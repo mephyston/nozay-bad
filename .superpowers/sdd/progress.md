@@ -1,15 +1,14 @@
 # Subagent-Driven Development Progress Ledger
 
 Project: `nozay-bad` (NBA 91)
-Current Plan: `docs/superpowers/plans/2026-07-07-layout-theme-plan.md`
+Current Plan: `docs/superpowers/plans/2026-07-07-poona-import-plan.md`
 
-## Task Progress (Sub-Project 1.5: Layout & Theme)
+## Task Progress (Sub-Project 2: Import Adhérents Poona)
 
-*   [x] Task 1: Installation des dépendances UI et verrouillage de Wrangler
-*   [x] Task 2: Configuration des variables HSL CSS pour Tailwind v4
-*   [x] Task 3: Composants ThemeToggle et UserNav
-*   [x] Task 4: Layout Principal Svelte (AdminLayout)
-*   [x] Task 5: Intégration du Layout et du ThemeWatcher dans Astro
+*   [ ] Task 1: Database Migration (Schema and Drizzle Setup)
+*   [ ] Task 2: Private API Import Endpoint (Hono Worker)
+*   [ ] Task 3: Astro Page Integration and API proxying
+*   [ ] Task 4: UI Drag-and-Drop Importer Component (Svelte 5)
 
 ## Ledger Entries
 
