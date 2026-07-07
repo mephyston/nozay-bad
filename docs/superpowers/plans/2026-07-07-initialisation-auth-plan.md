@@ -389,10 +389,17 @@
   Run: `npx vitest run apps/admin-console/src/middleware.test.ts`
   Expected: Échec.
 
-- [ ] **Step 3: Implémenter le middleware Astro**
+- [ ] **Step 3: Installer jose et implémenter le middleware Astro**
+  Run: `npm install jose`
   Créer `apps/admin-console/src/middleware.ts` :
   ```typescript
   import { defineMiddleware } from 'astro:middleware';
+  import { jwtVerify, createRemoteJWKSet } from 'jose';
+
+  const CF_TEAM_DOMAIN = process.env.CF_TEAM_DOMAIN || 'https://nba91.cloudflareaccess.com';
+  const CF_AUDIENCE = process.env.CF_AUDIENCE || 'mock-audience-id';
+
+  const JWKS = createRemoteJWKSet(new URL(`${CF_TEAM_DOMAIN}/cdn-cgi/access/certs`));
 
   export const handleAuth = async (context: any, next: any) => {
     const request = context.request;
@@ -402,14 +409,22 @@
       return new Response('Non autorisé. Authentification Cloudflare Access requise.', { status: 401 });
     }
 
-    // Validation simplifiée en développement local, à remplacer par la vérification JWKS Cloudflare en production
-    if (token === 'mock-valid-token' || process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === 'development' || token === 'mock-valid-token') {
       context.locals.user = { email: 'admin@nozay-bad.fr' };
       return next();
     }
 
-    // TODO: En prod, appeler une fonction de validation JWT Cloudflare (JWKS)
-    return new Response('Authentification invalide.', { status: 403 });
+    try {
+      const { payload } = await jwtVerify(token, JWKS, {
+        audience: CF_AUDIENCE,
+        issuer: CF_TEAM_DOMAIN,
+      });
+
+      context.locals.user = { email: payload.email as string };
+      return next();
+    } catch (err) {
+      return new Response('Authentification invalide ou expirée.', { status: 403 });
+    }
   };
 
   export const onRequest = defineMiddleware(handleAuth);
