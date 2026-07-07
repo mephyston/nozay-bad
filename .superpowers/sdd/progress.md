@@ -5,7 +5,7 @@ Plan: `docs/superpowers/plans/2026-07-07-initialisation-auth-plan.md`
 
 ## Task Progress
 
-*   [ ] Task 1: Initialisation du Monorepo Nx
+*   [x] Task 1: Initialisation du Monorepo Nx
 *   [ ] Task 2: Configuration de l'API (Worker Hono)
 *   [ ] Task 3: Configuration de la base de données (Drizzle & Cloudflare D1)
 *   [ ] Task 4: Setup Astro Frontends (`admin-console` et `boutique`)
@@ -13,4 +13,4 @@ Plan: `docs/superpowers/plans/2026-07-07-initialisation-auth-plan.md`
 
 ## Ledger Entries
 
-(Ledger empty - starting execution)
+- **2026-07-07**: Completed Task 1 (Initialisation du Monorepo Nx). Nx workspace initialized successfully, dev dependencies installed, and tsconfig.base.json configured. [task-1-report.md](file:///Users/david/Lab/nozay-bad/.superpowers/sdd/task-1-report.md) generated. (Commit: `a83ca50`)
