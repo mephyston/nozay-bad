@@ -8,7 +8,7 @@
     email?: string;
   }>();
 
-  let sidebarOpen = $state(true);
+  let sidebarOpen = $state(false);
 
   const navItems = [
     { name: "Vue d'ensemble", icon: LayoutDashboard, href: "#" },
@@ -19,6 +19,36 @@
 </script>
 
 <div class="flex h-screen bg-background text-foreground overflow-hidden">
+  <!-- Mobile Sidebar / Drawer -->
+  {#if sidebarOpen}
+    <button
+      type="button"
+      class="fixed inset-0 z-40 bg-black/50 md:hidden border-0 cursor-default"
+      onclick={() => sidebarOpen = false}
+      aria-label="Close sidebar"
+    ></button>
+    <aside class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-card transition-all duration-300 md:hidden">
+      <div class="flex h-14 items-center justify-between px-4 border-b border-border">
+        <span class="font-bold text-lg tracking-wider text-primary">NBA 91 - CA</span>
+        <button class="p-1 rounded hover:bg-accent" aria-label="Close menu" onclick={() => sidebarOpen = false}>
+          <X class="h-5 w-5" />
+        </button>
+      </div>
+      <nav class="flex-1 p-4 space-y-1">
+        {#each navItems as item}
+          <a
+            href={item.href}
+            onclick={() => sidebarOpen = false}
+            class="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            <item.icon class="mr-3 h-4 w-4" />
+            {item.name}
+          </a>
+        {/each}
+      </nav>
+    </aside>
+  {/if}
+
   <!-- Sidebar -->
   <aside class="hidden md:flex flex-col border-r border-border bg-card w-64 transition-all duration-300">
     <div class="flex h-14 items-center justify-between px-4 border-b border-border">
@@ -42,7 +72,7 @@
     <!-- Header -->
     <header class="flex h-14 items-center justify-between px-6 border-b border-border bg-card">
       <div class="flex items-center gap-4">
-        <button class="md:hidden p-1 rounded hover:bg-accent" aria-label="Menu">
+        <button class="md:hidden p-1 rounded hover:bg-accent" aria-label="Menu" onclick={() => sidebarOpen = true}>
           <Menu class="h-5 w-5" />
         </button>
         <span class="text-sm font-medium text-muted-foreground">Admin / Tableau de Bord</span>
