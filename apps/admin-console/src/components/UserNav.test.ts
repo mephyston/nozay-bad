@@ -7,7 +7,7 @@ describe('UserNav Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    const component = mount(UserNav, {
+    mount(UserNav, {
       target,
       props: {
         email: 'admin@nozay-bad.fr'
@@ -19,7 +19,7 @@ describe('UserNav Component', () => {
     expect(target.textContent).toContain('AD');
 
     // Initially, the dropdown content should not be in the DOM
-    expect(target.innerHTML).not.toContain('Profil');
+    expect(document.body.innerHTML).not.toContain('Profil');
 
     // Find and click the trigger button
     const trigger = target.querySelector('button');
@@ -28,7 +28,7 @@ describe('UserNav Component', () => {
     flushSync();
 
     // Now the dropdown should be visible, containing "Profil"
-    expect(target.innerHTML).toContain('Profil');
+    expect(document.body.innerHTML).toContain('Profil');
 
     // Clean up
     target.remove();

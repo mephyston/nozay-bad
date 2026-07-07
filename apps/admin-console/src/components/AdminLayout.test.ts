@@ -7,7 +7,7 @@ describe('AdminLayout Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    const component = mount(AdminLayout, {
+    mount(AdminLayout, {
       target,
       props: {
         email: 'test@nozay-bad.fr'
