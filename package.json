@@ -1,0 +1,15 @@
+{
+  "name": "nozay-bad",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {},
+  "private": true,
+  "devDependencies": {
+    "@nx/js": "23.0.1",
+    "@nx/workspace": "23.0.1",
+    "nx": "23.0.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.63.0",
+    "vitest": "^4.1.10"
+  }
+}

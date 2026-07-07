@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@nba/db": ["libs/shared/db/src/index.ts"],
+      "@nba/core": ["libs/shared/core/src/index.ts"],
+      "@nba/ui": ["libs/shared/ui/src/index.ts"]
+    }
+  }
+}
