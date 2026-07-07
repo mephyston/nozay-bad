@@ -5,11 +5,16 @@
   "scripts": {},
   "private": true,
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260707.1",
     "@nx/js": "23.0.1",
     "@nx/workspace": "23.0.1",
     "nx": "23.0.1",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.63.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "vitest-environment-miniflare": "^2.14.4"
+  },
+  "dependencies": {
+    "hono": "^4.12.28"
   }
 }
