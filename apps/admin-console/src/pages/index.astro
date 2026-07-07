@@ -1,12 +1,35 @@
 ---
-import '../styles/global.css';
+import Layout from '../layouts/Layout.astro';
+import AdminLayout from '../components/AdminLayout.svelte';
+
+const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
 ---
-<html lang="fr">
-  <head>
-    <meta charset="utf-8" />
-    <title>NBA 91 - Console Admin</title>
-  </head>
-  <body class="bg-slate-900 text-white flex items-center justify-center min-h-screen">
-    <h1 class="text-3xl font-bold">Console d'administration CA</h1>
-  </body>
-</html>
+
+<Layout title="NBA 91 - Console Admin">
+  <AdminLayout client:load email={userEmail}>
+    <div class="space-y-6">
+      <div>
+        <h2 class="text-2xl font-bold tracking-tight">Bonjour, Trésorier NBA 91</h2>
+        <p class="text-muted-foreground">Voici l'état récapitulatif de vos outils d'administration.</p>
+      </div>
+      <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <!-- Carte 1 -->
+        <div class="rounded-xl border border-border bg-card text-card-foreground p-6 shadow-sm">
+          <div class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 class="text-sm font-medium tracking-tight">Trésorerie</h3>
+          </div>
+          <div class="text-2xl font-bold">12 450,50 €</div>
+          <p class="text-xs text-muted-foreground">Solde comptable actif</p>
+        </div>
+        <!-- Carte 2 -->
+        <div class="rounded-xl border border-border bg-card text-card-foreground p-6 shadow-sm">
+          <div class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 class="text-sm font-medium tracking-tight">Adhérents Poona</h3>
+          </div>
+          <div class="text-2xl font-bold">182 / 210</div>
+          <p class="text-xs text-muted-foreground">86% des inscriptions validées</p>
+        </div>
+      </div>
+    </div>
+  </AdminLayout>
+</Layout>

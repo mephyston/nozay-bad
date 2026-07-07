@@ -20,7 +20,7 @@ describe('Astro Auth Middleware', () => {
     vi.restoreAllMocks();
     mockJwtVerify.mockReset();
     // Default to production environment to test production flow
-    vi.stubEnv('DEV', '');
+    vi.stubEnv('DEV', '' as any);
     vi.stubEnv('NODE_ENV', 'test');
   });
 
@@ -42,7 +42,7 @@ describe('Astro Auth Middleware', () => {
   });
 
   it('should allow access and populate locals.user in development environment (local dev bypass)', async () => {
-    vi.stubEnv('DEV', 'true');
+    vi.stubEnv('DEV', 'true' as any);
     const context = {
       request: new Request('https://admin.nozay-bad.fr/admin'),
       locals: {},
