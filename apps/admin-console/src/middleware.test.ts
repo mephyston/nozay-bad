@@ -21,9 +21,9 @@ describe('Astro Auth Middleware', () => {
     mockJwtVerify.mockReset();
   });
 
-  it('should return 401 if Cf-Access-Jwt-Assertion header is missing', async () => {
+  it('should return 401 if Cf-Access-Jwt-Assertion header is missing in production flow', async () => {
     const context = {
-      request: new Request('http://localhost/admin'),
+      request: new Request('https://admin.nozay-bad.fr/admin'),
       locals: {},
       redirect: vi.fn()
     } as any;
@@ -34,11 +34,9 @@ describe('Astro Auth Middleware', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('should allow access and populate locals.user if token is mock-valid (dev mode)', async () => {
+  it('should allow access and populate locals.user if URL is localhost (local dev bypass)', async () => {
     const context = {
-      request: new Request('http://localhost/admin', {
-        headers: { 'Cf-Access-Jwt-Assertion': 'mock-valid-token' }
-      }),
+      request: new Request('http://localhost/admin'),
       locals: {},
       redirect: vi.fn()
     } as any;
@@ -50,13 +48,13 @@ describe('Astro Auth Middleware', () => {
     expect(next).toHaveBeenCalled();
   });
 
-  it('should verify token with jose in production flow and set user if valid', async () => {
+  it('should verify token with jose in production flow (non-localhost) and set user if valid', async () => {
     mockJwtVerify.mockResolvedValue({
       payload: { email: 'prod-user@nozay-bad.fr' }
     });
 
     const context = {
-      request: new Request('http://localhost/admin', {
+      request: new Request('https://admin.nozay-bad.fr/admin', {
         headers: { 'Cf-Access-Jwt-Assertion': 'real-valid-token' }
       }),
       locals: {},
@@ -78,11 +76,11 @@ describe('Astro Auth Middleware', () => {
     );
   });
 
-  it('should return 403 if token verification fails', async () => {
+  it('should return 403 if token verification fails in production flow', async () => {
     mockJwtVerify.mockRejectedValue(new Error('Invalid signature'));
 
     const context = {
-      request: new Request('http://localhost/admin', {
+      request: new Request('https://admin.nozay-bad.fr/admin', {
         headers: { 'Cf-Access-Jwt-Assertion': 'invalid-token' }
       }),
       locals: {},
@@ -94,4 +92,40 @@ describe('Astro Auth Middleware', () => {
     expect(response.status).toBe(403);
     expect(next).not.toHaveBeenCalled();
   });
+
+  it('should load environment variables dynamically from context runtime env in production flow', async () => {
+    mockJwtVerify.mockResolvedValue({
+      payload: { email: 'prod-user@nozay-bad.fr' }
+    });
+
+    const context = {
+      request: new Request('https://admin.nozay-bad.fr/admin', {
+        headers: { 'Cf-Access-Jwt-Assertion': 'real-valid-token' }
+      }),
+      locals: {
+        runtime: {
+          env: {
+            CF_TEAM_DOMAIN: 'https://custom-team.cloudflareaccess.com',
+            CF_AUDIENCE: 'custom-audience-id'
+          }
+        }
+      },
+      redirect: vi.fn()
+    } as any;
+    const next = vi.fn().mockImplementation(() => new Response('ok'));
+
+    const response = await handleAuth(context, next);
+    expect(response.status).toBe(200);
+    expect(context.locals.user).toEqual({ email: 'prod-user@nozay-bad.fr' });
+    expect(next).toHaveBeenCalled();
+    expect(mockJwtVerify).toHaveBeenCalledWith(
+      'real-valid-token',
+      expect.any(Function),
+      {
+        audience: 'custom-audience-id',
+        issuer: 'https://custom-team.cloudflareaccess.com'
+      }
+    );
+  });
 });
+
