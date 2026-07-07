@@ -6,7 +6,7 @@ Current Plan: `docs/superpowers/plans/2026-07-07-layout-theme-plan.md`
 ## Task Progress (Sub-Project 1.5: Layout & Theme)
 
 *   [x] Task 1: Installation des dépendances UI et verrouillage de Wrangler
-*   [ ] Task 2: Configuration des variables HSL CSS pour Tailwind v4
+*   [x] Task 2: Configuration des variables HSL CSS pour Tailwind v4
 *   [ ] Task 3: Composants ThemeToggle et UserNav
 *   [ ] Task 4: Layout Principal Svelte (AdminLayout)
 *   [ ] Task 5: Intégration du Layout et du ThemeWatcher dans Astro
@@ -15,6 +15,7 @@ Current Plan: `docs/superpowers/plans/2026-07-07-layout-theme-plan.md`
 
 ### Sub-Project 1.5: Layout & Theme
 - Task 1: complete (commits a709bbc..d52f813, review clean)
+- Task 2: complete (commits e2c61db, review clean)
 
 ### Sub-Project 1: Base Application & Access Control
 - Task 1: complete (commits a559314..213b5a0, review clean)
