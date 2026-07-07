@@ -13,4 +13,4 @@ Plan: `docs/superpowers/plans/2026-07-07-initialisation-auth-plan.md`
 
 ## Ledger Entries
 
-- **2026-07-07**: Completed Task 1 (Initialisation du Monorepo Nx). Nx workspace initialized successfully, dev dependencies installed, and tsconfig.base.json configured. [task-1-report.md](file:///Users/david/Lab/nozay-bad/.superpowers/sdd/task-1-report.md) generated. (Commit: `a83ca50`)
+Task 1: complete (commits a559314..213b5a0, review clean)
