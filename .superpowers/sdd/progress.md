@@ -14,7 +14,7 @@ Current Plan: `docs/superpowers/plans/2026-07-07-layout-theme-plan.md`
 ## Ledger Entries
 
 ### Sub-Project 1.5: Layout & Theme
-- Task 1: complete (commit 352f4e7, review clean)
+- Task 1: complete (commits a709bbc..d52f813, review clean)
 
 ### Sub-Project 1: Base Application & Access Control
 - Task 1: complete (commits a559314..213b5a0, review clean)
