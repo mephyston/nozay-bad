@@ -1,10 +1,141 @@
 import { describe, it, expect } from 'vitest';
-import { usersTable } from './schema';
+import { membersTable } from './schema';
+import { drizzle } from 'drizzle-orm/d1';
+import { DatabaseSync } from 'node:sqlite';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
-describe('Drizzle Schema', () => {
-  it('should define users table with proper columns', () => {
-    expect(usersTable).toBeDefined();
-    expect(usersTable.email).toBeDefined();
-    expect(usersTable.role).toBeDefined();
+class MockD1Database {
+  private db: DatabaseSync;
+
+  constructor() {
+    this.db = new DatabaseSync(':memory:');
+  }
+
+  async exec(query: string) {
+    this.db.exec(query);
+    return { count: 0, duration: 0 };
+  }
+
+  prepare(query: string) {
+    const stmt = this.db.prepare(query);
+    return new MockD1PreparedStatement(stmt);
+  }
+
+  async batch(statements: MockD1PreparedStatement[]) {
+    const results = [];
+    for (const stmt of statements) {
+      results.push(await stmt.all());
+    }
+    return results;
+  }
+}
+
+class MockD1PreparedStatement {
+  private stmt: any;
+  private params: any[] = [];
+
+  constructor(stmt: any) {
+    this.stmt = stmt;
+  }
+
+  bind(...values: any[]) {
+    const newStmt = new MockD1PreparedStatement(this.stmt);
+    newStmt.params = values.map(v => {
+      if (v instanceof Date) return v.getTime();
+      if (typeof v === 'boolean') return v ? 1 : 0;
+      return v;
+    });
+    return newStmt;
+  }
+
+  async all() {
+    const results = this.stmt.all(...this.params);
+    return { results };
+  }
+
+  async run() {
+    const runResult = this.stmt.run(...this.params);
+    return {
+      success: true,
+      meta: {
+        changes: runResult.changes,
+        last_row_id: runResult.lastInsertRowid,
+      }
+    };
+  }
+
+  async first(colName?: string) {
+    const results = this.stmt.all(...this.params);
+    if (results.length === 0) return null;
+    const row = results[0];
+    if (colName) return row[colName];
+    return row;
+  }
+
+  async raw() {
+    const results = this.stmt.all(...this.params);
+    return results.map((row: any) => Object.values(row));
+  }
+}
+
+describe('Database Tests', () => {
+  it('should run migrations and insert/retrieve a member', async () => {
+    const mockD1 = new MockD1Database();
+    
+    // Apply migrations
+    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationFiles = fs.readdirSync(migrationsDir)
+      .filter(f => f.endsWith('.sql'))
+      .sort();
+
+    for (const file of migrationFiles) {
+      const sqlPath = path.join(migrationsDir, file);
+      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+      const statements = sqlContent.split('--> statement-breakpoint');
+      for (const statement of statements) {
+        if (statement.trim()) {
+          await mockD1.exec(statement);
+        }
+      }
+    }
+
+    // Initialize drizzle
+    const db = drizzle(mockD1 as any);
+
+    // Insert a member
+    const newMember = {
+      licence: '1234567',
+      lastName: 'Dupont',
+      firstName: 'Jean',
+      gender: 'M' as const,
+      birthDate: '1990-01-01',
+      email: 'jean.dupont@example.com',
+      phone: '0612345678',
+      status: 'valide',
+      type: 'Competiteur',
+      importedAt: new Date('2026-07-07T12:00:00Z'),
+    };
+
+    const insertResult = await db.insert(membersTable).values(newMember).run();
+    expect(insertResult.success).toBe(true);
+
+    // Retrieve the member
+    const members = await db.select().from(membersTable).all();
+    expect(members).toHaveLength(1);
+    expect(members[0].licence).toBe('1234567');
+    expect(members[0].lastName).toBe('Dupont');
+    expect(members[0].firstName).toBe('Jean');
+    expect(members[0].gender).toBe('M');
+    expect(members[0].birthDate).toBe('1990-01-01');
+    expect(members[0].email).toBe('jean.dupont@example.com');
+    expect(members[0].phone).toBe('0612345678');
+    expect(members[0].status).toBe('valide');
+    expect(members[0].type).toBe('Competiteur');
+    expect(members[0].importedAt).toBeInstanceOf(Date);
+    expect(members[0].importedAt.getTime()).toBe(new Date('2026-07-07T12:00:00Z').getTime());
   });
 });
+
+
+

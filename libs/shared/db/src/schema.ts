@@ -7,3 +7,18 @@ export const usersTable = sqliteTable('users', {
   role: text('role', { enum: ['admin', 'ca', 'member'] }).notNull().default('member'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
+
+export const membersTable = sqliteTable('members', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  licence: text('licence').notNull().unique(),
+  lastName: text('last_name').notNull(),
+  firstName: text('first_name').notNull(),
+  gender: text('gender', { enum: ['M', 'F'] }).notNull(),
+  birthDate: text('birth_date').notNull(),
+  email: text('email'),
+  phone: text('phone'),
+  status: text('status').notNull().default('valide'),
+  type: text('type').notNull(),
+  importedAt: integer('imported_at', { mode: 'timestamp' }).notNull()
+});
+
