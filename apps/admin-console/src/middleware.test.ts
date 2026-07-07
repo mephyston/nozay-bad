@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('astro:middleware', () => ({
   defineMiddleware: (fn: any) => fn,
@@ -19,6 +19,13 @@ describe('Astro Auth Middleware', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     mockJwtVerify.mockReset();
+    // Default to production environment to test production flow
+    vi.stubEnv('DEV', '');
+    vi.stubEnv('NODE_ENV', 'test');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('should return 401 if Cf-Access-Jwt-Assertion header is missing in production flow', async () => {
@@ -34,9 +41,10 @@ describe('Astro Auth Middleware', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('should allow access and populate locals.user if URL is localhost (local dev bypass)', async () => {
+  it('should allow access and populate locals.user in development environment (local dev bypass)', async () => {
+    vi.stubEnv('DEV', 'true');
     const context = {
-      request: new Request('http://localhost/admin'),
+      request: new Request('https://admin.nozay-bad.fr/admin'),
       locals: {},
       redirect: vi.fn()
     } as any;

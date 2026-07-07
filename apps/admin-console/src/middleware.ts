@@ -1,4 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
+import type { APIContext, MiddlewareNext } from 'astro';
 import { jwtVerify, createRemoteJWKSet } from 'jose';
 
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
@@ -12,17 +13,12 @@ function getJWKS(teamDomain: string) {
   return jwks;
 }
 
-export const handleAuth = async (context: any, next: any) => {
+export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
   const request = context.request;
   const token = request.headers.get('Cf-Access-Jwt-Assertion');
 
-  const url = new URL(request.url);
-  const isLocalDev =
-    process.env.NODE_ENV === 'development' ||
-    url.hostname === 'localhost' ||
-    url.hostname === '127.0.0.1';
-
-  if (isLocalDev) {
+  const isDev = import.meta.env.DEV || process.env.NODE_ENV === 'development';
+  if (isDev) {
     context.locals.user = { email: 'admin@nozay-bad.fr' };
     return next();
   }
