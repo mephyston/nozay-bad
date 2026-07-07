@@ -15,7 +15,7 @@ Current Plan: `docs/superpowers/plans/2026-07-07-layout-theme-plan.md`
 
 ### Sub-Project 1.5: Layout & Theme
 - Task 1: complete (commits a709bbc..d52f813, review clean)
-- Task 2: complete (commits e2c61db, review clean)
+- Task 2: complete (commits 5d05194..d8c88f1, review clean)
 
 ### Sub-Project 1: Base Application & Access Control
 - Task 1: complete (commits a559314..213b5a0, review clean)
