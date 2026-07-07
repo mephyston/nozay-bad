@@ -43,3 +43,8 @@ Thumbs.db
 .nx/migrate-runs
 .claude/worktrees
 .claude/settings.local.json
+
+# Astro and Wrangler
+.astro/
+.wrangler/
+

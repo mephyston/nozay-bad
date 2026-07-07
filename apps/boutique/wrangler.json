@@ -1,0 +1,10 @@
+{
+  "name": "nba-boutique",
+  "compatibility_date": "2024-09-23",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "services": [
+    { "binding": "API_SERVICE", "service": "nba-api" }
+  ]
+}
