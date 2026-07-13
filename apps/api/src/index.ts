@@ -1801,40 +1801,38 @@ app.post('/orders/:id/approve', async (c) => {
 
   let updatedOrder;
   try {
-    await db.transaction(async (txDb) => {
-      const order = await txDb.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
-      if (!order || order.status !== 'pending') {
-        throw new Error('Commande invalide ou déjà traitée');
-      }
+    const order = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
+    if (!order || order.status !== 'pending') {
+      throw new Error('Commande invalide ou déjà traitée');
+    }
 
-      const member = await txDb.select().from(membersTable).where(eq(membersTable.id, order.memberId)).get();
-      if (!member) {
-        throw new Error('Adhérent inexistant');
-      }
+    const member = await db.select().from(membersTable).where(eq(membersTable.id, order.memberId)).get();
+    if (!member) {
+      throw new Error('Adhérent inexistant');
+    }
 
-      const product = await txDb.select().from(productsTable).where(eq(productsTable.id, order.productId)).get();
-      if (!product) {
-        throw new Error('Produit inexistant');
-      }
+    const product = await db.select().from(productsTable).where(eq(productsTable.id, order.productId)).get();
+    if (!product) {
+      throw new Error('Produit inexistant');
+    }
 
-      const tx = await txDb.insert(transactionsTable).values({
-        seasonId: order.seasonId,
-        type: 'recette',
-        accountId: 'current',
-        category: 'boutique',
-        amount: order.totalAmount,
-        date: new Date().toISOString().split('T')[0],
-        paymentMethod: order.paymentMethod as any,
-        description: `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`,
-        memberId: member.id,
-        createdAt: new Date()
-      }).returning().get();
+    const tx = await db.insert(transactionsTable).values({
+      seasonId: order.seasonId,
+      type: 'recette',
+      accountId: 'current',
+      category: 'boutique',
+      amount: order.totalAmount,
+      date: new Date().toISOString().split('T')[0],
+      paymentMethod: order.paymentMethod as any,
+      description: `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`,
+      memberId: member.id,
+      createdAt: new Date()
+    }).returning().get();
 
-      updatedOrder = await txDb.update(ordersTable)
-        .set({ status: 'approved', transactionId: tx.id })
-        .where(eq(ordersTable.id, id))
-        .returning().get();
-    });
+    updatedOrder = await db.update(ordersTable)
+      .set({ status: 'approved', transactionId: tx.id })
+      .where(eq(ordersTable.id, id))
+      .returning().get();
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 400);
   }
@@ -1851,20 +1849,18 @@ app.post('/orders/:id/reject', async (c) => {
 
   let updatedOrder;
   try {
-    await db.transaction(async (txDb) => {
-      const order = await txDb.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
-      if (!order) {
-        throw new Error('Commande introuvable');
-      }
-      if (order.status !== 'pending') {
-        throw new Error('Commande invalide ou déjà traitée');
-      }
+    const order = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
+    if (!order) {
+      throw new Error('Commande introuvable');
+    }
+    if (order.status !== 'pending') {
+      throw new Error('Commande invalide ou déjà traitée');
+    }
 
-      updatedOrder = await txDb.update(ordersTable)
-        .set({ status: 'rejected' })
-        .where(eq(ordersTable.id, id))
-        .returning().get();
-    });
+    updatedOrder = await db.update(ordersTable)
+      .set({ status: 'rejected' })
+      .where(eq(ordersTable.id, id))
+      .returning().get();
   } catch (err: any) {
     const status = err.message === 'Commande introuvable' ? 404 : 400;
     return c.json({ success: false, error: err.message }, status);
@@ -1918,35 +1914,33 @@ app.post('/expenses/:id/approve', async (c) => {
 
   let updatedExpense;
   try {
-    await db.transaction(async (txDb) => {
-      const expense = await txDb.select().from(expensesTable).where(eq(expensesTable.id, id)).get();
-      if (!expense) {
-        throw new Error('Dépense introuvable');
-      }
-      if (expense.status !== 'pending') {
-        throw new Error('Dépense déjà traitée');
-      }
+    const expense = await db.select().from(expensesTable).where(eq(expensesTable.id, id)).get();
+    if (!expense) {
+      throw new Error('Dépense introuvable');
+    }
+    if (expense.status !== 'pending') {
+      throw new Error('Dépense déjà traitée');
+    }
 
-      // Créer la transaction de dépense
-      const tx = await txDb.insert(transactionsTable).values({
-        seasonId: expense.seasonId,
-        type: 'depense',
-        accountId: 'current',
-        category: expense.category,
-        amount: expense.amount,
-        date: new Date().toISOString().split('T')[0],
-        paymentMethod: 'virement',
-        description: `Remboursement frais - ${expense.emitterName} - ${expense.description}`,
-        memberId: expense.memberId,
-        createdAt: new Date()
-      }).returning().get();
+    // Créer la transaction de dépense
+    const tx = await db.insert(transactionsTable).values({
+      seasonId: expense.seasonId,
+      type: 'depense',
+      accountId: 'current',
+      category: expense.category,
+      amount: expense.amount,
+      date: new Date().toISOString().split('T')[0],
+      paymentMethod: 'virement',
+      description: `Remboursement frais - ${expense.emitterName} - ${expense.description}`,
+      memberId: expense.memberId,
+      createdAt: new Date()
+    }).returning().get();
 
-      // Mettre à jour le statut et lier la transaction
-      updatedExpense = await txDb.update(expensesTable)
-        .set({ status: 'approved', transactionId: tx.id })
-        .where(eq(expensesTable.id, id))
-        .returning().get();
-    });
+    // Mettre à jour le statut et lier la transaction
+    updatedExpense = await db.update(expensesTable)
+      .set({ status: 'approved', transactionId: tx.id })
+      .where(eq(expensesTable.id, id))
+      .returning().get();
   } catch (err: any) {
     const status = err.message === 'Dépense introuvable' ? 404 : 400;
     return c.json({ success: false, error: err.message }, status);
