@@ -13,7 +13,7 @@ describe('ExpensesManager Component', () => {
       id: 1,
       seasonId: '25-26',
       description: 'Achat de volants RSL',
-      category: 'materiel' as const,
+      category: 'materiel_club',
       amount: 12000, // 120.00 €
       photoUrl: 'http://example.com/receipt.jpg',
       status: 'pending' as const,
@@ -58,8 +58,9 @@ describe('ExpensesManager Component', () => {
     expect(target.innerHTML).toContain('Marie Curie');
     expect(target.innerHTML).toContain('120.00 €');
     expect(target.innerHTML).toContain('Achat de volants RSL');
-    expect(target.innerHTML).toContain('Matériel &amp; Fournitures');
+    expect(target.innerHTML).toContain('Matériel (hors cordages)');
     expect(target.innerHTML).toContain('Visualiser');
+    expect(target.innerHTML).toContain('Modifier');
   });
 
   it('calls fetch on action click', async () => {

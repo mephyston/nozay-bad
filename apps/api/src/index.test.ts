@@ -1436,7 +1436,7 @@ describe('Orders API Endpoints', () => {
         body: JSON.stringify({
           seasonId: '25-26',
           description: 'Achat de cartons pour tournoi',
-          category: 'materiel',
+          category: 'materiel_club',
           amount: 4500, // 45.00 €
           photoUrl: 'justificatif_carton.jpg',
           emitterName: 'Marie Curie'
@@ -1474,7 +1474,7 @@ describe('Orders API Endpoints', () => {
       expect(tx).toBeDefined();
       expect(tx.type).toBe('depense');
       expect(tx.amount).toBe(4500);
-      expect(tx.category).toBe('materiel');
+      expect(tx.category).toBe('materiel_club');
       expect(tx.description).toContain('Remboursement frais - Marie Curie - Achat de cartons pour tournoi');
 
       // 4. Create another expense to test rejection
@@ -1484,7 +1484,7 @@ describe('Orders API Endpoints', () => {
         body: JSON.stringify({
           seasonId: '25-26',
           description: 'Repas de Noel',
-          category: 'alimentation',
+          category: 'evenements_buvettes',
           amount: 8500,
           emitterName: 'Albert Einstein'
         })
@@ -1499,6 +1499,22 @@ describe('Orders API Endpoints', () => {
       const rejectJson = await rejectRes.json() as any;
       expect(rejectJson.success).toBe(true);
       expect(rejectJson.data.status).toBe('rejected');
+
+      // 5. Update expense
+      const updateRes = await app.request(`http://localhost/expenses/${expenseId2}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: 'Repas de Noel avec buvette',
+          category: 'evenements_buvettes',
+          amount: 9000
+        })
+      }, { DB: mockD1 as any });
+      expect(updateRes.status).toBe(200);
+      const updateJson = await updateRes.json() as any;
+      expect(updateJson.success).toBe(true);
+      expect(updateJson.data.description).toBe('Repas de Noel avec buvette');
+      expect(updateJson.data.amount).toBe(9000);
     });
   });
 });

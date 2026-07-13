@@ -1984,6 +1984,31 @@ app.post('/expenses/:id/reject', async (c) => {
   return c.json({ success: true, data: updatedExpense });
 });
 
+app.put('/expenses/:id', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const body = await c.req.json();
+  const db = drizzle(c.env.DB);
+
+  try {
+    const updated = await db.update(expensesTable).set({
+      description: body.description,
+      category: body.category,
+      amount: body.amount,
+      photoUrl: body.photoUrl !== undefined ? body.photoUrl : undefined
+    }).where(eq(expensesTable.id, id)).returning().get();
+    
+    if (!updated) {
+      return c.json({ success: false, error: 'Dépense introuvable' }, 404);
+    }
+    return c.json({ success: true, data: updated });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+});
+
 export default app;
 
 

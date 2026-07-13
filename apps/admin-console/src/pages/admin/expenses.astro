@@ -27,6 +27,15 @@ if (Astro.request.method === 'POST') {
       if (!apiRes.ok) {
         return new Response('Erreur rejet', { status: apiRes.status });
       }
+    } else if (data.action === 'update') {
+      const apiRes = await apiService.fetch(`http://localhost/expenses/${data.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data.updates)
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
     }
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' }

@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { Coins, FileText, Check, X, Calendar, AlertCircle, Eye, Search, Image as ImageIcon } from 'lucide-svelte';
+  import { Coins, FileText, Check, X, Calendar, AlertCircle, Eye, Search, Edit2, Image as ImageIcon } from 'lucide-svelte';
 
   interface Expense {
     id: number;
     seasonId: string;
     description: string;
-    category: 'deplacement' | 'materiel' | 'alimentation' | 'autre';
+    category: string;
     amount: number;
     photoUrl: string | null;
     status: 'pending' | 'approved' | 'rejected';
@@ -41,18 +41,62 @@
   let errorMsg = $state('');
   let successMsg = $state('');
 
+  // Editing state
+  let editingId = $state<number | null>(null);
+  let editDescription = $state('');
+  let editCategory = $state('');
+  let editAmountStr = $state('');
+  let isSaving = $state(false);
+
+  const categoriesList = [
+    { value: 'fonctionnement_administratif', label: 'Frais de fonctionnement & administratif' },
+    { value: 'materiel_club', label: 'Matériel (hors cordages)' },
+    { value: 'volants', label: 'Volants (vente ou achat)' },
+    { value: 'evenements_buvettes', label: 'Evénements & Buvettes' },
+    { value: 'championnats', label: 'Championnats (frais équipes)' },
+    { value: 'stages_formations', label: 'Stages & Formations' },
+    { value: 'adhesions_inscriptions', label: 'Adhésions & Inscriptions' },
+    { value: 'sponsoring', label: 'Sponsoring' },
+    { value: 'subventions', label: 'Subventions (aides publiques)' },
+    { value: 'actions_jeunes', label: 'Actions Jeunes (stages jeunes...)' },
+    { value: 'tournois_senior', label: 'Tournois Senior' },
+    { value: 'cordage_vente', label: 'Cordage (vente aux adhérents)' },
+    { value: 'salaires_charges', label: 'Salaires et Charges' },
+    { value: 'licences_federation', label: 'Licences (versements fédération)' }
+  ];
+
   const categoryLabels: Record<string, string> = {
-    deplacement: 'Déplacement',
-    materiel: 'Matériel & Fournitures',
-    alimentation: 'Repas & Convivialité',
-    autre: 'Autre'
+    fonctionnement_administratif: 'Frais de fonctionnement & administratif',
+    materiel_club: 'Matériel (hors cordages)',
+    volants: 'Volants (vente ou achat)',
+    evenements_buvettes: 'Evénements & Buvettes',
+    championnats: 'Championnats (frais équipes)',
+    stages_formations: 'Stages & Formations',
+    adhesions_inscriptions: 'Adhésions & Inscriptions',
+    sponsoring: 'Sponsoring',
+    subventions: 'Subventions (aides publiques)',
+    actions_jeunes: 'Actions Jeunes (stages jeunes...)',
+    tournois_senior: 'Tournois Senior',
+    cordage_vente: 'Cordage (vente aux adhérents)',
+    salaires_charges: 'Salaires et Charges',
+    licences_federation: 'Licences (versements fédération)'
   };
 
   const categoryColors: Record<string, string> = {
-    deplacement: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-    materiel: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-    alimentation: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-    autre: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20'
+    fonctionnement_administratif: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20',
+    materiel_club: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+    volants: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+    evenements_buvettes: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    championnats: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+    stages_formations: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
+    adhesions_inscriptions: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20',
+    sponsoring: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20',
+    subventions: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    actions_jeunes: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
+    tournois_senior: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+    cordage_vente: 'bg-lime-500/10 text-lime-600 dark:text-lime-400 border-lime-500/20',
+    salaires_charges: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',
+    licences_federation: 'bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-500/20'
   };
 
   // Filter and search
@@ -77,6 +121,56 @@
   function handleSeasonChange(e: Event) {
     const target = e.target as HTMLSelectElement;
     window.location.search = `?season=${target.value}`;
+  }
+
+  function startEdit(exp: Expense) {
+    editingId = exp.id;
+    editDescription = exp.description;
+    editCategory = exp.category;
+    editAmountStr = (exp.amount / 100).toFixed(2);
+  }
+
+  async function saveEdit(id: number) {
+    const parsedAmount = parseFloat(editAmountStr);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      errorMsg = "Veuillez saisir un montant supérieur à 0 €.";
+      return;
+    }
+
+    isSaving = true;
+    errorMsg = '';
+    successMsg = '';
+
+    try {
+      const res = await fetch('', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          id,
+          updates: {
+            description: editDescription,
+            category: editCategory,
+            amount: Math.round(parsedAmount * 100)
+          }
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("Erreur lors de la mise à jour de la note de frais.");
+      }
+
+      successMsg = "Note de frais mise à jour avec succès.";
+      editingId = null;
+      // Reload page to refresh data
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (err: any) {
+      errorMsg = err.message || "Une erreur est survenue.";
+    } finally {
+      isSaving = false;
+    }
   }
 
   async function handleAction(id: number, action: 'approve' | 'reject') {
@@ -195,78 +289,182 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         {#each pendingExpenses as exp}
           <div class="bg-card border border-border hover:border-border/80 transition-all rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
-            <div class="p-5 space-y-4">
-              <!-- Top Row -->
-              <div class="flex justify-between items-start">
+            {#if editingId === exp.id}
+              <!-- EDIT MODE CARD -->
+              <div class="p-5 space-y-4">
+                <div class="flex justify-between items-center border-b border-border pb-2">
+                  <h4 class="font-bold text-md text-foreground">Modifier la demande - {exp.emitterName}</h4>
+                  <span class="text-xs text-muted-foreground">ID: #{exp.id}</span>
+                </div>
+
+                <div class="space-y-1.5">
+                  <label for="edit-desc-{exp.id}" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Motif / Description</label>
+                  <textarea
+                    id="edit-desc-{exp.id}"
+                    bind:value={editDescription}
+                    rows="3"
+                    class="w-full px-3 py-2 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+                    required
+                  ></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="space-y-1.5">
+                    <label for="edit-cat-{exp.id}" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Catégorie compta</label>
+                    <select
+                      id="edit-cat-{exp.id}"
+                      bind:value={editCategory}
+                      class="w-full px-2.5 py-2 border border-border bg-background rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+                    >
+                      {#each categoriesList as cat}
+                        <option value={cat.value}>{cat.label}</option>
+                      {/each}
+                    </select>
+                  </div>
+
+                  <div class="space-y-1.5">
+                    <label for="edit-amount-{exp.id}" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Montant (€)</label>
+                    <input
+                      type="number"
+                      id="edit-amount-{exp.id}"
+                      step="0.01"
+                      min="0.01"
+                      bind:value={editAmountStr}
+                      class="w-full px-3 py-2 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-semibold"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <!-- Justificatif preview in Edit Mode -->
+                {#if exp.photoUrl}
+                  <div class="flex items-center justify-between bg-muted/40 p-2 rounded-lg border border-border/60">
+                    <span class="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                      <ImageIcon class="w-3.5 h-3.5" />
+                      Justificatif chargé
+                    </span>
+                    <button
+                      type="button"
+                      onclick={() => selectedPhoto = exp.photoUrl}
+                      class="text-xs font-bold text-primary hover:underline flex items-center gap-1 bg-transparent border-0 cursor-pointer"
+                    >
+                      <Eye class="w-3 h-3" />
+                      Visualiser
+                    </button>
+                  </div>
+                {/if}
+              </div>
+
+              <!-- Edit Actions Row -->
+              <div class="border-t border-border bg-muted/20 px-5 py-3.5 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onclick={() => editingId = null}
+                  disabled={isSaving}
+                  class="px-4 py-2 border border-border hover:bg-muted text-sm font-semibold rounded-lg transition-colors cursor-pointer bg-background"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onclick={() => saveEdit(exp.id)}
+                  disabled={isSaving}
+                  class="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground border-0 text-sm font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+                >
+                  {#if isSaving}
+                    <span>Enregistrement...</span>
+                  {:else}
+                    <span>Enregistrer</span>
+                  {/if}
+                </button>
+              </div>
+            {:else}
+              <!-- STANDARD MODE CARD -->
+              <div class="p-5 space-y-4">
+                <!-- Top Row -->
+                <div class="flex justify-between items-start">
+                  <div>
+                    <h4 class="font-bold text-lg text-foreground">{exp.emitterName}</h4>
+                    <span class="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                      <Calendar class="w-3.5 h-3.5" />
+                      Soumis le {new Date(exp.createdAt).toLocaleDateString('fr-FR')}
+                    </span>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-2xl font-black text-primary font-mono">
+                      {(exp.amount / 100).toFixed(2)} €
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Category Badge -->
                 <div>
-                  <h4 class="font-bold text-lg text-foreground">{exp.emitterName}</h4>
-                  <span class="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                    <Calendar class="w-3.5 h-3.5" />
-                    Soumis le {new Date(exp.createdAt).toLocaleDateString('fr-FR')}
+                  <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${categoryColors[exp.category] || 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20'}`}>
+                    {categoryLabels[exp.category] || exp.category}
                   </span>
                 </div>
-                <div class="text-right">
-                  <span class="text-2xl font-black text-primary font-mono">
-                    {(exp.amount / 100).toFixed(2)} €
-                  </span>
+
+                <!-- Description -->
+                <div class="text-sm text-foreground bg-muted/30 p-3 rounded-lg border border-border/50">
+                  <p class="whitespace-pre-wrap">{exp.description}</p>
                 </div>
+
+                <!-- Justificatif preview -->
+                {#if exp.photoUrl}
+                  <div class="flex items-center justify-between bg-muted/40 p-2.5 rounded-lg border border-border/60">
+                    <span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                      <ImageIcon class="w-4 h-4" />
+                      Justificatif de dépense
+                    </span>
+                    <button
+                      type="button"
+                      onclick={() => selectedPhoto = exp.photoUrl}
+                      class="text-xs font-bold text-primary hover:underline flex items-center gap-1 bg-transparent border-0 cursor-pointer"
+                    >
+                      <Eye class="w-3.5 h-3.5" />
+                      Visualiser
+                    </button>
+                  </div>
+                {/if}
               </div>
 
-              <!-- Category Badge -->
-              <div>
-                <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${categoryColors[exp.category]}`}>
-                  {categoryLabels[exp.category] || exp.category}
-                </span>
-              </div>
+              <!-- Actions Row -->
+              <div class="border-t border-border bg-muted/20 px-5 py-3.5 flex justify-between items-center gap-3">
+                <button
+                  type="button"
+                  onclick={() => startEdit(exp)}
+                  disabled={submittingId !== null}
+                  class="px-4 py-2 border border-border hover:bg-muted text-sm font-semibold rounded-lg transition-colors cursor-pointer bg-background flex items-center gap-1.5"
+                >
+                  <Edit2 class="w-3.5 h-3.5" />
+                  Modifier
+                </button>
 
-              <!-- Description -->
-              <div class="text-sm text-foreground bg-muted/30 p-3 rounded-lg border border-border/50">
-                <p class="whitespace-pre-wrap">{exp.description}</p>
-              </div>
-
-              <!-- Justificatif preview -->
-              {#if exp.photoUrl}
-                <div class="flex items-center justify-between bg-muted/40 p-2.5 rounded-lg border border-border/60">
-                  <span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                    <ImageIcon class="w-4 h-4" />
-                    Justificatif de dépense
-                  </span>
+                <div class="flex gap-3">
                   <button
                     type="button"
-                    onclick={() => selectedPhoto = exp.photoUrl}
-                    class="text-xs font-bold text-primary hover:underline flex items-center gap-1 bg-transparent border-0 cursor-pointer"
+                    onclick={() => handleAction(exp.id, 'reject')}
+                    disabled={submittingId !== null}
+                    class="px-4 py-2 border border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive text-sm font-semibold rounded-lg transition-colors cursor-pointer bg-background"
                   >
-                    <Eye class="w-3.5 h-3.5" />
-                    Visualiser
+                    Rejeter
+                  </button>
+                  <button
+                    type="button"
+                    onclick={() => handleAction(exp.id, 'approve')}
+                    disabled={submittingId !== null}
+                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white border-0 text-sm font-semibold rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    {#if submittingId === exp.id}
+                      <span class="animate-pulse">Validation...</span>
+                    {:else}
+                      <Check class="w-4 h-4" />
+                      Rembourser
+                    {/if}
                   </button>
                 </div>
-              {/if}
-            </div>
-
-            <!-- Actions Row -->
-            <div class="border-t border-border bg-muted/20 px-5 py-3.5 flex justify-end gap-3">
-              <button
-                type="button"
-                onclick={() => handleAction(exp.id, 'reject')}
-                disabled={submittingId !== null}
-                class="px-4 py-2 border border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive text-sm font-semibold rounded-lg transition-colors cursor-pointer bg-background"
-              >
-                Rejeter
-              </button>
-              <button
-                type="button"
-                onclick={() => handleAction(exp.id, 'approve')}
-                disabled={submittingId !== null}
-                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white border-0 text-sm font-semibold rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1"
-              >
-                {#if submittingId === exp.id}
-                  <span class="animate-pulse">Validation...</span>
-                {:else}
-                  <Check class="w-4 h-4" />
-                  Rembourser
-                {/if}
-              </button>
-            </div>
+              </div>
+            {/if}
           </div>
         {/each}
       </div>
@@ -306,7 +504,7 @@
                   {exp.description}
                 </td>
                 <td class="py-3.5 px-4">
-                  <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${categoryColors[exp.category]}`}>
+                  <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${categoryColors[exp.category] || 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20'}`}>
                     {categoryLabels[exp.category] || exp.category}
                   </span>
                 </td>

@@ -16,7 +16,7 @@
   const { activeSeasonId, members = [] }: Props = $props();
 
   let emitterName = $state('');
-  let category = $state('deplacement');
+  let category = $state('fonctionnement_administratif');
   let description = $state('');
   let amountStr = $state('');
   let photoUrl = $state<string | null>(null);
@@ -32,10 +32,20 @@
   let errorMsg = $state<string | null>(null);
 
   const categories = [
-    { value: 'deplacement', label: 'Déplacement (km, péage, train...)' },
-    { value: 'materiel', label: 'Matériel & Fournitures' },
-    { value: 'alimentation', label: 'Repas & Convivialité' },
-    { value: 'autre', label: 'Autre' }
+    { value: 'fonctionnement_administratif', label: 'Frais de fonctionnement & administratif' },
+    { value: 'materiel_club', label: 'Matériel (hors cordages)' },
+    { value: 'volants', label: 'Volants (vente ou achat)' },
+    { value: 'evenements_buvettes', label: 'Evénements & Buvettes' },
+    { value: 'championnats', label: 'Championnats (frais équipes)' },
+    { value: 'stages_formations', label: 'Stages & Formations' },
+    { value: 'adhesions_inscriptions', label: 'Adhésions & Inscriptions' },
+    { value: 'sponsoring', label: 'Sponsoring' },
+    { value: 'subventions', label: 'Subventions (aides publiques)' },
+    { value: 'actions_jeunes', label: 'Actions Jeunes (stages jeunes...)' },
+    { value: 'tournois_senior', label: 'Tournois Senior' },
+    { value: 'cordage_vente', label: 'Cordage (vente aux adhérents)' },
+    { value: 'salaires_charges', label: 'Salaires et Charges' },
+    { value: 'licences_federation', label: 'Licences (versements fédération)' }
   ];
 
   // Derived member lists for dropdown
@@ -195,7 +205,7 @@
       emitterName = '';
       selectedMemberId = '';
       memberSearchQuery = '';
-      category = 'deplacement';
+      category = 'fonctionnement_administratif';
       description = '';
       amountStr = '';
       photoUrl = null;
