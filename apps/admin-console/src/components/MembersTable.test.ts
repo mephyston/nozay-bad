@@ -25,7 +25,8 @@ describe('MembersTable Component', () => {
           status: '',
           type: '',
           season: '25-26'
-        }
+        },
+        seasons: []
       }
     });
 

@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
-import { and, or, eq, like, sql, inArray } from 'drizzle-orm';
-import { membersTable } from '../../../libs/shared/db/src/schema';
+import { and, or, eq, like, sql, inArray, desc } from 'drizzle-orm';
+import { membersTable, seasonsTable } from '../../../libs/shared/db/src/schema';
 
 type Bindings = {
   DB: D1Database;
@@ -90,8 +90,8 @@ app.post('/members/import', async (c) => {
   const statusIdx = headers.findIndex(h => h === 'Statut' || h === 'Adhérent validé' || h === 'Etat de dossier' || h === 'État de dossier');
   const typeIdx = headers.findIndex(h => h === 'Type' || h === 'Tarif');
 
-  if (licenceIdx === -1 || lastNameIdx === -1 || firstNameIdx === -1 || genderIdx === -1 || birthDateIdx === -1 || typeIdx === -1) {
-    return c.json({ success: false, error: 'Invalid headers. Missing required columns (Licence, Nom, Prénom, Sexe, Date naissance, Tarif/Type)' }, 400);
+  if (licenceIdx === -1 || lastNameIdx === -1 || firstNameIdx === -1 || genderIdx === -1 || birthDateIdx === -1 || typeIdx === -1 || seasonIdx === -1) {
+    return c.json({ success: false, error: 'Invalid headers. Missing required columns (Licence, Saison, Nom, Prénom, Sexe, Date naissance, Tarif/Type)' }, 400);
   }
 
   const validRowsMap = new Map<string, ParsedMember>();
@@ -102,7 +102,7 @@ app.post('/members/import', async (c) => {
     const columns = line.split(separator).map(col => col.trim().replace(/^"(.*)"$/, '$1').trim());
 
     const licence = columns[licenceIdx];
-    const season = seasonIdx !== -1 ? (columns[seasonIdx] || '25-26') : '25-26';
+    const season = columns[seasonIdx];
     const lastName = columns[lastNameIdx];
     const firstName = columns[firstNameIdx];
     const rawGender = columns[genderIdx];
@@ -162,6 +162,24 @@ app.post('/members/import', async (c) => {
   }
 
   const db = drizzle(c.env.DB);
+
+  // Auto-detect and populate new seasons from the import data
+  const uniqueSeasons = new Set<string>();
+  validRowsMap.forEach(member => uniqueSeasons.add(member.season));
+  for (const seasonName of uniqueSeasons) {
+    const parts = seasonName.split('-');
+    const name = parts.length === 2 ? `Saison 20${parts[0]}-20${parts[1]}` : `Saison ${seasonName}`;
+    await db.insert(seasonsTable)
+      .values({
+        id: seasonName,
+        name,
+        active: false,
+        createdAt: new Date()
+      })
+      .onConflictDoNothing()
+      .run();
+  }
+
   const existingLicenceSeasons = new Set<string>();
 
   // Extract list of licences to query existing records
@@ -340,6 +358,23 @@ app.get('/members/:licence', async (c) => {
   return c.json({
     success: true,
     data: result[0],
+  });
+});
+
+app.get('/seasons', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+
+  const db = drizzle(c.env.DB);
+  const seasons = await db.select()
+    .from(seasonsTable)
+    .orderBy(desc(seasonsTable.id))
+    .all();
+
+  return c.json({
+    success: true,
+    data: seasons
   });
 });
 

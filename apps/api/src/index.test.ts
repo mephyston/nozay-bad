@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable } from '../../../libs/shared/db/src/schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { DatabaseSync } from 'node:sqlite';
 import * as fs from 'node:fs';
@@ -119,9 +119,9 @@ describe('POST /members/import', () => {
     expect(initialMembers).toHaveLength(0);
 
     // Create form data with mock CSV file
-    const csvContent = `Licence;Nom;Prénom;Sexe;Date de naissance;Email;Téléphone;Statut;Type
-1111111;Martin;Pierre;M;1985-05-15;pierre.martin@example.com;0600000001;valide;Competiteur
-2222222;Bernard;Sophie;F;1990-10-20;sophie.bernard@example.com;0600000002;valide;Loisir
+    const csvContent = `Licence;Nom;Prénom;Sexe;Date de naissance;Email;Téléphone;Statut;Type;Saison
+1111111;Martin;Pierre;M;1985-05-15;pierre.martin@example.com;0600000001;valide;Competiteur;25-26
+2222222;Bernard;Sophie;F;1990-10-20;sophie.bernard@example.com;0600000002;valide;Loisir;25-26
 3333333;invalid-row;missing-fields-etc`;
 
     const formData = new FormData();
@@ -167,9 +167,9 @@ describe('POST /members/import', () => {
     expect(m1.importedAt).toBeInstanceOf(Date);
 
     // Now send another CSV with one update, one insert, and check counts
-    const updateCsvContent = `Licence;Nom;Prénom;Sexe;Date de naissance;Email;Téléphone;Statut;Type
-1111111;Martin Updated;Pierre;M;1985-05-15;pierre.martin.new@example.com;0600000099;suspendu;Competiteur
-4444444;Petit;Lucas;M;1995-12-25;lucas.petit@example.com;;valide;Loisir`;
+    const updateCsvContent = `Licence;Nom;Prénom;Sexe;Date de naissance;Email;Téléphone;Statut;Type;Saison
+1111111;Martin Updated;Pierre;M;1985-05-15;pierre.martin.new@example.com;0600000099;suspendu;Competiteur;25-26
+4444444;Petit;Lucas;M;1995-12-25;lucas.petit@example.com;;valide;Loisir;25-26`;
 
     const updateFormData = new FormData();
     const updateBlob = new Blob([updateCsvContent], { type: 'text/csv' });
@@ -352,6 +352,14 @@ describe('GET /members', () => {
     const mockD1 = await setupMockDb();
     const db = drizzle(mockD1 as any);
 
+    // Insert season 24-25 to respect foreign key constraint
+    await db.insert(seasonsTable).values({
+      id: '24-25',
+      name: 'Saison 2024-2025',
+      active: false,
+      createdAt: new Date()
+    }).run();
+
     // Insert dummy members in different seasons
     await db.insert(membersTable).values([
       { licence: '1000001', season: '24-25', lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'Competiteur', importedAt: new Date() },
@@ -400,6 +408,29 @@ describe('GET /members/:licence', () => {
     const mockD1 = await setupMockDb();
     const res = await app.request('http://localhost/members/9999999', undefined, { DB: mockD1 as any });
     expect(res.status).toBe(404);
+  });
+});
+
+describe('GET /seasons', () => {
+  it('should return the list of seasons in descending order', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Pre-populate with another season to verify ordering
+    await db.insert(seasonsTable).values({
+      id: '26-27',
+      name: 'Saison 2026-2027',
+      active: false,
+      createdAt: new Date(),
+    }).run();
+
+    const res = await app.request('http://localhost/seasons', undefined, { DB: mockD1 as any });
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveLength(2); // '26-27' and default '25-26'
+    expect(body.data[0].id).toBe('26-27');
+    expect(body.data[1].id).toBe('25-26');
   });
 });
 

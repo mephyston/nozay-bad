@@ -16,6 +16,7 @@ const apiService = env.API_SERVICE;
 const queryParams = new URLSearchParams({ page, limit: '20', search, gender, type, status, season });
 
 let membersData = { data: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 1 } };
+let seasonsList = [];
 let errorMsg = '';
 
 try {
@@ -24,6 +25,12 @@ try {
     throw new Error('Impossible de récupérer la liste des adhérents');
   }
   membersData = await res.json();
+
+  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasonsList = json.data || [];
+  }
 } catch (err: any) {
   errorMsg = err.message || 'Une erreur est survenue lors de la récupération.';
 }
@@ -58,6 +65,7 @@ try {
         data={membersData.data}
         pagination={membersData.pagination}
         filters={{ search, gender, type, status, season }}
+        seasons={seasonsList}
       />
     </div>
   </AdminLayout>

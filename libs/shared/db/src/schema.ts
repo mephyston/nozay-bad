@@ -8,10 +8,17 @@ export const usersTable = sqliteTable('users', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
+export const seasonsTable = sqliteTable('seasons', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  active: integer('active', { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
 export const membersTable = sqliteTable('members', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   licence: text('licence').notNull(),
-  season: text('season').notNull().default('25-26'),
+  season: text('season').notNull().default('25-26').references(() => seasonsTable.id),
   lastName: text('last_name').notNull(),
   firstName: text('first_name').notNull(),
   gender: text('gender', { enum: ['M', 'F'] }).notNull(),

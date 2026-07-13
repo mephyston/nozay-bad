@@ -26,7 +26,13 @@
     season?: string;
   }
 
-  let { data = [], pagination, filters }: { data: Member[]; pagination: Pagination; filters: Filters } = $props();
+  interface Season {
+    id: string;
+    name: string;
+    active: boolean;
+  }
+
+  let { data = [], pagination, filters, seasons = [] }: { data: Member[]; pagination: Pagination; filters: Filters; seasons?: Season[] } = $props();
 
   // svelte-ignore state_referenced_locally
   const initialSearch = filters?.search ?? '';
@@ -92,8 +98,12 @@
         bind:value={selectedSeason}
         onchange={applyFilters}
       >
-        <option value="25-26">Saison 2025-2026</option>
-        <option value="24-25">Saison 2024-2025</option>
+        {#each seasons as season}
+          <option value={season.id}>{season.name}</option>
+        {/each}
+        {#if seasons.length === 0}
+          <option value="25-26">Saison 2025-2026</option>
+        {/if}
       </select>
     </div>
 
