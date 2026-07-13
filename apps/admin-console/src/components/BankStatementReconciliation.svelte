@@ -58,6 +58,7 @@
   let isSubmitting = $state(false);
   let isAnalyzing = $state(false);
   let errorMsg = $state('');
+  let showImportModal = $state(false);
 
   // Onglet actif à gauche
   let activeTab = $state<'pending' | 'reconciled' | 'ignored'>('pending');
@@ -337,10 +338,95 @@
 </script>
 
 <div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-bold tracking-tight">Rapprochement bancaire</h1>
+      <p class="text-xs text-muted-foreground">Pointez les lignes de relevé Société Générale avec le grand livre ou les adhérents.</p>
+    </div>
+    {#if bankTransactions.length > 0}
+      <button 
+        type="button"
+        onclick={() => showImportModal = true}
+        class="inline-flex items-center gap-1.5 px-3 py-2 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-semibold rounded-md shadow cursor-pointer border-0"
+      >
+        <Upload class="w-3.5 h-3.5" />
+        Importer un autre relevé (.ofx)
+      </button>
+    {/if}
+  </div>
+
+  {#if showImportModal}
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div class="bg-card border border-border rounded-xl p-6 shadow-xl max-w-md w-full animate-in zoom-in-95 duration-200">
+        <div class="flex items-center justify-between mb-4 border-b border-border pb-3">
+          <h2 class="text-md font-bold flex items-center gap-2">
+            <Upload class="w-4 h-4 text-primary" />
+            Importer un relevé Société Générale
+          </h2>
+          <button 
+            type="button" 
+            onclick={() => showImportModal = false} 
+            class="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted border-0 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        {#if errorMsg}
+          <div class="p-3 mb-4 bg-destructive/15 border border-destructive text-destructive text-xs rounded-md flex items-center gap-2">
+            <AlertCircle class="w-4 h-4" />
+            <span>{errorMsg}</span>
+          </div>
+        {/if}
+
+        <form onsubmit={handleImport} class="space-y-4">
+          <div class="space-y-3">
+            <div>
+              <label for="season-select-modal" class="block text-xs font-semibold mb-1">Saison comptable</label>
+              <select id="season-select-modal" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium" bind:value={selectedSeason}>
+                {#each seasons as s}
+                  <option value={s.id}>{s.name}</option>
+                {/each}
+                {#if seasons.length === 0}
+                  <option value="25-26">Saison 2025-2026</option>
+                {/if}
+              </select>
+            </div>
+            <div>
+              <label for="file-input-modal" class="block text-xs font-semibold mb-1">Fichier (.ofx)</label>
+              <input id="file-input-modal" type="file" accept=".ofx" class="w-full text-sm" required />
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-border flex justify-end gap-2">
+            <button 
+              type="button" 
+              onclick={() => showImportModal = false} 
+              class="px-4 py-2 border border-border hover:bg-accent text-foreground text-xs font-semibold rounded-md cursor-pointer bg-transparent"
+            >
+              Annuler
+            </button>
+            <button 
+              type="submit" 
+              disabled={isSubmitting} 
+              class="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-md shadow hover:bg-primary/95 cursor-pointer border-0"
+            >
+              <Upload class="w-3.5 h-3.5" />
+              {isSubmitting ? 'Importation...' : 'Lancer l\'importation'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {/if}
+
   {#if bankTransactions.length === 0}
     <!-- Zone d'Importation initiale -->
     <div class="bg-card border border-border rounded-xl p-8 shadow-sm max-w-xl animate-in fade-in-50 duration-200">
-      <h2 class="text-lg font-semibold mb-4">Importer un relevé Société Générale</h2>
+      <h2 class="text-lg font-semibold mb-4 font-bold flex items-center gap-2">
+        <Upload class="w-5 h-5 text-primary" />
+        Importer un relevé Société Générale
+      </h2>
       {#if errorMsg}
         <div class="p-3 mb-4 bg-destructive/15 border border-destructive text-destructive text-sm rounded-md flex items-center gap-2">
           <AlertCircle class="w-4 h-4" />
@@ -365,7 +451,7 @@
             <input id="file-input" type="file" accept=".ofx" class="w-full text-sm" required />
           </div>
         </div>
-        <button type="submit" disabled={isSubmitting} class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-md shadow hover:bg-primary/95 cursor-pointer font-medium">
+        <button type="submit" disabled={isSubmitting} class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-md shadow hover:bg-primary/95 cursor-pointer font-medium border-0">
           <Upload class="w-4 h-4" />
           {isSubmitting ? 'Importation en cours...' : 'Lancer l\'importation'}
         </button>
