@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, usersTable, seasonBalancesTable, transactionsTable, seasonsTable, bankTransactionsTable, checkDepositsTable, checksTable } from './schema';
+import { membersTable, usersTable, seasonBalancesTable, transactionsTable, seasonsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable } from './schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { DatabaseSync } from 'node:sqlite';
 import * as fs from 'node:fs';
@@ -374,6 +374,70 @@ describe('Database Tests', () => {
 
     const checks = await db.select().from(checksTable).all();
     expect(checks).toHaveLength(2);
+  });
+
+  it('should insert and query products and orders', async () => {
+    const mockD1 = new MockD1Database();
+    
+    // Apply migrations
+    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationFiles = fs.readdirSync(migrationsDir)
+      .filter(f => f.endsWith('.sql'))
+      .sort();
+
+    for (const file of migrationFiles) {
+      const sqlPath = path.join(migrationsDir, file);
+      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+      const statements = sqlContent.split('--> statement-breakpoint');
+      for (const statement of statements) {
+        if (statement.trim()) {
+          await mockD1.exec(statement);
+        }
+      }
+    }
+
+    const db = drizzle(mockD1 as any);
+    const getDb = () => db;
+
+    const product = await db.insert(productsTable).values({
+      name: 'RSL Grade 1',
+      category: 'shuttlecock',
+      price: 1500,
+      stock: 10,
+      active: true,
+      createdAt: new Date()
+    }).returning().get();
+
+    expect(product.id).toBeDefined();
+    expect(product.name).toBe('RSL Grade 1');
+
+    // Insert dependency tables for order referencing
+    const [member] = await db.insert(membersTable).values({
+      licence: '1122334',
+      season: '25-26',
+      lastName: 'Martin',
+      firstName: 'Sophie',
+      gender: 'F',
+      birthDate: '1995-04-12',
+      type: 'Loisir',
+      importedAt: new Date()
+    }).returning();
+
+    const order = await db.insert(ordersTable).values({
+      seasonId: '25-26',
+      memberId: member.id,
+      productId: product.id,
+      quantity: 2,
+      totalAmount: 3000,
+      paymentMethod: 'cheque',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().get();
+
+    expect(order.id).toBeDefined();
+    expect(order.productId).toBe(product.id);
+    expect(order.quantity).toBe(2);
+    expect(order.totalAmount).toBe(3000);
   });
 });
 
