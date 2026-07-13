@@ -65,6 +65,10 @@
   let selectedMemberId = $state<string>('');
   let amountToLink = $state<number>(0);
 
+  // Filtres de recherche
+  let memberSearchQuery = $state('');
+  let categorySearchQuery = $state('');
+
   const accountLabels = {
     current: 'Compte Courant',
     savings: 'Compte Livret',
@@ -96,9 +100,26 @@
   let totalLinked = $derived(linkedGlTxs.reduce((sum, gt) => sum + Math.abs(gt.amount), 0));
   let remainingAmount = $derived(selectedTx ? Math.abs(selectedTx.amount) - totalLinked : 0);
 
+  // Adhérents et catégories filtrées en temps réel
+  let filteredMembers = $derived(
+    memberSearchQuery.trim() === ''
+      ? sortedMembers
+      : sortedMembers.filter(m =>
+          `${m.lastName} ${m.firstName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase())
+        )
+  );
+
+  let filteredCategories = $derived(
+    categorySearchQuery.trim() === ''
+      ? categories
+      : categories.filter(c => c.name.toLowerCase().includes(categorySearchQuery.toLowerCase()))
+  );
+
   $effect(() => {
     if (selectedTx) {
       amountToLink = parseFloat((remainingAmount / 100).toFixed(2));
+      memberSearchQuery = '';
+      categorySearchQuery = '';
     }
   });
 
@@ -428,18 +449,46 @@
                 </h4>
                 
                 <div class="space-y-3">
+                  <!-- Ligne Adhérent & Recherche Rapide -->
+                  <div class="space-y-1">
+                    <label for="member-search" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Rechercher un adhérent</label>
+                    <input
+                      id="member-search"
+                      type="text"
+                      placeholder="Saisissez quelques lettres..."
+                      class="w-full px-2 py-1 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium"
+                      bind:value={memberSearchQuery}
+                    />
+                    <select id="member-select" class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary font-medium" bind:value={selectedMemberId}>
+                      <option value="">-- Aucun adhérent (Opération diverse) --</option>
+                      {#each filteredMembers as m}
+                        <option value={m.id}>{m.lastName} {m.firstName} (Dû : {(m.amountRemaining / 100).toFixed(2)} €)</option>
+                      {/each}
+                    </select>
+                  </div>
+
+                  <!-- Ligne Catégorie & Recherche Rapide et Montant -->
                   <div class="grid grid-cols-3 gap-2">
-                    <div class="col-span-2">
-                      <label for="member-select" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Associer à un adhérent</label>
-                      <select id="member-select" class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary font-medium" bind:value={selectedMemberId}>
-                        <option value="">-- Aucun adhérent --</option>
-                        {#each sortedMembers as m}
-                          <option value={m.id}>{m.lastName} {m.firstName} (Dû : {(m.amountRemaining / 100).toFixed(2)} €)</option>
+                    <div class="col-span-2 space-y-1">
+                      <label for="category-search" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Filtrer la catégorie</label>
+                      <input
+                        id="category-search"
+                        type="text"
+                        placeholder="Ex: cordage, volant..."
+                        class="w-full px-2 py-1 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium"
+                        bind:value={categorySearchQuery}
+                      />
+                      <select id="cat-select" class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary" bind:value={category}>
+                        {#each filteredCategories as cat}
+                          <option value={cat.id}>{cat.name}</option>
                         {/each}
                       </select>
                     </div>
-                    <div>
-                      <label for="amount-input" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Montant (€)</label>
+                    
+                    <div class="space-y-1">
+                      <label for="amount-input" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Montant (€)</label>
+                      <!-- Div de calage vertical pour s'aligner avec le filtre input du select à gauche -->
+                      <div class="h-6"></div>
                       <input
                         id="amount-input"
                         type="number"
@@ -452,23 +501,14 @@
                     </div>
                   </div>
 
-                  <div class="grid grid-cols-2 gap-4">
-                    <div>
-                      <label for="cat-select" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Catégorie</label>
-                      <select id="cat-select" class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary" bind:value={category}>
-                        {#each categories as cat}
-                          <option value={cat.id}>{cat.name}</option>
-                        {/each}
-                      </select>
-                    </div>
-                    <div>
-                      <label for="method-select" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Moyen de paiement</label>
-                      <select id="method-select" class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary" bind:value={paymentMethod}>
-                        <option value="virement">Virement</option>
-                        <option value="cheque">Chèque</option>
-                        <option value="especes">Espèces</option>
-                      </select>
-                    </div>
+                  <!-- Moyen de paiement -->
+                  <div class="space-y-1">
+                    <label for="method-select" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Moyen de paiement</label>
+                    <select id="method-select" class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary" bind:value={paymentMethod}>
+                      <option value="virement">Virement</option>
+                      <option value="cheque">Chèque</option>
+                      <option value="especes">Espèces</option>
+                    </select>
                   </div>
                 </div>
 
