@@ -595,7 +595,7 @@ describe('Accounting API Endpoints', () => {
 
     const pnl = report.data.compteResultat;
     expect(pnl.totalRecettes).toBe(25000);
-    expect(pnl.categories.adhesions_inscriptions.total).toBe(25000);
+    expect(pnl.categories['1'].total).toBe(25000);
 
     const balances = report.data.bilanTrésorerie;
     // Compte courant : 1000 € (init) + 250 € (recette) - 200 € (transfert) = 1050 €
@@ -1563,7 +1563,7 @@ describe('Orders API Endpoints', () => {
       expect(tx).toBeDefined();
       expect(tx.type).toBe('depense');
       expect(tx.amount).toBe(4500);
-      expect(tx.category).toBe('materiel_club');
+      expect(tx.category).toBe(10);
       expect(tx.description).toContain('Remboursement frais - Marie Curie - Achat de cartons pour tournoi');
 
       // 4. Create another expense to test rejection

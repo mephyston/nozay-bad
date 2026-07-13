@@ -67,7 +67,7 @@
   let activeTab = $state<'pending' | 'reconciled' | 'ignored'>('pending');
 
   // Formulaire d'association/création
-  let category = $state('adhesions_inscriptions');
+  let category = $state('1');
   let paymentMethod = $state('virement');
   let selectedMemberId = $state<string>('');
   let amountToLink = $state<number>(0);
@@ -86,20 +86,20 @@
   };
 
   const categories = [
-    { id: 'adhesions_inscriptions', name: 'Adhésions & Inscriptions' },
-    { id: 'sponsoring', name: 'Sponsoring' },
-    { id: 'subventions', name: 'Subventions (aides publiques)' },
-    { id: 'actions_jeunes', name: 'Actions Jeunes (stages jeunes...)' },
-    { id: 'tournois_senior', name: 'Tournois Senior' },
-    { id: 'evenements_buvettes', name: 'Evénements & Buvettes' },
-    { id: 'cordage_vente', name: 'Cordage (vente aux adhérents)' },
-    { id: 'volants', name: 'Volants (vente ou achat)' },
-    { id: 'salaires_charges', name: 'Salaires et Charges' },
-    { id: 'materiel_club', name: 'Matériel (hors cordages)' },
-    { id: 'licences_federation', name: 'Licences (versements fédération)' },
-    { id: 'championnats', name: 'Championnats (frais équipes)' },
-    { id: 'stages_formations', name: 'Stages & Formations' },
-    { id: 'fonctionnement_administratif', name: 'Frais de fonctionnement & administratif' }
+    { id: '1', name: 'Adhésions & Inscriptions' },
+    { id: '2', name: 'Sponsoring' },
+    { id: '3', name: 'Subventions (aides publiques)' },
+    { id: '4', name: 'Actions Jeunes (stages jeunes...)' },
+    { id: '5', name: 'Tournois Senior' },
+    { id: '6', name: 'Evénements & Buvettes' },
+    { id: '7', name: 'Cordage (vente aux adhérents)' },
+    { id: '8', name: 'Volants (vente ou achat)' },
+    { id: '9', name: 'Salaires et Charges' },
+    { id: '10', name: 'Matériel (hors cordages)' },
+    { id: '11', name: 'Licences (versements fédération)' },
+    { id: '12', name: 'Championnats (frais équipes)' },
+    { id: '13', name: 'Stages & Formations' },
+    { id: '14', name: 'Frais de fonctionnement & administratif' }
   ];
 
   let sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));

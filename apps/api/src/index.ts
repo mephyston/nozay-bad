@@ -23,6 +23,30 @@ async function isSeasonClosed(db: any, seasonId: string): Promise<boolean> {
   return season?.closed === 1 || season?.closed === true;
 }
 
+export function normalizeCategory(categoryVal: any): number | null {
+  if (categoryVal === undefined || categoryVal === null) return null;
+  const num = Number(categoryVal);
+  if (!isNaN(num)) return num;
+
+  const legacyMap: Record<string, number> = {
+    adhesions_inscriptions: 1,
+    sponsoring: 2,
+    subventions: 3,
+    actions_jeunes: 4,
+    tournois_senior: 5,
+    evenements_buvettes: 6,
+    cordage_vente: 7,
+    volants: 8,
+    salaires_charges: 9,
+    materiel_club: 10,
+    licences_federation: 11,
+    championnats: 12,
+    stages_formations: 13,
+    fonctionnement_administratif: 14
+  };
+  return legacyMap[categoryVal] || null;
+}
+
 type Bindings = {
   DB: D1Database;
   AI: any;
@@ -686,7 +710,7 @@ app.post('/transactions', async (c) => {
     type: body.type,
     accountId: body.accountId,
     destinationAccountId: body.type === 'transfert' ? body.destinationAccountId : null,
-    category: body.type !== 'transfert' ? body.category : null,
+    category: body.type !== 'transfert' ? normalizeCategory(body.category) : null,
     amount: Math.round(body.amount),
     date: body.date,
     paymentMethod: body.paymentMethod,
@@ -743,7 +767,7 @@ app.put('/transactions/:id', async (c) => {
       type: body.type,
       accountId: body.accountId,
       destinationAccountId: body.type === 'transfert' ? body.destinationAccountId : null,
-      category: body.type !== 'transfert' ? body.category : null,
+      category: body.type !== 'transfert' ? normalizeCategory(body.category) : null,
       amount: Math.round(body.amount),
       date: body.date,
       paymentMethod: body.paymentMethod,
@@ -878,13 +902,13 @@ app.get('/seasons/:seasonId/reports', async (c) => {
   for (const tx of allTxs) {
     if (tx.type === 'transfert') continue;
     
-    const cat = tx.category || 'divers';
+    const cat = normalizeCategory(tx.category)?.toString() || 'divers';
     if (!categoryTotals[cat]) {
       categoryTotals[cat] = { type: tx.type, total: 0 };
     }
     categoryTotals[cat].total += tx.amount;
     
-    if (tx.category !== transitCatId) {
+    if (normalizeCategory(tx.category) !== transitCatId) {
       if (tx.type === 'recette') {
         totalRecettes += tx.amount;
       } else {
@@ -1322,7 +1346,7 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
       type: tx.type,
       accountId: tx.accountId,
       destinationAccountId: tx.destinationAccountId || null,
-      category: tx.category || null,
+      category: normalizeCategory(tx.category),
       amount: Math.round(tx.amount),
       date: tx.date,
       paymentMethod: tx.paymentMethod,
@@ -2115,7 +2139,7 @@ app.post('/expenses', async (c) => {
   const expense = await db.insert(expensesTable).values({
     seasonId: body.seasonId,
     description: body.description,
-    category: body.category,
+    category: normalizeCategory(body.category) || 1,
     amount: body.amount,
     photoUrl: body.photoUrl || null,
     status: 'pending',
@@ -2298,7 +2322,7 @@ app.put('/expenses/:id', async (c) => {
 
     const updated = await db.update(expensesTable).set({
       description: body.description,
-      category: body.category,
+      category: body.category !== undefined ? (normalizeCategory(body.category) || 1) : undefined,
       amount: body.amount,
       seasonId: body.seasonId,
       photoUrl: body.photoUrl !== undefined ? body.photoUrl : undefined

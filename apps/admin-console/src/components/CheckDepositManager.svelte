@@ -94,7 +94,7 @@
   let checkEmitter = $state('');
   let checkBank = $state('');
   let checkMemberId = $state<string>('');
-  let checkCategory = $state('adhesions_inscriptions');
+  let checkCategory = $state('1');
   let checkDate = $state(new Date().toISOString().split('T')[0]);
   let formError = $state('');
 
@@ -110,10 +110,10 @@
   
   // List of categories
   const categoriesList = [
-    { id: 'adhesions_inscriptions', name: 'Cotisation / Adhésion' },
-    { id: 'buvettes_recette', name: 'Recette Buvette' },
-    { id: 'cordage_vente', name: 'Vente Cordage' },
-    { id: 'divers_recette', name: 'Divers / Recettes annexes' }
+    { id: '1', name: 'Cotisation / Adhésion' },
+    { id: '6', name: 'Recette Buvette' },
+    { id: '7', name: 'Vente Cordage' },
+    { id: '14', name: 'Divers / Recettes annexes' }
   ];
 
   // Derived display values
