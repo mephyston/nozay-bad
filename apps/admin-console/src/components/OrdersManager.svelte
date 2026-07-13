@@ -346,18 +346,6 @@
                         <td class="p-4">
                           {#if item.product}
                             <div class="font-medium text-foreground">{item.product.name}</div>
-                            <div class="flex items-center gap-2 mt-1">
-                              {#if item.product.stock >= item.order.quantity}
-                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                                  {item.product.stock} en stock
-                                </span>
-                              {:else}
-                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-destructive/10 text-destructive">
-                                  <AlertCircle class="w-3 h-3" />
-                                  Stock insuffisant ({item.product.stock})
-                                </span>
-                              {/if}
-                            </div>
                           {:else}
                             <span class="text-xs text-muted-foreground italic">Produit supprimé</span>
                           {/if}
@@ -387,7 +375,7 @@
                               <div class="absolute right-4 mt-1 w-36 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border font-medium">
                                 <button
                                   onclick={() => handleApprove(item.order.id)}
-                                  disabled={processingId !== null || (item.product && item.product.stock < item.order.quantity)}
+                                  disabled={processingId !== null}
                                   class="w-full px-3 py-1.5 text-xs text-emerald-600 hover:bg-emerald-500/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent disabled:opacity-50"
                                 >
                                   <Check class="w-3.5 h-3.5" />
