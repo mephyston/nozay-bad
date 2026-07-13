@@ -4,7 +4,7 @@
   interface Product {
     id: number;
     name: string;
-    category: 'shuttlecock' | 'string';
+    category: 'shuttlecock' | 'string' | 'other';
     price: number;
     stock: number;
     active: boolean;
@@ -15,11 +15,11 @@
     category,
     products = []
   }: {
-    category?: 'shuttlecock' | 'string' | 'all';
+    category?: 'shuttlecock' | 'string' | 'other' | 'all';
     products?: Product[];
   } = $props();
 
-  let formCategory = $state<'shuttlecock' | 'string'>(
+  let formCategory = $state<'shuttlecock' | 'string' | 'other'>(
     category && category !== 'all' ? category : 'shuttlecock'
   );
 
@@ -35,7 +35,6 @@
   let editingId = $state<number | null>(null);
   let name = $state('');
   let price = $state(''); // Decimal string
-  let stock = $state(''); // Integer string
   let active = $state(true);
 
   // Sync state if products prop changes
@@ -59,7 +58,6 @@
     editingId = null;
     name = '';
     price = '';
-    stock = '';
     active = true;
     errorMsg = '';
     formCategory = category && category !== 'all' ? category : 'shuttlecock';
@@ -69,7 +67,6 @@
     editingId = product.id;
     name = product.name;
     price = (product.price / 100).toString();
-    stock = product.stock.toString();
     active = product.active;
     formCategory = product.category;
     errorMsg = '';
@@ -82,7 +79,6 @@
     successMsg = '';
 
     const numPrice = parseFloat(price);
-    const numStock = parseInt(stock, 10);
 
     if (!name.trim()) {
       errorMsg = 'Le nom du produit est requis.';
@@ -91,11 +87,6 @@
 
     if (isNaN(numPrice) || numPrice < 0) {
       errorMsg = 'Le prix doit être supérieur ou égal à 0.';
-      return;
-    }
-
-    if (isNaN(numStock) || numStock < 0) {
-      errorMsg = 'Le stock doit être supérieur ou égal à 0.';
       return;
     }
 
@@ -109,7 +100,7 @@
             id: editingId,
             name: name.trim(),
             price: priceCents,
-            stock: numStock,
+            stock: 9999,
             active
           }
         : {
@@ -117,7 +108,7 @@
             name: name.trim(),
             category: category && category !== 'all' ? category : formCategory,
             price: priceCents,
-            stock: numStock,
+            stock: 9999,
             active
           };
 
@@ -208,7 +199,7 @@
   <div class="flex items-center justify-between border-b border-border pb-4">
     <div>
       <h1 class="text-3xl font-bold tracking-tight">
-        {category === 'shuttlecock' ? 'Gestion des Volants' : category === 'string' ? 'Gestion des Cordages' : 'Gestion des Produits'}
+        {category === 'shuttlecock' ? 'Gestion des Volants' : category === 'string' ? 'Gestion des Cordages' : category === 'other' ? 'Gestion des Autres Produits' : 'Gestion des Produits'}
       </h1>
       <p class="text-muted-foreground mt-1">
         Consultez et modifiez les tarifs, stocks et statuts de la boutique.
@@ -279,37 +270,23 @@
             >
               <option value="shuttlecock">Volants</option>
               <option value="string">Cordages</option>
+              <option value="other">Autre</option>
             </select>
           </div>
         {/if}
 
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label for="price" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Prix (€)</label>
-            <input
-              type="number"
-              id="price"
-              step="0.01"
-              min="0"
-              placeholder="0.00"
-              bind:value={price}
-              class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              required
-            />
-          </div>
-          <div>
-            <label for="stock" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Stock disponible</label>
-            <input
-              type="number"
-              id="stock"
-              min="0"
-              step="1"
-              placeholder="0"
-              bind:value={stock}
-              class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              required
-            />
-          </div>
+        <div>
+          <label for="price" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Prix (€)</label>
+          <input
+            type="number"
+            id="price"
+            step="0.01"
+            min="0"
+            placeholder="0.00"
+            bind:value={price}
+            class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            required
+          />
         </div>
 
         <div class="flex items-center gap-2 py-2">
@@ -361,7 +338,6 @@
                 <th class="py-3 px-2">Catégorie</th>
               {/if}
               <th class="py-3 px-2">Prix</th>
-              <th class="py-3 px-2">Stock</th>
               <th class="py-3 px-2">Statut</th>
               <th class="py-3 px-2 text-right">Actions</th>
             </tr>
@@ -369,7 +345,7 @@
           <tbody class="divide-y divide-border">
             {#if filteredProducts.length === 0}
               <tr>
-                <td colspan={!category || category === 'all' ? 6 : 5} class="py-8 text-center text-muted-foreground text-sm">
+                <td colspan={!category || category === 'all' ? 5 : 4} class="py-8 text-center text-muted-foreground text-sm">
                   Aucun article trouvé.
                 </td>
               </tr>
@@ -382,23 +358,12 @@
                   {#if !category || category === 'all'}
                     <td class="py-3 px-2">
                       <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-primary/10 text-primary">
-                        {product.category === 'shuttlecock' ? 'Volants' : 'Cordages'}
+                        {product.category === 'shuttlecock' ? 'Volants' : product.category === 'string' ? 'Cordages' : 'Autre'}
                       </span>
                     </td>
                   {/if}
                   <td class="py-3 px-2 font-semibold">
                     {(product.price / 100).toFixed(2)} €
-                  </td>
-                  <td class="py-3 px-2">
-                    {#if product.stock > 0}
-                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                        {product.stock} en stock
-                      </span>
-                    {:else}
-                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-destructive/10 text-destructive">
-                        Rupture
-                      </span>
-                    {/if}
                   </td>
                   <td class="py-3 px-2">
                     <button 

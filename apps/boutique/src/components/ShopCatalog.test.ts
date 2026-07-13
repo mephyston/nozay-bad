@@ -51,11 +51,9 @@ describe('ShopCatalog Component', () => {
     // Check products rendered
     expect(target.innerHTML).toContain("Volant RSL Grade 1");
     expect(target.innerHTML).toContain("15.00 €");
-    expect(target.innerHTML).toContain("10 disponibles");
-
+ 
     expect(target.innerHTML).toContain("Cordage Yonex BG65");
     expect(target.innerHTML).toContain("20.00 €");
-    expect(target.innerHTML).toContain("5 disponibles");
   });
 
   it('allows member selection from combobox', async () => {
@@ -151,8 +149,6 @@ describe('ShopCatalog Component', () => {
       "Votre souhait d'achat de 1 Volant RSL Grade 1 a bien été enregistré. Il sera comptabilisé dès validation par le trésorier."
     );
 
-    // Check stock was decremented locally
-    expect(target.innerHTML).toContain("9 disponibles");
   });
 
   it('supports keyboard navigation through the members listbox', () => {

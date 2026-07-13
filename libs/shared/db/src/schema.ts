@@ -115,7 +115,7 @@ export const checksTable = sqliteTable('checks', {
 export const productsTable = sqliteTable('products', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
-  category: text('category', { enum: ['shuttlecock', 'string'] }).notNull(),
+  category: text('category', { enum: ['shuttlecock', 'string', 'other'] }).notNull(),
   price: integer('price').notNull(),
   stock: integer('stock').notNull().default(0),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),

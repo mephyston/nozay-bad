@@ -1774,8 +1774,8 @@ app.post('/orders', async (c) => {
   const db = drizzle(c.env.DB);
 
   const product = await db.select().from(productsTable).where(eq(productsTable.id, body.productId)).get();
-  if (!product || product.stock < body.quantity) {
-    return c.json({ success: false, error: 'Stock insuffisant ou produit inexistant' }, 400);
+  if (!product) {
+    return c.json({ success: false, error: 'Produit inexistant' }, 400);
   }
 
   const order = await db.insert(ordersTable).values({
@@ -1816,16 +1816,6 @@ app.post('/orders/:id/approve', async (c) => {
       if (!product) {
         throw new Error('Produit inexistant');
       }
-
-      if (product.stock < order.quantity) {
-        throw new Error('Stock insuffisant pour valider la commande');
-      }
-
-      // Décrémenter le stock et créer l'écriture de recette
-      await txDb.update(productsTable)
-        .set({ stock: product.stock - order.quantity })
-        .where(eq(productsTable.id, product.id))
-        .run();
 
       const tx = await txDb.insert(transactionsTable).values({
         seasonId: order.seasonId,

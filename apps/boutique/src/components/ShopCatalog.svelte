@@ -11,7 +11,7 @@
   interface Product {
     id: number;
     name: string;
-    category: 'shuttlecock' | 'string';
+    category: 'shuttlecock' | 'string' | 'other';
     price: number; // in cents
     stock: number;
     active: boolean;
@@ -171,10 +171,7 @@
       return;
     }
 
-    if (qty > product.stock) {
-      errorMessages[productId] = `Stock insuffisant. Maximum disponible : ${product.stock}`;
-      return;
-    }
+
 
     errorMessages[productId] = null;
     successMessages[productId] = null;
@@ -204,8 +201,7 @@
       // Success message
       successMessages[productId] = `Votre souhait d'achat de ${qty} ${product.name} a bien été enregistré. Il sera comptabilisé dès validation par le trésorier.`;
       
-      // Update local stock and reset qty
-      product.stock = Math.max(0, product.stock - qty);
+      // Update local qty
       quantities[productId] = 1;
     } catch (err: any) {
       errorMessages[productId] = err.message || "Une erreur est survenue.";
@@ -344,8 +340,8 @@
             <div class="p-6 pb-4 space-y-2">
               <div class="flex justify-between items-start gap-2">
                 <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border uppercase tracking-wider
-                  {product.category === 'shuttlecock' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-purple-500/10 text-purple-500 border-purple-500/20'}">
-                  {product.category === 'shuttlecock' ? 'Volants' : 'Cordages'}
+                  {product.category === 'shuttlecock' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : product.category === 'string' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'}">
+                  {product.category === 'shuttlecock' ? 'Volants' : product.category === 'string' ? 'Cordages' : 'Autre'}
                 </span>
                 
                 <span class="text-lg font-bold text-primary">
@@ -354,18 +350,6 @@
               </div>
               
               <h3 class="text-lg font-bold tracking-tight text-foreground">{product.name}</h3>
-              
-              <div class="flex items-center gap-1.5 text-xs">
-                {#if product.stock > 0}
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">
-                    {product.stock} disponibles
-                  </span>
-                {:else}
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-semibold">
-                    Rupture de stock
-                  </span>
-                {/if}
-              </div>
             </div>
 
             <!-- Card Action Area / Order Panel -->
@@ -389,14 +373,14 @@
                         id="qty-{product.id}"
                         type="number"
                         min="1"
-                        max={product.stock}
+                        max={99}
                         bind:value={quantities[product.id]}
                         class="w-12 text-center text-sm font-semibold border-0 focus:outline-none bg-transparent"
                       />
                       <button
                         type="button"
-                        onclick={() => incrementQty(product.id, product.stock)}
-                        disabled={quantities[product.id] >= product.stock}
+                        onclick={() => incrementQty(product.id, 99)}
+                        disabled={quantities[product.id] >= 99}
                         class="px-2.5 py-1 text-sm hover:bg-muted disabled:opacity-30 cursor-pointer font-bold border-0"
                       >
                         +

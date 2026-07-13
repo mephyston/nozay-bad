@@ -1338,9 +1338,9 @@ describe('Orders API Endpoints', () => {
     expect(json.data.status).toBe('approved');
     expect(json.data.transactionId).toBeDefined();
 
-    // 3. Verify stock is decremented
+    // 3. Verify stock is unchanged
     const updatedProd = await db.select().from(productsTable).where(eq(productsTable.id, 1)).get();
-    expect(updatedProd.stock).toBe(3); // 5 - 2
+    expect(updatedProd.stock).toBe(5);
 
     // 4. Verify transaction is created
     const tx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, json.data.transactionId)).get();
@@ -1402,7 +1402,7 @@ describe('Orders API Endpoints', () => {
     expect(rejectRes2.status).toBe(400);
   });
 
-  it('fails to create order if stock is insufficient', async () => {
+  it('creates order even if quantity is greater than stock', async () => {
     const mockD1 = await setupMockDb();
     const db = drizzle(mockD1 as any);
 
@@ -1416,9 +1416,9 @@ describe('Orders API Endpoints', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ seasonId: '25-26', memberId: 1, productId: 1, quantity: 2, paymentMethod: 'virement' })
     }, { DB: mockD1 as any });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
     const json = await res.json() as any;
-    expect(json.success).toBe(false);
+    expect(json.success).toBe(true);
   });
 });
 
