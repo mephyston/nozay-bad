@@ -8,13 +8,14 @@ Current Plan: `docs/superpowers/plans/2026-07-13-poona-import-and-members-plan.m
 *   [x] Task 1: Astro Backend Proxy Route for CSV Import
 *   [x] Task 2: UI Drag-and-Drop Importer Component (Svelte 5)
 *   [x] Task 3: API GET /members Endpoint
-*   [ ] Task 4: API GET /members/:licence Endpoint
+*   [x] Task 4: API GET /members/:licence Endpoint
 *   [ ] Task 5: Listing Page UI and Svelte Component
 *   [ ] Task 6: Detail Page UI and Svelte Component
 
 ## Ledger Entries
 
 ### Sub-Project 2: Import & Members Administration
+- Task 4: complete (commits 483b358..71a8823, review clean)
 - Task 3: complete (commits e1c06d8..483b358, review clean)
 - Task 2: complete (commits 06a6a83..e1c06d8, review clean)
 - Task 1: complete (commits 1c0010d..06a6a83, review clean)
