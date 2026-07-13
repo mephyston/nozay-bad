@@ -1095,6 +1095,35 @@ app.post('/bank-transactions/analyze', async (c) => {
     .where(eq(membersTable.season, season))
     .all();
 
+  // 3. Récupérer des rapprochements passés validés pour entraîner l'IA (Few-shot learning)
+  const pastReconciled = await db.select({
+    fitid: bankTransactionsTable.fitid,
+    name: bankTransactionsTable.name,
+    memo: bankTransactionsTable.memo,
+    amount: bankTransactionsTable.amount,
+    category: transactionsTable.category,
+    memberLastName: membersTable.lastName,
+    memberFirstName: membersTable.firstName
+  })
+  .from(bankTransactionsTable)
+  .innerJoin(transactionsTable, eq(transactionsTable.bankTransactionId, bankTransactionsTable.id))
+  .leftJoin(membersTable, eq(membersTable.id, transactionsTable.memberId))
+  .where(eq(bankTransactionsTable.status, 'reconciled'))
+  .orderBy(desc(bankTransactionsTable.id))
+  .limit(20)
+  .all();
+
+  let examplesPrompt = "";
+  if (pastReconciled.length > 0) {
+    examplesPrompt = "\nVoici des exemples récents de rapprochements réels déjà validés par le trésorier (sers-toi en comme référence) :\n";
+    for (const ex of pastReconciled) {
+      const memberName = ex.memberLastName ? `${ex.memberLastName} ${ex.memberFirstName}` : "Aucun";
+      const catLabel = ex.category ? String(ex.category) : "Inconnue";
+      examplesPrompt += `- Libellé bancaire : "${ex.name}" | Mémo : "${ex.memo || ''}" | Montant : ${(ex.amount / 100).toFixed(2)} EUR | Catégorie attribuée : ${catLabel} | Adhérent lié : ${memberName}\n`;
+    }
+    examplesPrompt += "\nSers-toi de ces exemples historiques pour orienter ton choix de catégorie ou de membre si l'opération à rapprocher est similaire.\n";
+  }
+
   let analyzedCount = 0;
 
   // Category integer ID mapping
@@ -1210,6 +1239,7 @@ Catégories valides pour l'écriture :
 - 12 (championnats : frais d'inscriptions des équipes du club)
 - 13 (stages_formations : stages adultes ou formations d'arbitres)
 - 14 (fonctionnement_administratif : frais bancaires, assurances, licences)
+${examplesPrompt}
 
 Liste des candidats adhérents possibles :
 ${candidates.map(c => `- ID: ${c.id}, Nom: ${c.lastName} ${c.firstName}, Parent 1: ${c.parent1Name || 'Aucun'}, Montant Restant Dû Adhésion: ${(c.amountRemaining / 100).toFixed(2)} EUR`).join('\n')}
