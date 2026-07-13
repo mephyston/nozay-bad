@@ -1147,13 +1147,16 @@ app.post('/bank-transactions/analyze', async (c) => {
   const CAT_CHAMPIONNATS = 12;
   const CAT_STAGES_FORMATIONS = 13;
   const CAT_FONCTIONNEMENT_ADMIN = 14;
+  const CAT_VIREMENTS_INTERNES = 15;
 
   for (const tx of pendingTxs) {
     // Déterminer la catégorie par défaut par dictionnaire simple
     let suggestedCategory = tx.amount < 0 ? CAT_FONCTIONNEMENT_ADMIN : CAT_ADHESIONS;
     const textToLower = `${tx.name} ${tx.memo || ''}`.toLowerCase();
     
-    if (textToLower.includes('ionos')) {
+    if (/\b\d{20,}\b/.test(textToLower) || textToLower.includes('virement interne') || textToLower.includes('virmt interne')) {
+      suggestedCategory = CAT_VIREMENTS_INTERNES;
+    } else if (textToLower.includes('ionos')) {
       suggestedCategory = CAT_FONCTIONNEMENT_ADMIN;
     } else if (textToLower.includes('urssaf') || textToLower.includes('afdas')) {
       suggestedCategory = CAT_SALAIRES_CHARGES;
@@ -1245,6 +1248,7 @@ Catégories valides pour l'écriture :
 - 12 (championnats : frais d'inscriptions des équipes du club)
 - 13 (stages_formations : stages adultes ou formations d'arbitres)
 - 14 (fonctionnement_administratif : frais bancaires, assurances, licences)
+- 15 (virements_internes : virements de compte à compte du club, transit de trésorerie)
 ${examplesPrompt}
 
 Liste des candidats adhérents possibles :
@@ -1253,6 +1257,7 @@ ${candidates.map(c => `- ID: ${c.id}, Nom: ${c.lastName} ${c.firstName}, Parent 
 Instructions :
 1. Associe l'adhérent (memberId et memberName) si son nom ou prénom (ou celui d'un de ses parents) apparaît clairement dans le libellé ou memo de l'opération, même si son "Montant Restant Dû Adhésion" est de 0.00 EUR (il peut s'agir d'un achat de volants, cordages, etc.).
 2. Choisis la catégorie la plus adaptée parmi la liste des catégories valides ci-dessus (ex: renvoie 8 si le motif mentionne "volants", 7 si "cordage", etc.).
+3. Si le libellé bancaire ou le mémo est composé principalement d'une longue suite de chiffres (plus de 20 chiffres d'affilée), il s'agit d'un virement interne de compte à compte. Associe impérativement la catégorie 15 et aucun adhérent (memberId = null).
 
 Renvoie STRICTEMENT un objet JSON sous la forme suivante (sans aucun autre texte, balises markdown ou commentaires) :
 {

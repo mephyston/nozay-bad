@@ -985,6 +985,33 @@ VERSION:102
     expect(updatedBt2.aiSuggestions).toBeNull();
   });
 
+  it('classifies long numeric strings as internal transfers (category 15)', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-LONG-NUM',
+      accountId: 'current',
+      seasonId: '25-26',
+      amount: 10000,
+      date: '2026-02-02',
+      name: '30930863000300846000500078472020260602',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const analyzeRes = await app.request('http://localhost/bank-transactions/analyze?season=25-26', {
+      method: 'POST'
+    }, { DB: mockD1 as any, AI: { run: async () => ({}) } as any });
+    expect(analyzeRes.status).toBe(200);
+
+    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    expect(updatedBt.aiSuggestions).not.toBeNull();
+    const suggestions = JSON.parse(updatedBt.aiSuggestions);
+    expect(suggestions.category).toBe(15);
+    expect(suggestions.memberId).toBeNull();
+  });
+
   it('resolves ambiguous name matching deterministically when multiple members share last name', async () => {
     const mockD1 = await setupMockDb();
     const db = drizzle(mockD1 as any);
