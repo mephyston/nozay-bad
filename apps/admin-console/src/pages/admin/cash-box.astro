@@ -1,93 +1,90 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import AdminLayout from '../../components/AdminLayout.svelte';
+import CashBoxManager from '../../components/CashBoxManager.svelte';
+
+import { env } from 'cloudflare:workers';
 
 const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
+const apiService = env.API_SERVICE;
+
+const season = Astro.url.searchParams.get('season') || '25-26';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const data = await Astro.request.json() as any;
+    if (data.action === 'create') {
+      const apiRes = await apiService.fetch('http://localhost/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+    } else if (data.action === 'delete') {
+      const apiRes = await apiService.fetch(`http://localhost/transactions/${data.id}`, {
+        method: 'DELETE'
+      });
+      if (!apiRes.ok) {
+        return new Response('Erreur suppression', { status: apiRes.status });
+      }
+    }
+    return new Response(JSON.stringify({ success: true }));
+  } catch (err: any) {
+    return new Response(err.message, { status: 500 });
+  }
+}
+
+let transactionsList = [];
+let initialBalance = 0;
+let seasonsList = [];
+let errorMsg = '';
+
+try {
+  // 1. Récupérer les soldes de départ de la saison
+  const balancesRes = await apiService.fetch(`http://localhost/seasons/${season}/balances`);
+  if (balancesRes.ok) {
+    const json = await balancesRes.json() as any;
+    const balances = json.data || [];
+    const cashBalance = balances.find((b: any) => b.accountId === 'cash');
+    initialBalance = cashBalance ? cashBalance.initialBalance : 0;
+  }
+
+  // 2. Récupérer les transactions réelles sur le compte cash
+  const txRes = await apiService.fetch(`http://localhost/transactions?season=${season}&accountId=cash&limit=100`);
+  if (txRes.ok) {
+    const json = await txRes.json() as any;
+    transactionsList = json.data || [];
+  }
+
+  // 3. Récupérer la liste des saisons
+  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasonsList = json.data || [];
+  }
+} catch (err: any) {
+  errorMsg = 'Une erreur est survenue lors du chargement des données de la caisse.';
+}
 ---
 
 <Layout title="Gestion de la Caisse - NBA 91">
   <AdminLayout client:load email={userEmail}>
     <div class="space-y-6">
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight">Suivi de la Caisse</h1>
-        <p class="text-muted-foreground mt-2">
-          Gérez l'argent liquide (pièces et billets) collecté lors des événements du club (buvette, tournois, etc.).
-        </p>
-      </div>
+      {errorMsg && (
+        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
+          {errorMsg}
+        </div>
+      )}
 
-      <!-- Statistiques Caisse -->
-      <div class="grid gap-4 md:grid-cols-3">
-        <div class="rounded-xl border border-border bg-card p-6 shadow-sm">
-          <h3 class="text-sm font-medium tracking-tight text-muted-foreground">Solde de la Caisse</h3>
-          <div class="text-3xl font-bold mt-2 text-emerald-600 dark:text-emerald-400">452,30 €</div>
-          <p class="text-xs text-muted-foreground mt-1">Dernière mise à jour : aujourd'hui</p>
-        </div>
-        <div class="rounded-xl border border-border bg-card p-6 shadow-sm">
-          <h3 class="text-sm font-medium tracking-tight text-muted-foreground">Total Entrées (Buvette...)</h3>
-          <div class="text-3xl font-bold mt-2 text-primary">+820,00 €</div>
-          <p class="text-xs text-muted-foreground mt-1">Saison en cours</p>
-        </div>
-        <div class="rounded-xl border border-border bg-card p-6 shadow-sm">
-          <h3 class="text-sm font-medium tracking-tight text-muted-foreground">Total Sorties (Monnaie...)</h3>
-          <div class="text-3xl font-bold mt-2 text-destructive">-367,70 €</div>
-          <p class="text-xs text-muted-foreground mt-1">Saison en cours</p>
-        </div>
-      </div>
-
-      <div class="grid gap-6 md:grid-cols-2">
-        <!-- Formulaire Ajouter une Transaction -->
-        <div class="bg-card border border-border rounded-xl p-6 shadow-sm">
-          <h2 class="text-lg font-semibold mb-4">Enregistrer un mouvement de caisse</h2>
-          <form class="space-y-4">
-            <div>
-              <label for="type" class="block text-sm font-medium mb-1">Type de transaction</label>
-              <select id="type" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary">
-                <option value="in">Entrée (Recette - ex: Vente buvette)</option>
-                <option value="out">Sortie (Dépense / Fond de caisse)</option>
-              </select>
-            </div>
-            <div>
-              <label for="amount" class="block text-sm font-medium mb-1">Montant (€)</label>
-              <input type="number" id="amount" step="0.01" min="0" placeholder="0.00" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary" required />
-            </div>
-            <div>
-              <label for="description" class="block text-sm font-medium mb-1">Description / Événement</label>
-              <input type="text" id="description" placeholder="Ex: Recette buvette tournoi Jeunes" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary" required />
-            </div>
-            <button type="submit" class="w-full px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow hover:bg-primary/90 transition-colors">
-              Enregistrer
-            </button>
-          </form>
-        </div>
-
-        <!-- Historique des Mouvements -->
-        <div class="bg-card border border-border rounded-xl p-6 shadow-sm">
-          <h2 class="text-lg font-semibold mb-4">Derniers mouvements</h2>
-          <div class="space-y-4">
-            <div class="flex items-center justify-between border-b border-border pb-3">
-              <div>
-                <p class="font-medium text-sm">Vente buvette - Interclub</p>
-                <p class="text-xs text-muted-foreground">12/07/2026</p>
-              </div>
-              <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400">+120,50 €</span>
-            </div>
-            <div class="flex items-center justify-between border-b border-border pb-3">
-              <div>
-                <p class="font-medium text-sm">Achat gobelets & boissons</p>
-                <p class="text-xs text-muted-foreground">10/07/2026</p>
-              </div>
-              <span class="text-sm font-bold text-destructive">-45,20 €</span>
-            </div>
-            <div class="flex items-center justify-between border-b border-border pb-3">
-              <div>
-                <p class="font-medium text-sm">Recettes tournoi interne</p>
-                <p class="text-xs text-muted-foreground">05/07/2026</p>
-              </div>
-              <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400">+315,00 €</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <CashBoxManager
+        client:load
+        initialBalance={initialBalance}
+        transactions={transactionsList}
+        seasonId={season}
+        seasons={seasonsList}
+      />
     </div>
   </AdminLayout>
 </Layout>
