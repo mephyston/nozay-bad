@@ -6,7 +6,8 @@
     {
       "binding": "DB",
       "database_name": "nba-db",
-      "database_id": "MOCK_DB_ID_FOR_LOCAL"
+      "database_id": "MOCK_DB_ID_FOR_LOCAL",
+      "migrations_dir": "../../libs/shared/db/migrations"
     }
   ]
 }
