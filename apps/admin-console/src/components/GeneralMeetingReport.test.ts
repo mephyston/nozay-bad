@@ -16,7 +16,7 @@ describe('GeneralMeetingReport Component', () => {
             totalDepenses: 30000,
             netResult: 20000,
             categories: {
-              adhesions: { type: 'recette', total: 50000 },
+              '1': { type: 'recette', total: 50000 },
               salaires: { type: 'depense', total: 30000 }
             }
           },
@@ -29,12 +29,16 @@ describe('GeneralMeetingReport Component', () => {
         seasonId: '25-26',
         seasons: [
           { id: '25-26', name: 'Saison 2025-2026', active: true }
+        ],
+        categories: [
+          { id: 1, adminLabel: 'Cotisations membres', adherentLabel: 'Cotis', hideInExpenses: false }
         ]
       }
     });
 
     expect(target.innerHTML).toContain("Rapport Financier pour l'Assemblée Générale");
     expect(target.innerHTML).toContain("Compte de Résultat");
+    expect(target.innerHTML).toContain("Cotisations membres"); // mapped from category ID 1
     expect(target.innerHTML).toContain("500.00 €"); // totalRecettes
     expect(target.innerHTML).toContain("300.00 €"); // totalDepenses
     expect(target.innerHTML).toContain("200.00 €"); // netResult

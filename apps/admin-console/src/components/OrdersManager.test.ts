@@ -148,6 +148,12 @@ describe('OrdersManager Component', () => {
     expect(target.innerHTML).toContain('50.00 €');
     expect(target.innerHTML).toContain('Virement');
 
+    // Open dropdown to render actions
+    const actionBtn = target.querySelector('button[aria-label="Actions"]') as HTMLButtonElement;
+    expect(actionBtn).not.toBeNull();
+    actionBtn.click();
+    flushSync();
+
     // Actions
     expect(target.innerHTML).toContain('Valider');
     expect(target.innerHTML).toContain('Refuser');
@@ -209,7 +215,15 @@ describe('OrdersManager Component', () => {
       }
     });
 
-    const approveBtn = target.querySelector('button[title="Valider la commande"]') as HTMLButtonElement;
+    // Open dropdown to render actions
+    const actionBtn = target.querySelector('button[aria-label="Actions"]') as HTMLButtonElement;
+    expect(actionBtn).not.toBeNull();
+    actionBtn.click();
+    flushSync();
+
+    const approveBtn = Array.from(target.querySelectorAll('button')).find(
+      b => b.textContent?.includes('Valider')
+    ) as HTMLButtonElement;
     expect(approveBtn).not.toBeNull();
 
     approveBtn.click();
@@ -233,6 +247,12 @@ describe('OrdersManager Component', () => {
         orders
       }
     });
+
+    // Open dropdown to render actions
+    const actionBtn = target.querySelector('button[aria-label="Actions"]') as HTMLButtonElement;
+    expect(actionBtn).not.toBeNull();
+    actionBtn.click();
+    flushSync();
 
     const rejectBtn = Array.from(target.querySelectorAll('button')).find(
       b => b.textContent?.includes('Refuser')

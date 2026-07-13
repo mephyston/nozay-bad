@@ -19,7 +19,7 @@ const { title } = Astro.props;
     <script is:inline>
       const theme = (() => {
         if (typeof localStorage !== 'undefined' && localStorage.getItem('mode-watcher-mode')) {
-          return localStorage.getItem('mode-watcher-mode');
+          return localStorage.getItem('mode-watcher-mode').replace(/"/g, '');
         }
         if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
           return 'dark';

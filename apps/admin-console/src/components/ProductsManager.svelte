@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Plus, Edit, Trash2, Check, AlertCircle, ShoppingBag, Search, X } from "lucide-svelte";
+  import { Plus, Edit, Trash2, Check, AlertCircle, ShoppingBag, Search, X, MoreVertical } from "lucide-svelte";
 
   interface Product {
     id: number;
@@ -193,6 +193,19 @@
       alert(err.message);
     }
   }
+
+  let openDropdownId = $state<number | null>(null);
+
+  function toggleDropdown(id: number, e: MouseEvent) {
+    e.stopPropagation();
+    openDropdownId = openDropdownId === id ? null : id;
+  }
+
+  $effect(() => {
+    const handleGlobalClick = () => { openDropdownId = null; };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  });
 </script>
 
 <div class="space-y-6">
@@ -329,47 +342,47 @@
         </div>
       </div>
 
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto min-h-[180px]">
         <table class="w-full text-sm text-left border-collapse">
-          <thead>
-            <tr class="border-b border-border text-xs text-muted-foreground font-bold uppercase tracking-wider">
-              <th class="py-3 px-2">Nom</th>
+          <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
+            <tr>
+              <th class="p-4">Nom</th>
               {#if !category || category === 'all'}
-                <th class="py-3 px-2">Catégorie</th>
+                <th class="p-4">Catégorie</th>
               {/if}
-              <th class="py-3 px-2">Prix</th>
-              <th class="py-3 px-2">Statut</th>
-              <th class="py-3 px-2 text-right">Actions</th>
+              <th class="p-4">Prix</th>
+              <th class="p-4">Statut</th>
+              <th class="p-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-border">
             {#if filteredProducts.length === 0}
               <tr>
-                <td colspan={!category || category === 'all' ? 5 : 4} class="py-8 text-center text-muted-foreground text-sm">
+                <td colspan={!category || category === 'all' ? 5 : 4} class="p-4 text-center text-muted-foreground text-sm">
                   Aucun article trouvé.
                 </td>
               </tr>
             {:else}
               {#each filteredProducts as product (product.id)}
-                <tr class="hover:bg-muted/40 transition-colors">
-                  <td class="py-3 px-2 font-medium">
+                <tr class="hover:bg-muted/50 transition-colors">
+                  <td class="p-4 font-medium">
                     {product.name}
                   </td>
                   {#if !category || category === 'all'}
-                    <td class="py-3 px-2">
-                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-primary/10 text-primary">
+                    <td class="p-4">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">
                         {product.category === 'shuttlecock' ? 'Volants' : product.category === 'string' ? 'Cordages' : 'Autre'}
                       </span>
                     </td>
                   {/if}
-                  <td class="py-3 px-2 font-semibold">
+                  <td class="p-4 font-semibold text-foreground">
                     {(product.price / 100).toFixed(2)} €
                   </td>
-                  <td class="py-3 px-2">
+                  <td class="p-4">
                     <button 
                       type="button" 
                       onclick={() => handleToggleActive(product)}
-                      class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold transition-colors border border-transparent hover:border-border cursor-pointer bg-transparent"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors border border-transparent hover:border-border cursor-pointer bg-transparent"
                       title="Cliquer pour changer le statut"
                     >
                       {#if product.active}
@@ -381,26 +394,37 @@
                       {/if}
                     </button>
                   </td>
-                  <td class="py-3 px-2 text-right">
-                    <div class="flex items-center justify-end gap-2">
-                      <button
+                  <td class="p-4 text-right relative">
+                    <div class="inline-block text-left">
+                      <button 
                         type="button"
-                        onclick={() => startEdit(product)}
-                        class="text-muted-foreground hover:text-primary p-1 rounded transition-colors cursor-pointer border border-transparent hover:border-border"
-                        aria-label="Modifier"
-                        title="Modifier"
+                        onclick={(e) => toggleDropdown(product.id, e)} 
+                        class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
+                        aria-label="Actions"
                       >
-                        <Edit class="w-4 h-4" />
+                        <MoreVertical class="w-4 h-4" />
                       </button>
-                      <button
-                        type="button"
-                        onclick={() => handleArchive(product)}
-                        class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer border border-transparent hover:border-border"
-                        aria-label="Supprimer"
-                        title="Désactiver"
-                      >
-                        <Trash2 class="w-4 h-4" />
-                      </button>
+
+                      {#if openDropdownId === product.id}
+                        <div class="absolute right-4 mt-1 w-32 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border">
+                          <button
+                            type="button"
+                            onclick={(e) => { e.stopPropagation(); startEdit(product); openDropdownId = null; }}
+                            class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                          >
+                            <Edit class="w-3.5 h-3.5" />
+                            Modifier
+                          </button>
+                          <button
+                            type="button"
+                            onclick={(e) => { e.stopPropagation(); handleArchive(product); openDropdownId = null; }}
+                            class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                          >
+                            <Trash2 class="w-3.5 h-3.5" />
+                            Désactiver
+                          </button>
+                        </div>
+                      {/if}
                     </div>
                   </td>
                 </tr>

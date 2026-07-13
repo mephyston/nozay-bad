@@ -449,6 +449,95 @@ describe('GET /seasons', () => {
   });
 });
 
+describe('POST and PUT /seasons', () => {
+  it('should support creating and updating seasons', async () => {
+    const mockD1 = await setupMockDb();
+    
+    // Create new season
+    const res = await app.request('http://localhost/seasons', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: '26-27',
+        name: 'Saison 2026-2027',
+        active: true
+      })
+    }, { DB: mockD1 as any });
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.success).toBe(true);
+    expect(body.data.id).toBe('26-27');
+    expect(body.data.active).toBe(true);
+
+    // Verify other seasons became inactive
+    const db = drizzle(mockD1 as any);
+    const prevSeason = await db.select().from(seasonsTable).where(eq(seasonsTable.id, '25-26')).get();
+    expect(prevSeason?.active).toBe(false);
+
+    // Update season
+    const updateRes = await app.request('http://localhost/seasons/26-27', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Saison 2026-2027 Modifiée',
+        active: false
+      })
+    }, { DB: mockD1 as any });
+    expect(updateRes.status).toBe(200);
+    const updateBody = await updateRes.json() as any;
+    expect(updateBody.success).toBe(true);
+    expect(updateBody.data.name).toBe('Saison 2026-2027 Modifiée');
+    expect(updateBody.data.active).toBe(false);
+  });
+
+  it('should support closing a season and block write actions on closed season', async () => {
+    const mockD1 = await setupMockDb();
+    
+    // Close season
+    const closeRes = await app.request('http://localhost/seasons/25-26/close', {
+      method: 'POST'
+    }, { DB: mockD1 as any });
+    expect(closeRes.status).toBe(200);
+    const closeBody = await closeRes.json() as any;
+    expect(closeBody.success).toBe(true);
+    expect(closeBody.data.closed).toBe(true);
+
+    // Try to create transaction
+    const txRes = await app.request('http://localhost/transactions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seasonId: '25-26',
+        type: 'recette',
+        accountId: 'current',
+        category: 'adhesions',
+        amount: 5000,
+        date: '2026-07-13',
+        paymentMethod: 'virement',
+        description: 'Should fail'
+      })
+    }, { DB: mockD1 as any });
+    expect(txRes.status).toBe(400);
+    const txBody = await txRes.json() as any;
+    expect(txBody.success).toBe(false);
+    expect(txBody.error).toContain('clôturée');
+
+    // Try to submit expense
+    const expRes = await app.request('http://localhost/expenses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seasonId: '25-26',
+        description: 'Should fail',
+        category: 'deplacements',
+        amount: 2000,
+        emitterName: 'Test'
+      })
+    }, { DB: mockD1 as any });
+    expect(expRes.status).toBe(400);
+  });
+});
+
 describe('Accounting API Endpoints', () => {
   it('should manage season balances, transactions, and generate reports', async () => {
     const mockD1 = await setupMockDb();
@@ -751,7 +840,7 @@ VERSION:102
           response: JSON.stringify({
             memberId: m.id,
             memberName: 'Eliot PIGNON',
-            category: 'adhesions_inscriptions',
+            category: 1,
             confidence: 0.95
           })
         };
@@ -783,7 +872,7 @@ VERSION:102
           seasonId: '25-26',
           type: 'recette',
           accountId: 'current',
-          category: 'adhesions_inscriptions',
+          category: 1,
           amount: 25000,
           date: '2026-02-02',
           paymentMethod: 'virement',
@@ -895,7 +984,7 @@ VERSION:102
     
     const sug = JSON.parse(updatedBt.aiSuggestions);
     expect(sug.memberId).toBe(mLaurence.id);
-    expect(sug.category).toBe('cordage_vente');
+    expect(sug.category).toBe(7);
   });
 
   it('resolves parent-child matching correctly when parent name is wrapped in parentheses in database', async () => {
@@ -954,7 +1043,7 @@ VERSION:102
     
     const sug = JSON.parse(updatedBt.aiSuggestions);
     expect(sug.memberId).toBe(mLubin.id);
-    expect(sug.category).toBe('cordage_vente');
+    expect(sug.category).toBe(7);
   });
 
   it('does not impact member remaining balance when linking a non-membership transaction (e.g. cordage)', async () => {
@@ -1067,7 +1156,7 @@ VERSION:102
         emitter: 'Jean Dupont',
         bank: 'Bred',
         memberId: m.id,
-        category: 'adhesions_inscriptions',
+        category: 1,
         date: '2026-07-10'
       })
     }, { DB: mockD1 as any });
@@ -1515,6 +1604,93 @@ describe('Orders API Endpoints', () => {
       expect(updateJson.success).toBe(true);
       expect(updateJson.data.description).toBe('Repas de Noel avec buvette');
       expect(updateJson.data.amount).toBe(9000);
+
+      // 6. Test cancellation of approved expense
+      const cancelRes = await app.request(`http://localhost/expenses/${expenseId}/cancel`, {
+        method: 'POST'
+      }, { DB: mockD1 as any });
+      expect(cancelRes.status).toBe(200);
+      const cancelJson = await cancelRes.json() as any;
+      expect(cancelJson.success).toBe(true);
+      expect(cancelJson.data.status).toBe('pending');
+      expect(cancelJson.data.transactionId).toBeNull();
+
+      // Check associated transaction is deleted
+      const txDeleted = await db.select().from(transactionsTable).where(eq(transactionsTable.id, approveJson.data.transactionId)).get();
+      expect(txDeleted).toBeUndefined();
+
+      // 7. Approve again to test transaction deletion cascading
+      const approveResAgain = await app.request(`http://localhost/expenses/${expenseId}/approve`, {
+        method: 'POST'
+      }, { DB: mockD1 as any });
+      const txIdAgain = (await approveResAgain.json() as any).data.transactionId;
+      expect(txIdAgain).toBeDefined();
+
+      // Delete the transaction directly in the ledger
+      const deleteTxRes = await app.request(`http://localhost/transactions/${txIdAgain}`, {
+        method: 'DELETE'
+      }, { DB: mockD1 as any });
+      expect(deleteTxRes.status).toBe(200);
+
+      // Verify the expense claim status went back to pending
+      const finalExpense = await db.select().from(expensesTable).where(eq(expensesTable.id, expenseId)).get();
+      expect(finalExpense.status).toBe('pending');
+      expect(finalExpense.transactionId).toBeNull();
+    });
+  });
+
+  describe('Categories API Endpoints', () => {
+    it('supports listing, creating, updating and deleting categories', async () => {
+      const mockD1 = await setupMockDb();
+
+      // 1. List default categories
+      const res = await app.request('http://localhost/categories', undefined, { DB: mockD1 as any });
+      expect(res.status).toBe(200);
+      const listJson = await res.json() as any;
+      expect(listJson.success).toBe(true);
+      expect(listJson.data.length).toBeGreaterThanOrEqual(14);
+
+      // 2. Create custom category
+      const createRes = await app.request('http://localhost/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: 'custom_grip',
+          adminLabel: 'Achat de grips et surgrips',
+          adherentLabel: 'Grips & Accessoires',
+          hideInExpenses: false
+        })
+      }, { DB: mockD1 as any });
+      expect(createRes.status).toBe(200);
+      const createJson = await createRes.json() as any;
+      expect(createJson.success).toBe(true);
+      expect(typeof createJson.data.id).toBe('number');
+
+      const customGripId = createJson.data.id;
+
+      // 3. Update category
+      const updateRes = await app.request(`http://localhost/categories/${customGripId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminLabel: 'Grips (vente ou achat)',
+          adherentLabel: 'Grips & Accessoires',
+          hideInExpenses: true
+        })
+      }, { DB: mockD1 as any });
+      expect(updateRes.status).toBe(200);
+      const updateJson = await updateRes.json() as any;
+      expect(updateJson.success).toBe(true);
+      expect(updateJson.data.adminLabel).toBe('Grips (vente ou achat)');
+      expect(updateJson.data.hideInExpenses).toBe(true);
+
+      // 4. Delete category
+      const deleteRes = await app.request(`http://localhost/categories/${customGripId}`, {
+        method: 'DELETE'
+      }, { DB: mockD1 as any });
+      expect(deleteRes.status).toBe(200);
+      const deleteJson = await deleteRes.json() as any;
+      expect(deleteJson.success).toBe(true);
     });
   });
 });

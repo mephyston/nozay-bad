@@ -36,6 +36,13 @@ if (Astro.request.method === 'POST') {
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
+    } else if (data.action === 'cancel') {
+      const apiRes = await apiService.fetch(`http://localhost/expenses/${data.id}/cancel`, {
+        method: 'POST'
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
     }
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' }
@@ -47,6 +54,7 @@ if (Astro.request.method === 'POST') {
 
 let expensesList = [];
 let seasonsList = [];
+let categoriesList = [];
 let errorMsg = '';
 
 try {
@@ -62,6 +70,13 @@ try {
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];
+  }
+
+  // 3. Récupérer les catégories
+  const categoriesRes = await apiService.fetch('http://localhost/categories');
+  if (categoriesRes.ok) {
+    const json = await categoriesRes.json() as any;
+    categoriesList = json.data || [];
   }
 } catch (err: any) {
   errorMsg = 'Une erreur est survenue lors du chargement des notes de frais.';
@@ -82,6 +97,7 @@ try {
         expenses={expensesList}
         seasonId={season}
         seasons={seasonsList}
+        categories={categoriesList}
       />
     </div>
   </AdminLayout>

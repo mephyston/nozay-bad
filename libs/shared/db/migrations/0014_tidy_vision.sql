@@ -1,0 +1,1 @@
+ALTER TABLE `seasons` ADD `closed` integer DEFAULT false NOT NULL;

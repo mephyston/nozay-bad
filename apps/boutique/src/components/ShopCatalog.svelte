@@ -246,6 +246,7 @@
           id="member-input"
           type="text"
           role="combobox"
+          autocomplete="off"
           aria-expanded={isMemberDropdownOpen}
           aria-autocomplete="list"
           aria-controls="member-listbox"

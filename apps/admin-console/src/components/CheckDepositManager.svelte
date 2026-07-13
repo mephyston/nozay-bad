@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Wallet, FileText, CheckCircle, Trash2, Camera, UploadCloud, Search, ArrowRight, Loader2, Link } from 'lucide-svelte';
+  import { Wallet, FileText, CheckCircle, Trash2, Camera, UploadCloud, Search, ArrowRight, Loader2, Link, MoreVertical, Eye } from 'lucide-svelte';
 
   interface Check {
     id: number;
@@ -50,7 +50,7 @@
 
   interface Props {
     seasonId: string;
-    seasons: { id: string; name: string; active: boolean }[];
+    seasons: { id: string; name: string; active: boolean; closed?: boolean }[];
     checks: Check[];
     checkDeposits: CheckDeposit[];
     members: Member[];
@@ -65,6 +65,25 @@
   // Selected Season
   // svelte-ignore state_referenced_locally
   let selectedSeason = $state(seasonId);
+  const isClosed = $derived(seasons.find(s => s.id === selectedSeason)?.closed || false);
+
+  // View / Print deposit slip states
+  let showViewDepositModal = $state(false);
+  let selectedDepositToView = $state<CheckDeposit | null>(null);
+  const checksInViewDeposit = $derived(selectedDepositToView ? checks.filter(c => c.checkDepositId === selectedDepositToView.id) : []);
+
+  let openDropdownId = $state<string | number | null>(null);
+
+  function toggleDropdown(id: string | number, e: MouseEvent) {
+    e.stopPropagation();
+    openDropdownId = openDropdownId === id ? null : id;
+  }
+
+  $effect(() => {
+    const handleGlobalClick = () => { openDropdownId = null; };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  });
 
   // Add Check Form State
   let showAddCheckModal = $state(false);
@@ -406,18 +425,25 @@
 <div class="space-y-6">
   <!-- Top Panel -->
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-6 rounded-xl border border-border">
-    <div>
-      <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-        Remise de Chèques
-      </h1>
-      <p class="text-sm text-muted-foreground">
-        Gestion et suivi des chèques physiques, génération de bordereaux de remise et rapprochement bancaire.
-      </p>
+    <div class="flex items-center gap-3">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+          Remise de Chèques
+        </h1>
+        <p class="text-sm text-muted-foreground">
+          Gestion et suivi des chèques physiques, génération de bordereaux de remise et rapprochement bancaire.
+        </p>
+      </div>
+      {#if isClosed}
+        <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground self-start mt-1">
+          Saison clôturée (Lecture seule)
+        </span>
+      {/if}
     </div>
 
     <!-- Season Selector -->
     <div class="flex items-center gap-2">
-      <span class="text-sm font-medium text-muted-foreground">Saison :</span>
+      <span class="text-sm font-medium text-muted-foreground whitespace-nowrap">Saison&nbsp;:</span>
       <select
         bind:value={selectedSeason}
         onchange={() => window.location.href = `?season=${selectedSeason}`}
@@ -447,7 +473,7 @@
       </button>
     </div>
 
-    {#if activeTab === 'checks'}
+    {#if activeTab === 'checks' && !isClosed}
       <div class="flex gap-2 mb-2">
         <button
           onclick={() => showAddCheckModal = true}
@@ -484,11 +510,11 @@
         />
       </div>
 
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto min-h-[180px]">
         <table class="w-full text-left border-collapse text-sm">
-          <thead>
-            <tr class="bg-muted/40 border-b border-border text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-              <th class="py-3.5 px-4 w-10">
+          <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
+            <tr>
+              <th class="p-4 w-10">
                 <input
                   type="checkbox"
                   checked={filteredChecks.length > 0 && filteredChecks.every(c => selectedCheckIds[c.id])}
@@ -496,35 +522,37 @@
                     const checked = (e.target as HTMLInputElement).checked;
                     filteredChecks.forEach(c => selectedCheckIds[c.id] = checked);
                   }}
-                  class="rounded border-border text-primary focus:ring-primary/20"
+                  disabled={isClosed}
+                  class="rounded border-border text-primary focus:ring-primary/20 disabled:opacity-50"
                 />
               </th>
-              <th class="py-3.5 px-4">Date de réception</th>
-              <th class="py-3.5 px-4">N° Chèque</th>
-              <th class="py-3.5 px-4">Banque</th>
-              <th class="py-3.5 px-4">Émetteur</th>
-              <th class="py-3.5 px-4">Adhérent associé</th>
-              <th class="py-3.5 px-4 text-right">Montant</th>
-              <th class="py-3.5 px-4 text-center">Actions</th>
+              <th class="p-4">Date de réception</th>
+              <th class="p-4">N° Chèque</th>
+              <th class="p-4">Banque</th>
+              <th class="p-4">Émetteur</th>
+              <th class="p-4">Adhérent associé</th>
+              <th class="p-4 text-right">Montant</th>
+              <th class="p-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-border">
             {#each filteredChecks as check}
-              <tr class="hover:bg-muted/30 transition-colors">
-                <td class="py-3.5 px-4">
+              <tr class="hover:bg-muted/50 transition-colors">
+                <td class="p-4">
                   <input
                     type="checkbox"
                     bind:checked={selectedCheckIds[check.id]}
-                    class="rounded border-border text-primary focus:ring-primary/20"
+                    disabled={isClosed}
+                    class="rounded border-border text-primary focus:ring-primary/20 disabled:opacity-50"
                   />
                 </td>
-                <td class="py-3.5 px-4 text-muted-foreground">
+                <td class="p-4 text-muted-foreground">
                   {new Date(check.createdAt).toLocaleDateString('fr-FR')}
                 </td>
-                <td class="py-3.5 px-4 font-mono font-medium">{check.number}</td>
-                <td class="py-3.5 px-4">{check.bank || '—'}</td>
-                <td class="py-3.5 px-4 font-medium">{check.emitter}</td>
-                <td class="py-3.5 px-4">
+                <td class="p-4 font-mono font-medium">{check.number}</td>
+                <td class="p-4">{check.bank || '—'}</td>
+                <td class="p-4 font-medium">{check.emitter}</td>
+                <td class="p-4">
                   {#if check.memberId && check.memberName}
                     <a
                       href={`/admin/members/${check.memberLicence}?season=${selectedSeason}`}
@@ -537,17 +565,35 @@
                     <span class="text-xs text-muted-foreground italic">Non associé</span>
                   {/if}
                 </td>
-                <td class="py-3.5 px-4 text-right font-semibold text-foreground">
+                <td class="p-4 text-right font-semibold text-foreground">
                   {(check.amount / 100).toFixed(2)} €
                 </td>
-                <td class="py-3.5 px-4 text-center">
-                  <button
-                    onclick={() => handleDeleteCheck(check.id)}
-                    class="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-all"
-                    title="Supprimer le chèque"
-                  >
-                    <Trash2 class="h-4 w-4" />
-                  </button>
+                <td class="p-4 text-right relative">
+                  {#if !isClosed}
+                    <div class="inline-block text-left">
+                      <button 
+                        onclick={(e) => toggleDropdown(`check-${check.id}`, e)} 
+                        class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
+                        aria-label="Actions"
+                      >
+                        <MoreVertical class="w-4 h-4" />
+                      </button>
+
+                      {#if openDropdownId === `check-${check.id}`}
+                        <div class="absolute right-4 mt-1 w-32 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border">
+                          <button
+                            onclick={() => handleDeleteCheck(check.id)}
+                            class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                          >
+                            <Trash2 class="w-3.5 h-3.5" />
+                            Supprimer
+                          </button>
+                        </div>
+                      {/if}
+                    </div>
+                  {:else}
+                    <span class="text-xs text-muted-foreground italic">Aucune</span>
+                  {/if}
                 </td>
               </tr>
             {:else}
@@ -565,26 +611,26 @@
   {:else}
     <!-- Deposits slips list -->
     <div class="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto min-h-[220px]">
         <table class="w-full text-left border-collapse text-sm">
-          <thead>
-            <tr class="bg-muted/40 border-b border-border text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-              <th class="py-3.5 px-4">Date de dépôt</th>
-              <th class="py-3.5 px-4">Référence</th>
-              <th class="py-3.5 px-4">Statut</th>
-              <th class="py-3.5 px-4 text-right">Montant Total</th>
-              <th class="py-3.5 px-4 text-center">Rapprochement Bancaire</th>
-              <th class="py-3.5 px-4 text-center">Actions</th>
+          <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
+            <tr>
+              <th class="p-4">Date de dépôt</th>
+              <th class="p-4">Référence</th>
+              <th class="p-4">Statut</th>
+              <th class="p-4 text-right">Montant Total</th>
+              <th class="p-4">Rapprochement Bancaire</th>
+              <th class="p-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-border">
             {#each checkDeposits as dep}
-              <tr class="hover:bg-muted/30 transition-colors">
-                <td class="py-3.5 px-4 text-muted-foreground">
+              <tr class="hover:bg-muted/50 transition-colors">
+                <td class="p-4 text-muted-foreground">
                   {new Date(dep.date).toLocaleDateString('fr-FR')}
                 </td>
-                <td class="py-3.5 px-4 font-mono font-medium">{dep.reference}</td>
-                <td class="py-3.5 px-4">
+                <td class="p-4 font-mono font-medium">{dep.reference}</td>
+                <td class="p-4">
                   {#if dep.status === 'cleared'}
                     <span class="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full text-xs font-medium">
                       <CheckCircle class="h-3 w-3" /> Cleared (Rapproché)
@@ -595,32 +641,67 @@
                     </span>
                   {/if}
                 </td>
-                <td class="py-3.5 px-4 text-right font-semibold text-foreground">
+                <td class="p-4 text-right font-semibold text-foreground">
                   {(dep.amount / 100).toFixed(2)} €
                 </td>
-                <td class="py-3.5 px-4 text-center">
+                <td class="p-4">
                   {#if dep.status === 'cleared'}
-                    <span class="text-xs text-muted-foreground">Associé à la transaction #{dep.bankTransactionId}</span>
+                    <span class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                      <CheckCircle class="w-3.5 h-3.5" />
+                      Rapproché (SG #{dep.bankTransactionId})
+                    </span>
                   {:else}
-                    <button
-                      onclick={() => {
-                        selectedDepositToClear = dep;
-                        showClearModal = true;
-                      }}
-                      class="inline-flex items-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1 rounded-md text-xs font-semibold transition-colors"
-                    >
-                      Rapprocher avec le Relevé SG
-                    </button>
+                    <span class="text-xs text-muted-foreground italic font-medium">Non rapproché</span>
                   {/if}
                 </td>
-                <td class="py-3.5 px-4 text-center">
-                  <button
-                    onclick={() => handleDeleteDeposit(dep.id)}
-                    class="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-all"
-                    title="Supprimer la remise (restaure les chèques)"
-                  >
-                    <Trash2 class="h-4 w-4" />
-                  </button>
+                <td class="p-4 text-right relative">
+                  <div class="inline-block text-left font-normal">
+                    <button 
+                      onclick={(e) => toggleDropdown(`deposit-${dep.id}`, e)} 
+                      class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
+                      aria-label="Actions"
+                    >
+                      <MoreVertical class="w-4 h-4" />
+                    </button>
+
+                    {#if openDropdownId === `deposit-${dep.id}`}
+                      <div class="absolute right-4 mt-1 w-48 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border">
+                        <button
+                          onclick={() => {
+                            selectedDepositToView = dep;
+                            showViewDepositModal = true;
+                          }}
+                          class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                        >
+                          <FileText class="w-3.5 h-3.5" />
+                          Consulter / Imprimer
+                        </button>
+                        
+                        {#if dep.status !== 'cleared' && !isClosed}
+                          <button
+                            onclick={() => {
+                              selectedDepositToClear = dep;
+                              showClearModal = true;
+                            }}
+                            class="w-full px-3 py-1.5 text-xs text-primary hover:bg-primary/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                          >
+                            <CheckCircle class="w-3.5 h-3.5" />
+                            Rapprocher (SG)
+                          </button>
+                        {/if}
+
+                        {#if !isClosed}
+                          <button
+                            onclick={() => handleDeleteDeposit(dep.id)}
+                            class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                          >
+                            <Trash2 class="w-3.5 h-3.5" />
+                            Supprimer la remise
+                          </button>
+                        {/if}
+                      </div>
+                    {/if}
+                  </div>
                 </td>
               </tr>
             {:else}
@@ -1015,3 +1096,148 @@
     </div>
   </div>
 {/if}
+{#if showViewDepositModal && selectedDepositToView}
+  <div class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-card border border-border w-full max-w-3xl rounded-xl shadow-lg flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+      <div class="p-6 border-b border-border flex justify-between items-center shrink-0">
+        <h2 class="text-lg font-bold text-foreground">Bordereau de Remise de Chèques</h2>
+        <button onclick={() => { showViewDepositModal = false; selectedDepositToView = null; }} class="text-muted-foreground hover:text-foreground text-sm cursor-pointer border-0 bg-transparent">Fermer</button>
+      </div>
+
+      <!-- Printable Slip Area -->
+      <div class="p-8 overflow-y-auto flex-1 space-y-6" id="printable-slip">
+        <!-- Logo and Club details -->
+        <div class="flex justify-between items-start border-b-2 border-primary pb-4">
+          <div>
+            <h3 class="text-xl font-extrabold text-foreground tracking-tight">NBA 91</h3>
+            <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nozay Badminton Associatif</p>
+            <p class="text-[10px] text-muted-foreground">Mairie de Nozay, 91620 Nozay</p>
+          </div>
+          <div class="text-right">
+            <h4 class="text-sm font-bold text-foreground uppercase tracking-wider">Bordereau de Remise</h4>
+            <p class="text-xs font-mono font-bold mt-1 text-primary">{selectedDepositToView.reference}</p>
+            <p class="text-xs text-muted-foreground mt-0.5">Date : {new Date(selectedDepositToView.date).toLocaleDateString('fr-FR')}</p>
+          </div>
+        </div>
+
+        <!-- Bank details summary -->
+        <div class="grid grid-cols-2 gap-4 bg-muted/40 p-4 rounded-lg border border-border text-xs">
+          <div>
+            <span class="text-muted-foreground font-medium">Bénéficiaire :</span>
+            <span class="font-bold text-foreground block mt-0.5">Nozay Badminton Associatif</span>
+          </div>
+          <div>
+            <span class="text-muted-foreground font-medium">Compte de dépôt :</span>
+            <span class="font-bold text-foreground block mt-0.5">Société Générale (Compte Courant)</span>
+          </div>
+        </div>
+
+        <!-- Table of checks -->
+        <div class="space-y-2">
+          <h5 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Liste des chèques ({checksInViewDeposit.length})</h5>
+          <table class="w-full text-left border-collapse text-xs border border-border">
+            <thead>
+              <tr class="bg-muted border-b border-border text-muted-foreground font-bold uppercase text-[10px]">
+                <th class="py-2.5 px-3 w-10 border-r border-border text-center">N°</th>
+                <th class="py-2.5 px-3 border-r border-border">Émetteur</th>
+                <th class="py-2.5 px-3 border-r border-border">Banque</th>
+                <th class="py-2.5 px-3 border-r border-border">N° Chèque</th>
+                <th class="py-2.5 px-3 border-r border-border">Adhérent associé</th>
+                <th class="py-2.5 px-3 text-right">Montant</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+              {#each checksInViewDeposit as check, idx}
+                <tr class="hover:bg-muted/10 transition-colors">
+                  <td class="py-2 px-3 border-r border-border text-center font-medium text-muted-foreground">{idx + 1}</td>
+                  <td class="py-2 px-3 border-r border-border font-semibold text-foreground">{check.emitter}</td>
+                  <td class="py-2 px-3 border-r border-border">{check.bank || '—'}</td>
+                  <td class="py-2 px-3 border-r border-border font-mono font-medium">{check.number}</td>
+                  <td class="py-2 px-3 border-r border-border">
+                    {check.memberName || '—'}
+                  </td>
+                  <td class="py-2 px-3 font-semibold text-right text-foreground">
+                    {(check.amount / 100).toFixed(2)} €
+                  </td>
+                </tr>
+              {:else}
+                <tr>
+                  <td colspan="6" class="text-center py-8 text-muted-foreground italic">Aucun chèque dans cette remise.</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Summary Totals & signatures -->
+        <div class="grid grid-cols-2 gap-8 pt-4">
+          <!-- Totals Box -->
+          <div class="bg-primary/5 border border-primary/20 rounded-xl p-4 flex flex-col justify-center space-y-2 h-fit">
+            <div class="flex justify-between text-xs">
+              <span class="text-muted-foreground font-medium">Nombre de chèques :</span>
+              <span class="font-bold text-foreground">{checksInViewDeposit.length}</span>
+            </div>
+            <div class="flex justify-between items-center text-sm border-t border-primary/20 pt-2">
+              <span class="text-muted-foreground font-bold">MONTANT TOTAL DE LA REMISE :</span>
+              <span class="font-black text-primary text-lg">{(selectedDepositToView.amount / 100).toFixed(2)} €</span>
+            </div>
+          </div>
+
+          <!-- Signatures area -->
+          <div class="border border-border rounded-xl p-4 space-y-8 text-[10px] text-muted-foreground">
+            <div class="flex justify-between">
+              <span>Signature du trésorier :</span>
+              <span>Fait à Nozay, le ___/___/______</span>
+            </div>
+            <div class="h-8"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="p-6 border-t border-border flex justify-end gap-2 shrink-0">
+        <button
+          type="button"
+          onclick={() => { showViewDepositModal = false; selectedDepositToView = null; }}
+          class="px-4 py-2 border border-border text-sm font-semibold rounded-lg hover:bg-muted text-foreground transition-all cursor-pointer bg-transparent"
+        >
+          Fermer
+        </button>
+        <button
+          type="button"
+          onclick={() => window.print()}
+          class="px-4 py-2 bg-primary hover:bg-primary/95 text-primary-foreground text-sm font-semibold rounded-lg shadow transition-all cursor-pointer border-0"
+        >
+          Imprimer le Bordereau
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<style>
+  @media print {
+    :global(body) {
+      background-color: white !important;
+    }
+    :global(body *) {
+      visibility: hidden !important;
+    }
+    #printable-slip, #printable-slip * {
+      visibility: visible !important;
+    }
+    #printable-slip {
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      box-shadow: none !important;
+      border: none !important;
+      background: white !important;
+      color: black !important;
+    }
+  }
+</style>
+

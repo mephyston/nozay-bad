@@ -13,6 +13,7 @@ describe('TransactionLedger Component', () => {
         transactions: [
           {
             id: 1,
+            seasonId: '25-26',
             type: 'recette',
             accountId: 'current',
             destinationAccountId: null,

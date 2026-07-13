@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Search, ChevronLeft, ChevronRight, User } from 'lucide-svelte';
+  import { Search, ChevronLeft, ChevronRight, User, MoreVertical, Eye } from 'lucide-svelte';
 
   interface Member {
     licence: string;
@@ -50,6 +50,18 @@
   let selectedStatus = $state(initialStatus);
   let selectedType = $state(initialType);
   let selectedSeason = $state(initialSeason);
+  let openDropdownId = $state<string | null>(null);
+
+  function toggleDropdown(id: string, e: MouseEvent) {
+    e.stopPropagation();
+    openDropdownId = openDropdownId === id ? null : id;
+  }
+
+  $effect(() => {
+    const handleGlobalClick = () => { openDropdownId = null; };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  });
 
   function applyFilters() {
     const params = new URLSearchParams();
@@ -146,7 +158,7 @@
 
   <!-- Table -->
   <div class="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto min-h-[150px]">
       <table class="w-full border-collapse text-left text-sm">
         <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
           <tr>
@@ -188,13 +200,28 @@
                   </span>
                 {/if}
               </td>
-              <td class="p-4 text-right">
-                <a
-                  href={`/admin/members/${member.licence}?season=${filters.season || '25-26'}`}
-                  class="inline-flex items-center justify-center px-3 py-1.5 border border-border bg-background hover:bg-muted font-medium text-xs rounded-md shadow-sm"
-                >
-                  Voir profil
-                </a>
+              <td class="p-4 text-right relative">
+                <div class="inline-block text-left">
+                  <button 
+                    onclick={(e) => toggleDropdown(member.licence, e)} 
+                    class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
+                    aria-label="Actions"
+                  >
+                    <MoreVertical class="w-4 h-4" />
+                  </button>
+
+                  {#if openDropdownId === member.licence}
+                    <div class="absolute right-4 mt-1 w-32 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left">
+                      <a
+                        href={`/admin/members/${member.licence}?season=${filters.season || '25-26'}`}
+                        class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer no-underline bg-transparent"
+                      >
+                        <Eye class="w-3.5 h-3.5" />
+                        Voir profil
+                      </a>
+                    </div>
+                  {/if}
+                </div>
               </td>
             </tr>
           {:else}

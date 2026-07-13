@@ -1,0 +1,167 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import AdminLayout from '../../components/AdminLayout.svelte';
+import SettingsManager from '../../components/SettingsManager.svelte';
+import { env } from 'cloudflare:workers';
+
+const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
+const apiService = env.API_SERVICE;
+
+const season = Astro.url.searchParams.get('season') || '25-26';
+const view = (Astro.url.searchParams.get('view') || 'seasons') as 'seasons' | 'compta';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const data = await Astro.request.json() as any;
+    
+    if (data.action === 'create_season') {
+      const apiRes = await apiService.fetch('http://localhost/seasons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: data.id,
+          name: data.name,
+          active: data.active
+        })
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+    } else if (data.action === 'close_season') {
+      const apiRes = await apiService.fetch(`http://localhost/seasons/${data.id}/close`, {
+        method: 'POST'
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+    } else if (data.action === 'activate_season') {
+      const apiRes = await apiService.fetch(`http://localhost/seasons/${data.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: true })
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+    } else if (data.action === 'update_balances') {
+      const apiRes = await apiService.fetch(`http://localhost/seasons/${data.seasonId}/balances`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data.balances)
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+    } else if (data.action === 'create_category') {
+      const apiRes = await apiService.fetch('http://localhost/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: data.id,
+          adminLabel: data.adminLabel,
+          adherentLabel: data.adherentLabel,
+          hideInExpenses: data.hideInExpenses
+        })
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+    } else if (data.action === 'update_category') {
+      const apiRes = await apiService.fetch(`http://localhost/categories/${data.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data.updates)
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+    } else if (data.action === 'delete_category') {
+      const apiRes = await apiService.fetch(`http://localhost/categories/${data.id}`, {
+        method: 'DELETE'
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (err: any) {
+    return new Response(err.message, { status: 500 });
+  }
+}
+
+let seasonsList: any[] = [];
+let categoriesList: any[] = [];
+let errorMsg = '';
+
+try {
+  // Fetch seasons
+  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    const rawSeasons = json.data || [];
+    
+    // Fetch initial balances for each season to embed in the list
+    for (const s of rawSeasons) {
+      const balRes = await apiService.fetch(`http://localhost/seasons/${s.id}/balances`);
+      let initialCurrentBalance = 0;
+      let initialSavingsBalance = 0;
+      let initialCashBalance = 0;
+      if (balRes.ok) {
+        const balJson = await balRes.json() as any;
+        const balList: any[] = balJson.data || [];
+        const curr = balList.find(b => b.accountId === 'current');
+        const sav = balList.find(b => b.accountId === 'savings');
+        const csh = balList.find(b => b.accountId === 'cash');
+        if (curr) initialCurrentBalance = curr.initialBalance;
+        if (sav) initialSavingsBalance = sav.initialBalance;
+        if (csh) initialCashBalance = csh.initialBalance;
+      }
+      seasonsList.push({
+        ...s,
+        initialCurrentBalance,
+        initialSavingsBalance,
+        initialCashBalance
+      });
+    }
+  }
+
+  // Fetch categories
+  const categoriesRes = await apiService.fetch('http://localhost/categories');
+  if (categoriesRes.ok) {
+    const json = await categoriesRes.json() as any;
+    categoriesList = json.data || [];
+  }
+} catch (err: any) {
+  errorMsg = 'Erreur lors de la récupération de la configuration.';
+}
+---
+
+<Layout title="Réglages - NBA 91">
+  <AdminLayout client:load email={userEmail} breadcrumb="Réglages">
+    <div class="space-y-6">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight">Réglages Association</h1>
+        <p class="text-muted-foreground mt-2">
+          Gérez l'exercice comptable et configurez les catégories de trésorerie.
+        </p>
+      </div>
+
+      {errorMsg && (
+        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
+          {errorMsg}
+        </div>
+      )}
+
+      <SettingsManager
+        client:load
+        seasons={seasonsList}
+        categories={categoriesList}
+        seasonId={season}
+        view={view}
+      />
+    </div>
+  </AdminLayout>
+</Layout>

@@ -36,6 +36,7 @@ let reportData = {
   ]
 };
 let seasonsList = [];
+let categoriesList = [];
 let errorMsg = '';
 
 try {
@@ -51,6 +52,12 @@ try {
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];
+  }
+
+  const categoriesRes = await apiService.fetch('http://localhost/categories');
+  if (categoriesRes.ok) {
+    const json = await categoriesRes.json() as any;
+    categoriesList = json.data || [];
   }
 } catch (err: any) {
   errorMsg = 'Impossible de charger les données du bilan AG.';
@@ -75,7 +82,7 @@ try {
         </div>
       )}
 
-      <GeneralMeetingReport client:load report={reportData} seasonId={season} seasons={seasonsList} />
+      <GeneralMeetingReport client:load report={reportData} seasonId={season} seasons={seasonsList} categories={categoriesList} />
     </div>
   </AdminLayout>
 </Layout>

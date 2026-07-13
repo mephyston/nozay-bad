@@ -6,7 +6,8 @@
     ShoppingBag,
     Menu,
     X,
-    Coins
+    Coins,
+    Settings
   } from "lucide-svelte";
   import ThemeToggle from "./ThemeToggle.svelte";
   import UserNav from "./UserNav.svelte";
@@ -38,7 +39,7 @@
         { name: "Rapprochement bancaire", href: "/admin/compta/import" },
         { name: "Remises de chèques", href: "/admin/compta/cheques" },
         { name: "Caisse", href: "/admin/cash-box" },
-        { name: "Configuration", href: "/admin/compta/config" }
+        { name: "Soldes initiaux", href: "/admin/compta/config" }
       ]
     },
     {
@@ -49,7 +50,15 @@
         { name: "Commandes", href: "/admin/shop/orders" }
       ]
     },
-    { name: "Note de frais", icon: Coins, href: "/admin/expenses" }
+    { name: "Note de frais", icon: Coins, href: "/admin/expenses" },
+    {
+      name: "Réglages",
+      icon: Settings,
+      subItems: [
+        { name: "Saisons", href: "/admin/settings?view=seasons" },
+        { name: "Catégories", href: "/admin/settings?view=compta" }
+      ]
+    }
   ];
 </script>
 
@@ -79,13 +88,30 @@
               </div>
               <div class="pl-7 space-y-1">
                 {#each item.subItems as sub}
-                  <a
-                    href={sub.href}
-                    onclick={() => sidebarOpen = false}
-                    class="block px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-accent/50 transition-colors"
-                  >
-                    {sub.name}
-                  </a>
+                  {#if sub.subItems}
+                    <div class="space-y-1 mt-1 pl-1">
+                      <div class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 py-0.5">{sub.name}</div>
+                      <div class="pl-3 space-y-1 border-l border-border/60">
+                        {#each sub.subItems as subSub}
+                          <a
+                            href={subSub.href}
+                            onclick={() => sidebarOpen = false}
+                            class="block px-3 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground rounded hover:bg-accent/40 transition-colors"
+                          >
+                            {subSub.name}
+                          </a>
+                        {/each}
+                      </div>
+                    </div>
+                  {:else}
+                    <a
+                      href={sub.href}
+                      onclick={() => sidebarOpen = false}
+                      class="block px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-accent/50 transition-colors"
+                    >
+                      {sub.name}
+                    </a>
+                  {/if}
                 {/each}
               </div>
             </div>
@@ -119,12 +145,28 @@
             </div>
             <div class="pl-7 space-y-1">
               {#each item.subItems as sub}
-                <a
-                  href={sub.href}
-                  class="block px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-accent/50 transition-colors"
-                >
-                  {sub.name}
-                </a>
+                {#if sub.subItems}
+                  <div class="space-y-1 mt-1 pl-1">
+                    <div class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 py-0.5">{sub.name}</div>
+                    <div class="pl-3 space-y-1 border-l border-border/60">
+                      {#each sub.subItems as subSub}
+                        <a
+                          href={subSub.href}
+                          class="block px-3 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground rounded hover:bg-accent/40 transition-colors"
+                        >
+                          {subSub.name}
+                        </a>
+                      {/each}
+                    </div>
+                  </div>
+                {:else}
+                  <a
+                    href={sub.href}
+                    class="block px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-accent/50 transition-colors"
+                  >
+                    {sub.name}
+                  </a>
+                {/if}
               {/each}
             </div>
           </div>

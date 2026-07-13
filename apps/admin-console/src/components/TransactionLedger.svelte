@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { Search, Plus, Trash2, ArrowLeftRight, Check, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-svelte';
+  import { Search, Plus, Trash2, ArrowLeftRight, Check, AlertCircle, ChevronLeft, ChevronRight, MoreVertical, Edit2 } from 'lucide-svelte';
 
   interface Transaction {
     id: number;
+    seasonId: string;
     type: 'recette' | 'depense' | 'transfert';
     accountId: 'current' | 'savings' | 'cash';
     destinationAccountId: 'current' | 'savings' | 'cash' | null;
@@ -35,6 +36,14 @@
     id: string;
     name: string;
     active: boolean;
+    closed?: boolean;
+  }
+
+  interface Category {
+    id: string;
+    adminLabel: string;
+    adherentLabel: string;
+    hideInExpenses: boolean;
   }
 
   let {
@@ -42,13 +51,15 @@
     pagination,
     seasonId,
     balances = [],
-    seasons = []
+    seasons = [],
+    categories = []
   }: {
     transactions: Transaction[];
     pagination: Pagination;
     seasonId: string;
     balances: BalanceReport[];
     seasons?: Season[];
+    categories?: Category[];
   } = $props();
 
   // Saisie formulaire
@@ -66,6 +77,46 @@
 
   // svelte-ignore state_referenced_locally
   let selectedSeason = $state(seasonId);
+  // svelte-ignore state_referenced_locally
+  let targetSeasonId = $state(seasonId);
+
+  const isClosed = $derived(seasons.find(s => s.id === selectedSeason)?.closed || false);
+
+  let editingId = $state<number | null>(null);
+  let openDropdownId = $state<number | null>(null);
+
+  function toggleDropdown(id: number, e: MouseEvent) {
+    e.stopPropagation();
+    if (openDropdownId === id) {
+      openDropdownId = null;
+    } else {
+      openDropdownId = id;
+    }
+  }
+
+  function startEdit(tx: Transaction, e: MouseEvent) {
+    e.stopPropagation();
+    editingId = tx.id;
+    amount = (tx.amount / 100).toFixed(2);
+    date = tx.date;
+    category = tx.category || 'adhesions_inscriptions';
+    accountId = tx.accountId;
+    destinationAccountId = tx.destinationAccountId || 'cash';
+    paymentMethod = tx.paymentMethod;
+    description = tx.description;
+    reference = tx.reference || '';
+    targetSeasonId = tx.seasonId;
+    showPanel = tx.type;
+    openDropdownId = null;
+  }
+
+  $effect(() => {
+    const handleGlobalClick = () => {
+      openDropdownId = null;
+    };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  });
 
   const accountLabels = {
     current: 'Compte Courant',
@@ -84,7 +135,7 @@
     up_loisir: 'Up & Loisir'
   };
 
-  const categories = [
+  const fallbackCategories = [
     { id: 'adhesions_inscriptions', name: 'Adhésions & Inscriptions' },
     { id: 'sponsoring', name: 'Sponsoring' },
     { id: 'subventions', name: 'Subventions (aides publiques)' },
@@ -100,6 +151,12 @@
     { id: 'stages_formations', name: 'Stages & Formations' },
     { id: 'fonctionnement_administratif', name: 'Frais de fonctionnement & administratif' }
   ];
+
+  const activeCategories = $derived(
+    categories && categories.length > 0
+      ? categories.map(c => ({ id: c.id, name: c.adminLabel }))
+      : fallbackCategories
+  );
 
   function getAccountBalance(acc: 'current' | 'savings' | 'cash') {
     const match = balances.find(b => b.accountId === acc);
@@ -117,27 +174,46 @@
 
     isSubmitting = true;
     try {
+      const payload = editingId
+        ? {
+            action: 'update',
+            id: editingId,
+            updates: {
+              seasonId: targetSeasonId,
+              type: showPanel,
+              accountId,
+              destinationAccountId: showPanel === 'transfert' ? destinationAccountId : null,
+              category: showPanel !== 'transfert' ? category : null,
+              amount: Math.round(floatAmount * 100),
+              date,
+              paymentMethod,
+              description,
+              reference
+            }
+          }
+        : {
+            action: 'create',
+            seasonId: targetSeasonId,
+            type: showPanel,
+            accountId,
+            destinationAccountId: showPanel === 'transfert' ? destinationAccountId : null,
+            category: showPanel !== 'transfert' ? category : null,
+            amount: Math.round(floatAmount * 100), // conversion en centimes
+            date,
+            paymentMethod,
+            description,
+            reference
+          };
+
       const res = await fetch('/admin/compta', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'create',
-          seasonId,
-          type: showPanel,
-          accountId,
-          destinationAccountId: showPanel === 'transfert' ? destinationAccountId : null,
-          category: showPanel !== 'transfert' ? category : null,
-          amount: Math.round(floatAmount * 100), // conversion en centimes
-          date,
-          paymentMethod,
-          description,
-          reference
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(text || 'Impossible de créer la transaction');
+        throw new Error(text || 'Impossible d\'enregistrer la transaction');
       }
 
       window.location.reload();
@@ -205,32 +281,39 @@
           <option value="25-26">Saison 2025-2026</option>
         {/if}
       </select>
+      {#if isClosed}
+        <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
+          Saison clôturée (Lecture seule)
+        </span>
+      {/if}
     </div>
     <div class="flex items-center gap-3">
-      <button
-        onclick={() => { showPanel = 'recette'; amount = ''; description = ''; }}
-        class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-md hover:bg-emerald-700 shadow transition-colors cursor-pointer"
-      >
-        Saisir Recette
-      </button>
-      <button
-        onclick={() => { showPanel = 'depense'; amount = ''; description = ''; }}
-        class="px-4 py-2 bg-destructive text-destructive-foreground text-sm font-medium rounded-md hover:bg-destructive/90 shadow transition-colors cursor-pointer"
-      >
-        Saisir Dépense
-      </button>
-      <button
-        onclick={() => { showPanel = 'transfert'; amount = ''; description = ''; }}
-        class="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 shadow transition-colors cursor-pointer"
-      >
-        Virement Interne
-      </button>
+      {#if !isClosed}
+        <button
+          onclick={() => { showPanel = 'recette'; amount = ''; description = ''; targetSeasonId = selectedSeason; editingId = null; }}
+          class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-md hover:bg-emerald-700 shadow transition-colors cursor-pointer"
+        >
+          Saisir Recette
+        </button>
+        <button
+          onclick={() => { showPanel = 'depense'; amount = ''; description = ''; targetSeasonId = selectedSeason; editingId = null; }}
+          class="px-4 py-2 bg-destructive text-destructive-foreground text-sm font-medium rounded-md hover:bg-destructive/90 shadow transition-colors cursor-pointer"
+        >
+          Saisir Dépense
+        </button>
+        <button
+          onclick={() => { showPanel = 'transfert'; amount = ''; description = ''; targetSeasonId = selectedSeason; editingId = null; }}
+          class="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 shadow transition-colors cursor-pointer"
+        >
+          Virement Interne
+        </button>
+      {/if}
     </div>
   </div>
 
   <!-- Tableau -->
   <div class="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto min-h-[180px]">
       <table class="w-full border-collapse text-left text-sm">
         <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
           <tr>
@@ -263,7 +346,7 @@
                   <span class="text-xs">{accountLabels[tx.accountId]}</span>
                 {/if}
               </td>
-              <td class="p-4">{tx.category ? (categories.find(c => c.id === tx.category)?.name || tx.category) : 'Transfert'}</td>
+              <td class="p-4">{tx.category ? (activeCategories.find(c => c.id === tx.category)?.name || tx.category) : 'Transfert'}</td>
               <td class="p-4 font-medium">
                 <div>{tx.description}</div>
                 {#if tx.reference}
@@ -292,10 +375,37 @@
                   <span class="text-muted-foreground">{(tx.amount / 100).toFixed(2)} €</span>
                 {/if}
               </td>
-              <td class="p-4 text-right">
-                <button onclick={() => handleDelete(tx.id)} class="text-muted-foreground hover:text-destructive p-1 rounded cursor-pointer" aria-label="Supprimer">
-                  <Trash2 class="w-4 h-4" />
-                </button>
+              <td class="p-4 text-right relative">
+                {#if !isClosed}
+                  <div class="inline-block text-left">
+                    <button 
+                      onclick={(e) => toggleDropdown(tx.id, e)} 
+                      class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center" 
+                      aria-label="Actions"
+                    >
+                      <MoreVertical class="w-4 h-4" />
+                    </button>
+
+                    {#if openDropdownId === tx.id}
+                      <div class="absolute right-4 mt-1 w-32 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border">
+                        <button
+                          onclick={(e) => startEdit(tx, e)}
+                          class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                        >
+                          <Edit2 class="w-3.5 h-3.5" />
+                          Éditer
+                        </button>
+                        <button
+                          onclick={() => handleDelete(tx.id)}
+                          class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                        >
+                          <Trash2 class="w-3.5 h-3.5" />
+                          Supprimer
+                        </button>
+                      </div>
+                    {/if}
+                  </div>
+                {/if}
               </td>
             </tr>
           {:else}
@@ -343,7 +453,11 @@
       <div class="relative w-full max-w-md bg-card border-l border-border h-full p-6 shadow-2xl flex flex-col justify-between overflow-y-auto z-10">
         <form onsubmit={handleAddTransaction} class="space-y-4">
           <h3 class="text-lg font-bold">
-            {#if showPanel === 'recette'}🟢 Saisir une recette{:else if showPanel === 'depense'}🔴 Saisir une dépense{:else}🔵 Faire un virement interne{/if}
+            {#if editingId}
+              {#if showPanel === 'recette'}🟢 Modifier la recette{:else if showPanel === 'depense'}🔴 Modifier la dépense{:else}🔵 Modifier le virement interne{/if}
+            {:else}
+              {#if showPanel === 'recette'}🟢 Saisir une recette{:else if showPanel === 'depense'}🔴 Saisir une dépense{:else}🔵 Faire un virement interne{/if}
+            {/if}
           </h3>
 
           {#if errorMsg}
@@ -363,11 +477,23 @@
             <input id="date-input" type="date" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={date} required />
           </div>
 
+          <div>
+            <label for="season-select-panel" class="block text-sm font-medium mb-1">Saison d'affectation</label>
+            <select id="season-select-panel" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary font-medium" bind:value={targetSeasonId}>
+              {#each seasons as s}
+                <option value={s.id}>{s.name}</option>
+              {/each}
+              {#if seasons.length === 0}
+                <option value="25-26">Saison 2025-2026</option>
+              {/if}
+            </select>
+          </div>
+
           {#if showPanel !== 'transfert'}
             <div>
               <label for="category-select" class="block text-sm font-medium mb-1">Catégorie</label>
               <select id="category-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={category}>
-                {#each categories as cat}
+                {#each activeCategories as cat}
                   <option value={cat.id}>{cat.name}</option>
                 {/each}
               </select>

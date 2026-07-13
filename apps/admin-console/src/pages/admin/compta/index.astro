@@ -23,6 +23,15 @@ if (Astro.request.method === 'POST') {
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
+    } else if (data.action === 'update') {
+      const apiRes = await apiService.fetch(`http://localhost/transactions/${data.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data.updates)
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
     } else if (data.action === 'delete') {
       const apiRes = await apiService.fetch(`http://localhost/transactions/${data.id}`, {
         method: 'DELETE'
@@ -41,6 +50,7 @@ let transactionsList = [];
 let pagination = { total: 0, page: 1, limit: 20, totalPages: 1 };
 let balances = [];
 let seasonsList = [];
+let categoriesList = [];
 let errorMsg = '';
 
 try {
@@ -61,6 +71,12 @@ try {
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];
+  }
+
+  const categoriesRes = await apiService.fetch('http://localhost/categories');
+  if (categoriesRes.ok) {
+    const json = await categoriesRes.json() as any;
+    categoriesList = json.data || [];
   }
 } catch (err: any) {
   errorMsg = 'Une erreur est survenue lors de la communication avec le serveur comptable.';
@@ -92,6 +108,7 @@ try {
         seasonId={season}
         balances={balances}
         seasons={seasonsList}
+        categories={categoriesList}
       />
     </div>
   </AdminLayout>

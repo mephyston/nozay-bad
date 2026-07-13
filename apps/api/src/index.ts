@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
-import { and, or, eq, ne, like, sql, inArray, desc } from 'drizzle-orm';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, expensesTable } from '../../../libs/shared/db/src/schema';
+import { and, or, eq, ne, like, sql, inArray, desc, gte, lte } from 'drizzle-orm';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, expensesTable, categoriesTable } from '../../../libs/shared/db/src/schema';
 
 
 
@@ -13,6 +13,14 @@ function cleanName(name: string | null): string {
     .replace(/\s*\(.*?\)/g, "")
     .trim()
     .toLowerCase();
+}
+
+async function isSeasonClosed(db: any, seasonId: string): Promise<boolean> {
+  const season = await db.select({ closed: seasonsTable.closed })
+    .from(seasonsTable)
+    .where(eq(seasonsTable.id, seasonId))
+    .get();
+  return season?.closed === 1 || season?.closed === true;
 }
 
 type Bindings = {
@@ -460,6 +468,75 @@ app.get('/seasons', async (c) => {
   });
 });
 
+app.post('/seasons', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const body = await c.req.json();
+  const db = drizzle(c.env.DB);
+  try {
+    if (body.active) {
+      await db.update(seasonsTable).set({ active: false }).run();
+    }
+    const newSeason = await db.insert(seasonsTable).values({
+      id: body.id,
+      name: body.name,
+      active: body.active || false,
+      createdAt: new Date()
+    }).returning().get();
+    return c.json({ success: true, data: newSeason });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+});
+
+app.put('/seasons/:id', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = c.req.param('id');
+  const body = await c.req.json();
+  const db = drizzle(c.env.DB);
+  try {
+    if (body.active) {
+      await db.update(seasonsTable).set({ active: false }).where(ne(seasonsTable.id, id)).run();
+    }
+    const updated = await db.update(seasonsTable).set({
+      name: body.name !== undefined ? body.name : undefined,
+      active: body.active !== undefined ? body.active : undefined,
+      closed: body.closed !== undefined ? body.closed : undefined
+    }).where(eq(seasonsTable.id, id)).returning().get();
+
+    if (!updated) {
+      return c.json({ success: false, error: 'Saison introuvable' }, 404);
+    }
+    return c.json({ success: true, data: updated });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+});
+
+app.post('/seasons/:id/close', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = c.req.param('id');
+  const db = drizzle(c.env.DB);
+  try {
+    const updated = await db.update(seasonsTable)
+      .set({ closed: true })
+      .where(eq(seasonsTable.id, id))
+      .returning()
+      .get();
+    if (!updated) {
+      return c.json({ success: false, error: 'Saison introuvable' }, 404);
+    }
+    return c.json({ success: true, data: updated });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+});
+
 app.get('/seasons/:seasonId/balances', async (c) => {
   if (!c.env || !c.env.DB) {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
@@ -477,6 +554,10 @@ app.post('/seasons/:seasonId/balances', async (c) => {
   const seasonId = c.req.param('seasonId');
   const body = await c.req.json() as { accountId: 'current' | 'savings' | 'cash'; initialBalance: number }[];
   const db = drizzle(c.env.DB);
+
+  if (await isSeasonClosed(db, seasonId)) {
+    return c.json({ success: false, error: 'La saison est clôturée. Impossible de modifier ses soldes initiaux.' }, 400);
+  }
 
   for (const item of body) {
     await db.insert(seasonBalancesTable)
@@ -586,6 +667,10 @@ app.post('/transactions', async (c) => {
     return c.json({ success: false, error: 'Champs requis manquants.' }, 400);
   }
 
+  if (await isSeasonClosed(db, body.seasonId)) {
+    return c.json({ success: false, error: 'La saison est clôturée. Impossible de créer une transaction.' }, 400);
+  }
+
   if (body.type === 'transfert') {
     if (!body.destinationAccountId || body.accountId === body.destinationAccountId) {
       return c.json({ success: false, error: 'Le compte destinataire doit être différent du compte source.' }, 400);
@@ -613,6 +698,69 @@ app.post('/transactions', async (c) => {
   return c.json({ success: true, data: inserted });
 });
 
+app.put('/transactions/:id', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const body = await c.req.json() as any;
+  const db = drizzle(c.env.DB);
+
+  if (!body.seasonId || !body.type || !body.accountId || !body.amount || !body.date || !body.paymentMethod || !body.description) {
+    return c.json({ success: false, error: 'Champs requis manquants.' }, 400);
+  }
+
+  const existing = await db.select({ seasonId: transactionsTable.seasonId })
+    .from(transactionsTable)
+    .where(eq(transactionsTable.id, id))
+    .get();
+
+  if (!existing) {
+    return c.json({ success: false, error: 'Transaction introuvable' }, 404);
+  }
+
+  if (await isSeasonClosed(db, existing.seasonId)) {
+    return c.json({ success: false, error: 'La saison d\'origine est clôturée. Impossible de modifier cette transaction.' }, 400);
+  }
+
+  if (await isSeasonClosed(db, body.seasonId)) {
+    return c.json({ success: false, error: 'La saison cible est clôturée. Impossible d\'affecter cette transaction.' }, 400);
+  }
+
+  if (body.type === 'transfert') {
+    if (!body.destinationAccountId || body.accountId === body.destinationAccountId) {
+      return c.json({ success: false, error: 'Le compte destinataire doit être différent du compte source.' }, 400);
+    }
+  } else {
+    if (!body.category) {
+      return c.json({ success: false, error: 'La catégorie est obligatoire pour les recettes/dépenses.' }, 400);
+    }
+  }
+
+  try {
+    const updated = await db.update(transactionsTable).set({
+      seasonId: body.seasonId,
+      type: body.type,
+      accountId: body.accountId,
+      destinationAccountId: body.type === 'transfert' ? body.destinationAccountId : null,
+      category: body.type !== 'transfert' ? body.category : null,
+      amount: Math.round(body.amount),
+      date: body.date,
+      paymentMethod: body.paymentMethod,
+      description: body.description,
+      reference: body.reference || null
+    }).where(eq(transactionsTable.id, id)).returning().get();
+
+    if (!updated) {
+      return c.json({ success: false, error: 'Transaction introuvable' }, 404);
+    }
+
+    return c.json({ success: true, data: updated });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+});
+
 app.delete('/transactions/:id', async (c) => {
   if (!c.env || !c.env.DB) {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
@@ -627,6 +775,10 @@ app.delete('/transactions/:id', async (c) => {
   const tx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, id)).get();
   if (!tx) {
     return c.json({ success: false, error: 'Transaction non trouvée' }, 404);
+  }
+
+  if (await isSeasonClosed(db, tx.seasonId)) {
+    return c.json({ success: false, error: 'La saison est clôturée. Impossible de supprimer cette transaction.' }, 400);
   }
 
   // 2. Si liée à un relevé bancaire, recalculer le pointage restant
@@ -657,7 +809,7 @@ app.delete('/transactions/:id', async (c) => {
   }
 
   // 3. Si liée à un adhérent pour une adhésion, déduire le montant reçu
-  if (tx.memberId && tx.category === 'adhesions_inscriptions') {
+  if (tx.memberId && (tx.category === 1 || String(tx.category) === '1')) {
     const member = await db.select().from(membersTable).where(eq(membersTable.id, tx.memberId)).get();
     if (member) {
       const newReceived = Math.max(0, member.amountReceived - Math.abs(tx.amount));
@@ -675,6 +827,12 @@ app.delete('/transactions/:id', async (c) => {
     }
   }
 
+  // 3.5. Si liée à une note de frais, la repasser en 'pending'
+  await db.update(expensesTable)
+    .set({ status: 'pending', transactionId: null })
+    .where(eq(expensesTable.transactionId, id))
+    .run();
+
   // 4. Supprimer la transaction du Grand Livre
   await db.delete(transactionsTable).where(eq(transactionsTable.id, id)).run();
 
@@ -688,11 +846,27 @@ app.get('/seasons/:seasonId/reports', async (c) => {
   const seasonId = c.req.param('seasonId');
   const db = drizzle(c.env.DB);
 
+  // Parse years from seasonId (format YY-ZZ)
+  const [yy, zz] = seasonId.split('-');
+  const startYear = 2000 + parseInt(yy);
+  const endYear = 2000 + parseInt(zz);
+  const startDateStr = `${startYear}-09-01`;
+  const endDateStr = `${endYear}-08-31`;
+
   // Récupérer les soldes initiaux
   const balances = await db.select().from(seasonBalancesTable).where(eq(seasonBalancesTable.seasonId, seasonId)).all();
   
-  // Récupérer toutes les transactions de la saison
+  // Récupérer toutes les transactions de la saison (par seasonId pour le budget)
   const allTxs = await db.select().from(transactionsTable).where(eq(transactionsTable.seasonId, seasonId)).all();
+
+  // Récupérer toutes les transactions de la période pour les flux de trésorerie (par date)
+  const cashFlowTxs = await db.select()
+    .from(transactionsTable)
+    .where(and(
+      gte(transactionsTable.date, startDateStr),
+      lte(transactionsTable.date, endDateStr)
+    ))
+    .all();
 
   // 1. Calcul du compte de résultat (ventilé par catégorie)
   const categoryTotals: Record<string, { type: 'recette' | 'depense', total: number }> = {};
@@ -715,14 +889,14 @@ app.get('/seasons/:seasonId/reports', async (c) => {
     }
   }
 
-  // 2. Calcul du bilan de trésorerie (init vs final)
+  // 2. Calcul du bilan de trésorerie (init vs final en fonction de la date de transaction)
   const accounts = ['current', 'savings', 'cash'] as const;
   const reportBalances = accounts.map(acc => {
     const initBal = balances.find(b => b.accountId === acc)?.initialBalance || 0;
     
-    // Calculer le solde final pour ce compte
+    // Calculer le solde final pour ce compte en utilisant les flux réels
     let finalBal = initBal;
-    for (const tx of allTxs) {
+    for (const tx of cashFlowTxs) {
       if (tx.type === 'recette' && tx.accountId === acc) {
         finalBal += tx.amount;
       } else if (tx.type === 'depense' && tx.accountId === acc) {
@@ -888,33 +1062,49 @@ app.post('/bank-transactions/analyze', async (c) => {
 
   let analyzedCount = 0;
 
+  // Category integer ID mapping
+  const CAT_ADHESIONS = 1;
+  const CAT_SPONSORING = 2;
+  const CAT_SUBVENTIONS = 3;
+  const CAT_ACTIONS_JEUNES = 4;
+  const CAT_TOURNOIS_SENIOR = 5;
+  const CAT_EVENEMENTS_BUVETTES = 6;
+  const CAT_CORDAGE_VENTE = 7;
+  const CAT_VOLANTS = 8;
+  const CAT_SALAIRES_CHARGES = 9;
+  const CAT_MATERIEL_CLUB = 10;
+  const CAT_LICENCES_FEDERATION = 11;
+  const CAT_CHAMPIONNATS = 12;
+  const CAT_STAGES_FORMATIONS = 13;
+  const CAT_FONCTIONNEMENT_ADMIN = 14;
+
   for (const tx of pendingTxs) {
     // Déterminer la catégorie par défaut par dictionnaire simple
-    let suggestedCategory = tx.amount < 0 ? 'fonctionnement_administratif' : 'adhesions_inscriptions';
+    let suggestedCategory = tx.amount < 0 ? CAT_FONCTIONNEMENT_ADMIN : CAT_ADHESIONS;
     const textToLower = `${tx.name} ${tx.memo || ''}`.toLowerCase();
     
     if (textToLower.includes('ionos')) {
-      suggestedCategory = 'fonctionnement_administratif';
+      suggestedCategory = CAT_FONCTIONNEMENT_ADMIN;
     } else if (textToLower.includes('urssaf') || textToLower.includes('afdas')) {
-      suggestedCategory = 'salaires_charges';
+      suggestedCategory = CAT_SALAIRES_CHARGES;
     } else if (textToLower.includes('salaire') || textToLower.includes('tetevuide') || textToLower.includes('meunier')) {
-      suggestedCategory = 'salaires_charges';
+      suggestedCategory = CAT_SALAIRES_CHARGES;
     } else if (textToLower.includes('larde')) {
-      suggestedCategory = 'materiel_club';
+      suggestedCategory = CAT_MATERIEL_CLUB;
     } else if (textToLower.includes('ligue') || textToLower.includes('badminton')) {
-      suggestedCategory = textToLower.includes('licence') ? 'licences_federation' : 'championnats';
+      suggestedCategory = textToLower.includes('licence') ? CAT_LICENCES_FEDERATION : CAT_CHAMPIONNATS;
     } else if (textToLower.includes('codep91') || textToLower.includes('comite')) {
-      suggestedCategory = 'championnats';
+      suggestedCategory = CAT_CHAMPIONNATS;
     } else if (textToLower.includes('sumup') || textToLower.includes('buvette')) {
-      suggestedCategory = 'evenements_buvettes';
+      suggestedCategory = CAT_EVENEMENTS_BUVETTES;
     } else if (textToLower.includes('cordage') || textToLower.includes('raquette')) {
-      suggestedCategory = 'cordage_vente';
+      suggestedCategory = CAT_CORDAGE_VENTE;
     } else if (textToLower.includes('volant')) {
-      suggestedCategory = 'volants';
+      suggestedCategory = CAT_VOLANTS;
     } else if (textToLower.includes('stage')) {
-      suggestedCategory = 'stages_formations';
+      suggestedCategory = CAT_STAGES_FORMATIONS;
     } else if (textToLower.includes('versement express')) {
-      suggestedCategory = 'adhesions_inscriptions';
+      suggestedCategory = CAT_ADHESIONS;
     }
 
     // Présélection des candidats adhérents :
@@ -971,33 +1161,33 @@ Opération bancaire à rapprocher :
 - Montant : ${(tx.amount / 100).toFixed(2)} EUR (${tx.amount < 0 ? 'Débit' : 'Crédit'})
 
 Catégories valides pour l'écriture :
-- adhesions_inscriptions (cotisations, dossiers d'adhésion)
-- sponsoring (partenaires)
-- subventions (aides publiques)
-- actions_jeunes (stages et événements jeunes)
-- tournois_senior (inscriptions tournois)
-- evenements_buvettes (consommations, soirées, SumUp)
-- cordage_vente (achat cordage par adhérent)
-- volants (achat de tubes de volants par adhérent ou achat fournisseur)
-- salaires_charges (salaires entraîneurs, URSSAF)
-- materiel_club (poteaux, filets, volants club)
-- licences_federation (reversement FFBad)
-- championnats (frais d'inscriptions des équipes du club)
-- stages_formations (stages adultes ou formations d'arbitres)
-- fonctionnement_administratif (frais bancaires, assurances, licences de logiciels comme Ionos)
+- 1 (adhesions_inscriptions : cotisations, dossiers d'adhésion)
+- 2 (sponsoring : partenaires)
+- 3 (subventions : aides publiques)
+- 4 (actions_jeunes : stages et événements jeunes)
+- 5 (tournois_senior : inscriptions tournois)
+- 6 (evenements_buvettes : consommations, soirées, SumUp)
+- 7 (cordage_vente : achat cordage par adhérent)
+- 8 (volants : achat de tubes de volants par adhérent ou achat fournisseur)
+- 9 (salaires_charges : salaires entraîneurs, URSSAF)
+- 10 (materiel_club : poteaux, filets, volants club)
+- 11 (licences_federation : reversement FFBad)
+- 12 (championnats : frais d'inscriptions des équipes du club)
+- 13 (stages_formations : stages adultes ou formations d'arbitres)
+- 14 (fonctionnement_administratif : frais bancaires, assurances, licences)
 
 Liste des candidats adhérents possibles :
 ${candidates.map(c => `- ID: ${c.id}, Nom: ${c.lastName} ${c.firstName}, Parent 1: ${c.parent1Name || 'Aucun'}, Montant Restant Dû Adhésion: ${(c.amountRemaining / 100).toFixed(2)} EUR`).join('\n')}
 
 Instructions :
 1. Associe l'adhérent (memberId et memberName) si son nom ou prénom (ou celui d'un de ses parents) apparaît clairement dans le libellé ou memo de l'opération, même si son "Montant Restant Dû Adhésion" est de 0.00 EUR (il peut s'agir d'un achat de volants, cordages, etc.).
-2. Choisis la catégorie la plus adaptée parmi la liste des catégories valides ci-dessus (ex: "volants" si le motif mentionne "volants", "cordage_vente" si "cordage", etc.).
+2. Choisis la catégorie la plus adaptée parmi la liste des catégories valides ci-dessus (ex: renvoie 8 si le motif mentionne "volants", 7 si "cordage", etc.).
 
 Renvoie STRICTEMENT un objet JSON sous la forme suivante (sans aucun autre texte, balises markdown ou commentaires) :
 {
   "memberId": <ID de l'adhérent associé ou null>,
   "memberName": "<Nom Prénom de l'adhérent associé ou null>",
-  "category": "<identifiant de la catégorie choisie>",
+  "category": <ID entier de la catégorie choisie>,
   "confidence": <nombre entre 0.0 et 1.0 indiquant ton niveau de certitude>,
   "reasoning": "<explication concise>"
 }`;
@@ -1012,7 +1202,7 @@ Renvoie STRICTEMENT un objet JSON sous la forme suivante (sans aucun autre texte
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
           suggestionResult = {
-            category: parsed.category || suggestedCategory,
+            category: parsed.category ? Number(parsed.category) : suggestedCategory,
             memberId: parsed.memberId || null,
             memberName: parsed.memberName || null,
             confidence: parsed.confidence || 0.5
@@ -1090,6 +1280,17 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
   let lastTxId = null;
 
   if (body.action === 'match') {
+    const existingTx = await db.select({ seasonId: transactionsTable.seasonId })
+      .from(transactionsTable)
+      .where(eq(transactionsTable.id, body.transactionId))
+      .get();
+    if (!existingTx) {
+      return c.json({ success: false, error: 'Transaction cible introuvable.' }, 404);
+    }
+    if (await isSeasonClosed(db, existingTx.seasonId)) {
+      return c.json({ success: false, error: 'La saison de la transaction est clôturée. Rapprochement impossible.' }, 400);
+    }
+
     await db.update(transactionsTable)
       .set({ 
         bankTransactionId: id,
@@ -1100,6 +1301,10 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
     lastTxId = body.transactionId;
   } else if (body.action === 'create') {
     const tx = body.transaction;
+    if (await isSeasonClosed(db, tx.seasonId)) {
+      return c.json({ success: false, error: 'La saison cible est clôturée. Rapprochement impossible.' }, 400);
+    }
+
     // Insérer la transaction dans le Grand Livre liée à cette transaction bancaire
     const [newTx] = await db.insert(transactionsTable).values({
       seasonId: tx.seasonId,
@@ -1145,7 +1350,7 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
       categoryStr = matchedTx ? matchedTx.category : null;
     }
 
-    if (categoryStr === 'adhesions_inscriptions') {
+    if (categoryStr === 1 || String(categoryStr) === '1' || categoryStr === 'adhesions_inscriptions') {
       const member = await db.select().from(membersTable).where(eq(membersTable.id, memberId)).get();
       if (member) {
         const amountToApply = Math.abs(body.transaction?.amount ?? bankTx.amount);
@@ -1464,14 +1669,14 @@ app.post('/checks', async (c) => {
     return c.json({ success: false, error: 'Champs requis manquants.' }, 400);
   }
 
-  const categoryStr = body.category || 'adhesions_inscriptions';
+  const categoryVal = body.category ? Number(body.category) : 1;
   const descStr = body.description || `Règlement par chèque n°${body.number} de ${body.emitter}`;
 
   const [newTx] = await db.insert(transactionsTable).values({
     seasonId: body.seasonId,
     type: 'recette',
     accountId: 'current',
-    category: categoryStr,
+    category: categoryVal,
     amount: body.amount,
     date: body.date || new Date().toISOString().split('T')[0],
     paymentMethod: 'cheque',
@@ -1494,7 +1699,7 @@ app.post('/checks', async (c) => {
     createdAt: new Date()
   }).returning();
 
-  if (body.memberId && categoryStr === 'adhesions_inscriptions') {
+  if (body.memberId && (categoryVal === 1 || String(categoryVal) === '1')) {
     const member = await db.select().from(membersTable).where(eq(membersTable.id, body.memberId)).get();
     if (member) {
       const newReceived = member.amountReceived + body.amount;
@@ -1535,7 +1740,7 @@ app.delete('/checks/:id', async (c) => {
 
     const tx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, check.transactionId)).get();
     if (tx) {
-      if (tx.memberId && tx.category === 'adhesions_inscriptions') {
+      if (tx.memberId && (tx.category === 1 || String(tx.category) === '1')) {
         const member = await db.select().from(membersTable).where(eq(membersTable.id, tx.memberId)).get();
         if (member) {
           const newReceived = Math.max(0, member.amountReceived - Math.abs(tx.amount));
@@ -1891,6 +2096,11 @@ app.post('/expenses', async (c) => {
   }
   const body = await c.req.json();
   const db = drizzle(c.env.DB);
+
+  if (await isSeasonClosed(db, body.seasonId)) {
+    return c.json({ success: false, error: 'La saison est clôturée. Impossible de soumettre une note de frais.' }, 400);
+  }
+
   const expense = await db.insert(expensesTable).values({
     seasonId: body.seasonId,
     description: body.description,
@@ -1917,6 +2127,9 @@ app.post('/expenses/:id/approve', async (c) => {
     const expense = await db.select().from(expensesTable).where(eq(expensesTable.id, id)).get();
     if (!expense) {
       throw new Error('Dépense introuvable');
+    }
+    if (await isSeasonClosed(db, expense.seasonId)) {
+      throw new Error('La saison est clôturée. Impossible d\'approuver cette note de frais.');
     }
     if (expense.status !== 'pending') {
       throw new Error('Dépense déjà traitée');
@@ -1962,6 +2175,9 @@ app.post('/expenses/:id/reject', async (c) => {
     if (!expense) {
       throw new Error('Dépense introuvable');
     }
+    if (await isSeasonClosed(db, expense.seasonId)) {
+      throw new Error('La saison est clôturée. Impossible de rejeter cette note de frais.');
+    }
     if (expense.status !== 'pending') {
       throw new Error('Dépense déjà traitée');
     }
@@ -1970,6 +2186,75 @@ app.post('/expenses/:id/reject', async (c) => {
       .set({ status: 'rejected' })
       .where(eq(expensesTable.id, id))
       .returning().get();
+  } catch (err: any) {
+    const status = err.message === 'Dépense introuvable' ? 404 : 400;
+    return c.json({ success: false, error: err.message }, status);
+  }
+
+  return c.json({ success: true, data: updatedExpense });
+});
+
+app.post('/expenses/:id/cancel', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const db = drizzle(c.env.DB);
+
+  let updatedExpense;
+  try {
+    const expense = await db.select().from(expensesTable).where(eq(expensesTable.id, id)).get();
+    if (!expense) {
+      throw new Error('Dépense introuvable');
+    }
+    if (await isSeasonClosed(db, expense.seasonId)) {
+      throw new Error('La saison est clôturée. Impossible d\'annuler la validation de cette note de frais.');
+    }
+    if (expense.status === 'pending') {
+      throw new Error('Dépense déjà en attente');
+    }
+
+    const txId = expense.transactionId;
+
+    // 1. Mettre à jour la note de frais d'abord pour couper la clé étrangère
+    updatedExpense = await db.update(expensesTable)
+      .set({ status: 'pending', transactionId: null })
+      .where(eq(expensesTable.id, id))
+      .returning().get();
+
+    // 2. Si approuvée, supprimer la transaction associée
+    if (expense.status === 'approved' && txId) {
+      // 1. Récupérer la transaction
+      const tx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, txId)).get();
+      if (tx) {
+        // Rapprochement bancaire : si la transaction est pointée, libérer l'écriture bancaire
+        if (tx.bankTransactionId) {
+          const bankTx = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, tx.bankTransactionId)).get();
+          if (bankTx) {
+            const remainingTxs = await db.select()
+              .from(transactionsTable)
+              .where(and(
+                eq(transactionsTable.bankTransactionId, tx.bankTransactionId),
+                ne(transactionsTable.id, tx.id)
+              ))
+              .all();
+            const totalRemaining = remainingTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+            if (totalRemaining < Math.abs(bankTx.amount)) {
+              await db.update(bankTransactionsTable)
+                .set({ 
+                  status: 'pending', 
+                  transactionId: remainingTxs.length > 0 ? remainingTxs[remainingTxs.length - 1].id : null 
+                })
+                .where(eq(bankTransactionsTable.id, tx.bankTransactionId))
+                .run();
+            }
+          }
+        }
+
+        // Supprimer la transaction du Grand Livre
+        await db.delete(transactionsTable).where(eq(transactionsTable.id, tx.id)).run();
+      }
+    }
   } catch (err: any) {
     const status = err.message === 'Dépense introuvable' ? 404 : 400;
     return c.json({ success: false, error: err.message }, status);
@@ -1987,10 +2272,25 @@ app.put('/expenses/:id', async (c) => {
   const db = drizzle(c.env.DB);
 
   try {
+    const existing = await db.select({ seasonId: expensesTable.seasonId })
+      .from(expensesTable)
+      .where(eq(expensesTable.id, id))
+      .get();
+    if (!existing) {
+      return c.json({ success: false, error: 'Dépense introuvable' }, 404);
+    }
+    if (await isSeasonClosed(db, existing.seasonId)) {
+      return c.json({ success: false, error: 'La saison d\'origine est clôturée. Impossible de modifier cette note de frais.' }, 400);
+    }
+    if (body.seasonId && await isSeasonClosed(db, body.seasonId)) {
+      return c.json({ success: false, error: 'La saison cible est clôturée. Impossible d\'affecter cette note de frais.' }, 400);
+    }
+
     const updated = await db.update(expensesTable).set({
       description: body.description,
       category: body.category,
       amount: body.amount,
+      seasonId: body.seasonId,
       photoUrl: body.photoUrl !== undefined ? body.photoUrl : undefined
     }).where(eq(expensesTable.id, id)).returning().get();
     
@@ -1998,6 +2298,78 @@ app.put('/expenses/:id', async (c) => {
       return c.json({ success: false, error: 'Dépense introuvable' }, 404);
     }
     return c.json({ success: true, data: updated });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+});
+
+app.get('/categories', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const db = drizzle(c.env.DB);
+  try {
+    const list = await db.select().from(categoriesTable).all();
+    return c.json({ success: true, data: list });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+app.post('/categories', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const body = await c.req.json();
+  const db = drizzle(c.env.DB);
+  try {
+    const newCat = await db.insert(categoriesTable).values({
+      adminLabel: body.adminLabel,
+      adherentLabel: body.adherentLabel,
+      hideInExpenses: body.hideInExpenses || false,
+      createdAt: new Date()
+    }).returning().get();
+    return c.json({ success: true, data: newCat });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+});
+
+app.put('/categories/:id', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const body = await c.req.json();
+  const db = drizzle(c.env.DB);
+  try {
+    const updated = await db.update(categoriesTable).set({
+      adminLabel: body.adminLabel,
+      adherentLabel: body.adherentLabel,
+      hideInExpenses: body.hideInExpenses
+    }).where(eq(categoriesTable.id, id)).returning().get();
+
+    if (!updated) {
+      return c.json({ success: false, error: 'Catégorie introuvable' }, 404);
+    }
+    return c.json({ success: true, data: updated });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+});
+
+app.delete('/categories/:id', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const db = drizzle(c.env.DB);
+  try {
+    const deleted = await db.delete(categoriesTable).where(eq(categoriesTable.id, id)).returning().get();
+    if (!deleted) {
+      return c.json({ success: false, error: 'Catégorie introuvable' }, 404);
+    }
+    return c.json({ success: true, data: deleted });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 400);
   }

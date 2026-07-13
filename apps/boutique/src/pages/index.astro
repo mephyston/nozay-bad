@@ -70,6 +70,7 @@ if (Astro.request.method === 'POST') {
 let products: Product[] = [];
 let members: Member[] = [];
 let seasons: Season[] = [];
+let categories: any[] = [];
 let errorMsg = '';
 
 try {
@@ -99,6 +100,13 @@ try {
   } else {
     errorMsg = 'Impossible de charger les saisons.';
   }
+
+  // Fetch categories
+  const categoriesRes = await apiService.fetch('http://localhost/categories');
+  if (categoriesRes.ok) {
+    const json = await categoriesRes.json() as any;
+    categories = json.data || [];
+  }
 } catch (e: any) {
   errorMsg = 'Une erreur de connexion est survenue lors du chargement des données.';
 }
@@ -115,7 +123,7 @@ const activeSeasonId = activeSeason.id;
     <script is:inline>
       const theme = (() => {
         if (typeof localStorage !== 'undefined' && localStorage.getItem('mode-watcher-mode')) {
-          return localStorage.getItem('mode-watcher-mode');
+          return localStorage.getItem('mode-watcher-mode').replace(/"/g, '');
         }
         if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
           return 'dark';
@@ -188,6 +196,7 @@ const activeSeasonId = activeSeason.id;
           client:load
           activeSeasonId={activeSeasonId}
           members={members}
+          categories={categories}
         />
       ) : (
         <ShopCatalog

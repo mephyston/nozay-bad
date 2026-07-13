@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Coins, FileText, Check, X, Calendar, AlertCircle, Eye, Search, Edit2, Image as ImageIcon } from 'lucide-svelte';
+  import { Coins, FileText, Check, X, Calendar, AlertCircle, Eye, Search, Edit2, Image as ImageIcon, MoreVertical, RefreshCw } from 'lucide-svelte';
 
   interface Expense {
     id: number;
@@ -19,21 +19,32 @@
     id: string;
     name: string;
     active: boolean;
+    closed?: boolean;
+  }
+
+  interface Category {
+    id: string;
+    adminLabel: string;
+    adherentLabel: string;
+    hideInExpenses: boolean;
   }
 
   let {
     expenses = [],
     seasonId,
-    seasons = []
+    seasons = [],
+    categories = []
   }: {
     expenses: Expense[];
     seasonId: string;
     seasons?: Season[];
+    categories?: Category[];
   } = $props();
 
   let activeTab = $state<'pending' | 'history'>('pending');
   // svelte-ignore state_referenced_locally
   let selectedSeason = $state(seasonId);
+  const isClosed = $derived(seasons.find(s => s.id === selectedSeason)?.closed || false);
   let searchTerm = $state('');
   let selectedPhoto = $state<string | null>(null);
 
@@ -45,10 +56,11 @@
   let editingId = $state<number | null>(null);
   let editDescription = $state('');
   let editCategory = $state('');
+  let editSeasonId = $state('');
   let editAmountStr = $state('');
   let isSaving = $state(false);
 
-  const categoriesList = [
+  const fallbackCategoriesList = [
     { value: 'fonctionnement_administratif', label: 'Frais de fonctionnement & administratif' },
     { value: 'materiel_club', label: 'Matériel (hors cordages)' },
     { value: 'volants', label: 'Volants (vente ou achat)' },
@@ -65,7 +77,13 @@
     { value: 'licences_federation', label: 'Licences (versements fédération)' }
   ];
 
-  const categoryLabels: Record<string, string> = {
+  const categoriesList = $derived(
+    categories && categories.length > 0
+      ? categories.map(c => ({ value: c.id, label: c.adminLabel }))
+      : fallbackCategoriesList
+  );
+
+  const fallbackCategoryLabels: Record<string, string> = {
     fonctionnement_administratif: 'Frais de fonctionnement & administratif',
     materiel_club: 'Matériel (hors cordages)',
     volants: 'Volants (vente ou achat)',
@@ -81,6 +99,15 @@
     salaires_charges: 'Salaires et Charges',
     licences_federation: 'Licences (versements fédération)'
   };
+
+  const categoryLabels = $derived(
+    categories && categories.length > 0
+      ? categories.reduce((acc, c) => {
+          acc[c.id] = c.adminLabel;
+          return acc;
+        }, {} as Record<string, string>)
+      : fallbackCategoryLabels
+  );
 
   const categoryColors: Record<string, string> = {
     fonctionnement_administratif: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20',
@@ -127,6 +154,7 @@
     editingId = exp.id;
     editDescription = exp.description;
     editCategory = exp.category;
+    editSeasonId = exp.seasonId;
     editAmountStr = (exp.amount / 100).toFixed(2);
   }
 
@@ -151,6 +179,7 @@
           updates: {
             description: editDescription,
             category: editCategory,
+            seasonId: editSeasonId,
             amount: Math.round(parsedAmount * 100)
           }
         })
@@ -200,6 +229,51 @@
       submittingId = null;
     }
   }
+
+  let openDropdownId = $state<number | null>(null);
+
+  function toggleDropdown(id: number, e: MouseEvent) {
+    e.stopPropagation();
+    openDropdownId = openDropdownId === id ? null : id;
+  }
+
+  $effect(() => {
+    const handleGlobalClick = () => { openDropdownId = null; };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  });
+
+  async function handleCancelValidation(id: number) {
+    if (!confirm("Êtes-vous sûr de vouloir remettre cette note de frais en attente ? Cela annulera son remboursement en comptabilité.")) {
+      return;
+    }
+
+    submittingId = id;
+    errorMsg = '';
+    successMsg = '';
+
+    try {
+      const res = await fetch('', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel', id })
+      });
+
+      if (!res.ok) {
+        throw new Error("Erreur lors de l'annulation de la validation.");
+      }
+
+      successMsg = "Note de frais remise en attente et transaction supprimée de la comptabilité.";
+      // Reload page to refresh data
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (err: any) {
+      errorMsg = err.message || "Une erreur est survenue.";
+    } finally {
+      submittingId = null;
+    }
+  }
 </script>
 
 <div class="space-y-6">
@@ -217,6 +291,11 @@
           <option value={s.id}>{s.name}</option>
         {/each}
       </select>
+      {#if isClosed}
+        <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
+          Saison clôturée (Lecture seule)
+        </span>
+      {/if}
     </div>
 
     <div class="relative w-full sm:w-72">
@@ -308,7 +387,7 @@
                   ></textarea>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-3 gap-4">
                   <div class="space-y-1.5">
                     <label for="edit-cat-{exp.id}" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Catégorie compta</label>
                     <select
@@ -318,6 +397,19 @@
                     >
                       {#each categoriesList as cat}
                         <option value={cat.value}>{cat.label}</option>
+                      {/each}
+                    </select>
+                  </div>
+
+                  <div class="space-y-1.5">
+                    <label for="edit-season-{exp.id}" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Saison d'affectation</label>
+                    <select
+                      id="edit-season-{exp.id}"
+                      bind:value={editSeasonId}
+                      class="w-full px-2.5 py-2 border border-border bg-background rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+                    >
+                      {#each seasons as s}
+                        <option value={s.id}>{s.name}</option>
                       {/each}
                     </select>
                   </div>
@@ -429,41 +521,43 @@
               </div>
 
               <!-- Actions Row -->
-              <div class="border-t border-border bg-muted/20 px-5 py-3.5 flex justify-between items-center gap-3">
-                <button
-                  type="button"
-                  onclick={() => startEdit(exp)}
-                  disabled={submittingId !== null}
-                  class="px-4 py-2 border border-border hover:bg-muted text-sm font-semibold rounded-lg transition-colors cursor-pointer bg-background flex items-center gap-1.5"
-                >
-                  <Edit2 class="w-3.5 h-3.5" />
-                  Modifier
-                </button>
+              {#if !isClosed}
+                <div class="border-t border-border bg-muted/20 px-5 py-3.5 flex justify-between items-center gap-3">
+                  <button
+                    type="button"
+                    onclick={() => startEdit(exp)}
+                    disabled={submittingId !== null}
+                    class="px-4 py-2 border border-border hover:bg-muted text-sm font-semibold rounded-lg transition-colors cursor-pointer bg-background flex items-center gap-1.5"
+                  >
+                    <Edit2 class="w-3.5 h-3.5" />
+                    Modifier
+                  </button>
 
-                <div class="flex gap-3">
-                  <button
-                    type="button"
-                    onclick={() => handleAction(exp.id, 'reject')}
-                    disabled={submittingId !== null}
-                    class="px-4 py-2 border border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive text-sm font-semibold rounded-lg transition-colors cursor-pointer bg-background"
-                  >
-                    Rejeter
-                  </button>
-                  <button
-                    type="button"
-                    onclick={() => handleAction(exp.id, 'approve')}
-                    disabled={submittingId !== null}
-                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white border-0 text-sm font-semibold rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1"
-                  >
-                    {#if submittingId === exp.id}
-                      <span class="animate-pulse">Validation...</span>
-                    {:else}
-                      <Check class="w-4 h-4" />
-                      Rembourser
-                    {/if}
-                  </button>
+                  <div class="flex gap-3">
+                    <button
+                      type="button"
+                      onclick={() => handleAction(exp.id, 'reject')}
+                      disabled={submittingId !== null}
+                      class="px-4 py-2 border border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive text-sm font-semibold rounded-lg transition-colors cursor-pointer bg-background"
+                    >
+                      Rejeter
+                    </button>
+                    <button
+                      type="button"
+                      onclick={() => handleAction(exp.id, 'approve')}
+                      disabled={submittingId !== null}
+                      class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white border-0 text-sm font-semibold rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      {#if submittingId === exp.id}
+                        <span class="animate-pulse">Validation...</span>
+                      {:else}
+                        <Check class="w-4 h-4" />
+                        Rembourser
+                      {/if}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              {/if}
             {/if}
           </div>
         {/each}
@@ -478,40 +572,41 @@
         <p class="text-sm text-muted-foreground mt-1">Les dépenses approuvées ou rejetées apparaîtront ici.</p>
       </div>
     {:else}
-      <div class="overflow-x-auto bg-card border border-border rounded-xl shadow-sm">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="border-b border-border text-xs text-muted-foreground font-bold uppercase tracking-wider bg-muted/30">
-              <th class="py-3.5 px-4">Date</th>
-              <th class="py-3.5 px-4">Bénéficiaire</th>
-              <th class="py-3.5 px-4">Motif</th>
-              <th class="py-3.5 px-4">Catégorie</th>
-              <th class="py-3.5 px-4">Montant</th>
-              <th class="py-3.5 px-4">Justificatif</th>
-              <th class="py-3.5 px-4 text-right">Statut</th>
+      <div class="overflow-x-auto bg-card border border-border rounded-xl shadow-sm min-h-[180px]">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
+            <tr>
+              <th class="p-4">Date</th>
+              <th class="p-4">Bénéficiaire</th>
+              <th class="p-4">Motif</th>
+              <th class="p-4">Catégorie</th>
+              <th class="p-4">Montant</th>
+              <th class="p-4">Justificatif</th>
+              <th class="p-4 text-right">Statut</th>
+              <th class="p-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-border">
             {#each historyExpenses as exp}
-              <tr class="hover:bg-muted/10 transition-colors text-sm">
-                <td class="py-3.5 px-4 text-muted-foreground">
+              <tr class="hover:bg-muted/50 transition-colors">
+                <td class="p-4 text-muted-foreground">
                   {new Date(exp.createdAt).toLocaleDateString('fr-FR')}
                 </td>
-                <td class="py-3.5 px-4 font-bold text-foreground">
+                <td class="p-4 font-bold text-foreground">
                   {exp.emitterName}
                 </td>
-                <td class="py-3.5 px-4 max-w-xs truncate" title={exp.description}>
+                <td class="p-4 max-w-xs truncate" title={exp.description}>
                   {exp.description}
                 </td>
-                <td class="py-3.5 px-4">
+                <td class="p-4">
                   <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${categoryColors[exp.category] || 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20'}`}>
                     {categoryLabels[exp.category] || exp.category}
                   </span>
                 </td>
-                <td class="py-3.5 px-4 font-mono font-bold text-foreground font-semibold">
+                <td class="p-4 font-mono font-bold text-foreground font-semibold">
                   {(exp.amount / 100).toFixed(2)} €
                 </td>
-                <td class="py-3.5 px-4">
+                <td class="p-4">
                   {#if exp.photoUrl}
                     <button
                       type="button"
@@ -525,7 +620,7 @@
                     <span class="text-xs text-muted-foreground">Aucun</span>
                   {/if}
                 </td>
-                <td class="py-3.5 px-4 text-right">
+                <td class="p-4 text-right">
                   {#if exp.status === 'approved'}
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                       Remboursé
@@ -534,6 +629,35 @@
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-destructive/10 text-destructive border border-destructive/20">
                       Rejeté
                     </span>
+                  {/if}
+                </td>
+                <td class="p-4 text-right relative">
+                  {#if !isClosed}
+                    <div class="inline-block text-left">
+                      <button 
+                        type="button"
+                        onclick={(e) => toggleDropdown(exp.id, e)} 
+                        class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
+                        aria-label="Actions"
+                      >
+                        <MoreVertical class="w-4 h-4" />
+                      </button>
+
+                      {#if openDropdownId === exp.id}
+                        <div class="absolute right-4 mt-1 w-44 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border font-medium">
+                          <button
+                            type="button"
+                            onclick={() => handleCancelValidation(exp.id)}
+                            class="w-full px-3 py-1.5 text-xs text-primary hover:bg-primary/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                          >
+                            <RefreshCw class="w-3.5 h-3.5" />
+                            Remettre en attente
+                          </button>
+                        </div>
+                      {/if}
+                    </div>
+                  {:else}
+                    <span class="text-xs text-muted-foreground italic">Aucune</span>
                   {/if}
                 </td>
               </tr>

@@ -11,12 +11,18 @@
   interface Props {
     activeSeasonId: string;
     members?: Member[];
+    categories?: {
+      id: string;
+      adminLabel: string;
+      adherentLabel: string;
+      hideInExpenses: boolean;
+    }[];
   }
 
-  const { activeSeasonId, members = [] }: Props = $props();
+  const { activeSeasonId, members = [], categories = [] }: Props = $props();
 
   let emitterName = $state('');
-  let category = $state('fonctionnement_administratif');
+  let category = $state('');
   let description = $state('');
   let amountStr = $state('');
   let photoUrl = $state<string | null>(null);
@@ -31,7 +37,7 @@
   let successMsg = $state<string | null>(null);
   let errorMsg = $state<string | null>(null);
 
-  const categories = [
+  const fallbackCategories = [
     { value: 'fonctionnement_administratif', label: 'Frais de fonctionnement & administratif' },
     { value: 'materiel_club', label: 'Matériel (hors cordages)' },
     { value: 'volants', label: 'Volants (vente ou achat)' },
@@ -43,10 +49,22 @@
     { value: 'subventions', label: 'Subventions (aides publiques)' },
     { value: 'actions_jeunes', label: 'Actions Jeunes (stages jeunes...)' },
     { value: 'tournois_senior', label: 'Tournois Senior' },
-    { value: 'cordage_vente', label: 'Cordage (vente aux adhérents)' },
-    { value: 'salaires_charges', label: 'Salaires et Charges' },
-    { value: 'licences_federation', label: 'Licences (versements fédération)' }
+    { value: 'cordage_vente', label: 'Cordage (vente aux adhérents)' }
   ];
+
+  const visibleCategories = $derived(
+    categories && categories.length > 0
+      ? categories
+          .filter(c => !c.hideInExpenses)
+          .map(c => ({ value: c.id, label: c.adherentLabel }))
+      : fallbackCategories
+  );
+
+  $effect(() => {
+    if (visibleCategories.length > 0 && !category) {
+      category = visibleCategories[0].value;
+    }
+  });
 
   // Derived member lists for dropdown
   const filteredMembers = $derived(
@@ -205,7 +223,7 @@
       emitterName = '';
       selectedMemberId = '';
       memberSearchQuery = '';
-      category = 'fonctionnement_administratif';
+      category = visibleCategories[0]?.value || 'fonctionnement_administratif';
       description = '';
       amountStr = '';
       photoUrl = null;
@@ -320,7 +338,7 @@
           bind:value={category}
           class="w-full px-3 py-2.5 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
         >
-          {#each categories as cat}
+          {#each visibleCategories as cat}
             <option value={cat.value}>{cat.label}</option>
           {/each}
         </select>

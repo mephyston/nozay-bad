@@ -26,12 +26,19 @@
     active: boolean;
   }
 
-  let { report, seasonId, seasons = [] }: { report: ReportData; seasonId: string; seasons?: Season[] } = $props();
+  interface DbCategory {
+    id: number;
+    adminLabel: string;
+    adherentLabel: string;
+    hideInExpenses: boolean;
+  }
+
+  let { report, seasonId, seasons = [], categories = [] }: { report: ReportData; seasonId: string; seasons?: Season[]; categories?: DbCategory[] } = $props();
 
   // svelte-ignore state_referenced_locally
   let selectedSeason = $state(seasonId);
 
-  const categories: Record<string, string> = {
+  const legacyCategoryLabels: Record<string, string> = {
     adhesions: 'Adhésions / Inscriptions membres',
     partenariats: 'Partenariats / Sponsoring',
     subventions: 'Subventions publiques',
@@ -52,6 +59,17 @@
     frais_administratifs: 'Frais Admin / Banque',
     divers_depense: 'Autres dépenses'
   };
+
+  function getCategoryLabel(key: string): string {
+    const id = parseInt(key);
+    if (!isNaN(id)) {
+      const found = categories.find(c => c.id === id);
+      if (found) {
+        return found.adminLabel;
+      }
+    }
+    return legacyCategoryLabels[key] || key;
+  }
 
   const accountLabels = {
     current: 'Compte Courant',
@@ -99,7 +117,7 @@
           {#each Object.entries(report.compteResultat.categories) as [key, cat]}
             {#if cat.type === 'recette'}
               <div class="flex items-center justify-between text-sm">
-                <span class="text-muted-foreground">{categories[key as keyof typeof categories] || key}</span>
+                <span class="text-muted-foreground">{getCategoryLabel(key)}</span>
                 <span class="font-semibold">{(cat.total / 100).toFixed(2)} €</span>
               </div>
             {/if}
@@ -119,7 +137,7 @@
           {#each Object.entries(report.compteResultat.categories) as [key, cat]}
             {#if cat.type === 'depense'}
               <div class="flex items-center justify-between text-sm">
-                <span class="text-muted-foreground">{categories[key as keyof typeof categories] || key}</span>
+                <span class="text-muted-foreground">{getCategoryLabel(key)}</span>
                 <span class="font-semibold">{(cat.total / 100).toFixed(2)} €</span>
               </div>
             {/if}

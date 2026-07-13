@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, X, Clock, ShoppingBag, Search, AlertCircle, Calendar, History, User } from "lucide-svelte";
+  import { Check, X, Clock, ShoppingBag, Search, AlertCircle, Calendar, History, User, MoreVertical } from "lucide-svelte";
 
   interface Order {
     id: number;
@@ -222,6 +222,19 @@
       processingId = null;
     }
   }
+
+  let openDropdownId = $state<number | null>(null);
+
+  function toggleDropdown(id: number, e: MouseEvent) {
+    e.stopPropagation();
+    openDropdownId = openDropdownId === id ? null : id;
+  }
+
+  $effect(() => {
+    const handleGlobalClick = () => { openDropdownId = null; };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  });
 </script>
 
 <div class="space-y-6">
@@ -299,26 +312,26 @@
             </h2>
 
             <div class="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-              <div class="overflow-x-auto">
+              <div class="overflow-x-auto min-h-[180px]">
                 <table class="w-full text-left border-collapse text-sm">
-                  <thead>
-                    <tr class="bg-muted/40 border-b border-border text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-                      <th class="py-3 px-4">Date</th>
-                      <th class="py-3 px-4">Adhérent</th>
-                      <th class="py-3 px-4">Article</th>
-                      <th class="py-3 px-4 text-center">Quantité</th>
-                      <th class="py-3 px-4">Paiement</th>
-                      <th class="py-3 px-4 text-right">Total</th>
-                      <th class="py-3 px-4 text-center">Actions</th>
+                  <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
+                    <tr>
+                      <th class="p-4">Date</th>
+                      <th class="p-4">Adhérent</th>
+                      <th class="p-4">Article</th>
+                      <th class="p-4 text-center">Quantité</th>
+                      <th class="p-4">Paiement</th>
+                      <th class="p-4 text-right">Total</th>
+                      <th class="p-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-border">
                     {#each group.orders as item (item.order.id)}
-                      <tr class="hover:bg-muted/30 transition-colors">
-                        <td class="py-3 px-4 text-muted-foreground whitespace-nowrap">
+                      <tr class="hover:bg-muted/50 transition-colors">
+                        <td class="p-4 text-muted-foreground whitespace-nowrap">
                           {new Date(item.order.createdAt).toLocaleDateString('fr-FR')}
                         </td>
-                        <td class="py-3 px-4">
+                        <td class="p-4">
                           {#if item.member}
                             <div class="font-medium text-foreground">
                               {item.member.lastName} {item.member.firstName}
@@ -330,7 +343,7 @@
                             <span class="text-xs text-muted-foreground italic">Inconnu</span>
                           {/if}
                         </td>
-                        <td class="py-3 px-4">
+                        <td class="p-4">
                           {#if item.product}
                             <div class="font-medium text-foreground">{item.product.name}</div>
                             <div class="flex items-center gap-2 mt-1">
@@ -349,40 +362,47 @@
                             <span class="text-xs text-muted-foreground italic">Produit supprimé</span>
                           {/if}
                         </td>
-                        <td class="py-3 px-4 text-center font-semibold text-foreground">
+                        <td class="p-4 text-center font-semibold text-foreground">
                           {item.order.quantity}
                         </td>
-                        <td class="py-3 px-4 whitespace-nowrap">
+                        <td class="p-4 whitespace-nowrap">
                           <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-muted text-muted-foreground border border-border">
                             {paymentMethodLabels[item.order.paymentMethod] || item.order.paymentMethod}
                           </span>
                         </td>
-                        <td class="py-3 px-4 text-right font-bold text-foreground">
+                        <td class="p-4 text-right font-bold text-foreground">
                           {(item.order.totalAmount / 100).toFixed(2)} €
                         </td>
-                        <td class="py-3 px-4 text-center">
-                          <div class="flex items-center justify-center gap-2">
-                            <button
-                              onclick={() => handleApprove(item.order.id)}
-                              disabled={processingId !== null || (item.product && item.product.stock < item.order.quantity)}
-                              class="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:hover:bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors shadow-sm cursor-pointer"
-                              title={item.product && item.product.stock < item.order.quantity ? "Stock insuffisant" : "Valider la commande"}
+                        <td class="p-4 text-right relative">
+                          <div class="inline-block text-left">
+                            <button 
+                              onclick={(e) => toggleDropdown(item.order.id, e)} 
+                              class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
+                              aria-label="Actions"
                             >
-                              {#if processingId === item.order.id}
-                                <span class="animate-pulse">En cours...</span>
-                              {:else}
-                                <Check class="h-3.5 w-3.5" />
-                                Valider
-                              {/if}
+                              <MoreVertical class="w-4 h-4" />
                             </button>
-                            <button
-                              onclick={() => handleReject(item.order.id)}
-                              disabled={processingId !== null}
-                              class="inline-flex items-center gap-1 bg-destructive/10 hover:bg-destructive/20 disabled:opacity-50 text-destructive text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors border border-transparent hover:border-destructive/30 cursor-pointer"
-                            >
-                              <X class="h-3.5 w-3.5" />
-                              Refuser
-                            </button>
+
+                            {#if openDropdownId === item.order.id}
+                              <div class="absolute right-4 mt-1 w-36 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border font-medium">
+                                <button
+                                  onclick={() => handleApprove(item.order.id)}
+                                  disabled={processingId !== null || (item.product && item.product.stock < item.order.quantity)}
+                                  class="w-full px-3 py-1.5 text-xs text-emerald-600 hover:bg-emerald-500/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent disabled:opacity-50"
+                                >
+                                  <Check class="w-3.5 h-3.5" />
+                                  Valider
+                                </button>
+                                <button
+                                  onclick={() => handleReject(item.order.id)}
+                                  disabled={processingId !== null}
+                                  class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                                >
+                                  <X class="w-3.5 h-3.5" />
+                                  Refuser
+                                </button>
+                              </div>
+                            {/if}
                           </div>
                         </td>
                       </tr>
@@ -413,24 +433,24 @@
             <div class="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
               <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse text-sm">
-                  <thead>
-                    <tr class="bg-muted/40 border-b border-border text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-                      <th class="py-3 px-4">Date</th>
-                      <th class="py-3 px-4">Adhérent</th>
-                      <th class="py-3 px-4">Article</th>
-                      <th class="py-3 px-4 text-center">Quantité</th>
-                      <th class="py-3 px-4">Paiement</th>
-                      <th class="py-3 px-4 text-right">Total</th>
-                      <th class="py-3 px-4 text-center">Statut</th>
+                  <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
+                    <tr>
+                      <th class="p-4">Date</th>
+                      <th class="p-4">Adhérent</th>
+                      <th class="p-4">Article</th>
+                      <th class="p-4 text-center">Quantité</th>
+                      <th class="p-4">Paiement</th>
+                      <th class="p-4 text-right">Total</th>
+                      <th class="p-4 text-center">Statut</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-border">
                     {#each group.orders as item (item.order.id)}
-                      <tr class="hover:bg-muted/30 transition-colors">
-                        <td class="py-3 px-4 text-muted-foreground whitespace-nowrap">
+                      <tr class="hover:bg-muted/50 transition-colors">
+                        <td class="p-4 text-muted-foreground whitespace-nowrap">
                           {new Date(item.order.createdAt).toLocaleDateString('fr-FR')}
                         </td>
-                        <td class="py-3 px-4">
+                        <td class="p-4">
                           {#if item.member}
                             <div class="font-medium text-foreground">
                               {item.member.lastName} {item.member.firstName}
@@ -442,25 +462,25 @@
                             <span class="text-xs text-muted-foreground italic">Inconnu</span>
                           {/if}
                         </td>
-                        <td class="py-3 px-4">
+                        <td class="p-4">
                           {#if item.product}
                             <span class="font-medium text-foreground">{item.product.name}</span>
                           {:else}
                             <span class="text-xs text-muted-foreground italic">Produit supprimé</span>
                           {/if}
                         </td>
-                        <td class="py-3 px-4 text-center font-semibold text-foreground">
+                        <td class="p-4 text-center font-semibold text-foreground">
                           {item.order.quantity}
                         </td>
-                        <td class="py-3 px-4 whitespace-nowrap">
+                        <td class="p-4 whitespace-nowrap">
                           <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-muted text-muted-foreground border border-border">
                             {paymentMethodLabels[item.order.paymentMethod] || item.order.paymentMethod}
                           </span>
                         </td>
-                        <td class="py-3 px-4 text-right font-bold text-foreground">
+                        <td class="p-4 text-right font-bold text-foreground">
                           {(item.order.totalAmount / 100).toFixed(2)} €
                         </td>
-                        <td class="py-3 px-4 text-center">
+                        <td class="p-4 text-center">
                           {#if item.order.status === 'approved'}
                             <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                               <Check class="w-3 h-3" />

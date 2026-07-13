@@ -12,6 +12,7 @@ export const seasonsTable = sqliteTable('seasons', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   active: integer('active', { mode: 'boolean' }).notNull().default(false),
+  closed: integer('closed', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
@@ -58,7 +59,7 @@ export const transactionsTable = sqliteTable('transactions', {
   type: text('type', { enum: ['recette', 'depense', 'transfert'] }).notNull(),
   accountId: text('account_id', { enum: ['current', 'savings', 'cash'] }).notNull(),
   destinationAccountId: text('destination_account_id', { enum: ['current', 'savings', 'cash'] }),
-  category: text('category'),
+  category: integer('category'),
   amount: integer('amount').notNull(),
   date: text('date').notNull(), // Format YYYY-MM-DD
   paymentMethod: text('payment_method', { 
@@ -141,13 +142,21 @@ export const expensesTable = sqliteTable('expenses', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   seasonId: text('season_id').notNull().references(() => seasonsTable.id),
   description: text('description').notNull(),
-  category: text('category').notNull(),
+  category: integer('category').notNull(),
   amount: integer('amount').notNull(),
   photoUrl: text('photo_url'),
   status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
   emitterName: text('emitter_name').notNull(),
   memberId: integer('member_id').references(() => membersTable.id),
   transactionId: integer('transaction_id').references(() => transactionsTable.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+export const categoriesTable = sqliteTable('categories', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  adminLabel: text('admin_label').notNull(),
+  adherentLabel: text('adherent_label').notNull(),
+  hideInExpenses: integer('hide_in_expenses', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 

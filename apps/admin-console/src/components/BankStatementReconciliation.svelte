@@ -28,6 +28,7 @@
     id: string;
     name: string;
     active: boolean;
+    closed?: boolean;
   }
 
   interface Member {
@@ -54,6 +55,7 @@
 
   // svelte-ignore state_referenced_locally
   let selectedSeason = $state(seasonId);
+  const isClosed = $derived(seasons.find(s => s.id === selectedSeason)?.closed || false);
   let selectedTx = $state<BankTransaction | null>(null);
   let isSubmitting = $state(false);
   let isAnalyzing = $state(false);
@@ -74,6 +76,7 @@
   let isCategoryDropdownOpen = $state(false);
   let memberSearchQuery = $state('');
   let categorySearchQuery = $state('');
+  let targetSeasonId = $state(selectedSeason);
 
   const accountLabels = {
     current: 'Compte Courant',
@@ -144,6 +147,7 @@
       amountToLink = parseFloat((remainingAmount / 100).toFixed(2));
       memberSearchQuery = '';
       categorySearchQuery = '';
+      targetSeasonId = selectedSeason;
     }
   });
 
@@ -203,9 +207,208 @@
     }
   }
 
+  // Keep track of the currently focused transaction in sessionStorage
+  $effect(() => {
+    // If no transaction is selected, check sessionStorage
+    if (!selectedTx && bankTransactions.length > 0) {
+      const savedIdStr = sessionStorage.getItem('reconcile_active_bt_id');
+      if (savedIdStr) {
+        const savedId = parseInt(savedIdStr);
+        const found = bankTransactions.find(t => t.id === savedId && t.status === activeTab);
+        if (found) {
+          selectedTx = found;
+        } else {
+          sessionStorage.removeItem('reconcile_active_bt_id');
+        }
+      }
+    }
+  });
+
+  $effect(() => {
+    if (selectedTx) {
+      sessionStorage.setItem('reconcile_active_bt_id', selectedTx.id.toString());
+    }
+  });
+
+  function prepareNextFocus(currentBtId: number, isFullyReconciled: boolean) {
+    if (!isFullyReconciled) {
+      sessionStorage.setItem('reconcile_active_bt_id', currentBtId.toString());
+    } else {
+      const index = displayedTransactions.findIndex(t => t.id === currentBtId);
+      if (index !== -1) {
+        // Option 1: Next pending transaction
+        if (index + 1 < displayedTransactions.length) {
+          sessionStorage.setItem('reconcile_active_bt_id', displayedTransactions[index + 1].id.toString());
+        } 
+        // Option 2: Previous pending transaction
+        else if (index - 1 >= 0) {
+          sessionStorage.setItem('reconcile_active_bt_id', displayedTransactions[index - 1].id.toString());
+        } 
+        // No more pending transactions
+        else {
+          sessionStorage.removeItem('reconcile_active_bt_id');
+        }
+      } else {
+        sessionStorage.removeItem('reconcile_active_bt_id');
+      }
+    }
+  }
+
+  // Keyboard navigation for Member dropdown
+  let memberHighlightedIndex = $state(-1);
+  $effect(() => {
+    if (!isMemberDropdownOpen) {
+      memberHighlightedIndex = -1;
+    }
+  });
+  $effect(() => {
+    const total = filteredMembers.length + 1;
+    if (memberHighlightedIndex >= total) {
+      memberHighlightedIndex = total - 1;
+    }
+  });
+
+  function selectMember(idStr: string, name: string) {
+    selectedMemberId = idStr;
+    memberSearchQuery = name;
+    isMemberDropdownOpen = false;
+    memberHighlightedIndex = -1;
+  }
+
+  function handleMemberKeyDown(e: KeyboardEvent) {
+    if (!isMemberDropdownOpen) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        isMemberDropdownOpen = true;
+        memberHighlightedIndex = 0;
+        e.preventDefault();
+      }
+      return;
+    }
+
+    const total = filteredMembers.length + 1;
+
+    if (e.key === 'ArrowDown') {
+      memberHighlightedIndex = (memberHighlightedIndex + 1) % total;
+      e.preventDefault();
+      scrollMemberOptionIntoView(memberHighlightedIndex);
+    } else if (e.key === 'ArrowUp') {
+      memberHighlightedIndex = (memberHighlightedIndex - 1 + total) % total;
+      e.preventDefault();
+      scrollMemberOptionIntoView(memberHighlightedIndex);
+    } else if (e.key === 'Enter') {
+      if (memberHighlightedIndex === 0) {
+        selectMember('', '');
+        e.preventDefault();
+      } else if (memberHighlightedIndex > 0 && memberHighlightedIndex < total) {
+        const m = filteredMembers[memberHighlightedIndex - 1];
+        selectMember(m.id.toString(), `${m.lastName} ${m.firstName}`);
+        e.preventDefault();
+      }
+    } else if (e.key === 'Escape') {
+      isMemberDropdownOpen = false;
+      e.preventDefault();
+    }
+  }
+
+  function scrollMemberOptionIntoView(index: number) {
+    setTimeout(() => {
+      const container = document.getElementById('member-listbox');
+      const option = document.getElementById(`member-option-${index}`);
+      if (container && option) {
+        const containerTop = container.scrollTop;
+        const containerBottom = containerTop + container.clientHeight;
+        const optionTop = option.offsetTop;
+        const optionBottom = optionTop + option.clientHeight;
+
+        if (optionTop < containerTop) {
+          container.scrollTop = optionTop;
+        } else if (optionBottom > containerBottom) {
+          container.scrollTop = optionBottom - container.clientHeight;
+        }
+      }
+    }, 0);
+  }
+
+  // Keyboard navigation for Category dropdown
+  let categoryHighlightedIndex = $state(-1);
+  $effect(() => {
+    if (!isCategoryDropdownOpen) {
+      categoryHighlightedIndex = -1;
+    }
+  });
+  $effect(() => {
+    const total = filteredCategories.length;
+    if (categoryHighlightedIndex >= total) {
+      categoryHighlightedIndex = total - 1;
+    }
+  });
+
+  function selectCategory(id: string, name: string) {
+    category = id;
+    categorySearchQuery = name;
+    isCategoryDropdownOpen = false;
+    categoryHighlightedIndex = -1;
+  }
+
+  function handleCategoryKeyDown(e: KeyboardEvent) {
+    if (!isCategoryDropdownOpen) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        isCategoryDropdownOpen = true;
+        categoryHighlightedIndex = 0;
+        e.preventDefault();
+      }
+      return;
+    }
+
+    const total = filteredCategories.length;
+
+    if (e.key === 'ArrowDown') {
+      categoryHighlightedIndex = (categoryHighlightedIndex + 1) % total;
+      e.preventDefault();
+      scrollCategoryOptionIntoView(categoryHighlightedIndex);
+    } else if (e.key === 'ArrowUp') {
+      categoryHighlightedIndex = (categoryHighlightedIndex - 1 + total) % total;
+      e.preventDefault();
+      scrollCategoryOptionIntoView(categoryHighlightedIndex);
+    } else if (e.key === 'Enter') {
+      if (categoryHighlightedIndex >= 0 && categoryHighlightedIndex < total) {
+        const cat = filteredCategories[categoryHighlightedIndex];
+        selectCategory(cat.id, cat.name);
+        e.preventDefault();
+      }
+    } else if (e.key === 'Escape') {
+      isCategoryDropdownOpen = false;
+      e.preventDefault();
+    }
+  }
+
+  function scrollCategoryOptionIntoView(index: number) {
+    setTimeout(() => {
+      const container = document.getElementById('category-listbox');
+      const option = document.getElementById(`category-option-${index}`);
+      if (container && option) {
+        const containerTop = container.scrollTop;
+        const containerBottom = containerTop + container.clientHeight;
+        const optionTop = option.offsetTop;
+        const optionBottom = optionTop + option.clientHeight;
+
+        if (optionTop < containerTop) {
+          container.scrollTop = optionTop;
+        } else if (optionBottom > containerBottom) {
+          container.scrollTop = optionBottom - container.clientHeight;
+        }
+      }
+    }, 0);
+  }
+
   async function handleMatch(btId: number, transactionId: number) {
     isSubmitting = true;
     try {
+      const matchedTx = glTransactions.find(t => t.id === transactionId);
+      const matchedAmount = matchedTx ? Math.abs(matchedTx.amount) : 0;
+      const isFullyReconciled = (remainingAmount - matchedAmount) <= 10;
+      prepareNextFocus(btId, isFullyReconciled);
+
       const res = await fetch('/admin/compta/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -227,6 +430,10 @@
   async function handleCreateAndMatch(bt: BankTransaction) {
     isSubmitting = true;
     try {
+      const linkedAmount = Math.round(amountToLink * 100);
+      const isFullyReconciled = (remainingAmount - linkedAmount) <= 10;
+      prepareNextFocus(bt.id, isFullyReconciled);
+
       const res = await fetch('/admin/compta/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -235,7 +442,7 @@
           btId: bt.id,
           memberId: selectedMemberId ? parseInt(selectedMemberId) : null,
           transaction: {
-            seasonId: selectedSeason,
+            seasonId: targetSeasonId,
             type: bt.amount < 0 ? 'depense' : 'recette',
             accountId: bt.accountId,
             category,
@@ -258,6 +465,8 @@
   async function handleMatchWithAI(btId: number, memberId: number | null, cat: string) {
     isSubmitting = true;
     try {
+      prepareNextFocus(btId, true);
+
       const res = await fetch('/admin/compta/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -290,6 +499,10 @@
     if (!confirm('Voulez-vous supprimer cette écriture liée ? Le solde de l\'adhérent et le rapprochement seront mis à jour.')) return;
     isSubmitting = true;
     try {
+      if (selectedTx) {
+        prepareNextFocus(selectedTx.id, false);
+      }
+
       const res = await fetch('/admin/compta/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -306,6 +519,8 @@
   async function handleUnignore(btId: number) {
     isSubmitting = true;
     try {
+      prepareNextFocus(btId, false);
+
       const res = await fetch('/admin/compta/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -323,6 +538,8 @@
     if (!confirm('Voulez-vous ignorer cette transaction bancaire ?')) return;
     isSubmitting = true;
     try {
+      prepareNextFocus(btId, true);
+
       const res = await fetch('/admin/compta/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -339,11 +556,18 @@
 
 <div class="space-y-6">
   <div class="flex items-center justify-between">
-    <div>
-      <h1 class="text-xl font-bold tracking-tight">Rapprochement bancaire</h1>
-      <p class="text-xs text-muted-foreground">Pointez les lignes de relevé Société Générale avec le grand livre ou les adhérents.</p>
+    <div class="flex items-center gap-3">
+      <div>
+        <h1 class="text-xl font-bold tracking-tight">Rapprochement bancaire</h1>
+        <p class="text-xs text-muted-foreground">Pointez les lignes de relevé Société Générale avec le grand livre ou les adhérents.</p>
+      </div>
+      {#if isClosed}
+        <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
+          Saison clôturée (Lecture seule)
+        </span>
+      {/if}
     </div>
-    {#if bankTransactions.length > 0}
+    {#if bankTransactions.length > 0 && !isClosed}
       <button 
         type="button"
         onclick={() => showImportModal = true}
@@ -489,7 +713,7 @@
 
         <div class="p-3 border-b border-border bg-muted/20 flex items-center justify-between shrink-0">
           <span class="font-bold text-xs text-muted-foreground">Liste des écritures ({displayedTransactions.length})</span>
-          {#if activeTab === 'pending'}
+          {#if activeTab === 'pending' && !isClosed}
             <button onclick={handleAnalyze} disabled={isAnalyzing} class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-bold rounded-md shadow-sm cursor-pointer border-0">
               <Sparkles class="w-3.5 h-3.5" />
               {isAnalyzing ? 'Analyse IA...' : 'Lancer l\'analyse IA'}
@@ -547,6 +771,16 @@
                 {selectedTx.amount < 0 ? '' : '+'}{(selectedTx.amount / 100).toFixed(2)} €
               </div>
             </div>
+
+            {#if isClosed}
+              <div class="p-4 bg-muted border border-border rounded-xl flex flex-col items-center justify-center text-center space-y-2 select-none">
+                <ShieldAlert class="w-8 h-8 text-muted-foreground/60" />
+                <h4 class="text-xs font-bold text-foreground">Saison Clôturée</h4>
+                <p class="text-xs text-muted-foreground leading-relaxed">
+                  Cette saison comptable est clôturée. Les écritures et les rapprochements bancaires ne peuvent plus être modifiés.
+                </p>
+              </div>
+            {/if}
 
             <!-- Ventilation / Pièces déjà liées -->
             {#if linkedGlTxs.length > 0}
@@ -608,8 +842,8 @@
               </div>
             {/if}
 
-            <!-- Étape 0 : Suggestion IA prioritaires (Seulement si rien n'a encore été ventilé et pending) -->
-            {#if selectedTx.aiSuggestions && linkedGlTxs.length === 0 && selectedTx.status === 'pending'}
+            <!-- Étape 0 : Suggestion IA prioritaires (Seulement si rien n'a encore été ventilé, pending et non clôturé) -->
+            {#if !isClosed && selectedTx.aiSuggestions && linkedGlTxs.length === 0 && selectedTx.status === 'pending'}
               {@const sug = JSON.parse(selectedTx.aiSuggestions)}
               <div class="border border-primary/30 bg-primary/5 rounded-xl p-4 space-y-3">
                 <div class="flex items-center gap-1.5 text-xs font-bold text-primary">
@@ -634,8 +868,8 @@
               </div>
             {/if}
 
-            <!-- Étape 1 : Suggestions d'association (Seulement si rien n'a encore été ventilé et pending) -->
-            {#if linkedGlTxs.length === 0 && selectedTx.status === 'pending'}
+            <!-- Étape 1 : Suggestions d'association (Seulement si rien n'a encore été ventilé, pending et non clôturé) -->
+            {#if !isClosed && linkedGlTxs.length === 0 && selectedTx.status === 'pending'}
               <div class="border border-border rounded-xl p-4 space-y-3 bg-muted/40">
                 <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Suggestions du Grand Livre (+/- 7 jours)</h4>
                 {#each suggestions as sug}
@@ -654,8 +888,8 @@
               </div>
             {/if}
 
-            <!-- Étape 2 : Création d'une nouvelle écriture (uniquement si reste à ventiler et pending) -->
-            {#if remainingAmount > 0 && selectedTx.status === 'pending'}
+            <!-- Étape 2 : Création d'une nouvelle écriture (uniquement si reste à ventiler, pending et non clôturé) -->
+            {#if !isClosed && remainingAmount > 0 && selectedTx.status === 'pending'}
               <div class="border border-border rounded-xl p-4 space-y-3">
                 <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   {linkedGlTxs.length > 0 ? 'Ventiler une nouvelle partie' : 'Créer et pointer manuellement'}
@@ -668,6 +902,7 @@
                     <input
                       id="member-input"
                       type="text"
+                      autocomplete="off"
                       placeholder="Tapez pour rechercher un adhérent..."
                       class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium pr-6"
                       value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
@@ -682,14 +917,16 @@
                       onblur={() => {
                         setTimeout(() => { isMemberDropdownOpen = false; }, 200);
                       }}
+                      onkeydown={handleMemberKeyDown}
                     />
                     <span class="absolute right-2 top-6 text-muted-foreground pointer-events-none text-[8px]">▼</span>
                     
                     {#if isMemberDropdownOpen}
-                      <div class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded shadow-lg divide-y divide-border">
+                      <div id="member-listbox" class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded shadow-lg divide-y divide-border">
                         <button
                           type="button"
-                          class="w-full text-left px-2.5 py-1.5 text-xs hover:bg-muted text-muted-foreground transition-colors font-medium border-0 cursor-pointer italic"
+                          id="member-option-0"
+                          class="w-full text-left px-2.5 py-1.5 text-xs transition-colors font-medium border-0 cursor-pointer italic {memberHighlightedIndex === 0 ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-muted-foreground'}"
                           onmousedown={() => {
                             selectedMemberId = '';
                             memberSearchQuery = '';
@@ -697,10 +934,11 @@
                         >
                           -- Aucun adhérent (Opération diverse) --
                         </button>
-                        {#each filteredMembers as m}
+                        {#each filteredMembers as m, index}
                           <button
                             type="button"
-                            class="w-full text-left px-2.5 py-1.5 text-xs hover:bg-muted text-foreground transition-colors font-medium border-0 cursor-pointer"
+                            id={`member-option-${index + 1}`}
+                            class="w-full text-left px-2.5 py-1.5 text-xs transition-colors font-medium border-0 cursor-pointer {memberHighlightedIndex === index + 1 ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground'}"
                             onmousedown={() => {
                               selectedMemberId = m.id.toString();
                               memberSearchQuery = `${m.lastName} ${m.firstName}`;
@@ -722,6 +960,7 @@
                       <input
                         id="category-input"
                         type="text"
+                        autocomplete="off"
                         placeholder="Tapez pour filtrer..."
                         class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium pr-6"
                         value={isCategoryDropdownOpen ? categorySearchQuery : categoryDisplayVal}
@@ -736,15 +975,17 @@
                         onblur={() => {
                           setTimeout(() => { isCategoryDropdownOpen = false; }, 200);
                         }}
+                        onkeydown={handleCategoryKeyDown}
                       />
                       <span class="absolute right-2 top-6 text-muted-foreground pointer-events-none text-[8px]">▼</span>
                       
                       {#if isCategoryDropdownOpen}
-                        <div class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded shadow-lg divide-y divide-border">
-                          {#each filteredCategories as cat}
+                        <div id="category-listbox" class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded shadow-lg divide-y divide-border">
+                          {#each filteredCategories as cat, index}
                             <button
                               type="button"
-                              class="w-full text-left px-2.5 py-1.5 text-xs hover:bg-muted text-foreground transition-colors font-medium border-0 cursor-pointer"
+                              id={`category-option-${index}`}
+                              class="w-full text-left px-2.5 py-1.5 text-xs transition-colors font-medium border-0 cursor-pointer {categoryHighlightedIndex === index ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground'}"
                               onmousedown={() => {
                                 category = cat.id;
                                 categorySearchQuery = cat.name;
@@ -773,14 +1014,25 @@
                     </div>
                   </div>
 
-                  <!-- Moyen de paiement -->
-                  <div class="space-y-1">
-                    <label for="method-select" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Moyen de paiement</label>
-                    <select id="method-select" class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium" bind:value={paymentMethod}>
-                      <option value="virement">Virement</option>
-                      <option value="cheque">Chèque</option>
-                      <option value="especes">Espèces</option>
-                    </select>
+                  <!-- Moyen de paiement & Saison d'affectation -->
+                  <div class="grid grid-cols-2 gap-2">
+                    <div class="space-y-1">
+                      <label for="method-select" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Moyen de paiement</label>
+                      <select id="method-select" class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium" bind:value={paymentMethod}>
+                        <option value="virement">Virement</option>
+                        <option value="cheque">Chèque</option>
+                        <option value="especes">Espèces</option>
+                      </select>
+                    </div>
+
+                    <div class="space-y-1">
+                      <label for="season-select-reconcile" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Saison d'affectation</label>
+                      <select id="season-select-reconcile" class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium" bind:value={targetSeasonId}>
+                        {#each seasons as s}
+                          <option value={s.id}>{s.name}</option>
+                        {/each}
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -793,7 +1045,7 @@
 
           <!-- Boutons actions secondaires -->
           <div class="pt-4 border-t border-border flex justify-between gap-4">
-            {#if selectedTx.status === 'pending'}
+            {#if !isClosed && selectedTx.status === 'pending'}
               <button onclick={() => handleIgnore(selectedTx!.id)} class="flex-1 py-2 border border-border bg-transparent text-destructive hover:bg-destructive/10 text-xs font-semibold rounded cursor-pointer font-medium">
                 Ignorer cette écriture
               </button>

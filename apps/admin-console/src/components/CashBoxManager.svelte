@@ -174,7 +174,7 @@
       </p>
     </div>
     <div class="flex items-center gap-3 shrink-0">
-      <span class="text-sm font-semibold text-muted-foreground">Saison :</span>
+      <span class="text-sm font-semibold text-muted-foreground whitespace-nowrap">Saison&nbsp;:</span>
       <select
         bind:value={selectedSeason}
         onchange={applySeasonChange}

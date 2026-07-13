@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, usersTable, seasonBalancesTable, transactionsTable, seasonsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable } from './schema';
+import { membersTable, usersTable, seasonBalancesTable, transactionsTable, seasonsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, categoriesTable } from './schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { DatabaseSync } from 'node:sqlite';
 import * as fs from 'node:fs';
@@ -438,6 +438,43 @@ describe('Database Tests', () => {
     expect(order.productId).toBe(product.id);
     expect(order.quantity).toBe(2);
     expect(order.totalAmount).toBe(3000);
+  });
+
+  it('should insert and query categories correctly', async () => {
+    const mockD1 = new MockD1Database();
+    
+    // Apply migrations
+    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationFiles = fs.readdirSync(migrationsDir)
+      .filter(f => f.endsWith('.sql'))
+      .sort();
+
+    for (const file of migrationFiles) {
+      const sqlPath = path.join(migrationsDir, file);
+      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+      const statements = sqlContent.split('--> statement-breakpoint');
+      for (const statement of statements) {
+        if (statement.trim()) {
+          await mockD1.exec(statement);
+        }
+      }
+    }
+
+    const db = drizzle(mockD1 as any);
+
+    // List seeded categories (our migration seeds 14 default categories)
+    const list = await db.select().from(categoriesTable).all();
+    expect(list.length).toBeGreaterThanOrEqual(14);
+
+    const volantCat = list.find(c => c.adherentLabel === 'Volants');
+    expect(volantCat).toBeDefined();
+    expect(volantCat?.adminLabel).toBe('Volants (vente ou achat)');
+    expect(volantCat?.adherentLabel).toBe('Volants');
+    expect(volantCat?.hideInExpenses).toBe(false);
+
+    const salaireCat = list.find(c => c.adminLabel === 'Salaires et Charges');
+    expect(salaireCat).toBeDefined();
+    expect(salaireCat?.hideInExpenses).toBe(true);
   });
 });
 
