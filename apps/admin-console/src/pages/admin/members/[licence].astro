@@ -1,0 +1,44 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import MemberProfile from '../../../components/MemberProfile.svelte';
+
+const { licence } = Astro.params;
+const apiService = Astro.locals.runtime.env.API_SERVICE;
+
+let member = null;
+let errorMsg = '';
+
+try {
+  const res = await apiService.fetch(`http://localhost/members/${licence}`);
+  if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error(`Adhérent avec la licence ${licence} introuvable.`);
+    }
+    throw new Error('Erreur de communication avec le service API.');
+  }
+  const body = await res.json();
+  member = body.data;
+} catch (err: any) {
+  errorMsg = err.message || 'Une erreur inattendue est survenue.';
+}
+---
+
+<Layout title={member ? `Profil ${member.lastName} ${member.firstName} - NBA 91` : "Profil Adhérent - NBA 91"}>
+  <AdminLayout client:load>
+    <div class="space-y-6">
+      {errorMsg && (
+        <div class="max-w-3xl mx-auto space-y-4">
+          <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
+            {errorMsg}
+          </div>
+          <a href="/admin/members" class="text-sm text-primary hover:underline">
+            &larr; Retour à la liste des adhérents
+          </a>
+        </div>
+      )}
+
+      {member && <MemberProfile client:load {member} />}
+    </div>
+  </AdminLayout>
+</Layout>
