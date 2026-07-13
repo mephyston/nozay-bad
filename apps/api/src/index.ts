@@ -162,7 +162,7 @@ app.post('/members/import', async (c) => {
   const existingLicences = new Set<string>();
 
   if (licenses.length > 0) {
-    const chunkSize = 500;
+    const chunkSize = 80;
     for (let i = 0; i < licenses.length; i += chunkSize) {
       const chunk = licenses.slice(i, i + chunkSize);
       const existing = await db.select({ licence: membersTable.licence })
