@@ -1,0 +1,52 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import PoonaImporter from '../../../components/PoonaImporter.svelte';
+
+let result = null;
+let error = null;
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const file = formData.get('file');
+
+    if (!file || !(file instanceof File) || file.size === 0) {
+      throw new Error('Aucun fichier fourni ou fichier vide.');
+    }
+
+    const apiService = Astro.locals.runtime.env.API_SERVICE;
+    const apiFormData = new FormData();
+    apiFormData.append('file', file);
+
+    const apiRes = await apiService.fetch('http://localhost/members/import', {
+      method: 'POST',
+      body: apiFormData,
+    });
+
+    if (!apiRes.ok) {
+      const text = await apiRes.text();
+      throw new Error(text || 'Erreur lors de l\'importation');
+    }
+
+    result = await apiRes.json();
+  } catch (err: any) {
+    error = err.message || 'Une erreur inconnue est survenue';
+  }
+}
+---
+
+<Layout title="Import Adhérents Poona - NBA 91">
+  <AdminLayout client:load>
+    <div class="space-y-6">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight">Import Adhérents</h1>
+        <p class="text-muted-foreground mt-2">
+          Importez le fichier d'extraction CSV depuis Poona pour synchroniser les informations des adhérents.
+        </p>
+      </div>
+
+      <PoonaImporter client:load {result} {error} />
+    </div>
+  </AdminLayout>
+</Layout>
