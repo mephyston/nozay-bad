@@ -7,7 +7,7 @@ Current Plan: `docs/superpowers/plans/2026-07-13-product-resales-and-orders-plan
 
 *   [x] Task 1: Schéma et Migrations Base de Données
 *   [x] Task 2: Endpoints API Produits (Hono)
-*   [ ] Task 3: Endpoints API Commandes (Hono)
+*   [x] Task 3: Endpoints API Commandes (Hono)
 *   [ ] Task 4: Console d'Administration - Gestion des Articles Svelte UI
 *   [ ] Task 5: Console d'Administration - Validation des Commandes Svelte UI
 *   [ ] Task 6: Application Boutique Adhérents
@@ -16,5 +16,6 @@ Current Plan: `docs/superpowers/plans/2026-07-13-product-resales-and-orders-plan
 
 ### Sub-Project: Product Resales and Orders
 
+- Task 3: complete (commits ff552ba..555f0ab, review clean)
 - Task 2: complete (commits 29ebfb1..37aab6f, review clean)
 - Task 1: complete (commits fa3dd15..27967de, review clean)
