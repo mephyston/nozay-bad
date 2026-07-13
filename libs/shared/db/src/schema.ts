@@ -32,3 +32,31 @@ export const membersTable = sqliteTable('members', {
   licenceSeasonUnq: uniqueIndex('members_licence_season_idx').on(table.licence, table.season),
 }));
 
+export const seasonBalancesTable = sqliteTable('season_balances', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  seasonId: text('season_id').notNull().references(() => seasonsTable.id),
+  accountId: text('account_id', { enum: ['current', 'savings', 'cash'] }).notNull(),
+  initialBalance: integer('initial_balance').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+}, (table) => ({
+  seasonAccountUnq: uniqueIndex('season_account_idx').on(table.seasonId, table.accountId),
+}));
+
+export const transactionsTable = sqliteTable('transactions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  seasonId: text('season_id').notNull().references(() => seasonsTable.id),
+  type: text('type', { enum: ['recette', 'depense', 'transfert'] }).notNull(),
+  accountId: text('account_id', { enum: ['current', 'savings', 'cash'] }).notNull(),
+  destinationAccountId: text('destination_account_id', { enum: ['current', 'savings', 'cash'] }),
+  category: text('category'),
+  amount: integer('amount').notNull(),
+  date: text('date').notNull(), // Format YYYY-MM-DD
+  paymentMethod: text('payment_method', { 
+    enum: ['virement', 'cheque', 'especes', 'labaz', 'ancv', 'pass_sport', 'ticket_loisir', 'up_loisir'] 
+  }).notNull(),
+  description: text('description').notNull(),
+  reference: text('reference'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+

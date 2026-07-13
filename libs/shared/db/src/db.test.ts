@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, usersTable } from './schema';
+import { membersTable, usersTable, seasonBalancesTable, transactionsTable, seasonsTable } from './schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { DatabaseSync } from 'node:sqlite';
 import * as fs from 'node:fs';
@@ -153,4 +153,54 @@ describe('Database Tests', () => {
     expect(members[0].importedAt).toBeInstanceOf(Date);
     expect(members[0].importedAt.getTime()).toBe(new Date('2026-07-07T12:00:00Z').getTime());
   });
+
+  it('should insert season balances and transactions correctly', async () => {
+    const mockD1 = new MockD1Database();
+    
+    // Apply migrations
+    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationFiles = fs.readdirSync(migrationsDir)
+      .filter(f => f.endsWith('.sql'))
+      .sort();
+
+    for (const file of migrationFiles) {
+      const sqlPath = path.join(migrationsDir, file);
+      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+      const statements = sqlContent.split('--> statement-breakpoint');
+      for (const statement of statements) {
+        if (statement.trim()) {
+          await mockD1.exec(statement);
+        }
+      }
+    }
+
+    const db = drizzle(mockD1 as any);
+
+    // Insérer un solde initial
+    const balance = {
+      seasonId: '25-26',
+      accountId: 'current' as const,
+      initialBalance: 150000, // 1500,00 €
+      createdAt: new Date()
+    };
+    const [insertedBalance] = await db.insert(seasonBalancesTable).values(balance).returning();
+    expect(insertedBalance.initialBalance).toBe(150000);
+
+    // Insérer une transaction
+    const transaction = {
+      seasonId: '25-26',
+      type: 'recette' as const,
+      accountId: 'current' as const,
+      category: 'adhesions',
+      amount: 4500, // 45,00 €
+      date: '2026-07-13',
+      paymentMethod: 'virement' as const,
+      description: 'Adhésion Dupont Jean',
+      createdAt: new Date()
+    };
+    const [insertedTx] = await db.insert(transactionsTable).values(transaction).returning();
+    expect(insertedTx.amount).toBe(4500);
+    expect(insertedTx.category).toBe('adhesions');
+  });
 });
+
