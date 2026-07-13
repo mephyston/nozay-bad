@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, or, eq, like, sql, inArray, desc } from 'drizzle-orm';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable } from '../../../libs/shared/db/src/schema';
+
 
 type Bindings = {
   DB: D1Database;
@@ -595,6 +596,200 @@ app.get('/seasons/:seasonId/reports', async (c) => {
   });
 });
 
+export function parseOFX(ofxContent: string): { transactions: { fitid: string; amount: number; date: string; name: string; memo: string | null; accountId: 'current' | 'savings' }[] } {
+  // 1. Détecter le compte bancaire depuis <ACCTID>
+  const acctIdMatch = ofxContent.match(/<ACCTID>([^\r\n<]+)/);
+  const acctId = acctIdMatch ? acctIdMatch[1].trim() : '';
+  const accountId: 'current' | 'savings' = acctId === '00070007847' ? 'savings' : 'current';
+
+  const transactions: any[] = [];
+  // 2. Extraire chaque transaction de type <STMTTRN> ... </STMTTRN> (ou jusqu'au prochain bloc ou fin de balise)
+  const blocks = ofxContent.split('<STMTTRN>');
+  // Le premier bloc contient les en-têtes et le début du fichier, on l'ignore
+  for (let i = 1; i < blocks.length; i++) {
+    const block = blocks[i].split('</STMTTRN>')[0];
+    
+    const fitidMatch = block.match(/<FITID>([^\r\n<]+)/);
+    const trnamtMatch = block.match(/<TRNAMT>([^\r\n<]+)/);
+    const dtpostedMatch = block.match(/<DTPOSTED>([^\r\n<]+)/);
+    const nameMatch = block.match(/<NAME>([^\r\n<]+)/);
+    const memoMatch = block.match(/<MEMO>([^\r\n<]+)/);
+
+    if (!fitidMatch || !trnamtMatch || !dtpostedMatch || !nameMatch) continue;
+
+    const rawAmount = parseFloat(trnamtMatch[1].trim());
+    const amountCents = Math.round(rawAmount * 100);
+
+    const rawDate = dtpostedMatch[1].trim(); // Format YYYYMMDD
+    const dateFormatted = `${rawDate.substring(0, 4)}-${rawDate.substring(4, 6)}-${rawDate.substring(6, 8)}`;
+
+    transactions.push({
+      fitid: fitidMatch[1].trim(),
+      accountId,
+      amount: amountCents,
+      date: dateFormatted,
+      name: nameMatch[1].trim(),
+      memo: memoMatch ? memoMatch[1].trim() : null
+    });
+  }
+
+  return { transactions };
+}
+
+app.post('/bank-transactions/import', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const body = await c.req.parseBody();
+  const file = body.file;
+  const seasonId = body.seasonId as string;
+
+  if (!file || !seasonId) {
+    return c.json({ success: false, error: 'Fichier et saison obligatoires.' }, 400);
+  }
+
+  let content: string;
+  if (typeof file === 'string') {
+    content = file;
+  } else if (typeof file === 'object' && file !== null) {
+    if ('text' in file && typeof (file as any).text === 'function') {
+      content = await (file as any).text();
+    } else if ('arrayBuffer' in file && typeof (file as any).arrayBuffer === 'function') {
+      const arrayBuffer = await (file as any).arrayBuffer();
+      const utf8Decoder = new TextDecoder('utf-8');
+      content = utf8Decoder.decode(arrayBuffer);
+    } else {
+      return c.json({ success: false, error: 'Format de fichier invalide.' }, 400);
+    }
+  } else {
+    return c.json({ success: false, error: 'Format de fichier invalide.' }, 400);
+  }
+
+  const { transactions } = parseOFX(content);
+  if (transactions.length === 0) {
+    return c.json({ success: true, count: 0 });
+  }
+
+  const db = drizzle(c.env.DB);
+  let insertedCount = 0;
+
+  for (const tx of transactions) {
+    try {
+      const res = await db.insert(bankTransactionsTable)
+        .values({
+          fitid: tx.fitid,
+          seasonId,
+          accountId: tx.accountId,
+          amount: tx.amount,
+          date: tx.date,
+          name: tx.name,
+          memo: tx.memo,
+          status: 'pending',
+          createdAt: new Date()
+        })
+        .onConflictDoNothing()
+        .run();
+      
+      const changes = res?.meta?.changes ?? 0;
+      if (changes > 0) {
+        insertedCount++;
+      }
+    } catch (err) {
+      // Ignorer silencieusement les erreurs de doublons si onConflictDoNothing ne suffit pas
+    }
+  }
+
+  return c.json({ success: true, count: insertedCount });
+});
+
+app.get('/bank-transactions', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const season = c.req.query('season');
+  if (!season) {
+    return c.json({ success: false, error: 'Missing season query parameter' }, 400);
+  }
+  const status = c.req.query('status') || 'pending';
+  const accountId = c.req.query('accountId');
+
+  const db = drizzle(c.env.DB);
+  const conditions = [
+    eq(bankTransactionsTable.seasonId, season),
+    eq(bankTransactionsTable.status, status as any)
+  ];
+
+  if (accountId) {
+    conditions.push(eq(bankTransactionsTable.accountId, accountId as any));
+  }
+
+  const data = await db.select()
+    .from(bankTransactionsTable)
+    .where(and(...conditions))
+    .orderBy(desc(bankTransactionsTable.date), desc(bankTransactionsTable.id))
+    .all();
+
+  return c.json({ success: true, data });
+});
+
+app.post('/bank-transactions/:id/reconcile', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const body = await c.req.json() as any;
+  const db = drizzle(c.env.DB);
+
+  if (body.action === 'match') {
+    await db.update(bankTransactionsTable)
+      .set({ status: 'reconciled', transactionId: body.transactionId })
+      .where(eq(bankTransactionsTable.id, id))
+      .run();
+  } else if (body.action === 'create') {
+    const tx = body.transaction;
+    // Insérer d'abord la transaction dans le Grand Livre
+    const [newTx] = await db.insert(transactionsTable).values({
+      seasonId: tx.seasonId,
+      type: tx.type,
+      accountId: tx.accountId,
+      destinationAccountId: tx.destinationAccountId || null,
+      category: tx.category || null,
+      amount: Math.round(tx.amount),
+      date: tx.date,
+      paymentMethod: tx.paymentMethod,
+      description: tx.description,
+      reference: tx.reference || null,
+      createdAt: new Date()
+    }).returning();
+
+    // Mettre à jour l'écriture bancaire
+    await db.update(bankTransactionsTable)
+      .set({ status: 'reconciled', transactionId: newTx.id })
+      .where(eq(bankTransactionsTable.id, id))
+      .run();
+  } else {
+    return c.json({ success: false, error: 'Action invalide.' }, 400);
+  }
+
+  return c.json({ success: true });
+});
+
+app.post('/bank-transactions/:id/ignore', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const db = drizzle(c.env.DB);
+
+  await db.update(bankTransactionsTable)
+    .set({ status: 'ignored' })
+    .where(eq(bankTransactionsTable.id, id))
+    .run();
+
+  return c.json({ success: true });
+});
+
 export default app;
+
 
 

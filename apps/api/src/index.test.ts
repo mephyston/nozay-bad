@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable } from '../../../libs/shared/db/src/schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { DatabaseSync } from 'node:sqlite';
 import * as fs from 'node:fs';
@@ -534,6 +534,162 @@ describe('Accounting API Endpoints', () => {
     expect(getTxJson2.data).toHaveLength(1);
   });
 });
+
+describe('Bank Reconciliation API Endpoints', () => {
+  it('should import OFX, list bank transactions, and reconcile them', async () => {
+    const mockD1 = await setupMockDb();
+
+    // Mock fichier OFX
+    const ofxContent = `OFXHEADER:100
+DATA:OFXSGML
+VERSION:102
+<OFX>
+<BANKMSGSRSV1>
+<STMTTRNRS>
+<STMTRS>
+<BANKACCTFROM>
+<ACCTID>00050007847
+</BANKACCTFROM>
+<BANKTRANLIST>
+<STMTTRN>
+<TRNTYPE>DEBIT
+<DTPOSTED>20260216
+<TRNAMT>-15.60
+<FITID>SG-FITID-TEST-1
+<NAME>IONOS SARL
+<MEMO>Facture Internet
+</STMTTRN>
+</BANKTRANLIST>
+</STMTRS>
+</STMTTRNRS>
+</BANKMSGSRSV1>
+</OFX>`;
+
+    // 1. Simuler l'importation via POST /bank-transactions/import
+    const formData = new FormData();
+    const file = new File([ofxContent], 'statement.ofx', { type: 'text/plain' });
+    formData.append('file', file);
+    formData.append('seasonId', '25-26');
+
+    const importRes = await app.request('http://localhost/bank-transactions/import', {
+      method: 'POST',
+      body: formData
+    }, { DB: mockD1 as any });
+    expect(importRes.status).toBe(200);
+    const importJson = await importRes.json() as any;
+    expect(importJson.success).toBe(true);
+    expect(importJson.count).toBe(1);
+
+    // 2. Récupérer les transactions importées via GET /bank-transactions
+    const getRes = await app.request('http://localhost/bank-transactions?season=25-26&status=pending', undefined, { DB: mockD1 as any });
+    expect(getRes.status).toBe(200);
+    const getJson = await getRes.json() as any;
+    expect(getJson.success).toBe(true);
+    expect(getJson.data).toHaveLength(1);
+    
+    const bankTx = getJson.data[0];
+    expect(bankTx.fitid).toBe('SG-FITID-TEST-1');
+    expect(bankTx.amount).toBe(-1560); // converti en centimes
+    expect(bankTx.accountId).toBe('current');
+
+    // 3. Pointer en créant une nouvelle transaction via POST /bank-transactions/:id/reconcile
+    const reconRes = await app.request(`http://localhost/bank-transactions/${bankTx.id}/reconcile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create',
+        transaction: {
+          seasonId: '25-26',
+          type: 'depense',
+          accountId: 'current',
+          category: 'frais_administratifs',
+          amount: 1560,
+          date: '2026-02-16',
+          paymentMethod: 'virement',
+          description: 'Facture Internet Ionos',
+          reference: 'SG-FITID-TEST-1'
+        }
+      })
+    }, { DB: mockD1 as any });
+    expect(reconRes.status).toBe(200);
+
+    // Vérifier le changement de statut
+    const checkRes = await app.request('http://localhost/bank-transactions?season=25-26&status=reconciled', undefined, { DB: mockD1 as any });
+    const checkJson = await checkRes.json() as any;
+    expect(checkJson.data).toHaveLength(1);
+    expect(checkJson.data[0].status).toBe('reconciled');
+  });
+
+  it('should ignore a bank transaction', async () => {
+    const mockD1 = await setupMockDb();
+
+    // Mock fichier OFX
+    const ofxContent = `OFXHEADER:100
+DATA:OFXSGML
+VERSION:102
+<OFX>
+<BANKMSGSRSV1>
+<STMTTRNRS>
+<STMTRS>
+<BANKACCTFROM>
+<ACCTID>00070007847
+</BANKACCTFROM>
+<BANKTRANLIST>
+<STMTTRN>
+<TRNTYPE>CREDIT
+<DTPOSTED>20260217
+<TRNAMT>50.00
+<FITID>SG-FITID-TEST-2
+<NAME>DUPONT RECETTE
+<MEMO>Cotisation
+</STMTTRN>
+</BANKTRANLIST>
+</STMTRS>
+</STMTTRNRS>
+</BANKMSGSRSV1>
+</OFX>`;
+
+    // 1. Simuler l'importation via POST /bank-transactions/import
+    const formData = new FormData();
+    const file = new File([ofxContent], 'statement.ofx', { type: 'text/plain' });
+    formData.append('file', file);
+    formData.append('seasonId', '25-26');
+
+    const importRes = await app.request('http://localhost/bank-transactions/import', {
+      method: 'POST',
+      body: formData
+    }, { DB: mockD1 as any });
+    expect(importRes.status).toBe(200);
+    const importJson = await importRes.json() as any;
+    expect(importJson.success).toBe(true);
+    expect(importJson.count).toBe(1);
+
+    // 2. Récupérer les transactions importées via GET /bank-transactions (note: savings account because of 00070007847)
+    const getRes = await app.request('http://localhost/bank-transactions?season=25-26&status=pending', undefined, { DB: mockD1 as any });
+    expect(getRes.status).toBe(200);
+    const getJson = await getRes.json() as any;
+    expect(getJson.success).toBe(true);
+    expect(getJson.data).toHaveLength(1);
+    
+    const bankTx = getJson.data[0];
+    expect(bankTx.fitid).toBe('SG-FITID-TEST-2');
+    expect(bankTx.amount).toBe(5000); // 50.00 -> 5000 cents
+    expect(bankTx.accountId).toBe('savings');
+
+    // 3. Ignorer via POST /bank-transactions/:id/ignore
+    const ignoreRes = await app.request(`http://localhost/bank-transactions/${bankTx.id}/ignore`, {
+      method: 'POST'
+    }, { DB: mockD1 as any });
+    expect(ignoreRes.status).toBe(200);
+
+    // Vérifier le changement de statut
+    const checkRes = await app.request('http://localhost/bank-transactions?season=25-26&status=ignored', undefined, { DB: mockD1 as any });
+    const checkJson = await checkRes.json() as any;
+    expect(checkJson.data).toHaveLength(1);
+    expect(checkJson.data[0].status).toBe('ignored');
+  });
+});
+
 
 
 
