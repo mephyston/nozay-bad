@@ -780,11 +780,11 @@
                   {#if sug.memberName}
                     <div class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-[10px] font-semibold text-primary">
                       <Sparkles class="w-2.5 h-2.5" />
-                      IA : {sug.memberName} ({categories.find(c => c.id === sug.category)?.name || sug.category})
+                      IA : {sug.memberName} ({categories.find(c => c.id === String(sug.category))?.name || sug.category})
                     </div>
                   {:else}
                     <div class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted border border-border text-[10px] font-semibold text-muted-foreground">
-                      IA : Opération diverse ({categories.find(c => c.id === sug.category)?.name || sug.category})
+                      IA : Opération diverse ({categories.find(c => c.id === String(sug.category))?.name || sug.category})
                     </div>
                   {/if}
                 {/if}
@@ -832,7 +832,7 @@
                     <div class="flex items-center justify-between text-xs p-2 bg-background border border-border rounded">
                       <div>
                         <div class="font-semibold text-foreground">{gt.description}</div>
-                        <div class="text-[10px] text-muted-foreground">{categories.find(c => c.id === gt.category)?.name || 'Opération diverse'}</div>
+                        <div class="text-[10px] text-muted-foreground">{categories.find(c => c.id === String(gt.category))?.name || 'Opération diverse'}</div>
                       </div>
                       <div class="flex items-center gap-3">
                         <div class="font-bold text-emerald-600">{(Math.abs(gt.amount) / 100).toFixed(2)} €</div>
@@ -908,11 +908,11 @@
                   {@const sug = JSON.parse(selectedTx.aiSuggestions)}
                   {#if sug.memberId}
                     <p class="text-xs text-foreground leading-relaxed">
-                      Associer cette ligne de relevé à l'adhérent **{sug.memberName}** dans la catégorie **{categories.find(c => c.id === sug.category)?.name || sug.category}**.
+                      Associer cette ligne de relevé à l'adhérent **{sug.memberName}** dans la catégorie **{categories.find(c => c.id === String(sug.category))?.name || sug.category}**.
                     </p>
                   {:else}
                     <p class="text-xs text-foreground leading-relaxed">
-                      Enregistrer cette transaction comme opération diverse de type **{categories.find(c => c.id === sug.category)?.name || sug.category}** (pas d'adhérent détecté).
+                      Enregistrer cette transaction comme opération diverse de type **{categories.find(c => c.id === String(sug.category))?.name || sug.category}** (pas d'adhérent détecté).
                     </p>
                   {/if}
                   <button
