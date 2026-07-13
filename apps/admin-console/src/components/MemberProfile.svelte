@@ -41,6 +41,10 @@
 
   let { member, transactions = [] }: { member: Member; transactions: GLTransaction[] } = $props();
 
+  let cotisationTransactions = $derived(transactions.filter(t => t.category === 'adhesions_inscriptions'));
+  let otherTransactions = $derived(transactions.filter(t => t.category !== 'adhesions_inscriptions'));
+  let totalOtherAmount = $derived(otherTransactions.reduce((sum, t) => sum + t.amount, 0));
+
   function formatImportedAt(importedAt: string) {
     if (!importedAt) return '-';
     const date = new Date(importedAt);
@@ -233,11 +237,11 @@
       </div>
     </div>
 
-    <!-- Historique des règlements Grand Livre -->
+    <!-- Historique des règlements de cotisation -->
     <div class="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4 md:col-span-2">
       <h3 class="font-bold text-lg flex items-center gap-2 border-b border-border pb-2 text-foreground">
         <FileText class="w-5 h-5 text-primary" />
-        Historique des règlements (Grand Livre)
+        Historique des règlements de la cotisation
       </h3>
       <div class="overflow-x-auto">
         <table class="w-full text-sm text-left">
@@ -251,7 +255,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-border">
-            {#each transactions as tx}
+            {#each cotisationTransactions as tx}
               <tr class="hover:bg-muted/40 transition-colors">
                 <td class="py-2.5">{tx.date}</td>
                 <td class="py-2.5 font-medium">{tx.description}</td>
@@ -264,7 +268,54 @@
             {:else}
               <tr>
                 <td colspan="5" class="py-4 text-center text-muted-foreground text-xs">
-                  Aucun règlement enregistré dans le Grand Livre pour cet adhérent.
+                  Aucun règlement de cotisation enregistré dans le Grand Livre pour cet adhérent.
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Achats et règlements annexes -->
+    <div class="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4 md:col-span-2">
+      <div class="flex items-center justify-between border-b border-border pb-2">
+        <h3 class="font-bold text-lg flex items-center gap-2 text-foreground">
+          <Landmark class="w-5 h-5 text-primary" />
+          Règlements annexes (Cordages, Volants, Buvette...)
+        </h3>
+        {#if otherTransactions.length > 0}
+          <span class="text-xs font-bold text-muted-foreground bg-muted px-2.5 py-1 rounded">
+            Total des règlements annexes : {(totalOtherAmount / 100).toFixed(2)} €
+          </span>
+        {/if}
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+          <thead>
+            <tr class="border-b border-border text-xs text-muted-foreground font-bold uppercase tracking-wider">
+              <th class="py-2.5">Date</th>
+              <th class="py-2.5">Description</th>
+              <th class="py-2.5">Catégorie</th>
+              <th class="py-2.5">Mode</th>
+              <th class="py-2.5 text-right">Montant</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border">
+            {#each otherTransactions as tx}
+              <tr class="hover:bg-muted/40 transition-colors">
+                <td class="py-2.5">{tx.date}</td>
+                <td class="py-2.5 font-medium">{tx.description}</td>
+                <td class="py-2.5 text-xs text-muted-foreground">{categoryLabels[tx.category || ''] || 'Divers'}</td>
+                <td class="py-2.5 text-xs text-muted-foreground uppercase">{tx.paymentMethod}</td>
+                <td class="py-2.5 text-right font-bold text-emerald-600">
+                  +{(tx.amount / 100).toFixed(2)} €
+                </td>
+              </tr>
+            {:else}
+              <tr>
+                <td colspan="5" class="py-4 text-center text-muted-foreground text-xs">
+                  Aucun règlement annexe (cordage, volant, buvette...) enregistré pour cet adhérent.
                 </td>
               </tr>
             {/each}
