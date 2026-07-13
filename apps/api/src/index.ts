@@ -1226,9 +1226,11 @@ app.post('/checks/analyze', async (c) => {
       return c.json({ success: false, error: 'Format de fichier invalide.' }, 400);
     }
 
-    // Appeler le modèle de vision de Workers AI pour extraire les données du chèque
-    const model = '@cf/meta/llama-3.2-11b-vision-instruct';
-    const systemPrompt = `Analyze this check image. Extract the following fields as a JSON object:
+    // Appeler le modèle de vision de Workers AI avec chaîne de repli en cas d'erreur de licence (UE)
+    let aiRes: any;
+    try {
+      const model = '@cf/meta/llama-3.2-11b-vision-instruct';
+      const systemPrompt = `Analyze this check image. Extract the following fields as a JSON object:
 {
   "number": "string (the check number, usually 7 digits)",
   "amount": number (the check amount in EUR, e.g. 150.00)",
@@ -1237,10 +1239,38 @@ app.post('/checks/analyze', async (c) => {
 }
 Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
 
-    const aiRes = await c.env.AI.run(model, {
-      prompt: systemPrompt,
-      image: [...new Uint8Array(bytes)]
-    });
+      aiRes = await c.env.AI.run(model, {
+        prompt: systemPrompt,
+        image: [...new Uint8Array(bytes)]
+      });
+    } catch (llamaErr) {
+      console.warn("Llama 3.2 vision failed (likely license/EU restrictions), trying Moondream 3.1:", llamaErr);
+      try {
+        const modelFallback = '@cf/moondream/moondream3.1-9b-a2b';
+        const systemPrompt = `Analyze this check image. Extract the following fields as a JSON object:
+{
+  "number": "string (the check number, usually 7 digits)",
+  "amount": number (the check amount in EUR, e.g. 150.00)",
+  "emitter": "string (the name of the account holder / drawer)",
+  "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)"
+}
+Return ONLY the raw JSON object.`;
+
+        aiRes = await c.env.AI.run(modelFallback, {
+          prompt: systemPrompt,
+          image: [...new Uint8Array(bytes)]
+        });
+      } catch (moondreamErr) {
+        console.warn("Moondream 3.1 vision failed, trying Llava 1.5:", moondreamErr);
+        const modelLlava = '@cf/llava-hf/llava-1.5-7b-hf';
+        const systemPrompt = `Identify check number (usually 7 digits), amount, account holder name (emitter), bank in this check. Output JSON: {"number":"...", "amount":150.0, "emitter":"...", "bank":"..."}`;
+
+        aiRes = await c.env.AI.run(modelLlava, {
+          prompt: systemPrompt,
+          image: [...new Uint8Array(bytes)]
+        });
+      }
+    }
 
     let extracted: any = {};
     const textResult = typeof aiRes === 'string' ? aiRes : (aiRes as any).response || '';
