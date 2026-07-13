@@ -59,4 +59,19 @@ export const transactionsTable = sqliteTable('transactions', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
+export const bankTransactionsTable = sqliteTable('bank_transactions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  fitid: text('fitid').notNull().unique(),
+  seasonId: text('season_id').notNull().references(() => seasonsTable.id),
+  accountId: text('account_id', { enum: ['current', 'savings', 'cash'] }).notNull(),
+  amount: integer('amount').notNull(),
+  date: text('date').notNull(),
+  name: text('name').notNull(),
+  memo: text('memo'),
+  status: text('status', { enum: ['pending', 'reconciled', 'ignored'] }).notNull().default('pending'),
+  transactionId: integer('transaction_id').references(() => transactionsTable.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, usersTable, seasonBalancesTable, transactionsTable, seasonsTable } from './schema';
+import { membersTable, usersTable, seasonBalancesTable, transactionsTable, seasonsTable, bankTransactionsTable } from './schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { DatabaseSync } from 'node:sqlite';
 import * as fs from 'node:fs';
@@ -201,6 +201,44 @@ describe('Database Tests', () => {
     const [insertedTx] = await db.insert(transactionsTable).values(transaction).returning();
     expect(insertedTx.amount).toBe(4500);
     expect(insertedTx.category).toBe('adhesions');
+  });
+
+  it('should insert bank transactions correctly', async () => {
+    const mockD1 = new MockD1Database();
+    
+    // Apply migrations
+    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationFiles = fs.readdirSync(migrationsDir)
+      .filter(f => f.endsWith('.sql'))
+      .sort();
+
+    for (const file of migrationFiles) {
+      const sqlPath = path.join(migrationsDir, file);
+      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+      const statements = sqlContent.split('--> statement-breakpoint');
+      for (const statement of statements) {
+        if (statement.trim()) {
+          await mockD1.exec(statement);
+        }
+      }
+    }
+
+    const db = drizzle(mockD1 as any);
+
+    const op = {
+      fitid: 'SG-123456-COURANT',
+      seasonId: '25-26',
+      accountId: 'current' as const,
+      amount: -1560, // -15,60 €
+      date: '2026-07-13',
+      name: 'IONOS',
+      memo: 'Facture Site Web',
+      createdAt: new Date()
+    };
+    const [inserted] = await db.insert(bankTransactionsTable).values(op).returning();
+    expect(inserted.fitid).toBe('SG-123456-COURANT');
+    expect(inserted.amount).toBe(-1560);
+    expect(inserted.status).toBe('pending');
   });
 });
 
