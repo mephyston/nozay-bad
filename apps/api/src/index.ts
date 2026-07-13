@@ -1284,7 +1284,18 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
     }
 
     let extracted: any = {};
-    const textResult = typeof aiRes === 'string' ? aiRes : (aiRes as any).response || '';
+    let textResult = '';
+    if (typeof aiRes === 'string') {
+      textResult = aiRes;
+    } else if (aiRes && typeof aiRes === 'object') {
+      if (typeof (aiRes as any).response === 'string') {
+        textResult = (aiRes as any).response;
+      } else if ((aiRes as any).response !== undefined && (aiRes as any).response !== null) {
+        textResult = JSON.stringify((aiRes as any).response);
+      } else {
+        textResult = JSON.stringify(aiRes);
+      }
+    }
     
     // Nettoyer et parser le JSON retourné par le LLM
     try {
