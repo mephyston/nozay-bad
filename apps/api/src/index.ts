@@ -1154,7 +1154,15 @@ app.post('/bank-transactions/analyze', async (c) => {
     let suggestedCategory = tx.amount < 0 ? CAT_FONCTIONNEMENT_ADMIN : CAT_ADHESIONS;
     const textToLower = `${tx.name} ${tx.memo || ''}`.toLowerCase();
     
-    if (/\b\d{20,}\b/.test(textToLower) || textToLower.includes('virement interne') || textToLower.includes('virmt interne')) {
+    if (
+      /\b\d{20,}\b/.test(textToLower) || 
+      textToLower.includes('virement interne') || 
+      textToLower.includes('virmt interne') ||
+      textToLower.includes('de: nozay badminton') ||
+      textToLower.includes('de: nozay bad') ||
+      textToLower.includes('de: nba') ||
+      (textToLower.includes('nozay badminton') && textToLower.includes('recharge'))
+    ) {
       suggestedCategory = CAT_VIREMENTS_INTERNES;
     } else if (textToLower.includes('ionos')) {
       suggestedCategory = CAT_FONCTIONNEMENT_ADMIN;

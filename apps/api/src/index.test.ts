@@ -985,17 +985,18 @@ VERSION:102
     expect(updatedBt2.aiSuggestions).toBeNull();
   });
 
-  it('classifies long numeric strings as internal transfers (category 15)', async () => {
+  it('classifies club recharges and long numeric IDs as internal transfers (category 15)', async () => {
     const mockD1 = await setupMockDb();
     const db = drizzle(mockD1 as any);
 
     const bt = await db.insert(bankTransactionsTable).values({
-      fitid: 'FITID-LONG-NUM',
+      fitid: '30930863000300846000500078472020260602',
       accountId: 'current',
       seasonId: '25-26',
-      amount: 10000,
-      date: '2026-02-02',
-      name: '30930863000300846000500078472020260602',
+      amount: 7000,
+      date: '2026-06-02',
+      name: 'VIR RECU 9615367317665',
+      memo: 'DE: NOZAY BADMINTON MOTIF: Recharge juin 2026',
       status: 'pending',
       createdAt: new Date()
     }).returning().then(r => r[0]);
