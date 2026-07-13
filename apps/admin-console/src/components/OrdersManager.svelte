@@ -129,6 +129,20 @@
     }).filter(group => group.orders.length > 0)
   );
 
+  async function getErrorMessage(res: Response, defaultMsg: string): Promise<string> {
+    try {
+      const text = await res.text();
+      try {
+        const json = JSON.parse(text);
+        return json.error || json.message || defaultMsg;
+      } catch {
+        return text || defaultMsg;
+      }
+    } catch {
+      return defaultMsg;
+    }
+  }
+
   async function handleApprove(orderId: number) {
     if (processingId !== null) return;
     errorMsg = null;
@@ -143,8 +157,8 @@
       });
 
       if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText || 'Erreur lors de la validation');
+        const errText = await getErrorMessage(res, 'Erreur lors de la validation');
+        throw new Error(errText);
       }
 
       successMsg = 'Commande validée avec succès !';
@@ -186,8 +200,8 @@
       });
 
       if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText || 'Erreur lors du rejet');
+        const errText = await getErrorMessage(res, 'Erreur lors du rejet');
+        throw new Error(errText);
       }
 
       successMsg = 'Commande refusée avec succès.';

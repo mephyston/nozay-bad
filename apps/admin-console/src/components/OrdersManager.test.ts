@@ -117,6 +117,7 @@ describe('OrdersManager Component', () => {
   afterEach(() => {
     global.fetch = originalFetch;
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it('renders pending orders grouped by season by default', () => {
