@@ -48,3 +48,6 @@ Thumbs.db
 .astro/
 .wrangler/
 
+# Données de tests avec info perso
+.data/
+

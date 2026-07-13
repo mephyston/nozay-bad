@@ -13,3 +13,6 @@ interface Env {
   CF_AUDIENCE?: string;
   DB: import('@cloudflare/workers-types').D1Database;
 }
+declare module 'cloudflare:workers' {
+  export const env: Env;
+}

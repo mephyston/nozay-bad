@@ -3,8 +3,10 @@ import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
 import MemberProfile from '../../../components/MemberProfile.svelte';
 
+import { env } from 'cloudflare:workers';
+
 const { licence } = Astro.params;
-const apiService = Astro.locals.runtime.env.API_SERVICE;
+const apiService = env.API_SERVICE;
 
 let member = null;
 let errorMsg = '';
@@ -17,7 +19,7 @@ try {
     }
     throw new Error('Erreur de communication avec le service API.');
   }
-  const body = await res.json();
+  const body = await res.json() as any;
   member = body.data;
 } catch (err: any) {
   errorMsg = err.message || 'Une erreur inattendue est survenue.';

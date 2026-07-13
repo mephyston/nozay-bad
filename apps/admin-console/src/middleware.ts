@@ -2,6 +2,8 @@ import { defineMiddleware } from 'astro:middleware';
 import type { APIContext, MiddlewareNext } from 'astro';
 import { jwtVerify, createRemoteJWKSet } from 'jose';
 
+import { env as cfEnv } from 'cloudflare:workers';
+
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
 function getJWKS(teamDomain: string) {
@@ -27,9 +29,15 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
     return new Response('Non autorisé. Authentification Cloudflare Access requise.', { status: 401 });
   }
 
-  const env = context.locals.runtime?.env || process.env;
-  const CF_TEAM_DOMAIN = env.CF_TEAM_DOMAIN || 'https://nba91.cloudflareaccess.com';
-  const CF_AUDIENCE = env.CF_AUDIENCE || 'mock-audience-id';
+  // Resolve environment variables from cloudflare:workers, context.locals.runtime, or process.env
+  const resolvedEnv = {
+    ...process.env,
+    ...(cfEnv || {}),
+    ...(context.locals.runtime?.env || {})
+  };
+
+  const CF_TEAM_DOMAIN = resolvedEnv.CF_TEAM_DOMAIN || 'https://nba91.cloudflareaccess.com';
+  const CF_AUDIENCE = resolvedEnv.CF_AUDIENCE || 'mock-audience-id';
 
   try {
     const jwks = getJWKS(CF_TEAM_DOMAIN);

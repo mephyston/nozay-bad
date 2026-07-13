@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       'astro:middleware': path.resolve(__dirname, './src/mocks/astro-middleware.ts'),
+      'cloudflare:workers': path.resolve(__dirname, './src/mocks/cloudflare-workers.ts'),
     },
     conditions: ['browser'],
   },

@@ -3,6 +3,8 @@ import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
 import PoonaImporter from '../../../components/PoonaImporter.svelte';
 
+import { env } from 'cloudflare:workers';
+
 let result = null;
 let error = null;
 
@@ -15,13 +17,13 @@ if (Astro.request.method === 'POST') {
       throw new Error('Aucun fichier fourni ou fichier vide.');
     }
 
-    const apiService = Astro.locals.runtime.env.API_SERVICE;
+    const apiService = env.API_SERVICE;
     const apiFormData = new FormData();
     apiFormData.append('file', file);
 
     const apiRes = await apiService.fetch('http://localhost/members/import', {
       method: 'POST',
-      body: apiFormData,
+      body: apiFormData as any,
     });
 
     if (!apiRes.ok) {
@@ -29,7 +31,7 @@ if (Astro.request.method === 'POST') {
       throw new Error(text || 'Erreur lors de l\'importation');
     }
 
-    result = await apiRes.json();
+    result = await apiRes.json() as any;
   } catch (err: any) {
     error = err.message || 'Une erreur inconnue est survenue';
   }

@@ -3,13 +3,15 @@ import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
 import MembersTable from '../../../components/MembersTable.svelte';
 
+import { env } from 'cloudflare:workers';
+
 const page = Astro.url.searchParams.get('page') || '1';
 const search = Astro.url.searchParams.get('search') || '';
 const gender = Astro.url.searchParams.get('gender') || '';
 const type = Astro.url.searchParams.get('type') || '';
 const status = Astro.url.searchParams.get('status') || '';
 
-const apiService = Astro.locals.runtime.env.API_SERVICE;
+const apiService = env.API_SERVICE;
 const queryParams = new URLSearchParams({ page, limit: '20', search, gender, type, status });
 
 let membersData = { data: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 1 } };
