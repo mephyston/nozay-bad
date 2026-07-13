@@ -897,6 +897,65 @@ VERSION:102
     expect(sug.memberId).toBe(mLaurence.id);
     expect(sug.category).toBe('cordage_vente');
   });
+
+  it('resolves parent-child matching correctly when parent name is wrapped in parentheses in database', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Ajouter Lubin LEFEBVRE avec sa mère ARTICO Lucie
+    const mLubin = await db.insert(membersTable).values({
+      licence: '07355187',
+      season: '25-26',
+      lastName: 'LEFEBVRE',
+      firstName: 'Lubin',
+      gender: 'M',
+      birthDate: '2014-09-16',
+      email: 'liolef@hotmail.fr',
+      status: 'valide',
+      type: 'Elite Jeunes (Collège)',
+      parent1Name: 'ARTICO Lucie (Parent)',
+      amountDue: 24100,
+      amountReceived: 24100,
+      amountRemaining: 0,
+      paid: true,
+      importedAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // Insérer la transaction
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: '18444113000300846000500078472020260708',
+      seasonId: '25-26',
+      accountId: 'current',
+      amount: 1500,
+      date: '2026-07-08',
+      name: 'VIR INST RE 668997068210',
+      memo: 'DE: MLE ARTICO LUCIE OU DATE: 08/07/2026 09:26 MOTIF: Cordage Lubin Avril REF: NOT PROVIDED',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const mockAI = {
+      run: async () => {
+        throw new Error('AI service error simulation');
+      }
+    };
+
+    // Lancer l'analyse
+    const analyzeRes = await app.request('http://localhost/bank-transactions/analyze?season=25-26', {
+      method: 'POST'
+    }, { DB: mockD1 as any, AI: mockAI as any });
+    expect(analyzeRes.status).toBe(200);
+
+    // Vérifier le match déterministe
+    const getRes = await app.request('http://localhost/bank-transactions?season=25-26&status=pending', undefined, { DB: mockD1 as any });
+    const json = await getRes.json() as any;
+    const updatedBt = json.data.find((x: any) => x.id === bt.id);
+    expect(updatedBt.aiSuggestions).not.toBeNull();
+    
+    const sug = JSON.parse(updatedBt.aiSuggestions);
+    expect(sug.memberId).toBe(mLubin.id);
+    expect(sug.category).toBe('cordage_vente');
+  });
 });
 
 

@@ -4,6 +4,16 @@ import { and, or, eq, ne, like, sql, inArray, desc } from 'drizzle-orm';
 import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable } from '../../../libs/shared/db/src/schema';
 
 
+function cleanName(name: string | null): string {
+  if (!name) return '';
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s*\(.*?\)/g, "")
+    .trim()
+    .toLowerCase();
+}
+
 type Bindings = {
   DB: D1Database;
   AI: any;
@@ -893,10 +903,15 @@ app.post('/bank-transactions/analyze', async (c) => {
     // On filtre les membres dont le nom de famille ou prénom apparaît dans le libellé/mémo
     const textToSearch = `${tx.name} ${tx.memo || ''}`.toLowerCase();
     const candidates = members.filter(m => {
-      const matchesLastName = textToSearch.includes(m.lastName.toLowerCase());
-      const matchesFirstName = textToSearch.includes(m.firstName.toLowerCase());
-      const matchesParent1 = m.parent1Name && textToSearch.includes(m.parent1Name.toLowerCase());
-      const matchesParent2 = m.parent2Name && textToSearch.includes(m.parent2Name.toLowerCase());
+      const cleanLast = cleanName(m.lastName);
+      const cleanFirst = cleanName(m.firstName);
+      const cleanP1 = cleanName(m.parent1Name);
+      const cleanP2 = cleanName(m.parent2Name);
+
+      const matchesLastName = cleanLast && textToSearch.includes(cleanLast);
+      const matchesFirstName = cleanFirst && textToSearch.includes(cleanFirst);
+      const matchesParent1 = cleanP1 && textToSearch.includes(cleanP1);
+      const matchesParent2 = cleanP2 && textToSearch.includes(cleanP2);
       const matchesAmount = Math.abs(m.amountRemaining) === Math.abs(tx.amount);
       
       return matchesLastName || matchesFirstName || matchesParent1 || matchesParent2 || matchesAmount;
@@ -907,12 +922,12 @@ app.post('/bank-transactions/analyze', async (c) => {
     const textNormalized = textToSearch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
     for (const m of candidates) {
-      const firstNorm = m.firstName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-      const lastNorm = m.lastName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-      const p1Norm = m.parent1Name ? m.parent1Name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : '';
-      const p2Norm = m.parent2Name ? m.parent2Name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : '';
+      const firstNorm = cleanName(m.firstName);
+      const lastNorm = cleanName(m.lastName);
+      const p1Norm = cleanName(m.parent1Name);
+      const p2Norm = cleanName(m.parent2Name);
       
-      const hasFirstAndLast = textNormalized.includes(firstNorm) && textNormalized.includes(lastNorm);
+      const hasFirstAndLast = firstNorm && lastNorm && textNormalized.includes(firstNorm) && textNormalized.includes(lastNorm);
       const hasParent1 = p1Norm && textNormalized.includes(p1Norm);
       const hasParent2 = p2Norm && textNormalized.includes(p2Norm);
 
