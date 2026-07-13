@@ -77,34 +77,16 @@ app.post('/members/import', async (c) => {
   const separator = headerLine.includes(';') ? ';' : ',';
   const headers = headerLine.split(separator).map(h => h.trim().replace(/^"(.*)"$/, '$1').trim());
 
-  // Normalize header strings to resolve encoding artifacts and minor variations
-  const normalizeHeader = (h: string) => {
-    let clean = h;
-    // Replace typical Windows-1252/ISO-8859-1 character artifacts (only replace if not already formatted)
-    clean = clean.replace(/Pr.nom/i, 'Prénom');
-    clean = clean.replace(/Adh.rent/i, 'Adhérent');
-    clean = clean.replace(/T.l\./i, 'Tél.');
-    clean = clean.replace(/R.le/i, 'Rôle');
-    clean = clean.replace(/M.dical/i, 'Médical');
-    clean = clean.replace(/pay./i, 'payé');
-    clean = clean.replace(/re.u/i, 'reçu');
-    clean = clean.replace(/\betat\b/i, 'État');
-    clean = clean.replace(/\bEtat\b/i, 'État');
-    return clean;
-  };
-
-  const normalizedHeaders = headers.map(normalizeHeader);
-
-  // Map indices
-  const licenceIdx = normalizedHeaders.findIndex(h => h === 'Licence');
-  const lastNameIdx = normalizedHeaders.findIndex(h => h === 'Nom');
-  const firstNameIdx = normalizedHeaders.findIndex(h => h.toLowerCase() === 'prénom');
-  const genderIdx = normalizedHeaders.findIndex(h => h === 'Sexe');
-  const birthDateIdx = normalizedHeaders.findIndex(h => h === 'Date naissance' || h === 'Date de naissance');
-  const emailIdx = normalizedHeaders.findIndex(h => h === 'Email');
-  const phoneIdx = normalizedHeaders.findIndex(h => h === 'Téléphone' || h === 'Tél. du contact 1');
-  const statusIdx = normalizedHeaders.findIndex(h => h === 'Statut' || h === 'Adhérent validé' || h === 'Etat de dossier' || h === 'État de dossier');
-  const typeIdx = normalizedHeaders.findIndex(h => h === 'Type' || h === 'Tarif');
+  // Map indices directly using clean UTF-8 exact matches
+  const licenceIdx = headers.findIndex(h => h === 'Licence');
+  const lastNameIdx = headers.findIndex(h => h === 'Nom');
+  const firstNameIdx = headers.findIndex(h => h === 'Prénom');
+  const genderIdx = headers.findIndex(h => h === 'Sexe');
+  const birthDateIdx = headers.findIndex(h => h === 'Date naissance' || h === 'Date de naissance');
+  const emailIdx = headers.findIndex(h => h === 'Email');
+  const phoneIdx = headers.findIndex(h => h === 'Téléphone' || h === 'Tél. du contact 1');
+  const statusIdx = headers.findIndex(h => h === 'Statut' || h === 'Adhérent validé' || h === 'Etat de dossier' || h === 'État de dossier');
+  const typeIdx = headers.findIndex(h => h === 'Type' || h === 'Tarif');
 
   if (licenceIdx === -1 || lastNameIdx === -1 || firstNameIdx === -1 || genderIdx === -1 || birthDateIdx === -1 || typeIdx === -1) {
     return c.json({ success: false, error: 'Invalid headers. Missing required columns (Licence, Nom, Prénom, Sexe, Date naissance, Tarif/Type)' }, 400);
