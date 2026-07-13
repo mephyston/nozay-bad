@@ -240,5 +240,62 @@ describe('Database Tests', () => {
     expect(inserted.amount).toBe(-1560);
     expect(inserted.status).toBe('pending');
   });
+
+  it('should support new member payment and transaction relation fields', async () => {
+    const mockD1 = new MockD1Database();
+    
+    // Apply migrations
+    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationFiles = fs.readdirSync(migrationsDir)
+      .filter(f => f.endsWith('.sql'))
+      .sort();
+
+    for (const file of migrationFiles) {
+      const sqlPath = path.join(migrationsDir, file);
+      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+      const statements = sqlContent.split('--> statement-breakpoint');
+      for (const statement of statements) {
+        if (statement.trim()) {
+          await mockD1.exec(statement);
+        }
+      }
+    }
+
+    const db = drizzle(mockD1 as any);
+
+    const [member] = await db.insert(membersTable).values({
+      licence: '7778889',
+      season: '25-26',
+      lastName: 'Dupont',
+      firstName: 'Jean',
+      gender: 'M',
+      birthDate: '2015-06-12',
+      amountDue: 25000,
+      amountReceived: 10000,
+      amountRemaining: 15000,
+      paid: false,
+      parent1Name: 'Dupont Marc',
+      type: 'Competiteur',
+      importedAt: new Date()
+    }).returning();
+
+    expect(member.amountDue).toBe(25000);
+    expect(member.parent1Name).toBe('Dupont Marc');
+
+    const [tx] = await db.insert(transactionsTable).values({
+      seasonId: '25-26',
+      type: 'recette',
+      accountId: 'current',
+      category: 'adhesions',
+      amount: 10000,
+      date: '2026-07-13',
+      paymentMethod: 'virement',
+      description: 'Acompte Dupont Jean',
+      memberId: member.id,
+      createdAt: new Date()
+    }).returning();
+
+    expect(tx.memberId).toBe(member.id);
+  });
 });
 

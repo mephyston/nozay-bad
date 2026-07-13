@@ -27,7 +27,17 @@ export const membersTable = sqliteTable('members', {
   phone: text('phone'),
   status: text('status').notNull().default('valide'),
   type: text('type').notNull(),
-  importedAt: integer('imported_at', { mode: 'timestamp' }).notNull()
+  importedAt: integer('imported_at', { mode: 'timestamp' }).notNull(),
+  amountDue: integer('amount_due').notNull().default(0),
+  amountReceived: integer('amount_received').notNull().default(0),
+  amountRemaining: integer('amount_remaining').notNull().default(0),
+  paid: integer('paid', { mode: 'boolean' }).notNull().default(false),
+  parent1Name: text('parent1_name'),
+  parent1Email: text('parent1_email'),
+  parent1Phone: text('parent1_phone'),
+  parent2Name: text('parent2_name'),
+  parent2Email: text('parent2_email'),
+  parent2Phone: text('parent2_phone')
 }, (table) => ({
   licenceSeasonUnq: uniqueIndex('members_licence_season_idx').on(table.licence, table.season),
 }));
@@ -56,6 +66,7 @@ export const transactionsTable = sqliteTable('transactions', {
   }).notNull(),
   description: text('description').notNull(),
   reference: text('reference'),
+  memberId: integer('member_id').references(() => membersTable.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
@@ -70,6 +81,7 @@ export const bankTransactionsTable = sqliteTable('bank_transactions', {
   memo: text('memo'),
   status: text('status', { enum: ['pending', 'reconciled', 'ignored'] }).notNull().default('pending'),
   transactionId: integer('transaction_id').references(() => transactionsTable.id),
+  aiSuggestions: text('ai_suggestions'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 

@@ -43,6 +43,13 @@
       "when": 1783945181535,
       "tag": "0005_create_bank_transactions_table",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1783946600907,
+      "tag": "0006_enrich_tables_for_ai_and_members",
+      "breakpoints": true
     }
   ]
 }
