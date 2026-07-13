@@ -1,19 +1,21 @@
 # Subagent-Driven Development Progress Ledger
 
 Project: `nozay-bad` (NBA 91)
-Current Plan: `docs/superpowers/plans/2026-07-07-poona-import-plan.md`
+Current Plan: `docs/superpowers/plans/2026-07-13-poona-import-and-members-plan.md`
 
-## Task Progress (Sub-Project 2: Import Adhérents Poona)
+## Task Progress (Sub-Project 2: Import & Members Administration)
 
-*   [x] Task 1: Database Migration (Schema and Drizzle Setup)
-*   [ ] Task 2: Private API Import Endpoint (Hono Worker)
-*   [ ] Task 3: Astro Page Integration and API proxying
-*   [ ] Task 4: UI Drag-and-Drop Importer Component (Svelte 5)
+*   [ ] Task 1: Astro Backend Proxy Route for CSV Import
+*   [ ] Task 2: UI Drag-and-Drop Importer Component (Svelte 5)
+*   [ ] Task 3: API GET /members Endpoint
+*   [ ] Task 4: API GET /members/:licence Endpoint
+*   [ ] Task 5: Listing Page UI and Svelte Component
+*   [ ] Task 6: Detail Page UI and Svelte Component
 
 ## Ledger Entries
 
-### Sub-Project 2: Import Adhérents Poona
-- Task 1: complete (commits fb552cf..46763c9, review clean)
+### Sub-Project 2: Import & Members Administration
+- Task 1 & 2 of the prior plan (DB schema and API POST endpoint) were completed as base commits `fb552cf..46763c9` and `9dd0010..f46c281` respectively. Tracked under new plan scope.
 
 ### Sub-Project 1.5: Layout & Theme
 - Task 1: complete (commits a709bbc..d52f813, review clean)
