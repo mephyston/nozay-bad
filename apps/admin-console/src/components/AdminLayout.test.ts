@@ -21,7 +21,6 @@ describe('AdminLayout Component', () => {
     expect(target.textContent).toContain("Adhérents");
     expect(target.textContent).toContain("Comptabilité");
     expect(target.textContent).toContain("Caisse");
-    expect(target.textContent).toContain("Licenciés");
     expect(target.textContent).toContain("Boutique");
     expect(target.textContent).toContain("Note de frais");
 

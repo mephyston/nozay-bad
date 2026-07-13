@@ -6,7 +6,6 @@
     ShoppingBag,
     Menu,
     X,
-    UserCheck,
     ChevronDown,
     ChevronRight,
     Coins,
@@ -22,10 +21,9 @@
 
   let sidebarOpen = $state(false);
 
-  // Keep track of which submenus are expanded. Default expand Adhérents, Licenciés, and Boutique.
+  // Keep track of which submenus are expanded. Default expand Adhérents and Boutique.
   let expandedMenus = $state<Record<string, boolean>>({
     "Adhérents": true,
-    "Licenciés": true,
     "Boutique": true
   });
 
@@ -45,13 +43,6 @@
     },
     { name: "Comptabilité", icon: Receipt, href: "/admin/compta" },
     { name: "Caisse", icon: Wallet, href: "/admin/cash-box" },
-    {
-      name: "Licenciés",
-      icon: UserCheck,
-      subItems: [
-        { name: "Liste", href: "/admin/licences" }
-      ]
-    },
     {
       name: "Boutique",
       icon: ShoppingBag,
