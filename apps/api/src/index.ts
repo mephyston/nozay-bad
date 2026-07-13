@@ -1744,8 +1744,8 @@ app.get('/orders', async (c) => {
   const memberIds = Array.from(new Set(orders.map(o => o.memberId)));
   const productIds = Array.from(new Set(orders.map(o => o.productId)));
 
-  let membersList: any[] = [];
-  let productsList: any[] = [];
+  let membersList: (typeof membersTable.$inferSelect)[] = [];
+  let productsList: (typeof productsTable.$inferSelect)[] = [];
 
   if (memberIds.length > 0) {
     membersList = await db.select().from(membersTable).where(inArray(membersTable.id, memberIds)).all();
@@ -1804,46 +1804,50 @@ app.post('/orders/:id/approve', async (c) => {
     return c.json({ success: false, error: 'Commande invalide ou déjà traitée' }, 400);
   }
 
-  const product = await db.select().from(productsTable).where(eq(productsTable.id, order.productId)).get();
-  if (!product) {
-    return c.json({ success: false, error: 'Produit inexistant' }, 400);
-  }
-
   const member = await db.select().from(membersTable).where(eq(membersTable.id, order.memberId)).get();
   if (!member) {
     return c.json({ success: false, error: 'Adhérent inexistant' }, 400);
   }
 
-  if (product.stock < order.quantity) {
-    return c.json({ success: false, error: 'Stock insuffisant pour valider la commande' }, 400);
-  }
-
   let updatedOrder;
-  await db.transaction(async (txDb) => {
-    // Décrémenter le stock et créer l'écriture de recette
-    await txDb.update(productsTable)
-      .set({ stock: product.stock - order.quantity })
-      .where(eq(productsTable.id, product.id))
-      .run();
+  try {
+    await db.transaction(async (txDb) => {
+      const product = await txDb.select().from(productsTable).where(eq(productsTable.id, order.productId)).get();
+      if (!product) {
+        throw new Error('Produit inexistant');
+      }
 
-    const tx = await txDb.insert(transactionsTable).values({
-      seasonId: order.seasonId,
-      type: 'recette',
-      accountId: 'current',
-      category: 'boutique',
-      amount: order.totalAmount,
-      date: new Date().toISOString().split('T')[0],
-      paymentMethod: order.paymentMethod as any,
-      description: `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`,
-      memberId: member.id,
-      createdAt: new Date()
-    }).returning().get();
+      if (product.stock < order.quantity) {
+        throw new Error('Stock insuffisant pour valider la commande');
+      }
 
-    updatedOrder = await txDb.update(ordersTable)
-      .set({ status: 'approved', transactionId: tx.id })
-      .where(eq(ordersTable.id, id))
-      .returning().get();
-  });
+      // Décrémenter le stock et créer l'écriture de recette
+      await txDb.update(productsTable)
+        .set({ stock: product.stock - order.quantity })
+        .where(eq(productsTable.id, product.id))
+        .run();
+
+      const tx = await txDb.insert(transactionsTable).values({
+        seasonId: order.seasonId,
+        type: 'recette',
+        accountId: 'current',
+        category: 'boutique',
+        amount: order.totalAmount,
+        date: new Date().toISOString().split('T')[0],
+        paymentMethod: order.paymentMethod as any,
+        description: `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`,
+        memberId: member.id,
+        createdAt: new Date()
+      }).returning().get();
+
+      updatedOrder = await txDb.update(ordersTable)
+        .set({ status: 'approved', transactionId: tx.id })
+        .where(eq(ordersTable.id, id))
+        .returning().get();
+    });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
 
   return c.json({ success: true, data: updatedOrder });
 });
