@@ -1337,13 +1337,20 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
         extracted.bank = bankMatch[1].trim();
       }
 
-      // Extraction de la date d'émission (format DD/MM/YYYY ou YYYY-MM-DD)
-      const dateMatch = textResult.match(/(\d{2})[\/\-\s](\d{2})[\/\-\s](\d{4})/) || textResult.match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})/);
+      // Extraction de la date d'émission (format DD/MM/YYYY, DD/MM/YY ou YYYY-MM-DD)
+      const dateMatch = textResult.match(/(\d{2})[\/\-\s](\d{2})[\/\-\s](\d{2,4})/);
       if (dateMatch) {
-        if (dateMatch[3].length === 4) {
-          extracted.date = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
-        } else {
-          extracted.date = dateMatch[0];
+        const day = dateMatch[1];
+        const month = dateMatch[2];
+        let year = dateMatch[3];
+        if (year.length === 2) {
+          year = `20${year}`;
+        }
+        extracted.date = `${year}-${month}-${day}`;
+      } else {
+        const dateMatchISO = textResult.match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})/);
+        if (dateMatchISO) {
+          extracted.date = dateMatchISO[0];
         }
       }
     }
@@ -1381,7 +1388,8 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
         emitter: extracted.emitter || '',
         bank: extracted.bank || '',
         memberId: matchedMember ? matchedMember.id : null,
-        memberName: matchedMember ? `${matchedMember.lastName} ${matchedMember.firstName}` : null
+        memberName: matchedMember ? `${matchedMember.lastName} ${matchedMember.firstName}` : null,
+        date: extracted.date || null
       }
     });
   } catch (err: any) {

@@ -82,6 +82,55 @@
   // Search filter for checks & members in select
   let checkSearchQuery = $state('');
   let memberSearchQuery = $state('');
+  let matchedMemberName = $state('');
+
+  // Combobox states
+  let isMemberDropdownOpen = $state(false);
+  let isCategoryDropdownOpen = $state(false);
+  let categorySearchQuery = $state('');
+  
+  // List of categories
+  const categoriesList = [
+    { id: 'adhesions_inscriptions', name: 'Cotisation / Adhésion' },
+    { id: 'buvettes_recette', name: 'Recette Buvette' },
+    { id: 'cordage_vente', name: 'Vente Cordage' },
+    { id: 'divers_recette', name: 'Divers / Recettes annexes' }
+  ];
+
+  // Derived display values
+  const memberDisplayVal = $derived.by(() => {
+    if (!checkMemberId) return '';
+    const m = members.find(item => item.id === parseInt(checkMemberId));
+    return m ? `${m.lastName} ${m.firstName} (${m.licence})` : '';
+  });
+
+  const categoryDisplayVal = $derived.by(() => {
+    const cat = categoriesList.find(c => c.id === checkCategory);
+    return cat ? cat.name : '';
+  });
+
+  // Filtered categories
+  const filteredCategories = $derived.by(() => {
+    if (!categorySearchQuery.trim()) return categoriesList;
+    const q = categorySearchQuery.toLowerCase();
+    return categoriesList.filter(c => c.name.toLowerCase().includes(q));
+  });
+
+  // Option list that guarantees the currently selected member is present
+  const memberOptions = $derived.by(() => {
+    let list = [...filteredMembers];
+    if (checkMemberId) {
+      const selectedId = parseInt(checkMemberId);
+      const isAlreadyInList = list.some(m => m.id === selectedId);
+      if (!isAlreadyInList) {
+        const found = members.find(m => m.id === selectedId);
+        if (found) {
+          list = [found, ...list];
+        }
+      }
+    }
+    return list;
+  });
 
   // Selected checks for deposit
   let selectedCheckIds = $state<Record<number, boolean>>({});
@@ -165,6 +214,7 @@
         checkEmitter = json.data.emitter || '';
         checkBank = json.data.bank || '';
         checkMemberId = json.data.memberId ? json.data.memberId.toString() : '';
+        matchedMemberName = json.data.memberName || '';
         if (json.data.date) {
           checkDate = json.data.date;
         }
@@ -218,6 +268,8 @@
       checkBank = '';
       checkMemberId = '';
       checkDate = new Date().toISOString().split('T')[0];
+      matchedMemberName = '';
+      categorySearchQuery = '';
       window.location.reload();
     } catch (err: any) {
       formError = err.message || 'Erreur lors de l\'enregistrement du chèque.';
@@ -631,6 +683,13 @@
           </div>
         {/if}
 
+        {#if matchedMemberName && checkMemberId}
+          <div class="p-3 bg-primary/10 border border-primary/20 text-primary rounded-lg text-xs flex justify-between items-center">
+            <span>Adhérent détecté : <strong>{matchedMemberName}</strong></span>
+            <span class="text-xs text-muted-foreground bg-primary/20 px-2 py-0.5 rounded font-medium">Automatiquement sélectionné</span>
+          </div>
+        {/if}
+
         <div class="relative flex py-2 items-center">
           <div class="flex-grow border-t border-border"></div>
           <span class="flex-shrink mx-4 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Ou Saisir Manuellement</span>
@@ -689,45 +748,111 @@
             </div>
           </div>
 
-          <div class="space-y-2">
-            <label for="check-member" class="text-xs font-semibold text-muted-foreground uppercase">Adhérent concerné (pour rapprochement cotisation)</label>
-            <div class="space-y-1">
+          <div class="space-y-1 relative">
+            <label for="check-member-input" class="text-xs font-semibold text-muted-foreground uppercase">Adhérent concerné (pour rapprochement cotisation)</label>
+            <div class="relative">
               <input
+                id="check-member-input"
                 type="text"
-                placeholder="🔍 Rechercher un adhérent..."
-                bind:value={memberSearchQuery}
-                class="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
+                placeholder="🔍 Rechercher un adhérent par nom ou licence..."
+                class="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground pr-8 font-medium"
+                value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
+                oninput={(e) => {
+                  isMemberDropdownOpen = true;
+                  memberSearchQuery = (e.target as HTMLInputElement).value;
+                }}
+                onfocus={() => {
+                  isMemberDropdownOpen = true;
+                  memberSearchQuery = '';
+                }}
+                onblur={() => {
+                  setTimeout(() => { isMemberDropdownOpen = false; }, 200);
+                }}
               />
-              <select
-                id="check-member"
-                bind:value={checkMemberId}
-                class="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
-              >
-                <option value="">-- Aucun adhérent (achat divers) --</option>
-                {#each filteredMembers as member}
-                  <option value={member.id}>
+              {#if checkMemberId}
+                <button
+                  type="button"
+                  onclick={() => {
+                    checkMemberId = '';
+                    memberSearchQuery = '';
+                    matchedMemberName = '';
+                  }}
+                  class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs bg-transparent border-0 cursor-pointer p-1"
+                  title="Effacer la sélection"
+                >
+                  ✕
+                </button>
+              {/if}
+            </div>
+
+            {#if isMemberDropdownOpen}
+              <div class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-popover border border-border rounded-lg shadow-lg divide-y divide-border">
+                {#each memberOptions as member}
+                  <button
+                    type="button"
+                    class="w-full text-left px-3 py-2 text-sm hover:bg-muted text-foreground transition-colors font-medium border-0 cursor-pointer bg-popover"
+                    onmousedown={() => {
+                      checkMemberId = member.id.toString();
+                      memberSearchQuery = `${member.lastName} ${member.firstName} (${member.licence})`;
+                      isMemberDropdownOpen = false;
+                    }}
+                  >
                     {member.lastName} {member.firstName} ({member.licence})
                     {member.parent1Name ? ` - Parent: ${member.parent1Name}` : ''}
-                  </option>
+                  </button>
+                {:else}
+                  <div class="px-3 py-2 text-xs text-muted-foreground italic bg-popover">Aucun adhérent trouvé</div>
                 {/each}
-              </select>
-            </div>
+              </div>
+            {/if}
           </div>
 
           <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-1">
-              <label for="check-cat" class="text-xs font-semibold text-muted-foreground uppercase">Affectation / Catégorie</label>
-              <select
-                id="check-cat"
-                bind:value={checkCategory}
-                class="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
-              >
-                <option value="adhesions_inscriptions">Cotisation / Adhésion</option>
-                <option value="buvettes_recette">Recette Buvette</option>
-                <option value="cordage_vente">Vente Cordage</option>
-                <option value="divers_recette">Divers / Recettes annexes</option>
-              </select>
+            <div class="space-y-1 relative">
+              <label for="check-cat-input" class="text-xs font-semibold text-muted-foreground uppercase">Affectation / Catégorie</label>
+              <div class="relative">
+                <input
+                  id="check-cat-input"
+                  type="text"
+                  placeholder="Filtrer les affectations..."
+                  class="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground pr-6 font-medium"
+                  value={isCategoryDropdownOpen ? categorySearchQuery : categoryDisplayVal}
+                  oninput={(e) => {
+                    isCategoryDropdownOpen = true;
+                    categorySearchQuery = (e.target as HTMLInputElement).value;
+                  }}
+                  onfocus={() => {
+                    isCategoryDropdownOpen = true;
+                    categorySearchQuery = '';
+                  }}
+                  onblur={() => {
+                    setTimeout(() => { isCategoryDropdownOpen = false; }, 200);
+                  }}
+                />
+                <span class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none text-[8px]">▼</span>
+              </div>
+
+              {#if isCategoryDropdownOpen}
+                <div class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded-lg shadow-lg divide-y divide-border">
+                  {#each filteredCategories as cat}
+                    <button
+                      type="button"
+                      class="w-full text-left px-3 py-2 text-sm hover:bg-muted text-foreground transition-colors font-medium border-0 cursor-pointer bg-popover"
+                      onmousedown={() => {
+                        checkCategory = cat.id;
+                        categorySearchQuery = cat.name;
+                        isCategoryDropdownOpen = false;
+                      }}
+                    >
+                      {cat.name}
+                    </button>
+                  {:else}
+                    <div class="px-3 py-2 text-xs text-muted-foreground italic bg-popover">Aucune catégorie trouvée</div>
+                  {/each}
+                </div>
+              {/if}
             </div>
+
             <div class="space-y-1">
               <label for="check-date" class="text-xs font-semibold text-muted-foreground uppercase">Date d'émission</label>
               <input
