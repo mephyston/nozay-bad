@@ -218,7 +218,7 @@ describe('POST /members/import', () => {
     });
 
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
   });
 
@@ -241,7 +241,7 @@ describe('POST /members/import', () => {
     });
 
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
   });
 });
@@ -261,7 +261,7 @@ describe('GET /members', () => {
     // Test simple list
     const res = await app.request('http://localhost/members?page=1&limit=2', undefined, { DB: mockD1 as any });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(body.data).toHaveLength(2);
     expect(body.pagination).toEqual({
@@ -273,27 +273,59 @@ describe('GET /members', () => {
 
     // Test search filter (firstName)
     const resSearch = await app.request('http://localhost/members?search=sop', undefined, { DB: mockD1 as any });
-    const bodySearch = await resSearch.json();
+    const bodySearch = await resSearch.json() as any;
     expect(bodySearch.data).toHaveLength(1);
     expect(bodySearch.data[0].firstName).toBe('Sophie');
 
     // Test search filter (lastName)
     const resSearchLast = await app.request('http://localhost/members?search=dupont', undefined, { DB: mockD1 as any });
-    const bodySearchLast = await resSearchLast.json();
+    const bodySearchLast = await resSearchLast.json() as any;
     expect(bodySearchLast.data).toHaveLength(1);
     expect(bodySearchLast.data[0].firstName).toBe('Jean');
 
     // Test search filter (licence)
     const resSearchLicence = await app.request('http://localhost/members?search=1000003', undefined, { DB: mockD1 as any });
-    const bodySearchLicence = await resSearchLicence.json();
+    const bodySearchLicence = await resSearchLicence.json() as any;
     expect(bodySearchLicence.data).toHaveLength(1);
     expect(bodySearchLicence.data[0].firstName).toBe('Luc');
 
     // Test type & gender filter
     const resFilter = await app.request('http://localhost/members?type=Competiteur&gender=M', undefined, { DB: mockD1 as any });
-    const bodyFilter = await resFilter.json();
+    const bodyFilter = await resFilter.json() as any;
     expect(bodyFilter.data).toHaveLength(2); // Dupont and Durand
   });
 });
+
+describe('GET /members/:licence', () => {
+  it('should return member details if found', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    await db.insert(membersTable).values({
+      licence: '7654321',
+      lastName: 'Lemoine',
+      firstName: 'Paul',
+      gender: 'M',
+      birthDate: '1992-04-18',
+      status: 'valide',
+      type: 'Competiteur',
+      importedAt: new Date()
+    }).run();
+
+    const res = await app.request('http://localhost/members/7654321', undefined, { DB: mockD1 as any });
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.success).toBe(true);
+    expect(body.data.firstName).toBe('Paul');
+    expect(body.data.lastName).toBe('Lemoine');
+  });
+
+  it('should return 404 if member is not found', async () => {
+    const mockD1 = await setupMockDb();
+    const res = await app.request('http://localhost/members/9999999', undefined, { DB: mockD1 as any });
+    expect(res.status).toBe(404);
+  });
+});
+
 
 

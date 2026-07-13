@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, or, eq, like, sql, inArray } from 'drizzle-orm';
-import { membersTable } from '../../libs/shared/db/src/schema';
+import { membersTable } from '../../../libs/shared/db/src/schema';
 
 type Bindings = {
   DB: D1Database;
@@ -258,5 +258,29 @@ app.get('/members', async (c) => {
   });
 });
 
+app.get('/members/:licence', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+
+  const licence = c.req.param('licence');
+  const db = drizzle(c.env.DB);
+
+  const result = await db.select()
+    .from(membersTable)
+    .where(eq(membersTable.licence, licence))
+    .all();
+
+  if (result.length === 0) {
+    return c.json({ success: false, error: 'Member not found' }, 404);
+  }
+
+  return c.json({
+    success: true,
+    data: result[0],
+  });
+});
+
 export default app;
+
 
