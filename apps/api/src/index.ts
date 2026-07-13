@@ -536,8 +536,25 @@ app.get('/transactions', async (c) => {
     .get();
   const total = totalRes?.count || 0;
 
-  const transactions = await db.select()
+  const transactions = await db.select({
+    id: transactionsTable.id,
+    seasonId: transactionsTable.seasonId,
+    type: transactionsTable.type,
+    accountId: transactionsTable.accountId,
+    destinationAccountId: transactionsTable.destinationAccountId,
+    category: transactionsTable.category,
+    amount: transactionsTable.amount,
+    date: transactionsTable.date,
+    paymentMethod: transactionsTable.paymentMethod,
+    description: transactionsTable.description,
+    reference: transactionsTable.reference,
+    memberId: transactionsTable.memberId,
+    bankTransactionId: transactionsTable.bankTransactionId,
+    memberName: sql<string | null>`members.last_name || ' ' || members.first_name`,
+    memberLicence: sql<string | null>`members.licence`
+  })
     .from(transactionsTable)
+    .leftJoin(membersTable, eq(transactionsTable.memberId, membersTable.id))
     .where(and(...conditions))
     .orderBy(desc(transactionsTable.date), desc(transactionsTable.id))
     .limit(limit)

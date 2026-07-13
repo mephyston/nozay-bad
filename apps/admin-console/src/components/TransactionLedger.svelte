@@ -12,6 +12,10 @@
     paymentMethod: string;
     description: string;
     reference: string | null;
+    memberId?: number | null;
+    bankTransactionId?: number | null;
+    memberName?: string | null;
+    memberLicence?: string | null;
   }
 
   interface Pagination {
@@ -265,6 +269,19 @@
                 {#if tx.reference}
                   <div class="text-xs text-muted-foreground italic">Réf: {tx.reference}</div>
                 {/if}
+                <div class="flex flex-wrap gap-1.5 mt-1">
+                  {#if tx.memberName}
+                    <a href={`/admin/members/${tx.memberLicence}`} class="inline-flex items-center px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[10px] font-semibold hover:underline">
+                      Adhérent : {tx.memberName}
+                    </a>
+                  {/if}
+                  {#if tx.bankTransactionId}
+                    <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold">
+                      <Check class="w-2.5 h-2.5" />
+                      Rapprochée (SG)
+                    </span>
+                  {/if}
+                </div>
               </td>
               <td class="p-4 text-right font-bold">
                 {#if tx.type === 'recette'}
