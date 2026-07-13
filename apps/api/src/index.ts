@@ -655,8 +655,8 @@ app.delete('/transactions/:id', async (c) => {
     }
   }
 
-  // 3. Si liée à un adhérent, déduire le montant reçu
-  if (tx.memberId) {
+  // 3. Si liée à un adhérent pour une adhésion, déduire le montant reçu
+  if (tx.memberId && tx.category === 'adhesions_inscriptions') {
     const member = await db.select().from(membersTable).where(eq(membersTable.id, tx.memberId)).get();
     if (member) {
       const newReceived = Math.max(0, member.amountReceived - Math.abs(tx.amount));
@@ -1136,21 +1136,31 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
   }
 
   if (memberId) {
-    const member = await db.select().from(membersTable).where(eq(membersTable.id, memberId)).get();
-    if (member) {
-      const amountToApply = Math.abs(body.transaction?.amount ?? bankTx.amount);
-      const newReceived = member.amountReceived + amountToApply;
-      const newRemaining = Math.max(0, member.amountDue - newReceived);
-      const isPaid = newRemaining === 0;
+    let categoryStr = null;
+    if (body.action === 'create') {
+      categoryStr = body.transaction?.category;
+    } else if (body.action === 'match') {
+      const matchedTx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, body.transactionId)).get();
+      categoryStr = matchedTx ? matchedTx.category : null;
+    }
 
-      await db.update(membersTable)
-        .set({
-          amountReceived: newReceived,
-          amountRemaining: newRemaining,
-          paid: isPaid
-        })
-        .where(eq(membersTable.id, memberId))
-        .run();
+    if (categoryStr === 'adhesions_inscriptions') {
+      const member = await db.select().from(membersTable).where(eq(membersTable.id, memberId)).get();
+      if (member) {
+        const amountToApply = Math.abs(body.transaction?.amount ?? bankTx.amount);
+        const newReceived = member.amountReceived + amountToApply;
+        const newRemaining = Math.max(0, member.amountDue - newReceived);
+        const isPaid = newRemaining === 0;
+
+        await db.update(membersTable)
+          .set({
+            amountReceived: newReceived,
+            amountRemaining: newRemaining,
+            paid: isPaid
+          })
+          .where(eq(membersTable.id, memberId))
+          .run();
+      }
     }
   }
 

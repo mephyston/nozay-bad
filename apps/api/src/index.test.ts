@@ -956,6 +956,85 @@ VERSION:102
     expect(sug.memberId).toBe(mLubin.id);
     expect(sug.category).toBe('cordage_vente');
   });
+
+  it('does not impact member remaining balance when linking a non-membership transaction (e.g. cordage)', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // 1. Ajouter un adhérent
+    const m = await db.insert(membersTable).values({
+      licence: '1234567',
+      season: '25-26',
+      lastName: 'PIGNON',
+      firstName: 'Eliot',
+      gender: 'M',
+      birthDate: '2010-01-01',
+      status: 'valide',
+      type: 'Loisir',
+      amountDue: 25000,
+      amountReceived: 0,
+      amountRemaining: 25000,
+      importedAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // 2. Insérer une transaction bancaire de cordage (15.00 €)
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: 'TEST-CORDAGE-BT',
+      seasonId: '25-26',
+      accountId: 'current',
+      amount: 1500,
+      date: '2026-02-02',
+      name: 'VIR INST RE 653287691266',
+      memo: 'DE: MLE ARTICO LUCIE MOTIF: Cordage',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // 3. Réaliser le pointage avec la catégorie 'cordage_vente'
+    const reconRes = await app.request(`http://localhost/bank-transactions/${bt.id}/reconcile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create',
+        btId: bt.id,
+        memberId: m.id,
+        transaction: {
+          seasonId: '25-26',
+          type: 'recette',
+          accountId: 'current',
+          category: 'cordage_vente',
+          amount: 1500,
+          date: '2026-02-02',
+          paymentMethod: 'virement',
+          description: 'Achat cordage Eliot PIGNON',
+          memberId: m.id,
+          reference: 'FITID-CORDAGE'
+        }
+      })
+    }, { DB: mockD1 as any });
+    expect(reconRes.status).toBe(200);
+
+    // 4. Vérifier que l'adhérent a son solde d'adhésion inchangé (toujours 250.00 € restant, amountReceived à 0)
+    const updatedMember = await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get();
+    expect(updatedMember.amountReceived).toBe(0);
+    expect(updatedMember.amountRemaining).toBe(25000);
+    expect(updatedMember.paid).toBe(false);
+
+    // 5. Récupérer la transaction créée
+    const createdTx = await db.select().from(transactionsTable).where(eq(transactionsTable.bankTransactionId, bt.id)).get();
+    expect(createdTx).toBeDefined();
+
+    // 6. Supprimer cette transaction
+    const deleteRes = await app.request(`http://localhost/transactions/${createdTx.id}`, {
+      method: 'DELETE'
+    }, { DB: mockD1 as any });
+    expect(deleteRes.status).toBe(200);
+
+    // 7. Vérifier que le solde de l'adhérent est toujours inchangé et n'a pas été déduit négativement
+    const finalMember = await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get();
+    expect(finalMember.amountReceived).toBe(0);
+    expect(finalMember.amountRemaining).toBe(25000);
+  });
 });
 
 
