@@ -6,6 +6,7 @@ import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, ban
 
 type Bindings = {
   DB: D1Database;
+  AI: any;
 };
 
 interface ParsedMember {
@@ -771,6 +772,123 @@ app.post('/bank-transactions/import', async (c) => {
   return c.json({ success: true, count: insertedCount });
 });
 
+app.post('/bank-transactions/analyze', async (c) => {
+  if (!c.env || !c.env.DB || !c.env.AI) {
+    return c.json({ success: false, error: 'Database or AI binding is missing' }, 500);
+  }
+  const season = c.req.query('season');
+  if (!season) {
+    return c.json({ success: false, error: 'Missing season query parameter' }, 400);
+  }
+
+  const db = drizzle(c.env.DB);
+  
+  // 1. Récupérer toutes les transactions bancaires pending de la saison
+  const pendingTxs = await db.select()
+    .from(bankTransactionsTable)
+    .where(and(
+      eq(bankTransactionsTable.seasonId, season),
+      eq(bankTransactionsTable.status, 'pending')
+    ))
+    .all();
+
+  // 2. Récupérer tous les adhérents de la saison pour la présélection
+  const members = await db.select()
+    .from(membersTable)
+    .where(eq(membersTable.season, season))
+    .all();
+
+  let analyzedCount = 0;
+
+  for (const tx of pendingTxs) {
+    // Déterminer la catégorie par défaut par dictionnaire simple
+    let suggestedCategory = 'buvette';
+    const nameLower = tx.name.toLowerCase();
+    if (nameLower.includes('ionos')) suggestedCategory = 'divers_depense';
+    else if (nameLower.includes('urssaf')) suggestedCategory = 'salaires';
+    else if (nameLower.includes('larde')) suggestedCategory = 'achats_club';
+    else if (nameLower.includes('ligue')) suggestedCategory = 'licences_ffbad';
+    else if (nameLower.includes('adhesion') || nameLower.includes('cotisation') || nameLower.includes('vir recu')) suggestedCategory = 'adhesions';
+
+    // Présélection des candidats adhérents :
+    // On filtre les membres dont le nom de famille ou prénom apparaît dans le libellé/mémo
+    const textToSearch = `${tx.name} ${tx.memo || ''}`.toLowerCase();
+    const candidates = members.filter(m => {
+      const matchesLastName = textToSearch.includes(m.lastName.toLowerCase());
+      const matchesFirstName = textToSearch.includes(m.firstName.toLowerCase());
+      const matchesParent1 = m.parent1Name && textToSearch.includes(m.parent1Name.toLowerCase());
+      const matchesParent2 = m.parent2Name && textToSearch.includes(m.parent2Name.toLowerCase());
+      const matchesAmount = Math.abs(m.amountRemaining) === Math.abs(tx.amount);
+      
+      return matchesLastName || matchesFirstName || matchesParent1 || matchesParent2 || matchesAmount;
+    }).slice(0, 5); // Max 5 candidats pour rester rapide
+
+    let suggestionResult = {
+      category: suggestedCategory,
+      memberId: null as number | null,
+      memberName: null as string | null,
+      confidence: 0.5
+    };
+
+    if (candidates.length > 0) {
+      // Appeler Workers AI (Llama 3) pour affiner le matching
+      const prompt = `Tu es l'assistant comptable du club Nozay Badminton.
+Opération bancaire à rapprocher :
+- Libellé : "${tx.name}"
+- Détails : "${tx.memo || 'Aucun'}"
+- Montant : ${(tx.amount / 100).toFixed(2)} EUR (${tx.amount < 0 ? 'Débit' : 'Crédit'})
+
+Liste des candidats adhérents possibles :
+${candidates.map(c => `- ID: ${c.id}, Nom: ${c.lastName} ${c.firstName}, Parent 1: ${c.parent1Name || 'Aucun'}, Montant Restant Dû: ${(c.amountRemaining / 100).toFixed(2)} EUR`).join('\n')}
+
+Trouve quel est l'adhérent le plus probablement associé à cette opération.
+Renvoie STRICTEMENT un objet JSON sous la forme suivante (sans aucun autre texte, balises markdown ou commentaires) :
+{
+  "memberId": <ID de l'adhérent ou null>,
+  "memberName": "<Nom Prénom de l'adhérent ou null>",
+  "category": "adhesions",
+  "confidence": <nombre entre 0.0 et 1.0>,
+  "reasoning": "<1 phrase d'explication>"
+}`;
+
+      try {
+        const aiResponse = await c.env.AI.run('@cf/meta/llama-3-8b-instruct', {
+          messages: [{ role: 'user', content: prompt }]
+        });
+        const textRes = aiResponse.response || aiResponse.text || '';
+        // Extraire l'objet JSON de la réponse texte
+        const jsonMatch = textRes.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          suggestionResult = {
+            category: parsed.category || suggestedCategory,
+            memberId: parsed.memberId || null,
+            memberName: parsed.memberName || null,
+            confidence: parsed.confidence || 0.5
+          };
+        }
+      } catch (e) {
+        // Fallback sur le premier candidat si l'IA échoue
+        if (candidates.length === 1) {
+          suggestionResult.memberId = candidates[0].id;
+          suggestionResult.memberName = `${candidates[0].lastName} ${candidates[0].firstName}`;
+          suggestionResult.confidence = 0.7;
+        }
+      }
+    }
+
+    // Sauvegarder la suggestion en base de données
+    await db.update(bankTransactionsTable)
+      .set({ aiSuggestions: JSON.stringify(suggestionResult) })
+      .where(eq(bankTransactionsTable.id, tx.id))
+      .run();
+    
+    analyzedCount++;
+  }
+
+  return c.json({ success: true, count: analyzedCount });
+});
+
 app.get('/bank-transactions', async (c) => {
   if (!c.env || !c.env.DB) {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
@@ -809,11 +927,25 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
   const body = await c.req.json() as any;
   const db = drizzle(c.env.DB);
 
+  const bankTx = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, id)).get();
+  if (!bankTx) {
+    return c.json({ success: false, error: 'Écriture bancaire non trouvée.' }, 404);
+  }
+
+  const memberId = body.memberId || body.transaction?.memberId;
+
   if (body.action === 'match') {
     await db.update(bankTransactionsTable)
       .set({ status: 'reconciled', transactionId: body.transactionId })
       .where(eq(bankTransactionsTable.id, id))
       .run();
+
+    if (memberId) {
+      await db.update(transactionsTable)
+        .set({ memberId })
+        .where(eq(transactionsTable.id, body.transactionId))
+        .run();
+    }
   } else if (body.action === 'create') {
     const tx = body.transaction;
     // Insérer d'abord la transaction dans le Grand Livre
@@ -828,6 +960,7 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
       paymentMethod: tx.paymentMethod,
       description: tx.description,
       reference: tx.reference || null,
+      memberId: memberId || null,
       createdAt: new Date()
     }).returning();
 
@@ -838,6 +971,25 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
       .run();
   } else {
     return c.json({ success: false, error: 'Action invalide.' }, 400);
+  }
+
+  if (memberId) {
+    const member = await db.select().from(membersTable).where(eq(membersTable.id, memberId)).get();
+    if (member) {
+      const amountToApply = Math.abs(body.transaction?.amount ?? bankTx.amount);
+      const newReceived = member.amountReceived + amountToApply;
+      const newRemaining = Math.max(0, member.amountDue - newReceived);
+      const isPaid = newRemaining === 0;
+
+      await db.update(membersTable)
+        .set({
+          amountReceived: newReceived,
+          amountRemaining: newRemaining,
+          paid: isPaid
+        })
+        .where(eq(membersTable.id, memberId))
+        .run();
+    }
   }
 
   return c.json({ success: true });

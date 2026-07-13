@@ -9,5 +9,8 @@
       "database_id": "MOCK_DB_ID_FOR_LOCAL",
       "migrations_dir": "../../libs/shared/db/migrations"
     }
-  ]
+  ],
+  "ai": {
+    "binding": "AI"
+  }
 }

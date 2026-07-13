@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable } from '../../../libs/shared/db/src/schema';
 import { drizzle } from 'drizzle-orm/d1';
+import { eq } from 'drizzle-orm';
 import { DatabaseSync } from 'node:sqlite';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -701,6 +702,104 @@ VERSION:102
     const checkJson = await checkRes.json() as any;
     expect(checkJson.data).toHaveLength(1);
     expect(checkJson.data[0].status).toBe('ignored');
+  });
+
+  it('should analyze transactions and update member balances on reconciliation', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Assurer que la saison existe
+    await db.insert(seasonsTable).values({
+      id: '25-26',
+      name: 'Saison 2025-2026',
+      active: true,
+      createdAt: new Date()
+    }).onConflictDoNothing().run();
+
+    // Mock adhérent et opération
+    const [m] = await db.insert(membersTable).values({
+      licence: '1234567',
+      season: '25-26',
+      lastName: 'PIGNON',
+      firstName: 'Eliot',
+      gender: 'M',
+      birthDate: '2010-01-01',
+      type: 'Loisir',
+      amountDue: 25000,
+      amountReceived: 0,
+      amountRemaining: 25000,
+      parent1Name: 'Sébastien PIGNON',
+      importedAt: new Date()
+    }).returning();
+
+    const [bt] = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-PIGNON-TEST',
+      seasonId: '25-26',
+      accountId: 'current',
+      amount: 25000, // 250.00 €
+      date: '2026-02-02',
+      name: 'VIR INST RE 653287691266',
+      memo: 'DE: M SEBASTIEN PIGNON MOTIF: ADHESION ELIOT PIGNON',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning();
+
+    // Mock du binding AI
+    const mockAI = {
+      run: async (model: string, input: any) => {
+        return {
+          response: JSON.stringify({
+            memberId: m.id,
+            memberName: 'Eliot PIGNON',
+            category: 'adhesions',
+            confidence: 0.95
+          })
+        };
+      }
+    };
+
+    // 1. Appeler l'endpoint d'analyse
+    const analyzeRes = await app.request('http://localhost/bank-transactions/analyze?season=25-26', {
+      method: 'POST'
+    }, { DB: mockD1 as any, AI: mockAI as any });
+    expect(analyzeRes.status).toBe(200);
+
+    // 2. Vérifier que la suggestion a été enregistrée
+    const getRes = await app.request('http://localhost/bank-transactions?season=25-26&status=pending', undefined, { DB: mockD1 as any });
+    const getJson = await getRes.json() as any;
+    const updatedBt = getJson.data.find((x: any) => x.id === bt.id);
+    expect(updatedBt.aiSuggestions).not.toBeNull();
+    const suggestions = JSON.parse(updatedBt.aiSuggestions);
+    expect(suggestions.memberId).toBe(m.id);
+
+    // 3. Réaliser le pointage
+    const reconRes = await app.request(`http://localhost/bank-transactions/${bt.id}/reconcile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create',
+        btId: bt.id,
+        transaction: {
+          seasonId: '25-26',
+          type: 'recette',
+          accountId: 'current',
+          category: 'adhesions',
+          amount: 25000,
+          date: '2026-02-02',
+          paymentMethod: 'virement',
+          description: 'Adhésion Eliot PIGNON',
+          memberId: m.id,
+          reference: 'FITID-PIGNON-TEST'
+        }
+      })
+    }, { DB: mockD1 as any });
+    expect(reconRes.status).toBe(200);
+
+    // 4. Vérifier que l'adhérent a son solde mis à jour à payé = true
+    const updatedMember = await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get();
+    expect(updatedMember.amountReceived).toBe(25000);
+    expect(updatedMember.amountRemaining).toBe(0);
+    expect(updatedMember.paid).toBe(true);
   });
 });
 
