@@ -799,8 +799,7 @@ app.delete('/transactions/:id', async (c) => {
       if (totalRemaining < Math.abs(bankTx.amount)) {
         await db.update(bankTransactionsTable)
           .set({ 
-            status: 'pending', 
-            transactionId: remainingTxs.length > 0 ? remainingTxs[remainingTxs.length - 1].id : null 
+            status: 'pending'
           })
           .where(eq(bankTransactionsTable.id, tx.bankTransactionId))
           .run();
@@ -1336,7 +1335,7 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
   // Si le total rapproché est égal ou supérieur au montant absolu de la ligne bancaire, on la valide
   if (totalLinked >= Math.abs(bankTx.amount)) {
     await db.update(bankTransactionsTable)
-      .set({ status: 'reconciled', transactionId: lastTxId })
+      .set({ status: 'reconciled' })
       .where(eq(bankTransactionsTable.id, id))
       .run();
   }
@@ -2242,8 +2241,7 @@ app.post('/expenses/:id/cancel', async (c) => {
             if (totalRemaining < Math.abs(bankTx.amount)) {
               await db.update(bankTransactionsTable)
                 .set({ 
-                  status: 'pending', 
-                  transactionId: remainingTxs.length > 0 ? remainingTxs[remainingTxs.length - 1].id : null 
+                  status: 'pending'
                 })
                 .where(eq(bankTransactionsTable.id, tx.bankTransactionId))
                 .run();

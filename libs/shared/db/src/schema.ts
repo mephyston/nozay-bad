@@ -69,6 +69,7 @@ export const transactionsTable = sqliteTable('transactions', {
   reference: text('reference'),
   memberId: integer('member_id').references(() => membersTable.id),
   bankTransactionId: integer('bank_transaction_id').references(() => bankTransactionsTable.id),
+  status: text('status', { enum: ['pending_debit', 'in_vault', 'cleared'] }).notNull().default('cleared'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
@@ -82,7 +83,6 @@ export const bankTransactionsTable = sqliteTable('bank_transactions', {
   name: text('name').notNull(),
   memo: text('memo'),
   status: text('status', { enum: ['pending', 'reconciled', 'ignored'] }).notNull().default('pending'),
-  transactionId: integer('transaction_id').references(() => transactionsTable.id),
   aiSuggestions: text('ai_suggestions'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
