@@ -11,7 +11,10 @@ export default defineConfig({
   }),
   integrations: [svelte()],
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss()],
+    optimizeDeps: {
+      exclude: ['@astrojs/cloudflare']
+    }
   },
   srcDir: './src'
 });
