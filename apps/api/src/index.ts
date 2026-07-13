@@ -1234,7 +1234,7 @@ app.post('/checks/analyze', async (c) => {
 {
   "number": "string (the check number, usually 7 digits)",
   "amount": number (the check amount in EUR, e.g. 150.00)",
-  "emitter": "string (the name of the account holder / drawer / person writing the check. Do NOT use the beneficiary/payee, which is usually 'Nozay Badminton' or 'Nozay-Bad')",
+  "emitter": "string (the pre-printed account holder / owner name, usually printed in black text in the left or upper section, e.g. 'ANTENNE REUNION TELEVISION'. Do NOT use the handwritten beneficiary/payee name written after 'à', e.g. 'Association Sourice de l'enfant')",
   "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)",
   "date": "string (the issue date of the check in YYYY-MM-DD format, or null if not clear)"
 }
@@ -1262,7 +1262,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
 {
   "number": "string (the check number, usually 7 digits)",
   "amount": number (the check amount in EUR, e.g. 150.00)",
-  "emitter": "string (the name of the account holder / drawer / person writing the check. Do NOT use the beneficiary/payee, which is usually 'Nozay Badminton' or 'Nozay-Bad')",
+  "emitter": "string (the pre-printed account holder / owner name, usually printed in black text in the left or upper section, e.g. 'ANTENNE REUNION TELEVISION'. Do NOT use the handwritten beneficiary/payee name written after 'à', e.g. 'Association Sourice de l'enfant')",
   "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)",
   "date": "string (the issue date of the check in YYYY-MM-DD format, or null if not clear)"
 }`,
@@ -1276,7 +1276,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
       if (!agreed || !aiRes) {
         console.warn("Falling back directly to Llava 1.5...");
         const modelLlava = '@cf/llava-hf/llava-1.5-7b-hf';
-        const systemPrompt = `Identify check number (usually 7 digits), amount, account holder name (emitter - the person writing the check, NOT the beneficiary/payee 'Nozay Badminton'), bank, and issue date in this check. Output JSON: {"number":"...", "amount":150.0, "emitter":"...", "bank":"...", "date":"YYYY-MM-DD"}`;
+        const systemPrompt = `Identify check number (usually 7 digits), amount, pre-printed account holder name (emitter, e.g. 'ANTENNE REUNION TELEVISION'. Do NOT use the handwritten beneficiary/payee name written after 'à', e.g. 'Association Sourice de l'enfant'), bank, and issue date in YYYY-MM-DD format in this check. Output JSON: {"number":"...", "amount":150.0, "emitter":"...", "bank":"...", "date":"YYYY-MM-DD"}`;
 
         aiRes = await c.env.AI.run(modelLlava, {
           prompt: systemPrompt,
@@ -1327,7 +1327,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
       const emitMatch = textResult.match(/émetteur\s*:\s*([A-Za-z\s\-]+)/i) || textResult.match(/de\s*([A-Z][a-z\-]+\s+[A-Z][a-z\-]+)/);
       if (emitMatch) {
         const val = emitMatch[1].trim();
-        if (!/nozay/i.test(val) && !/bad/i.test(val)) {
+        if (!/nozay/i.test(val) && !/bad/i.test(val) && !/association/i.test(val)) {
           extracted.emitter = val;
         }
       }
