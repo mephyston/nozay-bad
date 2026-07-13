@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable } from './schema';
+import { membersTable, usersTable } from './schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { DatabaseSync } from 'node:sqlite';
 import * as fs from 'node:fs';
@@ -80,7 +80,7 @@ class MockD1PreparedStatement {
 }
 
 describe('Database Tests', () => {
-  it('should run migrations and insert/retrieve a member', async () => {
+  it('should run migrations and insert/retrieve a member and a user', async () => {
     const mockD1 = new MockD1Database();
     
     // Apply migrations
@@ -102,6 +102,22 @@ describe('Database Tests', () => {
 
     // Initialize drizzle
     const db = drizzle(mockD1 as any);
+
+    // Insert and verify a user
+    const newUser = {
+      email: 'admin@nozay-bad.fr',
+      name: 'Admin',
+      role: 'admin' as const,
+      createdAt: new Date('2026-07-07T12:00:00Z'),
+    };
+    const userInsertResult = await db.insert(usersTable).values(newUser).run();
+    expect(userInsertResult.success).toBe(true);
+
+    const users = await db.select().from(usersTable).all();
+    expect(users).toHaveLength(1);
+    expect(users[0].email).toBe('admin@nozay-bad.fr');
+    expect(users[0].name).toBe('Admin');
+    expect(users[0].role).toBe('admin');
 
     // Insert a member
     const newMember = {
@@ -136,6 +152,3 @@ describe('Database Tests', () => {
     expect(members[0].importedAt.getTime()).toBe(new Date('2026-07-07T12:00:00Z').getTime());
   });
 });
-
-
-
