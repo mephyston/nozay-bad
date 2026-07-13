@@ -1257,6 +1257,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
 Return ONLY the raw JSON object.`;
 
         aiRes = await c.env.AI.run(modelFallback, {
+          task: 'query',
           prompt: systemPrompt,
           image: [...new Uint8Array(bytes)]
         });
