@@ -6,13 +6,14 @@ import MemberProfile from '../../../components/MemberProfile.svelte';
 import { env } from 'cloudflare:workers';
 
 const { licence } = Astro.params;
+const season = Astro.url.searchParams.get('season') || '25-26';
 const apiService = env.API_SERVICE;
 
 let member = null;
 let errorMsg = '';
 
 try {
-  const res = await apiService.fetch(`http://localhost/members/${licence}`);
+  const res = await apiService.fetch(`http://localhost/members/${licence}?season=${season}`);
   if (!res.ok) {
     if (res.status === 404) {
       throw new Error(`Adhérent avec la licence ${licence} introuvable.`);

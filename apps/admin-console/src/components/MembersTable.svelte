@@ -23,6 +23,7 @@
     gender: string;
     status: string;
     type: string;
+    season?: string;
   }
 
   let { data = [], pagination, filters }: { data: Member[]; pagination: Pagination; filters: Filters } = $props();
@@ -35,11 +36,14 @@
   const initialStatus = filters?.status ?? '';
   // svelte-ignore state_referenced_locally
   const initialType = filters?.type ?? '';
+  // svelte-ignore state_referenced_locally
+  const initialSeason = filters?.season ?? '25-26';
 
   let searchInput = $state(initialSearch);
   let selectedGender = $state(initialGender);
   let selectedStatus = $state(initialStatus);
   let selectedType = $state(initialType);
+  let selectedSeason = $state(initialSeason);
 
   function applyFilters() {
     const params = new URLSearchParams();
@@ -47,6 +51,7 @@
     if (selectedGender) params.set('gender', selectedGender);
     if (selectedStatus) params.set('status', selectedStatus);
     if (selectedType) params.set('type', selectedType);
+    if (selectedSeason) params.set('season', selectedSeason);
     params.set('page', '1'); // reset page on filter change
     window.location.href = `/admin/members?${params.toString()}`;
   }
@@ -67,7 +72,7 @@
 
 <div class="space-y-4">
   <!-- Filters Block -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-card p-4 rounded-lg border border-border shadow-sm">
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-4 bg-card p-4 rounded-lg border border-border shadow-sm">
     <div class="relative">
       <span class="absolute inset-y-0 left-3 flex items-center text-muted-foreground">
         <Search class="w-4 h-4" />
@@ -79,6 +84,17 @@
         bind:value={searchInput}
         onkeydown={handleKeydown}
       />
+    </div>
+
+    <div>
+      <select
+        class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+        bind:value={selectedSeason}
+        onchange={applyFilters}
+      >
+        <option value="25-26">Saison 2025-2026</option>
+        <option value="24-25">Saison 2024-2025</option>
+      </select>
     </div>
 
     <div>

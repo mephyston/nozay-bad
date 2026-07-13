@@ -15,6 +15,13 @@
       "when": 1783443677237,
       "tag": "0001_special_jigsaw",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783933870208,
+      "tag": "0002_sour_sharon_ventura",
+      "breakpoints": true
     }
   ]
 }

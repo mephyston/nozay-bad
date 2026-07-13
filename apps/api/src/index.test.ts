@@ -241,6 +241,7 @@ describe('POST /members/import', () => {
 
     const m1 = dbMembers.find(m => m.licence === '07104079')!;
     expect(m1).toBeDefined();
+    expect(m1.season).toBe('25-26');
     expect(m1.lastName).toBe('ABADIE');
     expect(m1.firstName).toBe('Christophe');
     expect(m1.gender).toBe('M'); // H mapped to M
@@ -250,6 +251,7 @@ describe('POST /members/import', () => {
 
     const m2 = dbMembers.find(m => m.licence === '07684632')!;
     expect(m2).toBeDefined();
+    expect(m2.season).toBe('25-26');
     expect(m2.gender).toBe('F');
     expect(m2.birthDate).toBe('2017-09-17');
     expect(m2.status).toBe('suspendu'); // Non/Dossier annulé mapped to suspendu
@@ -344,6 +346,29 @@ describe('GET /members', () => {
     const resFilter = await app.request('http://localhost/members?type=Competiteur&gender=M', undefined, { DB: mockD1 as any });
     const bodyFilter = await resFilter.json() as any;
     expect(bodyFilter.data).toHaveLength(2); // Dupont and Durand
+  });
+
+  it('should filter members by season', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Insert dummy members in different seasons
+    await db.insert(membersTable).values([
+      { licence: '1000001', season: '24-25', lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'Competiteur', importedAt: new Date() },
+      { licence: '1000001', season: '25-26', lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'Competiteur', importedAt: new Date() },
+      { licence: '1000002', season: '25-26', lastName: 'Martin', firstName: 'Sophie', gender: 'F', birthDate: '1985-05-15', status: 'valide', type: 'Loisir', importedAt: new Date() },
+    ]).run();
+
+    // Query for 24-25
+    const res2425 = await app.request('http://localhost/members?season=24-25', undefined, { DB: mockD1 as any });
+    const body2425 = await res2425.json() as any;
+    expect(body2425.data).toHaveLength(1);
+    expect(body2425.data[0].licence).toBe('1000001');
+
+    // Query for 25-26
+    const res2526 = await app.request('http://localhost/members?season=25-26', undefined, { DB: mockD1 as any });
+    const body2526 = await res2526.json() as any;
+    expect(body2526.data).toHaveLength(2);
   });
 });
 

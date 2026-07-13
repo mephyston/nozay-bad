@@ -23,7 +23,8 @@ describe('MembersTable Component', () => {
           search: '',
           gender: '',
           status: '',
-          type: ''
+          type: '',
+          season: '25-26'
         }
       }
     });

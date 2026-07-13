@@ -122,6 +122,7 @@ describe('Database Tests', () => {
     // Insert a member
     const newMember = {
       licence: '1234567',
+      season: '25-26',
       lastName: 'Dupont',
       firstName: 'Jean',
       gender: 'M' as const,
@@ -140,6 +141,7 @@ describe('Database Tests', () => {
     const members = await db.select().from(membersTable).all();
     expect(members).toHaveLength(1);
     expect(members[0].licence).toBe('1234567');
+    expect(members[0].season).toBe('25-26');
     expect(members[0].lastName).toBe('Dupont');
     expect(members[0].firstName).toBe('Jean');
     expect(members[0].gender).toBe('M');

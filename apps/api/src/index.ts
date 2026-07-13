@@ -9,6 +9,7 @@ type Bindings = {
 
 interface ParsedMember {
   licence: string;
+  season: string;
   lastName: string;
   firstName: string;
   gender: 'M' | 'F';
@@ -79,6 +80,7 @@ app.post('/members/import', async (c) => {
 
   // Map indices directly using clean UTF-8 exact matches
   const licenceIdx = headers.findIndex(h => h === 'Licence');
+  const seasonIdx = headers.findIndex(h => h === 'Saison');
   const lastNameIdx = headers.findIndex(h => h === 'Nom');
   const firstNameIdx = headers.findIndex(h => h === 'Prénom');
   const genderIdx = headers.findIndex(h => h === 'Sexe');
@@ -100,6 +102,7 @@ app.post('/members/import', async (c) => {
     const columns = line.split(separator).map(col => col.trim().replace(/^"(.*)"$/, '$1').trim());
 
     const licence = columns[licenceIdx];
+    const season = seasonIdx !== -1 ? (columns[seasonIdx] || '25-26') : '25-26';
     const lastName = columns[lastNameIdx];
     const firstName = columns[firstNameIdx];
     const rawGender = columns[genderIdx];
@@ -144,8 +147,9 @@ app.post('/members/import', async (c) => {
       status = 'suspendu';
     }
 
-    validRowsMap.set(licence, {
+    validRowsMap.set(`${licence}-${season}`, {
       licence,
+      season,
       lastName,
       firstName,
       gender: genderStr,
@@ -157,19 +161,23 @@ app.post('/members/import', async (c) => {
     });
   }
 
-  const licenses = Array.from(validRowsMap.keys());
   const db = drizzle(c.env.DB);
-  const existingLicences = new Set<string>();
+  const existingLicenceSeasons = new Set<string>();
 
-  if (licenses.length > 0) {
+  // Extract list of licences to query existing records
+  const licenceSet = new Set<string>();
+  validRowsMap.forEach(m => licenceSet.add(m.licence));
+  const licencesList = Array.from(licenceSet);
+
+  if (licencesList.length > 0) {
     const chunkSize = 80;
-    for (let i = 0; i < licenses.length; i += chunkSize) {
-      const chunk = licenses.slice(i, i + chunkSize);
-      const existing = await db.select({ licence: membersTable.licence })
+    for (let i = 0; i < licencesList.length; i += chunkSize) {
+      const chunk = licencesList.slice(i, i + chunkSize);
+      const existing = await db.select({ licence: membersTable.licence, season: membersTable.season })
         .from(membersTable)
         .where(inArray(membersTable.licence, chunk))
         .all();
-      existing.forEach(m => existingLicences.add(m.licence));
+      existing.forEach(m => existingLicenceSeasons.add(`${m.licence}-${m.season}`));
     }
   }
 
@@ -178,7 +186,8 @@ app.post('/members/import', async (c) => {
   const importedAt = new Date();
 
   const batchPromises = Array.from(validRowsMap.values()).map(member => {
-    const isUpdate = existingLicences.has(member.licence);
+    const key = `${member.licence}-${member.season}`;
+    const isUpdate = existingLicenceSeasons.has(key);
     if (isUpdate) {
       updated++;
     } else {
@@ -188,6 +197,7 @@ app.post('/members/import', async (c) => {
     return db.insert(membersTable)
       .values({
         licence: member.licence,
+        season: member.season,
         lastName: member.lastName,
         firstName: member.firstName,
         gender: member.gender,
@@ -199,7 +209,7 @@ app.post('/members/import', async (c) => {
         importedAt,
       })
       .onConflictDoUpdate({
-        target: membersTable.licence,
+        target: [membersTable.licence, membersTable.season],
         set: {
           lastName: member.lastName,
           firstName: member.firstName,
@@ -241,6 +251,7 @@ app.get('/members', async (c) => {
   const gender = c.req.query('gender') || '';
   const type = c.req.query('type') || '';
   const status = c.req.query('status') || '';
+  const season = c.req.query('season') || '';
 
   const db = drizzle(c.env.DB);
   const conditions = [];
@@ -265,6 +276,10 @@ app.get('/members', async (c) => {
 
   if (status) {
     conditions.push(eq(membersTable.status, status));
+  }
+
+  if (season) {
+    conditions.push(eq(membersTable.season, season));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -305,11 +320,17 @@ app.get('/members/:licence', async (c) => {
   }
 
   const licence = c.req.param('licence');
+  const season = c.req.query('season') || '';
   const db = drizzle(c.env.DB);
+
+  const conditions = [eq(membersTable.licence, licence)];
+  if (season) {
+    conditions.push(eq(membersTable.season, season));
+  }
 
   const result = await db.select()
     .from(membersTable)
-    .where(eq(membersTable.licence, licence))
+    .where(and(...conditions))
     .all();
 
   if (result.length === 0) {
