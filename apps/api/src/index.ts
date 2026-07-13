@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
-import { inArray } from 'drizzle-orm';
+import { and, or, eq, like, sql, inArray } from 'drizzle-orm';
 import { membersTable } from '../../libs/shared/db/src/schema';
 
 type Bindings = {
@@ -186,6 +186,75 @@ app.post('/members/import', async (c) => {
     inserted,
     updated,
     errors: errorsCount,
+  });
+});
+
+app.get('/members', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+
+  const page = parseInt(c.req.query('page') || '1', 10);
+  const limit = parseInt(c.req.query('limit') || '20', 10);
+  const search = c.req.query('search') || '';
+  const gender = c.req.query('gender') || '';
+  const type = c.req.query('type') || '';
+  const status = c.req.query('status') || '';
+
+  const db = drizzle(c.env.DB);
+  const conditions = [];
+
+  if (search) {
+    conditions.push(
+      or(
+        like(membersTable.firstName, `%${search}%`),
+        like(membersTable.lastName, `%${search}%`),
+        like(membersTable.licence, `%${search}%`)
+      )
+    );
+  }
+
+  if (gender) {
+    conditions.push(eq(membersTable.gender, gender as 'M' | 'F'));
+  }
+
+  if (type) {
+    conditions.push(eq(membersTable.type, type));
+  }
+
+  if (status) {
+    conditions.push(eq(membersTable.status, status));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  // Count query
+  const countRes = await db.select({ count: sql<number>`count(*)` })
+    .from(membersTable)
+    .where(whereClause)
+    .all();
+  const total = countRes[0]?.count || 0;
+
+  // Data query
+  const offset = (page - 1) * limit;
+  const members = await db.select()
+    .from(membersTable)
+    .where(whereClause)
+    .limit(limit)
+    .offset(offset)
+    .all();
+
+  const totalPages = Math.ceil(total / limit) || 1;
+
+  return c.json({
+    success: true,
+    data: members,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages,
+    }
   });
 });
 
