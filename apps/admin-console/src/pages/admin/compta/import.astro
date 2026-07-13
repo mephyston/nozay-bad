@@ -9,7 +9,7 @@ const apiService = env.API_SERVICE;
 
 const season = Astro.url.searchParams.get('season') || '25-26';
 
-// Si requête POST, intercepter pour les actions d'écriture (import ou reconcile/ignore)
+// Si requête POST, intercepter pour les actions d'écriture (import ou reconcile/ignore/analyze)
 if (Astro.request.method === 'POST') {
   try {
     const contentType = Astro.request.headers.get('content-type') || '';
@@ -25,7 +25,14 @@ if (Astro.request.method === 'POST') {
       return new Response(JSON.stringify({ success: true }));
     } else {
       const data = await Astro.request.json() as any;
-      if (data.action === 'match' || data.action === 'create') {
+      if (data.action === 'analyze') {
+        const apiRes = await apiService.fetch(`http://localhost/bank-transactions/analyze?season=${data.season}`, {
+          method: 'POST'
+        });
+        if (!apiRes.ok) {
+          return new Response(await apiRes.text(), { status: apiRes.status });
+        }
+      } else if (data.action === 'match' || data.action === 'create') {
         const apiRes = await apiService.fetch(`http://localhost/bank-transactions/${data.btId}/reconcile`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -52,6 +59,7 @@ if (Astro.request.method === 'POST') {
 let bankTransactionsList = [];
 let glTransactionsList = [];
 let seasonsList = [];
+let membersList = [];
 let errorMsg = '';
 
 try {
@@ -72,6 +80,12 @@ try {
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];
+  }
+
+  const membersRes = await apiService.fetch(`http://localhost/members?season=${season}&limit=500`);
+  if (membersRes.ok) {
+    const json = await membersRes.json() as any;
+    membersList = json.data || [];
   }
 } catch (err: any) {
   errorMsg = 'Une erreur est survenue lors de la communication avec le serveur comptable.';
@@ -103,6 +117,7 @@ try {
         glTransactions={glTransactionsList}
         seasonId={season}
         seasons={seasonsList}
+        members={membersList}
       />
     </div>
   </AdminLayout>

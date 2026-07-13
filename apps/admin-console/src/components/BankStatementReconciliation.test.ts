@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mount } from 'svelte';
+import { mount, flushSync } from 'svelte';
 import BankStatementReconciliation from './BankStatementReconciliation.svelte';
 
 describe('BankStatementReconciliation Component', () => {
@@ -13,7 +13,8 @@ describe('BankStatementReconciliation Component', () => {
         bankTransactions: [],
         glTransactions: [],
         seasonId: '25-26',
-        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }]
+        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }],
+        members: []
       }
     });
 
@@ -37,7 +38,8 @@ describe('BankStatementReconciliation Component', () => {
             date: '2026-02-16',
             name: 'IONOS',
             memo: 'Facture web',
-            status: 'pending'
+            status: 'pending',
+            aiSuggestions: null
           }
         ],
         glTransactions: [
@@ -51,12 +53,30 @@ describe('BankStatementReconciliation Component', () => {
           }
         ],
         seasonId: '25-26',
-        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }]
+        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }],
+        members: [
+          {
+            id: 42,
+            licence: '0102030',
+            lastName: 'Dupont',
+            firstName: 'Jean',
+            amountRemaining: 15000
+          }
+        ]
       }
     });
 
     expect(target.innerHTML).toContain('Opérations bancaires en attente (1)');
     expect(target.innerHTML).toContain('IONOS');
     expect(target.innerHTML).toContain('-15.60 €');
+
+    // Cliquer sur le bouton de la transaction pour l'activer dans le panneau droit
+    const btn = target.querySelector('button[type="button"]') as HTMLButtonElement;
+    expect(btn).not.toBeNull();
+    btn.click();
+    flushSync();
+
+    // Maintenant, "Dupont Jean" doit être visible dans le select d'association
+    expect(target.innerHTML).toContain('Dupont Jean');
   });
 });

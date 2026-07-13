@@ -10,6 +10,7 @@ const season = Astro.url.searchParams.get('season') || '25-26';
 const apiService = env.API_SERVICE;
 
 let member = null;
+let memberTransactionsList = [];
 let errorMsg = '';
 
 try {
@@ -22,6 +23,14 @@ try {
   }
   const body = await res.json() as any;
   member = body.data;
+
+  if (member) {
+    const txRes = await apiService.fetch(`http://localhost/transactions?season=${season}&memberId=${member.id}&limit=100`);
+    if (txRes.ok) {
+      const txBody = await txRes.json() as any;
+      memberTransactionsList = txBody.data || [];
+    }
+  }
 } catch (err: any) {
   errorMsg = err.message || 'Une erreur inattendue est survenue.';
 }
@@ -41,7 +50,7 @@ try {
         </div>
       )}
 
-      {member && <MemberProfile client:load {member} />}
+      {member && <MemberProfile client:load {member} transactions={memberTransactionsList} />}
     </div>
   </AdminLayout>
 </Layout>

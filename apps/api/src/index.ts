@@ -515,6 +515,11 @@ app.get('/transactions', async (c) => {
     conditions.push(eq(transactionsTable.category, category));
   }
 
+  const memberId = c.req.query('memberId');
+  if (memberId) {
+    conditions.push(eq(transactionsTable.memberId, parseInt(memberId)));
+  }
+
   const totalRes = await db.select({ count: sql<number>`count(*)` })
     .from(transactionsTable)
     .where(and(...conditions))
