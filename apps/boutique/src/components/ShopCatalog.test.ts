@@ -136,7 +136,8 @@ describe('ShopCatalog Component', () => {
         memberId: 1, // Jean Dupont's ID
         productId: 10, // Volant RSL Grade 1 ID
         quantity: 1,
-        paymentMethod: 'virement'
+        paymentMethod: 'virement',
+        turnstileToken: 'mock-test-token'
       })
     });
 

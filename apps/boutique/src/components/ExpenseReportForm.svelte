@@ -190,6 +190,16 @@
       return;
     }
 
+    // Retrieve Turnstile response token (bypassed in test environment)
+    const isTest = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+    const turnstileResponse = isTest
+      ? 'mock-test-token'
+      : (document.getElementsByName('cf-turnstile-response')[0] as HTMLInputElement)?.value;
+    if (!turnstileResponse) {
+      errorMsg = "Veuillez valider le test de sécurité anti-bot.";
+      return;
+    }
+
     submitting = true;
 
     try {
@@ -208,7 +218,8 @@
             photoUrl,
             emitterName,
             memberId: parseInt(selectedMemberId)
-          }
+          },
+          turnstileToken: turnstileResponse
         })
       });
 
@@ -228,8 +239,17 @@
       amountStr = '';
       photoUrl = null;
       if (fileInput) fileInput.value = '';
+
+      // Reset Turnstile widget on success
+      if (typeof window !== 'undefined' && (window as any).turnstile) {
+        (window as any).turnstile.reset();
+      }
     } catch (err: any) {
       errorMsg = err.message || "Une erreur est survenue.";
+      // Reset Turnstile widget on failure
+      if (typeof window !== 'undefined' && (window as any).turnstile) {
+        (window as any).turnstile.reset();
+      }
     } finally {
       submitting = false;
     }
@@ -397,6 +417,10 @@
           </div>
         {/if}
       </div>
+    </div>
+
+    <div class="flex justify-center my-4">
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1"></div>
     </div>
 
     <button

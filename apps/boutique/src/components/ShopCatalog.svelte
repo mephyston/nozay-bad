@@ -170,8 +170,15 @@
       errorMessages[productId] = "Produit inexistant.";
       return;
     }
-
-
+    // Retrieve Turnstile response token (bypassed in test environment)
+    const isTest = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+    const turnstileResponse = isTest
+      ? 'mock-test-token'
+      : (document.getElementsByName('cf-turnstile-response')[0] as HTMLInputElement)?.value;
+    if (!turnstileResponse) {
+      errorMessages[productId] = "Veuillez valider le test de sécurité anti-bot.";
+      return;
+    }
 
     errorMessages[productId] = null;
     successMessages[productId] = null;
@@ -188,7 +195,8 @@
           memberId: parseInt(selectedMemberId),
           productId: productId,
           quantity: qty,
-          paymentMethod: pm
+          paymentMethod: pm,
+          turnstileToken: turnstileResponse
         })
       });
 
@@ -203,8 +211,17 @@
       
       // Update local qty
       quantities[productId] = 1;
+
+      // Reset Turnstile on success to allow another order
+      if (typeof window !== 'undefined' && (window as any).turnstile) {
+        (window as any).turnstile.reset();
+      }
     } catch (err: any) {
       errorMessages[productId] = err.message || "Une erreur est survenue.";
+      // Reset Turnstile on failure so they can retry
+      if (typeof window !== 'undefined' && (window as any).turnstile) {
+        (window as any).turnstile.reset();
+      }
     } finally {
       submitting[productId] = false;
     }
@@ -307,9 +324,12 @@
 
     <!-- Active Member Badge -->
     {#if selectedMember}
-      <div class="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg text-xs font-semibold">
-        <Check class="w-4 h-4" />
-        Adhérent sélectionné : <span class="underline">{selectedMember.lastName} {selectedMember.firstName}</span>
+      <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div class="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg text-xs font-semibold self-start sm:self-auto">
+          <Check class="w-4 h-4" />
+          Adhérent sélectionné : <span class="underline">{selectedMember.lastName} {selectedMember.firstName}</span>
+        </div>
+        <div class="cf-turnstile" data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1"></div>
       </div>
     {:else}
       <div class="inline-flex items-center gap-2 bg-destructive/10 text-destructive border border-destructive/20 px-3 py-1.5 rounded-lg text-xs font-semibold">

@@ -34,6 +34,30 @@ const apiService = env.API_SERVICE;
 if (Astro.request.method === 'POST') {
   try {
     const body = await Astro.request.json();
+    const turnstileToken = body.turnstileToken;
+    if (!turnstileToken) {
+      return new Response(JSON.stringify({ success: false, error: 'Validation anti-bot manquante.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const verifyRes = await fetch('https://turnstile-siteverify-nba-boutique.mephyston.workers.dev', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ token: turnstileToken })
+    });
+    
+    const verifyData = await verifyRes.json() as any;
+    if (!verifyRes.ok || !verifyData.success) {
+      return new Response(JSON.stringify({ success: false, error: 'Validation anti-bot échouée.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     if (body.action === 'expense') {
       const res = await apiService.fetch('http://localhost/expenses', {
         method: 'POST',
@@ -120,6 +144,7 @@ const activeSeasonId = activeSeason.id;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <title>Boutique Adhérents - NBA 91</title>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" is:inline async defer></script>
     <script is:inline>
       const theme = (() => {
         if (typeof localStorage !== 'undefined' && localStorage.getItem('mode-watcher-mode')) {
