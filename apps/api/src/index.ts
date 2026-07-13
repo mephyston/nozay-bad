@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, or, eq, ne, like, sql, inArray, desc } from 'drizzle-orm';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable } from '../../../libs/shared/db/src/schema';
+
 
 
 function cleanName(name: string | null): string {
@@ -1723,6 +1724,143 @@ app.put('/products/:id', async (c) => {
     active: body.active
   }).where(eq(productsTable.id, id)).returning().get();
   return c.json({ success: true, data: prod });
+});
+
+app.get('/orders', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const season = c.req.query('season');
+  const status = c.req.query('status');
+  const db = drizzle(c.env.DB);
+  let conditions = [];
+  if (season) conditions.push(eq(ordersTable.seasonId, season));
+  if (status) conditions.push(eq(ordersTable.status, status as any));
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const orders = await db.select().from(ordersTable).where(whereClause).all();
+
+  const memberIds = Array.from(new Set(orders.map(o => o.memberId)));
+  const productIds = Array.from(new Set(orders.map(o => o.productId)));
+
+  let membersList = [];
+  let productsList = [];
+
+  if (memberIds.length > 0) {
+    membersList = await db.select().from(membersTable).where(inArray(membersTable.id, memberIds)).all();
+  }
+  if (productIds.length > 0) {
+    productsList = await db.select().from(productsTable).where(inArray(productsTable.id, productIds)).all();
+  }
+
+  const membersMap = new Map(membersList.map(m => [m.id, m]));
+  const productsMap = new Map(productsList.map(p => [p.id, p]));
+
+  const mappedOrders = orders.map(order => ({
+    order,
+    member: membersMap.get(order.memberId),
+    product: productsMap.get(order.productId)
+  }));
+
+  return c.json({ success: true, data: mappedOrders });
+});
+
+app.post('/orders', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const body = await c.req.json();
+  const db = drizzle(c.env.DB);
+
+  const product = await db.select().from(productsTable).where(eq(productsTable.id, body.productId)).get();
+  if (!product || product.stock < body.quantity) {
+    return c.json({ success: false, error: 'Stock insuffisant ou produit inexistant' }, 400);
+  }
+
+  const order = await db.insert(ordersTable).values({
+    seasonId: body.seasonId,
+    memberId: body.memberId,
+    productId: body.productId,
+    quantity: body.quantity,
+    totalAmount: product.price * body.quantity,
+    paymentMethod: body.paymentMethod,
+    status: 'pending',
+    createdAt: new Date()
+  }).returning().get();
+
+  return c.json({ success: true, data: order });
+});
+
+app.post('/orders/:id/approve', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const db = drizzle(c.env.DB);
+
+  const order = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
+  if (!order || order.status !== 'pending') {
+    return c.json({ success: false, error: 'Commande invalide ou déjà traitée' }, 400);
+  }
+
+  const product = await db.select().from(productsTable).where(eq(productsTable.id, order.productId)).get();
+  if (!product) {
+    return c.json({ success: false, error: 'Produit inexistant' }, 400);
+  }
+
+  const member = await db.select().from(membersTable).where(eq(membersTable.id, order.memberId)).get();
+  if (!member) {
+    return c.json({ success: false, error: 'Adhérent inexistant' }, 400);
+  }
+
+  if (product.stock < order.quantity) {
+    return c.json({ success: false, error: 'Stock insuffisant pour valider la commande' }, 400);
+  }
+
+  // Décrémenter le stock et créer l'écriture de recette
+  await db.update(productsTable)
+    .set({ stock: product.stock - order.quantity })
+    .where(eq(productsTable.id, product.id))
+    .run();
+
+  const tx = await db.insert(transactionsTable).values({
+    seasonId: order.seasonId,
+    type: 'recette',
+    accountId: 'current',
+    category: 'boutique',
+    amount: order.totalAmount,
+    date: new Date().toISOString().split('T')[0],
+    paymentMethod: order.paymentMethod as any,
+    description: `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`,
+    memberId: member.id,
+    createdAt: new Date()
+  }).returning().get();
+
+  const updatedOrder = await db.update(ordersTable)
+    .set({ status: 'approved', transactionId: tx.id })
+    .where(eq(ordersTable.id, id))
+    .returning().get();
+
+  return c.json({ success: true, data: updatedOrder });
+});
+
+app.post('/orders/:id/reject', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const db = drizzle(c.env.DB);
+  const updatedOrder = await db.update(ordersTable)
+    .set({ status: 'rejected' })
+    .where(eq(ordersTable.id, id))
+    .returning().get();
+
+  if (!updatedOrder) {
+    return c.json({ success: false, error: 'Commande introuvable' }, 404);
+  }
+
+  return c.json({ success: true, data: updatedOrder });
 });
 
 export default app;

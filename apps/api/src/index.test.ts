@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checksTable, checkDepositsTable, productsTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checksTable, checkDepositsTable, productsTable, ordersTable } from '../../../libs/shared/db/src/schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 import { DatabaseSync } from 'node:sqlite';
@@ -1274,6 +1274,145 @@ describe('Products API Endpoints', () => {
     const verifyJson = await verifyRes.json() as any;
     expect(verifyJson.data).toHaveLength(1);
     expect(verifyJson.data[0].name).toBe('Yonex BG65 Updated');
+  });
+});
+
+describe('Orders API Endpoints', () => {
+  it('processes orders and creates transaction on approval', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Insert a season
+    await db.insert(seasonsTable).values({
+      id: '25-26',
+      name: 'Saison 2025-2026',
+      active: true,
+      createdAt: new Date()
+    }).onConflictDoNothing().run();
+
+    // Insert a member
+    await db.insert(membersTable).values({
+      id: 1,
+      licence: '1234567',
+      season: '25-26',
+      lastName: 'Dupont',
+      firstName: 'Jean',
+      gender: 'M',
+      birthDate: '1990-01-01',
+      status: 'valide',
+      type: 'Competiteur',
+      amountDue: 25000,
+      amountReceived: 0,
+      amountRemaining: 25000,
+      importedAt: new Date()
+    }).run();
+
+    // Insert a product with stock = 5
+    await db.insert(productsTable).values({
+      id: 1,
+      name: 'Yonex BG65',
+      category: 'string' as any,
+      price: 1200,
+      stock: 5,
+      active: true,
+      createdAt: new Date()
+    }).run();
+    // 1. Post order
+    const res = await app.request('http://localhost/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seasonId: '25-26', memberId: 1, productId: 1, quantity: 2, paymentMethod: 'virement' })
+    }, { DB: mockD1 as any });
+    expect(res.status).toBe(200);
+    const orderJson = await res.json() as any;
+    expect(orderJson.success).toBe(true);
+    expect(orderJson.data.status).toBe('pending');
+    expect(orderJson.data.totalAmount).toBe(2400); // 1200 * 2
+
+    // 2. Approve
+    const appRes = await app.request(`http://localhost/orders/${orderJson.data.id}/approve`, {
+      method: 'POST'
+    }, { DB: mockD1 as any });
+    expect(appRes.status).toBe(200);
+    const json = await appRes.json() as any;
+    expect(json.data.status).toBe('approved');
+    expect(json.data.transactionId).toBeDefined();
+
+    // 3. Verify stock is decremented
+    const updatedProd = await db.select().from(productsTable).where(eq(productsTable.id, 1)).get();
+    expect(updatedProd.stock).toBe(3); // 5 - 2
+
+    // 4. Verify transaction is created
+    const tx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, json.data.transactionId)).get();
+    expect(tx).toBeDefined();
+    expect(tx.amount).toBe(2400);
+    expect(tx.category).toBe('boutique');
+    expect(tx.memberId).toBe(1);
+
+    // 5. Test GET /orders
+    const getRes = await app.request('http://localhost/orders?season=25-26', undefined, { DB: mockD1 as any });
+    expect(getRes.status).toBe(200);
+    const getJson = await getRes.json() as any;
+    expect(getJson.success).toBe(true);
+    expect(getJson.data).toHaveLength(1);
+    expect(getJson.data[0].order.id).toBe(orderJson.data.id);
+    expect(getJson.data[0].member.lastName).toBe('Dupont');
+    expect(getJson.data[0].product.name).toBe('Yonex BG65');
+  });
+
+  it('supports rejecting an order', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Insert season, member, product
+    await db.insert(seasonsTable).values({ id: '25-26', name: 'Saison 2025-2026', active: true, createdAt: new Date() }).onConflictDoNothing().run();
+    await db.insert(membersTable).values({ id: 1, licence: '1234567', season: '25-26', lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'Competiteur', amountDue: 25000, amountReceived: 0, amountRemaining: 25000, importedAt: new Date() }).run();
+    await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', category: 'string' as any, price: 1200, stock: 5, active: true, createdAt: new Date() }).run();
+
+    // 1. Create order
+    const res = await app.request('http://localhost/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seasonId: '25-26', memberId: 1, productId: 1, quantity: 2, paymentMethod: 'virement' })
+    }, { DB: mockD1 as any });
+    const order = (await res.json() as any).data;
+
+    // 2. Reject order
+    const rejectRes = await app.request(`http://localhost/orders/${order.id}/reject`, {
+      method: 'POST'
+    }, { DB: mockD1 as any });
+    expect(rejectRes.status).toBe(200);
+    const rejectJson = await rejectRes.json() as any;
+    expect(rejectJson.data.status).toBe('rejected');
+
+    // 3. Verify stock is unchanged
+    const prod = await db.select().from(productsTable).where(eq(productsTable.id, 1)).get();
+    expect(prod.stock).toBe(5);
+
+    // 4. Trying to approve rejected order should fail
+    const approveRes = await app.request(`http://localhost/orders/${order.id}/approve`, {
+      method: 'POST'
+    }, { DB: mockD1 as any });
+    expect(approveRes.status).toBe(400);
+  });
+
+  it('fails to create order if stock is insufficient', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Insert season, member, product
+    await db.insert(seasonsTable).values({ id: '25-26', name: 'Saison 2025-2026', active: true, createdAt: new Date() }).onConflictDoNothing().run();
+    await db.insert(membersTable).values({ id: 1, licence: '1234567', season: '25-26', lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'Competiteur', amountDue: 25000, amountReceived: 0, amountRemaining: 25000, importedAt: new Date() }).run();
+    await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', category: 'string' as any, price: 1200, stock: 1, active: true, createdAt: new Date() }).run();
+
+    const res = await app.request('http://localhost/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seasonId: '25-26', memberId: 1, productId: 1, quantity: 2, paymentMethod: 'virement' })
+    }, { DB: mockD1 as any });
+    expect(res.status).toBe(400);
+    const json = await res.json() as any;
+    expect(json.success).toBe(false);
   });
 });
 
