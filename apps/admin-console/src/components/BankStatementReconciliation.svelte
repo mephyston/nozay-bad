@@ -99,7 +99,8 @@
     { id: '11', name: 'Licences (versements fédération)' },
     { id: '12', name: 'Championnats (frais équipes)' },
     { id: '13', name: 'Stages & Formations' },
-    { id: '14', name: 'Frais de fonctionnement & administratif' }
+    { id: '14', name: 'Frais de fonctionnement & administratif' },
+    { id: '15', name: 'Virements Internes (Transit)' }
   ];
 
   let sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
