@@ -84,4 +84,46 @@ describe('ProductsManager Component', () => {
     expect(target.innerHTML).toContain('12.00 €');
     expect(target.innerHTML).toContain('5 en stock');
   });
+
+  it('renders all products with category column correctly', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(ProductsManager, {
+      target,
+      props: {
+        category: 'all',
+        products: [
+          {
+            id: 1,
+            name: 'Babolat Tour shuttlecock',
+            category: 'shuttlecock',
+            price: 2500,
+            stock: 10,
+            active: true,
+            createdAt: '2026-07-13'
+          },
+          {
+            id: 3,
+            name: 'Yonex BG65 String',
+            category: 'string',
+            price: 1200,
+            stock: 5,
+            active: true,
+            createdAt: '2026-07-13'
+          }
+        ]
+      }
+    });
+
+    // Check header
+    expect(target.innerHTML).toContain('Gestion des Produits');
+    
+    // Check categories are displayed in table
+    expect(target.innerHTML).toContain('Volants');
+    expect(target.innerHTML).toContain('Cordages');
+
+    // Check Category select field exists in form
+    expect(target.innerHTML).toContain('Catégorie');
+  });
 });

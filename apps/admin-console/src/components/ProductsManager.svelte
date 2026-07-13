@@ -15,9 +15,13 @@
     category,
     products = []
   }: {
-    category: 'shuttlecock' | 'string';
+    category?: 'shuttlecock' | 'string' | 'all';
     products?: Product[];
   } = $props();
+
+  let formCategory = $state<'shuttlecock' | 'string'>(
+    category && category !== 'all' ? category : 'shuttlecock'
+  );
 
   // Local state
   // svelte-ignore state_referenced_locally
@@ -58,6 +62,7 @@
     stock = '';
     active = true;
     errorMsg = '';
+    formCategory = category && category !== 'all' ? category : 'shuttlecock';
   }
 
   function startEdit(product: Product) {
@@ -66,6 +71,7 @@
     price = (product.price / 100).toString();
     stock = product.stock.toString();
     active = product.active;
+    formCategory = product.category;
     errorMsg = '';
     successMsg = '';
   }
@@ -109,7 +115,7 @@
         : {
             action: 'create',
             name: name.trim(),
-            category,
+            category: category && category !== 'all' ? category : formCategory,
             price: priceCents,
             stock: numStock,
             active
@@ -202,7 +208,7 @@
   <div class="flex items-center justify-between border-b border-border pb-4">
     <div>
       <h1 class="text-3xl font-bold tracking-tight">
-        {category === 'shuttlecock' ? 'Gestion des Volants' : 'Gestion des Cordages'}
+        {category === 'shuttlecock' ? 'Gestion des Volants' : category === 'string' ? 'Gestion des Cordages' : 'Gestion des Produits'}
       </h1>
       <p class="text-muted-foreground mt-1">
         Consultez et modifiez les tarifs, stocks et statuts de la boutique.
@@ -260,6 +266,22 @@
             required
           />
         </div>
+
+        {#if !category || category === 'all'}
+          <div>
+            <label for="category" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Catégorie</label>
+            <select
+              id="category"
+              bind:value={formCategory}
+              disabled={!!editingId}
+              class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              required
+            >
+              <option value="shuttlecock">Volants</option>
+              <option value="string">Cordages</option>
+            </select>
+          </div>
+        {/if}
 
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -335,6 +357,9 @@
           <thead>
             <tr class="border-b border-border text-xs text-muted-foreground font-bold uppercase tracking-wider">
               <th class="py-3 px-2">Nom</th>
+              {#if !category || category === 'all'}
+                <th class="py-3 px-2">Catégorie</th>
+              {/if}
               <th class="py-3 px-2">Prix</th>
               <th class="py-3 px-2">Stock</th>
               <th class="py-3 px-2">Statut</th>
@@ -344,7 +369,7 @@
           <tbody class="divide-y divide-border">
             {#if filteredProducts.length === 0}
               <tr>
-                <td colspan="5" class="py-8 text-center text-muted-foreground text-sm">
+                <td colspan={!category || category === 'all' ? 6 : 5} class="py-8 text-center text-muted-foreground text-sm">
                   Aucun article trouvé.
                 </td>
               </tr>
@@ -354,6 +379,13 @@
                   <td class="py-3 px-2 font-medium">
                     {product.name}
                   </td>
+                  {#if !category || category === 'all'}
+                    <td class="py-3 px-2">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-primary/10 text-primary">
+                        {product.category === 'shuttlecock' ? 'Volants' : 'Cordages'}
+                      </span>
+                    </td>
+                  {/if}
                   <td class="py-3 px-2 font-semibold">
                     {(product.price / 100).toFixed(2)} €
                   </td>

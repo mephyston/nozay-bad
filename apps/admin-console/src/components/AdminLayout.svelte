@@ -45,8 +45,7 @@
       name: "Boutique",
       icon: ShoppingBag,
       subItems: [
-        { name: "Volants", href: "/admin/shop/shuttlecocks" },
-        { name: "Cordage", href: "/admin/shop/strings" },
+        { name: "Produits", href: "/admin/shop/products" },
         { name: "Commandes", href: "/admin/shop/orders" }
       ]
     },

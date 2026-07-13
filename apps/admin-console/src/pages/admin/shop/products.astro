@@ -53,20 +53,20 @@ let productsList = [];
 let errorMsg = '';
 
 try {
-  const productsRes = await apiService.fetch('http://localhost/products?category=shuttlecock');
+  const productsRes = await apiService.fetch('http://localhost/products');
   if (productsRes.ok) {
     const json = await productsRes.json() as any;
     productsList = json.data || [];
   } else {
-    errorMsg = 'Impossible de charger la liste des volants depuis le service API.';
+    errorMsg = 'Impossible de charger la liste des produits depuis le service API.';
   }
 } catch (err: any) {
-  errorMsg = 'Une erreur est survenue lors du chargement des volants.';
+  errorMsg = 'Une erreur est survenue lors du chargement des produits.';
 }
 ---
 
-<Layout title="Gestion des Volants - NBA 91">
-  <AdminLayout client:load email={userEmail} breadcrumb="Boutique / Volants">
+<Layout title="Gestion des Produits - NBA 91">
+  <AdminLayout client:load email={userEmail} breadcrumb="Boutique / Produits">
     <div class="space-y-6">
       {errorMsg && (
         <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
@@ -76,7 +76,7 @@ try {
 
       <ProductsManager
         client:load
-        category="shuttlecock"
+        category="all"
         products={productsList}
       />
     </div>
