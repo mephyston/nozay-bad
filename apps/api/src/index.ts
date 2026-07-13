@@ -1241,7 +1241,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
 
       aiRes = await c.env.AI.run(model, {
         prompt: systemPrompt,
-        image: [...new Uint8Array(bytes)]
+        image: new Uint8Array(bytes)
       });
     } catch (llamaErr) {
       console.warn("Llama 3.2 vision failed (likely license/EU restrictions), trying Moondream 3.1:", llamaErr);
@@ -1259,7 +1259,7 @@ Return ONLY the raw JSON object.`;
         aiRes = await c.env.AI.run(modelFallback, {
           task: 'query',
           prompt: systemPrompt,
-          image: [...new Uint8Array(bytes)]
+          image: new Uint8Array(bytes)
         });
       } catch (moondreamErr) {
         console.warn("Moondream 3.1 vision failed, trying Llava 1.5:", moondreamErr);
@@ -1268,7 +1268,7 @@ Return ONLY the raw JSON object.`;
 
         aiRes = await c.env.AI.run(modelLlava, {
           prompt: systemPrompt,
-          image: [...new Uint8Array(bytes)]
+          image: new Uint8Array(bytes)
         });
       }
     }
