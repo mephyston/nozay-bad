@@ -61,6 +61,7 @@
   let isAnalyzing = $state(false);
   let errorMsg = $state('');
   let showImportModal = $state(false);
+  let selectedAccount = $state('auto');
 
   // Onglet actif à gauche
   let activeTab = $state<'pending' | 'reconciled' | 'ignored'>('pending');
@@ -176,6 +177,7 @@
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
     formData.append('seasonId', selectedSeason);
+    formData.append('accountId', selectedAccount);
 
     try {
       const res = await fetch('/admin/compta/import', {
@@ -617,6 +619,14 @@
               </select>
             </div>
             <div>
+              <label for="account-select-modal" class="block text-xs font-semibold mb-1">Compte de destination</label>
+              <select id="account-select-modal" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium" bind:value={selectedAccount}>
+                <option value="auto">Détecter automatiquement (depuis le fichier)</option>
+                <option value="current">Compte Courant (Société Générale)</option>
+                <option value="savings">Livret d'Épargne</option>
+              </select>
+            </div>
+            <div>
               <label for="file-input-modal" class="block text-xs font-semibold mb-1">Fichier (.ofx)</label>
               <input id="file-input-modal" type="file" accept=".ofx" class="w-full text-sm" required />
             </div>
@@ -658,7 +668,7 @@
         </div>
       {/if}
       <form onsubmit={handleImport} class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label for="season-select" class="block text-xs font-semibold mb-1">Saison comptable</label>
             <select id="season-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium" bind:value={selectedSeason}>
@@ -671,8 +681,16 @@
             </select>
           </div>
           <div>
+            <label for="account-select" class="block text-xs font-semibold mb-1">Compte de destination</label>
+            <select id="account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium" bind:value={selectedAccount}>
+              <option value="auto">Détecter automatiquement</option>
+              <option value="current">Compte Courant (Société Générale)</option>
+              <option value="savings">Livret d'Épargne</option>
+            </select>
+          </div>
+          <div>
             <label for="file-input" class="block text-xs font-semibold mb-1">Fichier (.ofx)</label>
-            <input id="file-input" type="file" accept=".ofx" class="w-full text-sm" required />
+            <input id="file-input" type="file" accept=".ofx" class="w-full text-sm mt-1.5" required />
           </div>
         </div>
         <button type="submit" disabled={isSubmitting} class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-md shadow hover:bg-primary/95 cursor-pointer font-medium border-0">

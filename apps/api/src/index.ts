@@ -872,6 +872,9 @@ app.get('/seasons/:seasonId/reports', async (c) => {
   let totalRecettes = 0;
   let totalDepenses = 0;
 
+  const transitCat = await db.select().from(categoriesTable).where(eq(categoriesTable.adminLabel, 'Virements Internes (Transit)')).get();
+  const transitCatId = transitCat ? transitCat.id : null;
+
   for (const tx of allTxs) {
     if (tx.type === 'transfert') continue;
     
@@ -881,10 +884,12 @@ app.get('/seasons/:seasonId/reports', async (c) => {
     }
     categoryTotals[cat].total += tx.amount;
     
-    if (tx.type === 'recette') {
-      totalRecettes += tx.amount;
-    } else {
-      totalDepenses += tx.amount;
+    if (tx.category !== transitCatId) {
+      if (tx.type === 'recette') {
+        totalRecettes += tx.amount;
+      } else {
+        totalDepenses += tx.amount;
+      }
     }
   }
 
@@ -974,6 +979,7 @@ app.post('/bank-transactions/import', async (c) => {
   const body = await c.req.parseBody();
   const file = body.file;
   const seasonId = body.seasonId as string;
+  const forcedAccountId = body.accountId as string;
 
   if (!file || !seasonId) {
     return c.json({ success: false, error: 'Fichier et saison obligatoires.' }, 400);
@@ -1004,30 +1010,36 @@ app.post('/bank-transactions/import', async (c) => {
   const db = drizzle(c.env.DB);
   let insertedCount = 0;
 
-  for (const tx of transactions) {
-    try {
-      const res = await db.insert(bankTransactionsTable)
-        .values({
-          fitid: tx.fitid,
-          seasonId,
-          accountId: tx.accountId,
-          amount: tx.amount,
-          date: tx.date,
-          name: tx.name,
-          memo: tx.memo,
-          status: 'pending',
-          createdAt: new Date()
-        })
-        .onConflictDoNothing()
-        .run();
-      
-      const changes = res?.meta?.changes ?? 0;
-      if (changes > 0) {
-        insertedCount++;
+  try {
+    await db.transaction(async (txDb) => {
+      for (const tx of transactions) {
+        const targetAccount = (forcedAccountId && forcedAccountId !== 'auto') 
+          ? (forcedAccountId as 'current' | 'savings') 
+          : tx.accountId;
+
+        const res = await txDb.insert(bankTransactionsTable)
+          .values({
+            fitid: tx.fitid,
+            seasonId,
+            accountId: targetAccount,
+            amount: tx.amount,
+            date: tx.date,
+            name: tx.name,
+            memo: tx.memo,
+            status: 'pending',
+            createdAt: new Date()
+          })
+          .onConflictDoNothing()
+          .run();
+        
+        const changes = res?.meta?.changes ?? 0;
+        if (changes > 0) {
+          insertedCount++;
+        }
       }
-    } catch (err) {
-      // Ignorer silencieusement les erreurs de doublons si onConflictDoNothing ne suffit pas
-    }
+    });
+  } catch (err: any) {
+    return c.json({ success: false, error: "Erreur lors de l'insertion en base : " + err.message }, 500);
   }
 
   return c.json({ success: true, count: insertedCount });

@@ -113,6 +113,13 @@
       "when": 1783982519235,
       "tag": "0015_misty_naoko",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1783983420000,
+      "tag": "0016_add_virements_internes_category",
+      "breakpoints": true
     }
   ]
 }
