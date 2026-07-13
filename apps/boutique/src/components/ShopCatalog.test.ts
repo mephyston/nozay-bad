@@ -154,4 +154,117 @@ describe('ShopCatalog Component', () => {
     // Check stock was decremented locally
     expect(target.innerHTML).toContain("9 disponibles");
   });
+
+  it('supports keyboard navigation through the members listbox', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(ShopCatalog, {
+      target,
+      props: {
+        members,
+        products,
+        activeSeasonId: '25-26'
+      }
+    });
+    flushSync();
+
+    const input = target.querySelector('input#member-input') as HTMLInputElement;
+    input.focus();
+    flushSync();
+
+    // Keydown ArrowDown to highlight first element (Dupont Jean)
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    flushSync();
+
+    // Verify option 0 is highlighted (has bg-primary/10 class or similar)
+    const option0 = target.querySelector('#member-option-0');
+    expect(option0?.className).toContain('bg-primary/10');
+
+    // Keydown ArrowDown to highlight second element (Martin Alice)
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    flushSync();
+
+    const option1 = target.querySelector('#member-option-1');
+    expect(option1?.className).toContain('bg-primary/10');
+    expect(option0?.className).not.toContain('bg-primary/10');
+
+    // Keydown Enter to select
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    flushSync();
+
+    // Verify selection was made
+    expect(target.innerHTML).toContain('Adhérent sélectionné : <span class="underline">Martin Alice</span>');
+  });
+
+  it('closes dropdown list on Escape key', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(ShopCatalog, {
+      target,
+      props: {
+        members,
+        products,
+        activeSeasonId: '25-26'
+      }
+    });
+    flushSync();
+
+    const input = target.querySelector('input#member-input') as HTMLInputElement;
+    input.focus();
+    flushSync();
+
+    expect(input.getAttribute('aria-expanded')).toBe('true');
+    expect(target.querySelector('#member-listbox')).not.toBeNull();
+
+    // Keydown Escape
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    flushSync();
+
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+    expect(target.querySelector('#member-listbox')).toBeNull();
+  });
+
+  it('selects all text on focus without clearing if member is selected', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(ShopCatalog, {
+      target,
+      props: {
+        members,
+        products,
+        activeSeasonId: '25-26'
+      }
+    });
+    flushSync();
+
+    // Select Jean Dupont first
+    const input = target.querySelector('input#member-input') as HTMLInputElement;
+    input.focus();
+    flushSync();
+    
+    const jeanBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Dupont Jean'));
+    jeanBtn!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    flushSync();
+
+    // Blur input
+    input.blur();
+    flushSync();
+
+    // Value should equal Jean Dupont's display name
+    expect(input.value).toBe('Dupont Jean');
+
+    // Mock HTMLInputElement.select
+    const selectSpy = vi.spyOn(input, 'select');
+
+    // Focus input again
+    input.focus();
+    flushSync();
+
+    // Input value should still be preserved
+    expect(input.value).toBe('Dupont Jean');
+    expect(selectSpy).toHaveBeenCalled();
+  });
 });

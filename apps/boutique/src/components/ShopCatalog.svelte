@@ -51,6 +51,76 @@
   let selectedMemberId = $state<string>('');
   let memberSearchQuery = $state<string>('');
   let isMemberDropdownOpen = $state<boolean>(false);
+  let highlightedIndex = $state<number>(-1);
+
+  // Reset highlightedIndex when dropdown closes
+  $effect(() => {
+    if (!isMemberDropdownOpen) {
+      highlightedIndex = -1;
+    }
+  });
+
+  // Clamp highlightedIndex when filteredMembers changes
+  $effect(() => {
+    if (highlightedIndex >= filteredMembers.length) {
+      highlightedIndex = filteredMembers.length - 1;
+    }
+  });
+
+  function selectMember(m: Member) {
+    selectedMemberId = m.id.toString();
+    memberSearchQuery = `${m.lastName} ${m.firstName}`;
+    isMemberDropdownOpen = false;
+    highlightedIndex = -1;
+  }
+
+  function handleKeyDown(e: KeyboardEvent) {
+    if (!isMemberDropdownOpen) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        isMemberDropdownOpen = true;
+        highlightedIndex = 0;
+        e.preventDefault();
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      highlightedIndex = (highlightedIndex + 1) % filteredMembers.length;
+      e.preventDefault();
+      scrollOptionIntoView(highlightedIndex);
+    } else if (e.key === 'ArrowUp') {
+      highlightedIndex = (highlightedIndex - 1 + filteredMembers.length) % filteredMembers.length;
+      e.preventDefault();
+      scrollOptionIntoView(highlightedIndex);
+    } else if (e.key === 'Enter') {
+      if (highlightedIndex >= 0 && highlightedIndex < filteredMembers.length) {
+        selectMember(filteredMembers[highlightedIndex]);
+        e.preventDefault();
+      }
+    } else if (e.key === 'Escape') {
+      isMemberDropdownOpen = false;
+      e.preventDefault();
+    }
+  }
+
+  function scrollOptionIntoView(index: number) {
+    setTimeout(() => {
+      const container = document.getElementById('member-listbox');
+      const option = document.getElementById(`member-option-${index}`);
+      if (container && option) {
+        const containerTop = container.scrollTop;
+        const containerBottom = containerTop + container.clientHeight;
+        const optionTop = option.offsetTop;
+        const optionBottom = optionTop + option.clientHeight;
+
+        if (optionTop < containerTop) {
+          container.scrollTop = optionTop;
+        } else if (optionBottom > containerBottom) {
+          container.scrollTop = optionBottom - container.clientHeight;
+        }
+      }
+    }, 0);
+  }
 
   // Local state for product ordering inputs
   let quantities = $state<Record<number, number>>({});
@@ -179,6 +249,11 @@
         <input
           id="member-input"
           type="text"
+          role="combobox"
+          aria-expanded={isMemberDropdownOpen}
+          aria-autocomplete="list"
+          aria-controls="member-listbox"
+          aria-activedescendant={highlightedIndex >= 0 ? `member-option-${highlightedIndex}` : undefined}
           placeholder="Rechercher par Nom, Prénom, ou N° Licence..."
           class="w-full pl-10 pr-10 py-2 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground font-medium"
           value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
@@ -186,28 +261,39 @@
             isMemberDropdownOpen = true;
             memberSearchQuery = (e.target as HTMLInputElement).value;
           }}
-          onfocus={() => {
+          onfocus={(e) => {
             isMemberDropdownOpen = true;
-            memberSearchQuery = '';
+            if (selectedMember) {
+              memberSearchQuery = `${selectedMember.lastName} ${selectedMember.firstName}`;
+            } else {
+              memberSearchQuery = '';
+            }
+            (e.target as HTMLInputElement).select();
           }}
           onblur={() => {
             // Delay to allow onmousedown selection of buttons
             setTimeout(() => { isMemberDropdownOpen = false; }, 200);
           }}
+          onkeydown={handleKeyDown}
         />
         <ChevronDown class="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
       </div>
 
       {#if isMemberDropdownOpen}
-        <div class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-popover border border-border rounded-lg shadow-xl divide-y divide-border">
-          {#each filteredMembers as m}
+        <div
+          role="listbox"
+          id="member-listbox"
+          class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-popover border border-border rounded-lg shadow-xl divide-y divide-border"
+        >
+          {#each filteredMembers as m, index}
             <button
               type="button"
-              class="w-full text-left px-4 py-2.5 text-sm hover:bg-muted text-foreground transition-colors font-medium border-0 cursor-pointer"
+              role="option"
+              aria-selected={selectedMemberId === m.id.toString()}
+              id={`member-option-${index}`}
+              class="w-full text-left px-4 py-2.5 text-sm transition-colors font-medium border-0 cursor-pointer {index === highlightedIndex ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground'}"
               onmousedown={() => {
-                selectedMemberId = m.id.toString();
-                memberSearchQuery = `${m.lastName} ${m.firstName}`;
-                isMemberDropdownOpen = false;
+                selectMember(m);
               }}
             >
               <div class="flex justify-between items-center">
