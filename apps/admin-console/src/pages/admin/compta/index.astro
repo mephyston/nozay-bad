@@ -77,12 +77,20 @@ try {
             Consultez le grand livre comptable et suivez les mouvements de fonds de l'association.
           </p>
         </div>
-        <a
-          href="/admin/compta/reports"
-          class="inline-flex items-center justify-center px-4 py-2 bg-primary hover:bg-primary/95 text-primary-foreground font-medium text-sm rounded-md shadow-sm transition-colors cursor-pointer"
-        >
-          Voir Rapport AG
-        </a>
+        <div class="flex gap-3">
+          <a
+            href="/admin/compta/import"
+            class="inline-flex items-center justify-center px-4 py-2 border border-input bg-transparent hover:bg-muted text-foreground font-medium text-sm rounded-md shadow-sm transition-colors cursor-pointer"
+          >
+            Rapprochement bancaire
+          </a>
+          <a
+            href="/admin/compta/reports"
+            class="inline-flex items-center justify-center px-4 py-2 bg-primary hover:bg-primary/95 text-primary-foreground font-medium text-sm rounded-md shadow-sm transition-colors cursor-pointer"
+          >
+            Voir Rapport AG
+          </a>
+        </div>
       </div>
 
       {errorMsg && (

@@ -1,0 +1,109 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import BankStatementReconciliation from '../../../components/BankStatementReconciliation.svelte';
+import { env } from 'cloudflare:workers';
+
+const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
+const apiService = env.API_SERVICE;
+
+const season = Astro.url.searchParams.get('season') || '25-26';
+
+// Si requête POST, intercepter pour les actions d'écriture (import ou reconcile/ignore)
+if (Astro.request.method === 'POST') {
+  try {
+    const contentType = Astro.request.headers.get('content-type') || '';
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await Astro.request.formData();
+      const apiRes = await apiService.fetch('http://localhost/bank-transactions/import', {
+        method: 'POST',
+        body: formData as any
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+      return new Response(JSON.stringify({ success: true }));
+    } else {
+      const data = await Astro.request.json() as any;
+      if (data.action === 'match' || data.action === 'create') {
+        const apiRes = await apiService.fetch(`http://localhost/bank-transactions/${data.btId}/reconcile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!apiRes.ok) {
+          return new Response(await apiRes.text(), { status: apiRes.status });
+        }
+      } else if (data.action === 'ignore') {
+        const apiRes = await apiService.fetch(`http://localhost/bank-transactions/${data.btId}/ignore`, {
+          method: 'POST'
+        });
+        if (!apiRes.ok) {
+          return new Response('Erreur ignore', { status: apiRes.status });
+        }
+      }
+      return new Response(JSON.stringify({ success: true }));
+    }
+  } catch (err: any) {
+    return new Response(err.message, { status: 500 });
+  }
+}
+
+let bankTransactionsList = [];
+let glTransactionsList = [];
+let seasonsList = [];
+let errorMsg = '';
+
+try {
+  const btRes = await apiService.fetch(`http://localhost/bank-transactions?season=${season}&status=pending`);
+  if (btRes.ok) {
+    const json = await btRes.json() as any;
+    bankTransactionsList = json.data || [];
+  }
+
+  // Récupérer toutes les transactions du grand livre pour faire des suggestions de pointage
+  const glRes = await apiService.fetch(`http://localhost/transactions?season=${season}&page=1&limit=250`);
+  if (glRes.ok) {
+    const json = await glRes.json() as any;
+    glTransactionsList = json.data || [];
+  }
+
+  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasonsList = json.data || [];
+  }
+} catch (err: any) {
+  errorMsg = 'Une erreur est survenue lors de la communication avec le serveur comptable.';
+}
+---
+
+<Layout title="Importation & Rapprochement - NBA 91">
+  <AdminLayout client:load email={userEmail}>
+    <div class="space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold tracking-tight">Rapprochement bancaire</h1>
+          <p class="text-muted-foreground mt-2">
+            Importez des fichiers de relevés (.ofx) et associez-les aux écritures de votre Grand Livre.
+          </p>
+        </div>
+        <a href="/admin/compta" class="text-sm font-semibold text-primary hover:underline">Retourner au Grand Livre</a>
+      </div>
+
+      {errorMsg && (
+        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
+          {errorMsg}
+        </div>
+      )}
+
+      <BankStatementReconciliation
+        client:load
+        bankTransactions={bankTransactionsList}
+        glTransactions={glTransactionsList}
+        seasonId={season}
+        seasons={seasonsList}
+      />
+    </div>
+  </AdminLayout>
+</Layout>
