@@ -1241,7 +1241,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
 
       aiRes = await c.env.AI.run(model, {
         prompt: systemPrompt,
-        image: new Uint8Array(bytes)
+        image: [...new Uint8Array(bytes)]
       });
     } catch (llamaErr: any) {
       console.warn("Llama 3.2 vision failed, trying auto-agreement or fallback:", llamaErr);
@@ -1252,7 +1252,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
           console.info("Submitting prompt 'agree' to accept Meta Llama license...");
           await c.env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
             prompt: 'agree',
-            image: new Uint8Array(bytes)
+            image: [...new Uint8Array(bytes)]
           });
           agreed = true;
           
@@ -1264,7 +1264,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
   "emitter": "string (the name of the account holder / drawer)",
   "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)"
 }`,
-            image: new Uint8Array(bytes)
+            image: [...new Uint8Array(bytes)]
           });
         } catch (agreeErr) {
           console.warn("Failed to automatically agree to Llama 3.2 terms:", agreeErr);
@@ -1272,41 +1272,14 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
       }
 
       if (!agreed || !aiRes) {
-        // Fallback 1: Moondream 3.1
-        try {
-          const modelFallback = '@cf/moondream/moondream3.1-9B-A2B';
-          const systemPrompt = `Analyze this check image. Extract the following fields as a JSON object:
-{
-  "number": "string (the check number, usually 7 digits)",
-  "amount": number (the check amount in EUR, e.g. 150.00)",
-  "emitter": "string (the name of the account holder / drawer)",
-  "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)"
-}
-Return ONLY the raw JSON object.`;
+        console.warn("Falling back directly to Llava 1.5...");
+        const modelLlava = '@cf/llava-hf/llava-1.5-7b-hf';
+        const systemPrompt = `Identify check number (usually 7 digits), amount, account holder name (emitter), bank in this check. Output JSON: {"number":"...", "amount":150.0, "emitter":"...", "bank":"..."}`;
 
-          try {
-            aiRes = await c.env.AI.run(modelFallback, {
-              task: 'query',
-              prompt: systemPrompt,
-              image: [...new Uint8Array(bytes)]
-            });
-          } catch (me1) {
-            aiRes = await c.env.AI.run(modelFallback, {
-              task: 'query',
-              prompt: systemPrompt,
-              image: new Uint8Array(bytes)
-            });
-          }
-        } catch (moondreamErr) {
-          console.warn("Moondream 3.1 vision failed, trying Llava 1.5:", moondreamErr);
-          const modelLlava = '@cf/llava-hf/llava-1.5-7b-hf';
-          const systemPrompt = `Identify check number (usually 7 digits), amount, account holder name (emitter), bank in this check. Output JSON: {"number":"...", "amount":150.0, "emitter":"...", "bank":"..."}`;
-
-          aiRes = await c.env.AI.run(modelLlava, {
-            prompt: systemPrompt,
-            image: new Uint8Array(bytes)
-          });
-        }
+        aiRes = await c.env.AI.run(modelLlava, {
+          prompt: systemPrompt,
+          image: [...new Uint8Array(bytes)]
+        });
       }
     }
 
