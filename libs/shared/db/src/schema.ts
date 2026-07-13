@@ -86,5 +86,31 @@ export const bankTransactionsTable = sqliteTable('bank_transactions', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
+export const checkDepositsTable = sqliteTable('check_deposits', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  seasonId: text('season_id').notNull().references(() => seasonsTable.id),
+  reference: text('reference').notNull().unique(),
+  date: text('date').notNull(),
+  amount: integer('amount').notNull(),
+  status: text('status', { enum: ['pending', 'deposited', 'cleared'] }).notNull().default('pending'),
+  bankTransactionId: integer('bank_transaction_id').references(() => bankTransactionsTable.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+export const checksTable = sqliteTable('checks', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  checkDepositId: integer('check_deposit_id').references(() => checkDepositsTable.id),
+  seasonId: text('season_id').notNull().references(() => seasonsTable.id),
+  number: text('number').notNull(),
+  amount: integer('amount').notNull(),
+  emitter: text('emitter').notNull(),
+  bank: text('bank'),
+  memberId: integer('member_id').references(() => membersTable.id),
+  transactionId: integer('transaction_id').references(() => transactionsTable.id),
+  status: text('status', { enum: ['received', 'deposited'] }).notNull().default('received'),
+  photoUrl: text('photo_url'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
 
 

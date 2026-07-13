@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, usersTable, seasonBalancesTable, transactionsTable, seasonsTable, bankTransactionsTable } from './schema';
+import { membersTable, usersTable, seasonBalancesTable, transactionsTable, seasonsTable, bankTransactionsTable, checkDepositsTable, checksTable } from './schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { DatabaseSync } from 'node:sqlite';
 import * as fs from 'node:fs';
@@ -309,6 +309,71 @@ describe('Database Tests', () => {
 
     expect(tx.memberId).toBe(member.id);
     expect(tx.bankTransactionId).toBe(bt.id);
+  });
+
+  it('should support check deposits and checks insertion and linking', async () => {
+    const mockD1 = new MockD1Database();
+    
+    // Apply migrations
+    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationFiles = fs.readdirSync(migrationsDir)
+      .filter(f => f.endsWith('.sql'))
+      .sort();
+
+    for (const file of migrationFiles) {
+      const sqlPath = path.join(migrationsDir, file);
+      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+      const statements = sqlContent.split('--> statement-breakpoint');
+      for (const statement of statements) {
+        if (statement.trim()) {
+          await mockD1.exec(statement);
+        }
+      }
+    }
+
+    const db = drizzle(mockD1 as any);
+
+    // Insérer un dépôt de chèque
+    const [deposit] = await db.insert(checkDepositsTable).values({
+      seasonId: '25-26',
+      reference: 'REMISE-20260713-1',
+      date: '2026-07-13',
+      amount: 45000, // 450.00 €
+      status: 'pending',
+      createdAt: new Date()
+    }).returning();
+
+    expect(deposit.reference).toBe('REMISE-20260713-1');
+
+    // Insérer des chèques liés à cette remise
+    const [c1] = await db.insert(checksTable).values({
+      checkDepositId: deposit.id,
+      seasonId: '25-26',
+      number: '1234567',
+      amount: 25000,
+      emitter: 'Dupont Marc',
+      bank: 'Société Générale',
+      status: 'deposited',
+      createdAt: new Date()
+    }).returning();
+
+    const [c2] = await db.insert(checksTable).values({
+      checkDepositId: deposit.id,
+      seasonId: '25-26',
+      number: '7654321',
+      amount: 20000,
+      emitter: 'Durand Julie',
+      bank: 'Crédit Agricole',
+      status: 'deposited',
+      createdAt: new Date()
+    }).returning();
+
+    expect(c1.checkDepositId).toBe(deposit.id);
+    expect(c1.number).toBe('1234567');
+    expect(c2.amount).toBe(20000);
+
+    const checks = await db.select().from(checksTable).all();
+    expect(checks).toHaveLength(2);
   });
 });
 

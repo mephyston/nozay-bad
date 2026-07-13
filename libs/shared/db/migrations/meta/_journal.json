@@ -57,6 +57,13 @@
       "when": 1783948081110,
       "tag": "0007_calm_misty_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1783951150751,
+      "tag": "0008_curly_yellowjacket",
+      "breakpoints": true
     }
   ]
 }
