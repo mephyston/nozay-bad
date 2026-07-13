@@ -821,6 +821,82 @@ VERSION:102
     expect(resetMember.amountRemaining).toBe(25000);
     expect(resetMember.paid).toBe(false);
   });
+
+  it('resolves ambiguous name matching deterministically when multiple members share last name', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Ajouter trois membres de la famille MADRANGE
+    const mLaurence = await db.insert(membersTable).values({
+      licence: '06654740',
+      season: '25-26',
+      lastName: 'MADRANGE',
+      firstName: 'Laurence',
+      gender: 'F',
+      birthDate: '1982-05-26',
+      email: 'laurence@test.com',
+      status: 'valide',
+      type: 'Compétiteurs adultes',
+      amountDue: 26000,
+      amountReceived: 26000,
+      amountRemaining: 0,
+      paid: true,
+      importedAt: new Date()
+    }).returning().then(r => r[0]);
+
+    await db.insert(membersTable).values({
+      licence: '00491827',
+      season: '25-26',
+      lastName: 'MADRANGE',
+      firstName: 'Paul',
+      gender: 'M',
+      birthDate: '1994-02-12',
+      email: 'paul@test.com',
+      status: 'valide',
+      type: 'Compétiteurs adultes',
+      amountDue: 6007,
+      amountReceived: 6007,
+      amountRemaining: 0,
+      paid: true,
+      importedAt: new Date()
+    }).run();
+
+    // Insérer la transaction de Laurence Madrange pour du cordage
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: '62517463000300846000500078472020260704',
+      seasonId: '25-26',
+      accountId: 'current',
+      amount: 1500,
+      date: '2026-07-04',
+      name: 'VIR INST RE 668591169870',
+      memo: 'DE: MLLE LAURENCE MADRANGE DATE: 04/07/2026 00:25 MOTIF: cordage',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // Mock du service AI pour simuler un échec ou un retour indécis (confidence faible)
+    const mockAI = {
+      run: async () => {
+        throw new Error('AI service error or empty response simulation');
+      }
+    };
+
+    // Lancer l'analyse
+    const analyzeRes = await app.request('http://localhost/bank-transactions/analyze?season=25-26', {
+      method: 'POST'
+    }, { DB: mockD1 as any, AI: mockAI as any });
+    expect(analyzeRes.status).toBe(200);
+
+    // Vérifier que Laurence Madrange a été identifiée de manière déterministe
+    const getRes = await app.request('http://localhost/bank-transactions?season=25-26&status=pending', undefined, { DB: mockD1 as any });
+    const json = await getRes.json() as any;
+    const updatedBt = json.data.find((x: any) => x.id === bt.id);
+    expect(updatedBt.aiSuggestions).not.toBeNull();
+    
+    const sug = JSON.parse(updatedBt.aiSuggestions);
+    expect(sug.memberId).toBe(mLaurence.id);
+    expect(sug.category).toBe('cordage_vente');
+  });
 });
 
 

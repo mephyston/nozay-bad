@@ -902,11 +902,31 @@ app.post('/bank-transactions/analyze', async (c) => {
       return matchesLastName || matchesFirstName || matchesParent1 || matchesParent2 || matchesAmount;
     }).slice(0, 5); // Max 5 candidats pour rester rapide
 
+    // Essayer de trouver un match déterministe parfait sur le nom + prénom de l'adhérent ou de ses parents
+    let exactCandidate: typeof members[0] | null = null;
+    const textNormalized = textToSearch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+    for (const m of candidates) {
+      const firstNorm = m.firstName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      const lastNorm = m.lastName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      const p1Norm = m.parent1Name ? m.parent1Name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : '';
+      const p2Norm = m.parent2Name ? m.parent2Name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : '';
+      
+      const hasFirstAndLast = textNormalized.includes(firstNorm) && textNormalized.includes(lastNorm);
+      const hasParent1 = p1Norm && textNormalized.includes(p1Norm);
+      const hasParent2 = p2Norm && textNormalized.includes(p2Norm);
+
+      if (hasFirstAndLast || hasParent1 || hasParent2) {
+        exactCandidate = m;
+        break;
+      }
+    }
+
     let suggestionResult = {
       category: suggestedCategory,
-      memberId: null as number | null,
-      memberName: null as string | null,
-      confidence: 0.5
+      memberId: exactCandidate ? exactCandidate.id : null as number | null,
+      memberName: exactCandidate ? `${exactCandidate.lastName} ${exactCandidate.firstName}` : null as string | null,
+      confidence: exactCandidate ? 0.9 : 0.5
     };
 
     if (candidates.length > 0) {
