@@ -1234,7 +1234,7 @@ app.post('/checks/analyze', async (c) => {
 {
   "number": "string (the check number, usually 7 digits)",
   "amount": number (the check amount in EUR, e.g. 150.00)",
-  "emitter": "string (the name of the account holder / drawer)",
+  "emitter": "string (the name of the account holder / drawer / person writing the check. Do NOT use the beneficiary/payee, which is usually 'Nozay Badminton' or 'Nozay-Bad')",
   "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)"
 }
 Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
@@ -1261,7 +1261,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
 {
   "number": "string (the check number, usually 7 digits)",
   "amount": number (the check amount in EUR, e.g. 150.00)",
-  "emitter": "string (the name of the account holder / drawer)",
+  "emitter": "string (the name of the account holder / drawer / person writing the check. Do NOT use the beneficiary/payee, which is usually 'Nozay Badminton' or 'Nozay-Bad')",
   "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)"
 }`,
             image: [...new Uint8Array(bytes)]
@@ -1274,7 +1274,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
       if (!agreed || !aiRes) {
         console.warn("Falling back directly to Llava 1.5...");
         const modelLlava = '@cf/llava-hf/llava-1.5-7b-hf';
-        const systemPrompt = `Identify check number (usually 7 digits), amount, account holder name (emitter), bank in this check. Output JSON: {"number":"...", "amount":150.0, "emitter":"...", "bank":"..."}`;
+        const systemPrompt = `Identify check number (usually 7 digits), amount, account holder name (emitter - the person writing the check, NOT the beneficiary/payee 'Nozay Badminton'), bank in this check. Output JSON: {"number":"...", "amount":150.0, "emitter":"...", "bank":"..."}`;
 
         aiRes = await c.env.AI.run(modelLlava, {
           prompt: systemPrompt,
@@ -1322,9 +1322,12 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
         extracted.amount = parseFloat(amtMatch[1].replace(',', '.'));
       }
 
-      const emitMatch = textResult.match(/émetteur\s*:\s*([A-Za-z\s]+)/i) || textResult.match(/de\s*([A-Z][a-z]+\s+[A-Z][a-z]+)/);
+      const emitMatch = textResult.match(/émetteur\s*:\s*([A-Za-z\s\-]+)/i) || textResult.match(/de\s*([A-Z][a-z\-]+\s+[A-Z][a-z\-]+)/);
       if (emitMatch) {
-        extracted.emitter = emitMatch[1].trim();
+        const val = emitMatch[1].trim();
+        if (!/nozay/i.test(val) && !/bad/i.test(val)) {
+          extracted.emitter = val;
+        }
       }
 
       const bankMatch = textResult.match(/banque\s*:\s*([A-Za-z\s]+)/i) || textResult.match(/(Société Générale|Crédit Agricole|LCL|Bred|BNP|La Banque Postale|CIC|Crédit Mutuel)/i);
