@@ -1,11 +1,19 @@
 <script lang="ts">
-  import { UploadCloud, FileText, CheckCircle, AlertCircle, Coins, Image, User } from 'lucide-svelte';
+  import { UploadCloud, FileText, CheckCircle, AlertCircle, Coins, Image, User, Search, ChevronDown, Check } from 'lucide-svelte';
+
+  interface Member {
+    id: number;
+    firstName: string;
+    lastName: string;
+    licence: string;
+  }
 
   interface Props {
     activeSeasonId: string;
+    members?: Member[];
   }
 
-  const { activeSeasonId }: Props = $props();
+  const { activeSeasonId, members = [] }: Props = $props();
 
   let emitterName = $state('');
   let category = $state('deplacement');
@@ -13,6 +21,11 @@
   let amountStr = $state('');
   let photoUrl = $state<string | null>(null);
   let fileInput = $state<HTMLInputElement | null>(null);
+
+  let selectedMemberId = $state('');
+  let memberSearchQuery = $state('');
+  let isMemberDropdownOpen = $state(false);
+  let highlightedIndex = $state(-1);
 
   let submitting = $state(false);
   let successMsg = $state<string | null>(null);
@@ -24,6 +37,87 @@
     { value: 'alimentation', label: 'Repas & Convivialité' },
     { value: 'autre', label: 'Autre' }
   ];
+
+  // Derived member lists for dropdown
+  const filteredMembers = $derived(
+    memberSearchQuery.trim() === ''
+      ? members
+      : members.filter(m => 
+          `${m.lastName} ${m.firstName}`.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
+          m.licence.toLowerCase().includes(memberSearchQuery.toLowerCase())
+        )
+  );
+
+  const selectedMember = $derived(
+    members.find(m => m.id.toString() === selectedMemberId) || null
+  );
+
+  const memberDisplayVal = $derived(
+    selectedMember ? `${selectedMember.lastName} ${selectedMember.firstName}` : ''
+  );
+
+  // Clamp highlightedIndex when filteredMembers changes
+  $effect(() => {
+    if (highlightedIndex >= filteredMembers.length) {
+      highlightedIndex = filteredMembers.length - 1;
+    }
+  });
+
+  function selectMember(m: Member) {
+    selectedMemberId = m.id.toString();
+    memberSearchQuery = `${m.lastName} ${m.firstName}`;
+    emitterName = `${m.lastName} ${m.firstName}`;
+    isMemberDropdownOpen = false;
+    highlightedIndex = -1;
+  }
+
+  function handleKeyDown(e: KeyboardEvent) {
+    if (!isMemberDropdownOpen) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        isMemberDropdownOpen = true;
+        highlightedIndex = 0;
+        e.preventDefault();
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      highlightedIndex = (highlightedIndex + 1) % filteredMembers.length;
+      e.preventDefault();
+      scrollOptionIntoView(highlightedIndex);
+    } else if (e.key === 'ArrowUp') {
+      highlightedIndex = (highlightedIndex - 1 + filteredMembers.length) % filteredMembers.length;
+      e.preventDefault();
+      scrollOptionIntoView(highlightedIndex);
+    } else if (e.key === 'Enter') {
+      if (highlightedIndex >= 0 && highlightedIndex < filteredMembers.length) {
+        selectMember(filteredMembers[highlightedIndex]);
+        e.preventDefault();
+      }
+    } else if (e.key === 'Escape') {
+      isMemberDropdownOpen = false;
+      e.preventDefault();
+    }
+  }
+
+  function scrollOptionIntoView(index: number) {
+    setTimeout(() => {
+      const container = document.getElementById('expense-member-listbox');
+      const option = document.getElementById(`expense-member-option-${index}`);
+      if (container && option) {
+        const containerTop = container.scrollTop;
+        const containerBottom = containerTop + container.clientHeight;
+        const optionTop = option.offsetTop;
+        const optionBottom = optionTop + option.clientHeight;
+
+        if (optionTop < containerTop) {
+          container.scrollTop = optionTop;
+        } else if (optionBottom > containerBottom) {
+          container.scrollTop = optionBottom - container.clientHeight;
+        }
+      }
+    }, 0);
+  }
 
   function handleFileChange(e: Event) {
     const target = e.target as HTMLInputElement;
@@ -52,6 +146,11 @@
     errorMsg = null;
     successMsg = null;
 
+    if (!selectedMemberId) {
+      errorMsg = "Veuillez sélectionner un demandeur dans la liste.";
+      return;
+    }
+
     const parsedAmount = parseFloat(amountStr);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       errorMsg = "Veuillez saisir un montant supérieur à 0 €.";
@@ -79,7 +178,8 @@
             category,
             amount: Math.round(parsedAmount * 100), // convert to cents
             photoUrl,
-            emitterName
+            emitterName,
+            memberId: parseInt(selectedMemberId)
           }
         })
       });
@@ -93,6 +193,8 @@
       
       // Reset form
       emitterName = '';
+      selectedMemberId = '';
+      memberSearchQuery = '';
       category = 'deplacement';
       description = '';
       amountStr = '';
@@ -132,19 +234,72 @@
       </div>
     {/if}
 
-    <div class="space-y-1.5">
-      <label for="emitterName" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Votre Nom & Prénom</label>
+    <!-- Searchable Member Combobox Dropdown -->
+    <div class="space-y-1.5 relative">
+      <label for="expense-member-input" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Demandeur (Adhérent)</label>
       <div class="relative">
+        <Search class="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
         <input
+          id="expense-member-input"
           type="text"
-          id="emitterName"
-          bind:value={emitterName}
-          placeholder="Ex: Marie Curie"
-          class="w-full pl-10 pr-4 py-2.5 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+          role="combobox"
+          aria-expanded={isMemberDropdownOpen}
+          aria-autocomplete="list"
+          aria-controls="expense-member-listbox"
+          aria-activedescendant={highlightedIndex >= 0 ? `expense-member-option-${highlightedIndex}` : undefined}
+          placeholder="Rechercher votre nom (Nom, Prénom, Licence...)"
+          class="w-full pl-10 pr-10 py-2.5 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-semibold"
+          value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
+          oninput={(e) => {
+            isMemberDropdownOpen = true;
+            memberSearchQuery = (e.target as HTMLInputElement).value;
+          }}
+          onfocus={(e) => {
+            isMemberDropdownOpen = true;
+            if (selectedMember) {
+              memberSearchQuery = `${selectedMember.lastName} ${selectedMember.firstName}`;
+            } else {
+              memberSearchQuery = '';
+            }
+            (e.target as HTMLInputElement).select();
+          }}
+          onblur={() => {
+            // Delay to allow onmousedown selection of options
+            setTimeout(() => { isMemberDropdownOpen = false; }, 200);
+          }}
+          onkeydown={handleKeyDown}
           required
         />
-        <User class="absolute left-3.5 top-3.5 h-4.5 w-4.5 text-muted-foreground" />
+        <ChevronDown class="absolute right-3 top-3.5 h-4 w-4 text-muted-foreground pointer-events-none" />
       </div>
+
+      {#if isMemberDropdownOpen}
+        <div
+          role="listbox"
+          id="expense-member-listbox"
+          class="absolute z-50 w-full mt-1 max-h-56 overflow-y-auto bg-popover border border-border rounded-xl shadow-xl divide-y divide-border"
+        >
+          {#each filteredMembers as m, index}
+            <button
+              type="button"
+              role="option"
+              aria-selected={selectedMemberId === m.id.toString()}
+              id={`expense-member-option-${index}`}
+              class="w-full text-left px-4 py-2.5 text-sm transition-colors font-semibold border-0 cursor-pointer {index === highlightedIndex ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground'}"
+              onmousedown={() => {
+                selectMember(m);
+              }}
+            >
+              <div class="flex justify-between items-center">
+                <span>{m.lastName} {m.firstName}</span>
+                <span class="text-xs text-muted-foreground font-mono">Licence: {m.licence}</span>
+              </div>
+            </button>
+          {:else}
+            <div class="px-4 py-3 text-sm text-muted-foreground italic bg-popover">Aucun adhérent trouvé</div>
+          {/each}
+        </div>
+      {/if}
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
