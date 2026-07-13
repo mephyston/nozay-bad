@@ -169,7 +169,7 @@
       }
     } catch (err: any) {
       console.error(err);
-      formError = "L'analyse IA a échoué. Vous pouvez saisir les informations manuellement.";
+      formError = "L'analyse IA a échoué (" + (err.message || 'erreur de connexion') + "). Vous pouvez saisir les informations manuellement.";
     } finally {
       isAnalyzing = false;
     }
