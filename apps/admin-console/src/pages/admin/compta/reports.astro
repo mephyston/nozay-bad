@@ -1,0 +1,84 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import GeneralMeetingReport from '../../../components/GeneralMeetingReport.svelte';
+import { env } from 'cloudflare:workers';
+
+const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
+const apiService = env.API_SERVICE;
+
+const season = Astro.url.searchParams.get('season') || '25-26';
+
+// Si requête POST, intercepter pour modifier les soldes initiaux (proxying)
+if (Astro.request.method === 'POST') {
+  try {
+    const data = await Astro.request.json() as any;
+    const apiRes = await apiService.fetch(`http://localhost/seasons/${data.seasonId}/balances`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data.balances)
+    });
+    if (!apiRes.ok) {
+      return new Response('Erreur configuration soldes', { status: apiRes.status });
+    }
+    return new Response(JSON.stringify({ success: true }));
+  } catch (err: any) {
+    return new Response(err.message, { status: 500 });
+  }
+}
+
+let reportData = {
+  compteResultat: { totalRecettes: 0, totalDepenses: 0, netResult: 0, categories: {} },
+  bilanTrésorerie: [
+    { accountId: 'current' as const, initialBalance: 0, finalBalance: 0 },
+    { accountId: 'savings' as const, initialBalance: 0, finalBalance: 0 },
+    { accountId: 'cash' as const, initialBalance: 0, finalBalance: 0 }
+  ]
+};
+let seasonsList = [];
+let errorMsg = '';
+
+try {
+  const res = await apiService.fetch(`http://localhost/seasons/${season}/reports`);
+  if (res.ok) {
+    const json = await res.json() as any;
+    reportData = json.data;
+  } else {
+    throw new Error('Erreur récupération du rapport');
+  }
+
+  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasonsList = json.data || [];
+  }
+} catch (err: any) {
+  errorMsg = 'Impossible de charger les données du bilan AG.';
+}
+---
+
+<Layout title="Rapports AG - NBA 91">
+  <AdminLayout client:load email={userEmail}>
+    <div class="space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold tracking-tight">Rapports AG</h1>
+          <p class="text-muted-foreground mt-2">
+            Visualisez le bilan annuel et exportez les comptes de résultat de l'association.
+          </p>
+        </div>
+        <div>
+          <a href="/admin/compta" class="text-sm font-semibold text-primary hover:underline">Retourner au Grand Livre</a>
+        </div>
+      </div>
+
+      {errorMsg && (
+        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
+          {errorMsg}
+        </div>
+      )}
+
+      <GeneralMeetingReport client:load report={reportData} seasonId={season} seasons={seasonsList} />
+    </div>
+  </AdminLayout>
+</Layout>
