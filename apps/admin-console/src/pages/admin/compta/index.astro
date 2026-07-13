@@ -1,0 +1,104 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import TransactionLedger from '../../../components/TransactionLedger.svelte';
+import { env } from 'cloudflare:workers';
+
+const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
+const apiService = env.API_SERVICE;
+
+const season = Astro.url.searchParams.get('season') || '25-26';
+const page = Astro.url.searchParams.get('page') || '1';
+
+// Si requête POST, intercepter pour les actions d'écriture (proxying vers Hono)
+if (Astro.request.method === 'POST') {
+  try {
+    const data = await Astro.request.json() as any;
+    if (data.action === 'create') {
+      const apiRes = await apiService.fetch('http://localhost/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+    } else if (data.action === 'delete') {
+      const apiRes = await apiService.fetch(`http://localhost/transactions/${data.id}`, {
+        method: 'DELETE'
+      });
+      if (!apiRes.ok) {
+        return new Response('Erreur suppression', { status: apiRes.status });
+      }
+    }
+    return new Response(JSON.stringify({ success: true }));
+  } catch (err: any) {
+    return new Response(err.message, { status: 500 });
+  }
+}
+
+let transactionsList = [];
+let pagination = { total: 0, page: 1, limit: 20, totalPages: 1 };
+let balances = [];
+let seasonsList = [];
+let errorMsg = '';
+
+try {
+  const txRes = await apiService.fetch(`http://localhost/transactions?season=${season}&page=${page}&limit=20`);
+  if (txRes.ok) {
+    const json = await txRes.json() as any;
+    transactionsList = json.data || [];
+    pagination = json.pagination;
+  }
+
+  const reportRes = await apiService.fetch(`http://localhost/seasons/${season}/reports`);
+  if (reportRes.ok) {
+    const json = await reportRes.json() as any;
+    balances = json.data?.bilanTrésorerie || [];
+  }
+
+  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasonsList = json.data || [];
+  }
+} catch (err: any) {
+  errorMsg = 'Une erreur est survenue lors de la communication avec le serveur comptable.';
+}
+---
+
+<Layout title="Comptabilité - NBA 91">
+  <AdminLayout client:load email={userEmail}>
+    <div class="space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold tracking-tight">Comptabilité</h1>
+          <p class="text-muted-foreground mt-2">
+            Consultez le grand livre comptable et suivez les mouvements de fonds de l'association.
+          </p>
+        </div>
+        <a
+          href="/admin/compta/reports"
+          class="inline-flex items-center justify-center px-4 py-2 bg-primary hover:bg-primary/95 text-primary-foreground font-medium text-sm rounded-md shadow-sm transition-colors cursor-pointer"
+        >
+          Voir Rapport AG
+        </a>
+      </div>
+
+      {errorMsg && (
+        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
+          {errorMsg}
+        </div>
+      )}
+
+      <TransactionLedger
+        client:load
+        transactions={transactionsList}
+        pagination={pagination}
+        seasonId={season}
+        balances={balances}
+        seasons={seasonsList}
+      />
+    </div>
+  </AdminLayout>
+</Layout>

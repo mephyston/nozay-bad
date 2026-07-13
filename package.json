@@ -2,7 +2,7 @@
   "name": "nozay-bad",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": { "test": "vitest" },
   "private": true,
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
