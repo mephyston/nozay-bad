@@ -1,0 +1,80 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import OrdersManager from '../../../components/OrdersManager.svelte';
+
+import { env } from 'cloudflare:workers';
+
+const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
+const apiService = env.API_SERVICE;
+
+if (Astro.request.method === 'POST') {
+  try {
+    const data = await Astro.request.json() as any;
+    if (data.action === 'approve') {
+      const apiRes = await apiService.fetch(`http://localhost/orders/${data.id}/approve`, {
+        method: 'POST'
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+      return new Response(JSON.stringify(await apiRes.json()));
+    } else if (data.action === 'reject') {
+      const apiRes = await apiService.fetch(`http://localhost/orders/${data.id}/reject`, {
+        method: 'POST'
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+      return new Response(JSON.stringify(await apiRes.json()));
+    }
+    return new Response('Action inconnue', { status: 400 });
+  } catch (err: any) {
+    return new Response(err.message, { status: 500 });
+  }
+}
+
+let ordersList = [];
+let seasonsList = [];
+let errorMsg = '';
+
+try {
+  // 1. Fetch seasons
+  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasonsList = json.data || [];
+  } else {
+    errorMsg = 'Impossible de charger la liste des saisons.';
+  }
+
+  // 2. Fetch all orders (which return mapped orders: order, member, product)
+  const ordersRes = await apiService.fetch('http://localhost/orders');
+  if (ordersRes.ok) {
+    const json = await ordersRes.json() as any;
+    ordersList = json.data || [];
+  } else {
+    errorMsg = 'Impossible de charger la liste des commandes.';
+  }
+} catch (err: any) {
+  errorMsg = 'Une erreur est survenue lors de la récupération des données de la boutique.';
+}
+---
+
+<Layout title="Validation des Commandes - NBA 91">
+  <AdminLayout client:load email={userEmail} breadcrumb="Boutique / Commandes">
+    <div class="space-y-6">
+      {errorMsg && (
+        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
+          {errorMsg}
+        </div>
+      )}
+
+      <OrdersManager
+        client:load
+        seasons={seasonsList}
+        orders={ordersList}
+      />
+    </div>
+  </AdminLayout>
+</Layout>
