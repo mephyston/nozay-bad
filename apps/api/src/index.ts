@@ -45,9 +45,22 @@ app.post('/members/import', async (c) => {
   let csvText: string;
   if (typeof file === 'string') {
     csvText = file;
-  } else if (typeof file === 'object' && file !== null && 'text' in file && typeof (file as any).text === 'function') {
+  } else if (typeof file === 'object' && file !== null) {
     try {
-      csvText = await (file as any).text();
+      if ('arrayBuffer' in file && typeof (file as any).arrayBuffer === 'function') {
+        const arrayBuffer = await (file as any).arrayBuffer();
+        const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
+        try {
+          csvText = utf8Decoder.decode(arrayBuffer);
+        } catch (e) {
+          const winDecoder = new TextDecoder('windows-1252');
+          csvText = winDecoder.decode(arrayBuffer);
+        }
+      } else if ('text' in file && typeof (file as any).text === 'function') {
+        csvText = await (file as any).text();
+      } else {
+        return c.json({ success: false, error: 'Invalid file format' }, 400);
+      }
     } catch (err) {
       return c.json({ success: false, error: 'Failed to read file content' }, 400);
     }
@@ -62,12 +75,39 @@ app.post('/members/import', async (c) => {
 
   const headerLine = lines[0];
   const separator = headerLine.includes(';') ? ';' : ',';
-  const headers = headerLine.split(separator).map(h => h.trim());
+  const headers = headerLine.split(separator).map(h => h.trim().replace(/^"(.*)"$/, '$1').trim());
 
-  const requiredHeaders = ['Licence', 'Nom', 'Prénom', 'Sexe', 'Date de naissance', 'Email', 'Téléphone', 'Statut', 'Type'];
-  const missingHeaders = requiredHeaders.filter(rh => !headers.includes(rh));
-  if (missingHeaders.length > 0) {
-    return c.json({ success: false, error: `Invalid headers. Missing: ${missingHeaders.join(', ')}` }, 400);
+  // Normalize header strings to resolve encoding artifacts and minor variations
+  const normalizeHeader = (h: string) => {
+    let clean = h;
+    // Replace typical Windows-1252/ISO-8859-1 character artifacts (only replace if not already formatted)
+    clean = clean.replace(/Pr.nom/i, 'Prénom');
+    clean = clean.replace(/Adh.rent/i, 'Adhérent');
+    clean = clean.replace(/T.l\./i, 'Tél.');
+    clean = clean.replace(/R.le/i, 'Rôle');
+    clean = clean.replace(/M.dical/i, 'Médical');
+    clean = clean.replace(/pay./i, 'payé');
+    clean = clean.replace(/re.u/i, 'reçu');
+    clean = clean.replace(/\betat\b/i, 'État');
+    clean = clean.replace(/\bEtat\b/i, 'État');
+    return clean;
+  };
+
+  const normalizedHeaders = headers.map(normalizeHeader);
+
+  // Map indices
+  const licenceIdx = normalizedHeaders.findIndex(h => h === 'Licence');
+  const lastNameIdx = normalizedHeaders.findIndex(h => h === 'Nom');
+  const firstNameIdx = normalizedHeaders.findIndex(h => h.toLowerCase() === 'prénom');
+  const genderIdx = normalizedHeaders.findIndex(h => h === 'Sexe');
+  const birthDateIdx = normalizedHeaders.findIndex(h => h === 'Date naissance' || h === 'Date de naissance');
+  const emailIdx = normalizedHeaders.findIndex(h => h === 'Email');
+  const phoneIdx = normalizedHeaders.findIndex(h => h === 'Téléphone' || h === 'Tél. du contact 1');
+  const statusIdx = normalizedHeaders.findIndex(h => h === 'Statut' || h === 'Adhérent validé' || h === 'Etat de dossier' || h === 'État de dossier');
+  const typeIdx = normalizedHeaders.findIndex(h => h === 'Type' || h === 'Tarif');
+
+  if (licenceIdx === -1 || lastNameIdx === -1 || firstNameIdx === -1 || genderIdx === -1 || birthDateIdx === -1 || typeIdx === -1) {
+    return c.json({ success: false, error: 'Invalid headers. Missing required columns (Licence, Nom, Prénom, Sexe, Date naissance, Tarif/Type)' }, 400);
   }
 
   const validRowsMap = new Map<string, ParsedMember>();
@@ -77,30 +117,49 @@ app.post('/members/import', async (c) => {
     const line = lines[i];
     const columns = line.split(separator).map(col => col.trim().replace(/^"(.*)"$/, '$1').trim());
 
-    // Map column values to headers by index
-    const rowData: Record<string, string> = {};
-    headers.forEach((header, idx) => {
-      rowData[header] = columns[idx] !== undefined ? columns[idx] : '';
-    });
+    const licence = columns[licenceIdx];
+    const lastName = columns[lastNameIdx];
+    const firstName = columns[firstNameIdx];
+    const rawGender = columns[genderIdx];
+    const rawBirthDate = columns[birthDateIdx];
+    const email = emailIdx !== -1 ? (columns[emailIdx] || null) : null;
+    const phone = phoneIdx !== -1 ? (columns[phoneIdx] || null) : null;
+    const rawStatus = statusIdx !== -1 ? (columns[statusIdx] || 'valide') : 'valide';
+    const type = columns[typeIdx];
 
-    const licence = rowData['Licence'];
-    const lastName = rowData['Nom'];
-    const firstName = rowData['Prénom'];
-    const genderStr = rowData['Sexe']?.toUpperCase();
-    const birthDate = rowData['Date de naissance'];
-    const email = rowData['Email'] || null;
-    const phone = rowData['Téléphone'] || null;
-    const status = rowData['Statut'] || 'valide';
-    const type = rowData['Type'];
-
-    if (!licence || !lastName || !firstName || !birthDate || !type) {
+    if (!licence || !lastName || !firstName || !rawBirthDate || !type) {
       errorsCount++;
       continue;
     }
 
-    if (genderStr !== 'M' && genderStr !== 'F') {
+    // Map gender: H/M -> M, F -> F
+    let genderStr: 'M' | 'F';
+    const cleanGender = rawGender.toUpperCase();
+    if (cleanGender === 'H' || cleanGender === 'M') {
+      genderStr = 'M';
+    } else if (cleanGender === 'F') {
+      genderStr = 'F';
+    } else {
       errorsCount++;
       continue;
+    }
+
+    // Parse and convert birth date: DD-MM-YYYY -> YYYY-MM-DD
+    let birthDate = rawBirthDate;
+    if (/^\d{2}-\d{2}-\d{4}$/.test(rawBirthDate)) {
+      const parts = rawBirthDate.split('-');
+      birthDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(rawBirthDate)) {
+      errorsCount++;
+      continue;
+    }
+
+    // Map status: Oui/valide -> valide, Non/suspendu -> suspendu
+    let status = 'valide';
+    if (rawStatus === 'Oui' || rawStatus === 'valide' || rawStatus.toLowerCase().includes('finalisé')) {
+      status = 'valide';
+    } else if (rawStatus === 'Non' || rawStatus === 'suspendu' || rawStatus.toLowerCase().includes('annulé')) {
+      status = 'suspendu';
     }
 
     validRowsMap.set(licence, {

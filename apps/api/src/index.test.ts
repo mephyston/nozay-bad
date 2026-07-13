@@ -204,6 +204,57 @@ describe('POST /members/import', () => {
     expect(m1Updated.status).toBe('suspendu');
   });
 
+  it('should import members from a real Poona CSV export format and map headers/values correctly', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Simulated real Poona export CSV with semicolons and actual columns
+    const poonaCsvContent = `Saison;Adhérent validé;Sexe;Nom;Prénom;Licence;Date naissance;Email;Tél. du contact 1;Tarif;Etat de dossier
+"25-26";"Oui";"H";"ABADIE";"Christophe";"07104079";"22-09-1969";"CA@SPECTRUMFR-DESIGN.COM";"+33682681335";"Pass Jeu Libre";"Dossier finalisé"
+"25-26";"Non";"F";"ALLARD";"Alice";"07684632";"17-09-2017";"aloux460@gmail.com";"";"Ecole Poussins (U11)";"Dossier annulé"`;
+
+    const formData = new FormData();
+    const blob = new Blob([poonaCsvContent], { type: 'text/csv' });
+    formData.append('file', blob, 'poona_export.csv');
+
+    const req = new Request('http://localhost/members/import', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const res = await app.request(req, undefined, {
+      DB: mockD1 as any,
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body).toEqual({
+      success: true,
+      inserted: 2,
+      updated: 0,
+      errors: 0,
+    });
+
+    // Verify database mappings
+    const dbMembers = await db.select().from(membersTable).all();
+    expect(dbMembers).toHaveLength(2);
+
+    const m1 = dbMembers.find(m => m.licence === '07104079')!;
+    expect(m1).toBeDefined();
+    expect(m1.lastName).toBe('ABADIE');
+    expect(m1.firstName).toBe('Christophe');
+    expect(m1.gender).toBe('M'); // H mapped to M
+    expect(m1.birthDate).toBe('1969-09-22'); // DD-MM-YYYY mapped to YYYY-MM-DD
+    expect(m1.email).toBe('CA@SPECTRUMFR-DESIGN.COM');
+    expect(m1.status).toBe('valide'); // Oui/Dossier finalisé mapped to valide
+
+    const m2 = dbMembers.find(m => m.licence === '07684632')!;
+    expect(m2).toBeDefined();
+    expect(m2.gender).toBe('F');
+    expect(m2.birthDate).toBe('2017-09-17');
+    expect(m2.status).toBe('suspendu'); // Non/Dossier annulé mapped to suspendu
+  });
+
   it('should return 400 when file is missing', async () => {
     const mockD1 = await setupMockDb();
     const formData = new FormData(); // no file appended
