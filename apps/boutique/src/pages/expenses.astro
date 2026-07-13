@@ -1,21 +1,12 @@
 ---
 import '../styles/global.css';
-import ShopCatalog from '../components/ShopCatalog.svelte';
+import ExpenseReportForm from '../components/ExpenseReportForm.svelte';
 import { env } from 'cloudflare:workers';
 import { ModeWatcher } from 'mode-watcher';
 
 interface Season {
   id: string;
   name: string;
-  active: boolean;
-}
-
-interface Product {
-  id: number;
-  name: string;
-  category: 'shuttlecock' | 'string';
-  price: number;
-  stock: number;
   active: boolean;
 }
 
@@ -55,17 +46,19 @@ if (Astro.request.method === 'POST') {
       });
     }
 
-    const res = await apiService.fetch('http://localhost/orders', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-    return new Response(await res.text(), {
-      status: res.status,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    if (body.action === 'expense') {
+      const res = await apiService.fetch('http://localhost/expenses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body.data)
+      });
+      return new Response(await res.text(), {
+        status: res.status,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
   } catch (err: any) {
     return new Response(JSON.stringify({ success: false, error: err.message }), {
       status: 500,
@@ -74,21 +67,12 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-let products: Product[] = [];
 let members: Member[] = [];
 let seasons: Season[] = [];
+let categories: any[] = [];
 let errorMsg = '';
 
 try {
-  // Fetch active products
-  const productsRes = await apiService.fetch('http://localhost/products?active=true');
-  if (productsRes.ok) {
-    const json = await productsRes.json() as any;
-    products = json.data || [];
-  } else {
-    errorMsg = 'Impossible de charger les produits de la boutique.';
-  }
-
   // Fetch members
   const membersRes = await apiService.fetch('http://localhost/members?limit=1000');
   if (membersRes.ok) {
@@ -106,6 +90,13 @@ try {
   } else {
     errorMsg = 'Impossible de charger les saisons.';
   }
+
+  // Fetch categories
+  const categoriesRes = await apiService.fetch('http://localhost/categories');
+  if (categoriesRes.ok) {
+    const json = await categoriesRes.json() as any;
+    categories = json.data || [];
+  }
 } catch (e: any) {
   errorMsg = 'Une erreur de connexion est survenue lors du chargement des données.';
 }
@@ -118,7 +109,7 @@ const activeSeasonId = activeSeason.id;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>Boutique Adhérents - NBA 91</title>
+    <title>Notes de frais - NBA 91</title>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" is:inline async defer></script>
     <script is:inline>
       const theme = (() => {
@@ -163,13 +154,13 @@ const activeSeasonId = activeSeason.id;
           <nav class="flex items-center gap-1 bg-muted p-1 rounded-xl border border-border">
             <a
               href="/"
-              class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 bg-background text-foreground shadow-sm"
+              class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 text-muted-foreground hover:text-foreground"
             >
               Boutique
             </a>
             <a
               href="/expenses"
-              class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 text-muted-foreground hover:text-foreground"
+              class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 bg-background text-foreground shadow-sm"
             >
               Note de frais
             </a>
@@ -191,18 +182,18 @@ const activeSeasonId = activeSeason.id;
         </div>
       )}
 
-      <ShopCatalog
+      <ExpenseReportForm
         client:load
-        products={products}
-        members={members}
         activeSeasonId={activeSeasonId}
+        members={members}
+        categories={categories}
       />
     </main>
 
     <!-- Footer -->
     <footer class="border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground">
       <p>© {new Date().getFullYear()} Nozay Badminton Associatif. Tous droits réservés.</p>
-      <p class="mt-1">Les commandes passées via la boutique sont soumises à la validation du trésorier.</p>
+      <p class="mt-1">Les notes de frais sont soumises à la validation du trésorier.</p>
     </footer>
   </body>
 </html>
