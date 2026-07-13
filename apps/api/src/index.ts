@@ -1161,6 +1161,9 @@ app.post('/bank-transactions/analyze', async (c) => {
       textToLower.includes('de: nozay badminton') ||
       textToLower.includes('de: nozay bad') ||
       textToLower.includes('de: nba') ||
+      textToLower.includes('pour: nozay badminton') ||
+      textToLower.includes('pour: nozay bad') ||
+      textToLower.includes('pour: nba') ||
       (textToLower.includes('nozay badminton') && textToLower.includes('recharge'))
     ) {
       suggestedCategory = CAT_VIREMENTS_INTERNES;

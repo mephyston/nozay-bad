@@ -989,7 +989,7 @@ VERSION:102
     const mockD1 = await setupMockDb();
     const db = drizzle(mockD1 as any);
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt1 = await db.insert(bankTransactionsTable).values({
       fitid: '30930863000300846000500078472020260602',
       accountId: 'current',
       seasonId: '25-26',
@@ -1001,16 +1001,34 @@ VERSION:102
       createdAt: new Date()
     }).returning().then(r => r[0]);
 
+    const bt2 = await db.insert(bankTransactionsTable).values({
+      fitid: '15509713000300846000500078472020260618',
+      accountId: 'current',
+      seasonId: '25-26',
+      amount: -1000000,
+      date: '2026-06-18',
+      name: '000001 VIR EUROPEEN EMIS NET',
+      memo: 'POUR: NOZAY BADMINTON REF: 9616980182494 REMISE: mise en reserve MOTIF: mise en reserve',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
     const analyzeRes = await app.request('http://localhost/bank-transactions/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: { run: async () => ({}) } as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
-    expect(updatedBt.aiSuggestions).not.toBeNull();
-    const suggestions = JSON.parse(updatedBt.aiSuggestions);
-    expect(suggestions.category).toBe(15);
-    expect(suggestions.memberId).toBeNull();
+    const updatedBt1 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get();
+    expect(updatedBt1.aiSuggestions).not.toBeNull();
+    const sug1 = JSON.parse(updatedBt1.aiSuggestions);
+    expect(sug1.category).toBe(15);
+    expect(sug1.memberId).toBeNull();
+
+    const updatedBt2 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get();
+    expect(updatedBt2.aiSuggestions).not.toBeNull();
+    const sug2 = JSON.parse(updatedBt2.aiSuggestions);
+    expect(sug2.category).toBe(15);
+    expect(sug2.memberId).toBeNull();
   });
 
   it('resolves ambiguous name matching deterministically when multiple members share last name', async () => {
