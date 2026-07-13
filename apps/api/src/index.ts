@@ -1030,14 +1030,17 @@ app.get('/bank-transactions', async (c) => {
   if (!season) {
     return c.json({ success: false, error: 'Missing season query parameter' }, 400);
   }
-  const status = c.req.query('status') || 'pending';
+  const status = c.req.query('status');
   const accountId = c.req.query('accountId');
 
   const db = drizzle(c.env.DB);
   const conditions = [
-    eq(bankTransactionsTable.seasonId, season),
-    eq(bankTransactionsTable.status, status as any)
+    eq(bankTransactionsTable.seasonId, season)
   ];
+
+  if (status) {
+    conditions.push(eq(bankTransactionsTable.status, status as any));
+  }
 
   if (accountId) {
     conditions.push(eq(bankTransactionsTable.accountId, accountId as any));
