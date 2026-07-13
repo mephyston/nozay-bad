@@ -18,9 +18,11 @@ describe('AdminLayout Component', () => {
     // Verify desktop title and navigation items are rendered
     expect(target.textContent).toContain('NBA 91 - CA');
     expect(target.textContent).toContain("Vue d'ensemble");
-    expect(target.textContent).toContain("Trésorerie");
-    expect(target.textContent).toContain("Adhésions & Poona");
-    expect(target.textContent).toContain("Boutique & Volants");
+    expect(target.textContent).toContain("Adhérents");
+    expect(target.textContent).toContain("Comptabilité");
+    expect(target.textContent).toContain("Licenciés");
+    expect(target.textContent).toContain("Boutique");
+    expect(target.textContent).toContain("Note de frais");
 
     // The mobile menu close button should not be present initially
     expect(target.querySelector('button[aria-label="Close menu"]')).toBeNull();
