@@ -1,0 +1,61 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import MembersTable from '../../../components/MembersTable.svelte';
+
+const page = Astro.url.searchParams.get('page') || '1';
+const search = Astro.url.searchParams.get('search') || '';
+const gender = Astro.url.searchParams.get('gender') || '';
+const type = Astro.url.searchParams.get('type') || '';
+const status = Astro.url.searchParams.get('status') || '';
+
+const apiService = Astro.locals.runtime.env.API_SERVICE;
+const queryParams = new URLSearchParams({ page, limit: '20', search, gender, type, status });
+
+let membersData = { data: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 1 } };
+let errorMsg = '';
+
+try {
+  const res = await apiService.fetch(`http://localhost/members?${queryParams.toString()}`);
+  if (!res.ok) {
+    throw new Error('Impossible de récupérer la liste des adhérents');
+  }
+  membersData = await res.json();
+} catch (err: any) {
+  errorMsg = err.message || 'Une erreur est survenue lors de la récupération.';
+}
+---
+
+<Layout title="Gestion des Adhérents - NBA 91">
+  <AdminLayout client:load>
+    <div class="space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold tracking-tight">Adhérents</h1>
+          <p class="text-muted-foreground mt-2">
+            Consultez et recherchez les membres inscrits au club.
+          </p>
+        </div>
+        <a
+          href="/admin/members/import"
+          class="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow hover:bg-primary/90"
+        >
+          Importer
+        </a>
+      </div>
+
+      {errorMsg && (
+        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
+          {errorMsg}
+        </div>
+      )}
+
+      <MembersTable
+        client:load
+        data={membersData.data}
+        pagination={membersData.pagination}
+        filters={{ search, gender, type, status }}
+      />
+    </div>
+  </AdminLayout>
+</Layout>
