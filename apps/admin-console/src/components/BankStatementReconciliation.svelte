@@ -20,6 +20,8 @@
     amount: number;
     date: string;
     description: string;
+    category?: string | null;
+    bankTransactionId?: number | null;
   }
 
   interface Season {
@@ -58,9 +60,10 @@
   let errorMsg = $state('');
 
   // Formulaire d'association/création
-  let category = $state('buvette');
+  let category = $state('adhesions_inscriptions');
   let paymentMethod = $state('virement');
   let selectedMemberId = $state<string>('');
+  let amountToLink = $state<number>(0);
 
   const accountLabels = {
     current: 'Compte Courant',
@@ -69,25 +72,35 @@
   };
 
   const categories = [
-    { id: 'adhesions', name: 'Adhésions / Inscriptions' },
-    { id: 'partenariats', name: 'Partenariats / Sponsoring' },
-    { id: 'subventions', name: 'Subventions' },
-    { id: 'buvette', name: 'Buvette' },
-    { id: 'boutique', name: 'Boutique & Cordages' },
-    { id: 'evenements', name: 'Événements (Action Jeunes...)' },
-    { id: 'stages', name: 'Stages' },
-    { id: 'salaires', name: 'Salaires' },
-    { id: 'achats_boutique', name: 'Achats Boutique (Revente)' },
-    { id: 'achats_club', name: 'Achats Club (Matériel)' },
-    { id: 'licences_ffbad', name: 'Licences FFBad' },
-    { id: 'championnats', name: 'Inscriptions Championnats' },
-    { id: 'formations', name: 'Formations' },
-    { id: 'divers_recette', name: 'Divers Recette' },
-    { id: 'divers_depense', name: 'Divers Dépense' }
+    { id: 'adhesions_inscriptions', name: 'Adhésions & Inscriptions' },
+    { id: 'sponsoring', name: 'Sponsoring' },
+    { id: 'subventions', name: 'Subventions (aides publiques)' },
+    { id: 'actions_jeunes', name: 'Actions Jeunes (stages jeunes...)' },
+    { id: 'tournois_senior', name: 'Tournois Senior' },
+    { id: 'evenements_buvettes', name: 'Evénements & Buvettes' },
+    { id: 'cordage_vente', name: 'Cordage (vente aux adhérents)' },
+    { id: 'volants', name: 'Volants (vente ou achat)' },
+    { id: 'salaires_charges', name: 'Salaires et Charges' },
+    { id: 'materiel_club', name: 'Matériel (hors cordages)' },
+    { id: 'licences_federation', name: 'Licences (versements fédération)' },
+    { id: 'championnats', name: 'Championnats (frais équipes)' },
+    { id: 'stages_formations', name: 'Stages & Formations' },
+    { id: 'fonctionnement_administratif', name: 'Frais de fonctionnement & administratif' }
   ];
 
   let sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
   let suggestions = $derived(selectedTx ? getSuggestions(selectedTx) : []);
+
+  // Détecter les pièces déjà liées du grand livre et le solde restant
+  let linkedGlTxs = $derived(selectedTx ? glTransactions.filter(gt => gt.bankTransactionId === selectedTx!.id) : []);
+  let totalLinked = $derived(linkedGlTxs.reduce((sum, gt) => sum + Math.abs(gt.amount), 0));
+  let remainingAmount = $derived(selectedTx ? Math.abs(selectedTx.amount) - totalLinked : 0);
+
+  $effect(() => {
+    if (selectedTx) {
+      amountToLink = parseFloat((remainingAmount / 100).toFixed(2));
+    }
+  });
 
   // Trouver les suggestions correspondantes du Grand Livre (même montant absolu et +/- 7 jours)
   function getSuggestions(bt: BankTransaction) {
@@ -181,7 +194,7 @@
             type: bt.amount < 0 ? 'depense' : 'recette',
             accountId: bt.accountId,
             category,
-            amount: Math.abs(bt.amount),
+            amount: Math.round(amountToLink * 100),
             date: bt.date,
             paymentMethod,
             description: bt.name,
@@ -275,7 +288,7 @@
             <input id="file-input" type="file" accept=".ofx" class="w-full text-sm" required />
           </div>
         </div>
-        <button type="submit" disabled={isSubmitting} class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-md shadow hover:bg-primary/95 cursor-pointer">
+        <button type="submit" disabled={isSubmitting} class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-md shadow hover:bg-primary/95 cursor-pointer font-medium">
           <Upload class="w-4 h-4" />
           {isSubmitting ? 'Importation en cours...' : 'Lancer l\'importation'}
         </button>
@@ -311,11 +324,11 @@
                   {#if sug.memberName}
                     <div class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-[10px] font-semibold text-primary">
                       <Sparkles class="w-2.5 h-2.5" />
-                      IA : {sug.memberName} ({sug.category})
+                      IA : {sug.memberName} ({categories.find(c => c.id === sug.category)?.name || sug.category})
                     </div>
                   {:else}
                     <div class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted border border-border text-[10px] font-semibold text-muted-foreground">
-                      IA : Opération diverse ({sug.category})
+                      IA : Opération diverse ({categories.find(c => c.id === sug.category)?.name || sug.category})
                     </div>
                   {/if}
                 {/if}
@@ -340,8 +353,29 @@
               </div>
             </div>
 
-            <!-- Étape 0 : Suggestion IA prioritaires -->
-            {#if selectedTx.aiSuggestions}
+            <!-- Ventilation / Pièces déjà liées -->
+            {#if linkedGlTxs.length > 0}
+              <div class="border border-border rounded-xl p-4 bg-muted/30 space-y-2.5">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Pièces déjà ventilées ({linkedGlTxs.length})</h4>
+                <div class="space-y-1.5">
+                  {#each linkedGlTxs as gt}
+                    <div class="flex items-center justify-between text-xs p-2 bg-background border border-border rounded">
+                      <div>
+                        <div class="font-semibold text-foreground">{gt.description}</div>
+                        <div class="text-[10px] text-muted-foreground">{categories.find(c => c.id === gt.category)?.name || 'Opération diverse'}</div>
+                      </div>
+                      <div class="font-bold text-emerald-600">{(Math.abs(gt.amount) / 100).toFixed(2)} €</div>
+                    </div>
+                  {/each}
+                </div>
+                <div class="text-xs font-bold text-right pt-2 border-t border-border text-foreground">
+                  Reste à ventiler : {(remainingAmount / 100).toFixed(2)} €
+                </div>
+              </div>
+            {/if}
+
+            <!-- Étape 0 : Suggestion IA prioritaires (Seulement si rien n'a encore été ventilé) -->
+            {#if selectedTx.aiSuggestions && linkedGlTxs.length === 0}
               {@const sug = JSON.parse(selectedTx.aiSuggestions)}
               <div class="border border-primary/30 bg-primary/5 rounded-xl p-4 space-y-3">
                 <div class="flex items-center gap-1.5 text-xs font-bold text-primary">
@@ -350,79 +384,104 @@
                 </div>
                 {#if sug.memberId}
                   <p class="text-xs text-foreground">
-                    Associer cette ligne de relevé à l'adhérent **{sug.memberName}** dans la catégorie **{sug.category}**.
+                    Associer cette ligne de relevé à l'adhérent **{sug.memberName}** dans la catégorie **{categories.find(c => c.id === sug.category)?.name || sug.category}**.
                   </p>
                 {:else}
                   <p class="text-xs text-foreground">
-                    Enregistrer cette transaction comme opération diverse de type **{sug.category}** (pas d'adhérent détecté).
+                    Enregistrer cette transaction comme opération diverse de type **{categories.find(c => c.id === sug.category)?.name || sug.category}** (pas d'adhérent détecté).
                   </p>
                 {/if}
                 <button
                   onclick={() => handleMatchWithAI(selectedTx!.id, sug.memberId, sug.category)}
-                  class="w-full py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-md hover:bg-primary/90 cursor-pointer border-0 shadow-sm"
+                  class="w-full py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-md hover:bg-primary/90 cursor-pointer border-0 shadow-sm font-medium"
                 >
                   Valider la suggestion IA
                 </button>
               </div>
             {/if}
 
-            <!-- Étape 1 : Suggestions d'association -->
-            <div class="border border-border rounded-xl p-4 space-y-3 bg-muted/40">
-              <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Suggestions du Grand Livre (+/- 7 jours)</h4>
-              {#each suggestions as sug}
-                <div class="flex items-center justify-between gap-2 p-2.5 bg-background border border-border rounded-md text-xs">
-                  <div>
-                    <div class="font-semibold text-foreground">{sug.description}</div>
-                    <div class="text-muted-foreground">{sug.date} • {(sug.amount / 100).toFixed(2)} €</div>
+            <!-- Étape 1 : Suggestions d'association (Seulement si rien n'a encore été ventilé) -->
+            {#if linkedGlTxs.length === 0}
+              <div class="border border-border rounded-xl p-4 space-y-3 bg-muted/40">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Suggestions du Grand Livre (+/- 7 jours)</h4>
+                {#each suggestions as sug}
+                  <div class="flex items-center justify-between gap-2 p-2.5 bg-background border border-border rounded-md text-xs">
+                    <div>
+                      <div class="font-semibold text-foreground">{sug.description}</div>
+                      <div class="text-muted-foreground">{sug.date} • {(sug.amount / 100).toFixed(2)} €</div>
+                    </div>
+                    <button onclick={() => handleMatch(selectedTx!.id, sug.id)} class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold cursor-pointer border-0">
+                      Associer
+                    </button>
                   </div>
-                  <button onclick={() => handleMatch(selectedTx!.id, sug.id)} class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold cursor-pointer border-0">
-                    Associer
-                  </button>
-                </div>
-              {:else}
-                <p class="text-xs text-muted-foreground">Aucune écriture correspondante trouvée à +/- 7 jours.</p>
-              {/each}
-            </div>
-
-            <!-- Étape 2 : Création d'une nouvelle écriture -->
-            <div class="border border-border rounded-xl p-4 space-y-3">
-              <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Créer et pointer manuellement</h4>
-              
-              <div class="space-y-2">
-                <div>
-                  <label for="member-select" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Associer à un adhérent</label>
-                  <select id="member-select" class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary font-medium" bind:value={selectedMemberId}>
-                    <option value="">-- Aucun adhérent (Opération diverse) --</option>
-                    {#each sortedMembers as m}
-                      <option value={m.id}>{m.lastName} {m.firstName} (Restant : {(m.amountRemaining / 100).toFixed(2)} €)</option>
-                    {/each}
-                  </select>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label for="cat-select" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Catégorie</label>
-                    <select id="cat-select" class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary" bind:value={category}>
-                      {#each categories as cat}
-                        <option value={cat.id}>{cat.name}</option>
-                      {/each}
-                    </select>
-                  </div>
-                  <div>
-                    <label for="method-select" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Moyen de paiement</label>
-                    <select id="method-select" class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary" bind:value={paymentMethod}>
-                      <option value="virement">Virement</option>
-                      <option value="cheque">Chèque</option>
-                      <option value="especes">Espèces</option>
-                    </select>
-                  </div>
-                </div>
+                {:else}
+                  <p class="text-xs text-muted-foreground">Aucune écriture correspondante trouvée à +/- 7 jours.</p>
+                {/each}
               </div>
+            {/if}
 
-              <button onclick={() => handleCreateAndMatch(selectedTx!)} class="w-full py-1.5 bg-primary hover:bg-primary/95 text-primary-foreground rounded text-xs font-semibold shadow-sm cursor-pointer border-0">
-                Créer & lier l'écriture
-              </button>
-            </div>
+            <!-- Étape 2 : Création d'une nouvelle écriture (Ventilation possible) -->
+            {#if remainingAmount > 0}
+              <div class="border border-border rounded-xl p-4 space-y-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  {linkedGlTxs.length > 0 ? 'Ventiler une nouvelle partie' : 'Créer et pointer manuellement'}
+                </h4>
+                
+                <div class="space-y-3">
+                  <div class="grid grid-cols-3 gap-2">
+                    <div class="col-span-2">
+                      <label for="member-select" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Associer à un adhérent</label>
+                      <select id="member-select" class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary font-medium" bind:value={selectedMemberId}>
+                        <option value="">-- Aucun adhérent --</option>
+                        {#each sortedMembers as m}
+                          <option value={m.id}>{m.lastName} {m.firstName} (Dû : {(m.amountRemaining / 100).toFixed(2)} €)</option>
+                        {/each}
+                      </select>
+                    </div>
+                    <div>
+                      <label for="amount-input" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Montant (€)</label>
+                      <input
+                        id="amount-input"
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        max={(remainingAmount / 100).toFixed(2)}
+                        class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary font-bold text-foreground"
+                        bind:value={amountToLink}
+                      />
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label for="cat-select" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Catégorie</label>
+                      <select id="cat-select" class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary" bind:value={category}>
+                        {#each categories as cat}
+                          <option value={cat.id}>{cat.name}</option>
+                        {/each}
+                      </select>
+                    </div>
+                    <div>
+                      <label for="method-select" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Moyen de paiement</label>
+                      <select id="method-select" class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary" bind:value={paymentMethod}>
+                        <option value="virement">Virement</option>
+                        <option value="cheque">Chèque</option>
+                        <option value="especes">Espèces</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <button onclick={() => handleCreateAndMatch(selectedTx!)} class="w-full py-1.5 bg-primary hover:bg-primary/95 text-primary-foreground rounded text-xs font-semibold shadow-sm cursor-pointer border-0">
+                  {linkedGlTxs.length > 0 ? 'Enregistrer cette partie' : "Créer & lier l'écriture"}
+                </button>
+              </div>
+            {:else}
+              <div class="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold rounded-lg flex items-center justify-center gap-2">
+                <Check class="w-4 h-4" />
+                Opération entièrement rapprochée et validée !
+              </div>
+            {/if}
           </div>
 
           <!-- Boutons actions secondaires -->
@@ -438,7 +497,7 @@
           <div class="h-full flex flex-col items-center justify-center text-center text-muted-foreground space-y-2">
             <ShieldAlert class="w-8 h-8 opacity-40 text-primary animate-pulse" />
             <p class="text-sm font-semibold text-foreground font-medium">Rapprochement intelligent</p>
-            <p class="text-xs max-w-xs">
+            <p class="text-xs max-w-xs font-medium">
               Cliquez sur **« Lancer l'analyse IA »** pour qualifier l'ensemble du relevé d'un coup, ou sélectionnez une ligne.
             </p>
           </div>

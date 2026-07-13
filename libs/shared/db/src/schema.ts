@@ -67,6 +67,7 @@ export const transactionsTable = sqliteTable('transactions', {
   description: text('description').notNull(),
   reference: text('reference'),
   memberId: integer('member_id').references(() => membersTable.id),
+  bankTransactionId: integer('bank_transaction_id').references(() => bankTransactionsTable.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 

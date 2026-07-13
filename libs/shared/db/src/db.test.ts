@@ -282,20 +282,33 @@ describe('Database Tests', () => {
     expect(member.amountDue).toBe(25000);
     expect(member.parent1Name).toBe('Dupont Marc');
 
+    const [bt] = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-RECONCILE-TEST',
+      seasonId: '25-26',
+      accountId: 'current',
+      amount: 10000,
+      date: '2026-07-13',
+      name: 'Virement Dupont',
+      status: 'reconciled',
+      createdAt: new Date()
+    }).returning();
+
     const [tx] = await db.insert(transactionsTable).values({
       seasonId: '25-26',
       type: 'recette',
       accountId: 'current',
-      category: 'adhesions',
+      category: 'adhesions_inscriptions',
       amount: 10000,
       date: '2026-07-13',
       paymentMethod: 'virement',
       description: 'Acompte Dupont Jean',
       memberId: member.id,
+      bankTransactionId: bt.id,
       createdAt: new Date()
     }).returning();
 
     expect(tx.memberId).toBe(member.id);
+    expect(tx.bankTransactionId).toBe(bt.id);
   });
 });
 

@@ -51,7 +51,7 @@
   let showPanel = $state<'recette' | 'depense' | 'transfert' | null>(null);
   let amount = $state('');
   let date = $state(new Date().toISOString().split('T')[0]);
-  let category = $state('adhesions');
+  let category = $state('adhesions_inscriptions');
   let accountId = $state<'current' | 'savings' | 'cash'>('current');
   let destinationAccountId = $state<'current' | 'savings' | 'cash'>('cash');
   let paymentMethod = $state('virement');
@@ -81,25 +81,20 @@
   };
 
   const categories = [
-    { id: 'adhesions', name: 'Adhésions / Inscriptions' },
-    { id: 'partenariats', name: 'Partenariats / Sponsoring' },
-    { id: 'subventions', name: 'Subventions' },
-    { id: 'buvette', name: 'Buvette' },
-    { id: 'boutique', name: 'Boutique & Cordages' },
-    { id: 'evenements', name: 'Événements (Action Jeunes...)' },
-    { id: 'stages', name: 'Stages' },
-    { id: 'salaires', name: 'Salaires' },
-    { id: 'achats_boutique', name: 'Achats Boutique (Revente)' },
-    { id: 'achats_club', name: 'Achats Club (Matériel)' },
-    { id: 'licences_ffbad', name: 'Licences FFBad' },
-    { id: 'championnats', name: 'Inscriptions Championnats' },
-    { id: 'formations', name: 'Formations' },
-    { id: 'evenements_club', name: 'Dépenses Événements' },
-    { id: 'frais_deplacement', name: 'Frais Déplacement' },
-    { id: 'assurances', name: 'Assurances' },
-    { id: 'frais_administratifs', name: 'Frais Admin / Banque' },
-    { id: 'divers_recette', name: 'Divers Recette' },
-    { id: 'divers_depense', name: 'Divers Dépense' }
+    { id: 'adhesions_inscriptions', name: 'Adhésions & Inscriptions' },
+    { id: 'sponsoring', name: 'Sponsoring' },
+    { id: 'subventions', name: 'Subventions (aides publiques)' },
+    { id: 'actions_jeunes', name: 'Actions Jeunes (stages jeunes...)' },
+    { id: 'tournois_senior', name: 'Tournois Senior' },
+    { id: 'evenements_buvettes', name: 'Evénements & Buvettes' },
+    { id: 'cordage_vente', name: 'Cordage (vente aux adhérents)' },
+    { id: 'volants', name: 'Volants (vente ou achat)' },
+    { id: 'salaires_charges', name: 'Salaires et Charges' },
+    { id: 'materiel_club', name: 'Matériel (hors cordages)' },
+    { id: 'licences_federation', name: 'Licences (versements fédération)' },
+    { id: 'championnats', name: 'Championnats (frais équipes)' },
+    { id: 'stages_formations', name: 'Stages & Formations' },
+    { id: 'fonctionnement_administratif', name: 'Frais de fonctionnement & administratif' }
   ];
 
   function getAccountBalance(acc: 'current' | 'savings' | 'cash') {

@@ -472,7 +472,7 @@ describe('Accounting API Endpoints', () => {
         seasonId: '25-26',
         type: 'recette',
         accountId: 'current',
-        category: 'adhesions',
+        category: 'adhesions_inscriptions',
         amount: 25000, // 250 €
         date: '2026-07-13',
         paymentMethod: 'virement',
@@ -506,7 +506,7 @@ describe('Accounting API Endpoints', () => {
 
     const pnl = report.data.compteResultat;
     expect(pnl.totalRecettes).toBe(25000);
-    expect(pnl.categories.adhesions.total).toBe(25000);
+    expect(pnl.categories.adhesions_inscriptions.total).toBe(25000);
 
     const balances = report.data.bilanTrésorerie;
     // Compte courant : 1000 € (init) + 250 € (recette) - 200 € (transfert) = 1050 €
@@ -751,7 +751,7 @@ VERSION:102
           response: JSON.stringify({
             memberId: m.id,
             memberName: 'Eliot PIGNON',
-            category: 'adhesions',
+            category: 'adhesions_inscriptions',
             confidence: 0.95
           })
         };
@@ -783,7 +783,7 @@ VERSION:102
           seasonId: '25-26',
           type: 'recette',
           accountId: 'current',
-          category: 'adhesions',
+          category: 'adhesions_inscriptions',
           amount: 25000,
           date: '2026-02-02',
           paymentMethod: 'virement',

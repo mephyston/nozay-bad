@@ -51,12 +51,20 @@
   }
 
   const categoryLabels: Record<string, string> = {
-    adhesions: 'Adhésion',
-    boutique: 'Boutique / Cordage',
-    stages: 'Stage',
-    buvette: 'Buvette',
-    evenements: 'Événement',
-    divers_recette: 'Divers Recette'
+    adhesions_inscriptions: 'Adhésion',
+    sponsoring: 'Sponsoring',
+    subventions: 'Subventions',
+    actions_jeunes: 'Actions Jeunes',
+    tournois_senior: 'Tournois Senior',
+    evenements_buvettes: 'Evénements & Buvette',
+    cordage_vente: 'Cordage',
+    volants: 'Volants',
+    salaires_charges: 'Salaires & Charges',
+    materiel_club: 'Matériel club',
+    licences_federation: 'Licence fédération',
+    championnats: 'Championnats',
+    stages_formations: 'Stages & Formations',
+    fonctionnement_administratif: 'Fonctionnement & Admin'
   };
 </script>
 

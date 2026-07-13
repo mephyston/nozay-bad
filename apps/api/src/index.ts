@@ -807,29 +807,31 @@ app.post('/bank-transactions/analyze', async (c) => {
 
   for (const tx of pendingTxs) {
     // Déterminer la catégorie par défaut par dictionnaire simple
-    let suggestedCategory = tx.amount < 0 ? 'divers_depense' : 'adhesions';
+    let suggestedCategory = tx.amount < 0 ? 'fonctionnement_administratif' : 'adhesions_inscriptions';
     const textToLower = `${tx.name} ${tx.memo || ''}`.toLowerCase();
     
     if (textToLower.includes('ionos')) {
-      suggestedCategory = 'divers_depense';
+      suggestedCategory = 'fonctionnement_administratif';
     } else if (textToLower.includes('urssaf') || textToLower.includes('afdas')) {
-      suggestedCategory = 'salaires';
+      suggestedCategory = 'salaires_charges';
     } else if (textToLower.includes('salaire') || textToLower.includes('tetevuide') || textToLower.includes('meunier')) {
-      suggestedCategory = 'salaires';
+      suggestedCategory = 'salaires_charges';
     } else if (textToLower.includes('larde')) {
-      suggestedCategory = 'achats_club';
+      suggestedCategory = 'materiel_club';
     } else if (textToLower.includes('ligue') || textToLower.includes('badminton')) {
-      suggestedCategory = textToLower.includes('licence') ? 'licences_ffbad' : 'championnats';
+      suggestedCategory = textToLower.includes('licence') ? 'licences_federation' : 'championnats';
     } else if (textToLower.includes('codep91') || textToLower.includes('comite')) {
       suggestedCategory = 'championnats';
     } else if (textToLower.includes('sumup') || textToLower.includes('buvette')) {
-      suggestedCategory = 'buvette';
-    } else if (textToLower.includes('cordage') || textToLower.includes('raquette') || textToLower.includes('volant')) {
-      suggestedCategory = 'boutique';
+      suggestedCategory = 'evenements_buvettes';
+    } else if (textToLower.includes('cordage') || textToLower.includes('raquette')) {
+      suggestedCategory = 'cordage_vente';
+    } else if (textToLower.includes('volant')) {
+      suggestedCategory = 'volants';
     } else if (textToLower.includes('stage')) {
-      suggestedCategory = 'stages';
+      suggestedCategory = 'stages_formations';
     } else if (textToLower.includes('versement express')) {
-      suggestedCategory = 'divers_recette';
+      suggestedCategory = 'adhesions_inscriptions';
     }
 
     // Présélection des candidats adhérents :
@@ -955,22 +957,20 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
   }
 
   const memberId = body.memberId || body.transaction?.memberId;
+  let lastTxId = null;
 
   if (body.action === 'match') {
-    await db.update(bankTransactionsTable)
-      .set({ status: 'reconciled', transactionId: body.transactionId })
-      .where(eq(bankTransactionsTable.id, id))
+    await db.update(transactionsTable)
+      .set({ 
+        bankTransactionId: id,
+        memberId: memberId || undefined
+      })
+      .where(eq(transactionsTable.id, body.transactionId))
       .run();
-
-    if (memberId) {
-      await db.update(transactionsTable)
-        .set({ memberId })
-        .where(eq(transactionsTable.id, body.transactionId))
-        .run();
-    }
+    lastTxId = body.transactionId;
   } else if (body.action === 'create') {
     const tx = body.transaction;
-    // Insérer d'abord la transaction dans le Grand Livre
+    // Insérer la transaction dans le Grand Livre liée à cette transaction bancaire
     const [newTx] = await db.insert(transactionsTable).values({
       seasonId: tx.seasonId,
       type: tx.type,
@@ -983,16 +983,27 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
       description: tx.description,
       reference: tx.reference || null,
       memberId: memberId || null,
+      bankTransactionId: id,
       createdAt: new Date()
     }).returning();
-
-    // Mettre à jour l'écriture bancaire
-    await db.update(bankTransactionsTable)
-      .set({ status: 'reconciled', transactionId: newTx.id })
-      .where(eq(bankTransactionsTable.id, id))
-      .run();
+    lastTxId = newTx.id;
   } else {
     return c.json({ success: false, error: 'Action invalide.' }, 400);
+  }
+
+  // Calculer le montant total déjà rapproché pour cette ligne de relevé
+  const linkedTxs = await db.select()
+    .from(transactionsTable)
+    .where(eq(transactionsTable.bankTransactionId, id))
+    .all();
+  const totalLinked = linkedTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+  // Si le total rapproché est égal ou supérieur au montant absolu de la ligne bancaire, on la valide
+  if (totalLinked >= Math.abs(bankTx.amount)) {
+    await db.update(bankTransactionsTable)
+      .set({ status: 'reconciled', transactionId: lastTxId })
+      .where(eq(bankTransactionsTable.id, id))
+      .run();
   }
 
   if (memberId) {
