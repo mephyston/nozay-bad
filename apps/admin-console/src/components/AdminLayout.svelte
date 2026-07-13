@@ -9,7 +9,8 @@
     UserCheck,
     ChevronDown,
     ChevronRight,
-    Coins
+    Coins,
+    Wallet
   } from "lucide-svelte";
   import ThemeToggle from "./ThemeToggle.svelte";
   import UserNav from "./UserNav.svelte";
@@ -43,6 +44,7 @@
       ]
     },
     { name: "Comptabilité", icon: Receipt, href: "/admin/compta" },
+    { name: "Caisse", icon: Wallet, href: "/admin/cash-box" },
     {
       name: "Licenciés",
       icon: UserCheck,

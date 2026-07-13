@@ -1,0 +1,93 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import AdminLayout from '../../components/AdminLayout.svelte';
+
+const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
+---
+
+<Layout title="Gestion de la Caisse - NBA 91">
+  <AdminLayout client:load email={userEmail}>
+    <div class="space-y-6">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight">Suivi de la Caisse</h1>
+        <p class="text-muted-foreground mt-2">
+          Gérez l'argent liquide (pièces et billets) collecté lors des événements du club (buvette, tournois, etc.).
+        </p>
+      </div>
+
+      <!-- Statistiques Caisse -->
+      <div class="grid gap-4 md:grid-cols-3">
+        <div class="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <h3 class="text-sm font-medium tracking-tight text-muted-foreground">Solde de la Caisse</h3>
+          <div class="text-3xl font-bold mt-2 text-emerald-600 dark:text-emerald-400">452,30 €</div>
+          <p class="text-xs text-muted-foreground mt-1">Dernière mise à jour : aujourd'hui</p>
+        </div>
+        <div class="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <h3 class="text-sm font-medium tracking-tight text-muted-foreground">Total Entrées (Buvette...)</h3>
+          <div class="text-3xl font-bold mt-2 text-primary">+820,00 €</div>
+          <p class="text-xs text-muted-foreground mt-1">Saison en cours</p>
+        </div>
+        <div class="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <h3 class="text-sm font-medium tracking-tight text-muted-foreground">Total Sorties (Monnaie...)</h3>
+          <div class="text-3xl font-bold mt-2 text-destructive">-367,70 €</div>
+          <p class="text-xs text-muted-foreground mt-1">Saison en cours</p>
+        </div>
+      </div>
+
+      <div class="grid gap-6 md:grid-cols-2">
+        <!-- Formulaire Ajouter une Transaction -->
+        <div class="bg-card border border-border rounded-xl p-6 shadow-sm">
+          <h2 class="text-lg font-semibold mb-4">Enregistrer un mouvement de caisse</h2>
+          <form class="space-y-4">
+            <div>
+              <label for="type" class="block text-sm font-medium mb-1">Type de transaction</label>
+              <select id="type" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                <option value="in">Entrée (Recette - ex: Vente buvette)</option>
+                <option value="out">Sortie (Dépense / Fond de caisse)</option>
+              </select>
+            </div>
+            <div>
+              <label for="amount" class="block text-sm font-medium mb-1">Montant (€)</label>
+              <input type="number" id="amount" step="0.01" min="0" placeholder="0.00" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary" required />
+            </div>
+            <div>
+              <label for="description" class="block text-sm font-medium mb-1">Description / Événement</label>
+              <input type="text" id="description" placeholder="Ex: Recette buvette tournoi Jeunes" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary" required />
+            </div>
+            <button type="submit" class="w-full px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow hover:bg-primary/90 transition-colors">
+              Enregistrer
+            </button>
+          </form>
+        </div>
+
+        <!-- Historique des Mouvements -->
+        <div class="bg-card border border-border rounded-xl p-6 shadow-sm">
+          <h2 class="text-lg font-semibold mb-4">Derniers mouvements</h2>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between border-b border-border pb-3">
+              <div>
+                <p class="font-medium text-sm">Vente buvette - Interclub</p>
+                <p class="text-xs text-muted-foreground">12/07/2026</p>
+              </div>
+              <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400">+120,50 €</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-border pb-3">
+              <div>
+                <p class="font-medium text-sm">Achat gobelets & boissons</p>
+                <p class="text-xs text-muted-foreground">10/07/2026</p>
+              </div>
+              <span class="text-sm font-bold text-destructive">-45,20 €</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-border pb-3">
+              <div>
+                <p class="font-medium text-sm">Recettes tournoi interne</p>
+                <p class="text-xs text-muted-foreground">05/07/2026</p>
+              </div>
+              <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400">+315,00 €</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </AdminLayout>
+</Layout>
