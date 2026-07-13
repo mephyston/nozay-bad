@@ -1,0 +1,63 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import InitialBalancesConfig from '../../../components/InitialBalancesConfig.svelte';
+import { env } from 'cloudflare:workers';
+
+const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
+const apiService = env.API_SERVICE;
+
+const season = Astro.url.searchParams.get('season') || '25-26';
+
+// Proxying POST requests to configure initial balances for a season
+if (Astro.request.method === 'POST') {
+  try {
+    const data = await Astro.request.json() as any;
+    const apiRes = await apiService.fetch(`http://localhost/seasons/${data.seasonId}/balances`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data.balances)
+    });
+    if (!apiRes.ok) {
+      return new Response('Erreur configuration soldes', { status: apiRes.status });
+    }
+    return new Response(JSON.stringify({ success: true }));
+  } catch (err: any) {
+    return new Response(err.message, { status: 500 });
+  }
+}
+
+let seasonsList = [];
+let errorMsg = '';
+
+try {
+  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasonsList = json.data || [];
+  }
+} catch (err: any) {
+  errorMsg = 'Impossible de charger la liste des saisons comptables.';
+}
+---
+
+<Layout title="Configuration Comptabilité - NBA 91">
+  <AdminLayout client:load email={userEmail} breadcrumb="Comptabilité / Configuration">
+    <div class="space-y-6">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight">Configuration Comptabilité</h1>
+        <p class="text-muted-foreground mt-2">
+          Gérez les configurations générales de la trésorerie et de la comptabilité.
+        </p>
+      </div>
+
+      {errorMsg && (
+        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
+          {errorMsg}
+        </div>
+      )}
+
+      <InitialBalancesConfig client:load seasons={seasonsList} seasonId={season} />
+    </div>
+  </AdminLayout>
+</Layout>

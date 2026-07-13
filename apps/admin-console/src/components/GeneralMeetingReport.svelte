@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AlertCircle, Edit3 } from 'lucide-svelte';
+  import { AlertCircle } from 'lucide-svelte';
 
   interface CategoryTotal {
     type: 'recette' | 'depense';
@@ -28,19 +28,10 @@
 
   let { report, seasonId, seasons = [] }: { report: ReportData; seasonId: string; seasons?: Season[] } = $props();
 
-  let editingBalances = $state(false);
-  // svelte-ignore state_referenced_locally
-  let currentInitial = $state((report.bilanTrésorerie.find(b => b.accountId === 'current')?.initialBalance || 0) / 100);
-  // svelte-ignore state_referenced_locally
-  let savingsInitial = $state((report.bilanTrésorerie.find(b => b.accountId === 'savings')?.initialBalance || 0) / 100);
-  // svelte-ignore state_referenced_locally
-  let cashInitial = $state((report.bilanTrésorerie.find(b => b.accountId === 'cash')?.initialBalance || 0) / 100);
-  let isSaving = $state(false);
-
   // svelte-ignore state_referenced_locally
   let selectedSeason = $state(seasonId);
 
-  const categories = {
+  const categories: Record<string, string> = {
     adhesions: 'Adhésions / Inscriptions membres',
     partenariats: 'Partenariats / Sponsoring',
     subventions: 'Subventions publiques',
@@ -68,30 +59,6 @@
     cash: 'Caisse Physique'
   };
 
-  async function handleSaveBalances(e: Event) {
-    e.preventDefault();
-    isSaving = true;
-    try {
-      const res = await fetch('/admin/compta/reports', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          seasonId,
-          balances: [
-            { accountId: 'current', initialBalance: Math.round(currentInitial * 100) },
-            { accountId: 'savings', initialBalance: Math.round(savingsInitial * 100) },
-            { accountId: 'cash', initialBalance: Math.round(cashInitial * 100) }
-          ]
-        })
-      });
-      if (!res.ok) throw new Error('Impossible de sauvegarder.');
-      window.location.reload();
-    } catch (err: any) {
-      alert(err.message);
-      isSaving = false;
-    }
-  }
-
   function applySeasonChange() {
     const params = new URLSearchParams(window.location.search);
     params.set('season', selectedSeason);
@@ -116,42 +83,7 @@
         {/if}
       </select>
     </div>
-    <button onclick={() => editingBalances = !editingBalances} class="inline-flex items-center gap-2 px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold hover:bg-muted shadow-sm transition-colors cursor-pointer">
-      <Edit3 class="w-3.5 h-3.5" />
-      Modifier Soldes Initiaux
-    </button>
   </div>
-
-  <!-- Formulaire de saisie des soldes initiaux -->
-  {#if editingBalances}
-    <div class="p-6 bg-card border border-border rounded-xl shadow-sm space-y-4 max-w-xl">
-      <h3 class="font-semibold text-sm">Configurer les soldes de départ (au 1er septembre)</h3>
-      <form onsubmit={handleSaveBalances} class="space-y-4">
-        <div class="grid grid-cols-3 gap-4">
-          <div>
-            <label for="current-initial" class="block text-xs font-medium mb-1">Compte Courant (€)</label>
-            <input id="current-initial" type="number" step="0.01" class="w-full px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={currentInitial} />
-          </div>
-          <div>
-            <label for="savings-initial" class="block text-xs font-medium mb-1">Compte Livret (€)</label>
-            <input id="savings-initial" type="number" step="0.01" class="w-full px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={savingsInitial} />
-          </div>
-          <div>
-            <label for="cash-initial" class="block text-xs font-medium mb-1">Caisse (€)</label>
-            <input id="cash-initial" type="number" step="0.01" class="w-full px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={cashInitial} />
-          </div>
-        </div>
-        <div class="flex gap-2">
-          <button type="submit" disabled={isSaving} class="px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-md shadow hover:bg-primary/90 cursor-pointer">
-            {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
-          </button>
-          <button type="button" onclick={() => editingBalances = false} class="px-4 py-2 border border-border text-xs font-semibold rounded-md hover:bg-muted cursor-pointer">
-            Annuler
-          </button>
-        </div>
-      </form>
-    </div>
-  {/if}
 
   <!-- 1. COMPTE DE RÉSULTAT -->
   <div class="bg-card border border-border rounded-xl p-6 shadow-sm space-y-6">

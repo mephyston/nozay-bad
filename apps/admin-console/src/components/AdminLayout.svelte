@@ -37,7 +37,8 @@
         { name: "Grand Livre", href: "/admin/compta" },
         { name: "Rapprochement bancaire", href: "/admin/compta/import" },
         { name: "Remises de chèques", href: "/admin/compta/cheques" },
-        { name: "Caisse", href: "/admin/cash-box" }
+        { name: "Caisse", href: "/admin/cash-box" },
+        { name: "Configuration", href: "/admin/compta/config" }
       ]
     },
     {

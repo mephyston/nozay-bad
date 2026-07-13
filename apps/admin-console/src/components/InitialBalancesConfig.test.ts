@@ -1,0 +1,38 @@
+import { describe, it, expect } from 'vitest';
+import { mount, flushSync } from 'svelte';
+import InitialBalancesConfig from './InitialBalancesConfig.svelte';
+
+describe('InitialBalancesConfig Component', () => {
+  it('renders initial balances inputs and selects correct values', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    const mockSeasons = [
+      {
+        id: '25-26',
+        name: 'Saison 2025-2026',
+        initialCurrentBalance: 100000, // 1000€
+        initialSavingsBalance: 200000, // 2000€
+        initialCashBalance: 30000,    // 300€
+      }
+    ];
+
+    mount(InitialBalancesConfig, {
+      target,
+      props: {
+        seasons: mockSeasons,
+        seasonId: '25-26'
+      }
+    });
+    flushSync();
+
+    const currentInput = target.querySelector('#current-initial') as HTMLInputElement;
+    const savingsInput = target.querySelector('#savings-initial') as HTMLInputElement;
+    const cashInput = target.querySelector('#cash-initial') as HTMLInputElement;
+
+    expect(currentInput).not.toBeNull();
+    expect(currentInput.value).toBe('1000.00');
+    expect(savingsInput.value).toBe('2000.00');
+    expect(cashInput.value).toBe('300.00');
+  });
+});
