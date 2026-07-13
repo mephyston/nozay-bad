@@ -46,7 +46,8 @@
       icon: ShoppingBag,
       subItems: [
         { name: "Volants", href: "/admin/shop/shuttlecocks" },
-        { name: "Cordage", href: "/admin/shop/strings" }
+        { name: "Cordage", href: "/admin/shop/strings" },
+        { name: "Commandes", href: "/admin/shop/orders" }
       ]
     },
     { name: "Note de frais", icon: Coins, href: "/admin/expenses" }
