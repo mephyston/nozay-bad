@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, or, eq, ne, like, sql, inArray, desc } from 'drizzle-orm';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, expensesTable } from '../../../libs/shared/db/src/schema';
 
 
 
@@ -1871,6 +1871,117 @@ app.post('/orders/:id/reject', async (c) => {
   }
 
   return c.json({ success: true, data: updatedOrder });
+});
+
+app.get('/expenses', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const season = c.req.query('season');
+  const status = c.req.query('status');
+  const db = drizzle(c.env.DB);
+  let conditions = [];
+  if (season) conditions.push(eq(expensesTable.seasonId, season));
+  if (status) conditions.push(eq(expensesTable.status, status as any));
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  const expenses = await db.select().from(expensesTable).where(whereClause).all();
+  return c.json({ success: true, data: expenses });
+});
+
+app.post('/expenses', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const body = await c.req.json();
+  const db = drizzle(c.env.DB);
+  const expense = await db.insert(expensesTable).values({
+    seasonId: body.seasonId,
+    description: body.description,
+    category: body.category,
+    amount: body.amount,
+    photoUrl: body.photoUrl || null,
+    status: 'pending',
+    emitterName: body.emitterName,
+    memberId: body.memberId || null,
+    createdAt: new Date()
+  }).returning().get();
+  return c.json({ success: true, data: expense });
+});
+
+app.post('/expenses/:id/approve', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const db = drizzle(c.env.DB);
+
+  let updatedExpense;
+  try {
+    await db.transaction(async (txDb) => {
+      const expense = await txDb.select().from(expensesTable).where(eq(expensesTable.id, id)).get();
+      if (!expense) {
+        throw new Error('Dépense introuvable');
+      }
+      if (expense.status !== 'pending') {
+        throw new Error('Dépense déjà traitée');
+      }
+
+      // Créer la transaction de dépense
+      const tx = await txDb.insert(transactionsTable).values({
+        seasonId: expense.seasonId,
+        type: 'depense',
+        accountId: 'current',
+        category: expense.category,
+        amount: expense.amount,
+        date: new Date().toISOString().split('T')[0],
+        paymentMethod: 'virement',
+        description: `Remboursement frais - ${expense.emitterName} - ${expense.description}`,
+        memberId: expense.memberId,
+        createdAt: new Date()
+      }).returning().get();
+
+      // Mettre à jour le statut et lier la transaction
+      updatedExpense = await txDb.update(expensesTable)
+        .set({ status: 'approved', transactionId: tx.id })
+        .where(eq(expensesTable.id, id))
+        .returning().get();
+    });
+  } catch (err: any) {
+    const status = err.message === 'Dépense introuvable' ? 404 : 400;
+    return c.json({ success: false, error: err.message }, status);
+  }
+
+  return c.json({ success: true, data: updatedExpense });
+});
+
+app.post('/expenses/:id/reject', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const db = drizzle(c.env.DB);
+
+  let updatedExpense;
+  try {
+    const expense = await db.select().from(expensesTable).where(eq(expensesTable.id, id)).get();
+    if (!expense) {
+      throw new Error('Dépense introuvable');
+    }
+    if (expense.status !== 'pending') {
+      throw new Error('Dépense déjà traitée');
+    }
+
+    updatedExpense = await db.update(expensesTable)
+      .set({ status: 'rejected' })
+      .where(eq(expensesTable.id, id))
+      .returning().get();
+  } catch (err: any) {
+    const status = err.message === 'Dépense introuvable' ? 404 : 400;
+    return c.json({ success: false, error: err.message }, status);
+  }
+
+  return c.json({ success: true, data: updatedExpense });
 });
 
 export default app;

@@ -137,6 +137,21 @@ export const ordersTable = sqliteTable('orders', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
+export const expensesTable = sqliteTable('expenses', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  seasonId: text('season_id').notNull().references(() => seasonsTable.id),
+  description: text('description').notNull(),
+  category: text('category', { enum: ['deplacement', 'materiel', 'alimentation', 'autre'] }).notNull(),
+  amount: integer('amount').notNull(),
+  photoUrl: text('photo_url'),
+  status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
+  emitterName: text('emitter_name').notNull(),
+  memberId: integer('member_id').references(() => membersTable.id),
+  transactionId: integer('transaction_id').references(() => transactionsTable.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+
 
 
 

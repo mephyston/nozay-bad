@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import ShopCatalog from '../components/ShopCatalog.svelte';
+import ExpenseReportForm from '../components/ExpenseReportForm.svelte';
 import { env } from 'cloudflare:workers';
 import { ModeWatcher } from 'mode-watcher';
 
@@ -9,6 +10,8 @@ interface Season {
   name: string;
   active: boolean;
 }
+
+const tab = new URL(Astro.request.url).searchParams.get('tab') || 'shop';
 
 interface Product {
   id: number;
@@ -31,17 +34,31 @@ const apiService = env.API_SERVICE;
 if (Astro.request.method === 'POST') {
   try {
     const body = await Astro.request.json();
-    const res = await apiService.fetch('http://localhost/orders', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-    return new Response(await res.text(), {
-      status: res.status,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    if (body.action === 'expense') {
+      const res = await apiService.fetch('http://localhost/expenses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body.data)
+      });
+      return new Response(await res.text(), {
+        status: res.status,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } else {
+      const res = await apiService.fetch('http://localhost/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+      return new Response(await res.text(), {
+        status: res.status,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
   } catch (err: any) {
     return new Response(JSON.stringify({ success: false, error: err.message }), {
       status: 500,
@@ -135,6 +152,20 @@ const activeSeasonId = activeSeason.id;
         </div>
         
         <div class="flex items-center gap-4">
+          <nav class="flex items-center gap-1 bg-muted p-1 rounded-xl border border-border">
+            <a
+              href="/"
+              class={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 ${tab !== 'expenses' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              Boutique
+            </a>
+            <a
+              href="/?tab=expenses"
+              class={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 ${tab === 'expenses' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              Note de frais
+            </a>
+          </nav>
           <div class="text-xs text-muted-foreground bg-muted border border-border px-3 py-1.5 rounded-lg font-semibold">
             Saison : <span class="text-foreground">{activeSeason.name || activeSeasonId}</span>
           </div>
@@ -152,12 +183,19 @@ const activeSeasonId = activeSeason.id;
         </div>
       )}
 
-      <ShopCatalog
-        client:load
-        products={products}
-        members={members}
-        activeSeasonId={activeSeasonId}
-      />
+      {tab === 'expenses' ? (
+        <ExpenseReportForm
+          client:load
+          activeSeasonId={activeSeasonId}
+        />
+      ) : (
+        <ShopCatalog
+          client:load
+          products={products}
+          members={members}
+          activeSeasonId={activeSeasonId}
+        />
+      )}
     </main>
 
     <!-- Footer -->

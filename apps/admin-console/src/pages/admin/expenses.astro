@@ -1,0 +1,79 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import AdminLayout from '../../components/AdminLayout.svelte';
+import ExpensesManager from '../../components/ExpensesManager.svelte';
+
+import { env } from 'cloudflare:workers';
+
+const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
+const apiService = env.API_SERVICE;
+
+const season = Astro.url.searchParams.get('season') || '25-26';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const data = await Astro.request.json() as any;
+    if (data.action === 'approve') {
+      const apiRes = await apiService.fetch(`http://localhost/expenses/${data.id}/approve`, {
+        method: 'POST'
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+    } else if (data.action === 'reject') {
+      const apiRes = await apiService.fetch(`http://localhost/expenses/${data.id}/reject`, {
+        method: 'POST'
+      });
+      if (!apiRes.ok) {
+        return new Response('Erreur rejet', { status: apiRes.status });
+      }
+    }
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (err: any) {
+    return new Response(err.message, { status: 500 });
+  }
+}
+
+let expensesList = [];
+let seasonsList = [];
+let errorMsg = '';
+
+try {
+  // 1. Récupérer les notes de frais de la saison
+  const expensesRes = await apiService.fetch(`http://localhost/expenses?season=${season}`);
+  if (expensesRes.ok) {
+    const json = await expensesRes.json() as any;
+    expensesList = json.data || [];
+  }
+
+  // 2. Récupérer la liste des saisons
+  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasonsList = json.data || [];
+  }
+} catch (err: any) {
+  errorMsg = 'Une erreur est survenue lors du chargement des notes de frais.';
+}
+---
+
+<Layout title="Notes de Frais - NBA 91">
+  <AdminLayout client:load email={userEmail} breadcrumb="Comptabilité / Notes de frais">
+    <div class="space-y-6">
+      {errorMsg && (
+        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
+          {errorMsg}
+        </div>
+      )}
+
+      <ExpensesManager
+        client:load
+        expenses={expensesList}
+        seasonId={season}
+        seasons={seasonsList}
+      />
+    </div>
+  </AdminLayout>
+</Layout>

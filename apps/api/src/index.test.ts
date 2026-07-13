@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checksTable, checkDepositsTable, productsTable, ordersTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checksTable, checkDepositsTable, productsTable, ordersTable, expensesTable } from '../../../libs/shared/db/src/schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 import { DatabaseSync } from 'node:sqlite';
@@ -1419,6 +1419,87 @@ describe('Orders API Endpoints', () => {
     expect(res.status).toBe(200);
     const json = await res.json() as any;
     expect(json.success).toBe(true);
+  });
+
+  describe('Expenses API Endpoints', () => {
+    it('supports creating, listing, approving and rejecting expenses', async () => {
+      const mockD1 = await setupMockDb();
+      const db = drizzle(mockD1 as any);
+
+      // Insert season
+      await db.insert(seasonsTable).values({ id: '25-26', name: 'Saison 2025-2026', active: true, createdAt: new Date() }).onConflictDoNothing().run();
+
+      // 1. Create a pending expense report
+      const res = await app.request('http://localhost/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          seasonId: '25-26',
+          description: 'Achat de cartons pour tournoi',
+          category: 'materiel',
+          amount: 4500, // 45.00 €
+          photoUrl: 'justificatif_carton.jpg',
+          emitterName: 'Marie Curie'
+        })
+      }, { DB: mockD1 as any });
+      expect(res.status).toBe(200);
+      const createJson = await res.json() as any;
+      expect(createJson.success).toBe(true);
+      expect(createJson.data.id).toBeDefined();
+      expect(createJson.data.status).toBe('pending');
+      expect(createJson.data.emitterName).toBe('Marie Curie');
+
+      const expenseId = createJson.data.id;
+
+      // 2. List expenses
+      const listRes = await app.request('http://localhost/expenses?season=25-26', undefined, { DB: mockD1 as any });
+      expect(listRes.status).toBe(200);
+      const listJson = await listRes.json() as any;
+      expect(listJson.success).toBe(true);
+      expect(listJson.data).toHaveLength(1);
+      expect(listJson.data[0].id).toBe(expenseId);
+
+      // 3. Approve expense
+      const approveRes = await app.request(`http://localhost/expenses/${expenseId}/approve`, {
+        method: 'POST'
+      }, { DB: mockD1 as any });
+      expect(approveRes.status).toBe(200);
+      const approveJson = await approveRes.json() as any;
+      expect(approveJson.success).toBe(true);
+      expect(approveJson.data.status).toBe('approved');
+      expect(approveJson.data.transactionId).toBeDefined();
+
+      // Verify transaction was created in compta
+      const tx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, approveJson.data.transactionId)).get();
+      expect(tx).toBeDefined();
+      expect(tx.type).toBe('depense');
+      expect(tx.amount).toBe(4500);
+      expect(tx.category).toBe('materiel');
+      expect(tx.description).toContain('Remboursement frais - Marie Curie - Achat de cartons pour tournoi');
+
+      // 4. Create another expense to test rejection
+      const res2 = await app.request('http://localhost/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          seasonId: '25-26',
+          description: 'Repas de Noel',
+          category: 'alimentation',
+          amount: 8500,
+          emitterName: 'Albert Einstein'
+        })
+      }, { DB: mockD1 as any });
+      const expenseId2 = (await res2.json() as any).data.id;
+
+      // Reject expense
+      const rejectRes = await app.request(`http://localhost/expenses/${expenseId2}/reject`, {
+        method: 'POST'
+      }, { DB: mockD1 as any });
+      expect(rejectRes.status).toBe(200);
+      const rejectJson = await rejectRes.json() as any;
+      expect(rejectJson.success).toBe(true);
+      expect(rejectJson.data.status).toBe('rejected');
+    });
   });
 });
 
