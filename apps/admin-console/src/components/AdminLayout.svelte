@@ -41,7 +41,14 @@
         { name: "Import", href: "/admin/members/import" }
       ]
     },
-    { name: "Comptabilité", icon: Receipt, href: "/admin/compta" },
+    {
+      name: "Comptabilité",
+      icon: Receipt,
+      subItems: [
+        { name: "Grand Livre", href: "/admin/compta" },
+        { name: "Remise de chèques", href: "/admin/compta/cheques" }
+      ]
+    },
     { name: "Caisse", icon: Wallet, href: "/admin/cash-box" },
     {
       name: "Boutique",
