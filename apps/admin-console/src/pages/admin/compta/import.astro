@@ -9,7 +9,7 @@ const apiService = env.API_SERVICE;
 
 const season = Astro.url.searchParams.get('season') || '25-26';
 
-// Si requête POST, intercepter pour les actions d'écriture (import ou reconcile/ignore/analyze)
+// Si requête POST, intercepter pour les actions d'écriture (import ou reconcile/ignore/unignore/analyze/delete-transaction)
 if (Astro.request.method === 'POST') {
   try {
     const contentType = Astro.request.headers.get('content-type') || '';
@@ -48,6 +48,20 @@ if (Astro.request.method === 'POST') {
         if (!apiRes.ok) {
           return new Response('Erreur ignore', { status: apiRes.status });
         }
+      } else if (data.action === 'unignore') {
+        const apiRes = await apiService.fetch(`http://localhost/bank-transactions/${data.btId}/unignore`, {
+          method: 'POST'
+        });
+        if (!apiRes.ok) {
+          return new Response('Erreur unignore', { status: apiRes.status });
+        }
+      } else if (data.action === 'delete-transaction') {
+        const apiRes = await apiService.fetch(`http://localhost/transactions/${data.txId}`, {
+          method: 'DELETE'
+        });
+        if (!apiRes.ok) {
+          return new Response(await apiRes.text(), { status: apiRes.status });
+        }
       }
       return new Response(JSON.stringify({ success: true }));
     }
@@ -63,14 +77,15 @@ let membersList = [];
 let errorMsg = '';
 
 try {
-  const btRes = await apiService.fetch(`http://localhost/bank-transactions?season=${season}&status=pending`);
+  // Récupérer toutes les transactions bancaires (non filtrées par statut au niveau de l'API pour pouvoir changer d'onglet)
+  const btRes = await apiService.fetch(`http://localhost/bank-transactions?season=${season}`);
   if (btRes.ok) {
     const json = await btRes.json() as any;
     bankTransactionsList = json.data || [];
   }
 
-  // Récupérer toutes les transactions du grand livre pour faire des suggestions de pointage
-  const glRes = await apiService.fetch(`http://localhost/transactions?season=${season}&page=1&limit=250`);
+  // Récupérer toutes les transactions du grand livre pour faire des suggestions de pointage et la ventilation
+  const glRes = await apiService.fetch(`http://localhost/transactions?season=${season}&page=1&limit=500`);
   if (glRes.ok) {
     const json = await glRes.json() as any;
     glTransactionsList = json.data || [];

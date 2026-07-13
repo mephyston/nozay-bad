@@ -1117,6 +1117,21 @@ app.post('/bank-transactions/:id/ignore', async (c) => {
   return c.json({ success: true });
 });
 
+app.post('/bank-transactions/:id/unignore', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const db = drizzle(c.env.DB);
+
+  await db.update(bankTransactionsTable)
+    .set({ status: 'pending' })
+    .where(eq(bankTransactionsTable.id, id))
+    .run();
+
+  return c.json({ success: true });
+});
+
 export default app;
 
 

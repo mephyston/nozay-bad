@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Upload, Check, AlertCircle, Trash2, ShieldAlert, Sparkles } from 'lucide-svelte';
+  import { Upload, Check, AlertCircle, Trash2, ShieldAlert, Sparkles, RefreshCw } from 'lucide-svelte';
 
   interface BankTransaction {
     id: number;
@@ -20,8 +20,8 @@
     amount: number;
     date: string;
     description: string;
-    category: string | null;
-    bankTransactionId: number | null;
+    category?: string | null;
+    bankTransactionId?: number | null;
   }
 
   interface Season {
@@ -58,6 +58,9 @@
   let isSubmitting = $state(false);
   let isAnalyzing = $state(false);
   let errorMsg = $state('');
+
+  // Onglet actif à gauche
+  let activeTab = $state<'pending' | 'reconciled' | 'ignored'>('pending');
 
   // Formulaire d'association/création
   let category = $state('adhesions_inscriptions');
@@ -101,6 +104,12 @@
   let linkedGlTxs = $derived(selectedTx ? glTransactions.filter(gt => gt.bankTransactionId === selectedTx!.id) : []);
   let totalLinked = $derived(linkedGlTxs.reduce((sum, gt) => sum + Math.abs(gt.amount), 0));
   let remainingAmount = $derived(selectedTx ? Math.abs(selectedTx.amount) - totalLinked : 0);
+
+  // Séparation par statut des transactions bancaires
+  let pendingCount = $derived(bankTransactions.filter(t => t.status === 'pending').length);
+  let reconciledCount = $derived(bankTransactions.filter(t => t.status === 'reconciled').length);
+  let ignoredCount = $derived(bankTransactions.filter(t => t.status === 'ignored').length);
+  let displayedTransactions = $derived(bankTransactions.filter(t => t.status === activeTab));
 
   // Synchronisation du texte d'affichage des sélections
   let memberDisplayVal = $derived.by(() => {
@@ -276,6 +285,39 @@
     }
   }
 
+  async function handleDeletePart(txId: number) {
+    if (!confirm('Voulez-vous supprimer cette écriture liée ? Le solde de l\'adhérent et le rapprochement seront mis à jour.')) return;
+    isSubmitting = true;
+    try {
+      const res = await fetch('/admin/compta/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete-transaction', txId })
+      });
+      if (!res.ok) throw new Error('Erreur lors de la suppression.');
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.message);
+      isSubmitting = false;
+    }
+  }
+
+  async function handleUnignore(btId: number) {
+    isSubmitting = true;
+    try {
+      const res = await fetch('/admin/compta/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'unignore', btId })
+      });
+      if (!res.ok) throw new Error('Erreur réactivation.');
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.message);
+      isSubmitting = false;
+    }
+  }
+
   async function handleIgnore(btId: number) {
     if (!confirm('Voulez-vous ignorer cette transaction bancaire ?')) return;
     isSubmitting = true;
@@ -323,7 +365,7 @@
             <input id="file-input" type="file" accept=".ofx" class="w-full text-sm" required />
           </div>
         </div>
-        <button type="submit" disabled={isSubmitting} class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-md shadow hover:bg-primary/95 cursor-pointer font-medium font-medium">
+        <button type="submit" disabled={isSubmitting} class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-md shadow hover:bg-primary/95 cursor-pointer font-medium">
           <Upload class="w-4 h-4" />
           {isSubmitting ? 'Importation en cours...' : 'Lancer l\'importation'}
         </button>
@@ -334,15 +376,43 @@
     <div class="grid md:grid-cols-12 gap-6 h-[600px] animate-in fade-in-50 duration-200">
       <!-- Liste de gauche (7/12) -->
       <div class="md:col-span-7 bg-card border border-border rounded-xl shadow-sm flex flex-col h-full overflow-hidden">
-        <div class="p-4 border-b border-border bg-muted flex items-center justify-between">
-          <span class="font-bold text-sm">Opérations bancaires en attente ({bankTransactions.length})</span>
-          <button onclick={handleAnalyze} disabled={isAnalyzing} class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-bold rounded-md shadow-sm cursor-pointer border-0">
-            <Sparkles class="w-3.5 h-3.5" />
-            {isAnalyzing ? 'Analyse IA...' : 'Lancer l\'analyse IA'}
+        <!-- Barre d'Onglets -->
+        <div class="flex border-b border-border bg-muted/50 shrink-0">
+          <button
+            type="button"
+            onclick={() => { activeTab = 'pending'; selectedTx = null; }}
+            class="flex-1 py-3 text-center text-xs font-bold transition-colors border-0 cursor-pointer border-b-2 {activeTab === 'pending' ? 'border-primary text-foreground bg-card' : 'border-transparent text-muted-foreground hover:text-foreground'}"
+          >
+            À rapprocher ({pendingCount})
+          </button>
+          <button
+            type="button"
+            onclick={() => { activeTab = 'reconciled'; selectedTx = null; }}
+            class="flex-1 py-3 text-center text-xs font-bold transition-colors border-0 cursor-pointer border-b-2 {activeTab === 'reconciled' ? 'border-primary text-foreground bg-card' : 'border-transparent text-muted-foreground hover:text-foreground'}"
+          >
+            Rapprochées ({reconciledCount})
+          </button>
+          <button
+            type="button"
+            onclick={() => { activeTab = 'ignored'; selectedTx = null; }}
+            class="flex-1 py-3 text-center text-xs font-bold transition-colors border-0 cursor-pointer border-b-2 {activeTab === 'ignored' ? 'border-primary text-foreground bg-card' : 'border-transparent text-muted-foreground hover:text-foreground'}"
+          >
+            Ignorées ({ignoredCount})
           </button>
         </div>
+
+        <div class="p-3 border-b border-border bg-muted/20 flex items-center justify-between shrink-0">
+          <span class="font-bold text-xs text-muted-foreground">Liste des écritures ({displayedTransactions.length})</span>
+          {#if activeTab === 'pending'}
+            <button onclick={handleAnalyze} disabled={isAnalyzing} class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-bold rounded-md shadow-sm cursor-pointer border-0">
+              <Sparkles class="w-3.5 h-3.5" />
+              {isAnalyzing ? 'Analyse IA...' : 'Lancer l\'analyse IA'}
+            </button>
+          {/if}
+        </div>
+
         <div class="flex-1 overflow-y-auto divide-y divide-border">
-          {#each bankTransactions as bt}
+          {#each displayedTransactions as bt}
             <button
               type="button"
               onclick={() => { selectedTx = bt; selectedMemberId = ''; }}
@@ -354,7 +424,7 @@
                 {#if bt.memo}
                   <div class="text-xs text-muted-foreground italic truncate max-w-md">{bt.memo}</div>
                 {/if}
-                {#if bt.aiSuggestions}
+                {#if bt.aiSuggestions && bt.status === 'pending'}
                   {@const sug = JSON.parse(bt.aiSuggestions)}
                   {#if sug.memberName}
                     <div class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-[10px] font-semibold text-primary">
@@ -372,6 +442,10 @@
                 {bt.amount < 0 ? '' : '+'}{(bt.amount / 100).toFixed(2)} €
               </div>
             </button>
+          {:else}
+            <div class="p-8 text-center text-xs text-muted-foreground italic">
+              Aucune transaction bancaire dans cet onglet.
+            </div>
           {/each}
         </div>
       </div>
@@ -399,18 +473,57 @@
                         <div class="font-semibold text-foreground">{gt.description}</div>
                         <div class="text-[10px] text-muted-foreground">{categories.find(c => c.id === gt.category)?.name || 'Opération diverse'}</div>
                       </div>
-                      <div class="font-bold text-emerald-600">{(Math.abs(gt.amount) / 100).toFixed(2)} €</div>
+                      <div class="flex items-center gap-3">
+                        <div class="font-bold text-emerald-600">{(Math.abs(gt.amount) / 100).toFixed(2)} €</div>
+                        <button
+                          type="button"
+                          onclick={() => handleDeletePart(gt.id)}
+                          class="text-destructive hover:bg-destructive/10 p-1.5 rounded border-0 cursor-pointer transition-colors"
+                          title="Supprimer cette écriture liée"
+                        >
+                          <Trash2 class="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   {/each}
                 </div>
-                <div class="text-xs font-bold text-right pt-2 border-t border-border text-foreground">
-                  Reste à ventiler : {(remainingAmount / 100).toFixed(2)} €
-                </div>
+                {#if remainingAmount > 0}
+                  <div class="text-xs font-bold text-right pt-2 border-t border-border text-foreground">
+                    Reste à ventiler : {(remainingAmount / 100).toFixed(2)} €
+                  </div>
+                {/if}
               </div>
             {/if}
 
-            <!-- Étape 0 : Suggestion IA prioritaires (Seulement si rien n'a encore été ventilé) -->
-            {#if selectedTx.aiSuggestions && linkedGlTxs.length === 0}
+            <!-- Si transaction déjà rapprochée complètement -->
+            {#if selectedTx.status === 'reconciled'}
+              <div class="p-3 bg-muted border border-border rounded-xl space-y-2">
+                <h4 class="text-xs font-bold text-foreground">Rapprochement validé</h4>
+                <p class="text-xs text-muted-foreground leading-relaxed">
+                  Cette ligne bancaire est rapprochée. Pour modifier ou annuler l'imputation, cliquez sur la corbeille <Trash2 class="w-3 h-3 inline text-destructive" /> à côté des pièces ci-dessus. L'opération redeviendra active.
+                </p>
+              </div>
+            {/if}
+
+            <!-- Si transaction ignorée -->
+            {#if selectedTx.status === 'ignored'}
+              <div class="p-4 bg-muted border border-border rounded-xl space-y-3">
+                <h4 class="text-xs font-bold text-foreground">Transaction ignorée</h4>
+                <p class="text-xs text-muted-foreground">
+                  Cette ligne a été écartée de la comptabilité. Vous pouvez la réactiver pour la rapprocher.
+                </p>
+                <button
+                  onclick={() => handleUnignore(selectedTx!.id)}
+                  class="w-full py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-md hover:bg-primary/95 cursor-pointer border-0 shadow-sm flex items-center justify-center gap-1.5"
+                >
+                  <RefreshCw class="w-3.5 h-3.5" />
+                  Réactiver cette transaction
+                </button>
+              </div>
+            {/if}
+
+            <!-- Étape 0 : Suggestion IA prioritaires (Seulement si rien n'a encore été ventilé et pending) -->
+            {#if selectedTx.aiSuggestions && linkedGlTxs.length === 0 && selectedTx.status === 'pending'}
               {@const sug = JSON.parse(selectedTx.aiSuggestions)}
               <div class="border border-primary/30 bg-primary/5 rounded-xl p-4 space-y-3">
                 <div class="flex items-center gap-1.5 text-xs font-bold text-primary">
@@ -435,8 +548,8 @@
               </div>
             {/if}
 
-            <!-- Étape 1 : Suggestions d'association (Seulement si rien n'a encore été ventilé) -->
-            {#if linkedGlTxs.length === 0}
+            <!-- Étape 1 : Suggestions d'association (Seulement si rien n'a encore été ventilé et pending) -->
+            {#if linkedGlTxs.length === 0 && selectedTx.status === 'pending'}
               <div class="border border-border rounded-xl p-4 space-y-3 bg-muted/40">
                 <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Suggestions du Grand Livre (+/- 7 jours)</h4>
                 {#each suggestions as sug}
@@ -455,8 +568,8 @@
               </div>
             {/if}
 
-            <!-- Étape 2 : Création d'une nouvelle écriture (Ventilation possible) -->
-            {#if remainingAmount > 0}
+            <!-- Étape 2 : Création d'une nouvelle écriture (uniquement si reste à ventiler et pending) -->
+            {#if remainingAmount > 0 && selectedTx.status === 'pending'}
               <div class="border border-border rounded-xl p-4 space-y-3">
                 <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   {linkedGlTxs.length > 0 ? 'Ventiler une nouvelle partie' : 'Créer et pointer manuellement'}
@@ -551,7 +664,7 @@
                                 categorySearchQuery = cat.name;
                               }}
                             >
-                              {cat.name}
+                                {cat.name}
                             </button>
                           {:else}
                             <div class="px-2.5 py-1.5 text-xs text-muted-foreground italic">Aucun résultat</div>
@@ -589,20 +702,17 @@
                   {linkedGlTxs.length > 0 ? 'Enregistrer cette partie' : "Créer & lier l'écriture"}
                 </button>
               </div>
-            {:else}
-              <div class="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold rounded-lg flex items-center justify-center gap-2">
-                <Check class="w-4 h-4" />
-                Opération entièrement rapprochée et validée !
-              </div>
             {/if}
           </div>
 
           <!-- Boutons actions secondaires -->
           <div class="pt-4 border-t border-border flex justify-between gap-4">
-            <button onclick={() => handleIgnore(selectedTx!.id)} class="flex-1 py-2 border border-border bg-transparent text-destructive hover:bg-destructive/10 text-xs font-semibold rounded cursor-pointer">
-              Ignorer cette écriture
-            </button>
-            <button onclick={() => selectedTx = null} class="px-4 py-2 border border-border bg-transparent hover:bg-muted text-xs font-semibold rounded cursor-pointer">
+            {#if selectedTx.status === 'pending'}
+              <button onclick={() => handleIgnore(selectedTx!.id)} class="flex-1 py-2 border border-border bg-transparent text-destructive hover:bg-destructive/10 text-xs font-semibold rounded cursor-pointer font-medium">
+                Ignorer cette écriture
+              </button>
+            {/if}
+            <button onclick={() => selectedTx = null} class="px-4 py-2 border border-border bg-transparent hover:bg-muted text-xs font-semibold rounded cursor-pointer font-medium">
               Fermer
             </button>
           </div>
@@ -611,7 +721,7 @@
             <ShieldAlert class="w-8 h-8 opacity-40 text-primary animate-pulse" />
             <p class="text-sm font-semibold text-foreground font-medium">Rapprochement intelligent</p>
             <p class="text-xs max-w-xs font-medium">
-              Cliquez sur **« Lancer l'analyse IA »** pour qualifier l'ensemble du relevé d'un coup, ou sélectionnez une ligne.
+              Sélectionnez un onglet à gauche (À rapprocher, Rapprochées ou Ignorées) et cliquez sur une ligne pour gérer ses imputations.
             </p>
           </div>
         {/if}
