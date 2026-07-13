@@ -11,9 +11,10 @@
   import ThemeToggle from "./ThemeToggle.svelte";
   import UserNav from "./UserNav.svelte";
 
-  let { children, email = "admin@nozay-bad.fr" } = $props<{
+  let { children, email = "admin@nozay-bad.fr", breadcrumb = "Tableau de Bord" } = $props<{
     children?: import('svelte').Snippet;
     email?: string;
+    breadcrumb?: string;
   }>();
 
   let sidebarOpen = $state(false);
@@ -147,7 +148,7 @@
         <button class="md:hidden p-1 rounded hover:bg-accent" aria-label="Menu" onclick={() => sidebarOpen = true}>
           <Menu class="h-5 w-5" />
         </button>
-        <span class="text-sm font-medium text-muted-foreground">Admin / Tableau de Bord</span>
+        <span class="text-sm font-medium text-muted-foreground font-medium">Admin / {breadcrumb}</span>
       </div>
       <div class="flex items-center gap-4">
         <ThemeToggle />

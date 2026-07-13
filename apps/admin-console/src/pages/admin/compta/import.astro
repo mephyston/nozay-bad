@@ -108,17 +108,8 @@ try {
 ---
 
 <Layout title="Importation & Rapprochement - NBA 91">
-  <AdminLayout client:load email={userEmail}>
+  <AdminLayout client:load email={userEmail} breadcrumb="Comptabilité / Rapprochement bancaire">
     <div class="space-y-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-3xl font-bold tracking-tight">Rapprochement bancaire</h1>
-          <p class="text-muted-foreground mt-2">
-            Importez des fichiers de relevés (.ofx) et associez-les aux écritures de votre Grand Livre.
-          </p>
-        </div>
-        <a href="/admin/compta" class="text-sm font-semibold text-primary hover:underline">Retourner au Grand Livre</a>
-      </div>
 
       {errorMsg && (
         <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
