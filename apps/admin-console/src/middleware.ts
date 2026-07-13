@@ -19,7 +19,8 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
   const request = context.request;
   const token = request.headers.get('Cf-Access-Jwt-Assertion');
 
-  const isDev = import.meta.env.DEV || process.env.NODE_ENV === 'development';
+  const url = new URL(request.url);
+  const isDev = import.meta.env.DEV || (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') || url.hostname === 'localhost' || url.hostname === '127.0.0.1';
   if (isDev) {
     context.locals.user = { email: 'admin@nozay-bad.fr' };
     return next();
