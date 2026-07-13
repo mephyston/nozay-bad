@@ -6,10 +6,7 @@
     ShoppingBag,
     Menu,
     X,
-    ChevronDown,
-    ChevronRight,
-    Coins,
-    Wallet
+    Coins
   } from "lucide-svelte";
   import ThemeToggle from "./ThemeToggle.svelte";
   import UserNav from "./UserNav.svelte";
@@ -20,16 +17,6 @@
   }>();
 
   let sidebarOpen = $state(false);
-
-  // Keep track of which submenus are expanded. Default expand Adhérents and Boutique.
-  let expandedMenus = $state<Record<string, boolean>>({
-    "Adhérents": true,
-    "Boutique": true
-  });
-
-  function toggleMenu(name: string) {
-    expandedMenus[name] = !expandedMenus[name];
-  }
 
   const navItems = [
     { name: "Vue d'ensemble", icon: LayoutDashboard, href: "/admin" },
@@ -45,11 +32,13 @@
       name: "Comptabilité",
       icon: Receipt,
       subItems: [
+        { name: "Rapports", href: "/admin/compta/reports" },
         { name: "Grand Livre", href: "/admin/compta" },
-        { name: "Remise de chèques", href: "/admin/compta/cheques" }
+        { name: "Rapprochement bancaire", href: "/admin/compta/import" },
+        { name: "Remises de chèques", href: "/admin/compta/cheques" },
+        { name: "Caisse", href: "/admin/cash-box" }
       ]
     },
-    { name: "Caisse", icon: Wallet, href: "/admin/cash-box" },
     {
       name: "Boutique",
       icon: ShoppingBag,
@@ -78,38 +67,25 @@
           <X class="h-5 w-5" />
         </button>
       </div>
-      <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+      <nav class="flex-1 p-4 space-y-3 overflow-y-auto">
         {#each navItems as item}
           {#if item.subItems}
             <div class="space-y-1">
-              <button
-                type="button"
-                onclick={() => toggleMenu(item.name)}
-                class="w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
-              >
-                <span class="flex items-center">
-                  <item.icon class="mr-3 h-4 w-4 shrink-0" />
-                  {item.name}
-                </span>
-                {#if expandedMenus[item.name]}
-                  <ChevronDown class="h-3.5 w-3.5" />
-                {:else}
-                  <ChevronRight class="h-3.5 w-3.5" />
-                {/if}
-              </button>
-              {#if expandedMenus[item.name]}
-                <div class="pl-7 space-y-1">
-                  {#each item.subItems as sub}
-                    <a
-                      href={sub.href}
-                      onclick={() => sidebarOpen = false}
-                      class="block px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-accent/50 transition-colors"
-                    >
-                      {sub.name}
-                    </a>
-                  {/each}
-                </div>
-              {/if}
+              <div class="flex items-center px-3 py-2 text-sm font-semibold text-foreground/80">
+                <item.icon class="mr-3 h-4 w-4 shrink-0 text-muted-foreground" />
+                {item.name}
+              </div>
+              <div class="pl-7 space-y-1">
+                {#each item.subItems as sub}
+                  <a
+                    href={sub.href}
+                    onclick={() => sidebarOpen = false}
+                    class="block px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-accent/50 transition-colors"
+                  >
+                    {sub.name}
+                  </a>
+                {/each}
+              </div>
             </div>
           {:else}
             <a
@@ -117,7 +93,7 @@
               onclick={() => sidebarOpen = false}
               class="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
             >
-              <item.icon class="mr-3 h-4 w-4 shrink-0" />
+              <item.icon class="mr-3 h-4 w-4 shrink-0 text-muted-foreground" />
               {item.name}
             </a>
           {/if}
@@ -131,44 +107,31 @@
     <div class="flex h-14 items-center justify-between px-4 border-b border-border">
       <span class="font-bold text-lg tracking-wider text-primary">NBA 91 - CA</span>
     </div>
-    <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+    <nav class="flex-1 p-4 space-y-3 overflow-y-auto">
       {#each navItems as item}
         {#if item.subItems}
           <div class="space-y-1">
-            <button
-              type="button"
-              onclick={() => toggleMenu(item.name)}
-              class="w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
-            >
-              <span class="flex items-center">
-                <item.icon class="mr-3 h-4 w-4 shrink-0" />
-                {item.name}
-              </span>
-              {#if expandedMenus[item.name]}
-                <ChevronDown class="h-3.5 w-3.5" />
-              {:else}
-                <ChevronRight class="h-3.5 w-3.5" />
-              {/if}
-            </button>
-            {#if expandedMenus[item.name]}
-              <div class="pl-7 space-y-1">
-                {#each item.subItems as sub}
-                  <a
-                    href={sub.href}
-                    class="block px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-accent/50 transition-colors"
-                  >
-                    {sub.name}
-                  </a>
-                {/each}
-              </div>
-            {/if}
+            <div class="flex items-center px-3 py-2 text-sm font-semibold text-foreground/80">
+              <item.icon class="mr-3 h-4 w-4 shrink-0 text-muted-foreground" />
+              {item.name}
+            </div>
+            <div class="pl-7 space-y-1">
+              {#each item.subItems as sub}
+                <a
+                  href={sub.href}
+                  class="block px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-accent/50 transition-colors"
+                >
+                  {sub.name}
+                </a>
+              {/each}
+            </div>
           </div>
         {:else}
           <a
             href={item.href}
             class="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
           >
-            <item.icon class="mr-3 h-4 w-4 shrink-0" />
+            <item.icon class="mr-3 h-4 w-4 shrink-0 text-muted-foreground" />
             {item.name}
           </a>
         {/if}
