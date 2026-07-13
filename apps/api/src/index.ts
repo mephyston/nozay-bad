@@ -1799,19 +1799,19 @@ app.post('/orders/:id/approve', async (c) => {
   const id = parseInt(c.req.param('id'));
   const db = drizzle(c.env.DB);
 
-  const order = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
-  if (!order || order.status !== 'pending') {
-    return c.json({ success: false, error: 'Commande invalide ou déjà traitée' }, 400);
-  }
-
-  const member = await db.select().from(membersTable).where(eq(membersTable.id, order.memberId)).get();
-  if (!member) {
-    return c.json({ success: false, error: 'Adhérent inexistant' }, 400);
-  }
-
   let updatedOrder;
   try {
     await db.transaction(async (txDb) => {
+      const order = await txDb.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
+      if (!order || order.status !== 'pending') {
+        throw new Error('Commande invalide ou déjà traitée');
+      }
+
+      const member = await txDb.select().from(membersTable).where(eq(membersTable.id, order.memberId)).get();
+      if (!member) {
+        throw new Error('Adhérent inexistant');
+      }
+
       const product = await txDb.select().from(productsTable).where(eq(productsTable.id, order.productId)).get();
       if (!product) {
         throw new Error('Produit inexistant');
@@ -1858,18 +1858,27 @@ app.post('/orders/:id/reject', async (c) => {
   }
   const id = parseInt(c.req.param('id'));
   const db = drizzle(c.env.DB);
-  const order = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
-  if (!order) {
-    return c.json({ success: false, error: 'Commande introuvable' }, 404);
-  }
-  if (order.status !== 'pending') {
-    return c.json({ success: false, error: 'Commande invalide ou déjà traitée' }, 400);
-  }
 
-  const updatedOrder = await db.update(ordersTable)
-    .set({ status: 'rejected' })
-    .where(eq(ordersTable.id, id))
-    .returning().get();
+  let updatedOrder;
+  try {
+    await db.transaction(async (txDb) => {
+      const order = await txDb.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
+      if (!order) {
+        throw new Error('Commande introuvable');
+      }
+      if (order.status !== 'pending') {
+        throw new Error('Commande invalide ou déjà traitée');
+      }
+
+      updatedOrder = await txDb.update(ordersTable)
+        .set({ status: 'rejected' })
+        .where(eq(ordersTable.id, id))
+        .returning().get();
+    });
+  } catch (err: any) {
+    const status = err.message === 'Commande introuvable' ? 404 : 400;
+    return c.json({ success: false, error: err.message }, status);
+  }
 
   return c.json({ success: true, data: updatedOrder });
 });
