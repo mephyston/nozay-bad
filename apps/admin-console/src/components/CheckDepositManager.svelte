@@ -76,6 +76,7 @@
   let checkBank = $state('');
   let checkMemberId = $state<string>('');
   let checkCategory = $state('adhesions_inscriptions');
+  let checkDate = $state(new Date().toISOString().split('T')[0]);
   let formError = $state('');
 
   // Search filter for checks & members in select
@@ -164,6 +165,9 @@
         checkEmitter = json.data.emitter || '';
         checkBank = json.data.bank || '';
         checkMemberId = json.data.memberId ? json.data.memberId.toString() : '';
+        if (json.data.date) {
+          checkDate = json.data.date;
+        }
       } else {
         throw new Error(json.error || 'Erreur lors de la lecture des données.');
       }
@@ -197,7 +201,8 @@
           emitter: checkEmitter,
           bank: checkBank || null,
           memberId: checkMemberId ? parseInt(checkMemberId) : null,
-          category: checkCategory
+          category: checkCategory,
+          date: checkDate
         })
       });
 
@@ -212,6 +217,7 @@
       checkEmitter = '';
       checkBank = '';
       checkMemberId = '';
+      checkDate = new Date().toISOString().split('T')[0];
       window.location.reload();
     } catch (err: any) {
       formError = err.message || 'Erreur lors de l\'enregistrement du chèque.';
@@ -721,6 +727,16 @@
                 <option value="cordage_vente">Vente Cordage</option>
                 <option value="divers_recette">Divers / Recettes annexes</option>
               </select>
+            </div>
+            <div class="space-y-1">
+              <label for="check-date" class="text-xs font-semibold text-muted-foreground uppercase">Date d'émission</label>
+              <input
+                id="check-date"
+                type="date"
+                bind:value={checkDate}
+                class="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
+                required
+              />
             </div>
           </div>
 

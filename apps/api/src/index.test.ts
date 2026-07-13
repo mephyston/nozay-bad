@@ -1067,7 +1067,8 @@ VERSION:102
         emitter: 'Jean Dupont',
         bank: 'Bred',
         memberId: m.id,
-        category: 'adhesions_inscriptions'
+        category: 'adhesions_inscriptions',
+        date: '2026-07-10'
       })
     }, { DB: mockD1 as any });
     expect(checkPostRes.status).toBe(200);
@@ -1087,6 +1088,9 @@ VERSION:102
     expect(getBody.data[0].memberName).toBe('DUPONT Jean');
 
     const checkId = getBody.data[0].id;
+    const txId = getBody.data[0].transactionId;
+    const checkTx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, txId)).get();
+    expect(checkTx.date).toBe('2026-07-10');
 
     // 5. Créer un bordereau de remise de chèques
     const depositRes = await app.request('http://localhost/check-deposits', {

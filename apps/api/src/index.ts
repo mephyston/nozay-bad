@@ -1235,7 +1235,8 @@ app.post('/checks/analyze', async (c) => {
   "number": "string (the check number, usually 7 digits)",
   "amount": number (the check amount in EUR, e.g. 150.00)",
   "emitter": "string (the name of the account holder / drawer / person writing the check. Do NOT use the beneficiary/payee, which is usually 'Nozay Badminton' or 'Nozay-Bad')",
-  "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)"
+  "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)",
+  "date": "string (the issue date of the check in YYYY-MM-DD format, or null if not clear)"
 }
 Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
 
@@ -1262,7 +1263,8 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
   "number": "string (the check number, usually 7 digits)",
   "amount": number (the check amount in EUR, e.g. 150.00)",
   "emitter": "string (the name of the account holder / drawer / person writing the check. Do NOT use the beneficiary/payee, which is usually 'Nozay Badminton' or 'Nozay-Bad')",
-  "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)"
+  "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)",
+  "date": "string (the issue date of the check in YYYY-MM-DD format, or null if not clear)"
 }`,
             image: [...new Uint8Array(bytes)]
           });
@@ -1274,7 +1276,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
       if (!agreed || !aiRes) {
         console.warn("Falling back directly to Llava 1.5...");
         const modelLlava = '@cf/llava-hf/llava-1.5-7b-hf';
-        const systemPrompt = `Identify check number (usually 7 digits), amount, account holder name (emitter - the person writing the check, NOT the beneficiary/payee 'Nozay Badminton'), bank in this check. Output JSON: {"number":"...", "amount":150.0, "emitter":"...", "bank":"..."}`;
+        const systemPrompt = `Identify check number (usually 7 digits), amount, account holder name (emitter - the person writing the check, NOT the beneficiary/payee 'Nozay Badminton'), bank, and issue date in this check. Output JSON: {"number":"...", "amount":150.0, "emitter":"...", "bank":"...", "date":"YYYY-MM-DD"}`;
 
         aiRes = await c.env.AI.run(modelLlava, {
           prompt: systemPrompt,
@@ -1333,6 +1335,16 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
       const bankMatch = textResult.match(/banque\s*:\s*([A-Za-z\s]+)/i) || textResult.match(/(Société Générale|Crédit Agricole|LCL|Bred|BNP|La Banque Postale|CIC|Crédit Mutuel)/i);
       if (bankMatch) {
         extracted.bank = bankMatch[1].trim();
+      }
+
+      // Extraction de la date d'émission (format DD/MM/YYYY ou YYYY-MM-DD)
+      const dateMatch = textResult.match(/(\d{2})[\/\-\s](\d{2})[\/\-\s](\d{4})/) || textResult.match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})/);
+      if (dateMatch) {
+        if (dateMatch[3].length === 4) {
+          extracted.date = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
+        } else {
+          extracted.date = dateMatch[0];
+        }
       }
     }
 
@@ -1438,7 +1450,7 @@ app.post('/checks', async (c) => {
     accountId: 'current',
     category: categoryStr,
     amount: body.amount,
-    date: new Date().toISOString().split('T')[0],
+    date: body.date || new Date().toISOString().split('T')[0],
     paymentMethod: 'cheque',
     description: descStr,
     reference: `Chèque n°${body.number}`,
