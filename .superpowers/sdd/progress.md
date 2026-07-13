@@ -16,4 +16,4 @@ Current Plan: `docs/superpowers/plans/2026-07-13-product-resales-and-orders-plan
 
 ### Sub-Project: Product Resales and Orders
 
-- Task 1: complete (commit c6e2e11, database schema + migrations + tests)
+- Task 1: complete (commits fa3dd15..27967de, review clean)
