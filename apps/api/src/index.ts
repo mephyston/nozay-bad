@@ -1236,7 +1236,7 @@ app.post('/checks/analyze', async (c) => {
   "amount": number (the check amount in EUR, e.g. 150.00)",
   "emitter": "string (the pre-printed account holder / owner name, usually printed in black text in the left or upper section, e.g. 'ANTENNE REUNION TELEVISION'. Do NOT use the handwritten beneficiary/payee name written after 'à', e.g. 'Association Sourice de l'enfant')",
   "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)",
-  "date": "string (the issue date of the check in YYYY-MM-DD format, or null if not clear)"
+  "date": "string (the handwritten issue date, usually in format DD/MM/YY or DD/MM/YYYY. Look in the bottom-right section, under the numerical amount box and next to the signature, following the pre-printed word 'le' or 'fait le', e.g. '10/09/20' should be extracted as '2020-09-10')"
 }
 Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
 
@@ -1264,7 +1264,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
   "amount": number (the check amount in EUR, e.g. 150.00)",
   "emitter": "string (the pre-printed account holder / owner name, usually printed in black text in the left or upper section, e.g. 'ANTENNE REUNION TELEVISION'. Do NOT use the handwritten beneficiary/payee name written after 'à', e.g. 'Association Sourice de l'enfant')",
   "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)",
-  "date": "string (the issue date of the check in YYYY-MM-DD format, or null if not clear)"
+  "date": "string (the handwritten issue date, usually in format DD/MM/YY or DD/MM/YYYY. Look in the bottom-right section, under the numerical amount box and next to the signature, following the pre-printed word 'le' or 'fait le', e.g. '10/09/20' should be extracted as '2020-09-10')"
 }`,
             image: [...new Uint8Array(bytes)]
           });
@@ -1276,7 +1276,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
       if (!agreed || !aiRes) {
         console.warn("Falling back directly to Llava 1.5...");
         const modelLlava = '@cf/llava-hf/llava-1.5-7b-hf';
-        const systemPrompt = `Identify check number (usually 7 digits), amount, pre-printed account holder name (emitter, e.g. 'ANTENNE REUNION TELEVISION'. Do NOT use the handwritten beneficiary/payee name written after 'à', e.g. 'Association Sourice de l'enfant'), bank, and issue date in YYYY-MM-DD format in this check. Output JSON: {"number":"...", "amount":150.0, "emitter":"...", "bank":"...", "date":"YYYY-MM-DD"}`;
+        const systemPrompt = `Identify check details in this image. Look in the bottom-right section below the numerical amount box and next to the signature, following 'le' or 'fait le' for the handwritten issue date (e.g. '10/09/20'). Extract the pre-printed account holder name as emitter (e.g. 'ANTENNE REUNION TELEVISION', NOT the payee 'Association Sourice de l'enfant'). Output JSON: {"number":"...", "amount":563.0, "emitter":"...", "bank":"...", "date":"2020-09-10"}`;
 
         aiRes = await c.env.AI.run(modelLlava, {
           prompt: systemPrompt,
