@@ -119,9 +119,9 @@ describe('POST /members/import', () => {
     expect(initialMembers).toHaveLength(0);
 
     // Create form data with mock CSV file
-    const csvContent = `Licence;Nom;Prénom;Sexe;Date de naissance;Email;Téléphone;Statut;Type;Saison
-1111111;Martin;Pierre;M;1985-05-15;pierre.martin@example.com;0600000001;valide;Competiteur;25-26
-2222222;Bernard;Sophie;F;1990-10-20;sophie.bernard@example.com;0600000002;valide;Loisir;25-26
+    const csvContent = `Licence;Nom;Prénom;Sexe;Date de naissance;Email;Téléphone;Statut;Type;Saison;Nom du contact 1;Email du contact 1;Tél. du contact 1;Montant;Montant reçu;Montant restant;Payé
+1111111;Martin;Pierre;M;1985-05-15;pierre.martin@example.com;0600000001;valide;Competiteur;25-26;Martin Jacques;jacques@example.com;0600000003;250.00;100.00;150.00;Non
+2222222;Bernard;Sophie;F;1990-10-20;sophie.bernard@example.com;0600000002;valide;Loisir;25-26;;;;;;;
 3333333;invalid-row;missing-fields-etc`;
 
     const formData = new FormData();
@@ -164,12 +164,19 @@ describe('POST /members/import', () => {
     expect(m1.phone).toBe('0600000001');
     expect(m1.status).toBe('valide');
     expect(m1.type).toBe('Competiteur');
+    expect(m1.amountDue).toBe(25000);
+    expect(m1.amountReceived).toBe(10000);
+    expect(m1.amountRemaining).toBe(15000);
+    expect(m1.paid).toBe(false);
+    expect(m1.parent1Name).toBe('Martin Jacques');
+    expect(m1.parent1Email).toBe('jacques@example.com');
+    expect(m1.parent1Phone).toBe('0600000003');
     expect(m1.importedAt).toBeInstanceOf(Date);
 
     // Now send another CSV with one update, one insert, and check counts
-    const updateCsvContent = `Licence;Nom;Prénom;Sexe;Date de naissance;Email;Téléphone;Statut;Type;Saison
-1111111;Martin Updated;Pierre;M;1985-05-15;pierre.martin.new@example.com;0600000099;suspendu;Competiteur;25-26
-4444444;Petit;Lucas;M;1995-12-25;lucas.petit@example.com;;valide;Loisir;25-26`;
+    const updateCsvContent = `Licence;Nom;Prénom;Sexe;Date de naissance;Email;Téléphone;Statut;Type;Saison;Nom du contact 1;Email du contact 1;Tél. du contact 1;Montant;Montant reçu;Montant restant;Payé
+1111111;Martin Updated;Pierre;M;1985-05-15;pierre.martin.new@example.com;0600000099;suspendu;Competiteur;25-26;Martin Jacques;jacques@example.com;0600000003;250.00;250.00;0.00;Oui
+4444444;Petit;Lucas;M;1995-12-25;lucas.petit@example.com;;valide;Loisir;25-26;;;;200.00;0.00;200.00;Non`;
 
     const updateFormData = new FormData();
     const updateBlob = new Blob([updateCsvContent], { type: 'text/csv' });
@@ -202,6 +209,10 @@ describe('POST /members/import', () => {
     expect(m1Updated.email).toBe('pierre.martin.new@example.com');
     expect(m1Updated.phone).toBe('0600000099');
     expect(m1Updated.status).toBe('suspendu');
+    expect(m1Updated.amountDue).toBe(25000);
+    expect(m1Updated.amountReceived).toBe(25000);
+    expect(m1Updated.amountRemaining).toBe(0);
+    expect(m1Updated.paid).toBe(true);
   });
 
   it('should import members from a real Poona CSV export format and map headers/values correctly', async () => {
@@ -248,6 +259,9 @@ describe('POST /members/import', () => {
     expect(m1.birthDate).toBe('1969-09-22'); // DD-MM-YYYY mapped to YYYY-MM-DD
     expect(m1.email).toBe('CA@SPECTRUMFR-DESIGN.COM');
     expect(m1.status).toBe('valide'); // Oui/Dossier finalisé mapped to valide
+    expect(m1.amountDue).toBe(0);
+    expect(m1.parent1Phone).toBe('+33682681335');
+    expect(m1.parent1Name).toBeNull();
 
     const m2 = dbMembers.find(m => m.licence === '07684632')!;
     expect(m2).toBeDefined();

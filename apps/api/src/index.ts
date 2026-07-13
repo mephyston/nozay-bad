@@ -19,6 +19,16 @@ interface ParsedMember {
   phone: string | null;
   status: string;
   type: string;
+  amountDue: number;
+  amountReceived: number;
+  amountRemaining: number;
+  paid: boolean;
+  parent1Name: string | null;
+  parent1Email: string | null;
+  parent1Phone: string | null;
+  parent2Name: string | null;
+  parent2Email: string | null;
+  parent2Phone: string | null;
 }
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -91,6 +101,17 @@ app.post('/members/import', async (c) => {
   const statusIdx = headers.findIndex(h => h === 'Statut' || h === 'Adhérent validé' || h === 'Etat de dossier' || h === 'État de dossier');
   const typeIdx = headers.findIndex(h => h === 'Type' || h === 'Tarif');
 
+  const amountDueIdx = headers.findIndex(h => h === 'Montant');
+  const amountReceivedIdx = headers.findIndex(h => h === 'Montant reçu');
+  const amountRemainingIdx = headers.findIndex(h => h === 'Montant restant');
+  const paidIdx = headers.findIndex(h => h === 'Payé');
+  const parent1NameIdx = headers.findIndex(h => h === 'Nom du contact 1');
+  const parent1EmailIdx = headers.findIndex(h => h === 'Email du contact 1');
+  const parent1PhoneIdx = headers.findIndex(h => h === 'Tél. du contact 1');
+  const parent2NameIdx = headers.findIndex(h => h === 'Nom du contact 2');
+  const parent2EmailIdx = headers.findIndex(h => h === 'Email du contact 2');
+  const parent2PhoneIdx = headers.findIndex(h => h === 'Tél. du contact 2');
+
   if (licenceIdx === -1 || lastNameIdx === -1 || firstNameIdx === -1 || genderIdx === -1 || birthDateIdx === -1 || typeIdx === -1 || seasonIdx === -1) {
     return c.json({ success: false, error: 'Invalid headers. Missing required columns (Licence, Saison, Nom, Prénom, Sexe, Date naissance, Tarif/Type)' }, 400);
   }
@@ -148,6 +169,24 @@ app.post('/members/import', async (c) => {
       status = 'suspendu';
     }
 
+    const parseAmount = (idx: number): number => {
+      if (idx === -1 || !columns[idx]) return 0;
+      const parsed = parseFloat(columns[idx]);
+      return isNaN(parsed) ? 0 : Math.round(parsed * 100);
+    };
+
+    const amountDue = parseAmount(amountDueIdx);
+    const amountReceived = parseAmount(amountReceivedIdx);
+    const amountRemaining = parseAmount(amountRemainingIdx);
+    const paid = paidIdx !== -1 && columns[paidIdx] === 'Oui';
+
+    const parent1Name = parent1NameIdx !== -1 ? (columns[parent1NameIdx] || null) : null;
+    const parent1Email = parent1EmailIdx !== -1 ? (columns[parent1EmailIdx] || null) : null;
+    const parent1Phone = parent1PhoneIdx !== -1 ? (columns[parent1PhoneIdx] || null) : null;
+    const parent2Name = parent2NameIdx !== -1 ? (columns[parent2NameIdx] || null) : null;
+    const parent2Email = parent2EmailIdx !== -1 ? (columns[parent2EmailIdx] || null) : null;
+    const parent2Phone = parent2PhoneIdx !== -1 ? (columns[parent2PhoneIdx] || null) : null;
+
     validRowsMap.set(`${licence}-${season}`, {
       licence,
       season,
@@ -159,6 +198,16 @@ app.post('/members/import', async (c) => {
       phone,
       status,
       type,
+      amountDue,
+      amountReceived,
+      amountRemaining,
+      paid,
+      parent1Name,
+      parent1Email,
+      parent1Phone,
+      parent2Name,
+      parent2Email,
+      parent2Phone,
     });
   }
 
@@ -225,6 +274,16 @@ app.post('/members/import', async (c) => {
         phone: member.phone,
         status: member.status,
         type: member.type,
+        amountDue: member.amountDue,
+        amountReceived: member.amountReceived,
+        amountRemaining: member.amountRemaining,
+        paid: member.paid,
+        parent1Name: member.parent1Name,
+        parent1Email: member.parent1Email,
+        parent1Phone: member.parent1Phone,
+        parent2Name: member.parent2Name,
+        parent2Email: member.parent2Email,
+        parent2Phone: member.parent2Phone,
         importedAt,
       })
       .onConflictDoUpdate({
@@ -238,6 +297,16 @@ app.post('/members/import', async (c) => {
           phone: member.phone,
           status: member.status,
           type: member.type,
+          amountDue: member.amountDue,
+          amountReceived: member.amountReceived,
+          amountRemaining: member.amountRemaining,
+          paid: member.paid,
+          parent1Name: member.parent1Name,
+          parent1Email: member.parent1Email,
+          parent1Phone: member.parent1Phone,
+          parent2Name: member.parent2Name,
+          parent2Email: member.parent2Email,
+          parent2Phone: member.parent2Phone,
           importedAt,
         }
       });
