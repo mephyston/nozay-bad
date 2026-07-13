@@ -1184,7 +1184,8 @@ VERSION:102
           number: '8877665',
           amount: 260,
           emitter: 'JEAN DUPONT',
-          bank: 'Société Générale'
+          bank: 'Société Générale',
+          date: '2026-07-10'
         });
       }
     };
@@ -1205,6 +1206,7 @@ VERSION:102
     expect(body.data.number).toBe('8877665');
     expect(body.data.emitter).toBe('JEAN DUPONT');
     expect(body.data.memberName).toBe('DUPONT Jean');
+    expect(body.data.date).toBe('2026-07-10');
   });
 });
 

@@ -1299,6 +1299,8 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
       }
     }
     
+    console.log("RAW LLM OUTPUT:", textResult);
+    
     // Nettoyer et parser le JSON retourné par le LLM
     try {
       const jsonMatch = textResult.match(/\{[\s\S]*?\}/);
@@ -1364,6 +1366,8 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
         }
       }
     }
+
+    console.log("EXTRACTED DATA:", JSON.stringify(extracted));
 
     // Associer automatiquement à un adhérent potentiel
     let matchedMember = null;
