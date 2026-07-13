@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, or, eq, like, sql, inArray, desc } from 'drizzle-orm';
-import { membersTable, seasonsTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable } from '../../../libs/shared/db/src/schema';
 
 type Bindings = {
   DB: D1Database;
@@ -375,6 +375,223 @@ app.get('/seasons', async (c) => {
   return c.json({
     success: true,
     data: seasons
+  });
+});
+
+app.get('/seasons/:seasonId/balances', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const seasonId = c.req.param('seasonId');
+  const db = drizzle(c.env.DB);
+  const balances = await db.select().from(seasonBalancesTable).where(eq(seasonBalancesTable.seasonId, seasonId)).all();
+  return c.json({ success: true, data: balances });
+});
+
+app.post('/seasons/:seasonId/balances', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const seasonId = c.req.param('seasonId');
+  const body = await c.req.json() as { accountId: 'current' | 'savings' | 'cash'; initialBalance: number }[];
+  const db = drizzle(c.env.DB);
+
+  for (const item of body) {
+    await db.insert(seasonBalancesTable)
+      .values({
+        seasonId,
+        accountId: item.accountId,
+        initialBalance: item.initialBalance,
+        createdAt: new Date()
+      })
+      .onConflictDoUpdate({
+        target: [seasonBalancesTable.seasonId, seasonBalancesTable.accountId],
+        set: { initialBalance: item.initialBalance }
+      })
+      .run();
+  }
+
+  return c.json({ success: true });
+});
+
+app.get('/transactions', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const seasonId = c.req.query('season');
+  if (!seasonId) {
+    return c.json({ success: false, error: 'Missing season query parameter' }, 400);
+  }
+  const page = parseInt(c.req.query('page') || '1');
+  const limit = parseInt(c.req.query('limit') || '20');
+  const offset = (page - 1) * limit;
+
+  const db = drizzle(c.env.DB);
+  const conditions = [eq(transactionsTable.seasonId, seasonId)];
+
+  const accountId = c.req.query('accountId');
+  if (accountId) {
+    conditions.push(or(eq(transactionsTable.accountId, accountId as any), eq(transactionsTable.destinationAccountId, accountId as any)) as any);
+  }
+
+  const type = c.req.query('type');
+  if (type) {
+    conditions.push(eq(transactionsTable.type, type as any));
+  }
+
+  const category = c.req.query('category');
+  if (category) {
+    conditions.push(eq(transactionsTable.category, category));
+  }
+
+  const totalRes = await db.select({ count: sql<number>`count(*)` })
+    .from(transactionsTable)
+    .where(and(...conditions))
+    .get();
+  const total = totalRes?.count || 0;
+
+  const transactions = await db.select()
+    .from(transactionsTable)
+    .where(and(...conditions))
+    .orderBy(desc(transactionsTable.date), desc(transactionsTable.id))
+    .limit(limit)
+    .offset(offset)
+    .all();
+
+  return c.json({
+    success: true,
+    data: transactions,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1
+    }
+  });
+});
+
+app.post('/transactions', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const body = await c.req.json() as any;
+  const db = drizzle(c.env.DB);
+
+  // Valider les champs requis
+  if (!body.seasonId || !body.type || !body.accountId || !body.amount || !body.date || !body.paymentMethod || !body.description) {
+    return c.json({ success: false, error: 'Champs requis manquants.' }, 400);
+  }
+
+  if (body.type === 'transfert') {
+    if (!body.destinationAccountId || body.accountId === body.destinationAccountId) {
+      return c.json({ success: false, error: 'Le compte destinataire doit être différent du compte source.' }, 400);
+    }
+  } else {
+    if (!body.category) {
+      return c.json({ success: false, error: 'La catégorie est obligatoire pour les recettes/dépenses.' }, 400);
+    }
+  }
+
+  const [inserted] = await db.insert(transactionsTable).values({
+    seasonId: body.seasonId,
+    type: body.type,
+    accountId: body.accountId,
+    destinationAccountId: body.type === 'transfert' ? body.destinationAccountId : null,
+    category: body.type !== 'transfert' ? body.category : null,
+    amount: Math.round(body.amount),
+    date: body.date,
+    paymentMethod: body.paymentMethod,
+    description: body.description,
+    reference: body.reference || null,
+    createdAt: new Date()
+  }).returning();
+
+  return c.json({ success: true, data: inserted });
+});
+
+app.delete('/transactions/:id', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  if (isNaN(id)) {
+    return c.json({ success: false, error: 'Invalid ID' }, 400);
+  }
+  const db = drizzle(c.env.DB);
+  await db.delete(transactionsTable).where(eq(transactionsTable.id, id)).run();
+  return c.json({ success: true });
+});
+
+app.get('/seasons/:seasonId/reports', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const seasonId = c.req.param('seasonId');
+  const db = drizzle(c.env.DB);
+
+  // Récupérer les soldes initiaux
+  const balances = await db.select().from(seasonBalancesTable).where(eq(seasonBalancesTable.seasonId, seasonId)).all();
+  
+  // Récupérer toutes les transactions de la saison
+  const allTxs = await db.select().from(transactionsTable).where(eq(transactionsTable.seasonId, seasonId)).all();
+
+  // 1. Calcul du compte de résultat (ventilé par catégorie)
+  const categoryTotals: Record<string, { type: 'recette' | 'depense', total: number }> = {};
+  let totalRecettes = 0;
+  let totalDepenses = 0;
+
+  for (const tx of allTxs) {
+    if (tx.type === 'transfert') continue;
+    
+    const cat = tx.category || 'divers';
+    if (!categoryTotals[cat]) {
+      categoryTotals[cat] = { type: tx.type, total: 0 };
+    }
+    categoryTotals[cat].total += tx.amount;
+    
+    if (tx.type === 'recette') {
+      totalRecettes += tx.amount;
+    } else {
+      totalDepenses += tx.amount;
+    }
+  }
+
+  // 2. Calcul du bilan de trésorerie (init vs final)
+  const accounts = ['current', 'savings', 'cash'] as const;
+  const reportBalances = accounts.map(acc => {
+    const initBal = balances.find(b => b.accountId === acc)?.initialBalance || 0;
+    
+    // Calculer le solde final pour ce compte
+    let finalBal = initBal;
+    for (const tx of allTxs) {
+      if (tx.type === 'recette' && tx.accountId === acc) {
+        finalBal += tx.amount;
+      } else if (tx.type === 'depense' && tx.accountId === acc) {
+        finalBal -= tx.amount;
+      } else if (tx.type === 'transfert') {
+        if (tx.accountId === acc) finalBal -= tx.amount; // Sortie du compte source
+        if (tx.destinationAccountId === acc) finalBal += tx.amount; // Entrée sur compte cible
+      }
+    }
+
+    return {
+      accountId: acc,
+      initialBalance: initBal,
+      finalBalance: finalBal
+    };
+  });
+
+  return c.json({
+    success: true,
+    data: {
+      compteResultat: {
+        totalRecettes,
+        totalDepenses,
+        netResult: totalRecettes - totalDepenses,
+        categories: categoryTotals
+      },
+      bilanTrésorerie: reportBalances
+    }
   });
 });
 

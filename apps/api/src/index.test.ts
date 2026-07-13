@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, seasonsTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable } from '../../../libs/shared/db/src/schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { DatabaseSync } from 'node:sqlite';
 import * as fs from 'node:fs';
@@ -433,6 +433,108 @@ describe('GET /seasons', () => {
     expect(body.data[1].id).toBe('25-26');
   });
 });
+
+describe('Accounting API Endpoints', () => {
+  it('should manage season balances, transactions, and generate reports', async () => {
+    const mockD1 = await setupMockDb();
+
+    // 1. Post initial balance
+    const balRes = await app.request('http://localhost/seasons/25-26/balances', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([
+        { accountId: 'current', initialBalance: 100000 }, // 1000 €
+        { accountId: 'cash', initialBalance: 5000 }      // 50 €
+      ])
+    }, { DB: mockD1 as any });
+    expect(balRes.status).toBe(200);
+
+    // 2. Add dynamic transaction
+    const txRes = await app.request('http://localhost/transactions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seasonId: '25-26',
+        type: 'recette',
+        accountId: 'current',
+        category: 'adhesions',
+        amount: 25000, // 250 €
+        date: '2026-07-13',
+        paymentMethod: 'virement',
+        description: 'Cotisation Dupont'
+      })
+    }, { DB: mockD1 as any });
+    expect(txRes.status).toBe(200);
+
+    // 3. Add internal transfer (current -> cash)
+    const transferRes = await app.request('http://localhost/transactions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seasonId: '25-26',
+        type: 'transfert',
+        accountId: 'current',
+        destinationAccountId: 'cash',
+        amount: 20000, // 200 €
+        date: '2026-07-13',
+        paymentMethod: 'virement',
+        description: 'Approvisionnement Caisse'
+      })
+    }, { DB: mockD1 as any });
+    expect(transferRes.status).toBe(200);
+
+    // 4. Fetch reports and assert correct balances
+    const reportRes = await app.request('http://localhost/seasons/25-26/reports', undefined, { DB: mockD1 as any });
+    expect(reportRes.status).toBe(200);
+    const report = await reportRes.json() as any;
+    expect(report.success).toBe(true);
+
+    const pnl = report.data.compteResultat;
+    expect(pnl.totalRecettes).toBe(25000);
+    expect(pnl.categories.adhesions.total).toBe(25000);
+
+    const balances = report.data.bilanTrésorerie;
+    // Compte courant : 1000 € (init) + 250 € (recette) - 200 € (transfert) = 1050 €
+    const current = balances.find((b: any) => b.accountId === 'current');
+    expect(current.initialBalance).toBe(100000);
+    expect(current.finalBalance).toBe(105000);
+
+    // Caisse : 50 € (init) + 200 € (transfert) = 250 €
+    const cash = balances.find((b: any) => b.accountId === 'cash');
+    expect(cash.initialBalance).toBe(5000);
+    expect(cash.finalBalance).toBe(25000);
+
+    // 5. Test GET /seasons/:seasonId/balances
+    const getBalRes = await app.request('http://localhost/seasons/25-26/balances', undefined, { DB: mockD1 as any });
+    expect(getBalRes.status).toBe(200);
+    const getBalJson = await getBalRes.json() as any;
+    expect(getBalJson.success).toBe(true);
+    expect(getBalJson.data).toHaveLength(2);
+
+    // 6. Test GET /transactions
+    const getTxRes = await app.request('http://localhost/transactions?season=25-26&page=1&limit=20', undefined, { DB: mockD1 as any });
+    expect(getTxRes.status).toBe(200);
+    const getTxJson = await getTxRes.json() as any;
+    expect(getTxJson.success).toBe(true);
+    expect(getTxJson.data).toHaveLength(2);
+    expect(getTxJson.pagination.total).toBe(2);
+
+    // 7. Test DELETE /transactions/:id
+    const txIdToDelete = getTxJson.data[0].id;
+    const delRes = await app.request(`http://localhost/transactions/${txIdToDelete}`, {
+      method: 'DELETE'
+    }, { DB: mockD1 as any });
+    expect(delRes.status).toBe(200);
+    const delJson = await delRes.json() as any;
+    expect(delJson.success).toBe(true);
+
+    // Verify deletion
+    const getTxRes2 = await app.request('http://localhost/transactions?season=25-26', undefined, { DB: mockD1 as any });
+    const getTxJson2 = await getTxRes2.json() as any;
+    expect(getTxJson2.data).toHaveLength(1);
+  });
+});
+
 
 
 
