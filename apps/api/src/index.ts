@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
-import { and, or, eq, like, sql, inArray, desc } from 'drizzle-orm';
+import { and, or, eq, ne, like, sql, inArray, desc } from 'drizzle-orm';
 import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable } from '../../../libs/shared/db/src/schema';
 
 
@@ -594,7 +594,62 @@ app.delete('/transactions/:id', async (c) => {
     return c.json({ success: false, error: 'Invalid ID' }, 400);
   }
   const db = drizzle(c.env.DB);
+
+  // 1. Récupérer la transaction pour vérifier les liens bankTransactionId et memberId
+  const tx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, id)).get();
+  if (!tx) {
+    return c.json({ success: false, error: 'Transaction non trouvée' }, 404);
+  }
+
+  // 2. Si liée à un relevé bancaire, recalculer le pointage restant
+  if (tx.bankTransactionId) {
+    const bankTx = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, tx.bankTransactionId)).get();
+    if (bankTx) {
+      // Trouver les transactions restantes pointées sur cette écriture bancaire
+      const remainingTxs = await db.select()
+        .from(transactionsTable)
+        .where(and(
+          eq(transactionsTable.bankTransactionId, tx.bankTransactionId),
+          ne(transactionsTable.id, id)
+        ))
+        .all();
+      const totalRemaining = remainingTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+      // Si le total restant est inférieur au montant absolu du relevé bancaire, on le repasse en 'pending'
+      if (totalRemaining < Math.abs(bankTx.amount)) {
+        await db.update(bankTransactionsTable)
+          .set({ 
+            status: 'pending', 
+            transactionId: remainingTxs.length > 0 ? remainingTxs[remainingTxs.length - 1].id : null 
+          })
+          .where(eq(bankTransactionsTable.id, tx.bankTransactionId))
+          .run();
+      }
+    }
+  }
+
+  // 3. Si liée à un adhérent, déduire le montant reçu
+  if (tx.memberId) {
+    const member = await db.select().from(membersTable).where(eq(membersTable.id, tx.memberId)).get();
+    if (member) {
+      const newReceived = Math.max(0, member.amountReceived - Math.abs(tx.amount));
+      const newRemaining = Math.max(0, member.amountDue - newReceived);
+      const isPaid = newRemaining === 0;
+
+      await db.update(membersTable)
+        .set({
+          amountReceived: newReceived,
+          amountRemaining: newRemaining,
+          paid: isPaid
+        })
+        .where(eq(membersTable.id, tx.memberId))
+        .run();
+    }
+  }
+
+  // 4. Supprimer la transaction du Grand Livre
   await db.delete(transactionsTable).where(eq(transactionsTable.id, id)).run();
+
   return c.json({ success: true });
 });
 

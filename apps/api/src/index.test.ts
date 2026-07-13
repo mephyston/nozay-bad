@@ -800,6 +800,26 @@ VERSION:102
     expect(updatedMember.amountReceived).toBe(25000);
     expect(updatedMember.amountRemaining).toBe(0);
     expect(updatedMember.paid).toBe(true);
+
+    // 5. Récupérer la transaction créée
+    const createdTx = await db.select().from(transactionsTable).where(eq(transactionsTable.bankTransactionId, bt.id)).get();
+    expect(createdTx).toBeDefined();
+
+    // 6. Supprimer la transaction du Grand Livre via l'API
+    const deleteRes = await app.request(`http://localhost/transactions/${createdTx.id}`, {
+      method: 'DELETE'
+    }, { DB: mockD1 as any });
+    expect(deleteRes.status).toBe(200);
+
+    // 7. Vérifier que la transaction bancaire est repassée en status = 'pending'
+    const resetBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    expect(resetBt.status).toBe('pending');
+
+    // 8. Vérifier que l'adhérent a son solde rétabli
+    const resetMember = await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get();
+    expect(resetMember.amountReceived).toBe(0);
+    expect(resetMember.amountRemaining).toBe(25000);
+    expect(resetMember.paid).toBe(false);
   });
 });
 
