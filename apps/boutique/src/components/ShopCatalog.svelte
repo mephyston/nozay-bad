@@ -322,21 +322,21 @@
       {/if}
     </div>
 
-    <!-- Active Member Badge -->
-    {#if selectedMember}
-      <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+    <!-- Active Member Badge & Security Check -->
+    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+      {#if selectedMember}
         <div class="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg text-xs font-semibold self-start sm:self-auto">
           <Check class="w-4 h-4" />
           Adhérent sélectionné : <span class="underline">{selectedMember.lastName} {selectedMember.firstName}</span>
         </div>
-        <div class="cf-turnstile" data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1"></div>
-      </div>
-    {:else}
-      <div class="inline-flex items-center gap-2 bg-destructive/10 text-destructive border border-destructive/20 px-3 py-1.5 rounded-lg text-xs font-semibold">
-        <AlertCircle class="w-4 h-4" />
-        Veuillez sélectionner un adhérent pour débloquer les commandes.
-      </div>
-    {/if}
+      {:else}
+        <div class="inline-flex items-center gap-2 bg-destructive/10 text-destructive border border-destructive/20 px-3 py-1.5 rounded-lg text-xs font-semibold">
+          <AlertCircle class="w-4 h-4" />
+          Veuillez sélectionner un adhérent pour débloquer les commandes.
+        </div>
+      {/if}
+      <div class="cf-turnstile" style={!selectedMember ? 'display: none;' : ''} data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1"></div>
+    </div>
   </div>
 
   <!-- Catalog Section -->
