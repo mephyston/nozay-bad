@@ -59,6 +59,7 @@
   let selectedTx = $state<BankTransaction | null>(null);
   let isSubmitting = $state(false);
   let isAnalyzing = $state(false);
+  let isAnalyzingSingle = $state(false);
   let errorMsg = $state('');
   let showImportModal = $state(false);
   let selectedAccount = $state('auto');
@@ -207,6 +208,27 @@
     } catch (err: any) {
       alert(err.message);
       isAnalyzing = false;
+    }
+  }
+
+  async function handleAnalyzeSingle(btId: number) {
+    isAnalyzingSingle = true;
+    errorMsg = '';
+    try {
+      const res = await fetch('/admin/compta/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'analyze',
+          season: selectedSeason,
+          btId
+        })
+      });
+      if (!res.ok) throw new Error(await res.text() || 'Erreur analyse.');
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.message);
+      isAnalyzingSingle = false;
     }
   }
 
@@ -861,29 +883,58 @@
               </div>
             {/if}
 
-            <!-- Étape 0 : Suggestion IA prioritaires (Seulement si rien n'a encore été ventilé, pending et non clôturé) -->
-            {#if !isClosed && selectedTx.aiSuggestions && linkedGlTxs.length === 0 && selectedTx.status === 'pending'}
-              {@const sug = JSON.parse(selectedTx.aiSuggestions)}
+            <!-- Étape 0 : Rapprochement & Suggestion IA (Seulement si rien n'a encore été ventilé, pending et non clôturé) -->
+            {#if !isClosed && linkedGlTxs.length === 0 && selectedTx.status === 'pending'}
               <div class="border border-primary/30 bg-primary/5 rounded-xl p-4 space-y-3">
-                <div class="flex items-center gap-1.5 text-xs font-bold text-primary">
-                  <Sparkles class="w-4 h-4" />
-                  <span>SUGGESTION IA DE RAPPROCHEMENT</span>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-1.5 text-xs font-bold text-primary">
+                    <Sparkles class="w-4 h-4" />
+                    <span>SUGGESTION IA DE RAPPROCHEMENT</span>
+                  </div>
+                  {#if selectedTx.aiSuggestions}
+                    <button
+                      onclick={() => handleAnalyzeSingle(selectedTx!.id)}
+                      disabled={isAnalyzingSingle}
+                      class="text-[10px] text-primary hover:underline bg-transparent border-0 cursor-pointer p-0 inline-flex items-center gap-1 font-semibold"
+                      title="Recalculer la suggestion avec les dernières données"
+                    >
+                      <RefreshCw class="w-3.5 h-3.5 {isAnalyzingSingle ? 'animate-spin' : ''}" />
+                      {isAnalyzingSingle ? 'Recalcul...' : 'Recalculer'}
+                    </button>
+                  {/if}
                 </div>
-                {#if sug.memberId}
-                  <p class="text-xs text-foreground">
-                    Associer cette ligne de relevé à l'adhérent **{sug.memberName}** dans la catégorie **{categories.find(c => c.id === sug.category)?.name || sug.category}**.
-                  </p>
+
+                {#if selectedTx.aiSuggestions}
+                  {@const sug = JSON.parse(selectedTx.aiSuggestions)}
+                  {#if sug.memberId}
+                    <p class="text-xs text-foreground leading-relaxed">
+                      Associer cette ligne de relevé à l'adhérent **{sug.memberName}** dans la catégorie **{categories.find(c => c.id === sug.category)?.name || sug.category}**.
+                    </p>
+                  {:else}
+                    <p class="text-xs text-foreground leading-relaxed">
+                      Enregistrer cette transaction comme opération diverse de type **{categories.find(c => c.id === sug.category)?.name || sug.category}** (pas d'adhérent détecté).
+                    </p>
+                  {/if}
+                  <button
+                    onclick={() => handleMatchWithAI(selectedTx!.id, sug.memberId, sug.category)}
+                    disabled={isSubmitting}
+                    class="w-full py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-md hover:bg-primary/90 cursor-pointer border-0 shadow-sm font-medium"
+                  >
+                    Valider la suggestion IA
+                  </button>
                 {:else}
-                  <p class="text-xs text-foreground">
-                    Enregistrer cette transaction comme opération diverse de type **{categories.find(c => c.id === sug.category)?.name || sug.category}** (pas d'adhérent détecté).
+                  <p class="text-xs text-muted-foreground italic">
+                    Aucune suggestion IA calculée pour cette opération.
                   </p>
+                  <button
+                    onclick={() => handleAnalyzeSingle(selectedTx!.id)}
+                    disabled={isAnalyzingSingle}
+                    class="w-full py-1.5 bg-primary/20 text-primary hover:bg-primary/30 text-xs font-semibold rounded-md cursor-pointer border-0 shadow-sm font-medium flex items-center justify-center gap-1.5"
+                  >
+                    <Sparkles class="w-3.5 h-3.5 {isAnalyzingSingle ? 'animate-spin' : ''}" />
+                    {isAnalyzingSingle ? 'Analyse en cours...' : 'Demander une analyse IA'}
+                  </button>
                 {/if}
-                <button
-                  onclick={() => handleMatchWithAI(selectedTx!.id, sug.memberId, sug.category)}
-                  class="w-full py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-md hover:bg-primary/90 cursor-pointer border-0 shadow-sm font-medium"
-                >
-                  Valider la suggestion IA
-                </button>
               </div>
             {/if}
 

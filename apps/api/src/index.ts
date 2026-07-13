@@ -1077,16 +1077,22 @@ app.post('/bank-transactions/analyze', async (c) => {
   if (!season) {
     return c.json({ success: false, error: 'Missing season query parameter' }, 400);
   }
+  const singleId = c.req.query('id');
 
   const db = drizzle(c.env.DB);
   
+  const conditions = [
+    eq(bankTransactionsTable.seasonId, season),
+    eq(bankTransactionsTable.status, 'pending')
+  ];
+  if (singleId) {
+    conditions.push(eq(bankTransactionsTable.id, parseInt(singleId)));
+  }
+
   // 1. Récupérer toutes les transactions bancaires pending de la saison
   const pendingTxs = await db.select()
     .from(bankTransactionsTable)
-    .where(and(
-      eq(bankTransactionsTable.seasonId, season),
-      eq(bankTransactionsTable.status, 'pending')
-    ))
+    .where(and(...conditions))
     .all();
 
   // 2. Récupérer tous les adhérents de la saison pour la présélection

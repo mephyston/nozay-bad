@@ -911,6 +911,80 @@ VERSION:102
     expect(resetMember.paid).toBe(false);
   });
 
+  it('supports analyzing a single transaction ID via query parameter', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    const m = await db.insert(membersTable).values({
+      licence: '12345678',
+      season: '25-26',
+      lastName: 'PIGNON',
+      firstName: 'Eliot',
+      gender: 'M',
+      birthDate: '2015-08-01',
+      email: 'eliot@pignon.com',
+      status: 'valide',
+      type: 'Jeunes',
+      amountDue: 25000,
+      amountReceived: 0,
+      amountRemaining: 25000,
+      paid: false,
+      importedAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const bt1 = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-SINGLE-1',
+      accountId: 'current',
+      seasonId: '25-26',
+      amount: 25000,
+      date: '2026-02-02',
+      name: 'VIR INST RE 653287691266',
+      memo: 'DE: M SEBASTIEN PIGNON MOTIF: ADHESION ELIOT PIGNON',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const bt2 = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-SINGLE-2',
+      accountId: 'current',
+      seasonId: '25-26',
+      amount: 1500,
+      date: '2026-02-02',
+      name: 'SUMUP *NOZAY BAD',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    let aiCallsCount = 0;
+    const mockAI = {
+      run: async (model: string, input: any) => {
+        aiCallsCount++;
+        return {
+          response: JSON.stringify({
+            memberId: m.id,
+            memberName: 'Eliot PIGNON',
+            category: 1,
+            confidence: 0.95
+          })
+        };
+      }
+    };
+
+    const analyzeRes = await app.request(`http://localhost/bank-transactions/analyze?season=25-26&id=${bt1.id}`, {
+      method: 'POST'
+    }, { DB: mockD1 as any, AI: mockAI as any });
+    expect(analyzeRes.status).toBe(200);
+    const analyzeJson = await analyzeRes.json() as any;
+    expect(analyzeJson.count).toBe(1);
+    expect(aiCallsCount).toBe(1);
+
+    const updatedBt1 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get();
+    expect(updatedBt1.aiSuggestions).not.toBeNull();
+
+    const updatedBt2 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get();
+    expect(updatedBt2.aiSuggestions).toBeNull();
+  });
+
   it('resolves ambiguous name matching deterministically when multiple members share last name', async () => {
     const mockD1 = await setupMockDb();
     const db = drizzle(mockD1 as any);

@@ -26,7 +26,10 @@ if (Astro.request.method === 'POST') {
     } else {
       const data = await Astro.request.json() as any;
       if (data.action === 'analyze') {
-        const apiRes = await apiService.fetch(`http://localhost/bank-transactions/analyze?season=${data.season}`, {
+        const url = data.btId
+          ? `http://localhost/bank-transactions/analyze?season=${data.season}&id=${data.btId}`
+          : `http://localhost/bank-transactions/analyze?season=${data.season}`;
+        const apiRes = await apiService.fetch(url, {
           method: 'POST'
         });
         if (!apiRes.ok) {
