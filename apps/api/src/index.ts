@@ -1744,8 +1744,8 @@ app.get('/orders', async (c) => {
   const memberIds = Array.from(new Set(orders.map(o => o.memberId)));
   const productIds = Array.from(new Set(orders.map(o => o.productId)));
 
-  let membersList = [];
-  let productsList = [];
+  let membersList: any[] = [];
+  let productsList: any[] = [];
 
   if (memberIds.length > 0) {
     membersList = await db.select().from(membersTable).where(inArray(membersTable.id, memberIds)).all();
@@ -1818,29 +1818,32 @@ app.post('/orders/:id/approve', async (c) => {
     return c.json({ success: false, error: 'Stock insuffisant pour valider la commande' }, 400);
   }
 
-  // Décrémenter le stock et créer l'écriture de recette
-  await db.update(productsTable)
-    .set({ stock: product.stock - order.quantity })
-    .where(eq(productsTable.id, product.id))
-    .run();
+  let updatedOrder;
+  await db.transaction(async (txDb) => {
+    // Décrémenter le stock et créer l'écriture de recette
+    await txDb.update(productsTable)
+      .set({ stock: product.stock - order.quantity })
+      .where(eq(productsTable.id, product.id))
+      .run();
 
-  const tx = await db.insert(transactionsTable).values({
-    seasonId: order.seasonId,
-    type: 'recette',
-    accountId: 'current',
-    category: 'boutique',
-    amount: order.totalAmount,
-    date: new Date().toISOString().split('T')[0],
-    paymentMethod: order.paymentMethod as any,
-    description: `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`,
-    memberId: member.id,
-    createdAt: new Date()
-  }).returning().get();
+    const tx = await txDb.insert(transactionsTable).values({
+      seasonId: order.seasonId,
+      type: 'recette',
+      accountId: 'current',
+      category: 'boutique',
+      amount: order.totalAmount,
+      date: new Date().toISOString().split('T')[0],
+      paymentMethod: order.paymentMethod as any,
+      description: `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`,
+      memberId: member.id,
+      createdAt: new Date()
+    }).returning().get();
 
-  const updatedOrder = await db.update(ordersTable)
-    .set({ status: 'approved', transactionId: tx.id })
-    .where(eq(ordersTable.id, id))
-    .returning().get();
+    updatedOrder = await txDb.update(ordersTable)
+      .set({ status: 'approved', transactionId: tx.id })
+      .where(eq(ordersTable.id, id))
+      .returning().get();
+  });
 
   return c.json({ success: true, data: updatedOrder });
 });
@@ -1851,14 +1854,18 @@ app.post('/orders/:id/reject', async (c) => {
   }
   const id = parseInt(c.req.param('id'));
   const db = drizzle(c.env.DB);
+  const order = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
+  if (!order) {
+    return c.json({ success: false, error: 'Commande introuvable' }, 404);
+  }
+  if (order.status !== 'pending') {
+    return c.json({ success: false, error: 'Commande invalide ou déjà traitée' }, 400);
+  }
+
   const updatedOrder = await db.update(ordersTable)
     .set({ status: 'rejected' })
     .where(eq(ordersTable.id, id))
     .returning().get();
-
-  if (!updatedOrder) {
-    return c.json({ success: false, error: 'Commande introuvable' }, 404);
-  }
 
   return c.json({ success: true, data: updatedOrder });
 });

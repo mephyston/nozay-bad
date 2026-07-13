@@ -1394,6 +1394,12 @@ describe('Orders API Endpoints', () => {
       method: 'POST'
     }, { DB: mockD1 as any });
     expect(approveRes.status).toBe(400);
+
+    // 5. Trying to reject already rejected order should fail
+    const rejectRes2 = await app.request(`http://localhost/orders/${order.id}/reject`, {
+      method: 'POST'
+    }, { DB: mockD1 as any });
+    expect(rejectRes2.status).toBe(400);
   });
 
   it('fails to create order if stock is insufficient', async () => {
