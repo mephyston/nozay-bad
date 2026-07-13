@@ -6,6 +6,7 @@ export default defineConfig({
       'apps/api/vitest.config.ts',
       'apps/admin-console/vitest.config.ts',
       'libs/shared/db/vitest.config.ts',
+      'apps/boutique/vitest.config.ts',
     ],
   },
 });

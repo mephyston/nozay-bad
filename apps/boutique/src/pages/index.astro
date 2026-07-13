@@ -1,12 +1,169 @@
 ---
 import '../styles/global.css';
+import ShopCatalog from '../components/ShopCatalog.svelte';
+import { env } from 'cloudflare:workers';
+import { ModeWatcher } from 'mode-watcher';
+
+interface Season {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  category: 'shuttlecock' | 'string';
+  price: number;
+  stock: number;
+  active: boolean;
+}
+
+interface Member {
+  id: number;
+  firstName: string;
+  lastName: string;
+  licence: string;
+}
+
+const apiService = env.API_SERVICE;
+
+if (Astro.request.method === 'POST') {
+  try {
+    const body = await Astro.request.json();
+    const res = await apiService.fetch('http://localhost/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    return new Response(await res.text(), {
+      status: res.status,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ success: false, error: err.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+let products: Product[] = [];
+let members: Member[] = [];
+let seasons: Season[] = [];
+let errorMsg = '';
+
+try {
+  // Fetch active products
+  const productsRes = await apiService.fetch('http://localhost/products?active=true');
+  if (productsRes.ok) {
+    const json = await productsRes.json() as any;
+    products = json.data || [];
+  } else {
+    errorMsg = 'Impossible de charger les produits de la boutique.';
+  }
+
+  // Fetch members
+  const membersRes = await apiService.fetch('http://localhost/members?limit=1000');
+  if (membersRes.ok) {
+    const json = await membersRes.json() as any;
+    members = json.data || [];
+  } else {
+    errorMsg = 'Impossible de charger les adhérents.';
+  }
+
+  // Fetch seasons
+  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasons = json.data || [];
+  } else {
+    errorMsg = 'Impossible de charger les saisons.';
+  }
+} catch (e: any) {
+  errorMsg = 'Une erreur de connexion est survenue lors du chargement des données.';
+}
+
+const activeSeason = seasons.find((s: Season) => s.active) || seasons[0] || { id: '25-26', name: 'Saison 2025-2026', active: false };
+const activeSeasonId = activeSeason.id;
 ---
-<html lang="fr">
+
+<html lang="fr" class="dark">
   <head>
     <meta charset="utf-8" />
-    <title>NBA 91 - Boutique</title>
+    <meta name="viewport" content="width=device-width" />
+    <title>Boutique Adhérents - NBA 91</title>
+    <script is:inline>
+      const theme = (() => {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('mode-watcher-mode')) {
+          return localStorage.getItem('mode-watcher-mode');
+        }
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          return 'dark';
+        }
+        return 'light';
+      })();
+      
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      document.documentElement.style.colorScheme = theme;
+    </script>
   </head>
-  <body class="bg-slate-900 text-white flex items-center justify-center min-h-screen">
-    <h1 class="text-3xl font-bold">Boutique CA</h1>
+  <body class="bg-background text-foreground min-h-screen antialiased transition-colors duration-200">
+    <ModeWatcher client:load />
+    
+    <!-- Header -->
+    <header class="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-40">
+      <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2.5">
+          <div class="bg-primary text-primary-foreground p-2 rounded-xl shadow-inner font-black text-lg tracking-wider">
+            NBA
+          </div>
+          <div>
+            <h1 class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+              Boutique Club
+            </h1>
+            <p class="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+              Nozay Badminton Associatif
+            </p>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+          <div class="text-xs text-muted-foreground bg-muted border border-border px-3 py-1.5 rounded-lg font-semibold">
+            Saison : <span class="text-foreground">{activeSeason.name || activeSeasonId}</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="py-6">
+      {errorMsg && (
+        <div class="max-w-6xl mx-auto px-4 mb-6">
+          <div class="p-4 bg-destructive/15 border border-destructive/20 text-destructive text-sm rounded-xl font-medium flex items-center gap-2">
+            <span>⚠️ {errorMsg}</span>
+          </div>
+        </div>
+      )}
+
+      <ShopCatalog
+        client:load
+        products={products}
+        members={members}
+        activeSeasonId={activeSeasonId}
+      />
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground">
+      <p>© {new Date().getFullYear()} Nozay Badminton Associatif. Tous droits réservés.</p>
+      <p class="mt-1">Les commandes passées via la boutique sont soumises à la validation du trésorier.</p>
+    </footer>
   </body>
 </html>
