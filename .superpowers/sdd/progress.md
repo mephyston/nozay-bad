@@ -10,11 +10,12 @@ Current Plan: `docs/superpowers/plans/2026-07-13-poona-import-and-members-plan.m
 *   [x] Task 3: API GET /members Endpoint
 *   [x] Task 4: API GET /members/:licence Endpoint
 *   [x] Task 5: Listing Page UI and Svelte Component
-*   [ ] Task 6: Detail Page UI and Svelte Component
+*   [x] Task 6: Detail Page UI and Svelte Component
 
 ## Ledger Entries
 
 ### Sub-Project 2: Import & Members Administration
+- Task 6: complete (commits 8a1632e..c864f23, review clean)
 - Task 5: complete (commits 71a8823..8a1632e, review clean)
 - Task 4: complete (commits 483b358..71a8823, review clean)
 - Task 3: complete (commits e1c06d8..483b358, review clean)
