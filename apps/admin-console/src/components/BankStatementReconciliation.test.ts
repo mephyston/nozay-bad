@@ -49,7 +49,9 @@ describe('BankStatementReconciliation Component', () => {
             accountId: 'current',
             amount: -1560,
             date: '2026-02-16',
-            description: 'Facture Ionos'
+            description: 'Facture Ionos',
+            category: null,
+            bankTransactionId: null
           }
         ],
         seasonId: '25-26',
@@ -74,6 +76,12 @@ describe('BankStatementReconciliation Component', () => {
     const btn = target.querySelector('button[type="button"]') as HTMLButtonElement;
     expect(btn).not.toBeNull();
     btn.click();
+    flushSync();
+
+    // Focus sur l'input de recherche adhérent pour ouvrir le dropdown
+    const input = target.querySelector('input[placeholder="Tapez pour rechercher un adhérent..."]') as HTMLInputElement;
+    expect(input).not.toBeNull();
+    input.focus();
     flushSync();
 
     // Maintenant, "Dupont Jean" doit être visible dans le select d'association

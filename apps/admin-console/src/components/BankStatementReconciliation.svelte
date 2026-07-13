@@ -20,8 +20,8 @@
     amount: number;
     date: string;
     description: string;
-    category?: string | null;
-    bankTransactionId?: number | null;
+    category: string | null;
+    bankTransactionId: number | null;
   }
 
   interface Season {
@@ -65,7 +65,9 @@
   let selectedMemberId = $state<string>('');
   let amountToLink = $state<number>(0);
 
-  // Filtres de recherche
+  // États du dropdown personnalisé (Searchable Select / Combobox)
+  let isMemberDropdownOpen = $state(false);
+  let isCategoryDropdownOpen = $state(false);
   let memberSearchQuery = $state('');
   let categorySearchQuery = $state('');
 
@@ -99,6 +101,18 @@
   let linkedGlTxs = $derived(selectedTx ? glTransactions.filter(gt => gt.bankTransactionId === selectedTx!.id) : []);
   let totalLinked = $derived(linkedGlTxs.reduce((sum, gt) => sum + Math.abs(gt.amount), 0));
   let remainingAmount = $derived(selectedTx ? Math.abs(selectedTx.amount) - totalLinked : 0);
+
+  // Synchronisation du texte d'affichage des sélections
+  let memberDisplayVal = $derived.by(() => {
+    if (!selectedMemberId) return '';
+    const m = members.find(x => x.id.toString() === selectedMemberId);
+    return m ? `${m.lastName} ${m.firstName}` : '';
+  });
+
+  let categoryDisplayVal = $derived.by(() => {
+    const cat = categories.find(c => c.id === category);
+    return cat ? cat.name : '';
+  });
 
   // Adhérents et catégories filtrées en temps réel
   let filteredMembers = $derived(
@@ -282,7 +296,7 @@
 
 <div class="space-y-6">
   {#if bankTransactions.length === 0}
-    <!-- Zone d'Importation initial -->
+    <!-- Zone d'Importation initiale -->
     <div class="bg-card border border-border rounded-xl p-8 shadow-sm max-w-xl animate-in fade-in-50 duration-200">
       <h2 class="text-lg font-semibold mb-4">Importer un relevé Société Générale</h2>
       {#if errorMsg}
@@ -309,7 +323,7 @@
             <input id="file-input" type="file" accept=".ofx" class="w-full text-sm" required />
           </div>
         </div>
-        <button type="submit" disabled={isSubmitting} class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-md shadow hover:bg-primary/95 cursor-pointer font-medium">
+        <button type="submit" disabled={isSubmitting} class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-md shadow hover:bg-primary/95 cursor-pointer font-medium font-medium">
           <Upload class="w-4 h-4" />
           {isSubmitting ? 'Importation en cours...' : 'Lancer l\'importation'}
         </button>
@@ -449,53 +463,112 @@
                 </h4>
                 
                 <div class="space-y-3">
-                  <!-- Ligne Adhérent & Recherche Rapide -->
-                  <div class="space-y-1">
-                    <label for="member-search" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Rechercher un adhérent</label>
+                  <!-- Ligne Adhérent & Recherche Combobox intégrée -->
+                  <div class="space-y-1 relative">
+                    <label for="member-input" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Adhérent</label>
                     <input
-                      id="member-search"
+                      id="member-input"
                       type="text"
-                      placeholder="Saisissez quelques lettres..."
-                      class="w-full px-2 py-1 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium"
-                      bind:value={memberSearchQuery}
+                      placeholder="Tapez pour rechercher un adhérent..."
+                      class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium pr-6"
+                      value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
+                      oninput={(e) => {
+                        isMemberDropdownOpen = true;
+                        memberSearchQuery = (e.target as HTMLInputElement).value;
+                      }}
+                      onfocus={() => {
+                        isMemberDropdownOpen = true;
+                        memberSearchQuery = '';
+                      }}
+                      onblur={() => {
+                        setTimeout(() => { isMemberDropdownOpen = false; }, 200);
+                      }}
                     />
-                    <select id="member-select" class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary font-medium" bind:value={selectedMemberId}>
-                      <option value="">-- Aucun adhérent (Opération diverse) --</option>
-                      {#each filteredMembers as m}
-                        <option value={m.id}>{m.lastName} {m.firstName} (Dû : {(m.amountRemaining / 100).toFixed(2)} €)</option>
-                      {/each}
-                    </select>
+                    <span class="absolute right-2 top-6 text-muted-foreground pointer-events-none text-[8px]">▼</span>
+                    
+                    {#if isMemberDropdownOpen}
+                      <div class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded shadow-lg divide-y divide-border">
+                        <button
+                          type="button"
+                          class="w-full text-left px-2.5 py-1.5 text-xs hover:bg-muted text-muted-foreground transition-colors font-medium border-0 cursor-pointer italic"
+                          onmousedown={() => {
+                            selectedMemberId = '';
+                            memberSearchQuery = '';
+                          }}
+                        >
+                          -- Aucun adhérent (Opération diverse) --
+                        </button>
+                        {#each filteredMembers as m}
+                          <button
+                            type="button"
+                            class="w-full text-left px-2.5 py-1.5 text-xs hover:bg-muted text-foreground transition-colors font-medium border-0 cursor-pointer"
+                            onmousedown={() => {
+                              selectedMemberId = m.id.toString();
+                              memberSearchQuery = `${m.lastName} ${m.firstName}`;
+                            }}
+                          >
+                            {m.lastName} {m.firstName} (Dû : {(m.amountRemaining / 100).toFixed(2)} €)
+                          </button>
+                        {:else}
+                          <div class="px-2.5 py-1.5 text-xs text-muted-foreground italic">Aucun résultat</div>
+                        {/each}
+                      </div>
+                    {/if}
                   </div>
 
-                  <!-- Ligne Catégorie & Recherche Rapide et Montant -->
+                  <!-- Ligne Catégorie Combobox intégrée et Montant -->
                   <div class="grid grid-cols-3 gap-2">
-                    <div class="col-span-2 space-y-1">
-                      <label for="category-search" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Filtrer la catégorie</label>
+                    <div class="col-span-2 space-y-1 relative">
+                      <label for="category-input" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Catégorie</label>
                       <input
-                        id="category-search"
+                        id="category-input"
                         type="text"
-                        placeholder="Ex: cordage, volant..."
-                        class="w-full px-2 py-1 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium"
-                        bind:value={categorySearchQuery}
+                        placeholder="Tapez pour filtrer..."
+                        class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium pr-6"
+                        value={isCategoryDropdownOpen ? categorySearchQuery : categoryDisplayVal}
+                        oninput={(e) => {
+                          isCategoryDropdownOpen = true;
+                          categorySearchQuery = (e.target as HTMLInputElement).value;
+                        }}
+                        onfocus={() => {
+                          isCategoryDropdownOpen = true;
+                          categorySearchQuery = '';
+                        }}
+                        onblur={() => {
+                          setTimeout(() => { isCategoryDropdownOpen = false; }, 200);
+                        }}
                       />
-                      <select id="cat-select" class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary" bind:value={category}>
-                        {#each filteredCategories as cat}
-                          <option value={cat.id}>{cat.name}</option>
-                        {/each}
-                      </select>
+                      <span class="absolute right-2 top-6 text-muted-foreground pointer-events-none text-[8px]">▼</span>
+                      
+                      {#if isCategoryDropdownOpen}
+                        <div class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded shadow-lg divide-y divide-border">
+                          {#each filteredCategories as cat}
+                            <button
+                              type="button"
+                              class="w-full text-left px-2.5 py-1.5 text-xs hover:bg-muted text-foreground transition-colors font-medium border-0 cursor-pointer"
+                              onmousedown={() => {
+                                category = cat.id;
+                                categorySearchQuery = cat.name;
+                              }}
+                            >
+                              {cat.name}
+                            </button>
+                          {:else}
+                            <div class="px-2.5 py-1.5 text-xs text-muted-foreground italic">Aucun résultat</div>
+                          {/each}
+                        </div>
+                      {/if}
                     </div>
                     
                     <div class="space-y-1">
                       <label for="amount-input" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Montant (€)</label>
-                      <!-- Div de calage vertical pour s'aligner avec le filtre input du select à gauche -->
-                      <div class="h-6"></div>
                       <input
                         id="amount-input"
                         type="number"
                         step="0.01"
                         min="0.01"
                         max={(remainingAmount / 100).toFixed(2)}
-                        class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary font-bold text-foreground"
+                        class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary font-bold text-foreground h-[29px] mt-1"
                         bind:value={amountToLink}
                       />
                     </div>
@@ -504,7 +577,7 @@
                   <!-- Moyen de paiement -->
                   <div class="space-y-1">
                     <label for="method-select" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Moyen de paiement</label>
-                    <select id="method-select" class="w-full px-2 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary" bind:value={paymentMethod}>
+                    <select id="method-select" class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium" bind:value={paymentMethod}>
                       <option value="virement">Virement</option>
                       <option value="cheque">Chèque</option>
                       <option value="especes">Espèces</option>
@@ -512,7 +585,7 @@
                   </div>
                 </div>
 
-                <button onclick={() => handleCreateAndMatch(selectedTx!)} class="w-full py-1.5 bg-primary hover:bg-primary/95 text-primary-foreground rounded text-xs font-semibold shadow-sm cursor-pointer border-0">
+                <button onclick={() => handleCreateAndMatch(selectedTx!)} class="w-full py-1.5 bg-primary hover:bg-primary/95 text-primary-foreground rounded text-xs font-semibold shadow-sm cursor-pointer border-0 mt-2 font-medium">
                   {linkedGlTxs.length > 0 ? 'Enregistrer cette partie' : "Créer & lier l'écriture"}
                 </button>
               </div>
