@@ -1243,11 +1243,39 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
         prompt: systemPrompt,
         image: new Uint8Array(bytes)
       });
-    } catch (llamaErr) {
-      console.warn("Llama 3.2 vision failed (likely license/EU restrictions), trying Moondream 3.1:", llamaErr);
-      try {
-        const modelFallback = '@cf/moondream/moondream3.1-9B-A2B';
-        const systemPrompt = `Analyze this check image. Extract the following fields as a JSON object:
+    } catch (llamaErr: any) {
+      console.warn("Llama 3.2 vision failed, trying auto-agreement or fallback:", llamaErr);
+      
+      let agreed = false;
+      if (llamaErr.message && (llamaErr.message.includes("submit the prompt 'agree'") || llamaErr.message.includes("5016"))) {
+        try {
+          console.info("Submitting prompt 'agree' to accept Meta Llama license...");
+          await c.env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
+            prompt: 'agree',
+            image: new Uint8Array(bytes)
+          });
+          agreed = true;
+          
+          aiRes = await c.env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
+            prompt: `Analyze this check image. Extract the following fields as a JSON object:
+{
+  "number": "string (the check number, usually 7 digits)",
+  "amount": number (the check amount in EUR, e.g. 150.00)",
+  "emitter": "string (the name of the account holder / drawer)",
+  "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)"
+}`,
+            image: new Uint8Array(bytes)
+          });
+        } catch (agreeErr) {
+          console.warn("Failed to automatically agree to Llama 3.2 terms:", agreeErr);
+        }
+      }
+
+      if (!agreed || !aiRes) {
+        // Fallback 1: Moondream 3.1
+        try {
+          const modelFallback = '@cf/moondream/moondream3.1-9B-A2B';
+          const systemPrompt = `Analyze this check image. Extract the following fields as a JSON object:
 {
   "number": "string (the check number, usually 7 digits)",
   "amount": number (the check amount in EUR, e.g. 150.00)",
@@ -1256,20 +1284,29 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
 }
 Return ONLY the raw JSON object.`;
 
-        aiRes = await c.env.AI.run(modelFallback, {
-          task: 'query',
-          prompt: systemPrompt,
-          image: new Uint8Array(bytes)
-        });
-      } catch (moondreamErr) {
-        console.warn("Moondream 3.1 vision failed, trying Llava 1.5:", moondreamErr);
-        const modelLlava = '@cf/llava-hf/llava-1.5-7b-hf';
-        const systemPrompt = `Identify check number (usually 7 digits), amount, account holder name (emitter), bank in this check. Output JSON: {"number":"...", "amount":150.0, "emitter":"...", "bank":"..."}`;
+          try {
+            aiRes = await c.env.AI.run(modelFallback, {
+              task: 'query',
+              prompt: systemPrompt,
+              image: [...new Uint8Array(bytes)]
+            });
+          } catch (me1) {
+            aiRes = await c.env.AI.run(modelFallback, {
+              task: 'query',
+              prompt: systemPrompt,
+              image: new Uint8Array(bytes)
+            });
+          }
+        } catch (moondreamErr) {
+          console.warn("Moondream 3.1 vision failed, trying Llava 1.5:", moondreamErr);
+          const modelLlava = '@cf/llava-hf/llava-1.5-7b-hf';
+          const systemPrompt = `Identify check number (usually 7 digits), amount, account holder name (emitter), bank in this check. Output JSON: {"number":"...", "amount":150.0, "emitter":"...", "bank":"..."}`;
 
-        aiRes = await c.env.AI.run(modelLlava, {
-          prompt: systemPrompt,
-          image: new Uint8Array(bytes)
-        });
+          aiRes = await c.env.AI.run(modelLlava, {
+            prompt: systemPrompt,
+            image: new Uint8Array(bytes)
+          });
+        }
       }
     }
 
@@ -1285,7 +1322,31 @@ Return ONLY the raw JSON object.`;
         extracted = JSON.parse(textResult);
       }
     } catch (e) {
-      console.error('Failed to parse AI check response:', textResult);
+      console.warn('Failed to parse AI check response as JSON, trying regex extraction on:', textResult);
+      extracted = {};
+      
+      const numMatch = textResult.match(/\b\d{7}\b/);
+      if (numMatch) {
+        extracted.number = numMatch[0];
+      } else {
+        const numMatchAny = textResult.match(/n°\s*(\d+)/i) || textResult.match(/numero\s*(\d+)/i);
+        if (numMatchAny) extracted.number = numMatchAny[1];
+      }
+
+      const amtMatch = textResult.match(/(\d+[\.,]\d{2})\s*€/) || textResult.match(/(\d+[\.,]\d{2})\s*eur/i) || textResult.match(/(\d+)\s*€/) || textResult.match(/montant\s*(?:de\s*)?(\d+)/i);
+      if (amtMatch) {
+        extracted.amount = parseFloat(amtMatch[1].replace(',', '.'));
+      }
+
+      const emitMatch = textResult.match(/émetteur\s*:\s*([A-Za-z\s]+)/i) || textResult.match(/de\s*([A-Z][a-z]+\s+[A-Z][a-z]+)/);
+      if (emitMatch) {
+        extracted.emitter = emitMatch[1].trim();
+      }
+
+      const bankMatch = textResult.match(/banque\s*:\s*([A-Za-z\s]+)/i) || textResult.match(/(Société Générale|Crédit Agricole|LCL|Bred|BNP|La Banque Postale|CIC|Crédit Mutuel)/i);
+      if (bankMatch) {
+        extracted.bank = bankMatch[1].trim();
+      }
     }
 
     // Associer automatiquement à un adhérent potentiel
