@@ -862,17 +862,36 @@ Opération bancaire à rapprocher :
 - Détails : "${tx.memo || 'Aucun'}"
 - Montant : ${(tx.amount / 100).toFixed(2)} EUR (${tx.amount < 0 ? 'Débit' : 'Crédit'})
 
-Liste des candidats adhérents possibles :
-${candidates.map(c => `- ID: ${c.id}, Nom: ${c.lastName} ${c.firstName}, Parent 1: ${c.parent1Name || 'Aucun'}, Montant Restant Dû: ${(c.amountRemaining / 100).toFixed(2)} EUR`).join('\n')}
+Catégories valides pour l'écriture :
+- adhesions_inscriptions (cotisations, dossiers d'adhésion)
+- sponsoring (partenaires)
+- subventions (aides publiques)
+- actions_jeunes (stages et événements jeunes)
+- tournois_senior (inscriptions tournois)
+- evenements_buvettes (consommations, soirées, SumUp)
+- cordage_vente (achat cordage par adhérent)
+- volants (achat de tubes de volants par adhérent ou achat fournisseur)
+- salaires_charges (salaires entraîneurs, URSSAF)
+- materiel_club (poteaux, filets, volants club)
+- licences_federation (reversement FFBad)
+- championnats (frais d'inscriptions des équipes du club)
+- stages_formations (stages adultes ou formations d'arbitres)
+- fonctionnement_administratif (frais bancaires, assurances, licences de logiciels comme Ionos)
 
-Trouve quel est l'adhérent le plus probablement associé à cette opération.
+Liste des candidats adhérents possibles :
+${candidates.map(c => `- ID: ${c.id}, Nom: ${c.lastName} ${c.firstName}, Parent 1: ${c.parent1Name || 'Aucun'}, Montant Restant Dû Adhésion: ${(c.amountRemaining / 100).toFixed(2)} EUR`).join('\n')}
+
+Instructions :
+1. Associe l'adhérent (memberId et memberName) si son nom ou prénom (ou celui d'un de ses parents) apparaît clairement dans le libellé ou memo de l'opération, même si son "Montant Restant Dû Adhésion" est de 0.00 EUR (il peut s'agir d'un achat de volants, cordages, etc.).
+2. Choisis la catégorie la plus adaptée parmi la liste des catégories valides ci-dessus (ex: "volants" si le motif mentionne "volants", "cordage_vente" si "cordage", etc.).
+
 Renvoie STRICTEMENT un objet JSON sous la forme suivante (sans aucun autre texte, balises markdown ou commentaires) :
 {
-  "memberId": <ID de l'adhérent ou null>,
-  "memberName": "<Nom Prénom de l'adhérent ou null>",
-  "category": "adhesions",
-  "confidence": <nombre entre 0.0 et 1.0>,
-  "reasoning": "<1 phrase d'explication>"
+  "memberId": <ID de l'adhérent associé ou null>,
+  "memberName": "<Nom Prénom de l'adhérent associé ou null>",
+  "category": "<identifiant de la catégorie choisie>",
+  "confidence": <nombre entre 0.0 et 1.0 indiquant ton niveau de certitude>,
+  "reasoning": "<explication concise>"
 }`;
 
       try {
