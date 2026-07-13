@@ -1,0 +1,84 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import ProductsManager from '../../../components/ProductsManager.svelte';
+
+import { env } from 'cloudflare:workers';
+
+const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
+const apiService = env.API_SERVICE;
+
+if (Astro.request.method === 'POST') {
+  try {
+    const data = await Astro.request.json() as any;
+    if (data.action === 'create') {
+      const apiRes = await apiService.fetch('http://localhost/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          category: data.category,
+          price: data.price,
+          stock: data.stock,
+          active: data.active
+        })
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+      return new Response(JSON.stringify(await apiRes.json()));
+    } else if (data.action === 'update') {
+      const apiRes = await apiService.fetch(`http://localhost/products/${data.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          price: data.price,
+          stock: data.stock,
+          active: data.active
+        })
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+      return new Response(JSON.stringify(await apiRes.json()));
+    }
+    return new Response('Action inconnue', { status: 400 });
+  } catch (err: any) {
+    return new Response(err.message, { status: 500 });
+  }
+}
+
+let productsList = [];
+let errorMsg = '';
+
+try {
+  const productsRes = await apiService.fetch('http://localhost/products?category=shuttlecock');
+  if (productsRes.ok) {
+    const json = await productsRes.json() as any;
+    productsList = json.data || [];
+  } else {
+    errorMsg = 'Impossible de charger la liste des volants depuis le service API.';
+  }
+} catch (err: any) {
+  errorMsg = 'Une erreur est survenue lors du chargement des volants.';
+}
+---
+
+<Layout title="Gestion des Volants - NBA 91">
+  <AdminLayout client:load email={userEmail} breadcrumb="Boutique / Volants">
+    <div class="space-y-6">
+      {errorMsg && (
+        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
+          {errorMsg}
+        </div>
+      )}
+
+      <ProductsManager
+        client:load
+        category="shuttlecock"
+        products={productsList}
+      />
+    </div>
+  </AdminLayout>
+</Layout>
