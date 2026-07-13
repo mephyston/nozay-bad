@@ -625,6 +625,12 @@
           </div>
         {/if}
 
+        <div class="relative flex py-2 items-center">
+          <div class="flex-grow border-t border-border"></div>
+          <span class="flex-shrink mx-4 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Ou Saisir Manuellement</span>
+          <div class="flex-grow border-t border-border"></div>
+        </div>
+
         <!-- Manual form fields -->
         <form onsubmit={handleAddCheck} class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
