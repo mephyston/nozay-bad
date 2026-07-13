@@ -1,0 +1,218 @@
+{
+  "lockfileVersion": 2,
+  "packageSlugs": [
+    "@global/nozay-bad"
+  ],
+  "agents": [
+    "agents_md",
+    "packmind"
+  ],
+  "installedAt": "2026-07-13T07:55:27.409Z",
+  "targetId": "fe6ca8b2-e567-4358-b2f0-4dd0163632ce",
+  "artifacts": {
+    "user:standard:astrojs-development-standards": {
+      "name": "AstroJS Development Standards",
+      "type": "standard",
+      "id": "667c434d-ef5b-4ca6-91cc-0510e732a6ab",
+      "version": 1,
+      "spaceId": "360745b6-9369-4afc-b7a2-9720c9e50650",
+      "packageIds": [
+        "722953ee-3d8a-4f5d-b96f-27c9c1887995"
+      ],
+      "source": "user",
+      "files": [
+        {
+          "path": ".packmind/standards/astrojs-development-standards.md",
+          "agent": "packmind"
+        }
+      ]
+    },
+    "user:standard:configuration-runtime-et-resolution-durls": {
+      "name": "Configuration Runtime et Résolution d'URLs",
+      "type": "standard",
+      "id": "30adb619-5e9d-4186-993a-1ab258fe92b0",
+      "version": 1,
+      "spaceId": "360745b6-9369-4afc-b7a2-9720c9e50650",
+      "packageIds": [
+        "722953ee-3d8a-4f5d-b96f-27c9c1887995"
+      ],
+      "source": "user",
+      "files": [
+        {
+          "path": ".packmind/standards/configuration-runtime-et-resolution-durls.md",
+          "agent": "packmind"
+        }
+      ]
+    },
+    "user:standard:documentation-fonctionnelle-et-metier-ddd": {
+      "name": "Documentation Fonctionnelle et Métier (DDD)",
+      "type": "standard",
+      "id": "4cf9f4c0-23c2-48f7-a04e-0593724b38bd",
+      "version": 1,
+      "spaceId": "360745b6-9369-4afc-b7a2-9720c9e50650",
+      "packageIds": [
+        "722953ee-3d8a-4f5d-b96f-27c9c1887995"
+      ],
+      "source": "user",
+      "files": [
+        {
+          "path": ".packmind/standards/documentation-fonctionnelle-et-metier-ddd.md",
+          "agent": "packmind"
+        }
+      ]
+    },
+    "user:standard:hono-cloudflare-workers-development-standards": {
+      "name": "Hono & Cloudflare Workers Development Standards",
+      "type": "standard",
+      "id": "3c38881a-7d1d-4583-b792-af167169961a",
+      "version": 1,
+      "spaceId": "360745b6-9369-4afc-b7a2-9720c9e50650",
+      "packageIds": [
+        "722953ee-3d8a-4f5d-b96f-27c9c1887995"
+      ],
+      "source": "user",
+      "files": [
+        {
+          "path": ".packmind/standards/hono-cloudflare-workers-development-standards.md",
+          "agent": "packmind"
+        }
+      ]
+    },
+    "user:standard:nx-monorepo-architecture-standards": {
+      "name": "NX Monorepo Architecture Standards",
+      "type": "standard",
+      "id": "2e6c42cb-29a1-4ad2-9725-a43cb5e1bd11",
+      "version": 1,
+      "spaceId": "360745b6-9369-4afc-b7a2-9720c9e50650",
+      "packageIds": [
+        "722953ee-3d8a-4f5d-b96f-27c9c1887995"
+      ],
+      "source": "user",
+      "files": [
+        {
+          "path": ".packmind/standards/nx-monorepo-architecture-standards.md",
+          "agent": "packmind"
+        }
+      ]
+    },
+    "user:standard:vertical-slice-architecture-vsa-standards": {
+      "name": "Vertical Slice Architecture (VSA) Standards",
+      "type": "standard",
+      "id": "203f921a-2139-4895-a2be-605d8890a2d1",
+      "version": 1,
+      "spaceId": "360745b6-9369-4afc-b7a2-9720c9e50650",
+      "packageIds": [
+        "722953ee-3d8a-4f5d-b96f-27c9c1887995"
+      ],
+      "source": "user",
+      "files": [
+        {
+          "path": ".packmind/standards/vertical-slice-architecture-vsa-standards.md",
+          "agent": "packmind"
+        }
+      ]
+    },
+    "user:standard:web-performance-cache-http": {
+      "name": "Web Performance - Cache HTTP",
+      "type": "standard",
+      "id": "41381801-f6c8-457e-b01a-dbbc99280ce6",
+      "version": 1,
+      "spaceId": "360745b6-9369-4afc-b7a2-9720c9e50650",
+      "packageIds": [
+        "722953ee-3d8a-4f5d-b96f-27c9c1887995"
+      ],
+      "source": "user",
+      "files": [
+        {
+          "path": ".packmind/standards/web-performance-cache-http.md",
+          "agent": "packmind"
+        }
+      ]
+    },
+    "user:standard:web-performance-chargement-javascript": {
+      "name": "Web Performance - Chargement JavaScript",
+      "type": "standard",
+      "id": "e7a1fcb6-a02b-45bc-9ce5-8c8d57a3c4a6",
+      "version": 1,
+      "spaceId": "360745b6-9369-4afc-b7a2-9720c9e50650",
+      "packageIds": [
+        "722953ee-3d8a-4f5d-b96f-27c9c1887995"
+      ],
+      "source": "user",
+      "files": [
+        {
+          "path": ".packmind/standards/web-performance-chargement-javascript.md",
+          "agent": "packmind"
+        }
+      ]
+    },
+    "user:standard:web-performance-gestion-des-scripts-tiers": {
+      "name": "Web Performance - Gestion des Scripts Tiers",
+      "type": "standard",
+      "id": "10bf5943-5dd3-4387-9aee-66e5bb425d10",
+      "version": 1,
+      "spaceId": "360745b6-9369-4afc-b7a2-9720c9e50650",
+      "packageIds": [
+        "722953ee-3d8a-4f5d-b96f-27c9c1887995"
+      ],
+      "source": "user",
+      "files": [
+        {
+          "path": ".packmind/standards/web-performance-gestion-des-scripts-tiers.md",
+          "agent": "packmind"
+        }
+      ]
+    },
+    "user:standard:web-performance-optimisation-des-fonts": {
+      "name": "Web Performance - Optimisation des Fonts",
+      "type": "standard",
+      "id": "71dc2618-b88c-4216-a329-da298dde2bc2",
+      "version": 2,
+      "spaceId": "360745b6-9369-4afc-b7a2-9720c9e50650",
+      "packageIds": [
+        "722953ee-3d8a-4f5d-b96f-27c9c1887995"
+      ],
+      "source": "user",
+      "files": [
+        {
+          "path": ".packmind/standards/web-performance-optimisation-des-fonts.md",
+          "agent": "packmind"
+        }
+      ]
+    },
+    "user:standard:web-performance-optimisation-des-images": {
+      "name": "Web Performance - Optimisation des Images",
+      "type": "standard",
+      "id": "0deaf15d-90ea-46e2-9878-4ae581b5275a",
+      "version": 2,
+      "spaceId": "360745b6-9369-4afc-b7a2-9720c9e50650",
+      "packageIds": [
+        "722953ee-3d8a-4f5d-b96f-27c9c1887995"
+      ],
+      "source": "user",
+      "files": [
+        {
+          "path": ".packmind/standards/web-performance-optimisation-des-images.md",
+          "agent": "packmind"
+        }
+      ]
+    },
+    "user:standard:web-performance-seuils-et-metriques": {
+      "name": "Web Performance - Seuils et Métriques",
+      "type": "standard",
+      "id": "5dc9df4d-4e83-497c-897e-e84b490c119c",
+      "version": 1,
+      "spaceId": "360745b6-9369-4afc-b7a2-9720c9e50650",
+      "packageIds": [
+        "722953ee-3d8a-4f5d-b96f-27c9c1887995"
+      ],
+      "source": "user",
+      "files": [
+        {
+          "path": ".packmind/standards/web-performance-seuils-et-metriques.md",
+          "agent": "packmind"
+        }
+      ]
+    }
+  }
+}
