@@ -1310,7 +1310,10 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
     } catch (e) {
       console.warn('Failed to parse AI check response as JSON, trying regex extraction on:', textResult);
       extracted = {};
-      
+    }
+
+    // Extraction de secours par regex pour chaque champ manquant ou vide
+    if (!extracted.number) {
       const numMatch = textResult.match(/\b\d{7}\b/);
       if (numMatch) {
         extracted.number = numMatch[0];
@@ -1318,12 +1321,16 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
         const numMatchAny = textResult.match(/n°\s*(\d+)/i) || textResult.match(/numero\s*(\d+)/i);
         if (numMatchAny) extracted.number = numMatchAny[1];
       }
+    }
 
+    if (!extracted.amount) {
       const amtMatch = textResult.match(/(\d+[\.,]\d{2})\s*€/) || textResult.match(/(\d+[\.,]\d{2})\s*eur/i) || textResult.match(/(\d+)\s*€/) || textResult.match(/montant\s*(?:de\s*)?(\d+)/i);
       if (amtMatch) {
         extracted.amount = parseFloat(amtMatch[1].replace(',', '.'));
       }
+    }
 
+    if (!extracted.emitter) {
       const emitMatch = textResult.match(/émetteur\s*:\s*([A-Za-z\s\-]+)/i) || textResult.match(/de\s*([A-Z][a-z\-]+\s+[A-Z][a-z\-]+)/);
       if (emitMatch) {
         const val = emitMatch[1].trim();
@@ -1331,13 +1338,16 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
           extracted.emitter = val;
         }
       }
+    }
 
+    if (!extracted.bank) {
       const bankMatch = textResult.match(/banque\s*:\s*([A-Za-z\s]+)/i) || textResult.match(/(Société Générale|Crédit Agricole|LCL|Bred|BNP|La Banque Postale|CIC|Crédit Mutuel)/i);
       if (bankMatch) {
         extracted.bank = bankMatch[1].trim();
       }
+    }
 
-      // Extraction de la date d'émission (format DD/MM/YYYY, DD/MM/YY ou YYYY-MM-DD)
+    if (!extracted.date) {
       const dateMatch = textResult.match(/(\d{2})[\/\-\s](\d{2})[\/\-\s](\d{2,4})/);
       if (dateMatch) {
         const day = dateMatch[1];
