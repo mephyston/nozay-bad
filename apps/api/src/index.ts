@@ -807,13 +807,30 @@ app.post('/bank-transactions/analyze', async (c) => {
 
   for (const tx of pendingTxs) {
     // Déterminer la catégorie par défaut par dictionnaire simple
-    let suggestedCategory = 'buvette';
-    const nameLower = tx.name.toLowerCase();
-    if (nameLower.includes('ionos')) suggestedCategory = 'divers_depense';
-    else if (nameLower.includes('urssaf')) suggestedCategory = 'salaires';
-    else if (nameLower.includes('larde')) suggestedCategory = 'achats_club';
-    else if (nameLower.includes('ligue')) suggestedCategory = 'licences_ffbad';
-    else if (nameLower.includes('adhesion') || nameLower.includes('cotisation') || nameLower.includes('vir recu')) suggestedCategory = 'adhesions';
+    let suggestedCategory = tx.amount < 0 ? 'divers_depense' : 'adhesions';
+    const textToLower = `${tx.name} ${tx.memo || ''}`.toLowerCase();
+    
+    if (textToLower.includes('ionos')) {
+      suggestedCategory = 'divers_depense';
+    } else if (textToLower.includes('urssaf') || textToLower.includes('afdas')) {
+      suggestedCategory = 'salaires';
+    } else if (textToLower.includes('salaire') || textToLower.includes('tetevuide') || textToLower.includes('meunier')) {
+      suggestedCategory = 'salaires';
+    } else if (textToLower.includes('larde')) {
+      suggestedCategory = 'achats_club';
+    } else if (textToLower.includes('ligue') || textToLower.includes('badminton')) {
+      suggestedCategory = textToLower.includes('licence') ? 'licences_ffbad' : 'championnats';
+    } else if (textToLower.includes('codep91') || textToLower.includes('comite')) {
+      suggestedCategory = 'championnats';
+    } else if (textToLower.includes('sumup') || textToLower.includes('buvette')) {
+      suggestedCategory = 'buvette';
+    } else if (textToLower.includes('cordage') || textToLower.includes('raquette') || textToLower.includes('volant')) {
+      suggestedCategory = 'boutique';
+    } else if (textToLower.includes('stage')) {
+      suggestedCategory = 'stages';
+    } else if (textToLower.includes('versement express')) {
+      suggestedCategory = 'divers_recette';
+    }
 
     // Présélection des candidats adhérents :
     // On filtre les membres dont le nom de famille ou prénom apparaît dans le libellé/mémo

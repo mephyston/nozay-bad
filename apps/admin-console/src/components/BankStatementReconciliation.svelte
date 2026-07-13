@@ -419,7 +419,7 @@
                 </div>
               </div>
 
-              <button onclick={() => handleCreateAndMatch(selectedTx!)} class="w-full py-1.5 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold shadow-sm cursor-pointer border-0">
+              <button onclick={() => handleCreateAndMatch(selectedTx!)} class="w-full py-1.5 bg-primary hover:bg-primary/95 text-primary-foreground rounded text-xs font-semibold shadow-sm cursor-pointer border-0">
                 Créer & lier l'écriture
               </button>
             </div>
