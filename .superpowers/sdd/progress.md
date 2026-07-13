@@ -5,12 +5,15 @@ Current Plan: `docs/superpowers/plans/2026-07-07-poona-import-plan.md`
 
 ## Task Progress (Sub-Project 2: Import Adhérents Poona)
 
-*   [ ] Task 1: Database Migration (Schema and Drizzle Setup)
+*   [x] Task 1: Database Migration (Schema and Drizzle Setup)
 *   [ ] Task 2: Private API Import Endpoint (Hono Worker)
 *   [ ] Task 3: Astro Page Integration and API proxying
 *   [ ] Task 4: UI Drag-and-Drop Importer Component (Svelte 5)
 
 ## Ledger Entries
+
+### Sub-Project 2: Import Adhérents Poona
+- Task 1: complete (commits fb552cf..46763c9, review clean)
 
 ### Sub-Project 1.5: Layout & Theme
 - Task 1: complete (commits a709bbc..d52f813, review clean)
