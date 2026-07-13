@@ -1246,7 +1246,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
     } catch (llamaErr) {
       console.warn("Llama 3.2 vision failed (likely license/EU restrictions), trying Moondream 3.1:", llamaErr);
       try {
-        const modelFallback = '@cf/moondream/moondream3.1-9b-a2b';
+        const modelFallback = '@cf/moondream/moondream3.1-9B-A2B';
         const systemPrompt = `Analyze this check image. Extract the following fields as a JSON object:
 {
   "number": "string (the check number, usually 7 digits)",
