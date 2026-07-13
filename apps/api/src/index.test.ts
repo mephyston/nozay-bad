@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checksTable, checkDepositsTable } from '../../../libs/shared/db/src/schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 import { DatabaseSync } from 'node:sqlite';
@@ -1034,6 +1034,173 @@ VERSION:102
     const finalMember = await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get();
     expect(finalMember.amountReceived).toBe(0);
     expect(finalMember.amountRemaining).toBe(25000);
+  });
+
+  it('supports checks and check-deposits workflow endpoints', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // 1. Ajouter un adhérent
+    const m = await db.insert(membersTable).values({
+      licence: '7766554',
+      season: '25-26',
+      lastName: 'DUPONT',
+      firstName: 'Jean',
+      gender: 'M',
+      birthDate: '1995-05-05',
+      status: 'valide',
+      type: 'Adulte',
+      amountDue: 26000,
+      amountReceived: 0,
+      amountRemaining: 26000,
+      importedAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // 2. Insérer un chèque via POST /checks (Catégorie adhésion)
+    const checkPostRes = await app.request('http://localhost/checks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seasonId: '25-26',
+        number: '8877665',
+        amount: 26000, // 260.00 €
+        emitter: 'Jean Dupont',
+        bank: 'Bred',
+        memberId: m.id,
+        category: 'adhesions_inscriptions'
+      })
+    }, { DB: mockD1 as any });
+    expect(checkPostRes.status).toBe(200);
+
+    // 3. Vérifier que la fiche de l'adhérent a été mise à jour (réglée)
+    const updatedMember = await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get();
+    expect(updatedMember.amountReceived).toBe(26000);
+    expect(updatedMember.amountRemaining).toBe(0);
+    expect(updatedMember.paid).toBe(true);
+
+    // 4. Récupérer le chèque via GET /checks
+    const getRes = await app.request('http://localhost/checks?season=25-26&status=received', undefined, { DB: mockD1 as any });
+    expect(getRes.status).toBe(200);
+    const getBody = await getRes.json() as any;
+    expect(getBody.data).toHaveLength(1);
+    expect(getBody.data[0].number).toBe('8877665');
+    expect(getBody.data[0].memberName).toBe('DUPONT Jean');
+
+    const checkId = getBody.data[0].id;
+
+    // 5. Créer un bordereau de remise de chèques
+    const depositRes = await app.request('http://localhost/check-deposits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seasonId: '25-26',
+        reference: 'REMISE-DE-TEST',
+        date: '2026-07-13',
+        checkIds: [checkId]
+      })
+    }, { DB: mockD1 as any });
+    expect(depositRes.status).toBe(200);
+    const depositBody = await depositRes.json() as any;
+    expect(depositBody.data.amount).toBe(26000);
+
+    const depositId = depositBody.data.id;
+
+    // 6. Vérifier que le chèque est marqué comme 'deposited'
+    const checkAfterDeposit = await db.select().from(checksTable).where(eq(checksTable.id, checkId)).get();
+    expect(checkAfterDeposit.status).toBe('deposited');
+    expect(checkAfterDeposit.checkDepositId).toBe(depositId);
+
+    // 7. Simuler le rapprochement avec une transaction de relevé bancaire (id: 999)
+    // On doit d'abord insérer cette transaction fictive ou simuler son existence
+    await db.insert(bankTransactionsTable).values({
+      id: 999,
+      fitid: 'SG-DEPOT-999',
+      seasonId: '25-26',
+      accountId: 'current',
+      amount: 26000,
+      date: '2026-07-13',
+      name: 'SG DEPOT CHEQUE',
+      status: 'pending',
+      createdAt: new Date()
+    }).run();
+
+    const clearRes = await app.request(`http://localhost/check-deposits/${depositId}/clear`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bankTransactionId: 999
+      })
+    }, { DB: mockD1 as any });
+    expect(clearRes.status).toBe(200);
+
+    // Vérifier le statut de la remise
+    const finalDeposit = await db.select().from(checkDepositsTable).where(eq(checkDepositsTable.id, depositId)).get();
+    expect(finalDeposit.status).toBe('cleared');
+    expect(finalDeposit.bankTransactionId).toBe(999);
+
+    // 8. Supprimer le chèque
+    const delCheckRes = await app.request(`http://localhost/checks/${checkId}`, {
+      method: 'DELETE'
+    }, { DB: mockD1 as any });
+    expect(delCheckRes.status).toBe(200);
+
+    // Vérifier que le chèque est supprimé et la fiche membre remise à zéro
+    const deletedCheck = await db.select().from(checksTable).where(eq(checksTable.id, checkId)).get();
+    expect(deletedCheck).toBeUndefined();
+
+    const resetMember = await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get();
+    expect(resetMember.amountReceived).toBe(0);
+    expect(resetMember.amountRemaining).toBe(26000);
+    expect(resetMember.paid).toBe(false);
+  });
+
+  it('supports check photo vision OCR analysis with Workers AI mock', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Ajouter un adhérent potentiel
+    await db.insert(membersTable).values({
+      licence: '7766554',
+      season: '25-26',
+      lastName: 'DUPONT',
+      firstName: 'Jean',
+      gender: 'M',
+      birthDate: '1995-05-05',
+      status: 'valide',
+      type: 'Adulte',
+      amountDue: 26000,
+      amountReceived: 0,
+      amountRemaining: 26000,
+      importedAt: new Date()
+    }).run();
+
+    const mockAI = {
+      run: async (model: string, input: any) => {
+        return JSON.stringify({
+          number: '8877665',
+          amount: 260,
+          emitter: 'JEAN DUPONT',
+          bank: 'Société Générale'
+        });
+      }
+    };
+
+    const formData = new FormData();
+    formData.append('file', new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' }), 'check.png');
+
+    const req = new Request('http://localhost/checks/analyze', {
+      method: 'POST',
+      body: formData
+    });
+
+    const res = await app.request(req, undefined, { DB: mockD1 as any, AI: mockAI as any });
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.success).toBe(true);
+    expect(body.data.number).toBe('8877665');
+    expect(body.data.emitter).toBe('JEAN DUPONT');
+    expect(body.data.memberName).toBe('DUPONT Jean');
   });
 });
 

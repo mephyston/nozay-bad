@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, or, eq, ne, like, sql, inArray, desc } from 'drizzle-orm';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable } from '../../../libs/shared/db/src/schema';
 
 
 function cleanName(name: string | null): string {
@@ -1194,6 +1194,372 @@ app.post('/bank-transactions/:id/unignore', async (c) => {
     .where(eq(bankTransactionsTable.id, id))
     .run();
 
+  return c.json({ success: true });
+});
+
+app.post('/checks/analyze', async (c) => {
+  if (!c.env || !c.env.DB || !c.env.AI) {
+    return c.json({ success: false, error: 'Database or AI binding is missing' }, 500);
+  }
+  try {
+    const formData = await c.req.parseBody();
+    const file = formData.file;
+    if (!file) {
+      return c.json({ success: false, error: 'Fichier image manquant.' }, 400);
+    }
+
+    let bytes: ArrayBuffer;
+    if (typeof file === 'string') {
+      if (file.startsWith('data:')) {
+        const base64Data = file.split(',')[1];
+        bytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)).buffer;
+      } else {
+        bytes = new TextEncoder().encode(file).buffer;
+      }
+    } else if (typeof file === 'object' && file !== null) {
+      if ('arrayBuffer' in file && typeof (file as any).arrayBuffer === 'function') {
+        bytes = await (file as any).arrayBuffer();
+      } else {
+        return c.json({ success: false, error: 'Format de fichier invalide.' }, 400);
+      }
+    } else {
+      return c.json({ success: false, error: 'Format de fichier invalide.' }, 400);
+    }
+
+    // Appeler le modèle de vision de Workers AI pour extraire les données du chèque
+    const model = '@cf/meta/llama-3.2-11b-vision-instruct';
+    const systemPrompt = `Analyze this check image. Extract the following fields as a JSON object:
+{
+  "number": "string (the check number, usually 7 digits)",
+  "amount": number (the check amount in EUR, e.g. 150.00)",
+  "emitter": "string (the name of the account holder / drawer)",
+  "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)"
+}
+Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
+
+    const aiRes = await c.env.AI.run(model, {
+      prompt: systemPrompt,
+      image: [...new Uint8Array(bytes)]
+    });
+
+    let extracted: any = {};
+    const textResult = typeof aiRes === 'string' ? aiRes : (aiRes as any).response || '';
+    
+    // Nettoyer et parser le JSON retourné par le LLM
+    try {
+      const jsonMatch = textResult.match(/\{[\s\S]*?\}/);
+      if (jsonMatch) {
+        extracted = JSON.parse(jsonMatch[0]);
+      } else {
+        extracted = JSON.parse(textResult);
+      }
+    } catch (e) {
+      console.error('Failed to parse AI check response:', textResult);
+    }
+
+    // Associer automatiquement à un adhérent potentiel
+    let matchedMember = null;
+    const db = drizzle(c.env.DB);
+    const members = await db.select().from(membersTable).all();
+
+    if (extracted.emitter) {
+      const cleanEmitter = cleanName(extracted.emitter);
+      
+      for (const m of members) {
+        const cleanLast = cleanName(m.lastName);
+        const cleanFirst = cleanName(m.firstName);
+        const cleanP1 = cleanName(m.parent1Name);
+        const cleanP2 = cleanName(m.parent2Name);
+
+        const hasFirstAndLast = cleanFirst && cleanLast && cleanEmitter.includes(cleanFirst) && cleanEmitter.includes(cleanLast);
+        const hasParent1 = cleanP1 && cleanEmitter.includes(cleanP1);
+        const hasParent2 = cleanP2 && cleanEmitter.includes(cleanP2);
+
+        if (hasFirstAndLast || hasParent1 || hasParent2) {
+          matchedMember = m;
+          break;
+        }
+      }
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        number: extracted.number || '',
+        amount: extracted.amount || 0,
+        emitter: extracted.emitter || '',
+        bank: extracted.bank || '',
+        memberId: matchedMember ? matchedMember.id : null,
+        memberName: matchedMember ? `${matchedMember.lastName} ${matchedMember.firstName}` : null
+      }
+    });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+app.get('/checks', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const season = c.req.query('season');
+  if (!season) {
+    return c.json({ success: false, error: 'Missing season query parameter' }, 400);
+  }
+  const status = c.req.query('status');
+  const db = drizzle(c.env.DB);
+
+  const conditions = [eq(checksTable.seasonId, season)];
+  if (status) {
+    conditions.push(eq(checksTable.status, status as any));
+  }
+
+  const data = await db.select({
+    id: checksTable.id,
+    checkDepositId: checksTable.checkDepositId,
+    seasonId: checksTable.seasonId,
+    number: checksTable.number,
+    amount: checksTable.amount,
+    emitter: checksTable.emitter,
+    bank: checksTable.bank,
+    memberId: checksTable.memberId,
+    transactionId: checksTable.transactionId,
+    status: checksTable.status,
+    photoUrl: checksTable.photoUrl,
+    createdAt: checksTable.createdAt,
+    memberName: sql<string | null>`members.last_name || ' ' || members.first_name`,
+    memberLicence: sql<string | null>`members.licence`
+  })
+    .from(checksTable)
+    .leftJoin(membersTable, eq(checksTable.memberId, membersTable.id))
+    .where(and(...conditions))
+    .orderBy(desc(checksTable.createdAt))
+    .all();
+
+  return c.json({ success: true, data });
+});
+
+app.post('/checks', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const body = await c.req.json() as any;
+  const db = drizzle(c.env.DB);
+
+  if (!body.seasonId || !body.number || !body.amount || !body.emitter) {
+    return c.json({ success: false, error: 'Champs requis manquants.' }, 400);
+  }
+
+  const categoryStr = body.category || 'adhesions_inscriptions';
+  const descStr = body.description || `Règlement par chèque n°${body.number} de ${body.emitter}`;
+
+  const [newTx] = await db.insert(transactionsTable).values({
+    seasonId: body.seasonId,
+    type: 'recette',
+    accountId: 'current',
+    category: categoryStr,
+    amount: body.amount,
+    date: new Date().toISOString().split('T')[0],
+    paymentMethod: 'cheque',
+    description: descStr,
+    reference: `Chèque n°${body.number}`,
+    memberId: body.memberId || null,
+    createdAt: new Date()
+  }).returning();
+
+  const [newCheck] = await db.insert(checksTable).values({
+    seasonId: body.seasonId,
+    number: body.number,
+    amount: body.amount,
+    emitter: body.emitter,
+    bank: body.bank || null,
+    memberId: body.memberId || null,
+    transactionId: newTx.id,
+    status: 'received',
+    photoUrl: body.photoUrl || null,
+    createdAt: new Date()
+  }).returning();
+
+  if (body.memberId && categoryStr === 'adhesions_inscriptions') {
+    const member = await db.select().from(membersTable).where(eq(membersTable.id, body.memberId)).get();
+    if (member) {
+      const newReceived = member.amountReceived + body.amount;
+      const newRemaining = Math.max(0, member.amountDue - newReceived);
+      const isPaid = newRemaining === 0;
+
+      await db.update(membersTable)
+        .set({
+          amountReceived: newReceived,
+          amountRemaining: newRemaining,
+          paid: isPaid
+        })
+        .where(eq(membersTable.id, body.memberId))
+        .run();
+    }
+  }
+
+  return c.json({ success: true, data: newCheck });
+});
+
+app.delete('/checks/:id', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const db = drizzle(c.env.DB);
+
+  const check = await db.select().from(checksTable).where(eq(checksTable.id, id)).get();
+  if (!check) {
+    return c.json({ success: false, error: 'Chèque non trouvé.' }, 404);
+  }
+
+  if (check.transactionId) {
+    await db.update(checksTable)
+      .set({ transactionId: null })
+      .where(eq(checksTable.id, id))
+      .run();
+
+    const tx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, check.transactionId)).get();
+    if (tx) {
+      if (tx.memberId && tx.category === 'adhesions_inscriptions') {
+        const member = await db.select().from(membersTable).where(eq(membersTable.id, tx.memberId)).get();
+        if (member) {
+          const newReceived = Math.max(0, member.amountReceived - Math.abs(tx.amount));
+          const newRemaining = Math.max(0, member.amountDue - newReceived);
+          const isPaid = newRemaining === 0;
+
+          await db.update(membersTable)
+            .set({
+              amountReceived: newReceived,
+              amountRemaining: newRemaining,
+              paid: isPaid
+            })
+            .where(eq(membersTable.id, tx.memberId))
+            .run();
+        }
+      }
+      await db.delete(transactionsTable).where(eq(transactionsTable.id, tx.id)).run();
+    }
+  }
+
+  await db.delete(checksTable).where(eq(checksTable.id, id)).run();
+  return c.json({ success: true });
+});
+
+app.post('/check-deposits', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const body = await c.req.json() as any;
+  const db = drizzle(c.env.DB);
+
+  if (!body.seasonId || !body.reference || !body.date || !body.checkIds || body.checkIds.length === 0) {
+    return c.json({ success: false, error: 'Champs requis manquants.' }, 400);
+  }
+
+  const checksToDeposit = await db.select().from(checksTable).where(inArray(checksTable.id, body.checkIds)).all();
+  if (checksToDeposit.length === 0) {
+    return c.json({ success: false, error: 'Aucun chèque valide trouvé.' }, 400);
+  }
+  const totalAmount = checksToDeposit.reduce((sum, ch) => sum + ch.amount, 0);
+
+  const [deposit] = await db.insert(checkDepositsTable).values({
+    seasonId: body.seasonId,
+    reference: body.reference,
+    date: body.date,
+    amount: totalAmount,
+    status: 'deposited',
+    createdAt: new Date()
+  }).returning();
+
+  await db.update(checksTable)
+    .set({
+      checkDepositId: deposit.id,
+      status: 'deposited'
+    })
+    .where(inArray(checksTable.id, body.checkIds))
+    .run();
+
+  return c.json({ success: true, data: deposit });
+});
+
+app.get('/check-deposits', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const season = c.req.query('season');
+  if (!season) {
+    return c.json({ success: false, error: 'Missing season query parameter' }, 400);
+  }
+  const db = drizzle(c.env.DB);
+
+  const deposits = await db.select()
+    .from(checkDepositsTable)
+    .where(eq(checkDepositsTable.seasonId, season))
+    .orderBy(desc(checkDepositsTable.date), desc(checkDepositsTable.id))
+    .all();
+
+  return c.json({ success: true, data: deposits });
+});
+
+app.post('/check-deposits/:id/clear', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const body = await c.req.json() as any;
+  const db = drizzle(c.env.DB);
+
+  if (!body.bankTransactionId) {
+    return c.json({ success: false, error: 'bankTransactionId requis.' }, 400);
+  }
+
+  await db.update(checkDepositsTable)
+    .set({
+      status: 'cleared',
+      bankTransactionId: body.bankTransactionId
+    })
+    .where(eq(checkDepositsTable.id, id))
+    .run();
+
+  await db.update(bankTransactionsTable)
+    .set({
+      status: 'reconciled'
+    })
+    .where(eq(bankTransactionsTable.id, body.bankTransactionId))
+    .run();
+
+  return c.json({ success: true });
+});
+
+app.post('/check-deposits/:id/delete', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const db = drizzle(c.env.DB);
+
+  const deposit = await db.select().from(checkDepositsTable).where(eq(checkDepositsTable.id, id)).get();
+  if (!deposit) {
+    return c.json({ success: false, error: 'Remise de chèques non trouvée.' }, 404);
+  }
+
+  if (deposit.bankTransactionId) {
+    await db.update(bankTransactionsTable)
+      .set({ status: 'pending' })
+      .where(eq(bankTransactionsTable.id, deposit.bankTransactionId))
+      .run();
+  }
+
+  await db.update(checksTable)
+    .set({
+      checkDepositId: null,
+      status: 'received'
+    })
+    .where(eq(checksTable.checkDepositId, id))
+    .run();
+
+  await db.delete(checkDepositsTable).where(eq(checkDepositsTable.id, id)).run();
   return c.json({ success: true });
 });
 
