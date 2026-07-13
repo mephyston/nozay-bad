@@ -39,7 +39,7 @@
     paymentMethod: string;
   }
 
-  let { member, transactions = [] }: { member: Member; transactions: GLTransaction[] } = $props();
+  let { member, transactions = [], seasonId = '25-26' }: { member: Member; transactions: GLTransaction[]; seasonId?: string } = $props();
 
   let cotisationTransactions = $derived(transactions.filter(t => t.category === 'adhesions_inscriptions'));
   let otherTransactions = $derived(transactions.filter(t => t.category !== 'adhesions_inscriptions'));
@@ -74,7 +74,7 @@
 
 <div class="space-y-6 max-w-3xl mx-auto">
   <a
-    href="/admin/members"
+    href={`/admin/members?season=${seasonId}`}
     class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
   >
     <ArrowLeft class="w-4 h-4" />
@@ -286,7 +286,7 @@
         </h3>
         {#if otherTransactions.length > 0}
           <span class="text-xs font-bold text-muted-foreground bg-muted px-2.5 py-1 rounded">
-            Total des règlements annexes : {(totalOtherAmount / 100).toFixed(2)} €
+            Total : {(totalOtherAmount / 100).toFixed(2)} €
           </span>
         {/if}
       </div>

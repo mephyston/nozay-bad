@@ -190,7 +190,7 @@
               </td>
               <td class="p-4 text-right">
                 <a
-                  href={`/admin/members/${member.licence}`}
+                  href={`/admin/members/${member.licence}?season=${filters.season || '25-26'}`}
                   class="inline-flex items-center justify-center px-3 py-1.5 border border-border bg-background hover:bg-muted font-medium text-xs rounded-md shadow-sm"
                 >
                   Voir profil

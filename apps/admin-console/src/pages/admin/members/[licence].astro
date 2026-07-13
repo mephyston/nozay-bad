@@ -50,7 +50,7 @@ try {
         </div>
       )}
 
-      {member && <MemberProfile client:load {member} transactions={memberTransactionsList} />}
+      {member && <MemberProfile client:load {member} transactions={memberTransactionsList} seasonId={season} />}
     </div>
   </AdminLayout>
 </Layout>
