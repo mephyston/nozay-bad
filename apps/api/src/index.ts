@@ -1232,7 +1232,7 @@ app.post('/checks/analyze', async (c) => {
       const model = '@cf/meta/llama-3.2-11b-vision-instruct';
       const systemPrompt = `Analyze this check image. Extract the following fields as a JSON object:
 {
-  "number": "string (the check number, usually 7 digits)",
+  "number": "string (the 7-digit check number, usually printed at the bottom-left corner, e.g. '2512612'. Do NOT use the longer bank routing or account numbers)",
   "amount": number (the check amount in EUR, e.g. 150.00)",
   "emitter": "string (the pre-printed account holder / owner name, usually printed in black text in the left or upper section, e.g. 'ANTENNE REUNION TELEVISION'. Do NOT use the handwritten beneficiary/payee name written after 'à', e.g. 'Association Sourice de l'enfant')",
   "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)",
@@ -1260,7 +1260,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
           aiRes = await c.env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
             prompt: `Analyze this check image. Extract the following fields as a JSON object:
 {
-  "number": "string (the check number, usually 7 digits)",
+  "number": "string (the 7-digit check number, usually printed at the bottom-left corner, e.g. '2512612'. Do NOT use the longer bank routing or account numbers)",
   "amount": number (the check amount in EUR, e.g. 150.00)",
   "emitter": "string (the pre-printed account holder / owner name, usually printed in black text in the left or upper section, e.g. 'ANTENNE REUNION TELEVISION'. Do NOT use the handwritten beneficiary/payee name written after 'à', e.g. 'Association Sourice de l'enfant')",
   "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)",
@@ -1276,7 +1276,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
       if (!agreed || !aiRes) {
         console.warn("Falling back directly to Llava 1.5...");
         const modelLlava = '@cf/llava-hf/llava-1.5-7b-hf';
-        const systemPrompt = `Identify check details in this image. Look in the bottom-right section below the numerical amount box and next to the signature, following 'le' or 'fait le' for the handwritten issue date (e.g. '10/09/20'). Extract the pre-printed account holder name as emitter (e.g. 'ANTENNE REUNION TELEVISION', NOT the payee 'Association Sourice de l'enfant'). Output JSON: {"number":"...", "amount":563.0, "emitter":"...", "bank":"...", "date":"2020-09-10"}`;
+        const systemPrompt = `Identify check details in this image. The check number (number) is always a 7-digit number, usually printed at the bottom-left corner (e.g. '2512612'). Do NOT use the longer account numbers. Look in the bottom-right section below the numerical amount box and next to the signature, following 'le' or 'fait le' for the handwritten issue date (e.g. '10/09/20' should be extracted as '2020-09-10'). Extract the pre-printed account holder name as emitter (e.g. 'ANTENNE REUNION TELEVISION', NOT the payee 'Association Sourice de l'enfant'). Output JSON format: {"number":"1234567", "amount":150.0, "emitter":"JEAN DUPONT", "bank":"LCL", "date":"2026-07-10"}`;
 
         aiRes = await c.env.AI.run(modelLlava, {
           prompt: systemPrompt,
