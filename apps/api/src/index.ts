@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, or, eq, ne, like, sql, inArray, desc } from 'drizzle-orm';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable } from '../../../libs/shared/db/src/schema';
 
 
 function cleanName(name: string | null): string {
@@ -1674,6 +1674,55 @@ app.post('/check-deposits/:id/delete', async (c) => {
 
   await db.delete(checkDepositsTable).where(eq(checkDepositsTable.id, id)).run();
   return c.json({ success: true });
+});
+
+app.get('/products', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const category = c.req.query('category');
+  const activeStr = c.req.query('active');
+  const db = drizzle(c.env.DB);
+  let conditions = [];
+  if (category) conditions.push(eq(productsTable.category, category as any));
+  if (activeStr) conditions.push(eq(productsTable.active, activeStr === 'true'));
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  const products = await db.select().from(productsTable).where(whereClause).all();
+  return c.json({ success: true, data: products });
+});
+
+app.post('/products', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const body = await c.req.json();
+  const db = drizzle(c.env.DB);
+  const prod = await db.insert(productsTable).values({
+    name: body.name,
+    category: body.category,
+    price: body.price,
+    stock: body.stock,
+    active: body.active !== false,
+    createdAt: new Date()
+  }).returning().get();
+  return c.json({ success: true, data: prod });
+});
+
+app.put('/products/:id', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const body = await c.req.json();
+  const db = drizzle(c.env.DB);
+  const prod = await db.update(productsTable).set({
+    name: body.name,
+    price: body.price,
+    stock: body.stock,
+    active: body.active
+  }).where(eq(productsTable.id, id)).returning().get();
+  return c.json({ success: true, data: prod });
 });
 
 export default app;

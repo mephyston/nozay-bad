@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checksTable, checkDepositsTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checksTable, checkDepositsTable, productsTable } from '../../../libs/shared/db/src/schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 import { DatabaseSync } from 'node:sqlite';
@@ -1207,6 +1207,73 @@ VERSION:102
     expect(body.data.emitter).toBe('JEAN DUPONT');
     expect(body.data.memberName).toBe('DUPONT Jean');
     expect(body.data.date).toBe('2026-07-10');
+  });
+});
+
+describe('Products API Endpoints', () => {
+  it('supports product CRUD operations', async () => {
+    const mockD1 = await setupMockDb();
+
+    // 1. Create a product (POST /products)
+    const createRes = await app.request('http://localhost/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Yonex BG65', category: 'string', price: 1200, stock: 5 })
+    }, { DB: mockD1 as any });
+
+    expect(createRes.status).toBe(200);
+    const createJson = await createRes.json() as any;
+    expect(createJson.success).toBe(true);
+    expect(createJson.data.name).toBe('Yonex BG65');
+    expect(createJson.data.category).toBe('string');
+    expect(createJson.data.price).toBe(1200);
+    expect(createJson.data.stock).toBe(5);
+    expect(createJson.data.active).toBe(true);
+    expect(createJson.data.id).toBeDefined();
+
+    const productId = createJson.data.id;
+
+    // 2. Read products (GET /products)
+    const listRes = await app.request('http://localhost/products', undefined, { DB: mockD1 as any });
+    expect(listRes.status).toBe(200);
+    const listJson = await listRes.json() as any;
+    expect(listJson.success).toBe(true);
+    expect(listJson.data).toHaveLength(1);
+    expect(listJson.data[0].name).toBe('Yonex BG65');
+
+    // Test GET /products with query filters
+    const listResFilter1 = await app.request('http://localhost/products?category=string', undefined, { DB: mockD1 as any });
+    const listJsonFilter1 = await listResFilter1.json() as any;
+    expect(listJsonFilter1.data).toHaveLength(1);
+
+    const listResFilter2 = await app.request('http://localhost/products?category=shuttlecock', undefined, { DB: mockD1 as any });
+    const listJsonFilter2 = await listResFilter2.json() as any;
+    expect(listJsonFilter2.data).toHaveLength(0);
+
+    const listResFilter3 = await app.request('http://localhost/products?active=true', undefined, { DB: mockD1 as any });
+    const listJsonFilter3 = await listResFilter3.json() as any;
+    expect(listJsonFilter3.data).toHaveLength(1);
+
+    // 3. Update a product (PUT /products/:id)
+    const updateRes = await app.request(`http://localhost/products/${productId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Yonex BG65 Updated', price: 1500, stock: 10, active: false })
+    }, { DB: mockD1 as any });
+
+    expect(updateRes.status).toBe(200);
+    const updateJson = await updateRes.json() as any;
+    expect(updateJson.success).toBe(true);
+    expect(updateJson.data.name).toBe('Yonex BG65 Updated');
+    expect(updateJson.data.price).toBe(1500);
+    expect(updateJson.data.stock).toBe(10);
+    expect(updateJson.data.active).toBe(false);
+
+    // Verify it is updated in DB listing
+    const verifyRes = await app.request('http://localhost/products?active=false', undefined, { DB: mockD1 as any });
+    const verifyJson = await verifyRes.json() as any;
+    expect(verifyJson.data).toHaveLength(1);
+    expect(verifyJson.data[0].name).toBe('Yonex BG65 Updated');
   });
 });
 
