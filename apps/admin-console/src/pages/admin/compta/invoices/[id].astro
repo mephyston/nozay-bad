@@ -65,18 +65,14 @@ function formatFrenchDate(dateStr: string): string {
         <!-- Header -->
         <div class="flex justify-between items-start gap-8 border-b-2 border-slate-100 pb-8">
           <div class="space-y-4">
-            <!-- logo inline SVG placeholder -->
-            <div class="flex items-center gap-3">
-              <svg class="w-14 h-14 text-blue-900 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L2 22h20L12 2zm0 3.99L18.8 19H5.2L12 5.99zM12 9a2 2 0 100 4 2 2 0 000-4zm-3 8h6v1H9v-1z"/>
-              </svg>
+            <div class="flex items-center gap-4">
+              <img src="/images/logo-nba.jpg" alt="Nozay Badminton Logo" class="w-16 h-16 object-contain shrink-0" />
               <div>
                 <h1 class="text-xl font-bold tracking-tight text-blue-950 font-serif leading-none">Nozay Badminton</h1>
-                <p class="text-xs text-slate-500 font-semibold tracking-wider uppercase mt-1">Association</p>
+                <p class="text-[10px] text-slate-500 font-semibold tracking-wider uppercase mt-1">Nozay Badminton Association</p>
               </div>
             </div>
             <div class="text-xs text-slate-600 leading-relaxed font-mono">
-              <p class="font-bold text-slate-800">Nozay Badminton Association</p>
               <p>Adresse : Mairie de Nozay, 91620 NOZAY</p>
               <p>Site web : <a href="https://sites.google.com/site/nozaybad/" target="_blank" class="text-blue-600 hover:underline">https://sites.google.com/site/nozaybad/</a></p>
               <p>Association N° 0913011863</p>
@@ -87,13 +83,11 @@ function formatFrenchDate(dateStr: string): string {
           </div>
 
           <!-- Top Right logos -->
-          <div class="flex flex-col items-end gap-2 text-right">
-            <div class="flex gap-2 items-center">
-              <!-- Inline simulated logos -->
-              <span class="px-2 py-1 bg-blue-50 border border-blue-200 text-blue-900 rounded font-bold text-[10px] tracking-wider uppercase">école de badminton</span>
-              <span class="px-2 py-1 bg-red-50 border border-red-200 text-red-800 rounded font-bold text-[10px] tracking-wider uppercase">Essonne</span>
-              <span class="px-2 py-1 bg-amber-50 border border-amber-200 text-amber-800 rounded font-bold text-[10px] tracking-wider">IDF</span>
-            </div>
+          <div class="flex flex-wrap items-center justify-end gap-3 max-w-sm pt-2">
+            <img src="/images/logo-nozay.png" alt="Nozay" class="h-10 object-contain" />
+            <img src="/images/logo-essonne.jpg" alt="Essonne" class="h-10 object-contain" />
+            <img src="/images/logo-idf.png" alt="Île-de-France" class="h-6 object-contain" />
+            <img src="/images/logo-efb.png" alt="EFB" class="h-12 object-contain" />
           </div>
         </div>
 
