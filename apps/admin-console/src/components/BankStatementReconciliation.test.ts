@@ -87,4 +87,51 @@ describe('BankStatementReconciliation Component', () => {
     // Maintenant, "Dupont Jean" doit être visible dans le select d'association
     expect(target.innerHTML).toContain('Dupont Jean');
   });
+
+  it('filters out already reconciled GL transactions from suggestions', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankTransactions: [
+          {
+            id: 1,
+            fitid: 'TEST-FITID-1',
+            accountId: 'current',
+            amount: 3150,
+            date: '2026-04-23',
+            name: 'VIR RECU 12345',
+            memo: 'Achat volants',
+            status: 'pending',
+            aiSuggestions: null
+          }
+        ],
+        glTransactions: [
+          {
+            id: 10,
+            type: 'recette',
+            accountId: 'current',
+            amount: 3150,
+            date: '2026-04-23',
+            description: 'Volants Clement',
+            category: null,
+            bankTransactionId: 99
+          }
+        ],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }],
+        members: []
+      }
+    });
+
+    const btn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('VIR RECU 12345')) as HTMLButtonElement;
+    expect(btn).not.toBeNull();
+    btn.click();
+    flushSync();
+
+    expect(target.innerHTML).not.toContain('Volants Clement');
+    expect(target.innerHTML).toContain('Aucune écriture correspondante trouvée à +/- 7 jours.');
+  });
 });

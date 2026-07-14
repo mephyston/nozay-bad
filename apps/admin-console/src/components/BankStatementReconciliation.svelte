@@ -157,8 +157,20 @@
   // Trouver les suggestions correspondantes du Grand Livre (même montant absolu et +/- 7 jours)
   function getSuggestions(bt: BankTransaction) {
     return glTransactions.filter(gt => {
+      // Écarter les écritures déjà pointées/rapprochées
+      if (gt.bankTransactionId) return false;
+
       const matchesAmount = Math.abs(gt.amount) === Math.abs(bt.amount);
       if (!matchesAmount) return false;
+
+      // Un débit de banque (négatif) correspond à une dépense ou un transfert sortant
+      // Un crédit de banque (positif) correspond à une recette ou un transfert entrant
+      const isBankDebit = bt.amount < 0;
+      const isGlExpense = gt.type === 'depense';
+      const isGlReceipt = gt.type === 'recette';
+      
+      if (isBankDebit && isGlReceipt) return false;
+      if (!isBankDebit && isGlExpense) return false;
 
       const btDate = new Date(bt.date).getTime();
       const gtDate = new Date(gt.date).getTime();
