@@ -75,11 +75,17 @@ describe('TransactionLedger Component', () => {
 
     expect(target.innerHTML).toContain('Chèques en circulation');
     expect(target.innerHTML).toContain('1');
+    expect(target.innerHTML).toContain('2'); // Page 2 is displayed directly instead of rendering an ellipsis
     expect(target.innerHTML).toContain('3');
     expect(target.innerHTML).toContain('4');
     expect(target.innerHTML).toContain('5');
     expect(target.innerHTML).toContain('6');
     expect(target.innerHTML).toContain('7');
     expect(target.innerHTML).toContain('10');
+    
+    // Check for aria-current on the active page
+    const activeBtn = target.querySelector('[aria-current="page"]');
+    expect(activeBtn).not.toBeNull();
+    expect(activeBtn?.textContent?.trim()).toBe('5');
   });
 });

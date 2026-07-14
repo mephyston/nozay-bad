@@ -2412,14 +2412,68 @@ VERSION:102
 
   it('supports filtering by unreconciled cheques only', async () => {
     const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // 1. Insert a bank transaction to link with the reconciled check
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-CHECK-RECON-1',
+      accountId: 'current',
+      seasonId: '25-26',
+      amount: 10000,
+      date: '2026-07-14',
+      name: 'CHEQUE DEPOSE',
+      status: 'reconciled',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // 2. Insert the three transactions:
+    // - Outstanding check: paymentMethod = 'cheque', bankTransactionId = null
+    const outstandingCheck = await db.insert(transactionsTable).values({
+      seasonId: '25-26',
+      type: 'recette',
+      accountId: 'current',
+      amount: 15000,
+      date: '2026-07-14',
+      paymentMethod: 'cheque',
+      description: 'Outstanding Check Tx',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // - Reconciled check: paymentMethod = 'cheque', bankTransactionId = bt.id
+    await db.insert(transactionsTable).values({
+      seasonId: '25-26',
+      type: 'recette',
+      accountId: 'current',
+      amount: 10000,
+      date: '2026-07-14',
+      paymentMethod: 'cheque',
+      description: 'Reconciled Check Tx',
+      bankTransactionId: bt.id,
+      createdAt: new Date()
+    }).run();
+
+    // - Non-check unreconciled transaction: paymentMethod = 'virement', bankTransactionId = null
+    await db.insert(transactionsTable).values({
+      seasonId: '25-26',
+      type: 'recette',
+      accountId: 'current',
+      amount: 20000,
+      date: '2026-07-14',
+      paymentMethod: 'virement',
+      description: 'Non-check Unreconciled Tx',
+      createdAt: new Date()
+    }).run();
+
     const res = await app.request('http://localhost/transactions?unreconciledCheques=true', undefined, { DB: mockD1 as any });
     expect(res.status).toBe(200);
     const json = await res.json() as any;
     expect(json.success).toBe(true);
-    for (const tx of json.data) {
-      expect(tx.paymentMethod).toBe('cheque');
-      expect(tx.bankTransactionId).toBeNull();
-    }
+    
+    // Assert that only the outstanding check is returned
+    expect(json.data).toHaveLength(1);
+    expect(json.data[0].id).toBe(outstandingCheck.id);
+    expect(json.data[0].paymentMethod).toBe('cheque');
+    expect(json.data[0].bankTransactionId).toBeNull();
   });
 });
 

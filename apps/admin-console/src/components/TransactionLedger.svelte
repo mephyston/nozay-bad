@@ -76,30 +76,42 @@
   import { X } from 'lucide-svelte';
 
   function getPageRange(current: number, total: number) {
-    const range: (number | string)[] = [];
-    const delta = 2;
+    if (total <= 0) return [];
+    if (total === 1) return [1];
 
-    for (let i = 1; i <= total; i++) {
-      if (
-        i === 1 ||
-        i === total ||
-        (i >= current - delta && i <= current + delta)
-      ) {
-        range.push(i);
-      } else if (
-        (i === current - delta - 1 && i > 1) ||
-        (i === current + delta + 1 && i < total)
-      ) {
-        range.push('...');
-      }
+    const delta = 2;
+    const pages = new Set<number>();
+
+    // Always include page 1 and total page
+    pages.add(1);
+    pages.add(total);
+
+    // Include page range around current
+    const start = Math.max(1, current - delta);
+    const end = Math.min(total, current + delta);
+    for (let i = start; i <= end; i++) {
+      pages.add(i);
     }
-    
-    return range.filter((val, idx, arr) => {
-      if (val === '...') {
-        return arr[idx - 1] !== '...';
+
+    // Sort the pages
+    const sortedPages = Array.from(pages).sort((a, b) => a - b);
+
+    const range: (number | string)[] = [];
+    for (let i = 0; i < sortedPages.length; i++) {
+      if (i > 0) {
+        const prev = sortedPages[i - 1];
+        const curr = sortedPages[i];
+        const gap = curr - prev;
+        if (gap === 2) {
+          range.push(prev + 1);
+        } else if (gap > 2) {
+          range.push('...');
+        }
       }
-      return true;
-    });
+      range.push(sortedPages[i]);
+    }
+
+    return range;
   }
 
   let pageRange = $derived(getPageRange(pagination.page, pagination.totalPages));
@@ -405,7 +417,7 @@
           params.set('unreconciledCheques', 'true');
         }
         params.set('page', '1');
-        window.location.href = `?${params.toString()}`;
+        window.location.href = `/admin/compta?${params.toString()}`;
       }}
     >
       <span>🎫</span> Chèques en circulation
@@ -548,6 +560,7 @@
                 class:bg-background={Number(p) !== pagination.page}
                 class:hover:bg-muted={Number(p) !== pagination.page}
                 onclick={() => changePage(Number(p))}
+                aria-current={Number(p) === pagination.page ? 'page' : undefined}
               >
                 {p}
               </button>
