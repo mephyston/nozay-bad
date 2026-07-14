@@ -20,8 +20,7 @@ if (Astro.request.method === 'POST') {
         body: JSON.stringify(data.budget)
       });
       if (!apiRes.ok) {
-        const errText = await apiRes.text();
-        return new Response(errText || 'Erreur configuration budget', { status: apiRes.status });
+        return new Response(await apiRes.text() || 'Erreur configuration budget', { status: apiRes.status });
       }
       return new Response(JSON.stringify({ success: true }));
     } else {

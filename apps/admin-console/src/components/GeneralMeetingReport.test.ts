@@ -72,14 +72,14 @@ describe('GeneralMeetingReport Component', () => {
           { code: '70', label: '70 - Ventes', type: 'recette' }
         ],
         budget: [
-          { classCode: '60', amount: 50000 },
-          { classCode: '70', amount: 120000 }
+          { categoryId: 1, type: 'depense', amount: 50000 },
+          { categoryId: 2, type: 'recette', amount: 120000 }
         ]
       }
     });
 
     // Verify view mode tabs exist
-    expect(target.innerHTML).toContain("Budget Prévisionnel");
-    expect(target.innerHTML).toContain("Résultat Réalisé (Réel)");
+    expect(target.innerHTML).toContain("Prévisionnel");
+    expect(target.innerHTML).toContain("Réalisé");
   });
 });

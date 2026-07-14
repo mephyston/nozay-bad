@@ -170,10 +170,11 @@ export const accountClassesTable = sqliteTable('account_classes', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
-export const seasonClassBudgetsTable = sqliteTable('season_class_budgets', {
+export const seasonCategoryBudgetsTable = sqliteTable('season_category_budgets', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   seasonId: text('season_id').notNull().references(() => seasonsTable.id),
-  classCode: text('class_code').notNull().references(() => accountClassesTable.code),
+  categoryId: integer('category_id').notNull().references(() => categoriesTable.id),
+  type: text('type', { enum: ['recette', 'depense'] }).notNull(),
   amount: integer('amount').notNull().default(0),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });

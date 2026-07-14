@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checksTable, checkDepositsTable, productsTable, ordersTable, expensesTable, invoicesTable, accountClassesTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checksTable, checkDepositsTable, productsTable, ordersTable, expensesTable, invoicesTable, accountClassesTable, categoriesTable, seasonCategoryBudgetsTable } from '../../../libs/shared/db/src/schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 import { DatabaseSync } from 'node:sqlite';
@@ -645,14 +645,19 @@ describe('Accounting API Endpoints', () => {
       { code: '60', label: '60 - Achats', type: 'depense', createdAt: new Date() },
       { code: '70', label: '70 - Ventes', type: 'recette', createdAt: new Date() }
     ]).run();
+    await db.delete(categoriesTable).run();
+    await db.insert(categoriesTable).values([
+      { id: 1, adminLabel: 'Cotisations', adherentLabel: 'Cotis', hideInExpenses: false, codeRecette: '70', codeDepense: null, createdAt: new Date() },
+      { id: 2, adminLabel: 'Achats Volants', adherentLabel: 'Volants', hideInExpenses: false, codeRecette: null, codeDepense: '60', createdAt: new Date() }
+    ]).run();
 
     // 1. Post initial budget
     const postRes = await app.request('http://localhost/seasons/25-26/budget', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify([
-        { classCode: '60', amount: 50000 },
-        { classCode: '70', amount: 120000 }
+        { categoryId: 2, type: 'depense', amount: 50000 },
+        { categoryId: 1, type: 'recette', amount: 120000 }
       ])
     }, { DB: mockD1 as any });
     expect(postRes.status).toBe(200);
@@ -666,7 +671,7 @@ describe('Accounting API Endpoints', () => {
     const getJson = await getRes.json() as any;
     expect(getJson.success).toBe(true);
     expect(getJson.data).toHaveLength(2);
-    expect(getJson.data.find((b: any) => b.classCode === '60').amount).toBe(50000);
+    expect(getJson.data.find((b: any) => b.categoryId === 2).amount).toBe(50000);
 
     // 3. Close the season
     const closeRes = await app.request('http://localhost/seasons/25-26/close', { method: 'POST' }, { DB: mockD1 as any });
@@ -677,7 +682,7 @@ describe('Accounting API Endpoints', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify([
-        { classCode: '60', amount: 99999 }
+        { categoryId: 2, type: 'depense', amount: 99999 }
       ])
     }, { DB: mockD1 as any });
     expect(postRes2.status).toBe(400);

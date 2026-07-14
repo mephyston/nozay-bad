@@ -42,7 +42,13 @@
     type: 'recette' | 'depense';
   }
 
-  let { report, seasonId, seasons = [], categories = [], accountClasses = [], budget = [] }: { report: ReportData; seasonId: string; seasons?: Season[]; categories?: DbCategory[]; accountClasses?: AccountClass[]; budget?: { classCode: string; amount: number }[] } = $props();
+  interface BudgetRecord {
+    categoryId: number;
+    type: 'recette' | 'depense';
+    amount: number;
+  }
+
+  let { report, seasonId, seasons = [], categories = [], accountClasses = [], budget = [] }: { report: ReportData; seasonId: string; seasons?: Season[]; categories?: DbCategory[]; accountClasses?: AccountClass[]; budget?: BudgetRecord[] } = $props();
 
   // svelte-ignore state_referenced_locally
   let selectedSeason = $state(seasonId);
@@ -54,22 +60,49 @@
   $effect(() => {
     const newMap: Record<string, number> = {};
     for (const item of budget) {
-      newMap[item.classCode] = item.amount;
+      newMap[`${item.categoryId}_${item.type}`] = item.amount;
     }
-    for (const ac of accountClasses) {
-      if (newMap[ac.code] === undefined) {
-        newMap[ac.code] = 0;
+    for (const cat of categories) {
+      if (cat.codeRecette) {
+        const key = `${cat.id}_recette`;
+        if (newMap[key] === undefined) newMap[key] = 0;
+      }
+      if (cat.codeDepense) {
+        const key = `${cat.id}_depense`;
+        if (newMap[key] === undefined) newMap[key] = 0;
       }
     }
     editableBudget = newMap;
   });
+
+  // Helper to get categories matching a class code and flow type
+  function getClassCategories(classCode: string, type: 'recette' | 'depense'): DbCategory[] {
+    return categories.filter(cat => {
+      const code = type === 'recette' ? cat.codeRecette : cat.codeDepense;
+      return code === classCode;
+    });
+  }
+
+  // Get total for a class code and flow type (dynamic based on reportMode)
+  function getClassSum(classCode: string, type: 'recette' | 'depense'): number {
+    const classCats = getClassCategories(classCode, type);
+    if (reportMode === 'realise') {
+      let sum = 0;
+      for (const cat of classCats) {
+        sum += getCatTotal(cat.id.toString(), type);
+      }
+      return sum;
+    } else {
+      return classCats.reduce((sum, cat) => sum + (editableBudget[`${cat.id}_${type}`] || 0), 0);
+    }
+  }
 
   let totalDepenses = $derived(
     reportMode === 'realise'
       ? report.compteResultat.totalDepenses
       : accountClasses
           .filter(ac => ac.type === 'depense')
-          .reduce((sum, ac) => sum + (editableBudget[ac.code] || 0), 0)
+          .reduce((sum, ac) => sum + getClassSum(ac.code, 'depense'), 0)
   );
 
   let totalRecettes = $derived(
@@ -77,7 +110,7 @@
       ? report.compteResultat.totalRecettes
       : accountClasses
           .filter(ac => ac.type === 'recette')
-          .reduce((sum, ac) => sum + (editableBudget[ac.code] || 0), 0)
+          .reduce((sum, ac) => sum + getClassSum(ac.code, 'recette'), 0)
   );
 
   let netResult = $derived(totalRecettes - totalDepenses);
@@ -90,10 +123,14 @@
     isSaving = true;
     saveStatus = null;
     try {
-      const payload = Object.entries(editableBudget).map(([code, amount]) => ({
-        classCode: code,
-        amount
-      }));
+      const payload: BudgetRecord[] = Object.entries(editableBudget).map(([key, amount]) => {
+        const [catIdStr, type] = key.split('_');
+        return {
+          categoryId: parseInt(catIdStr),
+          type: type as 'recette' | 'depense',
+          amount
+        };
+      }).filter(item => !isNaN(item.categoryId));
 
       const res = await fetch(window.location.pathname, {
         method: 'POST',
@@ -184,17 +221,6 @@
     return report.compteResultat.categories[`${id}_${type}`]?.total || 0;
   }
 
-  // Derived accounting sums using DB-defined codes
-  function getClassSum(classCode: string, type: 'recette' | 'depense'): number {
-    let sum = 0;
-    for (const cat of categories) {
-      const code = type === 'recette' ? cat.codeRecette : cat.codeDepense;
-      if (code === classCode) {
-        sum += getCatTotal(cat.id.toString(), type);
-      }
-    }
-    return sum;
-  }
 
   function getClassItems(classCode: string, type: 'recette' | 'depense'): { label: string, total: number }[] {
     const items: { label: string, total: number }[] = [];
@@ -267,14 +293,14 @@
           class="px-3 py-1 text-xs font-semibold rounded-md transition-colors {reportMode === 'realise' ? 'bg-background shadow-sm text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}"
           onclick={() => reportMode = 'realise'}
         >
-          Résultat Réalisé (Réel)
+          Réalisé
         </button>
         <button
           type="button"
           class="px-3 py-1 text-xs font-semibold rounded-md transition-colors {reportMode === 'previsionnel' ? 'bg-background shadow-sm text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}"
           onclick={() => reportMode = 'previsionnel'}
         >
-          Budget Prévisionnel
+          Prévisionnel
         </button>
       </div>
     </div>
@@ -292,30 +318,9 @@
             {#each chargeClasses as cc}
               {#if reportMode === 'previsionnel' || getClassSum(cc.code, 'depense') > 0}
                 <div class="space-y-1.5 py-1">
-                  <div class="flex justify-between items-center text-sm">
-                    <span class="font-semibold">{cc.label}</span>
-                    {#if reportMode === 'previsionnel'}
-                      {#if !isClosed}
-                        <div class="relative flex items-center">
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            value={editableBudget[cc.code] !== undefined ? (editableBudget[cc.code] / 100) : ''}
-                            oninput={(e) => {
-                              const val = parseFloat(e.currentTarget.value) || 0;
-                              editableBudget[cc.code] = Math.round(val * 100);
-                            }}
-                            class="w-28 px-2 py-1 text-right border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium font-mono"
-                          />
-                          <span class="absolute right-2 text-xs text-muted-foreground pointer-events-none">€</span>
-                        </div>
-                      {:else}
-                        <span class="font-semibold font-mono">{formatAmount(editableBudget[cc.code] || 0)}</span>
-                      {/if}
-                    {:else}
-                      <span class="font-mono">{formatAmount(getClassSum(cc.code, 'depense'))}</span>
-                    {/if}
+                  <div class="flex justify-between items-center text-sm border-b border-border/40 pb-1">
+                    <span class="font-semibold text-foreground/90">{cc.label}</span>
+                    <span class="font-mono font-bold text-foreground">{formatAmount(getClassSum(cc.code, 'depense'))}</span>
                   </div>
                   
                   {#if reportMode === 'realise'}
@@ -324,6 +329,32 @@
                         <div class="flex justify-between font-mono">
                           <span class="font-sans">• {item.label}</span>
                           <span>{formatAmount(item.total)}</span>
+                        </div>
+                      {/each}
+                    </div>
+                  {:else}
+                    <div class="pl-4 space-y-1 text-xs text-muted-foreground">
+                      {#each getClassCategories(cc.code, 'depense') as cat}
+                        <div class="flex justify-between items-center py-0.5 font-mono">
+                          <span class="font-sans text-muted-foreground">• {cat.adminLabel}</span>
+                          {#if !isClosed}
+                            <div class="relative flex items-center">
+                              <input
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={editableBudget[`${cat.id}_depense`] !== undefined ? (editableBudget[`${cat.id}_depense`] / 100) : ''}
+                                oninput={(e) => {
+                                  const val = parseFloat(e.currentTarget.value) || 0;
+                                  editableBudget[`${cat.id}_depense`] = Math.round(val * 100);
+                                }}
+                                class="w-24 px-2 py-0.5 text-right border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium font-mono"
+                              />
+                              <span class="absolute right-2 text-xs text-muted-foreground pointer-events-none">€</span>
+                            </div>
+                          {:else}
+                            <span>{formatAmount(editableBudget[`${cat.id}_depense`] || 0)}</span>
+                          {/if}
                         </div>
                       {/each}
                     </div>
@@ -362,30 +393,9 @@
             {#each produitClasses as pc}
               {#if reportMode === 'previsionnel' || getClassSum(pc.code, 'recette') > 0}
                 <div class="space-y-1.5 py-1">
-                  <div class="flex justify-between items-center text-sm">
-                    <span class="font-semibold">{pc.label}</span>
-                    {#if reportMode === 'previsionnel'}
-                      {#if !isClosed}
-                        <div class="relative flex items-center">
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            value={editableBudget[pc.code] !== undefined ? (editableBudget[pc.code] / 100) : ''}
-                            oninput={(e) => {
-                              const val = parseFloat(e.currentTarget.value) || 0;
-                              editableBudget[pc.code] = Math.round(val * 100);
-                            }}
-                            class="w-28 px-2 py-1 text-right border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium font-mono"
-                          />
-                          <span class="absolute right-2 text-xs text-muted-foreground pointer-events-none">€</span>
-                        </div>
-                      {:else}
-                        <span class="font-semibold font-mono">{formatAmount(editableBudget[pc.code] || 0)}</span>
-                      {/if}
-                    {:else}
-                      <span class="font-mono">{formatAmount(getClassSum(pc.code, 'recette'))}</span>
-                    {/if}
+                  <div class="flex justify-between items-center text-sm border-b border-border/40 pb-1">
+                    <span class="font-semibold text-foreground/90">{pc.label}</span>
+                    <span class="font-mono font-bold text-foreground">{formatAmount(getClassSum(pc.code, 'recette'))}</span>
                   </div>
                   
                   {#if reportMode === 'realise'}
@@ -394,6 +404,32 @@
                         <div class="flex justify-between font-mono">
                           <span class="font-sans">• {item.label}</span>
                           <span>{formatAmount(item.total)}</span>
+                        </div>
+                      {/each}
+                    </div>
+                  {:else}
+                    <div class="pl-4 space-y-1 text-xs text-muted-foreground">
+                      {#each getClassCategories(pc.code, 'recette') as cat}
+                        <div class="flex justify-between items-center py-0.5 font-mono">
+                          <span class="font-sans text-muted-foreground">• {cat.adminLabel}</span>
+                          {#if !isClosed}
+                            <div class="relative flex items-center">
+                              <input
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={editableBudget[`${cat.id}_recette`] !== undefined ? (editableBudget[`${cat.id}_recette`] / 100) : ''}
+                                oninput={(e) => {
+                                  const val = parseFloat(e.currentTarget.value) || 0;
+                                  editableBudget[`${cat.id}_recette`] = Math.round(val * 100);
+                                }}
+                                class="w-24 px-2 py-0.5 text-right border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium font-mono"
+                              />
+                              <span class="absolute right-2 text-xs text-muted-foreground pointer-events-none">€</span>
+                            </div>
+                          {:else}
+                            <span>{formatAmount(editableBudget[`${cat.id}_recette`] || 0)}</span>
+                          {/if}
                         </div>
                       {/each}
                     </div>

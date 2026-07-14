@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "58a73fb7-1168-4979-9895-ef4b94845717",
+  "id": "eeb5c58c-0ab7-4286-b5da-8757d7960ff7",
   "prevId": "d4105b80-4350-42c0-a372-04cac00ab941",
   "tables": {
     "account_classes": {
@@ -1279,8 +1279,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "season_class_budgets": {
-      "name": "season_class_budgets",
+    "season_category_budgets": {
+      "name": "season_category_budgets",
       "columns": {
         "id": {
           "name": "id",
@@ -1296,8 +1296,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "class_code": {
-          "name": "class_code",
+        "category_id": {
+          "name": "category_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -1321,9 +1328,9 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "season_class_budgets_season_id_seasons_id_fk": {
-          "name": "season_class_budgets_season_id_seasons_id_fk",
-          "tableFrom": "season_class_budgets",
+        "season_category_budgets_season_id_seasons_id_fk": {
+          "name": "season_category_budgets_season_id_seasons_id_fk",
+          "tableFrom": "season_category_budgets",
           "tableTo": "seasons",
           "columnsFrom": [
             "season_id"
@@ -1334,15 +1341,15 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "season_class_budgets_class_code_account_classes_code_fk": {
-          "name": "season_class_budgets_class_code_account_classes_code_fk",
-          "tableFrom": "season_class_budgets",
-          "tableTo": "account_classes",
+        "season_category_budgets_category_id_categories_id_fk": {
+          "name": "season_category_budgets_category_id_categories_id_fk",
+          "tableFrom": "season_category_budgets",
+          "tableTo": "categories",
           "columnsFrom": [
-            "class_code"
+            "category_id"
           ],
           "columnsTo": [
-            "code"
+            "id"
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
