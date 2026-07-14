@@ -99,6 +99,7 @@
   let isCategoryDropdownOpen = $state(false);
   let memberSearchQuery = $state('');
   let categorySearchQuery = $state('');
+  // svelte-ignore state_referenced_locally
   let targetSeasonId = $state(selectedSeason);
 
   const accountLabels = {
