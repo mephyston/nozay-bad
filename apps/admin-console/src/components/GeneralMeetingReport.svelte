@@ -278,10 +278,11 @@
 
   function formatAmount(cents: number): string {
     const euros = cents / 100;
-    return new Intl.NumberFormat('fr-FR', {
+    const formatted = new Intl.NumberFormat('fr-FR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(euros).replace(/\u202f|\u00a0/g, ' ') + ' €';
+    }).format(euros);
+    return formatted.replace(/\s/g, '\u00a0') + '\u00a0€';
   }
 
   function formatDelta(cents: number): string {
@@ -471,8 +472,8 @@
             <div class="flex justify-between font-semibold text-xs text-emerald-600 dark:text-emerald-400">
               <span>Excédent de l'exercice (Bénéfice)</span>
               <div class="flex gap-8 font-mono">
-                <span class="w-20 text-right">{netResultRealise >= 0 ? formatAmount(netResultRealise) : '0,00 €'}</span>
-                <span class="w-20 text-right">{netResultPrevisionnel >= 0 ? formatAmount(netResultPrevisionnel) : '0,00 €'}</span>
+                <span class="w-20 text-right">{netResultRealise >= 0 ? formatAmount(netResultRealise) : formatAmount(0)}</span>
+                <span class="w-20 text-right">{netResultPrevisionnel >= 0 ? formatAmount(netResultPrevisionnel) : formatAmount(0)}</span>
               </div>
             </div>
           {/if}
@@ -551,8 +552,8 @@
             <div class="flex justify-between font-semibold text-xs text-destructive">
               <span>Déficit de l'exercice (Perte)</span>
               <div class="flex gap-8 font-mono">
-                <span class="w-20 text-right">{netResultRealise < 0 ? formatAmount(-netResultRealise) : '0,00 €'}</span>
-                <span class="w-20 text-right">{netResultPrevisionnel < 0 ? formatAmount(-netResultPrevisionnel) : '0,00 €'}</span>
+                <span class="w-20 text-right">{netResultRealise < 0 ? formatAmount(-netResultRealise) : formatAmount(0)}</span>
+                <span class="w-20 text-right">{netResultPrevisionnel < 0 ? formatAmount(-netResultPrevisionnel) : formatAmount(0)}</span>
               </div>
             </div>
           {/if}
