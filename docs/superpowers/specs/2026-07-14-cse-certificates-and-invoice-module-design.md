@@ -19,6 +19,13 @@ export const invoicesTable = sqliteTable('invoices', {
   clientName: text('client_name').notNull(),
   clientAddress: text('client_address'),
   clientEmail: text('client_email'),
+  
+  // Champs spécifiques issus de vos modèles de factures réels
+  subject: text('subject'),      // Objet de la facture (ex: "Stage Excellence n°5")
+  location: text('location'),    // Lieu de l'activité (ex: "Châtenay-Malabry")
+  period: text('period'),        // Dates / Période concernée (ex: "du 28 au 29 Avril 2026")
+  attendees: text('attendees'),  // Personnes concernées (ex: "Julie Lecina")
+
   status: text('status', { enum: ['draft', 'sent', 'paid', 'cancelled'] }).notNull().default('draft'),
   totalAmount: integer('total_amount').notNull(), // TTC en centimes
   bankTransactionId: integer('bank_transaction_id').references(() => bankTransactionsTable.id),
@@ -79,7 +86,7 @@ Les endpoints suivants sont ajoutés dans [`apps/api/src/index.ts`](file:///User
 * Interface principale Svelte 5 (`InvoicesManager.svelte`) avec :
   * Filtres par saison et statut.
   * Liste des factures émanant du club.
-  * Formulaire de création / édition avec ajout de lignes dynamiques.
+  * Formulaire de création / édition avec ajout de lignes dynamiques et saisie des informations spécifiques (Objet, Lieu, Dates, Personnes concernées).
   * Boutons d'action : Marquer comme envoyée, Annuler, Supprimer, et Imprimer.
 
 ### B. Ajout du Rapprochement de Facture
@@ -91,9 +98,12 @@ Les endpoints suivants sont ajoutés dans [`apps/api/src/index.ts`](file:///User
 * Ajout d'un bouton d'action **« Attestation CSE »** sur le profil adhérent ou dans la table des membres s'il a entièrement réglé sa cotisation (`paid = true`).
 
 ### D. Pages d'Impression "Print-Ready" (Astro)
-Deux pages autonomes sans navigation, utilisant la règle CSS `@media print` pour masquer les boutons d'action (comme le bouton d'impression système) et optimiser les marges physiques :
-* `/admin/compta/invoices/[id].astro` (Modèle officiel de facture NBA91, avec IBAN, exonération légale de TVA des associations, etc.).
-* `/admin/compta/attestations/[id].astro` (Reçu fiscal / Attestation de paiement officielle signée par le bureau du club).
+Deux pages autonomes sans navigation, utilisant la règle CSS `@media print` pour masquer les boutons d'action (comme le bouton d'impression système) et optimiser les marges physiques. Les modèles reprennent fidèlement les logos, textes et coordonnées des fichiers fournis :
+* `/admin/compta/invoices/[id].astro` (Modèle officiel de facture NBA91 basé sur `Facture modèle.docx`, avec IBAN Société Générale, BIC, conditions de règlement et exonération de TVA Art. 261-7-1° du CGI).
+* `/admin/compta/attestations/[id].astro` (Reçu fiscal / Attestation de paiement officielle signée par Robert THAI basée sur `Attestation CE NBA 2025-2026.docx`).
+
+### E. Archivage Google Drive
+* L'archivage s'effectue via le dossier local Google Drive synchronisé sur le Mac du trésorier. Lors du clic sur « Imprimer », l'utilisateur choisit « Enregistrer au format PDF » et sélectionne son dossier local partagé Google Drive pour que l'application de bureau Google Drive synchronise le document sur le cloud.
 
 ---
 
