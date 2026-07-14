@@ -1245,6 +1245,13 @@ app.post('/bank-transactions/analyze', async (c) => {
         (
           textToLower.includes('jeune') || 
           textToLower.includes('jeunes') || 
+          textToLower.includes('minibad') || 
+          textToLower.includes('minibadminton') || 
+          textToLower.includes('poussin') || 
+          textToLower.includes('benjamin') || 
+          textToLower.includes('minime') || 
+          textToLower.includes('cadet') || 
+          textToLower.includes('junior') || 
           textToLower.includes('toussaint') || 
           textToLower.includes('paques') || 
           textToLower.includes('pâques') || 
@@ -1263,6 +1270,13 @@ app.post('/bank-transactions/analyze', async (c) => {
         (
           textToLower.includes('jeune') || 
           textToLower.includes('jeunes') || 
+          textToLower.includes('minibad') || 
+          textToLower.includes('minibadminton') || 
+          textToLower.includes('poussin') || 
+          textToLower.includes('benjamin') || 
+          textToLower.includes('minime') || 
+          textToLower.includes('cadet') || 
+          textToLower.includes('junior') || 
           textToLower.includes('toussaint') || 
           textToLower.includes('paques') || 
           textToLower.includes('pâques') || 
@@ -1284,6 +1298,8 @@ app.post('/bank-transactions/analyze', async (c) => {
       textToLower.includes('pâques') ||
       textToLower.includes('noel') ||
       textToLower.includes('noël') ||
+      textToLower.includes('minibad') ||
+      textToLower.includes('minibadminton') ||
       textToLower.includes('airbnb') ||
       textToLower.includes('air bnb')
     ) {
@@ -1398,7 +1414,7 @@ Instructions :
 2. Choisis la catégorie la plus adaptée parmi la liste des catégories valides ci-dessus (ex: renvoie 8 si le motif mentionne "volants", 7 si "cordage", etc.).
 3. Si le libellé bancaire ou le mémo est composé principalement d'une longue suite de chiffres (plus de 20 chiffres d'affilée), il s'agit d'un virement interne de compte à compte. Associe impérativement la catégorie 15 et aucun adhérent (memberId = null).
 4. Si le montant correspond exactement au tarif d'un produit (par exemple 31.50 EUR pour les volants) ou à un multiple entier de celui-ci (comme 63.00 EUR pour 2 boîtes de volants, ou 30.00 EUR pour 2 cordages), et qu'il n'y a pas d'autre indication de catégorie dans le texte, choisis la catégorie associée à ce produit. Si le texte mentionne explicitement "adhesion", "cotisation" ou "inscription", choisis impérativement la catégorie 1 (adhesions_inscriptions), même si le montant correspond à un produit.
-5. Si le libellé bancaire ou le mémo mentionne des déplacements, tournois, accompagnements pour les jeunes (ex: "deplacement jeune", "tournoi jeune") ou des stages de vacances scolaires pour jeunes (ex: "toussaint", "paques", "pâques", "stage février", "stage toussaint", "stg paques", "stage d'hiver", "stage de pâques", "stage de printemps", "stage jeunes", "course stage hivers") ou des frais d'hébergement/logement liés à ces déplacements pour les jeunes ou parents accompagnateurs (ex: "airbnb", "air bnb"), choisis impérativement la catégorie 4 (actions_jeunes) au lieu de la catégorie 9 (salaires_charges) ou 13 (stages_formations).
+5. Si le libellé bancaire ou le mémo mentionne des déplacements, tournois, accompagnements pour les jeunes (ex: "deplacement jeune", "tournoi jeune") ou des stages de vacances scolaires ou d'entraînement pour jeunes/catégories jeunes (ex: "minibad", "stage minibad", "toussaint", "paques", "pâques", "stage février", "stage toussaint", "stg paques", "stage d'hiver", "stage de pâques", "stage de printemps", "stage jeunes", "course stage hivers") ou des frais d'hébergement/logement liés à ces déplacements pour les jeunes ou parents accompagnateurs (ex: "airbnb", "air bnb"), choisis impérativement la catégorie 4 (actions_jeunes) au lieu de la catégorie 9 (salaires_charges) ou 13 (stages_formations).
 6. Si le libellé bancaire ou le mémo mentionne l'application "ebad" (ex: "ebad", "e-bad", "portefeuille ebad", "portefeuille e-bad") ou des inscriptions à des tournois adultes/seniors (sans mention de jeunes), choisis impérativement la catégorie 5 (tournois_senior).
 
 Renvoie STRICTEMENT un objet JSON sous la forme suivante (sans aucun autre texte, balises markdown ou commentaires) :
