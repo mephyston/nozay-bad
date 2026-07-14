@@ -163,6 +163,13 @@ export const categoriesTable = sqliteTable('categories', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
+export const accountClassesTable = sqliteTable('account_classes', {
+  code: text('code').primaryKey(), // e.g. '60', '70'
+  label: text('label').notNull(),  // e.g. '60 - Achats'
+  type: text('type', { enum: ['recette', 'depense'] }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
 export const invoicesTable = sqliteTable('invoices', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   invoiceNumber: text('invoice_number').notNull().unique(), // FAC-2526-NBA91-0001

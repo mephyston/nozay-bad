@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, usersTable, seasonBalancesTable, transactionsTable, seasonsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, categoriesTable, invoicesTable, invoiceItemsTable } from './schema';
+import { membersTable, usersTable, seasonBalancesTable, transactionsTable, seasonsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, categoriesTable, invoicesTable, invoiceItemsTable, accountClassesTable } from './schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { DatabaseSync } from 'node:sqlite';
 import * as fs from 'node:fs';
@@ -475,6 +475,43 @@ describe('Database Tests', () => {
     const salaireCat = list.find(c => c.adminLabel === 'Salaires et Charges');
     expect(salaireCat).toBeDefined();
     expect(salaireCat?.hideInExpenses).toBe(true);
+  });
+
+  it('should support creating and querying account classes', async () => {
+    const mockD1 = new MockD1Database();
+    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationFiles = fs.readdirSync(migrationsDir)
+      .filter(f => f.endsWith('.sql'))
+      .sort();
+
+    for (const file of migrationFiles) {
+      const sqlPath = path.join(migrationsDir, file);
+      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+      const statements = sqlContent.split('--> statement-breakpoint');
+      for (const statement of statements) {
+        if (statement.trim()) {
+          await mockD1.exec(statement);
+        }
+      }
+    }
+
+    const db = drizzle(mockD1 as any);
+
+    const testClass = {
+      code: '63',
+      label: '63 - Impôts et taxes',
+      type: 'depense' as const,
+      createdAt: new Date('2026-07-07T12:00:00Z')
+    };
+
+    const insertResult = await db.insert(accountClassesTable).values(testClass).run();
+    expect(insertResult.success).toBe(true);
+
+    const list = await db.select().from(accountClassesTable).all();
+    expect(list).toHaveLength(1);
+    expect(list[0].code).toBe('63');
+    expect(list[0].label).toBe('63 - Impôts et taxes');
+    expect(list[0].type).toBe('depense');
   });
 
   it('should support creating invoices and items', async () => {

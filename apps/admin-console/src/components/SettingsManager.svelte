@@ -17,18 +17,28 @@
     adminLabel: string;
     adherentLabel: string;
     hideInExpenses: boolean;
+    codeRecette?: string | null;
+    codeDepense?: string | null;
+  }
+
+  interface AccountClass {
+    code: string;
+    label: string;
+    type: 'recette' | 'depense';
   }
 
   let {
     seasons = [],
     categories = [],
+    accountClasses = [],
     seasonId,
     view = 'seasons'
   }: {
     seasons: Season[];
     categories: Category[];
+    accountClasses?: AccountClass[];
     seasonId: string;
-    view?: 'seasons' | 'compta';
+    view?: 'seasons' | 'compta' | 'classes';
   } = $props();
 
   let successMsg = $state('');
@@ -55,6 +65,15 @@
   let editCatHideInExpenses = $state(false);
   let editCatCodeRecette = $state('');
   let editCatCodeDepense = $state('');
+
+  // --- ACCOUNT CLASSES STATE ---
+  let newClassCode = $state('');
+  let newClassLabel = $state('');
+  let newClassType = $state<'recette' | 'depense'>('recette');
+
+  let editingClassCode = $state<string | null>(null);
+  let editClassLabel = $state('');
+  let editClassType = $state<'recette' | 'depense'>('recette');
 
   const defaultCategoryCodes = [
     'adhesions_inscriptions', 'sponsoring', 'subventions', 'actions_jeunes', 'tournois_senior',
@@ -278,6 +297,108 @@
     }
   }
 
+  // --- ACCOUNT CLASSES ACTIONS ---
+  async function handleCreateAccountClass(e: Event) {
+    e.preventDefault();
+    if (!newClassCode.trim() || !newClassLabel.trim()) {
+      errorMsg = 'Le code et le libellé sont obligatoires.';
+      return;
+    }
+    isSubmitting = true;
+    errorMsg = '';
+    successMsg = '';
+
+    try {
+      const res = await fetch('/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create_account_class',
+          code: newClassCode.trim(),
+          label: newClassLabel.trim(),
+          type: newClassType
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(await res.text() || 'Erreur lors de la création de la classe de compte.');
+      }
+
+      newClassCode = '';
+      newClassLabel = '';
+      showMessage('Classe de compte créée avec succès !');
+    } catch (err: any) {
+      errorMsg = err.message || 'Une erreur est survenue.';
+      isSubmitting = false;
+    }
+  }
+
+  function startEditAccountClass(ac: AccountClass) {
+    editingClassCode = ac.code;
+    editClassLabel = ac.label;
+    editClassType = ac.type;
+  }
+
+  async function handleUpdateAccountClass(code: string) {
+    if (!editClassLabel.trim()) {
+      errorMsg = 'Le libellé ne peut pas être vide.';
+      return;
+    }
+    isSubmitting = true;
+    errorMsg = '';
+    successMsg = '';
+
+    try {
+      const res = await fetch('/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_account_class',
+          code,
+          label: editClassLabel.trim(),
+          type: editClassType
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(await res.text() || 'Erreur lors de la modification de la classe de compte.');
+      }
+
+      editingClassCode = null;
+      showMessage('Classe de compte mise à jour avec succès.');
+    } catch (err: any) {
+      errorMsg = err.message || 'Une erreur est survenue.';
+      isSubmitting = false;
+    }
+  }
+
+  async function handleDeleteAccountClass(code: string) {
+    if (!confirm('Voulez-vous vraiment supprimer cette classe de compte ?')) return;
+    isSubmitting = true;
+    errorMsg = '';
+    successMsg = '';
+
+    try {
+      const res = await fetch('/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete_account_class',
+          code
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(await res.text() || 'Erreur lors de la suppression.');
+      }
+
+      showMessage('Classe de compte supprimée avec succès.');
+    } catch (err: any) {
+      errorMsg = err.message || 'Une erreur est survenue.';
+      isSubmitting = false;
+    }
+  }
+
   let openDropdownId = $state<string | number | null>(null);
 
   function toggleDropdown(id: string | number, e: MouseEvent) {
@@ -477,10 +598,9 @@
                         class="w-full px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
                       >
                         <option value="">N/A</option>
-                        <option value="70">70 - Ventes & Prestations</option>
-                        <option value="74">74 - Subventions</option>
-                        <option value="75">75 - Produits de gestion</option>
-                        <option value="77">77 - Produits exceptionnels</option>
+                        {#each (accountClasses || []).filter(ac => ac.type === 'recette') as ac}
+                          <option value={ac.code}>{ac.label}</option>
+                        {/each}
                       </select>
                     {:else}
                       <span class="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded">{cat.codeRecette || 'N/A'}</span>
@@ -493,12 +613,9 @@
                         class="w-full px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
                       >
                         <option value="">N/A</option>
-                        <option value="60">60 - Achats</option>
-                        <option value="61">61 - Services extérieurs</option>
-                        <option value="62">62 - Autres services extérieurs</option>
-                        <option value="64">64 - Charges de personnel</option>
-                        <option value="65">65 - Autres charges de gestion</option>
-                        <option value="67">67 - Charges exceptionnelles</option>
+                        {#each (accountClasses || []).filter(ac => ac.type === 'depense') as ac}
+                          <option value={ac.code}>{ac.label}</option>
+                        {/each}
                       </select>
                     {:else}
                       <span class="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded">{cat.codeDepense || 'N/A'}</span>
@@ -650,10 +767,9 @@
                 class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-medium"
               >
                 <option value="">Aucune (N/A)</option>
-                <option value="70">70 - Ventes & Prestations</option>
-                <option value="74">74 - Subventions</option>
-                <option value="75">75 - Produits de gestion</option>
-                <option value="77">77 - Produits exceptionnels</option>
+                {#each (accountClasses || []).filter(ac => ac.type === 'recette') as ac}
+                  <option value={ac.code}>{ac.label}</option>
+                {/each}
               </select>
             </div>
 
@@ -665,12 +781,9 @@
                 class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-medium"
               >
                 <option value="">Aucune (N/A)</option>
-                <option value="60">60 - Achats</option>
-                <option value="61">61 - Services extérieurs</option>
-                <option value="62">62 - Autres services extérieurs</option>
-                <option value="64">64 - Charges de personnel</option>
-                <option value="65">65 - Autres charges de gestion</option>
-                <option value="67">67 - Charges exceptionnelles</option>
+                {#each (accountClasses || []).filter(ac => ac.type === 'depense') as ac}
+                  <option value={ac.code}>{ac.label}</option>
+                {/each}
               </select>
             </div>
           </div>
@@ -696,6 +809,192 @@
         </form>
       </div>
 
+    </div>
+  {/if}
+
+  <!-- VIEW: ACCOUNT CLASSES -->
+  {#if view === 'classes'}
+    <div class="grid gap-6 md:grid-cols-3">
+      <!-- Left columns: Classes list -->
+      <div class="md:col-span-2 space-y-6">
+        <div class="bg-card border border-border rounded-xl shadow-sm p-6 space-y-4">
+          <div>
+            <h2 class="text-lg font-bold flex items-center gap-2">
+              <Settings class="w-5 h-5 text-primary" />
+              Gestion des Classes de Comptes
+            </h2>
+            <p class="text-xs text-muted-foreground mt-1">
+              Configurez le Plan Comptable de l'association (Charges : classe 6, Produits : classe 7).
+            </p>
+          </div>
+
+          <div class="overflow-x-auto border border-border rounded-lg bg-card min-h-[180px]">
+            <table class="w-full text-left border-collapse text-sm">
+              <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
+                <tr>
+                  <th class="p-4">Code</th>
+                  <th class="p-4">Libellé</th>
+                  <th class="p-4">Type</th>
+                  <th class="p-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                {#each accountClasses as ac}
+                  <tr class="hover:bg-muted/50 transition-colors">
+                    <td class="p-4 font-mono font-bold text-foreground">
+                      {ac.code}
+                    </td>
+                    <td class="p-4">
+                      {#if editingClassCode === ac.code}
+                        <input
+                          type="text"
+                          bind:value={editClassLabel}
+                          class="w-full px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                        />
+                      {:else}
+                        <span class="font-semibold text-foreground">{ac.label}</span>
+                      {/if}
+                    </td>
+                    <td class="p-4">
+                      {#if editingClassCode === ac.code}
+                        <select
+                          bind:value={editClassType}
+                          class="px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                        >
+                          <option value="recette">Produit (Recette)</option>
+                          <option value="depense">Charge (Dépense)</option>
+                        </select>
+                      {:else}
+                        {#if ac.type === 'recette'}
+                          <span class="inline-flex px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold border border-emerald-500/20 rounded-full">
+                            Produit (7)
+                          </span>
+                        {:else}
+                          <span class="inline-flex px-2 py-0.5 bg-destructive/10 text-destructive text-[11px] font-semibold border border-destructive/20 rounded-full">
+                            Charge (6)
+                          </span>
+                        {/if}
+                      {/if}
+                    </td>
+                    <td class="p-4 text-right relative">
+                      {#if editingClassCode === ac.code}
+                        <div class="flex justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onclick={() => editingClassCode = null}
+                            class="p-1 border border-border bg-background rounded hover:bg-muted text-muted-foreground cursor-pointer"
+                            title="Annuler"
+                          >
+                            <X class="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onclick={() => handleUpdateAccountClass(ac.code)}
+                            disabled={isSubmitting}
+                            class="p-1 border border-primary bg-primary text-primary-foreground rounded hover:bg-primary/95 cursor-pointer"
+                            title="Enregistrer"
+                          >
+                            <Check class="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      {:else}
+                        <div class="flex justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onclick={() => startEditAccountClass(ac)}
+                            class="p-1.5 border border-border bg-background rounded hover:bg-muted text-muted-foreground cursor-pointer"
+                            title="Modifier"
+                          >
+                            <Edit2 class="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onclick={() => handleDeleteAccountClass(ac.code)}
+                            disabled={isSubmitting}
+                            class="p-1.5 border border-destructive/20 bg-background rounded hover:bg-destructive/10 text-destructive cursor-pointer"
+                            title="Supprimer"
+                          >
+                            <Trash2 class="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      {/if}
+                    </td>
+                  </tr>
+                {/each}
+                {#if accountClasses.length === 0}
+                  <tr>
+                    <td colspan="4" class="p-8 text-center text-muted-foreground">
+                      Aucune classe de compte définie.
+                    </td>
+                  </tr>
+                {/if}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column: Add class form -->
+      <div>
+        <div class="bg-card border border-border rounded-xl shadow-sm p-6 space-y-6">
+          <div>
+            <h2 class="text-lg font-bold flex items-center gap-2">
+              <Plus class="w-5 h-5 text-primary" />
+              Nouvelle Classe
+            </h2>
+            <p class="text-xs text-muted-foreground mt-1">
+              Ajoutez une nouvelle rubrique pour structurer le compte de résultat.
+            </p>
+          </div>
+
+          <form onsubmit={handleCreateAccountClass} class="space-y-4">
+            <div class="space-y-1.5">
+              <label for="new-class-code" class="block text-xs font-bold text-muted-foreground uppercase">Code (ex: 63)</label>
+              <input
+                type="text"
+                id="new-class-code"
+                bind:value={newClassCode}
+                placeholder="63"
+                class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-mono"
+                required
+              />
+            </div>
+
+            <div class="space-y-1.5">
+              <label for="new-class-label" class="block text-xs font-bold text-muted-foreground uppercase">Libellé (ex: 63 - Impôts)</label>
+              <input
+                type="text"
+                id="new-class-label"
+                bind:value={newClassLabel}
+                placeholder="63 - Impôts et taxes"
+                class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+                required
+              />
+            </div>
+
+            <div class="space-y-1.5">
+              <label for="new-class-type" class="block text-xs font-bold text-muted-foreground uppercase">Type</label>
+              <select
+                id="new-class-type"
+                bind:value={newClassType}
+                class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-medium"
+              >
+                <option value="recette">Produit (7 - Recette)</option>
+                <option value="depense">Charge (6 - Dépense)</option>
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              class="w-full justify-center px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground border-0 text-xs font-bold rounded-lg shadow cursor-pointer flex items-center gap-1.5"
+            >
+              <Plus class="w-4 h-4" />
+              Créer la classe
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   {/if}
 </div>

@@ -57,7 +57,8 @@
       icon: Settings,
       subItems: [
         { name: "Saisons", href: "/admin/settings?view=seasons" },
-        { name: "Catégories", href: "/admin/settings?view=compta" }
+        { name: "Catégories", href: "/admin/settings?view=compta" },
+        { name: "Classes de comptes", href: "/admin/settings?view=classes" }
       ]
     }
   ];

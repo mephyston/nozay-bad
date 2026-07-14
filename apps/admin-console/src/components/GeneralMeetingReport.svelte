@@ -35,7 +35,13 @@
     codeDepense?: string | null;
   }
 
-  let { report, seasonId, seasons = [], categories = [], viewMode = 'cerfa' }: { report: ReportData; seasonId: string; seasons?: Season[]; categories?: DbCategory[]; viewMode?: string } = $props();
+  interface AccountClass {
+    code: string;
+    label: string;
+    type: 'recette' | 'depense';
+  }
+
+  let { report, seasonId, seasons = [], categories = [], accountClasses = [], viewMode = 'cerfa' }: { report: ReportData; seasonId: string; seasons?: Season[]; categories?: DbCategory[]; accountClasses?: AccountClass[]; viewMode?: string } = $props();
 
   // svelte-ignore state_referenced_locally
   let selectedSeason = $state(seasonId);
@@ -121,21 +127,29 @@
     return items;
   }
 
-  const chargeClasses = [
-    { code: '60', label: '60 - Achats' },
-    { code: '61', label: '61 - Services extérieurs' },
-    { code: '62', label: '62 - Autres services extérieurs' },
-    { code: '64', label: '64 - Charges de personnel' },
-    { code: '65', label: '65 - Autres charges de gestion courante' },
-    { code: '67', label: '67 - Charges exceptionnelles' }
-  ];
+  const chargeClasses = $derived(
+    accountClasses.length > 0
+      ? accountClasses.filter(ac => ac.type === 'depense')
+      : [
+          { code: '60', label: '60 - Achats' },
+          { code: '61', label: '61 - Services extérieurs' },
+          { code: '62', label: '62 - Autres services extérieurs' },
+          { code: '64', label: '64 - Charges de personnel' },
+          { code: '65', label: '65 - Autres charges de gestion courante' },
+          { code: '67', label: '67 - Charges exceptionnelles' }
+        ]
+  );
 
-  const produitClasses = [
-    { code: '70', label: '70 - Vente de produits & prestations' },
-    { code: '74', label: '74 - Subventions d\'exploitation' },
-    { code: '75', label: '75 - Autres produits de gestion courante' },
-    { code: '77', label: '77 - Produits exceptionnels' }
-  ];
+  const produitClasses = $derived(
+    accountClasses.length > 0
+      ? accountClasses.filter(ac => ac.type === 'recette')
+      : [
+          { code: '70', label: '70 - Vente de produits & prestations' },
+          { code: '74', label: '74 - Subventions d\'exploitation' },
+          { code: '75', label: '75 - Autres produits de gestion courante' },
+          { code: '77', label: '77 - Produits exceptionnels' }
+        ]
+  );
 </script>
 
 <div class="space-y-8">

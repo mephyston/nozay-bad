@@ -8,7 +8,7 @@ const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
 const apiService = env.API_SERVICE;
 
 const season = Astro.url.searchParams.get('season') || '25-26';
-const view = (Astro.url.searchParams.get('view') || 'seasons') as 'seasons' | 'compta';
+const view = (Astro.url.searchParams.get('view') || 'seasons') as 'seasons' | 'compta' | 'classes';
 
 if (Astro.request.method === 'POST') {
   try {
@@ -84,6 +84,38 @@ if (Astro.request.method === 'POST') {
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
+    } else if (data.action === 'create_account_class') {
+      const apiRes = await apiService.fetch('http://localhost/account-classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: data.code,
+          label: data.label,
+          type: data.type
+        })
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+    } else if (data.action === 'update_account_class') {
+      const apiRes = await apiService.fetch(`http://localhost/account-classes/${data.code}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          label: data.label,
+          type: data.type
+        })
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+    } else if (data.action === 'delete_account_class') {
+      const apiRes = await apiService.fetch(`http://localhost/account-classes/${data.code}`, {
+        method: 'DELETE'
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
     }
 
     return new Response(JSON.stringify({ success: true }), {
@@ -96,6 +128,7 @@ if (Astro.request.method === 'POST') {
 
 let seasonsList: any[] = [];
 let categoriesList: any[] = [];
+let accountClassesList: any[] = [];
 let errorMsg = '';
 
 try {
@@ -136,6 +169,13 @@ try {
     const json = await categoriesRes.json() as any;
     categoriesList = json.data || [];
   }
+
+  // Fetch account classes
+  const classesRes = await apiService.fetch('http://localhost/account-classes');
+  if (classesRes.ok) {
+    const json = await classesRes.json() as any;
+    accountClassesList = json.data || [];
+  }
 } catch (err: any) {
   errorMsg = 'Erreur lors de la récupération de la configuration.';
 }
@@ -161,6 +201,7 @@ try {
         client:load
         seasons={seasonsList}
         categories={categoriesList}
+        accountClasses={accountClassesList}
         seasonId={season}
         view={view}
       />

@@ -83,4 +83,28 @@ describe("SettingsManager Component", () => {
     expect(target.innerHTML).not.toContain("Soldes Initiaux de la Saison");
     expect(target.innerHTML).not.toContain("Soldes Initiaux");
   });
+
+  it("renders account classes view when view is 'classes'", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    mount(SettingsManager, {
+      target,
+      props: {
+        seasons,
+        categories,
+        accountClasses: [
+          { code: "63", label: "63 - Impôts", type: "depense" }
+        ],
+        seasonId: "25-26",
+        view: "classes"
+      }
+    });
+    flushSync();
+
+    expect(target.innerHTML).toContain("Gestion des Classes de Comptes");
+    expect(target.innerHTML).toContain("63");
+    expect(target.innerHTML).toContain("63 - Impôts");
+    expect(target.innerHTML).toContain("Nouvelle Classe");
+  });
 });

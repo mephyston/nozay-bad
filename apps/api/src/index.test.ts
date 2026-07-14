@@ -2752,6 +2752,51 @@ describe('Orders API Endpoints', () => {
       expect(deleteJson.success).toBe(true);
     });
   });
+
+  describe('Account Classes API Endpoints', () => {
+    it('supports listing, creating, updating and deleting account classes', async () => {
+      const mockD1 = await setupMockDb();
+
+      const res = await app.request('http://localhost/account-classes', undefined, { DB: mockD1 as any });
+      expect(res.status).toBe(200);
+      const listJson = await res.json() as any;
+      expect(listJson.success).toBe(true);
+
+      const createRes = await app.request('http://localhost/account-classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: '63',
+          label: '63 - Impôts et taxes',
+          type: 'depense'
+        })
+      }, { DB: mockD1 as any });
+      expect(createRes.status).toBe(200);
+      const createJson = await createRes.json() as any;
+      expect(createJson.success).toBe(true);
+      expect(createJson.data.code).toBe('63');
+
+      const updateRes = await app.request('http://localhost/account-classes/63', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          label: '63 - Impôts, taxes et versements',
+          type: 'depense'
+        })
+      }, { DB: mockD1 as any });
+      expect(updateRes.status).toBe(200);
+      const updateJson = await updateRes.json() as any;
+      expect(updateJson.success).toBe(true);
+      expect(updateJson.data.label).toBe('63 - Impôts, taxes et versements');
+
+      const deleteRes = await app.request('http://localhost/account-classes/63', {
+        method: 'DELETE'
+      }, { DB: mockD1 as any });
+      expect(deleteRes.status).toBe(200);
+      const deleteJson = await deleteRes.json() as any;
+      expect(deleteJson.success).toBe(true);
+    });
+  });
 });
 
 describe('Invoices and Attestation CSE API Endpoints', () => {

@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, or, eq, ne, like, sql, inArray, desc, gte, lte } from 'drizzle-orm';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, expensesTable, categoriesTable, invoicesTable, invoiceItemsTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, expensesTable, categoriesTable, invoicesTable, invoiceItemsTable, accountClassesTable } from '../../../libs/shared/db/src/schema';
 
 
 
@@ -2817,6 +2817,86 @@ app.delete('/categories/:id', async (c) => {
     const deleted = await db.delete(categoriesTable).where(eq(categoriesTable.id, id)).returning().get();
     if (!deleted) {
       return c.json({ success: false, error: 'Catégorie introuvable' }, 404);
+    }
+    return c.json({ success: true, data: deleted });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+});
+
+// GET /account-classes
+app.get('/account-classes', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const db = drizzle(c.env.DB);
+  try {
+    const list = await db.select().from(accountClassesTable).all();
+    return c.json({ success: true, data: list });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+// POST /account-classes
+app.post('/account-classes', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const body = await c.req.json();
+  const db = drizzle(c.env.DB);
+  
+  if (!body.code || !body.label || !body.type) {
+    return c.json({ success: false, error: 'Le code, le libellé et le type sont obligatoires.' }, 400);
+  }
+
+  try {
+    const newClass = await db.insert(accountClassesTable).values({
+      code: body.code.trim(),
+      label: body.label.trim(),
+      type: body.type,
+      createdAt: new Date()
+    }).returning().get();
+    return c.json({ success: true, data: newClass });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+});
+
+// PUT /account-classes/:code
+app.put('/account-classes/:code', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const code = c.req.param('code');
+  const body = await c.req.json();
+  const db = drizzle(c.env.DB);
+  try {
+    const updated = await db.update(accountClassesTable).set({
+      label: body.label?.trim(),
+      type: body.type
+    }).where(eq(accountClassesTable.code, code)).returning().get();
+
+    if (!updated) {
+      return c.json({ success: false, error: 'Classe de compte introuvable' }, 404);
+    }
+    return c.json({ success: true, data: updated });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+});
+
+// DELETE /account-classes/:code
+app.delete('/account-classes/:code', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const code = c.req.param('code');
+  const db = drizzle(c.env.DB);
+  try {
+    const deleted = await db.delete(accountClassesTable).where(eq(accountClassesTable.code, code)).returning().get();
+    if (!deleted) {
+      return c.json({ success: false, error: 'Classe de compte introuvable' }, 404);
     }
     return c.json({ success: true, data: deleted });
   } catch (err: any) {
