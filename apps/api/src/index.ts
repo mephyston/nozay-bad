@@ -1533,31 +1533,40 @@ async function reconcileBankTxInternal(db: any, id: number, body: any): Promise<
   }
 
   if (memberId) {
-    let categoryStr = null;
+    const isMembershipCategory = (cat: any) => {
+      const norm = normalizeCategory(cat);
+      return norm === 1 || cat === 'adhesions_inscriptions' || String(cat) === '1';
+    };
+
+    let amountToApply = 0;
+    let hasMembershipTx = false;
+
     if (body.action === 'create') {
       if (body.transactions && Array.isArray(body.transactions)) {
-        categoryStr = body.transactions[0]?.category;
+        const membershipTxs = body.transactions.filter((t: any) => isMembershipCategory(t.category));
+        if (membershipTxs.length > 0) {
+          hasMembershipTx = true;
+          amountToApply = membershipTxs.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
+        }
       } else {
-        categoryStr = body.transaction?.category;
+        const categoryStr = body.transaction?.category;
+        if (isMembershipCategory(categoryStr)) {
+          hasMembershipTx = true;
+          amountToApply = Math.abs(body.transaction?.amount ?? bankTx.amount);
+        }
       }
     } else if (body.action === 'match') {
       const matchedTx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, body.transactionId)).get();
-      categoryStr = matchedTx ? matchedTx.category : null;
+      const categoryStr = matchedTx ? matchedTx.category : null;
+      if (isMembershipCategory(categoryStr)) {
+        hasMembershipTx = true;
+        amountToApply = Math.abs(bankTx.amount);
+      }
     }
 
-    if (categoryStr === 1 || String(categoryStr) === '1' || categoryStr === 'adhesions_inscriptions') {
+    if (hasMembershipTx) {
       const member = await db.select().from(membersTable).where(eq(membersTable.id, memberId)).get();
       if (member) {
-        let amountToApply = 0;
-        if (body.action === 'create') {
-          if (body.transactions && Array.isArray(body.transactions)) {
-            amountToApply = body.transactions.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
-          } else {
-            amountToApply = Math.abs(body.transaction?.amount ?? bankTx.amount);
-          }
-        } else {
-          amountToApply = Math.abs(bankTx.amount);
-        }
         const newReceived = member.amountReceived + amountToApply;
         const newRemaining = Math.max(0, member.amountDue - newReceived);
         const isPaid = newRemaining === 0;

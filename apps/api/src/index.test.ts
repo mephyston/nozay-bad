@@ -2725,8 +2725,8 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     // Verify bank transactions are reconciled
     const updatedBt1 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get();
     const updatedBt2 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get();
-    expect(updatedBt1.status).toBe('reconciled');
-    expect(updatedBt2.status).toBe('reconciled');
+    expect(updatedBt1!.status).toBe('reconciled');
+    expect(updatedBt2!.status).toBe('reconciled');
 
     // Verify ledger transactions were created
     const ledgerTxs = await db.select().from(transactionsTable).all();
@@ -2822,7 +2822,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
 
     // Verify rollback: valid bt remains pending, no ledger transactions created
     const updatedBtValid = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, btValid.id)).get();
-    expect(updatedBtValid.status).toBe('pending');
+    expect(updatedBtValid!.status).toBe('pending');
 
     const ledgerTxs = await db.select().from(transactionsTable).all();
     expect(ledgerTxs).toHaveLength(0);
@@ -2885,7 +2885,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
 
     // Verify bank transaction is reconciled
     const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
-    expect(updatedBt.status).toBe('reconciled');
+    expect(updatedBt!.status).toBe('reconciled');
 
     // Verify multiple entries are created
     const ledgerTxs = await db.select().from(transactionsTable).where(eq(transactionsTable.bankTransactionId, bt.id)).all();
@@ -2964,14 +2964,101 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     // Verify invoices are marked as paid and linked to bank transaction
     const updatedInv1 = await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv1.id)).get();
     const updatedInv2 = await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv2.id)).get();
-    expect(updatedInv1.status).toBe('paid');
-    expect(updatedInv1.bankTransactionId).toBe(bt.id);
-    expect(updatedInv2.status).toBe('paid');
-    expect(updatedInv2.bankTransactionId).toBe(bt.id);
+    expect(updatedInv1!.status).toBe('paid');
+    expect(updatedInv1!.bankTransactionId).toBe(bt.id);
+    expect(updatedInv2!.status).toBe('paid');
+    expect(updatedInv2!.bankTransactionId).toBe(bt.id);
 
     // Verify bank transaction is reconciled
     const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
-    expect(updatedBt.status).toBe('reconciled');
+    expect(updatedBt!.status).toBe('reconciled');
+  });
+
+  it('POST /bank-transactions/:id/reconcile filters and sums only split transaction items that belong to the membership category', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    await db.insert(seasonsTable).values({
+      id: '25-26',
+      name: 'Saison 2025-2026',
+      active: true,
+      createdAt: new Date()
+    }).onConflictDoNothing().run();
+
+    // Create a member who has NOT paid fully
+    const m = await db.insert(membersTable).values({
+      id: 30,
+      licence: '1234599',
+      season: '25-26',
+      lastName: 'Martin',
+      firstName: 'Sophie',
+      gender: 'F',
+      birthDate: '1995-03-15',
+      status: 'valide',
+      type: 'Competiteur',
+      amountDue: 25000,
+      amountReceived: 0,
+      amountRemaining: 25000,
+      paid: false,
+      importedAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-SPLIT-MEMBER',
+      accountId: 'current',
+      seasonId: '25-26',
+      amount: 15000,
+      date: '2026-07-15',
+      name: 'VIR RECU SPLIT MEMBER',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // Send split reconcile request where:
+    // - One transaction belongs to category 1 (adhesions_inscriptions) with amount 10000
+    // - One transaction belongs to category 7 (cordage_vente) with amount 5000
+    const res = await app.request(`http://localhost/bank-transactions/${bt.id}/reconcile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create',
+        memberId: m.id,
+        transactions: [
+          {
+            seasonId: '25-26',
+            type: 'recette',
+            accountId: 'current',
+            category: 1, // membership category
+            amount: 10000,
+            date: '2026-07-15',
+            paymentMethod: 'virement',
+            description: 'Cotisation Split'
+          },
+          {
+            seasonId: '25-26',
+            type: 'recette',
+            accountId: 'current',
+            category: 7, // cordage_vente (not membership)
+            amount: 5000,
+            date: '2026-07-15',
+            paymentMethod: 'virement',
+            description: 'Cordage Split'
+          }
+        ]
+      })
+    }, { DB: mockD1 as any });
+
+    expect(res.status).toBe(200);
+
+    // Verify member amountReceived has only been incremented by the category 1 amount (10000)
+    const updatedMember = await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get();
+    expect(updatedMember!.amountReceived).toBe(10000);
+    expect(updatedMember!.amountRemaining).toBe(15000);
+    expect(updatedMember!.paid).toBe(false);
+
+    // Verify bank transaction is reconciled
+    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    expect(updatedBt!.status).toBe('reconciled');
   });
 });
 
