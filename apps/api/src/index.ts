@@ -1315,7 +1315,13 @@ app.post('/bank-transactions/analyze', async (c) => {
     } else if (textToLower.includes('salaire') || textToLower.includes('tetevuide') || textToLower.includes('meunier')) {
       suggestedCategory = CAT_SALAIRES_CHARGES;
     } else if (textToLower.includes('larde')) {
-      suggestedCategory = CAT_MATERIEL_CLUB;
+      if (textToLower.includes('cordage')) {
+        suggestedCategory = CAT_CORDAGE_VENTE;
+      } else if (textToLower.includes('volant')) {
+        suggestedCategory = CAT_VOLANTS;
+      } else {
+        suggestedCategory = CAT_MATERIEL_CLUB;
+      }
     } else if (textToLower.includes('ligue') || textToLower.includes('badminton')) {
       suggestedCategory = textToLower.includes('licence') ? CAT_LICENCES_FEDERATION : CAT_CHAMPIONNATS;
     } else if (textToLower.includes('codep91') || textToLower.includes('comite')) {
@@ -1392,10 +1398,10 @@ Catégories valides pour l'écriture :
 - 4 (actions_jeunes : stages et événements jeunes)
 - 5 (tournois_senior : inscriptions tournois)
 - 6 (evenements_buvettes : consommations, soirées, SumUp)
-- 7 (cordage_vente : achat cordage par adhérent)
+- 7 (cordage_vente : achat cordage par adhérent ou achat de bobines/fournitures de cordages auprès d'un fournisseur)
 - 8 (volants : achat de tubes de volants par adhérent ou achat fournisseur)
 - 9 (salaires_charges : salaires entraîneurs, URSSAF)
-- 10 (materiel_club : poteaux, filets, volants club)
+- 10 (materiel_club : poteaux, filets, volants club - hors cordages)
 - 11 (licences_federation : reversement FFBad)
 - 12 (championnats : frais d'inscriptions des équipes du club)
 - 13 (stages_formations : stages adultes ou formations d'arbitres)
