@@ -1399,6 +1399,17 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
 
   const memberId = body.memberId || body.transaction?.memberId;
   const invoiceId = body.invoiceId;
+
+  if (invoiceId) {
+    const invoice = await db.select().from(invoicesTable).where(eq(invoicesTable.id, invoiceId)).get();
+    if (!invoice) {
+      return c.json({ success: false, error: 'Facture introuvable' }, 404);
+    }
+    if (await isSeasonClosed(db, invoice.seasonId)) {
+      return c.json({ success: false, error: 'La saison de la facture est clôturée.' }, 400);
+    }
+  }
+
   let lastTxId = null;
 
   if (body.action === 'match') {

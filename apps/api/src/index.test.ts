@@ -779,6 +779,111 @@ VERSION:102
     expect(updatedInv.bankTransactionId).toBe(bt.id);
   });
 
+  it('should return 404 when reconciling with a non-existent invoiceId', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // 1. Insérer une ligne de relevé bancaire
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-RECON-INV-404',
+      accountId: 'current',
+      seasonId: '25-26',
+      amount: 15000,
+      date: '2026-07-15',
+      name: 'VIR RECU COMITE 91',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // 2. Rapprocher avec un invoiceId inexistant
+    const reconcileRes = await app.request(`http://localhost/bank-transactions/${bt.id}/reconcile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create',
+        invoiceId: 99999, // non-existent invoice ID
+        transaction: {
+          seasonId: '25-26',
+          type: 'recette',
+          accountId: 'current',
+          category: 7,
+          amount: 15000,
+          date: '2026-07-15',
+          paymentMethod: 'virement',
+          description: 'Règlement Facture Inexistante'
+        }
+      })
+    }, { DB: mockD1 as any });
+
+    expect(reconcileRes.status).toBe(404);
+    const body = await reconcileRes.json() as any;
+    expect(body.success).toBe(false);
+    expect(body.error).toBe('Facture introuvable');
+  });
+
+  it('should return 400 when reconciling with an invoice from a closed season', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // 1. Créer une saison clôturée
+    await db.insert(seasonsTable).values({
+      id: '24-25',
+      name: 'Saison 2024-2025',
+      active: false,
+      closed: true,
+      createdAt: new Date()
+    }).run();
+
+    // 2. Créer une facture dans cette saison
+    const inv = await db.insert(invoicesTable).values({
+      invoiceNumber: 'FAC-2425-NBA91-0001',
+      seasonId: '24-25',
+      date: '2025-07-14',
+      dueDate: '2025-08-14',
+      clientName: 'Comité 91',
+      totalAmount: 15000,
+      status: 'sent',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // 3. Insérer une ligne de relevé bancaire
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-RECON-INV-CLOSED',
+      accountId: 'current',
+      seasonId: '24-25',
+      amount: 15000,
+      date: '2025-07-15',
+      name: 'VIR RECU COMITE 91',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // 4. Tenter de rapprocher via l'API
+    const reconcileRes = await app.request(`http://localhost/bank-transactions/${bt.id}/reconcile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create',
+        invoiceId: inv.id,
+        transaction: {
+          seasonId: '24-25',
+          type: 'recette',
+          accountId: 'current',
+          category: 7,
+          amount: 15000,
+          date: '2025-07-15',
+          paymentMethod: 'virement',
+          description: 'Règlement Facture FAC-2425-NBA91-0001'
+        }
+      })
+    }, { DB: mockD1 as any });
+
+    expect(reconcileRes.status).toBe(400);
+    const body = await reconcileRes.json() as any;
+    expect(body.success).toBe(false);
+    expect(body.error).toBe('La saison de la facture est clôturée.');
+  });
+
   it('should ignore a bank transaction', async () => {
     const mockD1 = await setupMockDb();
 
