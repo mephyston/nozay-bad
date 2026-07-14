@@ -83,19 +83,21 @@ let errorMsg = '';
 try {
   // 1. Récupérer les factures de la saison
   const invoicesRes = await apiService.fetch(`http://localhost/invoices?season=${season}`);
-  if (invoicesRes.ok) {
-    const json = await invoicesRes.json() as any;
-    invoicesList = json.data || [];
+  if (!invoicesRes.ok) {
+    throw new Error('Impossible de récupérer les factures pour cette saison.');
   }
+  const invoicesJson = await invoicesRes.json() as any;
+  invoicesList = invoicesJson.data || [];
 
   // 2. Récupérer les saisons
   const seasonsRes = await apiService.fetch('http://localhost/seasons');
-  if (seasonsRes.ok) {
-    const json = await seasonsRes.json() as any;
-    seasonsList = json.data || [];
+  if (!seasonsRes.ok) {
+    throw new Error('Impossible de récupérer la liste des saisons.');
   }
+  const seasonsJson = await seasonsRes.json() as any;
+  seasonsList = seasonsJson.data || [];
 } catch (err: any) {
-  errorMsg = 'Une erreur est survenue lors du chargement des données.';
+  errorMsg = err.message || 'Une erreur est survenue lors du chargement des données.';
 }
 ---
 

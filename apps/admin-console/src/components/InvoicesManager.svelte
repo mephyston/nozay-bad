@@ -99,7 +99,7 @@
     items.reduce((sum, item) => {
       const q = item.quantity || 0;
       const p = parseFloat(item.unitPriceStr) || 0;
-      return sum + Math.round(q * p * 100);
+      return sum + (q * Math.round(p * 100));
     }, 0)
   );
 
@@ -162,26 +162,28 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'get-details', id: invoice.id })
       });
-      if (res.ok) {
-        const json = await res.json() as any;
-        if (json.success && json.data.items) {
-          items = json.data.items.map((item: any) => ({
-            description: item.description,
-            quantity: item.quantity,
-            unitPriceStr: (item.unitPrice / 100).toString()
-          }));
-        }
-      } else {
+      if (!res.ok) {
         throw new Error("Impossible de récupérer les lignes de la facture.");
       }
+      const json = await res.json() as any;
+      if (!json.success) {
+        throw new Error(json.error || "Impossible de récupérer les lignes de la facture.");
+      }
+      if (json.data && json.data.items) {
+        items = json.data.items.map((item: any) => ({
+          description: item.description,
+          quantity: item.quantity,
+          unitPriceStr: (item.unitPrice / 100).toString()
+        }));
+      }
+      
+      if (items.length === 0) {
+        items = [{ description: '', quantity: 1, unitPriceStr: '' }];
+      }
+      showModal = true;
     } catch (err: any) {
       errorMsg = err.message || "Erreur de chargement des détails.";
     }
-
-    if (items.length === 0) {
-      items = [{ description: '', quantity: 1, unitPriceStr: '' }];
-    }
-    showModal = true;
   }
 
   function addItem() {
@@ -209,6 +211,10 @@
     }
     if (!dueDate) {
       errorMsg = 'La date d\'échéance est requise.';
+      return;
+    }
+    if (dueDate < date) {
+      errorMsg = "La date d'échéance ne peut pas être antérieure à la date de facturation.";
       return;
     }
     
@@ -502,7 +508,7 @@
                           <MoreVertical class="w-4 h-4" />
                         </button>
                         {#if openMenuId === inv.id}
-                          <div class="absolute right-0 mt-1 w-48 bg-card border border-border rounded-lg shadow-lg z-20 overflow-hidden text-left animate-fade-in">
+                          <div class="absolute right-0 mt-1 w-48 bg-card border border-border rounded-lg shadow-lg z-20 overflow-hidden text-left animate-in fade-in duration-200">
                             {#if inv.status === 'draft'}
                               <button
                                 type="button"
@@ -568,7 +574,7 @@
 
 <!-- Modal Create / Edit -->
 {#if showModal}
-  <div class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+  <div class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
     <div class="bg-card border border-border rounded-2xl max-w-4xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <!-- Header -->
       <div class="border-b border-border px-6 py-4 flex justify-between items-center bg-muted/20">
