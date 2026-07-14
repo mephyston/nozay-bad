@@ -59,7 +59,8 @@
     balances = [],
     seasons = [],
     categories = [],
-    accountClasses = []
+    accountClasses = [],
+    unreconciledChequesOnly = false
   }: {
     transactions: Transaction[];
     pagination: Pagination;
@@ -68,6 +69,7 @@
     seasons?: Season[];
     categories?: Category[];
     accountClasses?: AccountClass[];
+    unreconciledChequesOnly?: boolean;
   } = $props();
 
   import { onMount } from 'svelte';

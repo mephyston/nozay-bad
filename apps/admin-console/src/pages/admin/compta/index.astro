@@ -11,6 +11,7 @@ const season = Astro.url.searchParams.get('season') || '25-26';
 const page = Astro.url.searchParams.get('page') || '1';
 const category = Astro.url.searchParams.get('category') || '';
 const classCode = Astro.url.searchParams.get('classCode') || '';
+const unreconciledChequesOnly = Astro.url.searchParams.get('unreconciledCheques') === 'true';
 
 // Si requête POST, intercepter pour les actions d'écriture (proxying vers Hono)
 if (Astro.request.method === 'POST') {
@@ -60,6 +61,7 @@ try {
   const queryParams = new URLSearchParams({ season, page, limit: '20' });
   if (category) queryParams.set('category', category);
   if (classCode) queryParams.set('classCode', classCode);
+  if (unreconciledChequesOnly) queryParams.set('unreconciledCheques', 'true');
 
   const txRes = await apiService.fetch(`http://localhost/transactions?${queryParams.toString()}`);
   if (txRes.ok) {
@@ -123,6 +125,7 @@ try {
         seasons={seasonsList}
         categories={categoriesList}
         accountClasses={accountClassesList}
+        unreconciledChequesOnly={unreconciledChequesOnly}
       />
     </div>
   </AdminLayout>
