@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, or, eq, ne, like, sql, inArray, desc, gte, lte } from 'drizzle-orm';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, expensesTable, categoriesTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, expensesTable, categoriesTable, invoicesTable, invoiceItemsTable } from '../../../libs/shared/db/src/schema';
 
 
 
@@ -2493,6 +2493,189 @@ app.delete('/categories/:id', async (c) => {
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 400);
   }
+});
+
+// GET /invoices
+app.get('/invoices', async (c) => {
+  const season = c.req.query('season');
+  if (!season) return c.json({ success: false, error: 'Saison manquante' }, 400);
+  const db = drizzle(c.env.DB);
+  const data = await db.select().from(invoicesTable).where(eq(invoicesTable.seasonId, season)).all();
+  return c.json({ success: true, data });
+});
+
+// GET /invoices/:id
+app.get('/invoices/:id', async (c) => {
+  const id = parseInt(c.req.param('id'));
+  const db = drizzle(c.env.DB);
+  const invoice = await db.select().from(invoicesTable).where(eq(invoicesTable.id, id)).get();
+  if (!invoice) return c.json({ success: false, error: 'Facture introuvable' }, 404);
+  const items = await db.select().from(invoiceItemsTable).where(eq(invoiceItemsTable.invoiceId, id)).all();
+  return c.json({ success: true, data: { ...invoice, items } });
+});
+
+// POST /invoices
+app.post('/invoices', async (c) => {
+  const body = await c.req.json();
+  const db = drizzle(c.env.DB);
+  if (await isSeasonClosed(db, body.seasonId)) {
+    return c.json({ success: false, error: 'Saison clôturée' }, 400);
+  }
+  // Calculer le prochain numéro FAC-2526-NBA91-XXXX
+  const seasonShort = body.seasonId.replace('-', '');
+  const prefix = `FAC-${seasonShort}-NBA91-`;
+  const lastInvoices = await db.select()
+    .from(invoicesTable)
+    .where(like(invoicesTable.invoiceNumber, `${prefix}%`))
+    .all();
+  let nextNum = 1;
+  if (lastInvoices.length > 0) {
+    const nums = lastInvoices.map(inv => {
+      const parts = inv.invoiceNumber.split('-');
+      return parseInt(parts[parts.length - 1]) || 0;
+    });
+    nextNum = Math.max(...nums) + 1;
+  }
+  const invoiceNumber = `${prefix}${String(nextNum).padStart(4, '0')}`;
+
+  // Insérer la facture
+  const [newInvoice] = await db.insert(invoicesTable).values({
+    invoiceNumber,
+    seasonId: body.seasonId,
+    date: body.date,
+    dueDate: body.dueDate,
+    clientName: body.clientName,
+    clientAddress: body.clientAddress || null,
+    clientEmail: body.clientEmail || null,
+    subject: body.subject || null,
+    location: body.location || null,
+    period: body.period || null,
+    attendees: body.attendees || null,
+    totalAmount: body.totalAmount,
+    status: 'draft',
+    createdAt: new Date()
+  }).returning();
+
+  // Insérer les items
+  if (body.items && body.items.length > 0) {
+    for (const item of body.items) {
+      await db.insert(invoiceItemsTable).values({
+        invoiceId: newInvoice.id,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.quantity * item.unitPrice,
+        createdAt: new Date()
+      });
+    }
+  }
+
+  return c.json({ success: true, data: newInvoice });
+});
+
+// PUT /invoices/:id
+app.put('/invoices/:id', async (c) => {
+  const id = parseInt(c.req.param('id'));
+  const body = await c.req.json();
+  const db = drizzle(c.env.DB);
+  const invoice = await db.select().from(invoicesTable).where(eq(invoicesTable.id, id)).get();
+  if (!invoice) return c.json({ success: false, error: 'Facture introuvable' }, 404);
+  if (invoice.status !== 'draft') {
+    return c.json({ success: false, error: 'Modification impossible car non au statut Brouillon' }, 400);
+  }
+  if (await isSeasonClosed(db, invoice.seasonId)) {
+    return c.json({ success: false, error: 'Saison clôturée' }, 400);
+  }
+
+  await db.update(invoicesTable).set({
+    date: body.date,
+    dueDate: body.dueDate,
+    clientName: body.clientName,
+    clientAddress: body.clientAddress || null,
+    clientEmail: body.clientEmail || null,
+    subject: body.subject || null,
+    location: body.location || null,
+    period: body.period || null,
+    attendees: body.attendees || null,
+    totalAmount: body.totalAmount
+  }).where(eq(invoicesTable.id, id)).run();
+
+  // Remplacer les items
+  await db.delete(invoiceItemsTable).where(eq(invoiceItemsTable.invoiceId, id)).run();
+  if (body.items && body.items.length > 0) {
+    for (const item of body.items) {
+      await db.insert(invoiceItemsTable).values({
+        invoiceId: id,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.quantity * item.unitPrice,
+        createdAt: new Date()
+      });
+    }
+  }
+  return c.json({ success: true });
+});
+
+// DELETE /invoices/:id
+app.delete('/invoices/:id', async (c) => {
+  const id = parseInt(c.req.param('id'));
+  const db = drizzle(c.env.DB);
+  const invoice = await db.select().from(invoicesTable).where(eq(invoicesTable.id, id)).get();
+  if (!invoice) return c.json({ success: false, error: 'Facture introuvable' }, 404);
+  if (invoice.status !== 'draft' && invoice.status !== 'cancelled') {
+    return c.json({ success: false, error: 'Seules les factures brouillon ou annulées peuvent être supprimées' }, 400);
+  }
+  if (await isSeasonClosed(db, invoice.seasonId)) {
+    return c.json({ success: false, error: 'Saison clôturée' }, 400);
+  }
+  await db.delete(invoicesTable).where(eq(invoicesTable.id, id)).run();
+  return c.json({ success: true });
+});
+
+// POST /invoices/:id/status
+app.post('/invoices/:id/status', async (c) => {
+  const id = parseInt(c.req.param('id'));
+  const { status } = await c.req.json();
+  const db = drizzle(c.env.DB);
+  const invoice = await db.select().from(invoicesTable).where(eq(invoicesTable.id, id)).get();
+  if (!invoice) return c.json({ success: false, error: 'Facture introuvable' }, 404);
+  if (await isSeasonClosed(db, invoice.seasonId)) {
+    return c.json({ success: false, error: 'Saison clôturée' }, 400);
+  }
+  await db.update(invoicesTable).set({ status }).where(eq(invoicesTable.id, id)).run();
+  return c.json({ success: true });
+});
+
+// GET /members/:id/cse-data
+app.get('/members/:id/cse-data', async (c) => {
+  const id = parseInt(c.req.param('id'));
+  const db = drizzle(c.env.DB);
+  const member = await db.select().from(membersTable).where(eq(membersTable.id, id)).get();
+  if (!member) return c.json({ success: false, error: 'Membre introuvable' }, 404);
+  if (!member.paid) {
+    return c.json({ success: false, error: 'L\'adhérent n\'a pas entièrement réglé sa cotisation.' }, 400);
+  }
+
+  // Trouver le règlement comptable lié à ce membre
+  const tx = await db.select()
+    .from(transactionsTable)
+    .where(and(eq(transactionsTable.memberId, id), eq(transactionsTable.type, 'recette')))
+    .orderBy(desc(transactionsTable.date))
+    .get();
+
+  return c.json({
+    success: true,
+    data: {
+      lastName: member.lastName,
+      firstName: member.firstName,
+      birthDate: member.birthDate,
+      amount: member.amountDue,
+      paymentMethod: tx ? tx.paymentMethod : 'virement',
+      paymentDate: tx ? tx.date : 'date de validation',
+      season: member.season
+    }
+  });
 });
 
 export default app;

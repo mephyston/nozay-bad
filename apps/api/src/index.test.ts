@@ -1950,6 +1950,332 @@ describe('Orders API Endpoints', () => {
   });
 });
 
+describe('Invoices and Attestation CSE API Endpoints', () => {
+  it('manages invoices workflow endpoints and handles next sequential code generation', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Ensure season exists and is not closed
+    await db.insert(seasonsTable).values({
+      id: '25-26',
+      name: 'Saison 2025-2026',
+      active: true,
+      closed: false,
+      createdAt: new Date()
+    }).onConflictDoNothing().run();
+
+    // Create a first invoice
+    const createRes = await app.request('http://localhost/invoices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seasonId: '25-26',
+        date: '2026-07-14',
+        dueDate: '2026-08-14',
+        clientName: 'Ligue IDF',
+        totalAmount: 12000,
+        items: [{ description: 'Stage ligue', quantity: 2, unitPrice: 6000 }]
+      })
+    }, { DB: mockD1 as any });
+    expect(createRes.status).toBe(200);
+    const createData = await createRes.json() as any;
+    expect(createData.data.invoiceNumber).toBe('FAC-2526-NBA91-0001');
+    const invoiceId1 = createData.data.id;
+
+    // Verify sequential increment
+    const createRes2 = await app.request('http://localhost/invoices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seasonId: '25-26',
+        date: '2026-07-15',
+        dueDate: '2026-08-15',
+        clientName: 'Ligue IDF n2',
+        totalAmount: 5000,
+        items: []
+      })
+    }, { DB: mockD1 as any });
+    const createData2 = await createRes2.json() as any;
+    expect(createData2.data.invoiceNumber).toBe('FAC-2526-NBA91-0002');
+    const invoiceId2 = createData2.data.id;
+
+    // GET /invoices with season filter
+    const getListRes = await app.request('http://localhost/invoices?season=25-26', undefined, { DB: mockD1 as any });
+    expect(getListRes.status).toBe(200);
+    const listData = await getListRes.json() as any;
+    expect(listData.success).toBe(true);
+    expect(listData.data).toHaveLength(2);
+
+    // GET /invoices without season parameter (should return 400)
+    const getListNoSeasonRes = await app.request('http://localhost/invoices', undefined, { DB: mockD1 as any });
+    expect(getListNoSeasonRes.status).toBe(400);
+
+    // GET /invoices/:id
+    const getInvoiceRes = await app.request(`http://localhost/invoices/${invoiceId1}`, undefined, { DB: mockD1 as any });
+    expect(getInvoiceRes.status).toBe(200);
+    const invoiceData = await getInvoiceRes.json() as any;
+    expect(invoiceData.success).toBe(true);
+    expect(invoiceData.data.invoiceNumber).toBe('FAC-2526-NBA91-0001');
+    expect(invoiceData.data.items).toHaveLength(1);
+    expect(invoiceData.data.items[0].description).toBe('Stage ligue');
+
+    // GET /invoices/:id not found
+    const getInvoiceNotFoundRes = await app.request('http://localhost/invoices/99999', undefined, { DB: mockD1 as any });
+    expect(getInvoiceNotFoundRes.status).toBe(404);
+
+    // PUT /invoices/:id (update draft invoice)
+    const updateRes = await app.request(`http://localhost/invoices/${invoiceId1}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: '2026-07-16',
+        dueDate: '2026-08-16',
+        clientName: 'Ligue IDF Updated',
+        totalAmount: 18000,
+        items: [
+          { description: 'Stage ligue modifié', quantity: 3, unitPrice: 6000 }
+        ]
+      })
+    }, { DB: mockD1 as any });
+    expect(updateRes.status).toBe(200);
+    
+    // Verify changes
+    const verifyRes = await app.request(`http://localhost/invoices/${invoiceId1}`, undefined, { DB: mockD1 as any });
+    const verifyData = await verifyRes.json() as any;
+    expect(verifyData.data.clientName).toBe('Ligue IDF Updated');
+    expect(verifyData.data.date).toBe('2026-07-16');
+    expect(verifyData.data.items).toHaveLength(1);
+    expect(verifyData.data.items[0].description).toBe('Stage ligue modifié');
+
+    // POST /invoices/:id/status (transition to sent)
+    const statusRes = await app.request(`http://localhost/invoices/${invoiceId1}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'sent' })
+    }, { DB: mockD1 as any });
+    expect(statusRes.status).toBe(200);
+
+    // Verify status update
+    const verifyStatusRes = await app.request(`http://localhost/invoices/${invoiceId1}`, undefined, { DB: mockD1 as any });
+    const verifyStatusData = await verifyStatusRes.json() as any;
+    expect(verifyStatusData.data.status).toBe('sent');
+
+    // PUT on non-draft should fail
+    const updateNonDraftRes = await app.request(`http://localhost/invoices/${invoiceId1}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: '2026-07-16',
+        dueDate: '2026-08-16',
+        clientName: 'Ligue IDF Fail',
+        totalAmount: 18000
+      })
+    }, { DB: mockD1 as any });
+    expect(updateNonDraftRes.status).toBe(400);
+
+    // DELETE on non-draft/non-cancelled should fail
+    const deleteSentRes = await app.request(`http://localhost/invoices/${invoiceId1}`, {
+      method: 'DELETE'
+    }, { DB: mockD1 as any });
+    expect(deleteSentRes.status).toBe(400);
+
+    // Set status to cancelled
+    await app.request(`http://localhost/invoices/${invoiceId1}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'cancelled' })
+    }, { DB: mockD1 as any });
+
+    // DELETE cancelled invoice should succeed
+    const deleteRes = await app.request(`http://localhost/invoices/${invoiceId1}`, {
+      method: 'DELETE'
+    }, { DB: mockD1 as any });
+    expect(deleteRes.status).toBe(200);
+
+    // Verify it is deleted
+    const verifyDeletedRes = await app.request(`http://localhost/invoices/${invoiceId1}`, undefined, { DB: mockD1 as any });
+    expect(verifyDeletedRes.status).toBe(404);
+  });
+
+  it('handles closed seasons blocking invoice write operations', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Create a closed season
+    await db.insert(seasonsTable).values({
+      id: '24-25',
+      name: 'Saison 2024-2025',
+      active: false,
+      closed: true,
+      createdAt: new Date()
+    }).run();
+
+    // Try to create invoice in closed season
+    const createRes = await app.request('http://localhost/invoices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seasonId: '24-25',
+        date: '2025-07-14',
+        dueDate: '2025-08-14',
+        clientName: 'Ligue IDF',
+        totalAmount: 12000
+      })
+    }, { DB: mockD1 as any });
+    expect(createRes.status).toBe(400);
+    const createData = await createRes.json() as any;
+    expect(createData.error).toBe('Saison clôturée');
+
+    // Create an open season to insert a draft invoice first
+    await db.insert(seasonsTable).values({
+      id: '25-26',
+      name: 'Saison 2025-2026',
+      active: true,
+      closed: false,
+      createdAt: new Date()
+    }).onConflictDoUpdate({
+      target: seasonsTable.id,
+      set: { closed: false, active: true }
+    }).run();
+
+    const insertRes = await app.request('http://localhost/invoices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seasonId: '25-26',
+        date: '2026-07-14',
+        dueDate: '2026-08-14',
+        clientName: 'Ligue IDF',
+        totalAmount: 12000
+      })
+    }, { DB: mockD1 as any });
+    const invoice = (await insertRes.json() as any).data;
+
+    // Now close the season
+    await db.update(seasonsTable).set({ closed: true }).where(eq(seasonsTable.id, '25-26')).run();
+
+    // Try to update invoice in closed season
+    const updateRes = await app.request(`http://localhost/invoices/${invoice.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: '2026-07-15',
+        dueDate: '2026-08-15',
+        clientName: 'Ligue IDF Updated',
+        totalAmount: 15000
+      })
+    }, { DB: mockD1 as any });
+    expect(updateRes.status).toBe(400);
+
+    // Try to change status in closed season
+    const statusRes = await app.request(`http://localhost/invoices/${invoice.id}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'sent' })
+    }, { DB: mockD1 as any });
+    expect(statusRes.status).toBe(400);
+
+    // Try to delete in closed season
+    const deleteRes = await app.request(`http://localhost/invoices/${invoice.id}`, {
+      method: 'DELETE'
+    }, { DB: mockD1 as any });
+    expect(deleteRes.status).toBe(400);
+  });
+
+  it('manages CSE members attestation data retrieval', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Ensure season exists
+    await db.insert(seasonsTable).values({
+      id: '25-26',
+      name: 'Saison 2025-2026',
+      active: true,
+      closed: false,
+      createdAt: new Date()
+    }).onConflictDoNothing().run();
+
+    // Create a member who has NOT paid fully
+    await db.insert(membersTable).values({
+      id: 10,
+      licence: '1234500',
+      season: '25-26',
+      lastName: 'Durand',
+      firstName: 'Alain',
+      gender: 'M',
+      birthDate: '1990-05-12',
+      status: 'valide',
+      type: 'Competiteur',
+      amountDue: 25000,
+      amountReceived: 10000,
+      amountRemaining: 15000,
+      paid: false,
+      importedAt: new Date()
+    }).run();
+
+    // Create a member who HAS paid fully
+    await db.insert(membersTable).values({
+      id: 20,
+      licence: '1234511',
+      season: '25-26',
+      lastName: 'Dupont',
+      firstName: 'Marie',
+      gender: 'F',
+      birthDate: '1992-08-24',
+      status: 'valide',
+      type: 'Loisir',
+      amountDue: 20000,
+      amountReceived: 20000,
+      amountRemaining: 0,
+      paid: true,
+      importedAt: new Date()
+    }).run();
+
+    // GET /members/:id/cse-data for non-existent member
+    const notFoundRes = await app.request('http://localhost/members/999/cse-data', undefined, { DB: mockD1 as any });
+    expect(notFoundRes.status).toBe(404);
+
+    // GET /members/:id/cse-data for unpaid member (should return 400)
+    const unpaidRes = await app.request('http://localhost/members/10/cse-data', undefined, { DB: mockD1 as any });
+    expect(unpaidRes.status).toBe(400);
+    const unpaidData = await unpaidRes.json() as any;
+    expect(unpaidData.error).toBe("L'adhérent n'a pas entièrement réglé sa cotisation.");
+
+    // GET /members/:id/cse-data for paid member but NO transaction yet
+    const paidNoTxRes = await app.request('http://localhost/members/20/cse-data', undefined, { DB: mockD1 as any });
+    expect(paidNoTxRes.status).toBe(200);
+    const paidNoTxData = await paidNoTxRes.json() as any;
+    expect(paidNoTxData.success).toBe(true);
+    expect(paidNoTxData.data.lastName).toBe('Dupont');
+    expect(paidNoTxData.data.paymentMethod).toBe('virement'); // Default fallback
+    expect(paidNoTxData.data.paymentDate).toBe('date de validation'); // Default fallback
+
+    // Add a transaction for Marie Dupont
+    await db.insert(transactionsTable).values({
+      id: 50,
+      seasonId: '25-26',
+      type: 'recette',
+      accountId: 'current',
+      category: 1, // adhesions_inscriptions
+      amount: 20000,
+      date: '2026-07-10',
+      paymentMethod: 'cheque',
+      description: 'Cotisation Marie Dupont',
+      memberId: 20,
+      createdAt: new Date()
+    }).run();
+
+    // GET /members/:id/cse-data for paid member WITH transaction
+    const paidWithTxRes = await app.request('http://localhost/members/20/cse-data', undefined, { DB: mockD1 as any });
+    expect(paidWithTxRes.status).toBe(200);
+    const paidWithTxData = await paidWithTxRes.json() as any;
+    expect(paidWithTxData.success).toBe(true);
+    expect(paidWithTxData.data.paymentMethod).toBe('cheque');
+    expect(paidWithTxData.data.paymentDate).toBe('2026-07-10');
+    expect(paidWithTxData.data.amount).toBe(20000);
+  });
+});
+
 
 
 
