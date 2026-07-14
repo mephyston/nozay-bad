@@ -420,7 +420,7 @@
           <div class="space-y-4 mt-4">
             {#each chargeClasses as cc}
               {#if reportMode === 'previsionnel' || getClassSumRealise(cc.code, 'depense') > 0 || getClassSumPrevisionnel(cc.code, 'depense') > 0}
-                <div class="space-y-1.5 py-1">
+                <div class="space-y-1.5 py-1 {getClassSumRealise(cc.code, 'depense') === 0 && getClassSumPrevisionnel(cc.code, 'depense') === 0 ? 'print:hidden' : ''}">
                   <div class="flex justify-between items-center text-sm border-b border-border/40 pb-1 font-bold text-foreground">
                     <span class="text-foreground/90">{cc.label}</span>
                     <div class="flex gap-8 font-mono">
@@ -432,7 +432,7 @@
                   <div class="pl-4 space-y-1 text-xs text-muted-foreground">
                     {#each getClassCategories(cc.code, 'depense') as cat}
                       {#if reportMode === 'previsionnel' || getCatTotal(cat.id.toString(), 'depense') > 0 || (editableBudget[`${cat.id}_depense`] || 0) > 0}
-                        <div class="flex justify-between items-center py-0.5 font-mono text-[11px]">
+                        <div class="flex justify-between items-center py-0.5 font-mono text-[11px] {getCatTotal(cat.id.toString(), 'depense') === 0 && (editableBudget[`${cat.id}_depense`] || 0) === 0 ? 'print:hidden' : ''}">
                           <span class="font-sans text-muted-foreground">• {cat.adminLabel}</span>
                           <div class="flex gap-8 items-center">
                             <span class="w-20 text-right">{formatAmount(getCatTotal(cat.id.toString(), 'depense'))}</span>
@@ -500,7 +500,7 @@
           <div class="space-y-4 mt-4">
             {#each produitClasses as pc}
               {#if reportMode === 'previsionnel' || getClassSumRealise(pc.code, 'recette') > 0 || getClassSumPrevisionnel(pc.code, 'recette') > 0}
-                <div class="space-y-1.5 py-1">
+                <div class="space-y-1.5 py-1 {getClassSumRealise(pc.code, 'recette') === 0 && getClassSumPrevisionnel(pc.code, 'recette') === 0 ? 'print:hidden' : ''}">
                   <div class="flex justify-between items-center text-sm border-b border-border/40 pb-1 font-bold text-foreground">
                     <span class="text-foreground/90">{pc.label}</span>
                     <div class="flex gap-8 font-mono">
@@ -512,7 +512,7 @@
                   <div class="pl-4 space-y-1 text-xs text-muted-foreground">
                     {#each getClassCategories(pc.code, 'recette') as cat}
                       {#if reportMode === 'previsionnel' || getCatTotal(cat.id.toString(), 'recette') > 0 || (editableBudget[`${cat.id}_recette`] || 0) > 0}
-                        <div class="flex justify-between items-center py-0.5 font-mono text-[11px]">
+                        <div class="flex justify-between items-center py-0.5 font-mono text-[11px] {getCatTotal(cat.id.toString(), 'recette') === 0 && (editableBudget[`${cat.id}_recette`] || 0) === 0 ? 'print:hidden' : ''}">
                           <span class="font-sans text-muted-foreground">• {cat.adminLabel}</span>
                           <div class="flex gap-8 items-center">
                             <span class="w-20 text-right">{formatAmount(getCatTotal(cat.id.toString(), 'recette'))}</span>
@@ -686,12 +686,24 @@
 
 <style>
   @media print {
+    @page {
+      size: landscape;
+      margin: 0.8cm;
+    }
     :global(body) {
       background: white !important;
       color: black !important;
+      font-size: 10px !important;
     }
     :global(aside), :global(nav), :global(header) {
       display: none !important;
+    }
+    /* Strip Astro layouts padding/margin */
+    :global(main), :global(.px-6), :global(.py-8), :global(.container), :global(.mx-auto), :global(.max-w-7xl) {
+      padding: 0 !important;
+      margin: 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
     }
     .no-print {
       display: none !important;
@@ -700,7 +712,7 @@
       page-break-before: always;
       break-before: page;
       margin-top: 0 !important;
-      padding-top: 2rem !important;
+      padding-top: 1.5rem !important;
       border: none !important;
       box-shadow: none !important;
     }
@@ -713,6 +725,35 @@
     .print-container {
       width: 100% !important;
       max-width: 100% !important;
+    }
+    /* Compact layout adjustments to ensure exactly 1 page */
+    .print-container .grid {
+      gap: 1rem !important;
+    }
+    .print-container .space-y-4 {
+      margin-top: 0.3rem !important;
+    }
+    .print-container .py-1 {
+      padding-top: 0.1rem !important;
+      padding-bottom: 0.1rem !important;
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+    }
+    .print-container :global(h4) {
+      font-size: 12px !important;
+      padding-bottom: 0.25rem !important;
+    }
+    .print-container .text-sm {
+      font-size: 11px !important;
+    }
+    .print-container .text-xs, .print-container .text-\[11px\] {
+      font-size: 9.5px !important;
+    }
+    .print-container .mt-8 {
+      margin-top: 1rem !important;
+    }
+    .print-container .pt-4 {
+      padding-top: 0.5rem !important;
     }
   }
 </style>
