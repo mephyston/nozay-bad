@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, or, eq, ne, like, sql, inArray, desc, gte, lte } from 'drizzle-orm';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, expensesTable, categoriesTable, invoicesTable, invoiceItemsTable, accountClassesTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, expensesTable, categoriesTable, invoicesTable, invoiceItemsTable, accountClassesTable, seasonClassBudgetsTable } from '../../../libs/shared/db/src/schema';
 
 
 
@@ -556,6 +556,55 @@ app.post('/seasons/:id/close', async (c) => {
       return c.json({ success: false, error: 'Saison introuvable' }, 404);
     }
     return c.json({ success: true, data: updated });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+});
+
+// GET /seasons/:seasonId/budget
+app.get('/seasons/:seasonId/budget', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const seasonId = c.req.param('seasonId');
+  const db = drizzle(c.env.DB);
+  try {
+    const list = await db.select().from(seasonClassBudgetsTable).where(eq(seasonClassBudgetsTable.seasonId, seasonId)).all();
+    return c.json({ success: true, data: list });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+// POST /seasons/:seasonId/budget
+app.post('/seasons/:seasonId/budget', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const seasonId = c.req.param('seasonId');
+  const body = await c.req.json() as { classCode: string; amount: number }[];
+  const db = drizzle(c.env.DB);
+
+  if (await isSeasonClosed(db, seasonId)) {
+    return c.json({ success: false, error: 'La saison est clôturée. Impossible de modifier son prévisionnel.' }, 400);
+  }
+
+  try {
+    await db.delete(seasonClassBudgetsTable).where(eq(seasonClassBudgetsTable.seasonId, seasonId)).run();
+
+    const inserted = [];
+    for (const item of body) {
+      if (item.classCode) {
+        const entry = await db.insert(seasonClassBudgetsTable).values({
+          seasonId,
+          classCode: item.classCode,
+          amount: Math.round(item.amount),
+          createdAt: new Date()
+        }).returning().get();
+        inserted.push(entry);
+      }
+    }
+    return c.json({ success: true, data: inserted });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 400);
   }

@@ -141,6 +141,13 @@
       "when": 1784039702328,
       "tag": "0019_grey_purifiers",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1784040967924,
+      "tag": "0020_black_korath",
+      "breakpoints": true
     }
   ]
 }

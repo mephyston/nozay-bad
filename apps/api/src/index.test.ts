@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checksTable, checkDepositsTable, productsTable, ordersTable, expensesTable, invoicesTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checksTable, checkDepositsTable, productsTable, ordersTable, expensesTable, invoicesTable, accountClassesTable } from '../../../libs/shared/db/src/schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 import { DatabaseSync } from 'node:sqlite';
@@ -636,6 +636,54 @@ describe('Accounting API Endpoints', () => {
     const getTxRes2 = await app.request('http://localhost/transactions?season=25-26', undefined, { DB: mockD1 as any });
     const getTxJson2 = await getTxRes2.json() as any;
     expect(getTxJson2.data).toHaveLength(1);
+  });
+
+  it('should manage season budgets and block edits when season is closed', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+    await db.insert(accountClassesTable).values([
+      { code: '60', label: '60 - Achats', type: 'depense', createdAt: new Date() },
+      { code: '70', label: '70 - Ventes', type: 'recette', createdAt: new Date() }
+    ]).run();
+
+    // 1. Post initial budget
+    const postRes = await app.request('http://localhost/seasons/25-26/budget', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([
+        { classCode: '60', amount: 50000 },
+        { classCode: '70', amount: 120000 }
+      ])
+    }, { DB: mockD1 as any });
+    expect(postRes.status).toBe(200);
+    const postJson = await postRes.json() as any;
+    expect(postJson.success).toBe(true);
+    expect(postJson.data).toHaveLength(2);
+
+    // 2. Get budget list
+    const getRes = await app.request('http://localhost/seasons/25-26/budget', undefined, { DB: mockD1 as any });
+    expect(getRes.status).toBe(200);
+    const getJson = await getRes.json() as any;
+    expect(getJson.success).toBe(true);
+    expect(getJson.data).toHaveLength(2);
+    expect(getJson.data.find((b: any) => b.classCode === '60').amount).toBe(50000);
+
+    // 3. Close the season
+    const closeRes = await app.request('http://localhost/seasons/25-26/close', { method: 'POST' }, { DB: mockD1 as any });
+    expect(closeRes.status).toBe(200);
+
+    // 4. Try posting budget again (should fail)
+    const postRes2 = await app.request('http://localhost/seasons/25-26/budget', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([
+        { classCode: '60', amount: 99999 }
+      ])
+    }, { DB: mockD1 as any });
+    expect(postRes2.status).toBe(400);
+    const postJson2 = await postRes2.json() as any;
+    expect(postJson2.success).toBe(false);
+    expect(postJson2.error).toContain('clôturée');
   });
 });
 

@@ -170,6 +170,14 @@ export const accountClassesTable = sqliteTable('account_classes', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
+export const seasonClassBudgetsTable = sqliteTable('season_class_budgets', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  seasonId: text('season_id').notNull().references(() => seasonsTable.id),
+  classCode: text('class_code').notNull().references(() => accountClassesTable.code),
+  amount: integer('amount').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
 export const invoicesTable = sqliteTable('invoices', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   invoiceNumber: text('invoice_number').notNull().unique(), // FAC-2526-NBA91-0001

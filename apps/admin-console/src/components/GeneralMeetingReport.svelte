@@ -24,6 +24,7 @@
     id: string;
     name: string;
     active: boolean;
+    closed: boolean;
   }
 
   interface DbCategory {
@@ -41,12 +42,84 @@
     type: 'recette' | 'depense';
   }
 
-  let { report, seasonId, seasons = [], categories = [], accountClasses = [], viewMode = 'cerfa' }: { report: ReportData; seasonId: string; seasons?: Season[]; categories?: DbCategory[]; accountClasses?: AccountClass[]; viewMode?: string } = $props();
+  let { report, seasonId, seasons = [], categories = [], accountClasses = [], budget = [] }: { report: ReportData; seasonId: string; seasons?: Season[]; categories?: DbCategory[]; accountClasses?: AccountClass[]; budget?: { classCode: string; amount: number }[] } = $props();
 
   // svelte-ignore state_referenced_locally
   let selectedSeason = $state(seasonId);
-  // svelte-ignore state_referenced_locally
-  let activeViewMode = $state(viewMode);
+  let reportMode = $state<'realise' | 'previsionnel'>('realise');
+  let editableBudget = $state<Record<string, number>>({});
+  let isSaving = $state(false);
+  let saveStatus = $state<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  $effect(() => {
+    const newMap: Record<string, number> = {};
+    for (const item of budget) {
+      newMap[item.classCode] = item.amount;
+    }
+    for (const ac of accountClasses) {
+      if (newMap[ac.code] === undefined) {
+        newMap[ac.code] = 0;
+      }
+    }
+    editableBudget = newMap;
+  });
+
+  let totalDepenses = $derived(
+    reportMode === 'realise'
+      ? report.compteResultat.totalDepenses
+      : accountClasses
+          .filter(ac => ac.type === 'depense')
+          .reduce((sum, ac) => sum + (editableBudget[ac.code] || 0), 0)
+  );
+
+  let totalRecettes = $derived(
+    reportMode === 'realise'
+      ? report.compteResultat.totalRecettes
+      : accountClasses
+          .filter(ac => ac.type === 'recette')
+          .reduce((sum, ac) => sum + (editableBudget[ac.code] || 0), 0)
+  );
+
+  let netResult = $derived(totalRecettes - totalDepenses);
+
+  let isClosed = $derived(
+    seasons.find(s => s.id === selectedSeason)?.closed || false
+  );
+
+  async function handleSaveBudget() {
+    isSaving = true;
+    saveStatus = null;
+    try {
+      const payload = Object.entries(editableBudget).map(([code, amount]) => ({
+        classCode: code,
+        amount
+      }));
+
+      const res = await fetch(window.location.pathname, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save_budget',
+          seasonId: selectedSeason,
+          budget: payload
+        })
+      });
+
+      if (res.ok) {
+        saveStatus = { type: 'success', message: 'Budget prévisionnel enregistré avec succès !' };
+        setTimeout(() => {
+          saveStatus = null;
+        }, 4000);
+      } else {
+        const errText = await res.text();
+        throw new Error(errText);
+      }
+    } catch (err: any) {
+      saveStatus = { type: 'error', message: err.message || "Impossible d'enregistrer le budget." };
+    } finally {
+      isSaving = false;
+    }
+  }
 
   const legacyCategoryLabels: Record<string, string> = {
     adhesions: 'Adhésions / Inscriptions membres',
@@ -188,6 +261,22 @@
   <div class="bg-card border border-border rounded-xl p-6 shadow-sm space-y-6">
     <div class="flex items-center justify-between border-b border-border pb-4">
       <h3 class="text-lg font-semibold">1. Compte de Résultat</h3>
+      <div class="inline-flex rounded-lg border border-border p-1 bg-muted/50">
+        <button
+          type="button"
+          class="px-3 py-1 text-xs font-semibold rounded-md transition-colors {reportMode === 'realise' ? 'bg-background shadow-sm text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}"
+          onclick={() => reportMode = 'realise'}
+        >
+          Résultat Réalisé (Réel)
+        </button>
+        <button
+          type="button"
+          class="px-3 py-1 text-xs font-semibold rounded-md transition-colors {reportMode === 'previsionnel' ? 'bg-background shadow-sm text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}"
+          onclick={() => reportMode = 'previsionnel'}
+        >
+          Budget Prévisionnel
+        </button>
+      </div>
     </div>
 
     <div class="grid gap-6 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
@@ -196,25 +285,49 @@
         <div>
           <h4 class="font-bold text-sm text-destructive border-b border-border pb-2 flex justify-between">
             <span>CHARGES (Dépenses)</span>
-            <span>{formatAmount(report.compteResultat.totalDepenses)}</span>
+            <span>{formatAmount(totalDepenses)}</span>
           </h4>
           
           <div class="space-y-4 mt-4">
             {#each chargeClasses as cc}
-              {#if getClassSum(cc.code, 'depense') > 0}
-                <div class="space-y-1.5">
-                  <div class="flex justify-between font-semibold text-sm">
-                    <span>{cc.label}</span>
-                    <span>{formatAmount(getClassSum(cc.code, 'depense'))}</span>
+              {#if reportMode === 'previsionnel' || getClassSum(cc.code, 'depense') > 0}
+                <div class="space-y-1.5 py-1">
+                  <div class="flex justify-between items-center text-sm">
+                    <span class="font-semibold">{cc.label}</span>
+                    {#if reportMode === 'previsionnel'}
+                      {#if !isClosed}
+                        <div class="relative flex items-center">
+                          <input
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            value={editableBudget[cc.code] !== undefined ? (editableBudget[cc.code] / 100) : ''}
+                            oninput={(e) => {
+                              const val = parseFloat(e.currentTarget.value) || 0;
+                              editableBudget[cc.code] = Math.round(val * 100);
+                            }}
+                            class="w-28 px-2 py-1 text-right border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium font-mono"
+                          />
+                          <span class="absolute right-2 text-xs text-muted-foreground pointer-events-none">€</span>
+                        </div>
+                      {:else}
+                        <span class="font-semibold font-mono">{formatAmount(editableBudget[cc.code] || 0)}</span>
+                      {/if}
+                    {:else}
+                      <span class="font-mono">{formatAmount(getClassSum(cc.code, 'depense'))}</span>
+                    {/if}
                   </div>
-                  <div class="pl-4 space-y-1 text-xs text-muted-foreground">
-                    {#each getClassItems(cc.code, 'depense') as item}
-                      <div class="flex justify-between">
-                        <span>• {item.label}</span>
-                        <span>{formatAmount(item.total)}</span>
-                      </div>
-                    {/each}
-                  </div>
+                  
+                  {#if reportMode === 'realise'}
+                    <div class="pl-4 space-y-1 text-xs text-muted-foreground">
+                      {#each getClassItems(cc.code, 'depense') as item}
+                        <div class="flex justify-between font-mono">
+                          <span class="font-sans">• {item.label}</span>
+                          <span>{formatAmount(item.total)}</span>
+                        </div>
+                      {/each}
+                    </div>
+                  {/if}
                 </div>
               {/if}
             {/each}
@@ -222,18 +335,16 @@
         </div>
 
         <div class="mt-8 pt-4 border-t border-border space-y-2">
-          {#if report.compteResultat.netResult >= 0}
+          {#if netResult >= 0}
             <div class="flex justify-between font-semibold text-sm text-emerald-600 dark:text-emerald-400">
               <span>Excédent de l'exercice (Bénéfice)</span>
-              <span>{formatAmount(report.compteResultat.netResult)}</span>
+              <span class="font-mono">{formatAmount(netResult)}</span>
             </div>
           {/if}
           <div class="flex justify-between font-bold text-sm text-foreground">
             <span>TOTAL GÉNÉRAL</span>
-            <span>
-              {formatAmount(report.compteResultat.netResult >= 0 
-                ? report.compteResultat.totalDepenses + report.compteResultat.netResult 
-                : report.compteResultat.totalDepenses)}
+            <span class="font-mono">
+              {formatAmount(netResult >= 0 ? totalDepenses + netResult : totalDepenses)}
             </span>
           </div>
         </div>
@@ -244,25 +355,49 @@
         <div>
           <h4 class="font-bold text-sm text-emerald-600 dark:text-emerald-400 border-b border-border pb-2 flex justify-between">
             <span>PRODUITS (Recettes)</span>
-            <span>{formatAmount(report.compteResultat.totalRecettes)}</span>
+            <span>{formatAmount(totalRecettes)}</span>
           </h4>
           
           <div class="space-y-4 mt-4">
             {#each produitClasses as pc}
-              {#if getClassSum(pc.code, 'recette') > 0}
-                <div class="space-y-1.5">
-                  <div class="flex justify-between font-semibold text-sm">
-                    <span>{pc.label}</span>
-                    <span>{formatAmount(getClassSum(pc.code, 'recette'))}</span>
+              {#if reportMode === 'previsionnel' || getClassSum(pc.code, 'recette') > 0}
+                <div class="space-y-1.5 py-1">
+                  <div class="flex justify-between items-center text-sm">
+                    <span class="font-semibold">{pc.label}</span>
+                    {#if reportMode === 'previsionnel'}
+                      {#if !isClosed}
+                        <div class="relative flex items-center">
+                          <input
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            value={editableBudget[pc.code] !== undefined ? (editableBudget[pc.code] / 100) : ''}
+                            oninput={(e) => {
+                              const val = parseFloat(e.currentTarget.value) || 0;
+                              editableBudget[pc.code] = Math.round(val * 100);
+                            }}
+                            class="w-28 px-2 py-1 text-right border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium font-mono"
+                          />
+                          <span class="absolute right-2 text-xs text-muted-foreground pointer-events-none">€</span>
+                        </div>
+                      {:else}
+                        <span class="font-semibold font-mono">{formatAmount(editableBudget[pc.code] || 0)}</span>
+                      {/if}
+                    {:else}
+                      <span class="font-mono">{formatAmount(getClassSum(pc.code, 'recette'))}</span>
+                    {/if}
                   </div>
-                  <div class="pl-4 space-y-1 text-xs text-muted-foreground">
-                    {#each getClassItems(pc.code, 'recette') as item}
-                      <div class="flex justify-between">
-                        <span>• {item.label}</span>
-                        <span>{formatAmount(item.total)}</span>
-                      </div>
-                    {/each}
-                  </div>
+                  
+                  {#if reportMode === 'realise'}
+                    <div class="pl-4 space-y-1 text-xs text-muted-foreground">
+                      {#each getClassItems(pc.code, 'recette') as item}
+                        <div class="flex justify-between font-mono">
+                          <span class="font-sans">• {item.label}</span>
+                          <span>{formatAmount(item.total)}</span>
+                        </div>
+                      {/each}
+                    </div>
+                  {/if}
                 </div>
               {/if}
             {/each}
@@ -270,23 +405,47 @@
         </div>
 
         <div class="mt-8 pt-4 border-t border-border space-y-2">
-          {#if report.compteResultat.netResult < 0}
+          {#if netResult < 0}
             <div class="flex justify-between font-semibold text-sm text-destructive">
               <span>Déficit de l'exercice (Perte)</span>
-              <span>{formatAmount(-report.compteResultat.netResult)}</span>
+              <span class="font-mono">{formatAmount(-netResult)}</span>
             </div>
           {/if}
           <div class="flex justify-between font-bold text-sm text-foreground">
             <span>TOTAL GÉNÉRAL</span>
-            <span>
-              {formatAmount(report.compteResultat.netResult < 0 
-                ? report.compteResultat.totalRecettes + (-report.compteResultat.netResult) 
-                : report.compteResultat.totalRecettes)}
+            <span class="font-mono">
+              {formatAmount(netResult < 0 ? totalRecettes + (-netResult) : totalRecettes)}
             </span>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Actions / Feedback for Budget editing -->
+    {#if reportMode === 'previsionnel' && !isClosed}
+      <div class="flex flex-col gap-3 pt-4 border-t border-border mt-6">
+        {#if saveStatus}
+          <div class="p-3 text-xs rounded-lg {saveStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-destructive/10 text-destructive border border-destructive/20'}">
+            {saveStatus.message}
+          </div>
+        {/if}
+        
+        <div class="flex justify-end">
+          <button
+            type="button"
+            onclick={handleSaveBudget}
+            disabled={isSaving}
+            class="px-4 py-2 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/95 text-xs shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+          >
+            {#if isSaving}
+              Enregistrement...
+            {:else}
+              Enregistrer le Prévisionnel
+            {/if}
+          </button>
+        </div>
+      </div>
+    {/if}
   </div>
 
   <!-- 2. BILAN DE TRÉSORERIE -->
