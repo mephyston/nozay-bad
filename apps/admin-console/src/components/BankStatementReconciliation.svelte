@@ -286,6 +286,31 @@
       memberHighlightedIndex = -1;
     }
   });
+
+  // Restaurer le défilement (scroll) de la liste au chargement
+  $effect(() => {
+    const savedScroll = sessionStorage.getItem('reconcile_list_scroll_top');
+    if (savedScroll) {
+      setTimeout(() => {
+        const container = document.querySelector('.reconcile-list-container');
+        if (container) {
+          container.scrollTop = parseInt(savedScroll);
+        }
+      }, 50);
+    }
+  });
+
+  // Faire défiler l'élément sélectionné dans le viewport si nécessaire
+  $effect(() => {
+    if (selectedTx) {
+      setTimeout(() => {
+        const activeBtn = document.querySelector('.reconcile-list-container .border-l-primary');
+        if (activeBtn) {
+          activeBtn.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+        }
+      }, 100);
+    }
+  });
   $effect(() => {
     const total = filteredMembers.length + 1;
     if (memberHighlightedIndex >= total) {
@@ -762,7 +787,12 @@
           {/if}
         </div>
 
-        <div class="flex-1 overflow-y-auto divide-y divide-border">
+        <div 
+          class="flex-1 overflow-y-auto divide-y divide-border reconcile-list-container"
+          onscroll={(e) => {
+            sessionStorage.setItem('reconcile_list_scroll_top', (e.currentTarget as HTMLDivElement).scrollTop.toString());
+          }}
+        >
           {#each displayedTransactions as bt}
             <button
               type="button"
