@@ -1098,6 +1098,74 @@ VERSION:102
     expect(suggestions.memberId).toBe(member.id);
   });
 
+  it('matches transaction category based on product price multiples (category 7 for 30.00 representing 2 strings)', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    await db.insert(productsTable).values({
+      name: 'Cordage adulte',
+      category: 'string',
+      price: 1500,
+      stock: 50,
+      active: true,
+      createdAt: new Date()
+    });
+
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: '16271243000300846000500078472020260324',
+      accountId: 'current',
+      seasonId: '25-26',
+      amount: 3000,
+      date: '2026-03-24',
+      name: 'VIR INST RE 658284570674',
+      memo: 'DE: MR OU MME DOMASZEWICZ WOLFGANG DATE: 23/03/2026 20:56 MOTIF: VIR. DE MR OU MME DOMASZEWICZ WOLFG ANG',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const member = await db.insert(membersTable).values({
+      licence: '7654321',
+      season: '25-26',
+      firstName: 'Wolfgang',
+      lastName: 'Domaszewicz',
+      gender: 'M',
+      birthDate: '1980-11-22',
+      status: 'valide',
+      type: 'Adultes',
+      amountDue: 0,
+      amountReceived: 0,
+      amountRemaining: 0,
+      paid: true,
+      importedAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const aiMock = {
+      run: async (model: string, options: any) => {
+        return {
+          response: JSON.stringify({
+            memberId: member.id,
+            memberName: 'Domaszewicz Wolfgang',
+            category: 7,
+            confidence: 0.95,
+            reasoning: 'Montant de 30.00 EUR correspond exactement à 2 cordages à 15.00 EUR.'
+          })
+        };
+      }
+    };
+
+    const analyzeRes = await app.request('http://localhost/bank-transactions/analyze?season=25-26', {
+      method: 'POST'
+    }, { DB: mockD1 as any, AI: aiMock as any });
+    expect(analyzeRes.status).toBe(200);
+
+    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    expect(updatedBt.aiSuggestions).not.toBeNull();
+    const suggestions = JSON.parse(updatedBt.aiSuggestions);
+    expect(suggestions.category).toBe(7);
+    expect(suggestions.memberId).toBe(member.id);
+  });
+
+
   it('resolves ambiguous name matching deterministically when multiple members share last name', async () => {
     const mockD1 = await setupMockDb();
     const db = drizzle(mockD1 as any);
