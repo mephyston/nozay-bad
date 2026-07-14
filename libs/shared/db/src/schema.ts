@@ -69,6 +69,7 @@ export const transactionsTable = sqliteTable('transactions', {
   reference: text('reference'),
   memberId: integer('member_id').references(() => membersTable.id),
   bankTransactionId: integer('bank_transaction_id').references(() => bankTransactionsTable.id),
+  invoiceId: integer('invoice_id').references(() => invoicesTable.id),
   status: text('status', { enum: ['pending_debit', 'in_vault', 'cleared'] }).notNull().default('cleared'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
@@ -157,6 +158,35 @@ export const categoriesTable = sqliteTable('categories', {
   adminLabel: text('admin_label').notNull(),
   adherentLabel: text('adherent_label').notNull(),
   hideInExpenses: integer('hide_in_expenses', { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+export const invoicesTable = sqliteTable('invoices', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  invoiceNumber: text('invoice_number').notNull().unique(), // FAC-2526-NBA91-0001
+  seasonId: text('season_id').notNull().references(() => seasonsTable.id),
+  date: text('date').notNull(), // YYYY-MM-DD
+  dueDate: text('due_date').notNull(), // YYYY-MM-DD
+  clientName: text('client_name').notNull(),
+  clientAddress: text('client_address'),
+  clientEmail: text('client_email'),
+  subject: text('subject'),      // Objet de la facture
+  location: text('location'),    // Lieu de l'activité
+  period: text('period'),        // Dates / Période concernée
+  attendees: text('attendees'),  // Personnes concernées
+  status: text('status', { enum: ['draft', 'sent', 'paid', 'cancelled'] }).notNull().default('draft'),
+  totalAmount: integer('total_amount').notNull(),
+  bankTransactionId: integer('bank_transaction_id').references(() => bankTransactionsTable.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+export const invoiceItemsTable = sqliteTable('invoice_items', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  invoiceId: integer('invoice_id').notNull().references(() => invoicesTable.id, { onDelete: 'cascade' }),
+  description: text('description').notNull(),
+  quantity: integer('quantity').notNull().default(1),
+  unitPrice: integer('unit_price').notNull(),
+  totalPrice: integer('total_price').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
