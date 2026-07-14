@@ -36,6 +36,7 @@
       subItems: [
         { name: "Rapports", href: "/admin/compta/reports" },
         { name: "Grand Livre", href: "/admin/compta" },
+        { name: "Factures", href: "/admin/compta/invoices" },
         { name: "Rapprochement bancaire", href: "/admin/compta/import" },
         { name: "Remises de chèques", href: "/admin/compta/cheques" },
         { name: "Caisse", href: "/admin/cash-box" },
