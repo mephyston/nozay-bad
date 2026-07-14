@@ -1063,7 +1063,37 @@ app.post('/bank-transactions/import', async (c) => {
       }
     });
   } catch (err: any) {
-    return c.json({ success: false, error: "Erreur lors de l'insertion en base : " + err.message }, 500);
+    if (err.message && err.message.includes('begin')) {
+      // Fallback: run sequentially without transaction (for D1/Wrangler local limitations)
+      insertedCount = 0;
+      for (const tx of transactions) {
+        const targetAccount = (forcedAccountId && forcedAccountId !== 'auto') 
+          ? (forcedAccountId as 'current' | 'savings') 
+          : tx.accountId;
+
+        const res = await db.insert(bankTransactionsTable)
+          .values({
+            fitid: tx.fitid,
+            seasonId,
+            accountId: targetAccount,
+            amount: tx.amount,
+            date: tx.date,
+            name: tx.name,
+            memo: tx.memo,
+            status: 'pending',
+            createdAt: new Date()
+          })
+          .onConflictDoNothing()
+          .run();
+        
+        const changes = res?.meta?.changes ?? 0;
+        if (changes > 0) {
+          insertedCount++;
+        }
+      }
+    } else {
+      return c.json({ success: false, error: "Erreur lors de l'insertion en base : " + err.message }, 500);
+    }
   }
 
   return c.json({ success: true, count: insertedCount });
@@ -1612,6 +1642,22 @@ app.post('/bank-transactions/reconcile-bulk', async (c) => {
 
     return c.json({ success: true, count });
   } catch (err: any) {
+    if (err.message && err.message.includes('begin')) {
+      // Fallback: run sequentially without transaction (for D1/Wrangler local limitations)
+      try {
+        let count = 0;
+        for (const req of requests) {
+          const result = await reconcileBankTxInternal(db, req.btId, req);
+          if (!result.success) {
+            return c.json({ success: false, error: result.error || 'Matching operation failed' }, 400);
+          }
+          count++;
+        }
+        return c.json({ success: true, count });
+      } catch (innerErr: any) {
+        return c.json({ success: false, error: innerErr.message }, 400);
+      }
+    }
     return c.json({ success: false, error: err.message }, 400);
   }
 });
@@ -1635,6 +1681,14 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
     });
     return c.json({ success: true });
   } catch (err: any) {
+    if (err.message && err.message.includes('begin')) {
+      // Fallback: run without transaction (for D1/Wrangler local limitations)
+      const result = await reconcileBankTxInternal(db, id, body);
+      if (!result.success) {
+        return c.json({ success: false, error: result.error || 'Reconciliation failed' }, (result.status || 400) as any);
+      }
+      return c.json({ success: true });
+    }
     if (err.status) {
       return c.json({ success: false, error: err.message }, err.status);
     }
