@@ -1420,6 +1420,21 @@ Renvoie STRICTEMENT un objet JSON sous la forme suivante (sans aucun autre texte
       }
     }
 
+    // Post-process : Rediriger les stages (13) et tournois (5) des mineurs vers Actions Jeunes (4)
+    if (suggestionResult.memberId) {
+      const matchedMember = members.find(m => m.id === suggestionResult.memberId);
+      if (matchedMember && matchedMember.birthDate) {
+        const birthYear = new Date(matchedMember.birthDate).getFullYear();
+        const currentYear = new Date().getFullYear();
+        const age = currentYear - birthYear;
+        if (age < 18) {
+          if (suggestionResult.category === CAT_STAGES_FORMATIONS || suggestionResult.category === CAT_TOURNOIS_SENIOR) {
+            suggestionResult.category = CAT_ACTIONS_JEUNES;
+          }
+        }
+      }
+    }
+
     // Sauvegarder la suggestion en base de données
     await db.update(bankTransactionsTable)
       .set({ aiSuggestions: JSON.stringify(suggestionResult) })

@@ -1717,6 +1717,57 @@ VERSION:102
     expect(sug.category).toBe(4); // Actions Jeunes
   });
 
+  it('correctly maps stages of minor members to actions_jeunes category in post-processing', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    const minor = await db.insert(membersTable).values({
+      licence: '07507281',
+      season: '25-26',
+      lastName: 'BRIER',
+      firstName: 'Martin',
+      gender: 'M',
+      birthDate: '2018-05-03',
+      status: 'valide',
+      type: 'Ecole Minibad (U9)',
+      amountDue: 16600,
+      amountReceived: 16600,
+      amountRemaining: 0,
+      paid: true,
+      importedAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: '48510893000300846000500078472020260302',
+      seasonId: '25-26',
+      accountId: 'current',
+      amount: 10000,
+      date: '2026-03-02',
+      name: 'VIR RECU 6180351232S',
+      memo: 'DE: MLE C TIERCELIN OU M N BRIER MOTIF: stage Martin Brier',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const mockAI = {
+      run: async () => {
+        throw new Error('AI offline simulation');
+      }
+    };
+
+    const analyzeRes = await app.request('http://localhost/bank-transactions/analyze?season=25-26', {
+      method: 'POST'
+    }, { DB: mockD1 as any, AI: mockAI as any });
+    expect(analyzeRes.status).toBe(200);
+
+    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    expect(updatedBt.aiSuggestions).not.toBeNull();
+    
+    const sug = JSON.parse(updatedBt.aiSuggestions);
+    expect(sug.category).toBe(4); // Actions Jeunes (overridden from general stage category 13)
+    expect(sug.memberId).toBe(minor.id);
+  });
+
   it('does not impact member remaining balance when linking a non-membership transaction (e.g. cordage)', async () => {
     const mockD1 = await setupMockDb();
     const db = drizzle(mockD1 as any);
