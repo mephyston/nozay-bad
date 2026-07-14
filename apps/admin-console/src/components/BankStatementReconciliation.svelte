@@ -138,7 +138,154 @@
   let pendingCount = $derived(bankTransactions.filter(t => t.status === 'pending').length);
   let reconciledCount = $derived(bankTransactions.filter(t => t.status === 'reconciled').length);
   let ignoredCount = $derived(bankTransactions.filter(t => t.status === 'ignored').length);
-  let displayedTransactions = $derived(bankTransactions.filter(t => t.status === activeTab));
+
+  // --- MASSE & FILTRES INTELLIGENTS ---
+  let selectedTxIds = $state<Record<number, boolean>>({});
+  let selectedCount = $derived(Object.keys(selectedTxIds).map(Number).filter(id => selectedTxIds[id]).length);
+  let smartFilter = $state<'all' | 'evidences' | 'recurrents'>('all');
+
+  function isRecurrentTx(bt: BankTransaction) {
+    const nameUpper = (bt.name || '').toUpperCase();
+    const memoUpper = (bt.memo || '').toUpperCase();
+    return nameUpper.includes('SALAIRE') ||
+           nameUpper.includes('LARDESPORT') ||
+           nameUpper.includes('PRLVT') ||
+           nameUpper.includes('COTISATION') ||
+           nameUpper.includes('ABONNEMENT') ||
+           memoUpper.includes('SALAIRE') ||
+           memoUpper.includes('LARDESPORT') ||
+           memoUpper.includes('PRLVT') ||
+           memoUpper.includes('COTISATION') ||
+           memoUpper.includes('ABONNEMENT');
+  }
+
+  function toggleSelectAll(displayedTxs: BankTransaction[]) {
+    const allSelected = displayedTxs.length > 0 && displayedTxs.every(t => selectedTxIds[t.id]);
+    for (const t of displayedTxs) {
+      selectedTxIds[t.id] = !allSelected;
+    }
+  }
+
+  $effect(() => {
+    // Reset selection when tab or smart filter changes
+    const _ = activeTab;
+    const __ = smartFilter;
+    selectedTxIds = {};
+  });
+
+  let displayedTransactions = $derived(
+    bankTransactions.filter(t => {
+      if (t.status !== activeTab) return false;
+      if (activeTab === 'pending') {
+        if (smartFilter === 'evidences') {
+          return !!t.aiSuggestions;
+        }
+        if (smartFilter === 'recurrents') {
+          return isRecurrentTx(t);
+        }
+      }
+      return true;
+    })
+  );
+
+  async function handleBulkReconcile() {
+    const ids = Object.keys(selectedTxIds).map(Number).filter(id => selectedTxIds[id]);
+    if (ids.length === 0) return;
+    isSubmitting = true;
+    errorMsg = '';
+    
+    try {
+      const requests = [];
+      for (const id of ids) {
+        const bt = bankTransactions.find(t => t.id === id);
+        if (!bt) continue;
+
+        let memberId = null;
+        let category = '1';
+
+        if (bt.aiSuggestions) {
+          try {
+            const sug = JSON.parse(bt.aiSuggestions);
+            memberId = sug.memberId ? parseInt(sug.memberId) : null;
+            category = sug.category || '1';
+          } catch (e) {
+            console.error('Failed to parse suggestions for transaction', bt.id, e);
+          }
+        }
+
+        requests.push({
+          btId: bt.id,
+          action: 'create',
+          memberId,
+          transaction: {
+            seasonId: selectedSeason,
+            type: bt.amount < 0 ? 'depense' : 'recette',
+            accountId: bt.accountId,
+            category,
+            amount: Math.abs(bt.amount),
+            date: bt.date,
+            paymentMethod: 'virement',
+            description: bt.name,
+            reference: bt.fitid
+          }
+        });
+      }
+
+      if (requests.length === 0) {
+        throw new Error('Aucune transaction sélectionnée ne dispose de suggestions valides.');
+      }
+
+      const res = await fetch('/admin/compta/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'bulk',
+          requests
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(await res.text() || 'Erreur lors du rapprochement en masse.');
+      }
+
+      selectedTxIds = {};
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.message);
+      isSubmitting = false;
+    }
+  }
+
+  async function handleBulkIgnore() {
+    const ids = Object.keys(selectedTxIds).map(Number).filter(id => selectedTxIds[id]);
+    if (ids.length === 0) return;
+    if (!confirm(`Voulez-vous ignorer ces ${ids.length} transactions bancaires ?`)) return;
+    isSubmitting = true;
+    errorMsg = '';
+    
+    try {
+      const promises = ids.map(btId =>
+        fetch('/admin/compta/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'ignore', btId })
+        })
+      );
+      
+      const responses = await Promise.all(promises);
+      const failed = responses.filter(r => !r.ok);
+      if (failed.length > 0) {
+        throw new Error('Certaines transactions n\'ont pas pu être ignorées.');
+      }
+      
+      selectedTxIds = {};
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.message);
+      isSubmitting = false;
+    }
+  }
+  // ------------------------------------
 
   // Synchronisation du texte d'affichage des sélections
   let memberDisplayVal = $derived.by(() => {
@@ -885,6 +1032,32 @@
           </button>
         </div>
 
+        {#if activeTab === 'pending'}
+          <div class="flex border-b border-border bg-muted/30 p-1 gap-1 shrink-0">
+            <button
+              type="button"
+              onclick={() => smartFilter = 'all'}
+              class="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors border-0 cursor-pointer {smartFilter === 'all' ? 'bg-background text-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent'}"
+            >
+              Tout
+            </button>
+            <button
+              type="button"
+              onclick={() => smartFilter = 'evidences'}
+              class="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors border-0 cursor-pointer {smartFilter === 'evidences' ? 'bg-background text-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent'}"
+            >
+              Évidences
+            </button>
+            <button
+              type="button"
+              onclick={() => smartFilter = 'recurrents'}
+              class="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors border-0 cursor-pointer {smartFilter === 'recurrents' ? 'bg-background text-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent'}"
+            >
+              Récurrents
+            </button>
+          </div>
+        {/if}
+
         <div class="p-3 border-b border-border bg-muted/20 flex items-center justify-between shrink-0">
           <span class="font-bold text-xs text-muted-foreground">Liste des écritures ({displayedTransactions.length})</span>
           {#if activeTab === 'pending' && !isClosed}
@@ -894,6 +1067,40 @@
             </button>
           {/if}
         </div>
+
+        {#if selectedCount > 0}
+          <div class="bg-primary/10 border-b border-primary/20 px-4 py-3 flex items-center justify-between shrink-0 sticky top-0 z-10 animate-in slide-in-from-top duration-200">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-primary">Sélection ({selectedCount})</span>
+              <button
+                type="button"
+                onclick={() => toggleSelectAll(displayedTransactions)}
+                class="text-[10px] text-muted-foreground hover:text-foreground hover:underline bg-transparent border-0 cursor-pointer p-0 font-semibold"
+              >
+                {displayedTransactions.length > 0 && displayedTransactions.every(t => selectedTxIds[t.id]) ? 'Tout décocher' : 'Sélectionner tout'}
+              </button>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                onclick={handleBulkIgnore}
+                disabled={isSubmitting}
+                class="px-2.5 py-1 border border-destructive/20 hover:bg-destructive/10 text-destructive text-[11px] font-bold rounded cursor-pointer bg-transparent"
+              >
+                Ignorer en masse
+              </button>
+              <button
+                type="button"
+                onclick={handleBulkReconcile}
+                disabled={isSubmitting}
+                class="px-2.5 py-1 bg-primary text-primary-foreground hover:bg-primary/95 text-[11px] font-bold rounded shadow-sm cursor-pointer border-0 flex items-center gap-1"
+              >
+                <Check class="w-3.5 h-3.5" />
+                Rapprocher en masse
+              </button>
+            </div>
+          </div>
+        {/if}
 
         <div 
           class="flex-1 overflow-y-auto divide-y divide-border reconcile-list-container"
@@ -908,25 +1115,39 @@
               class="w-full text-left p-4 hover:bg-muted/50 transition-colors flex items-center justify-between gap-4 border-0 cursor-pointer {selectedTx?.id === bt.id ? 'bg-muted border-l-4 border-l-primary' : ''}"
               title="{bt.name}{bt.memo ? ' — ' + bt.memo : ''}"
             >
-              <div>
-                <div class="font-bold text-sm text-foreground truncate max-w-[280px]" title={bt.name}>{bt.name}</div>
-                <div class="text-xs text-muted-foreground">{bt.date} • {accountLabels[bt.accountId]}</div>
-                {#if bt.memo}
-                  <div class="text-xs text-muted-foreground italic truncate max-w-[280px]" title={bt.memo}>{bt.memo}</div>
+              <div class="flex items-start gap-3 flex-1 min-w-0">
+                {#if activeTab === 'pending' && !isClosed}
+                  <input
+                    type="checkbox"
+                    checked={!!selectedTxIds[bt.id]}
+                    onchange={(e) => {
+                      selectedTxIds[bt.id] = (e.target as HTMLInputElement).checked;
+                    }}
+                    onclick={(e) => e.stopPropagation()}
+                    class="rounded border-border text-primary focus:ring-primary/20 cursor-pointer w-4 h-4 shrink-0 mt-0.5"
+                  />
                 {/if}
-                {#if bt.aiSuggestions && bt.status === 'pending'}
-                  {@const sug = JSON.parse(bt.aiSuggestions)}
-                  {#if sug.memberName}
-                    <div class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-[10px] font-semibold text-primary">
-                      <Sparkles class="w-2.5 h-2.5" />
-                      IA : {sug.memberName} ({categories.find(c => c.id === String(sug.category))?.name || sug.category})
-                    </div>
-                  {:else}
-                    <div class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted border border-border text-[10px] font-semibold text-muted-foreground">
-                      IA : Opération diverse ({categories.find(c => c.id === String(sug.category))?.name || sug.category})
-                    </div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold text-sm text-foreground truncate max-w-[280px]" title={bt.name}>{bt.name}</div>
+                  <div class="text-xs text-muted-foreground">{bt.date} • {accountLabels[bt.accountId]}</div>
+                  {#if bt.memo}
+                    <div class="text-xs text-muted-foreground italic truncate max-w-[280px]" title={bt.memo}>{bt.memo}</div>
                   {/if}
-                {/if}
+                  {#if bt.aiSuggestions && bt.status === 'pending'}
+                    {@const sug = JSON.parse(bt.aiSuggestions)}
+                    {#if sug.memberName}
+                      <div class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-[10px] font-semibold text-primary">
+                        <Sparkles class="w-2.5 h-2.5" />
+                        IA : {sug.memberName} ({categories.find(c => c.id === String(sug.category))?.name || sug.category})
+                      </div>
+                    {:else}
+                      <div class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted border border-border text-[10px] font-semibold text-muted-foreground">
+                        <Sparkles class="w-2.5 h-2.5" />
+                        IA : Opération diverse ({categories.find(c => c.id === String(sug.category))?.name || sug.category})
+                      </div>
+                    {/if}
+                  {/if}
+                </div>
               </div>
               <div class="font-bold text-sm shrink-0 {bt.amount < 0 ? 'text-destructive' : 'text-emerald-600'}">
                 {bt.amount < 0 ? '' : '+'}{(bt.amount / 100).toFixed(2)} €

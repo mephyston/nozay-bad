@@ -277,4 +277,172 @@ describe('BankStatementReconciliation Component', () => {
     expect(global.fetch).toHaveBeenCalledWith('/admin/compta/import', expect.any(Object));
     expect(reloadMock).toHaveBeenCalled();
   });
+
+  it('displays checkboxes next to bank transactions and toggles bulk action bar', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankTransactions: [
+          {
+            id: 1,
+            fitid: 'TX-1',
+            accountId: 'current',
+            amount: 1000,
+            date: '2026-02-16',
+            name: 'TX-ONE',
+            memo: 'Memo 1',
+            status: 'pending',
+            aiSuggestions: JSON.stringify({ memberId: 42, memberName: 'Dupont Jean', category: '1' })
+          },
+          {
+            id: 2,
+            fitid: 'TX-2',
+            accountId: 'current',
+            amount: -2000,
+            date: '2026-02-17',
+            name: 'TX-TWO',
+            memo: 'Memo 2',
+            status: 'pending',
+            aiSuggestions: null
+          }
+        ],
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }],
+        members: []
+      }
+    });
+
+    flushSync();
+
+    // Bulk Action Bar should not be visible initially
+    expect(target.innerHTML).not.toContain('Rapprocher en masse');
+    expect(target.innerHTML).not.toContain('Ignorer en masse');
+
+    // Checkboxes should be displayed next to bank transactions
+    const checkboxes = target.querySelectorAll('input[type="checkbox"]') as NodeListOf<HTMLInputElement>;
+    expect(checkboxes.length).toBe(2);
+
+    // Check the first checkbox
+    checkboxes[0].checked = true;
+    checkboxes[0].dispatchEvent(new Event('change', { bubbles: true }));
+    flushSync();
+
+    // Now the Bulk Action Bar should be visible
+    expect(target.innerHTML).toContain('Rapprocher en masse');
+    expect(target.innerHTML).toContain('Sélection (1)');
+
+    // Check the second checkbox
+    checkboxes[1].checked = true;
+    checkboxes[1].dispatchEvent(new Event('change', { bubbles: true }));
+    flushSync();
+
+    // Count should be updated
+    expect(target.innerHTML).toContain('Sélection (2)');
+
+    // Mock window.location.reload
+    const reloadMock = vi.fn();
+    vi.stubGlobal('location', {
+      reload: reloadMock
+    });
+
+    // Click "Rapprocher en masse"
+    const bulkReconcileBtn = Array.from(target.querySelectorAll('button')).find(
+      b => b.textContent?.includes('Rapprocher en masse')
+    ) as HTMLButtonElement;
+    expect(bulkReconcileBtn).not.toBeNull();
+    bulkReconcileBtn.click();
+    flushSync();
+
+    await new Promise(resolve => setTimeout(resolve, 50));
+    flushSync();
+
+    // Assert fetch call
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/admin/compta/import',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"action":"bulk"')
+      })
+    );
+    expect(reloadMock).toHaveBeenCalled();
+  });
+
+  it('filters bank transactions using smart filter tabs (Tout, Évidences, Récurrents)', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankTransactions: [
+          {
+            id: 1,
+            fitid: 'TX-1',
+            accountId: 'current',
+            amount: 1000,
+            date: '2026-02-16',
+            name: 'TX-ONE',
+            memo: 'Memo 1',
+            status: 'pending',
+            aiSuggestions: JSON.stringify({ memberId: 42, memberName: 'Dupont Jean', category: '1' })
+          },
+          {
+            id: 2,
+            fitid: 'TX-2',
+            accountId: 'current',
+            amount: -2000,
+            date: '2026-02-17',
+            name: 'SALAIRE MONSIEUR X',
+            memo: 'Memo 2',
+            status: 'pending',
+            aiSuggestions: null
+          }
+        ],
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }],
+        members: []
+      }
+    });
+
+    flushSync();
+
+    // Check tabs are displayed
+    expect(target.innerHTML).toContain('Tout');
+    expect(target.innerHTML).toContain('Évidences');
+    expect(target.innerHTML).toContain('Récurrents');
+
+    // By default, 'Tout' is selected, so both TX-ONE and SALAIRE are shown
+    expect(target.innerHTML).toContain('TX-ONE');
+    expect(target.innerHTML).toContain('SALAIRE');
+
+    // Click 'Évidences'
+    const evidencesBtn = Array.from(target.querySelectorAll('button')).find(
+      b => b.textContent?.trim() === 'Évidences'
+    ) as HTMLButtonElement;
+    expect(evidencesBtn).not.toBeNull();
+    evidencesBtn.click();
+    flushSync();
+
+    // Now only TX-ONE (which has suggestions) should be shown
+    expect(target.innerHTML).toContain('TX-ONE');
+    expect(target.innerHTML).not.toContain('SALAIRE');
+
+    // Click 'Récurrents'
+    const recurrentsBtn = Array.from(target.querySelectorAll('button')).find(
+      b => b.textContent?.trim() === 'Récurrents'
+    ) as HTMLButtonElement;
+    expect(recurrentsBtn).not.toBeNull();
+    recurrentsBtn.click();
+    flushSync();
+
+    // Now only SALAIRE should be shown
+    expect(target.innerHTML).not.toContain('TX-ONE');
+    expect(target.innerHTML).toContain('SALAIRE');
+  });
 });
+

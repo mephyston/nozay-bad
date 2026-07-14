@@ -44,6 +44,15 @@ if (Astro.request.method === 'POST') {
         if (!apiRes.ok) {
           return new Response(await apiRes.text(), { status: apiRes.status });
         }
+      } else if (data.action === 'bulk') {
+        const apiRes = await apiService.fetch('http://localhost/bank-transactions/reconcile-bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!apiRes.ok) {
+          return new Response(await apiRes.text(), { status: apiRes.status });
+        }
       } else if (data.action === 'ignore') {
         const apiRes = await apiService.fetch(`http://localhost/bank-transactions/${data.btId}/ignore`, {
           method: 'POST'
