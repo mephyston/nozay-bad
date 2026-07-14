@@ -2643,6 +2643,338 @@ describe('Final Improvements API checks', () => {
   });
 });
 
+describe('Task 1: API Endpoints Advanced Reconciliation', () => {
+  it('POST /bank-transactions/reconcile-bulk executes successfully when multiple valid suggestions are matched', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Create active season '25-26'
+    await db.insert(seasonsTable).values({
+      id: '25-26',
+      name: 'Saison 2025-2026',
+      active: true,
+      createdAt: new Date()
+    }).onConflictDoNothing().run();
+
+    // Create bank transactions
+    const bt1 = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-BULK-1',
+      accountId: 'current',
+      seasonId: '25-26',
+      amount: 10000,
+      date: '2026-07-15',
+      name: 'VIR RECU 1',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const bt2 = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-BULK-2',
+      accountId: 'current',
+      seasonId: '25-26',
+      amount: 20000,
+      date: '2026-07-15',
+      name: 'VIR RECU 2',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // Send bulk reconcile request
+    const res = await app.request('http://localhost/bank-transactions/reconcile-bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requests: [
+          {
+            btId: bt1.id,
+            action: 'create',
+            transaction: {
+              seasonId: '25-26',
+              type: 'recette',
+              accountId: 'current',
+              category: 7,
+              amount: 10000,
+              date: '2026-07-15',
+              paymentMethod: 'virement',
+              description: 'Bulk Reconcile 1'
+            }
+          },
+          {
+            btId: bt2.id,
+            action: 'create',
+            transaction: {
+              seasonId: '25-26',
+              type: 'recette',
+              accountId: 'current',
+              category: 7,
+              amount: 20000,
+              date: '2026-07-15',
+              paymentMethod: 'virement',
+              description: 'Bulk Reconcile 2'
+            }
+          }
+        ]
+      })
+    }, { DB: mockD1 as any });
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.success).toBe(true);
+    expect(body.count).toBe(2);
+
+    // Verify bank transactions are reconciled
+    const updatedBt1 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get();
+    const updatedBt2 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get();
+    expect(updatedBt1.status).toBe('reconciled');
+    expect(updatedBt2.status).toBe('reconciled');
+
+    // Verify ledger transactions were created
+    const ledgerTxs = await db.select().from(transactionsTable).all();
+    expect(ledgerTxs.filter(t => t.bankTransactionId === bt1.id)).toHaveLength(1);
+    expect(ledgerTxs.filter(t => t.bankTransactionId === bt2.id)).toHaveLength(1);
+  });
+
+  it('POST /bank-transactions/reconcile-bulk rolls back all changes if one matching operation fails or is closed', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Create seasons
+    await db.insert(seasonsTable).values({
+      id: '25-26',
+      name: 'Saison 2025-2026',
+      active: true,
+      createdAt: new Date()
+    }).onConflictDoNothing().run();
+
+    await db.insert(seasonsTable).values({
+      id: '24-25',
+      name: 'Saison 2024-2025',
+      active: false,
+      closed: true,
+      createdAt: new Date()
+    }).onConflictDoNothing().run();
+
+    // Create bank transactions
+    const btValid = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-BULK-VALID',
+      accountId: 'current',
+      seasonId: '25-26',
+      amount: 10000,
+      date: '2026-07-15',
+      name: 'VIR RECU VALID',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const btClosed = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-BULK-CLOSED',
+      accountId: 'current',
+      seasonId: '24-25', // closed season
+      amount: 20000,
+      date: '2025-07-15',
+      name: 'VIR RECU CLOSED',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // Send bulk reconcile request
+    const res = await app.request('http://localhost/bank-transactions/reconcile-bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requests: [
+          {
+            btId: btValid.id,
+            action: 'create',
+            transaction: {
+              seasonId: '25-26',
+              type: 'recette',
+              accountId: 'current',
+              category: 7,
+              amount: 10000,
+              date: '2026-07-15',
+              paymentMethod: 'virement',
+              description: 'Valid Item'
+            }
+          },
+          {
+            btId: btClosed.id,
+            action: 'create',
+            transaction: {
+              seasonId: '24-25', // closed season
+              type: 'recette',
+              accountId: 'current',
+              category: 7,
+              amount: 20000,
+              date: '2025-07-15',
+              paymentMethod: 'virement',
+              description: 'Closed Item'
+            }
+          }
+        ]
+      })
+    }, { DB: mockD1 as any });
+
+    // Expecting error (e.g. 400 Bad Request or similar error status code)
+    expect(res.status).not.toBe(200);
+    const body = await res.json() as any;
+    expect(body.success).toBe(false);
+
+    // Verify rollback: valid bt remains pending, no ledger transactions created
+    const updatedBtValid = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, btValid.id)).get();
+    expect(updatedBtValid.status).toBe('pending');
+
+    const ledgerTxs = await db.select().from(transactionsTable).all();
+    expect(ledgerTxs).toHaveLength(0);
+  });
+
+  it('POST /bank-transactions/:id/reconcile successfully processes split transactions creating multiple entries', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    await db.insert(seasonsTable).values({
+      id: '25-26',
+      name: 'Saison 2025-2026',
+      active: true,
+      createdAt: new Date()
+    }).onConflictDoNothing().run();
+
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-SPLIT',
+      accountId: 'current',
+      seasonId: '25-26',
+      amount: 15000,
+      date: '2026-07-15',
+      name: 'VIR RECU SPLIT',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // Send split reconcile request
+    const res = await app.request(`http://localhost/bank-transactions/${bt.id}/reconcile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create',
+        transactions: [
+          {
+            seasonId: '25-26',
+            type: 'recette',
+            accountId: 'current',
+            category: 7,
+            amount: 10000,
+            date: '2026-07-15',
+            paymentMethod: 'virement',
+            description: 'Split 1'
+          },
+          {
+            seasonId: '25-26',
+            type: 'recette',
+            accountId: 'current',
+            category: 8,
+            amount: 5000,
+            date: '2026-07-15',
+            paymentMethod: 'virement',
+            description: 'Split 2'
+          }
+        ]
+      })
+    }, { DB: mockD1 as any });
+
+    expect(res.status).toBe(200);
+
+    // Verify bank transaction is reconciled
+    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    expect(updatedBt.status).toBe('reconciled');
+
+    // Verify multiple entries are created
+    const ledgerTxs = await db.select().from(transactionsTable).where(eq(transactionsTable.bankTransactionId, bt.id)).all();
+    expect(ledgerTxs).toHaveLength(2);
+    expect(ledgerTxs.map(t => t.amount)).toContain(10000);
+    expect(ledgerTxs.map(t => t.amount)).toContain(5000);
+  });
+
+  it('POST /bank-transactions/:id/reconcile successfully matches a single bank transaction to multiple invoiceIds', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    await db.insert(seasonsTable).values({
+      id: '25-26',
+      name: 'Saison 2025-2026',
+      active: true,
+      createdAt: new Date()
+    }).onConflictDoNothing().run();
+
+    // Create 2 invoices
+    const inv1 = await db.insert(invoicesTable).values({
+      invoiceNumber: 'FAC-2526-NBA91-0101',
+      seasonId: '25-26',
+      date: '2026-07-14',
+      dueDate: '2026-08-14',
+      clientName: 'Client 1',
+      totalAmount: 15000,
+      status: 'sent',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const inv2 = await db.insert(invoicesTable).values({
+      invoiceNumber: 'FAC-2526-NBA91-0102',
+      seasonId: '25-26',
+      date: '2026-07-14',
+      dueDate: '2026-08-14',
+      clientName: 'Client 2',
+      totalAmount: 15000,
+      status: 'sent',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-MULTI-MATCH',
+      accountId: 'current',
+      seasonId: '25-26',
+      amount: 30000,
+      date: '2026-07-15',
+      name: 'VIR RECU MULTI',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // Send multi-match reconcile request
+    const res = await app.request(`http://localhost/bank-transactions/${bt.id}/reconcile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create',
+        invoiceIds: [inv1.id, inv2.id],
+        transaction: {
+          seasonId: '25-26',
+          type: 'recette',
+          accountId: 'current',
+          category: 7,
+          amount: 30000,
+          date: '2026-07-15',
+          paymentMethod: 'virement',
+          description: 'Multi-match'
+        }
+      })
+    }, { DB: mockD1 as any });
+
+    expect(res.status).toBe(200);
+
+    // Verify invoices are marked as paid and linked to bank transaction
+    const updatedInv1 = await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv1.id)).get();
+    const updatedInv2 = await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv2.id)).get();
+    expect(updatedInv1.status).toBe('paid');
+    expect(updatedInv1.bankTransactionId).toBe(bt.id);
+    expect(updatedInv2.status).toBe('paid');
+    expect(updatedInv2.bankTransactionId).toBe(bt.id);
+
+    // Verify bank transaction is reconciled
+    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    expect(updatedBt.status).toBe('reconciled');
+  });
+});
+
 
 
 

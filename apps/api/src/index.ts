@@ -1384,36 +1384,45 @@ app.get('/bank-transactions', async (c) => {
   return c.json({ success: true, data });
 });
 
-app.post('/bank-transactions/:id/reconcile', async (c) => {
-  if (!c.env || !c.env.DB) {
-    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-  }
-  const id = parseInt(c.req.param('id'));
-  const body = await c.req.json() as any;
-  const db = drizzle(c.env.DB);
-
+async function reconcileBankTxInternal(db: any, id: number, body: any): Promise<{ success: boolean, error?: string, status?: number }> {
   const bankTx = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, id)).get();
   if (!bankTx) {
-    return c.json({ success: false, error: 'Écriture bancaire non trouvée.' }, 404);
+    return { success: false, error: 'Écriture bancaire non trouvée.', status: 404 };
   }
 
   if (await isSeasonClosed(db, bankTx.seasonId)) {
-    return c.json({ success: false, error: 'La saison de l\'écriture bancaire est clôturée.' }, 400);
+    return { success: false, error: 'La saison de l\'écriture bancaire est clôturée.', status: 400 };
   }
 
   const memberId = body.memberId || body.transaction?.memberId;
   const invoiceId = body.invoiceId;
+  const invoiceIds = body.invoiceIds;
 
   if (invoiceId) {
     const invoice = await db.select().from(invoicesTable).where(eq(invoicesTable.id, invoiceId)).get();
     if (!invoice) {
-      return c.json({ success: false, error: 'Facture introuvable' }, 404);
+      return { success: false, error: 'Facture introuvable', status: 404 };
     }
     if (invoice.status === 'paid' || invoice.status === 'cancelled') {
-      return c.json({ success: false, error: 'La facture a déjà été payée ou a été annulée.' }, 400);
+      return { success: false, error: 'La facture a déjà été payée ou a été annulée.', status: 400 };
     }
     if (await isSeasonClosed(db, invoice.seasonId)) {
-      return c.json({ success: false, error: 'La saison de la facture est clôturée.' }, 400);
+      return { success: false, error: 'La saison de la facture est clôturée.', status: 400 };
+    }
+  }
+
+  if (invoiceIds && Array.isArray(invoiceIds)) {
+    for (const invId of invoiceIds) {
+      const invoice = await db.select().from(invoicesTable).where(eq(invoicesTable.id, invId)).get();
+      if (!invoice) {
+        return { success: false, error: 'Facture introuvable', status: 404 };
+      }
+      if (invoice.status === 'paid' || invoice.status === 'cancelled') {
+        return { success: false, error: 'La facture a déjà été payée ou a été annulée.', status: 400 };
+      }
+      if (await isSeasonClosed(db, invoice.seasonId)) {
+        return { success: false, error: 'La saison de la facture est clôturée.', status: 400 };
+      }
     }
   }
 
@@ -1425,10 +1434,10 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
       .where(eq(transactionsTable.id, body.transactionId))
       .get();
     if (!existingTx) {
-      return c.json({ success: false, error: 'Transaction cible introuvable.' }, 404);
+      return { success: false, error: 'Transaction cible introuvable.', status: 404 };
     }
     if (await isSeasonClosed(db, existingTx.seasonId)) {
-      return c.json({ success: false, error: 'La saison de la transaction est clôturée. Rapprochement impossible.' }, 400);
+      return { success: false, error: 'La saison de la transaction est clôturée. Rapprochement impossible.', status: 400 };
     }
 
     await db.update(transactionsTable)
@@ -1440,49 +1449,82 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
       .run();
     lastTxId = body.transactionId;
   } else if (body.action === 'create') {
-    const tx = body.transaction;
-    if (await isSeasonClosed(db, tx.seasonId)) {
-      return c.json({ success: false, error: 'La saison cible est clôturée. Rapprochement impossible.' }, 400);
+    if (body.transactions && Array.isArray(body.transactions)) {
+      for (const txItem of body.transactions) {
+        if (await isSeasonClosed(db, txItem.seasonId)) {
+          return { success: false, error: 'La saison cible est clôturée. Rapprochement impossible.', status: 400 };
+        }
+        await db.insert(transactionsTable).values({
+          seasonId: txItem.seasonId,
+          type: txItem.type,
+          accountId: txItem.accountId,
+          destinationAccountId: txItem.destinationAccountId || null,
+          category: normalizeCategory(txItem.category),
+          amount: Math.round(txItem.amount),
+          date: txItem.date,
+          paymentMethod: txItem.paymentMethod,
+          description: txItem.description,
+          reference: txItem.reference || null,
+          memberId: memberId || null,
+          invoiceId: invoiceId || null,
+          bankTransactionId: id,
+          createdAt: new Date()
+        }).run();
+      }
+    } else {
+      const tx = body.transaction;
+      if (!tx) {
+        return { success: false, error: 'Détails de la transaction manquants.', status: 400 };
+      }
+      if (await isSeasonClosed(db, tx.seasonId)) {
+        return { success: false, error: 'La saison cible est clôturée. Rapprochement impossible.', status: 400 };
+      }
+
+      const [newTx] = await db.insert(transactionsTable).values({
+        seasonId: tx.seasonId,
+        type: tx.type,
+        accountId: tx.accountId,
+        destinationAccountId: tx.destinationAccountId || null,
+        category: normalizeCategory(tx.category),
+        amount: Math.round(tx.amount),
+        date: tx.date,
+        paymentMethod: tx.paymentMethod,
+        description: tx.description,
+        reference: tx.reference || null,
+        memberId: memberId || null,
+        invoiceId: (invoiceIds && invoiceIds.length > 0) ? invoiceIds[0] : (invoiceId || null),
+        bankTransactionId: id,
+        createdAt: new Date()
+      }).returning();
+
+      lastTxId = newTx.id;
     }
 
-    // Insérer la transaction dans le Grand Livre liée à cette transaction bancaire
-    const [newTx] = await db.insert(transactionsTable).values({
-      seasonId: tx.seasonId,
-      type: tx.type,
-      accountId: tx.accountId,
-      destinationAccountId: tx.destinationAccountId || null,
-      category: normalizeCategory(tx.category),
-      amount: Math.round(tx.amount),
-      date: tx.date,
-      paymentMethod: tx.paymentMethod,
-      description: tx.description,
-      reference: tx.reference || null,
-      memberId: memberId || null,
-      invoiceId: invoiceId || null, // Associer la facture
-      bankTransactionId: id,
-      createdAt: new Date()
-    }).returning();
-
-    // Si lié à une facture, la marquer comme payée et lui associer la transaction bancaire
     if (invoiceId) {
       await db.update(invoicesTable)
         .set({ status: 'paid', bankTransactionId: id })
         .where(eq(invoicesTable.id, invoiceId))
         .run();
     }
-    lastTxId = newTx.id;
+
+    if (invoiceIds && Array.isArray(invoiceIds)) {
+      for (const invId of invoiceIds) {
+        await db.update(invoicesTable)
+          .set({ status: 'paid', bankTransactionId: id })
+          .where(eq(invoicesTable.id, invId))
+          .run();
+      }
+    }
   } else {
-    return c.json({ success: false, error: 'Action invalide.' }, 400);
+    return { success: false, error: 'Action invalide.', status: 400 };
   }
 
-  // Calculer le montant total déjà rapproché pour cette ligne de relevé
   const linkedTxs = await db.select()
     .from(transactionsTable)
     .where(eq(transactionsTable.bankTransactionId, id))
     .all();
-  const totalLinked = linkedTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  const totalLinked = linkedTxs.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
 
-  // Si le total rapproché est égal ou supérieur au montant absolu de la ligne bancaire, on la valide
   if (totalLinked >= Math.abs(bankTx.amount)) {
     await db.update(bankTransactionsTable)
       .set({ status: 'reconciled' })
@@ -1493,7 +1535,11 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
   if (memberId) {
     let categoryStr = null;
     if (body.action === 'create') {
-      categoryStr = body.transaction?.category;
+      if (body.transactions && Array.isArray(body.transactions)) {
+        categoryStr = body.transactions[0]?.category;
+      } else {
+        categoryStr = body.transaction?.category;
+      }
     } else if (body.action === 'match') {
       const matchedTx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, body.transactionId)).get();
       categoryStr = matchedTx ? matchedTx.category : null;
@@ -1502,7 +1548,16 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
     if (categoryStr === 1 || String(categoryStr) === '1' || categoryStr === 'adhesions_inscriptions') {
       const member = await db.select().from(membersTable).where(eq(membersTable.id, memberId)).get();
       if (member) {
-        const amountToApply = Math.abs(body.transaction?.amount ?? bankTx.amount);
+        let amountToApply = 0;
+        if (body.action === 'create') {
+          if (body.transactions && Array.isArray(body.transactions)) {
+            amountToApply = body.transactions.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
+          } else {
+            amountToApply = Math.abs(body.transaction?.amount ?? bankTx.amount);
+          }
+        } else {
+          amountToApply = Math.abs(bankTx.amount);
+        }
         const newReceived = member.amountReceived + amountToApply;
         const newRemaining = Math.max(0, member.amountDue - newReceived);
         const isPaid = newRemaining === 0;
@@ -1519,7 +1574,56 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
     }
   }
 
-  return c.json({ success: true });
+  return { success: true };
+}
+
+app.post('/bank-transactions/reconcile-bulk', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const body = await c.req.json() as any;
+  const requests = body.requests;
+  if (!requests || !Array.isArray(requests)) {
+    return c.json({ success: false, error: 'Missing requests array.' }, 400);
+  }
+
+  const db = drizzle(c.env.DB);
+
+  try {
+    let count = 0;
+    await db.transaction(async (tx) => {
+      for (const req of requests) {
+        const result = await reconcileBankTxInternal(tx, req.btId, req);
+        if (!result.success) {
+          throw new Error(result.error || 'Matching operation failed');
+        }
+        count++;
+      }
+    });
+
+    return c.json({ success: true, count });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+});
+
+app.post('/bank-transactions/:id/reconcile', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const body = await c.req.json() as any;
+  const db = drizzle(c.env.DB);
+
+  try {
+    const result = await reconcileBankTxInternal(db, id, body);
+    if (!result.success) {
+      return c.json({ success: false, error: result.error }, (result.status || 400) as any);
+    }
+    return c.json({ success: true });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
 });
 
 app.post('/bank-transactions/:id/ignore', async (c) => {
