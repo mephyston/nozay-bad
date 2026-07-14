@@ -747,5 +747,60 @@ describe('BankStatementReconciliation Component', () => {
     expect(store['reconcile_active_bt_id']).toBeUndefined();
     vi.unstubAllGlobals();
   });
+
+  it('pre-populates member and category fields in the manual form from AI suggestions when a transaction is selected', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankTransactions: [
+          {
+            id: 42,
+            fitid: 'TX-AI-SUG',
+            accountId: 'current',
+            amount: 15000,
+            date: '2026-02-16',
+            name: 'VIR DUPONT JEAN ADHESION',
+            memo: 'Cotisation 25-26',
+            status: 'pending',
+            aiSuggestions: JSON.stringify({
+              category: 5,
+              memberId: 99,
+              memberName: 'Dupont Jean',
+              confidence: 0.9
+            })
+          }
+        ],
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }],
+        members: [
+          {
+            id: 99,
+            licence: '0102030',
+            lastName: 'Dupont',
+            firstName: 'Jean',
+            amountRemaining: 15000
+          }
+        ]
+      }
+    });
+
+    flushSync();
+
+    // Click on the transaction to select it
+    const btn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('VIR DUPONT JEAN')) as HTMLButtonElement;
+    expect(btn).not.toBeNull();
+    btn.click();
+    flushSync();
+
+    // The category dropdown should show 'Tournois Senior'
+    expect(target.innerHTML).toContain('Tournois Senior');
+
+    // The member search combobox should show the selected member name 'Dupont Jean'
+    expect(target.innerHTML).toContain('Dupont Jean');
+  });
 });
 

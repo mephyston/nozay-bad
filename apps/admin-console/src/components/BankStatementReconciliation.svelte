@@ -93,6 +93,7 @@
   let paymentMethod = $state('virement');
   let selectedMemberId = $state<string>('');
   let amountToLink = $state<number>(0);
+  let lastProcessedTxId = $state<number | null>(null);
 
   // Task 3: Multi-match & manual split form state
   let selectedInvoiceIds = $state<Set<number>>(new Set());
@@ -570,6 +571,28 @@
   $effect(() => {
     if (selectedTx) {
       sessionStorage.setItem('reconcile_active_bt_id', selectedTx.id.toString());
+    }
+  });
+
+  $effect(() => {
+    if (selectedTx && selectedTx.id !== lastProcessedTxId) {
+      lastProcessedTxId = selectedTx.id;
+      if (selectedTx.aiSuggestions) {
+        try {
+          const sug = JSON.parse(selectedTx.aiSuggestions);
+          selectedMemberId = sug.memberId ? sug.memberId.toString() : '';
+          if (sug.category) {
+            category = sug.category.toString();
+          }
+        } catch (e) {
+          selectedMemberId = '';
+        }
+      } else {
+        selectedMemberId = '';
+      }
+    } else if (!selectedTx) {
+      lastProcessedTxId = null;
+      selectedMemberId = '';
     }
   });
 
