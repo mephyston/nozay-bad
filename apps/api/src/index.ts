@@ -1258,35 +1258,32 @@ app.post('/bank-transactions/analyze', async (c) => {
           textToLower.includes('hivers')
         )
       ) ||
+      (
+        (textToLower.includes('stage') || textToLower.includes('stg')) &&
+        (
+          textToLower.includes('jeune') || 
+          textToLower.includes('jeunes') || 
+          textToLower.includes('toussaint') || 
+          textToLower.includes('paques') || 
+          textToLower.includes('pâques') || 
+          textToLower.includes('noel') || 
+          textToLower.includes('noël') || 
+          textToLower.includes('fevrier') || 
+          textToLower.includes('février') || 
+          textToLower.includes('avril') || 
+          textToLower.includes('printemps') || 
+          textToLower.includes('hiver') || 
+          textToLower.includes('hivers') ||
+          textToLower.includes('juillet') ||
+          textToLower.includes('aout') ||
+          textToLower.includes('août')
+        )
+      ) ||
       textToLower.includes('toussaint') ||
       textToLower.includes('paques') ||
       textToLower.includes('pâques') ||
       textToLower.includes('noel') ||
       textToLower.includes('noël') ||
-      textToLower.includes('stage hiver') ||
-      textToLower.includes('stage d\'hiver') ||
-      textToLower.includes('stage d\'hivers') ||
-      textToLower.includes('stg hiver') ||
-      textToLower.includes('stg d\'hiver') ||
-      textToLower.includes('stg d\'hivers') ||
-      textToLower.includes('stage fevrier') ||
-      textToLower.includes('stage février') ||
-      textToLower.includes('stg fevrier') ||
-      textToLower.includes('stg février') ||
-      textToLower.includes('stage printemps') ||
-      textToLower.includes('stg printemps') ||
-      textToLower.includes('stage avril') ||
-      textToLower.includes('stg avril') ||
-      textToLower.includes('stage jeune') ||
-      textToLower.includes('stage jeunes') ||
-      textToLower.includes('stg jeune') ||
-      textToLower.includes('stg jeunes') ||
-      textToLower.includes('stage juillet') ||
-      textToLower.includes('stg juillet') ||
-      textToLower.includes('stage aout') ||
-      textToLower.includes('stage août') ||
-      textToLower.includes('stg aout') ||
-      textToLower.includes('stg août') ||
       textToLower.includes('airbnb') ||
       textToLower.includes('air bnb')
     ) {

@@ -1887,6 +1887,40 @@ VERSION:102
     expect(sug.category).toBe(4); // Actions Jeunes (overridden from general coach salary/travel category 9)
   });
 
+  it('correctly maps stages of players containing name in between stage and month to actions_jeunes category in deterministic fallback', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: '33286873000300846000500078472020260223',
+      seasonId: '25-26',
+      accountId: 'current',
+      amount: 7500,
+      date: '2026-02-23',
+      name: 'VIR RECU 9605385631002',
+      memo: 'DE: M OU MME AUDAS CHRISTOPHE MOTIF: Stage Mael Audas Fevrier 26',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const mockAI = {
+      run: async () => {
+        throw new Error('AI offline simulation');
+      }
+    };
+
+    const analyzeRes = await app.request('http://localhost/bank-transactions/analyze?season=25-26', {
+      method: 'POST'
+    }, { DB: mockD1 as any, AI: mockAI as any });
+    expect(analyzeRes.status).toBe(200);
+
+    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    expect(updatedBt.aiSuggestions).not.toBeNull();
+    
+    const sug = JSON.parse(updatedBt.aiSuggestions);
+    expect(sug.category).toBe(4); // Actions Jeunes (overridden from general stage category 13 because of Stage + Fevrier combination)
+  });
+
   it('does not impact member remaining balance when linking a non-membership transaction (e.g. cordage)', async () => {
     const mockD1 = await setupMockDb();
     const db = drizzle(mockD1 as any);
