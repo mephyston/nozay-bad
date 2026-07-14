@@ -470,7 +470,7 @@
     </div>
   {:else}
     <div class="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto min-h-[240px]">
         <table class="w-full text-left border-collapse text-sm">
           <thead>
             <tr class="bg-muted/40 border-b border-border text-muted-foreground font-semibold">
