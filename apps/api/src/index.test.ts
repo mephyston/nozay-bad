@@ -2057,6 +2057,54 @@ VERSION:102
     expect(sug.category).toBe(12); // Championnats
   });
 
+  it('correctly maps licence keyword to membership category when amount is positive, and to licences_federation when amount is negative', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    const bt1 = await db.insert(bankTransactionsTable).values({
+      fitid: 'GEN-2526-115',
+      seasonId: '25-26',
+      accountId: 'current',
+      amount: 5800,
+      date: '2025-10-01',
+      name: 'VIR RECU 0180513616S',
+      memo: 'DE: MR OU MME SEBASTIEN TETEVUIDE - licence 2',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const bt2 = await db.insert(bankTransactionsTable).values({
+      fitid: 'GEN-2526-116',
+      seasonId: '25-26',
+      accountId: 'current',
+      amount: -15000,
+      date: '2025-10-02',
+      name: 'VIR LIGUE IDF BADMINTON',
+      memo: 'Facture licences debut de saison',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const mockAI = {
+      run: async () => {
+        throw new Error('AI offline simulation');
+      }
+    };
+
+    const analyzeRes = await app.request('http://localhost/bank-transactions/analyze?season=25-26', {
+      method: 'POST'
+    }, { DB: mockD1 as any, AI: mockAI as any });
+    expect(analyzeRes.status).toBe(200);
+
+    const updatedBt1 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get();
+    const sug1 = JSON.parse(updatedBt1.aiSuggestions);
+    expect(sug1.category).toBe(1); // Adhesions
+
+    const updatedBt2 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get();
+    const sug2 = JSON.parse(updatedBt2.aiSuggestions);
+    expect(sug2.category).toBe(11); // Licences Federation
+  });
+
   it('does not impact member remaining balance when linking a non-membership transaction (e.g. cordage)', async () => {
     const mockD1 = await setupMockDb();
     const db = drizzle(mockD1 as any);

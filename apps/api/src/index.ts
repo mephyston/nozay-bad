@@ -1227,7 +1227,13 @@ app.post('/bank-transactions/analyze', async (c) => {
       (textToLower.includes('nozay badminton') && textToLower.includes('recharge'))
     ) {
       suggestedCategory = CAT_VIREMENTS_INTERNES;
-    } else if (textToLower.includes('adhesion') || textToLower.includes('cotisation') || (textToLower.includes('inscription') && !textToLower.includes('tournoi') && !textToLower.includes('ebad'))) {
+    } else if (
+      textToLower.includes('adhesion') || 
+      textToLower.includes('cotisation') || 
+      (textToLower.includes('inscription') && !textToLower.includes('tournoi') && !textToLower.includes('ebad')) ||
+      (textToLower.includes('licence') && tx.amount > 0) ||
+      (textToLower.includes('licences') && tx.amount > 0)
+    ) {
       suggestedCategory = CAT_ADHESIONS;
     } else if (textToLower.includes('ionos')) {
       suggestedCategory = CAT_FONCTIONNEMENT_ADMIN;
@@ -1339,6 +1345,11 @@ app.post('/bank-transactions/analyze', async (c) => {
       suggestedCategory = CAT_VOLANTS;
     } else if (textToLower.includes('stage')) {
       suggestedCategory = CAT_STAGES_FORMATIONS;
+    } else if (
+      (textToLower.includes('licence') && tx.amount < 0) ||
+      (textToLower.includes('licences') && tx.amount < 0)
+    ) {
+      suggestedCategory = CAT_LICENCES_FEDERATION;
     } else if (textToLower.includes('salaire') || textToLower.includes('tetevuide') || textToLower.includes('meunier')) {
       suggestedCategory = CAT_SALAIRES_CHARGES;
     } else if (textToLower.includes('versement express')) {
