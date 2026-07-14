@@ -810,12 +810,13 @@
               type="button"
               onclick={() => { selectedTx = bt; selectedMemberId = ''; }}
               class="w-full text-left p-4 hover:bg-muted/50 transition-colors flex items-center justify-between gap-4 border-0 cursor-pointer {selectedTx?.id === bt.id ? 'bg-muted border-l-4 border-l-primary' : ''}"
+              title="{bt.name}{bt.memo ? ' — ' + bt.memo : ''}"
             >
               <div>
-                <div class="font-bold text-sm text-foreground">{bt.name}</div>
+                <div class="font-bold text-sm text-foreground truncate max-w-[280px]" title={bt.name}>{bt.name}</div>
                 <div class="text-xs text-muted-foreground">{bt.date} • {accountLabels[bt.accountId]}</div>
                 {#if bt.memo}
-                  <div class="text-xs text-muted-foreground italic truncate max-w-md">{bt.memo}</div>
+                  <div class="text-xs text-muted-foreground italic truncate max-w-[280px]" title={bt.memo}>{bt.memo}</div>
                 {/if}
                 {#if bt.aiSuggestions && bt.status === 'pending'}
                   {@const sug = JSON.parse(bt.aiSuggestions)}
@@ -848,9 +849,15 @@
         {#if selectedTx}
           <div class="space-y-5">
             <div>
-              <h3 class="font-bold text-lg">{selectedTx.name}</h3>
+              <h3 class="font-bold text-lg" title={selectedTx.name}>{selectedTx.name}</h3>
               <p class="text-xs text-muted-foreground mt-1">Ligne bancaire sélectionnée • ID: {selectedTx.fitid}</p>
-              <div class="text-2xl font-bold mt-2 {selectedTx.amount < 0 ? 'text-destructive' : 'text-emerald-600'}">
+              {#if selectedTx.memo}
+                <div class="text-xs text-foreground bg-muted/40 p-3 rounded-lg border border-border mt-3 whitespace-pre-wrap leading-relaxed break-words" title={selectedTx.memo}>
+                  <span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Détails / Mémo bancaire</span>
+                  {selectedTx.memo}
+                </div>
+              {/if}
+              <div class="text-2xl font-bold mt-3 {selectedTx.amount < 0 ? 'text-destructive' : 'text-emerald-600'}">
                 {selectedTx.amount < 0 ? '' : '+'}{(selectedTx.amount / 100).toFixed(2)} €
               </div>
             </div>
