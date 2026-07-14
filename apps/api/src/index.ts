@@ -1231,6 +1231,15 @@ app.post('/bank-transactions/analyze', async (c) => {
       suggestedCategory = CAT_FONCTIONNEMENT_ADMIN;
     } else if (textToLower.includes('urssaf') || textToLower.includes('afdas')) {
       suggestedCategory = CAT_SALAIRES_CHARGES;
+    } else if (
+      textToLower.includes('deplacement jeune') || 
+      textToLower.includes('deplacement jeunes') || 
+      textToLower.includes('accompagnement jeune') || 
+      textToLower.includes('accompagnement jeunes') || 
+      textToLower.includes('tournoi jeune') ||
+      textToLower.includes('tournoi jeunes')
+    ) {
+      suggestedCategory = CAT_ACTIONS_JEUNES;
     } else if (textToLower.includes('salaire') || textToLower.includes('tetevuide') || textToLower.includes('meunier')) {
       suggestedCategory = CAT_SALAIRES_CHARGES;
     } else if (textToLower.includes('larde')) {
@@ -1333,6 +1342,7 @@ Instructions :
 2. Choisis la catégorie la plus adaptée parmi la liste des catégories valides ci-dessus (ex: renvoie 8 si le motif mentionne "volants", 7 si "cordage", etc.).
 3. Si le libellé bancaire ou le mémo est composé principalement d'une longue suite de chiffres (plus de 20 chiffres d'affilée), il s'agit d'un virement interne de compte à compte. Associe impérativement la catégorie 15 et aucun adhérent (memberId = null).
 4. Si le montant correspond exactement au tarif d'un produit (par exemple 31.50 EUR pour les volants) ou à un multiple entier de celui-ci (comme 63.00 EUR pour 2 boîtes de volants, ou 30.00 EUR pour 2 cordages), et qu'il n'y a pas d'autre indication de catégorie dans le texte, choisis la catégorie associée à ce produit.
+5. Si le libellé bancaire ou le mémo mentionne des déplacements, tournois, ou accompagnements pour les jeunes (ex: "deplacement jeune", "tournoi jeune", "accompagnement jeunes"), choisis impérativement la catégorie 4 (actions_jeunes) au lieu de la catégorie 9 (salaires_charges), même si le nom d'un entraîneur ou salarié apparaît dans l'opération.
 
 Renvoie STRICTEMENT un objet JSON sous la forme suivante (sans aucun autre texte, balises markdown ou commentaires) :
 {
