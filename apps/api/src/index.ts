@@ -2772,6 +2772,8 @@ app.post('/categories', async (c) => {
       adminLabel: body.adminLabel,
       adherentLabel: body.adherentLabel,
       hideInExpenses: body.hideInExpenses || false,
+      codeRecette: body.codeRecette,
+      codeDepense: body.codeDepense,
       createdAt: new Date()
     }).returning().get();
     return c.json({ success: true, data: newCat });
@@ -2791,7 +2793,9 @@ app.put('/categories/:id', async (c) => {
     const updated = await db.update(categoriesTable).set({
       adminLabel: body.adminLabel,
       adherentLabel: body.adherentLabel,
-      hideInExpenses: body.hideInExpenses
+      hideInExpenses: body.hideInExpenses,
+      codeRecette: body.codeRecette,
+      codeDepense: body.codeDepense
     }).where(eq(categoriesTable.id, id)).returning().get();
 
     if (!updated) {

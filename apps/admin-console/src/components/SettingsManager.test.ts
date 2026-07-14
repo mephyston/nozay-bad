@@ -9,8 +9,8 @@ describe("SettingsManager Component", () => {
   ];
 
   const categories = [
-    { id: 1, code: "volants", adminLabel: "Volants (vente ou achat)", adherentLabel: "Volants", hideInExpenses: false },
-    { id: 2, code: "salaires_charges", adminLabel: "Salaires et Charges", adherentLabel: "Salaires & Charges", hideInExpenses: true }
+    { id: 1, code: "volants", adminLabel: "Volants (vente ou achat)", adherentLabel: "Volants", hideInExpenses: false, codeRecette: "70", codeDepense: "60" },
+    { id: 2, code: "salaires_charges", adminLabel: "Salaires et Charges", adherentLabel: "Salaires & Charges", hideInExpenses: true, codeRecette: null, codeDepense: "64" }
   ];
 
   let originalFetch: typeof global.fetch;

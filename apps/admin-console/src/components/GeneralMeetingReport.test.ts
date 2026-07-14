@@ -31,7 +31,7 @@ describe('GeneralMeetingReport Component', () => {
           { id: '25-26', name: 'Saison 2025-2026', active: true }
         ],
         categories: [
-          { id: 1, adminLabel: 'Cotisations membres', adherentLabel: 'Cotis', hideInExpenses: false }
+          { id: 1, adminLabel: 'Cotisations membres', adherentLabel: 'Cotis', hideInExpenses: false, codeRecette: '75', codeDepense: '67' }
         ],
         viewMode: 'categories'
       }

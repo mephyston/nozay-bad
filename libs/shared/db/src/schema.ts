@@ -158,6 +158,8 @@ export const categoriesTable = sqliteTable('categories', {
   adminLabel: text('admin_label').notNull(),
   adherentLabel: text('adherent_label').notNull(),
   hideInExpenses: integer('hide_in_expenses', { mode: 'boolean' }).notNull().default(false),
+  codeRecette: text('code_recette'),
+  codeDepense: text('code_depense'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
