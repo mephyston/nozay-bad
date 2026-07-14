@@ -13,7 +13,7 @@
 - Task 3: complete (commits 313d222..d512639, review clean)
 - Task 7: complete (commits a553e05..5a77028, review clean)
 - Task 8: complete (commits 5a77028..e8c5b35, review clean)
-- Task 9: complete (commits e8c5b35..2bd94c5, review clean)
+- Task 9: complete (commits e8c5b35..30ecb1b, review clean)
 
 ## Sub-Project: Chèques en circulation et pagination intermédiaire
 
