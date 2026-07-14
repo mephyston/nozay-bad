@@ -2409,6 +2409,18 @@ VERSION:102
     expect(body.data.memberName).toBe('DUPONT Jean');
     expect(body.data.date).toBe('2026-07-10');
   });
+
+  it('supports filtering by unreconciled cheques only', async () => {
+    const mockD1 = await setupMockDb();
+    const res = await app.request('http://localhost/transactions?unreconciledCheques=true', undefined, { DB: mockD1 as any });
+    expect(res.status).toBe(200);
+    const json = await res.json() as any;
+    expect(json.success).toBe(true);
+    for (const tx of json.data) {
+      expect(tx.paymentMethod).toBe('cheque');
+      expect(tx.bankTransactionId).toBeNull();
+    }
+  });
 });
 
 describe('Products API Endpoints', () => {

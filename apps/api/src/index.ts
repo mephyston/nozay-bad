@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
-import { and, or, eq, ne, like, sql, inArray, desc, gte, lte } from 'drizzle-orm';
+import { and, or, eq, ne, like, sql, inArray, desc, gte, lte, isNull } from 'drizzle-orm';
 import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, expensesTable, categoriesTable, invoicesTable, invoiceItemsTable, accountClassesTable, seasonCategoryBudgetsTable } from '../../../libs/shared/db/src/schema';
 
 
@@ -656,7 +656,9 @@ app.get('/transactions', async (c) => {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
   const seasonId = c.req.query('season');
-  if (!seasonId) {
+  const unreconciledChequesOnly = c.req.query('unreconciledCheques') === 'true';
+
+  if (!seasonId && !unreconciledChequesOnly) {
     return c.json({ success: false, error: 'Missing season query parameter' }, 400);
   }
   const page = parseInt(c.req.query('page') || '1');
@@ -664,7 +666,10 @@ app.get('/transactions', async (c) => {
   const offset = (page - 1) * limit;
 
   const db = drizzle(c.env.DB);
-  const conditions = [eq(transactionsTable.seasonId, seasonId)];
+  const conditions = [];
+  if (seasonId) {
+    conditions.push(eq(transactionsTable.seasonId, seasonId));
+  }
 
   const accountId = c.req.query('accountId');
   if (accountId) {
@@ -698,6 +703,13 @@ app.get('/transactions', async (c) => {
   const memberId = c.req.query('memberId');
   if (memberId) {
     conditions.push(eq(transactionsTable.memberId, parseInt(memberId)));
+  }
+
+  if (unreconciledChequesOnly) {
+    conditions.push(
+      eq(transactionsTable.paymentMethod, 'cheque'),
+      isNull(transactionsTable.bankTransactionId)
+    );
   }
 
   const totalRes = await db.select({ count: sql<number>`count(*)` })
