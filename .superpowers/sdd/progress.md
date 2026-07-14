@@ -1,24 +1,19 @@
 # Subagent-Driven Development Progress Ledger
 
 Project: `nozay-bad` (NBA 91)
-Current Plan: `docs/superpowers/plans/2026-07-13-product-resales-and-orders-plan.md`
+Current Plan: `docs/superpowers/plans/2026-07-14-cse-certificates-and-invoice-module.md`
 
-## Task Progress (Sub-Project: Product Resales and Orders)
+## Task Progress (Sub-Project: Attestations CSE & Module de Facturation)
 
-*   [x] Task 1: Schéma et Migrations Base de Données
-*   [x] Task 2: Endpoints API Produits (Hono)
-*   [x] Task 3: Endpoints API Commandes (Hono)
-*   [x] Task 4: Console d'Administration - Gestion des Articles Svelte UI
-*   [x] Task 5: Console d'Administration - Validation des Commandes Svelte UI
-*   [x] Task 6: Application Boutique Adhérents
+*   [x] Task 1 : Schéma et Migrations Base de Données
+*   [ ] Task 2 : API Endpoints Factures & Attestation CSE
+*   [ ] Task 3 : Câblage du Rapprochement des Factures
+*   [ ] Task 4 : Interface de Gestion des Factures (Svelte 5)
+*   [ ] Task 5 : Rapprochement de Facture dans l'UI
+*   [ ] Task 6 : Templates d'Impression "Print-Ready"
 
 ## Ledger Entries
 
-### Sub-Project: Product Resales and Orders
+### Sub-Project: Attestations CSE & Module de Facturation
 
-- Task 6: complete (commits d60ea65..3bfb0ec, review clean)
-- Task 5: complete (commits 4e095cc..e121a16, review clean)
-- Task 4: complete (commits 6149700..bbfa366, review clean)
-- Task 3: complete (commits ff552ba..555f0ab, review clean)
-- Task 2: complete (commits 29ebfb1..37aab6f, review clean)
-- Task 1: complete (commits fa3dd15..27967de, review clean)
+- Task 1: complete (commits d23b9ca, review clean)
