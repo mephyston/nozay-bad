@@ -11,3 +11,10 @@
 - Task 1: complete (commits 6c830d7..917d83e, review clean)
 - Task 2: complete (commits 8a8e588..12a48f6, review clean)
 - Task 3: complete (commits 313d222..d512639, review clean)
+- Task 7: complete (commits a553e05..5a77028, review clean)
+
+## Sub-Project: Chèques en circulation et pagination intermédiaire
+
+*   [x] Task 7 : API Changes (Hono backend)
+*   [x] Task 8 : Page Controller Changes (Astro)
+*   [ ] Task 9 : UI Enhancement (Svelte 5 component & Tests)
