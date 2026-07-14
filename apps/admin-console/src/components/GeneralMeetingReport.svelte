@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AlertCircle } from 'lucide-svelte';
+  import { AlertCircle, Printer } from 'lucide-svelte';
 
   interface CategoryTotal {
     type: 'recette' | 'depense';
@@ -83,40 +83,125 @@
     });
   }
 
-  // Get total for a class code and flow type (dynamic based on reportMode)
-  function getClassSum(classCode: string, type: 'recette' | 'depense'): number {
+  // Get total for a class code and flow type (realise)
+  function getClassSumRealise(classCode: string, type: 'recette' | 'depense'): number {
     const classCats = getClassCategories(classCode, type);
-    if (reportMode === 'realise') {
-      let sum = 0;
-      for (const cat of classCats) {
-        sum += getCatTotal(cat.id.toString(), type);
-      }
-      return sum;
-    } else {
-      return classCats.reduce((sum, cat) => sum + (editableBudget[`${cat.id}_${type}`] || 0), 0);
+    let sum = 0;
+    for (const cat of classCats) {
+      sum += getCatTotal(cat.id.toString(), type);
     }
+    return sum;
   }
 
-  let totalDepenses = $derived(
-    reportMode === 'realise'
-      ? report.compteResultat.totalDepenses
-      : accountClasses
-          .filter(ac => ac.type === 'depense')
-          .reduce((sum, ac) => sum + getClassSum(ac.code, 'depense'), 0)
+  // Get total for a class code and flow type (previsionnel)
+  function getClassSumPrevisionnel(classCode: string, type: 'recette' | 'depense'): number {
+    const classCats = getClassCategories(classCode, type);
+    return classCats.reduce((sum, cat) => sum + (editableBudget[`${cat.id}_${type}`] || 0), 0);
+  }
+
+  // Get total for a class code and flow type (dynamic based on reportMode)
+  function getClassSum(classCode: string, type: 'recette' | 'depense'): number {
+    return reportMode === 'realise'
+      ? getClassSumRealise(classCode, type)
+      : getClassSumPrevisionnel(classCode, type);
+  }
+
+  let totalDepensesRealise = $derived(
+    accountClasses
+      .filter(ac => ac.type === 'depense')
+      .reduce((sum, ac) => sum + getClassSumRealise(ac.code, 'depense'), 0)
   );
 
-  let totalRecettes = $derived(
-    reportMode === 'realise'
-      ? report.compteResultat.totalRecettes
-      : accountClasses
-          .filter(ac => ac.type === 'recette')
-          .reduce((sum, ac) => sum + getClassSum(ac.code, 'recette'), 0)
+  let totalDepensesPrevisionnel = $derived(
+    accountClasses
+      .filter(ac => ac.type === 'depense')
+      .reduce((sum, ac) => sum + getClassSumPrevisionnel(ac.code, 'depense'), 0)
   );
 
-  let netResult = $derived(totalRecettes - totalDepenses);
+  let totalRecettesRealise = $derived(
+    accountClasses
+      .filter(ac => ac.type === 'recette')
+      .reduce((sum, ac) => sum + getClassSumRealise(ac.code, 'recette'), 0)
+  );
+
+  let totalRecettesPrevisionnel = $derived(
+    accountClasses
+      .filter(ac => ac.type === 'recette')
+      .reduce((sum, ac) => sum + getClassSumPrevisionnel(ac.code, 'recette'), 0)
+  );
+
+  let netResultRealise = $derived(totalRecettesRealise - totalDepensesRealise);
+  let netResultPrevisionnel = $derived(totalRecettesPrevisionnel - totalDepensesPrevisionnel);
+
+  // Backward compatibility for standard variables
+  let totalDepenses = $derived(reportMode === 'realise' ? totalDepensesRealise : totalDepensesPrevisionnel);
+  let totalRecettes = $derived(reportMode === 'realise' ? totalRecettesRealise : totalRecettesPrevisionnel);
+  let netResult = $derived(reportMode === 'realise' ? netResultRealise : netResultPrevisionnel);
 
   let isClosed = $derived(
     seasons.find(s => s.id === selectedSeason)?.closed || false
+  );
+
+  // Generate vector SVG pie chart slices
+  function generatePieSlices(items: { label: string; value: number }[]) {
+    const validItems = items.filter(item => item.value > 0);
+    const total = validItems.reduce((sum, item) => sum + item.value, 0);
+    if (total === 0) return [];
+
+    let accumulatedPercent = 0;
+    const colors = [
+      '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', 
+      '#ec4899', '#06b6d4', '#14b8a6', '#f43f5e', '#a855f7'
+    ];
+
+    return validItems.map((item, index) => {
+      const percent = item.value / total;
+      const startAngle = accumulatedPercent * 2 * Math.PI;
+      accumulatedPercent += percent;
+      const endAngle = accumulatedPercent * 2 * Math.PI;
+
+      const r = 80;
+      const cx = 100;
+      const cy = 100;
+      
+      const x1 = cx + r * Math.sin(startAngle);
+      const y1 = cy - r * Math.cos(startAngle);
+      const x2 = cx + r * Math.sin(endAngle);
+      const y2 = cy - r * Math.cos(endAngle);
+
+      const largeArcFlag = percent > 0.5 ? 1 : 0;
+      const pathData = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+
+      return {
+        label: item.label,
+        value: item.value,
+        percent: (percent * 100).toFixed(1),
+        pathData,
+        color: colors[index % colors.length]
+      };
+    });
+  }
+
+  let chargesChartData = $derived(
+    generatePieSlices(
+      accountClasses
+        .filter(ac => ac.type === 'depense')
+        .map(ac => ({
+          label: ac.label,
+          value: reportMode === 'realise' ? getClassSumRealise(ac.code, 'depense') : getClassSumPrevisionnel(ac.code, 'depense')
+        }))
+    )
+  );
+
+  let recettesChartData = $derived(
+    generatePieSlices(
+      accountClasses
+        .filter(ac => ac.type === 'recette')
+        .map(ac => ({
+          label: ac.label,
+          value: reportMode === 'realise' ? getClassSumRealise(ac.code, 'recette') : getClassSumPrevisionnel(ac.code, 'recette')
+        }))
+    )
   );
 
   async function handleSaveBudget() {
@@ -269,7 +354,7 @@
     <div class="flex items-center gap-3">
       <h2 class="text-xl font-bold tracking-tight">Rapport Financier pour l'Assemblée Générale</h2>
       <select
-        class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+        class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary font-medium no-print"
         bind:value={selectedSeason}
         onchange={applySeasonChange}
       >
@@ -281,11 +366,20 @@
         {/if}
       </select>
     </div>
+    
+    <button
+      type="button"
+      onclick={() => window.print()}
+      class="px-3 py-1.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/95 text-xs shadow-sm cursor-pointer flex items-center gap-1.5 no-print"
+    >
+      <Printer class="w-4 h-4" />
+      Imprimer
+    </button>
   </div>
 
-  <!-- 1. COMPTE DE RÉSULTAT -->
-  <div class="bg-card border border-border rounded-xl p-6 shadow-sm space-y-6">
-    <div class="flex items-center justify-between border-b border-border pb-4">
+  <!-- 1. COMPTE DE RÉSULTAT (PAGE 1) -->
+  <div class="bg-card border border-border rounded-xl p-6 shadow-sm space-y-6 print-container">
+    <div class="flex items-center justify-between border-b border-border pb-4 no-print">
       <h3 class="text-lg font-semibold">1. Compte de Résultat</h3>
       <div class="inline-flex rounded-lg border border-border p-1 bg-muted/50">
         <button
@@ -305,78 +399,89 @@
       </div>
     </div>
 
+    <!-- Printable Title for A4 -->
+    <div class="hidden print:block text-center space-y-1 mb-6">
+      <h3 class="text-xl font-bold tracking-tight">Compte de Résultat Simplifié</h3>
+      <p class="text-xs text-muted-foreground">Saison {seasons.find(s => s.id === selectedSeason)?.name || selectedSeason}</p>
+    </div>
+
     <div class="grid gap-6 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
       <!-- CHARGES (Dépenses) -->
       <div class="space-y-4 pr-0 md:pr-6 flex flex-col justify-between">
         <div>
-          <h4 class="font-bold text-sm text-destructive border-b border-border pb-2 flex justify-between">
-            <span>CHARGES (Dépenses)</span>
-            <span>{formatAmount(totalDepenses)}</span>
-          </h4>
+          <div class="flex justify-between items-center font-bold text-xs text-muted-foreground border-b border-border pb-2">
+            <span class="text-sm font-bold text-destructive">CHARGES (Dépenses)</span>
+            <div class="flex gap-8 font-mono text-[11px]">
+              <span class="w-20 text-right">Réalisé</span>
+              <span class="w-20 text-right">Prévisionnel</span>
+            </div>
+          </div>
           
           <div class="space-y-4 mt-4">
             {#each chargeClasses as cc}
-              {#if reportMode === 'previsionnel' || getClassSum(cc.code, 'depense') > 0}
+              {#if reportMode === 'previsionnel' || getClassSumRealise(cc.code, 'depense') > 0 || getClassSumPrevisionnel(cc.code, 'depense') > 0}
                 <div class="space-y-1.5 py-1">
-                  <div class="flex justify-between items-center text-sm border-b border-border/40 pb-1">
-                    <span class="font-semibold text-foreground/90">{cc.label}</span>
-                    <span class="font-mono font-bold text-foreground">{formatAmount(getClassSum(cc.code, 'depense'))}</span>
+                  <div class="flex justify-between items-center text-sm border-b border-border/40 pb-1 font-bold text-foreground">
+                    <span class="text-foreground/90">{cc.label}</span>
+                    <div class="flex gap-8 font-mono">
+                      <span class="w-20 text-right">{formatAmount(getClassSumRealise(cc.code, 'depense'))}</span>
+                      <span class="w-20 text-right">{formatAmount(getClassSumPrevisionnel(cc.code, 'depense'))}</span>
+                    </div>
                   </div>
                   
-                  {#if reportMode === 'realise'}
-                    <div class="pl-4 space-y-1 text-xs text-muted-foreground">
-                      {#each getClassItems(cc.code, 'depense') as item}
-                        <div class="flex justify-between font-mono">
-                          <span class="font-sans">• {item.label}</span>
-                          <span>{formatAmount(item.total)}</span>
-                        </div>
-                      {/each}
-                    </div>
-                  {:else}
-                    <div class="pl-4 space-y-1 text-xs text-muted-foreground">
-                      {#each getClassCategories(cc.code, 'depense') as cat}
-                        <div class="flex justify-between items-center py-0.5 font-mono">
+                  <div class="pl-4 space-y-1 text-xs text-muted-foreground">
+                    {#each getClassCategories(cc.code, 'depense') as cat}
+                      {#if reportMode === 'previsionnel' || getCatTotal(cat.id.toString(), 'depense') > 0 || (editableBudget[`${cat.id}_depense`] || 0) > 0}
+                        <div class="flex justify-between items-center py-0.5 font-mono text-[11px]">
                           <span class="font-sans text-muted-foreground">• {cat.adminLabel}</span>
-                          {#if !isClosed}
-                            <div class="relative flex items-center">
-                              <input
-                                type="number"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={editableBudget[`${cat.id}_depense`] !== undefined ? (editableBudget[`${cat.id}_depense`] / 100) : ''}
-                                oninput={(e) => {
-                                  const val = parseFloat(e.currentTarget.value) || 0;
-                                  editableBudget[`${cat.id}_depense`] = Math.round(val * 100);
-                                }}
-                                class="w-24 px-2 py-0.5 text-right border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium font-mono"
-                              />
-                              <span class="absolute right-2 text-xs text-muted-foreground pointer-events-none">€</span>
-                            </div>
-                          {:else}
-                            <span>{formatAmount(editableBudget[`${cat.id}_depense`] || 0)}</span>
-                          {/if}
+                          <div class="flex gap-8 items-center">
+                            <span class="w-20 text-right">{formatAmount(getCatTotal(cat.id.toString(), 'depense'))}</span>
+                            {#if reportMode === 'previsionnel' && !isClosed}
+                              <div class="relative flex items-center w-20">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0.00"
+                                  value={editableBudget[`${cat.id}_depense`] !== undefined ? (editableBudget[`${cat.id}_depense`] / 100) : ''}
+                                  oninput={(e) => {
+                                    const val = parseFloat(e.currentTarget.value) || 0;
+                                    editableBudget[`${cat.id}_depense`] = Math.round(val * 100);
+                                  }}
+                                  class="w-20 px-1 py-0.5 text-right border border-border bg-background rounded text-[11px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium font-mono no-print"
+                                />
+                                <span class="absolute right-1 text-[10px] text-muted-foreground pointer-events-none no-print">€</span>
+                                <span class="hidden print:inline font-mono text-right w-full">{formatAmount(editableBudget[`${cat.id}_depense`] || 0)}</span>
+                              </div>
+                            {:else}
+                              <span class="w-20 text-right">{formatAmount(editableBudget[`${cat.id}_depense`] || 0)}</span>
+                            {/if}
+                          </div>
                         </div>
-                      {/each}
-                    </div>
-                  {/if}
+                      {/if}
+                    {/each}
+                  </div>
                 </div>
               {/if}
             {/each}
           </div>
         </div>
 
-        <div class="mt-8 pt-4 border-t border-border space-y-2">
-          {#if netResult >= 0}
-            <div class="flex justify-between font-semibold text-sm text-emerald-600 dark:text-emerald-400">
+        <div class="mt-8 pt-4 border-t border-border space-y-2 font-bold text-sm">
+          {#if netResultRealise >= 0 || netResultPrevisionnel >= 0}
+            <div class="flex justify-between font-semibold text-xs text-emerald-600 dark:text-emerald-400">
               <span>Excédent de l'exercice (Bénéfice)</span>
-              <span class="font-mono">{formatAmount(netResult)}</span>
+              <div class="flex gap-8 font-mono">
+                <span class="w-20 text-right">{netResultRealise >= 0 ? formatAmount(netResultRealise) : '0,00 €'}</span>
+                <span class="w-20 text-right">{netResultPrevisionnel >= 0 ? formatAmount(netResultPrevisionnel) : '0,00 €'}</span>
+              </div>
             </div>
           {/if}
-          <div class="flex justify-between font-bold text-sm text-foreground">
+          <div class="flex justify-between text-foreground">
             <span>TOTAL GÉNÉRAL</span>
-            <span class="font-mono">
-              {formatAmount(netResult >= 0 ? totalDepenses + netResult : totalDepenses)}
-            </span>
+            <div class="flex gap-8 font-mono">
+              <span class="w-20 text-right">{formatAmount(netResultRealise >= 0 ? totalDepensesRealise + netResultRealise : totalDepensesRealise)}</span>
+              <span class="w-20 text-right">{formatAmount(netResultPrevisionnel >= 0 ? totalDepensesPrevisionnel + netResultPrevisionnel : totalDepensesPrevisionnel)}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -384,74 +489,79 @@
       <!-- PRODUITS (Recettes) -->
       <div class="space-y-4 pl-0 md:pl-6 pt-6 md:pt-0 flex flex-col justify-between">
         <div>
-          <h4 class="font-bold text-sm text-emerald-600 dark:text-emerald-400 border-b border-border pb-2 flex justify-between">
-            <span>PRODUITS (Recettes)</span>
-            <span>{formatAmount(totalRecettes)}</span>
-          </h4>
+          <div class="flex justify-between items-center font-bold text-xs text-muted-foreground border-b border-border pb-2">
+            <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400">PRODUITS (Recettes)</span>
+            <div class="flex gap-8 font-mono text-[11px]">
+              <span class="w-20 text-right">Réalisé</span>
+              <span class="w-20 text-right">Prévisionnel</span>
+            </div>
+          </div>
           
           <div class="space-y-4 mt-4">
             {#each produitClasses as pc}
-              {#if reportMode === 'previsionnel' || getClassSum(pc.code, 'recette') > 0}
+              {#if reportMode === 'previsionnel' || getClassSumRealise(pc.code, 'recette') > 0 || getClassSumPrevisionnel(pc.code, 'recette') > 0}
                 <div class="space-y-1.5 py-1">
-                  <div class="flex justify-between items-center text-sm border-b border-border/40 pb-1">
-                    <span class="font-semibold text-foreground/90">{pc.label}</span>
-                    <span class="font-mono font-bold text-foreground">{formatAmount(getClassSum(pc.code, 'recette'))}</span>
+                  <div class="flex justify-between items-center text-sm border-b border-border/40 pb-1 font-bold text-foreground">
+                    <span class="text-foreground/90">{pc.label}</span>
+                    <div class="flex gap-8 font-mono">
+                      <span class="w-20 text-right">{formatAmount(getClassSumRealise(pc.code, 'recette'))}</span>
+                      <span class="w-20 text-right">{formatAmount(getClassSumPrevisionnel(pc.code, 'recette'))}</span>
+                    </div>
                   </div>
                   
-                  {#if reportMode === 'realise'}
-                    <div class="pl-4 space-y-1 text-xs text-muted-foreground">
-                      {#each getClassItems(pc.code, 'recette') as item}
-                        <div class="flex justify-between font-mono">
-                          <span class="font-sans">• {item.label}</span>
-                          <span>{formatAmount(item.total)}</span>
-                        </div>
-                      {/each}
-                    </div>
-                  {:else}
-                    <div class="pl-4 space-y-1 text-xs text-muted-foreground">
-                      {#each getClassCategories(pc.code, 'recette') as cat}
-                        <div class="flex justify-between items-center py-0.5 font-mono">
+                  <div class="pl-4 space-y-1 text-xs text-muted-foreground">
+                    {#each getClassCategories(pc.code, 'recette') as cat}
+                      {#if reportMode === 'previsionnel' || getCatTotal(cat.id.toString(), 'recette') > 0 || (editableBudget[`${cat.id}_recette`] || 0) > 0}
+                        <div class="flex justify-between items-center py-0.5 font-mono text-[11px]">
                           <span class="font-sans text-muted-foreground">• {cat.adminLabel}</span>
-                          {#if !isClosed}
-                            <div class="relative flex items-center">
-                              <input
-                                type="number"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={editableBudget[`${cat.id}_recette`] !== undefined ? (editableBudget[`${cat.id}_recette`] / 100) : ''}
-                                oninput={(e) => {
-                                  const val = parseFloat(e.currentTarget.value) || 0;
-                                  editableBudget[`${cat.id}_recette`] = Math.round(val * 100);
-                                }}
-                                class="w-24 px-2 py-0.5 text-right border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium font-mono"
-                              />
-                              <span class="absolute right-2 text-xs text-muted-foreground pointer-events-none">€</span>
-                            </div>
-                          {:else}
-                            <span>{formatAmount(editableBudget[`${cat.id}_recette`] || 0)}</span>
-                          {/if}
+                          <div class="flex gap-8 items-center">
+                            <span class="w-20 text-right">{formatAmount(getCatTotal(cat.id.toString(), 'recette'))}</span>
+                            {#if reportMode === 'previsionnel' && !isClosed}
+                              <div class="relative flex items-center w-20">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0.00"
+                                  value={editableBudget[`${cat.id}_recette`] !== undefined ? (editableBudget[`${cat.id}_recette`] / 100) : ''}
+                                  oninput={(e) => {
+                                    const val = parseFloat(e.currentTarget.value) || 0;
+                                    editableBudget[`${cat.id}_recette`] = Math.round(val * 100);
+                                  }}
+                                  class="w-20 px-1 py-0.5 text-right border border-border bg-background rounded text-[11px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium font-mono no-print"
+                                />
+                                <span class="absolute right-1 text-[10px] text-muted-foreground pointer-events-none no-print">€</span>
+                                <span class="hidden print:inline font-mono text-right w-full">{formatAmount(editableBudget[`${cat.id}_recette`] || 0)}</span>
+                              </div>
+                            {:else}
+                              <span class="w-20 text-right">{formatAmount(editableBudget[`${cat.id}_recette`] || 0)}</span>
+                            {/if}
+                          </div>
                         </div>
-                      {/each}
-                    </div>
-                  {/if}
+                      {/if}
+                    {/each}
+                  </div>
                 </div>
               {/if}
             {/each}
           </div>
         </div>
 
-        <div class="mt-8 pt-4 border-t border-border space-y-2">
-          {#if netResult < 0}
-            <div class="flex justify-between font-semibold text-sm text-destructive">
+        <div class="mt-8 pt-4 border-t border-border space-y-2 font-bold text-sm">
+          {#if netResultRealise < 0 || netResultPrevisionnel < 0}
+            <div class="flex justify-between font-semibold text-xs text-destructive">
               <span>Déficit de l'exercice (Perte)</span>
-              <span class="font-mono">{formatAmount(-netResult)}</span>
+              <div class="flex gap-8 font-mono">
+                <span class="w-20 text-right">{netResultRealise < 0 ? formatAmount(-netResultRealise) : '0,00 €'}</span>
+                <span class="w-20 text-right">{netResultPrevisionnel < 0 ? formatAmount(-netResultPrevisionnel) : '0,00 €'}</span>
+              </div>
             </div>
           {/if}
-          <div class="flex justify-between font-bold text-sm text-foreground">
+          <div class="flex justify-between text-foreground">
             <span>TOTAL GÉNÉRAL</span>
-            <span class="font-mono">
-              {formatAmount(netResult < 0 ? totalRecettes + (-netResult) : totalRecettes)}
-            </span>
+            <div class="flex gap-8 font-mono">
+              <span class="w-20 text-right">{formatAmount(netResultRealise < 0 ? totalRecettesRealise + (-netResultRealise) : totalRecettesRealise)}</span>
+              <span class="w-20 text-right">{formatAmount(netResultPrevisionnel < 0 ? totalRecettesPrevisionnel + (-netResultPrevisionnel) : totalRecettesPrevisionnel)}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -459,7 +569,7 @@
 
     <!-- Actions / Feedback for Budget editing -->
     {#if reportMode === 'previsionnel' && !isClosed}
-      <div class="flex flex-col gap-3 pt-4 border-t border-border mt-6">
+      <div class="flex flex-col gap-3 pt-4 border-t border-border mt-6 no-print">
         {#if saveStatus}
           <div class="p-3 text-xs rounded-lg {saveStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-destructive/10 text-destructive border border-destructive/20'}">
             {saveStatus.message}
@@ -484,8 +594,68 @@
     {/if}
   </div>
 
-  <!-- 2. BILAN DE TRÉSORERIE -->
-  <div class="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4">
+  <!-- DIAGRAMMES (PAGE 2) -->
+  <div class="page-break bg-card border border-border rounded-xl p-6 shadow-sm space-y-6">
+    <div class="text-center space-y-1 mb-2">
+      <h3 class="text-lg font-bold tracking-tight">2. Répartition Graphique des Budgets</h3>
+      <p class="text-xs text-muted-foreground">Représentation par classes de comptes (Mode : {reportMode === 'realise' ? 'Réalisé' : 'Prévisionnel'})</p>
+    </div>
+    
+    <div class="grid md:grid-cols-2 gap-8">
+      <!-- Charges Chart -->
+      <div class="border border-border/80 rounded-xl p-6 flex flex-col items-center justify-between bg-muted/20">
+        <h4 class="font-bold text-sm text-destructive mb-6 text-center">Charges (Dépenses)</h4>
+        {#if chargesChartData.length > 0}
+          <div class="flex flex-col items-center gap-6 w-full">
+            <svg width="180" height="180" viewBox="0 0 200 200" class="drop-shadow-sm rotate-[-90deg]">
+              {#each chargesChartData as slice}
+                <path d={slice.pathData} fill={slice.color} class="hover:opacity-90 transition-opacity" />
+              {/each}
+            </svg>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full text-xs pt-4 border-t border-border/60">
+              {#each chargesChartData as slice}
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: {slice.color}"></span>
+                  <span class="truncate text-foreground/80 font-medium" title={slice.label}>{slice.label} : <strong class="font-mono">{slice.percent}%</strong></span>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {:else}
+          <p class="text-xs text-muted-foreground italic my-8">Aucune charge à afficher.</p>
+        {/if}
+      </div>
+
+      <!-- Recettes Chart -->
+      <div class="border border-border/80 rounded-xl p-6 flex flex-col items-center justify-between bg-muted/20">
+        <h4 class="font-bold text-sm text-emerald-600 dark:text-emerald-400 mb-6 text-center">Produits (Recettes)</h4>
+        {#if recettesChartData.length > 0}
+          <div class="flex flex-col items-center gap-6 w-full">
+            <svg width="180" height="180" viewBox="0 0 200 200" class="drop-shadow-sm rotate-[-90deg]">
+              {#each recettesChartData as slice}
+                <path d={slice.pathData} fill={slice.color} class="hover:opacity-90 transition-opacity" />
+              {/each}
+            </svg>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full text-xs pt-4 border-t border-border/60">
+              {#each recettesChartData as slice}
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: {slice.color}"></span>
+                  <span class="truncate text-foreground/80 font-medium" title={slice.label}>{slice.label} : <strong class="font-mono">{slice.percent}%</strong></span>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {:else}
+          <p class="text-xs text-muted-foreground italic my-8">Aucune recette à afficher.</p>
+        {/if}
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. BILAN DE TRÉSORERIE (no-print) -->
+  <div class="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4 no-print">
     <h3 class="text-lg font-semibold">2. Bilan de Trésorerie</h3>
     <div class="overflow-x-auto">
       <table class="w-full border-collapse text-left text-sm">
@@ -513,3 +683,36 @@
     </div>
   </div>
 </div>
+
+<style>
+  @media print {
+    :global(body) {
+      background: white !important;
+      color: black !important;
+    }
+    :global(aside), :global(nav), :global(header) {
+      display: none !important;
+    }
+    .no-print {
+      display: none !important;
+    }
+    .page-break {
+      page-break-before: always;
+      break-before: page;
+      margin-top: 0 !important;
+      padding-top: 2rem !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    .bg-card {
+      border: none !important;
+      box-shadow: none !important;
+      background: transparent !important;
+      padding: 0 !important;
+    }
+    .print-container {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+  }
+</style>
