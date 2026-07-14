@@ -903,10 +903,11 @@ app.get('/seasons/:seasonId/reports', async (c) => {
     if (tx.type === 'transfert') continue;
     
     const cat = normalizeCategory(tx.category)?.toString() || 'divers';
-    if (!categoryTotals[cat]) {
-      categoryTotals[cat] = { type: tx.type, total: 0 };
+    const key = `${cat}_${tx.type}`;
+    if (!categoryTotals[key]) {
+      categoryTotals[key] = { type: tx.type, total: 0 };
     }
-    categoryTotals[cat].total += tx.amount;
+    categoryTotals[key].total += tx.amount;
     
     if (normalizeCategory(tx.category) !== transitCatId) {
       if (tx.type === 'recette') {

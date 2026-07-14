@@ -595,7 +595,7 @@ describe('Accounting API Endpoints', () => {
 
     const pnl = report.data.compteResultat;
     expect(pnl.totalRecettes).toBe(25000);
-    expect(pnl.categories['1'].total).toBe(25000);
+    expect(pnl.categories['1_recette'].total).toBe(25000);
 
     const balances = report.data.bilanTrésorerie;
     // Compte courant : 1000 € (init) + 250 € (recette) - 200 € (transfert) = 1050 €
