@@ -2023,6 +2023,40 @@ VERSION:102
     expect(sug.category).toBe(5); // Tournois Senior
   });
 
+  it('correctly maps ICR/interclubs related expenses to championnats category in deterministic fallback', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: '34937793000300846000500078472020260126',
+      seasonId: '25-26',
+      accountId: 'current',
+      amount: -23730,
+      date: '2026-01-26',
+      name: '000001 VIR EUROPEEN EMIS NET',
+      memo: 'POUR: Tetevuide Cyril MOTIF: course icr avec cafe',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const mockAI = {
+      run: async () => {
+        throw new Error('AI offline simulation');
+      }
+    };
+
+    const analyzeRes = await app.request('http://localhost/bank-transactions/analyze?season=25-26', {
+      method: 'POST'
+    }, { DB: mockD1 as any, AI: mockAI as any });
+    expect(analyzeRes.status).toBe(200);
+
+    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    expect(updatedBt.aiSuggestions).not.toBeNull();
+    
+    const sug = JSON.parse(updatedBt.aiSuggestions);
+    expect(sug.category).toBe(12); // Championnats
+  });
+
   it('does not impact member remaining balance when linking a non-membership transaction (e.g. cordage)', async () => {
     const mockD1 = await setupMockDb();
     const db = drizzle(mockD1 as any);

@@ -1313,8 +1313,6 @@ app.post('/bank-transactions/analyze', async (c) => {
       (textToLower.includes('tournoi') && !textToLower.includes('jeune'))
     ) {
       suggestedCategory = CAT_TOURNOIS_SENIOR;
-    } else if (textToLower.includes('salaire') || textToLower.includes('tetevuide') || textToLower.includes('meunier')) {
-      suggestedCategory = CAT_SALAIRES_CHARGES;
     } else if (textToLower.includes('larde')) {
       if (textToLower.includes('cordage')) {
         suggestedCategory = CAT_CORDAGE_VENTE;
@@ -1325,7 +1323,13 @@ app.post('/bank-transactions/analyze', async (c) => {
       }
     } else if (textToLower.includes('ligue') || textToLower.includes('badminton')) {
       suggestedCategory = textToLower.includes('licence') ? CAT_LICENCES_FEDERATION : CAT_CHAMPIONNATS;
-    } else if (textToLower.includes('codep91') || textToLower.includes('comite')) {
+    } else if (
+      textToLower.includes('codep91') || 
+      textToLower.includes('comite') ||
+      /\b(icr|icd|icp)\b/.test(textToLower) ||
+      textToLower.includes('interclub') ||
+      textToLower.includes('interclubs')
+    ) {
       suggestedCategory = CAT_CHAMPIONNATS;
     } else if (textToLower.includes('sumup') || textToLower.includes('buvette')) {
       suggestedCategory = CAT_EVENEMENTS_BUVETTES;
@@ -1335,6 +1339,8 @@ app.post('/bank-transactions/analyze', async (c) => {
       suggestedCategory = CAT_VOLANTS;
     } else if (textToLower.includes('stage')) {
       suggestedCategory = CAT_STAGES_FORMATIONS;
+    } else if (textToLower.includes('salaire') || textToLower.includes('tetevuide') || textToLower.includes('meunier')) {
+      suggestedCategory = CAT_SALAIRES_CHARGES;
     } else if (textToLower.includes('versement express')) {
       suggestedCategory = CAT_ADHESIONS;
     }
@@ -1404,7 +1410,7 @@ Catégories valides pour l'écriture :
 - 9 (salaires_charges : salaires entraîneurs, URSSAF)
 - 10 (materiel_club : poteaux, filets, volants club - hors cordages)
 - 11 (licences_federation : reversement FFBad)
-- 12 (championnats : frais d'inscriptions des équipes du club)
+- 12 (championnats : frais d'inscriptions des équipes du club, volants interclubs, repas/courses d'interclubs comme icr, icd, icp)
 - 13 (stages_formations : stages adultes ou formations d'arbitres)
 - 14 (fonctionnement_administratif : frais bancaires, assurances, licences)
 - 15 (virements_internes : virements de compte à compte du club, transit de trésorerie)
