@@ -16,4 +16,4 @@ Current Plan: `docs/superpowers/plans/2026-07-14-cse-certificates-and-invoice-mo
 
 ### Sub-Project: Attestations CSE & Module de Facturation
 
-- Task 1: complete (commits d23b9ca, review clean)
+- Task 1: complete (commits 9103975..7d515ed, review clean)
