@@ -198,19 +198,17 @@
       const requests = [];
       for (const id of ids) {
         const bt = bankTransactions.find(t => t.id === id);
-        if (!bt) continue;
+        if (!bt || !bt.aiSuggestions) continue;
 
         let memberId = null;
         let category = '1';
 
-        if (bt.aiSuggestions) {
-          try {
-            const sug = JSON.parse(bt.aiSuggestions);
-            memberId = sug.memberId ? parseInt(sug.memberId) : null;
-            category = sug.category || '1';
-          } catch (e) {
-            console.error('Failed to parse suggestions for transaction', bt.id, e);
-          }
+        try {
+          const sug = JSON.parse(bt.aiSuggestions);
+          memberId = sug.memberId ? parseInt(sug.memberId) : null;
+          category = sug.category || '1';
+        } catch (e) {
+          console.error('Failed to parse suggestions for transaction', bt.id, e);
         }
 
         requests.push({
