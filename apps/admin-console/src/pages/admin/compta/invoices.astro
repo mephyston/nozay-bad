@@ -1,0 +1,119 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import InvoicesManager from '../../../components/InvoicesManager.svelte';
+
+import { env } from 'cloudflare:workers';
+
+const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
+const apiService = env.API_SERVICE;
+
+const season = Astro.url.searchParams.get('season') || '25-26';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const data = await Astro.request.json() as any;
+
+    if (data.action === 'create') {
+      const apiRes = await apiService.fetch('http://localhost/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data.invoice)
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+      return new Response(await apiRes.text(), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } else if (data.action === 'update') {
+      const apiRes = await apiService.fetch(`http://localhost/invoices/${data.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data.invoice)
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } else if (data.action === 'status') {
+      const apiRes = await apiService.fetch(`http://localhost/invoices/${data.id}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: data.status })
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } else if (data.action === 'delete') {
+      const apiRes = await apiService.fetch(`http://localhost/invoices/${data.id}`, {
+        method: 'DELETE'
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } else if (data.action === 'get-details') {
+      const apiRes = await apiService.fetch(`http://localhost/invoices/${data.id}`);
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+      return new Response(await apiRes.text(), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    return new Response(JSON.stringify({ success: false, error: 'Action inconnue' }), { status: 400 });
+  } catch (err: any) {
+    return new Response(err.message, { status: 500 });
+  }
+}
+
+let invoicesList = [];
+let seasonsList = [];
+let errorMsg = '';
+
+try {
+  // 1. Récupérer les factures de la saison
+  const invoicesRes = await apiService.fetch(`http://localhost/invoices?season=${season}`);
+  if (invoicesRes.ok) {
+    const json = await invoicesRes.json() as any;
+    invoicesList = json.data || [];
+  }
+
+  // 2. Récupérer les saisons
+  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasonsList = json.data || [];
+  }
+} catch (err: any) {
+  errorMsg = 'Une erreur est survenue lors du chargement des données.';
+}
+---
+
+<Layout title="Factures - NBA 91">
+  <AdminLayout client:load email={userEmail} breadcrumb="Comptabilité / Factures">
+    <div class="space-y-6">
+      {errorMsg && (
+        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
+          {errorMsg}
+        </div>
+      )}
+
+      <InvoicesManager
+        client:load
+        invoices={invoicesList}
+        seasonId={season}
+        seasons={seasonsList}
+      />
+    </div>
+  </AdminLayout>
+</Layout>
