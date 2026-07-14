@@ -681,6 +681,20 @@ app.get('/transactions', async (c) => {
     conditions.push(eq(transactionsTable.category, category));
   }
 
+  const classCode = c.req.query('classCode');
+  if (classCode) {
+    const matchingCats = await db.select({ id: categoriesTable.id })
+      .from(categoriesTable)
+      .where(or(eq(categoriesTable.codeRecette, classCode), eq(categoriesTable.codeDepense, classCode)))
+      .all();
+    const catIds = matchingCats.map(cat => cat.id.toString());
+    if (catIds.length > 0) {
+      conditions.push(inArray(transactionsTable.category, catIds));
+    } else {
+      conditions.push(sql`1 = 0`);
+    }
+  }
+
   const memberId = c.req.query('memberId');
   if (memberId) {
     conditions.push(eq(transactionsTable.memberId, parseInt(memberId)));

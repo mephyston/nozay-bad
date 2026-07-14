@@ -46,13 +46,20 @@
     hideInExpenses: boolean;
   }
 
+  interface AccountClass {
+    code: string;
+    label: string;
+    type: 'recette' | 'depense';
+  }
+
   let {
     transactions = [],
     pagination,
     seasonId,
     balances = [],
     seasons = [],
-    categories = []
+    categories = [],
+    accountClasses = []
   }: {
     transactions: Transaction[];
     pagination: Pagination;
@@ -60,7 +67,28 @@
     balances: BalanceReport[];
     seasons?: Season[];
     categories?: Category[];
+    accountClasses?: AccountClass[];
   } = $props();
+
+  import { onMount } from 'svelte';
+  import { X } from 'lucide-svelte';
+
+  let filteredCategory = $state<string | null>(null);
+  let filteredClassCode = $state<string | null>(null);
+
+  onMount(() => {
+    const params = new URLSearchParams(window.location.search);
+    filteredCategory = params.get('category');
+    filteredClassCode = params.get('classCode');
+  });
+
+  function clearFilters() {
+    const params = new URLSearchParams(window.location.search);
+    params.delete('category');
+    params.delete('classCode');
+    params.set('page', '1');
+    window.location.href = `/admin/compta?${params.toString()}`;
+  }
 
   // Saisie formulaire
   let showPanel = $state<'recette' | 'depense' | 'transfert' | null>(null);
@@ -311,6 +339,29 @@
       {/if}
     </div>
   </div>
+
+  {#if filteredCategory || filteredClassCode}
+    <div class="flex items-center gap-2 bg-muted/60 px-3 py-1.5 rounded-lg text-xs font-medium border border-border/80 w-fit no-print">
+      <span class="text-muted-foreground">Filtre actif&nbsp;:</span>
+      {#if filteredCategory}
+        <span class="bg-primary/10 text-primary px-2 py-0.5 rounded font-semibold">
+          Catégorie : {categories.find(c => c.id.toString() === filteredCategory)?.adminLabel || filteredCategory}
+        </span>
+      {/if}
+      {#if filteredClassCode}
+        <span class="bg-primary/10 text-primary px-2 py-0.5 rounded font-semibold">
+          Classe : {accountClasses.find(ac => ac.code === filteredClassCode)?.label || filteredClassCode} ({filteredClassCode})
+        </span>
+      {/if}
+      <button 
+        onclick={clearFilters}
+        class="text-muted-foreground hover:text-destructive p-0.5 rounded hover:bg-muted font-bold transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center ml-1"
+        aria-label="Effacer le filtre"
+      >
+        <X class="w-3.5 h-3.5" />
+      </button>
+    </div>
+  {/if}
 
   <!-- Tableau -->
   <div class="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
