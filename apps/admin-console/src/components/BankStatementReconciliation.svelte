@@ -31,6 +31,24 @@
     closed?: boolean;
   }
 
+  interface Invoice {
+    id: number;
+    invoiceNumber: string;
+    seasonId: string;
+    date: string;
+    dueDate: string;
+    clientName: string;
+    clientAddress: string | null;
+    clientEmail: string | null;
+    subject: string | null;
+    location: string | null;
+    period: string | null;
+    attendees: string | null;
+    status: 'draft' | 'sent' | 'paid' | 'cancelled';
+    totalAmount: number;
+    createdAt: string;
+  }
+
   interface Member {
     id: number;
     licence: string;
@@ -66,6 +84,9 @@
 
   // Onglet actif à gauche
   let activeTab = $state<'pending' | 'reconciled' | 'ignored'>('pending');
+
+  let unpaidInvoices = $state<Invoice[]>([]);
+  let activeRightTab = $state<'manual' | 'ledger' | 'invoice'>('manual');
 
   // Formulaire d'association/création
   let category = $state('1');
@@ -153,6 +174,68 @@
       targetSeasonId = selectedSeason;
     }
   });
+
+  async function loadUnpaidInvoices() {
+    try {
+      const res = await fetch('/admin/compta/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'get-unpaid-invoices',
+          season: selectedSeason
+        })
+      });
+      if (res.ok) {
+        const json = await res.json();
+        unpaidInvoices = (json.data || []).filter((inv: Invoice) => inv.status === 'draft' || inv.status === 'sent');
+      }
+    } catch (err) {
+      console.error('Erreur lors du chargement des factures:', err);
+    }
+  }
+
+  $effect(() => {
+    if (selectedSeason) {
+      loadUnpaidInvoices();
+    }
+  });
+
+  async function handleReconcile(action: 'create', bt: BankTransaction, invoiceId: number) {
+    isSubmitting = true;
+    try {
+      const invoice = unpaidInvoices.find(inv => inv.id === invoiceId);
+      if (!invoice) throw new Error('Facture introuvable.');
+
+      const isFullyReconciled = (remainingAmount - invoice.totalAmount) <= 10;
+      prepareNextFocus(bt.id, isFullyReconciled);
+
+      const res = await fetch('/admin/compta/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          btId: bt.id,
+          invoiceId: invoice.id,
+          transaction: {
+            seasonId: invoice.seasonId,
+            type: 'recette',
+            accountId: bt.accountId,
+            category: '1', // default category
+            amount: invoice.totalAmount,
+            date: bt.date,
+            paymentMethod: 'virement',
+            description: `Facture ${invoice.invoiceNumber} - ${invoice.clientName}`,
+            reference: bt.fitid
+          }
+        })
+      });
+      if (!res.ok) throw new Error('Erreur association facture.');
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.message);
+      isSubmitting = false;
+    }
+  }
 
   // Trouver les suggestions correspondantes du Grand Livre (même montant absolu et +/- 7 jours)
   function getSuggestions(bt: BankTransaction) {
@@ -316,8 +399,9 @@
   $effect(() => {
     if (selectedTx) {
       setTimeout(() => {
+        if (typeof document === 'undefined') return;
         const activeBtn = document.querySelector('.reconcile-list-container .border-l-primary');
-        if (activeBtn) {
+        if (activeBtn && typeof activeBtn.scrollIntoView === 'function') {
           activeBtn.scrollIntoView({ behavior: 'auto', block: 'nearest' });
         }
       }, 100);
@@ -614,6 +698,17 @@
       isSubmitting = false;
     }
   }
+  let matchingInvoices = $derived(
+    selectedTx && selectedTx.amount > 0
+      ? unpaidInvoices.filter(inv => inv.totalAmount === selectedTx.amount)
+      : []
+  );
+
+  let otherUnpaidInvoices = $derived(
+    selectedTx && selectedTx.amount > 0
+      ? unpaidInvoices.filter(inv => inv.totalAmount !== selectedTx.amount)
+      : unpaidInvoices
+  );
 </script>
 
 <div class="space-y-6">
@@ -987,8 +1082,35 @@
               </div>
             {/if}
 
-            <!-- Étape 1 : Suggestions d'association (Seulement si rien n'a encore été ventilé, pending et non clôturé) -->
-            {#if !isClosed && linkedGlTxs.length === 0 && selectedTx.status === 'pending'}
+            <!-- Onglets de rapprochement -->
+            {#if !isClosed && selectedTx.status === 'pending'}
+              <div class="flex border-b border-border bg-muted/30 rounded-lg p-0.5 shrink-0">
+                <button
+                  type="button"
+                  onclick={() => activeRightTab = 'manual'}
+                  class="flex-1 py-1.5 text-center text-xs font-semibold rounded-md transition-colors border-0 cursor-pointer {activeRightTab === 'manual' ? 'bg-background text-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent font-medium'}"
+                >
+                  Saisir écriture
+                </button>
+                <button
+                  type="button"
+                  onclick={() => activeRightTab = 'ledger'}
+                  class="flex-1 py-1.5 text-center text-xs font-semibold rounded-md transition-colors border-0 cursor-pointer {activeRightTab === 'ledger' ? 'bg-background text-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent font-medium'}"
+                >
+                  Suggestions
+                </button>
+                <button
+                  type="button"
+                  onclick={() => activeRightTab = 'invoice'}
+                  class="flex-1 py-1.5 text-center text-xs font-semibold rounded-md transition-colors border-0 cursor-pointer {activeRightTab === 'invoice' ? 'bg-background text-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent font-medium'}"
+                >
+                  Associer Facture
+                </button>
+              </div>
+            {/if}
+
+            <!-- Étape 1 : Suggestions d'association (Seulement si rien n'a encore été ventilé, pending et non clôturé, et onglet suggestions actif) -->
+            {#if !isClosed && linkedGlTxs.length === 0 && selectedTx.status === 'pending' && activeRightTab === 'ledger'}
               <div class="border border-border rounded-xl p-4 space-y-3 bg-muted/40">
                 <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Suggestions du Grand Livre (+/- 7 jours)</h4>
                 {#each suggestions as sug}
@@ -1005,10 +1127,16 @@
                   <p class="text-xs text-muted-foreground">Aucune écriture correspondante trouvée à +/- 7 jours.</p>
                 {/each}
               </div>
+            {:else}
+              {#if activeRightTab === 'ledger'}
+                <div class="border border-border rounded-xl p-4 bg-muted/40">
+                  <p class="text-xs text-muted-foreground italic">Les suggestions du Grand Livre ne sont pas disponibles (opération déjà ventilée ou clôturée).</p>
+                </div>
+              {/if}
             {/if}
 
-            <!-- Étape 2 : Création d'une nouvelle écriture (uniquement si reste à ventiler, pending et non clôturé) -->
-            {#if !isClosed && remainingAmount > 0 && selectedTx.status === 'pending'}
+            <!-- Étape 2 : Création d'une nouvelle écriture (uniquement si reste à ventiler, pending, non clôturé et onglet manuel actif) -->
+            {#if !isClosed && remainingAmount > 0 && selectedTx.status === 'pending' && activeRightTab === 'manual'}
               <div class="border border-border rounded-xl p-4 space-y-3">
                 <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   {linkedGlTxs.length > 0 ? 'Ventiler une nouvelle partie' : 'Créer et pointer manuellement'}
@@ -1071,7 +1199,7 @@
                       </div>
                     {/if}
                   </div>
-
+ 
                   <!-- Ligne Catégorie Combobox intégrée et Montant -->
                   <div class="grid grid-cols-3 gap-2">
                     <div class="col-span-2 space-y-1 relative">
@@ -1132,7 +1260,7 @@
                       />
                     </div>
                   </div>
-
+ 
                   <!-- Moyen de paiement & Saison d'affectation -->
                   <div class="grid grid-cols-2 gap-2">
                     <div class="space-y-1">
@@ -1143,7 +1271,7 @@
                         <option value="especes">Espèces</option>
                       </select>
                     </div>
-
+ 
                     <div class="space-y-1">
                       <label for="season-select-reconcile" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Saison d'affectation</label>
                       <select id="season-select-reconcile" class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium" bind:value={targetSeasonId}>
@@ -1154,11 +1282,83 @@
                     </div>
                   </div>
                 </div>
-
+ 
                 <button onclick={() => handleCreateAndMatch(selectedTx!)} class="w-full py-1.5 bg-primary hover:bg-primary/95 text-primary-foreground rounded text-xs font-semibold shadow-sm cursor-pointer border-0 mt-2 font-medium">
                   {linkedGlTxs.length > 0 ? 'Enregistrer cette partie' : "Créer & lier l'écriture"}
                 </button>
               </div>
+            {/if}
+
+            <!-- Étape 3 : Associer à une facture (uniquement si reste à ventiler, pending, non clôturé et onglet facture actif) -->
+            {#if !isClosed && selectedTx.status === 'pending' && activeRightTab === 'invoice'}
+              {#if selectedTx.amount < 0}
+                <div class="p-3 text-xs bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg">
+                  Le rapprochement de facture est réservé aux recettes (crédits). Cette transaction est un débit.
+                </div>
+              {:else}
+                <div class="space-y-4">
+                  <!-- Suggestions de factures correspondantes -->
+                  {#if matchingInvoices.length > 0}
+                    <div class="border border-emerald-600/30 bg-emerald-600/5 rounded-xl p-4 space-y-3">
+                      <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-600 uppercase tracking-wider">
+                        <Sparkles class="w-4 h-4" />
+                        <span>Suggestion de Facture</span>
+                      </div>
+                      <div class="space-y-2">
+                        {#each matchingInvoices as inv}
+                          <div class="flex items-center justify-between gap-2 p-2.5 bg-background border border-border rounded-md text-xs">
+                            <div>
+                              <div class="font-bold text-foreground">{inv.clientName}</div>
+                              <div class="text-[10px] text-muted-foreground">N° {inv.invoiceNumber} • Échéance : {inv.dueDate}</div>
+                              <div class="text-[10px] text-muted-foreground italic truncate max-w-[200px]">{inv.subject || ''}</div>
+                            </div>
+                            <div class="flex flex-col items-end gap-1.5 shrink-0">
+                              <div class="font-bold text-emerald-600">{(inv.totalAmount / 100).toFixed(2)} €</div>
+                              <button 
+                                onclick={() => handleReconcile('create', selectedTx!, inv.id)} 
+                                class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold cursor-pointer border-0 shadow-sm"
+                              >
+                                Associer
+                              </button>
+                            </div>
+                          </div>
+                        {/each}
+                      </div>
+                    </div>
+                  {/if}
+
+                  <!-- Liste complète des factures impayées -->
+                  <div class="border border-border rounded-xl p-4 space-y-3">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      {matchingInvoices.length > 0 ? 'Autres factures ouvertes' : 'Factures impayées ouvertes'}
+                    </h4>
+                    <div class="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                      {#each otherUnpaidInvoices as inv}
+                        <div class="flex items-center justify-between gap-2 p-2.5 bg-background border border-border rounded-md text-xs hover:bg-muted/30 transition-colors">
+                          <div>
+                            <div class="font-semibold text-foreground">{inv.clientName}</div>
+                            <div class="text-[10px] text-muted-foreground">N° {inv.invoiceNumber} • Échéance : {inv.dueDate}</div>
+                            <div class="text-[10px] text-muted-foreground italic truncate max-w-[180px]">{inv.subject || ''}</div>
+                          </div>
+                          <div class="flex flex-col items-end gap-1.5 shrink-0">
+                            <div class="font-bold text-foreground">{(inv.totalAmount / 100).toFixed(2)} €</div>
+                            <button 
+                              onclick={() => handleReconcile('create', selectedTx!, inv.id)} 
+                              class="px-2.5 py-1 bg-primary text-primary-foreground hover:bg-primary/95 rounded text-xs font-semibold cursor-pointer border-0 shadow-sm"
+                            >
+                              Associer
+                            </button>
+                          </div>
+                        </div>
+                      {:else}
+                        {#if matchingInvoices.length === 0}
+                          <p class="text-xs text-muted-foreground italic">Aucune facture impayée trouvée pour cette saison.</p>
+                        {/if}
+                      {/each}
+                    </div>
+                  </div>
+                </div>
+              {/if}
             {/if}
           </div>
 

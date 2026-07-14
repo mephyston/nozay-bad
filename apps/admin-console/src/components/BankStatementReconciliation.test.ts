@@ -1,8 +1,78 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount, flushSync } from 'svelte';
 import BankStatementReconciliation from './BankStatementReconciliation.svelte';
 
 describe('BankStatementReconciliation Component', () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    global.fetch = vi.fn().mockImplementation((url, init) => {
+      if (url === '/admin/compta/import' && init?.body) {
+        const body = JSON.parse(init.body);
+        if (body.action === 'get-unpaid-invoices') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: [
+                {
+                  id: 101,
+                  invoiceNumber: 'FAC-2026-0001',
+                  seasonId: '25-26',
+                  date: '2026-02-15',
+                  dueDate: '2026-03-15',
+                  clientName: 'Client Test',
+                  clientAddress: null,
+                  clientEmail: null,
+                  subject: 'Prestation Test',
+                  location: null,
+                  period: null,
+                  attendees: null,
+                  status: 'sent',
+                  totalAmount: 15600,
+                  createdAt: '2026-02-15'
+                },
+                {
+                  id: 102,
+                  invoiceNumber: 'FAC-2026-0002',
+                  seasonId: '25-26',
+                  date: '2026-02-16',
+                  dueDate: '2026-03-16',
+                  clientName: 'Autre Client',
+                  clientAddress: null,
+                  clientEmail: null,
+                  subject: 'Prestation 2',
+                  location: null,
+                  period: null,
+                  attendees: null,
+                  status: 'draft',
+                  totalAmount: 5000,
+                  createdAt: '2026-02-16'
+                }
+              ]
+            })
+          } as Response);
+        }
+        if (body.action === 'create' && body.invoiceId) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ success: true })
+          } as Response);
+        }
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ success: true })
+      } as Response);
+    });
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
   it('renders initial upload zone when no bank transactions are pending', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
@@ -131,7 +201,80 @@ describe('BankStatementReconciliation Component', () => {
     btn.click();
     flushSync();
 
+    // Cliquer sur l'onglet Suggestions pour afficher la liste des suggestions
+    const sugTabBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Suggestions')) as HTMLButtonElement;
+    expect(sugTabBtn).not.toBeNull();
+    sugTabBtn.click();
+    flushSync();
+
     expect(target.innerHTML).not.toContain('Volants Clement');
     expect(target.innerHTML).toContain('Aucune écriture correspondante trouvée à +/- 7 jours.');
+  });
+
+  it('renders unpaid invoices in the invoice tab and handles matching', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankTransactions: [
+          {
+            id: 1,
+            fitid: 'TEST-FITID-1',
+            accountId: 'current',
+            amount: 15600, // credit matching invoice totalAmount (15600 cents = 156.00 €)
+            date: '2026-02-16',
+            name: 'VIR RECU 12345',
+            memo: 'Réglement facture',
+            status: 'pending',
+            aiSuggestions: null
+          }
+        ],
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }],
+        members: []
+      }
+    });
+
+    // Select the bank transaction
+    const btn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('VIR RECU 12345')) as HTMLButtonElement;
+    expect(btn).not.toBeNull();
+    btn.click();
+    flushSync();
+
+    // Click on the Associer Facture tab
+    const invoiceTabBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Associer Facture')) as HTMLButtonElement;
+    expect(invoiceTabBtn).not.toBeNull();
+    invoiceTabBtn.click();
+    flushSync();
+
+    // Wait for the async loadUnpaidInvoices to run and populate the state
+    await new Promise(resolve => setTimeout(resolve, 50));
+    flushSync();
+
+    // Verify invoice information is displayed
+    expect(target.innerHTML).toContain('Client Test');
+    expect(target.innerHTML).toContain('FAC-2026-0001');
+    expect(target.innerHTML).toContain('156.00 €'); // formatted totalAmount
+    expect(target.innerHTML).toContain('Suggestion de Facture');
+
+    // Verify the mock call triggers match
+    const associateBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Associer') as HTMLButtonElement;
+    expect(associateBtn).not.toBeNull();
+
+    // Mock window.location
+    const reloadMock = vi.fn();
+    vi.stubGlobal('location', {
+      reload: reloadMock
+    });
+
+    associateBtn.click();
+    await new Promise(resolve => setTimeout(resolve, 50));
+    flushSync();
+
+    expect(global.fetch).toHaveBeenCalledWith('/admin/compta/import', expect.any(Object));
+    expect(reloadMock).toHaveBeenCalled();
   });
 });

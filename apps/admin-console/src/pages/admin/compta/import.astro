@@ -65,6 +65,14 @@ if (Astro.request.method === 'POST') {
         if (!apiRes.ok) {
           return new Response(await apiRes.text(), { status: apiRes.status });
         }
+      } else if (data.action === 'get-unpaid-invoices') {
+        const apiRes = await apiService.fetch(`http://localhost/invoices?season=${data.season}`);
+        if (!apiRes.ok) {
+          return new Response(await apiRes.text(), { status: apiRes.status });
+        }
+        return new Response(await apiRes.text(), {
+          headers: { 'Content-Type': 'application/json' }
+        });
       }
       return new Response(JSON.stringify({ success: true }));
     }
