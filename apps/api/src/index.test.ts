@@ -1989,6 +1989,40 @@ VERSION:102
     expect(sug.category).toBe(7); // Cordage Vente
   });
 
+  it('correctly maps blackminton event registration to tournois_senior category in deterministic fallback', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: '57168863000300846000500078472020260131',
+      seasonId: '25-26',
+      accountId: 'current',
+      amount: 500,
+      date: '2026-01-31',
+      name: 'VIR INST RE 653186740833',
+      memo: 'DE: MLLE LAURENCE MADRANGE MOTIF: blackminton',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const mockAI = {
+      run: async () => {
+        throw new Error('AI offline simulation');
+      }
+    };
+
+    const analyzeRes = await app.request('http://localhost/bank-transactions/analyze?season=25-26', {
+      method: 'POST'
+    }, { DB: mockD1 as any, AI: mockAI as any });
+    expect(analyzeRes.status).toBe(200);
+
+    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    expect(updatedBt.aiSuggestions).not.toBeNull();
+    
+    const sug = JSON.parse(updatedBt.aiSuggestions);
+    expect(sug.category).toBe(5); // Tournois Senior
+  });
+
   it('does not impact member remaining balance when linking a non-membership transaction (e.g. cordage)', async () => {
     const mockD1 = await setupMockDb();
     const db = drizzle(mockD1 as any);
