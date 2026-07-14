@@ -48,7 +48,7 @@
     amount: number;
   }
 
-  let { report, seasonId, seasons = [], categories = [], accountClasses = [], budget = [] }: { report: ReportData; seasonId: string; seasons?: Season[]; categories?: DbCategory[]; accountClasses?: AccountClass[]; budget?: BudgetRecord[] } = $props();
+  let { report, prevReport = null, seasonId, seasons = [], categories = [], accountClasses = [], budget = [] }: { report: ReportData; prevReport?: ReportData | null; seasonId: string; seasons?: Season[]; categories?: DbCategory[]; accountClasses?: AccountClass[]; budget?: BudgetRecord[] } = $props();
 
   // svelte-ignore state_referenced_locally
   let selectedSeason = $state(seasonId);
@@ -56,6 +56,20 @@
   let editableBudget = $state<Record<string, number>>({});
   let isSaving = $state(false);
   let saveStatus = $state<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  function getPreviousSeasonId(currentId: string): string {
+    const parts = currentId.split('-');
+    if (parts.length === 2) {
+      const start = parseInt(parts[0]);
+      const end = parseInt(parts[1]);
+      if (!isNaN(start) && !isNaN(end)) {
+        const prevStart = (start - 1).toString().padStart(2, '0');
+        const prevEnd = (end - 1).toString().padStart(2, '0');
+        return `${prevStart}-${prevEnd}`;
+      }
+    }
+    return '';
+  }
 
   $effect(() => {
     const newMap: Record<string, number> = {};
@@ -304,7 +318,8 @@
 
   // Helper to safely get total for a category and type
   function getCatTotal(id: string, type: 'recette' | 'depense'): number {
-    return report.compteResultat.categories[`${id}_${type}`]?.total || 0;
+    const reportToUse = (reportMode === 'previsionnel' && prevReport) ? prevReport : report;
+    return reportToUse.compteResultat.categories[`${id}_${type}`]?.total || 0;
   }
 
 
@@ -413,7 +428,13 @@
           <div class="flex justify-between items-center font-bold text-xs text-muted-foreground border-b border-border pb-2">
             <span class="text-sm font-bold text-destructive">CHARGES (Dépenses)</span>
             <div class="flex gap-8 font-mono text-[11px]">
-              <span class="w-20 text-right">Réalisé</span>
+              <span class="w-20 text-right">
+                {#if reportMode === 'previsionnel' && prevReport}
+                  Réalisé {seasons.find(s => s.id === getPreviousSeasonId(selectedSeason))?.name.replace('Saison ', '') || getPreviousSeasonId(selectedSeason)}
+                {:else}
+                  Réalisé
+                {/if}
+              </span>
               <span class="w-20 text-right">Prévisionnel</span>
             </div>
           </div>
@@ -493,7 +514,13 @@
           <div class="flex justify-between items-center font-bold text-xs text-muted-foreground border-b border-border pb-2">
             <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400">PRODUITS (Recettes)</span>
             <div class="flex gap-8 font-mono text-[11px]">
-              <span class="w-20 text-right">Réalisé</span>
+              <span class="w-20 text-right">
+                {#if reportMode === 'previsionnel' && prevReport}
+                  Réalisé {seasons.find(s => s.id === getPreviousSeasonId(selectedSeason))?.name.replace('Saison ', '') || getPreviousSeasonId(selectedSeason)}
+                {:else}
+                  Réalisé
+                {/if}
+              </span>
               <span class="w-20 text-right">Prévisionnel</span>
             </div>
           </div>

@@ -47,10 +47,25 @@ let reportData = {
     { accountId: 'cash' as const, initialBalance: 0, finalBalance: 0 }
   ]
 };
+function getPreviousSeasonId(currentId: string): string {
+  const parts = currentId.split('-');
+  if (parts.length === 2) {
+    const start = parseInt(parts[0]);
+    const end = parseInt(parts[1]);
+    if (!isNaN(start) && !isNaN(end)) {
+      const prevStart = (start - 1).toString().padStart(2, '0');
+      const prevEnd = (end - 1).toString().padStart(2, '0');
+      return `${prevStart}-${prevEnd}`;
+    }
+  }
+  return '';
+}
+
 let seasonsList = [];
 let categoriesList = [];
 let accountClassesList = [];
 let budgetList = [];
+let prevReportData = null;
 let errorMsg = '';
 
 try {
@@ -60,6 +75,19 @@ try {
     reportData = json.data;
   } else {
     throw new Error('Erreur récupération du rapport');
+  }
+
+  const prevSeason = getPreviousSeasonId(season);
+  if (prevSeason) {
+    try {
+      const prevRes = await apiService.fetch(`http://localhost/seasons/${prevSeason}/reports`);
+      if (prevRes.ok) {
+        const json = await prevRes.json() as any;
+        prevReportData = json.data;
+      }
+    } catch (e) {
+      console.error('Failed to fetch previous season reports', e);
+    }
   }
 
   const seasonsRes = await apiService.fetch('http://localhost/seasons');
@@ -108,7 +136,7 @@ try {
         </div>
       )}
 
-      <GeneralMeetingReport client:load report={reportData} seasonId={season} seasons={seasonsList} categories={categoriesList} accountClasses={accountClassesList} budget={budgetList} />
+      <GeneralMeetingReport client:load report={reportData} prevReport={prevReportData} seasonId={season} seasons={seasonsList} categories={categoriesList} accountClasses={accountClassesList} budget={budgetList} />
     </div>
   </AdminLayout>
 </Layout>
