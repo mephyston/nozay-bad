@@ -1427,7 +1427,7 @@ Renvoie STRICTEMENT un objet JSON sous la forme suivante (sans aucun autre texte
         const birthYear = new Date(matchedMember.birthDate).getFullYear();
         const currentYear = new Date().getFullYear();
         const age = currentYear - birthYear;
-        if (age < 18) {
+        if (age <= 18) {
           if (suggestionResult.category === CAT_STAGES_FORMATIONS || suggestionResult.category === CAT_TOURNOIS_SENIOR) {
             suggestionResult.category = CAT_ACTIONS_JEUNES;
           }

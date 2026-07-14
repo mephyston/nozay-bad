@@ -1768,6 +1768,57 @@ VERSION:102
     expect(sug.memberId).toBe(minor.id);
   });
 
+  it('correctly maps stages of 18-year-old junior members to actions_jeunes category in post-processing', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    const junior = await db.insert(membersTable).values({
+      licence: '06944909',
+      season: '25-26',
+      lastName: 'DOMASZEWICZ',
+      firstName: 'Katrina',
+      gender: 'F',
+      birthDate: '2008-03-27',
+      status: 'valide',
+      type: 'Compétiteurs adultes',
+      amountDue: 25000,
+      amountReceived: 25000,
+      amountRemaining: 0,
+      paid: true,
+      importedAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: '48510903000300846000500078472020260302',
+      seasonId: '25-26',
+      accountId: 'current',
+      amount: 5000,
+      date: '2026-03-02',
+      name: 'VIR INST RE 656089292063',
+      memo: 'DE: MR OU MME DOMASZEWICZ WOLFGANG MOTIF: DOMASZEWICZ KATRINA STAGE 2JOURS',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const mockAI = {
+      run: async () => {
+        throw new Error('AI offline simulation');
+      }
+    };
+
+    const analyzeRes = await app.request('http://localhost/bank-transactions/analyze?season=25-26', {
+      method: 'POST'
+    }, { DB: mockD1 as any, AI: mockAI as any });
+    expect(analyzeRes.status).toBe(200);
+
+    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    expect(updatedBt.aiSuggestions).not.toBeNull();
+    
+    const sug = JSON.parse(updatedBt.aiSuggestions);
+    expect(sug.category).toBe(4); // Actions Jeunes (overridden from stage category 13 because Katrina is 18, which is <= 18)
+    expect(sug.memberId).toBe(junior.id);
+  });
+
   it('does not impact member remaining balance when linking a non-membership transaction (e.g. cordage)', async () => {
     const mockD1 = await setupMockDb();
     const db = drizzle(mockD1 as any);
