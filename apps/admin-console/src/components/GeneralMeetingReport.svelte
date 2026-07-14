@@ -196,60 +196,98 @@
     {#if activeViewMode === 'cerfa'}
       <div class="grid gap-6 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
         <!-- CHARGES (Dépenses) -->
-        <div class="space-y-4 pr-0 md:pr-6">
-          <h4 class="font-bold text-sm text-destructive border-b border-border pb-2 flex justify-between">
-            <span>CHARGES (Dépenses)</span>
-            <span>{(report.compteResultat.totalDepenses / 100).toFixed(2)} €</span>
-          </h4>
-          
-          <div class="space-y-4">
-            {#each chargeClasses as cc}
-              {#if getClassSum(cc.code, 'depense') > 0}
-                <div class="space-y-1.5">
-                  <div class="flex justify-between font-semibold text-sm">
-                    <span>{cc.label}</span>
-                    <span>{(getClassSum(cc.code, 'depense') / 100).toFixed(2)} €</span>
+        <div class="space-y-4 pr-0 md:pr-6 flex flex-col justify-between">
+          <div>
+            <h4 class="font-bold text-sm text-destructive border-b border-border pb-2 flex justify-between">
+              <span>CHARGES (Dépenses)</span>
+              <span>{(report.compteResultat.totalDepenses / 100).toFixed(2)} €</span>
+            </h4>
+            
+            <div class="space-y-4 mt-4">
+              {#each chargeClasses as cc}
+                {#if getClassSum(cc.code, 'depense') > 0}
+                  <div class="space-y-1.5">
+                    <div class="flex justify-between font-semibold text-sm">
+                      <span>{cc.label}</span>
+                      <span>{(getClassSum(cc.code, 'depense') / 100).toFixed(2)} €</span>
+                    </div>
+                    <div class="pl-4 space-y-1 text-xs text-muted-foreground">
+                      {#each getClassItems(cc.code, 'depense') as item}
+                        <div class="flex justify-between">
+                          <span>• {item.label}</span>
+                          <span>{(item.total / 100).toFixed(2)} €</span>
+                        </div>
+                      {/each}
+                    </div>
                   </div>
-                  <div class="pl-4 space-y-1 text-xs text-muted-foreground">
-                    {#each getClassItems(cc.code, 'depense') as item}
-                      <div class="flex justify-between">
-                        <span>• {item.label}</span>
-                        <span>{(item.total / 100).toFixed(2)} €</span>
-                      </div>
-                    {/each}
-                  </div>
-                </div>
-              {/if}
-            {/each}
+                {/if}
+              {/each}
+            </div>
+          </div>
+
+          <div class="mt-8 pt-4 border-t border-border space-y-2">
+            {#if report.compteResultat.netResult >= 0}
+              <div class="flex justify-between font-semibold text-sm text-emerald-600 dark:text-emerald-400">
+                <span>Excédent de l'exercice (Bénéfice)</span>
+                <span>{(report.compteResultat.netResult / 100).toFixed(2)} €</span>
+              </div>
+            {/if}
+            <div class="flex justify-between font-bold text-sm text-foreground">
+              <span>TOTAL GÉNÉRAL</span>
+              <span>
+                {((report.compteResultat.netResult >= 0 
+                  ? report.compteResultat.totalDepenses + report.compteResultat.netResult 
+                  : report.compteResultat.totalDepenses) / 100).toFixed(2)} €
+              </span>
+            </div>
           </div>
         </div>
 
         <!-- PRODUITS (Recettes) -->
-        <div class="space-y-4 pl-0 md:pl-6 pt-6 md:pt-0">
-          <h4 class="font-bold text-sm text-emerald-600 dark:text-emerald-400 border-b border-border pb-2 flex justify-between">
-            <span>PRODUITS (Recettes)</span>
-            <span>{(report.compteResultat.totalRecettes / 100).toFixed(2)} €</span>
-          </h4>
-          
-          <div class="space-y-4">
-            {#each produitClasses as pc}
-              {#if getClassSum(pc.code, 'recette') > 0}
-                <div class="space-y-1.5">
-                  <div class="flex justify-between font-semibold text-sm">
-                    <span>{pc.label}</span>
-                    <span>{(getClassSum(pc.code, 'recette') / 100).toFixed(2)} €</span>
+        <div class="space-y-4 pl-0 md:pl-6 pt-6 md:pt-0 flex flex-col justify-between">
+          <div>
+            <h4 class="font-bold text-sm text-emerald-600 dark:text-emerald-400 border-b border-border pb-2 flex justify-between">
+              <span>PRODUITS (Recettes)</span>
+              <span>{(report.compteResultat.totalRecettes / 100).toFixed(2)} €</span>
+            </h4>
+            
+            <div class="space-y-4 mt-4">
+              {#each produitClasses as pc}
+                {#if getClassSum(pc.code, 'recette') > 0}
+                  <div class="space-y-1.5">
+                    <div class="flex justify-between font-semibold text-sm">
+                      <span>{pc.label}</span>
+                      <span>{(getClassSum(pc.code, 'recette') / 100).toFixed(2)} €</span>
+                    </div>
+                    <div class="pl-4 space-y-1 text-xs text-muted-foreground">
+                      {#each getClassItems(pc.code, 'recette') as item}
+                        <div class="flex justify-between">
+                          <span>• {item.label}</span>
+                          <span>{(item.total / 100).toFixed(2)} €</span>
+                        </div>
+                      {/each}
+                    </div>
                   </div>
-                  <div class="pl-4 space-y-1 text-xs text-muted-foreground">
-                    {#each getClassItems(pc.code, 'recette') as item}
-                      <div class="flex justify-between">
-                        <span>• {item.label}</span>
-                        <span>{(item.total / 100).toFixed(2)} €</span>
-                      </div>
-                    {/each}
-                  </div>
-                </div>
-              {/if}
-            {/each}
+                {/if}
+              {/each}
+            </div>
+          </div>
+
+          <div class="mt-8 pt-4 border-t border-border space-y-2">
+            {#if report.compteResultat.netResult < 0}
+              <div class="flex justify-between font-semibold text-sm text-destructive">
+                <span>Déficit de l'exercice (Perte)</span>
+                <span>{(-report.compteResultat.netResult / 100).toFixed(2)} €</span>
+              </div>
+            {/if}
+            <div class="flex justify-between font-bold text-sm text-foreground">
+              <span>TOTAL GÉNÉRAL</span>
+              <span>
+                {((report.compteResultat.netResult < 0 
+                  ? report.compteResultat.totalRecettes + (-report.compteResultat.netResult) 
+                  : report.compteResultat.totalRecettes) / 100).toFixed(2)} €
+              </span>
+            </div>
           </div>
         </div>
       </div>
