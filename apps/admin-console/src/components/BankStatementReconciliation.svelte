@@ -62,13 +62,15 @@
     glTransactions = [],
     seasonId,
     seasons = [],
-    members = []
+    members = [],
+    dbCategories = []
   }: {
     bankTransactions: BankTransaction[];
     glTransactions: GLTransaction[];
     seasonId: string;
     seasons: Season[];
     members: Member[];
+    dbCategories?: any[];
   } = $props();
 
   // svelte-ignore state_referenced_locally
@@ -129,7 +131,7 @@
     cash: 'Caisse Physique'
   };
 
-  const categories = [
+  const fallbackCategories = [
     { id: '1', name: 'Adhésions & Inscriptions' },
     { id: '2', name: 'Sponsoring' },
     { id: '3', name: 'Subventions (aides publiques)' },
@@ -146,6 +148,12 @@
     { id: '14', name: 'Frais de fonctionnement & administratif' },
     { id: '15', name: 'Virements Internes (Transit)' }
   ];
+
+  const categories = $derived(
+    dbCategories && dbCategories.length > 0
+      ? dbCategories.map(c => ({ id: String(c.id), name: c.adminLabel }))
+      : fallbackCategories
+  );
 
   let sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
   let suggestions = $derived(selectedTx ? getSuggestions(selectedTx) : []);

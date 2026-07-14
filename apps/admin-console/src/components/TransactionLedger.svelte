@@ -183,7 +183,7 @@
 
   const activeCategories = $derived(
     categories && categories.length > 0
-      ? categories.map(c => ({ id: c.id, name: c.adminLabel }))
+      ? categories.map(c => ({ id: String(c.id), name: c.adminLabel }))
       : fallbackCategories
   );
 
@@ -398,7 +398,7 @@
                   <span class="text-xs">{accountLabels[tx.accountId]}</span>
                 {/if}
               </td>
-              <td class="p-4">{tx.category ? (activeCategories.find(c => c.id === tx.category)?.name || tx.category) : 'Transfert'}</td>
+              <td class="p-4">{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</td>
               <td class="p-4 font-medium">
                 <div>{tx.description}</div>
                 {#if tx.reference}

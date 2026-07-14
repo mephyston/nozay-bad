@@ -94,6 +94,7 @@ let bankTransactionsList = [];
 let glTransactionsList = [];
 let seasonsList = [];
 let membersList = [];
+let categoriesList = [];
 let errorMsg = '';
 
 try {
@@ -122,6 +123,12 @@ try {
     const json = await membersRes.json() as any;
     membersList = json.data || [];
   }
+
+  const categoriesRes = await apiService.fetch('http://localhost/categories');
+  if (categoriesRes.ok) {
+    const json = await categoriesRes.json() as any;
+    categoriesList = json.data || [];
+  }
 } catch (err: any) {
   errorMsg = 'Une erreur est survenue lors de la communication avec le serveur comptable.';
 }
@@ -144,6 +151,7 @@ try {
         seasonId={season}
         seasons={seasonsList}
         members={membersList}
+        dbCategories={categoriesList}
       />
     </div>
   </AdminLayout>
