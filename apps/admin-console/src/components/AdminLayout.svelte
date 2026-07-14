@@ -188,7 +188,7 @@
   <!-- Main Content -->
   <div class="flex-1 flex flex-col overflow-y-auto">
     <!-- Header -->
-    <header class="flex h-14 items-center justify-between px-6 border-b border-border bg-card">
+    <header class="flex h-14 shrink-0 items-center justify-between px-6 border-b border-border bg-card">
       <div class="flex items-center gap-4">
         <button class="md:hidden p-1 rounded hover:bg-accent" aria-label="Menu" onclick={() => sidebarOpen = true}>
           <Menu class="h-5 w-5" />
