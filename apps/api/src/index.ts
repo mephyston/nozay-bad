@@ -1398,6 +1398,7 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
   }
 
   const memberId = body.memberId || body.transaction?.memberId;
+  const invoiceId = body.invoiceId;
   let lastTxId = null;
 
   if (body.action === 'match') {
@@ -1439,9 +1440,18 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
       description: tx.description,
       reference: tx.reference || null,
       memberId: memberId || null,
+      invoiceId: invoiceId || null, // Associer la facture
       bankTransactionId: id,
       createdAt: new Date()
     }).returning();
+
+    // Si lié à une facture, la marquer comme payée et lui associer la transaction bancaire
+    if (invoiceId) {
+      await db.update(invoicesTable)
+        .set({ status: 'paid', bankTransactionId: id })
+        .where(eq(invoicesTable.id, invoiceId))
+        .run();
+    }
     lastTxId = newTx.id;
   } else {
     return c.json({ success: false, error: 'Action invalide.' }, 400);

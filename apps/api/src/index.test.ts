@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checksTable, checkDepositsTable, productsTable, ordersTable, expensesTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checksTable, checkDepositsTable, productsTable, ordersTable, expensesTable, invoicesTable } from '../../../libs/shared/db/src/schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 import { DatabaseSync } from 'node:sqlite';
@@ -722,6 +722,61 @@ VERSION:102
     const checkJson = await checkRes.json() as any;
     expect(checkJson.data).toHaveLength(1);
     expect(checkJson.data[0].status).toBe('reconciled');
+  });
+
+  it('supports reconciling a bank transaction directly with a club invoice', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // 1. Créer une facture
+    const inv = await db.insert(invoicesTable).values({
+      invoiceNumber: 'FAC-2526-NBA91-0010',
+      seasonId: '25-26',
+      date: '2026-07-14',
+      dueDate: '2026-08-14',
+      clientName: 'Comité 91',
+      totalAmount: 15000,
+      status: 'sent',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // 2. Insérer une ligne de relevé bancaire de 150.00 €
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-RECON-INV-1',
+      accountId: 'current',
+      seasonId: '25-26',
+      amount: 15000,
+      date: '2026-07-15',
+      name: 'VIR RECU COMITE 91',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // 3. Rapprocher via l'API
+    const reconcileRes = await app.request(`http://localhost/bank-transactions/${bt.id}/reconcile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create',
+        invoiceId: inv.id,
+        transaction: {
+          seasonId: '25-26',
+          type: 'recette',
+          accountId: 'current',
+          category: 7, // Cordage ou autre vente
+          amount: 15000,
+          date: '2026-07-15',
+          paymentMethod: 'virement',
+          description: 'Règlement Facture FAC-2526-NBA91-0010'
+        }
+      })
+    }, { DB: mockD1 as any });
+    expect(reconcileRes.status).toBe(200);
+
+    // 4. Vérifier que la facture est payée et que la ligne D1 pointe dessus
+    const updatedInv = await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv.id)).get();
+    expect(updatedInv.status).toBe('paid');
+    expect(updatedInv.bankTransactionId).toBe(bt.id);
   });
 
   it('should ignore a bank transaction', async () => {
