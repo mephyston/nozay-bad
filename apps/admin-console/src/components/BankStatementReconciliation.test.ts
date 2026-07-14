@@ -686,5 +686,66 @@ describe('BankStatementReconciliation Component', () => {
     expect(target.innerHTML).not.toContain('SALAIRE');
     expect(target.innerHTML).not.toContain('ADHESION');
   });
+
+  it('restores focused transaction from sessionStorage on mount, and clears it on tab switch or close panel', async () => {
+    const store: Record<string, string> = {
+      'reconcile_active_bt_id': '1'
+    };
+    vi.stubGlobal('sessionStorage', {
+      getItem: (key: string) => store[key] || null,
+      setItem: (key: string, val: string) => { store[key] = val; },
+      removeItem: (key: string) => { delete store[key]; }
+    });
+
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankTransactions: [
+          {
+            id: 1,
+            fitid: 'TX-1',
+            accountId: 'current',
+            amount: 1000,
+            date: '2026-02-16',
+            name: 'TX ONE PENDING',
+            memo: 'Memo 1',
+            status: 'pending',
+            aiSuggestions: null
+          },
+          {
+            id: 2,
+            fitid: 'TX-2',
+            accountId: 'current',
+            amount: -2000,
+            date: '2026-02-17',
+            name: 'TX TWO PENDING',
+            memo: 'Memo 2',
+            status: 'pending',
+            aiSuggestions: null
+          }
+        ],
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }],
+        members: []
+      }
+    });
+
+    flushSync();
+
+    expect(target.innerHTML).toContain('TX ONE PENDING');
+    const closeBtn = Array.from(target.querySelectorAll('button')).find(
+      b => b.textContent?.includes('Fermer')
+    ) as HTMLButtonElement;
+    expect(closeBtn).not.toBeNull();
+    closeBtn.click();
+    flushSync();
+
+    expect(store['reconcile_active_bt_id']).toBeUndefined();
+    vi.unstubAllGlobals();
+  });
 });
 

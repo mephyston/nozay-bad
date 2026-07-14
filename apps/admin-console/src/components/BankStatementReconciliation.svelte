@@ -562,8 +562,6 @@
         const found = bankTransactions.find(t => t.id === savedId && t.status === activeTab);
         if (found) {
           selectedTx = found;
-        } else {
-          sessionStorage.removeItem('reconcile_active_bt_id');
         }
       }
     }
@@ -1121,21 +1119,21 @@
         <div class="flex border-b border-border bg-muted/50 shrink-0">
           <button
             type="button"
-            onclick={() => { activeTab = 'pending'; selectedTx = null; }}
+            onclick={() => { activeTab = 'pending'; selectedTx = null; sessionStorage.removeItem('reconcile_active_bt_id'); }}
             class="flex-1 py-3 text-center text-xs font-bold transition-colors border-0 cursor-pointer border-b-2 {activeTab === 'pending' ? 'border-primary text-foreground bg-card' : 'border-transparent text-muted-foreground hover:text-foreground'}"
           >
             À rapprocher ({pendingCount})
           </button>
           <button
             type="button"
-            onclick={() => { activeTab = 'reconciled'; selectedTx = null; }}
+            onclick={() => { activeTab = 'reconciled'; selectedTx = null; sessionStorage.removeItem('reconcile_active_bt_id'); }}
             class="flex-1 py-3 text-center text-xs font-bold transition-colors border-0 cursor-pointer border-b-2 {activeTab === 'reconciled' ? 'border-primary text-foreground bg-card' : 'border-transparent text-muted-foreground hover:text-foreground'}"
           >
             Rapprochées ({reconciledCount})
           </button>
           <button
             type="button"
-            onclick={() => { activeTab = 'ignored'; selectedTx = null; }}
+            onclick={() => { activeTab = 'ignored'; selectedTx = null; sessionStorage.removeItem('reconcile_active_bt_id'); }}
             class="flex-1 py-3 text-center text-xs font-bold transition-colors border-0 cursor-pointer border-b-2 {activeTab === 'ignored' ? 'border-primary text-foreground bg-card' : 'border-transparent text-muted-foreground hover:text-foreground'}"
           >
             Ignorées ({ignoredCount})
@@ -1835,7 +1833,7 @@
                 Ignorer cette écriture
               </button>
             {/if}
-            <button onclick={() => selectedTx = null} class="px-4 py-2 border border-border bg-transparent hover:bg-muted text-xs font-semibold rounded cursor-pointer font-medium">
+            <button onclick={() => { selectedTx = null; sessionStorage.removeItem('reconcile_active_bt_id'); }} class="px-4 py-2 border border-border bg-transparent hover:bg-muted text-xs font-semibold rounded cursor-pointer font-medium">
               Fermer
             </button>
           </div>
