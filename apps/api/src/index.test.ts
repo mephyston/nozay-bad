@@ -1819,6 +1819,40 @@ VERSION:102
     expect(sug.memberId).toBe(junior.id);
   });
 
+  it('correctly maps coach displacement during holiday months to actions_jeunes category in deterministic fallback', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: '19050983000300846000500078472020260227',
+      seasonId: '25-26',
+      accountId: 'current',
+      amount: -13969,
+      date: '2026-02-27',
+      name: '000001 VIR EUROPEEN EMIS NET',
+      memo: 'POUR: Tetevuide Cyril MOTIF: deplacement Fevrier 2026',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const mockAI = {
+      run: async () => {
+        throw new Error('AI offline simulation');
+      }
+    };
+
+    const analyzeRes = await app.request('http://localhost/bank-transactions/analyze?season=25-26', {
+      method: 'POST'
+    }, { DB: mockD1 as any, AI: mockAI as any });
+    expect(analyzeRes.status).toBe(200);
+
+    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    expect(updatedBt.aiSuggestions).not.toBeNull();
+    
+    const sug = JSON.parse(updatedBt.aiSuggestions);
+    expect(sug.category).toBe(4); // Actions Jeunes (overridden from general coach salary/travel category 9)
+  });
+
   it('does not impact member remaining balance when linking a non-membership transaction (e.g. cordage)', async () => {
     const mockD1 = await setupMockDb();
     const db = drizzle(mockD1 as any);

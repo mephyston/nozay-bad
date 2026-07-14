@@ -1240,6 +1240,24 @@ app.post('/bank-transactions/analyze', async (c) => {
       textToLower.includes('accompagnement jeunes') || 
       textToLower.includes('tournoi jeune') ||
       textToLower.includes('tournoi jeunes') ||
+      (
+        (textToLower.includes('deplacement') || textToLower.includes('déplacement') || textToLower.includes('deplacements') || textToLower.includes('déplacements')) &&
+        (
+          textToLower.includes('jeune') || 
+          textToLower.includes('jeunes') || 
+          textToLower.includes('toussaint') || 
+          textToLower.includes('paques') || 
+          textToLower.includes('pâques') || 
+          textToLower.includes('noel') || 
+          textToLower.includes('noël') || 
+          textToLower.includes('fevrier') || 
+          textToLower.includes('février') || 
+          textToLower.includes('avril') || 
+          textToLower.includes('printemps') || 
+          textToLower.includes('hiver') || 
+          textToLower.includes('hivers')
+        )
+      ) ||
       textToLower.includes('toussaint') ||
       textToLower.includes('paques') ||
       textToLower.includes('pâques') ||
