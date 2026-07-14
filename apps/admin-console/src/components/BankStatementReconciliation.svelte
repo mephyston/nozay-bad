@@ -186,23 +186,28 @@
     }
   }
 
+  let searchQuery = $state('');
+
   $effect(() => {
-    // Reset selection when tab or smart filter changes
+    // Reset selection and search query when tab or smart filter changes
     const _ = activeTab;
     const __ = smartFilter;
     selectedTxIds = {};
+    searchQuery = '';
   });
 
   let displayedTransactions = $derived(
     bankTransactions.filter(t => {
       if (t.status !== activeTab) return false;
       if (activeTab === 'pending') {
-        if (smartFilter === 'evidences') {
-          return !!t.aiSuggestions;
-        }
-        if (smartFilter === 'recurrents') {
-          return isRecurrentTx(t);
-        }
+        if (smartFilter === 'evidences' && !t.aiSuggestions) return false;
+        if (smartFilter === 'recurrents' && !isRecurrentTx(t)) return false;
+      }
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        const matchesName = (t.name || '').toLowerCase().includes(query);
+        const matchesMemo = (t.memo || '').toLowerCase().includes(query);
+        if (!matchesName && !matchesMemo) return false;
       }
       return true;
     })
@@ -1162,6 +1167,15 @@
             </button>
           </div>
         {/if}
+
+        <div class="p-2 border-b border-border bg-muted/10 shrink-0">
+          <input
+            type="text"
+            placeholder="Rechercher une transaction (ex: salaire)..."
+            bind:value={searchQuery}
+            class="w-full px-3 py-1.5 border border-border bg-background rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+          />
+        </div>
 
         <div class="p-3 border-b border-border bg-muted/20 flex items-center justify-between shrink-0">
           <span class="font-bold text-xs text-muted-foreground">Liste des écritures ({displayedTransactions.length})</span>

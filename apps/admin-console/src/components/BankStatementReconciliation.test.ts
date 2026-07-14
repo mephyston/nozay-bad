@@ -620,5 +620,71 @@ describe('BankStatementReconciliation Component', () => {
     }));
     expect(reloadMock).toHaveBeenCalled();
   });
+
+  it('filters bank transactions using free text search input field', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankTransactions: [
+          {
+            id: 1,
+            fitid: 'TX-1',
+            accountId: 'current',
+            amount: 1000,
+            date: '2026-02-16',
+            name: 'VIREMENT SALAIRE ENTRAINEUR',
+            memo: 'Memo 1',
+            status: 'pending',
+            aiSuggestions: null
+          },
+          {
+            id: 2,
+            fitid: 'TX-2',
+            accountId: 'current',
+            amount: -2000,
+            date: '2026-02-17',
+            name: 'BOUTIQUE ADHESION DUBOIS',
+            memo: 'Memo 2',
+            status: 'pending',
+            aiSuggestions: null
+          }
+        ],
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }],
+        members: []
+      }
+    });
+
+    flushSync();
+
+    // Verify both are present initially
+    expect(target.innerHTML).toContain('SALAIRE');
+    expect(target.innerHTML).toContain('ADHESION');
+
+    // Find free-text search input
+    const searchInput = target.querySelector('input[placeholder*="Rechercher une transaction"]') as HTMLInputElement;
+    expect(searchInput).not.toBeNull();
+
+    // Type "salaire" into search input
+    searchInput.value = 'salaire';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    flushSync();
+
+    // Only SALAIRE should be shown, ADHESION should be hidden
+    expect(target.innerHTML).toContain('SALAIRE');
+    expect(target.innerHTML).not.toContain('ADHESION');
+
+    // Type something that matches nothing
+    searchInput.value = 'inconnu';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    flushSync();
+
+    expect(target.innerHTML).not.toContain('SALAIRE');
+    expect(target.innerHTML).not.toContain('ADHESION');
+  });
 });
 
