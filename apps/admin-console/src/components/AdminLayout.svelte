@@ -7,10 +7,13 @@
     Menu,
     X,
     Coins,
-    Settings
+    Settings,
+    ChevronLeft,
+    ChevronRight
   } from "lucide-svelte";
   import ThemeToggle from "./ThemeToggle.svelte";
   import UserNav from "./UserNav.svelte";
+  import { onMount } from "svelte";
 
   let { children, email = "admin@nozay-bad.fr", breadcrumb = "Tableau de Bord" } = $props<{
     children?: import('svelte').Snippet;
@@ -19,6 +22,19 @@
   }>();
 
   let sidebarOpen = $state(false);
+  let sidebarCollapsed = $state(false);
+
+  onMount(() => {
+    const saved = localStorage.getItem("sidebar_collapsed");
+    if (saved !== null) {
+      sidebarCollapsed = saved === "true";
+    }
+  });
+
+  function toggleSidebar() {
+    sidebarCollapsed = !sidebarCollapsed;
+    localStorage.setItem("sidebar_collapsed", String(sidebarCollapsed));
+  }
 
   const navItems = [
     { name: "Vue d'ensemble", icon: LayoutDashboard, href: "/admin" },
@@ -133,53 +149,104 @@
   {/if}
 
   <!-- Sidebar -->
-  <aside class="hidden md:flex flex-col border-r border-border bg-card w-64 transition-all duration-300">
+  <aside class="hidden md:flex flex-col border-r border-border bg-card {sidebarCollapsed ? 'w-16' : 'w-64'} transition-all duration-300">
     <div class="flex h-14 items-center justify-between px-4 border-b border-border">
-      <span class="font-bold text-lg tracking-wider text-primary">NBA 91 - CA</span>
+      {#if !sidebarCollapsed}
+        <span class="font-bold text-lg tracking-wider text-primary">NBA 91 - CA</span>
+      {/if}
+      <button 
+        onclick={toggleSidebar}
+        class="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer border-0 bg-transparent flex items-center justify-center {sidebarCollapsed ? 'mx-auto' : ''}"
+        aria-label={sidebarCollapsed ? "Agrandir le menu" : "Replier le menu"}
+        title={sidebarCollapsed ? "Agrandir le menu" : "Replier le menu"}
+      >
+        {#if sidebarCollapsed}
+          <ChevronRight class="h-4.5 w-4.5" />
+        {:else}
+          <ChevronLeft class="h-4.5 w-4.5" />
+        {/if}
+      </button>
     </div>
-    <nav class="flex-1 p-4 space-y-3 overflow-y-auto">
+    <nav class="flex-1 {sidebarCollapsed ? 'p-2 space-y-4' : 'p-4 space-y-3'} overflow-y-auto">
       {#each navItems as item}
-        {#if item.subItems}
-          <div class="space-y-1">
-            <div class="flex items-center px-3 py-2 text-sm font-semibold text-foreground/80">
-              <item.icon class="mr-3 h-4 w-4 shrink-0 text-muted-foreground" />
-              {item.name}
-            </div>
-            <div class="pl-7 space-y-1">
-              {#each item.subItems as sub}
-                {#if sub.subItems}
-                  <div class="space-y-1 mt-1 pl-1">
-                    <div class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 py-0.5">{sub.name}</div>
-                    <div class="pl-3 space-y-1 border-l border-border/60">
-                      {#each sub.subItems as subSub}
-                        <a
-                          href={subSub.href}
-                          class="block px-3 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground rounded hover:bg-accent/40 transition-colors"
-                        >
-                          {subSub.name}
-                        </a>
-                      {/each}
-                    </div>
-                  </div>
-                {:else}
+        {#if sidebarCollapsed}
+          <!-- COLLAPSED SIDEBAR -->
+          <div class="relative group flex justify-center">
+            {#if item.subItems}
+              <button
+                type="button"
+                class="flex h-10 w-10 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground transition-colors text-muted-foreground cursor-pointer border-0 bg-transparent"
+                title={item.name}
+              >
+                <item.icon class="h-5 w-5 shrink-0" />
+              </button>
+              <div class="hidden group-hover:block absolute left-full top-0 ml-2 w-48 bg-card border border-border shadow-lg rounded-lg p-1.5 z-50">
+                <div class="px-2.5 py-1 text-xs font-bold text-primary border-b border-border/60 pb-1 mb-1">
+                  {item.name}
+                </div>
+                {#each item.subItems as sub}
                   <a
                     href={sub.href}
-                    class="block px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-accent/50 transition-colors"
+                    class="block px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
                   >
                     {sub.name}
                   </a>
-                {/if}
-              {/each}
-            </div>
+                {/each}
+              </div>
+            {:else}
+              <a
+                href={item.href}
+                class="flex h-10 w-10 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground transition-colors text-muted-foreground"
+                title={item.name}
+              >
+                <item.icon class="h-5 w-5 shrink-0" />
+              </a>
+            {/if}
           </div>
         {:else}
-          <a
-            href={item.href}
-            class="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
-          >
-            <item.icon class="mr-3 h-4 w-4 shrink-0 text-muted-foreground" />
-            {item.name}
-          </a>
+          <!-- EXPANDED SIDEBAR -->
+          {#if item.subItems}
+            <div class="space-y-1">
+              <div class="flex items-center px-3 py-2 text-sm font-semibold text-foreground/80">
+                <item.icon class="mr-3 h-4 w-4 shrink-0 text-muted-foreground" />
+                {item.name}
+              </div>
+              <div class="pl-7 space-y-1">
+                {#each item.subItems as sub}
+                  {#if sub.subItems}
+                    <div class="space-y-1 mt-1 pl-1">
+                      <div class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 py-0.5">{sub.name}</div>
+                      <div class="pl-3 space-y-1 border-l border-border/60">
+                        {#each sub.subItems as subSub}
+                          <a
+                            href={subSub.href}
+                            class="block px-3 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground rounded hover:bg-accent/40 transition-colors"
+                          >
+                            {subSub.name}
+                          </a>
+                        {/each}
+                      </div>
+                    </div>
+                  {:else}
+                    <a
+                      href={sub.href}
+                      class="block px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-accent/50 transition-colors"
+                    >
+                      {sub.name}
+                    </a>
+                  {/if}
+                {/each}
+              </div>
+            </div>
+          {:else}
+            <a
+              href={item.href}
+              class="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              <item.icon class="mr-3 h-4 w-4 shrink-0 text-muted-foreground" />
+              {item.name}
+            </a>
+          {/if}
         {/if}
       {/each}
     </nav>
