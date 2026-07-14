@@ -32,7 +32,8 @@ describe('GeneralMeetingReport Component', () => {
         ],
         categories: [
           { id: 1, adminLabel: 'Cotisations membres', adherentLabel: 'Cotis', hideInExpenses: false }
-        ]
+        ],
+        viewMode: 'categories'
       }
     });
 
