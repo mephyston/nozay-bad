@@ -1130,6 +1130,23 @@ app.post('/bank-transactions/analyze', async (c) => {
     examplesPrompt += "\nSers-toi de ces exemples historiques pour orienter ton choix de catégorie ou de membre si l'opération à rapprocher est similaire.\n";
   }
 
+  // 4. Récupérer tous les produits actifs pour le matching par montant
+  const activeProducts = await db.select()
+    .from(productsTable)
+    .where(eq(productsTable.active, true))
+    .all();
+
+  function getProductAccountingCategory(prodCat: string): number {
+    if (prodCat === 'shuttlecock') return 8; // Volants
+    if (prodCat === 'string') return 7; // Cordages
+    return 10; // Autre/Matériel
+  }
+
+  const productsPrompt = activeProducts.map(p => {
+    const accCat = getProductAccountingCategory(p.category);
+    return `- Produit : "${p.name}" | Prix : ${(p.price / 100).toFixed(2)} EUR | Catégorie Comptable associée : ${accCat}`;
+  }).join('\n');
+
   let analyzedCount = 0;
 
   // Category integer ID mapping
@@ -1152,6 +1169,13 @@ app.post('/bank-transactions/analyze', async (c) => {
   for (const tx of pendingTxs) {
     // Déterminer la catégorie par défaut par dictionnaire simple
     let suggestedCategory = tx.amount < 0 ? CAT_FONCTIONNEMENT_ADMIN : CAT_ADHESIONS;
+    
+    // Tenter de faire correspondre par tarif produit d'abord (fallback de montant exact)
+    const matchingProduct = activeProducts.find(p => p.price === Math.abs(tx.amount));
+    if (matchingProduct) {
+      suggestedCategory = getProductAccountingCategory(matchingProduct.category);
+    }
+
     const textToLower = `${tx.name} ${tx.memo || ''}`.toLowerCase();
     
     if (
@@ -1262,6 +1286,9 @@ Catégories valides pour l'écriture :
 - 15 (virements_internes : virements de compte à compte du club, transit de trésorerie)
 ${examplesPrompt}
 
+Tarifs des produits de la boutique (si le montant correspond exactement, sers-toi en pour déduire la catégorie) :
+${productsPrompt}
+
 Liste des candidats adhérents possibles :
 ${candidates.map(c => `- ID: ${c.id}, Nom: ${c.lastName} ${c.firstName}, Parent 1: ${c.parent1Name || 'Aucun'}, Montant Restant Dû Adhésion: ${(c.amountRemaining / 100).toFixed(2)} EUR`).join('\n')}
 
@@ -1269,6 +1296,7 @@ Instructions :
 1. Associe l'adhérent (memberId et memberName) si son nom ou prénom (ou celui d'un de ses parents) apparaît clairement dans le libellé ou memo de l'opération, même si son "Montant Restant Dû Adhésion" est de 0.00 EUR (il peut s'agir d'un achat de volants, cordages, etc.).
 2. Choisis la catégorie la plus adaptée parmi la liste des catégories valides ci-dessus (ex: renvoie 8 si le motif mentionne "volants", 7 si "cordage", etc.).
 3. Si le libellé bancaire ou le mémo est composé principalement d'une longue suite de chiffres (plus de 20 chiffres d'affilée), il s'agit d'un virement interne de compte à compte. Associe impérativement la catégorie 15 et aucun adhérent (memberId = null).
+4. Si le montant correspond exactement au tarif d'un produit (par exemple 31.50 EUR correspond à une boîte de volants de catégorie 8), et qu'il n'y a pas d'autre indication de catégorie dans le texte, choisis la catégorie associée à ce produit.
 
 Renvoie STRICTEMENT un objet JSON sous la forme suivante (sans aucun autre texte, balises markdown ou commentaires) :
 {

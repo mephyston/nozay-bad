@@ -1031,6 +1031,73 @@ VERSION:102
     expect(sug2.memberId).toBeNull();
   });
 
+  it('matches transaction category based on exact product price (category 8 for 31.50)', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    await db.insert(productsTable).values({
+      name: 'Babolat 2',
+      category: 'shuttlecock',
+      price: 3150,
+      stock: 50,
+      active: true,
+      createdAt: new Date()
+    });
+
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: '13800243000300846000500078472020260423',
+      accountId: 'current',
+      seasonId: '25-26',
+      amount: 3150,
+      date: '2026-04-23',
+      name: 'VIR RECU 2383707922S',
+      memo: 'DE: MLLE LAETITIA CLEMENT MOTIF: Virement de Mlle Laetitia Clement REF: Virement de Mlle Laetitia Clement',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const member = await db.insert(membersTable).values({
+      licence: '1234567',
+      season: '25-26',
+      firstName: 'Laetitia',
+      lastName: 'Clement',
+      gender: 'F',
+      birthDate: '1995-04-12',
+      status: 'valide',
+      type: 'Adultes',
+      amountDue: 0,
+      amountReceived: 0,
+      amountRemaining: 0,
+      paid: true,
+      importedAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const aiMock = {
+      run: async (model: string, options: any) => {
+        return {
+          response: JSON.stringify({
+            memberId: member.id,
+            memberName: 'Clement Laetitia',
+            category: 8,
+            confidence: 0.9,
+            reasoning: 'Montant de 31.50 EUR correspond exactement au prix des volants Babolat 2.'
+          })
+        };
+      }
+    };
+
+    const analyzeRes = await app.request('http://localhost/bank-transactions/analyze?season=25-26', {
+      method: 'POST'
+    }, { DB: mockD1 as any, AI: aiMock as any });
+    expect(analyzeRes.status).toBe(200);
+
+    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    expect(updatedBt.aiSuggestions).not.toBeNull();
+    const suggestions = JSON.parse(updatedBt.aiSuggestions);
+    expect(suggestions.category).toBe(8);
+    expect(suggestions.memberId).toBe(member.id);
+  });
+
   it('resolves ambiguous name matching deterministically when multiple members share last name', async () => {
     const mockD1 = await setupMockDb();
     const db = drizzle(mockD1 as any);
