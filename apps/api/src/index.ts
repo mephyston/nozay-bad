@@ -1397,6 +1397,10 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
     return c.json({ success: false, error: 'Écriture bancaire non trouvée.' }, 404);
   }
 
+  if (await isSeasonClosed(db, bankTx.seasonId)) {
+    return c.json({ success: false, error: 'La saison de l\'écriture bancaire est clôturée.' }, 400);
+  }
+
   const memberId = body.memberId || body.transaction?.memberId;
   const invoiceId = body.invoiceId;
 
@@ -1404,6 +1408,9 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
     const invoice = await db.select().from(invoicesTable).where(eq(invoicesTable.id, invoiceId)).get();
     if (!invoice) {
       return c.json({ success: false, error: 'Facture introuvable' }, 404);
+    }
+    if (invoice.status === 'paid' || invoice.status === 'cancelled') {
+      return c.json({ success: false, error: 'La facture a déjà été payée ou a été annulée.' }, 400);
     }
     if (await isSeasonClosed(db, invoice.seasonId)) {
       return c.json({ success: false, error: 'La saison de la facture est clôturée.' }, 400);
@@ -2528,6 +2535,9 @@ app.get('/invoices', async (c) => {
 // GET /invoices/:id
 app.get('/invoices/:id', async (c) => {
   const id = parseInt(c.req.param('id'));
+  if (isNaN(id)) {
+    return c.json({ success: false, error: 'Identifiant invalide' }, 400);
+  }
   const db = drizzle(c.env.DB);
   const invoice = await db.select().from(invoicesTable).where(eq(invoicesTable.id, id)).get();
   if (!invoice) return c.json({ success: false, error: 'Facture introuvable' }, 404);
@@ -2597,6 +2607,9 @@ app.post('/invoices', async (c) => {
 // PUT /invoices/:id
 app.put('/invoices/:id', async (c) => {
   const id = parseInt(c.req.param('id'));
+  if (isNaN(id)) {
+    return c.json({ success: false, error: 'Identifiant invalide' }, 400);
+  }
   const body = await c.req.json();
   const db = drizzle(c.env.DB);
   const invoice = await db.select().from(invoicesTable).where(eq(invoicesTable.id, id)).get();
@@ -2641,6 +2654,9 @@ app.put('/invoices/:id', async (c) => {
 // DELETE /invoices/:id
 app.delete('/invoices/:id', async (c) => {
   const id = parseInt(c.req.param('id'));
+  if (isNaN(id)) {
+    return c.json({ success: false, error: 'Identifiant invalide' }, 400);
+  }
   const db = drizzle(c.env.DB);
   const invoice = await db.select().from(invoicesTable).where(eq(invoicesTable.id, id)).get();
   if (!invoice) return c.json({ success: false, error: 'Facture introuvable' }, 404);
@@ -2657,7 +2673,14 @@ app.delete('/invoices/:id', async (c) => {
 // POST /invoices/:id/status
 app.post('/invoices/:id/status', async (c) => {
   const id = parseInt(c.req.param('id'));
+  if (isNaN(id)) {
+    return c.json({ success: false, error: 'Identifiant invalide' }, 400);
+  }
   const { status } = await c.req.json();
+  const validStatuses = ['draft', 'sent', 'paid', 'cancelled'];
+  if (!validStatuses.includes(status)) {
+    return c.json({ success: false, error: 'Statut invalide' }, 400);
+  }
   const db = drizzle(c.env.DB);
   const invoice = await db.select().from(invoicesTable).where(eq(invoicesTable.id, id)).get();
   if (!invoice) return c.json({ success: false, error: 'Facture introuvable' }, 404);
@@ -2671,6 +2694,9 @@ app.post('/invoices/:id/status', async (c) => {
 // GET /members/:id/cse-data
 app.get('/members/:id/cse-data', async (c) => {
   const id = parseInt(c.req.param('id'));
+  if (isNaN(id)) {
+    return c.json({ success: false, error: 'Identifiant invalide' }, 400);
+  }
   const db = drizzle(c.env.DB);
   const member = await db.select().from(membersTable).where(eq(membersTable.id, id)).get();
   if (!member) return c.json({ success: false, error: 'Membre introuvable' }, 404);

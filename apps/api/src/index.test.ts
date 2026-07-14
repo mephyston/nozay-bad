@@ -850,7 +850,7 @@ VERSION:102
     const bt = await db.insert(bankTransactionsTable).values({
       fitid: 'FITID-RECON-INV-CLOSED',
       accountId: 'current',
-      seasonId: '24-25',
+      seasonId: '25-26',
       amount: 15000,
       date: '2025-07-15',
       name: 'VIR RECU COMITE 91',
@@ -2433,6 +2433,213 @@ describe('Invoices and Attestation CSE API Endpoints', () => {
     expect(paidWithTxData.data.paymentMethod).toBe('cheque');
     expect(paidWithTxData.data.paymentDate).toBe('2026-07-10');
     expect(paidWithTxData.data.amount).toBe(20000);
+  });
+});
+
+describe('Final Improvements API checks', () => {
+  it('should validate status values in POST /invoices/:id/status', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Create an invoice
+    const inv = await db.insert(invoicesTable).values({
+      invoiceNumber: 'FAC-2526-NBA91-0020',
+      seasonId: '25-26',
+      date: '2026-07-14',
+      dueDate: '2026-08-14',
+      clientName: 'Client Test',
+      totalAmount: 10000,
+      status: 'draft',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // Send invalid status
+    const res = await app.request(`http://localhost/invoices/${inv.id}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'invalid_status_value' })
+    }, { DB: mockD1 as any });
+
+    expect(res.status).toBe(400);
+    const body = await res.json() as any;
+    expect(body.success).toBe(false);
+    expect(body.error).toBe('Statut invalide');
+
+    // Send valid status
+    const resValid = await app.request(`http://localhost/invoices/${inv.id}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'sent' })
+    }, { DB: mockD1 as any });
+
+    expect(resValid.status).toBe(200);
+    const bodyValid = await resValid.json() as any;
+    expect(bodyValid.success).toBe(true);
+  });
+
+  it('should verify NaN IDs and return 400 for specific endpoints', async () => {
+    const mockD1 = await setupMockDb();
+
+    const endpoints = [
+      { url: 'http://localhost/invoices/not-a-number', method: 'GET' },
+      { url: 'http://localhost/invoices/not-a-number', method: 'PUT', body: {} },
+      { url: 'http://localhost/invoices/not-a-number', method: 'DELETE' },
+      { url: 'http://localhost/invoices/not-a-number/status', method: 'POST', body: { status: 'sent' } },
+      { url: 'http://localhost/members/not-a-number/cse-data', method: 'GET' }
+    ];
+
+    for (const ep of endpoints) {
+      const res = await app.request(ep.url, {
+        method: ep.method,
+        headers: ep.body ? { 'Content-Type': 'application/json' } : undefined,
+        body: ep.body ? JSON.stringify(ep.body) : undefined
+      }, { DB: mockD1 as any });
+
+      expect(res.status).toBe(400);
+      const body = await res.json() as any;
+      expect(body).toEqual({ success: false, error: 'Identifiant invalide' });
+    }
+  });
+
+  it('should lock reconciliation when the bank transaction season is closed', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // 1. Create a closed season
+    await db.insert(seasonsTable).values({
+      id: '24-25',
+      name: 'Saison 2024-2025',
+      active: false,
+      closed: true,
+      createdAt: new Date()
+    }).run();
+
+    // 2. Create bank transaction in closed season
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-CLOSED-SEASON',
+      accountId: 'current',
+      seasonId: '24-25',
+      amount: 15000,
+      date: '2025-07-15',
+      name: 'VIR RECU',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // 3. Attempt to reconcile
+    const res = await app.request(`http://localhost/bank-transactions/${bt.id}/reconcile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create',
+        transaction: {
+          seasonId: '24-25',
+          type: 'recette',
+          accountId: 'current',
+          category: 7,
+          amount: 15000,
+          date: '2025-07-15',
+          paymentMethod: 'virement',
+          description: 'Fail reconcile'
+        }
+      })
+    }, { DB: mockD1 as any });
+
+    expect(res.status).toBe(400);
+    const body = await res.json() as any;
+    expect(body.success).toBe(false);
+    expect(body.error).toBe('La saison de l\'écriture bancaire est clôturée.');
+  });
+
+  it('should reject reconciliation if the invoice is already paid or cancelled', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    // Create a paid invoice
+    const invPaid = await db.insert(invoicesTable).values({
+      invoiceNumber: 'FAC-2526-NBA91-0021',
+      seasonId: '25-26',
+      date: '2026-07-14',
+      dueDate: '2026-08-14',
+      clientName: 'Client Paid',
+      totalAmount: 10000,
+      status: 'paid',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // Create a cancelled invoice
+    const invCancelled = await db.insert(invoicesTable).values({
+      invoiceNumber: 'FAC-2526-NBA91-0022',
+      seasonId: '25-26',
+      date: '2026-07-14',
+      dueDate: '2026-08-14',
+      clientName: 'Client Cancelled',
+      totalAmount: 10000,
+      status: 'cancelled',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // Create bank transaction
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: 'FITID-RECON-PAID',
+      accountId: 'current',
+      seasonId: '25-26',
+      amount: 10000,
+      date: '2026-07-15',
+      name: 'VIR RECU',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    // 1. Attempt reconcile with already paid invoice
+    const resPaid = await app.request(`http://localhost/bank-transactions/${bt.id}/reconcile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create',
+        invoiceId: invPaid.id,
+        transaction: {
+          seasonId: '25-26',
+          type: 'recette',
+          accountId: 'current',
+          category: 7,
+          amount: 10000,
+          date: '2026-07-15',
+          paymentMethod: 'virement',
+          description: 'Reconcile paid'
+        }
+      })
+    }, { DB: mockD1 as any });
+
+    expect(resPaid.status).toBe(400);
+    const bodyPaid = await resPaid.json() as any;
+    expect(bodyPaid.success).toBe(false);
+    expect(bodyPaid.error).toBe('La facture a déjà été payée ou a été annulée.');
+
+    // 2. Attempt reconcile with cancelled invoice
+    const resCancelled = await app.request(`http://localhost/bank-transactions/${bt.id}/reconcile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create',
+        invoiceId: invCancelled.id,
+        transaction: {
+          seasonId: '25-26',
+          type: 'recette',
+          accountId: 'current',
+          category: 7,
+          amount: 10000,
+          date: '2026-07-15',
+          paymentMethod: 'virement',
+          description: 'Reconcile cancelled'
+        }
+      })
+    }, { DB: mockD1 as any });
+
+    expect(resCancelled.status).toBe(400);
+    const bodyCancelled = await resCancelled.json() as any;
+    expect(bodyCancelled.success).toBe(false);
+    expect(bodyCancelled.error).toBe('La facture a déjà été payée ou a été annulée.');
   });
 });
 

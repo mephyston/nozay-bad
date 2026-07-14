@@ -197,6 +197,16 @@
     }
   }
 
+  function getErrorMessage(text: string, defaultMsg: string): string {
+    if (!text) return defaultMsg;
+    try {
+      const parsed = JSON.parse(text);
+      return parsed.error || parsed.message || defaultMsg;
+    } catch (_) {
+      return text;
+    }
+  }
+
   async function handleSubmit(e: Event) {
     e.preventDefault();
     errorMsg = '';
@@ -271,7 +281,7 @@
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(text || "Une erreur est survenue lors de l'enregistrement.");
+        throw new Error(getErrorMessage(text, "Une erreur est survenue lors de l'enregistrement."));
       }
 
       successMsg = editingId ? "Facture mise à jour avec succès !" : "Facture créée avec succès !";
@@ -301,7 +311,7 @@
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(text || "Erreur lors de la mise à jour du statut.");
+        throw new Error(getErrorMessage(text, "Erreur lors de la mise à jour du statut."));
       }
 
       successMsg = "Statut de la facture mis à jour avec succès !";
@@ -325,7 +335,7 @@
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(text || "Erreur lors de la suppression de la facture.");
+        throw new Error(getErrorMessage(text, "Erreur lors de la suppression de la facture."));
       }
 
       successMsg = "Facture supprimée avec succès !";

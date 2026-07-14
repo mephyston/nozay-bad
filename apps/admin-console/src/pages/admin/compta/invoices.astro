@@ -8,7 +8,7 @@ import { env } from 'cloudflare:workers';
 const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
 const apiService = env.API_SERVICE;
 
-const season = Astro.url.searchParams.get('season') || '25-26';
+let season = Astro.url.searchParams.get('season') || '';
 
 if (Astro.request.method === 'POST') {
   try {
@@ -81,21 +81,27 @@ let seasonsList = [];
 let errorMsg = '';
 
 try {
-  // 1. Récupérer les factures de la saison
-  const invoicesRes = await apiService.fetch(`http://localhost/invoices?season=${season}`);
-  if (!invoicesRes.ok) {
-    throw new Error('Impossible de récupérer les factures pour cette saison.');
-  }
-  const invoicesJson = await invoicesRes.json() as any;
-  invoicesList = invoicesJson.data || [];
-
-  // 2. Récupérer les saisons
+  // 1. Récupérer la liste des saisons d'abord pour avoir la saison active par défaut
   const seasonsRes = await apiService.fetch('http://localhost/seasons');
   if (!seasonsRes.ok) {
     throw new Error('Impossible de récupérer la liste des saisons.');
   }
   const seasonsJson = await seasonsRes.json() as any;
   seasonsList = seasonsJson.data || [];
+
+  // Déterminer la saison par défaut dynamiquement
+  if (!season) {
+    const activeSeason = seasonsList.find((s: any) => s.active === true || s.active === 1);
+    season = activeSeason ? activeSeason.id : '25-26';
+  }
+
+  // 2. Récupérer les factures de la saison
+  const invoicesRes = await apiService.fetch(`http://localhost/invoices?season=${season}`);
+  if (!invoicesRes.ok) {
+    throw new Error('Impossible de récupérer les factures pour cette saison.');
+  }
+  const invoicesJson = await invoicesRes.json() as any;
+  invoicesList = invoicesJson.data || [];
 } catch (err: any) {
   errorMsg = err.message || 'Une erreur est survenue lors du chargement des données.';
 }

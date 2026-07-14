@@ -61,6 +61,12 @@ function numberToFrenchWords(num: number): string {
         } else {
           words += 'soixante-' + teens[unitVal];
         }
+      } else if (tenVal === 8) {
+        if (unitVal === 1) {
+          words += 'quatre-vingt-un';
+        } else {
+          words += 'quatre-vingt-' + units[unitVal];
+        }
       } else if (tenVal === 9) {
         words += 'quatre-vingt-' + teens[unitVal];
       } else {
@@ -87,8 +93,8 @@ function formatFrenchDate(dateStr: string): string {
   const monthNum = parseInt(parts[1], 10);
   const day = parseInt(parts[2], 10);
   const months = [
-    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+    'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+    'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
   ];
   const monthName = months[monthNum - 1] || parts[1];
   return `${day} ${monthName} ${year}`;
