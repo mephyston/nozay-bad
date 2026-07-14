@@ -1683,7 +1683,7 @@
                 </div>
  
                 <button
-                  disabled={isSubmitting || (isSplitMode ? (Math.abs(splits.reduce((acc, s) => acc + Math.round((s.amount || 0) * 100), 0) - remainingAmount) > 10) : (!amountToLink || amountToLink <= 0 || Math.round(amountToLink * 100) > remainingAmount))}
+                  disabled={isSubmitting || (isSplitMode ? (splits.some(s => !s.amount || s.amount <= 0) || Math.abs(splits.reduce((acc, s) => acc + Math.round((s.amount || 0) * 100), 0) - remainingAmount) > 10) : (!amountToLink || amountToLink <= 0 || Math.round(amountToLink * 100) > remainingAmount))}
                   onclick={() => handleCreateAndMatch(selectedTx!)}
                   class="w-full py-1.5 bg-primary hover:bg-primary/95 text-primary-foreground disabled:bg-muted disabled:text-muted-foreground rounded text-xs font-semibold shadow-sm cursor-pointer border-0 mt-2 font-medium"
                 >
