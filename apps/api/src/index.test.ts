@@ -1615,6 +1615,40 @@ VERSION:102
     expect(sug.category).toBe(4); // Actions Jeunes
   });
 
+  it('prioritizes membership keywords over exact amount product matches in deterministic fallback', async () => {
+    const mockD1 = await setupMockDb();
+    const db = drizzle(mockD1 as any);
+
+    const bt = await db.insert(bankTransactionsTable).values({
+      fitid: '2184623000300846000500078472020260508',
+      seasonId: '25-26',
+      accountId: 'current',
+      amount: 6000,
+      date: '2026-05-08',
+      name: 'VIR INST RE 662880687198',
+      memo: 'DE: MAGISSON AYMERIC DATE: 08/05/2026 15:37 MOTIF: de MAGISSON AYMERIC - MAGISSON-AYME RIC-ADHESION2025-2026',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().then(r => r[0]);
+
+    const mockAI = {
+      run: async () => {
+        throw new Error('AI offline simulation');
+      }
+    };
+
+    const analyzeRes = await app.request('http://localhost/bank-transactions/analyze?season=25-26', {
+      method: 'POST'
+    }, { DB: mockD1 as any, AI: mockAI as any });
+    expect(analyzeRes.status).toBe(200);
+
+    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    expect(updatedBt.aiSuggestions).not.toBeNull();
+    
+    const sug = JSON.parse(updatedBt.aiSuggestions);
+    expect(sug.category).toBe(1); // Adhésions & Inscriptions (not Cordage 7)
+  });
+
   it('does not impact member remaining balance when linking a non-membership transaction (e.g. cordage)', async () => {
     const mockD1 = await setupMockDb();
     const db = drizzle(mockD1 as any);
