@@ -11,7 +11,7 @@ describe('MembersTable Component', () => {
       target,
       props: {
         data: [
-          { licence: '1111111', lastName: 'Martin', firstName: 'Jean', gender: 'M', birthDate: '1980-01-01', status: 'valide', type: 'Competiteur' }
+          { id: 1, licence: '1111111', lastName: 'Martin', firstName: 'Jean', gender: 'M', birthDate: '1980-01-01', status: 'valide', type: 'Competiteur', paid: true }
         ],
         pagination: {
           total: 1,

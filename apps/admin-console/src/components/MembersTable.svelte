@@ -2,6 +2,7 @@
   import { Search, ChevronLeft, ChevronRight, User, MoreVertical, Eye } from 'lucide-svelte';
 
   interface Member {
+    id: number;
     licence: string;
     lastName: string;
     firstName: string;
@@ -9,6 +10,7 @@
     birthDate: string;
     status: string;
     type: string;
+    paid: boolean;
   }
 
   interface Pagination {
@@ -211,7 +213,7 @@
                   </button>
 
                   {#if openDropdownId === member.licence}
-                    <div class="absolute right-4 mt-1 w-32 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left">
+                    <div class="absolute right-4 mt-1 w-40 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left">
                       <a
                         href={`/admin/members/${member.licence}?season=${filters.season || '25-26'}`}
                         class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer no-underline bg-transparent"
@@ -219,6 +221,18 @@
                         <Eye class="w-3.5 h-3.5" />
                         Voir profil
                       </a>
+                      {#if member.paid}
+                        <a
+                          href={`/admin/compta/attestations/${member.id}`}
+                          target="_blank"
+                          class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer no-underline bg-transparent"
+                        >
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Attestation CSE
+                        </a>
+                      {/if}
                     </div>
                   {/if}
                 </div>

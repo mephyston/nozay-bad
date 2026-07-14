@@ -92,8 +92,16 @@
         <p class="text-sm text-muted-foreground mt-1 font-medium">Licence : {member.licence}</p>
       </div>
     </div>
-    <div>
+    <div class="flex items-center gap-3">
       {#if member.paid}
+        <a
+          href={`/admin/compta/attestations/${member.id}`}
+          target="_blank"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors no-underline"
+        >
+          <FileText class="w-3.5 h-3.5" />
+          Attestation CSE
+        </a>
         <span class="px-3 py-1.5 text-xs font-bold rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
           Cotisation réglée
         </span>
