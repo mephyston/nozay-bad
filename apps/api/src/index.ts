@@ -1625,12 +1625,19 @@ app.post('/bank-transactions/:id/reconcile', async (c) => {
   const db = drizzle(c.env.DB);
 
   try {
-    const result = await reconcileBankTxInternal(db, id, body);
-    if (!result.success) {
-      return c.json({ success: false, error: result.error }, (result.status || 400) as any);
-    }
+    await db.transaction(async (tx) => {
+      const result = await reconcileBankTxInternal(tx, id, body);
+      if (!result.success) {
+        const err = new Error(result.error || 'Reconciliation failed');
+        (err as any).status = result.status || 400;
+        throw err;
+      }
+    });
     return c.json({ success: true });
   } catch (err: any) {
+    if (err.status) {
+      return c.json({ success: false, error: err.message }, err.status);
+    }
     return c.json({ success: false, error: err.message }, 500);
   }
 });
