@@ -75,6 +75,35 @@
   import { onMount } from 'svelte';
   import { X } from 'lucide-svelte';
 
+  function getPageRange(current: number, total: number) {
+    const range: (number | string)[] = [];
+    const delta = 2;
+
+    for (let i = 1; i <= total; i++) {
+      if (
+        i === 1 ||
+        i === total ||
+        (i >= current - delta && i <= current + delta)
+      ) {
+        range.push(i);
+      } else if (
+        (i === current - delta - 1 && i > 1) ||
+        (i === current + delta + 1 && i < total)
+      ) {
+        range.push('...');
+      }
+    }
+    
+    return range.filter((val, idx, arr) => {
+      if (val === '...') {
+        return arr[idx - 1] !== '...';
+      }
+      return true;
+    });
+  }
+
+  let pageRange = $derived(getPageRange(pagination.page, pagination.totalPages));
+
   let filteredCategory = $state<string | null>(null);
   let filteredClassCode = $state<string | null>(null);
 
@@ -365,6 +394,24 @@
     </div>
   {/if}
 
+  <div class="flex flex-wrap gap-2 items-center no-print">
+    <button 
+      class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border border-border shadow-sm transition-colors cursor-pointer {unreconciledChequesOnly ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-background hover:bg-muted'}"
+      onclick={() => {
+        const params = new URLSearchParams(window.location.search);
+        if (unreconciledChequesOnly) {
+          params.delete('unreconciledCheques');
+        } else {
+          params.set('unreconciledCheques', 'true');
+        }
+        params.set('page', '1');
+        window.location.href = `?${params.toString()}`;
+      }}
+    >
+      <span>🎫</span> Chèques en circulation
+    </button>
+  </div>
+
   <!-- Tableau -->
   <div class="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
     <div class="overflow-x-auto min-h-[180px]">
@@ -480,18 +527,38 @@
         <span class="text-xs">
           Page {pagination.page} sur {pagination.totalPages}
         </span>
-        <div class="flex gap-1">
+        <div class="flex gap-1 items-center">
           <button
             class="p-2 border border-border rounded bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             onclick={() => changePage(pagination.page - 1)}
             disabled={pagination.page <= 1}
+            aria-label="Page précédente"
           >
             <ChevronLeft class="w-4 h-4" />
           </button>
+
+          {#each pageRange as p}
+            {#if p === '...'}
+              <span class="px-2.5 py-1 text-xs text-muted-foreground select-none">...</span>
+            {:else}
+              <button
+                class="px-3 py-1 border border-border rounded text-xs font-semibold transition-colors cursor-pointer"
+                class:bg-primary={Number(p) === pagination.page}
+                class:text-primary-foreground={Number(p) === pagination.page}
+                class:bg-background={Number(p) !== pagination.page}
+                class:hover:bg-muted={Number(p) !== pagination.page}
+                onclick={() => changePage(Number(p))}
+              >
+                {p}
+              </button>
+            {/if}
+          {/each}
+
           <button
             class="p-2 border border-border rounded bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             onclick={() => changePage(pagination.page + 1)}
             disabled={pagination.page >= pagination.totalPages}
+            aria-label="Page suivante"
           >
             <ChevronRight class="w-4 h-4" />
           </button>

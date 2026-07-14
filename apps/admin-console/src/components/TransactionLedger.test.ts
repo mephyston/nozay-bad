@@ -49,4 +49,37 @@ describe('TransactionLedger Component', () => {
     expect(target.innerHTML).toContain('+45.00 €');
     expect(target.innerHTML).toContain('VIR-9988');
   });
+
+  it('renders outstanding checks toggle and intermediate pages in pagination', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(TransactionLedger, {
+      target,
+      props: {
+        transactions: [],
+        pagination: {
+          total: 100,
+          page: 5,
+          limit: 20,
+          totalPages: 10
+        },
+        seasonId: '25-26',
+        balances: [],
+        seasons: [],
+        categories: [],
+        accountClasses: [],
+        unreconciledChequesOnly: true
+      }
+    });
+
+    expect(target.innerHTML).toContain('Chèques en circulation');
+    expect(target.innerHTML).toContain('1');
+    expect(target.innerHTML).toContain('3');
+    expect(target.innerHTML).toContain('4');
+    expect(target.innerHTML).toContain('5');
+    expect(target.innerHTML).toContain('6');
+    expect(target.innerHTML).toContain('7');
+    expect(target.innerHTML).toContain('10');
+  });
 });
