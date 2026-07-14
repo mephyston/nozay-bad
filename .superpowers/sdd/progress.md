@@ -9,7 +9,7 @@ Current Plan: `docs/superpowers/plans/2026-07-14-cse-certificates-and-invoice-mo
 *   [x] Task 2 : API Endpoints Factures & Attestation CSE
 *   [x] Task 3 : Câblage du Rapprochement des Factures
 *   [x] Task 4 : Interface de Gestion des Factures (Svelte 5)
-*   [ ] Task 5 : Rapprochement de Facture dans l'UI
+*   [x] Task 5 : Rapprochement de Facture dans l'UI
 *   [ ] Task 6 : Templates d'Impression "Print-Ready"
 
 ## Ledger Entries
@@ -20,6 +20,7 @@ Current Plan: `docs/superpowers/plans/2026-07-14-cse-certificates-and-invoice-mo
 - Task 2: complete (commits f5a7ffc..581db82, review clean)
 - Task 3: complete (commits 872fd4f..f717b7a, review clean)
 - Task 4: complete (commits 1533d59..80d9f3b, review clean)
+- Task 5: complete (commits 8ba5aec..8bf0e1d, review clean)
 
 ### Minor Findings / Triage List
 - Task 2: In `POST /invoices/:id/status`, validate `status` input against allowed enum values.
