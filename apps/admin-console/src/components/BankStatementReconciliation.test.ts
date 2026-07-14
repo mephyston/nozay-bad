@@ -444,5 +444,181 @@ describe('BankStatementReconciliation Component', () => {
     expect(target.innerHTML).not.toContain('TX-ONE');
     expect(target.innerHTML).toContain('SALAIRE');
   });
+
+  it('multi-match order selection basket in invoice tab updates selected sum and validates with tolerance', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    // Set bank transaction amount to 206.00 € (20600 cents) which matches sum of 101 (15600) and 102 (5000)
+    mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankTransactions: [
+          {
+            id: 1,
+            fitid: 'TX-MULTI',
+            accountId: 'current',
+            amount: 20600,
+            date: '2026-02-16',
+            name: 'MULTI INVOICE TRANSFER',
+            memo: 'Réglement factures',
+            status: 'pending',
+            aiSuggestions: null
+          }
+        ],
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }],
+        members: []
+      }
+    });
+
+    // Select the bank transaction
+    const txBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('MULTI INVOICE TRANSFER')) as HTMLButtonElement;
+    expect(txBtn).not.toBeNull();
+    txBtn.click();
+    flushSync();
+
+    // Click on the Associer Facture tab
+    const invoiceTabBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Associer Facture')) as HTMLButtonElement;
+    expect(invoiceTabBtn).not.toBeNull();
+    invoiceTabBtn.click();
+    flushSync();
+
+    // Wait for the async loadUnpaidInvoices to run and populate the state
+    await new Promise(resolve => setTimeout(resolve, 50));
+    flushSync();
+
+    // Verify both invoices are listed
+    expect(target.innerHTML).toContain('FAC-2026-0001');
+    expect(target.innerHTML).toContain('FAC-2026-0002');
+
+    // Find checkboxes
+    const invoiceCheckboxes = target.querySelectorAll('input.invoice-checkbox') as NodeListOf<HTMLInputElement>;
+    expect(invoiceCheckboxes.length).toBe(2);
+
+    // Check first invoice checkbox
+    invoiceCheckboxes[0].checked = true;
+    invoiceCheckboxes[0].dispatchEvent(new Event('change', { bubbles: true }));
+    flushSync();
+
+    // The selected sum should be 156.00 € (15600 cents)
+    expect(target.innerHTML).toContain('156.00');
+
+    // Since selectedSum (15600) != selectedTx.amount (20600), the validation button must be disabled
+    const submitBtn = target.querySelector('#btn-valider-association') as HTMLButtonElement;
+    expect(submitBtn).not.toBeNull();
+    expect(submitBtn.disabled).toBe(true);
+
+    // Check second invoice checkbox
+    invoiceCheckboxes[1].checked = true;
+    invoiceCheckboxes[1].dispatchEvent(new Event('change', { bubbles: true }));
+    flushSync();
+
+    // Now both selected: sum is 20600 which matches selectedTx.amount (20600)
+    expect(target.innerHTML).toContain('206.00');
+    expect(submitBtn.disabled).toBe(false);
+
+    // Mock window.location
+    const reloadMock = vi.fn();
+    vi.stubGlobal('location', {
+      reload: reloadMock
+    });
+
+    // Click submit
+    submitBtn.click();
+    await new Promise(resolve => setTimeout(resolve, 50));
+    flushSync();
+
+    expect(global.fetch).toHaveBeenCalledWith('/admin/compta/import', expect.objectContaining({
+      method: 'POST',
+      body: expect.stringContaining('"invoiceIds":[101,102]')
+    }));
+    expect(reloadMock).toHaveBeenCalled();
+  });
+
+  it('dynamic split form in manual entry tab adds rows and validates against transaction amount', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    // Bank transaction amount: 150.00 € (15000 cents)
+    mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankTransactions: [
+          {
+            id: 1,
+            fitid: 'TX-SPLIT',
+            accountId: 'current',
+            amount: 15000,
+            date: '2026-02-16',
+            name: 'DIVERS SPLIT',
+            memo: 'Ventilation',
+            status: 'pending',
+            aiSuggestions: null
+          }
+        ],
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }],
+        members: []
+      }
+    });
+
+    // Select the bank transaction
+    const txBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('DIVERS SPLIT')) as HTMLButtonElement;
+    expect(txBtn).not.toBeNull();
+    txBtn.click();
+    flushSync();
+
+    // Active right tab is 'manual' by default, but click it to be sure
+    const manualTabBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Saisir écriture')) as HTMLButtonElement;
+    expect(manualTabBtn).not.toBeNull();
+    manualTabBtn.click();
+    flushSync();
+
+    // Click "Ventiler" button
+    const ventilerBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Ventiler') as HTMLButtonElement;
+    expect(ventilerBtn).not.toBeNull();
+    ventilerBtn.click();
+    flushSync();
+
+    // Should render split rows
+    const splitAmounts = target.querySelectorAll('input[id^="split-amount-"]') as NodeListOf<HTMLInputElement>;
+    expect(splitAmounts.length).toBe(2);
+
+    // Initially amount splits are 0, sum = 0 != 15000, so submit button should be disabled
+    const submitBtn = Array.from(target.querySelectorAll('button')).find(
+      b => b.textContent?.includes('Enregistrer la ventilation')
+    ) as HTMLButtonElement;
+    expect(submitBtn).not.toBeNull();
+    expect(submitBtn.disabled).toBe(true);
+
+    // Set split amounts to 100.00 € and 50.00 € respectively
+    splitAmounts[0].value = '100';
+    splitAmounts[0].dispatchEvent(new Event('input', { bubbles: true }));
+    splitAmounts[1].value = '50';
+    splitAmounts[1].dispatchEvent(new Event('input', { bubbles: true }));
+    flushSync();
+
+    // Total split sum is now 150.00 € which matches 150.00 € transaction total. Submit button should be enabled.
+    expect(submitBtn.disabled).toBe(false);
+
+    // Verify submission
+    const reloadMock = vi.fn();
+    vi.stubGlobal('location', {
+      reload: reloadMock
+    });
+
+    submitBtn.click();
+    await new Promise(resolve => setTimeout(resolve, 50));
+    flushSync();
+
+    expect(global.fetch).toHaveBeenCalledWith('/admin/compta/import', expect.objectContaining({
+      method: 'POST',
+      body: expect.stringContaining('"transactions":')
+    }));
+    expect(reloadMock).toHaveBeenCalled();
+  });
 });
 

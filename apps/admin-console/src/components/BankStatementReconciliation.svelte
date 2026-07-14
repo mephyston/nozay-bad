@@ -94,6 +94,26 @@
   let selectedMemberId = $state<string>('');
   let amountToLink = $state<number>(0);
 
+  // Task 3: Multi-match & manual split form state
+  let selectedInvoiceIds = $state<Set<number>>(new Set());
+  let selectedSum = $derived(
+    unpaidInvoices
+      .filter(i => selectedInvoiceIds.has(i.id))
+      .reduce((acc, i) => acc + i.totalAmount, 0)
+  );
+
+  let isSplitMode = $state(false);
+  let splits = $state<{ category: string; amount: number }[]>([]);
+
+  function toggleInvoiceSelection(id: number) {
+    if (selectedInvoiceIds.has(id)) {
+      selectedInvoiceIds.delete(id);
+    } else {
+      selectedInvoiceIds.add(id);
+    }
+    selectedInvoiceIds = new Set(selectedInvoiceIds);
+  }
+
   // États du dropdown personnalisé (Searchable Select / Combobox)
   let isMemberDropdownOpen = $state(false);
   let isCategoryDropdownOpen = $state(false);
@@ -318,6 +338,9 @@
       memberSearchQuery = '';
       categorySearchQuery = '';
       targetSeasonId = selectedSeason;
+      selectedInvoiceIds = new Set();
+      isSplitMode = false;
+      splits = [];
     }
   });
 
@@ -380,6 +403,57 @@
     } catch (err: any) {
       alert(err.message);
       isSubmitting = false;
+    }
+  }
+
+  async function handleMultiInvoiceReconcile() {
+    if (!selectedTx) return;
+    isSubmitting = true;
+    try {
+      const ids = Array.from(selectedInvoiceIds);
+      if (ids.length === 0) throw new Error('Aucune facture sélectionnée.');
+      
+      const firstInvoice = unpaidInvoices.find(inv => inv.id === ids[0]);
+      if (!firstInvoice) throw new Error('Facture introuvable.');
+
+      const isFullyReconciled = Math.abs(selectedSum - selectedTx.amount) <= 10;
+      prepareNextFocus(selectedTx.id, isFullyReconciled);
+
+      const res = await fetch('/admin/compta/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          btId: selectedTx.id,
+          invoiceIds: ids,
+          transaction: {
+            seasonId: firstInvoice.seasonId,
+            type: 'recette',
+            accountId: selectedTx.accountId,
+            category: '1', // default category
+            amount: selectedTx.amount,
+            date: selectedTx.date,
+            paymentMethod: 'virement',
+            description: `Rapprochement de ${ids.length} factures`,
+            reference: selectedTx.fitid
+          }
+        })
+      });
+      if (!res.ok) throw new Error('Erreur association factures.');
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.message);
+      isSubmitting = false;
+    }
+  }
+
+  function addSplitRow() {
+    splits = [...splits, { category: '1', amount: 0 }];
+  }
+
+  function removeSplitRow(index: number) {
+    if (splits.length > 2) {
+      splits = splits.filter((_, i) => i !== index);
     }
   }
 
@@ -722,32 +796,65 @@
   async function handleCreateAndMatch(bt: BankTransaction) {
     isSubmitting = true;
     try {
-      const linkedAmount = Math.round(amountToLink * 100);
-      const isFullyReconciled = (remainingAmount - linkedAmount) <= 10;
-      prepareNextFocus(bt.id, isFullyReconciled);
+      if (isSplitMode) {
+        const splitSumCents = splits.reduce((acc, s) => acc + Math.round((s.amount || 0) * 100), 0);
+        if (Math.abs(splitSumCents - remainingAmount) > 10) {
+          throw new Error("Le montant total ventilé doit être égal au reste à rapprocher.");
+        }
 
-      const res = await fetch('/admin/compta/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'create',
-          btId: bt.id,
-          memberId: selectedMemberId ? parseInt(selectedMemberId) : null,
-          transaction: {
-            seasonId: targetSeasonId,
-            type: bt.amount < 0 ? 'depense' : 'recette',
-            accountId: bt.accountId,
-            category,
-            amount: Math.round(amountToLink * 100),
-            date: bt.date,
-            paymentMethod,
-            description: bt.name,
-            reference: bt.fitid
-          }
-        })
-      });
-      if (!res.ok) throw new Error('Erreur création.');
-      window.location.reload();
+        const isFullyReconciled = (remainingAmount - splitSumCents) <= 10;
+        prepareNextFocus(bt.id, isFullyReconciled);
+
+        const res = await fetch('/admin/compta/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'create',
+            btId: bt.id,
+            memberId: selectedMemberId ? parseInt(selectedMemberId) : null,
+            transactions: splits.map((s, index) => ({
+              seasonId: targetSeasonId,
+              type: bt.amount < 0 ? 'depense' : 'recette',
+              accountId: bt.accountId,
+              category: s.category,
+              amount: Math.round(s.amount * 100),
+              date: bt.date,
+              paymentMethod,
+              description: `${bt.name} (Partie ${index + 1})`,
+              reference: bt.fitid
+            }))
+          })
+        });
+        if (!res.ok) throw new Error('Erreur création.');
+        window.location.reload();
+      } else {
+        const linkedAmount = Math.round(amountToLink * 100);
+        const isFullyReconciled = (remainingAmount - linkedAmount) <= 10;
+        prepareNextFocus(bt.id, isFullyReconciled);
+
+        const res = await fetch('/admin/compta/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'create',
+            btId: bt.id,
+            memberId: selectedMemberId ? parseInt(selectedMemberId) : null,
+            transaction: {
+              seasonId: targetSeasonId,
+              type: bt.amount < 0 ? 'depense' : 'recette',
+              accountId: bt.accountId,
+              category,
+              amount: Math.round(amountToLink * 100),
+              date: bt.date,
+              paymentMethod,
+              description: bt.name,
+              reference: bt.fitid
+            }
+          })
+        });
+        if (!res.ok) throw new Error('Erreur création.');
+        window.location.reload();
+      }
     } catch (err: any) {
       alert(err.message);
       isSubmitting = false;
@@ -1358,9 +1465,28 @@
             <!-- Étape 2 : Création d'une nouvelle écriture (uniquement si reste à ventiler, pending, non clôturé et onglet manuel actif) -->
             {#if !isClosed && remainingAmount > 0 && selectedTx.status === 'pending' && activeRightTab === 'manual'}
               <div class="border border-border rounded-xl p-4 space-y-3">
-                <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  {linkedGlTxs.length > 0 ? 'Ventiler une nouvelle partie' : 'Créer et pointer manuellement'}
-                </h4>
+                <div class="flex justify-between items-center">
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    {isSplitMode ? 'Ventiler l\'opération' : (linkedGlTxs.length > 0 ? 'Ventiler une nouvelle partie' : 'Créer et pointer manuellement')}
+                  </h4>
+                  <button
+                    type="button"
+                    onclick={() => {
+                      if (!isSplitMode) {
+                        isSplitMode = true;
+                        splits = [
+                          { category: '1', amount: 0 },
+                          { category: '1', amount: 0 }
+                        ];
+                      } else {
+                        isSplitMode = false;
+                      }
+                    }}
+                    class="px-2 py-1 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer border-0 shadow-sm transition-colors"
+                  >
+                    {isSplitMode ? 'Saisie simple' : 'Ventiler'}
+                  </button>
+                </div>
                 
                 <div class="space-y-3">
                   <!-- Ligne Adhérent & Recherche Combobox intégrée -->
@@ -1421,65 +1547,118 @@
                   </div>
  
                   <!-- Ligne Catégorie Combobox intégrée et Montant -->
-                  <div class="grid grid-cols-3 gap-2">
-                    <div class="col-span-2 space-y-1 relative">
-                      <label for="category-input" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Catégorie</label>
-                      <input
-                        id="category-input"
-                        type="text"
-                        autocomplete="off"
-                        placeholder="Tapez pour filtrer..."
-                        class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium pr-6"
-                        value={isCategoryDropdownOpen ? categorySearchQuery : categoryDisplayVal}
-                        oninput={(e) => {
-                          isCategoryDropdownOpen = true;
-                          categorySearchQuery = (e.target as HTMLInputElement).value;
-                        }}
-                        onfocus={() => {
-                          isCategoryDropdownOpen = true;
-                          categorySearchQuery = '';
-                        }}
-                        onblur={() => {
-                          setTimeout(() => { isCategoryDropdownOpen = false; }, 200);
-                        }}
-                        onkeydown={handleCategoryKeyDown}
-                      />
-                      <span class="absolute right-2 top-6 text-muted-foreground pointer-events-none text-[8px]">▼</span>
+                  {#if !isSplitMode}
+                    <div class="grid grid-cols-3 gap-2">
+                      <div class="col-span-2 space-y-1 relative">
+                        <label for="category-input" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Catégorie</label>
+                        <input
+                          id="category-input"
+                          type="text"
+                          autocomplete="off"
+                          placeholder="Tapez pour filtrer..."
+                          class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium pr-6"
+                          value={isCategoryDropdownOpen ? categorySearchQuery : categoryDisplayVal}
+                          oninput={(e) => {
+                            isCategoryDropdownOpen = true;
+                            categorySearchQuery = (e.target as HTMLInputElement).value;
+                          }}
+                          onfocus={() => {
+                            isCategoryDropdownOpen = true;
+                            categorySearchQuery = '';
+                          }}
+                          onblur={() => {
+                            setTimeout(() => { isCategoryDropdownOpen = false; }, 200);
+                          }}
+                          onkeydown={handleCategoryKeyDown}
+                        />
+                        <span class="absolute right-2 top-6 text-muted-foreground pointer-events-none text-[8px]">▼</span>
+                        
+                        {#if isCategoryDropdownOpen}
+                          <div id="category-listbox" class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded shadow-lg divide-y divide-border">
+                            {#each filteredCategories as cat, index}
+                              <button
+                                type="button"
+                                id={`category-option-${index}`}
+                                class="w-full text-left px-2.5 py-1.5 text-xs transition-colors font-medium border-0 cursor-pointer {categoryHighlightedIndex === index ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground'}"
+                                onmousedown={() => {
+                                  category = cat.id;
+                                  categorySearchQuery = cat.name;
+                                }}
+                              >
+                                  {cat.name}
+                              </button>
+                            {:else}
+                              <div class="px-2.5 py-1.5 text-xs text-muted-foreground italic">Aucun résultat</div>
+                            {/each}
+                          </div>
+                        {/if}
+                      </div>
                       
-                      {#if isCategoryDropdownOpen}
-                        <div id="category-listbox" class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded shadow-lg divide-y divide-border">
-                          {#each filteredCategories as cat, index}
-                            <button
-                              type="button"
-                              id={`category-option-${index}`}
-                              class="w-full text-left px-2.5 py-1.5 text-xs transition-colors font-medium border-0 cursor-pointer {categoryHighlightedIndex === index ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground'}"
-                              onmousedown={() => {
-                                category = cat.id;
-                                categorySearchQuery = cat.name;
-                              }}
+                      <div class="space-y-1">
+                        <label for="amount-input" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Montant (€)</label>
+                        <input
+                          id="amount-input"
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          max={(remainingAmount / 100).toFixed(2)}
+                          class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary font-bold text-foreground h-[29px] mt-1"
+                          bind:value={amountToLink}
+                        />
+                      </div>
+                    </div>
+                  {:else}
+                    <div class="space-y-2">
+                      {#each splits as split, index}
+                        <div class="grid grid-cols-3 gap-2 items-end">
+                          <div class="col-span-2 space-y-1">
+                            <label for={`split-category-${index}`} class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Catégorie {index + 1}</label>
+                            <select
+                              id={`split-category-${index}`}
+                              class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium"
+                              bind:value={split.category}
                             >
-                                {cat.name}
-                            </button>
-                          {:else}
-                            <div class="px-2.5 py-1.5 text-xs text-muted-foreground italic">Aucun résultat</div>
-                          {/each}
+                              {#each categories as cat}
+                                <option value={cat.id}>{cat.name}</option>
+                              {/each}
+                            </select>
+                          </div>
+                          <div class="space-y-1 relative">
+                            <label for={`split-amount-${index}`} class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider font-bold">Montant (€)</label>
+                            <div class="flex items-center gap-1">
+                              <input
+                                id={`split-amount-${index}`}
+                                type="number"
+                                step="0.01"
+                                min="0.01"
+                                class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary font-bold text-foreground h-[29px]"
+                                bind:value={split.amount}
+                              />
+                              {#if splits.length > 2}
+                                <button
+                                  type="button"
+                                  onclick={() => removeSplitRow(index)}
+                                  class="p-1 text-destructive hover:bg-destructive/10 rounded cursor-pointer border-0 bg-transparent flex items-center justify-center font-bold text-sm"
+                                  title="Supprimer"
+                                >
+                                  ✕
+                                </button>
+                              {/if}
+                            </div>
+                          </div>
                         </div>
-                      {/if}
+                      {/each}
+                      <div class="pt-1">
+                        <button
+                          type="button"
+                          onclick={addSplitRow}
+                          class="text-[10px] text-primary hover:underline font-bold uppercase tracking-wider cursor-pointer border-0 bg-transparent"
+                        >
+                          + Ajouter une catégorie
+                        </button>
+                      </div>
                     </div>
-                    
-                    <div class="space-y-1">
-                      <label for="amount-input" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Montant (€)</label>
-                      <input
-                        id="amount-input"
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        max={(remainingAmount / 100).toFixed(2)}
-                        class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary font-bold text-foreground h-[29px] mt-1"
-                        bind:value={amountToLink}
-                      />
-                    </div>
-                  </div>
+                  {/if}
  
                   <!-- Moyen de paiement & Saison d'affectation -->
                   <div class="grid grid-cols-2 gap-2">
@@ -1503,8 +1682,12 @@
                   </div>
                 </div>
  
-                <button onclick={() => handleCreateAndMatch(selectedTx!)} class="w-full py-1.5 bg-primary hover:bg-primary/95 text-primary-foreground rounded text-xs font-semibold shadow-sm cursor-pointer border-0 mt-2 font-medium">
-                  {linkedGlTxs.length > 0 ? 'Enregistrer cette partie' : "Créer & lier l'écriture"}
+                <button
+                  disabled={isSubmitting || (isSplitMode ? (Math.abs(splits.reduce((acc, s) => acc + Math.round((s.amount || 0) * 100), 0) - remainingAmount) > 10) : (!amountToLink || amountToLink <= 0 || Math.round(amountToLink * 100) > remainingAmount))}
+                  onclick={() => handleCreateAndMatch(selectedTx!)}
+                  class="w-full py-1.5 bg-primary hover:bg-primary/95 text-primary-foreground disabled:bg-muted disabled:text-muted-foreground rounded text-xs font-semibold shadow-sm cursor-pointer border-0 mt-2 font-medium"
+                >
+                  {isSplitMode ? 'Enregistrer la ventilation' : (linkedGlTxs.length > 0 ? 'Enregistrer cette partie' : "Créer & lier l'écriture")}
                 </button>
               </div>
             {/if}
@@ -1517,6 +1700,39 @@
                 </div>
               {:else}
                 <div class="space-y-4">
+                  <!-- Panier Commande / Récapitulatif de sélection -->
+                  <div class="border border-border rounded-xl p-4 bg-muted/20 space-y-3">
+                    <div class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Panier Commande</div>
+                    <div class="space-y-1.5">
+                      <div class="flex justify-between items-center text-xs font-medium">
+                        <span class="text-muted-foreground">Factures sélectionnées :</span>
+                        <span class="font-semibold text-foreground">{selectedInvoiceIds.size}</span>
+                      </div>
+                      <div class="flex justify-between items-center text-xs font-medium">
+                        <span class="text-muted-foreground">Total sélectionné :</span>
+                        <span class="font-semibold text-foreground">{(selectedSum / 100).toFixed(2)} €</span>
+                      </div>
+                      <div class="flex justify-between items-center text-xs font-medium">
+                        <span class="text-muted-foreground">Montant de la transaction :</span>
+                        <span class="font-semibold text-foreground">{(selectedTx.amount / 100).toFixed(2)} €</span>
+                      </div>
+                      <div class="flex justify-between items-center text-xs font-medium pt-1 border-t border-border">
+                        <span class="text-muted-foreground">Écart :</span>
+                        <span class="font-bold {Math.abs(selectedSum - selectedTx.amount) <= 10 ? 'text-emerald-600' : 'text-destructive'}">
+                          {(Math.abs(selectedSum - selectedTx.amount) / 100).toFixed(2)} €
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      id="btn-valider-association"
+                      disabled={isSubmitting || Math.abs(selectedSum - selectedTx.amount) > 10}
+                      onclick={handleMultiInvoiceReconcile}
+                      class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white disabled:bg-muted disabled:text-muted-foreground rounded text-xs font-semibold cursor-pointer border-0 shadow-sm transition-colors text-center block font-medium"
+                    >
+                      Valider l'association
+                    </button>
+                  </div>
+
                   <!-- Suggestions de factures correspondantes -->
                   {#if matchingInvoices.length > 0}
                     <div class="border border-emerald-600/30 bg-emerald-600/5 rounded-xl p-4 space-y-3">
@@ -1527,10 +1743,18 @@
                       <div class="space-y-2">
                         {#each matchingInvoices as inv}
                           <div class="flex items-center justify-between gap-2 p-2.5 bg-background border border-border rounded-md text-xs">
-                            <div>
-                              <div class="font-bold text-foreground">{inv.clientName}</div>
-                              <div class="text-[10px] text-muted-foreground">N° {inv.invoiceNumber} • Échéance : {inv.dueDate}</div>
-                              <div class="text-[10px] text-muted-foreground italic truncate max-w-[200px]">{inv.subject || ''}</div>
+                            <div class="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                class="invoice-checkbox w-4 h-4 text-primary border-border rounded focus:ring-primary cursor-pointer animate-none"
+                                checked={selectedInvoiceIds.has(inv.id)}
+                                onchange={() => toggleInvoiceSelection(inv.id)}
+                              />
+                              <div>
+                                <div class="font-bold text-foreground">{inv.clientName}</div>
+                                <div class="text-[10px] text-muted-foreground">N° {inv.invoiceNumber} • Échéance : {inv.dueDate}</div>
+                                <div class="text-[10px] text-muted-foreground italic truncate max-w-[200px]">{inv.subject || ''}</div>
+                              </div>
                             </div>
                             <div class="flex flex-col items-end gap-1.5 shrink-0">
                               <div class="font-bold text-emerald-600">{(inv.totalAmount / 100).toFixed(2)} €</div>
@@ -1555,10 +1779,18 @@
                     <div class="space-y-2 max-h-[320px] overflow-y-auto pr-1">
                       {#each otherUnpaidInvoices as inv}
                         <div class="flex items-center justify-between gap-2 p-2.5 bg-background border border-border rounded-md text-xs hover:bg-muted/30 transition-colors">
-                          <div>
-                            <div class="font-semibold text-foreground">{inv.clientName}</div>
-                            <div class="text-[10px] text-muted-foreground">N° {inv.invoiceNumber} • Échéance : {inv.dueDate}</div>
-                            <div class="text-[10px] text-muted-foreground italic truncate max-w-[180px]">{inv.subject || ''}</div>
+                          <div class="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              class="invoice-checkbox w-4 h-4 text-primary border-border rounded focus:ring-primary cursor-pointer animate-none"
+                              checked={selectedInvoiceIds.has(inv.id)}
+                              onchange={() => toggleInvoiceSelection(inv.id)}
+                            />
+                            <div>
+                              <div class="font-semibold text-foreground">{inv.clientName}</div>
+                              <div class="text-[10px] text-muted-foreground">N° {inv.invoiceNumber} • Échéance : {inv.dueDate}</div>
+                              <div class="text-[10px] text-muted-foreground italic truncate max-w-[180px]">{inv.subject || ''}</div>
+                            </div>
                           </div>
                           <div class="flex flex-col items-end gap-1.5 shrink-0">
                             <div class="font-bold text-foreground">{(inv.totalAmount / 100).toFixed(2)} €</div>
