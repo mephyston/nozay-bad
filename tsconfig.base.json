@@ -22,7 +22,12 @@
       "@metacult/features-members-api": ["libs/features/members/api/src/index.ts"],
       "@metacult/features-accounting-api": ["libs/features/accounting/api/src/index.ts"],
       "@metacult/features-expenses-api": ["libs/features/expenses/api/src/index.ts"],
-      "@metacult/features-shop-api": ["libs/features/shop/api/src/index.ts"]
+      "@metacult/features-shop-api": ["libs/features/shop/api/src/index.ts"],
+      "@metacult/shared-ui": ["libs/shared/ui/src/index.ts"],
+      "@metacult/features-members-ui": ["libs/features/members/ui/src/index.ts"],
+      "@metacult/features-accounting-ui": ["libs/features/accounting/ui/src/index.ts"],
+      "@metacult/features-expenses-ui": ["libs/features/expenses/ui/src/index.ts"],
+      "@metacult/features-shop-ui": ["libs/features/shop/ui/src/index.ts"]
     }
   }
 }

@@ -1,0 +1,8 @@
+{
+  "name": "@metacult/features-accounting-ui",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/features/accounting/ui/src",
+  "targets": {},
+  "tags": ["type:ui", "scope:accounting"]
+}
