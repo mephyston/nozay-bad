@@ -1,12 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { expensesRouter } from './routes';
-import {
-  setupMockDb,
-  seasonsTable,
-  transactionsTable,
-  expensesTable,
-} from '@metacult/shared-db';
+import { setupMockDb } from '@metacult/shared-db';
+import { seasonsTable } from '@metacult/features-members-data-access';
+import { transactionsTable } from '@metacult/features-accounting-data-access';
+import { expensesTable } from '@metacult/features-expenses-data-access';
 import { eq } from 'drizzle-orm';
 
 const app = new Hono<{ Bindings: { DB: any } }>();
@@ -62,10 +60,10 @@ describe('Expenses API Endpoints', () => {
     // Verify transaction was created in compta
     const tx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, approveJson.data.transactionId)).get();
     expect(tx).toBeDefined();
-    expect(tx.type).toBe('depense');
-    expect(tx.amount).toBe(4500);
-    expect(tx.category).toBe(10);
-    expect(tx.description).toContain('Remboursement frais - Marie Curie - Achat de cartons pour tournoi');
+    expect(tx!.type).toBe('depense');
+    expect(tx!.amount).toBe(4500);
+    expect(tx!.category).toBe(10);
+    expect(tx!.description).toContain('Remboursement frais - Marie Curie - Achat de cartons pour tournoi');
 
     // 4. Create another expense to test rejection
     const res2 = await app.request('http://localhost/expenses', {

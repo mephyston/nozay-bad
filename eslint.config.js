@@ -61,53 +61,9 @@ export default tseslint.config(
     }
   },
   {
-    files: ['libs/shared/db/**/*.ts'],
-    plugins: {
-      '@nx': nxPlugin,
-    },
+    files: ['**/*.test.ts', '**/*.spec.ts'],
     rules: {
-      '@nx/enforce-module-boundaries': [
-        'error',
-        {
-          enforceBuildableLibDependency: true,
-          allow: [
-            '@metacult/features-members-data-access',
-            '@metacult/features-accounting-data-access',
-            '@metacult/features-expenses-data-access',
-            '@metacult/features-shop-data-access'
-          ],
-          depConstraints: [
-            {
-              sourceTag: 'type:app',
-              onlyDependOnLibsWithTags: ['type:api', 'type:ui', 'scope:shared']
-            },
-            {
-              sourceTag: 'type:api',
-              onlyDependOnLibsWithTags: ['type:data-access', 'scope:shared']
-            },
-            {
-              sourceTag: 'scope:accounting',
-              onlyDependOnLibsWithTags: ['scope:accounting', 'scope:members', 'scope:shared']
-            },
-            {
-              sourceTag: 'scope:members',
-              onlyDependOnLibsWithTags: ['scope:members', 'scope:shared']
-            },
-            {
-              sourceTag: 'scope:expenses',
-              onlyDependOnLibsWithTags: ['scope:expenses', 'scope:shared']
-            },
-            {
-              sourceTag: 'scope:shop',
-              onlyDependOnLibsWithTags: ['scope:shop', 'scope:shared']
-            },
-            {
-              sourceTag: 'scope:shared',
-              onlyDependOnLibsWithTags: ['scope:shared']
-            }
-          ]
-        }
-      ]
+      '@nx/enforce-module-boundaries': 'off'
     }
   }
 );

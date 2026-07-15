@@ -1,14 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { shopRouter } from './routes';
-import {
-  setupMockDb,
-  seasonsTable,
-  categoriesTable,
-  membersTable,
-  productsTable,
-  transactionsTable,
-} from '@metacult/shared-db';
+import { setupMockDb } from '@metacult/shared-db';
+import { seasonsTable, membersTable } from '@metacult/features-members-data-access';
+import { productsTable } from '@metacult/features-shop-data-access';
+import { categoriesTable, transactionsTable } from '@metacult/features-accounting-data-access';
 import { eq } from 'drizzle-orm';
 
 const app = new Hono<{ Bindings: { DB: any } }>();
@@ -150,14 +146,14 @@ describe('Orders API Endpoints', () => {
 
     // 3. Verify stock is unchanged
     const updatedProd = await db.select().from(productsTable).where(eq(productsTable.id, 1)).get();
-    expect(updatedProd.stock).toBe(5);
+    expect(updatedProd!.stock).toBe(5);
 
     // 4. Verify transaction is created
     const tx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, json.data.transactionId)).get();
     expect(tx).toBeDefined();
-    expect(tx.amount).toBe(2400);
-    expect(tx.category).toBe(boutiqueCat.id);
-    expect(tx.memberId).toBe(1);
+    expect(tx!.amount).toBe(2400);
+    expect(tx!.category).toBe(boutiqueCat.id);
+    expect(tx!.memberId).toBe(1);
 
     // 5. Test GET /shop/orders
     const getRes = await app.request('http://localhost/shop/orders?season=25-26', undefined, { DB: mockD1 as any });
@@ -196,7 +192,7 @@ describe('Orders API Endpoints', () => {
 
     // 3. Verify stock is unchanged
     const prod = await db.select().from(productsTable).where(eq(productsTable.id, 1)).get();
-    expect(prod.stock).toBe(5);
+    expect(prod!.stock).toBe(5);
 
     // 4. Trying to approve rejected order should fail
     const approveRes = await app.request(`http://localhost/shop/orders/${order.id}/approve`, {

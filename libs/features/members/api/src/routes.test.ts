@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { membersRouter } from './routes';
-import { setupMockDb, membersTable, transactionsTable, seasonsTable } from '@metacult/shared-db';
+import { setupMockDb } from '@metacult/shared-db';
+import { membersTable, seasonsTable } from '@metacult/features-members-data-access';
+import { transactionsTable } from '@metacult/features-accounting-data-access';
 
 const app = new Hono<{ Bindings: { DB: any } }>();
 app.route('/members', membersRouter);

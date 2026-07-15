@@ -1,22 +1,20 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { accountingRouter } from './routes';
+import { setupMockDb } from '@metacult/shared-db';
+import { seasonsTable, membersTable } from '@metacult/features-members-data-access';
+import { productsTable, ordersTable } from '@metacult/features-shop-data-access';
 import {
-  setupMockDb,
-  seasonsTable,
   seasonBalancesTable,
   transactionsTable,
   bankTransactionsTable,
   checksTable,
   checkDepositsTable,
-  productsTable,
-  ordersTable,
   invoicesTable,
   accountClassesTable,
-  categoriesTable,
   seasonCategoryBudgetsTable,
-  membersTable,
-} from '@metacult/shared-db';
+  categoriesTable,
+} from '@metacult/features-accounting-data-access';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 
@@ -67,7 +65,7 @@ describe('POST and PUT /accounting/seasons', () => {
 
     // Verify other seasons became inactive
     const db = drizzle(mockD1 as any);
-    const prevSeason = await db.select().from(seasonsTable).where(eq(seasonsTable.id, '25-26')).get();
+    const prevSeason = (await db.select().from(seasonsTable).where(eq(seasonsTable.id, '25-26')).get())!;
     expect(prevSeason?.active).toBe(false);
 
     // Update season
@@ -407,7 +405,7 @@ VERSION:102
     expect(reconcileRes.status).toBe(200);
 
     // 4. Vérifier que la facture est payée et que la ligne D1 pointe dessus
-    const updatedInv = await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv.id)).get();
+    const updatedInv = (await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv.id)).get())!;
     expect(updatedInv.status).toBe('paid');
     expect(updatedInv.bankTransactionId).toBe(bt.id);
   });
@@ -648,7 +646,7 @@ VERSION:102
     const getJson = await getRes.json() as any;
     const updatedBt = getJson.data.find((x: any) => x.id === bt.id);
     expect(updatedBt.aiSuggestions).not.toBeNull();
-    const suggestions = JSON.parse(updatedBt.aiSuggestions);
+    const suggestions = JSON.parse(updatedBt.aiSuggestions!);
     expect(suggestions.memberId).toBe(m.id);
 
     // 3. Réaliser le pointage
@@ -675,13 +673,13 @@ VERSION:102
     expect(reconRes.status).toBe(200);
 
     // 4. Vérifier que l'adhérent a son solde mis à jour à payé = true
-    const updatedMember = await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get();
+    const updatedMember = (await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get())!;
     expect(updatedMember.amountReceived).toBe(25000);
     expect(updatedMember.amountRemaining).toBe(0);
     expect(updatedMember.paid).toBe(true);
 
     // 5. Récupérer la transaction créée
-    const createdTx = await db.select().from(transactionsTable).where(eq(transactionsTable.bankTransactionId, bt.id)).get();
+    const createdTx = (await db.select().from(transactionsTable).where(eq(transactionsTable.bankTransactionId, bt.id)).get())!;
     expect(createdTx).toBeDefined();
 
     // 6. Supprimer la transaction du Grand Livre via l'API
@@ -691,11 +689,11 @@ VERSION:102
     expect(deleteRes.status).toBe(200);
 
     // 7. Vérifier que la transaction bancaire est repassée en status = 'pending'
-    const resetBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const resetBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(resetBt.status).toBe('pending');
 
     // 8. Vérifier que l'adhérent a son solde rétabli
-    const resetMember = await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get();
+    const resetMember = (await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get())!;
     expect(resetMember.amountReceived).toBe(0);
     expect(resetMember.amountRemaining).toBe(25000);
     expect(resetMember.paid).toBe(false);
@@ -767,10 +765,10 @@ VERSION:102
     expect(analyzeJson.count).toBe(1);
     expect(aiCallsCount).toBe(1);
 
-    const updatedBt1 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get();
+    const updatedBt1 = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get())!;
     expect(updatedBt1.aiSuggestions).not.toBeNull();
 
-    const updatedBt2 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get();
+    const updatedBt2 = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get())!;
     expect(updatedBt2.aiSuggestions).toBeNull();
   });
 
@@ -806,15 +804,15 @@ VERSION:102
     }, { DB: mockD1 as any, AI: { run: async () => ({}) } as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt1 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get();
+    const updatedBt1 = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get())!;
     expect(updatedBt1.aiSuggestions).not.toBeNull();
-    const sug1 = JSON.parse(updatedBt1.aiSuggestions);
+    const sug1 = JSON.parse(updatedBt1.aiSuggestions!);
     expect(sug1.category).toBe(15);
     expect(sug1.memberId).toBeNull();
 
-    const updatedBt2 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get();
+    const updatedBt2 = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get())!;
     expect(updatedBt2.aiSuggestions).not.toBeNull();
-    const sug2 = JSON.parse(updatedBt2.aiSuggestions);
+    const sug2 = JSON.parse(updatedBt2.aiSuggestions!);
     expect(sug2.category).toBe(15);
     expect(sug2.memberId).toBeNull();
   });
@@ -878,9 +876,9 @@ VERSION:102
     }, { DB: mockD1 as any, AI: aiMock as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
-    const suggestions = JSON.parse(updatedBt.aiSuggestions);
+    const suggestions = JSON.parse(updatedBt.aiSuggestions!);
     expect(suggestions.category).toBe(8);
     expect(suggestions.memberId).toBe(member.id);
   });
@@ -944,9 +942,9 @@ VERSION:102
     }, { DB: mockD1 as any, AI: aiMock as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
-    const suggestions = JSON.parse(updatedBt.aiSuggestions);
+    const suggestions = JSON.parse(updatedBt.aiSuggestions!);
     expect(suggestions.category).toBe(7);
     expect(suggestions.memberId).toBe(member.id);
   });
@@ -1022,7 +1020,7 @@ VERSION:102
     const updatedBt = json.data.find((x: any) => x.id === bt.id);
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.memberId).toBe(mLaurence.id);
     expect(sug.category).toBe(7);
   });
@@ -1080,7 +1078,7 @@ VERSION:102
     const updatedBt = json.data.find((x: any) => x.id === bt.id);
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.memberId).toBe(mLubin.id);
     expect(sug.category).toBe(7);
   });
@@ -1128,10 +1126,10 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.category).toBe(4); // Actions Jeunes
     expect(sug.memberId).toBe(coach.id);
   });
@@ -1162,10 +1160,10 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.category).toBe(4); // Actions Jeunes
   });
 
@@ -1195,10 +1193,10 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.category).toBe(5); // Tournois Senior
   });
 
@@ -1228,10 +1226,10 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.category).toBe(4); // Actions Jeunes
   });
 
@@ -1261,10 +1259,10 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.category).toBe(1); // Adhésions & Inscriptions (not Cordage 7)
   });
 
@@ -1294,10 +1292,10 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.category).toBe(4); // Actions Jeunes
   });
 
@@ -1327,10 +1325,10 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.category).toBe(4); // Actions Jeunes
   });
 
@@ -1376,10 +1374,10 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.category).toBe(4); // Actions Jeunes (overridden from general stage category 13)
     expect(sug.memberId).toBe(minor.id);
   });
@@ -1426,10 +1424,10 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.category).toBe(4); // Actions Jeunes (overridden from stage category 13 because Katrina is 18, which is <= 18)
     expect(sug.memberId).toBe(junior.id);
   });
@@ -1460,10 +1458,10 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.category).toBe(4); // Actions Jeunes (overridden from general coach salary/travel category 9)
   });
 
@@ -1493,10 +1491,10 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.category).toBe(4); // Actions Jeunes (overridden from general coach salary/travel category 9)
   });
 
@@ -1526,10 +1524,10 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.category).toBe(4); // Actions Jeunes (overridden from general stage category 13 because of Stage + Fevrier combination)
   });
 
@@ -1559,10 +1557,10 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.category).toBe(4); // Actions Jeunes
   });
 
@@ -1592,10 +1590,10 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.category).toBe(7); // Cordage Vente
   });
 
@@ -1625,10 +1623,10 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.category).toBe(5); // Tournois Senior
   });
 
@@ -1658,10 +1656,10 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
-    const sug = JSON.parse(updatedBt.aiSuggestions);
+    const sug = JSON.parse(updatedBt.aiSuggestions!);
     expect(sug.category).toBe(12); // Championnats
   });
 
@@ -1703,12 +1701,12 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt1 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get();
-    const sug1 = JSON.parse(updatedBt1.aiSuggestions);
+    const updatedBt1 = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get())!;
+    const sug1 = JSON.parse(updatedBt1.aiSuggestions!);
     expect(sug1.category).toBe(1); // Adhesions
 
-    const updatedBt2 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get();
-    const sug2 = JSON.parse(updatedBt2.aiSuggestions);
+    const updatedBt2 = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get())!;
+    const sug2 = JSON.parse(updatedBt2.aiSuggestions!);
     expect(sug2.category).toBe(11); // Licences Federation
   });
 
@@ -1769,13 +1767,13 @@ VERSION:102
     expect(reconRes.status).toBe(200);
 
     // 4. Vérifier que l'adhérent a son solde d'adhésion inchangé (toujours 250.00 € restant, amountReceived à 0)
-    const updatedMember = await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get();
+    const updatedMember = (await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get())!;
     expect(updatedMember.amountReceived).toBe(0);
     expect(updatedMember.amountRemaining).toBe(25000);
     expect(updatedMember.paid).toBe(false);
 
     // 5. Récupérer la transaction créée
-    const createdTx = await db.select().from(transactionsTable).where(eq(transactionsTable.bankTransactionId, bt.id)).get();
+    const createdTx = (await db.select().from(transactionsTable).where(eq(transactionsTable.bankTransactionId, bt.id)).get())!;
     expect(createdTx).toBeDefined();
 
     // 6. Supprimer cette transaction
@@ -1785,7 +1783,7 @@ VERSION:102
     expect(deleteRes.status).toBe(200);
 
     // 7. Vérifier que le solde de l'adhérent est toujours inchangé et n'a pas été déduit négativement
-    const finalMember = await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get();
+    const finalMember = (await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get())!;
     expect(finalMember.amountReceived).toBe(0);
     expect(finalMember.amountRemaining).toBe(25000);
   });
@@ -1827,7 +1825,7 @@ VERSION:102
     expect(checkPostRes.status).toBe(200);
 
     // 3. Vérifier que la fiche de l'adhérent a été mise à jour (réglée)
-    const updatedMember = await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get();
+    const updatedMember = (await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get())!;
     expect(updatedMember.amountReceived).toBe(26000);
     expect(updatedMember.amountRemaining).toBe(0);
     expect(updatedMember.paid).toBe(true);
@@ -1842,7 +1840,7 @@ VERSION:102
 
     const checkId = getBody.data[0].id;
     const txId = getBody.data[0].transactionId;
-    const checkTx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, txId)).get();
+    const checkTx = (await db.select().from(transactionsTable).where(eq(transactionsTable.id, txId)).get())!;
     expect(checkTx.date).toBe('2026-07-10');
 
     // 5. Créer un bordereau de remise de chèques
@@ -1863,7 +1861,7 @@ VERSION:102
     const depositId = depositBody.data.id;
 
     // 6. Vérifier que le chèque est marqué comme 'deposited'
-    const checkAfterDeposit = await db.select().from(checksTable).where(eq(checksTable.id, checkId)).get();
+    const checkAfterDeposit = (await db.select().from(checksTable).where(eq(checksTable.id, checkId)).get())!;
     expect(checkAfterDeposit.status).toBe('deposited');
     expect(checkAfterDeposit.checkDepositId).toBe(depositId);
 
@@ -1891,7 +1889,7 @@ VERSION:102
     expect(clearRes.status).toBe(200);
 
     // Vérifier le statut de la remise
-    const finalDeposit = await db.select().from(checkDepositsTable).where(eq(checkDepositsTable.id, depositId)).get();
+    const finalDeposit = (await db.select().from(checkDepositsTable).where(eq(checkDepositsTable.id, depositId)).get())!;
     expect(finalDeposit.status).toBe('cleared');
     expect(finalDeposit.bankTransactionId).toBe(999);
 
@@ -1902,10 +1900,10 @@ VERSION:102
     expect(delCheckRes.status).toBe(200);
 
     // Vérifier que le chèque est supprimé et la fiche membre remise à zéro
-    const deletedCheck = await db.select().from(checksTable).where(eq(checksTable.id, checkId)).get();
+    const deletedCheck = (await db.select().from(checksTable).where(eq(checksTable.id, checkId)).get())!;
     expect(deletedCheck).toBeUndefined();
 
-    const resetMember = await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get();
+    const resetMember = (await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get())!;
     expect(resetMember.amountReceived).toBe(0);
     expect(resetMember.amountRemaining).toBe(26000);
     expect(resetMember.paid).toBe(false);
@@ -2640,8 +2638,8 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     expect(body.count).toBe(2);
 
     // Verify bank transactions are reconciled
-    const updatedBt1 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get();
-    const updatedBt2 = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get();
+    const updatedBt1 = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get())!;
+    const updatedBt2 = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get())!;
     expect(updatedBt1!.status).toBe('reconciled');
     expect(updatedBt2!.status).toBe('reconciled');
 
@@ -2737,7 +2735,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     expect(body.success).toBe(false);
 
     // Verify rollback: valid bt remains pending, no ledger transactions created
-    const updatedBtValid = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, btValid.id)).get();
+    const updatedBtValid = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, btValid.id)).get())!;
     expect(updatedBtValid!.status).toBe('pending');
 
     const ledgerTxs = await db.select().from(transactionsTable).all();
@@ -2799,7 +2797,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     expect(res.status).toBe(200);
 
     // Verify bank transaction is reconciled
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt!.status).toBe('reconciled');
 
     // Verify multiple entries are created
@@ -2876,15 +2874,15 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     expect(res.status).toBe(200);
 
     // Verify invoices are marked as paid and linked to bank transaction
-    const updatedInv1 = await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv1.id)).get();
-    const updatedInv2 = await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv2.id)).get();
+    const updatedInv1 = (await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv1.id)).get())!;
+    const updatedInv2 = (await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv2.id)).get())!;
     expect(updatedInv1!.status).toBe('paid');
     expect(updatedInv1!.bankTransactionId).toBe(bt.id);
     expect(updatedInv2!.status).toBe('paid');
     expect(updatedInv2!.bankTransactionId).toBe(bt.id);
 
     // Verify bank transaction is reconciled
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt!.status).toBe('reconciled');
   });
 
@@ -2964,13 +2962,13 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     expect(res.status).toBe(200);
 
     // Verify member amountReceived has only been incremented by the category 1 amount (10000)
-    const updatedMember = await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get();
+    const updatedMember = (await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get())!;
     expect(updatedMember!.amountReceived).toBe(10000);
     expect(updatedMember!.amountRemaining).toBe(15000);
     expect(updatedMember!.paid).toBe(false);
 
     // Verify bank transaction is reconciled
-    const updatedBt = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get();
+    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
     expect(updatedBt!.status).toBe('reconciled');
   });
 });

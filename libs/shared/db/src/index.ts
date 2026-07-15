@@ -1,5 +1,3 @@
-export * from '@metacult/features-members-data-access';
-export * from '@metacult/features-accounting-data-access';
-export * from '@metacult/features-expenses-data-access';
-export * from '@metacult/features-shop-data-access';
-export * from './test-utils';
+import { type DrizzleD1Database } from 'drizzle-orm/d1';
+export type db = DrizzleD1Database;
+export { setupMockDb, MockD1Database, MockD1PreparedStatement } from './test-utils';

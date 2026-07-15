@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, usersTable, seasonBalancesTable, transactionsTable, seasonsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, categoriesTable, invoicesTable, invoiceItemsTable, accountClassesTable } from './index';
+import { membersTable, usersTable, seasonsTable } from '@metacult/features-members-data-access';
+import {
+  seasonBalancesTable,
+  transactionsTable,
+  bankTransactionsTable,
+  checkDepositsTable,
+  checksTable,
+  categoriesTable,
+  invoicesTable,
+  invoiceItemsTable,
+  accountClassesTable
+} from '@metacult/features-accounting-data-access';
+import { productsTable, ordersTable } from '@metacult/features-shop-data-access';
 import { drizzle } from 'drizzle-orm/d1';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
