@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checksTable, checkDepositsTable, productsTable, ordersTable, expensesTable, invoicesTable, accountClassesTable, categoriesTable, seasonCategoryBudgetsTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checksTable, checkDepositsTable, productsTable, ordersTable, expensesTable, invoicesTable, accountClassesTable, categoriesTable, seasonCategoryBudgetsTable } from '../../../libs/shared/db/src/index';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 import { DatabaseSync } from 'node:sqlite';

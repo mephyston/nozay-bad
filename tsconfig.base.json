@@ -8,10 +8,16 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@nba/db": ["libs/shared/db/src/index.ts"],
       "@nba/core": ["libs/shared/core/src/index.ts"],
-      "@nba/ui": ["libs/shared/ui/src/index.ts"]
+      "@nba/ui": ["libs/shared/ui/src/index.ts"],
+      "@metacult/shared-db": ["libs/shared/db/src/index.ts"],
+      "@metacult/features-members-data-access": ["libs/features/members/data-access/src/index.ts"],
+      "@metacult/features-accounting-data-access": ["libs/features/accounting/data-access/src/index.ts"],
+      "@metacult/features-expenses-data-access": ["libs/features/expenses/data-access/src/index.ts"],
+      "@metacult/features-shop-data-access": ["libs/features/shop/data-access/src/index.ts"]
     }
   }
 }

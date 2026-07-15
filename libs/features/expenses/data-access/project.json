@@ -1,0 +1,6 @@
+{
+  "name": "@metacult/features-expenses-data-access",
+  "projectType": "library",
+  "sourceRoot": "libs/features/expenses/data-access/src",
+  "tags": ["type:data-access", "scope:expenses"]
+}

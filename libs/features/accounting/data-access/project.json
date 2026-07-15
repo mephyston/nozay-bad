@@ -1,0 +1,6 @@
+{
+  "name": "@metacult/features-accounting-data-access",
+  "projectType": "library",
+  "sourceRoot": "libs/features/accounting/data-access/src",
+  "tags": ["type:data-access", "scope:accounting"]
+}

@@ -1,6 +1,16 @@
 import { defineConfig } from 'vitest/config';
+import path from 'path';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@metacult/features-members-data-access': path.resolve(__dirname, '../../libs/features/members/data-access/src/index.ts'),
+      '@metacult/features-accounting-data-access': path.resolve(__dirname, '../../libs/features/accounting/data-access/src/index.ts'),
+      '@metacult/features-expenses-data-access': path.resolve(__dirname, '../../libs/features/expenses/data-access/src/index.ts'),
+      '@metacult/features-shop-data-access': path.resolve(__dirname, '../../libs/features/shop/data-access/src/index.ts'),
+      '@metacult/shared-db': path.resolve(__dirname, '../../libs/shared/db/src/index.ts'),
+    },
+  },
   test: {
     globals: true,
     environment: 'miniflare',
@@ -9,4 +19,3 @@ export default defineConfig({
     },
   },
 });
-

@@ -1,12 +1,5 @@
 import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core';
-
-export const usersTable = sqliteTable('users', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  email: text('email').notNull().unique(),
-  name: text('name'),
-  role: text('role', { enum: ['admin', 'ca', 'member'] }).notNull().default('member'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
-});
+import { membersTable } from '@metacult/features-members-data-access';
 
 export const seasonsTable = sqliteTable('seasons', {
   id: text('id').primaryKey(),
@@ -15,33 +8,6 @@ export const seasonsTable = sqliteTable('seasons', {
   closed: integer('closed', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
-
-export const membersTable = sqliteTable('members', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  licence: text('licence').notNull(),
-  season: text('season').notNull().default('25-26').references(() => seasonsTable.id),
-  lastName: text('last_name').notNull(),
-  firstName: text('first_name').notNull(),
-  gender: text('gender', { enum: ['M', 'F'] }).notNull(),
-  birthDate: text('birth_date').notNull(),
-  email: text('email'),
-  phone: text('phone'),
-  status: text('status').notNull().default('valide'),
-  type: text('type').notNull(),
-  importedAt: integer('imported_at', { mode: 'timestamp' }).notNull(),
-  amountDue: integer('amount_due').notNull().default(0),
-  amountReceived: integer('amount_received').notNull().default(0),
-  amountRemaining: integer('amount_remaining').notNull().default(0),
-  paid: integer('paid', { mode: 'boolean' }).notNull().default(false),
-  parent1Name: text('parent1_name'),
-  parent1Email: text('parent1_email'),
-  parent1Phone: text('parent1_phone'),
-  parent2Name: text('parent2_name'),
-  parent2Email: text('parent2_email'),
-  parent2Phone: text('parent2_phone')
-}, (table) => ({
-  licenceSeasonUnq: uniqueIndex('members_licence_season_idx').on(table.licence, table.season),
-}));
 
 export const seasonBalancesTable = sqliteTable('season_balances', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -114,45 +80,6 @@ export const checksTable = sqliteTable('checks', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
-export const productsTable = sqliteTable('products', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  name: text('name').notNull(),
-  category: text('category', { enum: ['shuttlecock', 'string', 'other'] }).notNull(),
-  price: integer('price').notNull(),
-  stock: integer('stock').notNull().default(0),
-  active: integer('active', { mode: 'boolean' }).notNull().default(true),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
-});
-
-export const ordersTable = sqliteTable('orders', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  seasonId: text('season_id').notNull().references(() => seasonsTable.id),
-  memberId: integer('member_id').notNull().references(() => membersTable.id),
-  productId: integer('product_id').notNull().references(() => productsTable.id),
-  quantity: integer('quantity').notNull().default(1),
-  totalAmount: integer('total_amount').notNull(),
-  paymentMethod: text('payment_method', { 
-    enum: ['virement', 'cheque', 'especes', 'labaz', 'ancv', 'pass_sport', 'ticket_loisir', 'up_loisir'] 
-  }).notNull(),
-  status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
-  transactionId: integer('transaction_id').references(() => transactionsTable.id),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
-});
-
-export const expensesTable = sqliteTable('expenses', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  seasonId: text('season_id').notNull().references(() => seasonsTable.id),
-  description: text('description').notNull(),
-  category: integer('category').notNull(),
-  amount: integer('amount').notNull(),
-  photoUrl: text('photo_url'),
-  status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
-  emitterName: text('emitter_name').notNull(),
-  memberId: integer('member_id').references(() => membersTable.id),
-  transactionId: integer('transaction_id').references(() => transactionsTable.id),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
-});
-
 export const categoriesTable = sqliteTable('categories', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   adminLabel: text('admin_label').notNull(),
@@ -207,8 +134,3 @@ export const invoiceItemsTable = sqliteTable('invoice_items', {
   totalPrice: integer('total_price').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
-
-
-
-
-

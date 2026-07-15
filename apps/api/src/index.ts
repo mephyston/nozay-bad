@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, or, eq, ne, like, sql, inArray, desc, gte, lte, isNull } from 'drizzle-orm';
-import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, expensesTable, categoriesTable, invoicesTable, invoiceItemsTable, accountClassesTable, seasonCategoryBudgetsTable } from '../../../libs/shared/db/src/schema';
+import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, expensesTable, categoriesTable, invoicesTable, invoiceItemsTable, accountClassesTable, seasonCategoryBudgetsTable } from '../../../libs/shared/db/src/index';
 
 
 
@@ -683,7 +683,7 @@ app.get('/transactions', async (c) => {
 
   const category = c.req.query('category');
   if (category) {
-    conditions.push(eq(transactionsTable.category, category));
+    conditions.push(eq(transactionsTable.category, category as any));
   }
 
   const classCode = c.req.query('classCode');
@@ -694,7 +694,7 @@ app.get('/transactions', async (c) => {
       .all();
     const catIds = matchingCats.map(cat => cat.id.toString());
     if (catIds.length > 0) {
-      conditions.push(inArray(transactionsTable.category, catIds));
+      conditions.push(inArray(transactionsTable.category, catIds as any));
     } else {
       conditions.push(sql`1 = 0`);
     }
@@ -2547,7 +2547,7 @@ app.post('/orders/:id/approve', async (c) => {
       seasonId: order.seasonId,
       type: 'recette',
       accountId: 'current',
-      category: 'boutique',
+      category: 'boutique' as any,
       amount: order.totalAmount,
       date: new Date().toISOString().split('T')[0],
       paymentMethod: order.paymentMethod as any,

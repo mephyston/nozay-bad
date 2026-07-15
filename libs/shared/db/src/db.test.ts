@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, usersTable, seasonBalancesTable, transactionsTable, seasonsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, categoriesTable, invoicesTable, invoiceItemsTable, accountClassesTable } from './schema';
+import { membersTable, usersTable, seasonBalancesTable, transactionsTable, seasonsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, categoriesTable, invoicesTable, invoiceItemsTable, accountClassesTable } from './index';
 import { drizzle } from 'drizzle-orm/d1';
 import { DatabaseSync } from 'node:sqlite';
 import * as fs from 'node:fs';
@@ -191,7 +191,7 @@ describe('Database Tests', () => {
       seasonId: '25-26',
       type: 'recette' as const,
       accountId: 'current' as const,
-      category: 'adhesions',
+      category: 1,
       amount: 4500, // 45,00 €
       date: '2026-07-13',
       paymentMethod: 'virement' as const,
@@ -200,7 +200,7 @@ describe('Database Tests', () => {
     };
     const [insertedTx] = await db.insert(transactionsTable).values(transaction).returning();
     expect(insertedTx.amount).toBe(4500);
-    expect(insertedTx.category).toBe('adhesions');
+    expect(insertedTx.category).toBe(1);
   });
 
   it('should insert bank transactions correctly', async () => {
@@ -297,7 +297,7 @@ describe('Database Tests', () => {
       seasonId: '25-26',
       type: 'recette',
       accountId: 'current',
-      category: 'adhesions_inscriptions',
+      category: 1,
       amount: 10000,
       date: '2026-07-13',
       paymentMethod: 'virement',
@@ -537,11 +537,12 @@ describe('Database Tests', () => {
     const db = drizzle(mockD1 as any);
     let season = await db.select().from(seasonsTable).all().then(r => r.find(s => s.id === '25-26'));
     if (!season) {
-      season = await db.insert(seasonsTable).values({ id: '25-26', name: 'Saison 25-26', active: true, createdAt: new Date() }).returning().then(r => r[0]);
+      const insertedSeasons = await db.insert(seasonsTable).values({ id: '25-26', name: 'Saison 25-26', active: true, createdAt: new Date() }).returning();
+      season = insertedSeasons[0];
     }
     const invoice = await db.insert(invoicesTable).values({
       invoiceNumber: 'FAC-2526-NBA91-0001',
-      seasonId: season.id,
+      seasonId: season!.id,
       date: '2026-07-14',
       dueDate: '2026-08-14',
       clientName: 'Ligue IDF',
