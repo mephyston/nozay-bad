@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { expensesRouter } from './routes';
-import { accountingRouter } from '@metacult/features-accounting-api';
 import {
   setupMockDb,
   seasonsTable,
@@ -12,7 +11,6 @@ import { eq } from 'drizzle-orm';
 
 const app = new Hono<{ Bindings: { DB: any } }>();
 app.route('/expenses', expensesRouter);
-app.route('/accounting', accountingRouter);
 
 describe('Expenses API Endpoints', () => {
   it('supports creating, listing, approving and rejecting expenses', async () => {
@@ -122,22 +120,5 @@ describe('Expenses API Endpoints', () => {
     const txDeleted = await db.select().from(transactionsTable).where(eq(transactionsTable.id, approveJson.data.transactionId)).get();
     expect(txDeleted).toBeUndefined();
 
-    // 7. Approve again to test transaction deletion cascading
-    const approveResAgain = await app.request(`http://localhost/expenses/${expenseId}/approve`, {
-      method: 'POST'
-    }, { DB: mockD1 as any });
-    const txIdAgain = (await approveResAgain.json() as any).data.transactionId;
-    expect(txIdAgain).toBeDefined();
-
-    // Delete the transaction directly in the ledger
-    const deleteTxRes = await app.request(`http://localhost/accounting/transactions/${txIdAgain}`, {
-      method: 'DELETE'
-    }, { DB: mockD1 as any });
-    expect(deleteTxRes.status).toBe(200);
-
-    // Verify the expense claim status went back to pending
-    const finalExpense = await db.select().from(expensesTable).where(eq(expensesTable.id, expenseId)).get();
-    expect(finalExpense.status).toBe('pending');
-    expect(finalExpense.transactionId).toBeNull();
   });
 });

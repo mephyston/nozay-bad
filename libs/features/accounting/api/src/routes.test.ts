@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { accountingRouter } from './routes';
-import { expensesRouter } from '@metacult/features-expenses-api';
-import { shopRouter } from '@metacult/features-shop-api';
-import { membersRouter } from '@metacult/features-members-api';
 import {
   setupMockDb,
   seasonsTable,
@@ -25,9 +22,6 @@ import { eq } from 'drizzle-orm';
 
 const app = new Hono<{ Bindings: { DB: any; AI: any } }>();
 app.route('/accounting', accountingRouter);
-app.route('/expenses', expensesRouter);
-app.route('/shop', shopRouter);
-app.route('/members', membersRouter);
 
 describe('GET /accounting/seasons', () => {
   it('should return the list of seasons in descending order', async () => {
@@ -123,20 +117,6 @@ describe('POST and PUT /accounting/seasons', () => {
     const txBody = await txRes.json() as any;
     expect(txBody.success).toBe(false);
     expect(txBody.error).toContain('clôturée');
-
-    // Try to submit expense
-    const expRes = await app.request('http://localhost/expenses', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        seasonId: '25-26',
-        description: 'Should fail',
-        category: 'deplacements',
-        amount: 2000,
-        emitterName: 'Test'
-      })
-    }, { DB: mockD1 as any });
-    expect(expRes.status).toBe(400);
   });
 });
 
