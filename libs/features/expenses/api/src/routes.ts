@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, eq, ne } from 'drizzle-orm';
-import { expensesTable, transactionsTable, bankTransactionsTable, seasonsTable } from '@metacult/shared-db';
+import { expensesTable } from '@metacult/features-expenses-data-access';
+import { sql } from 'drizzle-orm';
 
 export type Bindings = {
   DB: D1Database;
@@ -11,10 +12,10 @@ export type Bindings = {
 export const expensesRouter = new Hono<{ Bindings: Bindings }>();
 
 async function isSeasonClosed(db: any, seasonId: string): Promise<boolean> {
-  const season = await db.select({ closed: seasonsTable.closed })
-    .from(seasonsTable)
-    .where(eq(seasonsTable.id, seasonId))
-    .get();
+  const season = await db.select({ closed: sql<number | boolean>`closed` })
+    .from(sql`seasons`)
+    .where(sql`id = ${seasonId}`)
+    .get() as { closed: number | boolean } | undefined;
   return season?.closed === 1 || season?.closed === true;
 }
 
@@ -103,19 +104,12 @@ expensesRouter.post('/:id/approve', async (c) => {
       throw new Error('Dépense déjà traitée');
     }
 
-    // Créer la transaction de dépense
-    const tx = await db.insert(transactionsTable).values({
-      seasonId: expense.seasonId,
-      type: 'depense',
-      accountId: 'current',
-      category: expense.category,
-      amount: expense.amount,
-      date: new Date().toISOString().split('T')[0],
-      paymentMethod: 'virement',
-      description: `Remboursement frais - ${expense.emitterName} - ${expense.description}`,
-      memberId: expense.memberId,
-      createdAt: new Date()
-    }).returning().get();
+    // Créer la transaction de dépense via SQL brut
+    const tx = await db.get(sql`
+      INSERT INTO transactions (season_id, type, account_id, category, amount, date, payment_method, description, member_id, created_at)
+      VALUES (${expense.seasonId}, 'depense', 'current', ${expense.category}, ${expense.amount}, ${new Date().toISOString().split('T')[0]}, 'virement', ${`Remboursement frais - ${expense.emitterName} - ${expense.description}`}, ${expense.memberId}, ${new Date().getTime()})
+      RETURNING id
+    `) as { id: number };
 
     // Mettre à jour le statut et lier la transaction
     updatedExpense = await db.update(expensesTable)
@@ -193,33 +187,34 @@ expensesRouter.post('/:id/cancel', async (c) => {
     // 2. Si approuvée, supprimer la transaction associée
     if (expense.status === 'approved' && txId) {
       // 1. Récupérer la transaction
-      const tx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, txId)).get();
+      // 1. Récupérer la transaction via SQL brut
+      const tx = await db.get(sql`
+        SELECT id, bank_transaction_id as bankTransactionId, amount FROM transactions WHERE id = ${txId}
+      `) as { id: number; bankTransactionId: number | null; amount: number } | undefined;
+
       if (tx) {
         // Rapprochement bancaire : si la transaction est pointée, libérer l'écriture bancaire
         if (tx.bankTransactionId) {
-          const bankTx = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, tx.bankTransactionId)).get();
+          const bankTx = await db.get(sql`
+            SELECT id, amount FROM bank_transactions WHERE id = ${tx.bankTransactionId}
+          `) as { id: number; amount: number } | undefined;
+
           if (bankTx) {
-            const remainingTxs = await db.select()
-              .from(transactionsTable)
-              .where(and(
-                eq(transactionsTable.bankTransactionId, tx.bankTransactionId),
-                ne(transactionsTable.id, tx.id)
-              ))
-              .all();
+            const remainingTxs = await db.all(sql`
+              SELECT id, amount FROM transactions 
+              WHERE bank_transaction_id = ${tx.bankTransactionId} AND id != ${tx.id}
+            `) as { id: number; amount: number }[];
             const totalRemaining = remainingTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
             if (totalRemaining < Math.abs(bankTx.amount)) {
-              await db.update(bankTransactionsTable)
-                .set({ 
-                  status: 'pending'
-                })
-                .where(eq(bankTransactionsTable.id, tx.bankTransactionId))
-                .run();
+              await db.run(sql`
+                UPDATE bank_transactions SET status = 'pending' WHERE id = ${tx.bankTransactionId}
+              `);
             }
           }
         }
 
         // Supprimer la transaction du Grand Livre
-        await db.delete(transactionsTable).where(eq(transactionsTable.id, tx.id)).run();
+        await db.run(sql`DELETE FROM transactions WHERE id = ${tx.id}`);
       }
     }
   } catch (err: any) {

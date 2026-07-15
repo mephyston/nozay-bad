@@ -2,7 +2,6 @@ import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, or, eq, ne, like, sql, inArray, desc, gte, lte, isNull } from 'drizzle-orm';
 import {
-  seasonsTable,
   seasonBalancesTable,
   transactionsTable,
   bankTransactionsTable,
@@ -12,11 +11,12 @@ import {
   accountClassesTable,
   seasonCategoryBudgetsTable,
   invoicesTable,
-  invoiceItemsTable,
-  membersTable,
-  expensesTable,
-  productsTable
-} from '@metacult/shared-db';
+  invoiceItemsTable
+} from '@metacult/features-accounting-data-access';
+import {
+  seasonsTable,
+  membersTable
+} from '@metacult/features-members-data-access';
 
 export type Bindings = {
   DB: D1Database;
@@ -856,11 +856,10 @@ accountingRouter.delete('/transactions/:id', async (c) => {
     }
   }
 
-  // 3.5. Si liée à une note de frais, la repasser en 'pending'
-  await db.update(expensesTable)
-    .set({ status: 'pending', transactionId: null })
-    .where(eq(expensesTable.transactionId, id))
-    .run();
+  // 3.5. Si liée à une note de frais, la repasser en 'pending' via SQL brut
+  await db.run(sql`
+    UPDATE expenses SET status = 'pending', transaction_id = NULL WHERE transaction_id = ${id}
+  `);
 
   // 4. Supprimer la transaction du Grand Livre
   await db.delete(transactionsTable).where(eq(transactionsTable.id, id)).run();
@@ -1066,11 +1065,11 @@ accountingRouter.post('/bank-transactions/analyze', async (c) => {
     examplesPrompt += "\nSers-toi de ces exemples historiques pour orienter ton choix de catégorie ou de membre si l'opération à rapprocher est similaire.\n";
   }
 
-  // 4. Récupérer tous les produits actifs pour le matching par montant
-  const activeProducts = await db.select()
-    .from(productsTable)
-    .where(eq(productsTable.active, true))
-    .all();
+  // 4. Récupérer tous les produits actifs pour le matching par montant via SQL brut
+  const activeProducts = await db.all(sql`
+    SELECT id, name, category, price, stock, active, created_at as createdAt 
+    FROM products WHERE active = 1
+  `) as { id: number; name: string; category: string; price: number; stock: number; active: boolean; createdAt: number }[];
 
   function getProductAccountingCategory(prodCat: string): number {
     if (prodCat === 'shuttlecock') return 8; // Volants

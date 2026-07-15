@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, or, eq, like, inArray, desc, sql } from 'drizzle-orm';
-import { membersTable, seasonsTable, transactionsTable } from '@metacult/shared-db';
+import { membersTable, seasonsTable } from '@metacult/features-members-data-access';
 
 export type Bindings = {
   DB: D1Database;
@@ -443,11 +443,15 @@ membersRouter.get('/:id/cse-data', async (c) => {
   }
 
   // Trouver le règlement comptable lié à ce membre
-  const tx = await db.select()
-    .from(transactionsTable)
-    .where(and(eq(transactionsTable.memberId, id), eq(transactionsTable.type, 'recette')))
-    .orderBy(desc(transactionsTable.date))
-    .get();
+  const tx = await db.select({
+    paymentMethod: sql<string>`payment_method`,
+    date: sql<string>`date`
+  })
+    .from(sql`transactions`)
+    .where(sql`member_id = ${id} AND type = 'recette'`)
+    .orderBy(sql`date DESC`)
+    .limit(1)
+    .get() as { paymentMethod: string; date: string } | undefined;
 
   return c.json({
     success: true,

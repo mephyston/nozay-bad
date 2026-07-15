@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, eq, inArray } from 'drizzle-orm';
-import { productsTable, ordersTable, membersTable, categoriesTable, transactionsTable } from '@metacult/shared-db';
+import { productsTable, ordersTable } from '@metacult/features-shop-data-access';
+import { sql } from 'drizzle-orm';
 
 export type Bindings = {
   DB: D1Database;
@@ -77,11 +78,19 @@ shopRouter.get('/orders', async (c) => {
   const memberIds = Array.from(new Set(orders.map(o => o.memberId)));
   const productIds = Array.from(new Set(orders.map(o => o.productId)));
 
-  let membersList: (typeof membersTable.$inferSelect)[] = [];
+  let membersList: { id: number; lastName: string; firstName: string; licence: string }[] = [];
   let productsList: (typeof productsTable.$inferSelect)[] = [];
 
   if (memberIds.length > 0) {
-    membersList = await db.select().from(membersTable).where(inArray(membersTable.id, memberIds)).all();
+    membersList = await db.select({
+      id: sql<number>`id`,
+      lastName: sql<string>`last_name`,
+      firstName: sql<string>`first_name`,
+      licence: sql<string>`licence`
+    })
+      .from(sql`members`)
+      .where(inArray(sql`id`, memberIds))
+      .all() as { id: number; lastName: string; firstName: string; licence: string }[];
   }
   if (productIds.length > 0) {
     productsList = await db.select().from(productsTable).where(inArray(productsTable.id, productIds)).all();
@@ -139,7 +148,9 @@ shopRouter.post('/orders/:id/approve', async (c) => {
       throw new Error('Commande invalide ou déjà traitée');
     }
 
-    const member = await db.select().from(membersTable).where(eq(membersTable.id, order.memberId)).get();
+    const member = await db.get(sql`
+      SELECT id, last_name as lastName, first_name as firstName FROM members WHERE id = ${order.memberId}
+    `) as { id: number; lastName: string; firstName: string } | undefined;
     if (!member) {
       throw new Error('Adhérent inexistant');
     }
@@ -149,21 +160,16 @@ shopRouter.post('/orders/:id/approve', async (c) => {
       throw new Error('Produit inexistant');
     }
 
-    const boutiqueCat = await db.select().from(categoriesTable).where(eq(categoriesTable.adminLabel, 'Boutique')).get();
+    const boutiqueCat = await db.get(sql`
+      SELECT id FROM categories WHERE admin_label = 'Boutique'
+    `) as { id: number } | undefined;
     const boutiqueCatId = boutiqueCat ? boutiqueCat.id : null;
 
-    const tx = await db.insert(transactionsTable).values({
-      seasonId: order.seasonId,
-      type: 'recette',
-      accountId: 'current',
-      category: boutiqueCatId,
-      amount: order.totalAmount,
-      date: new Date().toISOString().split('T')[0],
-      paymentMethod: order.paymentMethod as any,
-      description: `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`,
-      memberId: member.id,
-      createdAt: new Date()
-    }).returning().get();
+    const tx = await db.get(sql`
+      INSERT INTO transactions (season_id, type, account_id, category, amount, date, payment_method, description, member_id, created_at)
+      VALUES (${order.seasonId}, 'recette', 'current', ${boutiqueCatId}, ${order.totalAmount}, ${new Date().toISOString().split('T')[0]}, ${order.paymentMethod}, ${`Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`}, ${member.id}, ${new Date().getTime()})
+      RETURNING id
+    `) as { id: number };
 
     updatedOrder = await db.update(ordersTable)
       .set({ status: 'approved', transactionId: tx.id })

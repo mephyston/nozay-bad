@@ -1,0 +1,188 @@
+<h2>Rapprochement Bancaire Amélioré</h2>
+<p class="subtitle">Visualisation de l'Approche 1 Hybride : Validation de masse + Panier de commandes + Ventilation</p>
+
+<div class="options" data-multiselect>
+  <div class="option selected" data-choice="mass-validation" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>Validation de masse & Filtres</h3>
+      <p>Cases à cocher sur les écritures bancaires + Filtres intelligents (Salaires, Cotisations) + Barre d'action rapide groupée.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="order-basket" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Panier de commandes (Multi-match)</h3>
+      <p>Associer un virement unique à plusieurs commandes/factures en attente avec calcul de la somme en temps réel.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="manual-split" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content">
+      <h3>Ventilation manuelle (Splits)</h3>
+      <p>Éclater un virement manuellement en plusieurs lignes comptables (ex: 30 € Cordage, 20 € Volants) directement dans le formulaire.</p>
+    </div>
+  </div>
+</div>
+
+<div class="mockup">
+  <div class="mockup-header" style="background: var(--bg-muted); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 12px 20px;">
+    <strong>Console CA - Rapprochement Bancaire (Simulation)</strong>
+    <span class="badge" style="background: var(--bg-accent); color: var(--text-foreground); font-size: 11px; padding: 4px 8px; border-radius: 4px;">Saison 2025-2026</span>
+  </div>
+  <div class="mockup-body" style="padding: 0; display: flex; min-height: 480px; background: var(--bg-card);">
+    
+    <!-- Left column: Transactions List -->
+    <div style="width: 55%; border-right: 1px solid var(--border); display: flex; flex-col; flex-direction: column;">
+      
+      <!-- Smart Filter Tabs / Blocks -->
+      <div style="display: flex; border-bottom: 1px solid var(--border); background: var(--bg-muted); padding: 4px 8px; gap: 4px;">
+        <button class="mock-button" style="flex: 1; padding: 6px; font-size: 11px; border: 0; background: var(--bg-card); font-weight: bold; border-bottom: 2px solid var(--text-link);">Tout (3)</button>
+        <button class="mock-button" style="flex: 1; padding: 6px; font-size: 11px; border: 0; background: transparent; color: var(--text-muted);">Correspondances (1)</button>
+        <button class="mock-button" style="flex: 1; padding: 6px; font-size: 11px; border: 0; background: transparent; color: var(--text-muted);">Récurrents (1)</button>
+      </div>
+
+      <!-- Quick Bulk Actions Bar (Visible when items are selected) -->
+      <div style="background: var(--bg-accent); padding: 8px 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+          <input type="checkbox" checked disabled />
+          <span>2 opérations sélectionnées</span>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button class="mock-button" style="background: var(--text-success); color: white; border: 0; padding: 4px 8px; font-size: 10px; border-radius: 4px; font-weight: bold;">Rapprocher en masse</button>
+          <button class="mock-button" style="background: var(--bg-muted); color: var(--text-foreground); border: 1px solid var(--border); padding: 4px 8px; font-size: 10px; border-radius: 4px;">Ignorer</button>
+        </div>
+      </div>
+
+      <!-- Bank transactions list -->
+      <div style="flex: 1; overflow-y: auto;">
+        <!-- Row 1: Selected & Auto-match suggestion -->
+        <div style="padding: 12px; border-bottom: 1px solid var(--border); background: var(--bg-muted); display: flex; gap: 8px; align-items: flex-start;">
+          <input type="checkbox" checked style="margin-top: 3px;" />
+          <div style="flex: 1;">
+            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+              <strong style="color: var(--text-foreground);">VIR RECU DUBOIS COTIS</strong>
+              <span style="font-family: monospace; color: var(--text-success); font-weight: bold;">+240.00 €</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+              <span>14 Juil 2026 • Dubois Jean</span>
+              <span style="background: rgba(16, 185, 129, 0.15); color: var(--text-success); padding: 1px 4px; border-radius: 2px; font-weight: bold;">Suggéré : Facture FAC-2526-0004</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2: Selected & Recurring Salaries -->
+        <div style="padding: 12px; border-bottom: 1px solid var(--border); background: var(--bg-muted); display: flex; gap: 8px; align-items: flex-start;">
+          <input type="checkbox" checked style="margin-top: 3px;" />
+          <div style="flex: 1;">
+            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+              <strong style="color: var(--text-foreground);">VIR SEPA SALAIRE ENTRAINEUR</strong>
+              <span style="font-family: monospace; color: var(--text-danger); font-weight: bold;">-450.00 €</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+              <span>10 Juil 2026 • Compte Courant</span>
+              <span style="background: rgba(59, 130, 246, 0.15); color: var(--text-link); padding: 1px 4px; border-radius: 2px; font-weight: bold;">Règle : "Salaire"</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 3: Complex Stringing/Volants (Unselected) -->
+        <div style="padding: 12px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: flex-start; cursor: pointer;">
+          <input type="checkbox" style="margin-top: 3px;" />
+          <div style="flex: 1;">
+            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+              <strong style="color: var(--text-foreground);">VIR RECU LACROIX CORD&VOL</strong>
+              <span style="font-family: monospace; color: var(--text-success); font-weight: bold;">+50.00 €</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+              <span>08 Juil 2026 • Lacroix Pierre</span>
+              <span style="background: rgba(245, 158, 11, 0.15); color: var(--text-warning); padding: 1px 4px; border-radius: 2px; font-weight: bold;">Achats Multiples</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column: Detail / Action Panel -->
+    <div style="width: 45%; padding: 16px; display: flex; flex-direction: column; gap: 16px; background: var(--bg-muted);">
+      
+      <!-- Panel Header -->
+      <div>
+        <span class="label">Opération active</span>
+        <h4 style="font-size: 14px; font-weight: bold; margin-top: 4px; color: var(--text-foreground);">VIR RECU LACROIX CORD&VOL</h4>
+        <div style="font-size: 16px; font-weight: 950; font-family: monospace; margin-top: 4px; color: var(--text-success);">+50.00 €</div>
+      </div>
+
+      <!-- Action Tabs -->
+      <div style="display: flex; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; padding: 2px;">
+        <button class="mock-button" style="flex: 1; border: 0; background: transparent; font-size: 10px; padding: 6px; color: var(--text-muted);">Saisir</button>
+        <button class="mock-button" style="flex: 1; border: 0; background: transparent; font-size: 10px; padding: 6px; color: var(--text-muted);">Suggestions</button>
+        <button class="mock-button" style="flex: 1; border: 0; background: var(--bg-accent); font-weight: bold; font-size: 10px; padding: 6px; color: var(--text-foreground); border-radius: 6px;">Panier Commande</button>
+      </div>
+
+      <!-- Panier Commande / Multi-Match Content -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px; flex: 1;">
+        <div style="font-size: 11px; font-weight: bold; color: var(--text-muted); display: flex; justify-content: space-between;">
+          <span>Sélectionner les commandes associées :</span>
+          <span style="color: var(--text-foreground);">Total : <strong style="color: var(--text-link);">50.00 € / 50.00 €</strong></span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-h: 160px; margin-top: 4px;">
+          <!-- Order Item 1 (Selected) -->
+          <label style="display: flex; gap: 8px; align-items: center; background: var(--bg-muted); padding: 8px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 11px;">
+            <input type="checkbox" checked style="margin: 0;" />
+            <div style="flex: 1; display: flex; justify-content: space-between;">
+              <div>
+                <strong>CMD-0284</strong> • Cordage BG65 (Pierre Lacroix)
+              </div>
+              <strong style="font-family: monospace;">15.00 €</strong>
+            </div>
+          </label>
+
+          <!-- Order Item 2 (Selected) -->
+          <label style="display: flex; gap: 8px; align-items: center; background: var(--bg-muted); padding: 8px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 11px;">
+            <input type="checkbox" checked style="margin: 0;" />
+            <div style="flex: 1; display: flex; justify-content: space-between;">
+              <div>
+                <strong>CMD-0285</strong> • Cordage BG65 (Pierre Lacroix)
+              </div>
+              <strong style="font-family: monospace;">15.00 €</strong>
+            </div>
+          </label>
+
+          <!-- Order Item 3 (Selected) -->
+          <label style="display: flex; gap: 8px; align-items: center; background: var(--bg-muted); padding: 8px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 11px;">
+            <input type="checkbox" checked style="margin: 0;" />
+            <div style="flex: 1; display: flex; justify-content: space-between;">
+              <div>
+                <strong>CMD-0291</strong> • 1x Tube de volants (Pierre Lacroix)
+              </div>
+              <strong style="font-family: monospace;">20.00 €</strong>
+            </div>
+          </label>
+
+          <!-- Other Order (Unselected) -->
+          <label style="display: flex; gap: 8px; align-items: center; padding: 8px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; font-size: 11px; color: var(--text-muted);">
+            <input type="checkbox" style="margin: 0;" />
+            <div style="flex: 1; display: flex; justify-content: space-between;">
+              <div>
+                <strong>CMD-0271</strong> • Cordage BG80 (Autre membre)
+              </div>
+              <strong style="font-family: monospace;">18.00 €</strong>
+            </div>
+          </label>
+        </div>
+
+        <div style="margin-top: auto; padding-top: 8px; border-t: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-size: 10px; color: var(--text-success); font-weight: bold; text-align: center;">
+            ✓ Correspondance parfaite du total (50.00 €)
+          </div>
+          <button class="mock-button" style="width: 100%; padding: 8px; background: var(--text-success); color: white; border: 0; font-weight: bold; border-radius: 6px;">
+            Valider l'association (3 commandes)
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
