@@ -6,4 +6,4 @@
 	let { ref = $bindable(null), ...restProps }: WithElementRef<ComponentProps<typeof DrawerPrimitive.Trigger>, HTMLButtonElement> = $props();
 </script>
 
-<DrawerPrimitive.Trigger bind:ref data-slot="drawer-trigger" {...restProps} />
+<DrawerPrimitive.Trigger bind:el={ref} data-slot="drawer-trigger" {...restProps} />

@@ -5,4 +5,4 @@
 	let { ref = $bindable(null), ...restProps }: WithElementRef<DrawerPrimitive.CloseProps, HTMLButtonElement> = $props();
 </script>
 
-<DrawerPrimitive.Close bind:ref data-slot="drawer-close" {...restProps} />
+<DrawerPrimitive.Close bind:el={ref} data-slot="drawer-close" {...restProps} />

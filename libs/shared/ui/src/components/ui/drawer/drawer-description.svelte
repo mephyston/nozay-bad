@@ -10,7 +10,7 @@
 </script>
 
 <DrawerPrimitive.Description
-	bind:ref
+	bind:el={ref}
 	data-slot="drawer-description"
 	class={cn("text-muted-foreground text-sm", className)}
 	{...restProps}
