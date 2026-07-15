@@ -1,5 +1,12 @@
 import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core';
-import { seasonsTable } from '@metacult/features-accounting-data-access';
+
+export const seasonsTable = sqliteTable('seasons', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  active: integer('active', { mode: 'boolean' }).notNull().default(false),
+  closed: integer('closed', { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
 
 export const usersTable = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),

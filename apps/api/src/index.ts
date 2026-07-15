@@ -683,7 +683,7 @@ app.get('/transactions', async (c) => {
 
   const category = c.req.query('category');
   if (category) {
-    conditions.push(eq(transactionsTable.category, category as any));
+    conditions.push(eq(transactionsTable.category, parseInt(category)));
   }
 
   const classCode = c.req.query('classCode');
@@ -692,9 +692,9 @@ app.get('/transactions', async (c) => {
       .from(categoriesTable)
       .where(or(eq(categoriesTable.codeRecette, classCode), eq(categoriesTable.codeDepense, classCode)))
       .all();
-    const catIds = matchingCats.map(cat => cat.id.toString());
+    const catIds = matchingCats.map(cat => cat.id);
     if (catIds.length > 0) {
-      conditions.push(inArray(transactionsTable.category, catIds as any));
+      conditions.push(inArray(transactionsTable.category, catIds));
     } else {
       conditions.push(sql`1 = 0`);
     }
@@ -2543,11 +2543,14 @@ app.post('/orders/:id/approve', async (c) => {
       throw new Error('Produit inexistant');
     }
 
+    const boutiqueCat = await db.select().from(categoriesTable).where(eq(categoriesTable.adminLabel, 'Boutique')).get();
+    const boutiqueCatId = boutiqueCat ? boutiqueCat.id : null;
+
     const tx = await db.insert(transactionsTable).values({
       seasonId: order.seasonId,
       type: 'recette',
       accountId: 'current',
-      category: 'boutique' as any,
+      category: boutiqueCatId,
       amount: order.totalAmount,
       date: new Date().toISOString().split('T')[0],
       paymentMethod: order.paymentMethod as any,

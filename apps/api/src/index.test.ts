@@ -2557,6 +2557,13 @@ describe('Orders API Endpoints', () => {
       createdAt: new Date()
     }).onConflictDoNothing().run();
 
+    // Insert a Boutique category
+    const boutiqueCat = await db.insert(categoriesTable).values({
+      adminLabel: 'Boutique',
+      adherentLabel: 'Boutique',
+      createdAt: new Date()
+    }).returning().get();
+
     // Insert a member
     await db.insert(membersTable).values({
       id: 1,
@@ -2613,7 +2620,7 @@ describe('Orders API Endpoints', () => {
     const tx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, json.data.transactionId)).get();
     expect(tx).toBeDefined();
     expect(tx.amount).toBe(2400);
-    expect(tx.category).toBe('boutique');
+    expect(tx.category).toBe(boutiqueCat.id);
     expect(tx.memberId).toBe(1);
 
     // 5. Test GET /orders
