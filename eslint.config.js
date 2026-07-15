@@ -29,7 +29,7 @@ export default tseslint.config(
           depConstraints: [
             {
               sourceTag: 'type:app',
-              onlyDependOnLibsWithTags: ['type:api', 'type:ui', 'scope:shared']
+              onlyDependOnLibsWithTags: ['type:api', 'type:ui', 'scope:shared', 'type:data-access']
             },
             {
               sourceTag: 'type:api',
@@ -58,12 +58,6 @@ export default tseslint.config(
           ]
         }
       ]
-    }
-  },
-  {
-    files: ['**/*.test.ts', '**/*.spec.ts'],
-    rules: {
-      '@nx/enforce-module-boundaries': 'off'
     }
   }
 );

@@ -15,14 +15,14 @@ import { productsTable, ordersTable } from '@metacult/features-shop-data-access'
 import { drizzle } from 'drizzle-orm/d1';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { MockD1Database } from './test-utils';
+import { MockD1Database } from '@metacult/shared-db';
 
 describe('Database Tests', () => {
   it('should run migrations and insert/retrieve a member and a user', async () => {
     const mockD1 = new MockD1Database();
     
     // Apply migrations
-    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
     const migrationFiles = fs.readdirSync(migrationsDir)
       .filter(f => f.endsWith('.sql'))
       .sort();
@@ -96,7 +96,7 @@ describe('Database Tests', () => {
     const mockD1 = new MockD1Database();
     
     // Apply migrations
-    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
     const migrationFiles = fs.readdirSync(migrationsDir)
       .filter(f => f.endsWith('.sql'))
       .sort();
@@ -145,7 +145,7 @@ describe('Database Tests', () => {
     const mockD1 = new MockD1Database();
     
     // Apply migrations
-    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
     const migrationFiles = fs.readdirSync(migrationsDir)
       .filter(f => f.endsWith('.sql'))
       .sort();
@@ -183,7 +183,7 @@ describe('Database Tests', () => {
     const mockD1 = new MockD1Database();
     
     // Apply migrations
-    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
     const migrationFiles = fs.readdirSync(migrationsDir)
       .filter(f => f.endsWith('.sql'))
       .sort();
@@ -253,7 +253,7 @@ describe('Database Tests', () => {
     const mockD1 = new MockD1Database();
     
     // Apply migrations
-    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
     const migrationFiles = fs.readdirSync(migrationsDir)
       .filter(f => f.endsWith('.sql'))
       .sort();
@@ -318,7 +318,7 @@ describe('Database Tests', () => {
     const mockD1 = new MockD1Database();
     
     // Apply migrations
-    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
     const migrationFiles = fs.readdirSync(migrationsDir)
       .filter(f => f.endsWith('.sql'))
       .sort();
@@ -382,7 +382,7 @@ describe('Database Tests', () => {
     const mockD1 = new MockD1Database();
     
     // Apply migrations
-    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
     const migrationFiles = fs.readdirSync(migrationsDir)
       .filter(f => f.endsWith('.sql'))
       .sort();
@@ -417,7 +417,7 @@ describe('Database Tests', () => {
 
   it('should support creating and querying account classes', async () => {
     const mockD1 = new MockD1Database();
-    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
     const migrationFiles = fs.readdirSync(migrationsDir)
       .filter(f => f.endsWith('.sql'))
       .sort();
@@ -456,7 +456,7 @@ describe('Database Tests', () => {
     const mockD1 = new MockD1Database();
     
     // Apply migrations
-    const migrationsDir = path.resolve(__dirname, '../migrations');
+    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
     const migrationFiles = fs.readdirSync(migrationsDir)
       .filter(f => f.endsWith('.sql'))
       .sort();

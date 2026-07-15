@@ -3,7 +3,6 @@ import { Hono } from 'hono';
 import { accountingRouter } from './routes';
 import { setupMockDb } from '@metacult/shared-db';
 import { seasonsTable, membersTable } from '@metacult/features-members-data-access';
-import { productsTable, ordersTable } from '@metacult/features-shop-data-access';
 import {
   seasonBalancesTable,
   transactionsTable,
@@ -16,7 +15,7 @@ import {
   categoriesTable,
 } from '@metacult/features-accounting-data-access';
 import { drizzle } from 'drizzle-orm/d1';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 const app = new Hono<{ Bindings: { DB: any; AI: any } }>();
 app.route('/accounting', accountingRouter);
@@ -820,14 +819,10 @@ VERSION:102
   it('matches transaction category based on exact product price (category 8 for 31.50)', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    await db.insert(productsTable).values({
-      name: 'Babolat 2',
-      category: 'shuttlecock',
-      price: 3150,
-      stock: 50,
-      active: true,
-      createdAt: new Date()
-    });
+    await db.run(sql`
+      INSERT INTO products (name, category, price, stock, active, created_at)
+      VALUES ('Babolat 2', 'shuttlecock', 3150, 50, 1, ${new Date().getTime()})
+    `);
 
     const bt = await db.insert(bankTransactionsTable).values({
       fitid: '13800243000300846000500078472020260423',
@@ -886,14 +881,10 @@ VERSION:102
   it('matches transaction category based on product price multiples (category 7 for 30.00 representing 2 strings)', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    await db.insert(productsTable).values({
-      name: 'Cordage adulte',
-      category: 'string',
-      price: 1500,
-      stock: 50,
-      active: true,
-      createdAt: new Date()
-    });
+    await db.run(sql`
+      INSERT INTO products (name, category, price, stock, active, created_at)
+      VALUES ('Cordage adulte', 'string', 1500, 50, 1, ${new Date().getTime()})
+    `);
 
     const bt = await db.insert(bankTransactionsTable).values({
       fitid: '16271243000300846000500078472020260324',

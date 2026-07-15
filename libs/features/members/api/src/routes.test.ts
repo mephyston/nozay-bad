@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { membersRouter } from './routes';
 import { setupMockDb } from '@metacult/shared-db';
 import { membersTable, seasonsTable } from '@metacult/features-members-data-access';
-import { transactionsTable } from '@metacult/features-accounting-data-access';
+import { sql } from 'drizzle-orm';
 
 const app = new Hono<{ Bindings: { DB: any } }>();
 app.route('/members', membersRouter);
@@ -377,19 +377,10 @@ describe('/members/:id/cse-data', () => {
     expect(paidNoTxData.data.paymentDate).toBe('date de validation'); // Default fallback
 
     // Add a transaction for Marie Dupont
-    await db.insert(transactionsTable).values({
-      id: 50,
-      seasonId: '25-26',
-      type: 'recette',
-      accountId: 'current',
-      category: 1, // adhesions_inscriptions
-      amount: 20000,
-      date: '2026-07-10',
-      paymentMethod: 'cheque',
-      description: 'Cotisation Marie Dupont',
-      memberId: 20,
-      createdAt: new Date()
-    }).run();
+    await db.run(sql`
+      INSERT INTO transactions (id, season_id, type, account_id, category, amount, date, payment_method, description, member_id, created_at)
+      VALUES (50, '25-26', 'recette', 'current', 1, 20000, '2026-07-10', 'cheque', 'Cotisation Marie Dupont', 20, ${new Date().getTime()})
+    `);
 
     // GET /members/:id/cse-data for paid member WITH transaction
     const paidWithTxRes = await app.request('http://localhost/members/20/cse-data', undefined, { DB: mockD1 as any });

@@ -2,10 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { shopRouter } from './routes';
 import { setupMockDb } from '@metacult/shared-db';
-import { seasonsTable, membersTable } from '@metacult/features-members-data-access';
 import { productsTable } from '@metacult/features-shop-data-access';
-import { categoriesTable, transactionsTable } from '@metacult/features-accounting-data-access';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 const app = new Hono<{ Bindings: { DB: any } }>();
 app.route('/shop', shopRouter);
@@ -82,36 +80,23 @@ describe('Orders API Endpoints', () => {
     const { mockD1, db } = await setupMockDb();
 
     // Insert a season
-    await db.insert(seasonsTable).values({
-      id: '25-26',
-      name: 'Saison 2025-2026',
-      active: true,
-      createdAt: new Date()
-    }).onConflictDoNothing().run();
+    await db.run(sql`
+      INSERT OR IGNORE INTO seasons (id, name, active, created_at)
+      VALUES ('25-26', 'Saison 2025-2026', 1, ${new Date().getTime()})
+    `);
 
     // Insert a Boutique category
-    const boutiqueCat = await db.insert(categoriesTable).values({
-      adminLabel: 'Boutique',
-      adherentLabel: 'Boutique',
-      createdAt: new Date()
-    }).returning().get();
+    const boutiqueCat = await db.get(sql`
+      INSERT INTO categories (admin_label, adherent_label, created_at)
+      VALUES ('Boutique', 'Boutique', ${new Date().getTime()})
+      RETURNING id
+    `) as { id: number };
 
     // Insert a member
-    await db.insert(membersTable).values({
-      id: 1,
-      licence: '1234567',
-      season: '25-26',
-      lastName: 'Dupont',
-      firstName: 'Jean',
-      gender: 'M',
-      birthDate: '1990-01-01',
-      status: 'valide',
-      type: 'Competiteur',
-      amountDue: 25000,
-      amountReceived: 0,
-      amountRemaining: 25000,
-      importedAt: new Date()
-    }).run();
+    await db.run(sql`
+      INSERT INTO members (id, licence, season, last_name, first_name, gender, birth_date, status, type, amount_due, amount_received, amount_remaining, imported_at)
+      VALUES (1, '1234567', '25-26', 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'Competiteur', 25000, 0, 25000, ${new Date().getTime()})
+    `);
 
     // Insert a product with stock = 5
     await db.insert(productsTable).values({
@@ -149,11 +134,13 @@ describe('Orders API Endpoints', () => {
     expect(updatedProd!.stock).toBe(5);
 
     // 4. Verify transaction is created
-    const tx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, json.data.transactionId)).get();
+    const tx = await db.get(sql`
+      SELECT amount, category, member_id FROM transactions WHERE id = ${json.data.transactionId}
+    `) as { amount: number; category: number; member_id: number };
     expect(tx).toBeDefined();
-    expect(tx!.amount).toBe(2400);
-    expect(tx!.category).toBe(boutiqueCat.id);
-    expect(tx!.memberId).toBe(1);
+    expect(tx.amount).toBe(2400);
+    expect(tx.category).toBe(boutiqueCat.id);
+    expect(tx.member_id).toBe(1);
 
     // 5. Test GET /shop/orders
     const getRes = await app.request('http://localhost/shop/orders?season=25-26', undefined, { DB: mockD1 as any });
@@ -170,8 +157,14 @@ describe('Orders API Endpoints', () => {
     const { mockD1, db } = await setupMockDb();
 
     // Insert season, member, product
-    await db.insert(seasonsTable).values({ id: '25-26', name: 'Saison 2025-2026', active: true, createdAt: new Date() }).onConflictDoNothing().run();
-    await db.insert(membersTable).values({ id: 1, licence: '1234567', season: '25-26', lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'Competiteur', amountDue: 25000, amountReceived: 0, amountRemaining: 25000, importedAt: new Date() }).run();
+    await db.run(sql`
+      INSERT OR IGNORE INTO seasons (id, name, active, created_at)
+      VALUES ('25-26', 'Saison 2025-2026', 1, ${new Date().getTime()})
+    `);
+    await db.run(sql`
+      INSERT INTO members (id, licence, season, last_name, first_name, gender, birth_date, status, type, amount_due, amount_received, amount_remaining, imported_at)
+      VALUES (1, '1234567', '25-26', 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'Competiteur', 25000, 0, 25000, ${new Date().getTime()})
+    `);
     await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', category: 'string' as any, price: 1200, stock: 5, active: true, createdAt: new Date() }).run();
 
     // 1. Create order
@@ -211,8 +204,14 @@ describe('Orders API Endpoints', () => {
     const { mockD1, db } = await setupMockDb();
 
     // Insert season, member, product
-    await db.insert(seasonsTable).values({ id: '25-26', name: 'Saison 2025-2026', active: true, createdAt: new Date() }).onConflictDoNothing().run();
-    await db.insert(membersTable).values({ id: 1, licence: '1234567', season: '25-26', lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'Competiteur', amountDue: 25000, amountReceived: 0, amountRemaining: 25000, importedAt: new Date() }).run();
+    await db.run(sql`
+      INSERT OR IGNORE INTO seasons (id, name, active, created_at)
+      VALUES ('25-26', 'Saison 2025-2026', 1, ${new Date().getTime()})
+    `);
+    await db.run(sql`
+      INSERT INTO members (id, licence, season, last_name, first_name, gender, birth_date, status, type, amount_due, amount_received, amount_remaining, imported_at)
+      VALUES (1, '1234567', '25-26', 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'Competiteur', 25000, 0, 25000, ${new Date().getTime()})
+    `);
     await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', category: 'string' as any, price: 1200, stock: 1, active: true, createdAt: new Date() }).run();
 
     const res = await app.request('http://localhost/shop/orders', {

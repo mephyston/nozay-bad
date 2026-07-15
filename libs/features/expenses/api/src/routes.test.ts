@@ -2,10 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { expensesRouter } from './routes';
 import { setupMockDb } from '@metacult/shared-db';
-import { seasonsTable } from '@metacult/features-members-data-access';
-import { transactionsTable } from '@metacult/features-accounting-data-access';
 import { expensesTable } from '@metacult/features-expenses-data-access';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 const app = new Hono<{ Bindings: { DB: any } }>();
 app.route('/expenses', expensesRouter);
@@ -15,7 +13,10 @@ describe('Expenses API Endpoints', () => {
     const { mockD1, db } = await setupMockDb();
 
     // Insert season
-    await db.insert(seasonsTable).values({ id: '25-26', name: 'Saison 2025-2026', active: true, createdAt: new Date() }).onConflictDoNothing().run();
+    await db.run(sql`
+      INSERT OR IGNORE INTO seasons (id, name, active, created_at)
+      VALUES ('25-26', 'Saison 2025-2026', 1, ${new Date().getTime()})
+    `);
 
     // 1. Create a pending expense report
     const res = await app.request('http://localhost/expenses', {
@@ -58,12 +59,14 @@ describe('Expenses API Endpoints', () => {
     expect(approveJson.data.transactionId).toBeDefined();
 
     // Verify transaction was created in compta
-    const tx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, approveJson.data.transactionId)).get();
+    const tx = await db.get(sql`
+      SELECT type, amount, category, description FROM transactions WHERE id = ${approveJson.data.transactionId}
+    `) as { type: string; amount: number; category: number; description: string };
     expect(tx).toBeDefined();
-    expect(tx!.type).toBe('depense');
-    expect(tx!.amount).toBe(4500);
-    expect(tx!.category).toBe(10);
-    expect(tx!.description).toContain('Remboursement frais - Marie Curie - Achat de cartons pour tournoi');
+    expect(tx.type).toBe('depense');
+    expect(tx.amount).toBe(4500);
+    expect(tx.category).toBe(10);
+    expect(tx.description).toContain('Remboursement frais - Marie Curie - Achat de cartons pour tournoi');
 
     // 4. Create another expense to test rejection
     const res2 = await app.request('http://localhost/expenses', {
@@ -115,7 +118,9 @@ describe('Expenses API Endpoints', () => {
     expect(cancelJson.data.transactionId).toBeNull();
 
     // Check associated transaction is deleted
-    const txDeleted = await db.select().from(transactionsTable).where(eq(transactionsTable.id, approveJson.data.transactionId)).get();
+    const txDeleted = await db.get(sql`
+      SELECT id FROM transactions WHERE id = ${approveJson.data.transactionId}
+    `);
     expect(txDeleted).toBeUndefined();
 
   });
