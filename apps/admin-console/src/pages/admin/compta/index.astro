@@ -18,7 +18,7 @@ if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
     if (data.action === 'create') {
-      const apiRes = await apiService.fetch('http://localhost/transactions', {
+      const apiRes = await apiService.fetch('http://localhost/accounting/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -27,7 +27,7 @@ if (Astro.request.method === 'POST') {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
     } else if (data.action === 'update') {
-      const apiRes = await apiService.fetch(`http://localhost/transactions/${data.id}`, {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/transactions/${data.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data.updates)
@@ -36,7 +36,7 @@ if (Astro.request.method === 'POST') {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
     } else if (data.action === 'delete') {
-      const apiRes = await apiService.fetch(`http://localhost/transactions/${data.id}`, {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/transactions/${data.id}`, {
         method: 'DELETE'
       });
       if (!apiRes.ok) {
@@ -63,32 +63,32 @@ try {
   if (classCode) queryParams.set('classCode', classCode);
   if (unreconciledChequesOnly) queryParams.set('unreconciledCheques', 'true');
 
-  const txRes = await apiService.fetch(`http://localhost/transactions?${queryParams.toString()}`);
+  const txRes = await apiService.fetch(`http://localhost/accounting/transactions?${queryParams.toString()}`);
   if (txRes.ok) {
     const json = await txRes.json() as any;
     transactionsList = json.data || [];
     pagination = json.pagination;
   }
 
-  const reportRes = await apiService.fetch(`http://localhost/seasons/${season}/reports`);
+  const reportRes = await apiService.fetch(`http://localhost/accounting/seasons/${season}/reports`);
   if (reportRes.ok) {
     const json = await reportRes.json() as any;
     balances = json.data?.bilanTrésorerie || [];
   }
 
-  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];
   }
 
-  const categoriesRes = await apiService.fetch('http://localhost/categories');
+  const categoriesRes = await apiService.fetch('http://localhost/accounting/categories');
   if (categoriesRes.ok) {
     const json = await categoriesRes.json() as any;
     categoriesList = json.data || [];
   }
 
-  const classesRes = await apiService.fetch('http://localhost/account-classes');
+  const classesRes = await apiService.fetch('http://localhost/accounting/account-classes');
   if (classesRes.ok) {
     const json = await classesRes.json() as any;
     accountClassesList = json.data || [];

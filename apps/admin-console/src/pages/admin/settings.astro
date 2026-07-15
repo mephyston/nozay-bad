@@ -15,7 +15,7 @@ if (Astro.request.method === 'POST') {
     const data = await Astro.request.json() as any;
     
     if (data.action === 'create_season') {
-      const apiRes = await apiService.fetch('http://localhost/seasons', {
+      const apiRes = await apiService.fetch('http://localhost/accounting/seasons', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -28,14 +28,14 @@ if (Astro.request.method === 'POST') {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
     } else if (data.action === 'close_season') {
-      const apiRes = await apiService.fetch(`http://localhost/seasons/${data.id}/close`, {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.id}/close`, {
         method: 'POST'
       });
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
     } else if (data.action === 'activate_season') {
-      const apiRes = await apiService.fetch(`http://localhost/seasons/${data.id}`, {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: true })
@@ -44,7 +44,7 @@ if (Astro.request.method === 'POST') {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
     } else if (data.action === 'update_balances') {
-      const apiRes = await apiService.fetch(`http://localhost/seasons/${data.seasonId}/balances`, {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.seasonId}/balances`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data.balances)
@@ -53,7 +53,7 @@ if (Astro.request.method === 'POST') {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
     } else if (data.action === 'create_category') {
-      const apiRes = await apiService.fetch('http://localhost/categories', {
+      const apiRes = await apiService.fetch('http://localhost/accounting/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -69,7 +69,7 @@ if (Astro.request.method === 'POST') {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
     } else if (data.action === 'update_category') {
-      const apiRes = await apiService.fetch(`http://localhost/categories/${data.id}`, {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/categories/${data.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data.updates)
@@ -78,14 +78,14 @@ if (Astro.request.method === 'POST') {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
     } else if (data.action === 'delete_category') {
-      const apiRes = await apiService.fetch(`http://localhost/categories/${data.id}`, {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/categories/${data.id}`, {
         method: 'DELETE'
       });
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
     } else if (data.action === 'create_account_class') {
-      const apiRes = await apiService.fetch('http://localhost/account-classes', {
+      const apiRes = await apiService.fetch('http://localhost/accounting/account-classes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -98,7 +98,7 @@ if (Astro.request.method === 'POST') {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
     } else if (data.action === 'update_account_class') {
-      const apiRes = await apiService.fetch(`http://localhost/account-classes/${data.code}`, {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/account-classes/${data.code}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -110,7 +110,7 @@ if (Astro.request.method === 'POST') {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
     } else if (data.action === 'delete_account_class') {
-      const apiRes = await apiService.fetch(`http://localhost/account-classes/${data.code}`, {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/account-classes/${data.code}`, {
         method: 'DELETE'
       });
       if (!apiRes.ok) {
@@ -133,14 +133,14 @@ let errorMsg = '';
 
 try {
   // Fetch seasons
-  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     const rawSeasons = json.data || [];
     
     // Fetch initial balances for each season to embed in the list
     for (const s of rawSeasons) {
-      const balRes = await apiService.fetch(`http://localhost/seasons/${s.id}/balances`);
+      const balRes = await apiService.fetch(`http://localhost/accounting/seasons/${s.id}/balances`);
       let initialCurrentBalance = 0;
       let initialSavingsBalance = 0;
       let initialCashBalance = 0;
@@ -164,14 +164,14 @@ try {
   }
 
   // Fetch categories
-  const categoriesRes = await apiService.fetch('http://localhost/categories');
+  const categoriesRes = await apiService.fetch('http://localhost/accounting/categories');
   if (categoriesRes.ok) {
     const json = await categoriesRes.json() as any;
     categoriesList = json.data || [];
   }
 
   // Fetch account classes
-  const classesRes = await apiService.fetch('http://localhost/account-classes');
+  const classesRes = await apiService.fetch('http://localhost/accounting/account-classes');
   if (classesRes.ok) {
     const json = await classesRes.json() as any;
     accountClassesList = json.data || [];

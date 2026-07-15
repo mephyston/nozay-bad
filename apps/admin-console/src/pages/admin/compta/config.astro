@@ -18,7 +18,7 @@ if (Astro.request.method === 'POST') {
       { accountId: 'savings', initialBalance: data.balances?.savings || 0 },
       { accountId: 'cash', initialBalance: data.balances?.cash || 0 }
     ];
-    const apiRes = await apiService.fetch(`http://localhost/seasons/${data.seasonId}/balances`, {
+    const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.seasonId}/balances`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(balancesArray)
@@ -36,13 +36,13 @@ let seasonsList: any[] = [];
 let errorMsg = '';
 
 try {
-  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     const rawSeasons = json.data || [];
 
     for (const s of rawSeasons) {
-      const balRes = await apiService.fetch(`http://localhost/seasons/${s.id}/balances`);
+      const balRes = await apiService.fetch(`http://localhost/accounting/seasons/${s.id}/balances`);
       let initialCurrentBalance = 0;
       let initialSavingsBalance = 0;
       let initialCashBalance = 0;
@@ -63,7 +63,7 @@ try {
             const yy = parseInt(match[1]);
             const zz = parseInt(match[2]);
             const prevSeasonId = `${String(yy - 1).padStart(2, '0')}-${String(zz - 1).padStart(2, '0')}`;
-            const prevReportRes = await apiService.fetch(`http://localhost/seasons/${prevSeasonId}/reports`);
+            const prevReportRes = await apiService.fetch(`http://localhost/accounting/seasons/${prevSeasonId}/reports`);
             if (prevReportRes.ok) {
               const prevReportJson = await prevReportRes.json() as any;
               const prevBilan: any[] = prevReportJson.data?.bilanTrésorerie || [];

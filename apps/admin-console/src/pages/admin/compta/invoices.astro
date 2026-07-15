@@ -15,7 +15,7 @@ if (Astro.request.method === 'POST') {
     const data = await Astro.request.json() as any;
 
     if (data.action === 'create') {
-      const apiRes = await apiService.fetch('http://localhost/invoices', {
+      const apiRes = await apiService.fetch('http://localhost/accounting/invoices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data.invoice)
@@ -27,7 +27,7 @@ if (Astro.request.method === 'POST') {
         headers: { 'Content-Type': 'application/json' }
       });
     } else if (data.action === 'update') {
-      const apiRes = await apiService.fetch(`http://localhost/invoices/${data.id}`, {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/invoices/${data.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data.invoice)
@@ -39,7 +39,7 @@ if (Astro.request.method === 'POST') {
         headers: { 'Content-Type': 'application/json' }
       });
     } else if (data.action === 'status') {
-      const apiRes = await apiService.fetch(`http://localhost/invoices/${data.id}/status`, {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/invoices/${data.id}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: data.status })
@@ -51,7 +51,7 @@ if (Astro.request.method === 'POST') {
         headers: { 'Content-Type': 'application/json' }
       });
     } else if (data.action === 'delete') {
-      const apiRes = await apiService.fetch(`http://localhost/invoices/${data.id}`, {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/invoices/${data.id}`, {
         method: 'DELETE'
       });
       if (!apiRes.ok) {
@@ -61,7 +61,7 @@ if (Astro.request.method === 'POST') {
         headers: { 'Content-Type': 'application/json' }
       });
     } else if (data.action === 'get-details') {
-      const apiRes = await apiService.fetch(`http://localhost/invoices/${data.id}`);
+      const apiRes = await apiService.fetch(`http://localhost/accounting/invoices/${data.id}`);
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
@@ -82,7 +82,7 @@ let errorMsg = '';
 
 try {
   // 1. Récupérer la liste des saisons d'abord pour avoir la saison active par défaut
-  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (!seasonsRes.ok) {
     throw new Error('Impossible de récupérer la liste des saisons.');
   }
@@ -96,7 +96,7 @@ try {
   }
 
   // 2. Récupérer les factures de la saison
-  const invoicesRes = await apiService.fetch(`http://localhost/invoices?season=${season}`);
+  const invoicesRes = await apiService.fetch(`http://localhost/accounting/invoices?season=${season}`);
   if (!invoicesRes.ok) {
     throw new Error('Impossible de récupérer les factures pour cette saison.');
   }

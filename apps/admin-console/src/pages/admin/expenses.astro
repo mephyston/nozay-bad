@@ -66,14 +66,14 @@ try {
   }
 
   // 2. Récupérer la liste des saisons
-  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];
   }
 
   // 3. Récupérer les catégories
-  const categoriesRes = await apiService.fetch('http://localhost/categories');
+  const categoriesRes = await apiService.fetch('http://localhost/accounting/categories');
   if (categoriesRes.ok) {
     const json = await categoriesRes.json() as any;
     categoriesList = json.data || [];

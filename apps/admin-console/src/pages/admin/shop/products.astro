@@ -12,7 +12,7 @@ if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
     if (data.action === 'create') {
-      const apiRes = await apiService.fetch('http://localhost/products', {
+      const apiRes = await apiService.fetch('http://localhost/shop/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -28,7 +28,7 @@ if (Astro.request.method === 'POST') {
       }
       return new Response(JSON.stringify(await apiRes.json()));
     } else if (data.action === 'update') {
-      const apiRes = await apiService.fetch(`http://localhost/products/${data.id}`, {
+      const apiRes = await apiService.fetch(`http://localhost/shop/products/${data.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -53,7 +53,7 @@ let productsList = [];
 let errorMsg = '';
 
 try {
-  const productsRes = await apiService.fetch('http://localhost/products');
+  const productsRes = await apiService.fetch('http://localhost/shop/products');
   if (productsRes.ok) {
     const json = await productsRes.json() as any;
     productsList = json.data || [];

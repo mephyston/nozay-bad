@@ -12,7 +12,7 @@ if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
     if (data.action === 'approve') {
-      const apiRes = await apiService.fetch(`http://localhost/orders/${data.id}/approve`, {
+      const apiRes = await apiService.fetch(`http://localhost/shop/orders/${data.id}/approve`, {
         method: 'POST'
       });
       if (!apiRes.ok) {
@@ -20,7 +20,7 @@ if (Astro.request.method === 'POST') {
       }
       return new Response(JSON.stringify(await apiRes.json()));
     } else if (data.action === 'reject') {
-      const apiRes = await apiService.fetch(`http://localhost/orders/${data.id}/reject`, {
+      const apiRes = await apiService.fetch(`http://localhost/shop/orders/${data.id}/reject`, {
         method: 'POST'
       });
       if (!apiRes.ok) {
@@ -40,7 +40,7 @@ let errorMsg = '';
 
 try {
   // 1. Fetch seasons
-  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];
@@ -49,7 +49,7 @@ try {
   }
 
   // 2. Fetch all orders (which return mapped orders: order, member, product)
-  const ordersRes = await apiService.fetch('http://localhost/orders');
+  const ordersRes = await apiService.fetch('http://localhost/shop/orders');
   if (ordersRes.ok) {
     const json = await ordersRes.json() as any;
     ordersList = json.data || [];

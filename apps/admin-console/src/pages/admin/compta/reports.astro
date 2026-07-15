@@ -14,7 +14,7 @@ if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
     if (data.action === 'save_budget') {
-      const apiRes = await apiService.fetch(`http://localhost/seasons/${data.seasonId}/budget`, {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.seasonId}/budget`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data.budget)
@@ -24,7 +24,7 @@ if (Astro.request.method === 'POST') {
       }
       return new Response(JSON.stringify({ success: true }));
     } else {
-      const apiRes = await apiService.fetch(`http://localhost/seasons/${data.seasonId}/balances`, {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.seasonId}/balances`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data.balances)
@@ -69,7 +69,7 @@ let prevReportData = null;
 let errorMsg = '';
 
 try {
-  const res = await apiService.fetch(`http://localhost/seasons/${season}/reports`);
+  const res = await apiService.fetch(`http://localhost/accounting/seasons/${season}/reports`);
   if (res.ok) {
     const json = await res.json() as any;
     reportData = json.data;
@@ -80,7 +80,7 @@ try {
   const prevSeason = getPreviousSeasonId(season);
   if (prevSeason) {
     try {
-      const prevRes = await apiService.fetch(`http://localhost/seasons/${prevSeason}/reports`);
+      const prevRes = await apiService.fetch(`http://localhost/accounting/seasons/${prevSeason}/reports`);
       if (prevRes.ok) {
         const json = await prevRes.json() as any;
         prevReportData = json.data;
@@ -90,25 +90,25 @@ try {
     }
   }
 
-  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];
   }
 
-  const categoriesRes = await apiService.fetch('http://localhost/categories');
+  const categoriesRes = await apiService.fetch('http://localhost/accounting/categories');
   if (categoriesRes.ok) {
     const json = await categoriesRes.json() as any;
     categoriesList = json.data || [];
   }
 
-  const classesRes = await apiService.fetch('http://localhost/account-classes');
+  const classesRes = await apiService.fetch('http://localhost/accounting/account-classes');
   if (classesRes.ok) {
     const json = await classesRes.json() as any;
     accountClassesList = json.data || [];
   }
 
-  const budgetRes = await apiService.fetch(`http://localhost/seasons/${season}/budget`);
+  const budgetRes = await apiService.fetch(`http://localhost/accounting/seasons/${season}/budget`);
   if (budgetRes.ok) {
     const json = await budgetRes.json() as any;
     budgetList = json.data || [];

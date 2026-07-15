@@ -55,7 +55,7 @@ if (Astro.request.method === 'POST') {
       });
     }
 
-    const res = await apiService.fetch('http://localhost/orders', {
+    const res = await apiService.fetch('http://localhost/shop/orders', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -81,7 +81,7 @@ let errorMsg = '';
 
 try {
   // Fetch active products
-  const productsRes = await apiService.fetch('http://localhost/products?active=true');
+  const productsRes = await apiService.fetch('http://localhost/shop/products?active=true');
   if (productsRes.ok) {
     const json = await productsRes.json() as any;
     products = json.data || [];
@@ -99,7 +99,7 @@ try {
   }
 
   // Fetch seasons
-  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasons = json.data || [];

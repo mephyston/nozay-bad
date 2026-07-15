@@ -83,7 +83,7 @@ try {
   }
 
   // Fetch seasons
-  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasons = json.data || [];
@@ -92,7 +92,7 @@ try {
   }
 
   // Fetch categories
-  const categoriesRes = await apiService.fetch('http://localhost/categories');
+  const categoriesRes = await apiService.fetch('http://localhost/accounting/categories');
   if (categoriesRes.ok) {
     const json = await categoriesRes.json() as any;
     categories = json.data || [];

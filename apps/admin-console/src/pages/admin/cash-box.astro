@@ -14,7 +14,7 @@ if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
     if (data.action === 'create') {
-      const apiRes = await apiService.fetch('http://localhost/transactions', {
+      const apiRes = await apiService.fetch('http://localhost/accounting/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -23,7 +23,7 @@ if (Astro.request.method === 'POST') {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
     } else if (data.action === 'delete') {
-      const apiRes = await apiService.fetch(`http://localhost/transactions/${data.id}`, {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/transactions/${data.id}`, {
         method: 'DELETE'
       });
       if (!apiRes.ok) {
@@ -43,7 +43,7 @@ let errorMsg = '';
 
 try {
   // 1. Récupérer les soldes de départ de la saison
-  const balancesRes = await apiService.fetch(`http://localhost/seasons/${season}/balances`);
+  const balancesRes = await apiService.fetch(`http://localhost/accounting/seasons/${season}/balances`);
   if (balancesRes.ok) {
     const json = await balancesRes.json() as any;
     const balances = json.data || [];
@@ -52,14 +52,14 @@ try {
   }
 
   // 2. Récupérer les transactions réelles sur le compte cash
-  const txRes = await apiService.fetch(`http://localhost/transactions?season=${season}&accountId=cash&limit=100`);
+  const txRes = await apiService.fetch(`http://localhost/accounting/transactions?season=${season}&accountId=cash&limit=100`);
   if (txRes.ok) {
     const json = await txRes.json() as any;
     transactionsList = json.data || [];
   }
 
   // 3. Récupérer la liste des saisons
-  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];

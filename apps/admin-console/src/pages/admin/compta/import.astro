@@ -15,7 +15,7 @@ if (Astro.request.method === 'POST') {
     const contentType = Astro.request.headers.get('content-type') || '';
     if (contentType.includes('multipart/form-data')) {
       const formData = await Astro.request.formData();
-      const apiRes = await apiService.fetch('http://localhost/bank-transactions/import', {
+      const apiRes = await apiService.fetch('http://localhost/accounting/bank-transactions/import', {
         method: 'POST',
         body: formData as any
       });
@@ -27,8 +27,8 @@ if (Astro.request.method === 'POST') {
       const data = await Astro.request.json() as any;
       if (data.action === 'analyze') {
         const url = data.btId
-          ? `http://localhost/bank-transactions/analyze?season=${data.season}&id=${data.btId}`
-          : `http://localhost/bank-transactions/analyze?season=${data.season}`;
+          ? `http://localhost/accounting/bank-transactions/analyze?season=${data.season}&id=${data.btId}`
+          : `http://localhost/accounting/bank-transactions/analyze?season=${data.season}`;
         const apiRes = await apiService.fetch(url, {
           method: 'POST'
         });
@@ -36,7 +36,7 @@ if (Astro.request.method === 'POST') {
           return new Response(await apiRes.text(), { status: apiRes.status });
         }
       } else if (data.action === 'match' || data.action === 'create') {
-        const apiRes = await apiService.fetch(`http://localhost/bank-transactions/${data.btId}/reconcile`, {
+        const apiRes = await apiService.fetch(`http://localhost/accounting/bank-transactions/${data.btId}/reconcile`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
@@ -45,7 +45,7 @@ if (Astro.request.method === 'POST') {
           return new Response(await apiRes.text(), { status: apiRes.status });
         }
       } else if (data.action === 'bulk') {
-        const apiRes = await apiService.fetch('http://localhost/bank-transactions/reconcile-bulk', {
+        const apiRes = await apiService.fetch('http://localhost/accounting/bank-transactions/reconcile-bulk', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
@@ -54,28 +54,28 @@ if (Astro.request.method === 'POST') {
           return new Response(await apiRes.text(), { status: apiRes.status });
         }
       } else if (data.action === 'ignore') {
-        const apiRes = await apiService.fetch(`http://localhost/bank-transactions/${data.btId}/ignore`, {
+        const apiRes = await apiService.fetch(`http://localhost/accounting/bank-transactions/${data.btId}/ignore`, {
           method: 'POST'
         });
         if (!apiRes.ok) {
           return new Response('Erreur ignore', { status: apiRes.status });
         }
       } else if (data.action === 'unignore') {
-        const apiRes = await apiService.fetch(`http://localhost/bank-transactions/${data.btId}/unignore`, {
+        const apiRes = await apiService.fetch(`http://localhost/accounting/bank-transactions/${data.btId}/unignore`, {
           method: 'POST'
         });
         if (!apiRes.ok) {
           return new Response('Erreur unignore', { status: apiRes.status });
         }
       } else if (data.action === 'delete-transaction') {
-        const apiRes = await apiService.fetch(`http://localhost/transactions/${data.txId}`, {
+        const apiRes = await apiService.fetch(`http://localhost/accounting/transactions/${data.txId}`, {
           method: 'DELETE'
         });
         if (!apiRes.ok) {
           return new Response(await apiRes.text(), { status: apiRes.status });
         }
       } else if (data.action === 'get-unpaid-invoices') {
-        const apiRes = await apiService.fetch(`http://localhost/invoices?season=${data.season}`);
+        const apiRes = await apiService.fetch(`http://localhost/accounting/invoices?season=${data.season}`);
         if (!apiRes.ok) {
           return new Response(await apiRes.text(), { status: apiRes.status });
         }
@@ -99,20 +99,20 @@ let errorMsg = '';
 
 try {
   // Récupérer toutes les transactions bancaires (non filtrées par statut au niveau de l'API pour pouvoir changer d'onglet)
-  const btRes = await apiService.fetch(`http://localhost/bank-transactions?season=${season}`);
+  const btRes = await apiService.fetch(`http://localhost/accounting/bank-transactions?season=${season}`);
   if (btRes.ok) {
     const json = await btRes.json() as any;
     bankTransactionsList = json.data || [];
   }
 
   // Récupérer toutes les transactions du grand livre pour faire des suggestions de pointage et la ventilation
-  const glRes = await apiService.fetch(`http://localhost/transactions?season=${season}&page=1&limit=500`);
+  const glRes = await apiService.fetch(`http://localhost/accounting/transactions?season=${season}&page=1&limit=500`);
   if (glRes.ok) {
     const json = await glRes.json() as any;
     glTransactionsList = json.data || [];
   }
 
-  const seasonsRes = await apiService.fetch('http://localhost/seasons');
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];
@@ -124,7 +124,7 @@ try {
     membersList = json.data || [];
   }
 
-  const categoriesRes = await apiService.fetch('http://localhost/categories');
+  const categoriesRes = await apiService.fetch('http://localhost/accounting/categories');
   if (categoriesRes.ok) {
     const json = await categoriesRes.json() as any;
     categoriesList = json.data || [];
