@@ -1,0 +1,15 @@
+{
+  "$schema": "https://shadcn-svelte.com/schema.json",
+  "style": "default",
+  "typescript": true,
+  "tailwind": {
+    "config": "",
+    "css": "apps/admin-console/src/styles/global.css",
+    "baseColor": "slate"
+  },
+  "aliases": {
+    "components": "libs/shared/ui/src/components",
+    "ui": "libs/shared/ui/src/components/ui",
+    "utils": "libs/shared/ui/src/lib/utils"
+  }
+}
