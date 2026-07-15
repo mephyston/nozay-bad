@@ -1,16 +1,15 @@
 <script lang="ts">
 	import { Drawer as DrawerPrimitive } from "vaul-svelte";
-	import { cn } from "libs/shared/ui/src/lib/utils.js";
+	import { cn, type WithElementRef } from "libs/shared/ui/src/lib/utils.js";
 
 	let {
 		ref = $bindable(null),
 		class: className,
 		...restProps
-	}: DrawerPrimitive.DescriptionProps = $props();
+	}: WithElementRef<DrawerPrimitive.DescriptionProps, HTMLDivElement> = $props();
 </script>
 
 <DrawerPrimitive.Description
-	bind:ref
 	data-slot="drawer-description"
 	class={cn("text-muted-foreground text-sm", className)}
 	{...restProps}
