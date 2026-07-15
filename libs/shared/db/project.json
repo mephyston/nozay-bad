@@ -1,0 +1,7 @@
+{
+  "name": "@metacult/shared-db",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/shared/db/src",
+  "tags": ["type:data-access", "scope:shared"]
+}
