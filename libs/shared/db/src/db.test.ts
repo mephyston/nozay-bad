@@ -1,83 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { membersTable, usersTable, seasonBalancesTable, transactionsTable, seasonsTable, bankTransactionsTable, checkDepositsTable, checksTable, productsTable, ordersTable, categoriesTable, invoicesTable, invoiceItemsTable, accountClassesTable } from './index';
 import { drizzle } from 'drizzle-orm/d1';
-import { DatabaseSync } from 'node:sqlite';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-
-class MockD1Database {
-  private db: DatabaseSync;
-
-  constructor() {
-    this.db = new DatabaseSync(':memory:');
-  }
-
-  async exec(query: string) {
-    this.db.exec(query);
-    return { count: 0, duration: 0 };
-  }
-
-  prepare(query: string) {
-    const stmt = this.db.prepare(query);
-    return new MockD1PreparedStatement(stmt);
-  }
-
-  async batch(statements: MockD1PreparedStatement[]) {
-    const results = [];
-    for (const stmt of statements) {
-      results.push(await stmt.all());
-    }
-    return results;
-  }
-}
-
-class MockD1PreparedStatement {
-  private stmt: any;
-  private params: any[] = [];
-
-  constructor(stmt: any) {
-    this.stmt = stmt;
-  }
-
-  bind(...values: any[]) {
-    const newStmt = new MockD1PreparedStatement(this.stmt);
-    newStmt.params = values.map(v => {
-      if (v instanceof Date) return v.getTime();
-      if (typeof v === 'boolean') return v ? 1 : 0;
-      return v;
-    });
-    return newStmt;
-  }
-
-  async all() {
-    const results = this.stmt.all(...this.params);
-    return { results };
-  }
-
-  async run() {
-    const runResult = this.stmt.run(...this.params);
-    return {
-      success: true,
-      meta: {
-        changes: runResult.changes,
-        last_row_id: runResult.lastInsertRowid,
-      }
-    };
-  }
-
-  async first(colName?: string) {
-    const results = this.stmt.all(...this.params);
-    if (results.length === 0) return null;
-    const row = results[0];
-    if (colName) return row[colName];
-    return row;
-  }
-
-  async raw() {
-    const results = this.stmt.all(...this.params);
-    return results.map((row: any) => Object.values(row));
-  }
-}
+import { MockD1Database } from './test-utils';
 
 describe('Database Tests', () => {
   it('should run migrations and insert/retrieve a member and a user', async () => {
