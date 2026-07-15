@@ -2,6 +2,16 @@ import nxPlugin from '@nx/eslint-plugin';
 
 export default [
   {
+    ignores: [
+      '**/.wrangler/**',
+      '**/dist/**',
+      '**/tmp/**',
+      '**/.nx/**',
+      '**/.astro/**',
+      '**/*.d.ts'
+    ]
+  },
+  {
     plugins: {
       '@nx': nxPlugin,
     },

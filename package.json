@@ -2,14 +2,18 @@
   "name": "nozay-bad",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": { "test": "vitest" },
+  "scripts": {
+    "test": "vitest"
+  },
   "private": true,
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
     "@cloudflare/workers-types": "^5.20260707.1",
+    "@nx/eslint-plugin": "^23.0.1",
     "@nx/js": "23.0.1",
     "@nx/workspace": "23.0.1",
     "drizzle-kit": "^0.31.10",
+    "eslint": "^9.10.0",
     "jsdom": "^26.0.0",
     "nx": "23.0.1",
     "typescript": "^6.0.3",
