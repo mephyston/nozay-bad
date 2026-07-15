@@ -1,33 +1,44 @@
-# Task 3 Report: Svelte UI - Order Basket & Manual Split Form
+# Task 3: Initialize UI Libraries in Nx Monorepo - Report
 
-## Status
-**DONE**
+## What was implemented
+Scaffolded 5 new UI libraries under `libs` following the Nx project structure guidelines:
+1. `@metacult/shared-ui` in `libs/shared/ui`
+2. `@metacult/features-members-ui` in `libs/features/members/ui`
+3. `@metacult/features-accounting-ui` in `libs/features/accounting/ui`
+4. `@metacult/features-expenses-ui` in `libs/features/expenses/ui`
+5. `@metacult/features-shop-ui` in `libs/features/shop/ui`
 
-## Commits Created
-* `62d9b02` - feat(ui): implement multi-match order selection basket and dynamic split entries form
+For each library:
+- Created a `project.json` containing the appropriate name, projectType, sourceRoot, targets, and boundary tags (`type:ui`, and `scope:shared|members|accounting|expenses|shop`).
+- Created a `tsconfig.json` extending the workspace `tsconfig.base.json` with declarations enabled.
+- Created an empty `src/index.ts` barrel file.
 
-## Summary of Changes
-1. **Multi-match Order/Invoice Basket:**
-   - Modified `apps/admin-console/src/components/BankStatementReconciliation.svelte` to add checkboxes next to all `unpaidInvoices` inside the "Associer Facture" tab.
-   - Declared reactive state `selectedInvoiceIds = $state<Set<number>>(new Set())` and derived `selectedSum = $derived(...)`.
-   - Rendered a premium "Panier Commande" basket panel displaying the number of selected invoices, the sum, the transaction amount, and the calculated discrepancy (écart).
-   - Validation locks the "Valider l'association" submit button until the discrepancy is within the 10-cent tolerance range.
-   - On submission, calls the reconciliation API passing an array of `invoiceIds`.
+Modified `tsconfig.base.json` to register correct TypeScript path mappings for all 5 new libraries.
 
-2. **Manual split Form:**
-   - Modified the "Saisir écriture" tab to add a "Ventiler" toggle button.
-   - When clicked, toggles `isSplitMode = true` and initializes a `splits` state array of `{ category, amount }` fields with two default rows.
-   - Rendered dynamic split rows with Svelte selection boxes for categories, numeric amount inputs, and add/remove row capability.
-   - Validation locks the submit button until the total split sum equals the remaining transaction amount.
-   - On submission, constructs and sends a `transactions` array payload to `POST /bank-transactions/:id/reconcile` (forwarded via the Astro proxy endpoint `/admin/compta/import`).
+## What was tested and test results
+- Ran `npx nx show projects` which successfully listed all 5 new UI libraries alongside the existing ones.
+- Verified file paths and configurations match structural patterns of the monorepo.
 
-## Testing Summary
-- Added 2 new comprehensive Vitest unit tests in `apps/admin-console/src/components/BankStatementReconciliation.test.ts`:
-  - `multi-match order selection basket in invoice tab updates selected sum and validates with tolerance`
-  - `dynamic split form in manual entry tab adds rows and validates against transaction amount`
-- Verified that all `admin-console` unit tests successfully pass:
-  - Total test suites: **18 passed**
-  - Total test cases: **39 passed**
+## Files changed
+- `tsconfig.base.json` (modified)
+- `libs/shared/ui/project.json` (new)
+- `libs/shared/ui/tsconfig.json` (new)
+- `libs/shared/ui/src/index.ts` (new)
+- `libs/features/members/ui/project.json` (new)
+- `libs/features/members/ui/tsconfig.json` (new)
+- `libs/features/members/ui/src/index.ts` (new)
+- `libs/features/accounting/ui/project.json` (new)
+- `libs/features/accounting/ui/tsconfig.json` (new)
+- `libs/features/accounting/ui/src/index.ts` (new)
+- `libs/features/expenses/ui/project.json` (new)
+- `libs/features/expenses/ui/tsconfig.json` (new)
+- `libs/features/expenses/ui/src/index.ts` (new)
+- `libs/features/shop/ui/project.json` (new)
+- `libs/features/shop/ui/tsconfig.json` (new)
+- `libs/features/shop/ui/src/index.ts` (new)
 
-## Concerns
-* None. The API handled the new payload structures cleanly, and the Svelte 5 reactive runes integration keeps UI updates fast and bug-free.
+## Self-review findings
+All files were configured correctly. The path mappings correctly resolve the module imports, tags match their directory scopes, and compiler options conform to standard Nx config layout.
+
+## Issues or concerns
+None.

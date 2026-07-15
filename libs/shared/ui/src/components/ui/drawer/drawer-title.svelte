@@ -10,6 +10,7 @@
 </script>
 
 <DrawerPrimitive.Title
+	bind:ref
 	data-slot="drawer-title"
 	class={cn("text-foreground text-base font-medium", className)}
 	{...restProps}
