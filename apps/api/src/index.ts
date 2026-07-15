@@ -690,7 +690,7 @@ app.get('/transactions', async (c) => {
   if (classCode) {
     const matchingCats = await db.select({ id: categoriesTable.id })
       .from(categoriesTable)
-      .where(or(eq(categoriesTable.codeRecette, classCode), eq(categoriesTable.codeDepense, classCode)))
+      .where(or(eq(categoriesTable.receiptCode, classCode), eq(categoriesTable.expenseCode, classCode)))
       .all();
     const catIds = matchingCats.map(cat => cat.id);
     if (catIds.length > 0) {
@@ -2851,8 +2851,8 @@ app.post('/categories', async (c) => {
       adminLabel: body.adminLabel,
       adherentLabel: body.adherentLabel,
       hideInExpenses: body.hideInExpenses || false,
-      codeRecette: body.codeRecette,
-      codeDepense: body.codeDepense,
+      receiptCode: body.receiptCode,
+      expenseCode: body.expenseCode,
       createdAt: new Date()
     }).returning().get();
     return c.json({ success: true, data: newCat });
@@ -2873,8 +2873,8 @@ app.put('/categories/:id', async (c) => {
       adminLabel: body.adminLabel,
       adherentLabel: body.adherentLabel,
       hideInExpenses: body.hideInExpenses,
-      codeRecette: body.codeRecette,
-      codeDepense: body.codeDepense
+      receiptCode: body.receiptCode,
+      expenseCode: body.expenseCode
     }).where(eq(categoriesTable.id, id)).returning().get();
 
     if (!updated) {

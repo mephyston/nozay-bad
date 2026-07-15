@@ -647,8 +647,8 @@ describe('Accounting API Endpoints', () => {
     ]).run();
     await db.delete(categoriesTable).run();
     await db.insert(categoriesTable).values([
-      { id: 1, adminLabel: 'Cotisations', adherentLabel: 'Cotis', hideInExpenses: false, codeRecette: '70', codeDepense: null, createdAt: new Date() },
-      { id: 2, adminLabel: 'Achats Volants', adherentLabel: 'Volants', hideInExpenses: false, codeRecette: null, codeDepense: '60', createdAt: new Date() }
+      { id: 1, adminLabel: 'Cotisations', adherentLabel: 'Cotis', hideInExpenses: false, receiptCode: '70', expenseCode: null, createdAt: new Date() },
+      { id: 2, adminLabel: 'Achats Volants', adherentLabel: 'Volants', hideInExpenses: false, receiptCode: null, expenseCode: '60', createdAt: new Date() }
     ]).run();
 
     // 1. Post initial budget

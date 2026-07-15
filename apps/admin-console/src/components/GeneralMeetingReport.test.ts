@@ -31,8 +31,8 @@ describe('GeneralMeetingReport Component', () => {
           { id: '25-26', name: 'Saison 2025-2026', active: true, closed: false }
         ],
         categories: [
-          { id: 1, adminLabel: 'Cotisations membres', adherentLabel: 'Cotis', hideInExpenses: false, codeRecette: '75', codeDepense: '67' },
-          { id: 9, adminLabel: 'Salaires et Charges', adherentLabel: 'Salaires', hideInExpenses: true, codeRecette: null, codeDepense: '64' }
+          { id: 1, adminLabel: 'Cotisations membres', adherentLabel: 'Cotis', hideInExpenses: false, receiptCode: '75', expenseCode: '67' },
+          { id: 9, adminLabel: 'Salaires et Charges', adherentLabel: 'Salaires', hideInExpenses: true, receiptCode: null, expenseCode: '64' }
         ],
       }
     });
@@ -120,8 +120,8 @@ describe('GeneralMeetingReport Component', () => {
           { id: '24-25', name: 'Saison 2024-2025', active: false, closed: true }
         ],
         categories: [
-          { id: 1, adminLabel: 'Cotisations membres', adherentLabel: 'Cotis', hideInExpenses: false, codeRecette: '75', codeDepense: '67' },
-          { id: 9, adminLabel: 'Salaires et Charges', adherentLabel: 'Salaires', hideInExpenses: true, codeRecette: null, codeDepense: '64' }
+          { id: 1, adminLabel: 'Cotisations membres', adherentLabel: 'Cotis', hideInExpenses: false, receiptCode: '75', expenseCode: '67' },
+          { id: 9, adminLabel: 'Salaires et Charges', adherentLabel: 'Salaires', hideInExpenses: true, receiptCode: null, expenseCode: '64' }
         ],
         accountClasses: [
           { code: '75', label: '75 - Cotisations', type: 'recette' },

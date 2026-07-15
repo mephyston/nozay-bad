@@ -17,8 +17,8 @@
     adminLabel: string;
     adherentLabel: string;
     hideInExpenses: boolean;
-    codeRecette?: string | null;
-    codeDepense?: string | null;
+    receiptCode?: string | null;
+    expenseCode?: string | null;
   }
 
   interface AccountClass {
@@ -55,16 +55,16 @@
   let newCatAdminLabel = $state('');
   let newCatAdherentLabel = $state('');
   let newCatHideInExpenses = $state(false);
-  let newCatCodeRecette = $state('');
-  let newCatCodeDepense = $state('');
+  let newCatReceiptCode = $state('');
+  let newCatExpenseCode = $state('');
 
   // Category Edit State
   let editingCatId = $state<number | null>(null);
   let editCatAdminLabel = $state('');
   let editCatAdherentLabel = $state('');
   let editCatHideInExpenses = $state(false);
-  let editCatCodeRecette = $state('');
-  let editCatCodeDepense = $state('');
+  let editCatReceiptCode = $state('');
+  let editCatExpenseCode = $state('');
 
   // --- ACCOUNT CLASSES STATE ---
   let newClassCode = $state('');
@@ -204,8 +204,8 @@
           adminLabel: newCatAdminLabel.trim(),
           adherentLabel: newCatAdherentLabel.trim(),
           hideInExpenses: newCatHideInExpenses,
-          codeRecette: newCatCodeRecette.trim() || null,
-          codeDepense: newCatCodeDepense.trim() || null
+          receiptCode: newCatReceiptCode.trim() || null,
+          expenseCode: newCatExpenseCode.trim() || null
         })
       });
 
@@ -226,8 +226,8 @@
     editCatAdminLabel = cat.adminLabel;
     editCatAdherentLabel = cat.adherentLabel;
     editCatHideInExpenses = cat.hideInExpenses;
-    editCatCodeRecette = cat.codeRecette || '';
-    editCatCodeDepense = cat.codeDepense || '';
+    editCatReceiptCode = cat.receiptCode || '';
+    editCatExpenseCode = cat.expenseCode || '';
   }
 
   // Action: Save Edit Category
@@ -251,8 +251,8 @@
             adminLabel: editCatAdminLabel.trim(),
             adherentLabel: editCatAdherentLabel.trim(),
             hideInExpenses: editCatHideInExpenses,
-            codeRecette: editCatCodeRecette.trim() || null,
-            codeDepense: editCatCodeDepense.trim() || null
+            receiptCode: editCatReceiptCode.trim() || null,
+            expenseCode: editCatExpenseCode.trim() || null
           }
         })
       });
@@ -594,7 +594,7 @@
                   <td class="p-4">
                     {#if editingCatId === cat.id}
                       <select
-                        bind:value={editCatCodeRecette}
+                        bind:value={editCatReceiptCode}
                         class="w-full px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
                       >
                         <option value="">N/A</option>
@@ -603,13 +603,13 @@
                         {/each}
                       </select>
                     {:else}
-                      <span class="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded">{cat.codeRecette || 'N/A'}</span>
+                      <span class="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded">{cat.receiptCode || 'N/A'}</span>
                     {/if}
                   </td>
                   <td class="p-4">
                     {#if editingCatId === cat.id}
                       <select
-                        bind:value={editCatCodeDepense}
+                        bind:value={editCatExpenseCode}
                         class="w-full px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
                       >
                         <option value="">N/A</option>
@@ -618,7 +618,7 @@
                         {/each}
                       </select>
                     {:else}
-                      <span class="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded">{cat.codeDepense || 'N/A'}</span>
+                      <span class="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded">{cat.expenseCode || 'N/A'}</span>
                     {/if}
                   </td>
                   <td class="p-4">
@@ -763,7 +763,7 @@
               <label for="new-cat-recette" class="block text-xs font-bold text-muted-foreground uppercase">Classe Recette (CR)</label>
               <select
                 id="new-cat-recette"
-                bind:value={newCatCodeRecette}
+                bind:value={newCatReceiptCode}
                 class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-medium"
               >
                 <option value="">Aucune (N/A)</option>
@@ -777,7 +777,7 @@
               <label for="new-cat-depense" class="block text-xs font-bold text-muted-foreground uppercase">Classe Dépense (CR)</label>
               <select
                 id="new-cat-depense"
-                bind:value={newCatCodeDepense}
+                bind:value={newCatExpenseCode}
                 class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-medium"
               >
                 <option value="">Aucune (N/A)</option>

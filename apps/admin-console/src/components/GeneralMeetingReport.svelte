@@ -32,8 +32,8 @@
     adminLabel: string;
     adherentLabel: string;
     hideInExpenses: boolean;
-    codeRecette?: string | null;
-    codeDepense?: string | null;
+    receiptCode?: string | null;
+    expenseCode?: string | null;
   }
 
   interface AccountClass {
@@ -77,11 +77,11 @@
       newMap[`${item.categoryId}_${item.type}`] = item.amount;
     }
     for (const cat of categories) {
-      if (cat.codeRecette) {
+      if (cat.receiptCode) {
         const key = `${cat.id}_recette`;
         if (newMap[key] === undefined) newMap[key] = 0;
       }
-      if (cat.codeDepense) {
+      if (cat.expenseCode) {
         const key = `${cat.id}_depense`;
         if (newMap[key] === undefined) newMap[key] = 0;
       }
@@ -92,7 +92,7 @@
   // Helper to get categories matching a class code and flow type
   function getClassCategories(classCode: string, type: 'recette' | 'depense'): DbCategory[] {
     return categories.filter(cat => {
-      const code = type === 'recette' ? cat.codeRecette : cat.codeDepense;
+      const code = type === 'recette' ? cat.receiptCode : cat.expenseCode;
       return code === classCode;
     });
   }
@@ -326,7 +326,7 @@
   function getClassItems(classCode: string, type: 'recette' | 'depense'): { label: string, total: number }[] {
     const items: { label: string, total: number }[] = [];
     for (const cat of categories) {
-      const code = type === 'recette' ? cat.codeRecette : cat.codeDepense;
+      const code = type === 'recette' ? cat.receiptCode : cat.expenseCode;
       if (code === classCode) {
         const total = getCatTotal(cat.id.toString(), type);
         if (total > 0) {

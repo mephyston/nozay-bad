@@ -61,8 +61,8 @@ if (Astro.request.method === 'POST') {
           adminLabel: data.adminLabel,
           adherentLabel: data.adherentLabel,
           hideInExpenses: data.hideInExpenses,
-          codeRecette: data.codeRecette,
-          codeDepense: data.codeDepense
+          receiptCode: data.receiptCode,
+          expenseCode: data.expenseCode
         })
       });
       if (!apiRes.ok) {

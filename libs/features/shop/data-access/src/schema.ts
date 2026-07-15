@@ -1,6 +1,6 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
-import { seasonsTable, transactionsTable } from '@metacult/features-accounting-data-access';
-import { membersTable } from '@metacult/features-members-data-access';
+import { transactionsTable } from '@metacult/features-accounting-data-access';
+import { membersTable, seasonsTable } from '@metacult/features-members-data-access';
 
 export const productsTable = sqliteTable('products', {
   id: integer('id').primaryKey({ autoIncrement: true }),
