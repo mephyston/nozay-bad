@@ -1,10 +1,11 @@
 # Progress Ledger
 
-## Sub-Project: Rapprochement Bancaire de Masse, Multi-match et Ventilation
+## Sub-Project: Backend VSA & Nx Boundaries
 
-*   [x] Task 1 : API Endpoints (Hono)
-*   [x] Task 2 : Svelte UI - Checkboxes & Bulk Action Bar
-*   [x] Task 3 : Svelte UI - Order Basket & Manual Split Form
+*   [ ] Task 10 : Initialize Nx Configuration & Project Metadata
+*   [ ] Task 11 : Create VSA Feature Data-Access Libraries & Split DB Schema
+*   [ ] Task 12 : Rename categories table columns & generate Drizzle migration
+*   [ ] Task 13 : Split Hono API Routes into Vertical Slice API Libraries
 
 ## Ledger Entries
 
@@ -14,9 +15,3 @@
 - Task 7: complete (commits a553e05..5a77028, review clean)
 - Task 8: complete (commits 5a77028..e8c5b35, review clean)
 - Task 9: complete (commits e8c5b35..30ecb1b, review clean)
-
-## Sub-Project: Chèques en circulation et pagination intermédiaire
-
-*   [x] Task 7 : API Changes (Hono backend)
-*   [x] Task 8 : Page Controller Changes (Astro)
-*   [x] Task 9 : UI Enhancement (Svelte 5 component & Tests)
