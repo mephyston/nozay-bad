@@ -1,44 +1,42 @@
-# Task 4 Report: Initialize and Configure Shadcn-Svelte
+# Task 4 Report: Refactor Accounting UI Configuration Components
 
-## What was Implemented
-- Initialized and configured **Shadcn-Svelte** configuration file `components.json` at the repository root.
-- Created `tsconfig.json` at the root extending `tsconfig.base.json` to resolve CLI and TS workspace configurations.
-- Implemented standard Tailwind CSS class merging utility `cn` at `libs/shared/ui/src/lib/utils.ts`.
-- Generated base Shadcn-Svelte component primitives directly within `@metacult/shared-ui`'s directory structure using `npx shadcn-svelte@latest add <component> -y`.
-- Maintained a clean directory structure by storing all components within `libs/shared/ui/src/components/ui`.
-- Updated `@metacult/shared-ui` index barrel (`libs/shared/ui/src/index.ts`) to cleanly export all components.
+## Summary of Changes
 
-## Components and Files Created/Modified
+We have refactored the accounting configuration components (`InitialBalancesConfig.svelte`, `CashBoxManager.svelte`, and `SettingsManager.svelte`) to consume standard Shadcn UI components exported from `@metacult/shared-ui`.
 
-### Added Components & Primitives:
-- **Button**: `libs/shared/ui/src/components/ui/button/` (Svelte components + exports barrel)
-- **Table**: `libs/shared/ui/src/components/ui/table/`
-- **Input**: `libs/shared/ui/src/components/ui/input/`
-- **Badge**: `libs/shared/ui/src/components/ui/badge/`
-- **Alert**: `libs/shared/ui/src/components/ui/alert/`
-- **Card**: `libs/shared/ui/src/components/ui/card/`
-- **Dialog**: `libs/shared/ui/src/components/ui/dialog/`
-- **Drawer**: `libs/shared/ui/src/components/ui/drawer/`
+### InitialBalancesConfig.svelte
+- Replaced the raw styling/div wrapper with `<Card.Root>`, `<Card.Header>`, `<Card.Title>`, `<Card.Description>`, and `<Card.Content>`.
+- Refactored status messages and errors to use `<Alert.Root>` and `<Alert.Description>`.
+- Replaced the three balance input elements with `<Input>` components.
+- Replaced the raw submit button with the standard `<Button>` component.
 
-### Added Configuration & Utilities:
-- `components.json` (Root)
-- `tsconfig.json` (Root, extending base)
-- `libs/shared/ui/src/lib/utils.ts` (Class Merger `cn` helper)
+### CashBoxManager.svelte
+- Replaced the three KPI statistical cards with `<Card.Root>`, `<Card.Title>`, and `<Card.Description>`.
+- Refactored the transactions form wrapper to `<Card.Root>` and fields to `<Input>` and `<Button>`.
+- Replaced transaction messages with `<Alert.Root>` and `<Alert.Description>`.
+- Replaced the HTML `<table>` with the `<Table.Root>`, `<Table.Header>`, `<Table.Body>`, `<Table.Row>`, `<Table.Head>`, and `<Table.Cell>` elements.
+- Replaced the inner "Virement interne" raw span with a standard `<Badge>` component.
+- Replaced the delete actions with standard `<Button>` variant ghost.
 
-### Modified Files:
-- `libs/shared/ui/src/index.ts` (Exporting all generated components)
+### SettingsManager.svelte
+- Integrated `<Tabs.Root>`, `<Tabs.List>`, `<Tabs.Trigger>`, and `<Tabs.Content>` to manage tabs for seasons, compta, and classes.
+- Used local Svelte state `activeView` to manage and dynamically sync the active view query parameter to the URL using `window.history.pushState`.
+- Replaced exercise lists, category tables, and plan account class lists with `<Card.Root>`, `<Table.Root>`, `<Input>`, `<Badge>`, and `<Button>` components.
 
-## Verification Results
-- **TypeScript Typecheck**:
-  - `astro check` on `apps/admin-console` passed with **0 errors, 0 warnings, 0 hints**.
-  - `astro check` on `apps/boutique` passed with **0 errors, 0 warnings, 2 hints** (unrelated unused variable warnings already present in codebase).
-- **Vitest Unit Tests**:
-  - Ran `npx vitest run` successfully.
-  - **131 tests** across **26 test files** passed successfully.
+## Testing & Verification
 
-## Self-Review Findings
-- Verified that all imports inside Svelte components resolving `libs/shared/ui/src/lib/utils.js` are resolved correctly under the Astro JS compiler.
-- Checked that components conform to standard shadcn-svelte specifications and the standard `components.json` layout.
+1. **Vitest Test Suite**: Run:
+   ```bash
+   npx vitest run libs/features/accounting/ui/src/InitialBalancesConfig.test.ts libs/features/accounting/ui/src/CashBoxManager.test.ts libs/features/accounting/ui/src/SettingsManager.test.ts
+   ```
+   **Result**: 5/5 tests PASSED.
 
-## Issues and Concerns
-- A small dependency installation error occurred during the shadcn-svelte CLI command due to conflicting peer dependencies (`@cloudflare/workers-types` and package managers in monorepo). Since the project dependencies are already locked and defined, running with existing dependencies works perfectly and compiles cleanly without errors.
+2. **Project Typecheck**: Run:
+   ```bash
+   npx astro check --root apps/admin-console
+   ```
+   **Result**: 0 errors, 0 warnings, 0 hints.
+
+## Commits
+- Hash: `a785029`
+- Message: `style(accounting-ui): migrate settings, cash-box, and initial balances config to shadcn components`
