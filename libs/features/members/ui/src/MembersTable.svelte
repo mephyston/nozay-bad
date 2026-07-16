@@ -88,6 +88,7 @@
       <Input
         type="text"
         placeholder="Rechercher un adhérent (Nom, Licence...)"
+        aria-label="Rechercher un adhérent par nom ou licence"
         class="pl-9 w-full bg-background"
         bind:value={searchInput}
         onkeydown={handleKeydown}
@@ -106,8 +107,9 @@
         
         <div class="space-y-3">
           <div class="space-y-1.5">
-            <span class="text-xs font-semibold text-muted-foreground">Saison</span>
+            <label for="filter-season" class="text-xs font-semibold text-muted-foreground">Saison</label>
             <select
+              id="filter-season"
               class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
               bind:value={selectedSeason}
               onchange={applyFilters}
@@ -122,8 +124,9 @@
           </div>
 
           <div class="space-y-1.5">
-            <span class="text-xs font-semibold text-muted-foreground">Genre</span>
+            <label for="filter-gender" class="text-xs font-semibold text-muted-foreground">Genre</label>
             <select
+              id="filter-gender"
               class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               bind:value={selectedGender}
               onchange={applyFilters}
@@ -135,8 +138,9 @@
           </div>
 
           <div class="space-y-1.5">
-            <span class="text-xs font-semibold text-muted-foreground">Type d'adhérent</span>
+            <label for="filter-type" class="text-xs font-semibold text-muted-foreground">Type d'adhérent</label>
             <select
+              id="filter-type"
               class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               bind:value={selectedType}
               onchange={applyFilters}
@@ -148,8 +152,9 @@
           </div>
 
           <div class="space-y-1.5">
-            <span class="text-xs font-semibold text-muted-foreground">Statut</span>
+            <label for="filter-status" class="text-xs font-semibold text-muted-foreground">Statut</label>
             <select
+              id="filter-status"
               class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               bind:value={selectedStatus}
               onchange={applyFilters}

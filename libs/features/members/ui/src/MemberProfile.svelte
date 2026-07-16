@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowLeft, User, Mail, Phone, Calendar, Shield, CreditCard, Tag, Landmark, FileText } from 'lucide-svelte';
+  import { ArrowLeft, User, Mail, Phone, Calendar, Shield, Tag, Landmark, FileText } from 'lucide-svelte';
   import { Table, Button, Badge, Card, Tabs } from '@metacult/shared-ui';
 
   interface Member {
@@ -41,19 +41,6 @@
   }
 
   let { member, transactions = [], seasonId = '25-26' }: { member: Member; transactions: GLTransaction[]; seasonId?: string } = $props();
-
-  let cotisationTransactions = $derived(transactions.filter(t => t.category === 'adhesions_inscriptions'));
-  let otherTransactions = $derived(transactions.filter(t => t.category !== 'adhesions_inscriptions'));
-  let totalOtherAmount = $derived(otherTransactions.reduce((sum, t) => sum + t.amount, 0));
-
-  function formatImportedAt(importedAt: string) {
-    if (!importedAt) return '-';
-    const date = new Date(importedAt);
-    return date.toLocaleString('fr-FR', {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    });
-  }
 
   const categoryLabels: Record<string, string> = {
     adhesions_inscriptions: 'Adhésion',
