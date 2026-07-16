@@ -28,73 +28,122 @@
 
   const sidebar = Sidebar.useSidebar();
 
-  const navItems = [
-    { name: "Vue d'ensemble", icon: LayoutDashboard, href: "/admin" },
+  const navGroups = [
     {
-      name: "Adhérents",
-      icon: Users,
-      subItems: [
-        { name: "Liste", href: "/admin/members" },
-        { name: "Import", href: "/admin/members/import" }
+      label: "",
+      items: [
+        { name: "Vue d'ensemble", icon: LayoutDashboard, href: "/admin" },
+        { name: "Note de frais", icon: Coins, href: "/admin/expenses" }
       ]
     },
     {
-      name: "Comptabilité",
-      icon: Receipt,
-      subItems: [
-        { name: "Rapports", href: "/admin/accounting/reports" },
-        { name: "Grand Livre", href: "/admin/accounting" },
-        { name: "Factures", href: "/admin/accounting/invoices" },
-        { name: "Rapprochement bancaire", href: "/admin/accounting/import" },
-        { name: "Remises de chèques", href: "/admin/accounting/cheques" },
-        { name: "Caisse", href: "/admin/accounting/cash-box" },
-        { name: "Soldes initiaux", href: "/admin/accounting/config" }
+      label: "Adhérents",
+      items: [
+        { name: "Liste des adhérents", icon: Users, href: "/admin/members" },
+        { name: "Import Poona", icon: Users, href: "/admin/members/import" }
       ]
     },
     {
-      name: "Boutique",
-      icon: ShoppingBag,
-      subItems: [
-        { name: "Produits", href: "/admin/shop/products" },
-        { name: "Commandes", href: "/admin/shop/orders" }
+      label: "Comptabilité",
+      items: [
+        { name: "Rapports", icon: Receipt, href: "/admin/accounting/reports" },
+        { name: "Grand Livre", icon: Receipt, href: "/admin/accounting" },
+        { name: "Factures", icon: Receipt, href: "/admin/accounting/invoices" },
+        { name: "Rapprochement bancaire", icon: Receipt, href: "/admin/accounting/import" },
+        { name: "Remises de chèques", icon: Receipt, href: "/admin/accounting/cheques" },
+        { name: "Caisse", icon: Receipt, href: "/admin/accounting/cash-box" },
+        { name: "Soldes initiaux", icon: Receipt, href: "/admin/accounting/config" }
       ]
     },
-    { name: "Note de frais", icon: Coins, href: "/admin/expenses" },
     {
-      name: "Réglages",
-      icon: Settings,
-      subItems: [
-        { name: "Saisons", href: "/admin/accounting/settings?view=seasons" },
-        { name: "Catégories", href: "/admin/accounting/settings?view=compta" },
-        { name: "Classes de comptes", href: "/admin/accounting/settings?view=classes" }
+      label: "Boutique",
+      items: [
+        { name: "Produits", icon: ShoppingBag, href: "/admin/shop/products" },
+        { name: "Commandes", icon: ShoppingBag, href: "/admin/shop/orders" }
+      ]
+    },
+    {
+      label: "Réglages",
+      items: [
+        { name: "Saisons", icon: Settings, href: "/admin/accounting/settings?view=seasons" },
+        { name: "Catégories", icon: Settings, href: "/admin/accounting/settings?view=compta" },
+        { name: "Classes de comptes", icon: Settings, href: "/admin/accounting/settings?view=classes" }
       ]
     }
   ];
 
-  // Track expanded submenus
-  let expandedMenus = $state<Record<string, boolean>>({});
+  function isItemActive(item: { name: string, href: string }): boolean {
+    const parts = breadcrumb.split(" / ").map(p => p.trim().toLowerCase());
+    const primary = parts[0];
+    const sub = parts[1];
+
+    if (item.href === "/admin") {
+      return breadcrumb === "Tableau de Bord" || primary === "tableau de bord" || primary === "vue d'ensemble";
+    }
+
+    if (item.href === "/admin/expenses") {
+      return primary === "note de frais" || primary === "notes de frais";
+    }
+
+    // Adhérents
+    if (item.href === "/admin/members") {
+      return primary === "adhérents" && (!sub || sub === "liste");
+    }
+    if (item.href === "/admin/members/import") {
+      return primary === "adhérents" && sub === "import";
+    }
+
+    // Comptabilité
+    if (item.href === "/admin/accounting/reports") {
+      return primary === "comptabilité" && sub === "rapports";
+    }
+    if (item.href === "/admin/accounting") {
+      return primary === "comptabilité" && (!sub || sub === "grand livre");
+    }
+    if (item.href === "/admin/accounting/invoices") {
+      return primary === "comptabilité" && sub === "factures";
+    }
+    if (item.href === "/admin/accounting/import") {
+      return primary === "comptabilité" && sub === "rapprochement bancaire";
+    }
+    if (item.href === "/admin/accounting/cheques") {
+      return primary === "comptabilité" && sub === "remises de chèques";
+    }
+    if (item.href === "/admin/accounting/cash-box") {
+      return primary === "comptabilité" && sub === "caisse";
+    }
+    if (item.href === "/admin/accounting/config") {
+      return primary === "comptabilité" && sub === "soldes initiaux";
+    }
+
+    // Boutique
+    if (item.href === "/admin/shop/products") {
+      return primary === "boutique" && sub === "produits";
+    }
+    if (item.href === "/admin/shop/orders") {
+      return primary === "boutique" && sub === "commandes";
+    }
+
+    // Réglages
+    if (item.href.includes("settings")) {
+      if (item.href.includes("view=seasons")) {
+        return primary === "réglages" && sub === "saisons";
+      }
+      if (item.href.includes("view=compta")) {
+        return primary === "réglages" && sub === "catégories";
+      }
+      if (item.href.includes("view=classes")) {
+        return primary === "réglages" && sub === "classes de comptes";
+      }
+    }
+
+    return false;
+  }
 
   // Parse breadcrumbs
   const breadcrumbParts = $derived(breadcrumb.split(" / "));
   const primaryGroup = $derived(breadcrumbParts[0]?.trim());
   const subGroup = $derived(breadcrumbParts[1]?.trim());
-
-  // Initialize expanded menus from breadcrumbs prop inside onMount to prevent compiler warnings
-  onMount(() => {
-    const initialGroup = breadcrumb.split(" / ")[0]?.trim();
-    if (initialGroup) {
-      expandedMenus[initialGroup] = true;
-      if (initialGroup === "Notes de frais") {
-        expandedMenus["Note de frais"] = true;
-      }
-      expandedMenus = { ...expandedMenus };
-    }
-  });
-
-  function toggleMenu(name: string) {
-    expandedMenus[name] = !expandedMenus[name];
-    expandedMenus = { ...expandedMenus };
-  }
 
   function getBreadcrumbHref(part: string): string | undefined {
     switch (part.toLowerCase().trim()) {
@@ -139,85 +188,24 @@
   </Sidebar.Header>
 
   <!-- Navigation items -->
-  <Sidebar.Content class="p-2">
-    <Sidebar.Group>
-      <Sidebar.GroupLabel class="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden">
-        Navigation
-      </Sidebar.GroupLabel>
-      <Sidebar.GroupContent>
-        <Sidebar.Menu>
-          {#each navItems as item}
-            <Sidebar.MenuItem>
-              {#if item.subItems}
-                <div class="relative group flex flex-col w-full">
-                  <!-- Collapsed Icon Trigger -->
-                  <div class="hidden group-data-[collapsible=icon]:block">
-                    <Sidebar.MenuButton
-                      tooltipContent={item.name}
-                      isActive={item.name === primaryGroup}
-                      class="w-full flex justify-center cursor-pointer border-0 bg-transparent"
-                    >
-                      <item.icon class="h-4 w-4 shrink-0 text-muted-foreground" />
-                    </Sidebar.MenuButton>
-                    <!-- Submenu popup on hover -->
-                    <div class="hidden group-hover:block absolute left-full top-0 ml-2 w-48 bg-card border border-border shadow-lg rounded-lg p-1.5 z-50">
-                      <div class="px-2.5 py-1 text-xs font-bold text-primary border-b border-border/60 pb-1 mb-1">
-                        {item.name}
-                      </div>
-                      {#each item.subItems as sub}
-                        <a
-                          href={sub.href}
-                          class="{sub.name === subGroup && item.name === primaryGroup ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold' : 'font-medium text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50'} block px-2.5 py-1.5 text-xs rounded-md transition-colors"
-                        >
-                          {sub.name}
-                        </a>
-                      {/each}
-                    </div>
-                  </div>
-
-                  <!-- Expanded Menu item -->
-                  <div class="group-data-[collapsible=icon]:hidden">
-                    <button
-                      type="button"
-                      onclick={() => toggleMenu(item.name)}
-                      class="{item.name === primaryGroup ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold' : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'} w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors border-0 bg-transparent text-left cursor-pointer"
-                    >
-                      <span class="flex items-center">
-                        <item.icon class="mr-3 h-4 w-4 shrink-0 text-muted-foreground" />
-                        {item.name}
-                      </span>
-                      {#if expandedMenus[item.name]}
-                        <ChevronUp class="h-3.5 w-3.5 text-muted-foreground" />
-                      {:else}
-                        <ChevronDown class="h-3.5 w-3.5 text-muted-foreground" />
-                      {/if}
-                    </button>
-                    {#if expandedMenus[item.name]}
-                      <div class="pl-7 pr-1 py-1 space-y-1">
-                        {#each item.subItems as sub}
-                          <a
-                            href={sub.href}
-                            class="{sub.name === subGroup && item.name === primaryGroup ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold' : 'font-medium text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50'} block px-3 py-1.5 text-xs rounded-md transition-colors"
-                          >
-                            {sub.name}
-                          </a>
-                        {/each}
-                      </div>
-                    {/if}
-                  </div>
-                </div>
-              {:else}
-                <!-- Single links -->
+  <Sidebar.Content class="p-2 space-y-4">
+    {#each navGroups as group}
+      <Sidebar.Group class="p-0">
+        {#if group.label}
+          <Sidebar.GroupLabel class="px-3 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden">
+            {group.label}
+          </Sidebar.GroupLabel>
+        {/if}
+        <Sidebar.GroupContent>
+          <Sidebar.Menu>
+            {#each group.items as item}
+              <Sidebar.MenuItem>
                 <Sidebar.MenuButton
-                  tooltipContent={item.name}
-                  isActive={item.name === primaryGroup || (item.name === "Vue d'ensemble" && primaryGroup === "Tableau de Bord") || (item.name === "Note de frais" && (primaryGroup === "Note de frais" || primaryGroup === "Notes de frais"))}
+                  isActive={isItemActive(item)}
                 >
                   {#snippet child({ props })}
                     <a
-                      class={props.class}
-                      data-active={props['data-active']}
-                      data-slot={props['data-slot']}
-                      data-sidebar={props['data-sidebar']}
+                      {...props}
                       href={item.href}
                     >
                       <item.icon class="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -225,12 +213,12 @@
                     </a>
                   {/snippet}
                 </Sidebar.MenuButton>
-              {/if}
-            </Sidebar.MenuItem>
-          {/each}
-        </Sidebar.Menu>
-      </Sidebar.GroupContent>
-    </Sidebar.Group>
+              </Sidebar.MenuItem>
+            {/each}
+          </Sidebar.Menu>
+        </Sidebar.GroupContent>
+      </Sidebar.Group>
+    {/each}
   </Sidebar.Content>
 
   <!-- Footer with user info -->
