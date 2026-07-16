@@ -9,7 +9,7 @@
 
 ## Phase 2: UI Components Migration to Shadcn
 - Task 1: complete (commits a2c299a..0ddb334, review clean)
-- Task 2: pending
+- Task 2: complete (commits 57a93cf..f71be4a, review clean)
 - Task 3: pending
 - Task 4: pending
 - Task 5: pending
