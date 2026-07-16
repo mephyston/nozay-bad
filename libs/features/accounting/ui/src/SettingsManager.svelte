@@ -704,24 +704,26 @@
 
                               {#if openDropdownId === cat.id}
                                 <div class="absolute right-4 mt-1 w-32 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border">
-                                  <button
+                                  <Button
+                                    variant="ghost"
                                     type="button"
                                     onclick={(e) => { e.stopPropagation(); startEditCategory(cat); openDropdownId = null; }}
-                                    class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                                    class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent justify-start h-auto rounded-none"
                                   >
                                     <Edit2 class="w-3.5 h-3.5" />
                                     Modifier
-                                  </button>
+                                  </Button>
                                   {#if !defaultCategoryCodes.includes(cat.code)}
-                                    <button
+                                    <Button
+                                      variant="ghost"
                                       type="button"
                                       onclick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id); openDropdownId = null; }}
                                       disabled={isSubmitting}
-                                      class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                                      class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent justify-start h-auto rounded-none"
                                     >
                                       <Trash2 class="w-3.5 h-3.5" />
                                       Supprimer
-                                    </button>
+                                    </Button>
                                   {/if}
                                 </div>
                               {/if}
