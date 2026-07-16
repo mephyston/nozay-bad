@@ -25,3 +25,6 @@ export * as ToggleGroup from './components/ui/toggle-group';
 export * as Popover from './components/ui/popover';
 export * as Command from './components/ui/command';
 export { Calendar } from './components/ui/calendar';
+export * as Sidebar from './components/ui/sidebar';
+export * as Tooltip from './components/ui/tooltip';
+export { Separator } from './components/ui/separator';

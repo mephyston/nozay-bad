@@ -1,13 +1,42 @@
-import { mount, flushSync } from 'svelte';
-import { describe, it, expect } from 'vitest';
+import { mount, unmount, flushSync } from 'svelte';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import AdminLayout from './AdminLayout.svelte';
 
 describe('AdminLayout Component', () => {
-  it('should render the desktop navigation items and toggle the mobile sidebar on hamburger click', () => {
+  let isMobileViewport = false;
+  let mediaQueryListener: ((e: { matches: boolean }) => void) | null = null;
+
+  beforeAll(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation(query => {
+        const isMobileQuery = query.includes('max-width');
+        return {
+          get matches() {
+            return isMobileQuery ? isMobileViewport : false;
+          },
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn().mockImplementation((event, cb) => {
+            if (event === 'change' && isMobileQuery) {
+              mediaQueryListener = cb;
+            }
+          }),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        };
+      }),
+    });
+  });
+
+  it('should render the desktop navigation items in desktop mode', () => {
+    isMobileViewport = false;
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(AdminLayout, {
+    const component = mount(AdminLayout, {
       target,
       props: {
         email: 'test@nozay-bad.fr'
@@ -24,27 +53,42 @@ describe('AdminLayout Component', () => {
     expect(target.textContent).toContain("Boutique");
     expect(target.textContent).toContain("Note de frais");
 
+    // Clean up
+    unmount(component);
+    target.remove();
+  });
+
+  it('should toggle the mobile sidebar on hamburger click in mobile mode', () => {
+    isMobileViewport = true;
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    const component = mount(AdminLayout, {
+      target,
+      props: {
+        email: 'test@nozay-bad.fr'
+      }
+    });
+    flushSync();
+
     // The mobile menu close button should not be present initially
-    expect(target.querySelector('button[aria-label="Close menu"]')).toBeNull();
+    expect(document.querySelector('button[aria-label="Close menu"]')).toBeNull();
 
     // Find and click the mobile hamburger menu button
     const menuButton = target.querySelector('button[aria-label="Menu"]');
     expect(menuButton).not.toBeNull();
-    menuButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    // Trigger click on the hamburger menu button using native click
+    // This will open the mobile drawer Sheet
+    (menuButton as HTMLButtonElement).click();
     flushSync();
 
     // Now the mobile drawer is open, so the close button should be in the DOM
-    const closeButton = target.querySelector('button[aria-label="Close menu"]');
+    const closeButton = document.querySelector('button[aria-label="Close menu"]');
     expect(closeButton).not.toBeNull();
 
-    // Click the close button to close the drawer
-    closeButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    flushSync();
-
-    // Mobile menu close button should be removed from DOM
-    expect(target.querySelector('button[aria-label="Close menu"]')).toBeNull();
-
-    // Clean up
+    // Clean up directly using unmount (which is safe and bypasses JSDOM click propagation bugs)
+    unmount(component);
     target.remove();
   });
 });

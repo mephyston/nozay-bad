@@ -1,44 +1,24 @@
-# Task 1 Report: Refactor Shop UI Components (`ProductsManager.svelte`, `OrdersManager.svelte`)
+# Rapport de Tâche 1 : Rénovation de la Table des Adhérents (MembersTable)
 
-## Overview
+## 1. Ce qui a été implémenté
 
-Task 1 required refactoring the shop components `ProductsManager.svelte` and `OrdersManager.svelte` inside `libs/features/shop/ui/src/` to consume unified Svelte UI primitives (`Button`, `Table`, `Input`, `Badge`, `Card`) exported from `@metacult/shared-ui`.
+Nous avons refactorisé la table des adhérents (`MembersTable.svelte`) pour utiliser les primitives Shadcn Svelte issues de `@metacult/shared-ui` :
+- **Popover** et **Input** ont été intégrés.
+- La barre de filtres (précédemment composée d'une grille de select natifs) a été transformée en un champ de recherche principal avec un bouton de filtres ouvrant un popover contenant les options de filtrage (Saison, Genre, Type, Statut) et un bouton de réinitialisation.
+- Le menu d'actions de chaque ligne de la table a été migré vers un dropdown basé sur le composant `Popover` de `@metacult/shared-ui` à la place d'une div absolue personnalisée, ce qui élimine également le besoin de gérer l'état global et les écouteurs de clics `window` manuellement.
 
-## Refactored Components
+## 2. Tests effectués et résultats
 
-### 1. [ProductsManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/shop/ui/src/ProductsManager.svelte)
-- **Imports Added**: Imported `{ Button, Input, Badge, Card, Table }` from `@metacult/shared-ui`.
-- **Card Migration**: Wrapped the creation/edit form in `<Card.Root>`, `<Card.Header>`, and `<Card.Content>`.
-- **Input Migration**: Migrated the text and number inputs (product name, price, search input) to `<Input>`.
-- **Table Migration**: Replaced the native `<table>` list layout with standard `<Table.Root>`, `<Table.Header>`, `<Table.Row>`, `<Table.Head>`, `<Table.Body>`, and `<Table.Cell>` elements.
-- **Badge Migration**: Replaced inline-styled category badges with `<Badge variant="secondary">`.
-- **Button Migration**: Converted the form submit button, edit cancel button, and dropdown trigger action button to use `<Button>`.
-
-### 2. [OrdersManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/shop/ui/src/OrdersManager.svelte)
-- **Imports Added**: Imported `{ Button, Input, Badge, Card, Table }` from `@metacult/shared-ui`.
-- **Badge Migration**: Migrated payment methods and status labels (Approved, Rejected) to `<Badge>` with appropriate variant styles (e.g. `variant="outline"`, `variant="secondary"`, `variant="destructive"`).
-- **Table Migration**: Refactored the tables in both the "Demandes en attente" (Pending) and "Historique" (History) tabs to use standard `<Table.Root>`, `<Table.Header>`, `<Table.Row>`, `<Table.Head>`, `<Table.Body>`, and `<Table.Cell>` structures.
-- **Button Migration**: Converted tab switches, dropdown triggers (`aria-label="Actions"`), and the action items (Approve, Reject) to use `<Button>`.
-- **Input Migration**: Converted the order search input filter to use `<Input>`.
-
----
-
-## Verification and Testing
-
-### 1. Vitest Test Suite
-Ran: `npx vitest run libs/features/shop/ui`
-Result: **PASS** (7 tests passed across 2 test files)
+Les tests unitaires ont été exécutés et validés avec succès :
+- **Commande** : `npx vitest run libs/features/members/ui/src/MembersTable.test.ts`
+- **Résultat** : 1 test réussi sur 1 fichier de test.
 ```
- ✓  features-shop-ui  src/ProductsManager.test.ts (3 tests) 48ms
- ✓  features-shop-ui  src/OrdersManager.test.ts (4 tests) 83ms
-
- Test Files  2 passed (2)
-      Tests  7 passed (7)
+✓  features-members-ui  src/MembersTable.test.ts (1 test) 36ms
 ```
 
-### 2. TypeScript and Astro Typechecking
-Ran: `npx astro check --root apps/admin-console`
-Result: **PASS** (0 errors, 0 warnings, 0 hints)
+La validation de la compilation Astro et du typage a également été effectuée :
+- **Commande** : `npx astro check --root apps/admin-console`
+- **Résultat** : 0 erreur, 0 avertissement, 0 conseil.
 ```
 Result (29 files): 
 - 0 errors
@@ -46,12 +26,16 @@ Result (29 files):
 - 0 hints
 ```
 
----
+## 3. Preuve TDD
+*(Non requis explicitement pour cette tâche, mais les tests de non-régression passent avec succès).*
 
-## Commit Details
+## 4. Fichiers modifiés
 
-- **Commit Message**: `style(shop-ui): migrate products and orders manager to shadcn components`
-- **Commit SHA**: `60a98b42885b5827b9b7b5ef6f46f075f2569b31`
-- **Modified Files**:
-  - `libs/features/shop/ui/src/OrdersManager.svelte`
-  - `libs/features/shop/ui/src/ProductsManager.svelte`
+- `libs/features/members/ui/src/MembersTable.svelte`
+
+## 5. Résultats de l'auto-revue
+
+- **Complétude** : Toutes les étapes de la tâche 1 ont été entièrement implémentées conformément à la spécification.
+- **Qualité** : Le code est propre, les écouteurs de clics globaux obsolètes et l'état `openDropdownId` ont été supprimés. Les classes CSS correspondent exactement à la spécification.
+- **Discipline** : Seules les modifications demandées ont été effectuées.
+- **Tests** : Les tests confirment que le composant est monté correctement avec les nouveaux éléments.
