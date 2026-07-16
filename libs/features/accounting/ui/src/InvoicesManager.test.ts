@@ -81,7 +81,7 @@ describe('InvoicesManager Component', () => {
     flushSync();
 
     // Verify modal is not showing initially
-    expect(target.innerHTML).not.toContain('Informations Client');
+    expect(document.body.innerHTML).not.toContain('Informations Client');
 
     const createButton = Array.from(target.querySelectorAll('button')).find(
       b => b.textContent?.trim() === 'Créer une facture'
@@ -92,9 +92,9 @@ describe('InvoicesManager Component', () => {
     flushSync();
 
     // Verify modal is now displayed
-    expect(target.innerHTML).toContain('Créer une facture');
-    expect(target.innerHTML).toContain('Informations Client');
-    expect(target.innerHTML).toContain('Nom du Client *');
-    expect(target.innerHTML).toContain('Lignes de facturation');
+    expect(document.body.innerHTML).toContain('Créer une facture');
+    expect(document.body.innerHTML).toContain('Informations Client');
+    expect(document.body.innerHTML).toContain('Nom du Client *');
+    expect(document.body.innerHTML).toContain('Lignes de facturation');
   });
 });

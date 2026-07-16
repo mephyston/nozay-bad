@@ -3,6 +3,7 @@
     Plus, Edit, Trash2, Check, AlertCircle, Search, X, MoreVertical, 
     Printer, Send, Ban, FileText, Mail, MapPin, Calendar, Users, Info
   } from 'lucide-svelte';
+  import { Button, Table, Input, Badge, Card, Dialog, Alert, Textarea } from '@metacult/shared-ui';
 
   interface InvoiceItem {
     id?: number;
@@ -387,436 +388,433 @@
       <p class="text-muted-foreground mt-1">Consultez, éditez et gérez les factures de l'association.</p>
     </div>
     {#if !isClosed}
-      <button 
-        type="button" 
+      <Button 
         onclick={openCreateModal}
-        class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-semibold rounded-lg shadow hover:bg-primary/95 transition-all border-0 cursor-pointer text-sm"
+        class="inline-flex items-center gap-2"
       >
         <Plus class="w-4 h-4" /> Créer une facture
-      </button>
+      </Button>
     {/if}
   </div>
 
   <!-- Filters block -->
-  <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-card border border-border p-4 rounded-xl shadow-sm">
-    <div class="flex flex-wrap items-center gap-3">
-      <div class="flex items-center gap-2">
-        <Calendar class="w-4 h-4 text-muted-foreground" />
-        <span class="text-sm font-semibold text-foreground">Saison :</span>
-      </div>
-      <select
-        value={selectedSeason}
-        onchange={handleSeasonChange}
-        class="bg-background border border-border px-3 py-1.5 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-      >
-        {#each seasons as s}
-          <option value={s.id}>{s.name}</option>
-        {/each}
-      </select>
-      {#if isClosed}
-        <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
-          Saison clôturée (Lecture seule)
-        </span>
-      {/if}
-    </div>
-
-    <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center w-full md:w-auto">
-      <!-- Search input -->
-      <div class="relative w-full sm:w-64">
-        <input
-          type="text"
-          placeholder="Rechercher..."
-          bind:value={searchTerm}
-          class="w-full pl-9 pr-4 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-        />
-        <Search class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+  <Card.Root>
+    <Card.Content class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 p-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-2">
+          <Calendar class="w-4 h-4 text-muted-foreground" />
+          <span class="text-sm font-semibold text-foreground">Saison :</span>
+        </div>
+        <select
+          value={selectedSeason}
+          onchange={handleSeasonChange}
+          class="bg-background border border-border px-3 py-1.5 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+        >
+          {#each seasons as s}
+            <option value={s.id}>{s.name}</option>
+          {/each}
+        </select>
+        {#if isClosed}
+          <Badge variant="outline" class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
+            Saison clôturée (Lecture seule)
+          </Badge>
+        {/if}
       </div>
 
-      <!-- Status selection dropdown -->
-      <select
-        bind:value={statusFilter}
-        class="bg-background border border-border px-3 py-1.5 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground w-full sm:w-auto"
-      >
-        <option value="all">Tous les statuts</option>
-        <option value="draft">Brouillon</option>
-        <option value="sent">Envoyée</option>
-        <option value="paid">Payée</option>
-        <option value="cancelled">Annulée</option>
-      </select>
-    </div>
-  </div>
+      <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center w-full md:w-auto">
+        <!-- Search input -->
+        <div class="relative w-full sm:w-64">
+          <Input
+            type="text"
+            placeholder="Rechercher..."
+            bind:value={searchTerm}
+            class="pl-9"
+          />
+          <Search class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+        </div>
+
+        <!-- Status selection dropdown -->
+        <select
+          bind:value={statusFilter}
+          class="bg-background border border-border px-3 py-1.5 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground w-full sm:w-auto"
+        >
+          <option value="all">Tous les statuts</option>
+          <option value="draft">Brouillon</option>
+          <option value="sent">Envoyée</option>
+          <option value="paid">Payée</option>
+          <option value="cancelled">Annulée</option>
+        </select>
+      </div>
+    </Card.Content>
+  </Card.Root>
 
   <!-- Messages -->
   {#if successMsg}
-    <div class="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm rounded-lg flex items-center gap-2">
+    <Alert.Root class="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
       <Check class="w-4 h-4" />
-      <span>{successMsg}</span>
-    </div>
+      <Alert.Description>{successMsg}</Alert.Description>
+    </Alert.Root>
   {/if}
 
   {#if errorMsg}
-    <div class="p-4 bg-destructive/15 border border-destructive text-destructive text-sm rounded-lg flex items-center gap-2">
+    <Alert.Root variant="destructive">
       <AlertCircle class="w-4 h-4 font-bold shrink-0" />
-      <span>{errorMsg}</span>
-    </div>
+      <Alert.Description>{errorMsg}</Alert.Description>
+    </Alert.Root>
   {/if}
 
   <!-- Invoices List -->
   {#if filteredInvoices.length === 0}
-    <div class="text-center py-16 bg-card border border-border rounded-xl">
-      <FileText class="w-12 h-12 text-muted-foreground/60 mx-auto mb-3" />
-      <h3 class="text-lg font-bold text-foreground">Aucune facture trouvée</h3>
-      <p class="text-sm text-muted-foreground mt-1">Aucune facture ne correspond aux critères sélectionnés.</p>
-    </div>
+    <Card.Root class="text-center py-16">
+      <Card.Content>
+        <FileText class="w-12 h-12 text-muted-foreground/60 mx-auto mb-3" />
+        <h3 class="text-lg font-bold text-foreground">Aucune facture trouvée</h3>
+        <p class="text-sm text-muted-foreground mt-1">Aucune facture ne correspond aux critères sélectionnés.</p>
+      </Card.Content>
+    </Card.Root>
   {:else}
-    <div class="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-      <div class="overflow-x-auto min-h-[240px]">
-        <table class="w-full text-left border-collapse text-sm">
-          <thead>
-            <tr class="bg-muted/40 border-b border-border text-muted-foreground font-semibold">
-              <th class="p-4">N° Facture</th>
-              <th class="p-4">Client</th>
-              <th class="p-4">Objet</th>
-              <th class="p-4">Date</th>
-              <th class="p-4">Échéance</th>
-              <th class="p-4 text-right">Montant</th>
-              <th class="p-4 text-center">Statut</th>
-              <th class="p-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-border">
-            {#each filteredInvoices as inv (inv.id)}
-              <tr class="hover:bg-muted/10 transition-colors">
-                <td class="p-4 font-mono font-bold text-foreground">{inv.invoiceNumber}</td>
-                <td class="p-4 font-semibold text-foreground">{inv.clientName}</td>
-                <td class="p-4 text-muted-foreground max-w-xs truncate">{inv.subject || '—'}</td>
-                <td class="p-4 text-muted-foreground">{inv.date}</td>
-                <td class="p-4 text-muted-foreground">{inv.dueDate}</td>
-                <td class="p-4 text-right font-bold text-foreground">{(inv.totalAmount / 100).toFixed(2)} €</td>
-                <td class="p-4 text-center">
-                  <span class={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${statusColors[inv.status]}`}>
-                    {statusLabels[inv.status]}
-                  </span>
-                </td>
-                <td class="p-4 text-right relative">
-                  <div class="inline-flex items-center justify-end gap-1.5">
-                    <button
-                      type="button"
-                      onclick={() => handlePrint(inv.id)}
-                      title="Imprimer"
-                      class="p-1.5 bg-transparent border-0 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
-                    >
-                      <Printer class="w-4 h-4" />
-                    </button>
-                    {#if !isClosed}
-                      <div class="relative inline-block">
-                        <button
-                          type="button"
-                          onclick={(e) => toggleMenu(inv.id, e)}
-                          class="p-1.5 bg-transparent border-0 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
-                        >
-                          <MoreVertical class="w-4 h-4" />
-                        </button>
-                        {#if openMenuId === inv.id}
-                          <div class="absolute right-0 mt-1 w-48 bg-card border border-border rounded-lg shadow-lg z-20 overflow-hidden text-left animate-in fade-in duration-200">
-                            {#if inv.status === 'draft'}
-                              <button
-                                type="button"
-                                onclick={() => openEditModal(inv)}
-                                class="w-full px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted flex items-center gap-2 border-0 bg-transparent cursor-pointer"
-                              >
-                                <Edit class="w-3.5 h-3.5" /> Modifier
-                              </button>
-                              <button
-                                type="button"
-                                onclick={() => handleStatusChange(inv.id, 'sent')}
-                                class="w-full px-4 py-2 text-xs font-semibold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 flex items-center gap-2 border-0 bg-transparent cursor-pointer"
-                              >
-                                <Send class="w-3.5 h-3.5" /> Marquer envoyée
-                              </button>
-                              <button
-                                type="button"
-                                onclick={() => handleStatusChange(inv.id, 'cancelled')}
-                                class="w-full px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 flex items-center gap-2 border-0 bg-transparent cursor-pointer"
-                              >
-                                <Ban class="w-3.5 h-3.5" /> Annuler la facture
-                              </button>
-                              <button
-                                type="button"
-                                onclick={() => handleDelete(inv.id, inv.invoiceNumber)}
-                                class="w-full px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 flex items-center gap-2 border-0 bg-transparent cursor-pointer"
-                              >
-                                <Trash2 class="w-3.5 h-3.5" /> Supprimer
-                              </button>
-                            {/if}
-                            {#if inv.status === 'sent'}
-                              <button
-                                type="button"
-                                onclick={() => handleStatusChange(inv.id, 'cancelled')}
-                                class="w-full px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 flex items-center gap-2 border-0 bg-transparent cursor-pointer"
-                              >
-                                <Ban class="w-3.5 h-3.5" /> Annuler la facture
-                              </button>
-                            {/if}
-                            {#if inv.status === 'cancelled'}
-                              <button
-                                type="button"
-                                onclick={() => handleDelete(inv.id, inv.invoiceNumber)}
-                                class="w-full px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 flex items-center gap-2 border-0 bg-transparent cursor-pointer"
-                              >
-                                <Trash2 class="w-3.5 h-3.5" /> Supprimer
-                              </button>
-                            {/if}
-                          </div>
-                        {/if}
-                      </div>
-                    {/if}
-                  </div>
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <Card.Root class="overflow-hidden shadow-sm">
+      <Card.Content class="p-0">
+        <div class="overflow-x-auto min-h-[240px]">
+          <Table.Root class="w-full text-left border-collapse text-sm">
+            <Table.Header class="bg-muted/40 border-b border-border text-muted-foreground font-semibold">
+              <Table.Row>
+                <Table.Head class="p-4">N° Facture</Table.Head>
+                <Table.Head class="p-4">Client</Table.Head>
+                <Table.Head class="p-4">Objet</Table.Head>
+                <Table.Head class="p-4">Date</Table.Head>
+                <Table.Head class="p-4">Échéance</Table.Head>
+                <Table.Head class="p-4 text-right">Montant</Table.Head>
+                <Table.Head class="p-4 text-center">Statut</Table.Head>
+                <Table.Head class="p-4 text-right">Actions</Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body class="divide-y divide-border">
+              {#each filteredInvoices as inv (inv.id)}
+                <Table.Row class="hover:bg-muted/10 transition-colors">
+                  <Table.Cell class="p-4 font-mono font-bold text-foreground">{inv.invoiceNumber}</Table.Cell>
+                  <Table.Cell class="p-4 font-semibold text-foreground">{inv.clientName}</Table.Cell>
+                  <Table.Cell class="p-4 text-muted-foreground max-w-xs truncate">{inv.subject || '—'}</Table.Cell>
+                  <Table.Cell class="p-4 text-muted-foreground">{inv.date}</Table.Cell>
+                  <Table.Cell class="p-4 text-muted-foreground">{inv.dueDate}</Table.Cell>
+                  <Table.Cell class="p-4 text-right font-bold text-foreground">{(inv.totalAmount / 100).toFixed(2)} €</Table.Cell>
+                  <Table.Cell class="p-4 text-center">
+                    <Badge variant="outline" class={statusColors[inv.status]}>
+                      {statusLabels[inv.status]}
+                    </Badge>
+                  </Table.Cell>
+                  <Table.Cell class="p-4 text-right relative">
+                    <div class="inline-flex items-center justify-end gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onclick={() => handlePrint(inv.id)}
+                        title="Imprimer"
+                        class="p-1.5"
+                      >
+                        <Printer class="w-4 h-4" />
+                      </Button>
+                      {#if !isClosed}
+                        <div class="relative inline-block">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onclick={(e) => toggleMenu(inv.id, e)}
+                            class="p-1.5"
+                          >
+                            <MoreVertical class="w-4 h-4" />
+                          </Button>
+                          {#if openMenuId === inv.id}
+                            <div class="absolute right-0 mt-1 w-48 bg-card border border-border rounded-lg shadow-lg z-20 overflow-hidden text-left animate-in fade-in duration-200">
+                              {#if inv.status === 'draft'}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onclick={() => openEditModal(inv)}
+                                  class="w-full justify-start rounded-none px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted flex items-center gap-2 border-0 bg-transparent cursor-pointer"
+                                >
+                                  <Edit class="w-3.5 h-3.5" /> Modifier
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onclick={() => handleStatusChange(inv.id, 'sent')}
+                                  class="w-full justify-start rounded-none px-4 py-2 text-xs font-semibold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 flex items-center gap-2 border-0 bg-transparent cursor-pointer"
+                                >
+                                  <Send class="w-3.5 h-3.5" /> Marquer envoyée
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onclick={() => handleStatusChange(inv.id, 'cancelled')}
+                                  class="w-full justify-start rounded-none px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 flex items-center gap-2 border-0 bg-transparent cursor-pointer"
+                                >
+                                  <Ban class="w-3.5 h-3.5" /> Annuler la facture
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onclick={() => handleDelete(inv.id, inv.invoiceNumber)}
+                                  class="w-full justify-start rounded-none px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 flex items-center gap-2 border-0 bg-transparent cursor-pointer"
+                                >
+                                  <Trash2 class="w-3.5 h-3.5" /> Supprimer
+                                </Button>
+                              {/if}
+                              {#if inv.status === 'sent'}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onclick={() => handleStatusChange(inv.id, 'cancelled')}
+                                  class="w-full justify-start rounded-none px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 flex items-center gap-2 border-0 bg-transparent cursor-pointer"
+                                >
+                                  <Ban class="w-3.5 h-3.5" /> Annuler la facture
+                                </Button>
+                              {/if}
+                              {#if inv.status === 'cancelled'}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onclick={() => handleDelete(inv.id, inv.invoiceNumber)}
+                                  class="w-full justify-start rounded-none px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 flex items-center gap-2 border-0 bg-transparent cursor-pointer"
+                                >
+                                  <Trash2 class="w-3.5 h-3.5" /> Supprimer
+                                </Button>
+                              {/if}
+                            </div>
+                          {/if}
+                        </div>
+                      {/if}
+                    </div>
+                  </Table.Cell>
+                </Table.Row>
+              {/each}
+            </Table.Body>
+          </Table.Root>
+        </div>
+      </Card.Content>
+    </Card.Root>
   {/if}
 </div>
 
 <!-- Modal Create / Edit -->
-{#if showModal}
-  <div class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-    <div class="bg-card border border-border rounded-2xl max-w-4xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-      <!-- Header -->
-      <div class="border-b border-border px-6 py-4 flex justify-between items-center bg-muted/20">
-        <h3 class="font-bold text-lg text-foreground flex items-center gap-2">
-          <FileText class="w-5 h-5 text-primary" />
-          {editingId ? 'Modifier la facture' : 'Créer une facture'}
-        </h3>
-        <button
-          type="button"
-          onclick={() => showModal = false}
-          class="text-muted-foreground hover:text-foreground hover:bg-muted p-1.5 rounded-lg transition-colors bg-transparent border-0 cursor-pointer"
-        >
-          <X class="w-5 h-5" />
-        </button>
-      </div>
+<Dialog.Root bind:open={showModal}>
+  <Dialog.Content class="max-w-4xl p-0 bg-card border-border overflow-hidden">
+    <Dialog.Header class="p-6 border-b border-border">
+      <Dialog.Title class="flex items-center gap-2">
+        <FileText class="w-5 h-5 text-primary" />
+        {editingId ? 'Modifier la facture' : 'Créer une facture'}
+      </Dialog.Title>
+      <Dialog.Description class="hidden">Création ou modification des factures NBA 91.</Dialog.Description>
+    </Dialog.Header>
 
-      <!-- Scrollable content -->
-      <form onsubmit={handleSubmit} class="flex flex-col flex-1 overflow-hidden">
-        <div class="p-6 overflow-y-auto space-y-6 flex-1">
-          <!-- Client Information -->
-          <div class="space-y-4">
-            <h4 class="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-1">Informations Client</h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="space-y-1.5">
-                <label for="clientName" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Nom du Client *</label>
-                <input
-                  type="text"
-                  id="clientName"
-                  bind:value={clientName}
-                  placeholder="Ex: Mairie de Nozay ou Nom d'entreprise"
-                  class="w-full px-3 py-2 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-                  required
-                />
-              </div>
-              <div class="space-y-1.5">
-                <label for="clientEmail" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Email du Client</label>
-                <div class="relative">
-                  <input
-                    type="email"
-                    id="clientEmail"
-                    bind:value={clientEmail}
-                    placeholder="client@domaine.com"
-                    class="w-full pl-9 pr-3 py-2 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-                  />
-                  <Mail class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                </div>
-              </div>
+    <!-- Scrollable content -->
+    <form onsubmit={handleSubmit} class="flex flex-col flex-1 overflow-hidden">
+      <div class="p-6 overflow-y-auto space-y-6 flex-1 max-h-[60vh]">
+        <!-- Client Information -->
+        <div class="space-y-4">
+          <h4 class="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-1">Informations Client</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <label for="clientName" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Nom du Client *</label>
+              <Input
+                type="text"
+                id="clientName"
+                bind:value={clientName}
+                placeholder="Ex: Mairie de Nozay ou Nom d'entreprise"
+                required
+              />
             </div>
             <div class="space-y-1.5">
-              <label for="clientAddress" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Adresse du Client</label>
+              <label for="clientEmail" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Email du Client</label>
               <div class="relative">
-                <textarea
-                  id="clientAddress"
-                  bind:value={clientAddress}
-                  placeholder="Adresse complète..."
-                  rows="2"
-                  class="w-full pl-9 pr-3 py-2 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-                ></textarea>
-                <MapPin class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="email"
+                  id="clientEmail"
+                  bind:value={clientEmail}
+                  placeholder="client@domaine.com"
+                  class="pl-9"
+                />
+                <Mail class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
               </div>
             </div>
           </div>
+          <div class="space-y-1.5">
+            <label for="clientAddress" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Adresse du Client</label>
+            <div class="relative">
+              <Textarea
+                id="clientAddress"
+                bind:value={clientAddress}
+                placeholder="Adresse complète..."
+                rows={2}
+                class="pl-9"
+              />
+              <MapPin class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+            </div>
+          </div>
+        </div>
 
-          <!-- Invoice Details -->
-          <div class="space-y-4">
-            <h4 class="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-1">Détails de la Facture</h4>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="space-y-1.5">
-                <label for="date" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Date d'émission *</label>
-                <input
-                  type="date"
-                  id="date"
-                  bind:value={date}
-                  class="w-full px-3 py-2 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-                  required
-                />
-              </div>
-              <div class="space-y-1.5">
-                <label for="dueDate" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Date d'échéance *</label>
-                <input
-                  type="date"
-                  id="dueDate"
-                  bind:value={dueDate}
-                  class="w-full px-3 py-2 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-                  required
-                />
-              </div>
-              <div class="space-y-1.5">
-                <label for="subject" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Objet / Titre</label>
-                <input
+        <!-- Invoice Details -->
+        <div class="space-y-4">
+          <h4 class="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-1">Détails de la Facture</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="space-y-1.5">
+              <label for="date" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Date d'émission *</label>
+              <Input
+                type="date"
+                id="date"
+                bind:value={date}
+                required
+              />
+            </div>
+            <div class="space-y-1.5">
+              <label for="dueDate" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Date d'échéance *</label>
+              <Input
+                type="date"
+                id="dueDate"
+                bind:value={dueDate}
+                required
+              />
+            </div>
+            <div class="space-y-1.5">
+              <label for="subject" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Objet / Titre</label>
+              <Input
+                type="text"
+                id="subject"
+                bind:value={subject}
+                placeholder="Ex: Subvention annuelle 2026"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="space-y-1.5">
+              <label for="location" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Lieu de l'activité</label>
+              <Input
+                type="text"
+                id="location"
+                bind:value={location}
+                placeholder="Ex: Halle des Sports"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <label for="period" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Période concernée</label>
+              <Input
+                type="text"
+                id="period"
+                bind:value={period}
+                placeholder="Ex: Juillet 2026"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <label for="attendees" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Bénéficiaires / Personnes</label>
+              <div class="relative">
+                <Input
                   type="text"
-                  id="subject"
-                  bind:value={subject}
-                  placeholder="Ex: Subvention annuelle 2026"
-                  class="w-full px-3 py-2 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+                  id="attendees"
+                  bind:value={attendees}
+                  placeholder="Ex: 15 Joueurs Jeunes"
+                  class="pl-9"
                 />
+                <Users class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
               </div>
             </div>
+          </div>
+        </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="space-y-1.5">
-                <label for="location" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Lieu de l'activité</label>
-                <input
-                  type="text"
-                  id="location"
-                  bind:value={location}
-                  placeholder="Ex: Halle des Sports"
-                  class="w-full px-3 py-2 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <label for="period" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Période concernée</label>
-                <input
-                  type="text"
-                  id="period"
-                  bind:value={period}
-                  placeholder="Ex: Juillet 2026"
-                  class="w-full px-3 py-2 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <label for="attendees" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Bénéficiaires / Personnes</label>
-                <div class="relative">
-                  <input
+        <!-- Line Items -->
+        <div class="space-y-4">
+          <div class="flex justify-between items-center border-b border-border pb-1">
+            <h4 class="text-sm font-bold text-primary uppercase tracking-wider">Prestations / Lignes de facturation</h4>
+            <Button
+              variant="ghost"
+              size="sm"
+              onclick={addItem}
+              class="px-2.5 py-1 text-xs bg-primary/10 text-primary font-bold hover:bg-primary/20 rounded transition-colors flex items-center gap-1 cursor-pointer border-0 animate-none"
+            >
+              <Plus class="w-3.5 h-3.5" /> Ajouter une ligne
+            </Button>
+          </div>
+
+          <div class="space-y-3">
+            {#each items as item, index}
+              <div class="grid grid-cols-12 gap-3 items-end bg-muted/10 p-3 rounded-lg border border-border/60">
+                <div class="col-span-12 sm:col-span-6 space-y-1">
+                  <label for="item-desc-{index}" class="block text-[10px] font-bold text-muted-foreground uppercase">Description *</label>
+                  <Input
                     type="text"
-                    id="attendees"
-                    bind:value={attendees}
-                    placeholder="Ex: 15 Joueurs Jeunes"
-                    class="w-full pl-9 pr-3 py-2 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+                    id="item-desc-{index}"
+                    bind:value={item.description}
+                    placeholder="Ex: Entraînements encadrés..."
+                    required
                   />
-                  <Users class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                </div>
+                <div class="col-span-4 sm:col-span-2 space-y-1">
+                  <label for="item-qty-{index}" class="block text-[10px] font-bold text-muted-foreground uppercase">Qté *</label>
+                  <Input
+                    type="number"
+                    id="item-qty-{index}"
+                    bind:value={item.quantity}
+                    min="1"
+                    class="text-center"
+                    required
+                  />
+                </div>
+                <div class="col-span-5 sm:col-span-3 space-y-1">
+                  <label for="item-price-{index}" class="block text-[10px] font-bold text-muted-foreground uppercase">Prix unitaire (€) *</label>
+                  <Input
+                    type="number"
+                    id="item-price-{index}"
+                    step="0.01"
+                    min="0"
+                    bind:value={item.unitPriceStr}
+                    placeholder="0.00"
+                    class="text-right"
+                    required
+                  />
+                </div>
+                <div class="col-span-3 sm:col-span-1 text-center pb-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onclick={() => removeItem(index)}
+                    class="p-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded cursor-pointer border-0 bg-transparent"
+                    title="Supprimer la ligne"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <!-- Line Items -->
-          <div class="space-y-4">
-            <div class="flex justify-between items-center border-b border-border pb-1">
-              <h4 class="text-sm font-bold text-primary uppercase tracking-wider">Prestations / Lignes de facturation</h4>
-              <button
-                type="button"
-                onclick={addItem}
-                class="px-2.5 py-1 text-xs bg-primary/10 text-primary font-bold hover:bg-primary/20 rounded transition-colors flex items-center gap-1 cursor-pointer border-0"
-              >
-                <Plus class="w-3.5 h-3.5" /> Ajouter une ligne
-              </button>
-            </div>
-
-            <div class="space-y-3">
-              {#each items as item, index}
-                <div class="grid grid-cols-12 gap-3 items-end bg-muted/10 p-3 rounded-lg border border-border/60">
-                  <div class="col-span-12 sm:col-span-6 space-y-1">
-                    <label for="item-desc-{index}" class="block text-[10px] font-bold text-muted-foreground uppercase">Description *</label>
-                    <input
-                      type="text"
-                      id="item-desc-{index}"
-                      bind:value={item.description}
-                      placeholder="Ex: Entraînements encadrés..."
-                      class="w-full px-3 py-1.5 border border-border bg-background rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-                      required
-                    />
-                  </div>
-                  <div class="col-span-4 sm:col-span-2 space-y-1">
-                    <label for="item-qty-{index}" class="block text-[10px] font-bold text-muted-foreground uppercase">Qté *</label>
-                    <input
-                      type="number"
-                      id="item-qty-{index}"
-                      bind:value={item.quantity}
-                      min="1"
-                      class="w-full px-3 py-1.5 border border-border bg-background rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground text-center"
-                      required
-                    />
-                  </div>
-                  <div class="col-span-5 sm:col-span-3 space-y-1">
-                    <label for="item-price-{index}" class="block text-[10px] font-bold text-muted-foreground uppercase">Prix unitaire (€) *</label>
-                    <input
-                      type="number"
-                      id="item-price-{index}"
-                      step="0.01"
-                      min="0"
-                      bind:value={item.unitPriceStr}
-                      placeholder="0.00"
-                      class="w-full px-3 py-1.5 border border-border bg-background rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground text-right"
-                      required
-                    />
-                  </div>
-                  <div class="col-span-3 sm:col-span-1 text-center pb-1">
-                    <button
-                      type="button"
-                      onclick={() => removeItem(index)}
-                      class="p-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded cursor-pointer border-0 bg-transparent"
-                      title="Supprimer la ligne"
-                    >
-                      <Trash2 class="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              {/each}
-            </div>
+            {/each}
           </div>
         </div>
+      </div>
 
-        <!-- Footer -->
-        <div class="border-t border-border px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 bg-muted/20">
-          <div class="text-sm text-foreground flex items-center gap-2">
-            <Info class="w-4 h-4 text-muted-foreground" />
-            <span>Total calculé : <strong class="text-base text-primary">{(itemsTotal / 100).toFixed(2)} €</strong></span>
-          </div>
-
-          <div class="flex gap-3">
-            <button
-              type="button"
-              onclick={() => showModal = false}
-              class="px-4 py-2 bg-background hover:bg-muted border border-border text-sm font-semibold rounded-lg transition-colors cursor-pointer text-foreground"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              class="px-4 py-2 bg-primary hover:bg-primary/95 text-primary-foreground text-sm font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-50 border-0"
-            >
-              {#if isSubmitting}
-                Enregistrement...
-              {:else}
-                Enregistrer
-              {/if}
-            </button>
-          </div>
+      <!-- Footer -->
+      <Dialog.Footer class="border-t border-border px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 bg-muted/20">
+        <div class="text-sm text-foreground flex items-center gap-2">
+          <Info class="w-4 h-4 text-muted-foreground" />
+          <span>Total calculé : <strong class="text-base text-primary">{(itemsTotal / 100).toFixed(2)} €</strong></span>
         </div>
-      </form>
-    </div>
-  </div>
-{/if}
+
+        <div class="flex gap-3">
+          <Button
+            variant="outline"
+            onclick={() => showModal = false}
+          >
+            Annuler
+          </Button>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+          >
+            {#if isSubmitting}
+              Enregistrement...
+            {:else}
+              Enregistrer
+            {/if}
+          </Button>
+        </div>
+      </Dialog.Footer>
+    </form>
+  </Dialog.Content>
+</Dialog.Root>
