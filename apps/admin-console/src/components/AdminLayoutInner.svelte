@@ -170,7 +170,7 @@
   }
 </script>
 
-<Sidebar.Root collapsible="icon">
+<Sidebar.Root collapsible="icon" variant="inset">
   <!-- Header -->
   <Sidebar.Header class="p-2 border-0 bg-transparent">
     <div class="flex items-center w-full justify-between gap-1">
