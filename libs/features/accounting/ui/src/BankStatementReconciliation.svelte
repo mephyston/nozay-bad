@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Upload, Check, AlertCircle, Trash2, ShieldAlert, Sparkles, RefreshCw } from 'lucide-svelte';
+  import { Button, Table, Input, Badge, Card, Dialog, Tabs } from '@metacult/shared-ui';
 
   interface BankTransaction {
     id: number;
@@ -1006,114 +1007,45 @@
         <p class="text-xs text-muted-foreground">Pointez les lignes de relevé Société Générale avec le grand livre ou les adhérents.</p>
       </div>
       {#if isClosed}
-        <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
+        <Badge variant="outline" class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
           Saison clôturée (Lecture seule)
-        </span>
+        </Badge>
       {/if}
     </div>
     {#if bankTransactions.length > 0 && !isClosed}
-      <button 
+      <Button 
         type="button"
         onclick={() => showImportModal = true}
-        class="inline-flex items-center gap-1.5 px-3 py-2 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-semibold rounded-md shadow cursor-pointer border-0"
+        class="inline-flex items-center gap-1.5 text-xs font-semibold"
       >
         <Upload class="w-3.5 h-3.5" />
-        Importer un autre relevé (.ofx)
-      </button>
+        Importer un relevé (.ofx)
+      </Button>
     {/if}
   </div>
 
-  {#if showImportModal}
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div class="bg-card border border-border rounded-xl p-6 shadow-xl max-w-md w-full animate-in zoom-in-95 duration-200">
-        <div class="flex items-center justify-between mb-4 border-b border-border pb-3">
-          <h2 class="text-md font-bold flex items-center gap-2">
-            <Upload class="w-4 h-4 text-primary" />
-            Importer un relevé Société Générale
-          </h2>
-          <button 
-            type="button" 
-            onclick={() => showImportModal = false} 
-            class="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted border-0 cursor-pointer"
-          >
-            ✕
-          </button>
-        </div>
+  <Dialog.Root bind:open={showImportModal}>
+    <Dialog.Content class="max-w-md p-6 bg-card border-border shadow-xl">
+      <Dialog.Header class="mb-4 border-b border-border pb-3">
+        <Dialog.Title class="text-md font-bold flex items-center gap-2">
+          <Upload class="w-4 h-4 text-primary" />
+          Importer un relevé Société Générale
+        </Dialog.Title>
+        <Dialog.Description class="hidden">Importation de relevés bancaires OFX.</Dialog.Description>
+      </Dialog.Header>
 
-        {#if errorMsg}
-          <div class="p-3 mb-4 bg-destructive/15 border border-destructive text-destructive text-xs rounded-md flex items-center gap-2">
-            <AlertCircle class="w-4 h-4" />
-            <span>{errorMsg}</span>
-          </div>
-        {/if}
-
-        <form onsubmit={handleImport} class="space-y-4">
-          <div class="space-y-3">
-            <div>
-              <label for="season-select-modal" class="block text-xs font-semibold mb-1">Saison comptable</label>
-              <select id="season-select-modal" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium" bind:value={selectedSeason}>
-                {#each seasons as s}
-                  <option value={s.id}>{s.name}</option>
-                {/each}
-                {#if seasons.length === 0}
-                  <option value="25-26">Saison 2025-2026</option>
-                {/if}
-              </select>
-            </div>
-            <div>
-              <label for="account-select-modal" class="block text-xs font-semibold mb-1">Compte de destination</label>
-              <select id="account-select-modal" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium" bind:value={selectedAccount}>
-                <option value="auto">Détecter automatiquement (depuis le fichier)</option>
-                <option value="current">Compte Courant (Société Générale)</option>
-                <option value="savings">Livret d'Épargne</option>
-              </select>
-            </div>
-            <div>
-              <label for="file-input-modal" class="block text-xs font-semibold mb-1">Fichier (.ofx)</label>
-              <input id="file-input-modal" type="file" accept=".ofx" class="w-full text-sm" required />
-            </div>
-          </div>
-
-          <div class="pt-4 border-t border-border flex justify-end gap-2">
-            <button 
-              type="button" 
-              onclick={() => showImportModal = false} 
-              class="px-4 py-2 border border-border hover:bg-accent text-foreground text-xs font-semibold rounded-md cursor-pointer bg-transparent"
-            >
-              Annuler
-            </button>
-            <button 
-              type="submit" 
-              disabled={isSubmitting} 
-              class="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-md shadow hover:bg-primary/95 cursor-pointer border-0"
-            >
-              <Upload class="w-3.5 h-3.5" />
-              {isSubmitting ? 'Importation...' : 'Lancer l\'importation'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  {/if}
-
-  {#if bankTransactions.length === 0}
-    <!-- Zone d'Importation initiale -->
-    <div class="bg-card border border-border rounded-xl p-8 shadow-sm max-w-xl animate-in fade-in-50 duration-200">
-      <h2 class="text-lg font-semibold mb-4 font-bold flex items-center gap-2">
-        <Upload class="w-5 h-5 text-primary" />
-        Importer un relevé Société Générale
-      </h2>
       {#if errorMsg}
-        <div class="p-3 mb-4 bg-destructive/15 border border-destructive text-destructive text-sm rounded-md flex items-center gap-2">
+        <div class="p-3 mb-4 bg-destructive/15 border border-destructive text-destructive text-xs rounded-md flex items-center gap-2">
           <AlertCircle class="w-4 h-4" />
           <span>{errorMsg}</span>
         </div>
       {/if}
+
       <form onsubmit={handleImport} class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="space-y-3">
           <div>
-            <label for="season-select" class="block text-xs font-semibold mb-1">Saison comptable</label>
-            <select id="season-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium" bind:value={selectedSeason}>
+            <label for="season-select-modal" class="block text-xs font-semibold mb-1">Saison comptable</label>
+            <select id="season-select-modal" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium" bind:value={selectedSeason}>
               {#each seasons as s}
                 <option value={s.id}>{s.name}</option>
               {/each}
@@ -1123,96 +1055,129 @@
             </select>
           </div>
           <div>
-            <label for="account-select" class="block text-xs font-semibold mb-1">Compte de destination</label>
-            <select id="account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium" bind:value={selectedAccount}>
-              <option value="auto">Détecter automatiquement</option>
+            <label for="account-select-modal" class="block text-xs font-semibold mb-1">Compte de destination</label>
+            <select id="account-select-modal" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium" bind:value={selectedAccount}>
+              <option value="auto">Détecter automatiquement (depuis le fichier)</option>
               <option value="current">Compte Courant (Société Générale)</option>
               <option value="savings">Livret d'Épargne</option>
             </select>
           </div>
           <div>
-            <label for="file-input" class="block text-xs font-semibold mb-1">Fichier (.ofx)</label>
-            <input id="file-input" type="file" accept=".ofx" class="w-full text-sm mt-1.5" required />
+            <label for="file-input-modal" class="block text-xs font-semibold mb-1">Fichier (.ofx)</label>
+            <Input id="file-input-modal" type="file" accept=".ofx" class="w-full text-sm" required />
           </div>
         </div>
-        <button type="submit" disabled={isSubmitting} class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-md shadow hover:bg-primary/95 cursor-pointer font-medium border-0">
-          <Upload class="w-4 h-4" />
-          {isSubmitting ? 'Importation en cours...' : 'Lancer l\'importation'}
-        </button>
+
+        <div class="pt-4 border-t border-border flex justify-end gap-2">
+          <Button 
+            type="button" 
+            variant="outline"
+            onclick={() => showImportModal = false} 
+          >
+            Annuler
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={isSubmitting} 
+            class="flex items-center gap-2"
+          >
+            <Upload class="w-3.5 h-3.5" />
+            {isSubmitting ? 'Importation...' : 'Lancer l\'importation'}
+          </Button>
+        </div>
       </form>
-    </div>
+    </Dialog.Content>
+  </Dialog.Root>
+
+  {#if bankTransactions.length === 0}
+    <!-- Zone d'Importation initiale -->
+    <Card.Root class="max-w-xl animate-in fade-in-50 duration-200 border-border bg-card p-8 shadow-sm">
+      <Card.Header class="p-0 pb-4">
+        <Card.Title class="text-lg font-bold flex items-center gap-2">
+          <Upload class="w-5 h-5 text-primary" />
+          Importer un relevé Société Générale
+        </Card.Title>
+      </Card.Header>
+      <Card.Content class="p-0">
+        {#if errorMsg}
+          <div class="p-3 mb-4 bg-destructive/15 border border-destructive text-destructive text-sm rounded-md flex items-center gap-2">
+            <AlertCircle class="w-4 h-4" />
+            <span>{errorMsg}</span>
+          </div>
+        {/if}
+        <form onsubmit={handleImport} class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label for="season-select" class="block text-xs font-semibold mb-1">Saison comptable</label>
+              <select id="season-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium" bind:value={selectedSeason}>
+                {#each seasons as s}
+                  <option value={s.id}>{s.name}</option>
+                {/each}
+                {#if seasons.length === 0}
+                  <option value="25-26">Saison 2025-2026</option>
+                {/if}
+              </select>
+            </div>
+            <div>
+              <label for="account-select" class="block text-xs font-semibold mb-1">Compte de destination</label>
+              <select id="account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium" bind:value={selectedAccount}>
+                <option value="auto">Détecter automatiquement</option>
+                <option value="current">Compte Courant (Société Générale)</option>
+                <option value="savings">Livret d'Épargne</option>
+              </select>
+            </div>
+            <div>
+              <label for="file-input" class="block text-xs font-semibold mb-1">Fichier (.ofx)</label>
+              <Input id="file-input" type="file" accept=".ofx" class="w-full text-sm mt-1.5" required />
+            </div>
+          </div>
+          <Button type="submit" disabled={isSubmitting} class="w-full flex items-center justify-center gap-2">
+            <Upload class="w-4 h-4" />
+            {isSubmitting ? 'Importation en cours...' : 'Lancer l\'importation'}
+          </Button>
+        </form>
+      </Card.Content>
+    </Card.Root>
   {:else}
     <!-- Zone Rapprochement (Split-Screen) -->
     <div class="grid md:grid-cols-12 gap-6 h-[600px] animate-in fade-in-50 duration-200">
       <!-- Liste de gauche (7/12) -->
-      <div class="md:col-span-7 bg-card border border-border rounded-xl shadow-sm flex flex-col h-full overflow-hidden">
+      <Card.Root class="md:col-span-7 flex flex-col h-full overflow-hidden border-border bg-card shadow-sm">
         <!-- Barre d'Onglets -->
-        <div class="flex border-b border-border bg-muted/50 shrink-0">
-          <button
-            type="button"
-            onclick={() => { activeTab = 'pending'; selectedTx = null; sessionStorage.removeItem('reconcile_active_bt_id'); }}
-            class="flex-1 py-3 text-center text-xs font-bold transition-colors border-0 cursor-pointer border-b-2 {activeTab === 'pending' ? 'border-primary text-foreground bg-card' : 'border-transparent text-muted-foreground hover:text-foreground'}"
-          >
-            À rapprocher ({pendingCount})
-          </button>
-          <button
-            type="button"
-            onclick={() => { activeTab = 'reconciled'; selectedTx = null; sessionStorage.removeItem('reconcile_active_bt_id'); }}
-            class="flex-1 py-3 text-center text-xs font-bold transition-colors border-0 cursor-pointer border-b-2 {activeTab === 'reconciled' ? 'border-primary text-foreground bg-card' : 'border-transparent text-muted-foreground hover:text-foreground'}"
-          >
-            Rapprochées ({reconciledCount})
-          </button>
-          <button
-            type="button"
-            onclick={() => { activeTab = 'ignored'; selectedTx = null; sessionStorage.removeItem('reconcile_active_bt_id'); }}
-            class="flex-1 py-3 text-center text-xs font-bold transition-colors border-0 cursor-pointer border-b-2 {activeTab === 'ignored' ? 'border-primary text-foreground bg-card' : 'border-transparent text-muted-foreground hover:text-foreground'}"
-          >
-            Ignorées ({ignoredCount})
-          </button>
-        </div>
+        <Tabs.Root value={activeTab} onValueChange={(val) => { activeTab = val as any; selectedTx = null; sessionStorage.removeItem('reconcile_active_bt_id'); }} class="w-full shrink-0">
+          <Tabs.List class="flex w-full rounded-none border-b border-border bg-muted/50 p-0">
+            <Tabs.Trigger value="pending" class="flex-1 py-3 text-xs font-bold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-card bg-transparent">À rapprocher ({pendingCount})</Tabs.Trigger>
+            <Tabs.Trigger value="reconciled" class="flex-1 py-3 text-xs font-bold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-card bg-transparent">Rapprochées ({reconciledCount})</Tabs.Trigger>
+            <Tabs.Trigger value="ignored" class="flex-1 py-3 text-xs font-bold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-card bg-transparent">Ignorées ({ignoredCount})</Tabs.Trigger>
+          </Tabs.List>
+        </Tabs.Root>
 
         {#if activeTab === 'pending'}
-          <div class="flex border-b border-border bg-muted/30 p-1 gap-1 shrink-0">
-            <button
-              type="button"
-              onclick={() => smartFilter = 'all'}
-              class="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors border-0 cursor-pointer {smartFilter === 'all' ? 'bg-background text-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent'}"
-            >
-              Tout
-            </button>
-            <button
-              type="button"
-              onclick={() => smartFilter = 'evidences'}
-              class="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors border-0 cursor-pointer {smartFilter === 'evidences' ? 'bg-background text-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent'}"
-            >
-              Évidences
-            </button>
-            <button
-              type="button"
-              onclick={() => smartFilter = 'recurrents'}
-              class="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors border-0 cursor-pointer {smartFilter === 'recurrents' ? 'bg-background text-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent'}"
-            >
-              Récurrents
-            </button>
-          </div>
+          <Tabs.Root value={smartFilter} onValueChange={(val) => smartFilter = val as any} class="shrink-0 border-b border-border bg-muted/30 p-1">
+            <Tabs.List class="flex gap-1 bg-transparent p-0">
+              <Tabs.Trigger value="all" class="px-3 py-1.5 text-xs font-semibold rounded-md">Tout</Tabs.Trigger>
+              <Tabs.Trigger value="evidences" class="px-3 py-1.5 text-xs font-semibold rounded-md">Évidences</Tabs.Trigger>
+              <Tabs.Trigger value="recurrents" class="px-3 py-1.5 text-xs font-semibold rounded-md">Récurrents</Tabs.Trigger>
+            </Tabs.List>
+          </Tabs.Root>
         {/if}
 
         <div class="p-2 border-b border-border bg-muted/10 shrink-0">
-          <input
+          <Input
             type="text"
             placeholder="Rechercher une transaction (ex: salaire)..."
             bind:value={searchQuery}
-            class="w-full px-3 py-1.5 border border-border bg-background rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+            class="w-full"
           />
         </div>
 
         <div class="p-3 border-b border-border bg-muted/20 flex items-center justify-between shrink-0">
           <span class="font-bold text-xs text-muted-foreground">Liste des écritures ({displayedTransactions.length})</span>
           {#if activeTab === 'pending' && !isClosed}
-            <button onclick={handleAnalyze} disabled={isAnalyzing} class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-bold rounded-md shadow-sm cursor-pointer border-0">
+            <Button onclick={handleAnalyze} disabled={isAnalyzing} class="inline-flex items-center gap-1.5 text-xs font-bold">
               <Sparkles class="w-3.5 h-3.5" />
               {isAnalyzing ? 'Analyse IA...' : 'Lancer l\'analyse IA'}
-            </button>
+            </Button>
           {/if}
         </div>
 
@@ -1220,32 +1185,31 @@
           <div class="bg-primary/10 border-b border-primary/20 px-4 py-3 flex items-center justify-between shrink-0 sticky top-0 z-10 animate-in slide-in-from-top duration-200">
             <div class="flex items-center gap-2">
               <span class="text-xs font-bold text-primary">Sélection ({selectedCount})</span>
-              <button
-                type="button"
+              <Button
+                variant="link"
                 onclick={() => toggleSelectAll(displayedTransactions)}
-                class="text-[10px] text-muted-foreground hover:text-foreground hover:underline bg-transparent border-0 cursor-pointer p-0 font-semibold"
+                class="text-[10px] text-muted-foreground hover:text-foreground hover:underline p-0 h-auto font-semibold"
               >
                 {displayedTransactions.length > 0 && displayedTransactions.every(t => selectedTxIds[t.id]) ? 'Tout décocher' : 'Sélectionner tout'}
-              </button>
+              </Button>
             </div>
             <div class="flex items-center gap-2">
-              <button
-                type="button"
+              <Button
+                variant="outline"
                 onclick={handleBulkIgnore}
                 disabled={isSubmitting}
-                class="px-2.5 py-1 border border-destructive/20 hover:bg-destructive/10 text-destructive text-[11px] font-bold rounded cursor-pointer bg-transparent"
+                class="border-destructive/20 hover:bg-destructive/10 text-destructive text-[11px] font-bold h-7 px-2.5"
               >
                 Ignorer en masse
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
                 onclick={handleBulkReconcile}
                 disabled={isSubmitting}
-                class="px-2.5 py-1 bg-primary text-primary-foreground hover:bg-primary/95 text-[11px] font-bold rounded shadow-sm cursor-pointer border-0 flex items-center gap-1"
+                class="text-[11px] font-bold h-7 px-2.5 flex items-center gap-1"
               >
                 <Check class="w-3.5 h-3.5" />
                 Rapprocher en masse
-              </button>
+              </Button>
             </div>
           </div>
         {/if}
@@ -1257,10 +1221,10 @@
           }}
         >
           {#each displayedTransactions as bt}
-            <button
-              type="button"
+            <Button
+              variant="ghost"
               onclick={() => { selectedTx = bt; selectedMemberId = ''; }}
-              class="w-full text-left p-4 hover:bg-muted/50 transition-colors flex items-center justify-between gap-4 border-0 cursor-pointer {selectedTx?.id === bt.id ? 'bg-muted border-l-4 border-l-primary' : ''}"
+              class="w-full text-left p-4 hover:bg-muted/50 transition-colors flex items-center justify-between gap-4 border-0 cursor-pointer h-auto rounded-none justify-between {selectedTx?.id === bt.id ? 'bg-muted border-l-4 border-l-primary' : ''}"
               title="{bt.name}{bt.memo ? ' — ' + bt.memo : ''}"
             >
               <div class="flex items-start gap-3 flex-1 min-w-0">
@@ -1275,7 +1239,7 @@
                     class="rounded border-border text-primary focus:ring-primary/20 cursor-pointer w-4 h-4 shrink-0 mt-0.5"
                   />
                 {/if}
-                <div class="flex-1 min-w-0">
+                <div class="flex-1 min-w-0 text-left">
                   <div class="font-bold text-sm text-foreground truncate max-w-[280px]" title={bt.name}>{bt.name}</div>
                   <div class="text-xs text-muted-foreground">{bt.date} • {accountLabels[bt.accountId]}</div>
                   {#if bt.memo}
@@ -1284,15 +1248,15 @@
                   {#if bt.aiSuggestions && bt.status === 'pending'}
                     {@const sug = JSON.parse(bt.aiSuggestions)}
                     {#if sug.memberName}
-                      <div class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-[10px] font-semibold text-primary">
+                      <Badge variant="outline" class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 border-primary/20 text-[10px] font-semibold text-primary">
                         <Sparkles class="w-2.5 h-2.5" />
                         IA : {sug.memberName} ({categories.find(c => c.id === String(sug.category))?.name || sug.category})
-                      </div>
+                      </Badge>
                     {:else}
-                      <div class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted border border-border text-[10px] font-semibold text-muted-foreground">
+                      <Badge variant="outline" class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted border-border text-[10px] font-semibold text-muted-foreground">
                         <Sparkles class="w-2.5 h-2.5" />
                         IA : Opération diverse ({categories.find(c => c.id === String(sug.category))?.name || sug.category})
-                      </div>
+                      </Badge>
                     {/if}
                   {/if}
                 </div>
@@ -1300,17 +1264,17 @@
               <div class="font-bold text-sm shrink-0 {bt.amount < 0 ? 'text-destructive' : 'text-emerald-600'}">
                 {bt.amount < 0 ? '' : '+'}{(bt.amount / 100).toFixed(2)} €
               </div>
-            </button>
+            </Button>
           {:else}
             <div class="p-8 text-center text-xs text-muted-foreground italic">
               Aucune transaction bancaire dans cet onglet.
             </div>
           {/each}
         </div>
-      </div>
+      </Card.Root>
 
       <!-- Panneau Action de droite (5/12) -->
-      <div class="md:col-span-5 bg-card border border-border rounded-xl shadow-sm p-6 h-full flex flex-col justify-between overflow-y-auto">
+      <Card.Root class="md:col-span-5 border-border bg-card p-6 h-full flex flex-col justify-between overflow-y-auto shadow-sm animate-in fade-in-50 duration-200">
         {#if selectedTx}
           <div class="space-y-5">
             <div>
@@ -1350,14 +1314,15 @@
                       </div>
                       <div class="flex items-center gap-3">
                         <div class="font-bold text-emerald-600">{(Math.abs(gt.amount) / 100).toFixed(2)} €</div>
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
                           onclick={() => handleDeletePart(gt.id)}
-                          class="text-destructive hover:bg-destructive/10 p-1.5 rounded border-0 cursor-pointer transition-colors"
+                          class="text-destructive hover:bg-destructive/10"
                           title="Supprimer cette écriture liée"
                         >
                           <Trash2 class="w-3.5 h-3.5" />
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   {/each}
@@ -1387,13 +1352,13 @@
                 <p class="text-xs text-muted-foreground">
                   Cette ligne a été écartée de la comptabilité. Vous pouvez la réactiver pour la rapprocher.
                 </p>
-                <button
+                <Button
                   onclick={() => handleUnignore(selectedTx!.id)}
-                  class="w-full py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-md hover:bg-primary/95 cursor-pointer border-0 shadow-sm flex items-center justify-center gap-1.5"
+                  class="w-full flex items-center justify-center gap-1.5"
                 >
                   <RefreshCw class="w-3.5 h-3.5" />
                   Réactiver cette transaction
-                </button>
+                </Button>
               </div>
             {/if}
 
@@ -1406,15 +1371,17 @@
                     <span>SUGGESTION IA DE RAPPROCHEMENT</span>
                   </div>
                   {#if selectedTx.aiSuggestions}
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="xs"
                       onclick={() => handleAnalyzeSingle(selectedTx!.id)}
                       disabled={isAnalyzingSingle}
-                      class="text-[10px] text-primary hover:underline bg-transparent border-0 cursor-pointer p-0 inline-flex items-center gap-1 font-semibold"
+                      class="text-[10px] text-primary hover:underline p-0 h-auto font-semibold flex items-center gap-1"
                       title="Recalculer la suggestion avec les dernières données"
                     >
                       <RefreshCw class="w-3.5 h-3.5 {isAnalyzingSingle ? 'animate-spin' : ''}" />
                       {isAnalyzingSingle ? 'Recalcul...' : 'Recalculer'}
-                    </button>
+                    </Button>
                   {/if}
                 </div>
 
@@ -1429,54 +1396,38 @@
                       Enregistrer cette transaction comme opération diverse de type **{categories.find(c => c.id === String(sug.category))?.name || sug.category}** (pas d'adhérent détecté).
                     </p>
                   {/if}
-                  <button
+                  <Button
                     onclick={() => handleMatchWithAI(selectedTx!.id, sug.memberId, sug.category)}
                     disabled={isSubmitting}
-                    class="w-full py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-md hover:bg-primary/90 cursor-pointer border-0 shadow-sm font-medium"
+                    class="w-full font-medium"
                   >
                     Valider la suggestion IA
-                  </button>
+                  </Button>
                 {:else}
                   <p class="text-xs text-muted-foreground italic">
                     Aucune suggestion IA calculée pour cette opération.
                   </p>
-                  <button
+                  <Button
                     onclick={() => handleAnalyzeSingle(selectedTx!.id)}
                     disabled={isAnalyzingSingle}
-                    class="w-full py-1.5 bg-primary/20 text-primary hover:bg-primary/30 text-xs font-semibold rounded-md cursor-pointer border-0 shadow-sm font-medium flex items-center justify-center gap-1.5"
+                    class="w-full font-medium flex items-center justify-center gap-1.5"
                   >
                     <Sparkles class="w-3.5 h-3.5 {isAnalyzingSingle ? 'animate-spin' : ''}" />
                     {isAnalyzingSingle ? 'Analyse en cours...' : 'Demander une analyse IA'}
-                  </button>
+                  </Button>
                 {/if}
               </div>
             {/if}
 
             <!-- Onglets de rapprochement -->
             {#if !isClosed && selectedTx.status === 'pending'}
-              <div class="flex border-b border-border bg-muted/30 rounded-lg p-0.5 shrink-0">
-                <button
-                  type="button"
-                  onclick={() => activeRightTab = 'manual'}
-                  class="flex-1 py-1.5 text-center text-xs font-semibold rounded-md transition-colors border-0 cursor-pointer {activeRightTab === 'manual' ? 'bg-background text-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent font-medium'}"
-                >
-                  Saisir écriture
-                </button>
-                <button
-                  type="button"
-                  onclick={() => activeRightTab = 'ledger'}
-                  class="flex-1 py-1.5 text-center text-xs font-semibold rounded-md transition-colors border-0 cursor-pointer {activeRightTab === 'ledger' ? 'bg-background text-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent font-medium'}"
-                >
-                  Suggestions
-                </button>
-                <button
-                  type="button"
-                  onclick={() => activeRightTab = 'invoice'}
-                  class="flex-1 py-1.5 text-center text-xs font-semibold rounded-md transition-colors border-0 cursor-pointer {activeRightTab === 'invoice' ? 'bg-background text-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent font-medium'}"
-                >
-                  Associer Facture
-                </button>
-              </div>
+              <Tabs.Root value={activeRightTab} onValueChange={(val) => activeRightTab = val as any} class="w-full shrink-0">
+                <Tabs.List class="flex w-full rounded-lg bg-muted/30 p-0.5">
+                  <Tabs.Trigger value="manual" class="flex-1 py-1.5 text-xs font-semibold rounded-md">Saisir écriture</Tabs.Trigger>
+                  <Tabs.Trigger value="ledger" class="flex-1 py-1.5 text-xs font-semibold rounded-md">Suggestions</Tabs.Trigger>
+                  <Tabs.Trigger value="invoice" class="flex-1 py-1.5 text-xs font-semibold rounded-md">Associer Facture</Tabs.Trigger>
+                </Tabs.List>
+              </Tabs.Root>
             {/if}
 
             <!-- Étape 1 : Suggestions d'association (Seulement si rien n'a encore été ventilé, pending et non clôturé, et onglet suggestions actif) -->
@@ -1489,9 +1440,9 @@
                       <div class="font-semibold text-foreground">{sug.description}</div>
                       <div class="text-muted-foreground">{sug.date} • {(sug.amount / 100).toFixed(2)} €</div>
                     </div>
-                    <button onclick={() => handleMatch(selectedTx!.id, sug.id)} class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold cursor-pointer border-0">
+                    <Button onclick={() => handleMatch(selectedTx!.id, sug.id)} size="sm" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
                       Associer
-                    </button>
+                    </Button>
                   </div>
                 {:else}
                   <p class="text-xs text-muted-foreground">Aucune écriture correspondante trouvée à +/- 7 jours.</p>
@@ -1512,8 +1463,10 @@
                   <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                     {isSplitMode ? 'Ventiler l\'opération' : (linkedGlTxs.length > 0 ? 'Ventiler une nouvelle partie' : 'Créer et pointer manuellement')}
                   </h4>
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="xs"
                     onclick={() => {
                       if (!isSplitMode) {
                         isSplitMode = true;
@@ -1525,22 +1478,22 @@
                         isSplitMode = false;
                       }
                     }}
-                    class="px-2 py-1 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer border-0 shadow-sm transition-colors"
+                    class="font-bold uppercase tracking-wider h-auto py-1"
                   >
                     {isSplitMode ? 'Saisie simple' : 'Ventiler'}
-                  </button>
+                  </Button>
                 </div>
                 
                 <div class="space-y-3">
                   <!-- Ligne Adhérent & Recherche Combobox intégrée -->
                   <div class="space-y-1 relative">
                     <label for="member-input" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Adhérent</label>
-                    <input
+                    <Input
                       id="member-input"
                       type="text"
                       autocomplete="off"
                       placeholder="Tapez pour rechercher un adhérent..."
-                      class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium pr-6"
+                      class="w-full font-medium pr-6"
                       value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
                       oninput={(e) => {
                         isMemberDropdownOpen = true;
@@ -1559,29 +1512,29 @@
                     
                     {#if isMemberDropdownOpen}
                       <div id="member-listbox" class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded shadow-lg divide-y divide-border">
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
                           id="member-option-0"
-                          class="w-full text-left px-2.5 py-1.5 text-xs transition-colors font-medium border-0 cursor-pointer italic {memberHighlightedIndex === 0 ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-muted-foreground'}"
+                          class="w-full text-left justify-start px-2.5 py-1.5 text-xs font-medium border-0 cursor-pointer italic h-auto rounded-none {memberHighlightedIndex === 0 ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-muted-foreground bg-transparent'}"
                           onmousedown={() => {
                             selectedMemberId = '';
                             memberSearchQuery = '';
                           }}
                         >
                           -- Aucun adhérent (Opération diverse) --
-                        </button>
+                        </Button>
                         {#each filteredMembers as m, index}
-                          <button
-                            type="button"
+                          <Button
+                            variant="ghost"
                             id={`member-option-${index + 1}`}
-                            class="w-full text-left px-2.5 py-1.5 text-xs transition-colors font-medium border-0 cursor-pointer {memberHighlightedIndex === index + 1 ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground'}"
+                            class="w-full text-left justify-start px-2.5 py-1.5 text-xs font-medium border-0 cursor-pointer h-auto rounded-none {memberHighlightedIndex === index + 1 ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground bg-transparent'}"
                             onmousedown={() => {
                               selectedMemberId = m.id.toString();
                               memberSearchQuery = `${m.lastName} ${m.firstName}`;
                             }}
                           >
                             {m.lastName} {m.firstName} (Dû : {(m.amountRemaining / 100).toFixed(2)} €)
-                          </button>
+                          </Button>
                         {:else}
                           <div class="px-2.5 py-1.5 text-xs text-muted-foreground italic">Aucun résultat</div>
                         {/each}
@@ -1594,12 +1547,12 @@
                     <div class="grid grid-cols-3 gap-2">
                       <div class="col-span-2 space-y-1 relative">
                         <label for="category-input" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Catégorie</label>
-                        <input
+                        <Input
                           id="category-input"
                           type="text"
                           autocomplete="off"
                           placeholder="Tapez pour filtrer..."
-                          class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium pr-6"
+                          class="w-full font-medium pr-6"
                           value={isCategoryDropdownOpen ? categorySearchQuery : categoryDisplayVal}
                           oninput={(e) => {
                             isCategoryDropdownOpen = true;
@@ -1619,17 +1572,17 @@
                         {#if isCategoryDropdownOpen}
                           <div id="category-listbox" class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded shadow-lg divide-y divide-border">
                             {#each filteredCategories as cat, index}
-                              <button
-                                type="button"
+                              <Button
+                                variant="ghost"
                                 id={`category-option-${index}`}
-                                class="w-full text-left px-2.5 py-1.5 text-xs transition-colors font-medium border-0 cursor-pointer {categoryHighlightedIndex === index ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground'}"
+                                class="w-full text-left justify-start px-2.5 py-1.5 text-xs font-medium border-0 cursor-pointer h-auto rounded-none {categoryHighlightedIndex === index ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground bg-transparent'}"
                                 onmousedown={() => {
                                   category = cat.id;
                                   categorySearchQuery = cat.name;
                                 }}
                               >
                                   {cat.name}
-                              </button>
+                              </Button>
                             {:else}
                               <div class="px-2.5 py-1.5 text-xs text-muted-foreground italic">Aucun résultat</div>
                             {/each}
@@ -1639,13 +1592,13 @@
                       
                       <div class="space-y-1">
                         <label for="amount-input" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Montant (€)</label>
-                        <input
+                        <Input
                           id="amount-input"
                           type="number"
                           step="0.01"
                           min="0.01"
                           max={(remainingAmount / 100).toFixed(2)}
-                          class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary font-bold text-foreground h-[29px] mt-1"
+                          class="w-full font-bold h-[29px]"
                           bind:value={amountToLink}
                         />
                       </div>
@@ -1669,36 +1622,37 @@
                           <div class="space-y-1 relative">
                             <label for={`split-amount-${index}`} class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider font-bold">Montant (€)</label>
                             <div class="flex items-center gap-1">
-                              <input
+                              <Input
                                 id={`split-amount-${index}`}
                                 type="number"
                                 step="0.01"
                                 min="0.01"
-                                class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary font-bold text-foreground h-[29px]"
+                                class="w-full font-bold h-[29px]"
                                 bind:value={split.amount}
                               />
                               {#if splits.length > 2}
-                                <button
-                                  type="button"
+                                <Button
+                                  variant="ghost"
+                                  size="icon-xs"
                                   onclick={() => removeSplitRow(index)}
-                                  class="p-1 text-destructive hover:bg-destructive/10 rounded cursor-pointer border-0 bg-transparent flex items-center justify-center font-bold text-sm"
+                                  class="text-destructive hover:bg-destructive/10"
                                   title="Supprimer"
                                 >
                                   ✕
-                                </button>
+                                </Button>
                               {/if}
                             </div>
                           </div>
                         </div>
                       {/each}
                       <div class="pt-1">
-                        <button
-                          type="button"
+                        <Button
+                          variant="link"
                           onclick={addSplitRow}
-                          class="text-[10px] text-primary hover:underline font-bold uppercase tracking-wider cursor-pointer border-0 bg-transparent"
+                          class="text-[10px] text-primary hover:underline font-bold uppercase tracking-wider p-0 h-auto"
                         >
                           + Ajouter une catégorie
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   {/if}
@@ -1725,13 +1679,13 @@
                   </div>
                 </div>
  
-                <button
+                <Button
                   disabled={isSubmitting || (isSplitMode ? (splits.some(s => !s.amount || s.amount <= 0) || Math.abs(splits.reduce((acc, s) => acc + Math.round((s.amount || 0) * 100), 0) - remainingAmount) > 10) : (!amountToLink || amountToLink <= 0 || Math.round(amountToLink * 100) > remainingAmount))}
                   onclick={() => handleCreateAndMatch(selectedTx!)}
-                  class="w-full py-1.5 bg-primary hover:bg-primary/95 text-primary-foreground disabled:bg-muted disabled:text-muted-foreground rounded text-xs font-semibold shadow-sm cursor-pointer border-0 mt-2 font-medium"
+                  class="w-full mt-2 font-medium"
                 >
                   {isSplitMode ? 'Enregistrer la ventilation' : (linkedGlTxs.length > 0 ? 'Enregistrer cette partie' : "Créer & lier l'écriture")}
-                </button>
+                </Button>
               </div>
             {/if}
 
@@ -1766,14 +1720,14 @@
                         </span>
                       </div>
                     </div>
-                    <button
+                    <Button
                       id="btn-valider-association"
                       disabled={isSubmitting || Math.abs(selectedSum - selectedTx.amount) > 10}
                       onclick={handleMultiInvoiceReconcile}
-                      class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white disabled:bg-muted disabled:text-muted-foreground rounded text-xs font-semibold cursor-pointer border-0 shadow-sm transition-colors text-center block font-medium"
+                      class="w-full font-medium"
                     >
                       Valider l'association
-                    </button>
+                    </Button>
                   </div>
 
                   <!-- Suggestions de factures correspondantes -->
@@ -1801,12 +1755,13 @@
                             </div>
                             <div class="flex flex-col items-end gap-1.5 shrink-0">
                               <div class="font-bold text-emerald-600">{(inv.totalAmount / 100).toFixed(2)} €</div>
-                              <button 
+                              <Button 
                                 onclick={() => handleReconcile('create', selectedTx!, inv.id)} 
-                                class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold cursor-pointer border-0 shadow-sm"
+                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                                size="sm"
                               >
                                 Associer
-                              </button>
+                              </Button>
                             </div>
                           </div>
                         {/each}
@@ -1837,12 +1792,12 @@
                           </div>
                           <div class="flex flex-col items-end gap-1.5 shrink-0">
                             <div class="font-bold text-foreground">{(inv.totalAmount / 100).toFixed(2)} €</div>
-                            <button 
+                            <Button 
                               onclick={() => handleReconcile('create', selectedTx!, inv.id)} 
-                              class="px-2.5 py-1 bg-primary text-primary-foreground hover:bg-primary/95 rounded text-xs font-semibold cursor-pointer border-0 shadow-sm"
+                              size="sm"
                             >
                               Associer
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       {:else}
@@ -1860,13 +1815,13 @@
           <!-- Boutons actions secondaires -->
           <div class="pt-4 border-t border-border flex justify-between gap-4">
             {#if !isClosed && selectedTx.status === 'pending'}
-              <button onclick={() => handleIgnore(selectedTx!.id)} class="flex-1 py-2 border border-border bg-transparent text-destructive hover:bg-destructive/10 text-xs font-semibold rounded cursor-pointer font-medium">
+              <Button variant="outline" onclick={() => handleIgnore(selectedTx!.id)} class="flex-1 text-destructive hover:bg-destructive/10 font-medium">
                 Ignorer cette écriture
-              </button>
+              </Button>
             {/if}
-            <button onclick={() => { selectedTx = null; sessionStorage.removeItem('reconcile_active_bt_id'); }} class="px-4 py-2 border border-border bg-transparent hover:bg-muted text-xs font-semibold rounded cursor-pointer font-medium">
+            <Button variant="outline" onclick={() => { selectedTx = null; sessionStorage.removeItem('reconcile_active_bt_id'); }} class="font-medium">
               Fermer
-            </button>
+            </Button>
           </div>
         {:else}
           <div class="h-full flex flex-col items-center justify-center text-center text-muted-foreground space-y-2">
@@ -1877,7 +1832,7 @@
             </p>
           </div>
         {/if}
-      </div>
+      </Card.Root>
     </div>
   {/if}
 </div>

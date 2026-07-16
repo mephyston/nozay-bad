@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Search, Plus, Trash2, ArrowLeftRight, Check, AlertCircle, ChevronLeft, ChevronRight, MoreVertical, Edit2 } from 'lucide-svelte';
+  import { Button, Table, Input, Badge, Card, Dialog } from '@metacult/shared-ui';
 
   interface Transaction {
     id: number;
@@ -135,6 +136,15 @@
 
   // Saisie formulaire
   let showPanel = $state<'recette' | 'depense' | 'transfert' | null>(null);
+  let open = $state(false);
+  $effect(() => {
+    open = showPanel !== null;
+  });
+  $effect(() => {
+    if (!open) {
+      showPanel = null;
+    }
+  });
   let amount = $state('');
   let date = $state(new Date().toISOString().split('T')[0]);
   let category = $state('1');
@@ -330,10 +340,14 @@
   <!-- Bandeau des Soldes -->
   <div class="grid gap-4 md:grid-cols-3">
     {#each Object.entries(accountLabels) as [key, label]}
-      <div class="rounded-xl border border-border bg-card p-6 shadow-sm">
-        <h3 class="text-sm font-medium text-muted-foreground">{label}</h3>
-        <div class="text-3xl font-bold mt-2">{getAccountBalance(key as any)} €</div>
-      </div>
+      <Card.Root>
+        <Card.Header class="pb-2">
+          <Card.Title class="text-sm font-medium text-muted-foreground">{label}</Card.Title>
+        </Card.Header>
+        <Card.Content>
+          <div class="text-3xl font-bold">{getAccountBalance(key as any)} €</div>
+        </Card.Content>
+      </Card.Root>
     {/each}
   </div>
 
@@ -354,31 +368,32 @@
         {/if}
       </select>
       {#if isClosed}
-        <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
+        <Badge variant="outline" class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
           Saison clôturée (Lecture seule)
-        </span>
+        </Badge>
       {/if}
     </div>
     <div class="flex items-center gap-3">
       {#if !isClosed}
-        <button
+        <Button
           onclick={() => { showPanel = 'recette'; amount = ''; description = ''; targetSeasonId = selectedSeason; editingId = null; }}
-          class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-md hover:bg-emerald-700 shadow transition-colors cursor-pointer"
+          class="bg-emerald-600 text-white text-sm font-medium rounded-md hover:bg-emerald-700 shadow transition-colors cursor-pointer"
         >
           Saisir Recette
-        </button>
-        <button
+        </Button>
+        <Button
           onclick={() => { showPanel = 'depense'; amount = ''; description = ''; targetSeasonId = selectedSeason; editingId = null; }}
-          class="px-4 py-2 bg-destructive text-destructive-foreground text-sm font-medium rounded-md hover:bg-destructive/90 shadow transition-colors cursor-pointer"
+          variant="destructive"
+          class="text-sm font-medium rounded-md shadow transition-colors cursor-pointer"
         >
           Saisir Dépense
-        </button>
-        <button
+        </Button>
+        <Button
           onclick={() => { showPanel = 'transfert'; amount = ''; description = ''; targetSeasonId = selectedSeason; editingId = null; }}
-          class="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 shadow transition-colors cursor-pointer"
+          class="text-sm font-medium rounded-md shadow transition-colors cursor-pointer"
         >
           Virement Interne
-        </button>
+        </Button>
       {/if}
     </div>
   </div>
@@ -387,28 +402,31 @@
     <div class="flex items-center gap-2 bg-muted/60 px-3 py-1.5 rounded-lg text-xs font-medium border border-border/80 w-fit no-print">
       <span class="text-muted-foreground">Filtre actif&nbsp;:</span>
       {#if filteredCategory}
-        <span class="bg-primary/10 text-primary px-2 py-0.5 rounded font-semibold">
+        <Badge variant="outline" class="bg-primary/10 text-primary px-2 py-0.5 rounded font-semibold border-transparent">
           Catégorie : {categories.find(c => c.id.toString() === filteredCategory)?.adminLabel || filteredCategory}
-        </span>
+        </Badge>
       {/if}
       {#if filteredClassCode}
-        <span class="bg-primary/10 text-primary px-2 py-0.5 rounded font-semibold">
+        <Badge variant="outline" class="bg-primary/10 text-primary px-2 py-0.5 rounded font-semibold border-transparent">
           Classe : {accountClasses.find(ac => ac.code === filteredClassCode)?.label || filteredClassCode} ({filteredClassCode})
-        </span>
+        </Badge>
       {/if}
-      <button 
+      <Button 
+        variant="ghost"
+        size="icon-xs"
         onclick={clearFilters}
         class="text-muted-foreground hover:text-destructive p-0.5 rounded hover:bg-muted font-bold transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center ml-1"
         aria-label="Effacer le filtre"
       >
         <X class="w-3.5 h-3.5" />
-      </button>
+      </Button>
     </div>
   {/if}
 
   <div class="flex flex-wrap gap-2 items-center no-print">
-    <button 
-      class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border border-border shadow-sm transition-colors cursor-pointer {unreconciledChequesOnly ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-background hover:bg-muted'}"
+    <Button 
+      variant={unreconciledChequesOnly ? 'default' : 'outline'}
+      class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer"
       onclick={() => {
         const params = new URLSearchParams(window.location.search);
         if (unreconciledChequesOnly) {
@@ -421,46 +439,46 @@
       }}
     >
       <span>🎫</span> Chèques en circulation
-    </button>
+    </Button>
   </div>
 
   <!-- Tableau -->
   <div class="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
     <div class="overflow-x-auto min-h-[180px]">
-      <table class="w-full border-collapse text-left text-sm">
-        <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
-          <tr>
-            <th class="p-4">Date</th>
-            <th class="p-4">Type</th>
-            <th class="p-4">Compte(s)</th>
-            <th class="p-4">Catégorie</th>
-            <th class="p-4">Libellé</th>
-            <th class="p-4 text-right">Montant</th>
-            <th class="p-4 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-border">
+      <Table.Root class="w-full border-collapse text-left text-sm">
+        <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
+          <Table.Row>
+            <Table.Head class="p-4">Date</Table.Head>
+            <Table.Head class="p-4">Type</Table.Head>
+            <Table.Head class="p-4">Compte(s)</Table.Head>
+            <Table.Head class="p-4">Catégorie</Table.Head>
+            <Table.Head class="p-4">Libellé</Table.Head>
+            <Table.Head class="p-4 text-right">Montant</Table.Head>
+            <Table.Head class="p-4 text-right">Actions</Table.Head>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body class="divide-y divide-border">
           {#each transactions as tx}
-            <tr class="hover:bg-muted/50 transition-colors">
-              <td class="p-4">{tx.date}</td>
-              <td class="p-4">
+            <Table.Row class="hover:bg-muted/50 transition-colors">
+              <Table.Cell class="p-4">{tx.date}</Table.Cell>
+              <Table.Cell class="p-4">
                 {#if tx.type === 'recette'}
-                  <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">Recette</span>
+                  <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-transparent">Recette</Badge>
                 {:else if tx.type === 'depense'}
-                  <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-destructive/15 text-destructive">Dépense</span>
+                  <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-destructive/15 text-destructive border-transparent">Dépense</Badge>
                 {:else}
-                  <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-primary/15 text-primary">Transfert</span>
+                  <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-primary/15 text-primary border-transparent">Transfert</Badge>
                 {/if}
-              </td>
-              <td class="p-4">
+              </Table.Cell>
+              <Table.Cell class="p-4">
                 {#if tx.type === 'transfert'}
                   <span class="text-xs">{accountLabels[tx.accountId]} ➔ {accountLabels[tx.destinationAccountId!]}</span>
                 {:else}
                   <span class="text-xs">{accountLabels[tx.accountId]}</span>
                 {/if}
-              </td>
-              <td class="p-4">{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</td>
-              <td class="p-4 font-medium">
+              </Table.Cell>
+              <Table.Cell class="p-4">{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</Table.Cell>
+              <Table.Cell class="p-4 font-medium">
                 <div>{tx.description}</div>
                 {#if tx.reference}
                   <div class="text-xs text-muted-foreground italic">Réf: {tx.reference}</div>
@@ -472,14 +490,14 @@
                     </a>
                   {/if}
                   {#if tx.bankTransactionId}
-                    <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold">
+                    <Badge variant="outline" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold border-transparent">
                       <Check class="w-2.5 h-2.5" />
                       Rapprochée (SG)
-                    </span>
+                    </Badge>
                   {/if}
                 </div>
-              </td>
-              <td class="p-4 text-right font-bold">
+              </Table.Cell>
+              <Table.Cell class="p-4 text-right font-bold">
                 {#if tx.type === 'recette'}
                   <span class="text-emerald-600 dark:text-emerald-400">+{(tx.amount / 100).toFixed(2)} €</span>
                 {:else if tx.type === 'depense'}
@@ -487,47 +505,51 @@
                 {:else}
                   <span class="text-muted-foreground">{(tx.amount / 100).toFixed(2)} €</span>
                 {/if}
-              </td>
-              <td class="p-4 text-right relative">
+              </Table.Cell>
+              <Table.Cell class="p-4 text-right relative">
                 {#if !isClosed}
                   <div class="inline-block text-left">
-                    <button 
+                    <Button 
+                      variant="ghost"
+                      size="icon-xs"
                       onclick={(e) => toggleDropdown(tx.id, e)} 
                       class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center" 
                       aria-label="Actions"
                     >
                       <MoreVertical class="w-4 h-4" />
-                    </button>
+                    </Button>
 
                     {#if openDropdownId === tx.id}
                       <div class="absolute right-4 mt-1 w-32 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border">
-                        <button
+                        <Button
+                          variant="ghost"
                           onclick={(e) => startEdit(tx, e)}
-                          class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                          class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent h-auto rounded-none justify-start"
                         >
                           <Edit2 class="w-3.5 h-3.5" />
                           Éditer
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="ghost"
                           onclick={() => handleDelete(tx.id)}
-                          class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                          class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent h-auto rounded-none justify-start"
                         >
                           <Trash2 class="w-3.5 h-3.5" />
                           Supprimer
-                        </button>
+                        </Button>
                       </div>
                     {/if}
                   </div>
                 {/if}
-              </td>
-            </tr>
+              </Table.Cell>
+            </Table.Row>
           {:else}
-            <tr>
-              <td colspan="7" class="p-8 text-center text-muted-foreground">Aucune écriture comptable pour cette saison.</td>
-            </tr>
+            <Table.Row>
+              <Table.Cell colspan={7} class="p-8 text-center text-muted-foreground">Aucune écriture comptable pour cette saison.</Table.Cell>
+            </Table.Row>
           {/each}
-        </tbody>
-      </table>
+        </Table.Body>
+      </Table.Root>
     </div>
 
     <!-- Pagination Footer -->
@@ -540,155 +562,157 @@
           Page {pagination.page} sur {pagination.totalPages}
         </span>
         <div class="flex gap-1 items-center">
-          <button
-            class="p-2 border border-border rounded bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          <Button
+            variant="outline"
+            size="icon-xs"
+            class="p-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             onclick={() => changePage(pagination.page - 1)}
             disabled={pagination.page <= 1}
             aria-label="Page précédente"
           >
             <ChevronLeft class="w-4 h-4" />
-          </button>
+          </Button>
 
           {#each pageRange as p}
             {#if p === '...'}
               <span class="px-2.5 py-1 text-xs text-muted-foreground select-none">...</span>
             {:else}
-              <button
-                class="px-3 py-1 border border-border rounded text-xs font-semibold transition-colors cursor-pointer"
-                class:bg-primary={Number(p) === pagination.page}
-                class:text-primary-foreground={Number(p) === pagination.page}
-                class:bg-background={Number(p) !== pagination.page}
-                class:hover:bg-muted={Number(p) !== pagination.page}
+              <Button
+                variant={Number(p) === pagination.page ? 'default' : 'outline'}
+                size="xs"
+                class="px-3 py-1 text-xs font-semibold transition-colors cursor-pointer"
                 onclick={() => changePage(Number(p))}
                 aria-current={Number(p) === pagination.page ? 'page' : undefined}
               >
                 {p}
-              </button>
+              </Button>
             {/if}
           {/each}
 
-          <button
-            class="p-2 border border-border rounded bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          <Button
+            variant="outline"
+            size="icon-xs"
+            class="p-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             onclick={() => changePage(pagination.page + 1)}
             disabled={pagination.page >= pagination.totalPages}
             aria-label="Page suivante"
           >
             <ChevronRight class="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Modale de saisie coulissante -->
-  {#if showPanel}
-    <div class="fixed inset-0 z-50 flex justify-end">
-      <button type="button" class="fixed inset-0 bg-black/40 border-0 cursor-default" onclick={() => showPanel = null} aria-label="Close modal"></button>
-      <div class="relative w-full max-w-md bg-card border-l border-border h-full p-6 shadow-2xl flex flex-col justify-between overflow-y-auto z-10">
-        <form onsubmit={handleAddTransaction} class="space-y-4">
-          <h3 class="text-lg font-bold">
-            {#if editingId}
-              {#if showPanel === 'recette'}🟢 Modifier la recette{:else if showPanel === 'depense'}🔴 Modifier la dépense{:else}🔵 Modifier le virement interne{/if}
-            {:else}
-              {#if showPanel === 'recette'}🟢 Saisir une recette{:else if showPanel === 'depense'}🔴 Saisir une dépense{:else}🔵 Faire un virement interne{/if}
-            {/if}
-          </h3>
-
-          {#if errorMsg}
-            <div class="p-3 bg-destructive/15 border border-destructive text-destructive text-xs rounded-md flex items-center gap-2">
-              <AlertCircle class="w-4 h-4 shrink-0" />
-              <span>{errorMsg}</span>
-            </div>
+  <Dialog.Root bind:open>
+    <Dialog.Content class="max-w-md p-6 bg-card border-border overflow-y-auto max-h-[90vh]">
+      <Dialog.Header>
+        <Dialog.Title>
+          {#if editingId}
+            {#if showPanel === 'recette'}🟢 Modifier la recette{:else if showPanel === 'depense'}🔴 Modifier la dépense{:else}🔵 Modifier le virement interne{/if}
+          {:else}
+            {#if showPanel === 'recette'}🟢 Saisir une recette{:else if showPanel === 'depense'}🔴 Saisir une dépense{:else}🔵 Faire un virement interne{/if}
           {/if}
+        </Dialog.Title>
+        <Dialog.Description class="hidden">Formulaire de saisie d'écriture comptable</Dialog.Description>
+      </Dialog.Header>
 
-          <div>
-            <label for="amount-input" class="block text-sm font-medium mb-1">Montant (€)</label>
-            <input id="amount-input" type="number" step="0.01" min="0.01" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={amount} required />
+      <form onsubmit={handleAddTransaction} class="space-y-4">
+        {#if errorMsg}
+          <div class="p-3 bg-destructive/15 border border-destructive text-destructive text-xs rounded-md flex items-center gap-2">
+            <AlertCircle class="w-4 h-4 shrink-0" />
+            <span>{errorMsg}</span>
           </div>
+        {/if}
 
-          <div>
-            <label for="date-input" class="block text-sm font-medium mb-1">Date</label>
-            <input id="date-input" type="date" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={date} required />
-          </div>
+        <div>
+          <label for="amount-input" class="block text-sm font-medium mb-1">Montant (€)</label>
+          <Input id="amount-input" type="number" step="0.01" min="0.01" bind:value={amount} required />
+        </div>
 
+        <div>
+          <label for="date-input" class="block text-sm font-medium mb-1">Date</label>
+          <Input id="date-input" type="date" bind:value={date} required />
+        </div>
+
+        <div>
+          <label for="season-select-panel" class="block text-sm font-medium mb-1">Saison d'affectation</label>
+          <select id="season-select-panel" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary font-medium" bind:value={targetSeasonId}>
+            {#each seasons as s}
+              <option value={s.id}>{s.name}</option>
+            {/each}
+            {#if seasons.length === 0}
+              <option value="25-26">Saison 2025-2026</option>
+            {/if}
+          </select>
+        </div>
+
+        {#if showPanel !== 'transfert'}
           <div>
-            <label for="season-select-panel" class="block text-sm font-medium mb-1">Saison d'affectation</label>
-            <select id="season-select-panel" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary font-medium" bind:value={targetSeasonId}>
-              {#each seasons as s}
-                <option value={s.id}>{s.name}</option>
+            <label for="category-select" class="block text-sm font-medium mb-1">Catégorie</label>
+            <select id="category-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={category}>
+              {#each activeCategories as cat}
+                <option value={cat.id}>{cat.name}</option>
               {/each}
-              {#if seasons.length === 0}
-                <option value="25-26">Saison 2025-2026</option>
-              {/if}
             </select>
           </div>
+        {/if}
 
-          {#if showPanel !== 'transfert'}
-            <div>
-              <label for="category-select" class="block text-sm font-medium mb-1">Catégorie</label>
-              <select id="category-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={category}>
-                {#each activeCategories as cat}
-                  <option value={cat.id}>{cat.name}</option>
-                {/each}
-              </select>
-            </div>
-          {/if}
+        <div>
+          <label for="account-select" class="block text-sm font-medium mb-1">
+            {#if showPanel === 'transfert'}Compte Source{:else}Compte financier{/if}
+          </label>
+          <select id="account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={accountId}>
+            {#each Object.entries(accountLabels) as [key, label]}
+              <option value={key}>{label}</option>
+            {/each}
+          </select>
+        </div>
 
+        {#if showPanel === 'transfert'}
           <div>
-            <label for="account-select" class="block text-sm font-medium mb-1">
-              {#if showPanel === 'transfert'}Compte Source{:else}Compte financier{/if}
-            </label>
-            <select id="account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={accountId}>
+            <label for="dest-account-select" class="block text-sm font-medium mb-1">Compte Destinataire</label>
+            <select id="dest-account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={destinationAccountId}>
               {#each Object.entries(accountLabels) as [key, label]}
+                {#if key !== accountId}
+                  <option value={key}>{label}</option>
+                {/if}
+              {/each}
+            </select>
+          </div>
+        {/if}
+
+        {#if showPanel !== 'transfert'}
+          <div>
+            <label for="payment-method-select" class="block text-sm font-medium mb-1">Moyen de paiement</label>
+            <select id="payment-method-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={paymentMethod}>
+              {#each Object.entries(methodLabels) as [key, label]}
                 <option value={key}>{label}</option>
               {/each}
             </select>
           </div>
+        {/if}
 
-          {#if showPanel === 'transfert'}
-            <div>
-              <label for="dest-account-select" class="block text-sm font-medium mb-1">Compte Destinataire</label>
-              <select id="dest-account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={destinationAccountId}>
-                {#each Object.entries(accountLabels) as [key, label]}
-                  {#if key !== accountId}
-                    <option value={key}>{label}</option>
-                  {/if}
-                {/each}
-              </select>
-            </div>
-          {/if}
+        <div>
+          <label for="description-input" class="block text-sm font-medium mb-1">Description / Motif</label>
+          <Input id="description-input" type="text" placeholder="Ex: Cotisation annuelle..." bind:value={description} required />
+        </div>
 
-          {#if showPanel !== 'transfert'}
-            <div>
-              <label for="payment-method-select" class="block text-sm font-medium mb-1">Moyen de paiement</label>
-              <select id="payment-method-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={paymentMethod}>
-                {#each Object.entries(methodLabels) as [key, label]}
-                  <option value={key}>{label}</option>
-                {/each}
-              </select>
-            </div>
-          {/if}
+        <div>
+          <label for="ref-input" class="block text-sm font-medium mb-1">Référence (Optionnel)</label>
+          <Input id="ref-input" type="text" placeholder="Ex: Chèque n°1234, Virement..." bind:value={reference} />
+        </div>
 
-          <div>
-            <label for="description-input" class="block text-sm font-medium mb-1">Description / Motif</label>
-            <input id="description-input" type="text" placeholder="Ex: Cotisation annuelle..." class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={description} required />
-          </div>
-
-          <div>
-            <label for="ref-input" class="block text-sm font-medium mb-1">Référence (Optionnel)</label>
-            <input id="ref-input" type="text" placeholder="Ex: Chèque n°1234, Virement..." class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={reference} />
-          </div>
-
-          <div class="flex gap-3 pt-4">
-            <button type="submit" disabled={isSubmitting} class="flex-1 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow hover:bg-primary/90 cursor-pointer">
-              {isSubmitting ? 'Enregistrement...' : 'Valider'}
-            </button>
-            <button type="button" onclick={() => showPanel = null} class="px-4 py-2 border border-border text-sm font-medium rounded-md hover:bg-muted cursor-pointer">
-              Annuler
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  {/if}
+        <div class="flex gap-3 pt-4">
+          <Button type="submit" disabled={isSubmitting} class="flex-1">
+            {isSubmitting ? 'Enregistrement...' : 'Valider'}
+          </Button>
+          <Button type="button" variant="outline" onclick={() => showPanel = null}>
+            Annuler
+          </Button>
+        </div>
+      </form>
+    </Dialog.Content>
+  </Dialog.Root>
 </div>
