@@ -16,18 +16,24 @@
   });
 
   function handleToggle() {
-    // Mettre à jour l'état dans mode-watcher et localStorage
-    toggleMode();
+    // Try using mode-watcher first
+    try {
+      toggleMode();
+    } catch (err) {
+      console.warn("mode-watcher toggleMode failed, using fallback:", err);
+    }
 
-    // Mettre à jour directement le DOM pour garantir un fonctionnement immédiat multi-islands
+    // Direct DOM and localStorage updates for instant and multi-island consistency
     const html = document.documentElement;
     if (currentMode === "dark") {
       html.classList.remove("dark");
       html.style.colorScheme = "light";
+      localStorage.setItem("mode-watcher-mode", '"light"');
       currentMode = "light";
     } else {
       html.classList.add("dark");
       html.style.colorScheme = "dark";
+      localStorage.setItem("mode-watcher-mode", '"dark"');
       currentMode = "dark";
     }
   }

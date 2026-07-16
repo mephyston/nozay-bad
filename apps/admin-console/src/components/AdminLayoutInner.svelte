@@ -1,15 +1,25 @@
 <script lang="ts">
   import {
     LayoutDashboard,
-    Receipt,
-    Users,
-    ShoppingBag,
     Coins,
-    Settings,
+    Users,
+    UploadCloud,
+    BarChart3,
+    BookOpen,
+    FileCheck,
+    Scale,
+    Landmark,
+    Wallet,
+    Play,
+    Package,
+    ShoppingCart,
+    Calendar,
+    Tags,
+    Layers,
     ChevronDown,
     ChevronUp,
-    X,
     ChevronsUpDown,
+    X,
     Trophy,
     User,
     LogOut
@@ -40,34 +50,34 @@
       label: "Adhérents",
       items: [
         { name: "Liste des adhérents", icon: Users, href: "/admin/members" },
-        { name: "Import Poona", icon: Users, href: "/admin/members/import" }
+        { name: "Import Poona", icon: UploadCloud, href: "/admin/members/import" }
       ]
     },
     {
       label: "Comptabilité",
       items: [
-        { name: "Rapports", icon: Receipt, href: "/admin/accounting/reports" },
-        { name: "Grand Livre", icon: Receipt, href: "/admin/accounting" },
-        { name: "Factures", icon: Receipt, href: "/admin/accounting/invoices" },
-        { name: "Rapprochement bancaire", icon: Receipt, href: "/admin/accounting/import" },
-        { name: "Remises de chèques", icon: Receipt, href: "/admin/accounting/cheques" },
-        { name: "Caisse", icon: Receipt, href: "/admin/accounting/cash-box" },
-        { name: "Soldes initiaux", icon: Receipt, href: "/admin/accounting/config" }
+        { name: "Rapports", icon: BarChart3, href: "/admin/accounting/reports" },
+        { name: "Grand Livre", icon: BookOpen, href: "/admin/accounting" },
+        { name: "Factures", icon: FileCheck, href: "/admin/accounting/invoices" },
+        { name: "Rapprochement bancaire", icon: Scale, href: "/admin/accounting/import" },
+        { name: "Remises de chèques", icon: Landmark, href: "/admin/accounting/cheques" },
+        { name: "Caisse", icon: Wallet, href: "/admin/accounting/cash-box" },
+        { name: "Soldes initiaux", icon: Play, href: "/admin/accounting/config" }
       ]
     },
     {
       label: "Boutique",
       items: [
-        { name: "Produits", icon: ShoppingBag, href: "/admin/shop/products" },
-        { name: "Commandes", icon: ShoppingBag, href: "/admin/shop/orders" }
+        { name: "Produits", icon: Package, href: "/admin/shop/products" },
+        { name: "Commandes", icon: ShoppingCart, href: "/admin/shop/orders" }
       ]
     },
     {
       label: "Réglages",
       items: [
-        { name: "Saisons", icon: Settings, href: "/admin/accounting/settings?view=seasons" },
-        { name: "Catégories", icon: Settings, href: "/admin/accounting/settings?view=compta" },
-        { name: "Classes de comptes", icon: Settings, href: "/admin/accounting/settings?view=classes" }
+        { name: "Saisons", icon: Calendar, href: "/admin/accounting/settings?view=seasons" },
+        { name: "Catégories", icon: Tags, href: "/admin/accounting/settings?view=compta" },
+        { name: "Classes de comptes", icon: Layers, href: "/admin/accounting/settings?view=classes" }
       ]
     }
   ];
@@ -163,21 +173,41 @@
 
 <Sidebar.Root collapsible="icon">
   <!-- Header -->
-  <Sidebar.Header class="h-14 flex flex-row items-center px-2 justify-between group-data-[collapsible=icon]:justify-center">
-    <div class="flex items-center w-full group-data-[collapsible=icon]:justify-center justify-between">
-      <div class="flex items-center gap-2 group-data-[collapsible=icon]:justify-center overflow-hidden">
-        <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0">
-          <Trophy class="size-4" />
-        </div>
-        <div class="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-          <span class="truncate font-bold text-primary tracking-wide text-xs">Nozay Badminton</span>
-          <span class="truncate text-[10px] text-muted-foreground font-semibold">Association</span>
-        </div>
-      </div>
+  <Sidebar.Header class="p-2 border-0 bg-transparent">
+    <div class="flex items-center w-full justify-between gap-1">
+      <Sidebar.Menu class="flex-1">
+        <Sidebar.MenuItem>
+          <Sidebar.MenuButton
+            size="default"
+            class="data-[slot=sidebar-menu-button]:!p-1.5 w-full bg-transparent border-0 flex items-center justify-start gap-2"
+          >
+            {#snippet child({ props })}
+              <a
+                {...props}
+                href="/admin"
+                class="flex items-center gap-2 w-full h-full font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center"
+              >
+                <!-- Badminton Racket & Shuttlecock Custom SVG Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0 text-primary">
+                  <circle cx="14.5" cy="8.5" r="5.5" />
+                  <path d="M11 8.5h7M14.5 5v7" />
+                  <path d="m11 12-6 6" />
+                  <rect x="3.5" y="18.5" width="2" height="2" rx="0.5" />
+                  <path d="M6 4h3v2.5a1.5 1.5 0 0 1-3 0V4Z" />
+                </svg>
+                <div class="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                  <span class="truncate font-bold text-sm text-foreground">Nozay Badminton</span>
+                  <span class="truncate text-[10px] text-muted-foreground font-semibold">Association</span>
+                </div>
+              </a>
+            {/snippet}
+          </Sidebar.MenuButton>
+        </Sidebar.MenuItem>
+      </Sidebar.Menu>
       {#if sidebar.isMobile}
         <button
           type="button"
-          class="p-1 rounded hover:bg-accent border-0 bg-transparent cursor-pointer flex items-center justify-center"
+          class="p-1 rounded hover:bg-accent border-0 bg-transparent cursor-pointer flex items-center justify-center shrink-0"
           aria-label="Close menu"
           onclick={(e) => { e.stopPropagation(); sidebar.setOpenMobile(false); }}
         >

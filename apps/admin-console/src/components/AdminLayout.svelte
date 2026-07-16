@@ -9,23 +9,23 @@
     breadcrumb?: string;
   }>();
 
-  // Keep track of desktop sidebar collapsed state in localstorage
-  let sidebarCollapsed = $state(false);
+  // Keep track of desktop sidebar open state in localstorage
+  let sidebarOpen = $state(true);
 
   onMount(() => {
     const saved = localStorage.getItem("sidebar_collapsed");
     if (saved !== null) {
-      sidebarCollapsed = saved === "true";
+      sidebarOpen = saved !== "true";
     }
   });
 
   function handleOpenChange(open: boolean) {
-    sidebarCollapsed = !open;
-    localStorage.setItem("sidebar_collapsed", String(sidebarCollapsed));
+    sidebarOpen = open;
+    localStorage.setItem("sidebar_collapsed", String(!open));
   }
 </script>
 
-<Sidebar.Provider open={!sidebarCollapsed} onOpenChange={handleOpenChange}>
+<Sidebar.Provider bind:open={sidebarOpen} onOpenChange={handleOpenChange}>
   <AdminLayoutInner {email} {breadcrumb}>
     {@render children?.()}
   </AdminLayoutInner>

@@ -97,10 +97,12 @@
 
     <Popover.Root>
       <Popover.Trigger>
-        <Button variant="outline" class="flex items-center gap-2">
-          <Filter class="w-4 h-4" />
-          Filtres
-        </Button>
+        {#snippet child({ props })}
+          <Button {...props} variant="outline" class="flex items-center gap-2">
+            <Filter class="w-4 h-4" />
+            Filtres
+          </Button>
+        {/snippet}
       </Popover.Trigger>
       <Popover.Content class="w-80 p-4 space-y-4" align="end">
         <h4 class="font-semibold text-sm border-b border-border pb-2">Options de filtrage</h4>
@@ -234,14 +236,17 @@
               <Table.Cell class="text-right">
                 <Popover.Root>
                   <Popover.Trigger>
-                    <Button 
-                      variant="ghost"
-                      size="icon-sm"
-                      class="text-muted-foreground hover:text-foreground cursor-pointer" 
-                      aria-label="Actions"
-                    >
-                      <MoreVertical class="w-4 h-4" />
-                    </Button>
+                    {#snippet child({ props })}
+                      <Button 
+                        {...props}
+                        variant="ghost"
+                        size="icon-sm"
+                        class="text-muted-foreground hover:text-foreground cursor-pointer" 
+                        aria-label="Actions"
+                      >
+                        <MoreVertical class="w-4 h-4" />
+                      </Button>
+                    {/snippet}
                   </Popover.Trigger>
                   <Popover.Content class="w-40 p-1" align="end">
                     <div class="flex flex-col">
