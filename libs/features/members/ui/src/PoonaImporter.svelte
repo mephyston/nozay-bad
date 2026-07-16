@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Upload, AlertCircle, CheckCircle, RefreshCw, FileText } from 'lucide-svelte';
-  import { Button, Card, Input, Alert, Table } from '@metacult/shared-ui';
+  import { Button, Card, Alert, Table } from '@metacult/shared-ui';
 
   interface ImportResult {
     success: boolean;
@@ -15,6 +15,7 @@
   let selectedFile = $state<File | null>(null);
   let loading = $state(false);
   let formElement = $state<HTMLFormElement | null>(null);
+  let fileInput = $state<HTMLInputElement | null>(null);
 
   // Nouveaux états locaux pour la prévisualisation et la validation
   let csvPreview = $state<any[]>([]);
@@ -23,6 +24,14 @@
   let localError = $state<string | null>(null);
 
   const REQUIRED_HEADERS = ['Licence', 'Saison', 'Nom', 'Prénom', 'Sexe', 'Date naissance', 'Type'];
+
+  function resetForm() {
+    selectedFile = null;
+    csvPreview = [];
+    localError = null;
+    totalRows = 0;
+    if (fileInput) fileInput.value = '';
+  }
 
   function handleDragOver(e: DragEvent) {
     e.preventDefault();
@@ -49,10 +58,13 @@
   }
 
   function processFile(file: File) {
+    csvPreview = [];
+    totalRows = 0;
+    localError = null;
+
     if (!file.name.endsWith('.csv')) {
+      resetForm();
       localError = "Le fichier doit être au format CSV (.csv uniquement).";
-      selectedFile = null;
-      csvPreview = [];
       return;
     }
 
@@ -64,6 +76,7 @@
       const text = event.target?.result as string;
       const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
       if (lines.length === 0) {
+        resetForm();
         localError = "Le fichier CSV est vide.";
         return;
       }
@@ -82,6 +95,7 @@
       );
 
       if (missing.length > 0) {
+        resetForm();
         localError = `En-têtes obligatoires manquants : ${missing.join(', ')}`;
         return;
       }
@@ -173,12 +187,13 @@
         ondragover={handleDragOver}
         ondragleave={handleDragLeave}
         ondrop={handleDrop}
-        onclick={() => formElement?.querySelector('input')?.click()}
+        onclick={() => fileInput?.click()}
         role="button"
         tabindex="0"
-        onkeydown={(e) => e.key === 'Enter' && formElement?.querySelector('input')?.click()}
+        onkeydown={(e) => e.key === 'Enter' && fileInput?.click()}
       >
         <input
+          bind:this={fileInput}
           type="file"
           name="file"
           accept=".csv"
@@ -247,7 +262,7 @@
           <Button
             type="button"
             variant="outline"
-            onclick={() => { selectedFile = null; csvPreview = []; localError = null; }}
+            onclick={resetForm}
             disabled={loading}
           >
             Annuler
