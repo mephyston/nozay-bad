@@ -11,6 +11,6 @@
 - Task 1: complete (commits a2c299a..0ddb334, review clean)
 - Task 2: complete (commits 57a93cf..f71be4a, review clean)
 - Task 3: complete (commits 4036ef4..1cb6951, review clean)
-- Task 4: pending
+- Task 4: complete (commits dc556f9..08ecb6c, review clean)
 - Task 5: pending
 - Task 6: pending
