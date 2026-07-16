@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Upload, AlertCircle, CheckCircle, RefreshCw } from 'lucide-svelte';
-  import { Button, Card, Input, Alert } from '@metacult/shared-ui';
+  import { Upload, AlertCircle, CheckCircle, RefreshCw, FileText } from 'lucide-svelte';
+  import { Button, Card, Input, Alert, Table } from '@metacult/shared-ui';
 
   interface ImportResult {
     success: boolean;
@@ -16,6 +16,14 @@
   let loading = $state(false);
   let formElement = $state<HTMLFormElement | null>(null);
 
+  // Nouveaux états locaux pour la prévisualisation et la validation
+  let csvPreview = $state<any[]>([]);
+  let totalRows = $state(0);
+  let separator = $state(';');
+  let localError = $state<string | null>(null);
+
+  const REQUIRED_HEADERS = ['Licence', 'Saison', 'Nom', 'Prénom', 'Sexe', 'Date naissance', 'Type'];
+
   function handleDragOver(e: DragEvent) {
     e.preventDefault();
     dragOver = true;
@@ -29,19 +37,86 @@
     e.preventDefault();
     dragOver = false;
     if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-      selectedFile = e.dataTransfer.files[0];
+      processFile(e.dataTransfer.files[0]);
     }
   }
 
   function handleFileChange(e: Event) {
     const input = e.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      selectedFile = input.files[0];
+      processFile(input.files[0]);
     }
   }
 
+  function processFile(file: File) {
+    if (!file.name.endsWith('.csv')) {
+      localError = "Le fichier doit être au format CSV (.csv uniquement).";
+      selectedFile = null;
+      csvPreview = [];
+      return;
+    }
+
+    localError = null;
+    selectedFile = file;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+      if (lines.length === 0) {
+        localError = "Le fichier CSV est vide.";
+        return;
+      }
+
+      const headerLine = lines[0];
+      const sep = headerLine.includes(';') ? ';' : ',';
+      separator = sep;
+
+      const headers = headerLine.split(sep).map(h => h.trim().replace(/^"(.*)"$/, '$1').trim().toLowerCase());
+      
+      // Vérifier les en-têtes requis
+      const missing = REQUIRED_HEADERS.filter(req => 
+        !headers.includes(req.toLowerCase()) && 
+        !(req === 'Date naissance' && headers.includes('date de naissance')) &&
+        !(req === 'Type' && headers.includes('tarif'))
+      );
+
+      if (missing.length > 0) {
+        localError = `En-têtes obligatoires manquants : ${missing.join(', ')}`;
+        return;
+      }
+
+      totalRows = lines.length - 1;
+
+      // Extraire l'aperçu
+      const previewRows: any[] = [];
+      const licenceIdx = headers.findIndex(h => h === 'licence');
+      const seasonIdx = headers.findIndex(h => h === 'saison');
+      const lastNameIdx = headers.findIndex(h => h === 'nom');
+      const firstNameIdx = headers.findIndex(h => h === 'prénom' || h === 'prenom');
+      const genderIdx = headers.findIndex(h => h === 'sexe');
+      const birthDateIdx = headers.findIndex(h => h === 'date naissance' || h === 'date de naissance');
+      const typeIdx = headers.findIndex(h => h === 'type' || h === 'tarif');
+
+      for (let i = 1; i < Math.min(lines.length, 6); i++) {
+        const columns = lines[i].split(sep).map(col => col.trim().replace(/^"(.*)"$/, '$1').trim());
+        previewRows.push({
+          licence: columns[licenceIdx] || '',
+          season: columns[seasonIdx] || '',
+          lastName: columns[lastNameIdx] || '',
+          firstName: columns[firstNameIdx] || '',
+          gender: columns[genderIdx] || '',
+          birthDate: columns[birthDateIdx] || '',
+          type: columns[typeIdx] || ''
+        });
+      }
+      csvPreview = previewRows;
+    };
+    reader.readAsText(file);
+  }
+
   function handleSubmit(e: Event) {
-    if (!selectedFile) {
+    if (!selectedFile || localError) {
       e.preventDefault();
       return;
     }
@@ -56,6 +131,14 @@
         <AlertCircle class="w-4 h-4" />
         <Alert.Title>Erreur d'importation</Alert.Title>
         <Alert.Description>{error}</Alert.Description>
+      </Alert.Root>
+    {/if}
+
+    {#if localError}
+      <Alert.Root variant="destructive" class="mb-6">
+        <AlertCircle class="w-4 h-4" />
+        <Alert.Title>Erreur de format locale</Alert.Title>
+        <Alert.Description>{localError}</Alert.Description>
       </Alert.Root>
     {/if}
 
@@ -95,7 +178,7 @@
         tabindex="0"
         onkeydown={(e) => e.key === 'Enter' && formElement?.querySelector('input')?.click()}
       >
-        <Input
+        <input
           type="file"
           name="file"
           accept=".csv"
@@ -106,9 +189,12 @@
         <Upload class="w-10 h-10 text-muted-foreground mb-4" />
 
         {#if selectedFile}
-          <p class="font-semibold text-sm">{selectedFile.name}</p>
+          <div class="flex items-center gap-2">
+            <FileText class="w-5 h-5 text-primary" />
+            <p class="font-semibold text-sm">{selectedFile.name}</p>
+          </div>
           <p class="text-xs text-muted-foreground mt-1">
-            {(selectedFile.size / 1024).toFixed(1)} KB
+            {(selectedFile.size / 1024).toFixed(1)} KB — {totalRows} ligne(s) détectée(s)
           </p>
         {:else}
           <p class="font-semibold text-sm">Sélectionnez un fichier CSV ou Glissez et déposez</p>
@@ -118,12 +204,50 @@
         {/if}
       </div>
 
+      <!-- Table de Prévisualisation -->
+      {#if selectedFile && csvPreview.length > 0 && !localError}
+        <div class="mt-6 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold">Aperçu des données (5 premières lignes)</h3>
+            <span class="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded font-mono">
+              Séparateur : {separator === ';' ? 'Point-virgule' : 'Virgule'}
+            </span>
+          </div>
+          <div class="border border-border rounded-md overflow-hidden bg-background">
+            <Table.Root>
+              <Table.Header>
+                <Table.Row>
+                  <Table.Head class="h-9 py-1 px-3">Licence</Table.Head>
+                  <Table.Head class="h-9 py-1 px-3">Saison</Table.Head>
+                  <Table.Head class="h-9 py-1 px-3">Nom</Table.Head>
+                  <Table.Head class="h-9 py-1 px-3">Prénom</Table.Head>
+                  <Table.Head class="h-9 py-1 px-3">Sexe</Table.Head>
+                  <Table.Head class="h-9 py-1 px-3">Type</Table.Head>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {#each csvPreview as row}
+                  <Table.Row class="hover:bg-muted/30">
+                    <Table.Cell class="py-1.5 px-3 font-medium text-xs">{row.licence}</Table.Cell>
+                    <Table.Cell class="py-1.5 px-3 text-xs text-muted-foreground">{row.season}</Table.Cell>
+                    <Table.Cell class="py-1.5 px-3 text-xs font-semibold">{row.lastName}</Table.Cell>
+                    <Table.Cell class="py-1.5 px-3 text-xs">{row.firstName}</Table.Cell>
+                    <Table.Cell class="py-1.5 px-3 text-xs">{row.gender}</Table.Cell>
+                    <Table.Cell class="py-1.5 px-3 text-xs text-muted-foreground">{row.type}</Table.Cell>
+                  </Table.Row>
+                {/each}
+              </Table.Body>
+            </Table.Root>
+          </div>
+        </div>
+      {/if}
+
       <div class="mt-6 flex justify-end gap-3">
         {#if selectedFile}
           <Button
             type="button"
             variant="outline"
-            onclick={() => { selectedFile = null; }}
+            onclick={() => { selectedFile = null; csvPreview = []; localError = null; }}
             disabled={loading}
           >
             Annuler
@@ -132,7 +256,7 @@
 
         <Button
           type="submit"
-          disabled={!selectedFile || loading}
+          disabled={!selectedFile || loading || !!localError}
           class="flex items-center justify-center gap-2"
         >
           {#if loading}
