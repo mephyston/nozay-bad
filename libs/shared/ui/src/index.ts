@@ -7,3 +7,21 @@ export * as Alert from './components/ui/alert';
 export * as Card from './components/ui/card';
 export * as Dialog from './components/ui/dialog';
 export * as Drawer from './components/ui/drawer';
+
+// Additional components
+export * as Accordion from './components/ui/accordion';
+export * as AlertDialog from './components/ui/alert-dialog';
+export * as Avatar from './components/ui/avatar';
+export * as Breadcrumb from './components/ui/breadcrumb';
+export { Checkbox } from './components/ui/checkbox';
+export * as HoverCard from './components/ui/hover-card';
+export { Label } from './components/ui/label';
+export { ScrollArea } from './components/ui/scroll-area';
+export * as Sheet from './components/ui/sheet';
+export * as Tabs from './components/ui/tabs';
+export { Textarea } from './components/ui/textarea';
+export { Toggle } from './components/ui/toggle';
+export * as ToggleGroup from './components/ui/toggle-group';
+export * as Popover from './components/ui/popover';
+export * as Command from './components/ui/command';
+export { Calendar } from './components/ui/calendar';
