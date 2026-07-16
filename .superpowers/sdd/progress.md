@@ -14,3 +14,8 @@
 - Task 4: complete (commits dc556f9..08ecb6c, review clean)
 - Task 5: complete (commits 4cf652d..1dc72f0, review clean)
 - Task 6: pending
+
+## Phase 3: Members UI Refactoring (2026-07-16)
+- Task 1: pending
+- Task 2: pending
+
