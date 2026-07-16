@@ -212,7 +212,10 @@
                 >
                   {#snippet child({ props })}
                     <a
-                      {...props}
+                      class={props.class}
+                      data-active={props['data-active']}
+                      data-slot={props['data-slot']}
+                      data-sidebar={props['data-sidebar']}
                       href={item.href}
                       onclick={() => { if (sidebar.isMobile) sidebar.setOpenMobile(false); }}
                     >
