@@ -1,60 +1,46 @@
-# Rapport d'implémentation - Tâche 5 : Relocaliser les composants, réécrire les styles, et réécrire les imports
+# Task 5 Report: Refactor Accounting UI Processing Components
 
-## Statut
-**COMPLETED**
+## Overview
+Successfully migrated the primary accounting UI processing components—`CheckDepositManager.svelte`, `InvoicesManager.svelte`, and `GeneralMeetingReport.svelte`—from custom HTML elements and raw styling classes to unified UI design primitives exported by `@metacult/shared-ui`.
 
-## Descriptif Fonctionnel & Technique
-La tâche 5 a consisté à relocaliser l'ensemble des composants Svelte spécifiques par domaine (et leurs tests unitaires) depuis le dossier monolithique `apps/admin-console/src/components/` vers les nouvelles bibliothèques UI de features dans `libs/features/[feature]/ui/src/`.
+## Refactoring Breakdown
 
-Afin d'uniformiser le design system, les composants principaux de gestion des membres (`MembersTable` et `MemberProfile`) ont été réécrits pour consommer les primitives réutilisables de `@metacult/shared-ui` (`Table`, `Button`, `Badge`, `Alert`, `Input`, etc.) à la place des tableaux HTML bruts et des styles CSS personnalisés. Les autres composants relocalisés (Comptabilité, Dépenses, Boutique) ont été déplacés de façon propre et isolée dans leurs bibliothèques respectives, tout en préservant leur code existant pour éviter les régressions visuelles ou fonctionnelles. Ils seront mis en conformité avec le design system au cours des prochaines itérations.
+### 1. `CheckDepositManager.svelte`
+- **Card Layout**: Replaced the custom top panel container with `<Card.Root>` and `<Card.Content>`.
+- **Tables**: Migrated the received checks list and deposit slips table to standard `<Table.Root>`, `<Table.Header>`, `<Table.Row>`, `<Table.Head>`, `<Table.Body>`, and `<Table.Cell>` components.
+- **Buttons**: Replaced all raw HTML `<button>` elements with the standard `<Button>` component, utilizing the appropriate variants and sizes (e.g., `destructive`, `outline`, `sm`, `icon`).
+- **Badges**: Replaced raw status label blocks with standard `<Badge>` tags.
+- **Modals**: Replaced custom overlay modal divs with the standardized `<Dialog.Root>`, `<Dialog.Content>`, `<Dialog.Header>`, `<Dialog.Title>`, and `<Dialog.Footer>`.
+- **Alerts**: Migrated error alerts to `<Alert.Root>` and `<Alert.Description>`.
 
-### 1. Composants Relocalisés par Domaine
-Les fichiers Svelte et leurs tests `.test.ts` ont été déplacés comme suit :
-* **Membres (`@metacult/features-members-ui`)** (avec refactorisation complète vers `@metacult/shared-ui`) :
-  - `MemberProfile.svelte` (+ `.test.ts`)
-  - `MembersTable.svelte` (+ `.test.ts`)
-  - `PoonaImporter.svelte` (+ `.test.ts`)
-* **Comptabilité (`@metacult/features-accounting-ui`)** (relocalisation propre) :
-  - `BankStatementReconciliation.svelte` (+ `.test.ts`)
-  - `InitialBalancesConfig.svelte` (+ `.test.ts`)
-  - `TransactionLedger.svelte` (+ `.test.ts`)
-  - `CheckDepositManager.svelte` (+ `.test.ts`)
-  - `CashBoxManager.svelte` (+ `.test.ts`)
-  - `GeneralMeetingReport.svelte` (+ `.test.ts`)
-  - `SettingsManager.svelte` (+ `.test.ts`)
-  - `InvoicesManager.svelte` (+ `.test.ts`)
-* **Dépenses (`@metacult/features-expenses-ui`)** (relocalisation propre) :
-  - `ExpensesManager.svelte` (+ `.test.ts`)
-* **Boutique (`@metacult/features-shop-ui`)** (relocalisation propre) :
-  - `OrdersManager.svelte` (+ `.test.ts`)
-  - `ProductsManager.svelte` (+ `.test.ts`)
+### 2. `InvoicesManager.svelte`
+- **Billing Form**: Refactored input structures inside the edit/create invoice modal.
+- **Tables**: Converted the invoice table layout to use `<Table.Root>` and namespaces.
+- **Badges & Alerts**: Wrapped status indicators in standard `<Badge>` tags and error feedback in `<Alert.Root>`.
+- **Portal Test Adaptations**: In `InvoicesManager.test.ts`, changed assertions from `target.innerHTML` to `document.body.innerHTML` to correctly test Dialog modal contents since the new component portals modals to the document body.
 
-*Note : Les composants de layout partagés (`AdminLayout`, `ThemeToggle`, `UserNav`) sont restés dans `apps/admin-console`.*
+### 3. `GeneralMeetingReport.svelte`
+- **Tables**: Migrated financial reports (Compte de résultat, Bilan de trésorerie) to the unified Table components.
+- **Budget Inputs**: Converted number inputs to standardized `<Input>` components.
+- **CSS Selectors**: Wrapped component class overrides (like `.page-break` and `.print-container`) in `:global()` to satisfy the Svelte compiler and eliminate unused selector warnings.
 
-### 2. Barils d'Exportation et Pages Astro
-- Configuration des barils `index.ts` dans chaque répertoire `libs/features/[feature]/ui/src/` pour exporter les composants déplacés.
-- Mise à jour de l'ensemble des pages Astro dans `apps/admin-console/src/pages/admin/` pour importer les composants Svelte depuis `@metacult/features-[feature]-ui` au lieu des anciens chemins relatifs vers `src/components`.
+## Verification
 
-### 3. Renforcement des Frontières Architecturales (ESLint)
-- Mise à jour de `eslint.config.js` pour ajouter la règle stricte interdisant aux bibliothèques `type:ui` d'importer d'autres types de bibliothèques non autorisées :
-  ```javascript
-  {
-    sourceTag: 'type:ui',
-    onlyDependOnLibsWithTags: ['type:ui', 'scope:shared']
-  }
-  ```
+### Vitest Test Suite
+Ran the accounting UI vitest suite:
+```bash
+npx vitest run libs/features/accounting/ui/src/CheckDepositManager.test.ts libs/features/accounting/ui/src/InvoicesManager.test.ts libs/features/accounting/ui/src/GeneralMeetingReport.test.ts
+```
+**Status**: All 6 tests passed successfully.
 
-### 4. Configuration de Tests Vitest par Projet
-- Création de fichiers `vitest.config.ts` dédiés pour chaque nouvelle bibliothèque UI (`shared/ui`, `members/ui`, `accounting/ui`, `expenses/ui`, `shop/ui`) contenant les résolutions d'alias pour les chemins de workspace.
-- Enregistrement des configurations dans le fichier de configuration racine `vitest.config.ts` pour que la suite de tests globale exécute l'intégralité des 131 tests unitaires et d'intégration.
+### Astro Typecheck
+Ran Astro diagnostics check:
+```bash
+npx astro check --root apps/admin-console
+```
+**Status**: Result (29 files): 0 errors, 0 warnings, 0 hints.
 
-## Résultats des Vérifications et Validation
-
-1. **Vérification de Types Astro (`npx astro check`) :**
-   - **Statut :** PASS (0 erreur de compilation TypeScript ou de résolution d'import après l'ajout des chemins requis dans les configurations tsconfig).
-
-2. **Tests Unitaires et d'Intégration (`npx vitest run`) :**
-   - **Statut :** PASS (131 tests sur 131 passés avec succès).
-
-3. **Analyse Statique et Frontières de Monorepo (`npx eslint .`) :**
-   - **Statut :** PASS (0 violation de règles de dépendances ESLint `@nx/enforce-module-boundaries`).
+## Git Commits
+- `5840e25` - refactor(accounting-ui): migrate CheckDepositManager to shared UI components
+- `a515d95` - refactor(accounting-ui): migrate InvoicesManager to shared UI components
+- `6e693e1` - refactor(accounting-ui): migrate GeneralMeetingReport to shared UI components
