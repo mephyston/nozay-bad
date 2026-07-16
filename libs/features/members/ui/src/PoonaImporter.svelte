@@ -249,6 +249,7 @@
           accept=".csv"
           class="hidden"
           onchange={handleFileChange}
+          onclick={(e) => e.stopPropagation()}
         />
 
         <Upload class="w-10 h-10 text-muted-foreground mb-4" />
