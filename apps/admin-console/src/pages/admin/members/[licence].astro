@@ -25,7 +25,7 @@ try {
   member = body.data;
 
   if (member) {
-    const txRes = await apiService.fetch(`http://localhost/transactions?season=${season}&memberId=${member.id}&limit=100`);
+    const txRes = await apiService.fetch(`http://localhost/accounting/transactions?season=${season}&memberId=${member.id}&limit=100`);
     if (txRes.ok) {
       const txBody = await txRes.json() as any;
       memberTransactionsList = txBody.data || [];
