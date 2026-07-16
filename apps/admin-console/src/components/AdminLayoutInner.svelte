@@ -15,6 +15,7 @@
     LogOut
   } from "lucide-svelte";
   import { DropdownMenu } from "bits-ui";
+  import { onMount } from "svelte";
   import ThemeToggle from "./ThemeToggle.svelte";
   import UserNav from "./UserNav.svelte";
   import { Sidebar, Breadcrumb, Separator, Avatar } from "@metacult/shared-ui";
@@ -73,24 +74,27 @@
   // Track expanded submenus
   let expandedMenus = $state<Record<string, boolean>>({});
 
-  function toggleMenu(name: string) {
-    expandedMenus[name] = !expandedMenus[name];
-  }
-
   // Parse breadcrumbs
   const breadcrumbParts = $derived(breadcrumb.split(" / "));
   const primaryGroup = $derived(breadcrumbParts[0]?.trim());
   const subGroup = $derived(breadcrumbParts[1]?.trim());
 
-  // Auto-expand menu group from breadcrumb on initialization
-  $effect(() => {
-    if (primaryGroup) {
-      expandedMenus[primaryGroup] = true;
-      if (primaryGroup === "Notes de frais") {
+  // Initialize expanded menus from breadcrumbs prop inside onMount to prevent compiler warnings
+  onMount(() => {
+    const initialGroup = breadcrumb.split(" / ")[0]?.trim();
+    if (initialGroup) {
+      expandedMenus[initialGroup] = true;
+      if (initialGroup === "Notes de frais") {
         expandedMenus["Note de frais"] = true;
       }
+      expandedMenus = { ...expandedMenus };
     }
   });
+
+  function toggleMenu(name: string) {
+    expandedMenus[name] = !expandedMenus[name];
+    expandedMenus = { ...expandedMenus };
+  }
 
   function getBreadcrumbHref(part: string): string | undefined {
     switch (part.toLowerCase().trim()) {
@@ -163,7 +167,6 @@
                       {#each item.subItems as sub}
                         <a
                           href={sub.href}
-                          onclick={() => { if (sidebar.isMobile) sidebar.setOpenMobile(false); }}
                           class="{sub.name === subGroup && item.name === primaryGroup ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold' : 'font-medium text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50'} block px-2.5 py-1.5 text-xs rounded-md transition-colors"
                         >
                           {sub.name}
@@ -194,7 +197,6 @@
                         {#each item.subItems as sub}
                           <a
                             href={sub.href}
-                            onclick={() => { if (sidebar.isMobile) sidebar.setOpenMobile(false); }}
                             class="{sub.name === subGroup && item.name === primaryGroup ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold' : 'font-medium text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50'} block px-3 py-1.5 text-xs rounded-md transition-colors"
                           >
                             {sub.name}
@@ -217,7 +219,6 @@
                       data-slot={props['data-slot']}
                       data-sidebar={props['data-sidebar']}
                       href={item.href}
-                      onclick={() => { if (sidebar.isMobile) sidebar.setOpenMobile(false); }}
                     >
                       <item.icon class="h-4 w-4 shrink-0 text-muted-foreground" />
                       <span class="group-data-[collapsible=icon]:hidden">{item.name}</span>
