@@ -387,10 +387,10 @@
                       {(product.price / 100).toFixed(2)} €
                     </Table.Cell>
                     <Table.Cell>
-                      <button 
-                        type="button" 
+                      <Button 
+                        variant="ghost" 
                         onclick={() => handleToggleActive(product)}
-                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors border border-transparent hover:border-border cursor-pointer bg-transparent"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors border border-transparent hover:border-border cursor-pointer bg-transparent h-auto"
                         title="Cliquer pour changer le statut"
                       >
                         {#if product.active}
@@ -400,7 +400,7 @@
                           <span class="h-2 w-2 rounded-full bg-muted-foreground"></span>
                           <span class="text-muted-foreground">Inactif</span>
                         {/if}
-                      </button>
+                      </Button>
                     </Table.Cell>
                     <Table.Cell class="text-right relative">
                       <div class="inline-block text-left">
@@ -416,22 +416,22 @@
 
                         {#if openDropdownId === product.id}
                           <div class="absolute right-4 mt-1 w-32 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border">
-                            <button
-                              type="button"
+                            <Button
+                              variant="ghost"
                               onclick={(e) => { e.stopPropagation(); startEdit(product); openDropdownId = null; }}
-                              class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                              class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent justify-start h-auto"
                             >
                               <Edit class="w-3.5 h-3.5" />
                               Modifier
-                            </button>
-                            <button
-                              type="button"
+                            </Button>
+                            <Button
+                              variant="ghost"
                               onclick={(e) => { e.stopPropagation(); handleArchive(product); openDropdownId = null; }}
-                              class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                              class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent justify-start h-auto"
                             >
                               <Trash2 class="w-3.5 h-3.5" />
                               Désactiver
-                            </button>
+                            </Button>
                           </div>
                         {/if}
                       </div>
