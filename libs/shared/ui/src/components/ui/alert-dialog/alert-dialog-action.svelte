@@ -4,7 +4,7 @@
 		buttonVariants,
 		type ButtonVariant,
 		type ButtonSize,
-	} from "libs/shared/ui/src/components/ui/button/index.js";
+	} from "../button/index.js";
 	import { cn } from "../../../lib/utils.js";
 
 	let {

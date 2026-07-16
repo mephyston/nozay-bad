@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { cn } from "../../../lib/utils.js";
 	import type { ComponentProps } from "svelte";
-	import { Input } from "libs/shared/ui/src/components/ui/input/index.js";
+	import { Input } from "../input/index.js";
 
 	let {
 		ref = $bindable(null),
