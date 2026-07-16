@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Search, ChevronLeft, ChevronRight, User, MoreVertical, Eye } from 'lucide-svelte';
-  import { Table, Button, Badge } from '@metacult/shared-ui';
+  import { Search, ChevronLeft, ChevronRight, User, MoreVertical, Eye, Filter } from 'lucide-svelte';
+  import { Table, Button, Badge, Input, Popover } from '@metacult/shared-ui';
 
   interface Member {
     id: number;
@@ -53,18 +53,6 @@
   let selectedStatus = $state(initialStatus);
   let selectedType = $state(initialType);
   let selectedSeason = $state(initialSeason);
-  let openDropdownId = $state<string | null>(null);
-
-  function toggleDropdown(id: string, e: MouseEvent) {
-    e.stopPropagation();
-    openDropdownId = openDropdownId === id ? null : id;
-  }
-
-  $effect(() => {
-    const handleGlobalClick = () => { openDropdownId = null; };
-    window.addEventListener('click', handleGlobalClick);
-    return () => window.removeEventListener('click', handleGlobalClick);
-  });
 
   function applyFilters() {
     const params = new URLSearchParams();
@@ -92,71 +80,106 @@
 </script>
 
 <div class="space-y-4">
-  <!-- Filters Block -->
-  <div class="grid grid-cols-1 md:grid-cols-5 gap-4 bg-card p-4 rounded-lg border border-border shadow-sm">
-    <div class="relative">
-      <span class="absolute inset-y-0 left-3 flex items-center text-muted-foreground">
+  <div class="flex items-center gap-3 bg-card p-4 rounded-xl border border-border shadow-sm">
+    <div class="relative flex-1">
+      <span class="absolute inset-y-0 left-3 flex items-center text-muted-foreground z-10">
         <Search class="w-4 h-4" />
       </span>
-      <input
+      <Input
         type="text"
-        placeholder="Rechercher (Nom, Licence...)"
-        class="w-full pl-9 pr-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+        placeholder="Rechercher un adhérent (Nom, Licence...)"
+        class="pl-9 w-full bg-background"
         bind:value={searchInput}
         onkeydown={handleKeydown}
       />
     </div>
 
-    <div>
-      <select
-        class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-        bind:value={selectedSeason}
-        onchange={applyFilters}
-      >
-        {#each seasons as season}
-          <option value={season.id}>{season.name}</option>
-        {/each}
-        {#if seasons.length === 0}
-          <option value="25-26">Saison 2025-2026</option>
-        {/if}
-      </select>
-    </div>
+    <Popover.Root>
+      <Popover.Trigger>
+        <Button variant="outline" class="flex items-center gap-2">
+          <Filter class="w-4 h-4" />
+          Filtres
+        </Button>
+      </Popover.Trigger>
+      <Popover.Content class="w-80 p-4 space-y-4" align="end">
+        <h4 class="font-semibold text-sm border-b border-border pb-2">Options de filtrage</h4>
+        
+        <div class="space-y-3">
+          <div class="space-y-1.5">
+            <span class="text-xs font-semibold text-muted-foreground">Saison</span>
+            <select
+              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+              bind:value={selectedSeason}
+              onchange={applyFilters}
+            >
+              {#each seasons as season}
+                <option value={season.id}>{season.name}</option>
+              {/each}
+              {#if seasons.length === 0}
+                <option value="25-26">Saison 2025-2026</option>
+              {/if}
+            </select>
+          </div>
 
-    <div>
-      <select
-        class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-        bind:value={selectedGender}
-        onchange={applyFilters}
-      >
-        <option value="">Tous les genres</option>
-        <option value="M">Homme (M)</option>
-        <option value="F">Femme (F)</option>
-      </select>
-    </div>
+          <div class="space-y-1.5">
+            <span class="text-xs font-semibold text-muted-foreground">Genre</span>
+            <select
+              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              bind:value={selectedGender}
+              onchange={applyFilters}
+            >
+              <option value="">Tous les genres</option>
+              <option value="M">Homme (M)</option>
+              <option value="F">Femme (F)</option>
+            </select>
+          </div>
 
-    <div>
-      <select
-        class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-        bind:value={selectedType}
-        onchange={applyFilters}
-      >
-        <option value="">Tous les types</option>
-        <option value="Competiteur">Compétiteur</option>
-        <option value="Loisir">Loisir</option>
-      </select>
-    </div>
+          <div class="space-y-1.5">
+            <span class="text-xs font-semibold text-muted-foreground">Type d'adhérent</span>
+            <select
+              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              bind:value={selectedType}
+              onchange={applyFilters}
+            >
+              <option value="">Tous les types</option>
+              <option value="Competiteur">Compétiteur</option>
+              <option value="Loisir">Loisir</option>
+            </select>
+          </div>
 
-    <div>
-      <select
-        class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-        bind:value={selectedStatus}
-        onchange={applyFilters}
-      >
-        <option value="">Tous les statuts</option>
-        <option value="valide">Valide</option>
-        <option value="suspendu">Suspendu</option>
-      </select>
-    </div>
+          <div class="space-y-1.5">
+            <span class="text-xs font-semibold text-muted-foreground">Statut</span>
+            <select
+              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              bind:value={selectedStatus}
+              onchange={applyFilters}
+            >
+              <option value="">Tous les statuts</option>
+              <option value="valide">Valide</option>
+              <option value="suspendu">Suspendu</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-2 flex justify-end">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onclick={() => {
+              searchInput = '';
+              selectedGender = '';
+              selectedStatus = '';
+              selectedType = '';
+              selectedSeason = '25-26';
+              applyFilters();
+            }}
+            class="text-xs"
+          >
+            Réinitialiser
+          </Button>
+        </div>
+      </Popover.Content>
+    </Popover.Root>
   </div>
 
   <!-- Table -->
@@ -203,23 +226,23 @@
                   </Badge>
                 {/if}
               </Table.Cell>
-              <Table.Cell class="text-right relative">
-                <div class="inline-block text-left">
-                  <Button 
-                    variant="ghost"
-                    size="icon-sm"
-                    onclick={(e) => toggleDropdown(member.licence, e)} 
-                    class="text-muted-foreground hover:text-foreground cursor-pointer" 
-                    aria-label="Actions"
-                  >
-                    <MoreVertical class="w-4 h-4" />
-                  </Button>
-
-                  {#if openDropdownId === member.licence}
-                    <div class="absolute right-4 mt-1 w-40 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left">
+              <Table.Cell class="text-right">
+                <Popover.Root>
+                  <Popover.Trigger>
+                    <Button 
+                      variant="ghost"
+                      size="icon-sm"
+                      class="text-muted-foreground hover:text-foreground cursor-pointer" 
+                      aria-label="Actions"
+                    >
+                      <MoreVertical class="w-4 h-4" />
+                    </Button>
+                  </Popover.Trigger>
+                  <Popover.Content class="w-40 p-1" align="end">
+                    <div class="flex flex-col">
                       <a
                         href={`/admin/members/${member.licence}?season=${filters.season || '25-26'}`}
-                        class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer no-underline bg-transparent"
+                        class="px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer no-underline bg-transparent rounded-md"
                       >
                         <Eye class="w-3.5 h-3.5" />
                         Voir profil
@@ -228,7 +251,7 @@
                         <a
                           href={`/admin/accounting/attestations/${member.id}`}
                           target="_blank"
-                          class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer no-underline bg-transparent"
+                          class="px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer no-underline bg-transparent rounded-md"
                         >
                           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -237,8 +260,8 @@
                         </a>
                       {/if}
                     </div>
-                  {/if}
-                </div>
+                  </Popover.Content>
+                </Popover.Root>
               </Table.Cell>
             </Table.Row>
           {:else}
