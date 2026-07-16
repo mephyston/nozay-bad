@@ -13,7 +13,14 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     optimizeDeps: {
-      exclude: ['@astrojs/cloudflare']
+      exclude: [
+        '@astrojs/cloudflare',
+        '@metacult/shared-ui',
+        '@metacult/features-members-ui',
+        '@metacult/features-accounting-ui',
+        '@metacult/features-expenses-ui',
+        '@metacult/features-shop-ui'
+      ]
     }
   },
   srcDir: './src'
