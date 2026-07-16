@@ -6,15 +6,15 @@
 ## Descriptif Fonctionnel & Technique
 La tâche 5 a consisté à relocaliser l'ensemble des composants Svelte spécifiques par domaine (et leurs tests unitaires) depuis le dossier monolithique `apps/admin-console/src/components/` vers les nouvelles bibliothèques UI de features dans `libs/features/[feature]/ui/src/`.
 
-De plus, le balisage des composants a été mis à jour pour consommer les composants réutilisables du Design System uniformisé de `@metacult/shared-ui` (`Table`, `Button`, `Badge`, `Alert`, `Input`, etc.) au lieu d'utiliser des tableaux HTML bruts et des styles CSS ad-hoc.
+Afin d'uniformiser le design system, les composants principaux de gestion des membres (`MembersTable` et `MemberProfile`) ont été réécrits pour consommer les primitives réutilisables de `@metacult/shared-ui` (`Table`, `Button`, `Badge`, `Alert`, `Input`, etc.) à la place des tableaux HTML bruts et des styles CSS personnalisés. Les autres composants relocalisés (Comptabilité, Dépenses, Boutique) ont été déplacés de façon propre et isolée dans leurs bibliothèques respectives, tout en préservant leur code existant pour éviter les régressions visuelles ou fonctionnelles. Ils seront mis en conformité avec le design system au cours des prochaines itérations.
 
 ### 1. Composants Relocalisés par Domaine
 Les fichiers Svelte et leurs tests `.test.ts` ont été déplacés comme suit :
-* **Membres (`@metacult/features-members-ui`)** :
+* **Membres (`@metacult/features-members-ui`)** (avec refactorisation complète vers `@metacult/shared-ui`) :
   - `MemberProfile.svelte` (+ `.test.ts`)
   - `MembersTable.svelte` (+ `.test.ts`)
   - `PoonaImporter.svelte` (+ `.test.ts`)
-* **Comptabilité (`@metacult/features-accounting-ui`)** :
+* **Comptabilité (`@metacult/features-accounting-ui`)** (relocalisation propre) :
   - `BankStatementReconciliation.svelte` (+ `.test.ts`)
   - `InitialBalancesConfig.svelte` (+ `.test.ts`)
   - `TransactionLedger.svelte` (+ `.test.ts`)
@@ -23,9 +23,9 @@ Les fichiers Svelte et leurs tests `.test.ts` ont été déplacés comme suit :
   - `GeneralMeetingReport.svelte` (+ `.test.ts`)
   - `SettingsManager.svelte` (+ `.test.ts`)
   - `InvoicesManager.svelte` (+ `.test.ts`)
-* **Dépenses (`@metacult/features-expenses-ui`)** :
+* **Dépenses (`@metacult/features-expenses-ui`)** (relocalisation propre) :
   - `ExpensesManager.svelte` (+ `.test.ts`)
-* **Boutique (`@metacult/features-shop-ui`)** :
+* **Boutique (`@metacult/features-shop-ui`)** (relocalisation propre) :
   - `OrdersManager.svelte` (+ `.test.ts`)
   - `ProductsManager.svelte` (+ `.test.ts`)
 
