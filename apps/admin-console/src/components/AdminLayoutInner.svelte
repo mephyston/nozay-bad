@@ -117,8 +117,8 @@
           <Trophy class="size-4" />
         </div>
         <div class="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-          <span class="truncate font-bold text-primary tracking-wide text-xs">Nozay Badminton Association</span>
-          <span class="truncate text-[10px] text-muted-foreground font-semibold">Conseil d'Administration</span>
+          <span class="truncate font-bold text-primary tracking-wide text-xs">Nozay Badminton</span>
+          <span class="truncate text-[10px] text-muted-foreground font-semibold">Association</span>
         </div>
       </div>
       {#if sidebar.isMobile}
@@ -153,7 +153,7 @@
                       isActive={item.name === primaryGroup}
                       class="w-full flex justify-center cursor-pointer border-0 bg-transparent"
                     >
-                      <item.icon />
+                      <item.icon class="h-4 w-4 shrink-0 text-muted-foreground" />
                     </Sidebar.MenuButton>
                     <!-- Submenu popup on hover -->
                     <div class="hidden group-hover:block absolute left-full top-0 ml-2 w-48 bg-card border border-border shadow-lg rounded-lg p-1.5 z-50">
@@ -210,13 +210,13 @@
                   tooltipContent={item.name}
                   isActive={item.name === primaryGroup || (item.name === "Vue d'ensemble" && primaryGroup === "Tableau de Bord") || (item.name === "Note de frais" && (primaryGroup === "Note de frais" || primaryGroup === "Notes de frais"))}
                 >
-                  {#snippet child(props)}
+                  {#snippet child({ props })}
                     <a
+                      {...props}
                       href={item.href}
                       onclick={() => { if (sidebar.isMobile) sidebar.setOpenMobile(false); }}
-                      {...props}
                     >
-                      <item.icon />
+                      <item.icon class="h-4 w-4 shrink-0 text-muted-foreground" />
                       <span class="group-data-[collapsible=icon]:hidden">{item.name}</span>
                     </a>
                   {/snippet}
