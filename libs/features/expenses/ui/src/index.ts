@@ -1,1 +1,1 @@
-// Export expenses UI components here
+export { default as ExpensesManager } from './ExpensesManager.svelte';

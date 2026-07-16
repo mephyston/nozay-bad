@@ -36,6 +36,10 @@ export default tseslint.config(
               onlyDependOnLibsWithTags: ['type:data-access', 'scope:shared']
             },
             {
+              sourceTag: 'type:ui',
+              onlyDependOnLibsWithTags: ['type:ui', 'scope:shared']
+            },
+            {
               sourceTag: 'scope:accounting',
               onlyDependOnLibsWithTags: ['scope:accounting', 'scope:members', 'scope:shared']
             },

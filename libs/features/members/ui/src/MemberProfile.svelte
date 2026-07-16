@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ArrowLeft, User, Mail, Phone, Calendar, Shield, CreditCard, Tag, Landmark, FileText } from 'lucide-svelte';
+  import { Table, Button, Badge } from '@metacult/shared-ui';
 
   interface Member {
     id: number;
@@ -94,21 +95,22 @@
     </div>
     <div class="flex items-center gap-3">
       {#if member.paid}
-        <a
+        <Button
           href={`/admin/compta/attestations/${member.id}`}
           target="_blank"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors no-underline"
+          size="sm"
+          class="no-underline"
         >
           <FileText class="w-3.5 h-3.5" />
           Attestation CSE
-        </a>
-        <span class="px-3 py-1.5 text-xs font-bold rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+        </Button>
+        <Badge variant="outline" class="bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold px-3 py-1.5 h-auto rounded-full">
           Cotisation réglée
-        </span>
+        </Badge>
       {:else}
-        <span class="px-3 py-1.5 text-xs font-bold rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400">
+        <Badge variant="outline" class="bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold px-3 py-1.5 h-auto rounded-full">
           Règlement en attente
-        </span>
+        </Badge>
       {/if}
     </div>
   </div>
@@ -252,36 +254,36 @@
         Historique des règlements de la cotisation
       </h3>
       <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left">
-          <thead>
-            <tr class="border-b border-border text-xs text-muted-foreground font-bold uppercase tracking-wider">
-              <th class="py-2.5">Date</th>
-              <th class="py-2.5">Description</th>
-              <th class="py-2.5">Catégorie</th>
-              <th class="py-2.5">Mode</th>
-              <th class="py-2.5 text-right">Montant</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-border">
+        <Table.Root>
+          <Table.Header>
+            <Table.Row>
+              <Table.Head>Date</Table.Head>
+              <Table.Head>Description</Table.Head>
+              <Table.Head>Catégorie</Table.Head>
+              <Table.Head>Mode</Table.Head>
+              <Table.Head class="text-right">Montant</Table.Head>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
             {#each cotisationTransactions as tx}
-              <tr class="hover:bg-muted/40 transition-colors">
-                <td class="py-2.5">{tx.date}</td>
-                <td class="py-2.5 font-medium">{tx.description}</td>
-                <td class="py-2.5 text-xs text-muted-foreground">{categoryLabels[tx.category || ''] || 'Divers'}</td>
-                <td class="py-2.5 text-xs text-muted-foreground uppercase">{tx.paymentMethod}</td>
-                <td class="py-2.5 text-right font-bold text-emerald-600">
+              <Table.Row class="hover:bg-muted/40 transition-colors">
+                <Table.Cell>{tx.date}</Table.Cell>
+                <Table.Cell class="font-medium">{tx.description}</Table.Cell>
+                <Table.Cell class="text-xs text-muted-foreground">{categoryLabels[tx.category || ''] || 'Divers'}</Table.Cell>
+                <Table.Cell class="text-xs text-muted-foreground uppercase">{tx.paymentMethod}</Table.Cell>
+                <Table.Cell class="text-right font-bold text-emerald-600">
                   +{(tx.amount / 100).toFixed(2)} €
-                </td>
-              </tr>
+                </Table.Cell>
+              </Table.Row>
             {:else}
-              <tr>
-                <td colspan="5" class="py-4 text-center text-muted-foreground text-xs">
+              <Table.Row>
+                <Table.Cell colspan={5} class="py-4 text-center text-muted-foreground text-xs">
                   Aucun règlement de cotisation enregistré dans le Grand Livre pour cet adhérent.
-                </td>
-              </tr>
+                </Table.Cell>
+              </Table.Row>
             {/each}
-          </tbody>
-        </table>
+          </Table.Body>
+        </Table.Root>
       </div>
     </div>
 
@@ -299,36 +301,36 @@
         {/if}
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left">
-          <thead>
-            <tr class="border-b border-border text-xs text-muted-foreground font-bold uppercase tracking-wider">
-              <th class="py-2.5">Date</th>
-              <th class="py-2.5">Description</th>
-              <th class="py-2.5">Catégorie</th>
-              <th class="py-2.5">Mode</th>
-              <th class="py-2.5 text-right">Montant</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-border">
+        <Table.Root>
+          <Table.Header>
+            <Table.Row>
+              <Table.Head>Date</Table.Head>
+              <Table.Head>Description</Table.Head>
+              <Table.Head>Catégorie</Table.Head>
+              <Table.Head>Mode</Table.Head>
+              <Table.Head class="text-right">Montant</Table.Head>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
             {#each otherTransactions as tx}
-              <tr class="hover:bg-muted/40 transition-colors">
-                <td class="py-2.5">{tx.date}</td>
-                <td class="py-2.5 font-medium">{tx.description}</td>
-                <td class="py-2.5 text-xs text-muted-foreground">{categoryLabels[tx.category || ''] || 'Divers'}</td>
-                <td class="py-2.5 text-xs text-muted-foreground uppercase">{tx.paymentMethod}</td>
-                <td class="py-2.5 text-right font-bold text-emerald-600">
+              <Table.Row class="hover:bg-muted/40 transition-colors">
+                <Table.Cell>{tx.date}</Table.Cell>
+                <Table.Cell class="font-medium">{tx.description}</Table.Cell>
+                <Table.Cell class="text-xs text-muted-foreground">{categoryLabels[tx.category || ''] || 'Divers'}</Table.Cell>
+                <Table.Cell class="text-xs text-muted-foreground uppercase">{tx.paymentMethod}</Table.Cell>
+                <Table.Cell class="text-right font-bold text-emerald-600">
                   +{(tx.amount / 100).toFixed(2)} €
-                </td>
-              </tr>
+                </Table.Cell>
+              </Table.Row>
             {:else}
-              <tr>
-                <td colspan="5" class="py-4 text-center text-muted-foreground text-xs">
+              <Table.Row>
+                <Table.Cell colspan={5} class="py-4 text-center text-muted-foreground text-xs">
                   Aucun règlement annexe (cordage, volant, buvette...) enregistré pour cet adhérent.
-                </td>
-              </tr>
+                </Table.Cell>
+              </Table.Row>
             {/each}
-          </tbody>
-        </table>
+          </Table.Body>
+        </Table.Root>
       </div>
     </div>
   </div>

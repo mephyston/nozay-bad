@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Search, ChevronLeft, ChevronRight, User, MoreVertical, Eye } from 'lucide-svelte';
+  import { Table, Button, Badge } from '@metacult/shared-ui';
 
   interface Member {
     id: number;
@@ -161,21 +162,21 @@
   <!-- Table -->
   <div class="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
     <div class="overflow-x-auto min-h-[150px]">
-      <table class="w-full border-collapse text-left text-sm">
-        <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
-          <tr>
-            <th class="p-4">Adhérent</th>
-            <th class="p-4">Licence</th>
-            <th class="p-4">Genre</th>
-            <th class="p-4">Type</th>
-            <th class="p-4">Statut</th>
-            <th class="p-4 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-border">
+      <Table.Root>
+        <Table.Header>
+          <Table.Row>
+            <Table.Head>Adhérent</Table.Head>
+            <Table.Head>Licence</Table.Head>
+            <Table.Head>Genre</Table.Head>
+            <Table.Head>Type</Table.Head>
+            <Table.Head>Statut</Table.Head>
+            <Table.Head class="text-right">Actions</Table.Head>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
           {#each data as member}
-            <tr class="hover:bg-muted/50 transition-colors">
-              <td class="p-4 font-medium flex items-center gap-3">
+            <Table.Row class="hover:bg-muted/50 transition-colors">
+              <Table.Cell class="font-medium flex items-center gap-3">
                 <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
                   <User class="w-4 h-4" />
                 </div>
@@ -183,34 +184,36 @@
                   <div class="font-semibold">{member.lastName} {member.firstName}</div>
                   <div class="text-xs text-muted-foreground">Né le {member.birthDate}</div>
                 </div>
-              </td>
-              <td class="p-4 text-muted-foreground">{member.licence}</td>
-              <td class="p-4">{member.gender}</td>
-              <td class="p-4">
-                <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-secondary/50 border border-secondary text-foreground">
+              </Table.Cell>
+              <Table.Cell class="text-muted-foreground">{member.licence}</Table.Cell>
+              <Table.Cell>{member.gender}</Table.Cell>
+              <Table.Cell>
+                <Badge variant="secondary">
                   {member.type}
-                </span>
-              </td>
-              <td class="p-4">
+                </Badge>
+              </Table.Cell>
+              <Table.Cell>
                 {#if member.status === 'valide'}
-                  <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                  <Badge variant="outline" class="bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-semibold">
                     Valide
-                  </span>
+                  </Badge>
                 {:else}
-                  <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-destructive/15 border border-destructive/30 text-destructive">
+                  <Badge variant="outline" class="bg-destructive/15 border-destructive/30 text-destructive font-semibold">
                     Suspendu
-                  </span>
+                  </Badge>
                 {/if}
-              </td>
-              <td class="p-4 text-right relative">
+              </Table.Cell>
+              <Table.Cell class="text-right relative">
                 <div class="inline-block text-left">
-                  <button 
+                  <Button 
+                    variant="ghost"
+                    size="icon-sm"
                     onclick={(e) => toggleDropdown(member.licence, e)} 
-                    class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
+                    class="text-muted-foreground hover:text-foreground cursor-pointer" 
                     aria-label="Actions"
                   >
                     <MoreVertical class="w-4 h-4" />
-                  </button>
+                  </Button>
 
                   {#if openDropdownId === member.licence}
                     <div class="absolute right-4 mt-1 w-40 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left">
@@ -236,17 +239,17 @@
                     </div>
                   {/if}
                 </div>
-              </td>
-            </tr>
+              </Table.Cell>
+            </Table.Row>
           {:else}
-            <tr>
-              <td colspan="6" class="p-8 text-center text-muted-foreground">
+            <Table.Row>
+              <Table.Cell colspan={6} class="p-8 text-center text-muted-foreground">
                 Aucun adhérent ne correspond à ces critères de recherche.
-              </td>
-            </tr>
+              </Table.Cell>
+            </Table.Row>
           {/each}
-        </tbody>
-      </table>
+        </Table.Body>
+      </Table.Root>
     </div>
 
     <!-- Pagination Footer -->
@@ -259,20 +262,22 @@
           Page {pagination.page} sur {pagination.totalPages}
         </span>
         <div class="flex gap-1">
-          <button
-            class="p-2 border border-border rounded bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+          <Button
+            variant="outline"
+            size="icon-sm"
             onclick={() => changePage(pagination.page - 1)}
             disabled={pagination.page <= 1}
           >
             <ChevronLeft class="w-4 h-4" />
-          </button>
-          <button
-            class="p-2 border border-border rounded bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+          </Button>
+          <Button
+            variant="outline"
+            size="icon-sm"
             onclick={() => changePage(pagination.page + 1)}
             disabled={pagination.page >= pagination.totalPages}
           >
             <ChevronRight class="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
     </div>

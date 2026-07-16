@@ -11,6 +11,11 @@ export default defineConfig({
       'libs/features/accounting/api/vitest.config.ts',
       'libs/features/expenses/api/vitest.config.ts',
       'libs/features/shop/api/vitest.config.ts',
+      'libs/shared/ui/vitest.config.ts',
+      'libs/features/members/ui/vitest.config.ts',
+      'libs/features/accounting/ui/vitest.config.ts',
+      'libs/features/expenses/ui/vitest.config.ts',
+      'libs/features/shop/ui/vitest.config.ts',
     ],
   },
 });
