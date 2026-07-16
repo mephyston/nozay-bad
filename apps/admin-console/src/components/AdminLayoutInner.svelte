@@ -27,7 +27,6 @@
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
   import ThemeToggle from "./ThemeToggle.svelte";
-  import UserNav from "./UserNav.svelte";
   import { Sidebar, Breadcrumb, Separator, Avatar } from "@metacult/shared-ui";
 
   let { children, email, breadcrumb } = $props<{
@@ -257,7 +256,7 @@
     <Sidebar.Menu>
       <Sidebar.MenuItem>
         <DropdownMenu.Root>
-          <DropdownMenu.Trigger class="w-full">
+          <DropdownMenu.Trigger asChild>
             {#snippet child({ props })}
               <Sidebar.MenuButton
                 size="lg"
@@ -291,17 +290,20 @@
               <div class="p-1 space-y-0.5">
                 <DropdownMenu.Item
                   class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer focus:bg-accent focus:text-accent-foreground focus:outline-none"
+                  onclick={() => window.location.href = "/admin/accounting/settings"}
                 >
-                  <User class="mr-2 h-3.5 w-3.5 text-muted-foreground" /> Profil
+                  <User class="mr-2 h-3.5 w-3.5 text-muted-foreground" /> Mon profil
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
                   class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer focus:bg-accent focus:text-accent-foreground focus:outline-none"
+                  onclick={() => window.location.href = "/admin/accounting/settings"}
                 >
                   <Settings class="mr-2 h-3.5 w-3.5 text-muted-foreground" /> Paramètres
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator class="my-1 border-t border-border" />
                 <DropdownMenu.Item
                   class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer focus:bg-destructive/10 focus:text-destructive focus:outline-none"
+                  onclick={() => window.location.href = "/"}
                 >
                   <LogOut class="mr-2 h-3.5 w-3.5" /> Déconnexion
                 </DropdownMenu.Item>
@@ -350,7 +352,6 @@
 
     <div class="flex items-center gap-4">
       <ThemeToggle />
-      <UserNav {email} />
     </div>
   </header>
 
