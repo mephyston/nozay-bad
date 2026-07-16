@@ -4,7 +4,6 @@ import AdminLayout from './AdminLayout.svelte';
 
 describe('AdminLayout Component', () => {
   let isMobileViewport = false;
-  let mediaQueryListener: ((e: { matches: boolean }) => void) | null = null;
 
   beforeAll(() => {
     Object.defineProperty(window, 'matchMedia', {
@@ -19,11 +18,7 @@ describe('AdminLayout Component', () => {
           onchange: null,
           addListener: vi.fn(),
           removeListener: vi.fn(),
-          addEventListener: vi.fn().mockImplementation((event, cb) => {
-            if (event === 'change' && isMobileQuery) {
-              mediaQueryListener = cb;
-            }
-          }),
+          addEventListener: vi.fn(),
           removeEventListener: vi.fn(),
           dispatchEvent: vi.fn(),
         };
@@ -45,7 +40,7 @@ describe('AdminLayout Component', () => {
     flushSync();
 
     // Verify desktop title and navigation items are rendered
-    expect(target.textContent).toContain('NBA 91 - CA');
+    expect(target.textContent).toContain('Nozay Badminton Association');
     expect(target.textContent).toContain("Vue d'ensemble");
     expect(target.textContent).toContain("Adhérents");
     expect(target.textContent).toContain("Comptabilité");
