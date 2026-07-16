@@ -1,6 +1,6 @@
 @import "tailwindcss";
-@source "../../../libs/**/*.svelte";
-@source "../../../libs/**/*.ts";
+@source "../../../../libs/**/*.svelte";
+@source "../../../../libs/**/*.ts";
 
 
 @plugin "tailwindcss-animate";
