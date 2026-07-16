@@ -17,7 +17,7 @@
 
 ---
 
-### Tâche 1 : Rénovation de la Table des Adhérents (MembersTable)
+### Task 1 : Rénovation de la Table des Adhérents (MembersTable)
 
 **Files:**
 - Modify: `libs/features/members/ui/src/MembersTable.svelte`
@@ -195,7 +195,7 @@
 
 ---
 
-### Tâche 2 : Refactorisation de la Fiche Profil par Onglets (MemberProfile)
+### Task 2 : Refactorisation de la Fiche Profil par Onglets (MemberProfile)
 
 **Files:**
 - Modify: `libs/features/members/ui/src/MemberProfile.svelte`
