@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Coins, FileText, Check, X, Calendar, AlertCircle, Eye, Search, Edit2, Image as ImageIcon, MoreVertical, RefreshCw } from 'lucide-svelte';
+  import { Button, Table, Input, Badge, Alert, Card, Textarea } from '@metacult/shared-ui';
 
   interface Expense {
     id: number;
@@ -292,35 +293,37 @@
         {/each}
       </select>
       {#if isClosed}
-        <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
+        <Badge variant="outline" class="font-bold bg-muted text-muted-foreground">
           Saison clôturée (Lecture seule)
-        </span>
+        </Badge>
       {/if}
     </div>
 
     <div class="relative w-full sm:w-72">
-      <input
+      <Input
         type="text"
         placeholder="Rechercher par nom, motif..."
         bind:value={searchTerm}
-        class="w-full pl-9 pr-4 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+        class="pl-9 w-full"
       />
-      <Search class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+      <Search class="absolute left-3 top-2 h-4 w-4 text-muted-foreground" />
     </div>
   </div>
 
   {#if successMsg}
-    <div class="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm rounded-lg flex items-center gap-2">
-      <Check class="w-4 h-4" />
-      <span>{successMsg}</span>
-    </div>
+    <Alert.Root class="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+      <Check class="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
+      <Alert.Title class="text-emerald-600 dark:text-emerald-400">Succès</Alert.Title>
+      <Alert.Description class="text-emerald-600 dark:text-emerald-400">{successMsg}</Alert.Description>
+    </Alert.Root>
   {/if}
 
   {#if errorMsg}
-    <div class="p-4 bg-destructive/15 border border-destructive text-destructive text-sm rounded-lg flex items-center gap-2">
-      <AlertCircle class="w-4 h-4" />
-      <span>{errorMsg}</span>
-    </div>
+    <Alert.Root variant="destructive">
+      <AlertCircle class="w-4.5 h-4.5" />
+      <Alert.Title>Erreur</Alert.Title>
+      <Alert.Description>{errorMsg}</Alert.Description>
+    </Alert.Root>
   {/if}
 
   <!-- Tab navigation -->
@@ -337,9 +340,9 @@
       >
         En attente
         {#if expenses.filter(e => e.status === 'pending').length > 0}
-          <span class="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold bg-primary text-primary-foreground rounded-full">
+          <Badge class="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold bg-primary text-primary-foreground rounded-full h-auto">
             {expenses.filter(e => e.status === 'pending').length}
-          </span>
+          </Badge>
         {/if}
       </button>
       <button
@@ -359,32 +362,33 @@
   <!-- Expenses lists -->
   {#if activeTab === 'pending'}
     {#if pendingExpenses.length === 0}
-      <div class="text-center py-16 bg-card border border-border rounded-xl">
-        <FileText class="w-12 h-12 text-muted-foreground/60 mx-auto mb-3" />
-        <h3 class="text-lg font-bold text-foreground">Aucune note de frais en attente</h3>
-        <p class="text-sm text-muted-foreground mt-1">Toutes les dépenses soumises ont été validées ou rejetées.</p>
-      </div>
+      <Card.Root class="text-center py-16">
+        <Card.Content>
+          <FileText class="w-12 h-12 text-muted-foreground/60 mx-auto mb-3" />
+          <Card.Title class="text-lg font-bold text-foreground">Aucune note de frais en attente</Card.Title>
+          <Card.Description class="text-sm text-muted-foreground mt-1">Toutes les dépenses soumises ont été validées ou rejetées.</Card.Description>
+        </Card.Content>
+      </Card.Root>
     {:else}
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         {#each pendingExpenses as exp}
-          <div class="bg-card border border-border hover:border-border/80 transition-all rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
+          <Card.Root class="hover:border-border/80 transition-all flex flex-col justify-between shadow-sm">
             {#if editingId === exp.id}
               <!-- EDIT MODE CARD -->
-              <div class="p-5 space-y-4">
-                <div class="flex justify-between items-center border-b border-border pb-2">
-                  <h4 class="font-bold text-md text-foreground">Modifier la demande - {exp.emitterName}</h4>
-                  <span class="text-xs text-muted-foreground">ID: #{exp.id}</span>
-                </div>
+              <Card.Header class="pb-2 border-b border-border flex flex-row justify-between items-center space-y-0">
+                <Card.Title class="font-bold text-md text-foreground">Modifier la demande - {exp.emitterName}</Card.Title>
+                <Card.Description class="text-xs text-muted-foreground">ID: #{exp.id}</Card.Description>
+              </Card.Header>
 
+              <Card.Content class="space-y-4 pt-4">
                 <div class="space-y-1.5">
                   <label for="edit-desc-{exp.id}" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Motif / Description</label>
-                  <textarea
+                  <Textarea
                     id="edit-desc-{exp.id}"
                     bind:value={editDescription}
-                    rows="3"
-                    class="w-full px-3 py-2 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+                    rows={3}
                     required
-                  ></textarea>
+                  />
                 </div>
 
                 <div class="grid grid-cols-3 gap-4">
@@ -416,13 +420,13 @@
 
                   <div class="space-y-1.5">
                     <label for="edit-amount-{exp.id}" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Montant (€)</label>
-                    <input
+                    <Input
                       type="number"
                       id="edit-amount-{exp.id}"
                       step="0.01"
                       min="0.01"
                       bind:value={editAmountStr}
-                      class="w-full px-3 py-2 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-semibold"
+                      class="font-semibold h-9"
                       required
                     />
                   </div>
@@ -435,65 +439,62 @@
                       <ImageIcon class="w-3.5 h-3.5" />
                       Justificatif chargé
                     </span>
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onclick={() => selectedPhoto = exp.photoUrl}
-                      class="text-xs font-bold text-primary hover:underline flex items-center gap-1 bg-transparent border-0 cursor-pointer"
+                      class="text-xs font-bold text-primary hover:underline flex items-center gap-1 h-auto py-1 px-2"
                     >
                       <Eye class="w-3 h-3" />
                       Visualiser
-                    </button>
+                    </Button>
                   </div>
                 {/if}
-              </div>
+              </Card.Content>
 
               <!-- Edit Actions Row -->
-              <div class="border-t border-border bg-muted/20 px-5 py-3.5 flex justify-end gap-3">
-                <button
-                  type="button"
+              <Card.Footer class="border-t border-border bg-muted/20 px-5 py-3.5 flex justify-end gap-3">
+                <Button
+                  variant="outline"
                   onclick={() => editingId = null}
                   disabled={isSaving}
-                  class="px-4 py-2 border border-border hover:bg-muted text-sm font-semibold rounded-lg transition-colors cursor-pointer bg-background"
                 >
                   Annuler
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
                   onclick={() => saveEdit(exp.id)}
                   disabled={isSaving}
-                  class="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground border-0 text-sm font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
                 >
                   {#if isSaving}
                     <span>Enregistrement...</span>
                   {:else}
                     <span>Enregistrer</span>
                   {/if}
-                </button>
-              </div>
+                </Button>
+              </Card.Footer>
             {:else}
               <!-- STANDARD MODE CARD -->
-              <div class="p-5 space-y-4">
-                <!-- Top Row -->
-                <div class="flex justify-between items-start">
-                  <div>
-                    <h4 class="font-bold text-lg text-foreground">{exp.emitterName}</h4>
-                    <span class="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <Calendar class="w-3.5 h-3.5" />
-                      Soumis le {new Date(exp.createdAt).toLocaleDateString('fr-FR')}
-                    </span>
-                  </div>
-                  <div class="text-right">
-                    <span class="text-2xl font-black text-primary font-mono">
-                      {(exp.amount / 100).toFixed(2)} €
-                    </span>
-                  </div>
+              <Card.Header class="pb-2 flex flex-row justify-between items-start space-y-0">
+                <div>
+                  <Card.Title class="font-bold text-lg text-foreground">{exp.emitterName}</Card.Title>
+                  <Card.Description class="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <Calendar class="w-3.5 h-3.5" />
+                    Soumis le {new Date(exp.createdAt).toLocaleDateString('fr-FR')}
+                  </Card.Description>
                 </div>
+                <div class="text-right">
+                  <span class="text-2xl font-black text-primary font-mono">
+                    {(exp.amount / 100).toFixed(2)} €
+                  </span>
+                </div>
+              </Card.Header>
 
+              <Card.Content class="space-y-4">
                 <!-- Category Badge -->
                 <div>
-                  <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${categoryColors[exp.category] || 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20'}`}>
+                  <Badge variant="outline" class={categoryColors[exp.category] || 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20'}>
                     {categoryLabels[exp.category] || exp.category}
-                  </span>
+                  </Badge>
                 </div>
 
                 <!-- Description -->
@@ -508,45 +509,45 @@
                       <ImageIcon class="w-4 h-4" />
                       Justificatif de dépense
                     </span>
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onclick={() => selectedPhoto = exp.photoUrl}
-                      class="text-xs font-bold text-primary hover:underline flex items-center gap-1 bg-transparent border-0 cursor-pointer"
+                      class="text-xs font-bold text-primary hover:underline flex items-center gap-1 h-auto py-1 px-2"
                     >
                       <Eye class="w-3.5 h-3.5" />
                       Visualiser
-                    </button>
+                    </Button>
                   </div>
                 {/if}
-              </div>
+              </Card.Content>
 
               <!-- Actions Row -->
               {#if !isClosed}
-                <div class="border-t border-border bg-muted/20 px-5 py-3.5 flex justify-between items-center gap-3">
-                  <button
-                    type="button"
+                <Card.Footer class="border-t border-border bg-muted/20 px-5 py-3.5 flex justify-between items-center gap-3">
+                  <Button
+                    variant="outline"
                     onclick={() => startEdit(exp)}
                     disabled={submittingId !== null}
-                    class="px-4 py-2 border border-border hover:bg-muted text-sm font-semibold rounded-lg transition-colors cursor-pointer bg-background flex items-center gap-1.5"
+                    class="flex items-center gap-1.5"
                   >
                     <Edit2 class="w-3.5 h-3.5" />
                     Modifier
-                  </button>
+                  </Button>
 
                   <div class="flex gap-3">
-                    <button
-                      type="button"
+                    <Button
+                      variant="outline"
                       onclick={() => handleAction(exp.id, 'reject')}
                       disabled={submittingId !== null}
-                      class="px-4 py-2 border border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive text-sm font-semibold rounded-lg transition-colors cursor-pointer bg-background"
+                      class="hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
                     >
                       Rejeter
-                    </button>
-                    <button
-                      type="button"
+                    </Button>
+                    <Button
                       onclick={() => handleAction(exp.id, 'approve')}
                       disabled={submittingId !== null}
-                      class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white border-0 text-sm font-semibold rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1"
+                      class="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1"
                     >
                       {#if submittingId === exp.id}
                         <span class="animate-pulse">Validation...</span>
@@ -554,117 +555,119 @@
                         <Check class="w-4 h-4" />
                         Rembourser
                       {/if}
-                    </button>
+                    </Button>
                   </div>
-                </div>
+                </Card.Footer>
               {/if}
             {/if}
-          </div>
+          </Card.Root>
         {/each}
       </div>
     {/if}
   {:else}
     <!-- History Tab -->
     {#if historyExpenses.length === 0}
-      <div class="text-center py-16 bg-card border border-border rounded-xl">
-        <FileText class="w-12 h-12 text-muted-foreground/60 mx-auto mb-3" />
-        <h3 class="text-lg font-bold text-foreground">Aucun historique</h3>
-        <p class="text-sm text-muted-foreground mt-1">Les dépenses approuvées ou rejetées apparaîtront ici.</p>
-      </div>
+      <Card.Root class="text-center py-16">
+        <Card.Content>
+          <FileText class="w-12 h-12 text-muted-foreground/60 mx-auto mb-3" />
+          <Card.Title class="text-lg font-bold text-foreground">Aucun historique</Card.Title>
+          <Card.Description class="text-sm text-muted-foreground mt-1">Les dépenses approuvées ou rejetées apparaîtront ici.</Card.Description>
+        </Card.Content>
+      </Card.Root>
     {:else}
-      <div class="overflow-x-auto bg-card border border-border rounded-xl shadow-sm min-h-[180px]">
-        <table class="w-full text-left border-collapse text-sm">
-          <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
-            <tr>
-              <th class="p-4">Date</th>
-              <th class="p-4">Bénéficiaire</th>
-              <th class="p-4">Motif</th>
-              <th class="p-4">Catégorie</th>
-              <th class="p-4">Montant</th>
-              <th class="p-4">Justificatif</th>
-              <th class="p-4 text-right">Statut</th>
-              <th class="p-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-border">
-            {#each historyExpenses as exp}
-              <tr class="hover:bg-muted/50 transition-colors">
-                <td class="p-4 text-muted-foreground">
-                  {new Date(exp.createdAt).toLocaleDateString('fr-FR')}
-                </td>
-                <td class="p-4 font-bold text-foreground">
-                  {exp.emitterName}
-                </td>
-                <td class="p-4 max-w-xs truncate" title={exp.description}>
-                  {exp.description}
-                </td>
-                <td class="p-4">
-                  <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${categoryColors[exp.category] || 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20'}`}>
-                    {categoryLabels[exp.category] || exp.category}
-                  </span>
-                </td>
-                <td class="p-4 font-mono font-bold text-foreground font-semibold">
-                  {(exp.amount / 100).toFixed(2)} €
-                </td>
-                <td class="p-4">
-                  {#if exp.photoUrl}
-                    <button
-                      type="button"
-                      onclick={() => selectedPhoto = exp.photoUrl}
-                      class="text-xs font-semibold text-primary hover:underline flex items-center gap-1 bg-transparent border-0 cursor-pointer"
+      <Table.Root>
+        <Table.Header>
+          <Table.Row>
+            <Table.Head class="p-4">Date</Table.Head>
+            <Table.Head class="p-4">Bénéficiaire</Table.Head>
+            <Table.Head class="p-4">Motif</Table.Head>
+            <Table.Head class="p-4">Catégorie</Table.Head>
+            <Table.Head class="p-4">Montant</Table.Head>
+            <Table.Head class="p-4">Justificatif</Table.Head>
+            <Table.Head class="p-4 text-right">Statut</Table.Head>
+            <Table.Head class="p-4 text-right">Actions</Table.Head>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {#each historyExpenses as exp}
+            <Table.Row class="hover:bg-muted/50 transition-colors">
+              <Table.Cell class="p-4 text-muted-foreground">
+                {new Date(exp.createdAt).toLocaleDateString('fr-FR')}
+              </Table.Cell>
+              <Table.Cell class="p-4 font-bold text-foreground">
+                {exp.emitterName}
+              </Table.Cell>
+              <Table.Cell class="p-4 max-w-xs truncate" title={exp.description}>
+                {exp.description}
+              </Table.Cell>
+              <Table.Cell class="p-4">
+                <Badge variant="outline" class={categoryColors[exp.category] || 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20'}>
+                  {categoryLabels[exp.category] || exp.category}
+                </Badge>
+              </Table.Cell>
+              <Table.Cell class="p-4 font-mono font-bold text-foreground font-semibold">
+                {(exp.amount / 100).toFixed(2)} €
+              </Table.Cell>
+              <Table.Cell class="p-4">
+                {#if exp.photoUrl}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onclick={() => selectedPhoto = exp.photoUrl}
+                    class="text-xs font-semibold text-primary hover:underline flex items-center gap-1 h-auto py-1 px-2"
+                  >
+                    <Eye class="w-3.5 h-3.5" />
+                    Visualiser
+                  </Button>
+                {:else}
+                  <span class="text-xs text-muted-foreground">Aucun</span>
+                {/if}
+              </Table.Cell>
+              <Table.Cell class="p-4 text-right">
+                {#if exp.status === 'approved'}
+                  <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+                    Remboursé
+                  </Badge>
+                {:else}
+                  <Badge variant="outline" class="bg-destructive/10 text-destructive border border-destructive/20">
+                    Rejeté
+                  </Badge>
+                {/if}
+              </Table.Cell>
+              <Table.Cell class="p-4 text-right relative">
+                {#if !isClosed}
+                  <div class="inline-block text-left">
+                    <Button 
+                      variant="ghost"
+                      size="icon-sm"
+                      onclick={(e) => toggleDropdown(exp.id, e)} 
+                      class="text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer" 
+                      aria-label="Actions"
                     >
-                      <Eye class="w-3.5 h-3.5" />
-                      Visualiser
-                    </button>
-                  {:else}
-                    <span class="text-xs text-muted-foreground">Aucun</span>
-                  {/if}
-                </td>
-                <td class="p-4 text-right">
-                  {#if exp.status === 'approved'}
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                      Remboursé
-                    </span>
-                  {:else}
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-destructive/10 text-destructive border border-destructive/20">
-                      Rejeté
-                    </span>
-                  {/if}
-                </td>
-                <td class="p-4 text-right relative">
-                  {#if !isClosed}
-                    <div class="inline-block text-left">
-                      <button 
-                        type="button"
-                        onclick={(e) => toggleDropdown(exp.id, e)} 
-                        class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
-                        aria-label="Actions"
-                      >
-                        <MoreVertical class="w-4 h-4" />
-                      </button>
+                      <MoreVertical class="w-4 h-4" />
+                    </Button>
 
-                      {#if openDropdownId === exp.id}
-                        <div class="absolute right-4 mt-1 w-44 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border font-medium">
-                          <button
-                            type="button"
-                            onclick={() => handleCancelValidation(exp.id)}
-                            class="w-full px-3 py-1.5 text-xs text-primary hover:bg-primary/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
-                          >
-                            <RefreshCw class="w-3.5 h-3.5" />
-                            Remettre en attente
-                          </button>
-                        </div>
-                      {/if}
-                    </div>
-                  {:else}
-                    <span class="text-xs text-muted-foreground italic">Aucune</span>
-                  {/if}
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
+                    {#if openDropdownId === exp.id}
+                      <div class="absolute right-4 mt-1 w-44 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border font-medium">
+                        <Button
+                          variant="ghost"
+                          onclick={() => handleCancelValidation(exp.id)}
+                          class="w-full px-3 py-1.5 text-xs text-primary hover:bg-primary/10 font-semibold flex items-center gap-1.5 justify-start h-auto"
+                        >
+                          <RefreshCw class="w-3.5 h-3.5" />
+                          Remettre en attente
+                        </Button>
+                      </div>
+                    {/if}
+                  </div>
+                {:else}
+                  <span class="text-xs text-muted-foreground italic">Aucune</span>
+                {/if}
+              </Table.Cell>
+            </Table.Row>
+          {/each}
+        </Table.Body>
+      </Table.Root>
     {/if}
   {/if}
 </div>
@@ -672,32 +675,32 @@
 <!-- Modal Photo Viewer -->
 {#if selectedPhoto}
   <div class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-    <div class="bg-card border border-border rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-      <div class="border-b border-border px-5 py-4 flex justify-between items-center bg-muted/20">
-        <h3 class="font-bold text-foreground flex items-center gap-2">
+    <Card.Root class="max-w-3xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[85vh] bg-card border border-border rounded-2xl p-0">
+      <Card.Header class="border-b border-border px-5 py-4 flex flex-row justify-between items-center bg-muted/20 space-y-0">
+        <Card.Title class="font-bold text-foreground flex items-center gap-2 text-base">
           <ImageIcon class="w-5 h-5 text-primary" />
           Justificatif de la dépense
-        </h3>
-        <button
-          type="button"
+        </Card.Title>
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onclick={() => selectedPhoto = null}
-          class="text-muted-foreground hover:text-foreground hover:bg-muted p-1.5 rounded-lg transition-colors bg-transparent border-0 cursor-pointer"
+          class="text-muted-foreground hover:text-foreground transition-colors"
         >
           <X class="w-5 h-5" />
-        </button>
-      </div>
-      <div class="p-6 overflow-y-auto flex items-center justify-center bg-muted/10 flex-1">
+        </Button>
+      </Card.Header>
+      <Card.Content class="p-6 overflow-y-auto flex items-center justify-center bg-muted/10 flex-1">
         <img src={selectedPhoto} alt="Justificatif de dépense" class="max-w-full max-h-[50vh] rounded-lg shadow-md object-contain border border-border" />
-      </div>
-      <div class="border-t border-border px-5 py-3.5 flex justify-end bg-muted/20">
-        <button
-          type="button"
+      </Card.Content>
+      <Card.Footer class="border-t border-border px-5 py-3.5 flex justify-end bg-muted/20">
+        <Button
+          variant="outline"
           onclick={() => selectedPhoto = null}
-          class="px-4 py-2 bg-background hover:bg-muted border border-border text-sm font-semibold rounded-lg transition-colors cursor-pointer"
         >
           Fermer
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Card.Footer>
+    </Card.Root>
   </div>
 {/if}
