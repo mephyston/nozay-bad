@@ -7,7 +7,7 @@ describe('PoonaImporter Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(PoonaImporter, {
+    const component = mount(PoonaImporter, {
       target,
       props: {
         result: null,
@@ -17,13 +17,16 @@ describe('PoonaImporter Component', () => {
 
     expect(target.innerHTML).toContain('Sélectionnez un fichier CSV');
     expect(target.innerHTML).toContain('Glissez et déposez');
+
+    unmount(component);
+    document.body.removeChild(target);
   });
 
   it('renders error messages when provided', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(PoonaImporter, {
+    const component = mount(PoonaImporter, {
       target,
       props: {
         result: null,
@@ -32,13 +35,16 @@ describe('PoonaImporter Component', () => {
     });
 
     expect(target.innerHTML).toContain('Le fichier CSV est corrompu.');
+
+    unmount(component);
+    document.body.removeChild(target);
   });
 
   it('renders stats when result is provided', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(PoonaImporter, {
+    const component = mount(PoonaImporter, {
       target,
       props: {
         result: {
@@ -55,6 +61,9 @@ describe('PoonaImporter Component', () => {
     expect(target.innerHTML).toContain('12'); // inserted count
     expect(target.innerHTML).toContain('5'); // updated count
     expect(target.innerHTML).toContain('2'); // errors count
+
+    unmount(component);
+    document.body.removeChild(target);
   });
 
   it('should render detailed KPI statistics cards when result prop is provided', () => {

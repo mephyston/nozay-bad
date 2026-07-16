@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Upload, AlertCircle, CheckCircle, RefreshCw, FileText, UserPlus, RefreshCw as UpdateIcon, AlertTriangle } from 'lucide-svelte';
+  import { Upload, AlertCircle, CheckCircle, RefreshCw, FileText, UserPlus, AlertTriangle } from 'lucide-svelte';
   import { Button, Card, Alert, Table } from '@metacult/shared-ui';
 
   interface ImportResult {
@@ -22,6 +22,7 @@
   let totalRows = $state(0);
   let separator = $state(';');
   let localError = $state<string | null>(null);
+  let isValidating = $state(false);
 
   const REQUIRED_HEADERS = ['Licence', 'Saison', 'Nom', 'Prénom', 'Sexe', 'Date naissance', 'Type'];
 
@@ -30,6 +31,7 @@
     csvPreview = [];
     localError = null;
     totalRows = 0;
+    isValidating = false;
     if (fileInput) fileInput.value = '';
   }
 
@@ -58,6 +60,7 @@
   }
 
   function processFile(file: File) {
+    isValidating = true;
     csvPreview = [];
     totalRows = 0;
     localError = null;
@@ -65,6 +68,7 @@
     if (!file.name.endsWith('.csv')) {
       resetForm();
       localError = "Le fichier doit être au format CSV (.csv uniquement).";
+      isValidating = false;
       return;
     }
 
@@ -73,60 +77,74 @@
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const text = event.target?.result as string;
-      const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
-      if (lines.length === 0) {
-        resetForm();
-        localError = "Le fichier CSV est vide.";
-        return;
+      try {
+        const text = event.target?.result as string;
+        const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+        if (lines.length === 0) {
+          resetForm();
+          localError = "Le fichier CSV est vide.";
+          return;
+        }
+
+        const headerLine = lines[0];
+        const sep = headerLine.includes(';') ? ';' : ',';
+        separator = sep;
+
+        const headers = headerLine.split(sep).map(h => h.trim().replace(/^"(.*)"$/, '$1').trim().toLowerCase());
+        
+        // Vérifier les en-têtes requis
+        const missing = REQUIRED_HEADERS.filter(req => 
+          !headers.includes(req.toLowerCase()) && 
+          !(req === 'Date naissance' && headers.includes('date de naissance')) &&
+          !(req === 'Type' && headers.includes('tarif')) &&
+          !(req === 'Prénom' && headers.includes('prenom'))
+        );
+
+        if (missing.length > 0) {
+          resetForm();
+          localError = `En-têtes obligatoires manquants : ${missing.join(', ')}`;
+          return;
+        }
+
+        totalRows = lines.length - 1;
+
+        // Extraire l'aperçu
+        const previewRows: any[] = [];
+        const licenceIdx = headers.findIndex(h => h === 'licence');
+        const seasonIdx = headers.findIndex(h => h === 'saison');
+        const lastNameIdx = headers.findIndex(h => h === 'nom');
+        const firstNameIdx = headers.findIndex(h => h === 'prénom' || h === 'prenom');
+        const genderIdx = headers.findIndex(h => h === 'sexe');
+        const birthDateIdx = headers.findIndex(h => h === 'date naissance' || h === 'date de naissance');
+        const typeIdx = headers.findIndex(h => h === 'type' || h === 'tarif');
+
+        for (let i = 1; i < Math.min(lines.length, 6); i++) {
+          const columns = lines[i].split(sep).map(col => col.trim().replace(/^"(.*)"$/, '$1').trim());
+          previewRows.push({
+            licence: columns[licenceIdx] || '',
+            season: columns[seasonIdx] || '',
+            lastName: columns[lastNameIdx] || '',
+            firstName: columns[firstNameIdx] || '',
+            gender: columns[genderIdx] || '',
+            birthDate: columns[birthDateIdx] || '',
+            type: columns[typeIdx] || ''
+          });
+        }
+        csvPreview = previewRows;
+      } finally {
+        isValidating = false;
       }
-
-      const headerLine = lines[0];
-      const sep = headerLine.includes(';') ? ';' : ',';
-      separator = sep;
-
-      const headers = headerLine.split(sep).map(h => h.trim().replace(/^"(.*)"$/, '$1').trim().toLowerCase());
-      
-      // Vérifier les en-têtes requis
-      const missing = REQUIRED_HEADERS.filter(req => 
-        !headers.includes(req.toLowerCase()) && 
-        !(req === 'Date naissance' && headers.includes('date de naissance')) &&
-        !(req === 'Type' && headers.includes('tarif'))
-      );
-
-      if (missing.length > 0) {
-        resetForm();
-        localError = `En-têtes obligatoires manquants : ${missing.join(', ')}`;
-        return;
-      }
-
-      totalRows = lines.length - 1;
-
-      // Extraire l'aperçu
-      const previewRows: any[] = [];
-      const licenceIdx = headers.findIndex(h => h === 'licence');
-      const seasonIdx = headers.findIndex(h => h === 'saison');
-      const lastNameIdx = headers.findIndex(h => h === 'nom');
-      const firstNameIdx = headers.findIndex(h => h === 'prénom' || h === 'prenom');
-      const genderIdx = headers.findIndex(h => h === 'sexe');
-      const birthDateIdx = headers.findIndex(h => h === 'date naissance' || h === 'date de naissance');
-      const typeIdx = headers.findIndex(h => h === 'type' || h === 'tarif');
-
-      for (let i = 1; i < Math.min(lines.length, 6); i++) {
-        const columns = lines[i].split(sep).map(col => col.trim().replace(/^"(.*)"$/, '$1').trim());
-        previewRows.push({
-          licence: columns[licenceIdx] || '',
-          season: columns[seasonIdx] || '',
-          lastName: columns[lastNameIdx] || '',
-          firstName: columns[firstNameIdx] || '',
-          gender: columns[genderIdx] || '',
-          birthDate: columns[birthDateIdx] || '',
-          type: columns[typeIdx] || ''
-        });
-      }
-      csvPreview = previewRows;
     };
-    reader.readAsText(file);
+    reader.onerror = () => {
+      isValidating = false;
+      localError = "Erreur de lecture du fichier.";
+    };
+    try {
+      reader.readAsText(file);
+    } catch (e) {
+      isValidating = false;
+      localError = "Impossible de lire le fichier.";
+    }
   }
 
   function handleSubmit(e: Event) {
@@ -166,7 +184,7 @@
           </Alert.Description>
         </Alert.Root>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 {result.errors > 0 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4">
           <!-- Créations -->
           <Card.Root class="bg-emerald-500/5 border-emerald-500/20 shadow-none">
             <Card.Content class="p-4 flex items-center justify-between">
@@ -188,23 +206,25 @@
                 <p class="text-2xl font-bold text-blue-700 dark:text-blue-300 mt-1">{result.updated}</p>
               </div>
               <div class="p-2 bg-blue-500/10 rounded-lg text-blue-600">
-                <UpdateIcon class="w-5 h-5" />
+                <RefreshCw class="w-5 h-5" />
               </div>
             </Card.Content>
           </Card.Root>
 
-          <!-- Rejets / Erreurs -->
-          <Card.Root class="bg-destructive/5 border-destructive/20 shadow-none">
-            <Card.Content class="p-4 flex items-center justify-between">
-              <div>
-                <span class="text-xs font-semibold text-destructive uppercase tracking-wider">Rejets / Erreurs</span>
-                <p class="text-2xl font-bold text-destructive mt-1">{result.errors}</p>
-              </div>
-              <div class="p-2 bg-destructive/10 rounded-lg text-destructive">
-                <AlertTriangle class="w-5 h-5" />
-              </div>
-            </Card.Content>
-          </Card.Root>
+          {#if result.errors > 0}
+            <!-- Rejets / Erreurs -->
+            <Card.Root class="bg-destructive/5 border-destructive/20 shadow-none">
+              <Card.Content class="p-4 flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-semibold text-destructive uppercase tracking-wider">Rejets / Erreurs</span>
+                  <p class="text-2xl font-bold text-destructive mt-1">{result.errors}</p>
+                </div>
+                <div class="p-2 bg-destructive/10 rounded-lg text-destructive">
+                  <AlertTriangle class="w-5 h-5" />
+                </div>
+              </Card.Content>
+            </Card.Root>
+          {/if}
         </div>
       </div>
     {/if}
@@ -220,7 +240,7 @@
         onclick={() => fileInput?.click()}
         role="button"
         tabindex="0"
-        onkeydown={(e) => e.key === 'Enter' && fileInput?.click()}
+        onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput?.click(); } }}
       >
         <input
           bind:this={fileInput}
@@ -301,7 +321,7 @@
 
         <Button
           type="submit"
-          disabled={!selectedFile || loading || !!localError}
+          disabled={!selectedFile || loading || isValidating || !!localError}
           class="flex items-center justify-center gap-2"
         >
           {#if loading}
