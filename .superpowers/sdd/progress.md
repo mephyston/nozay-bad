@@ -16,6 +16,6 @@
 - Task 6: pending
 
 ## Phase 3: Members UI Refactoring (2026-07-16)
-- Task 1: pending
+- Task 1: complete (commits 10284e9..5ba5130, review clean)
 - Task 2: pending
 
