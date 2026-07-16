@@ -50,13 +50,13 @@
       name: "Comptabilité",
       icon: Receipt,
       subItems: [
-        { name: "Rapports", href: "/admin/compta/reports" },
-        { name: "Grand Livre", href: "/admin/compta" },
-        { name: "Factures", href: "/admin/compta/invoices" },
-        { name: "Rapprochement bancaire", href: "/admin/compta/import" },
-        { name: "Remises de chèques", href: "/admin/compta/cheques" },
-        { name: "Caisse", href: "/admin/cash-box" },
-        { name: "Soldes initiaux", href: "/admin/compta/config" }
+        { name: "Rapports", href: "/admin/accounting/reports" },
+        { name: "Grand Livre", href: "/admin/accounting" },
+        { name: "Factures", href: "/admin/accounting/invoices" },
+        { name: "Rapprochement bancaire", href: "/admin/accounting/import" },
+        { name: "Remises de chèques", href: "/admin/accounting/cheques" },
+        { name: "Caisse", href: "/admin/accounting/cash-box" },
+        { name: "Soldes initiaux", href: "/admin/accounting/config" }
       ]
     },
     {
@@ -72,9 +72,9 @@
       name: "Réglages",
       icon: Settings,
       subItems: [
-        { name: "Saisons", href: "/admin/settings?view=seasons" },
-        { name: "Catégories", href: "/admin/settings?view=compta" },
-        { name: "Classes de comptes", href: "/admin/settings?view=classes" }
+        { name: "Saisons", href: "/admin/accounting/settings?view=seasons" },
+        { name: "Catégories", href: "/admin/accounting/settings?view=compta" },
+        { name: "Classes de comptes", href: "/admin/accounting/settings?view=classes" }
       ]
     }
   ];

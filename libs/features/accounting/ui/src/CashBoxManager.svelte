@@ -107,7 +107,7 @@
     isSubmitting = true;
 
     try {
-      const res = await fetch('/admin/cash-box', {
+      const res = await fetch('/admin/accounting/cash-box', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -146,7 +146,7 @@
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce mouvement de caisse ?')) return;
 
     try {
-      const res = await fetch('/admin/cash-box', {
+      const res = await fetch('/admin/accounting/cash-box', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'delete', id })
@@ -160,7 +160,7 @@
   }
 
   function applySeasonChange() {
-    window.location.href = `/admin/cash-box?season=${selectedSeason}`;
+    window.location.href = `/admin/accounting/cash-box?season=${selectedSeason}`;
   }
 </script>
 

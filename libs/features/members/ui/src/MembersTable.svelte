@@ -226,7 +226,7 @@
                       </a>
                       {#if member.paid}
                         <a
-                          href={`/admin/compta/attestations/${member.id}`}
+                          href={`/admin/accounting/attestations/${member.id}`}
                           target="_blank"
                           class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer no-underline bg-transparent"
                         >

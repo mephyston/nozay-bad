@@ -96,7 +96,7 @@
     <div class="flex items-center gap-3">
       {#if member.paid}
         <Button
-          href={`/admin/compta/attestations/${member.id}`}
+          href={`/admin/accounting/attestations/${member.id}`}
           target="_blank"
           size="sm"
           class="no-underline"

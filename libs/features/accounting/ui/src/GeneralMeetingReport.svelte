@@ -313,7 +313,7 @@
   function applySeasonChange() {
     const params = new URLSearchParams(window.location.search);
     params.set('season', selectedSeason);
-    window.location.href = `/admin/compta/reports?${params.toString()}`;
+    window.location.href = `/admin/accounting/reports?${params.toString()}`;
   }
 
   // Helper to safely get total for a category and type
@@ -444,7 +444,7 @@
               {#if reportMode === 'previsionnel' || getClassSumRealise(cc.code, 'depense') > 0 || getClassSumPrevisionnel(cc.code, 'depense') > 0}
                 <div class="space-y-1.5 py-1 {getClassSumRealise(cc.code, 'depense') === 0 && getClassSumPrevisionnel(cc.code, 'depense') === 0 ? 'print:hidden' : ''}">
                   <div class="flex justify-between items-center text-sm border-b border-border/40 pb-1 font-bold text-foreground">
-                    <a href="/admin/compta?season={selectedSeason}&classCode={cc.code}" class="hover:underline hover:text-primary transition-colors cursor-pointer text-foreground/90 print:no-underline" title="Voir les écritures dans le grand livre">{cc.label}</a>
+                    <a href="/admin/accounting?season={selectedSeason}&classCode={cc.code}" class="hover:underline hover:text-primary transition-colors cursor-pointer text-foreground/90 print:no-underline" title="Voir les écritures dans le grand livre">{cc.label}</a>
                     <div class="flex gap-8 font-mono">
                       <span class="w-20 text-right">{formatAmount(getClassSumRealise(cc.code, 'depense'))}</span>
                       <span class="w-20 text-right">{formatAmount(getClassSumPrevisionnel(cc.code, 'depense'))}</span>
@@ -455,7 +455,7 @@
                     {#each getClassCategories(cc.code, 'depense') as cat}
                       {#if reportMode === 'previsionnel' || getCatTotal(cat.id.toString(), 'depense') > 0 || (editableBudget[`${cat.id}_depense`] || 0) > 0}
                         <div class="flex justify-between items-center py-0.5 font-mono text-[11px] {getCatTotal(cat.id.toString(), 'depense') === 0 && (editableBudget[`${cat.id}_depense`] || 0) === 0 ? 'print:hidden' : ''}">
-                          <a href="/admin/compta?season={selectedSeason}&category={cat.id}" class="font-sans text-muted-foreground hover:underline hover:text-primary transition-colors cursor-pointer print:no-underline" title="Voir les écritures de cette catégorie dans le grand livre">• {cat.adminLabel}</a>
+                          <a href="/admin/accounting?season={selectedSeason}&category={cat.id}" class="font-sans text-muted-foreground hover:underline hover:text-primary transition-colors cursor-pointer print:no-underline" title="Voir les écritures de cette catégorie dans le grand livre">• {cat.adminLabel}</a>
                           <div class="flex gap-8 items-center">
                             <span class="w-20 text-right">{formatAmount(getCatTotal(cat.id.toString(), 'depense'))}</span>
                             {#if reportMode === 'previsionnel' && !isClosed}
@@ -530,7 +530,7 @@
               {#if reportMode === 'previsionnel' || getClassSumRealise(pc.code, 'recette') > 0 || getClassSumPrevisionnel(pc.code, 'recette') > 0}
                 <div class="space-y-1.5 py-1 {getClassSumRealise(pc.code, 'recette') === 0 && getClassSumPrevisionnel(pc.code, 'recette') === 0 ? 'print:hidden' : ''}">
                   <div class="flex justify-between items-center text-sm border-b border-border/40 pb-1 font-bold text-foreground">
-                    <a href="/admin/compta?season={selectedSeason}&classCode={pc.code}" class="hover:underline hover:text-primary transition-colors cursor-pointer text-foreground/90 print:no-underline" title="Voir les écritures dans le grand livre">{pc.label}</a>
+                    <a href="/admin/accounting?season={selectedSeason}&classCode={pc.code}" class="hover:underline hover:text-primary transition-colors cursor-pointer text-foreground/90 print:no-underline" title="Voir les écritures dans le grand livre">{pc.label}</a>
                     <div class="flex gap-8 font-mono">
                       <span class="w-20 text-right">{formatAmount(getClassSumRealise(pc.code, 'recette'))}</span>
                       <span class="w-20 text-right">{formatAmount(getClassSumPrevisionnel(pc.code, 'recette'))}</span>
@@ -541,7 +541,7 @@
                     {#each getClassCategories(pc.code, 'recette') as cat}
                       {#if reportMode === 'previsionnel' || getCatTotal(cat.id.toString(), 'recette') > 0 || (editableBudget[`${cat.id}_recette`] || 0) > 0}
                         <div class="flex justify-between items-center py-0.5 font-mono text-[11px] {getCatTotal(cat.id.toString(), 'recette') === 0 && (editableBudget[`${cat.id}_recette`] || 0) === 0 ? 'print:hidden' : ''}">
-                          <a href="/admin/compta?season={selectedSeason}&category={cat.id}" class="font-sans text-muted-foreground hover:underline hover:text-primary transition-colors cursor-pointer print:no-underline" title="Voir les écritures de cette catégorie dans le grand livre">• {cat.adminLabel}</a>
+                          <a href="/admin/accounting?season={selectedSeason}&category={cat.id}" class="font-sans text-muted-foreground hover:underline hover:text-primary transition-colors cursor-pointer print:no-underline" title="Voir les écritures de cette catégorie dans le grand livre">• {cat.adminLabel}</a>
                           <div class="flex gap-8 items-center">
                             <span class="w-20 text-right">{formatAmount(getCatTotal(cat.id.toString(), 'recette'))}</span>
                             {#if reportMode === 'previsionnel' && !isClosed}

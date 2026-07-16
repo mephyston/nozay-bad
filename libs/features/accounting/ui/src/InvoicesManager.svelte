@@ -348,7 +348,7 @@
   }
 
   function handlePrint(id: number) {
-    window.open(`/admin/compta/invoices/${id}`, '_blank');
+    window.open(`/admin/accounting/invoices/${id}`, '_blank');
   }
 
   // Dropdown menu state

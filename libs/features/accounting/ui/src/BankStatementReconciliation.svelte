@@ -267,7 +267,7 @@
         throw new Error('Aucune transaction sélectionnée ne dispose de suggestions valides.');
       }
 
-      const res = await fetch('/admin/compta/import', {
+      const res = await fetch('/admin/accounting/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -297,7 +297,7 @@
     
     try {
       const promises = ids.map(btId =>
-        fetch('/admin/compta/import', {
+        fetch('/admin/accounting/import', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'ignore', btId })
@@ -360,7 +360,7 @@
 
   async function loadUnpaidInvoices() {
     try {
-      const res = await fetch('/admin/compta/import', {
+      const res = await fetch('/admin/accounting/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -392,7 +392,7 @@
       const isFullyReconciled = (remainingAmount - invoice.totalAmount) <= 10;
       prepareNextFocus(bt.id, isFullyReconciled);
 
-      const res = await fetch('/admin/compta/import', {
+      const res = await fetch('/admin/accounting/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -433,7 +433,7 @@
       const isFullyReconciled = Math.abs(selectedSum - selectedTx.amount) <= 10;
       prepareNextFocus(selectedTx.id, isFullyReconciled);
 
-      const res = await fetch('/admin/compta/import', {
+      const res = await fetch('/admin/accounting/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -511,7 +511,7 @@
     formData.append('accountId', selectedAccount);
 
     try {
-      const res = await fetch('/admin/compta/import', {
+      const res = await fetch('/admin/accounting/import', {
         method: 'POST',
         body: formData
       });
@@ -527,7 +527,7 @@
     isAnalyzing = true;
     errorMsg = '';
     try {
-      const res = await fetch('/admin/compta/import', {
+      const res = await fetch('/admin/accounting/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'analyze', season: selectedSeason })
@@ -544,7 +544,7 @@
     isAnalyzingSingle = true;
     errorMsg = '';
     try {
-      const res = await fetch('/admin/compta/import', {
+      const res = await fetch('/admin/accounting/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -809,7 +809,7 @@
       const isFullyReconciled = (remainingAmount - matchedAmount) <= 10;
       prepareNextFocus(btId, isFullyReconciled);
 
-      const res = await fetch('/admin/compta/import', {
+      const res = await fetch('/admin/accounting/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -839,7 +839,7 @@
         const isFullyReconciled = (remainingAmount - splitSumCents) <= 10;
         prepareNextFocus(bt.id, isFullyReconciled);
 
-        const res = await fetch('/admin/compta/import', {
+        const res = await fetch('/admin/accounting/import', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -866,7 +866,7 @@
         const isFullyReconciled = (remainingAmount - linkedAmount) <= 10;
         prepareNextFocus(bt.id, isFullyReconciled);
 
-        const res = await fetch('/admin/compta/import', {
+        const res = await fetch('/admin/accounting/import', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -900,7 +900,7 @@
     try {
       prepareNextFocus(btId, true);
 
-      const res = await fetch('/admin/compta/import', {
+      const res = await fetch('/admin/accounting/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -936,7 +936,7 @@
         prepareNextFocus(selectedTx.id, false);
       }
 
-      const res = await fetch('/admin/compta/import', {
+      const res = await fetch('/admin/accounting/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'delete-transaction', txId })
@@ -954,7 +954,7 @@
     try {
       prepareNextFocus(btId, false);
 
-      const res = await fetch('/admin/compta/import', {
+      const res = await fetch('/admin/accounting/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'unignore', btId })
@@ -973,7 +973,7 @@
     try {
       prepareNextFocus(btId, true);
 
-      const res = await fetch('/admin/compta/import', {
+      const res = await fetch('/admin/accounting/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'ignore', btId })

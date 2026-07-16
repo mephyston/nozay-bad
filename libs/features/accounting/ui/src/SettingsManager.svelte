@@ -104,7 +104,7 @@
     successMsg = '';
 
     try {
-      const res = await fetch('/admin/settings', {
+      const res = await fetch('/admin/accounting/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -133,7 +133,7 @@
     successMsg = '';
 
     try {
-      const res = await fetch('/admin/settings', {
+      const res = await fetch('/admin/accounting/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -163,7 +163,7 @@
     successMsg = '';
 
     try {
-      const res = await fetch('/admin/settings', {
+      const res = await fetch('/admin/accounting/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -195,7 +195,7 @@
     successMsg = '';
 
     try {
-      const res = await fetch('/admin/settings', {
+      const res = await fetch('/admin/accounting/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -241,7 +241,7 @@
     successMsg = '';
 
     try {
-      const res = await fetch('/admin/settings', {
+      const res = await fetch('/admin/accounting/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -277,7 +277,7 @@
     successMsg = '';
 
     try {
-      const res = await fetch('/admin/settings', {
+      const res = await fetch('/admin/accounting/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -309,7 +309,7 @@
     successMsg = '';
 
     try {
-      const res = await fetch('/admin/settings', {
+      const res = await fetch('/admin/accounting/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -349,7 +349,7 @@
     successMsg = '';
 
     try {
-      const res = await fetch('/admin/settings', {
+      const res = await fetch('/admin/accounting/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -379,7 +379,7 @@
     successMsg = '';
 
     try {
-      const res = await fetch('/admin/settings', {
+      const res = await fetch('/admin/accounting/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -130,7 +130,7 @@
     params.delete('category');
     params.delete('classCode');
     params.set('page', '1');
-    window.location.href = `/admin/compta?${params.toString()}`;
+    window.location.href = `/admin/accounting?${params.toString()}`;
   }
 
   // Saisie formulaire
@@ -277,7 +277,7 @@
             reference
           };
 
-      const res = await fetch('/admin/compta', {
+      const res = await fetch('/admin/accounting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -299,7 +299,7 @@
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette transaction ?')) return;
 
     try {
-      const res = await fetch('/admin/compta', {
+      const res = await fetch('/admin/accounting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'delete', id })
@@ -315,14 +315,14 @@
     if (newPage < 1 || newPage > pagination.totalPages) return;
     const params = new URLSearchParams(window.location.search);
     params.set('page', newPage.toString());
-    window.location.href = `/admin/compta?${params.toString()}`;
+    window.location.href = `/admin/accounting?${params.toString()}`;
   }
 
   function applySeasonChange() {
     const params = new URLSearchParams(window.location.search);
     params.set('season', selectedSeason);
     params.set('page', '1');
-    window.location.href = `/admin/compta?${params.toString()}`;
+    window.location.href = `/admin/accounting?${params.toString()}`;
   }
 </script>
 
@@ -417,7 +417,7 @@
           params.set('unreconciledCheques', 'true');
         }
         params.set('page', '1');
-        window.location.href = `/admin/compta?${params.toString()}`;
+        window.location.href = `/admin/accounting?${params.toString()}`;
       }}
     >
       <span>🎫</span> Chèques en circulation

@@ -7,7 +7,7 @@ describe('BankStatementReconciliation Component', () => {
 
   beforeEach(() => {
     global.fetch = vi.fn().mockImplementation((url, init) => {
-      if (url === '/admin/compta/import' && init?.body) {
+      if (url === '/admin/accounting/import' && init?.body) {
         const body = JSON.parse(init.body);
         if (body.action === 'get-unpaid-invoices') {
           return Promise.resolve({
@@ -274,7 +274,7 @@ describe('BankStatementReconciliation Component', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     flushSync();
 
-    expect(global.fetch).toHaveBeenCalledWith('/admin/compta/import', expect.any(Object));
+    expect(global.fetch).toHaveBeenCalledWith('/admin/accounting/import', expect.any(Object));
     expect(reloadMock).toHaveBeenCalled();
   });
 
@@ -362,7 +362,7 @@ describe('BankStatementReconciliation Component', () => {
 
     // Assert fetch call
     expect(global.fetch).toHaveBeenCalledWith(
-      '/admin/compta/import',
+      '/admin/accounting/import',
       expect.objectContaining({
         method: 'POST',
         body: expect.stringContaining('"action":"bulk"')
@@ -530,7 +530,7 @@ describe('BankStatementReconciliation Component', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     flushSync();
 
-    expect(global.fetch).toHaveBeenCalledWith('/admin/compta/import', expect.objectContaining({
+    expect(global.fetch).toHaveBeenCalledWith('/admin/accounting/import', expect.objectContaining({
       method: 'POST',
       body: expect.stringContaining('"invoiceIds":[101,102]')
     }));
@@ -614,7 +614,7 @@ describe('BankStatementReconciliation Component', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     flushSync();
 
-    expect(global.fetch).toHaveBeenCalledWith('/admin/compta/import', expect.objectContaining({
+    expect(global.fetch).toHaveBeenCalledWith('/admin/accounting/import', expect.objectContaining({
       method: 'POST',
       body: expect.stringContaining('"transactions":')
     }));
