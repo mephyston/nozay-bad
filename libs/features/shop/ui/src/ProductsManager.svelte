@@ -19,6 +19,7 @@
     products?: Product[];
   } = $props();
 
+  // svelte-ignore state_referenced_locally
   let formCategory = $state<'shuttlecock' | 'string' | 'other'>(
     category && category !== 'all' ? category : 'shuttlecock'
   );
