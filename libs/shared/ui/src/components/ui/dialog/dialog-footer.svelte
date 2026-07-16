@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { cn, type WithElementRef } from "libs/shared/ui/src/lib/utils.js";
+	import { cn, type WithElementRef } from "../../../lib/utils.js";
 	import type { HTMLAttributes } from "svelte/elements";
 	import { Dialog as DialogPrimitive } from "bits-ui";
 	import { Button } from "libs/shared/ui/src/components/ui/button/index.js";

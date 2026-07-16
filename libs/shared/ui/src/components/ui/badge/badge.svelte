@@ -23,7 +23,7 @@
 
 <script lang="ts">
 	import type { HTMLAnchorAttributes } from "svelte/elements";
-	import { cn, type WithElementRef } from "libs/shared/ui/src/lib/utils.js";
+	import { cn, type WithElementRef } from "../../../lib/utils.js";
 
 	let {
 		ref = $bindable(null),

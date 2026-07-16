@@ -21,7 +21,7 @@
 
 <script lang="ts">
 	import { ToggleGroup as ToggleGroupPrimitive } from "bits-ui";
-	import { cn } from "libs/shared/ui/src/lib/utils.js";
+	import { cn } from "../../../lib/utils.js";
 
 	let {
 		ref = $bindable(null),
