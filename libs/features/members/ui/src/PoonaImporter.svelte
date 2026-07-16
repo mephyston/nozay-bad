@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Upload, AlertCircle, CheckCircle, RefreshCw, FileText } from 'lucide-svelte';
+  import { Upload, AlertCircle, CheckCircle, RefreshCw, FileText, UserPlus, RefreshCw as UpdateIcon, AlertTriangle } from 'lucide-svelte';
   import { Button, Card, Alert, Table } from '@metacult/shared-ui';
 
   interface ImportResult {
@@ -157,26 +157,56 @@
     {/if}
 
     {#if result}
-      <Alert.Root class="mb-6 bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-        <CheckCircle class="w-4 h-4" />
-        <Alert.Title class="text-emerald-600 dark:text-emerald-400">Importation réussie</Alert.Title>
-        <Alert.Description class="text-emerald-600 dark:text-emerald-400">
-          <div class="grid grid-cols-3 gap-6 mt-3">
-            <div class="text-center p-3 bg-background border border-border rounded-md">
-              <div class="text-2xl font-bold">{result.inserted}</div>
-              <div class="text-xs text-muted-foreground mt-1">Créations</div>
-            </div>
-            <div class="text-center p-3 bg-background border border-border rounded-md">
-              <div class="text-2xl font-bold">{result.updated}</div>
-              <div class="text-xs text-muted-foreground mt-1">Mises à jour</div>
-            </div>
-            <div class="text-center p-3 bg-background border border-border rounded-md">
-              <div class="text-2xl font-bold text-destructive">{result.errors}</div>
-              <div class="text-xs text-muted-foreground mt-1">Rejets</div>
-            </div>
-          </div>
-        </Alert.Description>
-      </Alert.Root>
+      <div class="mb-6 space-y-4">
+        <Alert.Root class="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+          <CheckCircle class="w-4 h-4" />
+          <Alert.Title class="text-emerald-600 dark:text-emerald-400">Importation complétée</Alert.Title>
+          <Alert.Description class="text-emerald-600 dark:text-emerald-400 text-xs">
+            Le traitement du fichier CSV Poona s'est terminé avec succès.
+          </Alert.Description>
+        </Alert.Root>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- Créations -->
+          <Card.Root class="bg-emerald-500/5 border-emerald-500/20 shadow-none">
+            <Card.Content class="p-4 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Créations</span>
+                <p class="text-2xl font-bold text-emerald-700 dark:text-emerald-300 mt-1">{result.inserted}</p>
+              </div>
+              <div class="p-2 bg-emerald-500/10 rounded-lg text-emerald-600">
+                <UserPlus class="w-5 h-5" />
+              </div>
+            </Card.Content>
+          </Card.Root>
+
+          <!-- Mises à jour -->
+          <Card.Root class="bg-blue-500/5 border-blue-500/20 shadow-none">
+            <Card.Content class="p-4 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Mises à jour</span>
+                <p class="text-2xl font-bold text-blue-700 dark:text-blue-300 mt-1">{result.updated}</p>
+              </div>
+              <div class="p-2 bg-blue-500/10 rounded-lg text-blue-600">
+                <UpdateIcon class="w-5 h-5" />
+              </div>
+            </Card.Content>
+          </Card.Root>
+
+          <!-- Rejets / Erreurs -->
+          <Card.Root class="bg-destructive/5 border-destructive/20 shadow-none">
+            <Card.Content class="p-4 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-semibold text-destructive uppercase tracking-wider">Rejets / Erreurs</span>
+                <p class="text-2xl font-bold text-destructive mt-1">{result.errors}</p>
+              </div>
+              <div class="p-2 bg-destructive/10 rounded-lg text-destructive">
+                <AlertTriangle class="w-5 h-5" />
+              </div>
+            </Card.Content>
+          </Card.Root>
+        </div>
+      </div>
     {/if}
 
     <form method="POST" enctype="multipart/form-data" onsubmit={handleSubmit} bind:this={formElement}>

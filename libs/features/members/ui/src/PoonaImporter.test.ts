@@ -51,11 +51,38 @@ describe('PoonaImporter Component', () => {
       }
     });
 
-    expect(target.innerHTML).toContain('Importation réussie');
+    expect(target.innerHTML).toContain('Importation complétée');
     expect(target.innerHTML).toContain('12'); // inserted count
     expect(target.innerHTML).toContain('5'); // updated count
     expect(target.innerHTML).toContain('2'); // errors count
   });
+
+  it('should render detailed KPI statistics cards when result prop is provided', () => {
+    const target = document.createElement('div');
+    const component = mount(PoonaImporter, {
+      target,
+      props: {
+        result: {
+          success: true,
+          inserted: 12,
+          updated: 5,
+          errors: 2
+        }
+      }
+    });
+    flushSync();
+
+    // Vérifier la présence des titres de cartes et des compteurs
+    expect(target.textContent).toContain('Créations');
+    expect(target.textContent).toContain('12');
+    expect(target.textContent).toContain('Mises à jour');
+    expect(target.textContent).toContain('5');
+    expect(target.textContent).toContain('Rejets / Erreurs');
+    expect(target.textContent).toContain('2');
+
+    unmount(component);
+  });
+
 
   it('should validate missing headers and show local error alert', async () => {
     const target = document.createElement('div');
