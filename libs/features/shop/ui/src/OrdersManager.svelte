@@ -1,5 +1,7 @@
 <script lang="ts">
   import { Check, X, Clock, ShoppingBag, Search, AlertCircle, Calendar, History, User, MoreVertical } from "lucide-svelte";
+  import { Button, Input, Badge, Card, Table } from "@metacult/shared-ui";
+
 
   interface Order {
     id: number;
@@ -268,29 +270,31 @@
   <!-- Main Tabs & Search Navigation -->
   <div class="border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div class="flex gap-4">
-      <button
+      <Button
+        variant="ghost"
         onclick={() => { activeTab = 'pending'; errorMsg = null; successMsg = null; }}
-        class="px-4 py-2 text-sm font-semibold border-b-2 transition-all outline-none -mb-px flex items-center gap-1.5 {activeTab === 'pending' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}"
+        class="px-4 py-2 text-sm font-semibold border-b-2 transition-all outline-none -mb-px flex items-center gap-1.5 rounded-none h-auto bg-transparent border-t-0 border-x-0 {activeTab === 'pending' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}"
       >
         <Clock class="h-4 w-4" />
         Demandes en attente ({pendingOrders.length})
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="ghost"
         onclick={() => { activeTab = 'history'; errorMsg = null; successMsg = null; }}
-        class="px-4 py-2 text-sm font-semibold border-b-2 transition-all outline-none -mb-px flex items-center gap-1.5 {activeTab === 'history' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}"
+        class="px-4 py-2 text-sm font-semibold border-b-2 transition-all outline-none -mb-px flex items-center gap-1.5 rounded-none h-auto bg-transparent border-t-0 border-x-0 {activeTab === 'history' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}"
       >
         <History class="h-4 w-4" />
         Historique ({historyOrders.length})
-      </button>
+      </Button>
     </div>
 
     <div class="relative w-full sm:w-64 pb-2 sm:pb-0">
       <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-      <input
+      <Input
         type="text"
         placeholder="Rechercher une commande..."
         bind:value={searchTerm}
-        class="pl-9 pr-3 py-1.5 w-full border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
+        class="pl-9 pr-3 py-1.5 w-full text-sm h-8"
       />
     </div>
   </div>
@@ -299,10 +303,12 @@
   {#if activeTab === 'pending'}
     <div class="space-y-8">
       {#if pendingBySeason.length === 0}
-        <div class="bg-card border border-border rounded-xl p-8 text-center text-muted-foreground">
-          <Clock class="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
-          Aucune commande en attente.
-        </div>
+        <Card.Root class="p-8 text-center text-muted-foreground">
+          <Card.Content class="p-0">
+            <Clock class="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
+            Aucune commande en attente.
+          </Card.Content>
+        </Card.Root>
       {:else}
         {#each pendingBySeason as group}
           <div class="space-y-3">
@@ -311,94 +317,100 @@
               {group.season.name}
             </h2>
 
-            <div class="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-              <div class="overflow-x-auto min-h-[180px]">
-                <table class="w-full text-left border-collapse text-sm">
-                  <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
-                    <tr>
-                      <th class="p-4">Date</th>
-                      <th class="p-4">Adhérent</th>
-                      <th class="p-4">Article</th>
-                      <th class="p-4 text-center">Quantité</th>
-                      <th class="p-4">Paiement</th>
-                      <th class="p-4 text-right">Total</th>
-                      <th class="p-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-border">
-                    {#each group.orders as item (item.order.id)}
-                      <tr class="hover:bg-muted/50 transition-colors">
-                        <td class="p-4 text-muted-foreground whitespace-nowrap">
-                          {new Date(item.order.createdAt).toLocaleDateString('fr-FR')}
-                        </td>
-                        <td class="p-4">
-                          {#if item.member}
-                            <div class="font-medium text-foreground">
-                              {item.member.lastName} {item.member.firstName}
-                            </div>
-                            <div class="text-xs text-muted-foreground font-mono">
-                              Licence: {item.member.licence}
-                            </div>
-                          {:else}
-                            <span class="text-xs text-muted-foreground italic">Inconnu</span>
-                          {/if}
-                        </td>
-                        <td class="p-4">
-                          {#if item.product}
-                            <div class="font-medium text-foreground">{item.product.name}</div>
-                          {:else}
-                            <span class="text-xs text-muted-foreground italic">Produit supprimé</span>
-                          {/if}
-                        </td>
-                        <td class="p-4 text-center font-semibold text-foreground">
-                          {item.order.quantity}
-                        </td>
-                        <td class="p-4 whitespace-nowrap">
-                          <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-muted text-muted-foreground border border-border">
-                            {paymentMethodLabels[item.order.paymentMethod] || item.order.paymentMethod}
-                          </span>
-                        </td>
-                        <td class="p-4 text-right font-bold text-foreground">
-                          {(item.order.totalAmount / 100).toFixed(2)} €
-                        </td>
-                        <td class="p-4 text-right relative">
-                          <div class="inline-block text-left">
-                            <button 
-                              onclick={(e) => toggleDropdown(item.order.id, e)} 
-                              class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
-                              aria-label="Actions"
-                            >
-                              <MoreVertical class="w-4 h-4" />
-                            </button>
-
-                            {#if openDropdownId === item.order.id}
-                              <div class="absolute right-4 mt-1 w-36 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border font-medium">
-                                <button
-                                  onclick={() => handleApprove(item.order.id)}
-                                  disabled={processingId !== null}
-                                  class="w-full px-3 py-1.5 text-xs text-emerald-600 hover:bg-emerald-500/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent disabled:opacity-50"
-                                >
-                                  <Check class="w-3.5 h-3.5" />
-                                  Valider
-                                </button>
-                                <button
-                                  onclick={() => handleReject(item.order.id)}
-                                  disabled={processingId !== null}
-                                  class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
-                                >
-                                  <X class="w-3.5 h-3.5" />
-                                  Refuser
-                                </button>
+            <Card.Root class="overflow-hidden shadow-sm">
+              <Card.Content class="p-0">
+                <div class="overflow-x-auto min-h-[180px]">
+                  <Table.Root>
+                    <Table.Header>
+                      <Table.Row>
+                        <Table.Head>Date</Table.Head>
+                        <Table.Head>Adhérent</Table.Head>
+                        <Table.Head>Article</Table.Head>
+                        <Table.Head class="text-center">Quantité</Table.Head>
+                        <Table.Head>Paiement</Table.Head>
+                        <Table.Head class="text-right">Total</Table.Head>
+                        <Table.Head class="text-right">Actions</Table.Head>
+                      </Table.Row>
+                    </Table.Header>
+                    <Table.Body>
+                      {#each group.orders as item (item.order.id)}
+                        <Table.Row class="hover:bg-muted/50 transition-colors">
+                          <Table.Cell class="text-muted-foreground whitespace-nowrap">
+                            {new Date(item.order.createdAt).toLocaleDateString('fr-FR')}
+                          </Table.Cell>
+                          <Table.Cell>
+                            {#if item.member}
+                              <div class="font-medium text-foreground">
+                                {item.member.lastName} {item.member.firstName}
                               </div>
+                              <div class="text-xs text-muted-foreground font-mono">
+                                Licence: {item.member.licence}
+                              </div>
+                            {:else}
+                              <span class="text-xs text-muted-foreground italic">Inconnu</span>
                             {/if}
-                          </div>
-                        </td>
-                      </tr>
-                    {/each}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                          </Table.Cell>
+                          <Table.Cell>
+                            {#if item.product}
+                              <div class="font-medium text-foreground">{item.product.name}</div>
+                            {:else}
+                              <span class="text-xs text-muted-foreground italic">Produit supprimé</span>
+                            {/if}
+                          </Table.Cell>
+                          <Table.Cell class="text-center font-semibold text-foreground">
+                            {item.order.quantity}
+                          </Table.Cell>
+                          <Table.Cell class="whitespace-nowrap">
+                            <Badge variant="outline">
+                              {paymentMethodLabels[item.order.paymentMethod] || item.order.paymentMethod}
+                            </Badge>
+                          </Table.Cell>
+                          <Table.Cell class="text-right font-bold text-foreground">
+                            {(item.order.totalAmount / 100).toFixed(2)} €
+                          </Table.Cell>
+                          <Table.Cell class="text-right relative">
+                            <div class="inline-block text-left">
+                              <Button 
+                                variant="ghost"
+                                size="icon"
+                                onclick={(e) => toggleDropdown(item.order.id, e)} 
+                                class="text-muted-foreground hover:text-foreground h-8 w-8 cursor-pointer" 
+                                aria-label="Actions"
+                              >
+                                <MoreVertical class="w-4 h-4" />
+                              </Button>
+
+                              {#if openDropdownId === item.order.id}
+                                <div class="absolute right-4 mt-1 w-36 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border font-medium">
+                                  <Button
+                                    variant="ghost"
+                                    onclick={() => handleApprove(item.order.id)}
+                                    disabled={processingId !== null}
+                                    class="w-full px-3 py-1.5 text-xs text-emerald-600 hover:bg-emerald-500/10 font-semibold flex items-center gap-1.5 cursor-pointer rounded-none justify-start h-auto bg-transparent border-0"
+                                  >
+                                    <Check class="w-3.5 h-3.5" />
+                                    Valider
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    onclick={() => handleReject(item.order.id)}
+                                    disabled={processingId !== null}
+                                    class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer rounded-none justify-start h-auto bg-transparent border-0"
+                                  >
+                                    <X class="w-3.5 h-3.5" />
+                                    Refuser
+                                  </Button>
+                                </div>
+                              {/if}
+                            </div>
+                          </Table.Cell>
+                        </Table.Row>
+                      {/each}
+                    </Table.Body>
+                  </Table.Root>
+                </div>
+              </Card.Content>
+            </Card.Root>
           </div>
         {/each}
       {/if}
@@ -406,10 +418,12 @@
   {:else}
     <div class="space-y-8">
       {#if historyBySeason.length === 0}
-        <div class="bg-card border border-border rounded-xl p-8 text-center text-muted-foreground">
-          <History class="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
-          Aucun historique de commande disponible.
-        </div>
+        <Card.Root class="p-8 text-center text-muted-foreground">
+          <Card.Content class="p-0">
+            <History class="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
+            Aucun historique de commande disponible.
+          </Card.Content>
+        </Card.Root>
       {:else}
         {#each historyBySeason as group}
           <div class="space-y-3">
@@ -418,80 +432,82 @@
               {group.season.name}
             </h2>
 
-            <div class="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-              <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm">
-                  <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
-                    <tr>
-                      <th class="p-4">Date</th>
-                      <th class="p-4">Adhérent</th>
-                      <th class="p-4">Article</th>
-                      <th class="p-4 text-center">Quantité</th>
-                      <th class="p-4">Paiement</th>
-                      <th class="p-4 text-right">Total</th>
-                      <th class="p-4 text-center">Statut</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-border">
-                    {#each group.orders as item (item.order.id)}
-                      <tr class="hover:bg-muted/50 transition-colors">
-                        <td class="p-4 text-muted-foreground whitespace-nowrap">
-                          {new Date(item.order.createdAt).toLocaleDateString('fr-FR')}
-                        </td>
-                        <td class="p-4">
-                          {#if item.member}
-                            <div class="font-medium text-foreground">
-                              {item.member.lastName} {item.member.firstName}
-                            </div>
-                            <div class="text-xs text-muted-foreground font-mono">
-                              Licence: {item.member.licence}
-                            </div>
-                          {:else}
-                            <span class="text-xs text-muted-foreground italic">Inconnu</span>
-                          {/if}
-                        </td>
-                        <td class="p-4">
-                          {#if item.product}
-                            <span class="font-medium text-foreground">{item.product.name}</span>
-                          {:else}
-                            <span class="text-xs text-muted-foreground italic">Produit supprimé</span>
-                          {/if}
-                        </td>
-                        <td class="p-4 text-center font-semibold text-foreground">
-                          {item.order.quantity}
-                        </td>
-                        <td class="p-4 whitespace-nowrap">
-                          <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-muted text-muted-foreground border border-border">
-                            {paymentMethodLabels[item.order.paymentMethod] || item.order.paymentMethod}
-                          </span>
-                        </td>
-                        <td class="p-4 text-right font-bold text-foreground">
-                          {(item.order.totalAmount / 100).toFixed(2)} €
-                        </td>
-                        <td class="p-4 text-center">
-                          {#if item.order.status === 'approved'}
-                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                              <Check class="w-3 h-3" />
-                              Validée
-                            </span>
-                            {#if item.order.transactionId}
-                              <div class="text-[10px] text-muted-foreground mt-0.5">
-                                Tx: #{item.order.transactionId}
+            <Card.Root class="overflow-hidden shadow-sm">
+              <Card.Content class="p-0">
+                <div class="overflow-x-auto">
+                  <Table.Root>
+                    <Table.Header>
+                      <Table.Row>
+                        <Table.Head>Date</Table.Head>
+                        <Table.Head>Adhérent</Table.Head>
+                        <Table.Head>Article</Table.Head>
+                        <Table.Head class="text-center">Quantité</Table.Head>
+                        <Table.Head>Paiement</Table.Head>
+                        <Table.Head class="text-right">Total</Table.Head>
+                        <Table.Head class="text-center">Statut</Table.Head>
+                      </Table.Row>
+                    </Table.Header>
+                    <Table.Body>
+                      {#each group.orders as item (item.order.id)}
+                        <Table.Row class="hover:bg-muted/50 transition-colors">
+                          <Table.Cell class="text-muted-foreground whitespace-nowrap">
+                            {new Date(item.order.createdAt).toLocaleDateString('fr-FR')}
+                          </Table.Cell>
+                          <Table.Cell>
+                            {#if item.member}
+                              <div class="font-medium text-foreground">
+                                {item.member.lastName} {item.member.firstName}
                               </div>
+                              <div class="text-xs text-muted-foreground font-mono">
+                                Licence: {item.member.licence}
+                              </div>
+                            {:else}
+                              <span class="text-xs text-muted-foreground italic">Inconnu</span>
                             {/if}
-                          {:else if item.order.status === 'rejected'}
-                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-destructive/10 text-destructive">
-                              <X class="w-3 h-3" />
-                              Refusée
-                            </span>
-                          {/if}
-                        </td>
-                      </tr>
-                    {/each}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                          </Table.Cell>
+                          <Table.Cell>
+                            {#if item.product}
+                              <span class="font-medium text-foreground">{item.product.name}</span>
+                            {:else}
+                              <span class="text-xs text-muted-foreground italic">Produit supprimé</span>
+                            {/if}
+                          </Table.Cell>
+                          <Table.Cell class="text-center font-semibold text-foreground">
+                            {item.order.quantity}
+                          </Table.Cell>
+                          <Table.Cell class="whitespace-nowrap">
+                            <Badge variant="outline">
+                              {paymentMethodLabels[item.order.paymentMethod] || item.order.paymentMethod}
+                            </Badge>
+                          </Table.Cell>
+                          <Table.Cell class="text-right font-bold text-foreground">
+                            {(item.order.totalAmount / 100).toFixed(2)} €
+                          </Table.Cell>
+                          <Table.Cell class="text-center">
+                            {#if item.order.status === 'approved'}
+                              <Badge variant="secondary" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-semibold gap-1">
+                                <Check class="w-3 h-3" />
+                                Validée
+                              </Badge>
+                              {#if item.order.transactionId}
+                                <div class="text-[10px] text-muted-foreground mt-0.5">
+                                  Tx: #{item.order.transactionId}
+                                </div>
+                              {/if}
+                            {:else if item.order.status === 'rejected'}
+                              <Badge variant="destructive" class="bg-destructive/10 text-destructive hover:bg-destructive/10 font-semibold gap-1">
+                                <X class="w-3 h-3" />
+                                Refusée
+                              </Badge>
+                            {/if}
+                          </Table.Cell>
+                        </Table.Row>
+                      {/each}
+                    </Table.Body>
+                  </Table.Root>
+                </div>
+              </Card.Content>
+            </Card.Root>
           </div>
         {/each}
       {/if}
