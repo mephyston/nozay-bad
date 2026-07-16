@@ -179,16 +179,16 @@
         <Sidebar.MenuItem>
           <Sidebar.MenuButton
             size="default"
-            class="data-[slot=sidebar-menu-button]:!p-1.5 w-full bg-transparent border-0 flex items-center justify-start gap-2"
+            class="w-full bg-transparent border-0 flex items-center justify-start"
           >
             {#snippet child({ props })}
               <a
                 {...props}
                 href="/admin"
-                class="flex items-center gap-2 w-full h-full font-bold text-sidebar-foreground group-data-[collapsible=icon]:justify-center"
+                class="flex items-center gap-3 px-3 py-2 w-full h-full font-bold text-sidebar-foreground group-data-[collapsible=icon]:justify-center"
               >
-                <!-- Badminton Shuttlecock Icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0 text-primary">
+                <!-- Badminton Shuttlecock Icon (aligned h-4 w-4) -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 shrink-0 text-primary">
                   <path d="M9 16c0-1.5 1-2 3-2s3 .5 3 2v2a3 3 0 0 1-6 0v-2z" />
                   <path d="M12 14V3" />
                   <path d="m8 14 2-10" />
@@ -198,9 +198,7 @@
                   <path d="M8 8h8" />
                   <path d="M6 11h12" />
                 </svg>
-                <div class="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                  <span class="truncate font-bold text-sm text-foreground">Nozay Bad Association</span>
-                </div>
+                <span class="group-data-[collapsible=icon]:hidden font-bold text-sm text-foreground truncate">Nozay Bad Association</span>
               </a>
             {/snippet}
           </Sidebar.MenuButton>

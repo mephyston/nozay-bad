@@ -250,8 +250,11 @@
                   </Popover.Trigger>
                   <Popover.Content class="w-40 p-1" align="end">
                     <div class="flex flex-col">
-                      <a
+                       <a
                         href={`/admin/members/${member.licence}?season=${filters.season || '25-26'}`}
+                        onclick={() => {
+                          window.location.href = `/admin/members/${member.licence}?season=${filters.season || '25-26'}`;
+                        }}
                         class="px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer no-underline bg-transparent rounded-md"
                       >
                         <Eye class="w-3.5 h-3.5" />
@@ -261,6 +264,10 @@
                         <a
                           href={`/admin/accounting/attestations/${member.id}`}
                           target="_blank"
+                          onclick={(e) => {
+                            e.preventDefault();
+                            window.open(`/admin/accounting/attestations/${member.id}`, '_blank');
+                          }}
                           class="px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer no-underline bg-transparent rounded-md"
                         >
                           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
