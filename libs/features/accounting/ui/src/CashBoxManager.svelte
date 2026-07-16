@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Wallet, TrendingUp, TrendingDown, Trash2, Calendar, FileText, Check, AlertCircle, Plus, Search } from 'lucide-svelte';
+  import { Button, Input, Badge, Card, Alert, Table } from '@metacult/shared-ui';
 
   interface CashTransaction {
     id: number;
@@ -192,195 +193,196 @@
 
   <!-- Statistiques Caisse -->
   <div class="grid gap-4 md:grid-cols-3">
-    <div class="rounded-xl border border-border bg-card p-6 shadow-sm flex items-center justify-between">
+    <Card.Root class="flex items-center justify-between p-6">
       <div class="space-y-1">
-        <h3 class="text-sm font-medium tracking-tight text-muted-foreground">Solde de la Caisse</h3>
+        <Card.Title class="text-sm font-medium tracking-tight text-muted-foreground">Solde de la Caisse</Card.Title>
         <div class="text-3xl font-bold mt-2 text-emerald-600 dark:text-emerald-400">
           {(currentBalance / 100).toFixed(2)} €
         </div>
-        <p class="text-xs text-muted-foreground mt-1">Solde d'ouverture : {(initialBalance / 100).toFixed(2)} €</p>
+        <Card.Description class="text-xs text-muted-foreground mt-1">Solde d'ouverture : {(initialBalance / 100).toFixed(2)} €</Card.Description>
       </div>
       <div class="p-3 bg-emerald-500/10 rounded-full text-emerald-600 dark:text-emerald-400">
         <Wallet class="w-6 h-6" />
       </div>
-    </div>
-    <div class="rounded-xl border border-border bg-card p-6 shadow-sm flex items-center justify-between">
+    </Card.Root>
+    <Card.Root class="flex items-center justify-between p-6">
       <div class="space-y-1">
-        <h3 class="text-sm font-medium tracking-tight text-muted-foreground">Total Entrées (Buvette...)</h3>
+        <Card.Title class="text-sm font-medium tracking-tight text-muted-foreground">Total Entrées (Buvette...)</Card.Title>
         <div class="text-3xl font-bold mt-2 text-primary">
           +{(totalIn / 100).toFixed(2)} €
         </div>
-        <p class="text-xs text-muted-foreground mt-1">Saison en cours</p>
+        <Card.Description class="text-xs text-muted-foreground mt-1">Saison en cours</Card.Description>
       </div>
       <div class="p-3 bg-primary/10 rounded-full text-primary">
         <TrendingUp class="w-6 h-6" />
       </div>
-    </div>
-    <div class="rounded-xl border border-border bg-card p-6 shadow-sm flex items-center justify-between">
+    </Card.Root>
+    <Card.Root class="flex items-center justify-between p-6">
       <div class="space-y-1">
-        <h3 class="text-sm font-medium tracking-tight text-muted-foreground">Total Sorties (Monnaie...)</h3>
+        <Card.Title class="text-sm font-medium tracking-tight text-muted-foreground">Total Sorties (Monnaie...)</Card.Title>
         <div class="text-3xl font-bold mt-2 text-destructive">
           -{(totalOut / 100).toFixed(2)} €
         </div>
-        <p class="text-xs text-muted-foreground mt-1">Saison en cours</p>
+        <Card.Description class="text-xs text-muted-foreground mt-1">Saison en cours</Card.Description>
       </div>
       <div class="p-3 bg-destructive/10 rounded-full text-destructive">
         <TrendingDown class="w-6 h-6" />
       </div>
-    </div>
+    </Card.Root>
   </div>
 
   <div class="grid gap-6 md:grid-cols-5">
     <!-- Formulaire Ajouter une Transaction (Col span 2) -->
-    <div class="bg-card border border-border rounded-xl p-6 shadow-sm md:col-span-2 space-y-4 h-fit">
-      <h2 class="text-lg font-semibold flex items-center gap-2 border-b border-border pb-2">
-        <Plus class="w-5 h-5 text-primary" />
-        Enregistrer un mouvement
-      </h2>
-      
-      {#if errorMsg}
-        <div class="p-3 bg-destructive/15 border border-destructive/30 text-destructive text-xs rounded-md flex items-center gap-2">
-          <AlertCircle class="w-4 h-4 shrink-0" />
-          <span>{errorMsg}</span>
-        </div>
-      {/if}
+    <Card.Root class="md:col-span-2 h-fit">
+      <Card.Header class="pb-2 border-b border-border">
+        <Card.Title class="text-lg font-semibold flex items-center gap-2">
+          <Plus class="w-5 h-5 text-primary" />
+          Enregistrer un mouvement
+        </Card.Title>
+      </Card.Header>
+      <Card.Content class="pt-4 space-y-4">
+        {#if errorMsg}
+          <Alert.Root variant="destructive">
+            <AlertCircle class="w-4 h-4 shrink-0" />
+            <Alert.Description>{errorMsg}</Alert.Description>
+          </Alert.Root>
+        {/if}
 
-      {#if successMsg}
-        <div class="p-3 bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs rounded-md flex items-center gap-2">
-          <Check class="w-4 h-4 shrink-0" />
-          <span>{successMsg}</span>
-        </div>
-      {/if}
+        {#if successMsg}
+          <Alert.Root class="bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+            <Check class="w-4 h-4 shrink-0" />
+            <Alert.Description>{successMsg}</Alert.Description>
+          </Alert.Root>
+        {/if}
 
-      <form onsubmit={handleSubmit} class="space-y-4">
-        <div>
-          <label for="type" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Type de transaction</label>
-          <select
-            id="type"
-            bind:value={type}
-            onchange={() => {
-              category = type === 'recette' ? 'evenements_buvettes' : 'evenements_club';
-            }}
-            class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="recette">Entrée (Recette - ex: Vente buvette)</option>
-            <option value="depense">Sortie (Dépense - ex: Achat boissons)</option>
-          </select>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
+        <form onsubmit={handleSubmit} class="space-y-4">
           <div>
-            <label for="amount" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Montant (€)</label>
-            <input
-              type="number"
-              id="amount"
-              step="0.01"
-              min="0"
-              placeholder="0.00"
-              bind:value={amount}
+            <label for="type" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Type de transaction</label>
+            <select
+              id="type"
+              bind:value={type}
+              onchange={() => {
+                category = type === 'recette' ? 'evenements_buvettes' : 'evenements_club';
+              }}
               class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="recette">Entrée (Recette - ex: Vente buvette)</option>
+              <option value="depense">Sortie (Dépense - ex: Achat boissons)</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="amount" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Montant (€)</label>
+              <Input
+                type="number"
+                id="amount"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                bind:value={amount}
+                required
+              />
+            </div>
+            <div>
+              <label for="date" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Date</label>
+              <Input
+                type="date"
+                id="date"
+                bind:value={date}
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label for="category" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Catégorie</label>
+            <select
+              id="category"
+              bind:value={category}
+              class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              {#if type === 'recette'}
+                <option value="evenements_buvettes">Événements & Buvette</option>
+                <option value="boutique">Boutique & Cordages</option>
+                <option value="adhesions_inscriptions">Adhésion & Cotisation</option>
+                <option value="divers_recette">Divers Recette</option>
+              {:else}
+                <option value="evenements_club">Événements & Buvette (achats)</option>
+                <option value="materiel_club">Matériel club</option>
+                <option value="divers_depense">Divers Dépense</option>
+              {/if}
+            </select>
+          </div>
+
+          <div>
+            <label for="description" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Description / Motif</label>
+            <Input
+              type="text"
+              id="description"
+              placeholder="Ex: Recette buvette tournoi Jeunes"
+              bind:value={description}
               required
             />
           </div>
-          <div>
-            <label for="date" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Date</label>
-            <input
-              type="date"
-              id="date"
-              bind:value={date}
-              class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              required
-            />
-          </div>
-        </div>
 
-        <div>
-          <label for="category" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Catégorie</label>
-          <select
-            id="category"
-            bind:value={category}
-            class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            class="w-full font-semibold"
           >
-            {#if type === 'recette'}
-              <option value="evenements_buvettes">Événements & Buvette</option>
-              <option value="boutique">Boutique & Cordages</option>
-              <option value="adhesions_inscriptions">Adhésion & Cotisation</option>
-              <option value="divers_recette">Divers Recette</option>
-            {:else}
-              <option value="evenements_club">Événements & Buvette (achats)</option>
-              <option value="materiel_club">Matériel club</option>
-              <option value="divers_depense">Divers Dépense</option>
-            {/if}
-          </select>
-        </div>
-
-        <div>
-          <label for="description" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Description / Motif</label>
-          <input
-            type="text"
-            id="description"
-            placeholder="Ex: Recette buvette tournoi Jeunes"
-            bind:value={description}
-            class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          class="w-full px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-md shadow hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer"
-        >
-          {isSubmitting ? 'Enregistrement...' : 'Enregistrer le mouvement'}
-        </button>
-      </form>
-    </div>
+            {isSubmitting ? 'Enregistrement...' : 'Enregistrer le mouvement'}
+          </Button>
+        </form>
+      </Card.Content>
+    </Card.Root>
 
     <!-- Historique des Mouvements (Col span 3) -->
-    <div class="bg-card border border-border rounded-xl p-6 shadow-sm md:col-span-3 space-y-4">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border pb-2">
-        <h2 class="text-lg font-semibold flex items-center gap-2">
-          <FileText class="w-5 h-5 text-primary" />
-          Derniers mouvements
-        </h2>
-        <div class="relative shrink-0">
-          <Search class="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Rechercher..."
-            bind:value={searchTerm}
-            class="pl-8 pr-3 py-1.5 w-full sm:w-48 border border-border bg-background rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-          />
+    <Card.Root class="md:col-span-3">
+      <Card.Header class="pb-2 border-b border-border">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <Card.Title class="text-lg font-semibold flex items-center gap-2">
+            <FileText class="w-5 h-5 text-primary" />
+            Derniers mouvements
+          </Card.Title>
+          <div class="relative shrink-0">
+            <Search class="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground z-10" />
+            <Input
+              type="text"
+              placeholder="Rechercher..."
+              bind:value={searchTerm}
+              class="pl-8 pr-3 w-full sm:w-48 h-8 text-xs"
+            />
+          </div>
         </div>
-      </div>
-
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left border-collapse">
-          <thead>
-            <tr class="border-b border-border text-xs text-muted-foreground font-bold uppercase tracking-wider">
-              <th class="py-3 px-2">Date</th>
-              <th class="py-3 px-2">Description</th>
-              <th class="py-3 px-2">Catégorie</th>
-              <th class="py-3 px-2 text-right">Montant</th>
-              <th class="py-3 px-2 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-border">
+      </Card.Header>
+      <Card.Content class="pt-4">
+        <Table.Root>
+          <Table.Header>
+            <Table.Row class="border-b border-border text-xs text-muted-foreground font-bold uppercase tracking-wider">
+              <Table.Head class="py-3 px-2">Date</Table.Head>
+              <Table.Head class="py-3 px-2">Description</Table.Head>
+              <Table.Head class="py-3 px-2">Catégorie</Table.Head>
+              <Table.Head class="py-3 px-2 text-right">Montant</Table.Head>
+              <Table.Head class="py-3 px-2 text-right">Action</Table.Head>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body class="divide-y divide-border">
             {#each filteredTransactions as tx}
-              <tr class="hover:bg-muted/40 transition-colors">
-                <td class="py-3 px-2 text-xs whitespace-nowrap">{tx.date}</td>
-                <td class="py-3 px-2 font-medium">
+              <Table.Row class="hover:bg-muted/40 transition-colors">
+                <Table.Cell class="py-3 px-2 text-xs whitespace-nowrap">{tx.date}</Table.Cell>
+                <Table.Cell class="py-3 px-2 font-medium">
                   <div>{tx.description}</div>
                   {#if tx.type === 'transfert'}
-                    <span class="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                    <Badge variant="outline" class="text-[10px] font-semibold uppercase px-1.5 py-0.5 bg-primary/10 text-primary border-transparent">
                       Virement interne
-                    </span>
+                    </Badge>
                   {/if}
-                </td>
-                <td class="py-3 px-2 text-xs text-muted-foreground">
+                </Table.Cell>
+                <Table.Cell class="py-3 px-2 text-xs text-muted-foreground">
                   {tx.category ? (categoryLabels[tx.category] || tx.category) : 'Transfert'}
-                </td>
-                <td class="py-3 px-2 text-right font-bold">
+                </Table.Cell>
+                <Table.Cell class="py-3 px-2 text-right font-bold">
                   {#if tx.type === 'recette'}
                     <span class="text-emerald-600 dark:text-emerald-400">+{(tx.amount / 100).toFixed(2)} €</span>
                   {:else if tx.type === 'depense'}
@@ -390,31 +392,33 @@
                   {:else}
                     <span class="text-destructive">-{(tx.amount / 100).toFixed(2)} €</span>
                   {/if}
-                </td>
-                <td class="py-3 px-2 text-right">
+                </Table.Cell>
+                <Table.Cell class="py-3 px-2 text-right">
                   {#if tx.type !== 'transfert'}
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
                       onclick={() => handleDelete(tx.id)}
-                      class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer"
+                      class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors"
                       aria-label="Supprimer"
                     >
                       <Trash2 class="w-4 h-4" />
-                    </button>
+                    </Button>
                   {:else}
                     <span class="text-[10px] text-muted-foreground italic">Protégé</span>
                   {/if}
-                </td>
-              </tr>
+                </Table.Cell>
+              </Table.Row>
             {:else}
-              <tr>
-                <td colspan="5" class="py-8 text-center text-muted-foreground text-xs">
+              <Table.Row>
+                <Table.Cell colspan={5} class="py-8 text-center text-muted-foreground text-xs">
                   Aucun mouvement de caisse pour cette saison.
-                </td>
-              </tr>
+                </Table.Cell>
+              </Table.Row>
             {/each}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </Table.Body>
+        </Table.Root>
+      </Card.Content>
+    </Card.Root>
   </div>
 </div>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Check, Calendar, Plus, Trash2, Edit2, X, AlertCircle, Settings, MoreVertical } from "lucide-svelte";
+  import { Button, Input, Badge, Card, Alert, Table, Tabs } from "@metacult/shared-ui";
 
   interface Season {
     id: string;
@@ -399,6 +400,22 @@
     }
   }
 
+  // svelte-ignore state_referenced_locally
+  let activeView = $state(view);
+  
+  $effect(() => {
+    activeView = view;
+  });
+
+  function handleViewChange(newView: string) {
+    activeView = newView as 'seasons' | 'compta' | 'classes';
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('view', newView);
+      window.history.pushState({}, '', url);
+    }
+  }
+
   let openDropdownId = $state<string | number | null>(null);
 
   function toggleDropdown(id: string | number, e: MouseEvent) {
@@ -415,586 +432,597 @@
 
 <div class="space-y-6">
   {#if successMsg}
-    <div class="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm rounded-lg flex items-center gap-2">
+    <Alert.Root class="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
       <Check class="w-4 h-4" />
-      <span>{successMsg}</span>
-    </div>
+      <Alert.Description>{successMsg}</Alert.Description>
+    </Alert.Root>
   {/if}
 
   {#if errorMsg}
-    <div class="p-4 bg-destructive/15 border border-destructive text-destructive text-sm rounded-lg flex items-center gap-2">
+    <Alert.Root variant="destructive">
       <AlertCircle class="w-4 h-4" />
-      <span>{errorMsg}</span>
-    </div>
+      <Alert.Description>{errorMsg}</Alert.Description>
+    </Alert.Root>
   {/if}
 
-  <!-- VIEW: SEASONS -->
-  {#if view === 'seasons'}
-    <div class="max-w-3xl bg-card border border-border rounded-xl shadow-sm p-6 space-y-6">
-      <div>
-        <h2 class="text-lg font-bold flex items-center gap-2">
-          <Calendar class="w-5 h-5 text-primary" />
-          Exercices Comptables / Saisons
-        </h2>
-        <p class="text-xs text-muted-foreground mt-1">
-          Gérez les saisons comptables et définissez la saison active de l'association.
-        </p>
-      </div>
+  <Tabs.Root value={activeView} onValueChange={handleViewChange} class="w-full">
+    <Tabs.List class="grid grid-cols-3 max-w-md mb-6">
+      <Tabs.Trigger value="seasons">Exercices & Saisons</Tabs.Trigger>
+      <Tabs.Trigger value="compta">Catégories Compta</Tabs.Trigger>
+      <Tabs.Trigger value="classes">Plan Comptable</Tabs.Trigger>
+    </Tabs.List>
 
-      <div class="divide-y divide-border border border-border rounded-lg overflow-hidden bg-muted/10">
-        {#each seasons as s}
-          <div class="p-3.5 flex justify-between items-center bg-card">
-            <div>
-              <span class="font-bold text-sm text-foreground">{s.name}</span>
-              <span class="ml-2 text-xs font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">ID: {s.id}</span>
-            </div>
-            <div class="flex items-center gap-3">
-              {#if s.closed}
-                <span class="px-2 py-0.5 bg-muted border border-border text-muted-foreground text-xs font-bold rounded-full">
-                  Clôturée
-                </span>
-              {:else}
-                {#if s.active}
-                  <span class="px-2 py-0.5 bg-primary/10 border border-primary/20 text-primary text-xs font-bold rounded-full">
-                    Active
-                  </span>
-                {:else}
-                  <button
-                    type="button"
-                    onclick={() => handleToggleSeasonActive(s.id)}
-                    disabled={isSubmitting}
-                    class="px-2.5 py-1 hover:bg-muted border border-border bg-background text-xs font-semibold rounded transition-colors cursor-pointer"
-                  >
-                    Activer
-                  </button>
-                {/if}
-                <button
-                  type="button"
-                  onclick={() => handleCloseSeason(s.id)}
-                  disabled={isSubmitting}
-                  class="px-2.5 py-1 text-destructive hover:bg-destructive/10 border border-destructive/20 bg-background text-xs font-semibold rounded transition-colors cursor-pointer"
-                >
-                  Clôturer
-                </button>
-              {/if}
-            </div>
-          </div>
-        {/each}
-      </div>
-
-      <!-- Add Season Form -->
-      <form onsubmit={handleCreateSeason} class="border-t border-border pt-4 space-y-4">
-        <h3 class="text-sm font-bold text-foreground">Ajouter un exercice</h3>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="space-y-1.5">
-            <label for="new-season-id" class="block text-xs font-bold text-muted-foreground uppercase">ID (ex: 26-27)</label>
-            <input
-              type="text"
-              id="new-season-id"
-              bind:value={newSeasonId}
-              placeholder="26-27"
-              class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-              required
-            />
-          </div>
-          <div class="space-y-1.5">
-            <label for="new-season-name" class="block text-xs font-bold text-muted-foreground uppercase">Libellé (ex: Saison 2026-2027)</label>
-            <input
-              type="text"
-              id="new-season-name"
-              bind:value={newSeasonName}
-              placeholder="Saison 2026-2027"
-              class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-              required
-            />
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="new-season-active"
-            bind:checked={newSeasonActive}
-            class="rounded border-border focus:ring-primary h-4 w-4"
-          />
-          <label for="new-season-active" class="text-xs font-medium text-foreground">Définir comme active immédiatement</label>
-        </div>
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          class="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground border-0 text-xs font-bold rounded-lg shadow cursor-pointer flex items-center gap-1"
-        >
-          <Plus class="w-3.5 h-3.5" />
-          Créer la saison
-        </button>
-      </form>
-    </div>
-  {/if}
-
-  <!-- VIEW: COMPTA (CATEGORIES ONLY) -->
-  {#if view === 'compta'}
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-      
-      <!-- Categories List Table -->
-      <div class="xl:col-span-2 bg-card border border-border rounded-xl shadow-sm p-6 space-y-6">
-        <div>
-          <h2 class="text-lg font-bold flex items-center gap-2">
-            <Settings class="w-5 h-5 text-primary" />
-            Gestion des Catégories de Trésorerie
-          </h2>
-          <p class="text-xs text-muted-foreground mt-1">
-            Configurez les libellés de comptabilité (Admin) et les libellés plus simples pour les notes de frais (Adhérent).
-          </p>
-        </div>
-
-        <div class="overflow-x-auto border border-border rounded-lg bg-card min-h-[180px]">
-          <table class="w-full text-left border-collapse text-sm">
-            <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
-              <tr>
-                <th class="p-4">ID / Code</th>
-                <th class="p-4">Libellé Admin (Compta)</th>
-                <th class="p-4">Libellé Adhérent (Notes de Frais)</th>
-                <th class="p-4">Classe Recette (CR)</th>
-                <th class="p-4">Classe Dépense (CR)</th>
-                <th class="p-4">Notes de frais ?</th>
-                <th class="p-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-border">
-              {#each categories as cat}
-                <tr class="hover:bg-muted/50 transition-colors">
-                  <td class="p-4">
-                    <span class="font-bold text-xs text-foreground bg-muted px-1.5 py-0.5 rounded">#{cat.id}</span>
-                    <span class="ml-1.5 font-mono text-xs text-muted-foreground">{cat.code}</span>
-                  </td>
-                  <td class="p-4">
-                    {#if editingCatId === cat.id}
-                      <input
-                        type="text"
-                        bind:value={editCatAdminLabel}
-                        class="w-full px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-                      />
+    <!-- VIEW: SEASONS -->
+    <Tabs.Content value="seasons">
+      {#if activeView === 'seasons'}
+        <Card.Root class="max-w-3xl">
+          <Card.Header>
+            <Card.Title class="text-lg font-bold flex items-center gap-2">
+              <Calendar class="w-5 h-5 text-primary" />
+              Exercices Comptables / Saisons
+            </Card.Title>
+            <Card.Description>
+              Gérez les saisons comptables et définissez la saison active de l'association.
+            </Card.Description>
+          </Card.Header>
+          <Card.Content class="space-y-6">
+            <div class="divide-y divide-border border border-border rounded-lg overflow-hidden bg-muted/10">
+              {#each seasons as s}
+                <div class="p-3.5 flex justify-between items-center bg-card">
+                  <div>
+                    <span class="font-bold text-sm text-foreground">{s.name}</span>
+                    <span class="ml-2 text-xs font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">ID: {s.id}</span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    {#if s.closed}
+                      <Badge variant="outline" class="bg-muted text-muted-foreground border-border font-bold">
+                        Clôturée
+                      </Badge>
                     {:else}
-                      <span class="font-semibold text-foreground">{cat.adminLabel}</span>
-                    {/if}
-                  </td>
-                  <td class="p-4">
-                    {#if editingCatId === cat.id}
-                      <input
-                        type="text"
-                        bind:value={editCatAdherentLabel}
-                        class="w-full px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-                      />
-                    {:else}
-                      <span class="text-foreground">{cat.adherentLabel}</span>
-                    {/if}
-                  </td>
-                  <td class="p-4">
-                    {#if editingCatId === cat.id}
-                      <select
-                        bind:value={editCatReceiptCode}
-                        class="w-full px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-                      >
-                        <option value="">N/A</option>
-                        {#each (accountClasses || []).filter(ac => ac.type === 'recette') as ac}
-                          <option value={ac.code}>{ac.label}</option>
-                        {/each}
-                      </select>
-                    {:else}
-                      <span class="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded">{cat.receiptCode || 'N/A'}</span>
-                    {/if}
-                  </td>
-                  <td class="p-4">
-                    {#if editingCatId === cat.id}
-                      <select
-                        bind:value={editCatExpenseCode}
-                        class="w-full px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-                      >
-                        <option value="">N/A</option>
-                        {#each (accountClasses || []).filter(ac => ac.type === 'depense') as ac}
-                          <option value={ac.code}>{ac.label}</option>
-                        {/each}
-                      </select>
-                    {:else}
-                      <span class="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded">{cat.expenseCode || 'N/A'}</span>
-                    {/if}
-                  </td>
-                  <td class="p-4">
-                    {#if editingCatId === cat.id}
-                      <div class="flex items-center gap-1.5">
-                        <input
-                          type="checkbox"
-                          id="edit-hide-{cat.id}"
-                          bind:checked={editCatHideInExpenses}
-                          class="rounded border-border focus:ring-primary h-3.5 w-3.5"
-                        />
-                        <label for="edit-hide-{cat.id}" class="text-xs text-muted-foreground">Masquer</label>
-                      </div>
-                    {:else}
-                      {#if cat.hideInExpenses}
-                        <span class="inline-flex px-2 py-0.5 bg-destructive/10 text-destructive text-[11px] font-semibold border border-destructive/20 rounded-full">
-                          Masquée
-                        </span>
+                      {#if s.active}
+                        <Badge variant="outline" class="bg-primary/10 hover:bg-primary/10 text-primary border-primary/20 font-bold">
+                          Active
+                        </Badge>
                       {:else}
-                        <span class="inline-flex px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold border border-emerald-500/20 rounded-full">
-                          Visible
-                        </span>
-                      {/if}
-                    {/if}
-                  </td>
-                  <td class="p-4 text-right relative">
-                    {#if editingCatId === cat.id}
-                      <div class="flex justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onclick={() => editingCatId = null}
-                          class="p-1 border border-border bg-background rounded hover:bg-muted text-muted-foreground cursor-pointer"
-                          title="Annuler"
-                        >
-                          <X class="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onclick={() => handleUpdateCategory(cat.id)}
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onclick={() => handleToggleSeasonActive(s.id)}
                           disabled={isSubmitting}
-                          class="p-1 bg-primary text-primary-foreground border-0 rounded hover:bg-primary/90 cursor-pointer"
-                          title="Enregistrer"
                         >
-                          <Check class="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    {:else}
-                      <div class="inline-block text-left font-normal">
-                        <button 
-                          type="button"
-                          onclick={(e) => toggleDropdown(cat.id, e)} 
-                          class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
-                          aria-label="Actions"
-                        >
-                          <MoreVertical class="w-4 h-4" />
-                        </button>
-
-                        {#if openDropdownId === cat.id}
-                          <div class="absolute right-4 mt-1 w-32 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border">
-                            <button
-                              type="button"
-                              onclick={(e) => { e.stopPropagation(); startEditCategory(cat); openDropdownId = null; }}
-                              class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
-                            >
-                              <Edit2 class="w-3.5 h-3.5" />
-                              Modifier
-                            </button>
-                            {#if !defaultCategoryCodes.includes(cat.code)}
-                              <button
-                                type="button"
-                                onclick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id); openDropdownId = null; }}
-                                disabled={isSubmitting}
-                                class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
-                              >
-                                <Trash2 class="w-3.5 h-3.5" />
-                                Supprimer
-                              </button>
-                            {/if}
-                          </div>
-                        {/if}
-                      </div>
+                          Activer
+                        </Button>
+                      {/if}
+                      <Button
+                        variant="destructive"
+                        size="xs"
+                        onclick={() => handleCloseSeason(s.id)}
+                        disabled={isSubmitting}
+                      >
+                        Clôturer
+                      </Button>
                     {/if}
-                  </td>
-                </tr>
+                  </div>
+                </div>
               {/each}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </div>
 
-      <!-- Add Category Form -->
-      <div class="bg-card border border-border rounded-xl shadow-sm p-6 space-y-6">
-        <div>
-          <h2 class="text-lg font-bold flex items-center gap-2">
-            <Plus class="w-5 h-5 text-primary" />
-            Nouvelle Catégorie
-          </h2>
-          <p class="text-xs text-muted-foreground mt-1">
-            Créez une nouvelle imputation pour les dépenses et recettes de l'asso.
-          </p>
-        </div>
+            <!-- Add Season Form -->
+            <form onsubmit={handleCreateSeason} class="border-t border-border pt-4 space-y-4">
+              <h3 class="text-sm font-bold text-foreground">Ajouter un exercice</h3>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-1.5">
+                  <label for="new-season-id" class="block text-xs font-bold text-muted-foreground uppercase">ID (ex: 26-27)</label>
+                  <Input
+                    type="text"
+                    id="new-season-id"
+                    bind:value={newSeasonId}
+                    placeholder="26-27"
+                    required
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <label for="new-season-name" class="block text-xs font-bold text-muted-foreground uppercase">Libellé (ex: Saison 2026-2027)</label>
+                  <Input
+                    type="text"
+                    id="new-season-name"
+                    bind:value={newSeasonName}
+                    placeholder="Saison 2026-2027"
+                    required
+                  />
+                </div>
+              </div>
 
-        <form onsubmit={handleCreateCategory} class="space-y-4">
-          <div class="space-y-1.5">
-            <label for="new-cat-code" class="block text-xs font-bold text-muted-foreground uppercase">Code ID (ex: grips)</label>
-            <input
-              type="text"
-              id="new-cat-code"
-              bind:value={newCatCode}
-              placeholder="grips"
-              class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-              required
-            />
-          </div>
+              <div class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="new-season-active"
+                  bind:checked={newSeasonActive}
+                  class="rounded border-border focus:ring-primary h-4 w-4"
+                />
+                <label for="new-season-active" class="text-xs font-medium text-foreground">Définir comme active immédiatement</label>
+              </div>
 
-          <div class="space-y-1.5">
-            <label for="new-cat-admin" class="block text-xs font-bold text-muted-foreground uppercase">Libellé Admin (Compta)</label>
-            <input
-              type="text"
-              id="new-cat-admin"
-              bind:value={newCatAdminLabel}
-              placeholder="Achat de grips et accessoires"
-              class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-              required
-            />
-          </div>
-
-          <div class="space-y-1.5">
-            <label for="new-cat-adherent" class="block text-xs font-bold text-muted-foreground uppercase">Libellé Adhérent (Notes de frais)</label>
-            <input
-              type="text"
-              id="new-cat-adherent"
-              bind:value={newCatAdherentLabel}
-              placeholder="Grips & Accessoires"
-              class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-              required
-            />
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label for="new-cat-recette" class="block text-xs font-bold text-muted-foreground uppercase">Classe Recette (CR)</label>
-              <select
-                id="new-cat-recette"
-                bind:value={newCatReceiptCode}
-                class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-medium"
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                size="sm"
+                class="font-bold flex items-center gap-1"
               >
-                <option value="">Aucune (N/A)</option>
-                {#each (accountClasses || []).filter(ac => ac.type === 'recette') as ac}
-                  <option value={ac.code}>{ac.label}</option>
-                {/each}
-              </select>
-            </div>
+                <Plus class="w-3.5 h-3.5" />
+                Créer la saison
+              </Button>
+            </form>
+          </Card.Content>
+        </Card.Root>
+      {/if}
+    </Tabs.Content>
 
-            <div class="space-y-1.5">
-              <label for="new-cat-depense" class="block text-xs font-bold text-muted-foreground uppercase">Classe Dépense (CR)</label>
-              <select
-                id="new-cat-depense"
-                bind:value={newCatExpenseCode}
-                class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-medium"
-              >
-                <option value="">Aucune (N/A)</option>
-                {#each (accountClasses || []).filter(ac => ac.type === 'depense') as ac}
-                  <option value={ac.code}>{ac.label}</option>
-                {/each}
-              </select>
-            </div>
-          </div>
+    <!-- VIEW: COMPTA (CATEGORIES ONLY) -->
+    <Tabs.Content value="compta">
+      {#if activeView === 'compta'}
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          
+          <!-- Categories List Table -->
+          <Card.Root class="xl:col-span-2">
+            <Card.Header>
+              <Card.Title class="text-lg font-bold flex items-center gap-2">
+                <Settings class="w-5 h-5 text-primary" />
+                Gestion des Catégories de Trésorerie
+              </Card.Title>
+              <Card.Description>
+                Configurez les libellés de comptabilité (Admin) et les libellés plus simples pour les notes de frais (Adhérent).
+              </Card.Description>
+            </Card.Header>
+            <Card.Content class="space-y-6">
+              <div class="overflow-x-auto border border-border rounded-lg bg-card min-h-[180px]">
+                <Table.Root>
+                  <Table.Header class="bg-muted border-b border-border">
+                    <Table.Row>
+                      <Table.Head class="p-4 font-medium text-muted-foreground">ID / Code</Table.Head>
+                      <Table.Head class="p-4 font-medium text-muted-foreground">Libellé Admin (Compta)</Table.Head>
+                      <Table.Head class="p-4 font-medium text-muted-foreground">Libellé Adhérent (Notes de Frais)</Table.Head>
+                      <Table.Head class="p-4 font-medium text-muted-foreground">Classe Recette (CR)</Table.Head>
+                      <Table.Head class="p-4 font-medium text-muted-foreground">Classe Dépense (CR)</Table.Head>
+                      <Table.Head class="p-4 font-medium text-muted-foreground">Notes de frais ?</Table.Head>
+                      <Table.Head class="p-4 text-right font-medium text-muted-foreground">Actions</Table.Head>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body class="divide-y divide-border">
+                    {#each categories as cat}
+                      <Table.Row class="hover:bg-muted/50 transition-colors">
+                        <Table.Cell class="p-4">
+                          <span class="font-bold text-xs text-foreground bg-muted px-1.5 py-0.5 rounded">#{cat.id}</span>
+                          <span class="ml-1.5 font-mono text-xs text-muted-foreground">{cat.code}</span>
+                        </Table.Cell>
+                        <Table.Cell class="p-4">
+                          {#if editingCatId === cat.id}
+                            <Input
+                              type="text"
+                              bind:value={editCatAdminLabel}
+                              class="h-7 text-xs font-medium"
+                            />
+                          {:else}
+                            <span class="font-semibold text-foreground">{cat.adminLabel}</span>
+                          {/if}
+                        </Table.Cell>
+                        <Table.Cell class="p-4">
+                          {#if editingCatId === cat.id}
+                            <Input
+                              type="text"
+                              bind:value={editCatAdherentLabel}
+                              class="h-7 text-xs font-medium"
+                            />
+                          {:else}
+                            <span class="text-foreground">{cat.adherentLabel}</span>
+                          {/if}
+                        </Table.Cell>
+                        <Table.Cell class="p-4">
+                          {#if editingCatId === cat.id}
+                            <select
+                              bind:value={editCatReceiptCode}
+                              class="w-full px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                            >
+                              <option value="">N/A</option>
+                              {#each (accountClasses || []).filter(ac => ac.type === 'recette') as ac}
+                                <option value={ac.code}>{ac.label}</option>
+                              {/each}
+                            </select>
+                          {:else}
+                            <span class="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded">{cat.receiptCode || 'N/A'}</span>
+                          {/if}
+                        </Table.Cell>
+                        <Table.Cell class="p-4">
+                          {#if editingCatId === cat.id}
+                            <select
+                              bind:value={editCatExpenseCode}
+                              class="w-full px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                            >
+                              <option value="">N/A</option>
+                              {#each (accountClasses || []).filter(ac => ac.type === 'depense') as ac}
+                                <option value={ac.code}>{ac.label}</option>
+                              {/each}
+                            </select>
+                          {:else}
+                            <span class="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded">{cat.expenseCode || 'N/A'}</span>
+                          {/if}
+                        </Table.Cell>
+                        <Table.Cell class="p-4">
+                          {#if editingCatId === cat.id}
+                            <div class="flex items-center gap-1.5">
+                              <input
+                                type="checkbox"
+                                id="edit-hide-{cat.id}"
+                                bind:checked={editCatHideInExpenses}
+                                class="rounded border-border focus:ring-primary h-3.5 w-3.5"
+                              />
+                              <label for="edit-hide-{cat.id}" class="text-xs text-muted-foreground">Masquer</label>
+                            </div>
+                          {:else}
+                            {#if cat.hideInExpenses}
+                              <Badge variant="outline" class="bg-destructive/10 text-destructive border-destructive/20 text-[11px] font-semibold">
+                                Masquée
+                              </Badge>
+                            {:else}
+                              <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[11px] font-semibold">
+                                Visible
+                              </Badge>
+                            {/if}
+                          {/if}
+                        </Table.Cell>
+                        <Table.Cell class="p-4 text-right relative">
+                          {#if editingCatId === cat.id}
+                            <div class="flex justify-end gap-1.5">
+                              <Button
+                                variant="outline"
+                                size="icon-xs"
+                                onclick={() => editingCatId = null}
+                                title="Annuler"
+                              >
+                                <X class="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                size="icon-xs"
+                                onclick={() => handleUpdateCategory(cat.id)}
+                                disabled={isSubmitting}
+                                title="Enregistrer"
+                              >
+                                <Check class="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          {:else}
+                            <div class="inline-block text-left font-normal">
+                              <Button 
+                                variant="ghost"
+                                size="icon-xs"
+                                onclick={(e) => toggleDropdown(cat.id, e)} 
+                                aria-label="Actions"
+                              >
+                                <MoreVertical class="w-4 h-4" />
+                              </Button>
 
-          <div class="flex items-center gap-2 pt-2">
-            <input
-              type="checkbox"
-              id="new-cat-hide"
-              bind:checked={newCatHideInExpenses}
-              class="rounded border-border focus:ring-primary h-4 w-4"
-            />
-            <label for="new-cat-hide" class="text-xs font-medium text-foreground">Masquer pour les notes de frais</label>
-          </div>
+                              {#if openDropdownId === cat.id}
+                                <div class="absolute right-4 mt-1 w-32 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border">
+                                  <button
+                                    type="button"
+                                    onclick={(e) => { e.stopPropagation(); startEditCategory(cat); openDropdownId = null; }}
+                                    class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                                  >
+                                    <Edit2 class="w-3.5 h-3.5" />
+                                    Modifier
+                                  </button>
+                                  {#if !defaultCategoryCodes.includes(cat.code)}
+                                    <button
+                                      type="button"
+                                      onclick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id); openDropdownId = null; }}
+                                      disabled={isSubmitting}
+                                      class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                                    >
+                                      <Trash2 class="w-3.5 h-3.5" />
+                                      Supprimer
+                                    </button>
+                                  {/if}
+                                </div>
+                              {/if}
+                            </div>
+                          {/if}
+                        </Table.Cell>
+                      </Table.Row>
+                    {/each}
+                  </Table.Body>
+                </Table.Root>
+              </div>
+            </Card.Content>
+          </Card.Root>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            class="w-full justify-center px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground border-0 text-xs font-bold rounded-lg shadow cursor-pointer flex items-center gap-1.5"
-          >
-            <Plus class="w-4 h-4" />
-            Créer la catégorie
-          </button>
-        </form>
-      </div>
+          <!-- Add Category Form -->
+          <Card.Root>
+            <Card.Header>
+              <Card.Title class="text-lg font-bold flex items-center gap-2">
+                <Plus class="w-5 h-5 text-primary" />
+                Nouvelle Catégorie
+              </Card.Title>
+              <Card.Description>
+                Créez une nouvelle imputation pour les dépenses et recettes de l'asso.
+              </Card.Description>
+            </Card.Header>
+            <Card.Content class="space-y-6">
+              <form onsubmit={handleCreateCategory} class="space-y-4">
+                <div class="space-y-1.5">
+                  <label for="new-cat-code" class="block text-xs font-bold text-muted-foreground uppercase">Code ID (ex: grips)</label>
+                  <Input
+                    type="text"
+                    id="new-cat-code"
+                    bind:value={newCatCode}
+                    placeholder="grips"
+                    required
+                  />
+                </div>
 
-    </div>
-  {/if}
+                <div class="space-y-1.5">
+                  <label for="new-cat-admin" class="block text-xs font-bold text-muted-foreground uppercase">Libellé Admin (Compta)</label>
+                  <Input
+                    type="text"
+                    id="new-cat-admin"
+                    bind:value={newCatAdminLabel}
+                    placeholder="Achat de grips et accessoires"
+                    required
+                  />
+                </div>
 
-  <!-- VIEW: ACCOUNT CLASSES -->
-  {#if view === 'classes'}
-    <div class="grid gap-6 md:grid-cols-3">
-      <!-- Left columns: Classes list -->
-      <div class="md:col-span-2 space-y-6">
-        <div class="bg-card border border-border rounded-xl shadow-sm p-6 space-y-4">
-          <div>
-            <h2 class="text-lg font-bold flex items-center gap-2">
-              <Settings class="w-5 h-5 text-primary" />
-              Gestion des Classes de Comptes
-            </h2>
-            <p class="text-xs text-muted-foreground mt-1">
-              Configurez le Plan Comptable de l'association (Charges : classe 6, Produits : classe 7).
-            </p>
-          </div>
+                <div class="space-y-1.5">
+                  <label for="new-cat-adherent" class="block text-xs font-bold text-muted-foreground uppercase">Libellé Adhérent (Notes de frais)</label>
+                  <Input
+                    type="text"
+                    id="new-cat-adherent"
+                    bind:value={newCatAdherentLabel}
+                    placeholder="Grips & Accessoires"
+                    required
+                  />
+                </div>
 
-          <div class="overflow-x-auto border border-border rounded-lg bg-card min-h-[180px]">
-            <table class="w-full text-left border-collapse text-sm">
-              <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
-                <tr>
-                  <th class="p-4">Code</th>
-                  <th class="p-4">Libellé</th>
-                  <th class="p-4">Type</th>
-                  <th class="p-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-border">
-                {#each accountClasses as ac}
-                  <tr class="hover:bg-muted/50 transition-colors">
-                    <td class="p-4 font-mono font-bold text-foreground">
-                      {ac.code}
-                    </td>
-                    <td class="p-4">
-                      {#if editingClassCode === ac.code}
-                        <input
-                          type="text"
-                          bind:value={editClassLabel}
-                          class="w-full px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-                        />
-                      {:else}
-                        <span class="font-semibold text-foreground">{ac.label}</span>
-                      {/if}
-                    </td>
-                    <td class="p-4">
-                      {#if editingClassCode === ac.code}
-                        <select
-                          bind:value={editClassType}
-                          class="px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-                        >
-                          <option value="recette">Produit (Recette)</option>
-                          <option value="depense">Charge (Dépense)</option>
-                        </select>
-                      {:else}
-                        {#if ac.type === 'recette'}
-                          <span class="inline-flex px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold border border-emerald-500/20 rounded-full">
-                            Produit (7)
-                          </span>
-                        {:else}
-                          <span class="inline-flex px-2 py-0.5 bg-destructive/10 text-destructive text-[11px] font-semibold border border-destructive/20 rounded-full">
-                            Charge (6)
-                          </span>
-                        {/if}
-                      {/if}
-                    </td>
-                    <td class="p-4 text-right relative">
-                      {#if editingClassCode === ac.code}
-                        <div class="flex justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onclick={() => editingClassCode = null}
-                            class="p-1 border border-border bg-background rounded hover:bg-muted text-muted-foreground cursor-pointer"
-                            title="Annuler"
-                          >
-                            <X class="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onclick={() => handleUpdateAccountClass(ac.code)}
-                            disabled={isSubmitting}
-                            class="p-1 border border-primary bg-primary text-primary-foreground rounded hover:bg-primary/95 cursor-pointer"
-                            title="Enregistrer"
-                          >
-                            <Check class="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      {:else}
-                        <div class="flex justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onclick={() => startEditAccountClass(ac)}
-                            class="p-1.5 border border-border bg-background rounded hover:bg-muted text-muted-foreground cursor-pointer"
-                            title="Modifier"
-                          >
-                            <Edit2 class="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onclick={() => handleDeleteAccountClass(ac.code)}
-                            disabled={isSubmitting}
-                            class="p-1.5 border border-destructive/20 bg-background rounded hover:bg-destructive/10 text-destructive cursor-pointer"
-                            title="Supprimer"
-                          >
-                            <Trash2 class="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      {/if}
-                    </td>
-                  </tr>
-                {/each}
-                {#if accountClasses.length === 0}
-                  <tr>
-                    <td colspan="4" class="p-8 text-center text-muted-foreground">
-                      Aucune classe de compte définie.
-                    </td>
-                  </tr>
-                {/if}
-              </tbody>
-            </table>
-          </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="space-y-1.5">
+                    <label for="new-cat-recette" class="block text-xs font-bold text-muted-foreground uppercase">Classe Recette (CR)</label>
+                    <select
+                      id="new-cat-recette"
+                      bind:value={newCatReceiptCode}
+                      class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-medium"
+                    >
+                      <option value="">Aucune (N/A)</option>
+                      {#each (accountClasses || []).filter(ac => ac.type === 'recette') as ac}
+                        <option value={ac.code}>{ac.label}</option>
+                      {/each}
+                    </select>
+                  </div>
+
+                  <div class="space-y-1.5">
+                    <label for="new-cat-depense" class="block text-xs font-bold text-muted-foreground uppercase">Classe Dépense (CR)</label>
+                    <select
+                      id="new-cat-depense"
+                      bind:value={newCatExpenseCode}
+                      class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-medium"
+                    >
+                      <option value="">Aucune (N/A)</option>
+                      {#each (accountClasses || []).filter(ac => ac.type === 'depense') as ac}
+                        <option value={ac.code}>{ac.label}</option>
+                      {/each}
+                    </select>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 pt-2">
+                  <input
+                    type="checkbox"
+                    id="new-cat-hide"
+                    bind:checked={newCatHideInExpenses}
+                    class="rounded border-border focus:ring-primary h-4 w-4"
+                  />
+                  <label for="new-cat-hide" class="text-xs font-medium text-foreground">Masquer pour les notes de frais</label>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  class="w-full font-bold flex items-center justify-center gap-1.5"
+                >
+                  <Plus class="w-4 h-4" />
+                  Créer la catégorie
+                </Button>
+              </form>
+            </Card.Content>
+          </Card.Root>
+
         </div>
-      </div>
+      {/if}
+    </Tabs.Content>
 
-      <!-- Right column: Add class form -->
-      <div>
-        <div class="bg-card border border-border rounded-xl shadow-sm p-6 space-y-6">
-          <div>
-            <h2 class="text-lg font-bold flex items-center gap-2">
-              <Plus class="w-5 h-5 text-primary" />
-              Nouvelle Classe
-            </h2>
-            <p class="text-xs text-muted-foreground mt-1">
-              Ajoutez une nouvelle rubrique pour structurer le compte de résultat.
-            </p>
+    <!-- VIEW: ACCOUNT CLASSES -->
+    <Tabs.Content value="classes">
+      {#if activeView === 'classes'}
+        <div class="grid gap-6 md:grid-cols-3">
+          <!-- Left columns: Classes list -->
+          <div class="md:col-span-2 space-y-6">
+            <Card.Root>
+              <Card.Header>
+                <Card.Title class="text-lg font-bold flex items-center gap-2">
+                  <Settings class="w-5 h-5 text-primary" />
+                  Gestion des Classes de Comptes
+                </Card.Title>
+                <Card.Description>
+                  Configurez le Plan Comptable de l'association (Charges : classe 6, Produits : classe 7).
+                </Card.Description>
+              </Card.Header>
+              <Card.Content class="space-y-4">
+                <div class="overflow-x-auto border border-border rounded-lg bg-card min-h-[180px]">
+                  <Table.Root>
+                    <Table.Header class="bg-muted border-b border-border">
+                      <Table.Row>
+                        <Table.Head class="p-4 font-medium text-muted-foreground">Code</Table.Head>
+                        <Table.Head class="p-4 font-medium text-muted-foreground">Libellé</Table.Head>
+                        <Table.Head class="p-4 font-medium text-muted-foreground">Type</Table.Head>
+                        <Table.Head class="p-4 text-right font-medium text-muted-foreground">Actions</Table.Head>
+                      </Table.Row>
+                    </Table.Header>
+                    <Table.Body class="divide-y divide-border">
+                      {#each accountClasses as ac}
+                        <Table.Row class="hover:bg-muted/50 transition-colors">
+                          <Table.Cell class="p-4 font-mono font-bold text-foreground">
+                            {ac.code}
+                          </Table.Cell>
+                          <Table.Cell class="p-4">
+                            {#if editingClassCode === ac.code}
+                              <Input
+                                type="text"
+                                bind:value={editClassLabel}
+                                class="h-7 text-xs font-medium"
+                              />
+                            {:else}
+                              <span class="font-semibold text-foreground">{ac.label}</span>
+                            {/if}
+                          </Table.Cell>
+                          <Table.Cell class="p-4">
+                            {#if editingClassCode === ac.code}
+                              <select
+                                bind:value={editClassType}
+                                class="px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                              >
+                                <option value="recette">Produit (Recette)</option>
+                                <option value="depense">Charge (Dépense)</option>
+                              </select>
+                            {:else}
+                              {#if ac.type === 'recette'}
+                                <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[11px] font-semibold">
+                                  Produit (7)
+                                </Badge>
+                              {:else}
+                                <Badge variant="outline" class="bg-destructive/10 text-destructive border-destructive/20 text-[11px] font-semibold">
+                                  Charge (6)
+                                </Badge>
+                              {/if}
+                            {/if}
+                          </Table.Cell>
+                          <Table.Cell class="p-4 text-right relative">
+                            {#if editingClassCode === ac.code}
+                              <div class="flex justify-end gap-1.5">
+                                <Button
+                                  variant="outline"
+                                  size="icon-xs"
+                                  onclick={() => editingClassCode = null}
+                                  title="Annuler"
+                                >
+                                  <X class="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  size="icon-xs"
+                                  onclick={() => handleUpdateAccountClass(ac.code)}
+                                  disabled={isSubmitting}
+                                  title="Enregistrer"
+                                >
+                                  <Check class="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            {:else}
+                              <div class="flex justify-end gap-1.5">
+                                <Button
+                                  variant="outline"
+                                  size="icon-xs"
+                                  onclick={() => startEditAccountClass(ac)}
+                                  title="Modifier"
+                                >
+                                  <Edit2 class="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon-xs"
+                                  class="border-destructive/20 hover:bg-destructive/10 text-destructive"
+                                  onclick={() => handleDeleteAccountClass(ac.code)}
+                                  disabled={isSubmitting}
+                                  title="Supprimer"
+                                >
+                                  <Trash2 class="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            {/if}
+                          </Table.Cell>
+                        </Table.Row>
+                      {/each}
+                      {#if accountClasses.length === 0}
+                        <Table.Row>
+                          <Table.Cell colspan={4} class="p-8 text-center text-muted-foreground">
+                            Aucune classe de compte définie.
+                          </Table.Cell>
+                        </Table.Row>
+                      {/if}
+                    </Table.Body>
+                  </Table.Root>
+                </div>
+              </Card.Content>
+            </Card.Root>
           </div>
 
-          <form onsubmit={handleCreateAccountClass} class="space-y-4">
-            <div class="space-y-1.5">
-              <label for="new-class-code" class="block text-xs font-bold text-muted-foreground uppercase">Code (ex: 63)</label>
-              <input
-                type="text"
-                id="new-class-code"
-                bind:value={newClassCode}
-                placeholder="63"
-                class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-mono"
-                required
-              />
-            </div>
+          <!-- Right column: Add class form -->
+          <Card.Root>
+            <Card.Header>
+              <Card.Title class="text-lg font-bold flex items-center gap-2">
+                <Plus class="w-5 h-5 text-primary" />
+                Nouvelle Classe
+              </Card.Title>
+              <Card.Description>
+                Ajoutez une nouvelle rubrique pour structurer le compte de résultat.
+              </Card.Description>
+            </Card.Header>
+            <Card.Content class="space-y-6">
+              <form onsubmit={handleCreateAccountClass} class="space-y-4">
+                <div class="space-y-1.5">
+                  <label for="new-class-code" class="block text-xs font-bold text-muted-foreground uppercase">Code (ex: 63)</label>
+                  <Input
+                    type="text"
+                    id="new-class-code"
+                    bind:value={newClassCode}
+                    placeholder="63"
+                    class="font-mono"
+                    required
+                  />
+                </div>
 
-            <div class="space-y-1.5">
-              <label for="new-class-label" class="block text-xs font-bold text-muted-foreground uppercase">Libellé (ex: 63 - Impôts)</label>
-              <input
-                type="text"
-                id="new-class-label"
-                bind:value={newClassLabel}
-                placeholder="63 - Impôts et taxes"
-                class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-                required
-              />
-            </div>
+                <div class="space-y-1.5">
+                  <label for="new-class-label" class="block text-xs font-bold text-muted-foreground uppercase">Libellé (ex: 63 - Impôts)</label>
+                  <Input
+                    type="text"
+                    id="new-class-label"
+                    bind:value={newClassLabel}
+                    placeholder="63 - Impôts et taxes"
+                    required
+                  />
+                </div>
 
-            <div class="space-y-1.5">
-              <label for="new-class-type" class="block text-xs font-bold text-muted-foreground uppercase">Type</label>
-              <select
-                id="new-class-type"
-                bind:value={newClassType}
-                class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-medium"
-              >
-                <option value="recette">Produit (7 - Recette)</option>
-                <option value="depense">Charge (6 - Dépense)</option>
-              </select>
-            </div>
+                <div class="space-y-1.5">
+                  <label for="new-class-type" class="block text-xs font-bold text-muted-foreground uppercase">Type</label>
+                  <select
+                    id="new-class-type"
+                    bind:value={newClassType}
+                    class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-medium"
+                  >
+                    <option value="recette">Produit (7 - Recette)</option>
+                    <option value="depense">Charge (6 - Dépense)</option>
+                  </select>
+                </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              class="w-full justify-center px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground border-0 text-xs font-bold rounded-lg shadow cursor-pointer flex items-center gap-1.5"
-            >
-              <Plus class="w-4 h-4" />
-              Créer la classe
-            </button>
-          </form>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  class="w-full font-bold flex items-center justify-center gap-1.5"
+                >
+                  <Plus class="w-4 h-4" />
+                  Créer la classe
+                </Button>
+              </form>
+            </Card.Content>
+          </Card.Root>
         </div>
-      </div>
-    </div>
-  {/if}
+      {/if}
+    </Tabs.Content>
+  </Tabs.Root>
 </div>
