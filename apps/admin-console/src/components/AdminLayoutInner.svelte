@@ -185,19 +185,21 @@
               <a
                 {...props}
                 href="/admin"
-                class="flex items-center gap-2 w-full h-full font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center"
+                class="flex items-center gap-2 w-full h-full font-bold text-sidebar-foreground group-data-[collapsible=icon]:justify-center"
               >
-                <!-- Badminton Racket & Shuttlecock Custom SVG Icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0 text-primary">
-                  <circle cx="14.5" cy="8.5" r="5.5" />
-                  <path d="M11 8.5h7M14.5 5v7" />
-                  <path d="m11 12-6 6" />
-                  <rect x="3.5" y="18.5" width="2" height="2" rx="0.5" />
-                  <path d="M6 4h3v2.5a1.5 1.5 0 0 1-3 0V4Z" />
+                <!-- Badminton Shuttlecock Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0 text-primary">
+                  <path d="M9 16c0-1.5 1-2 3-2s3 .5 3 2v2a3 3 0 0 1-6 0v-2z" />
+                  <path d="M12 14V3" />
+                  <path d="m8 14 2-10" />
+                  <path d="m16 14-2-10" />
+                  <path d="m6 14 3-10" />
+                  <path d="m18 14-3-10" />
+                  <path d="M8 8h8" />
+                  <path d="M6 11h12" />
                 </svg>
                 <div class="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                  <span class="truncate font-bold text-sm text-foreground">Nozay Badminton</span>
-                  <span class="truncate text-[10px] text-muted-foreground font-semibold">Association</span>
+                  <span class="truncate font-bold text-sm text-foreground">Nozay Bad Association</span>
                 </div>
               </a>
             {/snippet}
@@ -237,8 +239,9 @@
                     <a
                       {...props}
                       href={item.href}
+                      class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground w-full"
                     >
-                      <item.icon class="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <item.icon class="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
                       <span class="group-data-[collapsible=icon]:hidden">{item.name}</span>
                     </a>
                   {/snippet}

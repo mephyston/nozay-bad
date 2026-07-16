@@ -40,7 +40,7 @@ describe('AdminLayout Component', () => {
     flushSync();
 
     // Verify desktop title and navigation items are rendered
-    expect(target.textContent).toContain('Nozay Badminton Association');
+    expect(target.textContent).toContain('Nozay Bad Association');
     expect(target.textContent).toContain("Vue d'ensemble");
     expect(target.textContent).toContain("Adhérents");
     expect(target.textContent).toContain("Comptabilité");
@@ -54,6 +54,7 @@ describe('AdminLayout Component', () => {
   });
 
   it('should toggle the mobile sidebar on hamburger click in mobile mode', () => {
+    vi.useFakeTimers();
     isMobileViewport = true;
     const target = document.createElement('div');
     document.body.appendChild(target);
@@ -84,6 +85,9 @@ describe('AdminLayout Component', () => {
 
     // Clean up directly using unmount (which is safe and bypasses JSDOM click propagation bugs)
     unmount(component);
+    // Flush any pending body-scroll-lock cleanups before JSDOM teardown!
+    vi.runAllTimers();
+    vi.useRealTimers();
     target.remove();
   });
 });
