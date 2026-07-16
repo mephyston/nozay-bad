@@ -21,6 +21,6 @@
 
 ## Phase 4: Importateur Poona Refactoring (2026-07-16)
 - Task 1: complete (commits 0ad5d72..30aa82a, review clean)
-- Task 2: pending
+- Task 2: complete (commits 30aa82a..466ec8a, review clean)
 
 
