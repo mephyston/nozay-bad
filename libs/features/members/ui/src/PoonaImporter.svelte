@@ -48,7 +48,17 @@
     e.preventDefault();
     dragOver = false;
     if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-      processFile(e.dataTransfer.files[0]);
+      const file = e.dataTransfer.files[0];
+      if (fileInput) {
+        try {
+          const dt = new DataTransfer();
+          dt.items.add(file);
+          fileInput.files = dt.files;
+        } catch (err) {
+          console.error('Failed to set files using DataTransfer:', err);
+        }
+      }
+      processFile(file);
     }
   }
 
