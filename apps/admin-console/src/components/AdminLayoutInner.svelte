@@ -110,7 +110,7 @@
 
 <Sidebar.Root collapsible="icon">
   <!-- Header -->
-  <Sidebar.Header class="h-14 flex flex-row items-center px-2 border-b border-border justify-between group-data-[collapsible=icon]:justify-center">
+  <Sidebar.Header class="h-14 flex flex-row items-center px-2 justify-between group-data-[collapsible=icon]:justify-center">
     <div class="flex items-center w-full group-data-[collapsible=icon]:justify-center justify-between">
       <div class="flex items-center gap-2 group-data-[collapsible=icon]:justify-center overflow-hidden">
         <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0">
@@ -164,7 +164,7 @@
                         <a
                           href={sub.href}
                           onclick={() => { if (sidebar.isMobile) sidebar.setOpenMobile(false); }}
-                          class="{sub.name === subGroup && item.name === primaryGroup ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold' : 'font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50'} block px-2.5 py-1.5 text-xs rounded-md transition-colors"
+                          class="{sub.name === subGroup && item.name === primaryGroup ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold' : 'font-medium text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50'} block px-2.5 py-1.5 text-xs rounded-md transition-colors"
                         >
                           {sub.name}
                         </a>
@@ -177,7 +177,7 @@
                     <button
                       type="button"
                       onclick={() => toggleMenu(item.name)}
-                      class="{item.name === primaryGroup ? 'bg-sidebar-accent/60 text-foreground font-semibold' : 'text-foreground/80 hover:bg-accent hover:text-accent-foreground'} w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors border-0 bg-transparent text-left cursor-pointer"
+                      class="{item.name === primaryGroup ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold' : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'} w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors border-0 bg-transparent text-left cursor-pointer"
                     >
                       <span class="flex items-center">
                         <item.icon class="mr-3 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -195,7 +195,7 @@
                           <a
                             href={sub.href}
                             onclick={() => { if (sidebar.isMobile) sidebar.setOpenMobile(false); }}
-                            class="{sub.name === subGroup && item.name === primaryGroup ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold' : 'font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50'} block px-3 py-1.5 text-xs rounded-md transition-colors"
+                            class="{sub.name === subGroup && item.name === primaryGroup ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold' : 'font-medium text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50'} block px-3 py-1.5 text-xs rounded-md transition-colors"
                           >
                             {sub.name}
                           </a>
@@ -294,7 +294,7 @@
 <!-- Inset / Main panel -->
 <Sidebar.Inset class="flex flex-col h-screen overflow-hidden">
   <!-- Header -->
-  <header class="flex h-14 shrink-0 items-center justify-between px-6 border-b border-border bg-card">
+  <header class="flex h-14 shrink-0 items-center justify-between px-6 border-b border-border bg-background">
     <div class="flex items-center gap-4">
       <!-- Sidebar Trigger handles mobile/desktop collapse/expand -->
       <Sidebar.Trigger aria-label="Menu" class="cursor-pointer" />
