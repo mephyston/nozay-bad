@@ -17,7 +17,7 @@ import {
   seasonsTable,
   membersTable
 } from '@metacult/features-members-data-access';
-import { isSeasonClosed, normalizeCategory } from '@metacult/shared-db';
+import { isSeasonClosed, normalizeCategory, AppError } from '@metacult/shared-db';
 
 export type Bindings = {
   DB: D1Database;
@@ -391,7 +391,7 @@ accountingRouter.post('/seasons/:seasonId/budget', async (c) => {
   const db = drizzle(c.env.DB);
 
   if (await isSeasonClosed(db, seasonId)) {
-    return c.json({ success: false, error: 'La saison est clôturée. Impossible de modifier son prévisionnel.' }, 400);
+    throw new AppError('La saison est clôturée. Impossible de modifier son prévisionnel.', 400);
   }
 
   try {
@@ -416,6 +416,60 @@ accountingRouter.post('/seasons/:seasonId/budget', async (c) => {
   }
 });
 
+accountingRouter.get('/seasons/:seasonId/balance', async (c) => {
+  if (!c.env || !c.env.DB) {
+    throw new AppError('Database binding DB is missing', 500);
+  }
+  const seasonId = c.req.param('seasonId');
+  const db = drizzle(c.env.DB);
+
+  const [yy, zz] = seasonId.split('-');
+  if (!yy || !zz || yy.length !== 2 || zz.length !== 2) {
+    throw new AppError('Format de saison invalide. Format attendu : YY-ZZ (ex: 25-26)', 400);
+  }
+
+  const startYear = 2000 + parseInt(yy);
+  const endYear = 2000 + parseInt(zz);
+  const startDateStr = `${startYear}-09-01`;
+  const endDateStr = `${endYear}-08-31`;
+
+  const balances = await db.select().from(seasonBalancesTable).where(eq(seasonBalancesTable.seasonId, seasonId)).all();
+
+  const cashFlowTxs = await db.select()
+    .from(transactionsTable)
+    .where(and(
+      gte(transactionsTable.date, startDateStr),
+      lte(transactionsTable.date, endDateStr)
+    ))
+    .all();
+
+  const accounts = ['current', 'savings', 'cash'] as const;
+  let totalBalance = 0;
+
+  for (const acc of accounts) {
+    const initBal = balances.find(b => b.accountId === acc)?.initialBalance || 0;
+    let finalBal = initBal;
+    for (const tx of cashFlowTxs) {
+      if (tx.type === 'recette' && tx.accountId === acc) {
+        finalBal += tx.amount;
+      } else if (tx.type === 'depense' && tx.accountId === acc) {
+        finalBal -= tx.amount;
+      } else if (tx.type === 'transfert') {
+        if (tx.accountId === acc) finalBal -= tx.amount;
+        if (tx.destinationAccountId === acc) finalBal += tx.amount;
+      }
+    }
+    totalBalance += finalBal;
+  }
+
+  return c.json({
+    success: true,
+    data: {
+      balance: totalBalance
+    }
+  });
+});
+
 accountingRouter.get('/seasons/:seasonId/balances', async (c) => {
   if (!c.env || !c.env.DB) {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
@@ -435,7 +489,7 @@ accountingRouter.post('/seasons/:seasonId/balances', async (c) => {
   const db = drizzle(c.env.DB);
 
   if (await isSeasonClosed(db, seasonId)) {
-    return c.json({ success: false, error: 'La saison est clôturée. Impossible de modifier ses soldes initiaux.' }, 400);
+    throw new AppError('La saison est clôturée. Impossible de modifier ses soldes initiaux.', 400);
   }
 
   for (const item of body) {
@@ -669,7 +723,7 @@ accountingRouter.post('/transactions', async (c) => {
   }
 
   if (await isSeasonClosed(db, body.seasonId)) {
-    return c.json({ success: false, error: 'La saison est clôturée. Impossible de créer une transaction.' }, 400);
+    throw new AppError('La saison est clôturée. Impossible de créer une transaction.', 400);
   }
 
   if (body.type === 'transfert') {
@@ -721,11 +775,11 @@ accountingRouter.put('/transactions/:id', async (c) => {
   }
 
   if (await isSeasonClosed(db, existing.seasonId)) {
-    return c.json({ success: false, error: 'La saison d\'origine est clôturée. Impossible de modifier cette transaction.' }, 400);
+    throw new AppError('La saison d\'origine est clôturée. Impossible de modifier cette transaction.', 400);
   }
 
   if (await isSeasonClosed(db, body.seasonId)) {
-    return c.json({ success: false, error: 'La saison cible est clôturée. Impossible d\'affecter cette transaction.' }, 400);
+    throw new AppError('La saison cible est clôturée. Impossible d\'affecter cette transaction.', 400);
   }
 
   if (body.type === 'transfert') {
@@ -779,7 +833,7 @@ accountingRouter.delete('/transactions/:id', async (c) => {
   }
 
   if (await isSeasonClosed(db, tx.seasonId)) {
-    return c.json({ success: false, error: 'La saison est clôturée. Impossible de supprimer cette transaction.' }, 400);
+    throw new AppError('La saison est clôturée. Impossible de supprimer cette transaction.', 400);
   }
 
   // 2. Si liée à un relevé bancaire, recalculer le pointage restant
@@ -1394,7 +1448,7 @@ accountingRouter.post('/bank-transactions/reconcile-bulk', async (c) => {
       for (const req of requests) {
         const result = await reconcileBankTxInternal(tx, req.btId, req);
         if (!result.success) {
-          throw new Error(result.error || 'Matching operation failed');
+          throw new AppError(result.error || 'Matching operation failed', result.status || 400);
         }
         count++;
       }
@@ -1408,14 +1462,18 @@ accountingRouter.post('/bank-transactions/reconcile-bulk', async (c) => {
         for (const req of requests) {
           const result = await reconcileBankTxInternal(db, req.btId, req);
           if (!result.success) {
-            return c.json({ success: false, error: result.error || 'Matching operation failed' }, 400);
+            throw new AppError(result.error || 'Matching operation failed', result.status || 400);
           }
           count++;
         }
         return c.json({ success: true, count });
       } catch (innerErr: any) {
+        if (innerErr instanceof AppError) throw innerErr;
         return c.json({ success: false, error: innerErr.message }, 400);
       }
+    }
+    if (err instanceof AppError) {
+      throw err;
     }
     return c.json({ success: false, error: err.message }, 400);
   }
@@ -1433,9 +1491,7 @@ accountingRouter.post('/bank-transactions/:id/reconcile', async (c) => {
     await db.transaction(async (tx) => {
       const result = await reconcileBankTxInternal(tx, id, body);
       if (!result.success) {
-        const err = new Error(result.error || 'Reconciliation failed');
-        (err as any).status = result.status || 400;
-        throw err;
+        throw new AppError(result.error || 'Reconciliation failed', result.status || 400);
       }
     });
     return c.json({ success: true });
@@ -1443,14 +1499,14 @@ accountingRouter.post('/bank-transactions/:id/reconcile', async (c) => {
     if (err.message && err.message.includes('begin')) {
       const result = await reconcileBankTxInternal(db, id, body);
       if (!result.success) {
-        return c.json({ success: false, error: result.error || 'Reconciliation failed' }, (result.status || 400) as any);
+        throw new AppError(result.error || 'Reconciliation failed', result.status || 400);
       }
       return c.json({ success: true });
     }
-    if (err.status) {
-      return c.json({ success: false, error: err.message }, err.status);
+    if (err instanceof AppError) {
+      throw err;
     }
-    return c.json({ success: false, error: err.message }, 500);
+    return c.json({ success: false, error: err.message }, err.status || 400);
   }
 });
 
@@ -2131,7 +2187,7 @@ accountingRouter.post('/invoices', async (c) => {
   const body = await c.req.json();
   const db = drizzle(c.env.DB);
   if (await isSeasonClosed(db, body.seasonId)) {
-    return c.json({ success: false, error: 'Saison clôturée' }, 400);
+    throw new AppError('Saison clôturée', 400);
   }
   const seasonShort = body.seasonId.replace('-', '');
   const prefix = `FAC-${seasonShort}-NBA91-`;
@@ -2195,7 +2251,7 @@ accountingRouter.put('/invoices/:id', async (c) => {
     return c.json({ success: false, error: 'Modification impossible car non au statut Brouillon' }, 400);
   }
   if (await isSeasonClosed(db, invoice.seasonId)) {
-    return c.json({ success: false, error: 'Saison clôturée' }, 400);
+    throw new AppError('Saison clôturée', 400);
   }
 
   await db.update(invoicesTable).set({
@@ -2239,7 +2295,7 @@ accountingRouter.delete('/invoices/:id', async (c) => {
     return c.json({ success: false, error: 'Seules les factures brouillon ou annulées peuvent être supprimées' }, 400);
   }
   if (await isSeasonClosed(db, invoice.seasonId)) {
-    return c.json({ success: false, error: 'Saison clôturée' }, 400);
+    throw new AppError('Saison clôturée', 400);
   }
   await db.delete(invoicesTable).where(eq(invoicesTable.id, id)).run();
   return c.json({ success: true });
@@ -2259,7 +2315,7 @@ accountingRouter.post('/invoices/:id/status', async (c) => {
   const invoice = await db.select().from(invoicesTable).where(eq(invoicesTable.id, id)).get();
   if (!invoice) return c.json({ success: false, error: 'Facture introuvable' }, 404);
   if (await isSeasonClosed(db, invoice.seasonId)) {
-    return c.json({ success: false, error: 'Saison clôturée' }, 400);
+    throw new AppError('Saison clôturée', 400);
   }
   await db.update(invoicesTable).set({ status }).where(eq(invoicesTable.id, id)).run();
   return c.json({ success: true });

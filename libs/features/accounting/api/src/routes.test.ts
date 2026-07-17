@@ -16,8 +16,15 @@ import {
 } from '@metacult/features-accounting-data-access';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq, sql } from 'drizzle-orm';
+import { AppError } from '@metacult/shared-db';
 
 const app = new Hono<{ Bindings: { DB: any; AI: any } }>();
+app.onError((err, c) => {
+  if (err instanceof AppError) {
+    return c.json({ success: false, error: err.message }, err.status);
+  }
+  return c.json({ success: false, error: err.message }, 500);
+});
 app.route('/accounting', accountingRouter);
 
 describe('GET /accounting/seasons', () => {
@@ -186,6 +193,19 @@ describe('Accounting API Endpoints', () => {
     const cash = balances.find((b: any) => b.accountId === 'cash');
     expect(cash.initialBalance).toBe(5000);
     expect(cash.finalBalance).toBe(25000);
+
+    // 4b. Fetch total treasury balance and assert correct sum
+    const totalBalRes = await app.request('http://localhost/accounting/seasons/25-26/balance', undefined, { DB: mockD1 as any });
+    expect(totalBalRes.status).toBe(200);
+    const totalBalJson = await totalBalRes.json() as any;
+    expect(totalBalJson.success).toBe(true);
+    expect(totalBalJson.data.balance).toBe(130000);
+
+    const invalidBalRes = await app.request('http://localhost/accounting/seasons/invalid/balance', undefined, { DB: mockD1 as any });
+    expect(invalidBalRes.status).toBe(400);
+    const invalidBalJson = await invalidBalRes.json() as any;
+    expect(invalidBalJson.success).toBe(false);
+    expect(invalidBalJson.error).toContain('Format de saison invalide');
 
     // 5. Test GET /accounting/seasons/:seasonId/balances
     const getBalRes = await app.request('http://localhost/accounting/seasons/25-26/balances', undefined, { DB: mockD1 as any });

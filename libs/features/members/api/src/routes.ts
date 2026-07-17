@@ -369,6 +369,13 @@ membersRouter.get('/', async (c) => {
     conditions.push(eq(membersTable.season, season));
   }
 
+  const paid = c.req.query('paid');
+  if (paid === 'true') {
+    conditions.push(eq(membersTable.paid, true));
+  } else if (paid === 'false') {
+    conditions.push(eq(membersTable.paid, false));
+  }
+
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
   // Count query

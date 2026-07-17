@@ -276,6 +276,31 @@ describe('GET /members', () => {
     const body2526 = await res2526.json() as any;
     expect(body2526.data).toHaveLength(2);
   });
+
+  it('should filter members by payment status (paid=true/false)', async () => {
+    const { mockD1, db } = await setupMockDb();
+
+    // Insert dummy members with different payment status
+    await db.insert(membersTable).values([
+      { licence: '1000001', lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'Competiteur', importedAt: new Date(), paid: true },
+      { licence: '1000002', lastName: 'Martin', firstName: 'Sophie', gender: 'F', birthDate: '1985-05-15', status: 'valide', type: 'Loisir', importedAt: new Date(), paid: false },
+      { licence: '1000003', lastName: 'Durand', firstName: 'Luc', gender: 'M', birthDate: '1995-12-25', status: 'suspendu', type: 'Competiteur', importedAt: new Date(), paid: false },
+    ]).run();
+
+    // Query for paid=true
+    const resPaid = await app.request('http://localhost/members?paid=true', undefined, { DB: mockD1 as any });
+    const bodyPaid = await resPaid.json() as any;
+    expect(bodyPaid.data).toHaveLength(1);
+    expect(bodyPaid.data[0].licence).toBe('1000001');
+
+    // Query for paid=false
+    const resUnpaid = await app.request('http://localhost/members?paid=false', undefined, { DB: mockD1 as any });
+    const bodyUnpaid = await resUnpaid.json() as any;
+    expect(bodyUnpaid.data).toHaveLength(2);
+    const licences = bodyUnpaid.data.map((m: any) => m.licence);
+    expect(licences).toContain('1000002');
+    expect(licences).toContain('1000003');
+  });
 });
 
 describe('GET /members/:licence', () => {
