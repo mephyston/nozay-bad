@@ -27,4 +27,8 @@
 - Task 1: complete (commits 341bb5c..0809f20, review clean)
 - Task 2: complete (commits d3bff4b..bc960a5, review clean)
 
+## Phase 6: Grand Livre - Saisie Sheet & Filtre de Comptes (2026-07-17)
+- Task 1: pending
+- Task 2: pending
+
 
