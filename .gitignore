@@ -51,3 +51,6 @@ Thumbs.db
 # Données de tests avec info perso
 .data/
 
+# TypeScript build info
+*.tsbuildinfo
+
