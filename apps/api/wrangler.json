@@ -12,5 +12,18 @@
   ],
   "ai": {
     "binding": "AI"
+  },
+  "env": {
+    "staging": {
+      "name": "nba-api-staging",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "nba-db-staging",
+          "database_id": "42c30a26-8b8b-4c43-a58c-f16ee80df5a7",
+          "migrations_dir": "../../libs/shared/db/migrations"
+        }
+      ]
+    }
   }
 }
