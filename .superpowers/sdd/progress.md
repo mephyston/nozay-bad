@@ -40,7 +40,7 @@
 - Task 2: complete (commits 838258d..8a4f69d, review clean)
 
 ## Phase 9: Rapprochement Bancaire - Alignement En-tête (2026-07-17)
-- Task 1: pending
+- Task 1: complete (commits a0757ea..c604c35, review clean)
 - Task 2: pending
 
 
