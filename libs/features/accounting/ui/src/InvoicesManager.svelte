@@ -461,7 +461,7 @@
             <Table.Body class="divide-y divide-border">
               {#each filteredInvoices as inv (inv.id)}
                 <Table.Row class="hover:bg-muted/10 transition-colors">
-                  <Table.Cell class="p-4 font-mono font-bold text-foreground">{inv.invoiceNumber}</Table.Cell>
+                  <Table.Cell class="p-4 font-bold text-foreground">{inv.invoiceNumber}</Table.Cell>
                   <Table.Cell class="p-4 font-semibold text-foreground">{inv.clientName}</Table.Cell>
                   <Table.Cell class="p-4 text-muted-foreground max-w-xs truncate">{inv.subject || '—'}</Table.Cell>
                   <Table.Cell class="p-4 text-muted-foreground">{inv.date}</Table.Cell>
