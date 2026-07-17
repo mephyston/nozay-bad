@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Upload, Check, AlertCircle, Trash2, ShieldAlert, Sparkles, RefreshCw } from 'lucide-svelte';
-  import { Button, Table, Input, Badge, Card, Dialog, Tabs } from '@metacult/shared-ui';
+  import { Button, Table, Input, Badge, Card, Dialog, Tabs, Checkbox } from '@metacult/shared-ui';
 
   interface BankTransaction {
     id: number;
@@ -1229,14 +1229,13 @@
             >
               <div class="flex items-start gap-3 flex-1 min-w-0">
                 {#if activeTab === 'pending' && !isClosed}
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={!!selectedTxIds[bt.id]}
-                    onchange={(e) => {
-                      selectedTxIds[bt.id] = (e.target as HTMLInputElement).checked;
+                    onCheckedChange={(val) => {
+                      selectedTxIds[bt.id] = !!val;
                     }}
                     onclick={(e) => e.stopPropagation()}
-                    class="rounded border-border text-primary focus:ring-primary/20 cursor-pointer w-4 h-4 shrink-0 mt-0.5"
+                    class="w-4 h-4 shrink-0 mt-0.5"
                   />
                 {/if}
                 <div class="flex-1 min-w-0 text-left">
@@ -1741,11 +1740,10 @@
                         {#each matchingInvoices as inv}
                           <div class="flex items-center justify-between gap-2 p-2.5 bg-background border border-border rounded-md text-xs">
                             <div class="flex items-center gap-2">
-                              <input
-                                type="checkbox"
+                              <Checkbox
                                 class="invoice-checkbox w-4 h-4 text-primary border-border rounded focus:ring-primary cursor-pointer animate-none"
                                 checked={selectedInvoiceIds.has(inv.id)}
-                                onchange={() => toggleInvoiceSelection(inv.id)}
+                                onCheckedChange={() => toggleInvoiceSelection(inv.id)}
                               />
                               <div>
                                 <div class="font-bold text-foreground">{inv.clientName}</div>
@@ -1778,11 +1776,10 @@
                       {#each otherUnpaidInvoices as inv}
                         <div class="flex items-center justify-between gap-2 p-2.5 bg-background border border-border rounded-md text-xs hover:bg-muted/30 transition-colors">
                           <div class="flex items-center gap-2">
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               class="invoice-checkbox w-4 h-4 text-primary border-border rounded focus:ring-primary cursor-pointer animate-none"
                               checked={selectedInvoiceIds.has(inv.id)}
-                              onchange={() => toggleInvoiceSelection(inv.id)}
+                              onCheckedChange={() => toggleInvoiceSelection(inv.id)}
                             />
                             <div>
                               <div class="font-semibold text-foreground">{inv.clientName}</div>
