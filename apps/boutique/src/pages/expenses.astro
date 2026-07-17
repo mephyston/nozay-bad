@@ -47,16 +47,12 @@ if (Astro.request.method === 'POST') {
     }
 
     if (body.action === 'expense') {
-      const res = await apiService.fetch('http://localhost/expenses', {
+      return apiService.fetch('http://localhost/expenses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(body.data)
-      });
-      return new Response(await res.text(), {
-        status: res.status,
-        headers: { 'Content-Type': 'application/json' }
       });
     }
   } catch (err: any) {

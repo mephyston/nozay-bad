@@ -55,16 +55,12 @@ if (Astro.request.method === 'POST') {
       });
     }
 
-    const res = await apiService.fetch('http://localhost/shop/orders', {
+    return apiService.fetch('http://localhost/shop/orders', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(body)
-    });
-    return new Response(await res.text(), {
-      status: res.status,
-      headers: { 'Content-Type': 'application/json' }
     });
   } catch (err: any) {
     return new Response(JSON.stringify({ success: false, error: err.message }), {
