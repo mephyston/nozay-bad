@@ -86,5 +86,5 @@
 - Task 2: complete (commits 01eee76..4f98363, review clean)
 - Task 3: complete (commits a45c7a4..d43a303, review clean)
 - Task 4: complete (commits c6e519c..93cdf99, review clean)
-- Task 5: pending
+- Task 5: complete (commits a869268..242cbe7, review clean)
 - Task 6: pending
