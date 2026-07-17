@@ -8,6 +8,7 @@ import { productsTable, ordersTable } from '@metacult/features-shop-data-access'
 import { membersTable } from '@metacult/features-members-data-access';
 // Cross-domain read: shop needs the 'Boutique' accounting category ID and transaction insertion.
 import { categoriesTable, transactionsTable } from '@metacult/features-accounting-data-access';
+import { isSeasonClosed } from '@metacult/shared-db';
 
 export type Bindings = {
   DB: D1Database;
@@ -155,6 +156,10 @@ shopRouter.post('/orders/:id/approve', async (c) => {
         throw new Error('Commande invalide ou déjà traitée');
       }
 
+      if (await isSeasonClosed(tx, order.seasonId)) {
+        throw new Error('La saison est clôturée');
+      }
+
       const member = await tx
         .select({
           id: membersTable.id,
@@ -217,7 +222,7 @@ shopRouter.post('/orders/:id/approve', async (c) => {
     if (err.message === 'Commande introuvable') {
       return c.json({ success: false, error: err.message }, 404);
     }
-    if (err.message === 'Commande invalide ou déjà traitée' || err.message === 'Adhérent inexistant' || err.message === 'Produit inexistant') {
+    if (err.message === 'Commande invalide ou déjà traitée' || err.message === 'Adhérent inexistant' || err.message === 'Produit inexistant' || err.message === 'La saison est clôturée') {
       return c.json({ success: false, error: err.message }, 400);
     }
     if (err.message === 'CONFLIT') {

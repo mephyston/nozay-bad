@@ -53,10 +53,7 @@ export default tseslint.config(
             },
             {
               sourceTag: 'scope:shop',
-              // Cross-domain reads are allowed for shop: shop routes need member names for order
-              // display/approval, and the accounting category ID for transaction creation.
-              // Justified: same D1 database, same Worker — no Service Binding overhead.
-              // All cross-domain accesses are read-only (no writes to foreign tables).
+              // Cross-domain access: read-only for member names and categories, except order approval which inserts a transaction.
               onlyDependOnLibsWithTags: ['scope:shop', 'scope:shared', 'scope:members', 'scope:accounting']
             },
             {
