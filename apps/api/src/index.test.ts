@@ -4,6 +4,7 @@ import { setupMockDb } from '@metacult/shared-db/test-utils';
 import { seasonsTable } from '@metacult/features-members-data-access';
 import { expensesTable } from '@metacult/features-expenses-data-access';
 import { eq } from 'drizzle-orm';
+import { AppError } from '@metacult/shared-db';
 
 describe('API Health Endpoint', () => {
   it('should return 200 OK and status ok', async () => {
@@ -90,5 +91,27 @@ describe('Cross-Domain Integration Tests', () => {
     const finalExpense = await db.select().from(expensesTable).where(eq(expensesTable.id, expenseId)).get();
     expect(finalExpense!.status).toBe('pending');
     expect(finalExpense!.transactionId).toBeNull();
+  });
+});
+
+app.get('/test-app-error', () => {
+  throw new AppError('Custom bad request', 400);
+});
+
+app.get('/test-generic-error', () => {
+  throw new Error('Something went wrong');
+});
+
+describe('Global Error Handling', () => {
+  it('should handle AppError and return custom message and status code', async () => {
+    const res = await app.request('/test-app-error');
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ success: false, error: 'Custom bad request' });
+  });
+
+  it('should handle generic Error and return 500 status code', async () => {
+    const res = await app.request('/test-generic-error');
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ success: false, error: 'Erreur interne du serveur' });
   });
 });
