@@ -1,47 +1,32 @@
-# Rapport de Task 3 : Ajout de l'API de Balance de Trésorerie et Filtrage par Paiement
+### Task 3 Report: Sous-routeur des Transactions (Transactions)
 
-## Implémentation
+#### What was implemented
+- Created a new sub-router for transaction endpoints in `libs/features/accounting/api/src/routes/transactions.ts`.
+- Extracted and migrated all original transaction handlers from `libs/features/accounting/api/src/routes.ts` into the new router, setting up correct prefixes and paths (`GET /`, `POST /`, `PUT /:id`, `DELETE /:id`).
+- Mounted `transactionsRouter` on `accountingRouter` using `accountingRouter.route('/transactions', transactionsRouter)` in `libs/features/accounting/api/src/routes.ts`.
+- Ensured all imports (Drizzle D1 bindings, tables, schemas, and helper functions/utils) are correctly referenced.
 
-Dans le cadre de cette tâche, nous avons implémenté les fonctionnalités suivantes :
+#### What was tested and test results
+- Ran the existing test suite:
+  ```bash
+  npx vitest run libs/features/accounting/api/
+  ```
+- **Results:**
+  - `src/helpers.test.ts`: 3/3 tests passed.
+  - `src/routes.test.ts`: 51/51 tests passed.
+  - Total: 54/54 tests passed successfully in 652ms.
 
-1. **API de Balance de Trésorerie** :
-   - Ajout d'un endpoint `GET /accounting/seasons/:seasonId/balance` dans [libs/features/accounting/api/src/routes.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/api/src/routes.ts).
-   - Ce endpoint calcule le solde total de trésorerie (en centimes) pour une saison donnée en faisant la somme des soldes finaux des comptes `current`, `savings` et `cash`.
-   - Il supporte le format `YY-ZZ` pour `seasonId`, valide ce format et calcule la plage de dates de la saison correspondante pour agréger les soldes initiaux et les transactions de flux de trésorerie sur cette période.
+#### Files changed
+- **Created:**
+  - [transactions.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/api/src/routes/transactions.ts)
+- **Modified:**
+  - [routes.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/api/src/routes.ts)
 
-2. **Filtrage par Paiement pour les Adhérents** :
-   - Ajout du support pour le paramètre de requête `paid` dans `GET /members` dans [libs/features/members/api/src/routes.ts](file:///Users/david/Lab/nozay-bad/libs/features/members/api/src/routes.ts).
-   - Filtrage strict : `paid=true` filtre les membres ayant entièrement payé, tandis que `paid=false` retourne les membres dont la cotisation n'est pas soldée.
+#### Self-review findings
+- **Completeness:** All `/transactions` routes have been completely moved and mounted correctly.
+- **Quality:** Code formatting and structure follow the established conventions (e.g., using `seasons.ts` as reference). Unused transaction routes were successfully cleaned up from `routes.ts`.
+- **Discipline:** No extraneous code, no console logs or debugger statements were introduced.
+- **Testing:** The full integration test suite continues to pass with no regressions.
 
-3. **Refactoring de la Gestion d'Erreurs** :
-   - Remplacement de l'utilisation de la classe générique `Error` par `AppError` de `@metacult/shared-db` dans les endpoints de réconciliation bancaire.
-   - Refactoring de tous les contrôles `isSeasonClosed` dans [libs/features/accounting/api/src/routes.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/api/src/routes.ts) pour lever une exception `AppError` avec un code statut HTTP `400` au lieu de retourner des réponses d'erreur JSON brutes.
-   - Configuration du handler `app.onError` dans les tests unitaires d'accounting pour refléter le comportement de la production et propager correctement ces `AppError`.
-
-## Tests et Résultats
-
-Les tests unitaires et d'intégration ont été exécutés avec succès :
-
-- **Nouveaux tests écrits** :
-  - Un test d'intégration pour `GET /seasons/:seasonId/balance` a été écrit dans [libs/features/accounting/api/src/routes.test.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/api/src/routes.test.ts). Il valide à la fois le cas passant (avec le calcul du solde total cumulé de 1300,00 €) et le cas de format saison invalide (retournant une `AppError` status 400).
-  - Un test de filtrage des membres par statut de paiement `paid` (`true` ou `false`) a été ajouté dans [libs/features/members/api/src/routes.test.ts](file:///Users/david/Lab/nozay-bad/libs/features/members/api/src/routes.test.ts).
-- **Résultats des tests** :
-  - Tous les 157 tests du monorepo s'exécutent avec succès.
-
-## Fichiers modifiés
-
-Les fichiers suivants ont été modifiés :
-- [libs/features/accounting/api/src/routes.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/api/src/routes.ts)
-- [libs/features/accounting/api/src/routes.test.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/api/src/routes.test.ts)
-- [libs/features/members/api/src/routes.ts](file:///Users/david/Lab/nozay-bad/libs/features/members/api/src/routes.ts)
-- [libs/features/members/api/src/routes.test.ts](file:///Users/david/Lab/nozay-bad/libs/features/members/api/src/routes.test.ts)
-
-## Auto-revue (Self-Review)
-
-- **Complétude** : Toutes les demandes du brief de tâche ont été implémentées et validées.
-- **Qualité** : Utilisation stricte de `AppError` avec des types corrects, et élimination des réponses d'erreur brutes.
-- **Discipline & Tests** : Toutes les modifications sont couvertes par des tests et respectent les conventions du projet.
-
-## Problèmes ou préoccupations
-
-Aucun problème ou préoccupation à signaler.
+#### Issues or concerns
+- None. The migration was straightforward and everything works perfectly.
