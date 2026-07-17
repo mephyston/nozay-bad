@@ -36,7 +36,7 @@
 - Task 2: complete (commits bd28c59..b49fa9b, review clean)
 
 ## Phase 8: Rapprochement Bancaire - Simplification UX (2026-07-17)
-- Task 1: pending
+- Task 1: complete (commits f7591ca..90ba69c, review clean)
 - Task 2: pending
 
 
