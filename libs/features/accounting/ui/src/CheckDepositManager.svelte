@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Wallet, FileText, CheckCircle, Trash2, Camera, UploadCloud, Search, ArrowRight, Loader2, Link, MoreVertical, Eye } from 'lucide-svelte';
-  import { Button, Table, Input, Badge, Card, Dialog, Alert, Tabs } from '@metacult/shared-ui';
+  import { Button, Table, Input, Badge, Card, Dialog, Alert, Tabs, Checkbox } from '@metacult/shared-ui';
 
   interface Check {
     id: number;
@@ -427,7 +427,7 @@
   <Tabs.Root bind:value={activeTab} class="space-y-6">
     <!-- Main Tabs Navigation -->
     <div class="border-b border-border flex items-center justify-between">
-      <Tabs.List class="flex gap-4">
+      <Tabs.List class="flex gap-4 no-print">
         <Tabs.Trigger value="checks">
           Chèques reçus ({checks.filter(c => c.status === 'received').length})
         </Tabs.Trigger>
@@ -479,15 +479,13 @@
             <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
               <Table.Row>
                 <Table.Head class="p-4 w-10">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={filteredChecks.length > 0 && filteredChecks.every(c => selectedCheckIds[c.id])}
-                    onchange={(e) => {
-                      const checked = (e.target as HTMLInputElement).checked;
+                    onCheckedChange={(val) => {
+                      const checked = !!val;
                       filteredChecks.forEach(c => selectedCheckIds[c.id] = checked);
                     }}
                     disabled={isClosed}
-                    class="rounded border-border text-primary focus:ring-primary/20 disabled:opacity-50"
                   />
                 </Table.Head>
                 <Table.Head class="p-4">Date de réception</Table.Head>
@@ -503,17 +501,18 @@
               {#each filteredChecks as check}
                 <Table.Row class="hover:bg-muted/50 transition-colors">
                   <Table.Cell class="p-4">
-                    <input
-                      type="checkbox"
-                      bind:checked={selectedCheckIds[check.id]}
+                    <Checkbox
+                      checked={!!selectedCheckIds[check.id]}
+                      onCheckedChange={(val) => {
+                        selectedCheckIds[check.id] = !!val;
+                      }}
                       disabled={isClosed}
-                      class="rounded border-border text-primary focus:ring-primary/20 disabled:opacity-50"
                     />
                   </Table.Cell>
                   <Table.Cell class="p-4 text-muted-foreground">
                     {new Date(check.createdAt).toLocaleDateString('fr-FR')}
                   </Table.Cell>
-                  <Table.Cell class="p-4 font-mono font-medium">{check.number}</Table.Cell>
+                  <Table.Cell class="p-4 font-medium">{check.number}</Table.Cell>
                   <Table.Cell class="p-4">{check.bank || '—'}</Table.Cell>
                   <Table.Cell class="p-4 font-medium">{check.emitter}</Table.Cell>
                   <Table.Cell class="p-4">
@@ -600,7 +599,7 @@
                   <Table.Cell class="p-4 text-muted-foreground">
                     {new Date(dep.date).toLocaleDateString('fr-FR')}
                   </Table.Cell>
-                  <Table.Cell class="p-4 font-mono font-medium">{dep.reference}</Table.Cell>
+                  <Table.Cell class="p-4 font-medium">{dep.reference}</Table.Cell>
                   <Table.Cell class="p-4">
                     {#if dep.status === 'cleared'}
                       <Badge variant="secondary" class="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/10 px-2 py-0.5 rounded-full text-xs font-medium border-transparent">
@@ -769,7 +768,6 @@
               type="text"
               bind:value={checkNumber}
               placeholder="Ex: 1234567"
-              class="font-mono"
               required
             />
           </div>
@@ -974,7 +972,6 @@
           id="dep-ref"
           type="text"
           bind:value={depositReference}
-          class="font-mono"
           required
         />
       </div>
@@ -1023,7 +1020,7 @@
       <form onsubmit={handleClearDeposit} class="p-6 space-y-4">
         <div class="p-4 bg-muted/55 rounded-lg border border-border space-y-1">
           <div class="text-xs text-muted-foreground uppercase font-semibold">Remise sélectionnée</div>
-          <div class="font-mono text-sm text-foreground">{selectedDepositToClear.reference}</div>
+          <div class="text-sm text-foreground">{selectedDepositToClear.reference}</div>
           <div class="text-base font-bold text-primary">{(selectedDepositToClear.amount / 100).toFixed(2)} €</div>
         </div>
 
@@ -1089,7 +1086,7 @@
           </div>
           <div class="text-right">
             <h4 class="text-sm font-bold text-foreground uppercase tracking-wider">Bordereau de Remise</h4>
-            <p class="text-xs font-mono font-bold mt-1 text-primary">{selectedDepositToView.reference}</p>
+            <p class="text-xs font-bold mt-1 text-primary">{selectedDepositToView.reference}</p>
             <p class="text-xs text-muted-foreground mt-0.5">Date : {new Date(selectedDepositToView.date).toLocaleDateString('fr-FR')}</p>
           </div>
         </div>
@@ -1126,7 +1123,7 @@
                   <Table.Cell class="py-2 px-3 border-r border-border text-center font-medium text-muted-foreground">{idx + 1}</Table.Cell>
                   <Table.Cell class="py-2 px-3 border-r border-border font-semibold text-foreground">{check.emitter}</Table.Cell>
                   <Table.Cell class="py-2 px-3 border-r border-border">{check.bank || '—'}</Table.Cell>
-                  <Table.Cell class="py-2 px-3 border-r border-border font-mono font-medium">{check.number}</Table.Cell>
+                  <Table.Cell class="py-2 px-3 border-r border-border font-medium">{check.number}</Table.Cell>
                   <Table.Cell class="py-2 px-3 border-r border-border">
                     {check.memberName || '—'}
                   </Table.Cell>
