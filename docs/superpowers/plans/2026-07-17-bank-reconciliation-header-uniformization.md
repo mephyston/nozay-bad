@@ -1,10 +1,10 @@
-# Plan d'Implémentation : Alignement de l'En-tête & Icône d'Importation
+# Plan d'Implémentation : Alignement de l'En-tête & Icône d'Importation (Astro Level)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Déplacer l'en-tête de page (titre + description) et aligner le bouton « Importer » à droite dans le composant Svelte pour refléter le design uniforme de la console d'administration.
+**Goal:** Placer l'en-tête de page (titre + description) et aligner le bouton « Importer » au niveau d'Astro, en connectant le bouton à la modale Svelte par un événement personnalisé.
 
-**Tech Stack:** Astro, Svelte 5, `@metacult/shared-ui` (Button, Badge).
+**Tech Stack:** Astro, Svelte 5, Tailwind CSS.
 
 ## Global Constraints
 
@@ -15,26 +15,47 @@
 
 ---
 
-### Task 1: Retrait de l'en-tête Astro dans import.astro
+### Task 1: En-tête de page et bouton d'importation dans import.astro
 
 **Files:**
 * Modify: `apps/admin-console/src/pages/admin/accounting/import.astro`
 
 **Interfaces:**
 * Consumes: Mise en page Astro.
-* Produces: Page Astro épurée déléguant le titre au composant de contenu.
+* Produces: Titre de page et bouton primaire d'importation avec déclencheur CustomEvent.
 
-- [ ] **Step 1: Remove page title block in import.astro**
+- [ ] **Step 1: Compute isClosed and render header block with button**
 
 Ouvrir [import.astro](file:///Users/david/Lab/nozay-bad/apps/admin-console/src/pages/admin/accounting/import.astro) :
-1. Supprimer le bloc d'en-tête (lignes ~139 à ~148) :
+1. Calculer `isClosed` dans le frontmatter (lignes ~99) :
+   ```typescript
+   const isClosed = seasonsList.find(s => s.id === season)?.status === 'closed';
+   ```
+2. Remplacer le bloc d'en-tête existant (lignes ~139 à ~148) par la version alignée avec le bouton :
    ```html
          <div class="flex items-center justify-between">
            <div>
              <h1 class="text-3xl font-bold tracking-tight">Rapprochement bancaire</h1>
              <p class="text-muted-foreground mt-2">
-               Rapprochez les relevés bancaires importés avec les écritures du grand livre et valisez les factures.
+               Rapprochez les relevés bancaires importés avec les écritures du grand livre et validez les factures.
              </p>
+           </div>
+           <div class="flex items-center gap-3 shrink-0">
+             {isClosed && (
+               <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
+                 Saison clôturée (Lecture seule)
+               </span>
+             )}
+             {!isClosed && bankTransactionsList.length > 0 && (
+               <button
+                 id="trigger-import-btn"
+                 onclick="window.dispatchEvent(new CustomEvent('open-bank-import'))"
+                 class="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow hover:bg-primary/90 cursor-pointer inline-flex items-center gap-2 border-0"
+               >
+                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                 Importer
+               </button>
+             )}
            </div>
          </div>
    ```
@@ -43,85 +64,75 @@ Ouvrir [import.astro](file:///Users/david/Lab/nozay-bad/apps/admin-console/src/p
 
 ```bash
 git add apps/admin-console/src/pages/admin/accounting/import.astro
-git commit -m "style(accounting): delegate reconciliation page title layout from astro page to svelte component"
+git commit -m "style(accounting): implement page header and import button at Astro level on reconciliation page"
 ```
 
 ---
 
-### Task 2: Refonte de l'en-tête et du bouton d'importation dans le composant Svelte
+### Task 2: Écoute de l'événement et nettoyage UI dans le composant Svelte
 
 **Files:**
 * Modify: `libs/features/accounting/ui/src/BankStatementReconciliation.svelte`
 
 **Interfaces:**
-* Consumes: Primitives Svelte de présentation.
-* Produces: En-tête flex avec bouton d'importation primaire à droite du titre.
+* Consumes: Événement personnalisé `'open-bank-import'` de `window`.
+* Produces: Ouverture réactive de la modale d'importation sans boutons redondants.
 
-- [ ] **Step 1: Implement uniform header layout with button in Svelte**
+- [ ] **Step 1: Listen to open-bank-import event onMount**
 
 Ouvrir [BankStatementReconciliation.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/BankStatementReconciliation.svelte) :
-1. Remplacer la barre d'importation et d'information de clôture au début du balisage (lignes ~981 à ~1002) :
-   - Remplacer :
-     ```html
-       {#if isClosed || (bankTransactions.length > 0 && !isClosed)}
-         <div class="flex items-center justify-between">
-           <div class="flex items-center gap-3">
-             {#if isClosed}
-               <Badge variant="outline" class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
-                 Saison clôturée (Lecture seule)
-               </Badge>
-             {/if}
-           </div>
-           {#if bankTransactions.length > 0 && !isClosed}
-             <Button 
-               type="button"
-               onclick={() => showImportModal = true}
-               class="inline-flex items-center gap-1.5 text-xs font-semibold"
-             >
-               <Upload class="w-3.5 h-3.5" />
-               Importer un relevé (.ofx)
-             </Button>
-           {/if}
-         </div>
-       {/if}
-     ```
-   - Par :
-     ```html
+1. Importer `onMount` depuis `'svelte'` (à la ligne 1).
+2. Ajouter le bloc `onMount` pour écouter `'open-bank-import'` (lignes ~95) :
+   ```typescript
+     onMount(() => {
+       const handleOpen = () => {
+         if (!isClosed) {
+           showImportModal = true;
+         }
+       };
+       window.addEventListener('open-bank-import', handleOpen);
+       return () => {
+         window.removeEventListener('open-bank-import', handleOpen);
+       };
+     });
+   ```
+
+- [ ] **Step 2: Remove local import button block in HTML template**
+
+Ouvrir [BankStatementReconciliation.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/BankStatementReconciliation.svelte) :
+1. Supprimer l'ancien bloc bouton/badge en haut (lignes ~982 à ~1002) :
+   ```html
+     {#if isClosed || (bankTransactions.length > 0 && !isClosed)}
        <div class="flex items-center justify-between">
-         <div>
-           <h1 class="text-3xl font-bold tracking-tight text-foreground">Rapprochement bancaire</h1>
-           <p class="text-muted-foreground mt-2">
-             Rapprochez les relevés bancaires importés avec les écritures du grand livre et validez les factures.
-           </p>
-         </div>
-         <div class="flex items-center gap-3 shrink-0">
+         <div class="flex items-center gap-3">
            {#if isClosed}
              <Badge variant="outline" class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
                Saison clôturée (Lecture seule)
              </Badge>
            {/if}
-           {#if bankTransactions.length > 0 && !isClosed}
-             <Button 
-               type="button"
-               onclick={() => showImportModal = true}
-               class="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow hover:bg-primary/90 cursor-pointer border-0"
-             >
-               <Upload class="h-4 w-4" />
-               <span>Importer</span>
-             </Button>
-           {/if}
          </div>
+         {#if bankTransactions.length > 0 && !isClosed}
+           <Button 
+             type="button"
+             onclick={() => showImportModal = true}
+             class="inline-flex items-center gap-1.5 text-xs font-semibold"
+           >
+             <Upload class="w-3.5 h-3.5" />
+             Importer un relevé (.ofx)
+           </Button>
+         {/if}
        </div>
-     ```
+     {/if}
+   ```
 
-- [ ] **Step 2: Run verification checks**
+- [ ] **Step 3: Run verification checks**
 
 * Run Vitest tests: `npx vitest run libs/features/accounting/ui/src/BankStatementReconciliation.test.ts`
 * Run Astro check: `npx astro check --root apps/admin-console`
 
-- [ ] **Step 3: Commit changes**
+- [ ] **Step 4: Commit changes**
 
 ```bash
 git add libs/features/accounting/ui/src/BankStatementReconciliation.svelte
-git commit -m "feat(accounting): style and align import button with unified page title in bank reconciliation"
+git commit -m "feat(accounting): handle open-bank-import window event and clean up local import button in svelte"
 ```
