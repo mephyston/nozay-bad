@@ -1,56 +1,48 @@
-# Task 2 Report: Standardisation pour les Notes de Frais
+# Rapport de Tâche - Tâche 2 : Schémas et Validation TypeBox sur les Routes d'Écriture
 
-## What was implemented
-1. **Expenses Astro Page ([index.astro](file:///Users/david/Lab/nozay-bad/apps/admin-console/src/pages/admin/expenses/index.astro))**:
-   - Added standard header with the page title ("Notes de Frais") and description.
-   - Added the season selector at the Astro level, reloading the page on season change.
-   - Added the closed season badge if the selected season is closed.
-   
-2. **Expenses Manager Svelte Component ([ExpensesManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/expenses/ui/src/ExpensesManager.svelte))**:
-   - Removed the internal season selector state (`selectedSeason`) and its event handler (`handleSeasonChange`).
-   - Derived the `isClosed` status directly from the parent-provided `seasonId` prop.
-   - Removed the season selector markup from the top section and preserved a balanced layout featuring a search bar alongside a clean section title.
-   - Ensured that validation actions (Modifier, Rejeter, Rembourser) and historical rollback actions are hidden or disabled when `isClosed` is true.
+## Ce qui a été implémenté
 
-3. **Minor Finding Clean Up ([CashBoxManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/CashBoxManager.svelte))**:
-   - Added `closed?: boolean;` to the `Season` interface to clean up the type finding from the Task 1 review.
+1. **Validation et typage statique des entrées (TypeBox + Hono tbValidator)** :
+   - **`POST /shop/products`** : Ajout du schéma `createProductSchema` validant le nom, la catégorie (enum `'shuttlecock' | 'string' | 'other'`), le prix, le stock et l'option active.
+   - **`PUT /shop/products/:id`** : Ajout du schéma `updateProductSchema` rendant les champs facultatifs pour les mises à jour partielles.
+   - **`POST /shop/orders`** : Ajout du schéma `createOrderSchema` validant la saison, le membre, le produit, la quantité et le mode de paiement (enum des modes de paiement valides).
+   - **`POST /expenses/`** : Ajout du schéma `createExpenseSchema` validant la saison, la description, le montant, la catégorie, le justificatif, l'émetteur et le membre associé.
+   - **`PUT /expenses/:id`** : Ajout du schéma `updateExpenseSchema` rendant les champs optionnels.
+   - **`POST /members/import`** : Ajout du schéma `importMembersSchema` validant que le champ multipart `file` est présent dans le corps de requête de type multipart.
 
----
+2. **Mappage robuste des erreurs de validation** :
+   - Mise en place d'un hook personnalisé sur les validateurs Hono pour retourner systématiquement les erreurs de validation sous la forme standard de l'application : `{ success: false, error: "Validation failed: [détails]" }` avec le statut HTTP `400`.
+   - Utilisation sécurisée de l'itérateur `result.errors` (via `[...result.errors]`) et protection optionnelle sur l'accès aux chemins avec `e.path?.replace`.
 
-## What was tested and test results
-- Adapted existing tests and added a new unit test in [ExpensesManager.test.ts](file:///Users/david/Lab/nozay-bad/libs/features/expenses/ui/src/ExpensesManager.test.ts):
-  - `hides validation and edit actions when the season is closed`: mounts the component with a closed season and asserts that edit/validate action controls are not rendered.
-- Executed specific tests:
-  ```bash
-  npx vitest run libs/features/expenses/ui/src/ExpensesManager.test.ts
-  ```
-  Result: **PASS (3 tests passed)**
-- Ran the full workspace test suite:
-  ```bash
-  npx vitest run
-  ```
-  Result: **PASS (145 tests passed across 26 test files)**
-- Verified compilation and Astro routes type safety:
-  ```bash
-  npx astro check (in apps/admin-console)
-  ```
-  Result: **0 errors, 0 warnings, 0 hints**
+3. **Gestion des erreurs avec `AppError`** :
+   - Remplacement de l'ensemble des levées d'exceptions génériques `new Error` par `new AppError` avec les codes de statut HTTP appropriés (`404` pour non trouvé, `400` pour mauvaise requête / saison clôturée, `409` pour conflit d'optimistic locking).
+   - Simplification des blocs `catch` des contrôleurs pour intercepter directement `AppError` et propager ou formater proprement les réponses sans dépendre de comparaisons de chaînes de caractères manuelles.
 
----
+## Tests exécutés
 
-## Files changed
-- [apps/admin-console/src/pages/admin/expenses/index.astro](file:///Users/david/Lab/nozay-bad/apps/admin-console/src/pages/admin/expenses/index.astro)
-- [libs/features/expenses/ui/src/ExpensesManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/expenses/ui/src/ExpensesManager.svelte)
-- [libs/features/expenses/ui/src/ExpensesManager.test.ts](file:///Users/david/Lab/nozay-bad/libs/features/expenses/ui/src/ExpensesManager.test.ts)
-- [libs/features/accounting/ui/src/CashBoxManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/CashBoxManager.svelte)
+1. **Nouveaux scénarios de tests unitaires et d'intégration** :
+   - Vérification que la création ou la modification de produits avec des valeurs invalides ou manquantes échoue avec un code de statut `400` et une structure d'erreur claire.
+   - Vérification que la soumission de commandes invalides est rejetée en validation (statut `400`).
+   - Vérification que la soumission d'une note de frais invalide ou sa modification partielle avec des données incorrectes retourne un code `400`.
+   - Vérification du comportement de validation sur l'import CSV de membres (multipart `file` manquant).
+   - Vérification de la levée correcte de codes HTTP spécifiques via `AppError` (comme le statut `404` si un produit, commande ou note de frais n'existe pas lors d'une action d'écriture).
 
----
+2. **Résultats** :
+   - L'ensemble de la suite de tests (156 tests validés sur 156) s'exécute avec succès avec Vitest.
 
-## Self-review findings
-- **Completeness**: All required elements (title, description, season selector, closed badge, disabled actions) have been implemented.
-- **Quality**: The page and components respect the standards for configuration runtime and styling layout guidelines.
-- **Testing**: Added clean test assertions specifically for the closed-season behavior.
-- **Discipline**: The changes have been successfully committed.
+## Fichiers modifiés
 
-## Issues or concerns
-- None.
+- `package.json` : Ajout des dépendances `@hono/typebox-validator` et `typebox`.
+- `package-lock.json` : Mis à jour.
+- `libs/features/shop/api/src/routes.ts` : Intégration des validateurs de produits et commandes, et conversion vers `AppError`.
+- `libs/features/shop/api/src/routes.test.ts` : Nouveaux cas de test de validation et d'erreurs d'écriture.
+- `libs/features/expenses/api/src/routes.ts` : Intégration des validateurs de notes de frais, et conversion vers `AppError`.
+- `libs/features/expenses/api/src/routes.test.ts` : Nouveaux tests de validation et de 404 sur les notes de frais.
+- `libs/features/members/api/src/routes.ts` : Validation multipart pour l'import CSV.
+- `libs/features/members/api/src/routes.test.ts` : Test de validation sur le champ de fichier d'importation.
+
+## Auto-Évaluation (Self-Review)
+
+- **Complétude** : Toutes les routes d'écriture spécifiées ont été munies de schémas de validation TypeBox appropriés et converties pour utiliser `AppError` avec des statuts HTTP corrects.
+- **Qualité** : Les validateurs gèrent correctement les formats et les erreurs sans crash. L'utilisation de `AppError` fluidifie grandement le flux global d'erreurs en tirant parti du middleware Hono global.
+- **Discipline & Tests** : Écriture de tests d'erreur et de validation robustes en même temps que les développements. Tous les tests sont au vert.
