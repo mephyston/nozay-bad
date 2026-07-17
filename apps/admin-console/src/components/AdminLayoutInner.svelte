@@ -184,7 +184,7 @@
               <a
                 {...props}
                 href="/admin"
-                class="flex items-center gap-3 px-3 py-2 w-full h-full font-bold text-sidebar-foreground group-data-[collapsible=icon]:justify-center"
+                class="flex items-center gap-3 px-3 py-2 w-full h-full font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center"
               >
                 <!-- Badminton Shuttlecock Icon (aligned h-4 w-4) -->
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 shrink-0 text-primary">
@@ -197,7 +197,7 @@
                   <path d="M8 8h8" />
                   <path d="M6 11h12" />
                 </svg>
-                <span class="group-data-[collapsible=icon]:hidden font-bold text-sm text-foreground truncate">Nozay Bad Association</span>
+                <span class="group-data-[collapsible=icon]:hidden font-semibold text-sm text-foreground truncate">Nozay Bad Association</span>
               </a>
             {/snippet}
           </Sidebar.MenuButton>
@@ -221,7 +221,7 @@
     {#each navGroups as group}
       <Sidebar.Group class="p-0">
         {#if group.label}
-          <Sidebar.GroupLabel class="px-3 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden">
+          <Sidebar.GroupLabel class="px-3 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden">
             {group.label}
           </Sidebar.GroupLabel>
         {/if}
@@ -236,7 +236,7 @@
                     <a
                       {...props}
                       href={item.href}
-                      class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground w-full"
+                      class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-normal transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground w-full"
                     >
                       <item.icon class="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
                       <span class="group-data-[collapsible=icon]:hidden">{item.name}</span>
