@@ -31,4 +31,8 @@
 - Task 1: complete (commits 4d253af..cdcafa1, review clean)
 - Task 2: complete (commits 505909d..c4be4ff, review clean)
 
+## Phase 7: Rapprochement Bancaire - Standardisation Checkbox (2026-07-17)
+- Task 1: pending
+- Task 2: pending
+
 
