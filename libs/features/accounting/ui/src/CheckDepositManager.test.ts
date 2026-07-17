@@ -51,7 +51,7 @@ describe('CheckDepositManager Component', () => {
       }
     });
 
-    expect(target.innerHTML).toContain('Remise de Chèques');
+    expect(target.innerHTML).toContain('Chèques reçus');
     expect(target.innerHTML).toContain('1234567');
     expect(target.innerHTML).toContain('Dupont Marc');
     expect(target.innerHTML).toContain('150.00 €');

@@ -424,40 +424,6 @@
 </script>
 
 <div class="space-y-6">
-  <!-- Top Panel -->
-  <Card.Root>
-    <Card.Content class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6">
-      <div class="flex items-center gap-3">
-        <div>
-          <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Remise de Chèques
-          </h1>
-          <p class="text-sm text-muted-foreground">
-            Gestion et suivi des chèques physiques, génération de bordereaux de remise et rapprochement bancaire.
-          </p>
-        </div>
-        {#if isClosed}
-          <Badge variant="outline" class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground self-start mt-1">
-            Saison clôturée (Lecture seule)
-          </Badge>
-        {/if}
-      </div>
-
-      <!-- Season Selector -->
-      <div class="flex items-center gap-2">
-        <span class="text-sm font-medium text-muted-foreground whitespace-nowrap">Saison&nbsp;:</span>
-        <select
-          bind:value={selectedSeason}
-          onchange={() => window.location.href = `?season=${selectedSeason}`}
-          class="bg-background border border-border rounded-lg px-3 py-1.5 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-        >
-          {#each seasons as s}
-            <option value={s.id}>{s.name}</option>
-          {/each}
-        </select>
-      </div>
-    </Card.Content>
-  </Card.Root>
 
   <!-- Main Tabs Navigation -->
   <div class="border-b border-border flex items-center justify-between">
