@@ -50,5 +50,5 @@
 
 ## Phase 11: Rapports Financiers - Structure Onglets (2026-07-17)
 - Task 1: complete (commits 535763c..6e992b6, review clean)
-- Task 2: pending
+- Task 2: complete (commits c649ca9..ee063d9, review clean)
 - Task 3: pending
