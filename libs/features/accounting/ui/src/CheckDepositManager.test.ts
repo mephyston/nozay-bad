@@ -1,13 +1,23 @@
-import { describe, it, expect } from 'vitest';
-import { mount } from 'svelte';
+import { describe, it, expect, afterEach } from 'vitest';
+import { mount, unmount } from 'svelte';
 import CheckDepositManager from './CheckDepositManager.svelte';
 
 describe('CheckDepositManager Component', () => {
+  let component: any = null;
+
+  afterEach(() => {
+    if (component) {
+      unmount(component);
+      component = null;
+    }
+    document.body.innerHTML = '';
+  });
+
   it('renders received checks and past check deposits correctly', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(CheckDepositManager, {
+    component = mount(CheckDepositManager, {
       target,
       props: {
         seasonId: '25-26',
@@ -61,7 +71,7 @@ describe('CheckDepositManager Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(CheckDepositManager, {
+    component = mount(CheckDepositManager, {
       target,
       props: {
         seasonId: '25-26',
@@ -109,7 +119,7 @@ describe('CheckDepositManager Component', () => {
     const inputs = target.querySelectorAll('input[type="checkbox"]');
     expect(inputs.length).toBe(0);
 
-    const customCheckboxes = target.querySelectorAll('[role="checkbox"], [data-slot="checkbox"]');
+    const customCheckboxes = target.querySelectorAll('[role="checkbox"]');
     expect(customCheckboxes.length).toBeGreaterThan(0);
 
     // 2. font-mono should be removed from all numbers, references, and inputs
