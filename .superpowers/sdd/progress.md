@@ -87,4 +87,7 @@
 - Task 3: complete (commits a45c7a4..d43a303, review clean)
 - Task 4: complete (commits c6e519c..93cdf99, review clean)
 - Task 5: complete (commits a869268..242cbe7, review clean)
-- Task 6: pending
+- Task 6: complete (commits 90dd1c2..28128a5, review clean)
+
+## Phase 19: Consolidation du Menu Réglages (2026-07-17)
+- Task 1: pending
