@@ -47,3 +47,8 @@
 ## Phase 10: Uniformisation Boutons Import (2026-07-17)
 - Task 1: complete (commits c462917..28c593a, review clean)
 - Task 2: complete (commits 9346c88..6444c4f, review clean)
+
+## Phase 11: Rapports Financiers - Structure Onglets (2026-07-17)
+- Task 1: pending
+- Task 2: pending
+- Task 3: pending
