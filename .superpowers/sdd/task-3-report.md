@@ -1,40 +1,61 @@
-# Task 3 Report: Refoute de la suite de tests unitaires et résolution des fuites
+# Task 3 Report: Migration vers les onglets standards de shared-ui
 
 ## What was implemented
-- Imported `unmount` and `flushSync` from `'svelte'` and `afterEach` from `'vitest'`.
-- Declared a local `component` variable in the `describe` block.
-- Implemented an `afterEach` hook that calls `unmount(component)` to properly destroy the Svelte component instance and resets `document.body.innerHTML = ''`.
-- Stored the mounted component instance in the `component` variable for all 3 tests.
-- Replaced the tab button selection assertion by looking specifically for the `"Budget prévisionnel"` tab button rather than the partial `"Prévisionnel"` button match.
-- Replaced the asynchronous `setTimeout` with Svelte 5's synchronous `flushSync()` to trigger updates immediately.
+* Added `Tabs` import from `@metacult/shared-ui` in [CheckDepositManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/CheckDepositManager.svelte).
+* Refactored layout to use standard Svelte 5 `<Tabs.Root bind:value={activeTab}>`, `<Tabs.List>`, and `<Tabs.Trigger>` components instead of the custom button buttons in [CheckDepositManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/CheckDepositManager.svelte).
+* Wrapped the tab body content blocks inside `<Tabs.Content value="checks">` and `<Tabs.Content value="deposits">`.
+* Ensured that the dynamic action buttons (recording checks and generating deposits) remain reactive and placed inside the header/list context.
 
 ## What was tested and test results
-- Ran the specific unit tests: `npx vitest run libs/features/accounting/ui/src/GeneralMeetingReport.test.ts`
-  - Result: 3/3 passed.
-- Ran the entire test suite: `npx vitest run`
-  - Result: 138/138 tests passed.
+* Ran Vitest test suite on `CheckDepositManager.test.ts` to ensure layout mounts successfully and contains the expected components.
+* Ran Astro diagnostics checks to ensure type safety and proper integration.
 
 ## TDD Evidence (RED/GREEN run outputs)
-### Initial/Original status:
-- Ran the test suite before modifications (passed with `138/138` but with memory leaks and legacy selectors).
-
-### Post-modification verification:
+### Baseline test run:
+```bash
+npx vitest run libs/features/accounting/ui/src/CheckDepositManager.test.ts
 ```
- ✓  features-accounting-ui  src/GeneralMeetingReport.test.ts (3 tests) 109ms
+Output:
+```
+✓  features-accounting-ui  src/CheckDepositManager.test.ts (1 test) 51ms
 
- Test Files  1 passed (1)
-      Tests  3 passed (3)
-   Start at  11:09:38
-   Duration  8.67s (transform 7.11s, setup 0ms, import 8.35s, tests 109ms, environment 134ms)
+Test Files  1 passed (1)
+     Tests  1 passed (1)
+```
+
+### Verification check after refactoring:
+```bash
+npx vitest run libs/features/accounting/ui/src/CheckDepositManager.test.ts
+```
+Output:
+```
+✓  features-accounting-ui  src/CheckDepositManager.test.ts (1 test) 62ms
+
+Test Files  1 passed (1)
+     Tests  1 passed (1)
+```
+
+### Astro diagnostic check output:
+```bash
+npx astro check --root apps/admin-console
+```
+Output:
+```
+11:39:19 [check] Getting diagnostics for Astro files in /Users/david/Lab/nozay-bad/apps/admin-console...
+Result (29 files): 
+- 0 errors
+- 0 warnings
+- 0 hints
 ```
 
 ## Files changed
-- [GeneralMeetingReport.test.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/GeneralMeetingReport.test.ts)
+* [CheckDepositManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/CheckDepositManager.svelte)
 
 ## Self-review findings
-- **Completeness**: All steps in the task brief were completely implemented.
-- **Quality**: The tests are clean, memory leaks are avoided by ensuring every mount is unmounted, and Svelte DOM updates are correctly flushed.
-- **Discipline**: Standard and best practices followed. Tests verify correct behavior.
+* **Completeness**: Handled all four requirements of Step 1: imports, layout migration, content wrappers, and dynamic action buttons.
+* **Quality**: Replaced custom button code with clean Svelte 5 standard Tabs primitives, matching the styling and components of the existing codebase.
+* **Discipline**: Strictly adhered to guidelines, verified work with tests and Astro checks, and committed with standard Git commit format.
+* **Testing**: Confirmed that the component unit tests continue to pass and Astro compilation diagnostics are completely clean.
 
 ## Issues or concerns
-- None.
+* None.

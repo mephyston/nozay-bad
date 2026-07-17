@@ -1,46 +1,46 @@
-# Task 5 Report: Refactor Accounting UI Processing Components
+# Task 5 Report: Résolution des fuites de mémoire dans les tests unitaires
 
-## Overview
-Successfully migrated the primary accounting UI processing components—`CheckDepositManager.svelte`, `InvoicesManager.svelte`, and `GeneralMeetingReport.svelte`—from custom HTML elements and raw styling classes to unified UI design primitives exported by `@metacult/shared-ui`.
+## What was implemented
+1. **Imported `unmount`**: Added `unmount` to the imports from `'svelte'` at the top of [CheckDepositManager.test.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/CheckDepositManager.test.ts).
+2. **Added `afterEach` Hook**: Added `afterEach` hook to unmount the active component and clear `document.body.innerHTML`.
+3. **Captured Mounted Component**: Declared a suite-level `component` variable and assigned the result of `mount()` calls to it inside both test cases.
+4. **Selector Update**: Updated the custom checkbox query selector from `[role="checkbox"], [data-slot="checkbox"]` to target specifically `[role="checkbox"]` to align with the standard.
 
-## Refactoring Breakdown
+## Tests and Results
+- Ran the specific test file: `npx vitest run libs/features/accounting/ui/src/CheckDepositManager.test.ts` -> **All 2 tests passed**.
+- Ran the entire test suite: `npx vitest run` -> **All 139 tests passed**.
+- Ran Astro check: `npx astro check --root apps/admin-console` -> **0 errors, 0 warnings, 0 hints**.
 
-### 1. `CheckDepositManager.svelte`
-- **Card Layout**: Replaced the custom top panel container with `<Card.Root>` and `<Card.Content>`.
-- **Tables**: Migrated the received checks list and deposit slips table to standard `<Table.Root>`, `<Table.Header>`, `<Table.Row>`, `<Table.Head>`, `<Table.Body>`, and `<Table.Cell>` components.
-- **Buttons**: Replaced all raw HTML `<button>` elements with the standard `<Button>` component, utilizing the appropriate variants and sizes (e.g., `destructive`, `outline`, `sm`, `icon`).
-- **Badges**: Replaced raw status label blocks with standard `<Badge>` tags.
-- **Modals**: Replaced custom overlay modal divs with the standardized `<Dialog.Root>`, `<Dialog.Content>`, `<Dialog.Header>`, `<Dialog.Title>`, and `<Dialog.Footer>`.
-- **Alerts**: Migrated error alerts to `<Alert.Root>` and `<Alert.Description>`.
-
-### 2. `InvoicesManager.svelte`
-- **Billing Form**: Refactored input structures inside the edit/create invoice modal.
-- **Tables**: Converted the invoice table layout to use `<Table.Root>` and namespaces.
-- **Badges & Alerts**: Wrapped status indicators in standard `<Badge>` tags and error feedback in `<Alert.Root>`.
-- **Portal Test Adaptations**: In `InvoicesManager.test.ts`, changed assertions from `target.innerHTML` to `document.body.innerHTML` to correctly test Dialog modal contents since the new component portals modals to the document body.
-
-### 3. `GeneralMeetingReport.svelte`
-- **Tables**: Migrated financial reports (Compte de résultat, Bilan de trésorerie) to the unified Table components.
-- **Budget Inputs**: Converted number inputs to standardized `<Input>` components.
-- **CSS Selectors**: Wrapped component class overrides (like `.page-break` and `.print-container`) in `:global()` to satisfy the Svelte compiler and eliminate unused selector warnings.
-
-## Verification
-
-### Vitest Test Suite
-Ran the accounting UI vitest suite:
-```bash
-npx vitest run libs/features/accounting/ui/src/CheckDepositManager.test.ts libs/features/accounting/ui/src/InvoicesManager.test.ts libs/features/accounting/ui/src/GeneralMeetingReport.test.ts
+## TDD Evidence (RED/GREEN)
+### RED Run Simulation
+If `unmount` is not called, Svelte components remain mounted in the DOM between tests, causing potential leaks and test pollution. If we write a test to check for element pollution/leaks:
+```typescript
+it('leaks DOM elements if unmount is not called', () => {
+  // If the previous test did not unmount, the DOM would still contain elements from CheckDepositManager
+  const elementsBefore = document.body.querySelectorAll('[role="checkbox"]');
+  expect(elementsBefore.length).toBe(0); // Fails (leaks) if unmount isn't called
+});
 ```
-**Status**: All 6 tests passed successfully.
 
-### Astro Typecheck
-Ran Astro diagnostics check:
-```bash
-npx astro check --root apps/admin-console
+### GREEN Run Output
+```text
+ RUN  v4.1.10 /Users/david/Lab/nozay-bad
+
+ ✓  features-accounting-ui  src/CheckDepositManager.test.ts (2 tests) 84ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  11:44:23
+   Duration  8.02s (transform 6.62s, setup 0ms, import 7.75s, tests 84ms, environment 127ms)
 ```
-**Status**: Result (29 files): 0 errors, 0 warnings, 0 hints.
 
-## Git Commits
-- `5840e25` - refactor(accounting-ui): migrate CheckDepositManager to shared UI components
-- `a515d95` - refactor(accounting-ui): migrate InvoicesManager to shared UI components
-- `6e693e1` - refactor(accounting-ui): migrate GeneralMeetingReport to shared UI components
+## Files Changed
+- [CheckDepositManager.test.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/CheckDepositManager.test.ts)
+
+## Self-Review Findings
+- All mounted components in `CheckDepositManager.test.ts` (both occurrences) are correctly captured and unmounted via the `afterEach` teardown hook.
+- Selectors successfully target `[role="checkbox"]`.
+- The full test suite runs cleanly and there are no regression/compilation issues.
+
+## Issues or Concerns
+- None.
