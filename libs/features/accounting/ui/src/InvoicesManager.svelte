@@ -3,7 +3,7 @@
     Plus, Edit, Trash2, Check, AlertCircle, Search, X, MoreVertical, 
     Printer, Send, Ban, FileText, Mail, MapPin, Calendar, Users, Info
   } from 'lucide-svelte';
-  import { Button, Table, Input, Badge, Card, Dialog, Alert, Textarea } from '@metacult/shared-ui';
+  import { Button, Table, Input, Badge, Card, Sheet, Alert, Textarea } from '@metacult/shared-ui';
 
   interface InvoiceItem {
     id?: number;
@@ -51,9 +51,7 @@
   } = $props();
 
   // Local state
-  // svelte-ignore state_referenced_locally
-  let selectedSeason = $state(seasonId);
-  const isClosed = $derived(seasons.find(s => s.id === selectedSeason)?.closed || false);
+  const isClosed = $derived(seasons.find(s => s.id === seasonId)?.closed || false);
   
   let searchTerm = $state('');
   let statusFilter = $state<'all' | 'draft' | 'sent' | 'paid' | 'cancelled'>('all');
@@ -119,10 +117,7 @@
     return `${d.getFullYear()}-${month}-${day}`;
   }
 
-  function handleSeasonChange(e: Event) {
-    const target = e.target as HTMLSelectElement;
-    window.location.search = `?season=${target.value}`;
-  }
+
 
   function openCreateModal() {
     editingId = null;
@@ -255,7 +250,7 @@
         action: editingId ? 'update' : 'create',
         id: editingId,
         invoice: {
-          seasonId: selectedSeason,
+          seasonId: seasonId,
           clientName: clientName.trim(),
           clientAddress: clientAddress.trim() || null,
           clientEmail: clientEmail.trim() || null,
@@ -381,43 +376,17 @@
 </script>
 
 <div class="space-y-6">
-  <!-- Title section -->
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-    <div>
-      <h1 class="text-3xl font-bold tracking-tight text-foreground">Gestion des Factures</h1>
-      <p class="text-muted-foreground mt-1">Consultez, éditez et gérez les factures de l'association.</p>
-    </div>
-    {#if !isClosed}
-      <Button 
-        onclick={openCreateModal}
-        class="inline-flex items-center gap-2"
-      >
-        <Plus class="w-4 h-4" /> Créer une facture
-      </Button>
-    {/if}
-  </div>
-
   <!-- Filters block -->
   <Card.Root>
     <Card.Content class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 p-4">
       <div class="flex flex-wrap items-center gap-3">
-        <div class="flex items-center gap-2">
-          <Calendar class="w-4 h-4 text-muted-foreground" />
-          <span class="text-sm font-semibold text-foreground">Saison :</span>
-        </div>
-        <select
-          value={selectedSeason}
-          onchange={handleSeasonChange}
-          class="bg-background border border-border px-3 py-1.5 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-        >
-          {#each seasons as s}
-            <option value={s.id}>{s.name}</option>
-          {/each}
-        </select>
-        {#if isClosed}
-          <Badge variant="outline" class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
-            Saison clôturée (Lecture seule)
-          </Badge>
+        {#if !isClosed}
+          <Button 
+            onclick={openCreateModal}
+            class="inline-flex items-center gap-2"
+          >
+            <Plus class="w-4 h-4" /> Créer une facture
+          </Button>
         {/if}
       </div>
 
@@ -597,19 +566,19 @@
 </div>
 
 <!-- Modal Create / Edit -->
-<Dialog.Root bind:open={showModal}>
-  <Dialog.Content class="max-w-4xl p-0 bg-card border-border overflow-hidden">
-    <Dialog.Header class="p-6 border-b border-border">
-      <Dialog.Title class="flex items-center gap-2">
+<Sheet.Root bind:open={showModal}>
+  <Sheet.Content class="w-full sm:max-w-2xl flex flex-col h-full bg-card border-border overflow-hidden">
+    <Sheet.Header class="p-6 border-b border-border">
+      <Sheet.Title class="flex items-center gap-2">
         <FileText class="w-5 h-5 text-primary" />
         {editingId ? 'Modifier la facture' : 'Créer une facture'}
-      </Dialog.Title>
-      <Dialog.Description class="hidden">Création ou modification des factures NBA 91.</Dialog.Description>
-    </Dialog.Header>
+      </Sheet.Title>
+      <Sheet.Description class="hidden">Création ou modification des factures NBA 91.</Sheet.Description>
+    </Sheet.Header>
 
     <!-- Scrollable content -->
     <form onsubmit={handleSubmit} class="flex flex-col flex-1 overflow-hidden">
-      <div class="p-6 overflow-y-auto space-y-6 flex-1 max-h-[60vh]">
+      <div class="p-6 overflow-y-auto space-y-6 flex-1">
         <!-- Client Information -->
         <div class="space-y-4">
           <h4 class="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-1">Informations Client</h4>
@@ -790,7 +759,7 @@
       </div>
 
       <!-- Footer -->
-      <Dialog.Footer class="border-t border-border px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 bg-muted/20">
+      <Sheet.Footer class="p-6 border-t border-border bg-muted/20 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
         <div class="text-sm text-foreground flex items-center gap-2">
           <Info class="w-4 h-4 text-muted-foreground" />
           <span>Total calculé : <strong class="text-base text-primary">{(itemsTotal / 100).toFixed(2)} €</strong></span>
@@ -814,7 +783,7 @@
             {/if}
           </Button>
         </div>
-      </Dialog.Footer>
+      </Sheet.Footer>
     </form>
-  </Dialog.Content>
-</Dialog.Root>
+  </Sheet.Content>
+</Sheet.Root>
