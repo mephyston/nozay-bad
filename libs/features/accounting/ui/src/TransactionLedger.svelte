@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Search, Plus, Trash2, ArrowLeftRight, Check, AlertCircle, ChevronLeft, ChevronRight, MoreVertical, Edit2 } from 'lucide-svelte';
-  import { Button, Table, Input, Badge, Card, Dialog, Popover, Label, Tabs } from '@metacult/shared-ui';
+  import { Button, Table, Input, Badge, Card, Sheet, Popover, Label, Tabs } from '@metacult/shared-ui';
 
   interface Transaction {
     id: number;
@@ -616,18 +616,18 @@
   </div>
 
   <!-- Modale de saisie coulissante -->
-  <Dialog.Root bind:open>
-    <Dialog.Content class="max-w-md p-6 bg-card border-border overflow-y-auto max-h-[90vh]">
-      <Dialog.Header>
-        <Dialog.Title>
+  <Sheet.Root bind:open>
+    <Sheet.Content class="sm:max-w-md p-6 bg-card border-border overflow-y-auto h-full">
+      <Sheet.Header>
+        <Sheet.Title>
           {#if editingId}
             {#if showPanel === 'recette'}🟢 Modifier la recette{:else if showPanel === 'depense'}🔴 Modifier la dépense{:else}🔵 Modifier le virement interne{/if}
           {:else}
             {#if showPanel === 'recette'}🟢 Saisir une recette{:else if showPanel === 'depense'}🔴 Saisir une dépense{:else}🔵 Faire un virement interne{/if}
           {/if}
-        </Dialog.Title>
-        <Dialog.Description class="hidden">Formulaire de saisie d'écriture comptable</Dialog.Description>
-      </Dialog.Header>
+        </Sheet.Title>
+        <Sheet.Description class="hidden">Formulaire de saisie d'écriture comptable</Sheet.Description>
+      </Sheet.Header>
 
       <form onsubmit={handleAddTransaction} class="space-y-4">
         {#if errorMsg}
@@ -737,6 +737,6 @@
           </Button>
         </div>
       </form>
-    </Dialog.Content>
-  </Dialog.Root>
+    </Sheet.Content>
+  </Sheet.Root>
 </div>
