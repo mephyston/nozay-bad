@@ -20,8 +20,8 @@ import { AppError } from '@metacult/shared-db';
 
 const app = new Hono<{ Bindings: { DB: any; AI: any } }>();
 app.onError((err, c) => {
-  if (err instanceof AppError) {
-    return c.json({ success: false, error: err.message }, err.status);
+  if (err instanceof AppError || (err && (err as any).name === 'AppError')) {
+    return c.json({ success: false, error: err.message }, (err as any).status || 400);
   }
   return c.json({ success: false, error: err.message }, 500);
 });

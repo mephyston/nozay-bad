@@ -13,8 +13,8 @@ type Bindings = {
 const app = new Hono<{ Bindings: Bindings }>();
 
 app.onError((err, c) => {
-  if (err instanceof AppError) {
-    return c.json({ success: false, error: err.message }, err.status);
+  if (err instanceof AppError || (err && (err as any).name === 'AppError')) {
+    return c.json({ success: false, error: err.message }, (err as any).status || 400);
   }
   console.error({ url: c.req.url, err: err?.message || String(err), stack: err?.stack });
   return c.json({ success: false, error: 'Erreur interne du serveur' }, 500);
