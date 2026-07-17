@@ -297,4 +297,118 @@ describe('ShopCatalog Component', () => {
     const input = target.querySelector('input#member-input[data-slot="input"]');
     expect(input).not.toBeNull();
   });
+
+  it('performs dynamic autocomplete search via API when members prop is empty', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    // Mock fetch specifically for the API endpoint
+    const searchMembers = [
+      { id: 3, firstName: 'Pierre', lastName: 'Dubois', licence: '789012' }
+    ];
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/members-search')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(searchMembers)
+        } as any);
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ success: true, data: { id: 100 } })
+      } as any);
+    });
+
+    mount(ShopCatalog, {
+      target,
+      props: {
+        members: [],
+        products,
+        activeSeasonId: '25-26'
+      }
+    });
+    flushSync();
+
+    const input = target.querySelector('input#member-input') as HTMLInputElement;
+    expect(input).not.toBeNull();
+
+    // Focus input
+    input.focus();
+    flushSync();
+
+    // Type a query
+    input.value = 'Dubois';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    flushSync();
+
+    // Fast-forward timers for debounce (300ms)
+    await vi.advanceTimersByTimeAsync(300);
+    flushSync();
+
+    // Check that fetch was called with the query
+    expect(global.fetch).toHaveBeenCalledWith('/api/members-search?q=Dubois');
+
+    // Check if dropdown contains the fetched member
+    expect(target.innerHTML).toContain('Dubois Pierre');
+    expect(target.innerHTML).toContain('Licence: 789012');
+
+    // Select the member
+    const button = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Dubois Pierre'));
+    expect(button).not.toBeUndefined();
+    button!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    flushSync();
+
+    // Check that select worked
+    expect(target.innerHTML).toContain('Adhérent sélectionné : <span class="underline">Dubois Pierre</span>');
+  });
+
+  it('clears fetched members when search query is empty', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    const searchMembers = [
+      { id: 3, firstName: 'Pierre', lastName: 'Dubois', licence: '789012' }
+    ];
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/members-search')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(searchMembers)
+        } as any);
+      }
+      return Promise.resolve({} as any);
+    });
+
+    mount(ShopCatalog, {
+      target,
+      props: {
+        members: [],
+        products,
+        activeSeasonId: '25-26'
+      }
+    });
+    flushSync();
+
+    const input = target.querySelector('input#member-input') as HTMLInputElement;
+    input.focus();
+    flushSync();
+
+    input.value = 'Dubois';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    flushSync();
+
+    await vi.advanceTimersByTimeAsync(300);
+    flushSync();
+
+    expect(target.innerHTML).toContain('Dubois Pierre');
+
+    // Clear input
+    input.value = '';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    flushSync();
+
+    // Check that dropdown list is empty (shows "Aucun adhérent trouvé")
+    expect(target.innerHTML).toContain('Aucun adhérent trouvé');
+  });
 });
+

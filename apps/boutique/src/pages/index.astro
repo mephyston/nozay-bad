@@ -89,15 +89,6 @@ try {
     errorMsg = 'Impossible de charger les produits de la boutique.';
   }
 
-  // Fetch members
-  const membersRes = await apiService.fetch('http://localhost/members?limit=1000');
-  if (membersRes.ok) {
-    const json = await membersRes.json() as any;
-    members = json.data || [];
-  } else {
-    errorMsg = 'Impossible de charger les adhérents.';
-  }
-
   // Fetch seasons
   const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {

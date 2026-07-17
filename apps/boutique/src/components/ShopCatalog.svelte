@@ -53,6 +53,9 @@
   let memberSearchQuery = $state<string>('');
   let isMemberDropdownOpen = $state<boolean>(false);
   let highlightedIndex = $state<number>(-1);
+  let lastSelectedMember = $state<Member | null>(null);
+  let fetchedMembers = $state<Member[]>([]);
+  let debounceTimeout: any;
 
   // Reset highlightedIndex when dropdown closes
   $effect(() => {
@@ -68,8 +71,44 @@
     }
   });
 
+  // Debounced member search from API
+  $effect(() => {
+    if (members.length > 0) return;
+
+    const query = memberSearchQuery;
+    if (query.trim() === '') {
+      fetchedMembers = [];
+      return;
+    }
+
+    if (debounceTimeout) {
+      clearTimeout(debounceTimeout);
+    }
+
+    debounceTimeout = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/members-search?q=${encodeURIComponent(query)}`);
+        if (response.ok) {
+          const data = await response.json() as Member[];
+          if (memberSearchQuery === query) {
+            fetchedMembers = data;
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching members from API:', err);
+      }
+    }, 300);
+
+    return () => {
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
+    };
+  });
+
   function selectMember(m: Member) {
     selectedMemberId = m.id.toString();
+    lastSelectedMember = m;
     memberSearchQuery = `${m.lastName} ${m.firstName}`;
     isMemberDropdownOpen = false;
     highlightedIndex = -1;
@@ -86,13 +125,17 @@
     }
 
     if (e.key === 'ArrowDown') {
-      highlightedIndex = (highlightedIndex + 1) % filteredMembers.length;
+      if (filteredMembers.length > 0) {
+        highlightedIndex = (highlightedIndex + 1) % filteredMembers.length;
+        scrollOptionIntoView(highlightedIndex);
+      }
       e.preventDefault();
-      scrollOptionIntoView(highlightedIndex);
     } else if (e.key === 'ArrowUp') {
-      highlightedIndex = (highlightedIndex - 1 + filteredMembers.length) % filteredMembers.length;
+      if (filteredMembers.length > 0) {
+        highlightedIndex = (highlightedIndex - 1 + filteredMembers.length) % filteredMembers.length;
+        scrollOptionIntoView(highlightedIndex);
+      }
       e.preventDefault();
-      scrollOptionIntoView(highlightedIndex);
     } else if (e.key === 'Enter') {
       if (highlightedIndex >= 0 && highlightedIndex < filteredMembers.length) {
         selectMember(filteredMembers[highlightedIndex]);
@@ -142,7 +185,9 @@
   let sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
   
   let selectedMember = $derived(
-    members.find(m => m.id.toString() === selectedMemberId) || null
+    members.length > 0
+      ? (members.find(m => m.id.toString() === selectedMemberId) || null)
+      : lastSelectedMember
   );
 
   let memberDisplayVal = $derived(
@@ -150,11 +195,14 @@
   );
 
   let filteredMembers = $derived(
-    memberSearchQuery.trim() === ''
-      ? sortedMembers
-      : sortedMembers.filter(m =>
-          `${m.lastName} ${m.firstName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase())
+    members.length > 0
+      ? (memberSearchQuery.trim() === ''
+          ? sortedMembers
+          : sortedMembers.filter(m =>
+              `${m.lastName} ${m.firstName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase())
+            )
         )
+      : fetchedMembers
   );
 
   async function handleOrder(productId: number) {
