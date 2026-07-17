@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Search, Plus, Trash2, ArrowLeftRight, Check, AlertCircle, ChevronLeft, ChevronRight, MoreVertical, Edit2 } from 'lucide-svelte';
-  import { Button, Table, Input, Badge, Card, Dialog, Popover, Label } from '@metacult/shared-ui';
+  import { Button, Table, Input, Badge, Card, Dialog, Popover, Label, Tabs } from '@metacult/shared-ui';
 
   interface Transaction {
     id: number;
@@ -61,7 +61,8 @@
     seasons = [],
     categories = [],
     accountClasses = [],
-    unreconciledChequesOnly = false
+    unreconciledChequesOnly = false,
+    accountId = ''
   }: {
     transactions: Transaction[];
     pagination: Pagination;
@@ -71,6 +72,7 @@
     categories?: Category[];
     accountClasses?: AccountClass[];
     unreconciledChequesOnly?: boolean;
+    accountId?: string;
   } = $props();
 
   import { onMount } from 'svelte';
@@ -117,6 +119,22 @@
 
   let pageRange = $derived(getPageRange(pagination.page, pagination.totalPages));
 
+  // svelte-ignore state_referenced_locally
+  let selectedAccount = $state(accountId || 'all');
+
+  $effect(() => {
+    if (selectedAccount !== (accountId || 'all')) {
+      const params = new URLSearchParams(window.location.search);
+      if (selectedAccount === 'all') {
+        params.delete('accountId');
+      } else {
+        params.set('accountId', selectedAccount);
+      }
+      params.set('page', '1');
+      window.location.href = `/admin/accounting?${params.toString()}`;
+    }
+  });
+
   let filteredCategory = $state<string | null>(null);
   let filteredClassCode = $state<string | null>(null);
 
@@ -148,7 +166,7 @@
   let amount = $state('');
   let date = $state(new Date().toISOString().split('T')[0]);
   let category = $state('1');
-  let accountId = $state<'current' | 'savings' | 'cash'>('current');
+  let formAccountId = $state<'current' | 'savings' | 'cash'>('current');
   let destinationAccountId = $state<'current' | 'savings' | 'cash'>('cash');
   let paymentMethod = $state('virement');
   let description = $state('');
@@ -171,7 +189,7 @@
     amount = (tx.amount / 100).toFixed(2);
     date = tx.date;
     category = tx.category || '1';
-    accountId = tx.accountId;
+    formAccountId = tx.accountId;
     destinationAccountId = tx.destinationAccountId || 'cash';
     paymentMethod = tx.paymentMethod;
     description = tx.description;
@@ -246,7 +264,7 @@
             updates: {
               seasonId: targetSeasonId,
               type: showPanel,
-              accountId,
+              accountId: formAccountId,
               destinationAccountId: showPanel === 'transfert' ? destinationAccountId : null,
               category: showPanel !== 'transfert' ? category : null,
               amount: Math.round(floatAmount * 100),
@@ -260,7 +278,7 @@
             action: 'create',
             seasonId: targetSeasonId,
             type: showPanel,
-            accountId,
+            accountId: formAccountId,
             destinationAccountId: showPanel === 'transfert' ? destinationAccountId : null,
             category: showPanel !== 'transfert' ? category : null,
             amount: Math.round(floatAmount * 100), // conversion en centimes
@@ -426,6 +444,15 @@
   </div>
 
   <!-- Tableau -->
+  <Tabs.Root bind:value={selectedAccount} class="w-full no-print">
+    <Tabs.List class="grid w-full grid-cols-4 max-w-xl">
+      <Tabs.Trigger value="all">Tous les comptes</Tabs.Trigger>
+      <Tabs.Trigger value="current">Compte Courant</Tabs.Trigger>
+      <Tabs.Trigger value="savings">Compte Livret</Tabs.Trigger>
+      <Tabs.Trigger value="cash">Caisse Physique</Tabs.Trigger>
+    </Tabs.List>
+  </Tabs.Root>
+
   <div class="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
     <div class="overflow-x-auto min-h-[180px]">
       <Table.Root class="w-full border-collapse text-left text-sm">
@@ -648,7 +675,7 @@
             </div>
             <div>
               <Label for="account-select" class="mb-1 block">Compte financier</Label>
-              <select id="account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={accountId}>
+              <select id="account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={formAccountId}>
                 {#each Object.entries(accountLabels) as [key, label]}
                   <option value={key}>{label}</option>
                 {/each}
@@ -659,7 +686,7 @@
           <div class="grid grid-cols-2 gap-4">
             <div>
               <Label for="account-select" class="mb-1 block">Compte Source</Label>
-              <select id="account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={accountId}>
+              <select id="account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={formAccountId}>
                 {#each Object.entries(accountLabels) as [key, label]}
                   <option value={key}>{label}</option>
                 {/each}
@@ -669,7 +696,7 @@
               <Label for="dest-account-select" class="mb-1 block">Compte Destinataire</Label>
               <select id="dest-account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={destinationAccountId}>
                 {#each Object.entries(accountLabels) as [key, label]}
-                  {#if key !== accountId}
+                  {#if key !== formAccountId}
                     <option value={key}>{label}</option>
                   {/if}
                 {/each}

@@ -146,4 +146,31 @@ describe('TransactionLedger Component', () => {
     unmount(component);
     document.body.removeChild(target);
   });
+
+  it('renders account filtering tabs and indicates active tab', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    const component = mount(TransactionLedger, {
+      target,
+      props: {
+        transactions: [],
+        pagination: { total: 0, page: 1, limit: 20, totalPages: 1 },
+        seasonId: '25-26',
+        balances: [],
+        accountId: 'current'
+      }
+    });
+
+    expect(target.innerHTML).toContain('Tous les comptes');
+    expect(target.innerHTML).toContain('Compte Courant');
+    
+    // Vérifier que l'onglet Compte Courant est actif
+    const activeTab = target.querySelector('[data-state="active"]');
+    expect(activeTab).not.toBeNull();
+    expect(activeTab?.textContent?.trim()).toBe('Compte Courant');
+
+    unmount(component);
+    document.body.removeChild(target);
+  });
 });

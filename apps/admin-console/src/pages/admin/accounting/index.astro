@@ -12,6 +12,7 @@ const page = Astro.url.searchParams.get('page') || '1';
 const category = Astro.url.searchParams.get('category') || '';
 const classCode = Astro.url.searchParams.get('classCode') || '';
 const unreconciledChequesOnly = Astro.url.searchParams.get('unreconciledCheques') === 'true';
+const accountId = Astro.url.searchParams.get('accountId') || '';
 
 // Si requête POST, intercepter pour les actions d'écriture (proxying vers Hono)
 if (Astro.request.method === 'POST') {
@@ -62,6 +63,7 @@ try {
   if (category) queryParams.set('category', category);
   if (classCode) queryParams.set('classCode', classCode);
   if (unreconciledChequesOnly) queryParams.set('unreconciledCheques', 'true');
+  if (accountId) queryParams.set('accountId', accountId);
 
   const txRes = await apiService.fetch(`http://localhost/accounting/transactions?${queryParams.toString()}`);
   if (txRes.ok) {
@@ -126,6 +128,7 @@ try {
         categories={categoriesList}
         accountClasses={accountClassesList}
         unreconciledChequesOnly={unreconciledChequesOnly}
+        accountId={accountId}
       />
     </div>
   </AdminLayout>
