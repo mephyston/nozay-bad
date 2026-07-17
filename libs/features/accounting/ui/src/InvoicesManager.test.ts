@@ -30,6 +30,7 @@ describe('InvoicesManager Component', () => {
 
   let originalFetch: typeof global.fetch;
   let component: any;
+  let targets: HTMLDivElement[] = [];
 
   beforeEach(() => {
     originalFetch = global.fetch;
@@ -45,13 +46,21 @@ describe('InvoicesManager Component', () => {
     global.fetch = originalFetch;
     if (component) {
       unmount(component);
+      component = undefined;
     }
+    targets.forEach(t => {
+      if (t.parentNode) {
+        t.parentNode.removeChild(t);
+      }
+    });
+    targets = [];
     vi.restoreAllMocks();
   });
 
   it('renders invoices list correctly', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
+    targets.push(target);
 
     component = mount(InvoicesManager, {
       target,
@@ -73,6 +82,7 @@ describe('InvoicesManager Component', () => {
   it('opens the create invoice modal when the button is clicked', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
+    targets.push(target);
 
     component = mount(InvoicesManager, {
       target,
