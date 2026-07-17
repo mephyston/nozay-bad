@@ -84,7 +84,7 @@
 ## Phase 18: Standardisation des En-têtes Astro et des Sélecteurs de Saisons (2026-07-17)
 - Task 1: complete (commits c1b74d2..3aa552b, review clean)
 - Task 2: complete (commits 01eee76..4f98363, review clean)
-- Task 3: pending
+- Task 3: complete (commits a45c7a4..d43a303, review clean)
 - Task 4: pending
 - Task 5: pending
 - Task 6: pending
