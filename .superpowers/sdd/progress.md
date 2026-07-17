@@ -58,5 +58,5 @@
 - Task 2: complete (commits e018cd5..775ed48, review clean)
 
 ## Phase 13: Rapports Financiers - Polices & Nettoyage (2026-07-17)
-- Task 1: pending
+- Task 1: complete (commits d2ae96f..34c9fd4, review clean)
 - Task 2: pending
