@@ -122,6 +122,10 @@ shopRouter.post('/orders', async (c) => {
   const body = await c.req.json();
   const db = drizzle(c.env.DB);
 
+  if (await isSeasonClosed(db, body.seasonId)) {
+    return c.json({ success: false, error: 'La saison est clôturée' }, 400);
+  }
+
   const product = await db.select().from(productsTable).where(eq(productsTable.id, body.productId)).get();
   if (!product) {
     return c.json({ success: false, error: 'Produit inexistant' }, 400);
@@ -247,6 +251,9 @@ shopRouter.post('/orders/:id/reject', async (c) => {
     }
     if (order.status !== 'pending') {
       throw new Error('Commande invalide ou déjà traitée');
+    }
+    if (await isSeasonClosed(db, order.seasonId)) {
+      throw new Error('La saison est clôturée');
     }
 
     updatedOrder = await db.update(ordersTable)
