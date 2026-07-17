@@ -225,18 +225,6 @@
 </script>
 
 <div class="space-y-6">
-  <!-- Top Panel -->
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-6 rounded-xl border border-border shadow-sm">
-    <div>
-      <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent flex items-center gap-2">
-        <ShoppingBag class="h-6 w-6 text-primary" />
-        Validation des Commandes
-      </h1>
-      <p class="text-sm text-muted-foreground mt-1">
-        Validez ou refusez les demandes d'achats boutique des adhérents et consultez l'historique.
-      </p>
-    </div>
-  </div>
 
   {#if errorMsg}
     <div class="p-4 bg-destructive/15 border border-destructive/30 text-destructive text-sm rounded-lg flex items-center gap-2">

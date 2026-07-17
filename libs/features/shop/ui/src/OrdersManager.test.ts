@@ -68,7 +68,7 @@ describe('OrdersManager Component', () => {
     {
       order: {
         id: 3,
-        seasonId: '24-25',
+        seasonId: '25-26',
         memberId: 12,
         productId: 101,
         quantity: 3,
