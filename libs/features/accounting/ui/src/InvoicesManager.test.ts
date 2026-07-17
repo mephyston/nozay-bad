@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mount, flushSync } from 'svelte';
+import { mount, flushSync, unmount } from 'svelte';
 import InvoicesManager from './InvoicesManager.svelte';
 
 describe('InvoicesManager Component', () => {
@@ -29,6 +29,7 @@ describe('InvoicesManager Component', () => {
   ];
 
   let originalFetch: typeof global.fetch;
+  let component: any;
 
   beforeEach(() => {
     originalFetch = global.fetch;
@@ -42,6 +43,9 @@ describe('InvoicesManager Component', () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
+    if (component) {
+      unmount(component);
+    }
     vi.restoreAllMocks();
   });
 
@@ -49,7 +53,7 @@ describe('InvoicesManager Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(InvoicesManager, {
+    component = mount(InvoicesManager, {
       target,
       props: {
         invoices,
@@ -70,7 +74,7 @@ describe('InvoicesManager Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(InvoicesManager, {
+    component = mount(InvoicesManager, {
       target,
       props: {
         invoices,
