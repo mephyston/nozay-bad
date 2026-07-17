@@ -127,11 +127,19 @@ try {
 } catch (err: any) {
   errorMsg = 'Erreur lors de la récupération des données de remise de chèques.';
 }
+
+const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
 ---
 
 <Layout title="Remises de Chèques - NBA 91">
   <AdminLayout client:load email={userEmail} breadcrumb="Comptabilité / Remises de chèques">
     <div class="space-y-6">
+      {errorMsg && (
+        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
+          {errorMsg}
+        </div>
+      )}
+
       <div class="flex items-center justify-between print:hidden">
         <div>
           <h1 class="text-3xl font-bold tracking-tight">Remise de chèques</h1>
@@ -140,6 +148,11 @@ try {
           </p>
         </div>
         <div class="flex items-center gap-3">
+          {isClosed && (
+            <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
+              Saison clôturée (Lecture seule)
+            </span>
+          )}
           <select
             id="season-selector"
             class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9"
@@ -154,11 +167,7 @@ try {
         </div>
       </div>
 
-      {errorMsg && (
-        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
-          {errorMsg}
-        </div>
-      )}
+
 
       <CheckDepositManager
         client:load
