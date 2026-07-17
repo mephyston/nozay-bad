@@ -45,5 +45,5 @@
 - Task 3: complete (commits a84fd08..73a5703, review clean)
 
 ## Phase 10: Uniformisation Boutons Import (2026-07-17)
-- Task 1: pending
+- Task 1: complete (commits c462917..28c593a, review clean)
 - Task 2: pending
