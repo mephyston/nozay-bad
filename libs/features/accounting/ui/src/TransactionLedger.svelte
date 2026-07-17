@@ -505,7 +505,7 @@
                         </Button>
                       {/snippet}
                     </Popover.Trigger>
-                    <Popover.Content class="w-32 p-1 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border" align="end">
+                    <Popover.Content class="w-32 p-1 bg-popover border border-border rounded-lg shadow-lg z-50 text-left divide-y divide-border" align="end">
                       <Button
                         variant="ghost"
                         onclick={(e) => startEdit(tx, e)}

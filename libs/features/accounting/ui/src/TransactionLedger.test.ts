@@ -7,7 +7,7 @@ describe('TransactionLedger Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(TransactionLedger, {
+    const component = mount(TransactionLedger, {
       target,
       props: {
         transactions: [
@@ -48,13 +48,16 @@ describe('TransactionLedger Component', () => {
     expect(target.innerHTML).toContain('Cotisation Martin');
     expect(target.innerHTML).toContain('+45.00 €');
     expect(target.innerHTML).toContain('VIR-9988');
+
+    unmount(component);
+    document.body.removeChild(target);
   });
 
   it('renders outstanding checks toggle and intermediate pages in pagination', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(TransactionLedger, {
+    const component = mount(TransactionLedger, {
       target,
       props: {
         transactions: [],
@@ -87,6 +90,9 @@ describe('TransactionLedger Component', () => {
     const activeBtn = target.querySelector('[aria-current="page"]');
     expect(activeBtn).not.toBeNull();
     expect(activeBtn?.textContent?.trim()).toBe('5');
+
+    unmount(component);
+    document.body.removeChild(target);
   });
 
   it('should render actions trigger and open edit/delete buttons inside Popover', async () => {
