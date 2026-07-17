@@ -17,8 +17,6 @@
     seasonId: string;
   }>();
 
-  // svelte-ignore state_referenced_locally
-  let selectedSeasonId = $state(seasonId);
   let currentInitial = $state('0.00');
   let savingsInitial = $state('0.00');
   let cashInitial = $state('0.00');
@@ -27,13 +25,13 @@
   let successMsg = $state('');
   let errorMsg = $state('');
 
-  const currentSeason = $derived(seasons.find((s: Season) => s.id === selectedSeasonId));
+  const currentSeason = $derived(seasons.find((s: Season) => s.id === seasonId));
   const isClosed = $derived(currentSeason?.closed || false);
   const isAutoFilled = $derived(currentSeason?.isAutoFilled || false);
 
-  // Update initial inputs when selected season changes
+  // Update initial inputs when seasonId changes
   $effect(() => {
-    const season = seasons.find((s: Season) => s.id === selectedSeasonId);
+    const season = seasons.find((s: Season) => s.id === seasonId);
     if (season) {
       currentInitial = season.initialCurrentBalance !== undefined ? (season.initialCurrentBalance / 100).toFixed(2) : '0.00';
       savingsInitial = season.initialSavingsBalance !== undefined ? (season.initialSavingsBalance / 100).toFixed(2) : '0.00';
@@ -52,7 +50,7 @@
     successMsg = '';
 
     const payload = {
-      seasonId: selectedSeasonId,
+      seasonId,
       balances: {
         current: Math.round(parseFloat(currentInitial) * 100),
         savings: Math.round(parseFloat(savingsInitial) * 100),
@@ -123,22 +121,6 @@
     {/if}
 
     <form onsubmit={handleSaveBalances} class="space-y-4">
-      <div>
-        <label for="season-select-config" class="block text-xs font-semibold mb-1 uppercase tracking-wider text-muted-foreground">Saison à configurer</label>
-        <select 
-          id="season-select-config" 
-          class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium" 
-          bind:value={selectedSeasonId}
-        >
-          {#each seasons as s}
-            <option value={s.id}>{s.name}</option>
-          {/each}
-          {#if seasons.length === 0}
-            <option value="25-26">Saison 2025-2026</option>
-          {/if}
-        </select>
-      </div>
-
       <div class="grid grid-cols-3 gap-4">
         <div class="space-y-1">
           <label for="current-initial" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Compte Courant</label>
