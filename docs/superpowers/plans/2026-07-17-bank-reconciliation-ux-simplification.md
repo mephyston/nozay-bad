@@ -47,14 +47,15 @@ git commit -m "test(accounting): delete obsolete smart filter unit test from ban
 
 ---
 
-### Task 2: Nettoyage de la logique et du markup de filtrage intelligent
+### Task 2: Nettoyage de la logique, du markup et de l'en-tête de page Astro
 
 **Files:**
 * Modify: `libs/features/accounting/ui/src/BankStatementReconciliation.svelte`
+* Modify: `apps/admin-console/src/pages/admin/accounting/import.astro`
 
 **Interfaces:**
-* Consumes: Primitives Svelte de filtrage.
-* Produces: Une interface épurée sans barre d'onglets de filtrage secondaire.
+* Consumes: Primitives Svelte de filtrage et en-tête layout Astro.
+* Produces: Une interface épurée sans barre d'onglets de filtrage secondaire et un titre de page uniformisé.
 
 - [ ] **Step 1: Clean up smart filter state and helper functions**
 
@@ -84,14 +85,29 @@ Ouvrir [BankStatementReconciliation.svelte](file:///Users/david/Lab/nozay-bad/li
    {/if}
    ```
 
-- [ ] **Step 3: Run verification checks**
+- [ ] **Step 3: Uniformise page title in import.astro**
+
+Ouvrir [import.astro](file:///Users/david/Lab/nozay-bad/apps/admin-console/src/pages/admin/accounting/import.astro) :
+1. Ajouter l'en-tête de titre uniformisé juste après l'ouverture de `<AdminLayout>` :
+   ```html
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold tracking-tight">Rapprochement bancaire</h1>
+          <p class="text-muted-foreground mt-2">
+            Rapprochez les relevés bancaires importés avec les écritures du grand livre et validez les factures.
+          </p>
+        </div>
+      </div>
+   ```
+
+- [ ] **Step 4: Run verification checks**
 
 * Run Vitest tests: `npx vitest run libs/features/accounting/ui/src/BankStatementReconciliation.test.ts`
 * Run Astro check: `npx astro check --root apps/admin-console`
 
-- [ ] **Step 4: Commit changes**
+- [ ] **Step 5: Commit changes**
 
 ```bash
-git add libs/features/accounting/ui/src/BankStatementReconciliation.svelte
-git commit -m "feat(accounting): remove obsolete smart filter logic and markup from bank statement reconciliation"
+git add libs/features/accounting/ui/src/BankStatementReconciliation.svelte apps/admin-console/src/pages/admin/accounting/import.astro
+git commit -m "feat(accounting): remove obsolete smart filter and uniformise bank reconciliation page title"
 ```
