@@ -394,29 +394,6 @@
 </script>
 
 <div class="space-y-6">
-  <div class="flex justify-end items-center gap-3 no-print">
-    <select
-      class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-      bind:value={selectedSeason}
-      onchange={applySeasonChange}
-    >
-      {#each seasons as season}
-        <option value={season.id}>{season.name}</option>
-      {/each}
-      {#if seasons.length === 0}
-        <option value="25-26">Saison 2025-2026</option>
-      {/if}
-    </select>
-
-    <Button
-      onclick={() => window.print()}
-      class="px-3 py-1.5 text-xs shadow-sm cursor-pointer flex items-center gap-1.5"
-    >
-      <Printer class="w-4 h-4" />
-      Imprimer
-    </Button>
-  </div>
-
   <Tabs.Root bind:value={activeTab} class="space-y-6">
     <Tabs.List class="no-print">
       <Tabs.Trigger value="resultat">Compte de résultat</Tabs.Trigger>
