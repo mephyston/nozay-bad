@@ -1,23 +1,30 @@
-# Rapport de Task 1 : Refactoring du Menu de Navigation
+# Task 1 Report: Création d'AppError et Configuration du Middleware Global Hono
 
-## Implémentation
-- **Importation de l'icône Settings** : Ajout de l'icône `Settings` depuis `lucide-svelte` dans `AdminLayoutInner.svelte` et nettoyage des icônes inutilisées (`Calendar`, `Tags`, `Layers`).
-- **Mise à jour de navGroups** : Remplacement des trois sous-menus de réglages par un seul menu consolidé "Réglages" redirigeant vers `/admin/accounting/settings` avec l'icône `Settings` et un groupe anonyme (label vide).
-- **Simplification de isItemActive** : Remplacement de la vérification imbriquée par une vérification directe si la section principale (le fil d'Ariane) correspond à "réglages" ou "settings".
+## What was implemented
+- Created `libs/shared/db/src/errors.ts` defining the `AppError` class inheriting from `Error`, with custom message and HTTP status code properties (`status: 400 | 403 | 404 | 409 | 422 | 500 = 400`).
+- Exported `AppError` from `libs/shared/db/src/index.ts` to make it available to other packages/modules.
+- Configured a global `app.onError` middleware handler in `apps/api/src/index.ts` that:
+  - Catches instances of `AppError` and returns them as a JSON response with their associated status code and message.
+  - Catches generic errors, logs them to `console.error` (including URL, message, and stack trace), and returns a 500 JSON response.
 
-## Tests et Résultats
-- **Nouveau Cas de Test** : Ajout de la validation dans `AdminLayout.test.ts` pour s'assurer que :
-  - L'onglet "Réglages" consolidé est bien rendu.
-  - Les anciens sous-menus ("Saisons", "Catégories", "Classes de comptes") ne sont plus affichés dans les liens de navigation.
-  - L'onglet "Réglages" reçoit bien l'état actif (`data-active="true"`) quand le fil d'Ariane correspond à des réglages (testé avec "Réglages / Saisons" et "settings").
-- **Exécution des Tests** : `npx vitest run apps/admin-console/src/components/AdminLayout.test.ts` -> **PASS** (3 tests réussis).
-- **Typecheck global** : `npx astro check --root apps/admin-console` -> **PASS** (0 erreurs, 0 avertissements).
+## What was tested and test results
+- Added a `Global Error Handling` test suite in `apps/api/src/index.test.ts` to verify:
+  - Route throwing `AppError` returns the customized status code (400) and message as JSON.
+  - Route throwing a generic `Error` returns a 500 status code and the standardized error JSON response.
+- All tests were run using Vitest.
+  - **Results**: 150/150 tests passed successfully (including the 2 new test cases).
 
-## Fichiers modifiés
-- [apps/admin-console/src/components/AdminLayoutInner.svelte](file:///Users/david/Lab/nozay-bad/apps/admin-console/src/components/AdminLayoutInner.svelte)
-- [apps/admin-console/src/components/AdminLayout.test.ts](file:///Users/david/Lab/nozay-bad/apps/admin-console/src/components/AdminLayout.test.ts)
+## Files changed
+- [libs/shared/db/src/errors.ts](file:///Users/david/Lab/nozay-bad/libs/shared/db/src/errors.ts) *(New file)*
+- [libs/shared/db/src/index.ts](file:///Users/david/Lab/nozay-bad/libs/shared/db/src/index.ts)
+- [apps/api/src/index.ts](file:///Users/david/Lab/nozay-bad/apps/api/src/index.ts)
+- [apps/api/src/index.test.ts](file:///Users/david/Lab/nozay-bad/apps/api/src/index.test.ts)
 
-## Self-review
-- **Complétude** : Toutes les étapes de la description de tâche ont été suivies à la lettre.
-- **Qualité** : Nettoyage des imports inutilisés, code clair et concis.
-- **Discipline & Tests** : Ajout de tests robustes ciblant spécifiquement la régression possible et typecheck validé.
+## Self-review findings
+- **Completeness**: All requirements listed in Task 1 are implemented exactly.
+- **Quality**: The middleware logic is clean and integrates cleanly with the Hono routing system.
+- **Discipline**: TDD principles were followed: tests were written and verified to fail before the implementation code was written.
+- **Testing**: Regression tests verified all 150 tests are green.
+
+## Issues or concerns
+- None.

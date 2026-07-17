@@ -16,7 +16,7 @@ app.onError((err, c) => {
   if (err instanceof AppError) {
     return c.json({ success: false, error: err.message }, err.status);
   }
-  console.error({ url: c.req.url, err: err.message, stack: err.stack });
+  console.error({ url: c.req.url, err: err?.message || String(err), stack: err?.stack });
   return c.json({ success: false, error: 'Erreur interne du serveur' }, 500);
 });
 
