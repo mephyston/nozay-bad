@@ -34,9 +34,6 @@ describe('ProductsManager Component', () => {
       }
     });
 
-    // Check header
-    expect(target.innerHTML).toContain('Gestion des Volants');
-    
     // Check product names
     expect(target.innerHTML).toContain('Babolat Tour shuttlecock');
     expect(target.innerHTML).toContain('Yonex Mavis 300');
@@ -74,9 +71,6 @@ describe('ProductsManager Component', () => {
       }
     });
 
-    // Check header
-    expect(target.innerHTML).toContain('Gestion des Cordages');
-    
     // Check product details
     expect(target.innerHTML).toContain('Yonex BG65 String');
     expect(target.innerHTML).toContain('12.00 €');
@@ -113,9 +107,6 @@ describe('ProductsManager Component', () => {
       }
     });
 
-    // Check header
-    expect(target.innerHTML).toContain('Gestion des Produits');
-    
     // Check categories are displayed in table
     expect(target.innerHTML).toContain('Volants');
     expect(target.innerHTML).toContain('Cordages');

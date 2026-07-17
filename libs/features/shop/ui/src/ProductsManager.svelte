@@ -212,17 +212,6 @@
 </script>
 
 <div class="space-y-6">
-  <div class="flex items-center justify-between border-b border-border pb-4">
-    <div>
-      <h1 class="text-3xl font-bold tracking-tight">
-        {category === 'shuttlecock' ? 'Gestion des Volants' : category === 'string' ? 'Gestion des Cordages' : category === 'other' ? 'Gestion des Autres Produits' : 'Gestion des Produits'}
-      </h1>
-      <p class="text-muted-foreground mt-1">
-        Consultez et modifiez les tarifs, stocks et statuts de la boutique.
-      </p>
-    </div>
-  </div>
-
   <div class="grid gap-6 md:grid-cols-5">
     <!-- Formulaire (Col span 2) -->
     <Card.Root class="md:col-span-2 h-fit">
