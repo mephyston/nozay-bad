@@ -4,11 +4,31 @@ import { membersRouter } from './routes';
 import { setupMockDb } from '@metacult/shared-db/test-utils';
 import { membersTable, seasonsTable } from '@metacult/features-members-data-access';
 import { sql } from 'drizzle-orm';
+import { AppError } from '@metacult/shared-db';
 
 const app = new Hono<{ Bindings: { DB: any } }>();
+app.onError((err, c) => {
+  if (err instanceof AppError || (err && (err as any).name === 'AppError')) {
+    return c.json({ success: false, error: err.message }, (err as any).status || 400);
+  }
+  return c.json({ success: false, error: err.message }, 500);
+});
 app.route('/members', membersRouter);
 
 describe('POST /members/import', () => {
+  it('should reject file upload if Content-Length exceeds 5MB', async () => {
+    const req = new Request('http://localhost/members/import', {
+      method: 'POST',
+      headers: {
+        'Content-Length': (5 * 1024 * 1024 + 1).toString(),
+      },
+    });
+    const res = await app.request(req);
+    expect(res.status).toBe(413);
+    const body = await res.json() as any;
+    expect(body.success).toBe(false);
+    expect(body.error).toContain('limite autorisée de 5 Mo');
+  });
   it('should import members from valid CSV and handle inserts and updates', async () => {
     const { mockD1, db } = await setupMockDb();
 

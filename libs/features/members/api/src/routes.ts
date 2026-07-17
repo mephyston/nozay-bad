@@ -4,6 +4,7 @@ import { and, or, eq, like, inArray, desc, sql } from 'drizzle-orm';
 import { membersTable, seasonsTable } from '@metacult/features-members-data-access';
 import { Type } from '@sinclair/typebox';
 import { tbValidator } from '@hono/typebox-validator';
+import { AppError } from '@metacult/shared-db';
 
 export type Bindings = {
   DB: D1Database;
@@ -39,7 +40,13 @@ const importMembersSchema = Type.Object({
   file: Type.Any()
 });
 
-membersRouter.post('/import', tbValidator('form', importMembersSchema, (result, c) => {
+membersRouter.post('/import', async (c, next) => {
+  const contentLength = c.req.header('content-length');
+  if (contentLength && parseInt(contentLength, 10) > 5 * 1024 * 1024) {
+    throw new AppError('Payload Too Large: Le fichier dépasse la limite autorisée de 5 Mo', 413);
+  }
+  await next();
+}, tbValidator('form', importMembersSchema, (result, c) => {
   if (!result.success) {
     return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.path?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
   }

@@ -39,14 +39,8 @@
     { value: 'up_loisir', label: 'Up Loisir' }
   ];
 
-  // Local state for products list to enable reactive updates
-  // svelte-ignore state_referenced_locally
-  let productsList = $state<Product[]>(products.map(p => ({ ...p })));
-
-  // Sync state if products prop changes
-  $effect(() => {
-    productsList = products.map(p => ({ ...p }));
-  });
+  // Derived products list to ensure reactivity
+  let productsList = $derived(products);
 
   // Local state for member selection combobox
   let selectedMemberId = $state<string>('');

@@ -64,7 +64,7 @@ expensesRouter.post('/', tbValidator('json', createExpenseSchema, (result, c) =>
   const db = drizzle(c.env.DB);
 
   if (await isSeasonClosed(db, body.seasonId)) {
-    return c.json({ success: false, error: 'La saison est clôturée. Impossible de soumettre une note de frais.' }, 400);
+    throw new AppError('La saison est clôturée. Impossible de soumettre une note de frais.', 400);
   }
 
   const expense = await db.insert(expensesTable).values({
@@ -246,7 +246,9 @@ expensesRouter.put('/:id', tbValidator('json', updateExpenseSchema, (result, c) 
     category: body.category !== undefined ? (normalizeCategory(body.category) || 1) : undefined,
     amount: body.amount,
     seasonId: body.seasonId,
-    photoUrl: body.photoUrl !== undefined ? body.photoUrl : undefined
+    photoUrl: body.photoUrl !== undefined ? body.photoUrl : undefined,
+    emitterName: body.emitterName,
+    memberId: body.memberId !== undefined ? body.memberId : undefined
   }).where(eq(expensesTable.id, id)).returning().get();
   
   if (!updated) {

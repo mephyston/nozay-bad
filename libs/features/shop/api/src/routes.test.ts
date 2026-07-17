@@ -282,7 +282,7 @@ describe('Orders API Endpoints', () => {
     expect(createRes.status).toBe(400);
     const createJson = await createRes.json() as any;
     expect(createJson.success).toBe(false);
-    expect(createJson.error).toBe('La saison est clôturée');
+    expect(createJson.error).toBe('La saison est clôturée. Impossible de soumettre une commande.');
 
     // To test approval and rejection, insert a pending order directly bypassing endpoint
     await db.run(sql`

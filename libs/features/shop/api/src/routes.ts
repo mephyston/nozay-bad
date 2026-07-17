@@ -176,7 +176,7 @@ shopRouter.post('/orders', tbValidator('json', createOrderSchema, (result, c) =>
   const db = drizzle(c.env.DB);
 
   if (await isSeasonClosed(db, body.seasonId)) {
-    return c.json({ success: false, error: 'La saison est clôturée' }, 400);
+    throw new AppError('La saison est clôturée. Impossible de soumettre une commande.', 400);
   }
 
   const product = await db.select().from(productsTable).where(eq(productsTable.id, body.productId)).get();
