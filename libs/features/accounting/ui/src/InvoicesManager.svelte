@@ -567,7 +567,7 @@
 
 <!-- Modal Create / Edit -->
 <Sheet.Root bind:open={showModal}>
-  <Sheet.Content class="w-full sm:max-w-2xl flex flex-col h-full bg-card border-border overflow-hidden">
+  <Sheet.Content class="w-full data-[side=right]:sm:max-w-2xl flex flex-col h-full bg-card border-border overflow-hidden">
     <Sheet.Header class="p-6 border-b border-border">
       <Sheet.Title class="flex items-center gap-2">
         <FileText class="w-5 h-5 text-primary" />
@@ -576,7 +576,6 @@
       <Sheet.Description class="hidden">Création ou modification des factures NBA 91.</Sheet.Description>
     </Sheet.Header>
 
-    <!-- Scrollable content -->
     <form onsubmit={handleSubmit} class="flex flex-col flex-1 overflow-hidden">
       <div class="p-6 overflow-y-auto space-y-6 flex-1">
         <!-- Client Information -->
@@ -591,6 +590,7 @@
                 bind:value={clientName}
                 placeholder="Ex: Mairie de Nozay ou Nom d'entreprise"
                 required
+                disabled={isClosed}
               />
             </div>
             <div class="space-y-1.5">
@@ -602,6 +602,7 @@
                   bind:value={clientEmail}
                   placeholder="client@domaine.com"
                   class="pl-9"
+                  disabled={isClosed}
                 />
                 <Mail class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
               </div>
@@ -616,16 +617,76 @@
                 placeholder="Adresse complète..."
                 rows={2}
                 class="pl-9"
+                disabled={isClosed}
               />
               <MapPin class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
             </div>
           </div>
         </div>
 
-        <!-- Invoice Details -->
-        <div class="space-y-4">
-          <h4 class="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-1">Détails de la Facture</h4>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Details / Period -->
+        <div class="space-y-4 pt-4">
+          <h4 class="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-1">Objet & Période</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <label for="subject" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Objet de la facture *</label>
+              <Input
+                type="text"
+                id="subject"
+                bind:value={subject}
+                placeholder="Ex: Subvention 2026, Location..."
+                required
+                disabled={isClosed}
+              />
+            </div>
+            <div class="space-y-1.5">
+              <label for="period" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Période concernée</label>
+              <div class="relative">
+                <Input
+                  type="text"
+                  id="period"
+                  bind:value={period}
+                  placeholder="Ex: Année 2026, Septembre..."
+                  class="pl-9"
+                  disabled={isClosed}
+                />
+                <Calendar class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <label for="location" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Lieu</label>
+              <div class="relative">
+                <Input
+                  type="text"
+                  id="location"
+                  bind:value={location}
+                  placeholder="Ex: Nozay"
+                  class="pl-9"
+                  disabled={isClosed}
+                />
+                <MapPin class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              <label for="attendees" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Participants / Destinataires</label>
+              <div class="relative">
+                <Input
+                  type="text"
+                  id="attendees"
+                  bind:value={attendees}
+                  placeholder="Ex: Jeunes, Licenciés..."
+                  class="pl-9"
+                  disabled={isClosed}
+                />
+                <Users class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="space-y-1.5">
               <label for="date" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Date d'émission *</label>
               <Input
@@ -633,6 +694,7 @@
                 id="date"
                 bind:value={date}
                 required
+                disabled={isClosed}
               />
             </div>
             <div class="space-y-1.5">
@@ -642,146 +704,95 @@
                 id="dueDate"
                 bind:value={dueDate}
                 required
+                disabled={isClosed}
               />
-            </div>
-            <div class="space-y-1.5">
-              <label for="subject" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Objet / Titre</label>
-              <Input
-                type="text"
-                id="subject"
-                bind:value={subject}
-                placeholder="Ex: Subvention annuelle 2026"
-              />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="space-y-1.5">
-              <label for="location" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Lieu de l'activité</label>
-              <Input
-                type="text"
-                id="location"
-                bind:value={location}
-                placeholder="Ex: Halle des Sports"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <label for="period" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Période concernée</label>
-              <Input
-                type="text"
-                id="period"
-                bind:value={period}
-                placeholder="Ex: Juillet 2026"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <label for="attendees" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Bénéficiaires / Personnes</label>
-              <div class="relative">
-                <Input
-                  type="text"
-                  id="attendees"
-                  bind:value={attendees}
-                  placeholder="Ex: 15 Joueurs Jeunes"
-                  class="pl-9"
-                />
-                <Users class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-              </div>
             </div>
           </div>
         </div>
 
-        <!-- Line Items -->
-        <div class="space-y-4">
-          <div class="flex justify-between items-center border-b border-border pb-1">
-            <h4 class="text-sm font-bold text-primary uppercase tracking-wider">Prestations / Lignes de facturation</h4>
-            <Button
-              variant="ghost"
-              size="sm"
-              onclick={addItem}
-              class="px-2.5 py-1 text-xs bg-primary/10 text-primary font-bold hover:bg-primary/20 rounded transition-colors flex items-center gap-1 cursor-pointer border-0 animate-none"
-            >
-              <Plus class="w-3.5 h-3.5" /> Ajouter une ligne
-            </Button>
+        <!-- Billing Items -->
+        <div class="space-y-4 pt-4">
+          <div class="flex items-center justify-between border-b border-border pb-1">
+            <h4 class="text-sm font-bold text-primary uppercase tracking-wider">Lignes de facturation</h4>
+            {#if !isClosed}
+              <Button type="button" variant="outline" size="sm" onclick={addItem} class="h-8 gap-1">
+                <Plus class="w-4 h-4" /> Ajouter une ligne
+              </Button>
+            {/if}
           </div>
 
-          <div class="space-y-3">
-            {#each items as item, index}
-              <div class="grid grid-cols-12 gap-3 items-end bg-muted/10 p-3 rounded-lg border border-border/60">
-                <div class="col-span-12 sm:col-span-6 space-y-1">
-                  <label for="item-desc-{index}" class="block text-[10px] font-bold text-muted-foreground uppercase">Description *</label>
-                  <Input
-                    type="text"
-                    id="item-desc-{index}"
-                    bind:value={item.description}
-                    placeholder="Ex: Entraînements encadrés..."
-                    required
-                  />
+          {#if items.length === 0}
+            <Alert.Root variant="info" class="bg-muted/30">
+              <Info class="w-4 h-4" />
+              <Alert.Description>Aucune ligne de facturation. Veuillez en ajouter au moins une.</Alert.Description>
+            </Alert.Root>
+          {:else}
+            <div class="space-y-3">
+              {#each items as item, index}
+                <div class="flex items-start gap-3 bg-muted/20 p-3 rounded-lg border border-border/50">
+                  <div class="flex-1 space-y-1.5">
+                    <label for={`desc-${index}`} class="sr-only">Description</label>
+                    <Input
+                      type="text"
+                      id={`desc-${index}`}
+                      bind:value={item.description}
+                      placeholder="Description de la ligne..."
+                      required
+                      disabled={isClosed}
+                    />
+                  </div>
+                  <div class="w-20 space-y-1.5">
+                    <label for={`qty-${index}`} class="sr-only">Quantité</label>
+                    <Input
+                      type="number"
+                      id={`qty-${index}`}
+                      bind:value={item.quantity}
+                      min="1"
+                      required
+                      disabled={isClosed}
+                    />
+                  </div>
+                  <div class="w-32 space-y-1.5">
+                    <label for={`price-${index}`} class="sr-only">Prix unitaire (€)</label>
+                    <Input
+                      type="text"
+                      id={`price-${index}`}
+                      bind:value={item.unitPriceStr}
+                      placeholder="0.00"
+                      required
+                      disabled={isClosed}
+                    />
+                  </div>
+                  {#if !isClosed}
+                    <Button type="button" variant="ghost" size="icon" onclick={() => removeItem(index)} class="text-destructive hover:bg-destructive/10 shrink-0">
+                      <Trash2 class="w-4 h-4" />
+                    </Button>
+                  {/if}
                 </div>
-                <div class="col-span-4 sm:col-span-2 space-y-1">
-                  <label for="item-qty-{index}" class="block text-[10px] font-bold text-muted-foreground uppercase">Qté *</label>
-                  <Input
-                    type="number"
-                    id="item-qty-{index}"
-                    bind:value={item.quantity}
-                    min="1"
-                    class="text-center"
-                    required
-                  />
-                </div>
-                <div class="col-span-5 sm:col-span-3 space-y-1">
-                  <label for="item-price-{index}" class="block text-[10px] font-bold text-muted-foreground uppercase">Prix unitaire (€) *</label>
-                  <Input
-                    type="number"
-                    id="item-price-{index}"
-                    step="0.01"
-                    min="0"
-                    bind:value={item.unitPriceStr}
-                    placeholder="0.00"
-                    class="text-right"
-                    required
-                  />
-                </div>
-                <div class="col-span-3 sm:col-span-1 text-center pb-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onclick={() => removeItem(index)}
-                    class="p-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded cursor-pointer border-0 bg-transparent"
-                    title="Supprimer la ligne"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            {/each}
-          </div>
+              {/each}
+            </div>
+          {/if}
         </div>
       </div>
 
-      <!-- Footer -->
       <Sheet.Footer class="p-6 border-t border-border bg-muted/20 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
-        <div class="text-sm text-foreground flex items-center gap-2">
-          <Info class="w-4 h-4 text-muted-foreground" />
-          <span>Total calculé : <strong class="text-base text-primary">{(itemsTotal / 100).toFixed(2)} €</strong></span>
+        <div class="text-sm font-medium">
+          Total : <span class="text-lg font-bold text-primary">{(itemsTotal / 100).toFixed(2)} €</span>
         </div>
-
-        <div class="flex gap-3">
-          <Button
-            variant="outline"
-            onclick={() => showModal = false}
-          >
+        <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+          <Button type="button" variant="outline" onclick={() => { showModal = false; }} disabled={isSubmitting}>
             Annuler
           </Button>
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-          >
-            {#if isSubmitting}
-              Enregistrement...
-            {:else}
-              Enregistrer
-            {/if}
-          </Button>
+          {#if !isClosed}
+            <Button type="submit" disabled={isSubmitting || items.length === 0} class="gap-1.5 min-w-[120px]">
+              {#if isSubmitting}
+                <div class="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin"></div>
+                Enregistrement...
+              {:else}
+                <Check class="w-4 h-4" /> Enregistrer
+              {/if}
+            </Button>
+          {/if}
         </div>
       </Sheet.Footer>
     </form>
