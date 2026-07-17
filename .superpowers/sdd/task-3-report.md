@@ -1,61 +1,27 @@
-# Task 3 Report: Migration vers les onglets standards de shared-ui
+# Task 3: Sheet Migration and Form Layout (InvoicesManager.svelte) - Report
 
-## What was implemented
-* Added `Tabs` import from `@metacult/shared-ui` in [CheckDepositManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/CheckDepositManager.svelte).
-* Refactored layout to use standard Svelte 5 `<Tabs.Root bind:value={activeTab}>`, `<Tabs.List>`, and `<Tabs.Trigger>` components instead of the custom button buttons in [CheckDepositManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/CheckDepositManager.svelte).
-* Wrapped the tab body content blocks inside `<Tabs.Content value="checks">` and `<Tabs.Content value="deposits">`.
-* Ensured that the dynamic action buttons (recording checks and generating deposits) remain reactive and placed inside the header/list context.
+## What was Implemented
+1. **Sheet Side Drawer Migration:** Migrated the dialog container to the `Sheet` side drawer design inside `InvoicesManager.svelte`.
+2. **Custom Sizing & Behavior:** 
+   - Applied `data-[side=right]:sm:max-w-2xl` on `<Sheet.Content>` to override tailwind/bits-ui layout specificity.
+   - Kept `<Sheet.Footer>` sticky at the bottom by placing it inside `<form>` immediately after the scrollable inputs container.
+   - Disabled inputs properly when the season is closed (`isClosed` condition).
+3. **Typography Cleanup:** Ensured Outfit typography is used instead of `.font-mono` on totals, pricing, and amount displays. (No `.font-mono` classes exist for invoice pricing/amounts in the codebase).
 
-## What was tested and test results
-* Ran Vitest test suite on `CheckDepositManager.test.ts` to ensure layout mounts successfully and contains the expected components.
-* Ran Astro diagnostics checks to ensure type safety and proper integration.
+## Files Changed
+- `libs/features/accounting/ui/src/InvoicesManager.svelte`
 
-## TDD Evidence (RED/GREEN run outputs)
-### Baseline test run:
-```bash
-npx vitest run libs/features/accounting/ui/src/CheckDepositManager.test.ts
-```
-Output:
-```
-✓  features-accounting-ui  src/CheckDepositManager.test.ts (1 test) 51ms
+## What was Tested & Test Results
+- Ran the suite `libs/features/accounting/ui/src/InvoicesManager.test.ts` via Vitest:
+  - `renders invoices list correctly` -> **PASS**
+  - `opens the create invoice modal when the button is clicked` -> **PASS**
+  - All tests passed successfully.
 
-Test Files  1 passed (1)
-     Tests  1 passed (1)
-```
+## Self-Review Findings
+- **Completeness:** All steps from `task-3-brief.md` are completed.
+- **Quality:** Svelte 5 snippets/bindings are intact.Sizing overrides applied exactly as specified.
+- **Discipline:** Code adheres to NX monorepo limits and Svelte UI guidelines.
+- **Testing:** Local Vitest suite run and validated.
 
-### Verification check after refactoring:
-```bash
-npx vitest run libs/features/accounting/ui/src/CheckDepositManager.test.ts
-```
-Output:
-```
-✓  features-accounting-ui  src/CheckDepositManager.test.ts (1 test) 62ms
-
-Test Files  1 passed (1)
-     Tests  1 passed (1)
-```
-
-### Astro diagnostic check output:
-```bash
-npx astro check --root apps/admin-console
-```
-Output:
-```
-11:39:19 [check] Getting diagnostics for Astro files in /Users/david/Lab/nozay-bad/apps/admin-console...
-Result (29 files): 
-- 0 errors
-- 0 warnings
-- 0 hints
-```
-
-## Files changed
-* [CheckDepositManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/CheckDepositManager.svelte)
-
-## Self-review findings
-* **Completeness**: Handled all four requirements of Step 1: imports, layout migration, content wrappers, and dynamic action buttons.
-* **Quality**: Replaced custom button code with clean Svelte 5 standard Tabs primitives, matching the styling and components of the existing codebase.
-* **Discipline**: Strictly adhered to guidelines, verified work with tests and Astro checks, and committed with standard Git commit format.
-* **Testing**: Confirmed that the component unit tests continue to pass and Astro compilation diagnostics are completely clean.
-
-## Issues or concerns
-* None.
+## Issues/Concerns
+- None.
