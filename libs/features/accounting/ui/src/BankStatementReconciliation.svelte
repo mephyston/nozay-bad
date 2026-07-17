@@ -172,22 +172,6 @@
   // --- MASSE & FILTRES INTELLIGENTS ---
   let selectedTxIds = $state<Record<number, boolean>>({});
   let selectedCount = $derived(Object.keys(selectedTxIds).map(Number).filter(id => selectedTxIds[id]).length);
-  let smartFilter = $state<'all' | 'evidences' | 'recurrents'>('all');
-
-  function isRecurrentTx(bt: BankTransaction) {
-    const nameUpper = (bt.name || '').toUpperCase();
-    const memoUpper = (bt.memo || '').toUpperCase();
-    return nameUpper.includes('SALAIRE') ||
-           nameUpper.includes('LARDESPORT') ||
-           nameUpper.includes('PRLVT') ||
-           nameUpper.includes('COTISATION') ||
-           nameUpper.includes('ABONNEMENT') ||
-           memoUpper.includes('SALAIRE') ||
-           memoUpper.includes('LARDESPORT') ||
-           memoUpper.includes('PRLVT') ||
-           memoUpper.includes('COTISATION') ||
-           memoUpper.includes('ABONNEMENT');
-  }
 
   function toggleSelectAll(displayedTxs: BankTransaction[]) {
     const allSelected = displayedTxs.length > 0 && displayedTxs.every(t => selectedTxIds[t.id]);
@@ -199,9 +183,8 @@
   let searchQuery = $state('');
 
   $effect(() => {
-    // Reset selection and search query when tab or smart filter changes
+    // Reset selection and search query when tab changes
     const _ = activeTab;
-    const __ = smartFilter;
     selectedTxIds = {};
     searchQuery = '';
   });
@@ -209,10 +192,6 @@
   let displayedTransactions = $derived(
     bankTransactions.filter(t => {
       if (t.status !== activeTab) return false;
-      if (activeTab === 'pending') {
-        if (smartFilter === 'evidences' && !t.aiSuggestions) return false;
-        if (smartFilter === 'recurrents' && !isRecurrentTx(t)) return false;
-      }
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim();
         const matchesName = (t.name || '').toLowerCase().includes(query);
@@ -1000,29 +979,27 @@
 </script>
 
 <div class="space-y-6">
-  <div class="flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div>
-        <h1 class="text-xl font-bold tracking-tight">Rapprochement bancaire</h1>
-        <p class="text-xs text-muted-foreground">Pointez les lignes de relevé Société Générale avec le grand livre ou les adhérents.</p>
+  {#if isClosed || (bankTransactions.length > 0 && !isClosed)}
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        {#if isClosed}
+          <Badge variant="outline" class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
+            Saison clôturée (Lecture seule)
+          </Badge>
+        {/if}
       </div>
-      {#if isClosed}
-        <Badge variant="outline" class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
-          Saison clôturée (Lecture seule)
-        </Badge>
+      {#if bankTransactions.length > 0 && !isClosed}
+        <Button 
+          type="button"
+          onclick={() => showImportModal = true}
+          class="inline-flex items-center gap-1.5 text-xs font-semibold"
+        >
+          <Upload class="w-3.5 h-3.5" />
+          Importer un relevé (.ofx)
+        </Button>
       {/if}
     </div>
-    {#if bankTransactions.length > 0 && !isClosed}
-      <Button 
-        type="button"
-        onclick={() => showImportModal = true}
-        class="inline-flex items-center gap-1.5 text-xs font-semibold"
-      >
-        <Upload class="w-3.5 h-3.5" />
-        Importer un relevé (.ofx)
-      </Button>
-    {/if}
-  </div>
+  {/if}
 
   <Dialog.Root bind:open={showImportModal}>
     <Dialog.Content class="max-w-md p-6 bg-card border-border shadow-xl">
@@ -1151,16 +1128,6 @@
             <Tabs.Trigger value="ignored" class="flex-1 py-3 text-xs font-bold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-card bg-transparent">Ignorées ({ignoredCount})</Tabs.Trigger>
           </Tabs.List>
         </Tabs.Root>
-
-        {#if activeTab === 'pending'}
-          <Tabs.Root value={smartFilter} onValueChange={(val) => smartFilter = val as any} class="shrink-0 border-b border-border bg-muted/30 p-1">
-            <Tabs.List class="flex gap-1 bg-transparent p-0">
-              <Tabs.Trigger value="all" class="px-3 py-1.5 text-xs font-semibold rounded-md">Tout</Tabs.Trigger>
-              <Tabs.Trigger value="evidences" class="px-3 py-1.5 text-xs font-semibold rounded-md">Évidences</Tabs.Trigger>
-              <Tabs.Trigger value="recurrents" class="px-3 py-1.5 text-xs font-semibold rounded-md">Récurrents</Tabs.Trigger>
-            </Tabs.List>
-          </Tabs.Root>
-        {/if}
 
         <div class="p-2 border-b border-border bg-muted/10 shrink-0">
           <Input

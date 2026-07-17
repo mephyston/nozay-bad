@@ -137,6 +137,14 @@ try {
 <Layout title="Importation & Rapprochement - NBA 91">
   <AdminLayout client:load email={userEmail} breadcrumb="Comptabilité / Rapprochement bancaire">
     <div class="space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold tracking-tight">Rapprochement bancaire</h1>
+          <p class="text-muted-foreground mt-2">
+            Rapprochez les relevés bancaires importés avec les écritures du grand livre et validez les factures.
+          </p>
+        </div>
+      </div>
 
       {errorMsg && (
         <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
