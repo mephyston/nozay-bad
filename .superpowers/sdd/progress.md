@@ -78,5 +78,5 @@
 - Task 4: complete (commits 1c0b32c..13509b7, review clean)
 
 ## Phase 17: Boutique - Migration des Composants Shadcn (2026-07-17)
-- Task 1: pending
+- Task 1: complete (commits 74c819f..ce50afa, review clean)
 - Task 2: pending
