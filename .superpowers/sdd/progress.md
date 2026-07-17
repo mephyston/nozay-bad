@@ -60,3 +60,10 @@
 ## Phase 13: Rapports Financiers - Polices & Nettoyage (2026-07-17)
 - Task 1: complete (commits d2ae96f..34c9fd4, review clean)
 - Task 2: complete (commits 0555b03..bdf1183, review clean)
+
+## Phase 14: Remise de chèques - Standardisation & Polices (2026-07-17)
+- Task 1: pending
+- Task 2: pending
+- Task 3: pending
+- Task 4: pending
+- Task 5: pending
