@@ -1,78 +1,88 @@
-# Task 1 Report: Local CSV Header Validation and Preview
+# Task 1 Report: Implémentation du filtre par compte (Tabs) et routage Astro
 
 ## What Was Implemented
 
-1. **Client-Side CSV Parsing & Validation (`PoonaImporter.svelte`)**:
-   - Added standard `<input type="file" />` tag for handling file uploads.
-   - Configured delimiters detection (auto-detecting `;` and `,`).
-   - Implemented local validation check of the mandatory headers: `['Licence', 'Saison', 'Nom', 'Prénom', 'Sexe', 'Date naissance', 'Type']` (including handling of equivalents like `date de naissance` and `tarif`).
-   - Showed reactive error alert if mandatory headers are missing.
-   - Added detection of the total number of lines/rows.
-   - Populated the state `csvPreview` with up to 5 rows of data.
+1. **Astro Route Parameter forwarding**:
+   - Modified `apps/admin-console/src/pages/admin/accounting/index.astro` to extract the `accountId` query parameter from the URL.
+   - Forwarded `accountId` as a query parameter when calling the Hono API (`/accounting/transactions`) to filter transactions on the backend.
+   - Passed `accountId` as a prop to the `TransactionLedger` Svelte component.
 
-2. **UI Updates**:
-   - Displayed file information (name, size, row count detected).
-   - Rendered a dynamic preview table (`Table.Root` from `@metacult/shared-ui`) containing the 5 first rows of data.
-   - Controlled submit button activation status dynamically depending on whether a file is valid.
-   - Implemented an annulment / reset action to discard the selected file and clear error alerts/preview.
+2. **Account Filtering Tabs UI**:
+   - Added Svelte 5 state `selectedAccount` in `TransactionLedger.svelte` representing the active tab, initialized with the `accountId` prop (or falling back to `'all'`).
+   - Declared a redirect `$effect` that monitors `selectedAccount` changes and updates `window.location.href` to trigger a client navigation with the updated search parameter (resetting the page to `'1'`).
+   - Integrated the `<Tabs.Root>` and `<Tabs.List>` components from `@metacult/shared-ui` right above the transactions table.
+   - Solved variable shadowing/re-declaration compile error in Svelte 5 by renaming the local form state `accountId` to `formAccountId`, updating its occurrences and select bindings in the transaction entry modal.
+   - Silenced state references warning using `// svelte-ignore state_referenced_locally` on the prop initialization.
 
-## What Was Tested and Test Results
+3. **Unit Tests**:
+   - Added a new unit test in `TransactionLedger.test.ts` to verify the tabs render correctly and indicate the active tab matching the `accountId` prop.
 
-The test suite in `libs/features/members/ui/src/PoonaImporter.test.ts` was expanded with two new test cases:
-1. **Header validation**: Should validate missing headers and show a local error alert (with submit button disabled).
-2. **Preview rendering**: Should parse a valid CSV file, show the preview table headers, and populate it with rows (validating data like Licence, Nom, Prénom).
+---
 
-All 5 tests (3 existing, 2 new) passed successfully.
+## What Was Tested & Test Results
 
-## TDD Evidence (RED/GREEN Run Outputs)
+### Vitest Test Suites
+All unit tests in `TransactionLedger.test.ts` pass successfully.
 
-### RED Run (Failing Tests)
-```bash
-❯ npx vitest run libs/features/members/ui/src/PoonaImporter.test.ts
-
- RUN  v4.1.10 /Users/david/Lab/nozay-bad
-
- ❯  features-members-ui  src/PoonaImporter.test.ts (5 tests | 2 failed) 241ms
-     ✓ renders the drag and drop zone by default 19ms
-     ✓ renders error messages when provided 5ms
-     ✓ renders stats when result is provided 4ms
-     × should validate missing headers and show local error alert 110ms
-     × should parse valid CSV file and display preview table with 5 rows 103ms
-
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
-
- FAIL   features-members-ui  src/PoonaImporter.test.ts > PoonaImporter Component > should validate missing headers and show local error alert
-AssertionError: expected '    Sélectionnez un fichier CSV ou Gl…' to contain 'En-têtes obligatoires manquants'
-...
- FAIL   features-members-ui  src/PoonaImporter.test.ts > PoonaImporter Component > should parse valid CSV file and display preview table with 5 rows
-AssertionError: expected '    Sélectionnez un fichier CSV ou Gl…' to contain 'Aperçu des données'
 ```
-
-### GREEN Run (Passing Tests)
-```bash
-❯ npx vitest run libs/features/members/ui/src/PoonaImporter.test.ts
-
- RUN  v4.1.10 /Users/david/Lab/nozay-bad
-
- ✓  features-members-ui  src/PoonaImporter.test.ts (5 tests) 242ms
+ ✓  features-accounting-ui  src/TransactionLedger.test.ts (4 tests) 145ms
 
  Test Files  1 passed (1)
-      Tests  5 passed (5)
-   Start at  00:02:12
-   Duration  9.04s (transform 7.30s, setup 0ms, import 8.61s, tests 242ms, environment 129ms)
+      Tests  4 passed (4)
 ```
 
-## Files Changed
+### Type Checking
+Ran the Astro CLI check command for type validation:
+```bash
+npx astro check --root apps/admin-console
+```
+Result:
+- 0 errors
+- 0 warnings
+- 0 hints
 
-- [libs/features/members/ui/src/PoonaImporter.svelte](file:///Users/david/Lab/nozay-bad/libs/features/members/ui/src/PoonaImporter.svelte)
-- [libs/features/members/ui/src/PoonaImporter.test.ts](file:///Users/david/Lab/nozay-bad/libs/features/members/ui/src/PoonaImporter.test.ts)
+---
+
+## TDD Evidence
+
+### RED Run (Compile Error/Test Failure)
+During implementation of Svelte 5 properties, Vitest failed compiling because the form state `let accountId = $state(...)` collided with the new `accountId` component prop:
+```
+CompileError: /Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/TransactionLedger.svelte:168:6 Identifier 'accountId' has already been declared
+ 166 |    let date = $state(new Date().toISOString().split('T')[0]);
+ 167 |    let category = $state('1');
+ 168 |    let accountId = $state<'current' | 'savings' | 'cash'>('current');
+              ^
+ 169 |    let destinationAccountId = $state<'current' | 'savings' | 'cash'>('cash');
+ 170 |    let paymentMethod = $state('virement');
+```
+
+### GREEN Run (Success)
+After renaming the shadowed form variable to `formAccountId` and adding the new test verifying active states, the tests passed completely:
+```
+ RUN  v4.1.10 /Users/david/Lab/nozay-bad
+
+ ✓  features-accounting-ui  src/TransactionLedger.test.ts (4 tests) 145ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  09:37:47
+   Duration  7.83s (transform 6.41s, setup 0ms, import 7.51s, tests 145ms, environment 118ms)
+```
+
+---
+
+## Files Changed
+- `apps/admin-console/src/pages/admin/accounting/index.astro`
+- `libs/features/accounting/ui/src/TransactionLedger.svelte`
+- `libs/features/accounting/ui/src/TransactionLedger.test.ts`
+
+---
 
 ## Self-Review Findings
-
-- **Completeness**: All required behaviors are implemented and verified via automated unit tests.
-- **Quality**: Low complexity, clean and readable code structure. Reused Svelte 5 reactive states and imported components from `@metacult/shared-ui`.
-- **Discipline**: Strictly adhered to TDD rules (tests written first, verified failure, minimal production code added, verified pass, cleanup).
-- **Testing**: Discovered and resolved a key testing constraint with event delegation in Svelte 5 by correctly constructing mock change events with `bubbles: true`.
+- **Completeness**: All steps in Task 1 brief are fully implemented.
+- **Quality**: Avoided shadowing variables; cleanly split component prop `accountId` and form state `formAccountId`. Suppressed state initialization warnings using Svelte's official ignore comment.
+- **Discipline**: Tests and typechecks pass perfectly. No leftover debug code or warnings.
 
 ## Issues or Concerns
-None. Everything works beautifully.
+None. The implementation was straightforward and resolved successfully.
