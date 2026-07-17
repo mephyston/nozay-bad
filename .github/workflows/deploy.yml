@@ -8,6 +8,12 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      force_all:
+        description: "Force le déploiement de toutes les applications"
+        type: boolean
+        default: true
 
 # Un seul déploiement à la fois par branche
 concurrency:
@@ -46,19 +52,27 @@ jobs:
       - name: Detect affected projects
         id: affected
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          
+          if [ "${{ github.event.inputs.force_all }}" = "true" ] || echo "$COMMIT_MSG" | grep -qiE "force deploy|deploy all"; then
+            echo "Forcing deployment of all applications"
+            API_COUNT=1
+            BOUTIQUE_COUNT=1
+            ADMIN_COUNT=1
           else
-            BASE_SHA="HEAD~1"
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            else
+              BASE_SHA="HEAD~1"
+            fi
+
+            AFFECTED=$(npx nx show projects --affected --base=$BASE_SHA --head=HEAD 2>/dev/null || echo "")
+            echo "Affected projects: [$AFFECTED]"
+
+            API_COUNT=$(echo "$AFFECTED" | grep -cw 'api' || true)
+            BOUTIQUE_COUNT=$(echo "$AFFECTED" | grep -cw 'boutique' || true)
+            ADMIN_COUNT=$(echo "$AFFECTED" | grep -cw 'admin-console' || true)
           fi
-
-          AFFECTED=$(npx nx show projects --affected --base=$BASE_SHA --head=HEAD 2>/dev/null || echo "")
-          echo "Affected projects: [$AFFECTED]"
-
-          # grep -c retourne 0 si pas de match (exit code 1 ignoré avec ||)
-          API_COUNT=$(echo "$AFFECTED" | grep -cw 'api' || true)
-          BOUTIQUE_COUNT=$(echo "$AFFECTED" | grep -cw 'boutique' || true)
-          ADMIN_COUNT=$(echo "$AFFECTED" | grep -cw 'admin-console' || true)
 
           echo "api=$API_COUNT" >> $GITHUB_OUTPUT
           echo "boutique=$BOUTIQUE_COUNT" >> $GITHUB_OUTPUT
