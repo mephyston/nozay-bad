@@ -53,6 +53,55 @@ describe('AdminLayout Component', () => {
     target.remove();
   });
 
+  it('should render the consolidated settings menu item and highlight it when active', () => {
+    isMobileViewport = false;
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    // Test with breadcrumb "Réglages / Saisons"
+    const component = mount(AdminLayout, {
+      target,
+      props: {
+        email: 'test@nozay-bad.fr',
+        breadcrumb: 'Réglages / Saisons'
+      }
+    });
+    flushSync();
+
+    // Verify consolidated menu item is rendered
+    expect(target.textContent).toContain('Réglages');
+    // Ensure the old sub-items are NOT rendered in the navigation links
+    const navLinks = Array.from(target.querySelectorAll('a')).map(a => a.textContent?.trim());
+    expect(navLinks).not.toContain('Saisons');
+    expect(navLinks).not.toContain('Catégories');
+    expect(navLinks).not.toContain('Classes de comptes');
+
+    // Find the settings link
+    const settingsLink = target.querySelector('a[href="/admin/accounting/settings"]');
+    expect(settingsLink).not.toBeNull();
+    
+    // Check that it is marked as active
+    expect(settingsLink?.getAttribute('data-active')).toBe('true');
+
+    unmount(component);
+    
+    // Test with breadcrumb "settings"
+    const component2 = mount(AdminLayout, {
+      target,
+      props: {
+        email: 'test@nozay-bad.fr',
+        breadcrumb: 'settings'
+      }
+    });
+    flushSync();
+
+    const settingsLink2 = target.querySelector('a[href="/admin/accounting/settings"]');
+    expect(settingsLink2?.getAttribute('data-active')).toBe('true');
+
+    unmount(component2);
+    target.remove();
+  });
+
   it('should toggle the mobile sidebar on hamburger click in mobile mode', () => {
     vi.useFakeTimers();
     isMobileViewport = true;

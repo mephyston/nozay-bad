@@ -13,9 +13,7 @@
     Play,
     Package,
     ShoppingCart,
-    Calendar,
-    Tags,
-    Layers,
+    Settings,
     ChevronDown,
     ChevronUp,
     ChevronsUpDown,
@@ -72,11 +70,9 @@
       ]
     },
     {
-      label: "Réglages",
+      label: "",
       items: [
-        { name: "Saisons", icon: Calendar, href: "/admin/accounting/settings?view=seasons" },
-        { name: "Catégories", icon: Tags, href: "/admin/accounting/settings?view=compta" },
-        { name: "Classes de comptes", icon: Layers, href: "/admin/accounting/settings?view=classes" }
+        { name: "Réglages", icon: Settings, href: "/admin/accounting/settings" }
       ]
     }
   ];
@@ -135,15 +131,7 @@
 
     // Réglages
     if (item.href.includes("settings")) {
-      if (item.href.includes("view=seasons")) {
-        return primary === "réglages" && sub === "saisons";
-      }
-      if (item.href.includes("view=compta")) {
-        return primary === "réglages" && sub === "catégories";
-      }
-      if (item.href.includes("view=classes")) {
-        return primary === "réglages" && sub === "classes de comptes";
-      }
+      return primary === "réglages" || primary === "settings";
     }
 
     return false;
