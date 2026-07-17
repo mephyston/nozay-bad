@@ -1,5 +1,4 @@
 import { eq, sql } from 'drizzle-orm';
-import { seasonsTable } from '@metacult/features-members-data-access';
 
 /**
  * Shared helper: check whether a season is closed.
@@ -7,9 +6,9 @@ import { seasonsTable } from '@metacult/features-members-data-access';
  */
 export async function isSeasonClosed(db: any, seasonId: string): Promise<boolean> {
   const season = await db
-    .select({ closed: seasonsTable.closed })
-    .from(seasonsTable)
-    .where(eq(seasonsTable.id, seasonId))
+    .select({ closed: sql<number | boolean>`closed` })
+    .from(sql`seasons`)
+    .where(sql`id = ${seasonId}`)
     .get();
   return season?.closed === 1 || season?.closed === true;
 }

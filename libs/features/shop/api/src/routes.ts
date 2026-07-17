@@ -148,71 +148,81 @@ shopRouter.post('/orders/:id/approve', async (c) => {
   const db = drizzle(c.env.DB);
 
   try {
-    // Fetch all needed data first
-    const order = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
-    if (!order) return c.json({ success: false, error: 'Commande introuvable' }, 404);
-    if (order.status !== 'pending') {
-      return c.json({ success: false, error: 'Commande invalide ou déjà traitée' }, 400);
-    }
+    const updatedOrder = await db.transaction(async (tx) => {
+      const order = await tx.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
+      if (!order) throw new Error('Commande introuvable');
+      if (order.status !== 'pending') {
+        throw new Error('Commande invalide ou déjà traitée');
+      }
 
-    const member = await db
-      .select({
-        id: membersTable.id,
-        lastName: membersTable.lastName,
-        firstName: membersTable.firstName,
-      })
-      .from(membersTable)
-      .where(eq(membersTable.id, order.memberId))
-      .get();
-    if (!member) return c.json({ success: false, error: 'Adhérent inexistant' }, 400);
+      const member = await tx
+        .select({
+          id: membersTable.id,
+          lastName: membersTable.lastName,
+          firstName: membersTable.firstName,
+        })
+        .from(membersTable)
+        .where(eq(membersTable.id, order.memberId))
+        .get();
+      if (!member) throw new Error('Adhérent inexistant');
 
-    const product = await db.select().from(productsTable).where(eq(productsTable.id, order.productId)).get();
-    if (!product) return c.json({ success: false, error: 'Produit inexistant' }, 400);
+      const product = await tx.select().from(productsTable).where(eq(productsTable.id, order.productId)).get();
+      if (!product) throw new Error('Produit inexistant');
 
-    const boutiqueCat = await db
-      .select({ id: categoriesTable.id })
-      .from(categoriesTable)
-      .where(eq(categoriesTable.adminLabel, 'Boutique'))
-      .get();
-    const boutiqueCatId = boutiqueCat ? boutiqueCat.id : null;
+      const boutiqueCat = await tx
+        .select({ id: categoriesTable.id })
+        .from(categoriesTable)
+        .where(eq(categoriesTable.adminLabel, 'Boutique'))
+        .get();
+      const boutiqueCatId = boutiqueCat ? boutiqueCat.id : null;
 
-    const today = new Date().toISOString().split('T')[0];
-    const description = `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`;
+      const today = new Date().toISOString().split('T')[0];
+      const description = `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`;
 
-    // 1. Insert the transaction and retrieve the generated ID
-    const txRow = await db
-      .insert(transactionsTable)
-      .values({
-        seasonId: order.seasonId,
-        type: 'recette',
-        accountId: 'current',
-        category: boutiqueCatId,
-        amount: order.totalAmount,
-        date: today,
-        paymentMethod: order.paymentMethod as any,
-        description,
-        memberId: member.id,
-        createdAt: new Date(),
-      })
-      .returning({ id: transactionsTable.id })
-      .get();
+      // 1. Insert the transaction and retrieve the generated ID
+      const txRow = await tx
+        .insert(transactionsTable)
+        .values({
+          seasonId: order.seasonId,
+          type: 'recette',
+          accountId: 'current',
+          category: boutiqueCatId,
+          amount: order.totalAmount,
+          date: today,
+          paymentMethod: order.paymentMethod as any,
+          description,
+          memberId: member.id,
+          createdAt: new Date(),
+        })
+        .returning({ id: transactionsTable.id })
+        .get();
 
-    // 2. Update the order with optimistic locking
-    const updatedOrder = await db
-      .update(ordersTable)
-      .set({ status: 'approved', transactionId: txRow.id })
-      .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')))
-      .returning()
-      .get();
+      // 2. Update the order with optimistic locking
+      const updated = await tx
+        .update(ordersTable)
+        .set({ status: 'approved', transactionId: txRow.id })
+        .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')))
+        .returning()
+        .get();
 
-    if (!updatedOrder) {
-      // Rollback the transaction to avoid dangling records
-      await db.delete(transactionsTable).where(eq(transactionsTable.id, txRow.id));
-      return c.json({ success: false, error: 'Commande déjà traitée (conflit concurrent)' }, 409);
-    }
+      if (!updated) {
+        throw new Error('CONFLIT');
+      }
+
+      return updated;
+    });
 
     return c.json({ success: true, data: updatedOrder });
   } catch (err: any) {
+    if (err.message === 'Commande introuvable') {
+      return c.json({ success: false, error: err.message }, 404);
+    }
+    if (err.message === 'Commande invalide ou déjà traitée' || err.message === 'Adhérent inexistant' || err.message === 'Produit inexistant') {
+      return c.json({ success: false, error: err.message }, 400);
+    }
+    if (err.message === 'CONFLIT') {
+      return c.json({ success: false, error: 'Commande déjà traitée (conflit concurrent)' }, 409);
+    }
     return c.json({ success: false, error: err.message }, 500);
   }
 });
