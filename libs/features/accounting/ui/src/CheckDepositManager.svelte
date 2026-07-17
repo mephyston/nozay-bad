@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Wallet, FileText, CheckCircle, Trash2, Camera, UploadCloud, Search, ArrowRight, Loader2, Link, MoreVertical, Eye } from 'lucide-svelte';
-  import { Button, Table, Input, Badge, Card, Dialog, Alert, Tabs, Checkbox } from '@metacult/shared-ui';
+  import { Button, Table, Input, Badge, Card, Dialog, Sheet, Alert, Tabs, Checkbox } from '@metacult/shared-ui';
 
   interface Check {
     id: number;
@@ -697,14 +697,14 @@
 </div>
 
 <!-- Modal 1: Register Check with Photo upload & OCR -->
-<Dialog.Root bind:open={showAddCheckModal}>
-  <Dialog.Content class="w-full max-w-lg p-0 bg-card border-border overflow-hidden">
-    <Dialog.Header class="p-6 border-b border-border">
-      <Dialog.Title>Enregistrer un Chèque</Dialog.Title>
-      <Dialog.Description class="hidden">Enregistrement d'un chèque physique avec assistance IA optionnelle par photo.</Dialog.Description>
-    </Dialog.Header>
+<Sheet.Root bind:open={showAddCheckModal}>
+  <Sheet.Content class="w-full sm:max-w-md p-0 flex flex-col h-full bg-card border-border overflow-hidden">
+    <Sheet.Header class="p-6 border-b border-border">
+      <Sheet.Title>Enregistrer un Chèque</Sheet.Title>
+      <Sheet.Description class="hidden">Enregistrement d'un chèque physique avec assistance IA optionnelle par photo.</Sheet.Description>
+    </Sheet.Header>
 
-    <div class="p-6 overflow-y-auto max-h-[70vh] space-y-4">
+    <div class="p-6 overflow-y-auto flex-grow space-y-4">
       <!-- Photo/Camera Upload section -->
       <div class="space-y-2">
         <label for="photo-capture-input" class="block text-sm font-semibold text-foreground">Prise de photo du chèque (OCR IA)</label>
@@ -920,7 +920,7 @@
           </div>
         </div>
 
-        <Dialog.Footer class="pt-4 border-t border-border flex justify-end gap-2">
+        <Sheet.Footer class="p-6 border-t border-border bg-muted/30 flex justify-end gap-2 shrink-0">
           <Button
             variant="outline"
             onclick={() => showAddCheckModal = false}
@@ -937,11 +937,11 @@
             {/if}
             Enregistrer
           </Button>
-        </Dialog.Footer>
+        </Sheet.Footer>
       </form>
     </div>
-  </Dialog.Content>
-</Dialog.Root>
+  </Sheet.Content>
+</Sheet.Root>
 
 <!-- Modal 2: Create Deposit Slip -->
 <Dialog.Root bind:open={showCreateDepositModal}>
