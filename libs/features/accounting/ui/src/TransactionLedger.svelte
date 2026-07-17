@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Search, Plus, Trash2, ArrowLeftRight, Check, AlertCircle, ChevronLeft, ChevronRight, MoreVertical, Edit2 } from 'lucide-svelte';
-  import { Button, Table, Input, Badge, Card, Dialog } from '@metacult/shared-ui';
+  import { Button, Table, Input, Badge, Card, Dialog, Popover } from '@metacult/shared-ui';
 
   interface Transaction {
     id: number;
@@ -164,16 +164,6 @@
   const isClosed = $derived(seasons.find(s => s.id === selectedSeason)?.closed || false);
 
   let editingId = $state<number | null>(null);
-  let openDropdownId = $state<number | null>(null);
-
-  function toggleDropdown(id: number, e: MouseEvent) {
-    e.stopPropagation();
-    if (openDropdownId === id) {
-      openDropdownId = null;
-    } else {
-      openDropdownId = id;
-    }
-  }
 
   function startEdit(tx: Transaction, e: MouseEvent) {
     e.stopPropagation();
@@ -188,16 +178,9 @@
     reference = tx.reference || '';
     targetSeasonId = tx.seasonId;
     showPanel = tx.type;
-    openDropdownId = null;
   }
 
-  $effect(() => {
-    const handleGlobalClick = () => {
-      openDropdownId = null;
-    };
-    window.addEventListener('click', handleGlobalClick);
-    return () => window.removeEventListener('click', handleGlobalClick);
-  });
+
 
   const accountLabels = {
     current: 'Compte Courant',
@@ -508,38 +491,39 @@
               </Table.Cell>
               <Table.Cell class="p-4 text-right relative">
                 {#if !isClosed}
-                  <div class="inline-block text-left">
-                    <Button 
-                      variant="ghost"
-                      size="icon-xs"
-                      onclick={(e) => toggleDropdown(tx.id, e)} 
-                      class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center" 
-                      aria-label="Actions"
-                    >
-                      <MoreVertical class="w-4 h-4" />
-                    </Button>
-
-                    {#if openDropdownId === tx.id}
-                      <div class="absolute right-4 mt-1 w-32 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border">
-                        <Button
+                  <Popover.Root>
+                    <Popover.Trigger asChild>
+                      {#snippet child({ props })}
+                        <Button 
+                          {...props}
                           variant="ghost"
-                          onclick={(e) => startEdit(tx, e)}
-                          class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent h-auto rounded-none justify-start"
+                          size="icon-xs"
+                          class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center" 
+                          aria-label="Actions"
                         >
-                          <Edit2 class="w-3.5 h-3.5" />
-                          Éditer
+                          <MoreVertical class="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          onclick={() => handleDelete(tx.id)}
-                          class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent h-auto rounded-none justify-start"
-                        >
-                          <Trash2 class="w-3.5 h-3.5" />
-                          Supprimer
-                        </Button>
-                      </div>
-                    {/if}
-                  </div>
+                      {/snippet}
+                    </Popover.Trigger>
+                    <Popover.Content class="w-32 p-1 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border" align="end">
+                      <Button
+                        variant="ghost"
+                        onclick={(e) => startEdit(tx, e)}
+                        class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent h-auto rounded-none justify-start"
+                      >
+                        <Edit2 class="w-3.5 h-3.5" />
+                        Éditer
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onclick={() => handleDelete(tx.id)}
+                        class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent h-auto rounded-none justify-start"
+                      >
+                        <Trash2 class="w-3.5 h-3.5" />
+                        Supprimer
+                      </Button>
+                    </Popover.Content>
+                  </Popover.Root>
                 {/if}
               </Table.Cell>
             </Table.Row>
