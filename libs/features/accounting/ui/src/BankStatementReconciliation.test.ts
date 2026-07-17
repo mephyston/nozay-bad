@@ -323,12 +323,11 @@ describe('BankStatementReconciliation Component', () => {
     expect(target.innerHTML).not.toContain('Ignorer en masse');
 
     // Checkboxes should be displayed next to bank transactions
-    const checkboxes = target.querySelectorAll('input[type="checkbox"]') as NodeListOf<HTMLInputElement>;
+    const checkboxes = target.querySelectorAll('[role="checkbox"]') as NodeListOf<HTMLButtonElement>;
     expect(checkboxes.length).toBe(2);
 
     // Check the first checkbox
-    checkboxes[0].checked = true;
-    checkboxes[0].dispatchEvent(new Event('change', { bubbles: true }));
+    checkboxes[0].click();
     flushSync();
 
     // Now the Bulk Action Bar should be visible
@@ -336,8 +335,7 @@ describe('BankStatementReconciliation Component', () => {
     expect(target.innerHTML).toContain('Sélection (1)');
 
     // Check the second checkbox
-    checkboxes[1].checked = true;
-    checkboxes[1].dispatchEvent(new Event('change', { bubbles: true }));
+    checkboxes[1].click();
     flushSync();
 
     // Count should be updated
@@ -494,12 +492,11 @@ describe('BankStatementReconciliation Component', () => {
     expect(target.innerHTML).toContain('FAC-2026-0002');
 
     // Find checkboxes
-    const invoiceCheckboxes = target.querySelectorAll('input.invoice-checkbox') as NodeListOf<HTMLInputElement>;
+    const invoiceCheckboxes = target.querySelectorAll('.invoice-checkbox') as NodeListOf<HTMLButtonElement>;
     expect(invoiceCheckboxes.length).toBe(2);
 
     // Check first invoice checkbox
-    invoiceCheckboxes[0].checked = true;
-    invoiceCheckboxes[0].dispatchEvent(new Event('change', { bubbles: true }));
+    invoiceCheckboxes[0].click();
     flushSync();
 
     // The selected sum should be 156.00 € (15600 cents)
@@ -511,8 +508,7 @@ describe('BankStatementReconciliation Component', () => {
     expect(submitBtn.disabled).toBe(true);
 
     // Check second invoice checkbox
-    invoiceCheckboxes[1].checked = true;
-    invoiceCheckboxes[1].dispatchEvent(new Event('change', { bubbles: true }));
+    invoiceCheckboxes[1].click();
     flushSync();
 
     // Now both selected: sum is 20600 which matches selectedTx.amount (20600)
