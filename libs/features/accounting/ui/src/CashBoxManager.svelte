@@ -44,9 +44,7 @@
   let successMsg = $state('');
   let searchTerm = $state('');
 
-  // Selected Season
-  // svelte-ignore state_referenced_locally
-  let selectedSeason = $state(seasonId);
+  const isClosed = $derived(seasons.find(s => s.id === seasonId)?.closed || false);
 
   const categoryLabels: Record<string, string> = {
     evenements_buvettes: 'Événements & Buvette',
@@ -113,7 +111,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'create',
-          seasonId: selectedSeason,
+          seasonId,
           type,
           accountId: 'cash',
           category,
@@ -159,38 +157,9 @@
       alert(err.message);
     }
   }
-
-  function applySeasonChange() {
-    window.location.href = `/admin/accounting/cash-box?season=${selectedSeason}`;
-  }
 </script>
 
 <div class="space-y-6">
-  <!-- Header with Season Selector -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <div>
-      <h1 class="text-3xl font-bold tracking-tight">Suivi de la Caisse</h1>
-      <p class="text-muted-foreground mt-1">
-        Gérez l'argent liquide (pièces et billets) collecté lors des événements du club (buvette, tournois, etc.).
-      </p>
-    </div>
-    <div class="flex items-center gap-3 shrink-0">
-      <span class="text-sm font-semibold text-muted-foreground whitespace-nowrap">Saison&nbsp;:</span>
-      <select
-        bind:value={selectedSeason}
-        onchange={applySeasonChange}
-        class="px-3 py-1.5 border border-border bg-background rounded-md text-sm font-medium focus:outline-none focus:ring-1 focus:ring-primary"
-      >
-        {#each seasons as s}
-          <option value={s.id}>{s.name} {s.active ? '(Actuelle)' : ''}</option>
-        {/each}
-        {#if seasons.length === 0}
-          <option value="25-26">Saison 2025-2026</option>
-        {/if}
-      </select>
-    </div>
-  </div>
-
   <!-- Statistiques Caisse -->
   <div class="grid gap-4 md:grid-cols-3">
     <Card.Root class="flex items-center justify-between p-6">
@@ -261,10 +230,11 @@
             <select
               id="type"
               bind:value={type}
+              disabled={isClosed}
               onchange={() => {
                 category = type === 'recette' ? 'evenements_buvettes' : 'evenements_club';
               }}
-              class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
             >
               <option value="recette">Entrée (Recette - ex: Vente buvette)</option>
               <option value="depense">Sortie (Dépense - ex: Achat boissons)</option>
@@ -282,6 +252,7 @@
                 placeholder="0.00"
                 bind:value={amount}
                 required
+                disabled={isClosed}
               />
             </div>
             <div>
@@ -291,6 +262,7 @@
                 id="date"
                 bind:value={date}
                 required
+                disabled={isClosed}
               />
             </div>
           </div>
@@ -300,7 +272,8 @@
             <select
               id="category"
               bind:value={category}
-              class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              disabled={isClosed}
+              class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
             >
               {#if type === 'recette'}
                 <option value="evenements_buvettes">Événements & Buvette</option>
@@ -323,12 +296,13 @@
               placeholder="Ex: Recette buvette tournoi Jeunes"
               bind:value={description}
               required
+              disabled={isClosed}
             />
           </div>
 
           <Button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isClosed}
             class="w-full font-semibold"
           >
             {isSubmitting ? 'Enregistrement...' : 'Enregistrer le mouvement'}
@@ -401,6 +375,7 @@
                       onclick={() => handleDelete(tx.id)}
                       class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors"
                       aria-label="Supprimer"
+                      disabled={isClosed}
                     >
                       <Trash2 class="w-4 h-4" />
                     </Button>
