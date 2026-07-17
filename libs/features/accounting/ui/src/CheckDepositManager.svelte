@@ -63,10 +63,7 @@
   // Active Tab
   let activeTab = $state<'checks' | 'deposits'>('checks');
 
-  // Selected Season
-  // svelte-ignore state_referenced_locally
-  let selectedSeason = $state(seasonId);
-  const isClosed = $derived(seasons.find(s => s.id === selectedSeason)?.closed || false);
+  const isClosed = $derived(seasons.find(s => s.id === seasonId)?.closed || false);
 
   // View / Print deposit slip states
   let showViewDepositModal = $state(false);
@@ -214,7 +211,7 @@
 
     try {
       // Direct call to API analyze endpoint via the same Astro page proxy
-      const res = await fetch(`?season=${selectedSeason}`, {
+      const res = await fetch(`?season=${seasonId}`, {
         method: 'POST',
         headers: {
           // Send special action header so page proxy knows to forward to analyze
@@ -260,12 +257,12 @@
     formError = '';
 
     try {
-      const res = await fetch(`?season=${selectedSeason}`, {
+      const res = await fetch(`?season=${seasonId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'create-check',
-          seasonId: selectedSeason,
+          seasonId,
           number: checkNumber,
           amount: Math.round(parseFloat(checkAmount) * 100), // convert to centimes
           emitter: checkEmitter,
@@ -302,7 +299,7 @@
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce chèque ? Cette action annulera le règlement associé dans le Grand Livre.')) return;
 
     try {
-      const res = await fetch(`?season=${selectedSeason}`, {
+      const res = await fetch(`?season=${seasonId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -328,12 +325,12 @@
 
     isSubmittingDeposit = true;
     try {
-      const res = await fetch(`?season=${selectedSeason}`, {
+      const res = await fetch(`?season=${seasonId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'create-deposit',
-          seasonId: selectedSeason,
+          seasonId,
           reference: depositReference,
           date: depositDate,
           checkIds
@@ -358,7 +355,7 @@
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce bordereau ? Les chèques associés repasseront au statut "Reçus" et le rapprochement bancaire sera annulé.')) return;
 
     try {
-      const res = await fetch(`?season=${selectedSeason}`, {
+      const res = await fetch(`?season=${seasonId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -383,7 +380,7 @@
 
     isSubmittingClear = true;
     try {
-      const res = await fetch(`?season=${selectedSeason}`, {
+      const res = await fetch(`?season=${seasonId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -518,7 +515,7 @@
                   <Table.Cell class="p-4">
                     {#if check.memberId && check.memberName}
                       <a
-                        href={`/admin/members/${check.memberLicence}?season=${selectedSeason}`}
+                        href={`/admin/members/${check.memberLicence}?season=${seasonId}`}
                         class="inline-flex items-center gap-1 bg-primary/10 hover:bg-primary/20 text-primary px-2.5 py-1 rounded-md text-xs font-semibold transition-colors"
                       >
                         <Link class="h-3 w-3" />
