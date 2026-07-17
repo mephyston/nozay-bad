@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mount, flushSync } from 'svelte';
+import { mount, unmount, flushSync } from 'svelte';
 import BankStatementReconciliation from './BankStatementReconciliation.svelte';
 
 describe('BankStatementReconciliation Component', () => {
   const originalFetch = global.fetch;
+  let component: any = null;
 
   beforeEach(() => {
     document.body.innerHTML = '';
@@ -69,6 +70,10 @@ describe('BankStatementReconciliation Component', () => {
   });
 
   afterEach(() => {
+    if (component) {
+      unmount(component);
+      component = null;
+    }
     document.body.innerHTML = '';
     global.fetch = originalFetch;
     vi.restoreAllMocks();
@@ -79,7 +84,7 @@ describe('BankStatementReconciliation Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(BankStatementReconciliation, {
+    component = mount(BankStatementReconciliation, {
       target,
       props: {
         bankTransactions: [],
@@ -98,7 +103,7 @@ describe('BankStatementReconciliation Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(BankStatementReconciliation, {
+    component = mount(BankStatementReconciliation, {
       target,
       props: {
         bankTransactions: [
@@ -164,7 +169,7 @@ describe('BankStatementReconciliation Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(BankStatementReconciliation, {
+    component = mount(BankStatementReconciliation, {
       target,
       props: {
         bankTransactions: [
@@ -217,7 +222,7 @@ describe('BankStatementReconciliation Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(BankStatementReconciliation, {
+    component = mount(BankStatementReconciliation, {
       target,
       props: {
         bankTransactions: [
@@ -284,7 +289,7 @@ describe('BankStatementReconciliation Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(BankStatementReconciliation, {
+    component = mount(BankStatementReconciliation, {
       target,
       props: {
         bankTransactions: [
@@ -378,7 +383,7 @@ describe('BankStatementReconciliation Component', () => {
     document.body.appendChild(target);
 
     // Set bank transaction amount to 206.00 € (20600 cents) which matches sum of 101 (15600) and 102 (5000)
-    mount(BankStatementReconciliation, {
+    component = mount(BankStatementReconciliation, {
       target,
       props: {
         bankTransactions: [
@@ -468,7 +473,7 @@ describe('BankStatementReconciliation Component', () => {
     document.body.appendChild(target);
 
     // Bank transaction amount: 150.00 € (15000 cents)
-    mount(BankStatementReconciliation, {
+    component = mount(BankStatementReconciliation, {
       target,
       props: {
         bankTransactions: [
@@ -551,7 +556,7 @@ describe('BankStatementReconciliation Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(BankStatementReconciliation, {
+    component = mount(BankStatementReconciliation, {
       target,
       props: {
         bankTransactions: [
@@ -626,7 +631,7 @@ describe('BankStatementReconciliation Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(BankStatementReconciliation, {
+    component = mount(BankStatementReconciliation, {
       target,
       props: {
         bankTransactions: [
@@ -678,7 +683,7 @@ describe('BankStatementReconciliation Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(BankStatementReconciliation, {
+    component = mount(BankStatementReconciliation, {
       target,
       props: {
         bankTransactions: [
@@ -732,7 +737,7 @@ describe('BankStatementReconciliation Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(BankStatementReconciliation, {
+    component = mount(BankStatementReconciliation, {
       target,
       props: {
         bankTransactions: [
@@ -775,7 +780,7 @@ describe('BankStatementReconciliation Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(BankStatementReconciliation, {
+    component = mount(BankStatementReconciliation, {
       target,
       props: {
         bankTransactions: [
