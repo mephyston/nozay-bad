@@ -1,8 +1,33 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import AdminLayout from '../components/AdminLayout.svelte';
+import { env } from 'cloudflare:workers';
+import {
+  resolveActiveSeason,
+  fetchTreasuryBalance,
+  formatTreasuryBalance,
+  fetchMembersCount,
+  calculatePaidPercentage,
+  formatPaidPercentage
+} from '../utils/dashboard';
 
 const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
+const apiService = env.API_SERVICE;
+
+// Fetch data in SSR
+const activeSeasonId = await resolveActiveSeason(apiService);
+
+const balanceCents = await fetchTreasuryBalance(apiService, activeSeasonId);
+const formattedBalance = formatTreasuryBalance(balanceCents);
+
+const paidCount = await fetchMembersCount(apiService, activeSeasonId, true);
+const totalCount = await fetchMembersCount(apiService, activeSeasonId);
+const paidPercentage = calculatePaidPercentage(paidCount, totalCount);
+const formattedPaidPercentage = formatPaidPercentage(paidPercentage);
+
+const formattedMembersCount = (paidCount !== null && totalCount !== null)
+  ? `${paidCount} / ${totalCount}`
+  : '--';
 ---
 
 <Layout title="NBA 91 - Console Admin">
@@ -10,7 +35,7 @@ const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
     <div class="space-y-6">
       <div>
         <h2 class="text-2xl font-bold tracking-tight">Bonjour, Trésorier NBA 91</h2>
-        <p class="text-muted-foreground">Voici l'état récapitulatif de vos outils d'administration.</p>
+        <p class="text-muted-foreground">Voici l'état récapitulatif de vos outils d'administration pour la saison {activeSeasonId}.</p>
       </div>
       <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <!-- Carte 1 -->
@@ -18,7 +43,7 @@ const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
           <div class="flex flex-row items-center justify-between space-y-0 pb-2">
             <h3 class="text-sm font-medium tracking-tight">Trésorerie</h3>
           </div>
-          <div class="text-2xl font-bold">12 450,50 €</div>
+          <div class="text-2xl font-bold">{formattedBalance}</div>
           <p class="text-xs text-muted-foreground">Solde comptable actif</p>
         </div>
         <!-- Carte 2 -->
@@ -26,10 +51,11 @@ const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
           <div class="flex flex-row items-center justify-between space-y-0 pb-2">
             <h3 class="text-sm font-medium tracking-tight">Adhérents Poona</h3>
           </div>
-          <div class="text-2xl font-bold">182 / 210</div>
-          <p class="text-xs text-muted-foreground">86% des inscriptions validées</p>
+          <div class="text-2xl font-bold">{formattedMembersCount}</div>
+          <p class="text-xs text-muted-foreground">{formattedPaidPercentage}</p>
         </div>
       </div>
     </div>
   </AdminLayout>
 </Layout>
+
