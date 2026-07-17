@@ -1,30 +1,31 @@
-# Task 1 Report: Création d'AppError et Configuration du Middleware Global Hono
+# Task 1 Report: Extraction des Helpers et Utilitaires
 
 ## What was implemented
-- Created `libs/shared/db/src/errors.ts` defining the `AppError` class inheriting from `Error`, with custom message and HTTP status code properties (`status: 400 | 403 | 404 | 409 | 422 | 500 = 400`).
-- Exported `AppError` from `libs/shared/db/src/index.ts` to make it available to other packages/modules.
-- Configured a global `app.onError` middleware handler in `apps/api/src/index.ts` that:
-  - Catches instances of `AppError` and returns them as a JSON response with their associated status code and message.
-  - Catches generic errors, logs them to `console.error` (including URL, message, and stack trace), and returns a 500 JSON response.
+- Created a new file `libs/features/accounting/api/src/helpers.ts` to host shared helper functions.
+- Extracted `cleanName`, `parseOFX`, and `reconcileBankTxInternal` from `libs/features/accounting/api/src/routes.ts` to `helpers.ts`.
+- Set up all necessary database imports (`eq`, `transactionsTable`, `bankTransactionsTable`, `invoicesTable`, `membersTable`, `isSeasonClosed`, `normalizeCategory`) in `helpers.ts`.
+- Modified `routes.ts` to import these helper functions and removed their local implementations.
 
 ## What was tested and test results
-- Added a `Global Error Handling` test suite in `apps/api/src/index.test.ts` to verify:
-  - Route throwing `AppError` returns the customized status code (400) and message as JSON.
-  - Route throwing a generic `Error` returns a 500 status code and the standardized error JSON response.
-- All tests were run using Vitest.
-  - **Results**: 150/150 tests passed successfully (including the 2 new test cases).
+- Wrote new unit tests inside `libs/features/accounting/api/src/helpers.test.ts` to cover:
+  - `cleanName` (accent removal, lowercase normalization, parentheses cleaning, null safety).
+  - `parseOFX` (basic SGML-like OFX string parsing, accounts mapping to savings vs current accounts).
+- Ran all Vitest tests for the project:
+  ```bash
+  npx vitest run libs/features/accounting/api/
+  ```
+  Result: **PASS (54 tests passed)**.
 
 ## Files changed
-- [libs/shared/db/src/errors.ts](file:///Users/david/Lab/nozay-bad/libs/shared/db/src/errors.ts) *(New file)*
-- [libs/shared/db/src/index.ts](file:///Users/david/Lab/nozay-bad/libs/shared/db/src/index.ts)
-- [apps/api/src/index.ts](file:///Users/david/Lab/nozay-bad/apps/api/src/index.ts)
-- [apps/api/src/index.test.ts](file:///Users/david/Lab/nozay-bad/apps/api/src/index.test.ts)
+- [helpers.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/api/src/helpers.ts) (New)
+- [helpers.test.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/api/src/helpers.test.ts) (New)
+- [routes.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/api/src/routes.ts) (Modified)
 
 ## Self-review findings
-- **Completeness**: All requirements listed in Task 1 are implemented exactly.
-- **Quality**: The middleware logic is clean and integrates cleanly with the Hono routing system.
-- **Discipline**: TDD principles were followed: tests were written and verified to fail before the implementation code was written.
-- **Testing**: Regression tests verified all 150 tests are green.
+- Checked code type-safety, imports, and correctness.
+- Code structure follows clean code standards and VSA guidelines.
+- Preserved existing documentation and comments.
+- ESLint checks reported 0 issues.
 
 ## Issues or concerns
 - None.
