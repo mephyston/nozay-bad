@@ -15,7 +15,7 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   try {
-    const apiService = env.API_SERVICE;
+    const apiService = (env as any).API_SERVICE;
     const res = await apiService.fetch(`http://localhost/members?search=${encodeURIComponent(q)}&limit=10`);
     if (!res.ok) {
       throw new Error(`API error: ${res.status}`);

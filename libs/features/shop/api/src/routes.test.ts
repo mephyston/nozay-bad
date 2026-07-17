@@ -9,7 +9,7 @@ import { AppError } from '@metacult/shared-db';
 const app = new Hono<{ Bindings: { DB: any } }>();
 app.onError((err, c) => {
   if (err instanceof AppError) {
-    return c.json({ success: false, error: err.message }, err.status);
+    return c.json({ success: false, error: err.message }, err.status as any);
   }
   return c.json({ success: false, error: err.message }, 500);
 });

@@ -13,23 +13,20 @@ describe('ShopCatalog Component', () => {
     { id: 11, name: 'Cordage Yonex BG65', category: 'string' as const, price: 2000, stock: 5, active: true }
   ];
 
-  let originalFetch: typeof global.fetch;
-
   beforeEach(() => {
     vi.useFakeTimers();
-    originalFetch = global.fetch;
-    global.fetch = vi.fn().mockImplementation(() =>
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ success: true, data: { id: 100 } })
       } as any)
-    );
+    ));
   });
 
   afterEach(() => {
     vi.runAllTimers();
     vi.useRealTimers();
-    global.fetch = originalFetch;
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
@@ -306,7 +303,7 @@ describe('ShopCatalog Component', () => {
     const searchMembers = [
       { id: 3, firstName: 'Pierre', lastName: 'Dubois', licence: '789012' }
     ];
-    global.fetch = vi.fn().mockImplementation((url: string) => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
       if (url.includes('/api/members-search')) {
         return Promise.resolve({
           ok: true,
@@ -317,7 +314,7 @@ describe('ShopCatalog Component', () => {
         ok: true,
         json: () => Promise.resolve({ success: true, data: { id: 100 } })
       } as any);
-    });
+    }));
 
     mount(ShopCatalog, {
       target,
@@ -369,7 +366,7 @@ describe('ShopCatalog Component', () => {
     const searchMembers = [
       { id: 3, firstName: 'Pierre', lastName: 'Dubois', licence: '789012' }
     ];
-    global.fetch = vi.fn().mockImplementation((url: string) => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
       if (url.includes('/api/members-search')) {
         return Promise.resolve({
           ok: true,
@@ -377,7 +374,7 @@ describe('ShopCatalog Component', () => {
         } as any);
       }
       return Promise.resolve({} as any);
-    });
+    }));
 
     mount(ShopCatalog, {
       target,
