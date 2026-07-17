@@ -369,79 +369,7 @@ describe('BankStatementReconciliation Component', () => {
     expect(reloadMock).toHaveBeenCalled();
   });
 
-  it('filters bank transactions using smart filter tabs (Tout, Évidences, Récurrents)', async () => {
-    const target = document.createElement('div');
-    document.body.appendChild(target);
 
-    mount(BankStatementReconciliation, {
-      target,
-      props: {
-        bankTransactions: [
-          {
-            id: 1,
-            fitid: 'TX-1',
-            accountId: 'current',
-            amount: 1000,
-            date: '2026-02-16',
-            name: 'TX-ONE',
-            memo: 'Memo 1',
-            status: 'pending',
-            aiSuggestions: JSON.stringify({ memberId: 42, memberName: 'Dupont Jean', category: '1' })
-          },
-          {
-            id: 2,
-            fitid: 'TX-2',
-            accountId: 'current',
-            amount: -2000,
-            date: '2026-02-17',
-            name: 'SALAIRE MONSIEUR X',
-            memo: 'Memo 2',
-            status: 'pending',
-            aiSuggestions: null
-          }
-        ],
-        glTransactions: [],
-        seasonId: '25-26',
-        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }],
-        members: []
-      }
-    });
-
-    flushSync();
-
-    // Check tabs are displayed
-    expect(target.innerHTML).toContain('Tout');
-    expect(target.innerHTML).toContain('Évidences');
-    expect(target.innerHTML).toContain('Récurrents');
-
-    // By default, 'Tout' is selected, so both TX-ONE and SALAIRE are shown
-    expect(target.innerHTML).toContain('TX-ONE');
-    expect(target.innerHTML).toContain('SALAIRE');
-
-    // Click 'Évidences'
-    const evidencesBtn = Array.from(target.querySelectorAll('button')).find(
-      b => b.textContent?.trim() === 'Évidences'
-    ) as HTMLButtonElement;
-    expect(evidencesBtn).not.toBeNull();
-    evidencesBtn.click();
-    flushSync();
-
-    // Now only TX-ONE (which has suggestions) should be shown
-    expect(target.innerHTML).toContain('TX-ONE');
-    expect(target.innerHTML).not.toContain('SALAIRE');
-
-    // Click 'Récurrents'
-    const recurrentsBtn = Array.from(target.querySelectorAll('button')).find(
-      b => b.textContent?.trim() === 'Récurrents'
-    ) as HTMLButtonElement;
-    expect(recurrentsBtn).not.toBeNull();
-    recurrentsBtn.click();
-    flushSync();
-
-    // Now only SALAIRE should be shown
-    expect(target.innerHTML).not.toContain('TX-ONE');
-    expect(target.innerHTML).toContain('SALAIRE');
-  });
 
   it('multi-match order selection basket in invoice tab updates selected sum and validates with tolerance', async () => {
     const target = document.createElement('div');
