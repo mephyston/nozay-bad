@@ -55,7 +55,7 @@
     {
       label: "Comptabilité",
       items: [
-        { name: "Rapports", icon: BarChart3, href: "/admin/accounting/reports" },
+        { name: "Rapports financiers", icon: BarChart3, href: "/admin/accounting/reports" },
         { name: "Grand Livre", icon: BookOpen, href: "/admin/accounting" },
         { name: "Factures", icon: FileCheck, href: "/admin/accounting/invoices" },
         { name: "Rapprochement bancaire", icon: Scale, href: "/admin/accounting/import" },
@@ -104,7 +104,7 @@
 
     // Comptabilité
     if (item.href === "/admin/accounting/reports") {
-      return primary === "comptabilité" && sub === "rapports";
+      return primary === "comptabilité" && (sub === "rapports" || sub === "rapports financiers");
     }
     if (item.href === "/admin/accounting") {
       return primary === "comptabilité" && (!sub || sub === "grand livre");
