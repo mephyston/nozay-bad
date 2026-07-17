@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Search, Plus, Trash2, ArrowLeftRight, Check, AlertCircle, ChevronLeft, ChevronRight, MoreVertical, Edit2 } from 'lucide-svelte';
-  import { Button, Table, Input, Badge, Card, Dialog, Popover } from '@metacult/shared-ui';
+  import { Button, Table, Input, Badge, Card, Dialog, Popover, Label } from '@metacult/shared-ui';
 
   interface Transaction {
     id: number;
@@ -610,18 +610,21 @@
           </div>
         {/if}
 
-        <div>
-          <label for="amount-input" class="block text-sm font-medium mb-1">Montant (€)</label>
-          <Input id="amount-input" type="number" step="0.01" min="0.01" bind:value={amount} required />
+        <!-- Ligne 1 : Montant et Date en Grille -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <Label for="amount-input" class="mb-1 block">Montant (€)</Label>
+            <Input id="amount-input" type="number" step="0.01" min="0.01" bind:value={amount} required />
+          </div>
+          <div>
+            <Label for="date-input" class="mb-1 block">Date</Label>
+            <Input id="date-input" type="date" bind:value={date} required />
+          </div>
         </div>
 
+        <!-- Ligne 2 : Saison -->
         <div>
-          <label for="date-input" class="block text-sm font-medium mb-1">Date</label>
-          <Input id="date-input" type="date" bind:value={date} required />
-        </div>
-
-        <div>
-          <label for="season-select-panel" class="block text-sm font-medium mb-1">Saison d'affectation</label>
+          <Label for="season-select-panel" class="mb-1 block">Saison d'affectation</Label>
           <select id="season-select-panel" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary font-medium" bind:value={targetSeasonId}>
             {#each seasons as s}
               <option value={s.id}>{s.name}</option>
@@ -632,44 +635,53 @@
           </select>
         </div>
 
+        <!-- Ligne 3 : Catégorie / Comptes en Grille -->
         {#if showPanel !== 'transfert'}
-          <div>
-            <label for="category-select" class="block text-sm font-medium mb-1">Catégorie</label>
-            <select id="category-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={category}>
-              {#each activeCategories as cat}
-                <option value={cat.id}>{cat.name}</option>
-              {/each}
-            </select>
-          </div>
-        {/if}
-
-        <div>
-          <label for="account-select" class="block text-sm font-medium mb-1">
-            {#if showPanel === 'transfert'}Compte Source{:else}Compte financier{/if}
-          </label>
-          <select id="account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={accountId}>
-            {#each Object.entries(accountLabels) as [key, label]}
-              <option value={key}>{label}</option>
-            {/each}
-          </select>
-        </div>
-
-        {#if showPanel === 'transfert'}
-          <div>
-            <label for="dest-account-select" class="block text-sm font-medium mb-1">Compte Destinataire</label>
-            <select id="dest-account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={destinationAccountId}>
-              {#each Object.entries(accountLabels) as [key, label]}
-                {#if key !== accountId}
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <Label for="category-select" class="mb-1 block">Catégorie</Label>
+              <select id="category-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={category}>
+                {#each activeCategories as cat}
+                  <option value={cat.id}>{cat.name}</option>
+                {/each}
+              </select>
+            </div>
+            <div>
+              <Label for="account-select" class="mb-1 block">Compte financier</Label>
+              <select id="account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={accountId}>
+                {#each Object.entries(accountLabels) as [key, label]}
                   <option value={key}>{label}</option>
-                {/if}
-              {/each}
-            </select>
+                {/each}
+              </select>
+            </div>
+          </div>
+        {:else}
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <Label for="account-select" class="mb-1 block">Compte Source</Label>
+              <select id="account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={accountId}>
+                {#each Object.entries(accountLabels) as [key, label]}
+                  <option value={key}>{label}</option>
+                {/each}
+              </select>
+            </div>
+            <div>
+              <Label for="dest-account-select" class="mb-1 block">Compte Destinataire</Label>
+              <select id="dest-account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={destinationAccountId}>
+                {#each Object.entries(accountLabels) as [key, label]}
+                  {#if key !== accountId}
+                    <option value={key}>{label}</option>
+                  {/if}
+                {/each}
+              </select>
+            </div>
           </div>
         {/if}
 
+        <!-- Ligne 4 : Moyen de paiement -->
         {#if showPanel !== 'transfert'}
           <div>
-            <label for="payment-method-select" class="block text-sm font-medium mb-1">Moyen de paiement</label>
+            <Label for="payment-method-select" class="mb-1 block">Moyen de paiement</Label>
             <select id="payment-method-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={paymentMethod}>
               {#each Object.entries(methodLabels) as [key, label]}
                 <option value={key}>{label}</option>
@@ -678,13 +690,14 @@
           </div>
         {/if}
 
+        <!-- Lignes 5 et 6 : Description & Référence -->
         <div>
-          <label for="description-input" class="block text-sm font-medium mb-1">Description / Motif</label>
+          <Label for="description-input" class="mb-1 block">Description / Motif</Label>
           <Input id="description-input" type="text" placeholder="Ex: Cotisation annuelle..." bind:value={description} required />
         </div>
 
         <div>
-          <label for="ref-input" class="block text-sm font-medium mb-1">Référence (Optionnel)</label>
+          <Label for="ref-input" class="mb-1 block">Référence (Optionnel)</Label>
           <Input id="ref-input" type="text" placeholder="Ex: Chèque n°1234, Virement..." bind:value={reference} />
         </div>
 
