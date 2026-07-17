@@ -35,34 +35,32 @@ Ce plan décrit les actions nécessaires pour corriger les 5 problèmes restants
 
 ---
 
-## Planification des Tâches
+### Task 1: Création d'AppError et Configuration du Middleware Global Hono
+- Créer `libs/shared/db/src/errors.ts`.
+- Exposer `AppError` dans `libs/shared/db/src/index.ts`.
+- Intégrer le middleware global `app.onError` dans `apps/api/src/index.ts`.
+- Vérifier la compilation et les tests existants.
 
-- [ ] **Task 1: Création d'AppError et Configuration du Middleware Global Hono**
-  - Créer `libs/shared/db/src/errors.ts`.
-  - Exposer `AppError` dans `libs/shared/db/src/index.ts`.
-  - Intégrer le middleware global `app.onError` dans `apps/api/src/index.ts`.
-  - Vérifier la compilation et les tests existants.
+### Task 2: Schémas et Validation TypeBox sur les Routes d'Écriture
+- Mettre en place la validation et le typage statique dans `libs/features/shop/api/src/routes.ts`.
+- Mettre en place la validation et le typage statique dans `libs/features/expenses/api/src/routes.ts`.
+- Mettre en place la validation et le typage statique dans `libs/features/members/api/src/routes.ts`.
+- Remplacer les throw `new Error` par `new AppError` dans ces routes.
 
-- [ ] **Task 2: Schémas et Validation TypeBox sur les Routes d'Écriture**
-  - Mettre en place la validation et le typage statique dans `libs/features/shop/api/src/routes.ts`.
-  - Mettre en place la validation et le typage statique dans `libs/features/expenses/api/src/routes.ts`.
-  - Mettre en place la validation et le typage statique dans `libs/features/members/api/src/routes.ts`.
-  - Remplacer les throw `new Error` par `new AppError` dans ces routes.
+### Task 3: Ajout de l'API de Balance de Trésorerie et Filtrage par Paiement
+- Implémenter l'API `GET /seasons/:seasonId/balance` dans `libs/features/accounting/api/src/routes.ts`.
+- Ajouter le support du filtre de requête `paid` dans `GET /members` (`libs/features/members/api/src/routes.ts`).
+- Convertir les erreurs de l'API accounting pour utiliser `AppError`.
 
-- [ ] **Task 3: Ajout de l'API de Balance de Trésorerie et Filtrage par Paiement**
-  - Implémenter l'API `GET /seasons/:seasonId/balance` dans `libs/features/accounting/api/src/routes.ts`.
-  - Ajouter le support du filtre de requête `paid` dans `GET /members` (`libs/features/members/api/src/routes.ts`).
-  - Convertir les erreurs de l'API accounting pour utiliser `AppError`.
+### Task 4: Raccordement du Tableau de Bord d'Administration aux Données Réelles
+- Récupérer et afficher les métriques réelles dans `apps/admin-console/src/pages/index.astro`.
+- Gérer les cas d'erreurs de connexion.
 
-- [ ] **Task 4: Raccordement du Tableau de Bord d'Administration aux Données Réelles**
-  - Récupérer et afficher les métriques réelles dans `apps/admin-console/src/pages/index.astro`.
-  - Gérer les cas d'erreurs de connexion.
+### Task 5: Optimisation du Catalogue Boutique et Autocomplétion Dynamique des Membres
+- Modifier le chargement dans `apps/boutique/src/pages/index.astro`.
+- Implémenter l'API de recherche dans `apps/boutique/src/pages/api/members-search.ts`.
+- Mettre à jour `ShopCatalog.svelte` pour utiliser l'autocomplétion dynamique avec debounce.
 
-- [ ] **Task 5: Optimisation du Catalogue Boutique et Autocomplétion Dynamique des Membres**
-  - Modifier le chargement dans `apps/boutique/src/pages/index.astro`.
-  - Implémenter l'API de recherche dans `apps/boutique/src/pages/api/members-search.ts`.
-  - Mettre à jour `ShopCatalog.svelte` pour utiliser l'autocomplétion dynamique avec debounce.
-
-- [ ] **Task 6: Validation Globale et Poussée**
-  - Exécuter la suite complète de tests Vitest, Astro check, ESLint.
-  - Pousser le travail finalisé.
+### Task 6: Validation Globale et Poussée
+- Exécuter la suite complète de tests Vitest, Astro check, ESLint.
+- Pousser le travail finalisé.
