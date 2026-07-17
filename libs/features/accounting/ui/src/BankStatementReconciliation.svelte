@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { Upload, Check, AlertCircle, Trash2, ShieldAlert, Sparkles, RefreshCw } from 'lucide-svelte';
   import { Button, Table, Input, Badge, Card, Dialog, Tabs, Checkbox } from '@metacult/shared-ui';
 
@@ -976,30 +977,21 @@
       ? unpaidInvoices.filter(inv => inv.totalAmount !== selectedTx.amount)
       : unpaidInvoices
   );
+
+  onMount(() => {
+    const handleOpen = () => {
+      if (!isClosed) {
+        showImportModal = true;
+      }
+    };
+    window.addEventListener('open-bank-import', handleOpen);
+    return () => {
+      window.removeEventListener('open-bank-import', handleOpen);
+    };
+  });
 </script>
 
 <div class="space-y-6">
-  {#if isClosed || (bankTransactions.length > 0 && !isClosed)}
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        {#if isClosed}
-          <Badge variant="outline" class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
-            Saison clôturée (Lecture seule)
-          </Badge>
-        {/if}
-      </div>
-      {#if bankTransactions.length > 0 && !isClosed}
-        <Button 
-          type="button"
-          onclick={() => showImportModal = true}
-          class="inline-flex items-center gap-1.5 text-xs font-semibold"
-        >
-          <Upload class="w-3.5 h-3.5" />
-          Importer un relevé (.ofx)
-        </Button>
-      {/if}
-    </div>
-  {/if}
 
   <Dialog.Root bind:open={showImportModal}>
     <Dialog.Content class="max-w-md p-6 bg-card border-border shadow-xl">

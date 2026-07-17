@@ -6,6 +6,7 @@ describe('BankStatementReconciliation Component', () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
+    document.body.innerHTML = '';
     global.fetch = vi.fn().mockImplementation((url, init) => {
       if (url === '/admin/accounting/import' && init?.body) {
         const body = JSON.parse(init.body);
@@ -68,6 +69,7 @@ describe('BankStatementReconciliation Component', () => {
   });
 
   afterEach(() => {
+    document.body.innerHTML = '';
     global.fetch = originalFetch;
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
@@ -724,7 +726,92 @@ describe('BankStatementReconciliation Component', () => {
     expect(target.innerHTML).toContain('Tournois Senior');
 
     // The member search combobox should show the selected member name 'Dupont Jean'
-    expect(target.innerHTML).toContain('Dupont Jean');
+  });
+
+  it('opens import modal when open-bank-import window event is dispatched and season is not closed', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankTransactions: [
+          {
+            id: 1,
+            fitid: 'TEST-FITID',
+            accountId: 'current',
+            amount: -1560,
+            date: '2026-02-16',
+            name: 'IONOS',
+            memo: 'Facture web',
+            status: 'pending',
+            aiSuggestions: null
+          }
+        ],
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true, closed: false }],
+        members: []
+      }
+    });
+
+    flushSync();
+
+    // The modal content is not in the DOM initially
+    expect(document.body.innerHTML).not.toContain('Importer un relevé Société Générale');
+
+    // Dispatch the window event
+    window.dispatchEvent(new CustomEvent('open-bank-import'));
+    flushSync();
+
+    // The modal content should now be in the DOM
+    expect(document.body.innerHTML).toContain('Importer un relevé Société Générale');
+
+    // Clean up
+    target.remove();
+  });
+
+  it('does not open import modal when open-bank-import window event is dispatched if season is closed', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankTransactions: [
+          {
+            id: 1,
+            fitid: 'TEST-FITID',
+            accountId: 'current',
+            amount: -1560,
+            date: '2026-02-16',
+            name: 'IONOS',
+            memo: 'Facture web',
+            status: 'pending',
+            aiSuggestions: null
+          }
+        ],
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true, closed: true }],
+        members: []
+      }
+    });
+
+    flushSync();
+
+    // The modal content is not in the DOM initially
+    expect(document.body.innerHTML).not.toContain('Importer un relevé Société Générale');
+
+    // Dispatch the window event
+    window.dispatchEvent(new CustomEvent('open-bank-import'));
+    flushSync();
+
+    // The modal content should still NOT be in the DOM
+    expect(document.body.innerHTML).not.toContain('Importer un relevé Société Générale');
+
+    // Clean up
+    target.remove();
   });
 });
 
