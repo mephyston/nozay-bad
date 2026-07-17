@@ -223,4 +223,56 @@ describe('Orders API Endpoints', () => {
     const json = await res.json() as any;
     expect(json.success).toBe(true);
   });
+
+  it('blocks order CRUD / mutations if the season is closed', async () => {
+    const { mockD1, db } = await setupMockDb();
+
+    // 1. Insert a closed season
+    await db.run(sql`
+      INSERT OR REPLACE INTO seasons (id, name, active, closed, created_at)
+      VALUES ('25-26', 'Saison 2025-2026', 1, 1, ${new Date().getTime()})
+    `);
+
+    // Insert member, product
+    await db.run(sql`
+      INSERT INTO members (id, licence, season, last_name, first_name, gender, birth_date, status, type, amount_due, amount_received, amount_remaining, imported_at)
+      VALUES (1, '1234567', '25-26', 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'Competiteur', 25000, 0, 25000, ${new Date().getTime()})
+    `);
+    await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', category: 'string' as any, price: 1200, stock: 5, active: true, createdAt: new Date() }).run();
+
+    // Try creating an order on a closed season -> expect 400
+    const createRes = await app.request('http://localhost/shop/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seasonId: '25-26', memberId: 1, productId: 1, quantity: 2, paymentMethod: 'virement' })
+    }, { DB: mockD1 as any });
+    expect(createRes.status).toBe(400);
+    const createJson = await createRes.json() as any;
+    expect(createJson.success).toBe(false);
+    expect(createJson.error).toBe('La saison est clôturée');
+
+    // To test approval and rejection, insert a pending order directly bypassing endpoint
+    await db.run(sql`
+      INSERT INTO orders (id, season_id, member_id, product_id, quantity, total_amount, payment_method, status, created_at)
+      VALUES (10, '25-26', 1, 1, 2, 2400, 'virement', 'pending', ${new Date().getTime()})
+    `);
+
+    // Try approving the order on closed season -> expect 400
+    const approveRes = await app.request('http://localhost/shop/orders/10/approve', {
+      method: 'POST'
+    }, { DB: mockD1 as any });
+    expect(approveRes.status).toBe(400);
+    const approveJson = await approveRes.json() as any;
+    expect(approveJson.success).toBe(false);
+    expect(approveJson.error).toBe('La saison est clôturée');
+
+    // Try rejecting the order on closed season -> expect 400
+    const rejectRes = await app.request('http://localhost/shop/orders/10/reject', {
+      method: 'POST'
+    }, { DB: mockD1 as any });
+    expect(rejectRes.status).toBe(400);
+    const rejectJson = await rejectRes.json() as any;
+    expect(rejectJson.success).toBe(false);
+    expect(rejectJson.error).toBe('La saison est clôturée');
+  });
 });
