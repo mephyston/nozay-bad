@@ -11,6 +11,7 @@ describe('ExpenseReportForm Component', () => {
   ];
 
   beforeEach(() => {
+    vi.useFakeTimers();
     originalFetch = global.fetch;
     global.fetch = vi.fn().mockImplementation(() =>
       Promise.resolve({
@@ -21,6 +22,8 @@ describe('ExpenseReportForm Component', () => {
   });
 
   afterEach(() => {
+    vi.runAllTimers();
+    vi.useRealTimers();
     global.fetch = originalFetch;
     vi.restoreAllMocks();
   });
@@ -43,5 +46,32 @@ describe('ExpenseReportForm Component', () => {
     expect(target.innerHTML).toContain("Catégorie de dépense");
     expect(target.innerHTML).toContain("Montant (€)");
     expect(target.innerHTML).toContain("Description / Motif des frais");
+  });
+
+  it('uses design system components from @metacult/shared-ui', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(ExpenseReportForm, {
+      target,
+      props: {
+        activeSeasonId: '25-26',
+        members
+      }
+    });
+    flushSync();
+
+    // Check for Card component (represented by data-slot="card")
+    expect(target.querySelector('[data-slot="card"]')).not.toBeNull();
+    expect(target.querySelector('[data-slot="card-header"]')).not.toBeNull();
+    expect(target.querySelector('[data-slot="card-title"]')).not.toBeNull();
+    expect(target.querySelector('[data-slot="card-content"]')).not.toBeNull();
+
+    // Check for Input component (data-slot="input")
+    const inputs = target.querySelectorAll('[data-slot="input"]');
+    expect(inputs.length).toBeGreaterThanOrEqual(2);
+
+    // Check for Label component (data-slot="label")
+    expect(target.querySelector('[data-slot="label"]')).not.toBeNull();
   });
 });
