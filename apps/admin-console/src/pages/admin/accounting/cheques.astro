@@ -132,6 +132,28 @@ try {
 <Layout title="Remises de Chèques - NBA 91">
   <AdminLayout client:load email={userEmail} breadcrumb="Comptabilité / Remises de chèques">
     <div class="space-y-6">
+      <div class="flex items-center justify-between print:hidden">
+        <div>
+          <h1 class="text-3xl font-bold tracking-tight">Remise de chèques</h1>
+          <p class="text-muted-foreground mt-2">
+            Gestion et suivi des chèques physiques, génération de bordereaux de remise et rapprochement bancaire.
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <select
+            id="season-selector"
+            class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9"
+          >
+            {seasonsList.map((s: any) => (
+              <option value={s.id} selected={s.id === season}>{s.name}</option>
+            ))}
+            {seasonsList.length === 0 && (
+              <option value="25-26" selected>Saison 2025-2026</option>
+            )}
+          </select>
+        </div>
+      </div>
+
       {errorMsg && (
         <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
           {errorMsg}
@@ -149,4 +171,15 @@ try {
       />
     </div>
   </AdminLayout>
+  <script>
+    const selector = document.getElementById('season-selector');
+    if (selector) {
+      selector.addEventListener('change', (e) => {
+        const newSeason = (e.target as HTMLSelectElement).value;
+        const params = new URLSearchParams(window.location.search);
+        params.set('season', newSeason);
+        window.location.href = `/admin/accounting/cheques?${params.toString()}`;
+      });
+    }
+  </script>
 </Layout>
