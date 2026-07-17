@@ -33,6 +33,7 @@ describe('InvoicesManager Component', () => {
   let targets: HTMLDivElement[] = [];
 
   beforeEach(() => {
+    vi.useFakeTimers();
     originalFetch = global.fetch;
     global.fetch = vi.fn().mockImplementation(() =>
       Promise.resolve({
@@ -54,6 +55,8 @@ describe('InvoicesManager Component', () => {
       }
     });
     targets = [];
+    vi.runAllTimers();
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 

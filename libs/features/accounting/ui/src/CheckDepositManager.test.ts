@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, beforeAll, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, beforeAll, vi } from 'vitest';
 import { mount, unmount, flushSync } from 'svelte';
 import CheckDepositManager from './CheckDepositManager.svelte';
 
@@ -29,12 +29,18 @@ describe('CheckDepositManager Component', () => {
     });
   });
 
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
   afterEach(() => {
     if (component) {
       unmount(component);
       component = null;
     }
     document.body.innerHTML = '';
+    vi.runAllTimers();
+    vi.useRealTimers();
   });
 
   it('renders received checks and past check deposits correctly', () => {

@@ -13,6 +13,7 @@
       "@nba/db": ["libs/shared/db/src/index.ts"],
       "@nba/core": ["libs/shared/core/src/index.ts"],
       "@nba/ui": ["libs/shared/ui/src/index.ts"],
+      "@metacult/shared-db/test-utils": ["libs/shared/db/src/test-utils.ts"],
       "@metacult/shared-db": ["libs/shared/db/src/index.ts"],
       "@metacult/features-members-data-access": ["libs/features/members/data-access/src/index.ts"],
       "@metacult/features-accounting-data-access": ["libs/features/accounting/data-access/src/index.ts"],

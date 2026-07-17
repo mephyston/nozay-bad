@@ -15,7 +15,7 @@ import { productsTable, ordersTable } from '@metacult/features-shop-data-access'
 import { drizzle } from 'drizzle-orm/d1';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { MockD1Database } from '@metacult/shared-db';
+import { MockD1Database } from '@metacult/shared-db/test-utils';
 
 describe('Database Tests', () => {
   it('should run migrations and insert/retrieve a member and a user', async () => {

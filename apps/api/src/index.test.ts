@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import app from './index';
-import { setupMockDb } from '@metacult/shared-db';
+import { setupMockDb } from '@metacult/shared-db/test-utils';
 import { seasonsTable } from '@metacult/features-members-data-access';
 import { expensesTable } from '@metacult/features-expenses-data-access';
 import { eq } from 'drizzle-orm';

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { accountingRouter } from './routes';
-import { setupMockDb } from '@metacult/shared-db';
+import { setupMockDb } from '@metacult/shared-db/test-utils';
 import { seasonsTable, membersTable } from '@metacult/features-members-data-access';
 import {
   seasonBalancesTable,
