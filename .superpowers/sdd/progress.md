@@ -102,7 +102,7 @@
 
 ## Phase 21: Découpage des Routes Comptables (2026-07-18)
 - Task 1: complete (commits 6cbdc08..b84fb20, review clean)
-- Task 2: pending
+- Task 2: complete (commits 440d5e5..e8655a5, review clean)
 - Task 3: pending
 - Task 4: pending
 - Task 5: pending
