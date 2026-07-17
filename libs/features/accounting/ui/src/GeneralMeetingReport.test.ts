@@ -1,13 +1,23 @@
-import { describe, it, expect } from 'vitest';
-import { mount } from 'svelte';
+import { describe, it, expect, afterEach } from 'vitest';
+import { mount, unmount, flushSync } from 'svelte';
 import GeneralMeetingReport from './GeneralMeetingReport.svelte';
 
 describe('GeneralMeetingReport Component', () => {
+  let component: any = null;
+
+  afterEach(() => {
+    if (component) {
+      unmount(component);
+      component = null;
+    }
+    document.body.innerHTML = '';
+  });
+
   it('renders report details and balances correctly', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(GeneralMeetingReport, {
+    component = mount(GeneralMeetingReport, {
       target,
       props: {
         report: {
@@ -50,7 +60,7 @@ describe('GeneralMeetingReport Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(GeneralMeetingReport, {
+    component = mount(GeneralMeetingReport, {
       target,
       props: {
         report: {
@@ -87,7 +97,7 @@ describe('GeneralMeetingReport Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(GeneralMeetingReport, {
+    component = mount(GeneralMeetingReport, {
       target,
       props: {
         report: {
@@ -135,12 +145,11 @@ describe('GeneralMeetingReport Component', () => {
     expect(target.innerHTML).toContain("100,00&nbsp;€");
     expect(target.innerHTML).toContain("50,00&nbsp;€");
 
-    // Find and click the "Prévisionnel" button
-    const prevButton = Array.from(target.querySelectorAll('button')).find(btn => btn.textContent?.includes('Prévisionnel'));
-    expect(prevButton).toBeDefined();
-    prevButton?.click();
-
-    await new Promise(resolve => setTimeout(resolve, 0));
+    // Find and click the "Budget prévisionnel" tab button
+    const prevTab = Array.from(target.querySelectorAll('button')).find(btn => btn.textContent?.includes('Budget prévisionnel'));
+    expect(prevTab).toBeDefined();
+    prevTab?.click();
+    flushSync();
 
     // Now in previsionnel mode: should show prevReport's realized column header "Réalisé 2024-2025"
     expect(target.innerHTML).toContain("Réalisé 2024-2025");
