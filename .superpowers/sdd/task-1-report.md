@@ -1,30 +1,29 @@
-# Task 1 Report: En-tête de page et bouton d'importation dans import.astro
+# Task 1 Report: Bouton « Import Poona » avec icône dans index.astro (Adhérents)
 
 ## What was implemented
-1. **Computed `isClosed` status:** Added computation of `isClosed` in the frontmatter of `apps/admin-console/src/pages/admin/accounting/import.astro` based on the fetched `seasonsList` and current `season` parameter. Explicitly typed the search parameter to avoid compiler errors.
-2. **Updated Page Header Block:** Updated the header layout in `import.astro` to:
-   - Display a "Saison clôturée (Lecture seule)" label if the season is closed (`isClosed === true`).
-   - Render the "Importer" primary action button with a custom event trigger (`onclick="window.dispatchEvent(new CustomEvent('open-bank-import'))"`) if the season is active and there are existing bank transactions.
-
-## What was tested and test results
-- Ran `npx astro check --root apps/admin-console` to ensure typescript compilation passes without any diagnostic errors (0 errors, 0 warnings).
-- Ran the full test suite with `npx vitest run` to ensure no regression was introduced (all 136 tests passed).
-
-## TDD Evidence (Vitest Run Outputs)
-```
-Test Files  26 passed (26)
-     Tests  136 passed (136)
-  Start at  10:35:35
-  Duration  33.93s
-```
+Modified the members list page to replace the generic "Importer" text button with a standardized link containing an SVG upload icon and the label "Import Poona".
 
 ## Files changed
-- `apps/admin-console/src/pages/admin/accounting/import.astro`
+* [apps/admin-console/src/pages/admin/members/index.astro](file:///Users/david/Lab/nozay-bad/apps/admin-console/src/pages/admin/members/index.astro)
+
+## What was tested and test results
+* Checked the full Vitest suite to ensure that no existing tests were broken.
+* 26 test files, 138 tests passed.
+
+### Test Run Output (Baseline / Post-implementation)
+```
+Test Files  26 passed (26)
+     Tests  138 passed (138)
+```
+
+## TDD Evidence (RED/GREEN run outputs)
+No new test cases were required for this markup-only change (there was no test suite checking the Astro template markup for that button), but the test suite was verified before and after the modification to ensure complete stability.
 
 ## Self-review findings
-- **Completeness:** All steps from the task brief were executed exactly as specified.
-- **Quality & Discipline:** Checked typescript compilations via `astro check` and fixed the implicit `any` error.
-- **Testing:** Validated existing test suites.
+* **Completeness**: Implemented exactly what was specified in `task-1-brief.md`.
+* **Quality**: The styling of the button uses CSS utilities matching Tailwind class standards as requested (`cursor-pointer inline-flex items-center gap-2 border-0 no-underline`).
+* **Discipline**: Used Git commands to stage and commit the changes according to standard practices.
+* **Testing**: Ran `npm test -- --run` successfully.
 
 ## Issues or concerns
 None.
