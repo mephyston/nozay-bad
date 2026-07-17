@@ -56,3 +56,7 @@
 ## Phase 12: Rapports Financiers - Alignement En-tête (2026-07-17)
 - Task 1: complete (commits da73751..425bdc2, review clean)
 - Task 2: complete (commits e018cd5..775ed48, review clean)
+
+## Phase 13: Rapports Financiers - Polices & Nettoyage (2026-07-17)
+- Task 1: pending
+- Task 2: pending
