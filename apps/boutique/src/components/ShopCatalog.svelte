@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ShoppingBag, Search, Check, AlertCircle, ChevronDown, User } from "lucide-svelte";
+  import { Button, Card, Input, Label, Badge } from '@metacult/shared-ui';
 
   interface Member {
     id: number;
@@ -250,16 +251,16 @@
         <User class="w-6 h-6" />
       </div>
       <div>
-        <h2 class="text-xl font-bold tracking-tight">Qui effectue l'achat ?</h2>
-        <p class="text-xs text-muted-foreground font-medium">Sélectionnez votre nom dans la liste des adhérents du club.</p>
+        <Label for="member-input" class="text-xl font-bold tracking-tight block cursor-pointer">Qui effectue l'achat ?</Label>
+        <p class="text-xs text-muted-foreground font-medium mt-1">Sélectionnez votre nom dans la liste des adhérents du club.</p>
       </div>
     </div>
 
     <!-- Dropdown / Autocomplete Combobox -->
     <div class="relative max-w-md">
       <div class="relative">
-        <Search class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-        <input
+        <Search class="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
+        <Input
           id="member-input"
           type="text"
           role="combobox"
@@ -269,7 +270,7 @@
           aria-controls="member-listbox"
           aria-activedescendant={highlightedIndex >= 0 ? `member-option-${highlightedIndex}` : undefined}
           placeholder="Rechercher par Nom, Prénom, ou N° Licence..."
-          class="w-full pl-10 pr-10 py-2 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground font-medium"
+          class="w-full pl-10 pr-10 h-10 bg-background text-sm text-foreground font-medium"
           value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
           oninput={(e) => {
             isMemberDropdownOpen = true;
@@ -290,7 +291,7 @@
           }}
           onkeydown={handleKeyDown}
         />
-        <ChevronDown class="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <ChevronDown class="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
       </div>
 
       {#if isMemberDropdownOpen}
@@ -312,7 +313,7 @@
             >
               <div class="flex justify-between items-center">
                 <span>{m.lastName} {m.firstName}</span>
-                <span class="text-xs text-muted-foreground font-mono">Licence: {m.licence}</span>
+                <Badge variant="outline" class="font-mono">Licence: {m.licence}</Badge>
               </div>
             </button>
           {:else}
@@ -325,15 +326,15 @@
     <!-- Active Member Badge & Security Check -->
     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
       {#if selectedMember}
-        <div class="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg text-xs font-semibold self-start sm:self-auto">
+        <Badge variant="outline" class="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg text-xs font-semibold self-start sm:self-auto">
           <Check class="w-4 h-4" />
           Adhérent sélectionné : <span class="underline">{selectedMember.lastName} {selectedMember.firstName}</span>
-        </div>
+        </Badge>
       {:else}
-        <div class="inline-flex items-center gap-2 bg-destructive/10 text-destructive border border-destructive/20 px-3 py-1.5 rounded-lg text-xs font-semibold">
+        <Badge variant="destructive" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold self-start sm:self-auto">
           <AlertCircle class="w-4 h-4" />
           Veuillez sélectionner un adhérent pour débloquer les commandes.
-        </div>
+        </Badge>
       {/if}
       <div class="cf-turnstile" style={!selectedMember ? 'display: none;' : ''} data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1"></div>
     </div>
@@ -355,63 +356,70 @@
     {:else}
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {#each productsList as product (product.id)}
-          <div class="bg-card text-card-foreground border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <Card.Root class="overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
             
             <!-- Card Header -->
-            <div class="p-6 pb-4 space-y-2">
+            <Card.Header class="p-6 pb-4 space-y-2">
               <div class="flex justify-between items-start gap-2">
-                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border uppercase tracking-wider
+                <Card.Title class="text-lg font-bold tracking-tight text-foreground">{product.name}</Card.Title>
+                <Badge variant={product.stock > 0 ? "outline" : "destructive"}>
+                  {product.stock > 0 ? `Stock: ${product.stock}` : "Rupture"}
+                </Badge>
+              </div>
+            </Card.Header>
+
+            <!-- Card Content -->
+            <Card.Content class="p-6 pt-0 flex-grow flex flex-col justify-between space-y-2">
+              <div class="flex justify-between items-center mt-2">
+                <Badge variant="outline" class="uppercase tracking-wider
                   {product.category === 'shuttlecock' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : product.category === 'string' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'}">
                   {product.category === 'shuttlecock' ? 'Volants' : product.category === 'string' ? 'Cordages' : 'Autre'}
-                </span>
+                </Badge>
                 
                 <span class="text-lg font-bold text-primary">
                   {(product.price / 100).toFixed(2)} €
                 </span>
               </div>
-              
-              <h3 class="text-lg font-bold tracking-tight text-foreground">{product.name}</h3>
-            </div>
+            </Card.Content>
 
-            <!-- Card Action Area / Order Panel -->
-            <div class="p-6 pt-0 border-t border-border/50 bg-muted/20 space-y-4">
-              
+            <!-- Card Footer / Order Panel -->
+            <Card.Footer class="p-6 pt-0 border-t border-border/50 bg-muted/20 flex flex-col items-stretch w-full gap-4">
               {#if product.stock > 0}
-                <div class="space-y-3 mt-4">
+                <div class="space-y-3 mt-4 w-full">
                   <!-- Quantity Selector -->
                   <div class="flex justify-between items-center">
-                    <label for="qty-{product.id}" class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Quantité</label>
+                    <Label for="qty-{product.id}" class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Quantité</Label>
                     <div class="flex items-center border border-border bg-background rounded-lg overflow-hidden">
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
                         onclick={() => decrementQty(product.id)}
                         disabled={quantities[product.id] <= 1}
-                        class="px-2.5 py-1 text-sm hover:bg-muted disabled:opacity-30 cursor-pointer font-bold border-0"
+                        class="px-2.5 py-1 h-8 text-sm hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0"
                       >
                         -
-                      </button>
-                      <input
+                      </Button>
+                      <Input
                         id="qty-{product.id}"
                         type="number"
                         min="1"
                         max={99}
                         bind:value={quantities[product.id]}
-                        class="w-12 text-center text-sm font-semibold border-0 focus:outline-none bg-transparent"
+                        class="w-12 h-8 text-center text-sm font-semibold border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                       />
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
                         onclick={() => incrementQty(product.id, 99)}
                         disabled={quantities[product.id] >= 99}
-                        class="px-2.5 py-1 text-sm hover:bg-muted disabled:opacity-30 cursor-pointer font-bold border-0"
+                        class="px-2.5 py-1 h-8 text-sm hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0"
                       >
                         +
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
                   <!-- Payment Method -->
                   <div class="space-y-1">
-                    <label for="pm-{product.id}" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Mode de paiement prévu</label>
+                    <Label for="pm-{product.id}" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Mode de paiement prévu</Label>
                     <div class="relative">
                       <select
                         id="pm-{product.id}"
@@ -427,11 +435,10 @@
                   </div>
 
                   <!-- Submit button -->
-                  <button
-                    type="button"
+                  <Button
                     onclick={() => handleOrder(product.id)}
                     disabled={!selectedMemberId || submitting[product.id]}
-                    class="w-full flex justify-center items-center gap-2 bg-primary hover:bg-primary/95 text-primary-foreground font-semibold py-2 px-4 rounded-lg text-sm transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-0 mt-2"
+                    class="w-full flex justify-center items-center gap-2 font-semibold h-10 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                   >
                     {#if submitting[product.id]}
                       <span class="animate-pulse">Envoi en cours...</span>
@@ -439,31 +446,30 @@
                       <ShoppingBag class="w-4 h-4" />
                       Commander
                     {/if}
-                  </button>
+                  </Button>
                 </div>
               {:else}
-                <div class="text-center py-6 text-sm text-muted-foreground italic mt-4">
+                <div class="text-center py-6 text-sm text-muted-foreground italic mt-4 w-full">
                   Cet article n'est plus en stock.
                 </div>
               {/if}
 
               <!-- Individual Feedbacks -->
               {#if successMessages[product.id]}
-                <div class="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs rounded-lg flex items-start gap-1.5">
+                <div class="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs rounded-lg flex items-start gap-1.5 w-full">
                   <Check class="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{successMessages[product.id]}</span>
                 </div>
               {/if}
 
               {#if errorMessages[product.id]}
-                <div class="mt-3 p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-lg flex items-start gap-1.5">
+                <div class="mt-3 p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-lg flex items-start gap-1.5 w-full">
                   <AlertCircle class="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{errorMessages[product.id]}</span>
                 </div>
               {/if}
-
-            </div>
-          </div>
+            </Card.Footer>
+          </Card.Root>
         {/each}
       </div>
     {/if}

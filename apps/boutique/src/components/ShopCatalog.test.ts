@@ -16,6 +16,7 @@ describe('ShopCatalog Component', () => {
   let originalFetch: typeof global.fetch;
 
   beforeEach(() => {
+    vi.useFakeTimers();
     originalFetch = global.fetch;
     global.fetch = vi.fn().mockImplementation(() =>
       Promise.resolve({
@@ -26,6 +27,8 @@ describe('ShopCatalog Component', () => {
   });
 
   afterEach(() => {
+    vi.runAllTimers();
+    vi.useRealTimers();
     global.fetch = originalFetch;
     vi.restoreAllMocks();
   });
@@ -141,8 +144,7 @@ describe('ShopCatalog Component', () => {
       })
     });
 
-    // Wait for async handler to resolve and state changes to trigger re-render
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await vi.runAllTimersAsync();
     flushSync();
 
     // Check success message is displayed
@@ -263,5 +265,36 @@ describe('ShopCatalog Component', () => {
     // Input value should still be preserved
     expect(input.value).toBe('Dupont Jean');
     expect(selectSpy).toHaveBeenCalled();
+  });
+
+  it('renders products using Card components and member selection with Label and Input', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(ShopCatalog, {
+      target,
+      props: {
+        members,
+        products,
+        activeSeasonId: '25-26'
+      }
+    });
+    flushSync();
+
+    // Check that Card components are used (data-slot="card")
+    const cardRoots = target.querySelectorAll('[data-slot="card"]');
+    expect(cardRoots.length).toBe(2);
+
+    // Verify card titles (data-slot="card-title")
+    const cardTitles = Array.from(target.querySelectorAll('[data-slot="card-title"]'));
+    expect(cardTitles.some(el => el.textContent?.includes('Volant RSL Grade 1'))).toBe(true);
+    expect(cardTitles.some(el => el.textContent?.includes('Cordage Yonex BG65'))).toBe(true);
+
+    // Verify Label and Input are used for member search
+    const labels = Array.from(target.querySelectorAll('[data-slot="label"]'));
+    expect(labels.some(el => el.textContent?.includes("Qui effectue l'achat ?"))).toBe(true);
+
+    const input = target.querySelector('input#member-input[data-slot="input"]');
+    expect(input).not.toBeNull();
   });
 });
