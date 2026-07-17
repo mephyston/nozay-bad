@@ -67,3 +67,7 @@
 - Task 3: complete (commits df1c0b3..c8a68bf, review clean)
 - Task 4: complete (commits bbd3098..0928ac2, review clean)
 - Task 5: complete (commits 08b05dc..01137bb, review clean)
+
+## Phase 15: Remise de chèques - Panel Latéral (Sheet) (2026-07-17)
+- Task 1: pending
+- Task 2: pending
