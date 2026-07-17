@@ -1,9 +1,33 @@
-import { describe, it, expect, afterEach } from 'vitest';
-import { mount, unmount } from 'svelte';
+import { describe, it, expect, afterEach, beforeAll, vi } from 'vitest';
+import { mount, unmount, flushSync } from 'svelte';
 import CheckDepositManager from './CheckDepositManager.svelte';
 
 describe('CheckDepositManager Component', () => {
   let component: any = null;
+
+  beforeAll(() => {
+    // Mock ResizeObserver which is required by Radix / bits-ui
+    global.ResizeObserver = class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
+
+    // Mock matchMedia which is required by Radix / bits-ui
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation(query => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
+  });
 
   afterEach(() => {
     if (component) {
@@ -129,5 +153,30 @@ describe('CheckDepositManager Component', () => {
     // 3. no-print should be on the Tabs.List element
     const noPrintElements = target.querySelectorAll('.no-print');
     expect(noPrintElements.length).toBeGreaterThan(0);
+  });
+
+  it('renders the "Enregistrer un Chèque" trigger button', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    component = mount(CheckDepositManager, {
+      target,
+      props: {
+        seasonId: '25-26',
+        seasons: [
+          { id: '25-26', name: 'Saison 2025-2026', active: true }
+        ],
+        checks: [],
+        checkDeposits: [],
+        members: [
+          { id: 10, licence: 'LIC-123', lastName: 'DUPONT', firstName: 'Marc', parent1Name: null, parent2Name: null }
+        ],
+        pendingBankTransactions: []
+      }
+    });
+
+    const buttons = target.querySelectorAll('button');
+    const openButton = Array.from(buttons).find(btn => btn.textContent?.includes('Enregistrer un Chèque'));
+    expect(openButton).toBeDefined();
   });
 });

@@ -704,242 +704,244 @@
       <Sheet.Description class="hidden">Enregistrement d'un chèque physique avec assistance IA optionnelle par photo.</Sheet.Description>
     </Sheet.Header>
 
-    <div class="p-6 overflow-y-auto flex-grow space-y-4">
-      <!-- Photo/Camera Upload section -->
-      <div class="space-y-2">
-        <label for="photo-capture-input" class="block text-sm font-semibold text-foreground">Prise de photo du chèque (OCR IA)</label>
-        <Button
-          variant="outline"
-          onclick={() => fileInput?.click()}
-          class="w-full h-auto border-2 border-dashed border-border hover:border-primary rounded-lg p-6 text-center cursor-pointer hover:bg-accent/30 transition-all flex flex-col items-center justify-center gap-2 relative {isAnalyzing ? 'pointer-events-none opacity-50' : ''}"
-        >
-          {#if isAnalyzing}
-            <Loader2 class="h-8 w-8 text-primary animate-spin" />
-            <span class="text-sm font-semibold text-primary">Analyse du chèque par l'IA en cours...</span>
-            <span class="text-xs text-muted-foreground">Extraction du numéro, montant, émetteur et de la banque.</span>
-          {:else}
-            <UploadCloud class="h-8 w-8 text-muted-foreground" />
-            <span class="text-sm font-medium text-foreground">Prendre en photo ou glisser l'image du chèque</span>
-            <span class="text-xs text-muted-foreground">Format JPG, PNG, WEBP. Détection automatique.</span>
-          {/if}
-        </Button>
-        <input
-          id="photo-capture-input"
-          type="file"
-          accept="image/*"
-          capture="environment"
-          bind:this={fileInput}
-          onchange={handlePhotoSelected}
-          class="hidden"
-        />
-      </div>
-
-      {#if formError}
-        <Alert.Root variant="destructive">
-          <Alert.Description>{formError}</Alert.Description>
-        </Alert.Root>
-      {/if}
-
-      {#if matchedMemberName && checkMemberId}
-        <Alert.Root class="bg-primary/10 border-primary/20 text-primary">
-          <Alert.Description class="flex justify-between items-center text-xs w-full">
-            <span>Adhérent détecté : <strong>{matchedMemberName}</strong></span>
-            <Badge variant="secondary" class="bg-primary/20 hover:bg-primary/20 text-primary border-transparent">Automatiquement sélectionné</Badge>
-          </Alert.Description>
-        </Alert.Root>
-      {/if}
-
-      <div class="relative flex py-2 items-center">
-        <div class="flex-grow border-t border-border"></div>
-        <span class="flex-shrink mx-4 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Ou Saisir Manuellement</span>
-        <div class="flex-grow border-t border-border"></div>
-      </div>
-
-      <!-- Manual form fields -->
-      <form onsubmit={handleAddCheck} class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
-          <div class="space-y-1">
-            <label for="check-num" class="text-xs font-semibold text-muted-foreground uppercase">N° de chèque (7 chiffres)</label>
-            <Input
-              id="check-num"
-              type="text"
-              bind:value={checkNumber}
-              placeholder="Ex: 1234567"
-              required
-            />
-          </div>
-          <div class="space-y-1">
-            <label for="check-amt" class="text-xs font-semibold text-muted-foreground uppercase">Montant (€)</label>
-            <Input
-              id="check-amt"
-              type="number"
-              step="0.01"
-              bind:value={checkAmount}
-              placeholder="Ex: 150.00"
-              required
-            />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div class="space-y-1">
-            <label for="check-emitter" class="text-xs font-semibold text-muted-foreground uppercase">Émetteur (Nom sur le chèque)</label>
-            <Input
-              id="check-emitter"
-              type="text"
-              bind:value={checkEmitter}
-              placeholder="Ex: Dupont Marc"
-              required
-            />
-          </div>
-          <div class="space-y-1">
-            <label for="check-bank" class="text-xs font-semibold text-muted-foreground uppercase">Banque (optionnel)</label>
-            <Input
-              id="check-bank"
-              type="text"
-              bind:value={checkBank}
-              placeholder="Ex: LCL, SG..."
-            />
-          </div>
-        </div>
-
-        <div class="space-y-1 relative">
-          <label for="check-member-input" class="text-xs font-semibold text-muted-foreground uppercase">Adhérent concerné (pour rapprochement cotisation)</label>
-          <div class="relative">
-            <Input
-              id="check-member-input"
-              type="text"
-              placeholder="🔍 Rechercher un adhérent par nom ou licence..."
-              class="pr-8 font-medium"
-              value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
-              oninput={(e) => {
-                isMemberDropdownOpen = true;
-                memberSearchQuery = (e.target as HTMLInputElement).value;
-              }}
-              onfocus={() => {
-                isMemberDropdownOpen = true;
-                memberSearchQuery = '';
-              }}
-              onblur={() => {
-                setTimeout(() => { isMemberDropdownOpen = false; }, 200);
-              }}
-            />
-            {#if checkMemberId}
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onclick={() => {
-                  checkMemberId = '';
-                  memberSearchQuery = '';
-                  matchedMemberName = '';
-                }}
-                class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-                title="Effacer la sélection"
-              >
-                ✕
-              </Button>
+    <form onsubmit={handleAddCheck} class="flex flex-col flex-grow overflow-hidden">
+      <div class="p-6 overflow-y-auto flex-grow space-y-4">
+        <!-- Photo/Camera Upload section -->
+        <div class="space-y-2">
+          <label for="photo-capture-input" class="block text-sm font-semibold text-foreground">Prise de photo du chèque (OCR IA)</label>
+          <Button
+            variant="outline"
+            onclick={() => fileInput?.click()}
+            class="w-full h-auto border-2 border-dashed border-border hover:border-primary rounded-lg p-6 text-center cursor-pointer hover:bg-accent/30 transition-all flex flex-col items-center justify-center gap-2 relative {isAnalyzing ? 'pointer-events-none opacity-50' : ''}"
+          >
+            {#if isAnalyzing}
+              <Loader2 class="h-8 w-8 text-primary animate-spin" />
+              <span class="text-sm font-semibold text-primary">Analyse du chèque par l'IA en cours...</span>
+              <span class="text-xs text-muted-foreground">Extraction du numéro, montant, émetteur et de la banque.</span>
+            {:else}
+              <UploadCloud class="h-8 w-8 text-muted-foreground" />
+              <span class="text-sm font-medium text-foreground">Prendre en photo ou glisser l'image du chèque</span>
+              <span class="text-xs text-muted-foreground">Format JPG, PNG, WEBP. Détection automatique.</span>
             {/if}
-          </div>
-
-          {#if isMemberDropdownOpen}
-            <div class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-popover border border-border rounded-lg shadow-lg divide-y divide-border">
-              {#each memberOptions as member}
-                <Button
-                  variant="ghost"
-                  class="w-full text-left justify-start rounded-none px-3 py-2 text-sm hover:bg-muted text-foreground transition-colors font-medium border-0 cursor-pointer bg-popover"
-                  onmousedown={() => {
-                    checkMemberId = member.id.toString();
-                    memberSearchQuery = `${member.lastName} ${member.firstName} (${member.licence})`;
-                    isMemberDropdownOpen = false;
-                  }}
-                >
-                  {member.lastName} {member.firstName} ({member.licence})
-                  {member.parent1Name ? ` - Parent: ${member.parent1Name}` : ''}
-                </Button>
-              {:else}
-                <div class="px-3 py-2 text-xs text-muted-foreground italic bg-popover">Aucun adhérent trouvé</div>
-              {/each}
-            </div>
-          {/if}
+          </Button>
+          <input
+            id="photo-capture-input"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            bind:this={fileInput}
+            onchange={handlePhotoSelected}
+            class="hidden"
+          />
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        {#if formError}
+          <Alert.Root variant="destructive">
+            <Alert.Description>{formError}</Alert.Description>
+          </Alert.Root>
+        {/if}
+
+        {#if matchedMemberName && checkMemberId}
+          <Alert.Root class="bg-primary/10 border-primary/20 text-primary">
+            <Alert.Description class="flex justify-between items-center text-xs w-full">
+              <span>Adhérent détecté : <strong>{matchedMemberName}</strong></span>
+              <Badge variant="secondary" class="bg-primary/20 hover:bg-primary/20 text-primary border-transparent">Automatiquement sélectionné</Badge>
+            </Alert.Description>
+          </Alert.Root>
+        {/if}
+
+        <div class="relative flex py-2 items-center">
+          <div class="flex-grow border-t border-border"></div>
+          <span class="flex-shrink mx-4 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Ou Saisir Manuellement</span>
+          <div class="flex-grow border-t border-border"></div>
+        </div>
+
+        <!-- Manual form fields -->
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label for="check-num" class="text-xs font-semibold text-muted-foreground uppercase">N° de chèque (7 chiffres)</label>
+              <Input
+                id="check-num"
+                type="text"
+                bind:value={checkNumber}
+                placeholder="Ex: 1234567"
+                required
+              />
+            </div>
+            <div class="space-y-1">
+              <label for="check-amt" class="text-xs font-semibold text-muted-foreground uppercase">Montant (€)</label>
+              <Input
+                id="check-amt"
+                type="number"
+                step="0.01"
+                bind:value={checkAmount}
+                placeholder="Ex: 150.00"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label for="check-emitter" class="text-xs font-semibold text-muted-foreground uppercase">Émetteur (Nom sur le chèque)</label>
+              <Input
+                id="check-emitter"
+                type="text"
+                bind:value={checkEmitter}
+                placeholder="Ex: Dupont Marc"
+                required
+              />
+            </div>
+            <div class="space-y-1">
+              <label for="check-bank" class="text-xs font-semibold text-muted-foreground uppercase">Banque (optionnel)</label>
+              <Input
+                id="check-bank"
+                type="text"
+                bind:value={checkBank}
+                placeholder="Ex: LCL, SG..."
+              />
+            </div>
+          </div>
+
           <div class="space-y-1 relative">
-            <label for="check-cat-input" class="text-xs font-semibold text-muted-foreground uppercase">Affectation / Catégorie</label>
+            <label for="check-member-input" class="text-xs font-semibold text-muted-foreground uppercase">Adhérent concerné (pour rapprochement cotisation)</label>
             <div class="relative">
               <Input
-                id="check-cat-input"
+                id="check-member-input"
                 type="text"
-                placeholder="Filtrer les affectations..."
-                class="pr-6 font-medium"
-                value={isCategoryDropdownOpen ? categorySearchQuery : categoryDisplayVal}
+                placeholder="🔍 Rechercher un adhérent par nom ou licence..."
+                class="pr-8 font-medium"
+                value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
                 oninput={(e) => {
-                  isCategoryDropdownOpen = true;
-                  categorySearchQuery = (e.target as HTMLInputElement).value;
+                  isMemberDropdownOpen = true;
+                  memberSearchQuery = (e.target as HTMLInputElement).value;
                 }}
                 onfocus={() => {
-                  isCategoryDropdownOpen = true;
-                  categorySearchQuery = '';
+                  isMemberDropdownOpen = true;
+                  memberSearchQuery = '';
                 }}
                 onblur={() => {
-                  setTimeout(() => { isCategoryDropdownOpen = false; }, 200);
+                  setTimeout(() => { isMemberDropdownOpen = false; }, 200);
                 }}
               />
-              <span class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none text-[8px]">▼</span>
+              {#if checkMemberId}
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onclick={() => {
+                    checkMemberId = '';
+                    memberSearchQuery = '';
+                    matchedMemberName = '';
+                  }}
+                  class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  title="Effacer la sélection"
+                >
+                  ✕
+                </Button>
+              {/if}
             </div>
 
-            {#if isCategoryDropdownOpen}
-              <div class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded-lg shadow-lg divide-y divide-border">
-                {#each filteredCategories as cat}
+            {#if isMemberDropdownOpen}
+              <div class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-popover border border-border rounded-lg shadow-lg divide-y divide-border">
+                {#each memberOptions as member}
                   <Button
                     variant="ghost"
                     class="w-full text-left justify-start rounded-none px-3 py-2 text-sm hover:bg-muted text-foreground transition-colors font-medium border-0 cursor-pointer bg-popover"
                     onmousedown={() => {
-                      checkCategory = cat.id;
-                      categorySearchQuery = cat.name;
-                      isCategoryDropdownOpen = false;
+                      checkMemberId = member.id.toString();
+                      memberSearchQuery = `${member.lastName} ${member.firstName} (${member.licence})`;
+                      isMemberDropdownOpen = false;
                     }}
                   >
-                    {cat.name}
+                    {member.lastName} {member.firstName} ({member.licence})
+                    {member.parent1Name ? ` - Parent: ${member.parent1Name}` : ''}
                   </Button>
                 {:else}
-                  <div class="px-3 py-2 text-xs text-muted-foreground italic bg-popover">Aucune catégorie trouvée</div>
+                  <div class="px-3 py-2 text-xs text-muted-foreground italic bg-popover">Aucun adhérent trouvé</div>
                 {/each}
               </div>
             {/if}
           </div>
 
-          <div class="space-y-1">
-            <label for="check-date" class="text-xs font-semibold text-muted-foreground uppercase">Date d'émission</label>
-            <Input
-              id="check-date"
-              type="date"
-              bind:value={checkDate}
-              required
-            />
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-1 relative">
+              <label for="check-cat-input" class="text-xs font-semibold text-muted-foreground uppercase">Affectation / Catégorie</label>
+              <div class="relative">
+                <Input
+                  id="check-cat-input"
+                  type="text"
+                  placeholder="Filtrer les affectations..."
+                  class="pr-6 font-medium"
+                  value={isCategoryDropdownOpen ? categorySearchQuery : categoryDisplayVal}
+                  oninput={(e) => {
+                    isCategoryDropdownOpen = true;
+                    categorySearchQuery = (e.target as HTMLInputElement).value;
+                  }}
+                  onfocus={() => {
+                    isCategoryDropdownOpen = true;
+                    categorySearchQuery = '';
+                  }}
+                  onblur={() => {
+                    setTimeout(() => { isCategoryDropdownOpen = false; }, 200);
+                  }}
+                />
+                <span class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none text-[8px]">▼</span>
+              </div>
+
+              {#if isCategoryDropdownOpen}
+                <div class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded-lg shadow-lg divide-y divide-border">
+                  {#each filteredCategories as cat}
+                    <Button
+                      variant="ghost"
+                      class="w-full text-left justify-start rounded-none px-3 py-2 text-sm hover:bg-muted text-foreground transition-colors font-medium border-0 cursor-pointer bg-popover"
+                      onmousedown={() => {
+                        checkCategory = cat.id;
+                        categorySearchQuery = cat.name;
+                        isCategoryDropdownOpen = false;
+                      }}
+                    >
+                      {cat.name}
+                    </Button>
+                  {:else}
+                    <div class="px-3 py-2 text-xs text-muted-foreground italic bg-popover">Aucune catégorie trouvée</div>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+
+            <div class="space-y-1">
+              <label for="check-date" class="text-xs font-semibold text-muted-foreground uppercase">Date d'émission</label>
+              <Input
+                id="check-date"
+                type="date"
+                bind:value={checkDate}
+                required
+              />
+            </div>
           </div>
         </div>
+      </div>
 
-        <Sheet.Footer class="p-6 border-t border-border bg-muted/30 flex justify-end gap-2 shrink-0">
-          <Button
-            variant="outline"
-            onclick={() => showAddCheckModal = false}
-          >
-            Annuler
-          </Button>
-          <Button
-            type="submit"
-            disabled={isSubmittingCheck}
-            class="flex items-center gap-2"
-          >
-            {#if isSubmittingCheck}
-              <Loader2 class="h-4 w-4 animate-spin" />
-            {/if}
-            Enregistrer
-          </Button>
-        </Sheet.Footer>
-      </form>
-    </div>
+      <Sheet.Footer class="p-6 border-t border-border bg-muted/30 flex justify-end gap-2 shrink-0">
+        <Button
+          variant="outline"
+          onclick={() => showAddCheckModal = false}
+        >
+          Annuler
+        </Button>
+        <Button
+          type="submit"
+          disabled={isSubmittingCheck}
+          class="flex items-center gap-2"
+        >
+          {#if isSubmittingCheck}
+            <Loader2 class="h-4 w-4 animate-spin" />
+          {/if}
+          Enregistrer
+        </Button>
+      </Sheet.Footer>
+    </form>
   </Sheet.Content>
 </Sheet.Root>
 
