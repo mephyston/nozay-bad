@@ -37,7 +37,7 @@ describe('GeneralMeetingReport Component', () => {
       }
     });
 
-    expect(target.innerHTML).toContain("Rapport Financier pour l'Assemblée Générale");
+    expect(target.innerHTML).toContain("Compte de résultat");
     expect(target.innerHTML).toContain("Compte de Résultat");
     expect(target.innerHTML).toContain("Cotisations membres"); // mapped from category ID 1
     expect(target.innerHTML).toContain("500,00&nbsp;€"); // totalRecettes

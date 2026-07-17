@@ -1,6 +1,6 @@
 <script lang="ts">
   import { AlertCircle, Printer } from 'lucide-svelte';
-  import { Button, Table, Input, Card } from '@metacult/shared-ui';
+  import { Button, Table, Input, Card, Tabs } from '@metacult/shared-ui';
 
   interface CategoryTotal {
     type: 'recette' | 'depense';
@@ -53,7 +53,8 @@
 
   // svelte-ignore state_referenced_locally
   let selectedSeason = $state(seasonId);
-  let reportMode = $state<'realise' | 'previsionnel'>('realise');
+  let activeTab = $state<'resultat' | 'tresorerie' | 'budget'>('resultat');
+  let reportMode = $derived(activeTab === 'budget' ? 'previsionnel' : 'realise');
   let editableBudget = $state<Record<string, number>>({});
   let isSaving = $state(false);
   let saveStatus = $state<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -99,11 +100,11 @@
   }
 
   // Get total for a class code and flow type (realise)
-  function getClassSumRealise(classCode: string, type: 'recette' | 'depense'): number {
+  function getClassSumRealise(classCode: string, type: 'recette' | 'depense', mode: 'realise' | 'previsionnel'): number {
     const classCats = getClassCategories(classCode, type);
     let sum = 0;
     for (const cat of classCats) {
-      sum += getCatTotal(cat.id.toString(), type);
+      sum += getCatTotal(cat.id.toString(), type, mode);
     }
     return sum;
   }
@@ -117,15 +118,23 @@
   // Get total for a class code and flow type (dynamic based on reportMode)
   function getClassSum(classCode: string, type: 'recette' | 'depense'): number {
     return reportMode === 'realise'
-      ? getClassSumRealise(classCode, type)
+      ? getClassSumRealise(classCode, type, 'realise')
       : getClassSumPrevisionnel(classCode, type);
   }
 
-  let totalDepensesRealise = $derived(
-    accountClasses
+  function getTotalDepensesRealise(mode: 'realise' | 'previsionnel'): number {
+    return accountClasses
       .filter(ac => ac.type === 'depense')
-      .reduce((sum, ac) => sum + getClassSumRealise(ac.code, 'depense'), 0)
-  );
+      .reduce((sum, ac) => sum + getClassSumRealise(ac.code, 'depense', mode), 0);
+  }
+
+  function getTotalRecettesRealise(mode: 'realise' | 'previsionnel'): number {
+    return accountClasses
+      .filter(ac => ac.type === 'recette')
+      .reduce((sum, ac) => sum + getClassSumRealise(ac.code, 'recette', mode), 0);
+  }
+
+  let totalDepensesRealise = $derived(getTotalDepensesRealise(reportMode));
 
   let totalDepensesPrevisionnel = $derived(
     accountClasses
@@ -133,11 +142,7 @@
       .reduce((sum, ac) => sum + getClassSumPrevisionnel(ac.code, 'depense'), 0)
   );
 
-  let totalRecettesRealise = $derived(
-    accountClasses
-      .filter(ac => ac.type === 'recette')
-      .reduce((sum, ac) => sum + getClassSumRealise(ac.code, 'recette'), 0)
-  );
+  let totalRecettesRealise = $derived(getTotalRecettesRealise(reportMode));
 
   let totalRecettesPrevisionnel = $derived(
     accountClasses
@@ -197,24 +202,46 @@
     });
   }
 
-  let chargesChartData = $derived(
+  let chargesChartDataRealise = $derived(
     generatePieSlices(
       accountClasses
         .filter(ac => ac.type === 'depense')
         .map(ac => ({
           label: ac.label,
-          value: reportMode === 'realise' ? getClassSumRealise(ac.code, 'depense') : getClassSumPrevisionnel(ac.code, 'depense')
+          value: getClassSumRealise(ac.code, 'depense', 'realise')
         }))
     )
   );
 
-  let recettesChartData = $derived(
+  let recettesChartDataRealise = $derived(
     generatePieSlices(
       accountClasses
         .filter(ac => ac.type === 'recette')
         .map(ac => ({
           label: ac.label,
-          value: reportMode === 'realise' ? getClassSumRealise(ac.code, 'recette') : getClassSumPrevisionnel(ac.code, 'recette')
+          value: getClassSumRealise(ac.code, 'recette', 'realise')
+        }))
+    )
+  );
+
+  let chargesChartDataPrevisionnel = $derived(
+    generatePieSlices(
+      accountClasses
+        .filter(ac => ac.type === 'depense')
+        .map(ac => ({
+          label: ac.label,
+          value: getClassSumPrevisionnel(ac.code, 'depense')
+        }))
+    )
+  );
+
+  let recettesChartDataPrevisionnel = $derived(
+    generatePieSlices(
+      accountClasses
+        .filter(ac => ac.type === 'recette')
+        .map(ac => ({
+          label: ac.label,
+          value: getClassSumPrevisionnel(ac.code, 'recette')
         }))
     )
   );
@@ -318,8 +345,8 @@
   }
 
   // Helper to safely get total for a category and type
-  function getCatTotal(id: string, type: 'recette' | 'depense'): number {
-    const reportToUse = (reportMode === 'previsionnel' && prevReport) ? prevReport : report;
+  function getCatTotal(id: string, type: 'recette' | 'depense', mode: 'realise' | 'previsionnel'): number {
+    const reportToUse = (mode === 'previsionnel' && prevReport) ? prevReport : report;
     return reportToUse.compteResultat.categories[`${id}_${type}`]?.total || 0;
   }
 
@@ -329,7 +356,7 @@
     for (const cat of categories) {
       const code = type === 'recette' ? cat.receiptCode : cat.expenseCode;
       if (code === classCode) {
-        const total = getCatTotal(cat.id.toString(), type);
+        const total = getCatTotal(cat.id.toString(), type, reportMode);
         if (total > 0) {
           items.push({
             label: cat.adminLabel,
@@ -366,62 +393,98 @@
   );
 </script>
 
-<div class="space-y-8">
-  <div class="flex items-center justify-between border-b border-border pb-4">
-    <div class="flex items-center gap-3">
-      <h2 class="text-xl font-bold tracking-tight">Rapport Financier pour l'Assemblée Générale</h2>
-      <select
-        class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary font-medium no-print"
-        bind:value={selectedSeason}
-        onchange={applySeasonChange}
-      >
-        {#each seasons as season}
-          <option value={season.id}>{season.name}</option>
-        {/each}
-        {#if seasons.length === 0}
-          <option value="25-26">Saison 2025-2026</option>
-        {/if}
-      </select>
-    </div>
-    
+<div class="space-y-6">
+  <div class="flex justify-end no-print">
     <Button
       onclick={() => window.print()}
-      class="px-3 py-1.5 text-xs shadow-sm cursor-pointer flex items-center gap-1.5 no-print"
+      class="px-3 py-1.5 text-xs shadow-sm cursor-pointer flex items-center gap-1.5"
     >
       <Printer class="w-4 h-4" />
       Imprimer
     </Button>
   </div>
 
-  <!-- 1. COMPTE DE RÉSULTAT (PAGE 1) -->
+  <Tabs.Root bind:value={activeTab} class="space-y-6">
+    <Tabs.List class="no-print">
+      <Tabs.Trigger value="resultat">Compte de résultat</Tabs.Trigger>
+      <Tabs.Trigger value="tresorerie">Bilan de trésorerie</Tabs.Trigger>
+      <Tabs.Trigger value="budget">Budget prévisionnel</Tabs.Trigger>
+    </Tabs.List>
+
+    <!-- Onglet 1 : « Compte de résultat » (value="resultat") -->
+    <Tabs.Content value="resultat" class="space-y-6">
+      {@render compteResultatCard('realise')}
+      {@render graphiquesCard('realise')}
+    </Tabs.Content>
+
+    <!-- Onglet 2 : « Bilan de trésorerie » (value="tresorerie") -->
+    <Tabs.Content value="tresorerie" class="space-y-6">
+      <Card.Root>
+        <Card.Content class="p-6 space-y-4">
+          <!-- Printable Title for A4 -->
+          <div class="hidden print:block text-center space-y-1 mb-6">
+            <h3 class="text-xl font-bold tracking-tight">Bilan de Trésorerie</h3>
+            <p class="text-xs text-muted-foreground">Saison {seasons.find(s => s.id === selectedSeason)?.name || selectedSeason}</p>
+          </div>
+
+          <h3 class="text-lg font-semibold no-print">2. Bilan de Trésorerie</h3>
+          <div class="overflow-x-auto">
+            <Table.Root class="w-full border-collapse text-left text-sm">
+              <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
+                <Table.Row>
+                  <Table.Head class="p-4">Compte Financier</Table.Head>
+                  <Table.Head class="p-4 text-right">Solde Initial (1er sept.)</Table.Head>
+                  <Table.Head class="p-4 text-right">Mouvements de saison</Table.Head>
+                  <Table.Head class="p-4 text-right">Solde Réel Final (31 août)</Table.Head>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body class="divide-y divide-border">
+                {#each report.bilanTrésorerie as item}
+                  <Table.Row>
+                    <Table.Cell class="p-4 font-semibold">{accountLabels[item.accountId]}</Table.Cell>
+                    <Table.Cell class="p-4 text-right">{formatAmount(item.initialBalance)}</Table.Cell>
+                    <Table.Cell class="p-4 text-right font-medium {item.finalBalance - item.initialBalance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}">
+                      {formatDelta(item.finalBalance - item.initialBalance)}
+                    </Table.Cell>
+                    <Table.Cell class="p-4 text-right font-bold">{formatAmount(item.finalBalance)}</Table.Cell>
+                  </Table.Row>
+                {/each}
+              </Table.Body>
+            </Table.Root>
+          </div>
+        </Card.Content>
+      </Card.Root>
+    </Tabs.Content>
+
+    <!-- Onglet 3 : « Budget prévisionnel » (value="budget") -->
+    <Tabs.Content value="budget" class="space-y-6">
+      {@render compteResultatCard('previsionnel')}
+      {@render graphiquesCard('previsionnel')}
+    </Tabs.Content>
+  </Tabs.Root>
+</div>
+
+{#snippet compteResultatCard(mode: 'realise' | 'previsionnel')}
+  {@const totalDepReal = getTotalDepensesRealise(mode)}
+  {@const totalRecReal = getTotalRecettesRealise(mode)}
+  {@const netResReal = totalRecReal - totalDepReal}
+  {@const netResPrev = totalRecettesPrevisionnel - totalDepensesPrevisionnel}
+
   <Card.Root class="print-container">
     <Card.Content class="p-6 space-y-6">
-      <div class="flex items-center justify-between border-b border-border pb-4 no-print">
-        <h3 class="text-lg font-semibold">1. Compte de Résultat</h3>
-        <div class="inline-flex rounded-lg border border-border p-1 bg-muted/50">
-          <Button
-            variant="ghost"
-            size="sm"
-            class="px-3 py-1 text-xs font-semibold rounded-md transition-colors {reportMode === 'realise' ? 'bg-background shadow-sm text-foreground font-bold hover:bg-background' : 'text-muted-foreground hover:text-foreground'}"
-            onclick={() => reportMode = 'realise'}
-          >
-            Réalisé
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            class="px-3 py-1 text-xs font-semibold rounded-md transition-colors {reportMode === 'previsionnel' ? 'bg-background shadow-sm text-foreground font-bold hover:bg-background' : 'text-muted-foreground hover:text-foreground'}"
-            onclick={() => reportMode = 'previsionnel'}
-          >
-            Prévisionnel
-          </Button>
-        </div>
-      </div>
-
       <!-- Printable Title for A4 -->
       <div class="hidden print:block text-center space-y-1 mb-6">
-        <h3 class="text-xl font-bold tracking-tight">Compte de Résultat Simplifié</h3>
+        <h3 class="text-xl font-bold tracking-tight">
+          {mode === 'realise' ? 'Compte de Résultat Simplifié (Réalisé)' : 'Budget Prévisionnel'}
+        </h3>
         <p class="text-xs text-muted-foreground">Saison {seasons.find(s => s.id === selectedSeason)?.name || selectedSeason}</p>
+      </div>
+
+      <!-- Header with Tab Mode Title -->
+      <div class="flex items-center justify-between border-b border-border pb-4 no-print">
+        <h3 class="text-lg font-semibold">
+          {mode === 'realise' ? '1. Compte de Résultat' : '3. Budget Prévisionnel'}
+        </h3>
       </div>
 
       <div class="grid gap-6 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
@@ -431,37 +494,37 @@
             <div class="flex justify-between items-center font-bold text-xs text-muted-foreground border-b border-border pb-2">
               <span class="text-sm font-bold text-destructive">CHARGES (Dépenses)</span>
               <div class="flex gap-8 font-mono text-[11px]">
-                <span class="w-20 text-right">
-                  {#if reportMode === 'previsionnel' && prevReport}
+                <span class="w-20 text-right font-semibold">
+                  {#if mode === 'previsionnel' && prevReport}
                     Réalisé {seasons.find(s => s.id === getPreviousSeasonId(selectedSeason))?.name.replace('Saison ', '') || getPreviousSeasonId(selectedSeason)}
                   {:else}
                     Réalisé
                   {/if}
                 </span>
-                <span class="w-20 text-right">Prévisionnel</span>
+                <span class="w-20 text-right font-semibold">Prévisionnel</span>
               </div>
             </div>
             
             <div class="space-y-4 mt-4">
               {#each chargeClasses as cc}
-                {#if reportMode === 'previsionnel' || getClassSumRealise(cc.code, 'depense') > 0 || getClassSumPrevisionnel(cc.code, 'depense') > 0}
-                  <div class="space-y-1.5 py-1 {getClassSumRealise(cc.code, 'depense') === 0 && getClassSumPrevisionnel(cc.code, 'depense') === 0 ? 'print:hidden' : ''}">
+                {#if mode === 'previsionnel' || getClassSumRealise(cc.code, 'depense', mode) > 0 || getClassSumPrevisionnel(cc.code, 'depense') > 0}
+                  <div class="space-y-1.5 py-1 {getClassSumRealise(cc.code, 'depense', mode) === 0 && getClassSumPrevisionnel(cc.code, 'depense') === 0 ? 'print:hidden' : ''}">
                     <div class="flex justify-between items-center text-sm border-b border-border/40 pb-1 font-bold text-foreground">
                       <a href="/admin/accounting?season={selectedSeason}&classCode={cc.code}" class="hover:underline hover:text-primary transition-colors cursor-pointer text-foreground/90 print:no-underline" title="Voir les écritures dans le grand livre">{cc.label}</a>
                       <div class="flex gap-8 font-mono">
-                        <span class="w-20 text-right">{formatAmount(getClassSumRealise(cc.code, 'depense'))}</span>
+                        <span class="w-20 text-right">{formatAmount(getClassSumRealise(cc.code, 'depense', mode))}</span>
                         <span class="w-20 text-right">{formatAmount(getClassSumPrevisionnel(cc.code, 'depense'))}</span>
                       </div>
                     </div>
                     
                     <div class="pl-4 space-y-1 text-xs text-muted-foreground">
                       {#each getClassCategories(cc.code, 'depense') as cat}
-                        {#if reportMode === 'previsionnel' || getCatTotal(cat.id.toString(), 'depense') > 0 || (editableBudget[`${cat.id}_depense`] || 0) > 0}
-                          <div class="flex justify-between items-center py-0.5 font-mono text-[11px] {getCatTotal(cat.id.toString(), 'depense') === 0 && (editableBudget[`${cat.id}_depense`] || 0) === 0 ? 'print:hidden' : ''}">
+                        {#if mode === 'previsionnel' || getCatTotal(cat.id.toString(), 'depense', mode) > 0 || (editableBudget[`${cat.id}_depense`] || 0) > 0}
+                          <div class="flex justify-between items-center py-0.5 font-mono text-[11px] {getCatTotal(cat.id.toString(), 'depense', mode) === 0 && (editableBudget[`${cat.id}_depense`] || 0) === 0 ? 'print:hidden' : ''}">
                             <a href="/admin/accounting?season={selectedSeason}&category={cat.id}" class="font-sans text-muted-foreground hover:underline hover:text-primary transition-colors cursor-pointer print:no-underline" title="Voir les écritures de cette catégorie dans le grand livre">• {cat.adminLabel}</a>
                             <div class="flex gap-8 items-center">
-                              <span class="w-20 text-right">{formatAmount(getCatTotal(cat.id.toString(), 'depense'))}</span>
-                              {#if reportMode === 'previsionnel' && !isClosed}
+                              <span class="w-20 text-right">{formatAmount(getCatTotal(cat.id.toString(), 'depense', mode))}</span>
+                              {#if mode === 'previsionnel' && !isClosed}
                                 <div class="relative flex items-center w-20">
                                   <Input
                                     type="number"
@@ -492,20 +555,20 @@
           </div>
 
           <div class="mt-8 pt-4 border-t border-border space-y-2 font-bold text-sm">
-            {#if netResultRealise >= 0 || netResultPrevisionnel >= 0}
+            {#if netResReal >= 0 || netResPrev >= 0}
               <div class="flex justify-between font-semibold text-xs text-emerald-600 dark:text-emerald-400">
                 <span>Excédent de l'exercice (Bénéfice)</span>
                 <div class="flex gap-8 font-mono">
-                  <span class="w-20 text-right">{netResultRealise >= 0 ? formatAmount(netResultRealise) : formatAmount(0)}</span>
-                  <span class="w-20 text-right">{netResultPrevisionnel >= 0 ? formatAmount(netResultPrevisionnel) : formatAmount(0)}</span>
+                  <span class="w-20 text-right">{netResReal >= 0 ? formatAmount(netResReal) : formatAmount(0)}</span>
+                  <span class="w-20 text-right">{netResPrev >= 0 ? formatAmount(netResPrev) : formatAmount(0)}</span>
                 </div>
               </div>
             {/if}
             <div class="flex justify-between text-foreground">
               <span>TOTAL GÉNÉRAL</span>
               <div class="flex gap-8 font-mono">
-                <span class="w-20 text-right">{formatAmount(netResultRealise >= 0 ? totalDepensesRealise + netResultRealise : totalDepensesRealise)}</span>
-                <span class="w-20 text-right">{formatAmount(netResultPrevisionnel >= 0 ? totalDepensesPrevisionnel + netResultPrevisionnel : totalDepensesPrevisionnel)}</span>
+                <span class="w-20 text-right">{formatAmount(netResReal >= 0 ? totalDepReal + netResReal : totalDepReal)}</span>
+                <span class="w-20 text-right">{formatAmount(netResPrev >= 0 ? totalDepensesPrevisionnel + netResPrev : totalDepensesPrevisionnel)}</span>
               </div>
             </div>
           </div>
@@ -517,37 +580,37 @@
             <div class="flex justify-between items-center font-bold text-xs text-muted-foreground border-b border-border pb-2">
               <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400">PRODUITS (Recettes)</span>
               <div class="flex gap-8 font-mono text-[11px]">
-                <span class="w-20 text-right">
-                  {#if reportMode === 'previsionnel' && prevReport}
+                <span class="w-20 text-right font-semibold">
+                  {#if mode === 'previsionnel' && prevReport}
                     Réalisé {seasons.find(s => s.id === getPreviousSeasonId(selectedSeason))?.name.replace('Saison ', '') || getPreviousSeasonId(selectedSeason)}
                   {:else}
                     Réalisé
                   {/if}
                 </span>
-                <span class="w-20 text-right">Prévisionnel</span>
+                <span class="w-20 text-right font-semibold">Prévisionnel</span>
               </div>
             </div>
             
             <div class="space-y-4 mt-4">
               {#each produitClasses as pc}
-                {#if reportMode === 'previsionnel' || getClassSumRealise(pc.code, 'recette') > 0 || getClassSumPrevisionnel(pc.code, 'recette') > 0}
-                  <div class="space-y-1.5 py-1 {getClassSumRealise(pc.code, 'recette') === 0 && getClassSumPrevisionnel(pc.code, 'recette') === 0 ? 'print:hidden' : ''}">
+                {#if mode === 'previsionnel' || getClassSumRealise(pc.code, 'recette', mode) > 0 || getClassSumPrevisionnel(pc.code, 'recette') > 0}
+                  <div class="space-y-1.5 py-1 {getClassSumRealise(pc.code, 'recette', mode) === 0 && getClassSumPrevisionnel(pc.code, 'recette') === 0 ? 'print:hidden' : ''}">
                     <div class="flex justify-between items-center text-sm border-b border-border/40 pb-1 font-bold text-foreground">
                       <a href="/admin/accounting?season={selectedSeason}&classCode={pc.code}" class="hover:underline hover:text-primary transition-colors cursor-pointer text-foreground/90 print:no-underline" title="Voir les écritures dans le grand livre">{pc.label}</a>
                       <div class="flex gap-8 font-mono">
-                        <span class="w-20 text-right">{formatAmount(getClassSumRealise(pc.code, 'recette'))}</span>
+                        <span class="w-20 text-right">{formatAmount(getClassSumRealise(pc.code, 'recette', mode))}</span>
                         <span class="w-20 text-right">{formatAmount(getClassSumPrevisionnel(pc.code, 'recette'))}</span>
                       </div>
                     </div>
                     
                     <div class="pl-4 space-y-1 text-xs text-muted-foreground">
                       {#each getClassCategories(pc.code, 'recette') as cat}
-                        {#if reportMode === 'previsionnel' || getCatTotal(cat.id.toString(), 'recette') > 0 || (editableBudget[`${cat.id}_recette`] || 0) > 0}
-                          <div class="flex justify-between items-center py-0.5 font-mono text-[11px] {getCatTotal(cat.id.toString(), 'recette') === 0 && (editableBudget[`${cat.id}_recette`] || 0) === 0 ? 'print:hidden' : ''}">
+                        {#if mode === 'previsionnel' || getCatTotal(cat.id.toString(), 'recette', mode) > 0 || (editableBudget[`${cat.id}_recette`] || 0) > 0}
+                          <div class="flex justify-between items-center py-0.5 font-mono text-[11px] {getCatTotal(cat.id.toString(), 'recette', mode) === 0 && (editableBudget[`${cat.id}_recette`] || 0) === 0 ? 'print:hidden' : ''}">
                             <a href="/admin/accounting?season={selectedSeason}&category={cat.id}" class="font-sans text-muted-foreground hover:underline hover:text-primary transition-colors cursor-pointer print:no-underline" title="Voir les écritures de cette catégorie dans le grand livre">• {cat.adminLabel}</a>
                             <div class="flex gap-8 items-center">
-                              <span class="w-20 text-right">{formatAmount(getCatTotal(cat.id.toString(), 'recette'))}</span>
-                              {#if reportMode === 'previsionnel' && !isClosed}
+                              <span class="w-20 text-right">{formatAmount(getCatTotal(cat.id.toString(), 'recette', mode))}</span>
+                              {#if mode === 'previsionnel' && !isClosed}
                                 <div class="relative flex items-center w-20">
                                   <Input
                                     type="number"
@@ -578,20 +641,20 @@
           </div>
 
           <div class="mt-8 pt-4 border-t border-border space-y-2 font-bold text-sm">
-            {#if netResultRealise < 0 || netResultPrevisionnel < 0}
+            {#if netResReal < 0 || netResPrev < 0}
               <div class="flex justify-between font-semibold text-xs text-destructive">
                 <span>Déficit de l'exercice (Perte)</span>
                 <div class="flex gap-8 font-mono">
-                  <span class="w-20 text-right">{netResultRealise < 0 ? formatAmount(-netResultRealise) : formatAmount(0)}</span>
-                  <span class="w-20 text-right">{netResultPrevisionnel < 0 ? formatAmount(-netResultPrevisionnel) : formatAmount(0)}</span>
+                  <span class="w-20 text-right">{netResReal < 0 ? formatAmount(-netResReal) : formatAmount(0)}</span>
+                  <span class="w-20 text-right">{netResPrev < 0 ? formatAmount(-netResPrev) : formatAmount(0)}</span>
                 </div>
               </div>
             {/if}
             <div class="flex justify-between text-foreground">
               <span>TOTAL GÉNÉRAL</span>
               <div class="flex gap-8 font-mono">
-                <span class="w-20 text-right">{formatAmount(netResultRealise < 0 ? totalRecettesRealise + (-netResultRealise) : totalRecettesRealise)}</span>
-                <span class="w-20 text-right">{formatAmount(netResultPrevisionnel < 0 ? totalRecettesPrevisionnel + (-netResultPrevisionnel) : totalRecettesPrevisionnel)}</span>
+                <span class="w-20 text-right">{formatAmount(netResReal < 0 ? totalRecReal + (-netResReal) : totalRecReal)}</span>
+                <span class="w-20 text-right">{formatAmount(netResPrev < 0 ? totalRecettesPrevisionnel + (-netResPrev) : totalRecettesPrevisionnel)}</span>
               </div>
             </div>
           </div>
@@ -599,7 +662,7 @@
       </div>
 
       <!-- Actions / Feedback for Budget editing -->
-      {#if reportMode === 'previsionnel' && !isClosed}
+      {#if mode === 'previsionnel' && !isClosed}
         <div class="flex flex-col gap-3 pt-4 border-t border-border mt-6 no-print">
           {#if saveStatus}
             <div class="p-3 text-xs rounded-lg {saveStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-destructive/10 text-destructive border border-destructive/20'}">
@@ -624,29 +687,35 @@
       {/if}
     </Card.Content>
   </Card.Root>
+{/snippet}
 
-  <!-- DIAGRAMMES (PAGE 2) -->
+{#snippet graphiquesCard(mode: 'realise' | 'previsionnel')}
+  {@const chargesData = mode === 'realise' ? chargesChartDataRealise : chargesChartDataPrevisionnel}
+  {@const recettesData = mode === 'realise' ? recettesChartDataRealise : recettesChartDataPrevisionnel}
+
   <Card.Root class="page-break">
     <Card.Content class="p-6 space-y-6">
       <div class="text-center space-y-1 mb-2">
-        <h3 class="text-lg font-bold tracking-tight">2. Répartition Graphique des Budgets</h3>
-        <p class="text-xs text-muted-foreground">Représentation par classes de comptes (Mode : {reportMode === 'realise' ? 'Réalisé' : 'Prévisionnel'})</p>
+        <h3 class="text-lg font-bold tracking-tight">
+          {mode === 'realise' ? '2. Répartition Graphique du Réalisé' : '4. Répartition Graphique des Budgets'}
+        </h3>
+        <p class="text-xs text-muted-foreground">Représentation par classes de comptes (Mode : {mode === 'realise' ? 'Réalisé' : 'Prévisionnel'})</p>
       </div>
       
       <div class="grid md:grid-cols-2 gap-8">
         <!-- Charges Chart -->
         <div class="border border-border/80 rounded-xl p-6 flex flex-col items-center justify-between bg-muted/20">
           <h4 class="font-bold text-sm text-destructive mb-6 text-center">Charges (Dépenses)</h4>
-          {#if chargesChartData.length > 0}
+          {#if chargesData.length > 0}
             <div class="flex flex-col items-center gap-6 w-full">
               <svg width="180" height="180" viewBox="0 0 200 200" class="drop-shadow-sm rotate-[-90deg]">
-                {#each chargesChartData as slice}
+                {#each chargesData as slice}
                   <path d={slice.pathData} fill={slice.color} class="hover:opacity-90 transition-opacity" />
                 {/each}
               </svg>
               
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full text-xs pt-4 border-t border-border/60">
-                {#each chargesChartData as slice}
+                {#each chargesData as slice}
                   <div class="flex items-center gap-2">
                     <span class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: {slice.color}"></span>
                     <span class="truncate text-foreground/80 font-medium" title={slice.label}>{slice.label} : <strong class="font-mono">{slice.percent}%</strong></span>
@@ -662,16 +731,16 @@
         <!-- Recettes Chart -->
         <div class="border border-border/80 rounded-xl p-6 flex flex-col items-center justify-between bg-muted/20">
           <h4 class="font-bold text-sm text-emerald-600 dark:text-emerald-400 mb-6 text-center">Produits (Recettes)</h4>
-          {#if recettesChartData.length > 0}
+          {#if recettesData.length > 0}
             <div class="flex flex-col items-center gap-6 w-full">
               <svg width="180" height="180" viewBox="0 0 200 200" class="drop-shadow-sm rotate-[-90deg]">
-                {#each recettesChartData as slice}
+                {#each recettesData as slice}
                   <path d={slice.pathData} fill={slice.color} class="hover:opacity-90 transition-opacity" />
                 {/each}
               </svg>
               
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full text-xs pt-4 border-t border-border/60">
-                {#each recettesChartData as slice}
+                {#each recettesData as slice}
                   <div class="flex items-center gap-2">
                     <span class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: {slice.color}"></span>
                     <span class="truncate text-foreground/80 font-medium" title={slice.label}>{slice.label} : <strong class="font-mono">{slice.percent}%</strong></span>
@@ -686,38 +755,7 @@
       </div>
     </Card.Content>
   </Card.Root>
-
-  <!-- 2. BILAN DE TRÉSORERIE (no-print) -->
-  <Card.Root class="no-print">
-    <Card.Content class="p-6 space-y-4">
-      <h3 class="text-lg font-semibold">2. Bilan de Trésorerie</h3>
-      <div class="overflow-x-auto">
-        <Table.Root class="w-full border-collapse text-left text-sm">
-          <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
-            <Table.Row>
-              <Table.Head class="p-4">Compte Financier</Table.Head>
-              <Table.Head class="p-4 text-right">Solde Initial (1er sept.)</Table.Head>
-              <Table.Head class="p-4 text-right">Mouvements de saison</Table.Head>
-              <Table.Head class="p-4 text-right">Solde Réel Final (31 août)</Table.Head>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body class="divide-y divide-border">
-            {#each report.bilanTrésorerie as item}
-              <Table.Row>
-                <Table.Cell class="p-4 font-semibold">{accountLabels[item.accountId]}</Table.Cell>
-                <Table.Cell class="p-4 text-right">{formatAmount(item.initialBalance)}</Table.Cell>
-                <Table.Cell class="p-4 text-right font-medium {item.finalBalance - item.initialBalance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}">
-                  {formatDelta(item.finalBalance - item.initialBalance)}
-                </Table.Cell>
-                <Table.Cell class="p-4 text-right font-bold">{formatAmount(item.finalBalance)}</Table.Cell>
-              </Table.Row>
-            {/each}
-          </Table.Body>
-        </Table.Root>
-      </div>
-    </Card.Content>
-  </Card.Root>
-</div>
+{/snippet}
 
 <style>
   @media print {
@@ -789,6 +827,17 @@
     }
     :global(.print-container) :global(.pt-4) {
       padding-top: 0.5rem !important;
+    }
+
+    /* Print all tabs */
+    :global([data-slot="tabs-content"]) {
+      display: block !important;
+      page-break-before: always;
+      break-before: page;
+    }
+    :global([data-slot="tabs-content"]:first-of-type) {
+      page-break-before: avoid;
+      break-before: avoid;
     }
   }
 </style>
