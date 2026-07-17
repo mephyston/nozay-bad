@@ -81,6 +81,10 @@
       return;
     }
 
+    if (lastSelectedMember && query === `${lastSelectedMember.lastName} ${lastSelectedMember.firstName}`) {
+      return;
+    }
+
     if (debounceTimeout) {
       clearTimeout(debounceTimeout);
     }

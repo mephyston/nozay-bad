@@ -37,8 +37,8 @@ export const GET: APIRoute = async ({ request }) => {
     });
   } catch (error) {
     console.error('Error fetching members:', error);
-    return new Response(JSON.stringify([]), {
-      status: 200,
+    return new Response(JSON.stringify({ error: 'Failed to search members' }), {
+      status: 500,
       headers: {
         'Content-Type': 'application/json'
       }
