@@ -9,15 +9,13 @@ on:
     branches:
       - main
 
-# Un seul déploiement à la fois par environnement
+# Un seul déploiement à la fois par branche
 concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
 env:
   NODE_VERSION: "22"
-  # 'staging' sur la branche staging, vide (prod) sur main
-  WRANGLER_ENV: ${{ github.ref_name == 'main' && '' || 'staging' }}
 
 jobs:
   # ──────────────────────────────────────────────────────────────
@@ -29,12 +27,12 @@ jobs:
     outputs:
       api: ${{ steps.affected.outputs.api }}
       boutique: ${{ steps.affected.outputs.boutique }}
-      admin-console: ${{ steps.affected.outputs.admin-console }}
+      admin_console: ${{ steps.affected.outputs.admin_console }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Nécessaire pour nx affected (comparaison git)
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -48,8 +46,6 @@ jobs:
       - name: Detect affected projects
         id: affected
         run: |
-          # Sur main/staging : compare avec le commit précédent
-          # Sur PR : compare avec la branche de base
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
           else
@@ -57,14 +53,21 @@ jobs:
           fi
 
           AFFECTED=$(npx nx show projects --affected --base=$BASE_SHA --head=HEAD 2>/dev/null || echo "")
-          echo "Affected projects: $AFFECTED"
+          echo "Affected projects: [$AFFECTED]"
 
-          echo "api=$(echo "$AFFECTED" | grep -w 'api' | wc -l | tr -d ' ')" >> $GITHUB_OUTPUT
-          echo "boutique=$(echo "$AFFECTED" | grep -w 'boutique' | wc -l | tr -d ' ')" >> $GITHUB_OUTPUT
-          echo "admin-console=$(echo "$AFFECTED" | grep -w 'admin-console' | wc -l | tr -d ' ')" >> $GITHUB_OUTPUT
+          # grep -c retourne 0 si pas de match (exit code 1 ignoré avec ||)
+          API_COUNT=$(echo "$AFFECTED" | grep -cw 'api' || true)
+          BOUTIQUE_COUNT=$(echo "$AFFECTED" | grep -cw 'boutique' || true)
+          ADMIN_COUNT=$(echo "$AFFECTED" | grep -cw 'admin-console' || true)
+
+          echo "api=$API_COUNT" >> $GITHUB_OUTPUT
+          echo "boutique=$BOUTIQUE_COUNT" >> $GITHUB_OUTPUT
+          echo "admin_console=$ADMIN_COUNT" >> $GITHUB_OUTPUT
+
+          echo "Debug outputs → api=$API_COUNT boutique=$BOUTIQUE_COUNT admin_console=$ADMIN_COUNT"
 
   # ──────────────────────────────────────────────────────────────
-  # 2. Tests (toujours exécutés sur PR, skip sur push si rien d'affecté)
+  # 2. Tests sur PR uniquement
   # ──────────────────────────────────────────────────────────────
   test:
     name: Test affected
@@ -92,17 +95,13 @@ jobs:
           npx nx affected -t test --base=$BASE_SHA --head=HEAD --parallel=3
 
   # ──────────────────────────────────────────────────────────────
-  # 3. Deploy API (en premier — les autres apps en dépendent)
+  # 3. Deploy API (en premier — les autres apps en dépendent via Service Binding)
   # ──────────────────────────────────────────────────────────────
   deploy-api:
     name: Deploy API Worker
     runs-on: ubuntu-latest
     needs: detect-changes
-    # On déploie si l'API est affectée ET qu'on est sur main ou staging (pas sur PR)
-    if: |
-      github.event_name == 'push' &&
-      needs.detect-changes.outputs.api == '1'
-    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    if: github.event_name == 'push' && needs.detect-changes.outputs.api == '1'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -122,31 +121,32 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          # --env staging cible nba-db-staging, sans flag cible nba-db (prod)
-          npx wrangler d1 migrations apply nba-db${{ env.WRANGLER_ENV == 'staging' && '-staging' || '' }} --remote ${{ env.WRANGLER_ENV != '' && format('--env {0}', env.WRANGLER_ENV) || '' }}
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            npx wrangler d1 migrations apply nba-db --remote
+          else
+            npx wrangler d1 migrations apply nba-db-staging --remote --env staging
+          fi
 
       - name: Deploy API Worker
         working-directory: apps/api
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        # --env staging utilise le bloc env.staging du wrangler.json
-        run: npx wrangler deploy ${{ env.WRANGLER_ENV != '' && format('--env {0}', env.WRANGLER_ENV) || '' }}
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            npx wrangler deploy
+          else
+            npx wrangler deploy --env staging
+          fi
 
   # ──────────────────────────────────────────────────────────────
-  # 4. Deploy Boutique & Admin Console en parallèle
-  #    (après l'API, car elles utilisent le Service Binding nba-api)
+  # 4. Deploy Boutique & Admin Console en parallèle (après API)
   # ──────────────────────────────────────────────────────────────
   deploy-boutique:
     name: Deploy Boutique Worker
     runs-on: ubuntu-latest
     needs: [detect-changes, deploy-api]
-    # Se lance même si deploy-api a été skippé (API non affectée)
-    if: |
-      github.event_name == 'push' &&
-      needs.detect-changes.outputs.boutique == '1' &&
-      (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
-    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    if: github.event_name == 'push' && needs.detect-changes.outputs.boutique == '1' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -169,17 +169,18 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx wrangler deploy ${{ env.WRANGLER_ENV != '' && format('--env {0}', env.WRANGLER_ENV) || '' }}
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            npx wrangler deploy
+          else
+            npx wrangler deploy --env staging
+          fi
 
   deploy-admin-console:
     name: Deploy Admin Console Worker
     runs-on: ubuntu-latest
     needs: [detect-changes, deploy-api]
-    if: |
-      github.event_name == 'push' &&
-      needs.detect-changes.outputs.admin-console == '1' &&
-      (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
-    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    if: github.event_name == 'push' && needs.detect-changes.outputs.admin_console == '1' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -202,4 +203,9 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx wrangler deploy ${{ env.WRANGLER_ENV != '' && format('--env {0}', env.WRANGLER_ENV) || '' }}
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            npx wrangler deploy
+          else
+            npx wrangler deploy --env staging
+          fi

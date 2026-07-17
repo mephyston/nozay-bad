@@ -1,4 +1,4 @@
-// deploy: 2026-07-18-2
+// deploy: 2026-07-18-3
 /// <reference types="astro/client" />
 declare namespace App {
   interface Locals {
