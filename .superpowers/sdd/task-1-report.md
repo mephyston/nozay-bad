@@ -1,41 +1,30 @@
-# Task 1 Report: Nettoyage des tests unitaires obsolètes
+# Task 1 Report: En-tête de page et bouton d'importation dans import.astro
 
 ## What was implemented
-Deleted the obsolete smart filter unit test block from the BankStatementReconciliation component test file to align with the UX simplification (removal of the smart filter tabs).
-
-## Files Changed
-* Modified: [BankStatementReconciliation.test.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/BankStatementReconciliation.test.ts)
+1. **Computed `isClosed` status:** Added computation of `isClosed` in the frontmatter of `apps/admin-console/src/pages/admin/accounting/import.astro` based on the fetched `seasonsList` and current `season` parameter. Explicitly typed the search parameter to avoid compiler errors.
+2. **Updated Page Header Block:** Updated the header layout in `import.astro` to:
+   - Display a "Saison clôturée (Lecture seule)" label if the season is closed (`isClosed === true`).
+   - Render the "Importer" primary action button with a custom event trigger (`onclick="window.dispatchEvent(new CustomEvent('open-bank-import'))"`) if the season is active and there are existing bank transactions.
 
 ## What was tested and test results
-We ran Vitest before and after the modification to verify the test suite state:
-- **Baseline (Before deletion):** 11 tests passed successfully.
-- **Post-cleanup (After deletion):** 10 tests passed successfully.
+- Ran `npx astro check --root apps/admin-console` to ensure typescript compilation passes without any diagnostic errors (0 errors, 0 warnings).
+- Ran the full test suite with `npx vitest run` to ensure no regression was introduced (all 136 tests passed).
 
-### Test Evidence (Before change)
+## TDD Evidence (Vitest Run Outputs)
 ```
- RUN  v4.1.10 /Users/david/Lab/nozay-bad
-
- ✓  features-accounting-ui  src/BankStatementReconciliation.test.ts (11 tests) 495ms
-
- Test Files  1 passed (1)
-      Tests  11 passed (11)
+Test Files  26 passed (26)
+     Tests  136 passed (136)
+  Start at  10:35:35
+  Duration  33.93s
 ```
 
-### Test Evidence (After change)
-```
- RUN  v4.1.10 /Users/david/Lab/nozay-bad
+## Files changed
+- `apps/admin-console/src/pages/admin/accounting/import.astro`
 
- ✓  features-accounting-ui  src/BankStatementReconciliation.test.ts (10 tests) 504ms
+## Self-review findings
+- **Completeness:** All steps from the task brief were executed exactly as specified.
+- **Quality & Discipline:** Checked typescript compilations via `astro check` and fixed the implicit `any` error.
+- **Testing:** Validated existing test suites.
 
- Test Files  1 passed (1)
-      Tests  10 passed (10)
-```
-
-## Self-Review Findings
-- **Completeness:** The obsolete test block starting at line 372 (`filters bank transactions using smart filter tabs (Tout, Évidences, Récurrents)`) was successfully deleted.
-- **Quality:** No extraneous files or lines were modified. The code remains clean.
-- **Discipline:** Commit was created with the correct format and message structure as requested.
-- **Testing:** The test execution confirms the suite is green and down from 11 to 10 tests.
-
-## Issues/Concerns
+## Issues or concerns
 None.
