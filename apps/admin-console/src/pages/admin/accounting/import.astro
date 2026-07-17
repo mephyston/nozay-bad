@@ -133,7 +133,7 @@ try {
   errorMsg = 'Une erreur est survenue lors de la communication avec le serveur comptable.';
 }
 
-const isClosed = seasonsList.find((s: any) => s.id === season)?.status === 'closed';
+const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
 ---
 
 <Layout title="Importation & Rapprochement - NBA 91">

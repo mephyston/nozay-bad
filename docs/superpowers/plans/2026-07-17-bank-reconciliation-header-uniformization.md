@@ -136,3 +136,43 @@ Ouvrir [BankStatementReconciliation.svelte](file:///Users/david/Lab/nozay-bad/li
 git add libs/features/accounting/ui/src/BankStatementReconciliation.svelte
 git commit -m "feat(accounting): handle open-bank-import window event and clean up local import button in svelte"
 ```
+
+---
+
+### Task 3: Résolution des fuites de mémoire (unmount) dans les tests
+
+**Files:**
+* Modify: `libs/features/accounting/ui/src/BankStatementReconciliation.test.ts`
+
+**Interfaces:**
+* Consumes: Méthodes de nettoyage Vitest/Svelte.
+* Produces: Une suite de tests propre sans fuite d'écouteurs d'événements.
+
+- [ ] **Step 1: Track and unmount component instances in test file**
+
+Ouvrir [BankStatementReconciliation.test.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/BankStatementReconciliation.test.ts) :
+1. Importer `unmount` depuis `'svelte'` à la ligne 2.
+2. Déclarer la variable `let component: any = null;` sous `describe` (ligne ~7).
+3. Assigner `component = mount(...)` pour chaque appel de montage (12 occurrences).
+4. Ajouter le nettoyage dans le hook `afterEach` :
+   ```typescript
+     afterEach(() => {
+       if (component) {
+         unmount(component);
+         component = null;
+       }
+       document.body.innerHTML = '';
+       ...
+     });
+   ```
+
+- [ ] **Step 2: Run verification checks**
+
+* Run Vitest tests: `npx vitest run libs/features/accounting/ui/src/BankStatementReconciliation.test.ts`
+
+- [ ] **Step 3: Commit changes**
+
+```bash
+git add libs/features/accounting/ui/src/BankStatementReconciliation.test.ts
+git commit -m "test(accounting): resolve memory leaks by unmounting svelte components in afterEach hook"
+```
