@@ -2,13 +2,12 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
     "types": ["@cloudflare/workers-types"],
     "paths": {
       "@nba/db": ["libs/shared/db/src/index.ts"],

@@ -17,15 +17,15 @@ function getJWKS(teamDomain: string) {
 
 export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
   const request = context.request;
-  const token = request.headers.get('Cf-Access-Jwt-Assertion');
 
-  const url = new URL(request.url);
-  const isDev = import.meta.env.DEV || (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') || url.hostname === 'localhost' || url.hostname === '127.0.0.1';
-  if (isDev) {
+  // Only trust Vite/Astro's DEV flag — never hostname-based checks which can be
+  // spoofed or triggered on internal network in production.
+  if (import.meta.env.DEV) {
     context.locals.user = { email: 'admin@nozay-bad.fr' };
     return next();
   }
 
+  const token = request.headers.get('Cf-Access-Jwt-Assertion');
   if (!token) {
     return new Response('Non autorisé. Authentification Cloudflare Access requise.', { status: 401 });
   }
@@ -37,8 +37,15 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
     ...(context.locals.runtime?.env || {})
   };
 
-  const CF_TEAM_DOMAIN = resolvedEnv.CF_TEAM_DOMAIN || 'https://nba91.cloudflareaccess.com';
-  const CF_AUDIENCE = resolvedEnv.CF_AUDIENCE || 'mock-audience-id';
+  const CF_TEAM_DOMAIN = resolvedEnv.CF_TEAM_DOMAIN;
+  const CF_AUDIENCE = resolvedEnv.CF_AUDIENCE;
+
+  // Fail fast: never use a fallback audience in production — an absent audience would
+  // accept any valid Cloudflare Access JWT from any application.
+  if (!CF_TEAM_DOMAIN || !CF_AUDIENCE) {
+    console.error('[auth] CF_TEAM_DOMAIN or CF_AUDIENCE is not configured');
+    return new Response('Erreur de configuration serveur.', { status: 500 });
+  }
 
   try {
     const jwks = getJWKS(CF_TEAM_DOMAIN);

@@ -2,7 +2,12 @@ import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, eq, inArray } from 'drizzle-orm';
 import { productsTable, ordersTable } from '@metacult/features-shop-data-access';
-import { sql } from 'drizzle-orm';
+// Cross-domain read: shop needs member names for order display and approval.
+// Justified: same D1 database, same Worker — no Service Binding overhead.
+// Declared explicitly in eslint.config.js boundaries (scope:shop allows scope:members read).
+import { membersTable } from '@metacult/features-members-data-access';
+// Cross-domain read: shop needs the 'Boutique' accounting category ID for transaction creation.
+import { categoriesTable } from '@metacult/features-accounting-data-access';
 
 export type Bindings = {
   DB: D1Database;
@@ -82,15 +87,16 @@ shopRouter.get('/orders', async (c) => {
   let productsList: (typeof productsTable.$inferSelect)[] = [];
 
   if (memberIds.length > 0) {
-    membersList = await db.select({
-      id: sql<number>`id`,
-      lastName: sql<string>`last_name`,
-      firstName: sql<string>`first_name`,
-      licence: sql<string>`licence`
-    })
-      .from(sql`members`)
-      .where(inArray(sql`id`, memberIds))
-      .all() as { id: number; lastName: string; firstName: string; licence: string }[];
+    membersList = await db
+      .select({
+        id: membersTable.id,
+        lastName: membersTable.lastName,
+        firstName: membersTable.firstName,
+        licence: membersTable.licence,
+      })
+      .from(membersTable)
+      .where(inArray(membersTable.id, memberIds))
+      .all();
   }
   if (productIds.length > 0) {
     productsList = await db.select().from(productsTable).where(inArray(productsTable.id, productIds)).all();
@@ -141,45 +147,61 @@ shopRouter.post('/orders/:id/approve', async (c) => {
   const id = parseInt(c.req.param('id'));
   const db = drizzle(c.env.DB);
 
-  let updatedOrder;
   try {
+    // Fetch all needed data first
     const order = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
-    if (!order || order.status !== 'pending') {
-      throw new Error('Commande invalide ou déjà traitée');
+    if (!order) return c.json({ success: false, error: 'Commande introuvable' }, 404);
+    if (order.status !== 'pending') {
+      return c.json({ success: false, error: 'Commande invalide ou déjà traitée' }, 400);
     }
 
-    const member = await db.get(sql`
-      SELECT id, last_name as lastName, first_name as firstName FROM members WHERE id = ${order.memberId}
-    `) as { id: number; lastName: string; firstName: string } | undefined;
-    if (!member) {
-      throw new Error('Adhérent inexistant');
-    }
+    const member = await db
+      .select({
+        id: membersTable.id,
+        lastName: membersTable.lastName,
+        firstName: membersTable.firstName,
+      })
+      .from(membersTable)
+      .where(eq(membersTable.id, order.memberId))
+      .get();
+    if (!member) return c.json({ success: false, error: 'Adhérent inexistant' }, 400);
 
     const product = await db.select().from(productsTable).where(eq(productsTable.id, order.productId)).get();
-    if (!product) {
-      throw new Error('Produit inexistant');
-    }
+    if (!product) return c.json({ success: false, error: 'Produit inexistant' }, 400);
 
-    const boutiqueCat = await db.get(sql`
-      SELECT id FROM categories WHERE admin_label = 'Boutique'
-    `) as { id: number } | undefined;
+    const boutiqueCat = await db
+      .select({ id: categoriesTable.id })
+      .from(categoriesTable)
+      .where(eq(categoriesTable.adminLabel, 'Boutique'))
+      .get();
     const boutiqueCatId = boutiqueCat ? boutiqueCat.id : null;
 
-    const tx = await db.get(sql`
-      INSERT INTO transactions (season_id, type, account_id, category, amount, date, payment_method, description, member_id, created_at)
-      VALUES (${order.seasonId}, 'recette', 'current', ${boutiqueCatId}, ${order.totalAmount}, ${new Date().toISOString().split('T')[0]}, ${order.paymentMethod}, ${`Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`}, ${member.id}, ${new Date().getTime()})
-      RETURNING id
-    `) as { id: number };
+    const today = new Date().toISOString().split('T')[0];
+    const description = `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`;
 
-    updatedOrder = await db.update(ordersTable)
-      .set({ status: 'approved', transactionId: tx.id })
-      .where(eq(ordersTable.id, id))
-      .returning().get();
+    // Atomic batch: insert accounting transaction + conditionally approve order.
+    // The WHERE status = 'pending' on the UPDATE is an optimistic lock:
+    // if a concurrent request already approved, RETURNING returns nothing → we detect the conflict.
+    const [, approvedRows] = await db.batch([
+      db.run(sql`
+        INSERT INTO transactions (season_id, type, account_id, category, amount, date, payment_method, description, member_id, created_at)
+        VALUES (${order.seasonId}, 'recette', 'current', ${boutiqueCatId}, ${order.totalAmount}, ${today}, ${order.paymentMethod}, ${description}, ${member.id}, ${new Date().getTime()})
+      `),
+      db.update(ordersTable)
+        .set({ status: 'approved' })
+        .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')))
+        .returning(),
+    ] as [any, any]);
+
+    const updatedOrder = approvedRows[0];
+    if (!updatedOrder) {
+      return c.json({ success: false, error: 'Commande déjà traitée (conflit concurrent)' }, 409);
+    }
+
+    return c.json({ success: true, data: updatedOrder });
   } catch (err: any) {
-    return c.json({ success: false, error: err.message }, 400);
+    return c.json({ success: false, error: err.message }, 500);
   }
-
-  return c.json({ success: true, data: updatedOrder });
 });
 
 shopRouter.post('/orders/:id/reject', async (c) => {

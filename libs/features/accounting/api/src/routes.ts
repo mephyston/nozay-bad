@@ -17,6 +17,7 @@ import {
   seasonsTable,
   membersTable
 } from '@metacult/features-members-data-access';
+import { isSeasonClosed, normalizeCategory } from '@metacult/shared-db';
 
 export type Bindings = {
   DB: D1Database;
@@ -36,37 +37,7 @@ function cleanName(name: string | null): string {
     .toLowerCase();
 }
 
-async function isSeasonClosed(db: any, seasonId: string): Promise<boolean> {
-  const season = await db.select({ closed: seasonsTable.closed })
-    .from(seasonsTable)
-    .where(eq(seasonsTable.id, seasonId))
-    .get();
-  return season?.closed === 1 || season?.closed === true;
-}
-
-export function normalizeCategory(categoryVal: any): number | null {
-  if (categoryVal === undefined || categoryVal === null) return null;
-  const num = Number(categoryVal);
-  if (!isNaN(num)) return num;
-
-  const legacyMap: Record<string, number> = {
-    adhesions_inscriptions: 1,
-    sponsoring: 2,
-    subventions: 3,
-    actions_jeunes: 4,
-    tournois_senior: 5,
-    evenements_buvettes: 6,
-    cordage_vente: 7,
-    volants: 8,
-    salaires_charges: 9,
-    materiel_club: 10,
-    licences_federation: 11,
-    championnats: 12,
-    stages_formations: 13,
-    fonctionnement_administratif: 14
-  };
-  return legacyMap[categoryVal] || null;
-}
+// isSeasonClosed and normalizeCategory are imported from @metacult/shared-db
 
 export function parseOFX(ofxContent: string): { transactions: { fitid: string; amount: number; date: string; name: string; memo: string | null; accountId: 'current' | 'savings' }[] } {
   // 1. Détecter le compte bancaire depuis <ACCTID>
