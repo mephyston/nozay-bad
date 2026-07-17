@@ -208,82 +208,75 @@ shopRouter.post('/orders/:id/approve', async (c) => {
   }
   const db = drizzle(c.env.DB);
 
-  try {
-    const updatedOrder = await db.transaction(async (tx) => {
-      const order = await tx.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
-      if (!order) throw new AppError('Commande introuvable', 404);
-      if (order.status !== 'pending') {
-        throw new AppError('Commande invalide ou déjà traitée', 400);
-      }
-
-      if (await isSeasonClosed(tx, order.seasonId)) {
-        throw new AppError('La saison est clôturée', 400);
-      }
-
-      const member = await tx
-        .select({
-          id: membersTable.id,
-          lastName: membersTable.lastName,
-          firstName: membersTable.firstName,
-        })
-        .from(membersTable)
-        .where(eq(membersTable.id, order.memberId))
-        .get();
-      if (!member) throw new AppError('Adhérent inexistant', 400);
-
-      const product = await tx.select().from(productsTable).where(eq(productsTable.id, order.productId)).get();
-      if (!product) throw new AppError('Produit inexistant', 400);
-
-      const boutiqueCat = await tx
-        .select({ id: categoriesTable.id })
-        .from(categoriesTable)
-        .where(eq(categoriesTable.adminLabel, 'Boutique'))
-        .get();
-      const boutiqueCatId = boutiqueCat ? boutiqueCat.id : null;
-
-      const today = new Date().toISOString().split('T')[0];
-      const description = `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`;
-
-      // 1. Insert the transaction and retrieve the generated ID
-      const txRow = await tx
-        .insert(transactionsTable)
-        .values({
-          seasonId: order.seasonId,
-          type: 'recette',
-          accountId: 'current',
-          category: boutiqueCatId,
-          amount: order.totalAmount,
-          date: today,
-          paymentMethod: order.paymentMethod as any,
-          description,
-          memberId: member.id,
-          createdAt: new Date(),
-        })
-        .returning({ id: transactionsTable.id })
-        .get();
-
-      // 2. Update the order with optimistic locking
-      const updated = await tx
-        .update(ordersTable)
-        .set({ status: 'approved', transactionId: txRow.id })
-        .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')))
-        .returning()
-        .get();
-
-      if (!updated) {
-        throw new AppError('Commande déjà traitée (conflit concurrent)', 409);
-      }
-
-      return updated;
-    });
-
-    return c.json({ success: true, data: updatedOrder });
-  } catch (err: any) {
-    if (err instanceof AppError) {
-      return c.json({ success: false, error: err.message }, err.status);
+  const updatedOrder = await db.transaction(async (tx) => {
+    const order = await tx.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
+    if (!order) throw new AppError('Commande introuvable', 404);
+    if (order.status !== 'pending') {
+      throw new AppError('Commande invalide ou déjà traitée', 400);
     }
-    return c.json({ success: false, error: err.message }, 500);
-  }
+
+    if (await isSeasonClosed(tx, order.seasonId)) {
+      throw new AppError('La saison est clôturée', 400);
+    }
+
+    const member = await tx
+      .select({
+        id: membersTable.id,
+        lastName: membersTable.lastName,
+        firstName: membersTable.firstName,
+      })
+      .from(membersTable)
+      .where(eq(membersTable.id, order.memberId))
+      .get();
+    if (!member) throw new AppError('Adhérent inexistant', 400);
+
+    const product = await tx.select().from(productsTable).where(eq(productsTable.id, order.productId)).get();
+    if (!product) throw new AppError('Produit inexistant', 400);
+
+    const boutiqueCat = await tx
+      .select({ id: categoriesTable.id })
+      .from(categoriesTable)
+      .where(eq(categoriesTable.adminLabel, 'Boutique'))
+      .get();
+    const boutiqueCatId = boutiqueCat ? boutiqueCat.id : null;
+
+    const today = new Date().toISOString().split('T')[0];
+    const description = `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`;
+
+    // 1. Insert the transaction and retrieve the generated ID
+    const txRow = await tx
+      .insert(transactionsTable)
+      .values({
+        seasonId: order.seasonId,
+        type: 'recette',
+        accountId: 'current',
+        category: boutiqueCatId,
+        amount: order.totalAmount,
+        date: today,
+        paymentMethod: order.paymentMethod as any,
+        description,
+        memberId: member.id,
+        createdAt: new Date(),
+      })
+      .returning({ id: transactionsTable.id })
+      .get();
+
+    // 2. Update the order with optimistic locking
+    const updated = await tx
+      .update(ordersTable)
+      .set({ status: 'approved', transactionId: txRow.id })
+      .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')))
+      .returning()
+      .get();
+
+    if (!updated) {
+      throw new AppError('Commande déjà traitée (conflit concurrent)', 409);
+    }
+
+    return updated;
+  });
+
+  return c.json({ success: true, data: updatedOrder });
 });
 
 shopRouter.post('/orders/:id/reject', async (c) => {
@@ -296,32 +289,25 @@ shopRouter.post('/orders/:id/reject', async (c) => {
   }
   const db = drizzle(c.env.DB);
 
-  try {
-    const order = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
-    if (!order) {
-      throw new AppError('Commande introuvable', 404);
-    }
-    if (order.status !== 'pending') {
-      throw new AppError('Commande invalide ou déjà traitée', 400);
-    }
-    if (await isSeasonClosed(db, order.seasonId)) {
-      throw new AppError('La saison est clôturée', 400);
-    }
-
-    const updatedOrder = await db.update(ordersTable)
-      .set({ status: 'rejected' })
-      .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')))
-      .returning().get();
-
-    if (!updatedOrder) {
-      throw new AppError('Commande déjà traitée (conflit concurrent)', 409);
-    }
-
-    return c.json({ success: true, data: updatedOrder });
-  } catch (err: any) {
-    if (err instanceof AppError) {
-      return c.json({ success: false, error: err.message }, err.status);
-    }
-    return c.json({ success: false, error: err.message }, 500);
+  const order = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
+  if (!order) {
+    throw new AppError('Commande introuvable', 404);
   }
+  if (order.status !== 'pending') {
+    throw new AppError('Commande invalide ou déjà traitée', 400);
+  }
+  if (await isSeasonClosed(db, order.seasonId)) {
+    throw new AppError('La saison est clôturée', 400);
+  }
+
+  const updatedOrder = await db.update(ordersTable)
+    .set({ status: 'rejected' })
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')))
+    .returning().get();
+
+  if (!updatedOrder) {
+    throw new AppError('Commande déjà traitée (conflit concurrent)', 409);
+  }
+
+  return c.json({ success: true, data: updatedOrder });
 });

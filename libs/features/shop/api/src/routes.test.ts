@@ -4,8 +4,15 @@ import { shopRouter } from './routes';
 import { setupMockDb } from '@metacult/shared-db/test-utils';
 import { productsTable } from '@metacult/features-shop-data-access';
 import { eq, sql } from 'drizzle-orm';
+import { AppError } from '@metacult/shared-db';
 
 const app = new Hono<{ Bindings: { DB: any } }>();
+app.onError((err, c) => {
+  if (err instanceof AppError) {
+    return c.json({ success: false, error: err.message }, err.status);
+  }
+  return c.json({ success: false, error: err.message }, 500);
+});
 app.route('/shop', shopRouter);
 
 describe('Products API Endpoints', () => {
