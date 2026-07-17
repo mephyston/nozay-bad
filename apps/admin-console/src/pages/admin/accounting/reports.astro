@@ -121,14 +121,14 @@ try {
 <Layout title="Rapports financiers - NBA 91">
   <AdminLayout client:load email={userEmail} breadcrumb="Comptabilité / Rapports financiers">
     <div class="space-y-6">
-      <div class="flex items-center justify-between print:hidden">
+      <div class="flex items-center justify-between">
         <div>
           <h1 class="text-3xl font-bold tracking-tight">Rapports financiers</h1>
           <p class="text-muted-foreground mt-2">
             Consultez les comptes de résultat, le bilan de trésorerie et gérez les budgets prévisionnels.
           </p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 print:hidden">
           <select
             id="season-selector"
             class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9"
