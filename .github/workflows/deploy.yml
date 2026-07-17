@@ -146,7 +146,7 @@ jobs:
     name: Deploy Boutique Worker
     runs-on: ubuntu-latest
     needs: [detect-changes, deploy-api]
-    if: github.event_name == 'push' && needs.detect-changes.outputs.boutique == '1' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.boutique == '1' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -180,7 +180,7 @@ jobs:
     name: Deploy Admin Console Worker
     runs-on: ubuntu-latest
     needs: [detect-changes, deploy-api]
-    if: github.event_name == 'push' && needs.detect-changes.outputs.admin_console == '1' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.admin_console == '1' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
