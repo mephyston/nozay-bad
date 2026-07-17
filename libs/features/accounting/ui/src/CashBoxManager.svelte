@@ -19,6 +19,7 @@
     id: string;
     name: string;
     active: boolean;
+    closed?: boolean;
   }
 
   let {

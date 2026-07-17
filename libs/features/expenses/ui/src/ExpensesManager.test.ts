@@ -91,4 +91,29 @@ describe('ExpensesManager Component', () => {
       body: JSON.stringify({ action: 'approve', id: 1 })
     });
   });
+
+  it('hides validation and edit actions when the season is closed', () => {
+    const closedSeasons = [
+      { id: '25-26', name: 'Saison 2025-2026', active: true, closed: true },
+      { id: '24-25', name: 'Saison 2024-2025', active: false, closed: false }
+    ];
+
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(ExpensesManager, {
+      target,
+      props: {
+        expenses,
+        seasonId: '25-26',
+        seasons: closedSeasons
+      }
+    });
+    flushSync();
+
+    expect(target.innerHTML).toContain('Marie Curie');
+    expect(target.innerHTML).not.toContain('Modifier');
+    expect(target.innerHTML).not.toContain('Rembourser');
+    expect(target.innerHTML).not.toContain('Rejeter');
+  });
 });

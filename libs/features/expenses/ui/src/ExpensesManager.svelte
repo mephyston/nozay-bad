@@ -43,9 +43,7 @@
   } = $props();
 
   let activeTab = $state<'pending' | 'history'>('pending');
-  // svelte-ignore state_referenced_locally
-  let selectedSeason = $state(seasonId);
-  const isClosed = $derived(seasons.find(s => s.id === selectedSeason)?.closed || false);
+  const isClosed = $derived(seasons.find(s => s.id === seasonId)?.closed || false);
   let searchTerm = $state('');
   let selectedPhoto = $state<string | null>(null);
 
@@ -146,10 +144,7 @@
       )
   );
 
-  function handleSeasonChange(e: Event) {
-    const target = e.target as HTMLSelectElement;
-    window.location.search = `?season=${target.value}`;
-  }
+
 
   function startEdit(exp: Expense) {
     editingId = exp.id;
@@ -278,27 +273,12 @@
 </script>
 
 <div class="space-y-6">
-  <!-- Season selector and Search -->
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card border border-border p-4 rounded-xl shadow-sm">
-    <div class="flex items-center gap-3">
+  <!-- Search -->
+  <div class="flex justify-between items-center bg-card border border-border p-4 rounded-xl shadow-sm">
+    <div class="flex items-center gap-2">
       <Coins class="w-5 h-5 text-primary" />
-      <span class="font-semibold text-foreground">Saison de comptabilisation :</span>
-      <select
-        value={selectedSeason}
-        onchange={handleSeasonChange}
-        class="bg-background border border-border px-3 py-1.5 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-      >
-        {#each seasons as s}
-          <option value={s.id}>{s.name}</option>
-        {/each}
-      </select>
-      {#if isClosed}
-        <Badge variant="outline" class="font-bold bg-muted text-muted-foreground">
-          Saison clôturée (Lecture seule)
-        </Badge>
-      {/if}
+      <span class="font-semibold text-foreground">Dépenses de la saison</span>
     </div>
-
     <div class="relative w-full sm:w-72">
       <Input
         type="text"
