@@ -99,3 +99,11 @@
 - Task 4: complete (commits 74cdff6..c41e551, review clean)
 - Task 5: complete (commits b1a0f0a..f0467ac, review clean)
 - Task 6: complete (commits e8bca3e..c13f958, review clean)
+
+## Phase 21: Découpage des Routes Comptables (2026-07-18)
+- Task 1: pending
+- Task 2: pending
+- Task 3: pending
+- Task 4: pending
+- Task 5: pending
+- Task 6: pending
