@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Wallet, FileText, CheckCircle, Trash2, Camera, UploadCloud, Search, ArrowRight, Loader2, Link, MoreVertical, Eye } from 'lucide-svelte';
-  import { Button, Table, Input, Badge, Card, Dialog, Alert } from '@metacult/shared-ui';
+  import { Button, Table, Input, Badge, Card, Dialog, Alert, Tabs } from '@metacult/shared-ui';
 
   interface Check {
     id: number;
@@ -424,51 +424,43 @@
 </script>
 
 <div class="space-y-6">
+  <Tabs.Root bind:value={activeTab} class="space-y-6">
+    <!-- Main Tabs Navigation -->
+    <div class="border-b border-border flex items-center justify-between">
+      <Tabs.List class="flex gap-4">
+        <Tabs.Trigger value="checks">
+          Chèques reçus ({checks.filter(c => c.status === 'received').length})
+        </Tabs.Trigger>
+        <Tabs.Trigger value="deposits">
+          Bordereaux de Remise ({checkDeposits.length})
+        </Tabs.Trigger>
+      </Tabs.List>
 
-  <!-- Main Tabs Navigation -->
-  <div class="border-b border-border flex items-center justify-between">
-    <div class="flex gap-4">
-      <Button
-        variant="ghost"
-        onclick={() => activeTab = 'checks'}
-        class="px-4 py-2 text-sm font-semibold border-b-2 rounded-none transition-all outline-none -mb-px {activeTab === 'checks' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}"
-      >
-        Chèques reçus ({checks.filter(c => c.status === 'received').length})
-      </Button>
-      <Button
-        variant="ghost"
-        onclick={() => activeTab = 'deposits'}
-        class="px-4 py-2 text-sm font-semibold border-b-2 rounded-none transition-all outline-none -mb-px {activeTab === 'deposits' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}"
-      >
-        Bordereaux de Remise ({checkDeposits.length})
-      </Button>
+      {#if activeTab === 'checks' && !isClosed}
+        <div class="flex gap-2 mb-2">
+          <Button
+            onclick={() => showAddCheckModal = true}
+            class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold px-4 py-2 rounded-lg transition-all shadow-sm"
+          >
+            <Camera class="h-4 w-4" />
+            Enregistrer un Chèque
+          </Button>
+
+          {#if selectedChecksList.length > 0}
+            <Button
+              onclick={() => showCreateDepositModal = true}
+              class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all shadow-sm animate-pulse"
+            >
+              <FileText class="h-4 w-4" />
+              Remise de {selectedChecksList.length} chèque(s) ({(totalSelectedAmount / 100).toFixed(2)} €)
+            </Button>
+          {/if}
+        </div>
+      {/if}
     </div>
 
-    {#if activeTab === 'checks' && !isClosed}
-      <div class="flex gap-2 mb-2">
-        <Button
-          onclick={() => showAddCheckModal = true}
-          class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold px-4 py-2 rounded-lg transition-all shadow-sm"
-        >
-          <Camera class="h-4 w-4" />
-          Enregistrer un Chèque
-        </Button>
-
-        {#if selectedChecksList.length > 0}
-          <Button
-            onclick={() => showCreateDepositModal = true}
-            class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all shadow-sm animate-pulse"
-          >
-            <FileText class="h-4 w-4" />
-            Remise de {selectedChecksList.length} chèque(s) ({(totalSelectedAmount / 100).toFixed(2)} €)
-          </Button>
-        {/if}
-      </div>
-    {/if}
-  </div>
-
-  <!-- Tab Contents -->
-  {#if activeTab === 'checks'}
+    <!-- Tab Contents -->
+    <Tabs.Content value="checks">
     <!-- Checks List -->
     <Card.Root class="overflow-hidden shadow-sm">
       <Card.Content class="p-0">
@@ -585,7 +577,8 @@
         </div>
       </Card.Content>
     </Card.Root>
-  {:else}
+  </Tabs.Content>
+  <Tabs.Content value="deposits">
     <!-- Deposits slips list -->
     <Card.Root class="overflow-hidden shadow-sm">
       <Card.Content class="p-0">
@@ -703,7 +696,8 @@
         </div>
       </Card.Content>
     </Card.Root>
-  {/if}
+  </Tabs.Content>
+  </Tabs.Root>
 </div>
 
 <!-- Modal 1: Register Check with Photo upload & OCR -->
