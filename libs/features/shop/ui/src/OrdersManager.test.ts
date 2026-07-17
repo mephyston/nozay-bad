@@ -120,7 +120,7 @@ describe('OrdersManager Component', () => {
     vi.unstubAllGlobals();
   });
 
-  it('renders pending orders grouped by season by default', () => {
+  it('renders pending orders by default', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
@@ -128,18 +128,13 @@ describe('OrdersManager Component', () => {
       target,
       props: {
         seasons,
-        orders
+        orders,
+        seasonId: '25-26'
       }
     });
 
-    // Header
-    expect(target.innerHTML).toContain('Validation des Commandes');
-
     // Default tab should be pending
     expect(target.innerHTML).toContain('Demandes en attente (1)');
-
-    // Season header
-    expect(target.innerHTML).toContain('Saison 2025-2026');
 
     // Pending Order info
     expect(target.innerHTML).toContain('Dupont');
@@ -170,7 +165,8 @@ describe('OrdersManager Component', () => {
       target,
       props: {
         seasons,
-        orders
+        orders,
+        seasonId: '25-26'
       }
     });
 
@@ -184,10 +180,6 @@ describe('OrdersManager Component', () => {
 
     // Check history count
     expect(target.innerHTML).toContain('Historique (2)');
-
-    // Season headers
-    expect(target.innerHTML).toContain('Saison 2025-2026');
-    expect(target.innerHTML).toContain('Saison 2024-2025');
 
     // Approved order
     expect(target.innerHTML).toContain('Martin');
@@ -211,7 +203,8 @@ describe('OrdersManager Component', () => {
       target,
       props: {
         seasons,
-        orders
+        orders,
+        seasonId: '25-26'
       }
     });
 
@@ -244,7 +237,8 @@ describe('OrdersManager Component', () => {
       target,
       props: {
         seasons,
-        orders
+        orders,
+        seasonId: '25-26'
       }
     });
 
@@ -268,5 +262,41 @@ describe('OrdersManager Component', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'reject', id: 1 })
     });
+  });
+
+  it('disables validation actions when the season is closed', async () => {
+    const seasonsClosed = [
+      { id: '25-26', name: 'Saison 2025-2026', active: true, closed: true }
+    ];
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(OrdersManager, {
+      target,
+      props: {
+        seasons: seasonsClosed,
+        orders,
+        seasonId: '25-26'
+      }
+    });
+
+    // Open dropdown to render actions
+    const actionBtn = target.querySelector('button[aria-label="Actions"]') as HTMLButtonElement;
+    expect(actionBtn).not.toBeNull();
+    actionBtn.click();
+    flushSync();
+
+    const approveBtn = Array.from(target.querySelectorAll('button')).find(
+      b => b.textContent?.includes('Valider')
+    ) as HTMLButtonElement;
+    const rejectBtn = Array.from(target.querySelectorAll('button')).find(
+      b => b.textContent?.includes('Refuser')
+    ) as HTMLButtonElement;
+
+    expect(approveBtn).not.toBeNull();
+    expect(approveBtn.disabled).toBe(true);
+
+    expect(rejectBtn).not.toBeNull();
+    expect(rejectBtn.disabled).toBe(true);
   });
 });
