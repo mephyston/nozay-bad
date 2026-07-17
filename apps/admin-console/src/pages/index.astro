@@ -17,11 +17,13 @@ const apiService = env.API_SERVICE;
 // Fetch data in SSR
 const activeSeasonId = await resolveActiveSeason(apiService);
 
-const balanceCents = await fetchTreasuryBalance(apiService, activeSeasonId);
-const formattedBalance = formatTreasuryBalance(balanceCents);
+const [balanceCents, paidCount, totalCount] = await Promise.all([
+  fetchTreasuryBalance(apiService, activeSeasonId),
+  fetchMembersCount(apiService, activeSeasonId, true),
+  fetchMembersCount(apiService, activeSeasonId)
+]);
 
-const paidCount = await fetchMembersCount(apiService, activeSeasonId, true);
-const totalCount = await fetchMembersCount(apiService, activeSeasonId);
+const formattedBalance = formatTreasuryBalance(balanceCents);
 const paidPercentage = calculatePaidPercentage(paidCount, totalCount);
 const formattedPaidPercentage = formatPaidPercentage(paidPercentage);
 
