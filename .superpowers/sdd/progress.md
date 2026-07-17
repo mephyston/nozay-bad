@@ -63,7 +63,7 @@
 
 ## Phase 14: Remise de chèques - Standardisation & Polices (2026-07-17)
 - Task 1: complete (commits 88fa868..4b3d4a9, review clean)
-- Task 2: pending
+- Task 2: complete (commits f0cc743..a2128bc, review clean)
 - Task 3: pending
 - Task 4: pending
 - Task 5: pending
