@@ -2,6 +2,8 @@ import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, or, eq, like, inArray, desc, sql } from 'drizzle-orm';
 import { membersTable, seasonsTable } from '@metacult/features-members-data-access';
+import { Type } from '@sinclair/typebox';
+import { tbValidator } from '@hono/typebox-validator';
 
 export type Bindings = {
   DB: D1Database;
@@ -33,19 +35,20 @@ interface ParsedMember {
 
 export const membersRouter = new Hono<{ Bindings: Bindings }>();
 
-membersRouter.post('/import', async (c) => {
+const importMembersSchema = Type.Object({
+  file: Type.Any()
+});
+
+membersRouter.post('/import', tbValidator('form', importMembersSchema, (result, c) => {
+  if (!result.success) {
+    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.path?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+  }
+}), async (c) => {
   if (!c.env || !c.env.DB) {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
 
-  let body: any;
-  try {
-    body = await c.req.parseBody();
-  } catch (err) {
-    return c.json({ success: false, error: 'Failed to parse request body' }, 400);
-  }
-
-  const file = body.file;
+  const { file } = c.req.valid('form');
   if (!file) {
     return c.json({ success: false, error: 'Missing file field in multipart form data' }, 400);
   }

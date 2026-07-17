@@ -8,7 +8,9 @@ import { productsTable, ordersTable } from '@metacult/features-shop-data-access'
 import { membersTable } from '@metacult/features-members-data-access';
 // Cross-domain read: shop needs the 'Boutique' accounting category ID and transaction insertion.
 import { categoriesTable, transactionsTable } from '@metacult/features-accounting-data-access';
-import { isSeasonClosed } from '@metacult/shared-db';
+import { isSeasonClosed, AppError } from '@metacult/shared-db';
+import { Type } from '@sinclair/typebox';
+import { tbValidator } from '@hono/typebox-validator';
 
 export type Bindings = {
   DB: D1Database;
@@ -33,11 +35,34 @@ shopRouter.get('/products', async (c) => {
   return c.json({ success: true, data: products });
 });
 
-shopRouter.post('/products', async (c) => {
+const createProductSchema = Type.Object({
+  name: Type.String({ minLength: 1 }),
+  category: Type.Union([
+    Type.Literal('shuttlecock'),
+    Type.Literal('string'),
+    Type.Literal('other'),
+  ]),
+  price: Type.Integer({ minimum: 0 }),
+  stock: Type.Integer({ minimum: 0 }),
+  active: Type.Optional(Type.Boolean()),
+});
+
+const updateProductSchema = Type.Object({
+  name: Type.Optional(Type.String({ minLength: 1 })),
+  price: Type.Optional(Type.Integer({ minimum: 0 })),
+  stock: Type.Optional(Type.Integer({ minimum: 0 })),
+  active: Type.Optional(Type.Boolean()),
+});
+
+shopRouter.post('/products', tbValidator('json', createProductSchema, (result, c) => {
+  if (!result.success) {
+    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.path?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+  }
+}), async (c) => {
   if (!c.env || !c.env.DB) {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
-  const body = await c.req.json();
+  const body = c.req.valid('json');
   const db = drizzle(c.env.DB);
   const prod = await db.insert(productsTable).values({
     name: body.name,
@@ -50,12 +75,19 @@ shopRouter.post('/products', async (c) => {
   return c.json({ success: true, data: prod });
 });
 
-shopRouter.put('/products/:id', async (c) => {
+shopRouter.put('/products/:id', tbValidator('json', updateProductSchema, (result, c) => {
+  if (!result.success) {
+    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.path?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+  }
+}), async (c) => {
   if (!c.env || !c.env.DB) {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
   const id = parseInt(c.req.param('id'));
-  const body = await c.req.json();
+  if (isNaN(id)) {
+    return c.json({ success: false, error: 'Identifiant invalide' }, 400);
+  }
+  const body = c.req.valid('json');
   const db = drizzle(c.env.DB);
   const prod = await db.update(productsTable).set({
     name: body.name,
@@ -115,11 +147,32 @@ shopRouter.get('/orders', async (c) => {
   return c.json({ success: true, data: mappedOrders });
 });
 
-shopRouter.post('/orders', async (c) => {
+const createOrderSchema = Type.Object({
+  seasonId: Type.String({ minLength: 1 }),
+  memberId: Type.Integer({ minimum: 1 }),
+  productId: Type.Integer({ minimum: 1 }),
+  quantity: Type.Integer({ minimum: 1 }),
+  paymentMethod: Type.Union([
+    Type.Literal('virement'),
+    Type.Literal('cheque'),
+    Type.Literal('especes'),
+    Type.Literal('labaz'),
+    Type.Literal('ancv'),
+    Type.Literal('pass_sport'),
+    Type.Literal('ticket_loisir'),
+    Type.Literal('up_loisir'),
+  ]),
+});
+
+shopRouter.post('/orders', tbValidator('json', createOrderSchema, (result, c) => {
+  if (!result.success) {
+    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.path?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+  }
+}), async (c) => {
   if (!c.env || !c.env.DB) {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
-  const body = await c.req.json();
+  const body = c.req.valid('json');
   const db = drizzle(c.env.DB);
 
   if (await isSeasonClosed(db, body.seasonId)) {
@@ -150,18 +203,21 @@ shopRouter.post('/orders/:id/approve', async (c) => {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
   const id = parseInt(c.req.param('id'));
+  if (isNaN(id)) {
+    return c.json({ success: false, error: 'Identifiant invalide' }, 400);
+  }
   const db = drizzle(c.env.DB);
 
   try {
     const updatedOrder = await db.transaction(async (tx) => {
       const order = await tx.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
-      if (!order) throw new Error('Commande introuvable');
+      if (!order) throw new AppError('Commande introuvable', 404);
       if (order.status !== 'pending') {
-        throw new Error('Commande invalide ou déjà traitée');
+        throw new AppError('Commande invalide ou déjà traitée', 400);
       }
 
       if (await isSeasonClosed(tx, order.seasonId)) {
-        throw new Error('La saison est clôturée');
+        throw new AppError('La saison est clôturée', 400);
       }
 
       const member = await tx
@@ -173,10 +229,10 @@ shopRouter.post('/orders/:id/approve', async (c) => {
         .from(membersTable)
         .where(eq(membersTable.id, order.memberId))
         .get();
-      if (!member) throw new Error('Adhérent inexistant');
+      if (!member) throw new AppError('Adhérent inexistant', 400);
 
       const product = await tx.select().from(productsTable).where(eq(productsTable.id, order.productId)).get();
-      if (!product) throw new Error('Produit inexistant');
+      if (!product) throw new AppError('Produit inexistant', 400);
 
       const boutiqueCat = await tx
         .select({ id: categoriesTable.id })
@@ -215,7 +271,7 @@ shopRouter.post('/orders/:id/approve', async (c) => {
         .get();
 
       if (!updated) {
-        throw new Error('CONFLIT');
+        throw new AppError('Commande déjà traitée (conflit concurrent)', 409);
       }
 
       return updated;
@@ -223,14 +279,8 @@ shopRouter.post('/orders/:id/approve', async (c) => {
 
     return c.json({ success: true, data: updatedOrder });
   } catch (err: any) {
-    if (err.message === 'Commande introuvable') {
-      return c.json({ success: false, error: err.message }, 404);
-    }
-    if (err.message === 'Commande invalide ou déjà traitée' || err.message === 'Adhérent inexistant' || err.message === 'Produit inexistant' || err.message === 'La saison est clôturée') {
-      return c.json({ success: false, error: err.message }, 400);
-    }
-    if (err.message === 'CONFLIT') {
-      return c.json({ success: false, error: 'Commande déjà traitée (conflit concurrent)' }, 409);
+    if (err instanceof AppError) {
+      return c.json({ success: false, error: err.message }, err.status);
     }
     return c.json({ success: false, error: err.message }, 500);
   }
@@ -241,41 +291,37 @@ shopRouter.post('/orders/:id/reject', async (c) => {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
   const id = parseInt(c.req.param('id'));
+  if (isNaN(id)) {
+    return c.json({ success: false, error: 'Identifiant invalide' }, 400);
+  }
   const db = drizzle(c.env.DB);
 
-  let updatedOrder;
   try {
     const order = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
     if (!order) {
-      throw new Error('Commande introuvable');
+      throw new AppError('Commande introuvable', 404);
     }
     if (order.status !== 'pending') {
-      throw new Error('Commande invalide ou déjà traitée');
+      throw new AppError('Commande invalide ou déjà traitée', 400);
     }
     if (await isSeasonClosed(db, order.seasonId)) {
-      throw new Error('La saison est clôturée');
+      throw new AppError('La saison est clôturée', 400);
     }
 
-    updatedOrder = await db.update(ordersTable)
+    const updatedOrder = await db.update(ordersTable)
       .set({ status: 'rejected' })
       .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')))
       .returning().get();
 
     if (!updatedOrder) {
-      throw new Error('CONFLIT');
+      throw new AppError('Commande déjà traitée (conflit concurrent)', 409);
     }
+
+    return c.json({ success: true, data: updatedOrder });
   } catch (err: any) {
-    if (err.message === 'Commande introuvable') {
-      return c.json({ success: false, error: err.message }, 404);
-    }
-    if (err.message === 'Commande invalide ou déjà traitée' || err.message === 'La saison est clôturée') {
-      return c.json({ success: false, error: err.message }, 400);
-    }
-    if (err.message === 'CONFLIT') {
-      return c.json({ success: false, error: 'Commande déjà traitée (conflit concurrent)' }, 409);
+    if (err instanceof AppError) {
+      return c.json({ success: false, error: err.message }, err.status);
     }
     return c.json({ success: false, error: err.message }, 500);
   }
-
-  return c.json({ success: true, data: updatedOrder });
 });

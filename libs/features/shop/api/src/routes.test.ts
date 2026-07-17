@@ -73,6 +73,32 @@ describe('Products API Endpoints', () => {
     expect(verifyJson.data).toHaveLength(1);
     expect(verifyJson.data[0].name).toBe('Yonex BG65 Updated');
   });
+
+  it('validates invalid inputs for product creation and updates', async () => {
+    const { mockD1 } = await setupMockDb();
+
+    // POST with missing name and invalid category
+    const createRes = await app.request('http://localhost/shop/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: 'invalid-cat', price: -5, stock: -1 })
+    }, { DB: mockD1 as any });
+    expect(createRes.status).toBe(400);
+    const json = await createRes.json() as any;
+    expect(json.success).toBe(false);
+    expect(json.error).toContain('Validation failed');
+
+    // PUT with invalid fields
+    const updateRes = await app.request('http://localhost/shop/products/1', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ price: -10 })
+    }, { DB: mockD1 as any });
+    expect(updateRes.status).toBe(400);
+    const updateJson = await updateRes.json() as any;
+    expect(updateJson.success).toBe(false);
+    expect(updateJson.error).toContain('Validation failed');
+  });
 });
 
 describe('Orders API Endpoints', () => {
@@ -274,5 +300,30 @@ describe('Orders API Endpoints', () => {
     const rejectJson = await rejectRes.json() as any;
     expect(rejectJson.success).toBe(false);
     expect(rejectJson.error).toBe('La saison est clôturée');
+  });
+
+  it('validates invalid inputs for order creation', async () => {
+    const { mockD1 } = await setupMockDb();
+
+    const res = await app.request('http://localhost/shop/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seasonId: '', memberId: 0, productId: -1, quantity: 0, paymentMethod: 'invalid-method' })
+    }, { DB: mockD1 as any });
+    expect(res.status).toBe(400);
+    const json = await res.json() as any;
+    expect(json.success).toBe(false);
+    expect(json.error).toContain('Validation failed');
+  });
+
+  it('should return 404 AppError when order is not found for approval', async () => {
+    const { mockD1 } = await setupMockDb();
+    const res = await app.request('http://localhost/shop/orders/9999/approve', {
+      method: 'POST'
+    }, { DB: mockD1 as any });
+    expect(res.status).toBe(404);
+    const json = await res.json() as any;
+    expect(json.success).toBe(false);
+    expect(json.error).toBe('Commande introuvable');
   });
 });

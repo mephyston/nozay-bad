@@ -124,4 +124,41 @@ describe('Expenses API Endpoints', () => {
     expect(txDeleted).toBeUndefined();
 
   });
+
+  it('validates invalid inputs for expense creation and updates', async () => {
+    const { mockD1 } = await setupMockDb();
+
+    // Invalid POST
+    const res = await app.request('http://localhost/expenses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seasonId: '', description: '', amount: -50, emitterName: '' })
+    }, { DB: mockD1 as any });
+    expect(res.status).toBe(400);
+    const json = await res.json() as any;
+    expect(json.success).toBe(false);
+    expect(json.error).toContain('Validation failed');
+
+    // Invalid PUT
+    const updateRes = await app.request('http://localhost/expenses/1', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: -100 })
+    }, { DB: mockD1 as any });
+    expect(updateRes.status).toBe(400);
+    const updateJson = await updateRes.json() as any;
+    expect(updateJson.success).toBe(false);
+    expect(updateJson.error).toContain('Validation failed');
+  });
+
+  it('should return 404 AppError when expense is not found for approval', async () => {
+    const { mockD1 } = await setupMockDb();
+    const res = await app.request('http://localhost/expenses/9999/approve', {
+      method: 'POST'
+    }, { DB: mockD1 as any });
+    expect(res.status).toBe(404);
+    const json = await res.json() as any;
+    expect(json.success).toBe(false);
+    expect(json.error).toBe('Dépense introuvable');
+  });
 });

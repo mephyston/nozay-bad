@@ -402,4 +402,24 @@ describe('/members/:id/cse-data', () => {
     const body = await res.json() as any;
     expect(body).toEqual({ success: false, error: 'Identifiant invalide' });
   });
+
+  it('should return 400 validation error when file field is completely missing in POST /members/import', async () => {
+    const { mockD1 } = await setupMockDb();
+    const formData = new FormData();
+    formData.append('other_field', 'some_value'); // Completely missing "file" field
+
+    const req = new Request('http://localhost/members/import', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const res = await app.request(req, undefined, {
+      DB: mockD1 as any,
+    });
+
+    expect(res.status).toBe(400);
+    const body = await res.json() as any;
+    expect(body.success).toBe(false);
+    expect(body.error).toContain('Validation failed');
+  });
 });
