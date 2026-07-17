@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { AlertCircle, Printer } from 'lucide-svelte';
   import { Button, Table, Input, Card, Tabs } from '@metacult/shared-ui';
 
   interface CategoryTotal {
@@ -115,13 +114,6 @@
     return classCats.reduce((sum, cat) => sum + (editableBudget[`${cat.id}_${type}`] || 0), 0);
   }
 
-  // Get total for a class code and flow type (dynamic based on reportMode)
-  function getClassSum(classCode: string, type: 'recette' | 'depense'): number {
-    return reportMode === 'realise'
-      ? getClassSumRealise(classCode, type, 'realise')
-      : getClassSumPrevisionnel(classCode, type);
-  }
-
   function getTotalDepensesRealise(mode: 'realise' | 'previsionnel'): number {
     return accountClasses
       .filter(ac => ac.type === 'depense')
@@ -134,29 +126,17 @@
       .reduce((sum, ac) => sum + getClassSumRealise(ac.code, 'recette', mode), 0);
   }
 
-  let totalDepensesRealise = $derived(getTotalDepensesRealise(reportMode));
-
   let totalDepensesPrevisionnel = $derived(
     accountClasses
       .filter(ac => ac.type === 'depense')
       .reduce((sum, ac) => sum + getClassSumPrevisionnel(ac.code, 'depense'), 0)
   );
 
-  let totalRecettesRealise = $derived(getTotalRecettesRealise(reportMode));
-
   let totalRecettesPrevisionnel = $derived(
     accountClasses
       .filter(ac => ac.type === 'recette')
       .reduce((sum, ac) => sum + getClassSumPrevisionnel(ac.code, 'recette'), 0)
   );
-
-  let netResultRealise = $derived(totalRecettesRealise - totalDepensesRealise);
-  let netResultPrevisionnel = $derived(totalRecettesPrevisionnel - totalDepensesPrevisionnel);
-
-  // Backward compatibility for standard variables
-  let totalDepenses = $derived(reportMode === 'realise' ? totalDepensesRealise : totalDepensesPrevisionnel);
-  let totalRecettes = $derived(reportMode === 'realise' ? totalRecettesRealise : totalRecettesPrevisionnel);
-  let netResult = $derived(reportMode === 'realise' ? netResultRealise : netResultPrevisionnel);
 
   let isClosed = $derived(
     seasons.find(s => s.id === selectedSeason)?.closed || false
@@ -337,12 +317,6 @@
     savings: 'Compte Livret',
     cash: 'Caisse Physique'
   };
-
-  function applySeasonChange() {
-    const params = new URLSearchParams(window.location.search);
-    params.set('season', selectedSeason);
-    window.location.href = `/admin/accounting/reports?${params.toString()}`;
-  }
 
   // Helper to safely get total for a category and type
   function getCatTotal(id: string, type: 'recette' | 'depense', mode: 'realise' | 'previsionnel'): number {
