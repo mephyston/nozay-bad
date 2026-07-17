@@ -104,6 +104,6 @@
 - Task 1: complete (commits 6cbdc08..b84fb20, review clean)
 - Task 2: complete (commits 440d5e5..e8655a5, review clean)
 - Task 3: complete (commits 0ff0042..895e4d6, review clean)
-- Task 4: pending
+- Task 4: complete (commits 627bb90..1eeb18b, review clean)
 - Task 5: pending
 - Task 6: pending
