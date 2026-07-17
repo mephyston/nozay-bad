@@ -90,4 +90,4 @@
 - Task 6: complete (commits 90dd1c2..28128a5, review clean)
 
 ## Phase 19: Consolidation du Menu Réglages (2026-07-17)
-- Task 1: pending
+- Task 1: complete (commits 9c9ef51..39fa02a, review clean)
