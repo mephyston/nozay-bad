@@ -1,13 +1,13 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { productsTable, ordersTable } from '@metacult/features-shop-data-access';
 // Cross-domain read: shop needs member names for order display and approval.
 // Justified: same D1 database, same Worker — no Service Binding overhead.
 // Declared explicitly in eslint.config.js boundaries (scope:shop allows scope:members read).
 import { membersTable } from '@metacult/features-members-data-access';
-// Cross-domain read: shop needs the 'Boutique' accounting category ID for transaction creation.
-import { categoriesTable } from '@metacult/features-accounting-data-access';
+// Cross-domain read: shop needs the 'Boutique' accounting category ID and transaction insertion.
+import { categoriesTable, transactionsTable } from '@metacult/features-accounting-data-access';
 
 export type Bindings = {
   DB: D1Database;
@@ -179,22 +179,35 @@ shopRouter.post('/orders/:id/approve', async (c) => {
     const today = new Date().toISOString().split('T')[0];
     const description = `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`;
 
-    // Atomic batch: insert accounting transaction + conditionally approve order.
-    // The WHERE status = 'pending' on the UPDATE is an optimistic lock:
-    // if a concurrent request already approved, RETURNING returns nothing → we detect the conflict.
-    const [, approvedRows] = await db.batch([
-      db.run(sql`
-        INSERT INTO transactions (season_id, type, account_id, category, amount, date, payment_method, description, member_id, created_at)
-        VALUES (${order.seasonId}, 'recette', 'current', ${boutiqueCatId}, ${order.totalAmount}, ${today}, ${order.paymentMethod}, ${description}, ${member.id}, ${new Date().getTime()})
-      `),
-      db.update(ordersTable)
-        .set({ status: 'approved' })
-        .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')))
-        .returning(),
-    ] as [any, any]);
+    // 1. Insert the transaction and retrieve the generated ID
+    const txRow = await db
+      .insert(transactionsTable)
+      .values({
+        seasonId: order.seasonId,
+        type: 'recette',
+        accountId: 'current',
+        category: boutiqueCatId,
+        amount: order.totalAmount,
+        date: today,
+        paymentMethod: order.paymentMethod as any,
+        description,
+        memberId: member.id,
+        createdAt: new Date(),
+      })
+      .returning({ id: transactionsTable.id })
+      .get();
 
-    const updatedOrder = approvedRows[0];
+    // 2. Update the order with optimistic locking
+    const updatedOrder = await db
+      .update(ordersTable)
+      .set({ status: 'approved', transactionId: txRow.id })
+      .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')))
+      .returning()
+      .get();
+
     if (!updatedOrder) {
+      // Rollback the transaction to avoid dangling records
+      await db.delete(transactionsTable).where(eq(transactionsTable.id, txRow.id));
       return c.json({ success: false, error: 'Commande déjà traitée (conflit concurrent)' }, 409);
     }
 
