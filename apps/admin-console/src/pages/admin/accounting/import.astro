@@ -132,6 +132,8 @@ try {
 } catch (err: any) {
   errorMsg = 'Une erreur est survenue lors de la communication avec le serveur comptable.';
 }
+
+const isClosed = seasonsList.find((s: any) => s.id === season)?.status === 'closed';
 ---
 
 <Layout title="Importation & Rapprochement - NBA 91">
@@ -143,6 +145,23 @@ try {
           <p class="text-muted-foreground mt-2">
             Rapprochez les relevés bancaires importés avec les écritures du grand livre et validez les factures.
           </p>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          {isClosed && (
+            <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
+              Saison clôturée (Lecture seule)
+            </span>
+          )}
+          {!isClosed && bankTransactionsList.length > 0 && (
+            <button
+              id="trigger-import-btn"
+              onclick="window.dispatchEvent(new CustomEvent('open-bank-import'))"
+              class="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow hover:bg-primary/90 cursor-pointer inline-flex items-center gap-2 border-0"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+              Importer
+            </button>
+          )}
         </div>
       </div>
 
