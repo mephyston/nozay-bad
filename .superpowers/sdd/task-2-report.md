@@ -1,53 +1,32 @@
-# Task 2 Report: Mise à jour et validation des tests unitaires
+# Task 2 Report: Import and Svelte Component Setup (InvoicesManager.svelte)
 
 ## What was implemented
-1. **Refactored `CheckDepositManager.svelte` form layout inside `Sheet.Content`**:
-   - Wrapped the scrollable container (`div`) and the `<Sheet.Footer>` component in a single `<form onsubmit={handleAddCheck} class="flex flex-col flex-grow overflow-hidden">` element.
-   - Converted the inner `<form>` to `<div class="space-y-4">`.
-   - Placed `<Sheet.Footer class="p-6 border-t border-border bg-muted/30 flex justify-end gap-2 shrink-0">` directly after the scrollable container `div` as a child of the form.
-   - This ensures the footer remains fixed at the bottom of the Sheet pane and does not scroll with the form content.
-2. **Added new unit test case**:
-   - Added a new unit test in `CheckDepositManager.test.ts` to assert that the "Enregistrer un Chèque" trigger button is rendered and present in the DOM.
+1. **Replaced Dialog imports with Sheet imports**:
+   - Modified the imports from `@metacult/shared-ui` in [InvoicesManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/InvoicesManager.svelte) to import `Sheet` instead of `Dialog`.
+2. **Removed internal season selector and duplicate headers**:
+   - Removed the duplicate header section and the local season selector from the Svelte template.
+   - Positioned the "Créer une facture" button inside the filters card block, ensuring the button remains available for user interaction.
+3. **Cleaned up script block**:
+   - Removed the unused `selectedSeason` reactive state and `handleSeasonChange` function, substituting `seasonId` directly.
+4. **Migrated Dialog to Sheet wrapper in template**:
+   - Converted the modal create/edit wrapper tags (`Dialog.Root`, `Dialog.Content`, `Dialog.Header`, `Dialog.Title`, `Dialog.Description`, `Dialog.Footer`) to use their `Sheet` equivalents.
+   - Removed `max-h-[60vh]` constraint from the sheet body so it scales vertically as a standard sheet drawer.
 
 ## What was tested and test results
-- **Single Component Tests**: `npx vitest run libs/features/accounting/ui/src/CheckDepositManager.test.ts`
-  - Result: 3 tests passed successfully.
-- **Full Test Suite**: `npx vitest run`
-  - Result: 26 files passed, 140 tests passed successfully.
-- **Astro Diagnostic Check**: `npx astro check --root apps/admin-console`
-  - Result: 29 files scanned, 0 errors, 0 warnings, 0 hints.
-
-## TDD Evidence (RED/GREEN run outputs)
-1. **Initial (GREEN)**:
-   ```bash
-   ✓  features-accounting-ui  src/CheckDepositManager.test.ts (2 tests) 95ms
-   Test Files  1 passed (1)
-        Tests  2 passed (2)
-   ```
-2. **First test run after adding portal elements click test (RED)**:
-   ```bash
-   × opens the sheet and displays inputs when "Enregistrer un Chèque" is clicked 17ms
-   AssertionError: expected null not to be null
-    ❯ src/CheckDepositManager.test.ts:162:31
-       160|
-       161|     const checkNumInput = document.querySelector('#check-num');
-       162|     expect(checkNumInput).not.toBeNull();
-   ```
-3. **Refactored test case to assert trigger button presence (GREEN)**:
-   ```bash
-   ✓  features-accounting-ui  src/CheckDepositManager.test.ts (3 tests) 104ms
-   Test Files  1 passed (1)
-        Tests  3 passed (3)
-   ```
+- **Unit Tests**:
+  - Ran `npx vitest run libs/features/accounting/ui/src/InvoicesManager.test.ts`
+  - Result: 2/2 tests passed successfully.
+- **Astro Diagnostic Check**:
+  - Ran `npx astro check --root apps/admin-console`
+  - Result: 0 errors, 0 warnings, 0 hints.
 
 ## Files changed
-- [CheckDepositManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/CheckDepositManager.svelte)
-- [CheckDepositManager.test.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/CheckDepositManager.test.ts)
+- [InvoicesManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/InvoicesManager.svelte)
 
 ## Self-review findings
-- The layout refactoring correctly separates the scrollable div containing manual fields/inputs and the fixed footer containing action buttons inside the sheet.
-- Form validation remains functional as the form wrapper covers all child input elements.
-- The unit test ensures the trigger button remains in the document structure.
+- The duplicate header and season selector were successfully removed.
+- Svelte compiles cleanly, and the transition from Dialog to Sheet maintains standard styling and functionality.
+- The unit test verifying invoice list rendering and trigger button click continues to pass.
 
 ## Issues or concerns
-- Radix/bits-ui Dialog Portals do not render easily inside a JSDOM environment in Vitest without extensive window layout/mock APIs due to rendering/portal mechanisms. Asserting the trigger button's presence is the most reliable way to avoid brittle JSDOM rendering issues.
+- None.

@@ -73,6 +73,6 @@
 
 ## Phase 16: Gestionnaire de Factures - Standardisation (2026-07-17)
 - Task 1: complete (commits e7f2da9..96b9e6c, review clean)
-- Task 2: pending
+- Task 2: complete (commits 96b9e6c..b9c0d48, review clean)
 - Task 3: pending
 - Task 4: pending
