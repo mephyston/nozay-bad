@@ -24,7 +24,7 @@
 - Task 2: complete (commits 30aa82a..466ec8a, review clean)
 
 ## Phase 5: Grand Livre Refactoring (2026-07-17)
-- Task 1: pending
+- Task 1: complete (commits 341bb5c..0809f20, review clean)
 - Task 2: pending
 
 
