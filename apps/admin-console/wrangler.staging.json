@@ -4,6 +4,14 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true
+    }
+  },
   "services": [
     { "binding": "API_SERVICE", "service": "nba-api-staging" }
   ]
