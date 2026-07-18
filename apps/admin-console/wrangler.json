@@ -35,7 +35,7 @@
       "name": "nba-admin-console-staging",
       "routes": [
         {
-          "pattern": "staging.dashboard.nozaybad.fr",
+          "pattern": "staging-dashboard.nozaybad.fr",
           "custom_domain": true
         }
       ],
