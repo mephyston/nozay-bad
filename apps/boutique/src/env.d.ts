@@ -1,4 +1,4 @@
-// deploy: 2026-07-18-3
+
 /// <reference types="astro/client" />
 declare namespace App {
   interface Locals {
@@ -17,3 +17,4 @@ interface Env {
 declare module 'cloudflare:workers' {
   export const env: Env;
 }
+// deploy: 2026-07-18-3
