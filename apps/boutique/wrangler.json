@@ -6,8 +6,5 @@
   ],
   "services": [
     { "binding": "API_SERVICE", "service": "nba-api" }
-  ],
-  "kv_namespaces": [
-    { "binding": "SESSION", "id": "041331b9d1f9479583274f4f21f089a5" }
   ]
 }
