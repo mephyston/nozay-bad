@@ -187,7 +187,14 @@ jobs:
           if [ "${{ github.ref_name }}" = "main" ]; then
             npx wrangler deploy
           else
-            npx wrangler deploy --env staging
+            node -e "
+              const fs = require('fs');
+              const cfg = JSON.parse(fs.readFileSync('dist/server/wrangler.json', 'utf8'));
+              cfg.name = 'nba-boutique-staging';
+              cfg.services = [{ binding: 'API_SERVICE', service: 'nba-api-staging' }];
+              fs.writeFileSync('dist/server/wrangler.json', JSON.stringify(cfg, null, 2));
+            "
+            npx wrangler deploy
           fi
 
   deploy-admin-console:
@@ -221,5 +228,12 @@ jobs:
           if [ "${{ github.ref_name }}" = "main" ]; then
             npx wrangler deploy
           else
-            npx wrangler deploy --env staging
+            node -e "
+              const fs = require('fs');
+              const cfg = JSON.parse(fs.readFileSync('dist/server/wrangler.json', 'utf8'));
+              cfg.name = 'nba-admin-console-staging';
+              cfg.services = [{ binding: 'API_SERVICE', service: 'nba-api-staging' }];
+              fs.writeFileSync('dist/server/wrangler.json', JSON.stringify(cfg, null, 2));
+            "
+            npx wrangler deploy
           fi
