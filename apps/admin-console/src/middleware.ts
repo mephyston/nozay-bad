@@ -43,8 +43,18 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
   // Fail fast: never use a fallback audience in production — an absent audience would
   // accept any valid Cloudflare Access JWT from any application.
   if (!CF_TEAM_DOMAIN || !CF_AUDIENCE) {
-    console.error('[auth] CF_TEAM_DOMAIN or CF_AUDIENCE is not configured');
-    return new Response('Erreur de configuration serveur.', { status: 500 });
+    const debugInfo = {
+      hasProcessEnv: !!process.env,
+      processEnvKeys: process.env ? Object.keys(process.env) : [],
+      hasCfEnv: !!cfEnv,
+      cfEnvKeys: cfEnv ? Object.keys(cfEnv) : [],
+      hasRuntime: !!context.locals.runtime,
+      runtimeKeys: context.locals.runtime ? Object.keys(context.locals.runtime) : [],
+      runtimeEnvKeys: context.locals.runtime?.env ? Object.keys(context.locals.runtime.env) : [],
+      keysOfResolvedEnv: Object.keys(resolvedEnv),
+    };
+    console.error('[auth] CF_TEAM_DOMAIN or CF_AUDIENCE is not configured', debugInfo);
+    return new Response('Erreur de configuration serveur.\n' + JSON.stringify(debugInfo, null, 2), { status: 500 });
   }
 
   try {
