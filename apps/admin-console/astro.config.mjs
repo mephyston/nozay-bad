@@ -9,7 +9,6 @@ export default defineConfig({
     mode: 'advanced',
     runtime: { mode: 'local' }
   }),
-  session: false,
   integrations: [svelte()],
   vite: {
     plugins: [tailwindcss()],
