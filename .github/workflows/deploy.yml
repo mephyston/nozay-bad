@@ -187,7 +187,7 @@ jobs:
           if [ "${{ github.ref_name }}" = "main" ]; then
             npx wrangler deploy
           else
-            npx wrangler deploy --config wrangler.staging.json
+            npx wrangler deploy --env staging
           fi
 
   deploy-admin-console:
@@ -221,5 +221,5 @@ jobs:
           if [ "${{ github.ref_name }}" = "main" ]; then
             npx wrangler deploy
           else
-            npx wrangler deploy --config wrangler.staging.json
+            npx wrangler deploy --env staging
           fi

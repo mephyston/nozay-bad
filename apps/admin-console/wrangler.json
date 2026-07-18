@@ -14,5 +14,13 @@
   },
   "services": [
     { "binding": "API_SERVICE", "service": "nba-api" }
-  ]
+  ],
+  "env": {
+    "staging": {
+      "name": "nba-admin-console-staging",
+      "services": [
+        { "binding": "API_SERVICE", "service": "nba-api-staging" }
+      ]
+    }
+  }
 }

@@ -14,5 +14,13 @@
   },
   "services": [
     { "binding": "API_SERVICE", "service": "nba-api" }
-  ]
+  ],
+  "env": {
+    "staging": {
+      "name": "nba-boutique-staging",
+      "services": [
+        { "binding": "API_SERVICE", "service": "nba-api-staging" }
+      ]
+    }
+  }
 }
