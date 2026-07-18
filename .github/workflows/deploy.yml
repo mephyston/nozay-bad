@@ -184,18 +184,18 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            npx wrangler deploy
-          else
-            node -e "
-              const fs = require('fs');
-              const cfg = JSON.parse(fs.readFileSync('dist/server/wrangler.json', 'utf8'));
+          node -e "
+            const fs = require('fs');
+            const cfg = JSON.parse(fs.readFileSync('dist/server/wrangler.json', 'utf8'));
+            cfg.kv_namespaces = (cfg.kv_namespaces || []).filter(kv => kv.id);
+            delete cfg.images;
+            if ('${{ github.ref_name }}' !== 'main') {
               cfg.name = 'nba-boutique-staging';
               cfg.services = [{ binding: 'API_SERVICE', service: 'nba-api-staging' }];
-              fs.writeFileSync('dist/server/wrangler.json', JSON.stringify(cfg, null, 2));
-            "
-            npx wrangler deploy
-          fi
+            }
+            fs.writeFileSync('dist/server/wrangler.json', JSON.stringify(cfg, null, 2));
+          "
+          npx wrangler deploy
 
   deploy-admin-console:
     name: Deploy Admin Console Worker
@@ -225,15 +225,15 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            npx wrangler deploy
-          else
-            node -e "
-              const fs = require('fs');
-              const cfg = JSON.parse(fs.readFileSync('dist/server/wrangler.json', 'utf8'));
+          node -e "
+            const fs = require('fs');
+            const cfg = JSON.parse(fs.readFileSync('dist/server/wrangler.json', 'utf8'));
+            cfg.kv_namespaces = (cfg.kv_namespaces || []).filter(kv => kv.id);
+            delete cfg.images;
+            if ('${{ github.ref_name }}' !== 'main') {
               cfg.name = 'nba-admin-console-staging';
               cfg.services = [{ binding: 'API_SERVICE', service: 'nba-api-staging' }];
-              fs.writeFileSync('dist/server/wrangler.json', JSON.stringify(cfg, null, 2));
-            "
-            npx wrangler deploy
-          fi
+            }
+            fs.writeFileSync('dist/server/wrangler.json', JSON.stringify(cfg, null, 2));
+          "
+          npx wrangler deploy
