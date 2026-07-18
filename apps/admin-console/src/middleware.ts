@@ -52,9 +52,7 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
 
     context.locals.user = { email: payload.email as string };
     return next();
-  } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
-    console.error(`[auth] JWT verification failed: ${reason} | issuer_configured: ${!!CF_TEAM_DOMAIN} | audience_configured: ${!!CF_AUDIENCE}`);
+  } catch {
     return new Response('Authentification invalide ou expirée.', { status: 403 });
   }
 };
