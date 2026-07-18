@@ -17,13 +17,6 @@
       "persist": true,
       "head_sampling_rate": 1
     }
-  },
-  "routes": [
-    {
-      "pattern": "dashboard.nozaybad.fr",
-      "custom_domain": true
-    }
-  ],
   "services": [
     { "binding": "API_SERVICE", "service": "nba-api" }
   ],
@@ -33,12 +26,6 @@
   "env": {
     "staging": {
       "name": "nba-admin-console-staging",
-      "routes": [
-        {
-          "pattern": "staging-dashboard.nozaybad.fr",
-          "custom_domain": true
-        }
-      ],
       "services": [
         { "binding": "API_SERVICE", "service": "nba-api-staging" }
       ],

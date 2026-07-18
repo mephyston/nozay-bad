@@ -17,13 +17,6 @@
       "persist": true,
       "head_sampling_rate": 1
     }
-  },
-  "routes": [
-    {
-      "pattern": "my.nozaybad.fr",
-      "custom_domain": true
-    }
-  ],
   "services": [
     { "binding": "API_SERVICE", "service": "nba-api" }
   ],
@@ -33,12 +26,6 @@
   "env": {
     "staging": {
       "name": "nba-boutique-staging",
-      "routes": [
-        {
-          "pattern": "staging-my.nozaybad.fr",
-          "custom_domain": true
-        }
-      ],
       "services": [
         { "binding": "API_SERVICE", "service": "nba-api-staging" }
       ],
