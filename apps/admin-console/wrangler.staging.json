@@ -1,0 +1,13 @@
+{
+  "name": "nba-admin-console-staging",
+  "compatibility_date": "2024-09-23",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "services": [
+    { "binding": "API_SERVICE", "service": "nba-api-staging" }
+  ],
+  "kv_namespaces": [
+    { "binding": "SESSION", "id": "d434276dcda343cda761a895fe99912d" }
+  ]
+}
