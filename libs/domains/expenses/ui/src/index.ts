@@ -1,1 +1,1 @@
-export { default as ExpensesManager } from './ExpensesManager.svelte';
+export { default as ExpensesManager } from '../../list/ui/ExpensesManager.svelte';

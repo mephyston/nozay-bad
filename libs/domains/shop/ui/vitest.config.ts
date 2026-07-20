@@ -17,5 +17,7 @@ export default defineConfig({
     name: 'features-shop-ui',
     globals: true,
     environment: 'jsdom',
+    root: __dirname,
+    include: ['src/**/*.test.ts', '../**/ui/**/*.test.ts'],
   },
 });

@@ -1,2 +1,2 @@
-export { default as OrdersManager } from './OrdersManager.svelte';
-export { default as ProductsManager } from './ProductsManager.svelte';
+export { default as OrdersManager } from '../../list-orders/ui/OrdersManager.svelte';
+export { default as ProductsManager } from '../../list-products/ui/ProductsManager.svelte';
