@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { listBankTransactions, updateBankTransactionStatus, analyzeBankTransactions } from '../../../bank/handler';
-import { importBankStatement } from '../../../import-bank-statement/handler';
-import { reconcileBankTransaction, reconcileBulkTransactions } from '../../../reconcile-bank-transaction/handler';
+import { importBankStatement } from '../../../commands/import-bank-statement/handler';
+import { reconcileBankTransaction, reconcileBulkTransactions } from '../../../commands/reconcile-bank-transaction/handler';
 import type { Bindings } from '../routes';
 
 export const bankRouter = new Hono<{ Bindings: Bindings }>();
