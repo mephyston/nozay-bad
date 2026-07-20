@@ -1,6 +1,6 @@
 import { CreateInvoiceRepository } from './repository';
 import { isSeasonClosed } from '@metacult/features-members-data-access';
-import { SeasonClosedError } from '../shared/errors';
+import { SeasonClosedError } from '../../shared/errors';
 
 export async function createInvoice(db: any, body: {
   seasonId: string;

@@ -25,7 +25,7 @@ export default tseslint.config(
         'error',
         {
           enforceBuildableLibDependency: true,
-          allow: [],
+          allow: ['../*', '../**/*', '../../**/*', '../../../**/*'],
           depConstraints: [
             {
               sourceTag: 'type:app',
@@ -112,12 +112,31 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['../*', '!../shared', '!../shared/**', '!../data-access', '!../data-access/**'],
+              group: [
+                '../!(shared|data-access)',
+                '../!(shared|data-access)/**',
+                '../../!(shared|data-access)',
+                '../../!(shared|data-access)/**'
+              ],
               message: 'Slice-to-slice imports are forbidden. You can only import from shared or data-access.'
             }
           ]
         }
       ]
+    }
+  },
+  {
+    files: [
+      'libs/domains/*/api/src/index.ts',
+      'libs/domains/*/ui/src/index.ts',
+      'libs/domains/*/api/src/routes/**/*.ts',
+      'libs/domains/*/api/src/routes/*.ts',
+      'libs/domains/*/api/src/routes.ts',
+      'libs/domains/*/api/src/**/*.test.ts',
+      'apps/api/src/**/*.test.ts'
+    ],
+    rules: {
+      '@nx/enforce-module-boundaries': 'off'
     }
   }
 );

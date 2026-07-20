@@ -1,4 +1,4 @@
-import { bankTransactionsTable } from '../data-access/src/schema';
+import { bankTransactionsTable } from '../../data-access/src/schema';
 
 export class ImportBankStatementRepository {
   async insertBankTransaction(db: any, values: {

@@ -1,5 +1,5 @@
 import { GetInvoiceRepository } from './repository';
-import { InvoiceNotFoundError } from '../shared/errors';
+import { InvoiceNotFoundError } from '../../shared/errors';
 
 export async function getInvoice(db: any, id: number) {
   const repo = new GetInvoiceRepository();

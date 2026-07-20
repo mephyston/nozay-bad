@@ -3,7 +3,7 @@ import {
   transactionsTable,
   bankTransactionsTable,
   invoicesTable,
-} from '../data-access/src/schema';
+} from '../../data-access/src/schema';
 
 export class ReconcileBankTransactionRepository {
   async getBankTransactionById(db: any, id: number): Promise<any | undefined> {

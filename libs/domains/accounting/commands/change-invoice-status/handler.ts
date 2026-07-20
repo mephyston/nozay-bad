@@ -1,5 +1,5 @@
 import { ChangeInvoiceStatusRepository } from './repository';
-import { InvoiceNotFoundError, SeasonClosedError, InvalidStatusError } from '../shared/errors';
+import { InvoiceNotFoundError, SeasonClosedError, InvalidStatusError } from '../../shared/errors';
 import { isSeasonClosed } from '@metacult/features-members-data-access';
 
 export async function changeInvoiceStatus(db: any, id: number, status: string) {

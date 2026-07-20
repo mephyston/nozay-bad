@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { invoicesTable } from '../data-access/src/schema';
+import { invoicesTable } from '../../data-access/src/schema';
 
 export class ListInvoicesRepository {
   async list(db: any, seasonId: string): Promise<any[]> {

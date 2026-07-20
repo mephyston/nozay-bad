@@ -1,5 +1,5 @@
 import { like } from 'drizzle-orm';
-import { invoicesTable, invoiceItemsTable } from '../data-access/src/schema';
+import { invoicesTable, invoiceItemsTable } from '../../data-access/src/schema';
 
 export class CreateInvoiceRepository {
   async generateInvoiceNumber(db: any, seasonId: string): Promise<string> {

@@ -1,6 +1,6 @@
 import { DeleteInvoiceRepository } from './repository';
-import { Invoice } from '../shared/invoice';
-import { InvoiceNotFoundError, InvoiceNotDeletableError, SeasonClosedError } from '../shared/errors';
+import { Invoice } from '../../shared/invoice';
+import { InvoiceNotFoundError, InvoiceNotDeletableError, SeasonClosedError } from '../../shared/errors';
 import { isSeasonClosed } from '@metacult/features-members-data-access';
 
 export async function deleteInvoice(db: any, id: number) {
