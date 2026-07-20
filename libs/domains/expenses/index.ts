@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
-import { listExpensesRoute } from '../../list/route';
-import { createExpenseRoute } from '../../create/route';
-import { updateExpenseRoute } from '../../update/route';
+import { listExpensesRoute } from './list/route';
+import { createExpenseRoute } from './create/route';
+import { updateExpenseRoute } from './update/route';
 
 export type Bindings = {
   DB: D1Database;

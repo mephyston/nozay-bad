@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
-import { accountingRouter } from './routes';
+import { accountingRouter } from '../../index';
 import { setupMockDb } from '@metacult/shared-db/test-utils';
 import { seasonsTable, membersTable } from '@metacult/features-members-data-access';
 import {

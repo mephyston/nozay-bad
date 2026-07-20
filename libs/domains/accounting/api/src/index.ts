@@ -1,1 +1,0 @@
-export { accountingRouter } from './routes';

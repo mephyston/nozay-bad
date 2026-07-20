@@ -1,11 +1,11 @@
 import { Hono } from 'hono';
-import { listProductsRoute } from '../../list-products/route';
-import { createProductRoute } from '../../create-product/route';
-import { updateProductRoute } from '../../update-product/route';
-import { listOrdersRoute } from '../../list-orders/route';
-import { createOrderRoute } from '../../create-order/route';
-import { approveOrderRoute } from '../../approve-order/route';
-import { rejectOrderRoute } from '../../reject-order/route';
+import { listProductsRoute } from './list-products/route';
+import { createProductRoute } from './create-product/route';
+import { updateProductRoute } from './update-product/route';
+import { listOrdersRoute } from './list-orders/route';
+import { createOrderRoute } from './create-order/route';
+import { approveOrderRoute } from './approve-order/route';
+import { rejectOrderRoute } from './reject-order/route';
 
 export type Bindings = {
   DB: D1Database;

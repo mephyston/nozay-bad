@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
-import { expensesRouter } from './index';
+import { expensesRouter } from '../../index';
 import { setupMockDb } from '@metacult/shared-db/test-utils';
 import { expensesTable } from '../../data-access/src/schema';
 import { eq, sql } from 'drizzle-orm';
