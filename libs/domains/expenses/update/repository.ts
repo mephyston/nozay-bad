@@ -1,21 +1,12 @@
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { expensesTable } from '../data-access/src/schema';
 
-export interface ExpenseRepository {
-  list(db: any, filters: { season?: string; status?: string }): Promise<any[]>;
-  create(db: any, values: {
-    seasonId: string;
-    description: string;
-    category: number;
-    amount: number;
-    photoUrl: string | null;
-    status: 'pending';
-    emitterName: string;
-    memberId: number | null;
-    createdAt: Date;
-  }): Promise<any>;
-  getById(db: any, id: number): Promise<any | undefined>;
-  update(db: any, id: number, values: {
+export class UpdateExpenseRepository {
+  async getById(db: any, id: number): Promise<any | undefined> {
+    return db.select().from(expensesTable).where(eq(expensesTable.id, id)).get();
+  }
+
+  async update(db: any, id: number, values: {
     description?: string;
     category?: number;
     amount?: number;
@@ -23,44 +14,7 @@ export interface ExpenseRepository {
     photoUrl?: string | null;
     emitterName?: string;
     memberId?: number | null;
-  }): Promise<any>;
-  approve(db: any, id: number, transactionId: number): Promise<any>;
-  reject(db: any, id: number): Promise<any>;
-  cancelApproval(db: any, id: number): Promise<any>;
-  getTransactionDetails(db: any, txId: number): Promise<{ id: number; bankTransactionId: number | null; amount: number } | undefined>;
-  getBankTransactionDetails(db: any, bankTxId: number): Promise<{ id: number; amount: number } | undefined>;
-  getRemainingTransactionsForBankTx(db: any, bankTxId: number, excludeTxId: number): Promise<{ id: number; amount: number }[]>;
-  resetBankTransactionStatus(db: any, bankTxId: number): Promise<void>;
-  deleteTransaction(db: any, txId: number): Promise<void>;
-  insertTransaction(db: any, values: {
-    seasonId: string;
-    category: number;
-    amount: number;
-    emitterName: string;
-    description: string;
-    memberId: number | null;
-  }): Promise<{ id: number }>;
-}
-
-export class DrizzleExpenseRepository implements ExpenseRepository {
-  async list(db: any, filters: { season?: string; status?: string }): Promise<any[]> {
-    const conditions = [];
-    if (filters.season) conditions.push(eq(expensesTable.seasonId, filters.season));
-    if (filters.status) conditions.push(eq(expensesTable.status, filters.status as any));
-
-    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-    return db.select().from(expensesTable).where(whereClause).all();
-  }
-
-  async create(db: any, values: any): Promise<any> {
-    return db.insert(expensesTable).values(values).returning().get();
-  }
-
-  async getById(db: any, id: number): Promise<any | undefined> {
-    return db.select().from(expensesTable).where(eq(expensesTable.id, id)).get();
-  }
-
-  async update(db: any, id: number, values: any): Promise<any> {
+  }): Promise<any> {
     return db.update(expensesTable).set(values).where(eq(expensesTable.id, id)).returning().get();
   }
 

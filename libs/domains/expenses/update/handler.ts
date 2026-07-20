@@ -1,10 +1,10 @@
-import { DrizzleExpenseRepository } from '../shared/repository';
+import { UpdateExpenseRepository } from './repository';
 import { isSeasonClosed } from '@metacult/features-members-data-access';
 import { normalizeCategory } from '@metacult/features-accounting-data-access';
 import { AppError } from '@metacult/shared-db';
 
 export async function approveExpense(db: any, id: number) {
-  const repo = new DrizzleExpenseRepository();
+  const repo = new UpdateExpenseRepository();
   const expense = await repo.getById(db, id);
   if (!expense) {
     throw new AppError('Dépense introuvable', 404);
@@ -31,7 +31,7 @@ export async function approveExpense(db: any, id: number) {
 }
 
 export async function rejectExpense(db: any, id: number) {
-  const repo = new DrizzleExpenseRepository();
+  const repo = new UpdateExpenseRepository();
   const expense = await repo.getById(db, id);
   if (!expense) {
     throw new AppError('Dépense introuvable', 404);
@@ -47,7 +47,7 @@ export async function rejectExpense(db: any, id: number) {
 }
 
 export async function cancelExpenseApproval(db: any, id: number) {
-  const repo = new DrizzleExpenseRepository();
+  const repo = new UpdateExpenseRepository();
   const expense = await repo.getById(db, id);
   if (!expense) {
     throw new AppError('Dépense introuvable', 404);
@@ -104,7 +104,7 @@ export async function updateExpense(
     memberId?: number | null;
   }
 ) {
-  const repo = new DrizzleExpenseRepository();
+  const repo = new UpdateExpenseRepository();
   const existing = await repo.getById(db, id);
   if (!existing) {
     throw new AppError('Dépense introuvable', 404);
