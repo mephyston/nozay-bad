@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
-import { Type } from '@sinclair/typebox';
 import { tbValidator } from '@hono/typebox-validator';
 import { listExpenses } from '../../list/handler';
 import { createExpense } from '../../create/handler';
+import { createExpenseSchema } from '../../create/validator';
+import { updateExpenseSchema } from '../../update/validator';
 import {
   approveExpense,
   rejectExpense,
@@ -28,26 +29,6 @@ expensesRouter.get('/', async (c) => {
 
   const expenses = await listExpenses(db, { season, status });
   return c.json({ success: true, data: expenses });
-});
-
-const createExpenseSchema = Type.Object({
-  seasonId: Type.String({ minLength: 1 }),
-  description: Type.String({ minLength: 1 }),
-  category: Type.Union([Type.String(), Type.Integer()]),
-  amount: Type.Integer({ minimum: 1 }),
-  photoUrl: Type.Optional(Type.Union([Type.String(), Type.Null()])),
-  emitterName: Type.String({ minLength: 1 }),
-  memberId: Type.Optional(Type.Union([Type.Integer(), Type.Null()])),
-});
-
-const updateExpenseSchema = Type.Object({
-  seasonId: Type.Optional(Type.String({ minLength: 1 })),
-  description: Type.Optional(Type.String({ minLength: 1 })),
-  category: Type.Optional(Type.Union([Type.String(), Type.Integer()])),
-  amount: Type.Optional(Type.Integer({ minimum: 1 })),
-  photoUrl: Type.Optional(Type.Union([Type.String(), Type.Null()])),
-  emitterName: Type.Optional(Type.String({ minLength: 1 })),
-  memberId: Type.Optional(Type.Union([Type.Integer(), Type.Null()])),
 });
 
 expensesRouter.post('/', tbValidator('json', createExpenseSchema, (result, c) => {
