@@ -1,6 +1,9 @@
 <script lang="ts">
   import { Wallet, FileText, CheckCircle, Trash2, Camera, UploadCloud, Search, ArrowRight, Loader2, Link, MoreVertical, Eye } from 'lucide-svelte';
   import { Button, Table, Input, Badge, Card, Dialog, Sheet, Alert, Tabs, Checkbox } from '@metacult/shared-ui';
+  import AnalyzeCheck from './AnalyzeCheck.svelte';
+  import CheckDepositForm from './CheckDepositForm.svelte';
+  import CheckReconciliationForm from './CheckReconciliationForm.svelte';
 
   interface Check {
     id: number;
@@ -707,33 +710,11 @@
     <form onsubmit={handleAddCheck} class="flex flex-col flex-grow overflow-hidden">
       <div class="p-6 overflow-y-auto flex-grow space-y-4">
         <!-- Photo/Camera Upload section -->
-        <div class="space-y-2">
-          <label for="photo-capture-input" class="block text-sm font-semibold text-foreground">Prise de photo du chèque (OCR IA)</label>
-          <Button
-            variant="outline"
-            onclick={() => fileInput?.click()}
-            class="w-full h-auto border-2 border-dashed border-border hover:border-primary rounded-lg p-6 text-center cursor-pointer hover:bg-accent/30 transition-all flex flex-col items-center justify-center gap-2 relative {isAnalyzing ? 'pointer-events-none opacity-50' : ''}"
-          >
-            {#if isAnalyzing}
-              <Loader2 class="h-8 w-8 text-primary animate-spin" />
-              <span class="text-sm font-semibold text-primary">Analyse du chèque par l'IA en cours...</span>
-              <span class="text-xs text-muted-foreground">Extraction du numéro, montant, émetteur et de la banque.</span>
-            {:else}
-              <UploadCloud class="h-8 w-8 text-muted-foreground" />
-              <span class="text-sm font-medium text-foreground">Prendre en photo ou glisser l'image du chèque</span>
-              <span class="text-xs text-muted-foreground">Format JPG, PNG, WEBP. Détection automatique.</span>
-            {/if}
-          </Button>
-          <input
-            id="photo-capture-input"
-            type="file"
-            accept="image/*"
-            capture="environment"
-            bind:this={fileInput}
-            onchange={handlePhotoSelected}
-            class="hidden"
-          />
-        </div>
+        <AnalyzeCheck
+          {isAnalyzing}
+          bind:fileInput
+          onFileSelected={handlePhotoSelected}
+        />
 
         {#if formError}
           <Alert.Root variant="destructive">
@@ -953,57 +934,16 @@
       <Dialog.Description class="hidden">Création d'un bordereau de remise de chèque bancaire.</Dialog.Description>
     </Dialog.Header>
 
-    <form onsubmit={handleCreateDeposit} class="p-6 space-y-4">
-      <div class="p-4 bg-muted/55 rounded-lg border border-border space-y-2">
-        <div class="flex justify-between text-sm">
-          <span class="text-muted-foreground">Nombre de chèques :</span>
-          <span class="font-bold text-foreground">{selectedChecksList.length}</span>
-        </div>
-        <div class="flex justify-between text-sm">
-          <span class="text-muted-foreground">Montant Total :</span>
-          <span class="font-bold text-primary text-base">{(totalSelectedAmount / 100).toFixed(2)} €</span>
-        </div>
-      </div>
-
-      <div class="space-y-1">
-        <label for="dep-ref" class="text-xs font-semibold text-muted-foreground uppercase">Référence du dépôt</label>
-        <Input
-          id="dep-ref"
-          type="text"
-          bind:value={depositReference}
-          required
-        />
-      </div>
-
-      <div class="space-y-1">
-        <label for="dep-date" class="text-xs font-semibold text-muted-foreground uppercase">Date de dépôt</label>
-        <Input
-          id="dep-date"
-          type="date"
-          bind:value={depositDate}
-          required
-        />
-      </div>
-
-      <Dialog.Footer class="pt-4 border-t border-border flex justify-end gap-2">
-        <Button
-          variant="outline"
-          onclick={() => showCreateDepositModal = false}
-        >
-          Annuler
-        </Button>
-        <Button
-          type="submit"
-          disabled={isSubmittingDeposit}
-          class="bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2"
-        >
-          {#if isSubmittingDeposit}
-            <Loader2 class="h-4 w-4 animate-spin" />
-          {/if}
-          Générer le Bordereau
-        </Button>
-      </Dialog.Footer>
-    </form>
+    <div class="p-6">
+      <CheckDepositForm
+        {selectedChecksList}
+        {totalSelectedAmount}
+        bind:depositReference
+        bind:depositDate
+        {isSubmittingDeposit}
+        onCreateDeposit={handleCreateDeposit}
+      />
+    </div>
   </Dialog.Content>
 </Dialog.Root>
 
@@ -1016,51 +956,15 @@
     </Dialog.Header>
 
     {#if selectedDepositToClear}
-      <form onsubmit={handleClearDeposit} class="p-6 space-y-4">
-        <div class="p-4 bg-muted/55 rounded-lg border border-border space-y-1">
-          <div class="text-xs text-muted-foreground uppercase font-semibold">Remise sélectionnée</div>
-          <div class="text-sm text-foreground">{selectedDepositToClear.reference}</div>
-          <div class="text-base font-bold text-primary">{(selectedDepositToClear.amount / 100).toFixed(2)} €</div>
-        </div>
-
-        <div class="space-y-1">
-          <label for="bank-tx-select" class="text-xs font-semibold text-muted-foreground uppercase">Ligne de crédit correspondante (Relevé bancaire)</label>
-          <select
-            id="bank-tx-select"
-            bind:value={selectedBankTransactionId}
-            class="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
-            required
-          >
-            <option value="">-- Sélectionner l'écriture de crédit bancaire --</option>
-            {#each pendingBankTransactions as tx}
-              <option value={tx.id}>
-                {new Date(tx.date).toLocaleDateString('fr-FR')} - {tx.name} ({(tx.amount / 100).toFixed(2)} €)
-              </option>
-            {:else}
-              <option value="" disabled>Aucune transaction de crédit non pointée sur ce compte.</option>
-            {/each}
-          </select>
-        </div>
-
-        <Dialog.Footer class="pt-4 border-t border-border flex justify-end gap-2">
-          <Button
-            variant="outline"
-            onclick={() => { showClearModal = false; selectedDepositToClear = null; }}
-          >
-            Annuler
-          </Button>
-          <Button
-            type="submit"
-            disabled={isSubmittingClear || !selectedBankTransactionId}
-            class="flex items-center gap-2"
-          >
-            {#if isSubmittingClear}
-              <Loader2 class="h-4 w-4 animate-spin" />
-            {/if}
-            Valider le Rapprochement
-          </Button>
-        </Dialog.Footer>
-      </form>
+      <div class="p-6">
+        <CheckReconciliationForm
+          {selectedDepositToClear}
+          {pendingBankTransactions}
+          bind:selectedBankTransactionId
+          {isSubmittingClear}
+          onClearDeposit={handleClearDeposit}
+        />
+      </div>
     {/if}
   </Dialog.Content>
 </Dialog.Root>
