@@ -1,5 +1,5 @@
 import { eq, and, sql } from 'drizzle-orm';
-import { expensesTable } from './schema';
+import { expensesTable } from '../data-access/src/schema';
 
 export interface ExpenseRepository {
   list(db: any, filters: { season?: string; status?: string }): Promise<any[]>;

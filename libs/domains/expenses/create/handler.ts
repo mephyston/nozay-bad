@@ -1,4 +1,4 @@
-import { DrizzleExpenseRepository } from '@metacult/features-expenses-data-access';
+import { DrizzleExpenseRepository } from '../shared/repository';
 import { isSeasonClosed } from '@metacult/features-members-data-access';
 import { normalizeCategory } from '@metacult/features-accounting-data-access';
 import { AppError } from '@metacult/shared-db';

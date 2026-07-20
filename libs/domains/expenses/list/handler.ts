@@ -1,4 +1,4 @@
-import { DrizzleExpenseRepository } from '@metacult/features-expenses-data-access';
+import { DrizzleExpenseRepository } from '../shared/repository';
 
 export async function listExpenses(
   db: any,
