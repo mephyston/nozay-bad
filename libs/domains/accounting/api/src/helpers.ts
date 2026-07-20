@@ -2,13 +2,13 @@ import { eq } from 'drizzle-orm';
 import {
   transactionsTable,
   bankTransactionsTable,
-  invoicesTable
+  invoicesTable,
+  normalizeCategory
 } from '@metacult/features-accounting-data-access';
 import {
-  membersTable
+  membersTable,
+  isSeasonClosed
 } from '@metacult/features-members-data-access';
-import { isSeasonClosed } from '@metacult/features-members-data-access';
-import { normalizeCategory } from '@metacult/shared-db';
 
 export function cleanName(name: string | null): string {
   if (!name) return '';

@@ -5,13 +5,14 @@ import {
   seasonBalancesTable,
   transactionsTable,
   categoriesTable,
-  seasonCategoryBudgetsTable
+  seasonCategoryBudgetsTable,
+  normalizeCategory
 } from '@metacult/features-accounting-data-access';
 import {
-  seasonsTable
+  seasonsTable,
+  isSeasonClosed
 } from '@metacult/features-members-data-access';
-import { isSeasonClosed } from '@metacult/features-members-data-access';
-import { normalizeCategory, AppError } from '@metacult/shared-db';
+import { AppError } from '@metacult/shared-db';
 import type { Bindings } from '../routes';
 
 export const seasonsRouter = new Hono<{ Bindings: Bindings }>();
