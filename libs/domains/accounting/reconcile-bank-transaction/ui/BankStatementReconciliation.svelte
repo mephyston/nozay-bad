@@ -2,6 +2,9 @@
   import { onMount } from 'svelte';
   import { Upload, Check, AlertCircle, Trash2, ShieldAlert, Sparkles, RefreshCw } from 'lucide-svelte';
   import { Button, Table, Input, Badge, Card, Dialog, Tabs, Checkbox } from '@metacult/shared-ui';
+  import ReconciliationSummary from './ReconciliationSummary.svelte';
+  import MatchTransaction from './MatchTransaction.svelte';
+  import CreateTransactionFromBankLine from './CreateTransactionFromBankLine.svelte';
 
   interface BankTransaction {
     id: number;
@@ -1260,38 +1263,13 @@
             {/if}
 
             <!-- Ventilation / Pièces déjà liées -->
-            {#if linkedGlTxs.length > 0}
-              <div class="border border-border rounded-xl p-4 bg-muted/30 space-y-2.5">
-                <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Pièces déjà ventilées ({linkedGlTxs.length})</h4>
-                <div class="space-y-1.5">
-                  {#each linkedGlTxs as gt}
-                    <div class="flex items-center justify-between text-xs p-2 bg-background border border-border rounded">
-                      <div>
-                        <div class="font-semibold text-foreground">{gt.description}</div>
-                        <div class="text-[10px] text-muted-foreground">{categories.find(c => c.id === String(gt.category))?.name || 'Opération diverse'}</div>
-                      </div>
-                      <div class="flex items-center gap-3">
-                        <div class="font-bold text-emerald-600">{(Math.abs(gt.amount) / 100).toFixed(2)} €</div>
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          onclick={() => handleDeletePart(gt.id)}
-                          class="text-destructive hover:bg-destructive/10"
-                          title="Supprimer cette écriture liée"
-                        >
-                          <Trash2 class="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  {/each}
-                </div>
-                {#if remainingAmount > 0}
-                  <div class="text-xs font-bold text-right pt-2 border-t border-border text-foreground">
-                    Reste à ventiler : {(remainingAmount / 100).toFixed(2)} €
-                  </div>
-                {/if}
-              </div>
-            {/if}
+            <ReconciliationSummary
+              {selectedTx}
+              {linkedGlTxs}
+              {totalLinked}
+              {remainingAmount}
+              onDeleteGlLink={handleDeletePart}
+            />
 
             <!-- Si transaction déjà rapprochée complètement -->
             {#if selectedTx.status === 'reconciled'}
@@ -1391,20 +1369,19 @@
             <!-- Étape 1 : Suggestions d'association (Seulement si rien n'a encore été ventilé, pending et non clôturé, et onglet suggestions actif) -->
             {#if !isClosed && linkedGlTxs.length === 0 && selectedTx.status === 'pending' && activeRightTab === 'ledger'}
               <div class="border border-border rounded-xl p-4 space-y-3 bg-muted/40">
-                <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Suggestions du Grand Livre (+/- 7 jours)</h4>
-                {#each suggestions as sug}
-                  <div class="flex items-center justify-between gap-2 p-2.5 bg-background border border-border rounded-md text-xs">
-                    <div>
-                      <div class="font-semibold text-foreground">{sug.description}</div>
-                      <div class="text-muted-foreground">{sug.date} • {(sug.amount / 100).toFixed(2)} €</div>
-                    </div>
-                    <Button onclick={() => handleMatch(selectedTx!.id, sug.id)} size="sm" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
-                      Associer
-                    </Button>
-                  </div>
-                {:else}
-                  <p class="text-xs text-muted-foreground">Aucune écriture correspondante trouvée à +/- 7 jours.</p>
-                {/each}
+                <MatchTransaction
+                  {glTransactions}
+                  {selectedTx}
+                  {remainingAmount}
+                  bind:selectedMemberId
+                  {isSubmitting}
+                  onMatch={(gtId) => handleMatch(selectedTx.id, gtId)}
+                  suggestions={[]}
+                  onSelectAiSuggestion={() => {}}
+                  {sortedMembers}
+                  bind:isMemberDropdownOpen
+                  bind:memberSearchQuery
+                />
               </div>
             {:else}
               {#if activeRightTab === 'ledger'}
@@ -1417,233 +1394,25 @@
             <!-- Étape 2 : Création d'une nouvelle écriture (uniquement si reste à ventiler, pending, non clôturé et onglet manuel actif) -->
             {#if !isClosed && remainingAmount > 0 && selectedTx.status === 'pending' && activeRightTab === 'manual'}
               <div class="border border-border rounded-xl p-4 space-y-3">
-                <div class="flex justify-between items-center">
-                  <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    {isSplitMode ? 'Ventiler l\'opération' : (linkedGlTxs.length > 0 ? 'Ventiler une nouvelle partie' : 'Créer et pointer manuellement')}
-                  </h4>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="xs"
-                    onclick={() => {
-                      if (!isSplitMode) {
-                        isSplitMode = true;
-                        splits = [
-                          { category: '1', amount: 0 },
-                          { category: '1', amount: 0 }
-                        ];
-                      } else {
-                        isSplitMode = false;
-                      }
-                    }}
-                    class="font-bold uppercase tracking-wider h-auto py-1"
-                  >
-                    {isSplitMode ? 'Saisie simple' : 'Ventiler'}
-                  </Button>
-                </div>
-                
-                <div class="space-y-3">
-                  <!-- Ligne Adhérent & Recherche Combobox intégrée -->
-                  <div class="space-y-1 relative">
-                    <label for="member-input" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Adhérent</label>
-                    <Input
-                      id="member-input"
-                      type="text"
-                      autocomplete="off"
-                      placeholder="Tapez pour rechercher un adhérent..."
-                      class="w-full font-medium pr-6"
-                      value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
-                      oninput={(e) => {
-                        isMemberDropdownOpen = true;
-                        memberSearchQuery = (e.target as HTMLInputElement).value;
-                      }}
-                      onfocus={() => {
-                        isMemberDropdownOpen = true;
-                        memberSearchQuery = '';
-                      }}
-                      onblur={() => {
-                        setTimeout(() => { isMemberDropdownOpen = false; }, 200);
-                      }}
-                      onkeydown={handleMemberKeyDown}
-                    />
-                    <span class="absolute right-2 top-6 text-muted-foreground pointer-events-none text-[8px]">▼</span>
-                    
-                    {#if isMemberDropdownOpen}
-                      <div id="member-listbox" class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded shadow-lg divide-y divide-border">
-                        <Button
-                          variant="ghost"
-                          id="member-option-0"
-                          class="w-full text-left justify-start px-2.5 py-1.5 text-xs font-medium border-0 cursor-pointer italic h-auto rounded-none {memberHighlightedIndex === 0 ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-muted-foreground bg-transparent'}"
-                          onmousedown={() => {
-                            selectedMemberId = '';
-                            memberSearchQuery = '';
-                          }}
-                        >
-                          -- Aucun adhérent (Opération diverse) --
-                        </Button>
-                        {#each filteredMembers as m, index}
-                          <Button
-                            variant="ghost"
-                            id={`member-option-${index + 1}`}
-                            class="w-full text-left justify-start px-2.5 py-1.5 text-xs font-medium border-0 cursor-pointer h-auto rounded-none {memberHighlightedIndex === index + 1 ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground bg-transparent'}"
-                            onmousedown={() => {
-                              selectedMemberId = m.id.toString();
-                              memberSearchQuery = `${m.lastName} ${m.firstName}`;
-                            }}
-                          >
-                            {m.lastName} {m.firstName} (Dû : {(m.amountRemaining / 100).toFixed(2)} €)
-                          </Button>
-                        {:else}
-                          <div class="px-2.5 py-1.5 text-xs text-muted-foreground italic">Aucun résultat</div>
-                        {/each}
-                      </div>
-                    {/if}
-                  </div>
- 
-                  <!-- Ligne Catégorie Combobox intégrée et Montant -->
-                  {#if !isSplitMode}
-                    <div class="grid grid-cols-3 gap-2">
-                      <div class="col-span-2 space-y-1 relative">
-                        <label for="category-input" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Catégorie</label>
-                        <Input
-                          id="category-input"
-                          type="text"
-                          autocomplete="off"
-                          placeholder="Tapez pour filtrer..."
-                          class="w-full font-medium pr-6"
-                          value={isCategoryDropdownOpen ? categorySearchQuery : categoryDisplayVal}
-                          oninput={(e) => {
-                            isCategoryDropdownOpen = true;
-                            categorySearchQuery = (e.target as HTMLInputElement).value;
-                          }}
-                          onfocus={() => {
-                            isCategoryDropdownOpen = true;
-                            categorySearchQuery = '';
-                          }}
-                          onblur={() => {
-                            setTimeout(() => { isCategoryDropdownOpen = false; }, 200);
-                          }}
-                          onkeydown={handleCategoryKeyDown}
-                        />
-                        <span class="absolute right-2 top-6 text-muted-foreground pointer-events-none text-[8px]">▼</span>
-                        
-                        {#if isCategoryDropdownOpen}
-                          <div id="category-listbox" class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded shadow-lg divide-y divide-border">
-                            {#each filteredCategories as cat, index}
-                              <Button
-                                variant="ghost"
-                                id={`category-option-${index}`}
-                                class="w-full text-left justify-start px-2.5 py-1.5 text-xs font-medium border-0 cursor-pointer h-auto rounded-none {categoryHighlightedIndex === index ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground bg-transparent'}"
-                                onmousedown={() => {
-                                  category = cat.id;
-                                  categorySearchQuery = cat.name;
-                                }}
-                              >
-                                  {cat.name}
-                              </Button>
-                            {:else}
-                              <div class="px-2.5 py-1.5 text-xs text-muted-foreground italic">Aucun résultat</div>
-                            {/each}
-                          </div>
-                        {/if}
-                      </div>
-                      
-                      <div class="space-y-1">
-                        <label for="amount-input" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Montant (€)</label>
-                        <Input
-                          id="amount-input"
-                          type="number"
-                          step="0.01"
-                          min="0.01"
-                          max={(remainingAmount / 100).toFixed(2)}
-                          class="w-full font-bold h-[29px]"
-                          bind:value={amountToLink}
-                        />
-                      </div>
-                    </div>
-                  {:else}
-                    <div class="space-y-2">
-                      {#each splits as split, index}
-                        <div class="grid grid-cols-3 gap-2 items-end">
-                          <div class="col-span-2 space-y-1">
-                            <label for={`split-category-${index}`} class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Catégorie {index + 1}</label>
-                            <select
-                              id={`split-category-${index}`}
-                              class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium"
-                              bind:value={split.category}
-                            >
-                              {#each categories as cat}
-                                <option value={cat.id}>{cat.name}</option>
-                              {/each}
-                            </select>
-                          </div>
-                          <div class="space-y-1 relative">
-                            <label for={`split-amount-${index}`} class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider font-bold">Montant (€)</label>
-                            <div class="flex items-center gap-1">
-                              <Input
-                                id={`split-amount-${index}`}
-                                type="number"
-                                step="0.01"
-                                min="0.01"
-                                class="w-full font-bold h-[29px]"
-                                bind:value={split.amount}
-                              />
-                              {#if splits.length > 2}
-                                <Button
-                                  variant="ghost"
-                                  size="icon-xs"
-                                  onclick={() => removeSplitRow(index)}
-                                  class="text-destructive hover:bg-destructive/10"
-                                  title="Supprimer"
-                                >
-                                  ✕
-                                </Button>
-                              {/if}
-                            </div>
-                          </div>
-                        </div>
-                      {/each}
-                      <div class="pt-1">
-                        <Button
-                          variant="link"
-                          onclick={addSplitRow}
-                          class="text-[10px] text-primary hover:underline font-bold uppercase tracking-wider p-0 h-auto"
-                        >
-                          + Ajouter une catégorie
-                        </Button>
-                      </div>
-                    </div>
-                  {/if}
- 
-                  <!-- Moyen de paiement & Saison d'affectation -->
-                  <div class="grid grid-cols-2 gap-2">
-                    <div class="space-y-1">
-                      <label for="method-select" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Moyen de paiement</label>
-                      <select id="method-select" class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium" bind:value={paymentMethod}>
-                        <option value="virement">Virement</option>
-                        <option value="cheque">Chèque</option>
-                        <option value="especes">Espèces</option>
-                      </select>
-                    </div>
- 
-                    <div class="space-y-1">
-                      <label for="season-select-reconcile" class="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Saison d'affectation</label>
-                      <select id="season-select-reconcile" class="w-full px-2.5 py-1.5 border border-border bg-background rounded text-xs focus:ring-1 focus:ring-primary text-foreground font-medium" bind:value={targetSeasonId}>
-                        {#each seasons as s}
-                          <option value={s.id}>{s.name}</option>
-                        {/each}
-                      </select>
-                    </div>
-                  </div>
-                </div>
- 
-                <Button
-                  disabled={isSubmitting || (isSplitMode ? (splits.some(s => !s.amount || s.amount <= 0) || Math.abs(splits.reduce((acc, s) => acc + Math.round((s.amount || 0) * 100), 0) - remainingAmount) > 10) : (!amountToLink || amountToLink <= 0 || Math.round(amountToLink * 100) > remainingAmount))}
-                  onclick={() => handleCreateAndMatch(selectedTx!)}
-                  class="w-full mt-2 font-medium"
-                >
-                  {isSplitMode ? 'Enregistrer la ventilation' : (linkedGlTxs.length > 0 ? 'Enregistrer cette partie' : "Créer & lier l'écriture")}
-                </Button>
+                <CreateTransactionFromBankLine
+                  {selectedTx}
+                  {remainingAmount}
+                  bind:category
+                  bind:paymentMethod
+                  bind:selectedMemberId
+                  {isSubmitting}
+                  onCreate={() => handleCreateAndMatch(selectedTx)}
+                  bind:isSplitMode
+                  bind:splits
+                  onAddSplit={addSplitRow}
+                  onRemoveSplit={removeSplitRow}
+                  {categories}
+                  {sortedMembers}
+                  bind:isMemberDropdownOpen
+                  bind:isCategoryDropdownOpen
+                  bind:memberSearchQuery
+                  bind:categorySearchQuery
+                />
               </div>
             {/if}
 
