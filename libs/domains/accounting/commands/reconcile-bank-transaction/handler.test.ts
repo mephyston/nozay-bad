@@ -18,7 +18,7 @@ describe('reconcileBankTransaction', () => {
   it('should execute successfully', async () => {
     (isSeasonClosed as any).mockResolvedValue(false);
     const mockRepoInstance = {
-      getBankTransactionById: vi.fn().mockResolvedValue({ seasonId: '23-24', amount: 10 }),
+      getBankTransactionById: vi.fn().mockResolvedValue({ id: 1, seasonId: '23-24', amount: 10, status: 'pending', date: '2023-01-01', label: 'test' }),
       getTransactionById: vi.fn().mockResolvedValue({ seasonId: '23-24', amount: 10, category: 1 }),
       linkTransactionToBank: vi.fn().mockResolvedValue(true),
       getTransactionsForBankTransaction: vi.fn().mockResolvedValue([{ amount: 10 }]),

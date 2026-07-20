@@ -19,7 +19,7 @@ describe('listCategories', () => {
     
     
     const mockRepoInstance = {
-      listCategories: vi.fn().mockResolvedValue(true)
+      listCategories: vi.fn().mockResolvedValue([])
     };
     (vi.mocked(ListCategoriesRepository) as any).mockImplementation(function() { return mockRepoInstance; });
 

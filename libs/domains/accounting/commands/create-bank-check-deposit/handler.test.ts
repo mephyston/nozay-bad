@@ -5,7 +5,7 @@ import { AppError } from '@metacult/shared-db';
 vi.mock('./repository', () => {
   return {
     CreateBankCheckDepositRepository: class {
-      getChecksByIds = vi.fn().mockResolvedValue([{ id: 1, amount: 100 }]);
+      getChecksByIds = vi.fn().mockResolvedValue([{ id: 1, amount: 100, number: '123', seasonId: '23-24', status: 'pending' }]);
       createCheckDeposit = vi.fn().mockResolvedValue({ id: 2 });
       updateChecksDeposit = vi.fn();
       getCheckDepositById = vi.fn().mockResolvedValue({ id: 2, bankTransactionId: 3 });

@@ -19,7 +19,7 @@ describe('listAccountClasses', () => {
     
     
     const mockRepoInstance = {
-      listAccountClasses: vi.fn().mockResolvedValue(true)
+      listAccountClasses: vi.fn().mockResolvedValue([])
     };
     (vi.mocked(ListAccountClassesRepository) as any).mockImplementation(function() { return mockRepoInstance; });
 

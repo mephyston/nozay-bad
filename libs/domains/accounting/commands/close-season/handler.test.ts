@@ -19,6 +19,7 @@ describe('closeSeason', () => {
     
     
     const mockRepoInstance = {
+      getSeasonById: vi.fn().mockResolvedValue({ id: '1', closed: false }),
       updateSeason: vi.fn().mockResolvedValue(true)
     };
     (vi.mocked(CloseSeasonRepository) as any).mockImplementation(function() { return mockRepoInstance; });
@@ -38,6 +39,7 @@ describe('closeSeason', () => {
     
 
     const mockRepoInstance = {
+      getSeasonById: vi.fn().mockResolvedValue({ id: '1', closed: false }),
       updateSeason: vi.fn().mockRejectedValue(new Error('Business error'))
     };
     (vi.mocked(CloseSeasonRepository) as any).mockImplementation(function() { return mockRepoInstance; });
@@ -45,5 +47,20 @@ describe('closeSeason', () => {
     // Act & Assert
     const args = [db, '1', payload];
     await expect((closeSeason as any)(...args)).rejects.toThrow();
+  });
+  
+  it('should throw if season already closed', async () => {
+    // Arrange
+    const payload = { seasonId: '23-24', items: [] } as any;
+    
+    const mockRepoInstance = {
+      getSeasonById: vi.fn().mockResolvedValue({ id: '1', closed: true }),
+      updateSeason: vi.fn()
+    };
+    (vi.mocked(CloseSeasonRepository) as any).mockImplementation(function() { return mockRepoInstance; });
+
+    // Act & Assert
+    const args = [db, '1', payload];
+    await expect((closeSeason as any)(...args)).rejects.toThrow('Saison déjà clôturée');
   });
 });

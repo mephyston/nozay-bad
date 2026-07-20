@@ -5,12 +5,18 @@ import { AppError } from '@metacult/shared-db';
 import { normalizeCategory } from '@metacult/features-accounting-data-access';
 import { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
 import { ReconcileBankTxInternalId, ReconcileBankTxInternalInput, ReconcileBankTxInternalOutput } from "./dto";
+import { BankTransaction } from '../../shared/bank-transaction';
 
 export async function reconcileBankTxInternal(db: any, id: ReconcileBankTxInternalId, body: ReconcileBankTxInternalInput): Promise<ReconcileBankTxInternalOutput> {
   const repo = new ReconcileBankTransactionRepository();
-  const bankTx = await repo.getBankTransactionById(db, id);
-  if (!bankTx) {
+  const bankTxData = await repo.getBankTransactionById(db, id);
+  if (!bankTxData) {
     return { success: false, error: 'Écriture bancaire non trouvée.', status: 404 };
+  }
+  
+  const bankTx = new BankTransaction(bankTxData);
+  if (!bankTx.canBeReconciled()) {
+    return { success: false, error: 'Écriture bancaire déjà rapprochée.', status: 400 };
   }
 
   if (await isSeasonClosed(db, bankTx.seasonId)) {

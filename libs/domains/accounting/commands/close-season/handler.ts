@@ -1,12 +1,21 @@
 import { AppError } from '@metacult/shared-db';
 import { CloseSeasonRepository } from './repository';
 import { CloseSeasonInput, CloseSeasonOutput } from "./dto";
+import { Season } from '../../shared/season';
 
 export async function closeSeason(db: any, id: CloseSeasonInput): Promise<CloseSeasonOutput> {
   const repo = new CloseSeasonRepository();
-  const updated = await repo.updateSeason(db, id, { closed: true });
-  if (!updated) {
+  
+  const seasonData = await repo.getSeasonById(db, id as unknown as string);
+  if (!seasonData) {
     throw new AppError('Saison introuvable', 404);
   }
+  
+  const season = new Season(seasonData);
+  if (season.isClosed()) {
+    throw new AppError('Saison déjà clôturée', 400);
+  }
+
+  const updated = await repo.updateSeason(db, id as unknown as string, { closed: true });
   return updated;
 }

@@ -1,6 +1,7 @@
 import { CreateBankCheckDepositRepository } from './repository';
 import { AppError } from '@metacult/shared-db';
 import type { CreateCheckDepositInput, ClearCheckDepositInput } from './dto';
+import { Check } from '../../shared/check';
 
 export async function createCheckDeposit(db: any, body: CreateCheckDepositInput) {
   if (!body.seasonId || !body.reference || !body.date || !body.checkIds || body.checkIds.length === 0) {
@@ -14,7 +15,15 @@ export async function createCheckDeposit(db: any, body: CreateCheckDepositInput)
     if (checksToDeposit.length === 0) {
       throw new AppError('Aucun chèque valide trouvé.', 400);
     }
-    const totalAmount = checksToDeposit.reduce((sum, ch) => sum + ch.amount, 0);
+    
+    let totalAmount = 0;
+    for (const checkData of checksToDeposit) {
+      const check = new Check(checkData);
+      if (!check.canBeDeposited()) {
+        throw new AppError('Un chèque n\'est pas dans un état valide pour être déposé.', 400);
+      }
+      totalAmount += check.amount;
+    }
 
     const deposit = await repo.createCheckDeposit(txDb, {
       seasonId: body.seasonId,
