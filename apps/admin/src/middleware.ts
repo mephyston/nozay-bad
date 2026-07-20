@@ -31,7 +31,13 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
   }
 
   // Resolve environment variables from cloudflare:workers or Astro runtime context
-  const resolvedEnv = { ...cfEnv, ...context.locals.runtime?.env };
+  let runtimeEnv = {};
+  try {
+    runtimeEnv = (context.locals as any).runtime?.env || {};
+  } catch (err) {
+    // Ignore. Astro.locals.runtime.env throws in Astro v6 production.
+  }
+  const resolvedEnv = { ...cfEnv, ...runtimeEnv };
 
   const CF_TEAM_DOMAIN = resolvedEnv.CF_TEAM_DOMAIN;
   const CF_AUDIENCE = resolvedEnv.CF_AUDIENCE;
