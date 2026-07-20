@@ -32,8 +32,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       api: ${{ steps.affected.outputs.api }}
-      boutique: ${{ steps.affected.outputs.boutique }}
-      admin_console: ${{ steps.affected.outputs.admin_console }}
+      storefront: ${{ steps.affected.outputs.storefront }}
+      admin: ${{ steps.affected.outputs.admin }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,7 +57,7 @@ jobs:
           if [ "${{ github.event.inputs.force_all }}" = "true" ] || echo "$COMMIT_MSG" | grep -qiE "force deploy|deploy all"; then
             echo "Forcing deployment of all applications"
             API_COUNT=1
-            BOUTIQUE_COUNT=1
+            STOREFRONT_COUNT=1
             ADMIN_COUNT=1
           else
             if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -70,15 +70,15 @@ jobs:
             echo "Affected projects: [$AFFECTED]"
 
             API_COUNT=$(echo "$AFFECTED" | grep -cw 'api' || true)
-            BOUTIQUE_COUNT=$(echo "$AFFECTED" | grep -cw 'boutique' || true)
-            ADMIN_COUNT=$(echo "$AFFECTED" | grep -cw 'admin-console' || true)
+            STOREFRONT_COUNT=$(echo "$AFFECTED" | grep -cw 'storefront' || true)
+            ADMIN_COUNT=$(echo "$AFFECTED" | grep -cw 'admin' || true)
           fi
 
           echo "api=$API_COUNT" >> $GITHUB_OUTPUT
-          echo "boutique=$BOUTIQUE_COUNT" >> $GITHUB_OUTPUT
-          echo "admin_console=$ADMIN_COUNT" >> $GITHUB_OUTPUT
+          echo "storefront=$STOREFRONT_COUNT" >> $GITHUB_OUTPUT
+          echo "admin=$ADMIN_COUNT" >> $GITHUB_OUTPUT
 
-          echo "Debug outputs → api=$API_COUNT boutique=$BOUTIQUE_COUNT admin_console=$ADMIN_COUNT"
+          echo "Debug outputs → api=$API_COUNT storefront=$STOREFRONT_COUNT admin=$ADMIN_COUNT"
 
   # ──────────────────────────────────────────────────────────────
   # 2. Tests sur PR uniquement
@@ -154,13 +154,13 @@ jobs:
           fi
 
   # ──────────────────────────────────────────────────────────────
-  # 4. Deploy Boutique & Admin Console en parallèle (après API)
+  # 4. Deploy Storefront & Admin en parallèle (après API)
   # ──────────────────────────────────────────────────────────────
-  deploy-boutique:
-    name: Deploy Boutique Worker
+  deploy-storefront:
+    name: Deploy Storefront Worker
     runs-on: ubuntu-latest
     needs: [detect-changes, deploy-api]
-    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.boutique == '1' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.storefront == '1' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -174,12 +174,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Boutique (Astro SSR)
-        working-directory: apps/boutique
+      - name: Build Storefront (Astro SSR)
+        working-directory: apps/storefront
         run: npx astro build
 
-      - name: Deploy Boutique Worker
-        working-directory: apps/boutique
+      - name: Deploy Storefront Worker
+        working-directory: apps/storefront
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -197,11 +197,11 @@ jobs:
           "
           npx wrangler deploy
 
-  deploy-admin-console:
-    name: Deploy Admin Console Worker
+  deploy-admin:
+    name: Deploy Admin Worker
     runs-on: ubuntu-latest
     needs: [detect-changes, deploy-api]
-    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.admin_console == '1' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.admin == '1' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -215,12 +215,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Admin Console (Astro SSR)
-        working-directory: apps/admin-console
+      - name: Build Admin (Astro SSR)
+        working-directory: apps/admin
         run: npx astro build
 
-      - name: Deploy Admin Console Worker
-        working-directory: apps/admin-console
+      - name: Deploy Admin Worker
+        working-directory: apps/admin
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

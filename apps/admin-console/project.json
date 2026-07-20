@@ -1,7 +1,0 @@
-{
-  "name": "admin-console",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "projectType": "application",
-  "sourceRoot": "apps/admin-console/src",
-  "tags": ["type:app", "scope:admin-console"]
-}

@@ -4,9 +4,9 @@ export default defineConfig({
   test: {
     projects: [
       'apps/api/vitest.config.ts',
-      'apps/admin-console/vitest.config.ts',
+      'apps/admin/vitest.config.ts',
       'libs/shared/db/vitest.config.ts',
-      'apps/boutique/vitest.config.ts',
+      'apps/storefront/vitest.config.ts',
       'libs/domains/members/api/vitest.config.ts',
       'libs/domains/accounting/api/vitest.config.ts',
       'libs/domains/expenses/api/vitest.config.ts',

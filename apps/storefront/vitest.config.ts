@@ -6,13 +6,13 @@ export default defineConfig({
   plugins: [svelte()],
   resolve: {
     alias: {
-      'cloudflare:workers': path.resolve(__dirname, '../admin-console/src/mocks/cloudflare-workers.ts'),
+      'cloudflare:workers': path.resolve(__dirname, '../admin/src/mocks/cloudflare-workers.ts'),
       '@metacult/shared-ui': path.resolve(__dirname, '../../libs/shared/ui/src/index.ts'),
     },
     conditions: ['browser'],
   },
   test: {
-    name: 'boutique',
+    name: 'storefront',
     globals: true,
     environment: 'jsdom',
   },

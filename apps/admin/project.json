@@ -1,7 +1,7 @@
 {
-  "name": "boutique",
+  "name": "admin",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
-  "sourceRoot": "apps/boutique/src",
-  "tags": ["type:app", "scope:boutique"]
+  "sourceRoot": "apps/admin/src",
+  "tags": ["type:app", "scope:admin"]
 }
