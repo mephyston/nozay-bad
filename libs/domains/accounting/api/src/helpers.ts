@@ -7,7 +7,8 @@ import {
 import {
   membersTable
 } from '@metacult/features-members-data-access';
-import { isSeasonClosed, normalizeCategory } from '@metacult/shared-db';
+import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { normalizeCategory } from '@metacult/shared-db';
 
 export function cleanName(name: string | null): string {
   if (!name) return '';

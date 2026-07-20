@@ -10,7 +10,8 @@ import {
 import {
   seasonsTable
 } from '@metacult/features-members-data-access';
-import { isSeasonClosed, normalizeCategory, AppError } from '@metacult/shared-db';
+import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { normalizeCategory, AppError } from '@metacult/shared-db';
 import type { Bindings } from '../routes';
 
 export const seasonsRouter = new Hono<{ Bindings: Bindings }>();

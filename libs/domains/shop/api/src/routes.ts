@@ -8,7 +8,8 @@ import { productsTable, ordersTable } from '@metacult/features-shop-data-access'
 import { membersTable } from '@metacult/features-members-data-access';
 // Cross-domain read: shop needs the 'Boutique' accounting category ID and transaction insertion.
 import { categoriesTable, transactionsTable } from '@metacult/features-accounting-data-access';
-import { isSeasonClosed, AppError } from '@metacult/shared-db';
+import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { AppError } from '@metacult/shared-db';
 import { Type } from '@sinclair/typebox';
 import { tbValidator } from '@hono/typebox-validator';
 

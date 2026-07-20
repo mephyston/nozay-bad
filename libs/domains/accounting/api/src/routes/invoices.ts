@@ -5,7 +5,8 @@ import {
   invoicesTable,
   invoiceItemsTable
 } from '@metacult/features-accounting-data-access';
-import { isSeasonClosed, AppError } from '@metacult/shared-db';
+import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { AppError } from '@metacult/shared-db';
 import type { Bindings } from '../routes';
 
 export const invoicesRouter = new Hono<{ Bindings: Bindings }>();

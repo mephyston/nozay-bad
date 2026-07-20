@@ -3,7 +3,8 @@ import { drizzle } from 'drizzle-orm/d1';
 import { and, eq, ne } from 'drizzle-orm';
 import { expensesTable } from '@metacult/features-expenses-data-access';
 import { sql } from 'drizzle-orm';
-import { isSeasonClosed, normalizeCategory, AppError } from '@metacult/shared-db';
+import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { normalizeCategory, AppError } from '@metacult/shared-db';
 import { Type } from '@sinclair/typebox';
 import { tbValidator } from '@hono/typebox-validator';
 

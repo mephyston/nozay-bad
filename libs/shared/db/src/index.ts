@@ -1,4 +1,4 @@
 import { type DrizzleD1Database } from 'drizzle-orm/d1';
 export type db = DrizzleD1Database;
-export { isSeasonClosed, normalizeCategory } from './helpers';
+export { normalizeCategory } from './helpers';
 export { AppError } from './errors';

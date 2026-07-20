@@ -1,24 +1,3 @@
-import { eq } from 'drizzle-orm';
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
-
-// Lightweight seasons table schema locally defined to comply with Nx boundary rules
-const seasonsTable = sqliteTable('seasons', {
-  id: text('id').primaryKey(),
-  closed: integer('closed', { mode: 'boolean' }).notNull().default(false),
-});
-
-/**
- * Shared helper: check whether a season is closed.
- * Centralised here to avoid duplication across accounting, expenses, and shop modules.
- */
-export async function isSeasonClosed(db: any, seasonId: string): Promise<boolean> {
-  const season = await db
-    .select({ closed: seasonsTable.closed })
-    .from(seasonsTable)
-    .where(eq(seasonsTable.id, seasonId))
-    .get();
-  return season?.closed === 1 || season?.closed === true;
-}
 
 /**
  * Shared helper: normalise a category value to its numeric ID.
