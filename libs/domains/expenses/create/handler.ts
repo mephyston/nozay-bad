@@ -1,7 +1,7 @@
 import { CreateExpenseRepository } from './repository';
 import { isSeasonClosed } from '@metacult/features-members-data-access';
 import { normalizeCategory } from '@metacult/features-accounting-data-access';
-import { AppError } from '@metacult/shared-db';
+import { SeasonClosedError } from '../shared/errors';
 
 export async function createExpense(
   db: any,
@@ -16,7 +16,7 @@ export async function createExpense(
   }
 ) {
   if (await isSeasonClosed(db, body.seasonId)) {
-    throw new AppError('La saison est clôturée. Impossible de soumettre une note de frais.', 400);
+    throw new SeasonClosedError('La saison est clôturée. Impossible de soumettre une note de frais.');
   }
 
   const repo = new CreateExpenseRepository();

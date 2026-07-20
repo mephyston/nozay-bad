@@ -1,7 +1,8 @@
 import { eq, and } from 'drizzle-orm';
 import { expensesTable } from '../data-access/src/schema';
+import { ListExpensesRepositoryInterface } from '../shared/repository';
 
-export class ListExpensesRepository {
+export class ListExpensesRepository implements ListExpensesRepositoryInterface {
   async list(db: any, filters: { season?: string; status?: string }): Promise<any[]> {
     const conditions = [];
     if (filters.season) conditions.push(eq(expensesTable.seasonId, filters.season));

@@ -1,29 +1,36 @@
 import { UpdateExpenseRepository } from './repository';
 import { isSeasonClosed } from '@metacult/features-members-data-access';
 import { normalizeCategory } from '@metacult/features-accounting-data-access';
-import { AppError } from '@metacult/shared-db';
+import { Expense } from '../shared/expense';
+import {
+  SeasonClosedError,
+  ExpenseNotFoundError,
+  ExpenseAlreadyProcessedError,
+  ExpenseAlreadyPendingError
+} from '../shared/errors';
 
 export async function approveExpense(db: any, id: number) {
   const repo = new UpdateExpenseRepository();
-  const expense = await repo.getById(db, id);
-  if (!expense) {
-    throw new AppError('Dépense introuvable', 404);
+  const expenseData = await repo.getById(db, id);
+  if (!expenseData) {
+    throw new ExpenseNotFoundError();
   }
+  const expense = new Expense(expenseData);
   if (await isSeasonClosed(db, expense.seasonId)) {
-    throw new AppError('La saison est clôturée. Impossible d\'approuver cette note de frais.', 400);
+    throw new SeasonClosedError('La saison est clôturée. Impossible d\'approuver cette note de frais.');
   }
-  if (expense.status !== 'pending') {
-    throw new AppError('Dépense déjà traitée', 400);
+  if (!expense.canBeApproved()) {
+    throw new ExpenseAlreadyProcessedError();
   }
 
   // Créer la transaction de dépense via le repository
   const tx = await repo.insertTransaction(db, {
-    seasonId: expense.seasonId,
-    category: expense.category,
-    amount: expense.amount,
-    emitterName: expense.emitterName,
-    description: expense.description,
-    memberId: expense.memberId,
+    seasonId: expenseData.seasonId,
+    category: expenseData.category,
+    amount: expenseData.amount,
+    emitterName: expenseData.emitterName,
+    description: expenseData.description,
+    memberId: expenseData.memberId,
   });
 
   // Mettre à jour le statut et lier la transaction
@@ -32,15 +39,16 @@ export async function approveExpense(db: any, id: number) {
 
 export async function rejectExpense(db: any, id: number) {
   const repo = new UpdateExpenseRepository();
-  const expense = await repo.getById(db, id);
-  if (!expense) {
-    throw new AppError('Dépense introuvable', 404);
+  const expenseData = await repo.getById(db, id);
+  if (!expenseData) {
+    throw new ExpenseNotFoundError();
   }
+  const expense = new Expense(expenseData);
   if (await isSeasonClosed(db, expense.seasonId)) {
-    throw new AppError('La saison est clôturée. Impossible de rejeter cette note de frais.', 400);
+    throw new SeasonClosedError('La saison est clôturée. Impossible de rejeter cette note de frais.');
   }
-  if (expense.status !== 'pending') {
-    throw new AppError('Dépense déjà traitée', 400);
+  if (!expense.canBeRejected()) {
+    throw new ExpenseAlreadyProcessedError();
   }
 
   return repo.reject(db, id);
@@ -48,24 +56,25 @@ export async function rejectExpense(db: any, id: number) {
 
 export async function cancelExpenseApproval(db: any, id: number) {
   const repo = new UpdateExpenseRepository();
-  const expense = await repo.getById(db, id);
-  if (!expense) {
-    throw new AppError('Dépense introuvable', 404);
+  const expenseData = await repo.getById(db, id);
+  if (!expenseData) {
+    throw new ExpenseNotFoundError();
   }
+  const expense = new Expense(expenseData);
   if (await isSeasonClosed(db, expense.seasonId)) {
-    throw new AppError('La saison est clôturée. Impossible d\'annuler la validation de cette note de frais.', 400);
+    throw new SeasonClosedError('La saison est clôturée. Impossible d\'annuler la validation de cette note de frais.');
   }
-  if (expense.status === 'pending') {
-    throw new AppError('Dépense déjà en attente', 400);
+  if (!expense.canBeCancelled()) {
+    throw new ExpenseAlreadyPendingError();
   }
 
-  const txId = expense.transactionId;
+  const txId = expenseData.transactionId;
 
   // 1. Mettre à jour la note de frais d'abord pour couper la clé étrangère
   const updatedExpense = await repo.cancelApproval(db, id);
 
   // 2. Si approuvée, supprimer la transaction associée
-  if (expense.status === 'approved' && txId) {
+  if (expenseData.status === 'approved' && txId) {
     // 1. Récupérer la transaction via le repository
     const tx = await repo.getTransactionDetails(db, txId);
 
@@ -105,15 +114,16 @@ export async function updateExpense(
   }
 ) {
   const repo = new UpdateExpenseRepository();
-  const existing = await repo.getById(db, id);
-  if (!existing) {
-    throw new AppError('Dépense introuvable', 404);
+  const existingData = await repo.getById(db, id);
+  if (!existingData) {
+    throw new ExpenseNotFoundError();
   }
+  const existing = new Expense(existingData);
   if (await isSeasonClosed(db, existing.seasonId)) {
-    throw new AppError('La saison d\'origine est clôturée. Impossible de modifier cette note de frais.', 400);
+    throw new SeasonClosedError('La saison d\'origine est clôturée. Impossible de modifier cette note de frais.');
   }
   if (body.seasonId && await isSeasonClosed(db, body.seasonId)) {
-    throw new AppError('La saison cible est clôturée. Impossible d\'affecter cette note de frais.', 400);
+    throw new SeasonClosedError('La saison cible est clôturée. Impossible d\'affecter cette note de frais.');
   }
 
   const updated = await repo.update(db, id, {
@@ -127,7 +137,7 @@ export async function updateExpense(
   });
   
   if (!updated) {
-    throw new AppError('Dépense introuvable', 404);
+    throw new ExpenseNotFoundError();
   }
   return updated;
 }
