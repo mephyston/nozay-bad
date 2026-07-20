@@ -1,8 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import { expensesTable } from '../data-access/src/schema';
-import { UpdateExpenseRepositoryInterface } from '../shared/repository';
 
-export class UpdateExpenseRepository implements UpdateExpenseRepositoryInterface {
+export class UpdateExpenseRepository {
   async getById(db: any, id: number): Promise<any | undefined> {
     return db.select().from(expensesTable).where(eq(expensesTable.id, id)).get();
   }

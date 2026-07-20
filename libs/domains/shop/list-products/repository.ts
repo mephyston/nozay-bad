@@ -1,8 +1,7 @@
 import { eq, and } from 'drizzle-orm';
 import { productsTable } from '../data-access/src/schema';
-import { ListProductsRepositoryInterface } from '../shared/repository';
 
-export class ListProductsRepository implements ListProductsRepositoryInterface {
+export class ListProductsRepository {
   async list(db: any, filters: { category?: string; active?: boolean }): Promise<any[]> {
     const conditions = [];
     if (filters.category) conditions.push(eq(productsTable.category, filters.category as any));

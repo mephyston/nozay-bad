@@ -1,8 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { membersTable } from '../data-access/src/schema';
-import { ApplyPaymentRepositoryInterface } from '../shared/repository';
 
-export class ApplyPaymentRepository implements ApplyPaymentRepositoryInterface {
+export class ApplyPaymentRepository {
   async getById(db: any, id: number): Promise<any | undefined> {
     return db.select().from(membersTable).where(eq(membersTable.id, id)).get();
   }

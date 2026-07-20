@@ -1,7 +1,6 @@
 import { productsTable } from '../data-access/src/schema';
-import { CreateProductRepositoryInterface } from '../shared/repository';
 
-export class CreateProductRepository implements CreateProductRepositoryInterface {
+export class CreateProductRepository {
   async create(db: any, values: {
     name: string;
     category: 'shuttlecock' | 'string' | 'other';

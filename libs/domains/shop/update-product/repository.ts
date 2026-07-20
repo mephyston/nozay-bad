@@ -1,8 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { productsTable } from '../data-access/src/schema';
-import { UpdateProductRepositoryInterface } from '../shared/repository';
 
-export class UpdateProductRepository implements UpdateProductRepositoryInterface {
+export class UpdateProductRepository {
   async update(db: any, id: number, values: {
     name?: string;
     price?: number;

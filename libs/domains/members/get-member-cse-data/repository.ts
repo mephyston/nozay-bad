@@ -1,8 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import { membersTable } from '../data-access/src/schema';
-import { MemberCseDataRepositoryInterface } from '../shared/repository';
 
-export class MemberCseDataRepository implements MemberCseDataRepositoryInterface {
+export class MemberCseDataRepository {
   async getById(db: any, id: number): Promise<any | undefined> {
     return db.select().from(membersTable).where(eq(membersTable.id, id)).get();
   }

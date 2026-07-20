@@ -1,8 +1,7 @@
 import { eq, and } from 'drizzle-orm';
 import { membersTable } from '../data-access/src/schema';
-import { GetMemberRepositoryInterface } from '../shared/repository';
 
-export class GetMemberRepository implements GetMemberRepositoryInterface {
+export class GetMemberRepository {
   async getByLicence(db: any, licence: string, season?: string): Promise<any | undefined> {
     const conditions = [eq(membersTable.licence, licence)];
     if (season) {

@@ -1,8 +1,7 @@
 import { inArray } from 'drizzle-orm';
 import { membersTable, seasonsTable } from '../data-access/src/schema';
-import { ImportMembersRepositoryInterface } from '../shared/repository';
 
-export class ImportMembersRepository implements ImportMembersRepositoryInterface {
+export class ImportMembersRepository {
   async insertSeasons(db: any, seasons: { id: string; name: string; active: boolean; createdAt: Date }[]): Promise<void> {
     for (const season of seasons) {
       await db.insert(seasonsTable)

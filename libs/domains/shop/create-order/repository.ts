@@ -1,8 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { ordersTable, productsTable } from '../data-access/src/schema';
-import { CreateOrderRepositoryInterface } from '../shared/repository';
 
-export class CreateOrderRepository implements CreateOrderRepositoryInterface {
+export class CreateOrderRepository {
   async getProductById(db: any, id: number): Promise<any | undefined> {
     return db.select().from(productsTable).where(eq(productsTable.id, id)).get();
   }

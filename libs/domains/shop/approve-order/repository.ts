@@ -2,9 +2,8 @@ import { and, eq } from 'drizzle-orm';
 import { ordersTable, productsTable } from '../data-access/src/schema';
 import { getMemberById } from '@metacult/features-members-api';
 import { categoriesTable, transactionsTable } from '@metacult/features-accounting-data-access';
-import { ApproveOrderRepositoryInterface } from '../shared/repository';
 
-export class ApproveOrderRepository implements ApproveOrderRepositoryInterface {
+export class ApproveOrderRepository {
   async getOrderById(db: any, id: number): Promise<any | undefined> {
     return db.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
   }

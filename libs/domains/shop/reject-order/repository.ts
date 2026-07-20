@@ -1,8 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { ordersTable } from '../data-access/src/schema';
-import { RejectOrderRepositoryInterface } from '../shared/repository';
 
-export class RejectOrderRepository implements RejectOrderRepositoryInterface {
+export class RejectOrderRepository {
   async getOrderById(db: any, id: number): Promise<any | undefined> {
     return db.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
   }

@@ -1,8 +1,7 @@
 import { eq, and, or, like, sql } from 'drizzle-orm';
 import { membersTable } from '../data-access/src/schema';
-import { ListMembersRepositoryInterface } from '../shared/repository';
 
-export class ListMembersRepository implements ListMembersRepositoryInterface {
+export class ListMembersRepository {
   private buildConditions(filters: {
     search?: string;
     gender?: 'M' | 'F';

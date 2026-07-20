@@ -1,9 +1,8 @@
 import { eq, and, inArray } from 'drizzle-orm';
 import { ordersTable, productsTable } from '../data-access/src/schema';
 import { getMembersByIds } from '@metacult/features-members-api';
-import { ListOrdersRepositoryInterface } from '../shared/repository';
 
-export class ListOrdersRepository implements ListOrdersRepositoryInterface {
+export class ListOrdersRepository {
   async list(db: any, filters: { season?: string; status?: string }): Promise<any[]> {
     const conditions = [];
     if (filters.season) conditions.push(eq(ordersTable.seasonId, filters.season));
