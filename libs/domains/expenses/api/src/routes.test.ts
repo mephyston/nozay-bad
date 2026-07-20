@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { expensesRouter } from './routes';
 import { setupMockDb } from '@metacult/shared-db/test-utils';
-import { expensesTable } from '@metacult/features-expenses-data-access';
+import { expensesTable } from '../../data-access/src/schema';
 import { eq, sql } from 'drizzle-orm';
 import { AppError } from '@metacult/shared-db';
 

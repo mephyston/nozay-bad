@@ -1,1 +1,1 @@
-export * from './schema';
+export { ExpenseRepository, DrizzleExpenseRepository } from './repository';
