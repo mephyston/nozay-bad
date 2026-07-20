@@ -1,139 +1,25 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
-import {
-  listSeasons,
-  createSeason,
-  updateSeason,
-  closeSeason,
-  getSeasonBudget,
-  updateSeasonBudget,
-  getSeasonBalance,
-  getSeasonBalances,
-  updateSeasonBalances,
-  getSeasonReports
-} from '../../../seasons/handler';
+import { listSeasonsRoute } from '../../../queries/list-seasons/route';
+import { createSeasonRoute } from '../../../commands/create-season/route';
+import { updateSeasonRoute } from '../../../commands/update-season/route';
+import { closeSeasonRoute } from '../../../commands/close-season/route';
+import { getSeasonBudgetRoute } from '../../../queries/get-season-budget/route';
+import { updateSeasonBudgetRoute } from '../../../commands/update-season-budget/route';
+import { getSeasonBalanceRoute } from '../../../queries/get-season-balance/route';
+import { getSeasonBalancesRoute } from '../../../queries/get-season-balances/route';
+import { updateSeasonBalancesRoute } from '../../../commands/update-season-balances/route';
+import { getSeasonReportsRoute } from '../../../queries/get-season-reports/route';
 import type { Bindings } from '../routes';
 
 export const seasonsRouter = new Hono<{ Bindings: Bindings }>();
 
-seasonsRouter.get('/', async (c) => {
-  if (!c.env || !c.env.DB) {
-    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-  }
-  const db = drizzle(c.env.DB);
-  const data = await listSeasons(db);
-  return c.json({ success: true, data });
-});
-
-seasonsRouter.post('/', async (c) => {
-  if (!c.env || !c.env.DB) {
-    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-  }
-  const body = await c.req.json();
-  const db = drizzle(c.env.DB);
-  try {
-    const data = await createSeason(db, body);
-    return c.json({ success: true, data });
-  } catch (err: any) {
-    return c.json({ success: false, error: err.message }, 400);
-  }
-});
-
-seasonsRouter.put('/:id', async (c) => {
-  if (!c.env || !c.env.DB) {
-    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-  }
-  const id = c.req.param('id');
-  const body = await c.req.json();
-  const db = drizzle(c.env.DB);
-  try {
-    const data = await updateSeason(db, id, body);
-    return c.json({ success: true, data });
-  } catch (err: any) {
-    return c.json({ success: false, error: err.message }, 400);
-  }
-});
-
-seasonsRouter.post('/:id/close', async (c) => {
-  if (!c.env || !c.env.DB) {
-    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-  }
-  const id = c.req.param('id');
-  const db = drizzle(c.env.DB);
-  try {
-    const data = await closeSeason(db, id);
-    return c.json({ success: true, data });
-  } catch (err: any) {
-    return c.json({ success: false, error: err.message }, 400);
-  }
-});
-
-seasonsRouter.get('/:seasonId/budget', async (c) => {
-  if (!c.env || !c.env.DB) {
-    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-  }
-  const seasonId = c.req.param('seasonId');
-  const db = drizzle(c.env.DB);
-  try {
-    const data = await getSeasonBudget(db, seasonId);
-    return c.json({ success: true, data });
-  } catch (err: any) {
-    return c.json({ success: false, error: err.message }, 500);
-  }
-});
-
-seasonsRouter.post('/:seasonId/budget', async (c) => {
-  if (!c.env || !c.env.DB) {
-    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-  }
-  const seasonId = c.req.param('seasonId');
-  const body = await c.req.json();
-  const db = drizzle(c.env.DB);
-  try {
-    const data = await updateSeasonBudget(db, seasonId, body);
-    return c.json({ success: true, data });
-  } catch (err: any) {
-    return c.json({ success: false, error: err.message }, 400);
-  }
-});
-
-seasonsRouter.get('/:seasonId/balance', async (c) => {
-  if (!c.env || !c.env.DB) {
-    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-  }
-  const seasonId = c.req.param('seasonId');
-  const db = drizzle(c.env.DB);
-  const data = await getSeasonBalance(db, seasonId);
-  return c.json({ success: true, data });
-});
-
-seasonsRouter.get('/:seasonId/balances', async (c) => {
-  if (!c.env || !c.env.DB) {
-    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-  }
-  const seasonId = c.req.param('seasonId');
-  const db = drizzle(c.env.DB);
-  const data = await getSeasonBalances(db, seasonId);
-  return c.json({ success: true, data });
-});
-
-seasonsRouter.post('/:seasonId/balances', async (c) => {
-  if (!c.env || !c.env.DB) {
-    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-  }
-  const seasonId = c.req.param('seasonId');
-  const body = await c.req.json();
-  const db = drizzle(c.env.DB);
-  await updateSeasonBalances(db, seasonId, body);
-  return c.json({ success: true });
-});
-
-seasonsRouter.get('/:seasonId/reports', async (c) => {
-  if (!c.env || !c.env.DB) {
-    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-  }
-  const seasonId = c.req.param('seasonId');
-  const db = drizzle(c.env.DB);
-  const data = await getSeasonReports(db, seasonId);
-  return c.json({ success: true, data });
-});
+seasonsRouter.route('/', listSeasonsRoute);
+seasonsRouter.route('/', createSeasonRoute);
+seasonsRouter.route('/', updateSeasonRoute);
+seasonsRouter.route('/', closeSeasonRoute);
+seasonsRouter.route('/', getSeasonBudgetRoute);
+seasonsRouter.route('/', updateSeasonBudgetRoute);
+seasonsRouter.route('/', getSeasonBalanceRoute);
+seasonsRouter.route('/', getSeasonBalancesRoute);
+seasonsRouter.route('/', updateSeasonBalancesRoute);
+seasonsRouter.route('/', getSeasonReportsRoute);
