@@ -64,5 +64,60 @@ export default tseslint.config(
         }
       ]
     }
+  },
+  {
+    files: ['**/routes.ts', '**/routes/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'drizzle-orm',
+              message: 'Please do not import drizzle-orm in route files. Database logic should be confined to repository files.'
+            }
+          ],
+          patterns: [
+            {
+              group: ['**/data-access/**', '**/schema'],
+              message: 'Please do not import data-access or schemas directly in route files. Confine database logic to repository files.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    files: ['**/handler.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'hono',
+              message: 'Please do not import hono in handler files. Use case handlers should remain framework-independent.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    files: ['libs/domains/*/*/**/*.ts'],
+    ignores: ['libs/domains/*/shared/**/*.ts', 'libs/domains/*/api/**/*.ts', 'libs/domains/*/data-access/**/*.ts', 'libs/domains/*/ui/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../*', '!../shared', '!../shared/**', '!../data-access', '!../data-access/**'],
+              message: 'Slice-to-slice imports are forbidden. You can only import from shared or data-access.'
+            }
+          ]
+        }
+      ]
+    }
   }
 );

@@ -1,10 +1,15 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
-import { eq } from 'drizzle-orm';
 import {
-  categoriesTable,
-  accountClassesTable
-} from '@metacult/features-accounting-data-access';
+  listCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  listAccountClasses,
+  createAccountClass,
+  updateAccountClass,
+  deleteAccountClass
+} from '../../../categories/handler';
 import type { Bindings } from '../routes';
 
 export const configRouter = new Hono<{ Bindings: Bindings }>();
@@ -16,7 +21,7 @@ configRouter.get('/categories', async (c) => {
   }
   const db = drizzle(c.env.DB);
   try {
-    const list = await db.select().from(categoriesTable).all();
+    const list = await listCategories(db);
     return c.json({ success: true, data: list });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
@@ -30,14 +35,7 @@ configRouter.post('/categories', async (c) => {
   const body = await c.req.json();
   const db = drizzle(c.env.DB);
   try {
-    const newCat = await db.insert(categoriesTable).values({
-      adminLabel: body.adminLabel,
-      adherentLabel: body.adherentLabel,
-      hideInExpenses: body.hideInExpenses || false,
-      receiptCode: body.receiptCode,
-      expenseCode: body.expenseCode,
-      createdAt: new Date()
-    }).returning().get();
+    const newCat = await createCategory(db, body);
     return c.json({ success: true, data: newCat });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 400);
@@ -52,14 +50,7 @@ configRouter.put('/categories/:id', async (c) => {
   const body = await c.req.json();
   const db = drizzle(c.env.DB);
   try {
-    const updated = await db.update(categoriesTable).set({
-      adminLabel: body.adminLabel,
-      adherentLabel: body.adherentLabel,
-      hideInExpenses: body.hideInExpenses,
-      receiptCode: body.receiptCode,
-      expenseCode: body.expenseCode
-    }).where(eq(categoriesTable.id, id)).returning().get();
-
+    const updated = await updateCategory(db, id, body);
     if (!updated) {
       return c.json({ success: false, error: 'Catégorie introuvable' }, 404);
     }
@@ -76,7 +67,7 @@ configRouter.delete('/categories/:id', async (c) => {
   const id = parseInt(c.req.param('id'));
   const db = drizzle(c.env.DB);
   try {
-    const deleted = await db.delete(categoriesTable).where(eq(categoriesTable.id, id)).returning().get();
+    const deleted = await deleteCategory(db, id);
     if (!deleted) {
       return c.json({ success: false, error: 'Catégorie introuvable' }, 404);
     }
@@ -93,7 +84,7 @@ configRouter.get('/account-classes', async (c) => {
   }
   const db = drizzle(c.env.DB);
   try {
-    const list = await db.select().from(accountClassesTable).all();
+    const list = await listAccountClasses(db);
     return c.json({ success: true, data: list });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
@@ -112,12 +103,7 @@ configRouter.post('/account-classes', async (c) => {
   }
 
   try {
-    const newClass = await db.insert(accountClassesTable).values({
-      code: body.code.trim(),
-      label: body.label.trim(),
-      type: body.type,
-      createdAt: new Date()
-    }).returning().get();
+    const newClass = await createAccountClass(db, body);
     return c.json({ success: true, data: newClass });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 400);
@@ -132,11 +118,7 @@ configRouter.put('/account-classes/:code', async (c) => {
   const body = await c.req.json();
   const db = drizzle(c.env.DB);
   try {
-    const updated = await db.update(accountClassesTable).set({
-      label: body.label?.trim(),
-      type: body.type
-    }).where(eq(accountClassesTable.code, code)).returning().get();
-
+    const updated = await updateAccountClass(db, code, body);
     if (!updated) {
       return c.json({ success: false, error: 'Classe de compte introuvable' }, 404);
     }
@@ -153,7 +135,7 @@ configRouter.delete('/account-classes/:code', async (c) => {
   const code = c.req.param('code');
   const db = drizzle(c.env.DB);
   try {
-    const deleted = await db.delete(accountClassesTable).where(eq(accountClassesTable.code, code)).returning().get();
+    const deleted = await deleteAccountClass(db, code);
     if (!deleted) {
       return c.json({ success: false, error: 'Classe de compte introuvable' }, 404);
     }
