@@ -3,6 +3,7 @@ import { isSeasonClosed } from '@metacult/features-members-data-access';
 import { applyPaymentToMember } from '@metacult/features-members-api';
 import { AppError } from '@metacult/shared-db';
 import { normalizeCategory } from '@metacult/features-accounting-data-access';
+import { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
 
 export async function reconcileBankTxInternal(db: any, id: number, body: any): Promise<{ success: boolean, error?: string, status?: number }> {
   const repo = new ReconcileBankTransactionRepository();
@@ -180,16 +181,12 @@ export async function reconcileBankTransaction(db: any, id: number, body: any) {
     }
   };
 
-  try {
+  if (db instanceof SQLiteTransaction) {
+    await runReconciliation(db);
+  } else {
     await db.transaction(async (txDb: any) => {
       await runReconciliation(txDb);
     });
-  } catch (err: any) {
-    if (err.message && err.message.includes('begin')) {
-      await runReconciliation(db);
-    } else {
-      throw err;
-    }
   }
 }
 
@@ -206,15 +203,11 @@ export async function reconcileBulkTransactions(db: any, requests: any[]) {
     return count;
   };
 
-  try {
+  if (db instanceof SQLiteTransaction) {
+    return await runBulk(db);
+  } else {
     return await db.transaction(async (txDb: any) => {
       return await runBulk(txDb);
     });
-  } catch (err: any) {
-    if (err.message && err.message.includes('begin')) {
-      return await runBulk(db);
-    } else {
-      throw err;
-    }
   }
 }
