@@ -44,3 +44,7 @@ exposer `applyPaymentToMember` — `accounting` n'a plus besoin de connaître
 Cette interface permet d'injecter un repository en mémoire dans
 `handler.test.ts` (cf. `04-vsa.md`) sans monter Drizzle/D1 dans les tests
 unitaires — à réserver aux tests d'intégration du repository lui-même.
+
+## Schémas de base de données internes au domaine
+
+Le schéma Drizzle interne (tables du domaine) peut être conservé centralisé dans `data-access/src/schema.ts` s'il est partagé par plusieurs repositories du domaine (par exemple dans le cas de `accounting` ou `members`). Cela évite la redéfinition des tables tout en le gardant privé et non exporté à l'extérieur du domaine.
