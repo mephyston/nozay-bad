@@ -23,5 +23,8 @@ export default defineConfig({
     environmentOptions: {
       d1Databases: ['DB'],
     },
+    root: __dirname,
+    include: ['src/**/*.test.ts', '../**/*.test.ts'],
+    exclude: ['../**/ui/**', '../data-access/**', '**/node_modules/**'],
   },
 });

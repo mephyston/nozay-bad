@@ -46,10 +46,29 @@ Cible : `libs/domains/accounting/create-invoice/` :
 ## Règle de composition
 
 Décision actée : le `route.ts` de chaque cas d'usage exporte son propre
-sous-routeur Hono. Le fichier `api/src/index.ts` du domaine ne fait que les
-monter (`app.route('/', createInvoiceRoute)`, etc.) — c'est un fichier de
-composition pur, sans logique. Il n'existe plus de fichier `routes.ts`
-central ni de dossier `api/src/routes/` regroupant plusieurs cas d'usage :
-ce modèle intermédiaire (utile pendant la migration) est désormais remplacé
-partout, y compris pour `accounting` qui l'utilisait comme étape
-transitoire.
+sous-routeur Hono. Un unique fichier de composition les monte
+(`app.route('/', createInvoiceRoute)`, etc.) — c'est un fichier de câblage
+pur, sans logique. Il n'existe plus de fichier `routes.ts` central ni de
+dossier `api/src/routes/` regroupant plusieurs cas d'usage.
+
+**Emplacement du fichier de composition : à la racine du domaine**
+(`libs/domains/accounting/index.ts`), pas dans un sous-dossier `api/`.
+`api/` est un vestige de l'architecture en couches — il n'y a pas de raison
+de le garder pour un seul fichier de câblage une fois que le routing, la
+validation et la persistance vivent dans les tranches. `shared/` n'est pas
+non plus le bon endroit pour ce fichier : `shared/` est réservé au modèle
+métier partagé entre tranches (agrégats, interfaces de repository, erreurs),
+jamais au code d'assemblage/routing.
+
+**Sort du schéma Drizzle** (aujourd'hui dans `data-access/src/schema.ts`) :
+il déménage dans `shared/schema.ts` du domaine — visible par les
+repositories de toutes les tranches du domaine, mais jamais exporté en
+dehors du domaine (contrairement à l'ancien `data-access/index.ts` qui
+faisait `export * from './schema'`).
+
+**Sort de `ui/` à la racine du domaine** : il disparaît une fois chaque
+composant redistribué dans le `ui/` de sa tranche (`commands/<cas-usage>/ui/`
+ou `queries/<cas-usage>/ui/`). Un domaine cible n'a donc plus que
+`shared/`, `commands/`, `queries/` (ou directement des tranches à plat si le
+domaine est sous le seuil de la règle 12) — aucun dossier `api/`,
+`data-access/` ni `ui/` à sa racine.
