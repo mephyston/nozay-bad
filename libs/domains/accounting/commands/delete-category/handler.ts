@@ -1,6 +1,7 @@
 import { DeleteCategoryRepository } from './repository';
+import { DeleteCategoryInput, DeleteCategoryOutput } from "./dto";
 
-export async function deleteCategory(db: any, id: number) {
+export async function deleteCategory(db: any, id: DeleteCategoryInput): Promise<DeleteCategoryOutput> {
   const repo = new DeleteCategoryRepository();
   return repo.deleteCategory(db, id);
 }

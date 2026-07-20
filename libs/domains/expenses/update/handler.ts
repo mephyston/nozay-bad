@@ -8,8 +8,9 @@ import {
   ExpenseAlreadyProcessedError,
   ExpenseAlreadyPendingError
 } from '../shared/errors';
+import { ApproveExpenseInput, ApproveExpenseOutput } from "./dto";
 
-export async function approveExpense(db: any, id: number) {
+export async function approveExpense(db: any, id: ApproveExpenseInput): Promise<ApproveExpenseOutput> {
   const repo = new UpdateExpenseRepository();
 
   return db.transaction(async (txDb: any) => {

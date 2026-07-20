@@ -2,20 +2,9 @@ import { UpdateInvoiceRepository } from './repository';
 import { Invoice } from '../../shared/invoice';
 import { InvoiceNotFoundError, InvoiceNotEditableError, SeasonClosedError } from '../../shared/errors';
 import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { UpdateInvoiceId, UpdateInvoiceInput, UpdateInvoiceOutput } from "./dto";
 
-export async function updateInvoice(db: any, id: number, body: {
-  date: string;
-  dueDate: string;
-  clientName: string;
-  clientAddress?: string;
-  clientEmail?: string;
-  subject?: string;
-  location?: string;
-  period?: string;
-  attendees?: string;
-  totalAmount: number;
-  items?: { description: string; quantity: number; unitPrice: number }[];
-}) {
+export async function updateInvoice(db: any, id: UpdateInvoiceId, body: UpdateInvoiceInput): Promise<UpdateInvoiceOutput> {
   return db.transaction(async (txDb: any) => {
     const repo = new UpdateInvoiceRepository();
     const invoiceData = await repo.getById(txDb, id);

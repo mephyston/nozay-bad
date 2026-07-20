@@ -1,6 +1,7 @@
 import { ListOrdersRepository } from './repository';
+import { ListOrdersInput, ListOrdersOutput } from "./dto";
 
-export async function listOrders(db: any, filters: { season?: string; status?: string }) {
+export async function listOrders(db: any, filters: ListOrdersInput): Promise<ListOrdersOutput> {
   const repo = new ListOrdersRepository();
   const orders = await repo.list(db, filters);
 

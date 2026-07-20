@@ -1,6 +1,7 @@
 import { CreateCategoryRepository } from './repository';
+import { CreateCategoryInput, CreateCategoryOutput } from "./dto";
 
-export async function createCategory(db: any, body: any) {
+export async function createCategory(db: any, body: CreateCategoryInput): Promise<CreateCategoryOutput> {
   const repo = new CreateCategoryRepository();
   return repo.createCategory(db, {
     adminLabel: body.adminLabel,

@@ -1,5 +1,6 @@
 import { ImportMembersRepository } from './repository';
 import { CsvHeadersInvalidError } from '../shared/errors';
+import { ImportMembersFromCsvInput, ImportMembersFromCsvOutput } from "./dto";
 
 interface ParsedMember {
   licence: string;
@@ -24,7 +25,7 @@ interface ParsedMember {
   parent2Phone: string | null;
 }
 
-export async function importMembersFromCsv(db: any, csvText: string) {
+export async function importMembersFromCsv(db: any, csvText: ImportMembersFromCsvInput): Promise<ImportMembersFromCsvOutput> {
   const lines = csvText.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
   if (lines.length === 0) {
     throw new CsvHeadersInvalidError('Le fichier CSV est vide.');

@@ -9,8 +9,9 @@ import {
   ConcurrentModificationError
 } from '../shared/errors';
 import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { ApproveOrderInput, ApproveOrderOutput } from "./dto";
 
-export async function approveOrder(db: any, id: number) {
+export async function approveOrder(db: any, id: ApproveOrderInput): Promise<ApproveOrderOutput> {
   const repo = new ApproveOrderRepository();
 
   return db.transaction(async (tx: any) => {

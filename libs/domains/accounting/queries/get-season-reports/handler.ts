@@ -1,7 +1,8 @@
 import { normalizeCategory } from '@metacult/features-accounting-data-access';
 import { GetSeasonReportsRepository } from './repository';
+import { GetSeasonReportsInput, GetSeasonReportsOutput } from "./dto";
 
-export async function getSeasonReports(db: any, seasonId: string) {
+export async function getSeasonReports(db: any, seasonId: GetSeasonReportsInput): Promise<GetSeasonReportsOutput> {
   const repo = new GetSeasonReportsRepository();
   const [yy, zz] = seasonId.split('-');
   const startYear = 2000 + parseInt(yy);

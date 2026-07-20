@@ -7,8 +7,9 @@ import {
   ConcurrentModificationError
 } from '../shared/errors';
 import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { RejectOrderInput, RejectOrderOutput } from "./dto";
 
-export async function rejectOrder(db: any, id: number) {
+export async function rejectOrder(db: any, id: RejectOrderInput): Promise<RejectOrderOutput> {
   const repo = new RejectOrderRepository();
 
   const orderData = await repo.getOrderById(db, id);

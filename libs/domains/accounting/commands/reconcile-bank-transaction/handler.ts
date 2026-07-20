@@ -4,8 +4,9 @@ import { applyPaymentToMember } from '@metacult/features-members-api';
 import { AppError } from '@metacult/shared-db';
 import { normalizeCategory } from '@metacult/features-accounting-data-access';
 import { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
+import { ReconcileBankTxInternalId, ReconcileBankTxInternalInput, ReconcileBankTxInternalOutput } from "./dto";
 
-export async function reconcileBankTxInternal(db: any, id: number, body: any): Promise<{ success: boolean, error?: string, status?: number }> {
+export async function reconcileBankTxInternal(db: any, id: ReconcileBankTxInternalId, body: ReconcileBankTxInternalInput): Promise<ReconcileBankTxInternalOutput> {
   const repo = new ReconcileBankTransactionRepository();
   const bankTx = await repo.getBankTransactionById(db, id);
   if (!bankTx) {

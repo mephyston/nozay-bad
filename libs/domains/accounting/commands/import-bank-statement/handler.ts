@@ -1,6 +1,7 @@
 import { ImportBankStatementRepository } from './repository';
+import { ParseOFXInput, ParseOFXOutput } from "./dto";
 
-export function parseOFX(ofxContent: string): { transactions: { fitid: string; amount: number; date: string; name: string; memo: string | null; accountId: 'current' | 'savings' }[] } {
+export function parseOFX(ofxContent: string): ParseOFXOutput {
   const acctIdMatch = ofxContent.match(/<ACCTID>([^\r\n<]+)/);
   const acctId = acctIdMatch ? acctIdMatch[1].trim() : '';
   const accountId: 'current' | 'savings' = acctId === '00070007847' ? 'savings' : 'current';
