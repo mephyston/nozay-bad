@@ -1,0 +1,43 @@
+import { AppError } from '@metacult/shared-db';
+
+export class ProductNotFoundError extends AppError {
+  constructor(message = 'Produit inexistant') {
+    super(message, 400);
+    this.name = 'ProductNotFoundError';
+  }
+}
+
+export class OrderNotFoundError extends AppError {
+  constructor(message = 'Commande introuvable') {
+    super(message, 404);
+    this.name = 'OrderNotFoundError';
+  }
+}
+
+export class OrderInvalidOrProcessedError extends AppError {
+  constructor(message = 'Commande invalide ou déjà traitée') {
+    super(message, 400);
+    this.name = 'OrderInvalidOrProcessedError';
+  }
+}
+
+export class SeasonClosedError extends AppError {
+  constructor(message = 'La saison est clôturée') {
+    super(message, 400);
+    this.name = 'SeasonClosedError';
+  }
+}
+
+export class MemberNotFoundError extends AppError {
+  constructor(message = 'Adhérent inexistant') {
+    super(message, 400);
+    this.name = 'MemberNotFoundError';
+  }
+}
+
+export class ConcurrentModificationError extends AppError {
+  constructor(message = 'Commande déjà traitée (conflit concurrent)') {
+    super(message, 409);
+    this.name = 'ConcurrentModificationError';
+  }
+}

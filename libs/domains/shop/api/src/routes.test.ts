@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { shopRouter } from './routes';
 import { setupMockDb } from '@metacult/shared-db/test-utils';
-import { productsTable } from '@metacult/features-shop-data-access';
+import { productsTable } from '../../data-access/src/schema';
 import { eq, sql } from 'drizzle-orm';
 import { AppError } from '@metacult/shared-db';
 
