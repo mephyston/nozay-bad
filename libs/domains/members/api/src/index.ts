@@ -1,3 +1,2 @@
 export { membersRouter } from './routes';
-export { applyPaymentToMember } from './apply-payment';
-
+export { applyPaymentToMember } from '../../apply-payment/handler';
