@@ -18,7 +18,7 @@ describe('getSeasonBalance', () => {
     };
     (vi.mocked(GetSeasonBalanceRepository) as any).mockImplementation(function() { return mockRepoInstance; });
     await (getSeasonBalance as any)(db, '23-24');
-    expect(mockRepoInstance.getCashFlowTransactions).toHaveBeenCalled();
+    expect(mockRepoInstance.getTransactionsForPeriod).toHaveBeenCalled();
   });
   it('should throw error', async () => {
     const mockRepoInstance = {

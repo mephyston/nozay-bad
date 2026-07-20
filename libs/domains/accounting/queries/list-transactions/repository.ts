@@ -1,21 +1,10 @@
-import { and, or, eq, ne, sql, inArray, isNull, desc } from 'drizzle-orm';
-import {
-  transactionsTable,
-  bankTransactionsTable,
-  categoriesTable,
-} from '../data-access/src/schema';
-import { getMemberById, getMembersByIds } from '@metacult/features-members-api';
+import { and, or, eq, sql, inArray, isNull, desc } from 'drizzle-orm';
+import { transactionsTable, categoriesTable } from '../../data-access/src/schema';
+import { getMembersByIds } from '@metacult/features-members-api';
+import type { ListTransactionsFilters } from './dto';
 
-export class TransactionsRepository {
-  private buildConditions(filters: {
-    seasonId?: string;
-    accountId?: string;
-    type?: string;
-    category?: string;
-    classCode?: string;
-    memberId?: string;
-    unreconciledChequesOnly?: boolean;
-  }) {
+export class ListTransactionsRepository {
+  private buildConditions(filters: ListTransactionsFilters) {
     const conditions = [];
     if (filters.seasonId) {
       conditions.push(eq(transactionsTable.seasonId, filters.seasonId));
@@ -41,7 +30,7 @@ export class TransactionsRepository {
     return conditions;
   }
 
-  async count(db: any, filters: any): Promise<number> {
+  async count(db: any, filters: ListTransactionsFilters): Promise<number> {
     const conditions = this.buildConditions(filters);
     if (filters.classCode) {
       const matchingCats = await db.select({ id: categoriesTable.id })
@@ -62,7 +51,7 @@ export class TransactionsRepository {
     return countRes?.count || 0;
   }
 
-  async list(db: any, filters: any, pagination: { limit: number; offset: number }): Promise<any[]> {
+  async list(db: any, filters: ListTransactionsFilters, pagination: { limit: number; offset: number }): Promise<any[]> {
     const conditions = this.buildConditions(filters);
     if (filters.classCode) {
       const matchingCats = await db.select({ id: categoriesTable.id })
@@ -110,49 +99,5 @@ export class TransactionsRepository {
         memberLicence: m ? m.licence : null
       };
     });
-  }
-
-  async getById(db: any, id: number): Promise<any | undefined> {
-    return db.select().from(transactionsTable).where(eq(transactionsTable.id, id)).get();
-  }
-
-  async create(db: any, values: any): Promise<any> {
-    return db.insert(transactionsTable).values(values).returning().get();
-  }
-
-  async update(db: any, id: number, values: any): Promise<any | undefined> {
-    return db.update(transactionsTable).set(values).where(eq(transactionsTable.id, id)).returning().get();
-  }
-
-  async delete(db: any, id: number): Promise<void> {
-    await db.delete(transactionsTable).where(eq(transactionsTable.id, id)).run();
-  }
-
-  async getBankTransactionById(db: any, id: number): Promise<any | undefined> {
-    return db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, id)).get();
-  }
-
-  async getRemainingTransactionsForBankTx(db: any, bankTxId: number, excludeTxId: number): Promise<any[]> {
-    return db.select()
-      .from(transactionsTable)
-      .where(and(
-        eq(transactionsTable.bankTransactionId, bankTxId),
-        ne(transactionsTable.id, excludeTxId)
-      ))
-      .all();
-  }
-
-  async updateBankTransactionStatus(db: any, id: number, status: string): Promise<void> {
-    await db.update(bankTransactionsTable).set({ status }).where(eq(bankTransactionsTable.id, id)).run();
-  }
-
-  async getMemberById(db: any, id: number): Promise<any | undefined> {
-    return getMemberById(db, id);
-  }
-
-  async resetExpenseStatusByTxId(db: any, txId: number): Promise<void> {
-    await db.run(sql`
-      UPDATE expenses SET status = 'pending', transaction_id = NULL WHERE transaction_id = ${txId}
-    `);
   }
 }

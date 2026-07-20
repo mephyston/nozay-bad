@@ -1,0 +1,51 @@
+import { eq, and, desc } from 'drizzle-orm';
+import { checksTable, checkDepositsTable } from '../../data-access/src/schema';
+import { getMembersByIds } from '@metacult/features-members-api';
+
+export class ListChecksRepository {
+  async listChecks(db: any, seasonId: string, status?: string) {
+    const conditions = [eq(checksTable.seasonId, seasonId)];
+    if (status) {
+      conditions.push(eq(checksTable.status, status as any));
+    }
+    const checks = await db.select({
+      id: checksTable.id,
+      checkDepositId: checksTable.checkDepositId,
+      seasonId: checksTable.seasonId,
+      number: checksTable.number,
+      amount: checksTable.amount,
+      emitter: checksTable.emitter,
+      bank: checksTable.bank,
+      memberId: checksTable.memberId,
+      transactionId: checksTable.transactionId,
+      status: checksTable.status,
+      photoUrl: checksTable.photoUrl,
+      createdAt: checksTable.createdAt
+    })
+      .from(checksTable)
+      .where(and(...conditions))
+      .orderBy(desc(checksTable.createdAt))
+      .all();
+
+    const memberIds = Array.from(new Set(checks.map((c: any) => c.memberId).filter((id: any) => id !== null))) as number[];
+    const members = await getMembersByIds(db, memberIds);
+    const membersMap = new Map(members.map((m: any) => [m.id, m]));
+
+    return checks.map((c: any) => {
+      const m = c.memberId ? membersMap.get(c.memberId) : null;
+      return {
+        ...c,
+        memberName: m ? `${m.lastName} ${m.firstName}` : null,
+        memberLicence: m ? m.licence : null
+      };
+    });
+  }
+
+  async listCheckDeposits(db: any, seasonId: string) {
+    return db.select()
+      .from(checkDepositsTable)
+      .where(eq(checkDepositsTable.seasonId, seasonId))
+      .orderBy(desc(checkDepositsTable.date), desc(checkDepositsTable.id))
+      .all();
+  }
+}

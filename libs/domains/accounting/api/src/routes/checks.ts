@@ -1,15 +1,8 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
-import {
-  analyzeCheckImage,
-  listChecks,
-  createCheck,
-  deleteCheck,
-  createCheckDeposit,
-  listCheckDeposits,
-  clearCheckDeposit,
-  deleteCheckDeposit
-} from '../../../checks/handler';
+import { listChecks, listCheckDeposits } from '../../../queries/list-checks/handler';
+import { analyzeCheckImage, createCheck, deleteCheck } from '../../../commands/record-check-transaction/handler';
+import { createCheckDeposit, clearCheckDeposit, deleteCheckDeposit } from '../../../commands/create-bank-check-deposit/handler';
 import type { Bindings } from '../routes';
 
 export const checksRouter = new Hono<{ Bindings: Bindings }>();

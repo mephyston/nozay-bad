@@ -1,21 +1,11 @@
-import { BankRepository } from './repository';
-import { cleanName } from '../shared/helpers';
-import { sql } from 'drizzle-orm';
+import { AnalyzeBankTransactionsRepository } from './repository';
+import { cleanName } from '../../shared/helpers';
+import type { AnalyzeBankTransactionsInput, AnalyzeBankTransactionsOutput } from './dto';
 
-export async function listBankTransactions(db: any, seasonId: string, filters: { status?: string; accountId?: string }) {
-  const repo = new BankRepository();
-  return repo.listBankTransactions(db, seasonId, filters);
-}
-
-export async function updateBankTransactionStatus(db: any, id: number, status: 'pending' | 'ignored') {
-  const repo = new BankRepository();
-  await repo.updateStatus(db, id, status);
-}
-
-export async function analyzeBankTransactions(db: any, ai: any, season: string, singleId?: number) {
-  const repo = new BankRepository();
-  const pendingTxs = await repo.getPendingTransactions(db, season, singleId);
-  const members = await repo.getMembersBySeason(db, season);
+export async function analyzeBankTransactions(db: any, ai: any, input: AnalyzeBankTransactionsInput): Promise<AnalyzeBankTransactionsOutput> {
+  const repo = new AnalyzeBankTransactionsRepository();
+  const pendingTxs = await repo.getPendingTransactions(db, input.seasonId, input.singleId);
+  const members = await repo.getMembersBySeason(db, input.seasonId);
   const pastReconciled = await repo.getPastReconciledTransactions(db);
 
   let examplesPrompt = "";
@@ -29,10 +19,7 @@ export async function analyzeBankTransactions(db: any, ai: any, season: string, 
     examplesPrompt += "\nSers-toi de ces exemples historiques pour orienter ton choix de catégorie ou de membre si l'opération à rapprocher est similaire.\n";
   }
 
-  const activeProducts = await db.all(sql`
-    SELECT id, name, category, price, stock, active, created_at as createdAt 
-    FROM products WHERE active = 1
-  `) as any[];
+  const activeProducts = await repo.getActiveProducts(db);
 
   function getProductAccountingCategory(prodCat: string): number {
     if (prodCat === 'shuttlecock') return 8;

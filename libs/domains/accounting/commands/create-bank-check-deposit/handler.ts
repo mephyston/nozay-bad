@@ -1,0 +1,67 @@
+import { CreateBankCheckDepositRepository } from './repository';
+import { AppError } from '@metacult/shared-db';
+import type { CreateCheckDepositInput, ClearCheckDepositInput } from './dto';
+
+export async function createCheckDeposit(db: any, body: CreateCheckDepositInput) {
+  if (!body.seasonId || !body.reference || !body.date || !body.checkIds || body.checkIds.length === 0) {
+    throw new AppError('Champs requis manquants.', 400);
+  }
+
+  const repo = new CreateBankCheckDepositRepository();
+
+  return db.transaction(async (txDb: any) => {
+    const checksToDeposit = await repo.getChecksByIds(txDb, body.checkIds);
+    if (checksToDeposit.length === 0) {
+      throw new AppError('Aucun chèque valide trouvé.', 400);
+    }
+    const totalAmount = checksToDeposit.reduce((sum, ch) => sum + ch.amount, 0);
+
+    const deposit = await repo.createCheckDeposit(txDb, {
+      seasonId: body.seasonId,
+      reference: body.reference,
+      date: body.date,
+      amount: totalAmount,
+      status: 'deposited',
+      createdAt: new Date()
+    });
+
+    await repo.updateChecksDeposit(txDb, body.checkIds, deposit.id, 'deposited');
+
+    return deposit;
+  });
+}
+
+export async function clearCheckDeposit(db: any, id: number, body: ClearCheckDepositInput) {
+  if (!body.bankTransactionId) {
+    throw new AppError('bankTransactionId requis.', 400);
+  }
+
+  const repo = new CreateBankCheckDepositRepository();
+
+  return db.transaction(async (txDb: any) => {
+    await repo.updateCheckDeposit(txDb, id, {
+      status: 'cleared',
+      bankTransactionId: body.bankTransactionId
+    });
+
+    await repo.updateBankTransactionStatus(txDb, body.bankTransactionId, 'reconciled');
+  });
+}
+
+export async function deleteCheckDeposit(db: any, id: number) {
+  const repo = new CreateBankCheckDepositRepository();
+
+  return db.transaction(async (txDb: any) => {
+    const deposit = await repo.getCheckDepositById(txDb, id);
+    if (!deposit) {
+      throw new AppError('Remise de chèques non trouvée.', 404);
+    }
+
+    if (deposit.bankTransactionId) {
+      await repo.updateBankTransactionStatus(txDb, deposit.bankTransactionId, 'pending');
+    }
+
+    await repo.unlinkChecksForDeposit(txDb, id);
+    await repo.deleteCheckDeposit(txDb, id);
+  });
+}

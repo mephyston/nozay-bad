@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
-import { listBankTransactions, updateBankTransactionStatus, analyzeBankTransactions } from '../../../bank/handler';
+import { listBankTransactions } from '../../../queries/list-bank-transactions/handler';
+import { updateBankTransactionStatus } from '../../../commands/update-bank-transaction-status/handler';
+import { analyzeBankTransactions } from '../../../commands/analyze-bank-transactions/handler';
 import { importBankStatement } from '../../../commands/import-bank-statement/handler';
 import { reconcileBankTransaction, reconcileBulkTransactions } from '../../../commands/reconcile-bank-transaction/handler';
 import type { Bindings } from '../routes';
@@ -19,7 +21,7 @@ bankRouter.get('/', async (c) => {
   const accountId = c.req.query('accountId');
   const db = drizzle(c.env.DB);
 
-  const data = await listBankTransactions(db, season, { status, accountId });
+  const data = await listBankTransactions(db, { seasonId: season, filters: { status, accountId } });
   return c.json({ success: true, data });
 });
 
@@ -70,7 +72,7 @@ bankRouter.post('/analyze', async (c) => {
   const idNum = singleId ? parseInt(singleId) : undefined;
   const db = drizzle(c.env.DB);
 
-  const result = await analyzeBankTransactions(db, c.env.AI, season, idNum);
+  const result = await analyzeBankTransactions(db, c.env.AI, { seasonId: season, singleId: idNum });
   return c.json({ success: true, ...result });
 });
 
@@ -106,7 +108,7 @@ bankRouter.post('/:id/ignore', async (c) => {
   }
   const id = parseInt(c.req.param('id'));
   const db = drizzle(c.env.DB);
-  await updateBankTransactionStatus(db, id, 'ignored');
+  await updateBankTransactionStatus(db, { id, status: 'ignored' });
   return c.json({ success: true });
 });
 
@@ -116,6 +118,6 @@ bankRouter.post('/:id/unignore', async (c) => {
   }
   const id = parseInt(c.req.param('id'));
   const db = drizzle(c.env.DB);
-  await updateBankTransactionStatus(db, id, 'pending');
+  await updateBankTransactionStatus(db, { id, status: 'pending' });
   return c.json({ success: true });
 });
