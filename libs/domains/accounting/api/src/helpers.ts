@@ -6,9 +6,9 @@ import {
   normalizeCategory
 } from '@metacult/features-accounting-data-access';
 import {
-  membersTable,
   isSeasonClosed
 } from '@metacult/features-members-data-access';
+import { applyPaymentToMember } from '@metacult/features-members-api';
 
 export function cleanName(name: string | null): string {
   if (!name) return '';
@@ -241,21 +241,7 @@ export async function reconcileBankTxInternal(db: any, id: number, body: any): P
     }
 
     if (hasMembershipTx) {
-      const member = await db.select().from(membersTable).where(eq(membersTable.id, memberId)).get();
-      if (member) {
-        const newReceived = member.amountReceived + amountToApply;
-        const newRemaining = Math.max(0, member.amountDue - newReceived);
-        const isPaid = newRemaining === 0;
-
-        await db.update(membersTable)
-          .set({
-            amountReceived: newReceived,
-            amountRemaining: newRemaining,
-            paid: isPaid
-          })
-          .where(eq(membersTable.id, memberId))
-          .run();
-      }
+      await applyPaymentToMember(db, memberId, amountToApply);
     }
   }
 
