@@ -1,6 +1,6 @@
 import { and, eq, desc } from 'drizzle-orm';
 import { bankTransactionsTable, transactionsTable } from '../data-access/src/schema';
-import { membersTable } from '@metacult/features-members-data-access';
+import { getMembersBySeason, getMembersByIds } from '@metacult/features-members-api';
 
 export class BankRepository {
   async listBankTransactions(db: any, seasonId: string, filters: { status?: string; accountId?: string }): Promise<any[]> {
@@ -30,26 +30,41 @@ export class BankRepository {
   }
 
   async getMembersBySeason(db: any, seasonId: string): Promise<any[]> {
-    return db.select().from(membersTable).where(eq(membersTable.season, seasonId)).all();
+    return getMembersBySeason(db, seasonId);
   }
 
   async getPastReconciledTransactions(db: any): Promise<any[]> {
-    return db.select({
+    const txs = await db.select({
       fitid: bankTransactionsTable.fitid,
       name: bankTransactionsTable.name,
       memo: bankTransactionsTable.memo,
       amount: bankTransactionsTable.amount,
       category: transactionsTable.category,
-      memberLastName: membersTable.lastName,
-      memberFirstName: membersTable.firstName
+      memberId: transactionsTable.memberId
     })
       .from(bankTransactionsTable)
       .innerJoin(transactionsTable, eq(transactionsTable.bankTransactionId, bankTransactionsTable.id))
-      .leftJoin(membersTable, eq(membersTable.id, transactionsTable.memberId))
       .where(eq(bankTransactionsTable.status, 'reconciled'))
       .orderBy(desc(bankTransactionsTable.id))
       .limit(20)
       .all();
+
+    const memberIds = Array.from(new Set(txs.map((t: any) => t.memberId).filter((id: any) => id !== null))) as number[];
+    const members = await getMembersByIds(db, memberIds);
+    const membersMap = new Map(members.map((m: any) => [m.id, m]));
+
+    return txs.map((t: any) => {
+      const m = t.memberId ? membersMap.get(t.memberId) : null;
+      return {
+        fitid: t.fitid,
+        name: t.name,
+        memo: t.memo,
+        amount: t.amount,
+        category: t.category,
+        memberLastName: m ? m.lastName : null,
+        memberFirstName: m ? m.firstName : null
+      };
+    });
   }
 
   async updateAISuggestions(db: any, id: number, suggestions: any): Promise<void> {

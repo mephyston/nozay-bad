@@ -4,7 +4,7 @@ import {
   bankTransactionsTable,
   categoriesTable,
 } from '../data-access/src/schema';
-import { membersTable } from '@metacult/features-members-data-access';
+import { getMemberById, getMembersByIds } from '@metacult/features-members-api';
 
 export class TransactionsRepository {
   private buildConditions(filters: {
@@ -76,7 +76,7 @@ export class TransactionsRepository {
         conditions.push(sql`1 = 0`);
       }
     }
-    return db.select({
+    const txs = await db.select({
       id: transactionsTable.id,
       seasonId: transactionsTable.seasonId,
       type: transactionsTable.type,
@@ -89,17 +89,27 @@ export class TransactionsRepository {
       description: transactionsTable.description,
       reference: transactionsTable.reference,
       memberId: transactionsTable.memberId,
-      bankTransactionId: transactionsTable.bankTransactionId,
-      memberName: sql<string | null>`members.last_name || ' ' || members.first_name`,
-      memberLicence: sql<string | null>`members.licence`
+      bankTransactionId: transactionsTable.bankTransactionId
     })
       .from(transactionsTable)
-      .leftJoin(membersTable, eq(transactionsTable.memberId, membersTable.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(transactionsTable.date), desc(transactionsTable.id))
       .limit(pagination.limit)
       .offset(pagination.offset)
       .all();
+
+    const memberIds = Array.from(new Set(txs.map((t: any) => t.memberId).filter((id: any) => id !== null))) as number[];
+    const members = await getMembersByIds(db, memberIds);
+    const membersMap = new Map(members.map((m: any) => [m.id, m]));
+
+    return txs.map((t: any) => {
+      const m = t.memberId ? membersMap.get(t.memberId) : null;
+      return {
+        ...t,
+        memberName: m ? `${m.lastName} ${m.firstName}` : null,
+        memberLicence: m ? m.licence : null
+      };
+    });
   }
 
   async getById(db: any, id: number): Promise<any | undefined> {
@@ -137,11 +147,7 @@ export class TransactionsRepository {
   }
 
   async getMemberById(db: any, id: number): Promise<any | undefined> {
-    return db.select().from(membersTable).where(eq(membersTable.id, id)).get();
-  }
-
-  async updateMemberPayment(db: any, id: number, values: any): Promise<void> {
-    await db.update(membersTable).set(values).where(eq(membersTable.id, id)).run();
+    return getMemberById(db, id);
   }
 
   async resetExpenseStatusByTxId(db: any, txId: number): Promise<void> {

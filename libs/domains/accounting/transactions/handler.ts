@@ -3,6 +3,7 @@ import { isSeasonClosed } from '@metacult/features-members-data-access';
 import { AppError } from '@metacult/shared-db';
 import { SeasonClosedError } from '../shared/errors';
 import { normalizeCategory } from '@metacult/features-accounting-data-access';
+import { applyPaymentToMember } from '@metacult/features-members-api';
 
 export async function listTransactions(
   db: any,
@@ -167,18 +168,7 @@ export async function deleteTransaction(db: any, id: number) {
 
     // 3. Si liée à un adhérent pour une adhésion, déduire le montant reçu
     if (tx.memberId && (tx.category === 1 || String(tx.category) === '1')) {
-      const member = await repo.getMemberById(txDb, tx.memberId);
-      if (member) {
-        const newReceived = Math.max(0, member.amountReceived - Math.abs(tx.amount));
-        const newRemaining = Math.max(0, member.amountDue - newReceived);
-        const isPaid = newRemaining === 0;
-
-        await repo.updateMemberPayment(txDb, tx.memberId, {
-          amountReceived: newReceived,
-          amountRemaining: newRemaining,
-          paid: isPaid
-        });
-      }
+      await applyPaymentToMember(txDb, tx.memberId, -Math.abs(tx.amount));
     }
 
     // 3.5. Si liée à une note de frais, la repasser en 'pending'

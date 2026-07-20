@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { ordersTable, productsTable } from '../data-access/src/schema';
-import { membersTable } from '@metacult/features-members-data-access';
+import { getMemberById } from '@metacult/features-members-api';
 import { categoriesTable, transactionsTable } from '@metacult/features-accounting-data-access';
 import { ApproveOrderRepositoryInterface } from '../shared/repository';
 
@@ -10,14 +10,13 @@ export class ApproveOrderRepository implements ApproveOrderRepositoryInterface {
   }
 
   async getMemberById(db: any, id: number): Promise<any | undefined> {
-    return db.select({
-      id: membersTable.id,
-      lastName: membersTable.lastName,
-      firstName: membersTable.firstName,
-    })
-      .from(membersTable)
-      .where(eq(membersTable.id, id))
-      .get();
+    const member = await getMemberById(db, id);
+    if (!member) return undefined;
+    return {
+      id: member.id,
+      lastName: member.lastName,
+      firstName: member.firstName
+    };
   }
 
   async getProductById(db: any, id: number): Promise<any | undefined> {

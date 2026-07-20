@@ -5,11 +5,11 @@ import {
   checksTable,
   checkDepositsTable,
 } from '../data-access/src/schema';
-import { membersTable } from '@metacult/features-members-data-access';
+import { getAllMembers, getMembersByIds, getMemberById } from '@metacult/features-members-api';
 
 export class ChecksRepository {
   async getAllMembers(db: any): Promise<any[]> {
-    return db.select().from(membersTable).all();
+    return getAllMembers(db);
   }
 
   async listChecks(db: any, seasonId: string, status?: string): Promise<any[]> {
@@ -17,7 +17,7 @@ export class ChecksRepository {
     if (status) {
       conditions.push(eq(checksTable.status, status as any));
     }
-    return db.select({
+    const checks = await db.select({
       id: checksTable.id,
       checkDepositId: checksTable.checkDepositId,
       seasonId: checksTable.seasonId,
@@ -29,15 +29,25 @@ export class ChecksRepository {
       transactionId: checksTable.transactionId,
       status: checksTable.status,
       photoUrl: checksTable.photoUrl,
-      createdAt: checksTable.createdAt,
-      memberName: sql<string | null>`members.last_name || ' ' || members.first_name`,
-      memberLicence: sql<string | null>`members.licence`
+      createdAt: checksTable.createdAt
     })
       .from(checksTable)
-      .leftJoin(membersTable, eq(checksTable.memberId, membersTable.id))
       .where(and(...conditions))
       .orderBy(desc(checksTable.createdAt))
       .all();
+
+    const memberIds = Array.from(new Set(checks.map((c: any) => c.memberId).filter((id: any) => id !== null))) as number[];
+    const members = await getMembersByIds(db, memberIds);
+    const membersMap = new Map(members.map((m: any) => [m.id, m]));
+
+    return checks.map((c: any) => {
+      const m = c.memberId ? membersMap.get(c.memberId) : null;
+      return {
+        ...c,
+        memberName: m ? `${m.lastName} ${m.firstName}` : null,
+        memberLicence: m ? m.licence : null
+      };
+    });
   }
 
   async createTransaction(db: any, values: any): Promise<any> {
@@ -49,14 +59,7 @@ export class ChecksRepository {
   }
 
   async getMemberById(db: any, id: number): Promise<any | undefined> {
-    return db.select().from(membersTable).where(eq(membersTable.id, id)).get();
-  }
-
-  async updateMemberReceived(db: any, id: number, amountReceived: number, amountRemaining: number, paid: boolean): Promise<void> {
-    await db.update(membersTable)
-      .set({ amountReceived, amountRemaining, paid })
-      .where(eq(membersTable.id, id))
-      .run();
+    return getMemberById(db, id);
   }
 
   async getCheckById(db: any, id: number): Promise<any | undefined> {

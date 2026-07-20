@@ -1,6 +1,6 @@
 import { eq, and, inArray } from 'drizzle-orm';
 import { ordersTable, productsTable } from '../data-access/src/schema';
-import { membersTable } from '@metacult/features-members-data-access';
+import { getMembersByIds } from '@metacult/features-members-api';
 import { ListOrdersRepositoryInterface } from '../shared/repository';
 
 export class ListOrdersRepository implements ListOrdersRepositoryInterface {
@@ -15,15 +15,13 @@ export class ListOrdersRepository implements ListOrdersRepositoryInterface {
 
   async getMembersByIds(db: any, ids: number[]): Promise<any[]> {
     if (ids.length === 0) return [];
-    return db.select({
-      id: membersTable.id,
-      lastName: membersTable.lastName,
-      firstName: membersTable.firstName,
-      licence: membersTable.licence,
-    })
-      .from(membersTable)
-      .where(inArray(membersTable.id, ids))
-      .all();
+    const members = await getMembersByIds(db, ids);
+    return members.map((m: any) => ({
+      id: m.id,
+      lastName: m.lastName,
+      firstName: m.firstName,
+      licence: m.licence
+    }));
   }
 
   async getProductsByIds(db: any, ids: number[]): Promise<any[]> {

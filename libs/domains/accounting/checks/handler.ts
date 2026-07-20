@@ -1,6 +1,7 @@
 import { ChecksRepository } from './repository';
 import { AppError } from '@metacult/shared-db';
 import { cleanName } from '../shared/helpers';
+import { applyPaymentToMember } from '@metacult/features-members-api';
 
 export async function analyzeCheckImage(
   db: any,
@@ -250,14 +251,7 @@ export async function createCheck(db: any, body: {
     });
 
     if (body.memberId && (categoryVal === 1 || String(categoryVal) === '1')) {
-      const member = await repo.getMemberById(txDb, body.memberId);
-      if (member) {
-        const newReceived = member.amountReceived + body.amount;
-        const newRemaining = Math.max(0, member.amountDue - newReceived);
-        const isPaid = newRemaining === 0;
-
-        await repo.updateMemberReceived(txDb, body.memberId, newReceived, newRemaining, isPaid);
-      }
+      await applyPaymentToMember(txDb, body.memberId, body.amount);
     }
 
     return newCheck;
@@ -279,14 +273,7 @@ export async function deleteCheck(db: any, id: number) {
       const tx = await repo.getTransactionById(txDb, check.transactionId);
       if (tx) {
         if (tx.memberId && (tx.category === 1 || String(tx.category) === '1')) {
-          const member = await repo.getMemberById(txDb, tx.memberId);
-          if (member) {
-            const newReceived = Math.max(0, member.amountReceived - Math.abs(tx.amount));
-            const newRemaining = Math.max(0, member.amountDue - newReceived);
-            const isPaid = newRemaining === 0;
-
-            await repo.updateMemberReceived(txDb, tx.memberId, newReceived, newRemaining, isPaid);
-          }
+          await applyPaymentToMember(txDb, tx.memberId, -Math.abs(tx.amount));
         }
         await repo.deleteTransaction(txDb, tx.id);
       }
