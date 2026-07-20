@@ -16,29 +16,31 @@ export async function updateInvoice(db: any, id: number, body: {
   totalAmount: number;
   items?: { description: string; quantity: number; unitPrice: number }[];
 }) {
-  const repo = new UpdateInvoiceRepository();
-  const invoiceData = await repo.getById(db, id);
-  if (!invoiceData) {
-    throw new InvoiceNotFoundError();
-  }
+  return db.transaction(async (txDb: any) => {
+    const repo = new UpdateInvoiceRepository();
+    const invoiceData = await repo.getById(txDb, id);
+    if (!invoiceData) {
+      throw new InvoiceNotFoundError();
+    }
 
-  const closed = await isSeasonClosed(db, invoiceData.seasonId);
-  const invoice = new Invoice(invoiceData);
-  if (!invoice.canBeEdited(closed)) {
-    if (closed) throw new SeasonClosedError('Saison clôturée');
-    throw new InvoiceNotEditableError();
-  }
+    const closed = await isSeasonClosed(txDb, invoiceData.seasonId);
+    const invoice = new Invoice(invoiceData);
+    if (!invoice.canBeEdited(closed)) {
+      if (closed) throw new SeasonClosedError('Saison clôturée');
+      throw new InvoiceNotEditableError();
+    }
 
-  await repo.update(db, id, {
-    date: body.date,
-    dueDate: body.dueDate,
-    clientName: body.clientName,
-    clientAddress: body.clientAddress || null,
-    clientEmail: body.clientEmail || null,
-    subject: body.subject || null,
-    location: body.location || null,
-    period: body.period || null,
-    attendees: body.attendees || null,
-    totalAmount: body.totalAmount
-  }, body.items || []);
+    await repo.update(txDb, id, {
+      date: body.date,
+      dueDate: body.dueDate,
+      clientName: body.clientName,
+      clientAddress: body.clientAddress || null,
+      clientEmail: body.clientEmail || null,
+      subject: body.subject || null,
+      location: body.location || null,
+      period: body.period || null,
+      attendees: body.attendees || null,
+      totalAmount: body.totalAmount
+    }, body.items || []);
+  });
 }

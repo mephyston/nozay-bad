@@ -168,29 +168,31 @@ export async function importMembersFromCsv(db: any, csvText: string) {
     };
   });
 
-  await repo.insertSeasons(db, seasonsToInsert);
+  return db.transaction(async (txDb: any) => {
+    await repo.insertSeasons(txDb, seasonsToInsert);
 
-  const membersArray = Array.from(validRowsMap.values());
-  const licencesList = membersArray.map(m => m.licence);
-  const existingLicenceSeasons = await repo.getExistingLicenceSeasons(db, licencesList);
+    const membersArray = Array.from(validRowsMap.values());
+    const licencesList = membersArray.map(m => m.licence);
+    const existingLicenceSeasons = await repo.getExistingLicenceSeasons(txDb, licencesList);
 
-  let inserted = 0;
-  let updated = 0;
+    let inserted = 0;
+    let updated = 0;
 
-  membersArray.forEach(member => {
-    const key = `${member.licence}-${member.season}`;
-    if (existingLicenceSeasons.has(key)) {
-      updated++;
-    } else {
-      inserted++;
-    }
+    membersArray.forEach(member => {
+      const key = `${member.licence}-${member.season}`;
+      if (existingLicenceSeasons.has(key)) {
+        updated++;
+      } else {
+        inserted++;
+      }
+    });
+
+    await repo.batchUpsertMembers(txDb, membersArray);
+
+    return {
+      inserted,
+      updated,
+      errors: errorsCount,
+    };
   });
-
-  await repo.batchUpsertMembers(db, membersArray);
-
-  return {
-    inserted,
-    updated,
-    errors: errorsCount,
-  };
 }

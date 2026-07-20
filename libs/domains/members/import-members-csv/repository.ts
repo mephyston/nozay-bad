@@ -67,7 +67,9 @@ export class ImportMembersRepository implements ImportMembersRepositoryInterface
     const batchChunkSize = 200;
     for (let i = 0; i < batchPromises.length; i += batchChunkSize) {
       const chunk = batchPromises.slice(i, i + batchChunkSize);
-      await db.batch(chunk as [any, ...any[]]);
+      for (const query of chunk) {
+        await query.run();
+      }
     }
   }
 }

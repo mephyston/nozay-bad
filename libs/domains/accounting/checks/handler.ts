@@ -217,77 +217,83 @@ export async function createCheck(db: any, body: {
   }
 
   const repo = new ChecksRepository();
-  const categoryVal = body.category ? Number(body.category) : 1;
-  const descStr = body.description || `Règlement par chèque n°${body.number} de ${body.emitter}`;
 
-  const newTx = await repo.createTransaction(db, {
-    seasonId: body.seasonId,
-    type: 'recette',
-    accountId: 'current',
-    category: categoryVal,
-    amount: body.amount,
-    date: body.date || new Date().toISOString().split('T')[0],
-    paymentMethod: 'cheque',
-    description: descStr,
-    reference: `Chèque n°${body.number}`,
-    memberId: body.memberId || null,
-    createdAt: new Date()
-  });
+  return db.transaction(async (txDb: any) => {
+    const categoryVal = body.category ? Number(body.category) : 1;
+    const descStr = body.description || `Règlement par chèque n°${body.number} de ${body.emitter}`;
 
-  const newCheck = await repo.createCheck(db, {
-    seasonId: body.seasonId,
-    number: body.number,
-    amount: body.amount,
-    emitter: body.emitter,
-    bank: body.bank || null,
-    memberId: body.memberId || null,
-    transactionId: newTx.id,
-    status: 'received',
-    photoUrl: body.photoUrl || null,
-    createdAt: new Date()
-  });
+    const newTx = await repo.createTransaction(txDb, {
+      seasonId: body.seasonId,
+      type: 'recette',
+      accountId: 'current',
+      category: categoryVal,
+      amount: body.amount,
+      date: body.date || new Date().toISOString().split('T')[0],
+      paymentMethod: 'cheque',
+      description: descStr,
+      reference: `Chèque n°${body.number}`,
+      memberId: body.memberId || null,
+      createdAt: new Date()
+    });
 
-  if (body.memberId && (categoryVal === 1 || String(categoryVal) === '1')) {
-    const member = await repo.getMemberById(db, body.memberId);
-    if (member) {
-      const newReceived = member.amountReceived + body.amount;
-      const newRemaining = Math.max(0, member.amountDue - newReceived);
-      const isPaid = newRemaining === 0;
+    const newCheck = await repo.createCheck(txDb, {
+      seasonId: body.seasonId,
+      number: body.number,
+      amount: body.amount,
+      emitter: body.emitter,
+      bank: body.bank || null,
+      memberId: body.memberId || null,
+      transactionId: newTx.id,
+      status: 'received',
+      photoUrl: body.photoUrl || null,
+      createdAt: new Date()
+    });
 
-      await repo.updateMemberReceived(db, body.memberId, newReceived, newRemaining, isPaid);
+    if (body.memberId && (categoryVal === 1 || String(categoryVal) === '1')) {
+      const member = await repo.getMemberById(txDb, body.memberId);
+      if (member) {
+        const newReceived = member.amountReceived + body.amount;
+        const newRemaining = Math.max(0, member.amountDue - newReceived);
+        const isPaid = newRemaining === 0;
+
+        await repo.updateMemberReceived(txDb, body.memberId, newReceived, newRemaining, isPaid);
+      }
     }
-  }
 
-  return newCheck;
+    return newCheck;
+  });
 }
 
 export async function deleteCheck(db: any, id: number) {
   const repo = new ChecksRepository();
-  const check = await repo.getCheckById(db, id);
-  if (!check) {
-    throw new AppError('Chèque non trouvé.', 404);
-  }
 
-  if (check.transactionId) {
-    await repo.unlinkCheckTransaction(db, id);
-
-    const tx = await repo.getTransactionById(db, check.transactionId);
-    if (tx) {
-      if (tx.memberId && (tx.category === 1 || String(tx.category) === '1')) {
-        const member = await repo.getMemberById(db, tx.memberId);
-        if (member) {
-          const newReceived = Math.max(0, member.amountReceived - Math.abs(tx.amount));
-          const newRemaining = Math.max(0, member.amountDue - newReceived);
-          const isPaid = newRemaining === 0;
-
-          await repo.updateMemberReceived(db, tx.memberId, newReceived, newRemaining, isPaid);
-        }
-      }
-      await repo.deleteTransaction(db, tx.id);
+  return db.transaction(async (txDb: any) => {
+    const check = await repo.getCheckById(txDb, id);
+    if (!check) {
+      throw new AppError('Chèque non trouvé.', 404);
     }
-  }
 
-  await repo.deleteCheck(db, id);
+    if (check.transactionId) {
+      await repo.unlinkCheckTransaction(txDb, id);
+
+      const tx = await repo.getTransactionById(txDb, check.transactionId);
+      if (tx) {
+        if (tx.memberId && (tx.category === 1 || String(tx.category) === '1')) {
+          const member = await repo.getMemberById(txDb, tx.memberId);
+          if (member) {
+            const newReceived = Math.max(0, member.amountReceived - Math.abs(tx.amount));
+            const newRemaining = Math.max(0, member.amountDue - newReceived);
+            const isPaid = newRemaining === 0;
+
+            await repo.updateMemberReceived(txDb, tx.memberId, newReceived, newRemaining, isPaid);
+          }
+        }
+        await repo.deleteTransaction(txDb, tx.id);
+      }
+    }
+
+    await repo.deleteCheck(txDb, id);
+  });
 }
 
 export async function createCheckDeposit(db: any, body: {
@@ -301,24 +307,27 @@ export async function createCheckDeposit(db: any, body: {
   }
 
   const repo = new ChecksRepository();
-  const checksToDeposit = await repo.getChecksByIds(db, body.checkIds);
-  if (checksToDeposit.length === 0) {
-    throw new AppError('Aucun chèque valide trouvé.', 400);
-  }
-  const totalAmount = checksToDeposit.reduce((sum, ch) => sum + ch.amount, 0);
 
-  const deposit = await repo.createCheckDeposit(db, {
-    seasonId: body.seasonId,
-    reference: body.reference,
-    date: body.date,
-    amount: totalAmount,
-    status: 'deposited',
-    createdAt: new Date()
+  return db.transaction(async (txDb: any) => {
+    const checksToDeposit = await repo.getChecksByIds(txDb, body.checkIds);
+    if (checksToDeposit.length === 0) {
+      throw new AppError('Aucun chèque valide trouvé.', 400);
+    }
+    const totalAmount = checksToDeposit.reduce((sum, ch) => sum + ch.amount, 0);
+
+    const deposit = await repo.createCheckDeposit(txDb, {
+      seasonId: body.seasonId,
+      reference: body.reference,
+      date: body.date,
+      amount: totalAmount,
+      status: 'deposited',
+      createdAt: new Date()
+    });
+
+    await repo.updateChecksDeposit(txDb, body.checkIds, deposit.id, 'deposited');
+
+    return deposit;
   });
-
-  await repo.updateChecksDeposit(db, body.checkIds, deposit.id, 'deposited');
-
-  return deposit;
 }
 
 export async function listCheckDeposits(db: any, seasonId: string) {
@@ -332,25 +341,31 @@ export async function clearCheckDeposit(db: any, id: number, body: { bankTransac
   }
 
   const repo = new ChecksRepository();
-  await repo.updateCheckDeposit(db, id, {
-    status: 'cleared',
-    bankTransactionId: body.bankTransactionId
-  });
 
-  await repo.updateBankTransactionStatus(db, body.bankTransactionId, 'reconciled');
+  return db.transaction(async (txDb: any) => {
+    await repo.updateCheckDeposit(txDb, id, {
+      status: 'cleared',
+      bankTransactionId: body.bankTransactionId
+    });
+
+    await repo.updateBankTransactionStatus(txDb, body.bankTransactionId, 'reconciled');
+  });
 }
 
 export async function deleteCheckDeposit(db: any, id: number) {
   const repo = new ChecksRepository();
-  const deposit = await repo.getCheckDepositById(db, id);
-  if (!deposit) {
-    throw new AppError('Remise de chèques non trouvée.', 404);
-  }
 
-  if (deposit.bankTransactionId) {
-    await repo.updateBankTransactionStatus(db, deposit.bankTransactionId, 'pending');
-  }
+  return db.transaction(async (txDb: any) => {
+    const deposit = await repo.getCheckDepositById(txDb, id);
+    if (!deposit) {
+      throw new AppError('Remise de chèques non trouvée.', 404);
+    }
 
-  await repo.unlinkChecksForDeposit(db, id);
-  await repo.deleteCheckDeposit(db, id);
+    if (deposit.bankTransactionId) {
+      await repo.updateBankTransactionStatus(txDb, deposit.bankTransactionId, 'pending');
+    }
+
+    await repo.unlinkChecksForDeposit(txDb, id);
+    await repo.deleteCheckDeposit(txDb, id);
+  });
 }

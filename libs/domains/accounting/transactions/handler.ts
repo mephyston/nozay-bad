@@ -141,47 +141,50 @@ export async function updateTransaction(db: any, id: number, body: {
 
 export async function deleteTransaction(db: any, id: number) {
   const repo = new TransactionsRepository();
-  const tx = await repo.getById(db, id);
-  if (!tx) {
-    throw new AppError('Transaction non trouvée', 404);
-  }
 
-  if (await isSeasonClosed(db, tx.seasonId)) {
-    throw new SeasonClosedError('La saison est clôturée. Impossible de supprimer cette transaction.');
-  }
+  return db.transaction(async (txDb: any) => {
+    const tx = await repo.getById(txDb, id);
+    if (!tx) {
+      throw new AppError('Transaction non trouvée', 404);
+    }
 
-  // 2. Si liée à un relevé bancaire, recalculer le pointage restant
-  if (tx.bankTransactionId) {
-    const bankTx = await repo.getBankTransactionById(db, tx.bankTransactionId);
-    if (bankTx) {
-      const remainingTxs = await repo.getRemainingTransactionsForBankTx(db, tx.bankTransactionId, id);
-      const totalRemaining = remainingTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    if (await isSeasonClosed(txDb, tx.seasonId)) {
+      throw new SeasonClosedError('La saison est clôturée. Impossible de supprimer cette transaction.');
+    }
 
-      if (totalRemaining < Math.abs(bankTx.amount)) {
-        await repo.updateBankTransactionStatus(db, tx.bankTransactionId, 'pending');
+    // 2. Si liée à un relevé bancaire, recalculer le pointage restant
+    if (tx.bankTransactionId) {
+      const bankTx = await repo.getBankTransactionById(txDb, tx.bankTransactionId);
+      if (bankTx) {
+        const remainingTxs = await repo.getRemainingTransactionsForBankTx(txDb, tx.bankTransactionId, id);
+        const totalRemaining = remainingTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+        if (totalRemaining < Math.abs(bankTx.amount)) {
+          await repo.updateBankTransactionStatus(txDb, tx.bankTransactionId, 'pending');
+        }
       }
     }
-  }
 
-  // 3. Si liée à un adhérent pour une adhésion, déduire le montant reçu
-  if (tx.memberId && (tx.category === 1 || String(tx.category) === '1')) {
-    const member = await repo.getMemberById(db, tx.memberId);
-    if (member) {
-      const newReceived = Math.max(0, member.amountReceived - Math.abs(tx.amount));
-      const newRemaining = Math.max(0, member.amountDue - newReceived);
-      const isPaid = newRemaining === 0;
+    // 3. Si liée à un adhérent pour une adhésion, déduire le montant reçu
+    if (tx.memberId && (tx.category === 1 || String(tx.category) === '1')) {
+      const member = await repo.getMemberById(txDb, tx.memberId);
+      if (member) {
+        const newReceived = Math.max(0, member.amountReceived - Math.abs(tx.amount));
+        const newRemaining = Math.max(0, member.amountDue - newReceived);
+        const isPaid = newRemaining === 0;
 
-      await repo.updateMemberPayment(db, tx.memberId, {
-        amountReceived: newReceived,
-        amountRemaining: newRemaining,
-        paid: isPaid
-      });
+        await repo.updateMemberPayment(txDb, tx.memberId, {
+          amountReceived: newReceived,
+          amountRemaining: newRemaining,
+          paid: isPaid
+        });
+      }
     }
-  }
 
-  // 3.5. Si liée à une note de frais, la repasser en 'pending'
-  await repo.resetExpenseStatusByTxId(db, id);
+    // 3.5. Si liée à une note de frais, la repasser en 'pending'
+    await repo.resetExpenseStatusByTxId(txDb, id);
 
-  // 4. Supprimer la transaction du Grand Livre
-  await repo.delete(db, id);
+    // 4. Supprimer la transaction du Grand Livre
+    await repo.delete(txDb, id);
+  });
 }

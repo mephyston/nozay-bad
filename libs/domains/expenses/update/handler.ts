@@ -11,30 +11,33 @@ import {
 
 export async function approveExpense(db: any, id: number) {
   const repo = new UpdateExpenseRepository();
-  const expenseData = await repo.getById(db, id);
-  if (!expenseData) {
-    throw new ExpenseNotFoundError();
-  }
-  const expense = new Expense(expenseData);
-  if (await isSeasonClosed(db, expense.seasonId)) {
-    throw new SeasonClosedError('La saison est clôturée. Impossible d\'approuver cette note de frais.');
-  }
-  if (!expense.canBeApproved()) {
-    throw new ExpenseAlreadyProcessedError();
-  }
 
-  // Créer la transaction de dépense via le repository
-  const tx = await repo.insertTransaction(db, {
-    seasonId: expenseData.seasonId,
-    category: expenseData.category,
-    amount: expenseData.amount,
-    emitterName: expenseData.emitterName,
-    description: expenseData.description,
-    memberId: expenseData.memberId,
+  return db.transaction(async (txDb: any) => {
+    const expenseData = await repo.getById(txDb, id);
+    if (!expenseData) {
+      throw new ExpenseNotFoundError();
+    }
+    const expense = new Expense(expenseData);
+    if (await isSeasonClosed(txDb, expense.seasonId)) {
+      throw new SeasonClosedError('La saison est clôturée. Impossible d\'approuver cette note de frais.');
+    }
+    if (!expense.canBeApproved()) {
+      throw new ExpenseAlreadyProcessedError();
+    }
+
+    // Créer la transaction de dépense via le repository
+    const tx = await repo.insertTransaction(txDb, {
+      seasonId: expenseData.seasonId,
+      category: expenseData.category,
+      amount: expenseData.amount,
+      emitterName: expenseData.emitterName,
+      description: expenseData.description,
+      memberId: expenseData.memberId,
+    });
+
+    // Mettre à jour le statut et lier la transaction
+    return repo.approve(txDb, id, tx.id);
   });
-
-  // Mettre à jour le statut et lier la transaction
-  return repo.approve(db, id, tx.id);
 }
 
 export async function rejectExpense(db: any, id: number) {
@@ -56,48 +59,51 @@ export async function rejectExpense(db: any, id: number) {
 
 export async function cancelExpenseApproval(db: any, id: number) {
   const repo = new UpdateExpenseRepository();
-  const expenseData = await repo.getById(db, id);
-  if (!expenseData) {
-    throw new ExpenseNotFoundError();
-  }
-  const expense = new Expense(expenseData);
-  if (await isSeasonClosed(db, expense.seasonId)) {
-    throw new SeasonClosedError('La saison est clôturée. Impossible d\'annuler la validation de cette note de frais.');
-  }
-  if (!expense.canBeCancelled()) {
-    throw new ExpenseAlreadyPendingError();
-  }
 
-  const txId = expenseData.transactionId;
+  return db.transaction(async (txDb: any) => {
+    const expenseData = await repo.getById(txDb, id);
+    if (!expenseData) {
+      throw new ExpenseNotFoundError();
+    }
+    const expense = new Expense(expenseData);
+    if (await isSeasonClosed(txDb, expense.seasonId)) {
+      throw new SeasonClosedError('La saison est clôturée. Impossible d\'annuler la validation de cette note de frais.');
+    }
+    if (!expense.canBeCancelled()) {
+      throw new ExpenseAlreadyPendingError();
+    }
 
-  // 1. Mettre à jour la note de frais d'abord pour couper la clé étrangère
-  const updatedExpense = await repo.cancelApproval(db, id);
+    const txId = expenseData.transactionId;
 
-  // 2. Si approuvée, supprimer la transaction associée
-  if (expenseData.status === 'approved' && txId) {
-    // 1. Récupérer la transaction via le repository
-    const tx = await repo.getTransactionDetails(db, txId);
+    // 1. Mettre à jour la note de frais d'abord pour couper la clé étrangère
+    const updatedExpense = await repo.cancelApproval(txDb, id);
 
-    if (tx) {
-      // Rapprochement bancaire : si la transaction est pointée, libérer l'écriture bancaire
-      if (tx.bankTransactionId) {
-        const bankTx = await repo.getBankTransactionDetails(db, tx.bankTransactionId);
+    // 2. Si approuvée, supprimer la transaction associée
+    if (expenseData.status === 'approved' && txId) {
+      // 1. Récupérer la transaction via le repository
+      const tx = await repo.getTransactionDetails(txDb, txId);
 
-        if (bankTx) {
-          const remainingTxs = await repo.getRemainingTransactionsForBankTx(db, tx.bankTransactionId, tx.id);
-          const totalRemaining = remainingTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
-          if (totalRemaining < Math.abs(bankTx.amount)) {
-            await repo.resetBankTransactionStatus(db, tx.bankTransactionId);
+      if (tx) {
+        // Rapprochement bancaire : si la transaction est pointée, libérer l'écriture bancaire
+        if (tx.bankTransactionId) {
+          const bankTx = await repo.getBankTransactionDetails(txDb, tx.bankTransactionId);
+
+          if (bankTx) {
+            const remainingTxs = await repo.getRemainingTransactionsForBankTx(txDb, tx.bankTransactionId, tx.id);
+            const totalRemaining = remainingTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+            if (totalRemaining < Math.abs(bankTx.amount)) {
+              await repo.resetBankTransactionStatus(txDb, tx.bankTransactionId);
+            }
           }
         }
+
+        // Supprimer la transaction du Grand Livre
+        await repo.deleteTransaction(txDb, tx.id);
       }
-
-      // Supprimer la transaction du Grand Livre
-      await repo.deleteTransaction(db, tx.id);
     }
-  }
 
-  return updatedExpense;
+    return updatedExpense;
+  });
 }
 
 export async function updateExpense(

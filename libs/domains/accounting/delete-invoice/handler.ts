@@ -4,18 +4,20 @@ import { InvoiceNotFoundError, InvoiceNotDeletableError, SeasonClosedError } fro
 import { isSeasonClosed } from '@metacult/features-members-data-access';
 
 export async function deleteInvoice(db: any, id: number) {
-  const repo = new DeleteInvoiceRepository();
-  const invoiceData = await repo.getById(db, id);
-  if (!invoiceData) {
-    throw new InvoiceNotFoundError();
-  }
+  return db.transaction(async (txDb: any) => {
+    const repo = new DeleteInvoiceRepository();
+    const invoiceData = await repo.getById(txDb, id);
+    if (!invoiceData) {
+      throw new InvoiceNotFoundError();
+    }
 
-  const closed = await isSeasonClosed(db, invoiceData.seasonId);
-  const invoice = new Invoice(invoiceData);
-  if (!invoice.canBeDeleted(closed)) {
-    if (closed) throw new SeasonClosedError('Saison clôturée');
-    throw new InvoiceNotDeletableError();
-  }
+    const closed = await isSeasonClosed(txDb, invoiceData.seasonId);
+    const invoice = new Invoice(invoiceData);
+    if (!invoice.canBeDeleted(closed)) {
+      if (closed) throw new SeasonClosedError('Saison clôturée');
+      throw new InvoiceNotDeletableError();
+    }
 
-  await repo.delete(db, id);
+    await repo.delete(txDb, id);
+  });
 }
