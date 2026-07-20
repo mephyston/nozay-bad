@@ -59,14 +59,25 @@ Ces règles sont non négociables et s'appliquent à chaque PR de la migration.
    ses lignes sans transaction.
 
 10. **Les apps ne contiennent aucune logique métier.**
-    `apps/api` compose des routes exportées par les domaines. `apps/boutique`
-    et `apps/admin-console` importent uniquement des composants `ui`
-    (comportement déjà respecté aujourd'hui : `admin-console` n'importe que
+    `apps/api` compose des routes exportées par les domaines. `apps/storefront`
+    et `apps/admin` importent uniquement des composants `ui`
+    (comportement déjà respecté aujourd'hui : `admin` n'importe que
     des libs `*-ui`, jamais `*-api`/`*-data-access` — à préserver).
 
 11. **Aucun fichier de plus de 200 lignes dans un domaine, sauf `shared/`.**
     Seuil d'alerte, pas une limite dure — sert à repérer un cas d'usage encore
     non découpé ou un fichier fourre-tout.
+
+12. **Regroupement `commands/` / `queries/` (CQRS léger), uniquement au-delà
+    d'un seuil de taille.** Quand un domaine dépasse ~8 tranches, ses cas
+    d'usage sont répartis dans deux sous-dossiers : `commands/` (tout ce qui
+    écrit — soumis à la règle 9 sur les transactions) et `queries/` (tout ce
+    qui lit seul — jamais de `db.transaction`). Pas de bus, pas de médiateur,
+    juste un classement physique. `shared/` reste au niveau racine du
+    domaine, partagé par les deux. Ce seuil s'applique domaine par domaine :
+    aujourd'hui seul `accounting` le dépasse ; ne pas imposer ce découpage à
+    `expenses`, `members`, `shop` tant qu'ils restent petits — l'ajouter s'ils
+    grossissent au même point.
 
 12. **Le déploiement ne change pas pendant la migration.**
     Toujours un Worker par app (`wrangler.json` inchangé). Aucune

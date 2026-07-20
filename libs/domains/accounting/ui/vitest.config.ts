@@ -3,6 +3,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import path from 'path';
 
 export default defineConfig({
+  root: __dirname,
   plugins: [svelte()],
   resolve: {
     alias: {
@@ -18,5 +19,6 @@ export default defineConfig({
     name: 'features-accounting-ui',
     globals: true,
     environment: 'jsdom',
+    include: ['src/**/*.test.ts', '../**/ui/**/*.test.ts'],
   },
 });

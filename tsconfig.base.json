@@ -8,6 +8,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "types": ["@cloudflare/workers-types"],
     "paths": {
       "@nba/db": ["libs/shared/db/src/index.ts"],
@@ -15,19 +16,19 @@
       "@nba/ui": ["libs/shared/ui/src/index.ts"],
       "@metacult/shared-db/test-utils": ["libs/shared/db/src/test-utils.ts"],
       "@metacult/shared-db": ["libs/shared/db/src/index.ts"],
-      "@metacult/features-members-data-access": ["libs/features/members/data-access/src/index.ts"],
-      "@metacult/features-accounting-data-access": ["libs/features/accounting/data-access/src/index.ts"],
-      "@metacult/features-expenses-data-access": ["libs/features/expenses/data-access/src/index.ts"],
-      "@metacult/features-shop-data-access": ["libs/features/shop/data-access/src/index.ts"],
-      "@metacult/features-members-api": ["libs/features/members/api/src/index.ts"],
-      "@metacult/features-accounting-api": ["libs/features/accounting/api/src/index.ts"],
-      "@metacult/features-expenses-api": ["libs/features/expenses/api/src/index.ts"],
-      "@metacult/features-shop-api": ["libs/features/shop/api/src/index.ts"],
+      "@metacult/features-members-data-access": ["libs/domains/members/data-access/src/index.ts"],
+      "@metacult/features-accounting-data-access": ["libs/domains/accounting/data-access/src/index.ts"],
+      "@metacult/features-expenses-data-access": ["libs/domains/expenses/data-access/src/index.ts"],
+      "@metacult/features-shop-data-access": ["libs/domains/shop/data-access/src/index.ts"],
+      "@metacult/features-members-api": ["libs/domains/members/api/src/index.ts"],
+      "@metacult/features-accounting-api": ["libs/domains/accounting/api/src/index.ts"],
+      "@metacult/features-expenses-api": ["libs/domains/expenses/api/src/index.ts"],
+      "@metacult/features-shop-api": ["libs/domains/shop/api/src/index.ts"],
       "@metacult/shared-ui": ["libs/shared/ui/src/index.ts"],
-      "@metacult/features-members-ui": ["libs/features/members/ui/src/index.ts"],
-      "@metacult/features-accounting-ui": ["libs/features/accounting/ui/src/index.ts"],
-      "@metacult/features-expenses-ui": ["libs/features/expenses/ui/src/index.ts"],
-      "@metacult/features-shop-ui": ["libs/features/shop/ui/src/index.ts"]
+      "@metacult/features-members-ui": ["libs/domains/members/ui/src/index.ts"],
+      "@metacult/features-accounting-ui": ["libs/domains/accounting/ui/src/index.ts"],
+      "@metacult/features-expenses-ui": ["libs/domains/expenses/ui/src/index.ts"],
+      "@metacult/features-shop-ui": ["libs/domains/shop/ui/src/index.ts"]
     }
   }
 }

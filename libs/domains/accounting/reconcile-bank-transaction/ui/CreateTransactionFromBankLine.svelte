@@ -58,16 +58,27 @@
         )
   );
 
-  let splitSum = $derived(splits.reduce((sum, s) => sum + (s.amount || 0), 0));
+  let splitSum = $derived(splits.reduce((sum, s) => sum + Math.round((s.amount || 0) * 100), 0));
 </script>
 
 <div class="space-y-4">
   <div class="flex justify-between items-center">
     <h4 class="text-sm font-semibold text-gray-700">Créer et rapprocher une nouvelle écriture</h4>
-    <label class="flex items-center gap-1.5 text-xs text-gray-500 font-medium cursor-pointer">
-      <input type="checkbox" bind:checked={isSplitMode} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-      <span>Ventiler l'opération</span>
-    </label>
+    <Button
+      variant="outline"
+      size="xs"
+      onclick={() => {
+        isSplitMode = !isSplitMode;
+        if (isSplitMode && splits.length === 0) {
+          splits = [
+            { category: '1', amount: 0 },
+            { category: '1', amount: 0 }
+          ];
+        }
+      }}
+    >
+      {isSplitMode ? 'Annuler la ventilation' : 'Ventiler'}
+    </Button>
   </div>
 
   {#if !isSplitMode}
@@ -145,10 +156,9 @@
           <span class="text-gray-400">▼</span>
         </button>
 
-        {#if isMemberDropdownOpen}
-          <div class="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto p-2 space-y-2">
-            <Input 
-              placeholder="Rechercher un adhérent..." 
+        <div class="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto p-2 space-y-2" class:hidden={!isMemberDropdownOpen}>
+          <Input 
+              placeholder="Tapez pour rechercher un adhérent..." 
               bind:value={memberSearchQuery} 
               size="sm"
             />
@@ -172,7 +182,6 @@
               {/each}
             </div>
           </div>
-        {/if}
       </div>
     </div>
   {:else}
@@ -196,6 +205,7 @@
           </select>
           <input 
             type="number" 
+            id="split-amount-{idx}"
             placeholder="Montant en cents" 
             bind:value={sp.amount}
             class="w-24 bg-white border rounded px-2 py-1 text-xs text-gray-700"
@@ -226,7 +236,7 @@
       disabled={isSubmitting || (isSplitMode && splitSum !== remainingAmount)}
       class="w-full"
     >
-      Créer et rapprocher {(remainingAmount / 100).toFixed(2)} €
+      {isSplitMode ? 'Enregistrer la ventilation' : `Créer et rapprocher ${(remainingAmount / 100).toFixed(2)} €`}
     </Button>
   </div>
 </div>

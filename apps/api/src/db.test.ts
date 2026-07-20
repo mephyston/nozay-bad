@@ -11,7 +11,7 @@ import {
   invoiceItemsTable,
   accountClassesTable
 } from '@metacult/features-accounting-data-access';
-import { productsTable, ordersTable } from '@metacult/features-shop-data-access';
+import { productsTable, ordersTable } from '../../../libs/domains/shop/data-access/src/schema';
 import { drizzle } from 'drizzle-orm/d1';
 import * as fs from 'node:fs';
 import * as path from 'node:path';

@@ -2,7 +2,7 @@
   "name": "@metacult/features-members-ui",
   "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
   "projectType": "library",
-  "sourceRoot": "libs/features/members/ui/src",
+  "sourceRoot": "libs/domains/members/ui/src",
   "targets": {},
   "tags": ["type:ui", "scope:members"]
 }

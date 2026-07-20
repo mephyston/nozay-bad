@@ -2,7 +2,7 @@
   "name": "@metacult/features-expenses-ui",
   "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
   "projectType": "library",
-  "sourceRoot": "libs/features/expenses/ui/src",
+  "sourceRoot": "libs/domains/expenses/ui/src",
   "targets": {},
   "tags": ["type:ui", "scope:expenses"]
 }

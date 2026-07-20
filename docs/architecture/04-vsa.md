@@ -12,6 +12,14 @@ create-invoice/
   handler.test.ts         # test du handler, indépendant du framework HTTP
 ```
 
+Le gabarit d'une tranche est identique qu'il s'agisse d'une commande ou d'une
+requête. Ce qui change, c'est où elle vit une fois le domaine devenu gros
+(cf. `01-principles.md`, règle 12) : `commands/create-invoice/` pour ce qui
+écrit, `queries/list-invoices/` pour ce qui lit seul. Une tranche `queries/`
+n'a jamais de `db.transaction` dans son `handler.ts` — si vous en trouvez
+une, c'est le signe qu'elle a été mal classée ou qu'elle fait plus qu'une
+lecture.
+
 ## Exemple concret basé sur le code existant
 
 Aujourd'hui, `POST /invoices` dans
@@ -37,9 +45,11 @@ Cible : `libs/domains/accounting/create-invoice/` :
 
 ## Règle de composition
 
-Le `index.ts` du domaine agrège les routes de chaque slice, exactement comme
-le fait déjà `libs/features/accounting/api/src/routes.ts` aujourd'hui pour
-composer `seasonsRouter`, `transactionsRouter`, `bankRouter`, etc. — ce
-fichier de composition existe déjà pour `accounting`, il faut généraliser ce
-modèle à `expenses`, `members` et `shop`, qui sont aujourd'hui un seul fichier
-`routes.ts` monolithique (258, 485 et 313 lignes respectivement).
+Décision actée : le `route.ts` de chaque cas d'usage exporte son propre
+sous-routeur Hono. Le fichier `api/src/index.ts` du domaine ne fait que les
+monter (`app.route('/', createInvoiceRoute)`, etc.) — c'est un fichier de
+composition pur, sans logique. Il n'existe plus de fichier `routes.ts`
+central ni de dossier `api/src/routes/` regroupant plusieurs cas d'usage :
+ce modèle intermédiaire (utile pendant la migration) est désormais remplacé
+partout, y compris pour `accounting` qui l'utilisait comme étape
+transitoire.

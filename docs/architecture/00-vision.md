@@ -5,8 +5,8 @@
 `nba-api` (monorepo Nx) sert 3 applications déployées sur Cloudflare Workers :
 
 - `apps/api` — Worker HTTP (Hono), point d'entrée métier unique
-- `apps/admin-console` — back-office (Astro/Svelte), consomme l'API
-- `apps/boutique` — boutique publique (Astro), consomme l'API
+- `apps/admin` — back-office (Astro/Svelte), consomme l'API
+- `apps/storefront` — storefront publique (Astro), consomme l'API
 
 Le projet est un **Modular Monolith** : un seul dépôt, un déploiement par app,
 mais une frontière logique stricte entre domaines métier.
@@ -20,11 +20,11 @@ mais une frontière logique stricte entre domaines métier.
 
 Il n'y a pas de domaine `auth` séparé : l'authentification du back-office est
 déléguée à Cloudflare Access (vérification JWT dans
-`apps/admin-console/src/middleware.ts`), pas gérée en interne.
+`apps/admin/src/middleware.ts`), pas gérée en interne.
 
 ## Principe directeur
 
-- Les **apps** (`api`, `admin-console`, `boutique`) sont des points d'entrée et
+- Les **apps** (`api`, `admin`, `storefront`) sont des points d'entrée et
   de composition. Elles ne contiennent aucune règle métier.
 - Toute la logique métier vit dans `libs/domains/<domaine>`.
 - Chaque domaine est organisé en **Vertical Slice** : un dossier par cas

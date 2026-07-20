@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import app from './index';
 import { setupMockDb } from '@metacult/shared-db/test-utils';
 import { seasonsTable } from '@metacult/features-members-data-access';
-import { expensesTable } from '@metacult/features-expenses-data-access';
+import { expensesTable } from '../../../libs/domains/expenses/data-access/src/schema';
 import { eq } from 'drizzle-orm';
 import { AppError } from '@metacult/shared-db';
 

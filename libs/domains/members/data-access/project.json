@@ -1,6 +1,6 @@
 {
   "name": "@metacult/features-members-data-access",
   "projectType": "library",
-  "sourceRoot": "libs/features/members/data-access/src",
+  "sourceRoot": "libs/domains/members/data-access/src",
   "tags": ["type:data-access", "scope:members"]
 }

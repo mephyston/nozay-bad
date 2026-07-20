@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mount, unmount, flushSync } from 'svelte';
+import { mount, unmount, flushSync, tick } from 'svelte';
 import BankStatementReconciliation from './BankStatementReconciliation.svelte';
 
 describe('BankStatementReconciliation Component', () => {
@@ -590,11 +590,14 @@ describe('BankStatementReconciliation Component', () => {
       }
     });
 
-    flushSync();
+    await tick();
+
+    const listContainer = target.querySelector('.reconcile-list-container')!;
+    expect(listContainer).not.toBeNull();
 
     // Verify both are present initially
-    expect(target.innerHTML).toContain('SALAIRE');
-    expect(target.innerHTML).toContain('ADHESION');
+    expect(listContainer.innerHTML).toContain('SALAIRE');
+    expect(listContainer.innerHTML).toContain('ADHESION');
 
     // Find free-text search input
     const searchInput = target.querySelector('input[placeholder*="Rechercher une transaction"]') as HTMLInputElement;
@@ -603,19 +606,19 @@ describe('BankStatementReconciliation Component', () => {
     // Type "salaire" into search input
     searchInput.value = 'salaire';
     searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-    flushSync();
+    await tick();
 
     // Only SALAIRE should be shown, ADHESION should be hidden
-    expect(target.innerHTML).toContain('SALAIRE');
-    expect(target.innerHTML).not.toContain('ADHESION');
+    expect(listContainer.innerHTML).toContain('SALAIRE');
+    expect(listContainer.innerHTML).not.toContain('ADHESION');
 
     // Type something that matches nothing
     searchInput.value = 'inconnu';
     searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-    flushSync();
+    await tick();
 
-    expect(target.innerHTML).not.toContain('SALAIRE');
-    expect(target.innerHTML).not.toContain('ADHESION');
+    expect(listContainer.innerHTML).not.toContain('SALAIRE');
+    expect(listContainer.innerHTML).not.toContain('ADHESION');
   });
 
   it('restores focused transaction from sessionStorage on mount, and clears it on tab switch or close panel', async () => {

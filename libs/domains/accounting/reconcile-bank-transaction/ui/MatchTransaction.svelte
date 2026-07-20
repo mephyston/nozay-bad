@@ -76,7 +76,7 @@
   
   {#if glCandidates.length === 0}
     <div class="text-center py-6 text-sm text-gray-400 italic">
-      Aucune transaction non rapprochée correspondante dans le grand livre.
+      Aucune écriture correspondante trouvée à +/- 7 jours.
     </div>
   {:else}
     <div class="max-h-60 overflow-y-auto border rounded-lg text-xs">
@@ -133,34 +133,32 @@
         <span class="text-gray-400">▼</span>
       </button>
 
-      {#if isMemberDropdownOpen}
-        <div class="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto p-2 space-y-2">
-          <Input 
-            placeholder="Rechercher un adhérent..." 
-            bind:value={memberSearchQuery} 
-            size="sm"
-          />
-          <div class="space-y-0.5">
+      <div class="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto p-2 space-y-2" class:hidden={!isMemberDropdownOpen}>
+        <Input 
+          placeholder="Tapez pour rechercher un adhérent..." 
+          bind:value={memberSearchQuery} 
+          size="sm"
+        />
+        <div class="space-y-0.5">
+          <button
+            type="button"
+            onclick={() => { selectedMemberId = ''; isMemberDropdownOpen = false; }}
+            class="w-full text-left px-2 py-1.5 rounded hover:bg-gray-100 text-xs text-red-600 font-medium"
+          >
+            Aucun lien adhérent
+          </button>
+          {#each filteredMembers as m}
             <button
               type="button"
-              onclick={() => { selectedMemberId = ''; isMemberDropdownOpen = false; }}
-              class="w-full text-left px-2 py-1.5 rounded hover:bg-gray-100 text-xs text-red-600 font-medium"
+              onclick={() => { selectedMemberId = String(m.id); isMemberDropdownOpen = false; }}
+              class="w-full text-left px-2 py-1.5 rounded hover:bg-gray-100 text-xs flex justify-between"
             >
-              Aucun lien adhérent
+              <span>{m.lastName} {m.firstName}</span>
+              <span class="text-gray-400">{m.licence}</span>
             </button>
-            {#each filteredMembers as m}
-              <button
-                type="button"
-                onclick={() => { selectedMemberId = String(m.id); isMemberDropdownOpen = false; }}
-                class="w-full text-left px-2 py-1.5 rounded hover:bg-gray-100 text-xs flex justify-between"
-              >
-                <span>{m.lastName} {m.firstName}</span>
-                <span class="text-gray-400">{m.licence}</span>
-              </button>
-            {/each}
-          </div>
+          {/each}
         </div>
-      {/if}
+      </div>
     </div>
   </div>
 </div>

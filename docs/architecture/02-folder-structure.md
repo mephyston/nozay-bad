@@ -3,34 +3,45 @@
 ```
 libs/
   domains/
-    accounting/
-      shared/
-        invoice.ts                # agrégat : canBeEdited(), markAsPaid()...
+    accounting/                    # seul domaine au-dessus du seuil de 8 tranches (principe 12)
+      shared/                      # partagé par commands/ et queries/
+        invoice.ts                 # agrégat : canBeEdited(), markAsPaid()...
         bank-transaction.ts
-        season.ts                 # si la propriété de "season" est confirmée ici
+        season.ts                  # si la propriété de "season" est confirmée ici
         accounting-errors.ts
-        category.ts                # normalisation des catégories comptables
-      create-invoice/
-        route.ts
-        validator.ts
-        handler.ts
-        repository.ts
-        dto.ts
-        handler.test.ts
-      update-invoice/
-      delete-invoice/
-      change-invoice-status/
-      create-season/
-      close-season/
-      list-transactions/
-      create-bank-check-deposit/
-      import-bank-statement/       # parseOFX() actuellement dans api/src/helpers.ts
-      reconcile-bank-transaction/  # reconcileBankTxInternal() à découper
-      ui/
+        category.ts                 # normalisation des catégories comptables
+      commands/                     # tout ce qui écrit — soumis à la règle 9 (transactions)
         create-invoice/
-          InvoiceForm.svelte
-        reconcile-bank-transaction/
-          BankStatementReconciliation.svelte  # 80 Ko actuellement, à éclater
+          route.ts
+          validator.ts
+          handler.ts
+          repository.ts
+          dto.ts
+          handler.test.ts
+          ui/
+            InvoiceForm.svelte
+        update-invoice/
+        delete-invoice/
+        change-invoice-status/
+        create-season/
+        close-season/
+        create-bank-check-deposit/
+        record-check-transaction/    # extrait de l'actuel checks/ (partie écriture)
+        import-bank-statement/       # parseOFX(), extrait de l'actuel api/src/helpers.ts
+        reconcile-bank-transaction/  # reconcileBankTxInternal(), découpé
+          ui/
+            MatchTransaction.svelte
+            CreateTransactionFromBankLine.svelte
+        update-category/             # extrait de l'actuel categories/ (partie écriture)
+      queries/                       # tout ce qui lit seul — jamais de db.transaction
+        list-invoices/
+        get-invoice/
+        list-transactions/
+        list-checks/                 # extrait de l'actuel checks/ (partie lecture)
+        list-categories/             # extrait de l'actuel categories/ (partie lecture)
+        get-reconciliation-summary/
+          ui/
+            ReconciliationSummary.svelte
 
     expenses/
       shared/
@@ -72,9 +83,9 @@ libs/
 apps/
   api/
     src/index.ts                    # compose app.route(...) par domaine, comme aujourd'hui
-  admin-console/
+  admin/
     src/pages/                      # importe uniquement des composants ui de domaine
-  boutique/
+  storefront/
     src/pages/
 ```
 
