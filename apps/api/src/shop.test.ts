@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
-import { shopRouter } from './index';
+import { shopRouter } from '@metacult/features-shop-api';
 import { setupMockDb } from '@metacult/shared-db/test-utils';
-import { productsTable } from './shared/schema';
+import { productsTable } from '../../../libs/domains/shop/shared/schema';
 import { eq, sql } from 'drizzle-orm';
 import { AppError } from '@metacult/shared-db';
 

@@ -1,7 +1,0 @@
-{
-  "extends": "../../../tsconfig.base.json",
-  "compilerOptions": {
-    "moduleResolution": "bundler"
-  },
-  "include": ["index.ts", "ui.ts", "commands/**/*", "queries/**/*", "shared/**/*", "*.ts"]
-}

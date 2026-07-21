@@ -21,10 +21,10 @@
       "@metacult/features-expenses-api": ["libs/domains/expenses/index.ts"],
       "@metacult/features-shop-api": ["libs/domains/shop/index.ts"],
       "@metacult/shared-ui": ["libs/shared/ui/src/index.ts"],
-      "@metacult/features-members-ui": ["libs/domains/members/ui.ts"],
-      "@metacult/features-accounting-ui": ["libs/domains/accounting/ui.ts"],
-      "@metacult/features-expenses-ui": ["libs/domains/expenses/ui.ts"],
-      "@metacult/features-shop-ui": ["libs/domains/shop/ui.ts"]
+      "@metacult/features-members-ui": ["libs/domains/members/shared/ui.ts"],
+      "@metacult/features-accounting-ui": ["libs/domains/accounting/shared/ui.ts"],
+      "@metacult/features-expenses-ui": ["libs/domains/expenses/shared/ui.ts"],
+      "@metacult/features-shop-ui": ["libs/domains/shop/shared/ui.ts"]
     }
   }
 }

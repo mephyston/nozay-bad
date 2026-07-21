@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
-import { membersRouter } from './index';
+import { membersRouter } from '@metacult/features-members-api';
 import { setupMockDb } from '@metacult/shared-db/test-utils';
-import { membersTable, seasonsTable } from './shared/schema';
+import { membersTable, seasonsTable } from '../../../libs/domains/members/shared/schema';
 import { sql } from 'drizzle-orm';
 import { AppError } from '@metacult/shared-db';
 

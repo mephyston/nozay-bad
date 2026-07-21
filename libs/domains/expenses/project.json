@@ -1,6 +1,0 @@
-{
-  "name": "@metacult/features-expenses-api",
-  "projectType": "library",
-  "sourceRoot": "libs/domains/expenses",
-  "tags": ["type:api", "scope:expenses"]
-}
