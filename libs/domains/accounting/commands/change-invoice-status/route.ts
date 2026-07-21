@@ -21,6 +21,10 @@ changeInvoiceStatusRoute.post(
   },
   tbValidator('json', changeInvoiceStatusSchema, (result, c) => {
     if (!result.success) {
+      const hasStatusError = result.errors.some(e => e.instancePath === '/status');
+      if (hasStatusError) {
+        return c.json({ success: false, error: 'Statut invalide' }, 400);
+      }
       return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
     }
   }),

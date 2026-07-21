@@ -18,7 +18,7 @@ describe('ChangeInvoiceStatus Route', () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.success).toBe(false);
-    expect(body.error).toContain('Validation failed');
+    expect(body.error).toBe('Statut invalide');
   });
 
   it('should return 200 on valid body', async () => {
