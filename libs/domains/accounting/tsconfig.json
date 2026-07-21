@@ -3,5 +3,5 @@
   "compilerOptions": {
     "moduleResolution": "bundler"
   },
-  "include": ["index.ts", "ui.ts", "commands/**/*", "queries/**/*", "shared/**/*", "routes/**/*", "*.ts"]
+  "include": ["index.ts", "ui.ts", "commands/**/*", "queries/**/*", "shared/**/*", "*.ts"]
 }

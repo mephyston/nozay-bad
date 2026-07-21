@@ -1,10 +1,52 @@
 import { Hono } from 'hono';
-import { seasonsRouter } from './routes/seasons';
-import { transactionsRouter } from './routes/transactions';
-import { bankRouter } from './routes/bank';
-import { checksRouter, checkDepositsRouter } from './routes/checks';
-import { configRouter } from './routes/config';
-import { invoicesRouter } from './routes/invoices';
+
+// Seasons Routes
+import { listSeasonsRoute } from './queries/list-seasons/route';
+import { getSeasonBudgetRoute } from './queries/get-season-budget/route';
+import { getSeasonBalanceRoute } from './queries/get-season-balance/route';
+import { getSeasonBalancesRoute } from './queries/get-season-balances/route';
+import { getSeasonReportsRoute } from './queries/get-season-reports/route';
+import { createSeasonRoute } from './commands/create-season/route';
+import { updateSeasonRoute } from './commands/update-season/route';
+import { closeSeasonRoute } from './commands/close-season/route';
+import { updateSeasonBudgetRoute } from './commands/update-season-budget/route';
+import { updateSeasonBalancesRoute } from './commands/update-season-balances/route';
+
+// Config Routes
+import { listCategoriesRoute } from './queries/list-categories/route';
+import { listAccountClassesRoute } from './queries/list-account-classes/route';
+import { createCategoryRoute } from './commands/create-category/route';
+import { updateCategoryRoute } from './commands/update-category/route';
+import { deleteCategoryRoute } from './commands/delete-category/route';
+import { createAccountClassRoute } from './commands/create-account-class/route';
+import { updateAccountClassRoute } from './commands/update-account-class/route';
+import { deleteAccountClassRoute } from './commands/delete-account-class/route';
+
+// Invoices Routes
+import { listInvoicesRoute } from './queries/list-invoices/route';
+import { getInvoiceRoute } from './queries/get-invoice/route';
+import { createInvoiceRoute } from './commands/create-invoice/route';
+import { updateInvoiceRoute } from './commands/update-invoice/route';
+import { deleteInvoiceRoute } from './commands/delete-invoice/route';
+import { changeInvoiceStatusRoute } from './commands/change-invoice-status/route';
+
+// Bank Transactions Routes
+import { listBankTransactionsRoute } from './queries/list-bank-transactions/route';
+import { importBankStatementRoute } from './commands/import-bank-statement/route';
+import { analyzeBankTransactionsRoute } from './commands/analyze-bank-transactions/route';
+import { reconcileBankTransactionRoute } from './commands/reconcile-bank-transaction/route';
+import { updateBankTransactionStatusRoute } from './commands/update-bank-transaction-status/route';
+
+// Transactions Routes
+import { listTransactionsRoute } from './queries/list-transactions/route';
+import { createTransactionRoute } from './commands/create-transaction/route';
+import { updateTransactionRoute } from './commands/update-transaction/route';
+import { deleteTransactionRoute } from './commands/delete-transaction/route';
+
+// Checks Routes
+import { listChecksRoute } from './queries/list-checks/route';
+import { recordCheckTransactionRoute } from './commands/record-check-transaction/route';
+import { createBankCheckDepositRoute } from './commands/create-bank-check-deposit/route';
 
 export type Bindings = {
   DB: D1Database;
@@ -13,25 +55,52 @@ export type Bindings = {
 
 export const accountingRouter = new Hono<{ Bindings: Bindings }>();
 
-// 1. SEASONS ROUTES
-accountingRouter.route('/seasons', seasonsRouter);
+// 1. SEASONS ROUTES (mounted with /seasons prefix)
+accountingRouter.route('/seasons', listSeasonsRoute);
+accountingRouter.route('/seasons', getSeasonBudgetRoute);
+accountingRouter.route('/seasons', getSeasonBalanceRoute);
+accountingRouter.route('/seasons', getSeasonBalancesRoute);
+accountingRouter.route('/seasons', getSeasonReportsRoute);
+accountingRouter.route('/seasons', createSeasonRoute);
+accountingRouter.route('/seasons', updateSeasonRoute);
+accountingRouter.route('/seasons', closeSeasonRoute);
+accountingRouter.route('/seasons', updateSeasonBudgetRoute);
+accountingRouter.route('/seasons', updateSeasonBalancesRoute);
 
-// 2. TRANSACTIONS ROUTES
-accountingRouter.route('/transactions', transactionsRouter);
+// 2. CONFIG ROUTES
+accountingRouter.route('/', listCategoriesRoute);
+accountingRouter.route('/', listAccountClassesRoute);
+accountingRouter.route('/', createCategoryRoute);
+accountingRouter.route('/', updateCategoryRoute);
+accountingRouter.route('/', deleteCategoryRoute);
+accountingRouter.route('/', createAccountClassRoute);
+accountingRouter.route('/', updateAccountClassRoute);
+accountingRouter.route('/', deleteAccountClassRoute);
 
-// 3. BANK TRANSACTIONS ROUTES
-accountingRouter.route('/bank-transactions', bankRouter);
+// 3. INVOICES ROUTES
+accountingRouter.route('/', listInvoicesRoute);
+accountingRouter.route('/', getInvoiceRoute);
+accountingRouter.route('/', createInvoiceRoute);
+accountingRouter.route('/', updateInvoiceRoute);
+accountingRouter.route('/', deleteInvoiceRoute);
+accountingRouter.route('/', changeInvoiceStatusRoute);
 
-// 4. CHECKS ROUTES
-accountingRouter.route('/checks', checksRouter);
+// 4. BANK TRANSACTIONS ROUTES
+accountingRouter.route('/', listBankTransactionsRoute);
+accountingRouter.route('/', importBankStatementRoute);
+accountingRouter.route('/', analyzeBankTransactionsRoute);
+accountingRouter.route('/', reconcileBankTransactionRoute);
+accountingRouter.route('/', updateBankTransactionStatusRoute);
 
-// 5. CHECK DEPOSITS ROUTES
-accountingRouter.route('/check-deposits', checkDepositsRouter);
+// 5. TRANSACTIONS ROUTES
+accountingRouter.route('/', listTransactionsRoute);
+accountingRouter.route('/', createTransactionRoute);
+accountingRouter.route('/', updateTransactionRoute);
+accountingRouter.route('/', deleteTransactionRoute);
 
-// 6. CONFIG (CATEGORIES & ACCOUNT-CLASSES) ROUTES
-accountingRouter.route('/', configRouter);
-
-// 7. INVOICES ROUTES
-accountingRouter.route('/invoices', invoicesRouter);
+// 6. CHECKS & DEPOSITS ROUTES
+accountingRouter.route('/', listChecksRoute);
+accountingRouter.route('/', recordCheckTransactionRoute);
+accountingRouter.route('/', createBankCheckDepositRoute);
 
 export { normalizeCategory, cleanName } from './shared/helpers';
