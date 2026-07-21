@@ -154,6 +154,15 @@ export default defineConfig({
           include: ['list-orders/ui/**/*.test.ts', 'list-products/ui/**/*.test.ts'],
         }
       },
+      {
+        extends: true,
+        test: {
+          name: 'architecture-tests',
+          globals: true,
+          environment: 'node',
+          include: ['libs/architecture.test.ts'],
+        }
+      },
     ],
   },
 });
