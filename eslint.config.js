@@ -66,18 +66,17 @@ export default tseslint.config(
     }
   },
   {
-    files: ['**/routes.ts', '**/routes/**/*.ts'],
+    files: ['**/route.ts', '**/routes.ts', '**/routes/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
-          paths: [
-            {
-              name: 'drizzle-orm',
-              message: 'Please do not import drizzle-orm in route files. Database logic should be confined to repository files.'
-            }
-          ],
           patterns: [
+            {
+              // Interdit drizzle-orm et ses sous-modules, sauf drizzle-orm/d1 pour l'instanciation de drizzle(c.env.DB)
+              group: ['drizzle-orm', 'drizzle-orm/*', '!drizzle-orm/d1'],
+              message: 'Please do not import drizzle-orm in route files. Database logic should be confined to repository files. Only drizzle-orm/d1 is allowed for client creation.'
+            },
             {
               group: ['**/data-access/**', '**/schema'],
               message: 'Please do not import data-access or schemas directly in route files. Confine database logic to repository files.'
