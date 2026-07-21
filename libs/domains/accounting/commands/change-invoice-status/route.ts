@@ -12,6 +12,13 @@ export const changeInvoiceStatusRoute = new Hono<{ Bindings: Bindings }>();
 
 changeInvoiceStatusRoute.post(
   '/invoices/:id/status',
+  async (c, next) => {
+    const id = parseInt(c.req.param('id'));
+    if (isNaN(id)) {
+      return c.json({ success: false, error: 'Identifiant invalide' }, 400);
+    }
+    await next();
+  },
   tbValidator('json', changeInvoiceStatusSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
@@ -22,16 +29,13 @@ changeInvoiceStatusRoute.post(
       return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
     }
     const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) {
-      return c.json({ success: false, error: 'Identifiant invalide' }, 400);
-    }
     const { status } = c.req.valid('json');
     const db = drizzle(c.env.DB);
     try {
       await changeInvoiceStatus(db, id, status);
       return c.json({ success: true });
     } catch (err: any) {
-      return c.json({ success: false, error: err.message }, 400);
+      return c.json({ success: false, error: err.message }, err.status || 400);
     }
   }
 );
