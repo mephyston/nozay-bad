@@ -1,4 +1,4 @@
-import { expensesTable } from '../data-access/src/schema';
+import { expensesTable } from '../shared/schema';
 
 export class CreateExpenseRepository {
   async create(db: any, values: {

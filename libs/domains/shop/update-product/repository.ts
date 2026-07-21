@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { productsTable } from '../data-access/src/schema';
+import { productsTable } from '../shared/schema';
 
 export class UpdateProductRepository {
   async update(db: any, id: number, values: {

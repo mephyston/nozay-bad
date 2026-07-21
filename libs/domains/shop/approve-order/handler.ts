@@ -8,7 +8,7 @@ import {
   ProductNotFoundError,
   ConcurrentModificationError
 } from '../shared/errors';
-import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { isSeasonClosed } from '@metacult/features-members-api';
 import { ApproveOrderInput, ApproveOrderOutput } from "./dto";
 
 export async function approveOrder(db: any, id: ApproveOrderInput): Promise<ApproveOrderOutput> {

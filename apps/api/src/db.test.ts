@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { membersTable, usersTable, seasonsTable } from '@metacult/features-members-data-access';
+import { membersTable, usersTable, seasonsTable } from '../../../libs/domains/members/shared/schema';
 import {
   seasonBalancesTable,
   transactionsTable,
@@ -10,8 +10,8 @@ import {
   invoicesTable,
   invoiceItemsTable,
   accountClassesTable
-} from '@metacult/features-accounting-data-access';
-import { productsTable, ordersTable } from '../../../libs/domains/shop/data-access/src/schema';
+} from '../../../libs/domains/accounting/shared/schema';
+import { productsTable, ordersTable } from '../../../libs/domains/shop/shared/schema';
 import { drizzle } from 'drizzle-orm/d1';
 import * as fs from 'node:fs';
 import * as path from 'node:path';

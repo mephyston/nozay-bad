@@ -24,3 +24,32 @@ export const ordersTable = sqliteTable('orders', {
   transactionId: integer('transaction_id'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
+
+export const categoriesTable = sqliteTable('categories', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  adminLabel: text('admin_label').notNull(),
+  adherentLabel: text('adherent_label').notNull(),
+  hideInExpenses: integer('hide_in_expenses', { mode: 'boolean' }).notNull().default(false),
+  receiptCode: text('receipt_code'),
+  expenseCode: text('expense_code'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+export const transactionsTable = sqliteTable('transactions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  seasonId: text('season_id').notNull(),
+  type: text('type', { enum: ['recette', 'depense', 'transfert'] }).notNull(),
+  accountId: text('account_id').notNull(),
+  destinationAccountId: text('destination_account_id'),
+  category: integer('category'),
+  amount: integer('amount').notNull(),
+  date: text('date').notNull(),
+  paymentMethod: text('payment_method').notNull(),
+  description: text('description').notNull(),
+  reference: text('reference'),
+  memberId: integer('member_id'),
+  bankTransactionId: integer('bank_transaction_id'),
+  invoiceId: integer('invoice_id'),
+  status: text('status').notNull().default('cleared'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});

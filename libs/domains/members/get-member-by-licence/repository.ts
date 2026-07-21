@@ -1,5 +1,5 @@
 import { eq, and } from 'drizzle-orm';
-import { membersTable } from '../data-access/src/schema';
+import { membersTable } from '../shared/schema';
 
 export class GetMemberRepository {
   async getByLicence(db: any, licence: string, season?: string): Promise<any | undefined> {

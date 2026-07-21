@@ -1,5 +1,5 @@
 import { eq, and, inArray } from 'drizzle-orm';
-import { ordersTable, productsTable } from '../data-access/src/schema';
+import { ordersTable, productsTable } from '../shared/schema';
 import { getMembersByIds } from '@metacult/features-members-api';
 
 export class ListOrdersRepository {

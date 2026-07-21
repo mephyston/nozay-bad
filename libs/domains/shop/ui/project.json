@@ -1,8 +1,0 @@
-{
-  "name": "@metacult/features-shop-ui",
-  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
-  "projectType": "library",
-  "sourceRoot": "libs/domains/shop/ui/src",
-  "targets": {},
-  "tags": ["type:ui", "scope:shop"]
-}

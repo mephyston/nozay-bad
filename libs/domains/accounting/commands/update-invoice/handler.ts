@@ -1,7 +1,7 @@
 import { UpdateInvoiceRepository } from './repository';
 import { Invoice } from '../../shared/invoice';
 import { InvoiceNotFoundError, InvoiceNotEditableError, SeasonClosedError } from '../../shared/errors';
-import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { isSeasonClosed } from '@metacult/features-members-api';
 import { UpdateInvoiceId, UpdateInvoiceInput, UpdateInvoiceOutput } from "./dto";
 
 export async function updateInvoice(db: any, id: UpdateInvoiceId, body: UpdateInvoiceInput): Promise<UpdateInvoiceOutput> {

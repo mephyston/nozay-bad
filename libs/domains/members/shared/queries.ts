@@ -1,5 +1,5 @@
 import { eq, inArray } from 'drizzle-orm';
-import { membersTable } from '@metacult/features-members-data-access';
+import { membersTable, seasonsTable } from './schema';
 
 export interface MemberSummary {
   id: number;
@@ -38,4 +38,17 @@ export async function getMembersBySeason(db: any, seasonId: string): Promise<Mem
 export async function getAllMembers(db: any): Promise<MemberSummary[]> {
   const result = await db.select().from(membersTable).all();
   return result as MemberSummary[];
+}
+
+/**
+ * Domain helper: check whether a season is closed.
+ * Belongs to the `members` domain — canonical owner of `seasonsTable`.
+ */
+export async function isSeasonClosed(db: any, seasonId: string): Promise<boolean> {
+  const season = await db
+    .select({ closed: seasonsTable.closed })
+    .from(seasonsTable)
+    .where(eq(seasonsTable.id, seasonId))
+    .get();
+  return season?.closed === 1 || season?.closed === true || season?.closed === '1';
 }

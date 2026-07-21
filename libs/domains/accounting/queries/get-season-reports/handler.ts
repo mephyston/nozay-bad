@@ -1,4 +1,4 @@
-import { normalizeCategory } from '@metacult/features-accounting-data-access';
+import { normalizeCategory } from '@metacult/features-accounting-api';
 import { GetSeasonReportsRepository } from './repository';
 import { GetSeasonReportsInput, GetSeasonReportsOutput } from "./dto";
 

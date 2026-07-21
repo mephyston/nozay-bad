@@ -1,4 +1,4 @@
-import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { isSeasonClosed } from '@metacult/features-members-api';
 import { SeasonClosedError } from '../../shared/errors';
 import { UpdateSeasonBudgetRepository } from './repository';
 import { UpdateSeasonBudgetSeasonId, UpdateSeasonBudgetInput, UpdateSeasonBudgetOutput } from "./dto";

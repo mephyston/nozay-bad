@@ -1,4 +1,4 @@
-import { productsTable } from '../data-access/src/schema';
+import { productsTable } from '../shared/schema';
 
 export class CreateProductRepository {
   async create(db: any, values: {

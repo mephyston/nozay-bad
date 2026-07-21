@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { seasonsTable } from '@metacult/features-members-data-access';
+import { seasonsTable } from '../../shared/schema';
 
 export class CloseSeasonRepository {
   async getSeasonById(db: any, id: string): Promise<any | undefined> {

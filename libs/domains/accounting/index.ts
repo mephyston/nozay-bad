@@ -33,3 +33,5 @@ accountingRouter.route('/', configRouter);
 
 // 7. INVOICES ROUTES
 accountingRouter.route('/invoices', invoicesRouter);
+
+export { normalizeCategory, cleanName } from './shared/helpers';

@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { seasonCategoryBudgetsTable } from '../../data-access/src/schema';
+import { seasonCategoryBudgetsTable } from '../../shared/schema';
 
 export class UpdateSeasonBudgetRepository {
   async updateBudget(db: any, seasonId: string, items: { categoryId: number; type: 'recette' | 'depense'; amount: number }[]): Promise<any[]> {

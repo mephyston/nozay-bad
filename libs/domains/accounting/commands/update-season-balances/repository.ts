@@ -1,4 +1,4 @@
-import { seasonBalancesTable } from '../../data-access/src/schema';
+import { seasonBalancesTable } from '../../shared/schema';
 
 export class UpdateSeasonBalancesRepository {
   async updateBalances(db: any, seasonId: string, balances: { accountId: 'current' | 'savings' | 'cash'; initialBalance: number }[]): Promise<void> {

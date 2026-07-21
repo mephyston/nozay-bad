@@ -1,5 +1,5 @@
 import { eq, and, gte, lte } from 'drizzle-orm';
-import { seasonBalancesTable, transactionsTable, categoriesTable } from '../../data-access/src/schema';
+import { seasonBalancesTable, transactionsTable, categoriesTable } from '../../shared/schema';
 
 export class GetSeasonReportsRepository {
   async getBalances(db: any, seasonId: string): Promise<any[]> {

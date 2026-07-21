@@ -1,5 +1,5 @@
 import { eq, and, or, like, sql } from 'drizzle-orm';
-import { membersTable } from '../data-access/src/schema';
+import { membersTable } from '../shared/schema';
 
 export class ListMembersRepository {
   private buildConditions(filters: {

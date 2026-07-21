@@ -1,5 +1,5 @@
 import { eq, and, ne, sql } from 'drizzle-orm';
-import { transactionsTable, bankTransactionsTable } from '../../data-access/src/schema';
+import { transactionsTable, bankTransactionsTable } from '../../shared/schema';
 
 export class DeleteTransactionRepository {
   async getById(db: any, id: number): Promise<any | undefined> {

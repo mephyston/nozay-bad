@@ -1,4 +1,4 @@
-import { accountClassesTable } from '../../data-access/src/schema';
+import { accountClassesTable } from '../../shared/schema';
 
 export class CreateAccountClassRepository {
   async createAccountClass(db: any, values: {

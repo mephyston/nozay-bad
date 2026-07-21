@@ -1,5 +1,5 @@
 import { ne } from 'drizzle-orm';
-import { seasonsTable } from '@metacult/features-members-data-access';
+import { seasonsTable } from '../../shared/schema';
 
 export class CreateSeasonRepository {
   async createSeason(db: any, values: {

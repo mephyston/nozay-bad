@@ -1,5 +1,5 @@
 import { and, eq, desc, sql } from 'drizzle-orm';
-import { bankTransactionsTable, transactionsTable } from '../../data-access/src/schema';
+import { bankTransactionsTable, transactionsTable } from '../../shared/schema';
 import { getMembersBySeason, getMembersByIds } from '@metacult/features-members-api';
 
 export class AnalyzeBankTransactionsRepository {

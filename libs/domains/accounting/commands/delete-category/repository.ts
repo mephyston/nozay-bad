@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { categoriesTable } from '../../data-access/src/schema';
+import { categoriesTable } from '../../shared/schema';
 
 export class DeleteCategoryRepository {
   async deleteCategory(db: any, id: number): Promise<any> {

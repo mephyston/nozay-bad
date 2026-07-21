@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { categoriesTable } from '../../data-access/src/schema';
+import { categoriesTable } from '../../shared/schema';
 
 export class UpdateCategoryRepository {
   async updateCategory(db: any, id: number, values: {

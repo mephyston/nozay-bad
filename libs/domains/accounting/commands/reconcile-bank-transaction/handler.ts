@@ -1,8 +1,8 @@
 import { ReconcileBankTransactionRepository } from './repository';
-import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { isSeasonClosed } from '@metacult/features-members-api';
 import { applyPaymentToMember } from '@metacult/features-members-api';
 import { AppError } from '@metacult/shared-db';
-import { normalizeCategory } from '@metacult/features-accounting-data-access';
+import { normalizeCategory } from '@metacult/features-accounting-api';
 import { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
 import { ReconcileBankTxInternalId, ReconcileBankTxInternalInput, ReconcileBankTxInternalOutput } from "./dto";
 import { BankTransaction } from '../../shared/bank-transaction';

@@ -1,5 +1,5 @@
 import { and, eq, desc } from 'drizzle-orm';
-import { bankTransactionsTable } from '../../data-access/src/schema';
+import { bankTransactionsTable } from '../../shared/schema';
 
 export class ListBankTransactionsRepository {
   async listBankTransactions(db: any, seasonId: string, filters: { status?: string; accountId?: string }): Promise<any[]> {

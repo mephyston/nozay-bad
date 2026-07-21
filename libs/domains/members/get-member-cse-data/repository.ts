@@ -1,5 +1,5 @@
 import { eq, sql } from 'drizzle-orm';
-import { membersTable } from '../data-access/src/schema';
+import { membersTable } from '../shared/schema';
 
 export class MemberCseDataRepository {
   async getById(db: any, id: number): Promise<any | undefined> {

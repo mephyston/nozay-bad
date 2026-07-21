@@ -1,5 +1,5 @@
 import { and, or, eq, sql, inArray, isNull, desc } from 'drizzle-orm';
-import { transactionsTable, categoriesTable } from '../../data-access/src/schema';
+import { transactionsTable, categoriesTable } from '../../shared/schema';
 import { getMembersByIds } from '@metacult/features-members-api';
 import type { ListTransactionsFilters } from './dto';
 

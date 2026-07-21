@@ -1,6 +1,6 @@
 import { ChangeInvoiceStatusRepository } from './repository';
 import { InvoiceNotFoundError, SeasonClosedError, InvalidStatusError } from '../../shared/errors';
-import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { isSeasonClosed } from '@metacult/features-members-api';
 import { ChangeInvoiceStatusId, ChangeInvoiceStatusStatus, ChangeInvoiceStatusOutput } from "./dto";
 
 export async function changeInvoiceStatus(db: any, id: ChangeInvoiceStatusId, status: ChangeInvoiceStatusStatus): Promise<ChangeInvoiceStatusOutput> {

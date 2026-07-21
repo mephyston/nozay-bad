@@ -1,5 +1,5 @@
 import { eq, and } from 'drizzle-orm';
-import { expensesTable } from '../data-access/src/schema';
+import { expensesTable } from '../shared/schema';
 
 export class ListExpensesRepository {
   async list(db: any, filters: { season?: string; status?: string }): Promise<any[]> {

@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm';
-import { ordersTable } from '../data-access/src/schema';
+import { ordersTable } from '../shared/schema';
 
 export class RejectOrderRepository {
   async getOrderById(db: any, id: number): Promise<any | undefined> {

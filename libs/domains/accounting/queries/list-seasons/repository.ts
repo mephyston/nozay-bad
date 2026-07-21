@@ -1,5 +1,5 @@
 import { desc } from 'drizzle-orm';
-import { seasonsTable } from '@metacult/features-members-data-access';
+import { seasonsTable } from '../../shared/schema';
 
 export class ListSeasonsRepository {
   async listSeasons(db: any): Promise<any[]> {

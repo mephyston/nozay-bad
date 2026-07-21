@@ -1,6 +1,40 @@
 import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core';
-import { membersTable, seasonsTable } from '@metacult/features-members-data-access';
 
+// local minimal definitions of external tables to enforce domain isolation
+export const seasonsTable = sqliteTable('seasons', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  active: integer('active', { mode: 'boolean' }).notNull().default(false),
+  closed: integer('closed', { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+export const membersTable = sqliteTable('members', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  licence: text('licence').notNull(),
+  season: text('season').notNull().default('25-26').references(() => seasonsTable.id),
+  lastName: text('last_name').notNull(),
+  firstName: text('first_name').notNull(),
+  gender: text('gender', { enum: ['M', 'F'] }).notNull(),
+  birthDate: text('birth_date').notNull(),
+  email: text('email'),
+  phone: text('phone'),
+  status: text('status').notNull().default('valide'),
+  type: text('type').notNull(),
+  importedAt: integer('imported_at', { mode: 'timestamp' }).notNull(),
+  amountDue: integer('amount_due').notNull().default(0),
+  amountReceived: integer('amount_received').notNull().default(0),
+  amountRemaining: integer('amount_remaining').notNull().default(0),
+  paid: integer('paid', { mode: 'boolean' }).notNull().default(false),
+  parent1Name: text('parent1_name'),
+  parent1Email: text('parent1_email'),
+  parent1Phone: text('parent1_phone'),
+  parent2Name: text('parent2_name'),
+  parent2Email: text('parent2_email'),
+  parent2Phone: text('parent2_phone')
+}, (table) => ({
+  licenceSeasonUnq: uniqueIndex('members_licence_season_idx').on(table.licence, table.season),
+}));
 
 export const seasonBalancesTable = sqliteTable('season_balances', {
   id: integer('id').primaryKey({ autoIncrement: true }),

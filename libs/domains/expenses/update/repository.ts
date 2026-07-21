@@ -1,5 +1,5 @@
 import { eq, sql } from 'drizzle-orm';
-import { expensesTable } from '../data-access/src/schema';
+import { expensesTable } from '../shared/schema';
 
 export class UpdateExpenseRepository {
   async getById(db: any, id: number): Promise<any | undefined> {

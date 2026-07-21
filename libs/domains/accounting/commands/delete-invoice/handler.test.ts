@@ -2,8 +2,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { deleteInvoice } from './handler';
 import { DeleteInvoiceRepository } from './repository';
-import { isSeasonClosed } from '@metacult/features-members-data-access';
-vi.mock('@metacult/features-members-data-access', () => ({ isSeasonClosed: vi.fn() }));
+import { isSeasonClosed } from '@metacult/features-members-api';
+vi.mock('@metacult/features-members-api', () => ({ isSeasonClosed: vi.fn() }));
 vi.mock('./repository');
 
 describe('deleteInvoice', () => {

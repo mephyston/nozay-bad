@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { transactionsTable, checksTable } from '../../data-access/src/schema';
+import { transactionsTable, checksTable } from '../../shared/schema';
 import { getAllMembers } from '@metacult/features-members-api';
 
 export class RecordCheckTransactionRepository {

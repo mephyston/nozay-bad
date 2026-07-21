@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { invoicesTable, invoiceItemsTable } from '../../data-access/src/schema';
+import { invoicesTable, invoiceItemsTable } from '../../shared/schema';
 
 export class UpdateInvoiceRepository {
   async getById(db: any, id: number): Promise<any | undefined> {

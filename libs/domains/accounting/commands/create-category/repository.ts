@@ -1,4 +1,4 @@
-import { categoriesTable } from '../../data-access/src/schema';
+import { categoriesTable } from '../../shared/schema';
 
 export class CreateCategoryRepository {
   async createCategory(db: any, values: {

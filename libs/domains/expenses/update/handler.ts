@@ -1,6 +1,6 @@
 import { UpdateExpenseRepository } from './repository';
-import { isSeasonClosed } from '@metacult/features-members-data-access';
-import { normalizeCategory } from '@metacult/features-accounting-data-access';
+import { isSeasonClosed } from '@metacult/features-members-api';
+import { normalizeCategory } from '@metacult/features-accounting-api';
 import { Expense } from '../shared/expense';
 import {
   SeasonClosedError,

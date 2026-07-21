@@ -1,5 +1,5 @@
 import { eq, and } from 'drizzle-orm';
-import { productsTable } from '../data-access/src/schema';
+import { productsTable } from '../shared/schema';
 
 export class ListProductsRepository {
   async list(db: any, filters: { category?: string; active?: boolean }): Promise<any[]> {

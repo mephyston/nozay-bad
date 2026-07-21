@@ -1,5 +1,5 @@
 import { DeleteTransactionRepository } from './repository';
-import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { isSeasonClosed } from '@metacult/features-members-api';
 import { AppError } from '@metacult/shared-db';
 import { SeasonClosedError } from '../../shared/errors';
 import { applyPaymentToMember } from '@metacult/features-members-api';

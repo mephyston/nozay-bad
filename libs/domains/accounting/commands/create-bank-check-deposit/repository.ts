@@ -1,5 +1,5 @@
 import { eq, inArray } from 'drizzle-orm';
-import { checksTable, checkDepositsTable, bankTransactionsTable } from '../../data-access/src/schema';
+import { checksTable, checkDepositsTable, bankTransactionsTable } from '../../shared/schema';
 
 export class CreateBankCheckDepositRepository {
   async getChecksByIds(db: any, ids: number[]): Promise<any[]> {

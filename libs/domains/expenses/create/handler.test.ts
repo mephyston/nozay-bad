@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createExpense } from './handler';
 import { CreateExpenseRepository } from './repository';
-import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { isSeasonClosed } from '@metacult/features-members-api';
 import { SeasonClosedError } from '../shared/errors';
 
 vi.mock('./repository', () => {
@@ -10,11 +10,11 @@ vi.mock('./repository', () => {
   return { CreateExpenseRepository };
 });
 
-vi.mock('@metacult/features-members-data-access', () => ({
+vi.mock('@metacult/features-members-api', () => ({
   isSeasonClosed: vi.fn()
 }));
 
-vi.mock('@metacult/features-accounting-data-access', () => ({
+vi.mock('@metacult/features-accounting-api', () => ({
   normalizeCategory: vi.fn((c) => (typeof c === 'number' ? c : 1))
 }));
 

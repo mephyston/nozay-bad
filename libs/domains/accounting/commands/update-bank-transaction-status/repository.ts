@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { bankTransactionsTable } from '../../data-access/src/schema';
+import { bankTransactionsTable } from '../../shared/schema';
 
 export class UpdateBankTransactionStatusRepository {
   async updateStatus(db: any, id: number, status: 'pending' | 'ignored'): Promise<void> {

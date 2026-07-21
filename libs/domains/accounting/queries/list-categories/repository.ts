@@ -1,4 +1,4 @@
-import { categoriesTable } from '../../data-access/src/schema';
+import { categoriesTable } from '../../shared/schema';
 
 export class ListCategoriesRepository {
   async listCategories(db: any): Promise<any[]> {

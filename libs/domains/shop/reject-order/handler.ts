@@ -6,7 +6,7 @@ import {
   SeasonClosedError,
   ConcurrentModificationError
 } from '../shared/errors';
-import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { isSeasonClosed } from '@metacult/features-members-api';
 import { RejectOrderInput, RejectOrderOutput } from "./dto";
 
 export async function rejectOrder(db: any, id: RejectOrderInput): Promise<RejectOrderOutput> {

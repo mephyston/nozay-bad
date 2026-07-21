@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { membersTable } from '../data-access/src/schema';
+import { membersTable } from '../shared/schema';
 
 export class ApplyPaymentRepository {
   async getById(db: any, id: number): Promise<any | undefined> {

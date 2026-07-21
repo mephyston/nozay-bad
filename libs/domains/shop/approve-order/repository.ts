@@ -1,7 +1,6 @@
 import { and, eq } from 'drizzle-orm';
-import { ordersTable, productsTable } from '../data-access/src/schema';
+import { ordersTable, productsTable, categoriesTable, transactionsTable } from '../shared/schema';
 import { getMemberById } from '@metacult/features-members-api';
-import { categoriesTable, transactionsTable } from '@metacult/features-accounting-data-access';
 
 export class ApproveOrderRepository {
   async getOrderById(db: any, id: number): Promise<any | undefined> {

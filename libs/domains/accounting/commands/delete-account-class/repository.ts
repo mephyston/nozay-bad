@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { accountClassesTable } from '../../data-access/src/schema';
+import { accountClassesTable } from '../../shared/schema';
 
 export class DeleteAccountClassRepository {
   async deleteAccountClass(db: any, code: string): Promise<any> {

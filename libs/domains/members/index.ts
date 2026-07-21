@@ -22,5 +22,6 @@ export {
   getMembersByIds,
   getMembersBySeason,
   getAllMembers,
+  isSeasonClosed,
   type MemberSummary
 } from './shared/queries';

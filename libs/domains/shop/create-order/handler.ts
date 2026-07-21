@@ -1,6 +1,6 @@
 import { CreateOrderRepository } from './repository';
 import { ProductNotFoundError, SeasonClosedError } from '../shared/errors';
-import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { isSeasonClosed } from '@metacult/features-members-api';
 import { CreateOrderInput, CreateOrderOutput } from "./dto";
 
 export async function createOrder(db: any, body: CreateOrderInput): Promise<CreateOrderOutput> {
