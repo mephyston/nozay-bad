@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
-import { membersRouter } from '../../index';
+import { membersRouter } from './index';
 import { setupMockDb } from '@metacult/shared-db/test-utils';
-import { membersTable, seasonsTable } from '../../shared/schema';
+import { membersTable, seasonsTable } from './shared/schema';
 import { sql } from 'drizzle-orm';
 import { AppError } from '@metacult/shared-db';
 

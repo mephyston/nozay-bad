@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
-import { seasonsRouter } from './api/src/routes/seasons';
-import { transactionsRouter } from './api/src/routes/transactions';
-import { bankRouter } from './api/src/routes/bank';
-import { checksRouter, checkDepositsRouter } from './api/src/routes/checks';
-import { configRouter } from './api/src/routes/config';
-import { invoicesRouter } from './api/src/routes/invoices';
+import { seasonsRouter } from './routes/seasons';
+import { transactionsRouter } from './routes/transactions';
+import { bankRouter } from './routes/bank';
+import { checksRouter, checkDepositsRouter } from './routes/checks';
+import { configRouter } from './routes/config';
+import { invoicesRouter } from './routes/invoices';
 
 export type Bindings = {
   DB: D1Database;

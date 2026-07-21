@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
-import { accountingRouter } from '../../index';
+import { accountingRouter } from './index';
 import { setupMockDb } from '@metacult/shared-db/test-utils';
-import { seasonsTable, membersTable } from '../../shared/schema';
+import { seasonsTable, membersTable } from './shared/schema';
 import {
   seasonBalancesTable,
   transactionsTable,
@@ -13,7 +13,7 @@ import {
   accountClassesTable,
   seasonCategoryBudgetsTable,
   categoriesTable,
-} from '../../shared/schema';
+} from './shared/schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq, sql } from 'drizzle-orm';
 import { AppError } from '@metacult/shared-db';

@@ -1,6 +1,6 @@
 {
   "name": "@metacult/features-accounting-api",
   "projectType": "library",
-  "sourceRoot": "libs/domains/accounting/api/src",
+  "sourceRoot": "libs/domains/accounting",
   "tags": ["type:api", "scope:accounting"]
 }

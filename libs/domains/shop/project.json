@@ -1,6 +1,6 @@
 {
   "name": "@metacult/features-shop-api",
   "projectType": "library",
-  "sourceRoot": "libs/domains/shop/api/src",
+  "sourceRoot": "libs/domains/shop",
   "tags": ["type:api", "scope:shop"]
 }

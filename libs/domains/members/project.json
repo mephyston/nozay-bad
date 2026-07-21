@@ -1,6 +1,6 @@
 {
   "name": "@metacult/features-members-api",
   "projectType": "library",
-  "sourceRoot": "libs/domains/members/api/src",
+  "sourceRoot": "libs/domains/members",
   "tags": ["type:api", "scope:members"]
 }

@@ -1,12 +1,12 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
-import { createInvoice } from '../../../commands/create-invoice/handler';
-import { updateInvoice } from '../../../commands/update-invoice/handler';
-import { deleteInvoice } from '../../../commands/delete-invoice/handler';
-import { changeInvoiceStatus } from '../../../commands/change-invoice-status/handler';
-import { listInvoices } from '../../../queries/list-invoices/handler';
-import { getInvoice } from '../../../queries/get-invoice/handler';
-import type { Bindings } from '../routes';
+import { createInvoice } from '../commands/create-invoice/handler';
+import { updateInvoice } from '../commands/update-invoice/handler';
+import { deleteInvoice } from '../commands/delete-invoice/handler';
+import { changeInvoiceStatus } from '../commands/change-invoice-status/handler';
+import { listInvoices } from '../queries/list-invoices/handler';
+import { getInvoice } from '../queries/get-invoice/handler';
+import type { Bindings } from '../index';
 
 export const invoicesRouter = new Hono<{ Bindings: Bindings }>();
 

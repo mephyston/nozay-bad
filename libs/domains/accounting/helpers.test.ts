@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { cleanName } from '../../shared/helpers';
-import { parseOFX } from '../../commands/import-bank-statement/handler';
+import { cleanName } from './shared/helpers';
+import { parseOFX } from './commands/import-bank-statement/handler';
 
 describe('cleanName', () => {
   it('should clean name correctly by removing accents, parentheses, extra spaces, and lowercase it', () => {
