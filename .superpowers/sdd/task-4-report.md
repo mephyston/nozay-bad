@@ -1,34 +1,36 @@
-# Task 4 Report: Sous-routeur des Écritures Bancaires (Bank Transactions)
+# Task 4 Report: Validateurs pour les Commandes de Modification
 
-## What was implemented
-- Created the new sub-router file `libs/features/accounting/api/src/routes/bank.ts` and moved all the `/bank-transactions` endpoint implementations into it.
-- Restructured route paths within `routes/bank.ts` to be relative to the `/bank-transactions` mount point:
-  - `GET /` (originally `GET /bank-transactions`)
-  - `POST /import` (originally `POST /bank-transactions/import`)
-  - `POST /analyze` (originally `POST /bank-transactions/analyze`)
-  - `POST /reconcile-bulk` (originally `POST /bank-transactions/reconcile-bulk`)
-  - `POST /:id/reconcile` (originally `POST /bank-transactions/:id/reconcile`)
-  - `POST /:id/ignore` (originally `POST /bank-transactions/:id/ignore`)
-  - `POST /:id/unignore` (originally `POST /bank-transactions/:id/unignore`)
-- Imported helper functions `reconcileBankTxInternal` and `parseOFX` inside `routes/bank.ts`.
-- Modified `libs/features/accounting/api/src/routes.ts` to import `bankRouter` from `./routes/bank` and mount it under `/bank-transactions` via `accountingRouter.route('/bank-transactions', bankRouter)`.
-- Cleaned up unused helper imports (`parseOFX` and `reconcileBankTxInternal`) in `routes.ts`.
+## Accomplishments
+- Created and integrated TypeBox validator schemas (`validator.ts`) for all 8 update/modification commands in the `libs/domains/accounting` domain:
+  - `change-invoice-status`
+  - `update-account-class`
+  - `update-category`
+  - `update-invoice`
+  - `update-season`
+  - `update-season-balances`
+  - `update-season-budget`
+  - `update-transaction`
+- Modified Hono routes (`route.ts`) for each of these 8 commands to:
+  - Use `tbValidator` middleware to validate the request payload against the TypeBox schema.
+  - Return detailed 400 Bad Request error messages if validation fails.
+  - Retrieve the validated JSON body using `c.req.valid('json')` instead of untyped `await c.req.json()`.
+- Created comprehensive route integration tests (`route.test.ts`) for each command to verify:
+  - Validation failure (400) when receiving incorrect or incomplete payloads.
+  - Validation success (200) when receiving valid payloads.
+- Verified that all accounting tests (148 tests across 60 test suites) pass successfully.
+- Verified that the codebase adheres to ESLint rules, specifically avoiding unauthorized drizzle-orm queries inside routes.
 
-## What was tested and test results
-- Ran `npx vitest run libs/features/accounting/api/` which runs the entire test suite for the accounting API.
-- All 54 tests passed successfully:
-  - `src/helpers.test.ts` (3 tests passed)
-  - `src/routes.test.ts` (51 tests passed)
+## Test Summary
+All 148 tests in `libs/domains/accounting` passed successfully.
+- Command-specific route tests passed:
+  - `change-invoice-status` (2/2 tests passed)
+  - `update-account-class` (3/3 tests passed)
+  - `update-category` (3/3 tests passed)
+  - `update-invoice` (2/2 tests passed)
+  - `update-season` (2/2 tests passed)
+  - `update-season-balances` (2/2 tests passed)
+  - `update-season-budget` (2/2 tests passed)
+  - `update-transaction` (2/2 tests passed)
 
-## Files changed
-- `libs/features/accounting/api/src/routes/bank.ts` (Created)
-- `libs/features/accounting/api/src/routes.ts` (Modified)
-
-## Self-review findings
-- **Completeness**: All endpoints required by the brief have been successfully extracted and mounted.
-- **Quality**: Code formatting and styling conventions have been preserved. No unused variables or leftover endpoints exist in the main `routes.ts`.
-- **Discipline**: Relied on correct imports and Hono sub-routing. Type checking via `tsc --noEmit` verifies that the `accounting/api` types are fully consistent.
-- **Testing**: Confirmed that since the sub-router is mounted on the `/bank-transactions` prefix of the main router, the full integration test URLs (`/accounting/bank-transactions/...`) remained unchanged and successfully passed.
-
-## Issues or concerns
-- None.
+## Validation and Commits
+- Commit subject: `feat(accounting): implement TypeBox validators for update/modification routes`

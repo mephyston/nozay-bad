@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
+import { tbValidator } from '@hono/typebox-validator';
 import { changeInvoiceStatus } from './handler';
+import { changeInvoiceStatusSchema } from './validator';
 
 export type Bindings = {
   DB: D1Database;
@@ -8,16 +10,28 @@ export type Bindings = {
 
 export const changeInvoiceStatusRoute = new Hono<{ Bindings: Bindings }>();
 
-changeInvoiceStatusRoute.post('/invoices/:id/status', async (c) => {
-  if (!c.env || !c.env.DB) {
-    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+changeInvoiceStatusRoute.post(
+  '/invoices/:id/status',
+  tbValidator('json', changeInvoiceStatusSchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+    }
+  }),
+  async (c) => {
+    if (!c.env || !c.env.DB) {
+      return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+    }
+    const id = parseInt(c.req.param('id'));
+    if (isNaN(id)) {
+      return c.json({ success: false, error: 'Identifiant invalide' }, 400);
+    }
+    const { status } = c.req.valid('json');
+    const db = drizzle(c.env.DB);
+    try {
+      await changeInvoiceStatus(db, id, status);
+      return c.json({ success: true });
+    } catch (err: any) {
+      return c.json({ success: false, error: err.message }, 400);
+    }
   }
-  const id = parseInt(c.req.param('id'));
-  if (isNaN(id)) {
-    return c.json({ success: false, error: 'Identifiant invalide' }, 400);
-  }
-  const { status } = await c.req.json();
-  const db = drizzle(c.env.DB);
-  await changeInvoiceStatus(db, id, status);
-  return c.json({ success: true });
-});
+);
