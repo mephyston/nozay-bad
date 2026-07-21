@@ -1,32 +1,27 @@
-### Task 3 Report: Sous-routeur des Transactions (Transactions)
+# Task 3 Report: Validateurs pour les Commandes de Création Complexes
 
-#### What was implemented
-- Created a new sub-router for transaction endpoints in `libs/features/accounting/api/src/routes/transactions.ts`.
-- Extracted and migrated all original transaction handlers from `libs/features/accounting/api/src/routes.ts` into the new router, setting up correct prefixes and paths (`GET /`, `POST /`, `PUT /:id`, `DELETE /:id`).
-- Mounted `transactionsRouter` on `accountingRouter` using `accountingRouter.route('/transactions', transactionsRouter)` in `libs/features/accounting/api/src/routes.ts`.
-- Ensured all imports (Drizzle D1 bindings, tables, schemas, and helper functions/utils) are correctly referenced.
+## Summary of Changes
+Implemented TypeBox validators, integrated them with `tbValidator` in routes, and added route tests with error (400) and success (200) scenarios for the following slices:
+- **create-invoice**
+  - Created `validator.ts` with `createInvoiceSchema`.
+  - Updated `route.ts` to use `tbValidator` and retrieve validated JSON with `c.req.valid('json')`.
+  - Created `route.test.ts` to verify 400 and 200 responses.
+- **create-transaction**
+  - Created `validator.ts` with `createTransactionSchema`.
+  - Updated `route.ts` to use `tbValidator` and retrieve validated JSON with `c.req.valid('json')`.
+  - Created `route.test.ts` to verify 400 and 200 responses.
+- **record-check-transaction**
+  - Created `validator.ts` with `createCheckSchema`.
+  - Updated `route.ts` to use `tbValidator` on the POST `/checks` endpoint and retrieve validated JSON with `c.req.valid('json')`.
+  - Created `route.test.ts` to verify 400 and 200 responses.
+- **reconcile-bank-transaction**
+  - Created `validator.ts` with `reconcileBankTransactionSchema` and `reconcileBulkTransactionsSchema`.
+  - Updated `route.ts` to use `tbValidator` for the `/bank-transactions/reconcile-bulk` and `/bank-transactions/:id/reconcile` endpoints.
+  - Created `route.test.ts` to verify 400 and 200 responses.
 
-#### What was tested and test results
-- Ran the existing test suite:
-  ```bash
-  npx vitest run libs/features/accounting/api/
-  ```
-- **Results:**
-  - `src/helpers.test.ts`: 3/3 tests passed.
-  - `src/routes.test.ts`: 51/51 tests passed.
-  - Total: 54/54 tests passed successfully in 652ms.
+## Verification
+- Ran vitest tests for accounting domain: `npx vitest run libs/domains/accounting`.
+- All 130 tests (including the 13 new route tests) passed successfully.
 
-#### Files changed
-- **Created:**
-  - [transactions.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/api/src/routes/transactions.ts)
-- **Modified:**
-  - [routes.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/api/src/routes.ts)
-
-#### Self-review findings
-- **Completeness:** All `/transactions` routes have been completely moved and mounted correctly.
-- **Quality:** Code formatting and structure follow the established conventions (e.g., using `seasons.ts` as reference). Unused transaction routes were successfully cleaned up from `routes.ts`.
-- **Discipline:** No extraneous code, no console logs or debugger statements were introduced.
-- **Testing:** The full integration test suite continues to pass with no regressions.
-
-#### Issues or concerns
-- None. The migration was straightforward and everything works perfectly.
+## Commits
+- `1bb3b7b feat(accounting): implement validators for complex creation/reconcile commands`

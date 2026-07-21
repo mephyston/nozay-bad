@@ -1,24 +1,27 @@
-# Task 2: Sous-routeur des Saisons (Seasons) - Report
+# Task 2 Report: Validateurs pour les Commandes de Création de Base
 
-## What was implemented
-- Created a new seasons sub-router file at [seasons.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/api/src/routes/seasons.ts) containing all endpoints under the `/seasons` prefix originally defined in `routes.ts`.
-- Mounted the seasons sub-router in [routes.ts](file:///Users/david/Lab/nozay-bad/libs/features/accounting/api/src/routes.ts) using `accountingRouter.route('/seasons', seasonsRouter)`.
-- Removed original endpoints starting with `/seasons` from the main `routes.ts` file.
-- Cleaned up unused imports in `routes.ts` (e.g. `seasonBalancesTable`, `seasonCategoryBudgetsTable`, `seasonsTable`) to keep imports tidy.
+## Summary of Changes
+Implemented TypeBox validators, integrated them with `tbValidator` in routes, and added route tests with error (400) and success (200) scenarios for the following slices:
+- **create-account-class**
+  - Created `validator.ts` with `createAccountClassSchema`.
+  - Updated `route.ts` to use `tbValidator` and retrieved validated JSON with `c.req.valid('json')`.
+  - Created `route.test.ts` to verify 400 and 200 responses.
+- **create-category**
+  - Created `validator.ts` with `createCategorySchema`.
+  - Updated `route.ts` to use `tbValidator` and `c.req.valid('json')`.
+  - Created `route.test.ts` to verify 400 and 200 responses.
+- **create-season**
+  - Created `validator.ts` with `createSeasonSchema`.
+  - Updated `route.ts` to use `tbValidator` and `c.req.valid('json')`.
+  - Created `route.test.ts` to verify 400 and 200 responses.
+- **create-bank-check-deposit**
+  - Created `validator.ts` with `createCheckDepositSchema` and `clearCheckDepositSchema`.
+  - Updated `route.ts` to use `tbValidator` for the `/check-deposits` and `/check-deposits/:id/clear` endpoints.
+  - Created `route.test.ts` with mocked repository functionality to test 400 and 200 responses.
 
-## What was tested and test results
-- Ran full test suite for the accounting API using `npx vitest run libs/features/accounting/api/`.
-- Executed the global test suite using `npm test -- run` to make sure nothing was broken.
-- **Results:** All 179 unit/integration tests passed successfully, including the 54 tests specific to features-accounting-api (which fully verify the season routes, budget, balances, and reports).
+## Verification
+- Ran vitest tests for accounting domain: `npx vitest run libs/domains/accounting`.
+- All 117 tests (including the 10 new route tests) passed successfully.
 
-## Files changed
-- Created: `libs/features/accounting/api/src/routes/seasons.ts`
-- Modified: `libs/features/accounting/api/src/routes.ts`
-
-## Self-Review Findings
-- **Completeness**: All required routes (GET `/`, POST `/`, PUT `/:id`, POST `/:id/close`, GET `/:seasonId/budget`, POST `/:seasonId/budget`, GET `/:seasonId/balance`, GET `/:seasonId/balances`, POST `/:seasonId/balances`, GET `/:seasonId/reports`) have been correctly migrated and mapped relative to the `/seasons` sub-router mount point.
-- **Quality & Discipline**: Code formatting is preserved, dependencies and imports are optimized, and clean structure rules from development standards are respected.
-- **Testing**: Complete test coverage is verified and passes cleanly on the local environment.
-
-## Issues/Concerns
-- None. The migration went very smoothly and cleanly.
+## Commits
+- `09d1c48 feat(accounting): implement validators for base creation commands`
