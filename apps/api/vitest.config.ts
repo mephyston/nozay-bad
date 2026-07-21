@@ -1,7 +1,15 @@
 import { defineConfig } from 'vitest/config';
+import { cloudflareTest } from '@cloudflare/vitest-pool-workers';
 import path from 'path';
 
 export default defineConfig({
+  plugins: [
+    cloudflareTest({
+      wrangler: {
+        configPath: path.resolve(__dirname, './wrangler.json'),
+      },
+    }),
+  ],
   resolve: {
     alias: {
       '@metacult/shared-db/test-utils': path.resolve(__dirname, '../../libs/shared/db/src/test-utils.ts'),
@@ -14,9 +22,5 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'miniflare',
-    environmentOptions: {
-      d1Databases: ['DB'],
-    },
   },
 });

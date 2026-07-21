@@ -12,34 +12,11 @@ import {
   accountClassesTable
 } from '../../../libs/domains/accounting/shared/schema';
 import { productsTable, ordersTable } from '../../../libs/domains/shop/shared/schema';
-import { drizzle } from 'drizzle-orm/d1';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { MockD1Database } from '@metacult/shared-db/test-utils';
+import { setupMockDb } from '@metacult/shared-db/test-utils';
 
 describe('Database Tests', () => {
   it('should run migrations and insert/retrieve a member and a user', async () => {
-    const mockD1 = new MockD1Database();
-    
-    // Apply migrations
-    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
-    const migrationFiles = fs.readdirSync(migrationsDir)
-      .filter(f => f.endsWith('.sql'))
-      .sort();
-
-    for (const file of migrationFiles) {
-      const sqlPath = path.join(migrationsDir, file);
-      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
-      const statements = sqlContent.split('--> statement-breakpoint');
-      for (const statement of statements) {
-        if (statement.trim()) {
-          await mockD1.exec(statement);
-        }
-      }
-    }
-
-    // Initialize drizzle
-    const db = drizzle(mockD1 as any);
+    const { db } = await setupMockDb();
 
     // Insert and verify a user
     const newUser = {
@@ -93,26 +70,7 @@ describe('Database Tests', () => {
   });
 
   it('should insert season balances and transactions correctly', async () => {
-    const mockD1 = new MockD1Database();
-    
-    // Apply migrations
-    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
-    const migrationFiles = fs.readdirSync(migrationsDir)
-      .filter(f => f.endsWith('.sql'))
-      .sort();
-
-    for (const file of migrationFiles) {
-      const sqlPath = path.join(migrationsDir, file);
-      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
-      const statements = sqlContent.split('--> statement-breakpoint');
-      for (const statement of statements) {
-        if (statement.trim()) {
-          await mockD1.exec(statement);
-        }
-      }
-    }
-
-    const db = drizzle(mockD1 as any);
+    const { db } = await setupMockDb();
 
     // Insérer un solde initial
     const balance = {
@@ -142,26 +100,7 @@ describe('Database Tests', () => {
   });
 
   it('should insert bank transactions correctly', async () => {
-    const mockD1 = new MockD1Database();
-    
-    // Apply migrations
-    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
-    const migrationFiles = fs.readdirSync(migrationsDir)
-      .filter(f => f.endsWith('.sql'))
-      .sort();
-
-    for (const file of migrationFiles) {
-      const sqlPath = path.join(migrationsDir, file);
-      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
-      const statements = sqlContent.split('--> statement-breakpoint');
-      for (const statement of statements) {
-        if (statement.trim()) {
-          await mockD1.exec(statement);
-        }
-      }
-    }
-
-    const db = drizzle(mockD1 as any);
+    const { db } = await setupMockDb();
 
     const op = {
       fitid: 'SG-123456-COURANT',
@@ -180,26 +119,7 @@ describe('Database Tests', () => {
   });
 
   it('should support new member payment and transaction relation fields', async () => {
-    const mockD1 = new MockD1Database();
-    
-    // Apply migrations
-    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
-    const migrationFiles = fs.readdirSync(migrationsDir)
-      .filter(f => f.endsWith('.sql'))
-      .sort();
-
-    for (const file of migrationFiles) {
-      const sqlPath = path.join(migrationsDir, file);
-      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
-      const statements = sqlContent.split('--> statement-breakpoint');
-      for (const statement of statements) {
-        if (statement.trim()) {
-          await mockD1.exec(statement);
-        }
-      }
-    }
-
-    const db = drizzle(mockD1 as any);
+    const { db } = await setupMockDb();
 
     const [member] = await db.insert(membersTable).values({
       licence: '7778889',
@@ -250,26 +170,7 @@ describe('Database Tests', () => {
   });
 
   it('should support check deposits and checks insertion and linking', async () => {
-    const mockD1 = new MockD1Database();
-    
-    // Apply migrations
-    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
-    const migrationFiles = fs.readdirSync(migrationsDir)
-      .filter(f => f.endsWith('.sql'))
-      .sort();
-
-    for (const file of migrationFiles) {
-      const sqlPath = path.join(migrationsDir, file);
-      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
-      const statements = sqlContent.split('--> statement-breakpoint');
-      for (const statement of statements) {
-        if (statement.trim()) {
-          await mockD1.exec(statement);
-        }
-      }
-    }
-
-    const db = drizzle(mockD1 as any);
+    const { db } = await setupMockDb();
 
     // Insérer un dépôt de chèque
     const [deposit] = await db.insert(checkDepositsTable).values({
@@ -315,27 +216,7 @@ describe('Database Tests', () => {
   });
 
   it('should insert and query products and orders', async () => {
-    const mockD1 = new MockD1Database();
-    
-    // Apply migrations
-    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
-    const migrationFiles = fs.readdirSync(migrationsDir)
-      .filter(f => f.endsWith('.sql'))
-      .sort();
-
-    for (const file of migrationFiles) {
-      const sqlPath = path.join(migrationsDir, file);
-      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
-      const statements = sqlContent.split('--> statement-breakpoint');
-      for (const statement of statements) {
-        if (statement.trim()) {
-          await mockD1.exec(statement);
-        }
-      }
-    }
-
-    const db = drizzle(mockD1 as any);
-    const getDb = () => db;
+    const { db } = await setupMockDb();
 
     const product = await db.insert(productsTable).values({
       name: 'RSL Grade 1',
@@ -379,26 +260,7 @@ describe('Database Tests', () => {
   });
 
   it('should insert and query categories correctly', async () => {
-    const mockD1 = new MockD1Database();
-    
-    // Apply migrations
-    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
-    const migrationFiles = fs.readdirSync(migrationsDir)
-      .filter(f => f.endsWith('.sql'))
-      .sort();
-
-    for (const file of migrationFiles) {
-      const sqlPath = path.join(migrationsDir, file);
-      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
-      const statements = sqlContent.split('--> statement-breakpoint');
-      for (const statement of statements) {
-        if (statement.trim()) {
-          await mockD1.exec(statement);
-        }
-      }
-    }
-
-    const db = drizzle(mockD1 as any);
+    const { db } = await setupMockDb();
 
     // List seeded categories (our migration seeds 14 default categories)
     const list = await db.select().from(categoriesTable).all();
@@ -416,24 +278,7 @@ describe('Database Tests', () => {
   });
 
   it('should support creating and querying account classes', async () => {
-    const mockD1 = new MockD1Database();
-    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
-    const migrationFiles = fs.readdirSync(migrationsDir)
-      .filter(f => f.endsWith('.sql'))
-      .sort();
-
-    for (const file of migrationFiles) {
-      const sqlPath = path.join(migrationsDir, file);
-      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
-      const statements = sqlContent.split('--> statement-breakpoint');
-      for (const statement of statements) {
-        if (statement.trim()) {
-          await mockD1.exec(statement);
-        }
-      }
-    }
-
-    const db = drizzle(mockD1 as any);
+    const { db } = await setupMockDb();
 
     const testClass = {
       code: '63',
@@ -453,26 +298,8 @@ describe('Database Tests', () => {
   });
 
   it('should support creating invoices and items', async () => {
-    const mockD1 = new MockD1Database();
-    
-    // Apply migrations
-    const migrationsDir = path.resolve(__dirname, '../../../libs/shared/db/migrations');
-    const migrationFiles = fs.readdirSync(migrationsDir)
-      .filter(f => f.endsWith('.sql'))
-      .sort();
+    const { db } = await setupMockDb();
 
-    for (const file of migrationFiles) {
-      const sqlPath = path.join(migrationsDir, file);
-      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
-      const statements = sqlContent.split('--> statement-breakpoint');
-      for (const statement of statements) {
-        if (statement.trim()) {
-          await mockD1.exec(statement);
-        }
-      }
-    }
-
-    const db = drizzle(mockD1 as any);
     let season = await db.select().from(seasonsTable).all().then(r => r.find(s => s.id === '25-26'));
     if (!season) {
       const insertedSeasons = await db.insert(seasonsTable).values({ id: '25-26', name: 'Saison 25-26', active: true, createdAt: new Date() }).returning();
@@ -501,4 +328,3 @@ describe('Database Tests', () => {
     expect(item.id).toBeDefined();
   });
 });
-

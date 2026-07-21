@@ -1,0 +1,1054 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Nozay Badminton API",
+    "version": "1.0.0",
+    "description": "Verifiable contract between apps/api, apps/admin and apps/storefront"
+  },
+  "paths": {
+    "/members/import": {
+      "post": {
+        "summary": "Import members from CSV file",
+        "tags": [
+          "Members"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportMembersInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Import result report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "inserted",
+                    "updated",
+                    "errors"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "inserted": {
+                      "type": "integer"
+                    },
+                    "updated": {
+                      "type": "integer"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/members": {
+      "get": {
+        "summary": "List and filter members",
+        "tags": [
+          "Members"
+        ],
+        "parameters": [
+          {
+            "name": "season",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "paid",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "meta": {
+                      "type": "object",
+                      "required": [
+                        "total",
+                        "page",
+                        "limit",
+                        "pages"
+                      ],
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "pages": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/members/{licence}": {
+      "get": {
+        "summary": "Get member by licence number",
+        "tags": [
+          "Members"
+        ],
+        "parameters": [
+          {
+            "name": "licence",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {}
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Member not found"
+          }
+        }
+      }
+    },
+    "/members/cse": {
+      "get": {
+        "summary": "Get CSE attestation details",
+        "tags": [
+          "Members"
+        ],
+        "parameters": [
+          {
+            "name": "licence",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "season",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSE attestation details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/expenses": {
+      "post": {
+        "summary": "Create a new expense note",
+        "tags": [
+          "Expenses"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExpenseInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created expense details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/expenses/{id}": {
+      "put": {
+        "summary": "Update an existing expense note",
+        "tags": [
+          "Expenses"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateExpenseInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated expense details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/expenses/{id}/approve": {
+      "post": {
+        "summary": "Approve an expense and record transaction",
+        "tags": [
+          "Expenses"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Approved expense",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/expenses/{id}/reject": {
+      "post": {
+        "summary": "Reject an expense",
+        "tags": [
+          "Expenses"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rejected expense",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shop/products": {
+      "post": {
+        "summary": "Create a new shop product",
+        "tags": [
+          "Shop"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProductInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created product details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shop/products/{id}": {
+      "put": {
+        "summary": "Update shop product details or stock",
+        "tags": [
+          "Shop"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProductInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated product details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shop/orders": {
+      "post": {
+        "summary": "Place a new product order",
+        "tags": [
+          "Shop"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created order details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/accounting/seasons": {
+      "post": {
+        "summary": "Create a new accounting season",
+        "tags": [
+          "Accounting"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSeasonInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created season details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/accounting/invoices": {
+      "post": {
+        "summary": "Create a new invoice",
+        "tags": [
+          "Accounting"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInvoiceInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created invoice details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/accounting/invoices/{id}/status": {
+      "post": {
+        "summary": "Change invoice status",
+        "tags": [
+          "Accounting"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeInvoiceStatusInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status update status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateExpenseInput": {
+        "type": "object",
+        "required": [
+          "seasonId",
+          "description",
+          "category",
+          "amount",
+          "emitterName"
+        ],
+        "properties": {
+          "seasonId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "amount": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "photoUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "emitterName": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "memberId": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "UpdateExpenseInput": {
+        "type": "object",
+        "properties": {
+          "seasonId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "amount": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "photoUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "emitterName": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "memberId": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ImportMembersInput": {
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "properties": {
+          "file": {}
+        }
+      },
+      "CreateOrderInput": {
+        "type": "object",
+        "required": [
+          "seasonId",
+          "memberId",
+          "productId",
+          "quantity",
+          "paymentMethod"
+        ],
+        "properties": {
+          "seasonId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "memberId": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "productId": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "quantity": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "paymentMethod": {
+            "anyOf": [
+              {
+                "const": "virement",
+                "type": "string"
+              },
+              {
+                "const": "cheque",
+                "type": "string"
+              },
+              {
+                "const": "especes",
+                "type": "string"
+              },
+              {
+                "const": "labaz",
+                "type": "string"
+              },
+              {
+                "const": "ancv",
+                "type": "string"
+              },
+              {
+                "const": "pass_sport",
+                "type": "string"
+              },
+              {
+                "const": "ticket_loisir",
+                "type": "string"
+              },
+              {
+                "const": "up_loisir",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "CreateProductInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "category",
+          "price",
+          "stock"
+        ],
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "const": "shuttlecock",
+                "type": "string"
+              },
+              {
+                "const": "string",
+                "type": "string"
+              },
+              {
+                "const": "other",
+                "type": "string"
+              }
+            ]
+          },
+          "price": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "stock": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdateProductInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "price": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "stock": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateSeasonInput": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "description": "Season identifier, e.g. \"25-26\"",
+            "type": "string"
+          },
+          "name": {
+            "description": "Season display name, e.g. \"Saison 2025-2026\"",
+            "type": "string"
+          },
+          "active": {
+            "default": false,
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateInvoiceInput": {
+        "type": "object",
+        "required": [
+          "seasonId",
+          "date",
+          "dueDate",
+          "clientName",
+          "totalAmount",
+          "items"
+        ],
+        "properties": {
+          "seasonId": {
+            "type": "string"
+          },
+          "date": {
+            "description": "Invoice date (YYYY-MM-DD)",
+            "type": "string"
+          },
+          "dueDate": {
+            "description": "Due date (YYYY-MM-DD)",
+            "type": "string"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "clientAddress": {
+            "type": "string"
+          },
+          "clientEmail": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string"
+          },
+          "attendees": {
+            "type": "string"
+          },
+          "totalAmount": {
+            "description": "Total invoice amount in cents",
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "description",
+                "quantity",
+                "unitPrice",
+                "totalPrice"
+              ],
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "unitPrice": {
+                  "description": "Unit price in cents",
+                  "type": "integer"
+                },
+                "totalPrice": {
+                  "description": "Total price in cents",
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ChangeInvoiceStatusInput": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "const": "draft",
+                "type": "string"
+              },
+              {
+                "const": "sent",
+                "type": "string"
+              },
+              {
+                "const": "paid",
+                "type": "string"
+              },
+              {
+                "const": "cancelled",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,47 +1,119 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 
+// Simple in-memory rate limit map for Cloudflare Worker isolates
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+function isRateLimited(ip: string, limit = 30, windowMs = 60000): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+  if (!record) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });
+    return false;
+  }
+  if (now > record.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });
+    return false;
+  }
+  record.count++;
+  return record.count > limit;
+}
+
+function resetRateLimit(ip: string) {
+  rateLimitMap.delete(ip);
+}
+
 export const GET: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
-  const q = url.searchParams.get('q') || '';
+  const q = (url.searchParams.get('q') || '').trim();
 
-  if (!q.trim()) {
+  // 1. Min length requirement
+  if (q.length < 3) {
     return new Response(JSON.stringify([]), {
       status: 200,
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Content-Type': 'application/json' }
     });
+  }
+
+  // 2. Simple IP-based rate limiting
+  const ip = request.headers.get('CF-Connecting-IP') || request.headers.get('x-real-ip') || '127.0.0.1';
+  if (isRateLimited(ip)) {
+    const turnstileToken = request.headers.get('cf-turnstile-response') || url.searchParams.get('token') || '';
+    if (turnstileToken) {
+      try {
+        const verifyRes = await fetch('https://turnstile-siteverify-nba.mephyston.workers.dev', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: turnstileToken })
+        });
+        const verifyJson = (await verifyRes.json()) as any;
+        if (verifyJson.success) {
+          resetRateLimit(ip);
+        } else {
+          return new Response(JSON.stringify({ error: 'Rate limit exceeded. Captcha verification failed.' }), {
+            status: 429,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      } catch (err) {
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Captcha verification error.' }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    } else {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Captcha required.' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
   }
 
   try {
     const apiService = (env as any).API_SERVICE;
-    const res = await apiService.fetch(`http://localhost/members?search=${encodeURIComponent(q)}&limit=10`);
-    if (!res.ok) {
-      throw new Error(`API error: ${res.status}`);
+    let membersData: any[] = [];
+
+    // 3. Exact licence match if query is numeric
+    if (/^\d+$/.test(q)) {
+      if (q.length >= 7) {
+        // Fetch exact member by licence
+        const res = await apiService.fetch(`http://localhost/members/${encodeURIComponent(q)}`);
+        if (res.status === 200) {
+          const json = await res.json() as any;
+          if (json.success && json.data) {
+            membersData = [json.data];
+          }
+        }
+      } else {
+        // Shorter numeric queries are ignored for licence matching
+        membersData = [];
+      }
+    } else {
+      // Name-based autocomplete search
+      const res = await apiService.fetch(`http://localhost/members?search=${encodeURIComponent(q)}&limit=10`);
+      if (res.ok) {
+        const json = await res.json() as any;
+        membersData = json.data || [];
+      }
     }
-    const json = (await res.json()) as any;
-    const membersData = json.data || [];
+
+    // 4. Return masked fields to preserve privacy
     const members = membersData.map((m: any) => ({
       id: m.id,
       firstName: m.firstName,
-      lastName: m.lastName,
-      licence: m.licence
+      lastName: m.lastName ? `${m.lastName[0]}.` : '',
+      licence: m.licence ? `${m.licence.slice(0, 2)}***${m.licence.slice(-2)}` : '***'
     }));
 
     return new Response(JSON.stringify(members), {
       status: 200,
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
     console.error('Error fetching members:', error);
     return new Response(JSON.stringify({ error: 'Failed to search members' }), {
       status: 500,
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Content-Type': 'application/json' }
     });
   }
 };

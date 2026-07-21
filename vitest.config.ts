@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { cloudflareTest } from '@cloudflare/vitest-pool-workers';
 import path from 'path';
 
 export default defineConfig({
@@ -19,6 +20,15 @@ export default defineConfig({
     },
   },
   test: {
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: false,
+        isolate: true,
+      },
+    },
+    maxWorkers: '75%',
+    fileParallelism: true,
     projects: [
       // Standard config files for apps and shared libs
       'apps/api/vitest.config.ts',
@@ -30,14 +40,17 @@ export default defineConfig({
       // Inline project configs for members API and UI
       {
         extends: true,
+        plugins: [
+          cloudflareTest({
+            wrangler: {
+              configPath: path.resolve(__dirname, 'apps/api/wrangler.json'),
+            },
+          }),
+        ],
         cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-members-api'),
         test: {
           name: 'features-members-api',
           globals: true,
-          environment: 'miniflare',
-          environmentOptions: {
-            d1Databases: ['DB'],
-          },
           root: path.resolve(__dirname, 'libs/domains/members'),
           include: ['commands/**/*.test.ts', 'queries/**/*.test.ts', 'shared/**/*.test.ts'],
           exclude: ['**/ui/**', '**/node_modules/**'],
@@ -62,14 +75,17 @@ export default defineConfig({
       // Inline project configs for accounting API and UI
       {
         extends: true,
+        plugins: [
+          cloudflareTest({
+            wrangler: {
+              configPath: path.resolve(__dirname, 'apps/api/wrangler.json'),
+            },
+          }),
+        ],
         cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-accounting-api'),
         test: {
           name: 'features-accounting-api',
           globals: true,
-          environment: 'miniflare',
-          environmentOptions: {
-            d1Databases: ['DB'],
-          },
           root: path.resolve(__dirname, 'libs/domains/accounting'),
           include: ['commands/**/*.test.ts', 'queries/**/*.test.ts'],
           exclude: ['**/ui/**', '**/node_modules/**'],
@@ -94,14 +110,17 @@ export default defineConfig({
       // Inline project configs for expenses API and UI
       {
         extends: true,
+        plugins: [
+          cloudflareTest({
+            wrangler: {
+              configPath: path.resolve(__dirname, 'apps/api/wrangler.json'),
+            },
+          }),
+        ],
         cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-expenses-api'),
         test: {
           name: 'features-expenses-api',
           globals: true,
-          environment: 'miniflare',
-          environmentOptions: {
-            d1Databases: ['DB'],
-          },
           root: path.resolve(__dirname, 'libs/domains/expenses'),
           include: ['commands/**/*.test.ts', 'queries/**/*.test.ts', 'shared/**/*.test.ts'],
           exclude: ['**/ui/**', '**/node_modules/**'],
@@ -126,14 +145,17 @@ export default defineConfig({
       // Inline project configs for shop API and UI
       {
         extends: true,
+        plugins: [
+          cloudflareTest({
+            wrangler: {
+              configPath: path.resolve(__dirname, 'apps/api/wrangler.json'),
+            },
+          }),
+        ],
         cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-shop-api'),
         test: {
           name: 'features-shop-api',
           globals: true,
-          environment: 'miniflare',
-          environmentOptions: {
-            d1Databases: ['DB'],
-          },
           root: path.resolve(__dirname, 'libs/domains/shop'),
           include: ['commands/**/*.test.ts', 'queries/**/*.test.ts', 'shared/**/*.test.ts'],
           exclude: ['**/ui/**', '**/node_modules/**'],
@@ -154,13 +176,14 @@ export default defineConfig({
           include: ['list-orders/ui/**/*.test.ts', 'list-products/ui/**/*.test.ts'],
         }
       },
+      // Architecture tests project
       {
         extends: true,
         test: {
           name: 'architecture-tests',
           globals: true,
           environment: 'node',
-          include: ['libs/architecture.test.ts'],
+          include: ['libs/*.test.ts'],
         }
       },
     ],

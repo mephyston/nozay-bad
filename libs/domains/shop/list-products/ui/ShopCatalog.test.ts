@@ -299,9 +299,9 @@ describe('ShopCatalog Component', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    // Mock fetch specifically for the API endpoint
+    // Mock fetch specifically for the API endpoint returning masked data
     const searchMembers = [
-      { id: 3, firstName: 'Pierre', lastName: 'Dubois', licence: '789012' }
+      { id: 3, firstName: 'Pierre', lastName: 'D.', licence: '78***12' }
     ];
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
       if (url.includes('/api/members-search')) {
@@ -346,17 +346,17 @@ describe('ShopCatalog Component', () => {
     expect(global.fetch).toHaveBeenCalledWith('/api/members-search?q=Dubois');
 
     // Check if dropdown contains the fetched member
-    expect(target.innerHTML).toContain('Dubois Pierre');
-    expect(target.innerHTML).toContain('Licence: 789012');
+    expect(target.innerHTML).toContain('D. Pierre');
+    expect(target.innerHTML).toContain('Licence: 78***12');
 
     // Select the member
-    const button = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Dubois Pierre'));
+    const button = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('D. Pierre'));
     expect(button).not.toBeUndefined();
     button!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     flushSync();
 
     // Check that select worked
-    expect(target.innerHTML).toContain('Adhérent sélectionné : <span class="underline">Dubois Pierre</span>');
+    expect(target.innerHTML).toContain('Adhérent sélectionné : <span class="underline">D. Pierre</span>');
   });
 
   it('clears fetched members when search query is empty', async () => {
@@ -364,7 +364,7 @@ describe('ShopCatalog Component', () => {
     document.body.appendChild(target);
 
     const searchMembers = [
-      { id: 3, firstName: 'Pierre', lastName: 'Dubois', licence: '789012' }
+      { id: 3, firstName: 'Pierre', lastName: 'D.', licence: '78***12' }
     ];
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
       if (url.includes('/api/members-search')) {
@@ -397,7 +397,7 @@ describe('ShopCatalog Component', () => {
     await vi.advanceTimersByTimeAsync(300);
     flushSync();
 
-    expect(target.innerHTML).toContain('Dubois Pierre');
+    expect(target.innerHTML).toContain('D. Pierre');
 
     // Clear input
     input.value = '';
