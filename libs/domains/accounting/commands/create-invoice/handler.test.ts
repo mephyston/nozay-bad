@@ -49,4 +49,17 @@ describe('createInvoice', () => {
     const args = [db, payload];
     await expect((createInvoice as any)(...args)).rejects.toThrow();
   });
+
+  it('should transform UNIQUE constraint collision into a business error', async () => {
+    const payload = { seasonId: '25-26', items: [] } as any;
+    (isSeasonClosed as any).mockResolvedValue(false);
+
+    const mockRepoInstance = {
+      generateInvoiceNumber: vi.fn().mockResolvedValue('FAC-2526-NBA91-0001'),
+      create: vi.fn().mockRejectedValue(new Error('UNIQUE constraint failed: invoices.invoice_number'))
+    };
+    (vi.mocked(CreateInvoiceRepository) as any).mockImplementation(function() { return mockRepoInstance; });
+
+    await expect((createInvoice as any)(db, payload)).rejects.toThrow('Numéro de facture déjà attribué, réessayez');
+  });
 });
