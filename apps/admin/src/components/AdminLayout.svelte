@@ -9,8 +9,12 @@
     breadcrumb?: string;
   }>();
 
-  // Keep track of desktop sidebar open state in localstorage
-  let sidebarOpen = $state(true);
+  // Synchronously initialize sidebar open state to prevent layout shift during hydration
+  let sidebarOpen = $state(
+    typeof localStorage !== "undefined" && localStorage.getItem("sidebar_collapsed") !== null
+      ? localStorage.getItem("sidebar_collapsed") !== "true"
+      : true
+  );
 
   onMount(() => {
     const saved = localStorage.getItem("sidebar_collapsed");
