@@ -68,16 +68,12 @@ Ces règles sont non négociables et s'appliquent à chaque PR de la migration.
     Seuil d'alerte, pas une limite dure — sert à repérer un cas d'usage encore
     non découpé ou un fichier fourre-tout.
 
-12. **Regroupement `commands/` / `queries/` (CQRS léger), uniquement au-delà
-    d'un seuil de taille.** Quand un domaine dépasse ~8 tranches, ses cas
-    d'usage sont répartis dans deux sous-dossiers : `commands/` (tout ce qui
-    écrit — soumis à la règle 9 sur les transactions) et `queries/` (tout ce
-    qui lit seul — jamais de `db.transaction`). Pas de bus, pas de médiateur,
-    juste un classement physique. `shared/` reste au niveau racine du
-    domaine, partagé par les deux. Ce seuil s'applique domaine par domaine :
-    aujourd'hui seul `accounting` le dépasse ; ne pas imposer ce découpage à
-    `expenses`, `members`, `shop` tant qu'ils restent petits — l'ajouter s'ils
-    grossissent au même point.
+12. **Découpage par capacités métier au-delà de 10 tranches (ADR-0003).** Quand un domaine
+    atteint ou dépasse 10 tranches verticales (seuil $N = 10$), ses cas d'usage sont
+    regroupés par sous-domaines/capacités métier (ex: `accounting/invoices/`,
+    `accounting/seasons/`). En dessous de 10 tranches, le domaine reste à plat sous
+    sa racine (`members/`, `expenses/`, `shop/`). La séparation technique `commands/`
+    et `queries/` est proscrite au profit d'un découpage métier.
 
 12. **Le déploiement ne change pas pendant la migration.**
     Toujours un Worker par app (`wrangler.json` inchangé). Aucune

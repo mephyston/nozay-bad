@@ -12,13 +12,8 @@ create-invoice/
   handler.test.ts         # test du handler, indépendant du framework HTTP
 ```
 
-Le gabarit d'une tranche est identique qu'il s'agisse d'une commande ou d'une
-requête. Ce qui change, c'est où elle vit une fois le domaine devenu gros
-(cf. `01-principles.md`, règle 12) : `commands/create-invoice/` pour ce qui
-écrit, `queries/list-invoices/` pour ce qui lit seul. Une tranche `queries/`
-n'a jamais de `db.transaction` dans son `handler.ts` — si vous en trouvez
-une, c'est le signe qu'elle a été mal classée ou qu'elle fait plus qu'une
-lecture.
+Le gabarit d'une tranche est identique quel que soit le cas d'usage. Ce qui change, c'est où elle vit une fois le domaine devenu volumineux
+(cf. `01-principles.md`, règle 12 & `ADR-0003`) : dans un sous-dossier par capacité métier (`invoices/create-invoice/`, `seasons/list-seasons/`). Pour les domaines comportant moins de 10 tranches, la tranche vit directement à la racine du domaine (`members/list-members/`).
 
 ## Exemple concret basé sur le code existant
 
@@ -67,8 +62,7 @@ dehors du domaine (contrairement à l'ancien `data-access/index.ts` qui
 faisait `export * from './schema'`).
 
 **Sort de `ui/` à la racine du domaine** : il disparaît une fois chaque
-composant redistribué dans le `ui/` de sa tranche (`commands/<cas-usage>/ui/`
-ou `queries/<cas-usage>/ui/`). Un domaine cible n'a donc plus que
-`shared/`, `commands/`, `queries/` (ou directement des tranches à plat si le
-domaine est sous le seuil de la règle 12) — aucun dossier `api/`,
+composant redistribué dans le `ui/` de sa tranche (`<capacité>/<cas-usage>/ui/`
+ou `<cas-usage>/ui/`). Un domaine cible n'a donc plus que
+`shared/` et ses dossiers de capacités métier ou ses tranches à plat (selon la règle des 10 tranches ADR-0003) — aucun dossier `api/`,
 `data-access/` ni `ui/` à sa racine.

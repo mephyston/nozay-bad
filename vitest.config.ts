@@ -103,7 +103,7 @@ export default defineConfig({
           globals: true,
           environment: 'jsdom',
           root: path.resolve(__dirname, 'libs/domains/accounting'),
-          include: ['commands/**/ui/**/*.test.ts', 'queries/**/ui/**/*.test.ts'],
+          include: ['*/**/ui/**/*.test.ts'],
         }
       },
       

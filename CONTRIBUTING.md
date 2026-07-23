@@ -46,7 +46,7 @@ Chaque cas d'usage doit contenir la structure suivante :
 3. **`handler.ts`** : Contient la fonction métier. Ne contient aucun import de Hono (`c.req`, `c.json`) ni de Drizzle (`eq`, `and`, `db.select`).
 4. **`repository.ts`** : Reçoit l'instance de base de données D1/Drizzle et exécute les requêtes SQL. C'est l'**unique endroit** d'une tranche où l'import de `drizzle-orm` est autorisé.
 5. **`route.ts`** : Exporte le sous-routeur Hono de la tranche (`export const create<Slice>Route = ...`). Rôle : valider la requête via `validator.ts`, appeler `handler.ts`, et retourner la réponse HTTP.
-6. **`ui/` (optionnel)** : Si le cas d'usage inclut des composants d'interface Svelte/Astro, ils doivent obligatoirement être placés dans le sous-dossier `ui/` de la tranche (`commands/<nom-du-cas>/ui/`).
+6. **`ui/` (optionnel)** : Si le cas d'usage inclut des composants d'interface Svelte/Astro, ils doivent obligatoirement être placés dans le sous-dossier `ui/` de la tranche (`<capacité>/<nom-du-cas>/ui/` ou `<nom-du-cas>/ui/`).
 
 ---
 
