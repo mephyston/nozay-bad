@@ -76,13 +76,18 @@
     }
   });
 
-  // Debounced member search from API (fetches initial list when opened)
+  // Debounced member search with 3-character minimum requirement
   $effect(() => {
     if (!isMemberDropdownOpen) return;
     if (members.length > 0) return;
 
-    const query = memberSearchQuery;
-    if (lastSelectedMember && query === formatMemberName(lastSelectedMember)) {
+    const query = memberSearchQuery.trim();
+    if (lastSelectedMember && memberSearchQuery === formatMemberName(lastSelectedMember)) {
+      return;
+    }
+
+    // Require at least 3 characters when typing a search query
+    if (query.length > 0 && query.length < 3) {
       return;
     }
 
@@ -100,7 +105,7 @@
       } catch (err) {
         console.error('Error fetching members from API:', err);
       }
-    }, query.trim() === '' ? 0 : 250);
+    }, query === '' ? 0 : 300);
 
     return () => {
       if (debounceTimeout) {
@@ -315,7 +320,7 @@
             aria-autocomplete="list"
             aria-controls="member-listbox"
             aria-activedescendant={highlightedIndex >= 0 ? `member-option-${highlightedIndex}` : undefined}
-            placeholder="Rechercher par Nom, Prénom, ou N° Licence..."
+            placeholder="Rechercher par Nom, Prénom, ou N° Licence (min 3 caractères)..."
             class="w-full pl-10 pr-10 h-10 rounded-xl font-semibold"
             value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
             oninput={(e) => {
@@ -362,7 +367,9 @@
                 </div>
               </button>
             {:else}
-              <div class="px-4 py-3 text-sm text-muted-foreground italic bg-popover">Aucun adhérent trouvé</div>
+              <div class="px-4 py-3 text-sm text-muted-foreground italic bg-popover">
+                {memberSearchQuery.trim().length > 0 && memberSearchQuery.trim().length < 3 ? 'Saisissez au moins 3 caractères pour rechercher' : 'Aucun adhérent trouvé'}
+              </div>
             {/each}
           </div>
         {/if}

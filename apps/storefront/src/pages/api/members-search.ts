@@ -6,6 +6,14 @@ export const GET: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
   const q = (url.searchParams.get('q') || '').trim();
 
+  // Require minimum 3 characters when a search query is provided
+  if (q.length > 0 && q.length < 3) {
+    return new Response(JSON.stringify([]), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
   // IP-based rate limiting with KV / Shared Store persistence
   const ip = request.headers.get('CF-Connecting-IP') || request.headers.get('x-real-ip') || '127.0.0.1';
   const kv = (env as any)?.RATE_LIMIT_KV;
