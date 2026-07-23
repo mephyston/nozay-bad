@@ -1,4 +1,4 @@
-import { AppError } from '@metacult/shared-db';
+import { AppError } from '@nba/db';
 
 export class ProductNotFoundError extends AppError {
   constructor(message = 'Produit inexistant') {

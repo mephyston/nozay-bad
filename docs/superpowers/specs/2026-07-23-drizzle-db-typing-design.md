@@ -4,7 +4,7 @@ Ce document décrit la refactorisation globale du typage Drizzle ORM sur Cloudfl
 
 ## Objectifs et Périmètre
 
-1. **Création/Complétude du module partagé `@metacult/shared-db`** :
+1. **Création/Complétude du module partagé `@nba/db`** :
    Exposer les types `Db`, `Tx`, `DbOrTx` et la factory `createDb`.
 2. **Remplacement de `drizzle(c.env.DB)` dans les routes** :
    Utiliser `createDb(c.env.DB)` dans tous les fichiers `route.ts`.
@@ -20,7 +20,7 @@ Ce document décrit la refactorisation globale du typage Drizzle ORM sur Cloudfl
    - Insertions : `$inferInsert` ou `Omit<..., 'id'>`.
 5. **Types DTO** : Remplacer `export type XxxOutput = any` par les types d'API réels.
 
-## Spécification Technique du Module `@metacult/shared-db`
+## Spécification Technique du Module `@nba/db`
 
 Structure de `libs/shared/db/src/client.ts` :
 

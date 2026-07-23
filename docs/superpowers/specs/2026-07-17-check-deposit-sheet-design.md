@@ -10,7 +10,7 @@ Ce document spécifie la modification de l'interface utilisateur pour l'enregist
 
 ## 2. Structure et Composants Svelte
 
-Utilisation des composants de l'espace de noms `Sheet` exporté par `@metacult/shared-ui` :
+Utilisation des composants de l'espace de noms `Sheet` exporté par `@nba/ui` :
 
 ```html
 <Sheet.Root bind:open={showAddCheckModal}>

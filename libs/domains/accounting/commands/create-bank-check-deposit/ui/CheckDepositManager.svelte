@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Wallet, FileText, CheckCircle, Trash2, Camera, UploadCloud, Search, ArrowRight, Loader2, Link, MoreVertical, Eye } from '@lucide/svelte';
-  import { Button, Table, Input, Badge, Card, Dialog, Sheet, Alert, Tabs, Checkbox } from '@metacult/shared-ui';
+  import { Button, Table, Input, Badge, Card, Dialog, Sheet, Alert, Tabs, Checkbox } from '@nba/ui';
   import AnalyzeCheck from '../../record-check-transaction/ui/AnalyzeCheck.svelte';
   import CheckDepositForm from './CheckDepositForm.svelte';
   import CheckReconciliationForm from './CheckReconciliationForm.svelte';

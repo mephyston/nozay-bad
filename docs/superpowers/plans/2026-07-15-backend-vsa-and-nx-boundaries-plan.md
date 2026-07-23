@@ -70,7 +70,7 @@
   Write configuration:
   ```json
   {
-    "name": "@metacult/shared-db",
+    "name": "@nba/db",
     "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "projectType": "library",
     "sourceRoot": "libs/shared/db/src",
@@ -129,7 +129,7 @@
 
 - [ ] **Step 6: Run Nx validation**
   Run: `npx nx show projects`
-  Expected: Outputs `api`, `admin-console`, `boutique`, `@metacult/shared-db`.
+  Expected: Outputs `api`, `admin-console`, `boutique`, `@nba/db`.
 
 - [ ] **Step 7: Commit changes**
   Run:
@@ -209,7 +209,7 @@
   Append path definitions in `tsconfig.base.json`:
   ```json
   "paths": {
-    "@metacult/shared-db": ["libs/shared/db/src/index.ts"],
+    "@nba/db": ["libs/shared/db/src/index.ts"],
     "@metacult/features-members-data-access": ["libs/features/members/data-access/src/index.ts"],
     "@metacult/features-accounting-data-access": ["libs/features/accounting/data-access/src/index.ts"],
     "@metacult/features-expenses-data-access": ["libs/features/expenses/data-access/src/index.ts"],
@@ -357,7 +357,7 @@
   - `libs/features/members/api/project.json`:
     ```json
     {
-      "name": "@metacult/features-members-api",
+      "name": "@nba/members-api",
       "projectType": "library",
       "sourceRoot": "libs/features/members/api/src",
       "tags": ["type:api", "scope:members"]
@@ -366,7 +366,7 @@
   - `libs/features/accounting/api/project.json`:
     ```json
     {
-      "name": "@metacult/features-accounting-api",
+      "name": "@nba/accounting-api",
       "projectType": "library",
       "sourceRoot": "libs/features/accounting/api/src",
       "tags": ["type:api", "scope:accounting"]
@@ -375,7 +375,7 @@
   - `libs/features/expenses/api/project.json`:
     ```json
     {
-      "name": "@metacult/features-expenses-api",
+      "name": "@nba/expenses-api",
       "projectType": "library",
       "sourceRoot": "libs/features/expenses/api/src",
       "tags": ["type:api", "scope:expenses"]
@@ -384,7 +384,7 @@
   - `libs/features/shop/api/project.json`:
     ```json
     {
-      "name": "@metacult/features-shop-api",
+      "name": "@nba/shop-api",
       "projectType": "library",
       "sourceRoot": "libs/features/shop/api/src",
       "tags": ["type:api", "scope:shop"]
@@ -395,10 +395,10 @@
   Append path definitions in `tsconfig.base.json`:
   ```json
   "paths": {
-    "@metacult/features-members-api": ["libs/features/members/api/src/index.ts"],
-    "@metacult/features-accounting-api": ["libs/features/accounting/api/src/index.ts"],
-    "@metacult/features-expenses-api": ["libs/features/expenses/api/src/index.ts"],
-    "@metacult/features-shop-api": ["libs/features/shop/api/src/index.ts"]
+    "@nba/members-api": ["libs/features/members/api/src/index.ts"],
+    "@nba/accounting-api": ["libs/features/accounting/api/src/index.ts"],
+    "@nba/expenses-api": ["libs/features/expenses/api/src/index.ts"],
+    "@nba/shop-api": ["libs/features/shop/api/src/index.ts"]
   }
   ```
 
@@ -416,10 +416,10 @@
 - [ ] **Step 4: Mount sub-routers in main API index.ts**
   Simplify `apps/api/src/index.ts` by removing raw handlers and mounting routers:
   ```typescript
-  import { membersRouter } from '@metacult/features-members-api';
-  import { accountingRouter } from '@metacult/features-accounting-api';
-  import { expensesRouter } from '@metacult/features-expenses-api';
-  import { shopRouter } from '@metacult/features-shop-api';
+  import { membersRouter } from '@nba/members-api';
+  import { accountingRouter } from '@nba/accounting-api';
+  import { expensesRouter } from '@nba/expenses-api';
+  import { shopRouter } from '@nba/shop-api';
 
   const app = new Hono<{ Bindings: Env }>();
 

@@ -1,4 +1,4 @@
-import { type DbOrTx } from '@metacult/shared-db';
+import { type DbOrTx } from '@nba/db';
 import { eq, inArray } from 'drizzle-orm';
 import { checksTable, checkDepositsTable, bankTransactionsTable } from '../../shared/schema';
 

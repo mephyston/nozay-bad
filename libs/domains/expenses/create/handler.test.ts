@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createExpense } from './handler';
 import { CreateExpenseRepository } from './repository';
-import { isSeasonClosed } from '@metacult/features-members-api';
+import { isSeasonClosed } from '@nba/members-api';
 import { SeasonClosedError } from '../shared/errors';
 
 vi.mock('./repository', () => {
@@ -10,16 +10,16 @@ vi.mock('./repository', () => {
   return { CreateExpenseRepository };
 });
 
-vi.mock('@metacult/features-members-api', () => ({
+vi.mock('@nba/members-api', () => ({
   isSeasonClosed: vi.fn()
 }));
 
-vi.mock('@metacult/features-accounting-api', () => ({
+vi.mock('@nba/accounting-api', () => ({
   normalizeCategory: vi.fn((c) => (typeof c === 'number' ? c : 1))
 }));
 
 describe('createExpense handler', () => {
-  const db = {}; // Mock DB
+  const db = {} as any; // Mock DB
 
   beforeEach(() => {
     vi.clearAllMocks();

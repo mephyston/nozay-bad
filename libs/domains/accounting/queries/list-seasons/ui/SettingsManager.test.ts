@@ -13,11 +13,11 @@ describe("SettingsManager Component", () => {
     { id: 2, code: "salaires_charges", adminLabel: "Salaires et Charges", adherentLabel: "Salaires & Charges", hideInExpenses: true, receiptCode: null, expenseCode: "64" }
   ];
 
-  let originalFetch: typeof global.fetch;
+  let originalFetch: typeof globalThis.fetch;
 
   beforeEach(() => {
-    originalFetch = global.fetch;
-    global.fetch = vi.fn().mockImplementation(() =>
+    originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockImplementation(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ success: true })
@@ -26,7 +26,7 @@ describe("SettingsManager Component", () => {
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
     vi.restoreAllMocks();
   });
 

@@ -1,4 +1,4 @@
-import { AppError } from '@metacult/shared-db';
+import { AppError } from '@nba/db';
 
 export class MemberNotFoundError extends AppError {
   constructor(message = 'Membre introuvable') {

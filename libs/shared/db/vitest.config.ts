@@ -4,7 +4,7 @@ import path from 'path';
 export default defineConfig({
   resolve: {
     alias: {
-      '@metacult/shared-db': path.resolve(__dirname, './src/index.ts'),
+      '@nba/db': path.resolve(__dirname, './src/index.ts'),
     },
   },
   test: {

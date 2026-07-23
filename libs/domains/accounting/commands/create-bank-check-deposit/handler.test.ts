@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createCheckDeposit, clearCheckDeposit, deleteCheckDeposit } from './handler';
-import { AppError } from '@metacult/shared-db';
+import { AppError } from '@nba/db';
 
 vi.mock('./repository', () => {
   return {

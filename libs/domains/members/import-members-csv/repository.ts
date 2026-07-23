@@ -1,5 +1,5 @@
 import { inArray } from 'drizzle-orm';
-import { type DbOrTx } from '@metacult/shared-db';
+import { type DbOrTx } from '@nba/db';
 import { membersTable, seasonsTable } from '../shared/schema';
 
 export class ImportMembersRepository {

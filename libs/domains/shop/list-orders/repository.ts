@@ -1,13 +1,13 @@
 import { eq, and, inArray } from 'drizzle-orm';
-import { type DbOrTx } from '@metacult/shared-db';
+import { type DbOrTx } from '@nba/db';
 import { ordersTable, productsTable } from '../shared/schema';
-import { getMembersByIds } from '@metacult/features-members-api';
+import { getMembersByIds } from '@nba/members-api';
 
 export class ListOrdersRepository {
   async list(db: DbOrTx, filters: { season?: string; status?: string }): Promise<(typeof ordersTable.$inferSelect)[]> {
     const conditions = [];
     if (filters.season) conditions.push(eq(ordersTable.seasonId, filters.season));
-    if (filters.status) conditions.push(eq(ordersTable.status, filters.status));
+    if (filters.status) conditions.push(eq(ordersTable.status, filters.status as 'pending' | 'approved' | 'rejected'));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     return db.select().from(ordersTable).where(whereClause).all();

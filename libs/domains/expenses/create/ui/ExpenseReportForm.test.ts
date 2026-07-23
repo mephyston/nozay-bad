@@ -3,7 +3,7 @@ import { mount, flushSync } from 'svelte';
 import ExpenseReportForm from './ExpenseReportForm.svelte';
 
 describe('ExpenseReportForm Component', () => {
-  let originalFetch: typeof global.fetch;
+  let originalFetch: typeof globalThis.fetch;
 
   const members = [
     { id: 1, firstName: 'Jean', lastName: 'Dupont', licence: '123456' },
@@ -12,8 +12,8 @@ describe('ExpenseReportForm Component', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    originalFetch = global.fetch;
-    global.fetch = vi.fn().mockImplementation(() =>
+    originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockImplementation(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ success: true, data: { id: 100 } })
@@ -24,7 +24,7 @@ describe('ExpenseReportForm Component', () => {
   afterEach(() => {
     vi.runAllTimers();
     vi.useRealTimers();
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
     vi.restoreAllMocks();
   });
 
@@ -48,7 +48,7 @@ describe('ExpenseReportForm Component', () => {
     expect(target.innerHTML).toContain("Description / Motif des frais");
   });
 
-  it('uses design system components from @metacult/shared-ui', () => {
+  it('uses design system components from @nba/ui', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 

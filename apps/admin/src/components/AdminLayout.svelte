@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Sidebar } from "@metacult/shared-ui";
+  import { Sidebar } from "@nba/ui";
   import AdminLayoutInner from "./AdminLayoutInner.svelte";
   import { onMount } from "svelte";
 

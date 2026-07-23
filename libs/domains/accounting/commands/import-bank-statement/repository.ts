@@ -1,4 +1,4 @@
-import { type DbOrTx } from '@metacult/shared-db';
+import { type DbOrTx } from '@nba/db';
 import { bankTransactionsTable } from '../../shared/schema';
 
 export class ImportBankStatementRepository {

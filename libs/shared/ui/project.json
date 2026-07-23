@@ -1,5 +1,5 @@
 {
-  "name": "@metacult/shared-ui",
+  "name": "@nba/ui",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "projectType": "library",
   "sourceRoot": "libs/shared/ui/src",

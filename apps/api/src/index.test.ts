@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import app from './index';
-import { setupMockDb } from '@metacult/shared-db/test-utils';
+import { setupMockDb } from '@nba/db/test-utils';
 import { seasonsTable } from '../../../libs/domains/members/shared/schema';
 import { expensesTable } from '../../../libs/domains/expenses/shared/schema';
 import { eq } from 'drizzle-orm';
-import { AppError } from '@metacult/shared-db';
+import { AppError } from '@nba/db';
 
 describe('API Health Endpoint', () => {
   it('should return 200 OK and status ok', async () => {

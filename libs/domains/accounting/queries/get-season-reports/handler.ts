@@ -1,5 +1,5 @@
-import { type Db } from '@metacult/shared-db';
-import { normalizeCategory } from '@metacult/features-accounting-api';
+import { type Db } from '@nba/db';
+import { normalizeCategory } from '@nba/accounting-api';
 import { GetSeasonReportsRepository } from './repository';
 import { GetSeasonReportsInput, GetSeasonReportsOutput } from "./dto";
 

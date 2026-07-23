@@ -3,12 +3,12 @@ import { mount, unmount, flushSync, tick } from 'svelte';
 import BankStatementReconciliation from './BankStatementReconciliation.svelte';
 
 describe('BankStatementReconciliation Component', () => {
-  const originalFetch = global.fetch;
+  const originalFetch = globalThis.fetch;
   let component: any = null;
 
   beforeEach(() => {
     document.body.innerHTML = '';
-    global.fetch = vi.fn().mockImplementation((url, init) => {
+    globalThis.fetch = vi.fn().mockImplementation((url, init) => {
       if (url === '/admin/accounting/import' && init?.body) {
         const body = JSON.parse(init.body);
         if (body.action === 'get-unpaid-invoices') {
@@ -75,7 +75,7 @@ describe('BankStatementReconciliation Component', () => {
       component = null;
     }
     document.body.innerHTML = '';
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
@@ -281,7 +281,7 @@ describe('BankStatementReconciliation Component', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     flushSync();
 
-    expect(global.fetch).toHaveBeenCalledWith('/admin/accounting/import', expect.any(Object));
+    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/accounting/import', expect.any(Object));
     expect(reloadMock).toHaveBeenCalled();
   });
 
@@ -366,7 +366,7 @@ describe('BankStatementReconciliation Component', () => {
     flushSync();
 
     // Assert fetch call
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(globalThis.fetch).toHaveBeenCalledWith(
       '/admin/accounting/import',
       expect.objectContaining({
         method: 'POST',
@@ -461,7 +461,7 @@ describe('BankStatementReconciliation Component', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     flushSync();
 
-    expect(global.fetch).toHaveBeenCalledWith('/admin/accounting/import', expect.objectContaining({
+    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/accounting/import', expect.objectContaining({
       method: 'POST',
       body: expect.stringContaining('"invoiceIds":[101,102]')
     }));
@@ -545,7 +545,7 @@ describe('BankStatementReconciliation Component', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     flushSync();
 
-    expect(global.fetch).toHaveBeenCalledWith('/admin/accounting/import', expect.objectContaining({
+    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/accounting/import', expect.objectContaining({
       method: 'POST',
       body: expect.stringContaining('"transactions":')
     }));

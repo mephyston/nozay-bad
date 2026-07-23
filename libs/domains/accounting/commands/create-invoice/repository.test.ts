@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { setupMockDb } from '@metacult/shared-db/test-utils';
+import { setupMockDb } from '@nba/db/test-utils';
 import { CreateInvoiceRepository } from './repository';
 import { invoicesTable, invoiceItemsTable, seasonsTable } from '../../shared/schema';
 

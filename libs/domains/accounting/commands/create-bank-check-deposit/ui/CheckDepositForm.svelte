@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Input } from '@metacult/shared-ui';
+  import { Button, Input } from '@nba/ui';
 
   let {
     selectedChecksList = [],

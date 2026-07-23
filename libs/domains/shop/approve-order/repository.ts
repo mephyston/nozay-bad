@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
-import { type DbOrTx } from '@metacult/shared-db';
+import { type DbOrTx } from '@nba/db';
 import { ordersTable, productsTable, categoriesTable, transactionsTable } from '../shared/schema';
-import { getMemberById } from '@metacult/features-members-api';
+import { getMemberById } from '@nba/members-api';
 
 export class ApproveOrderRepository {
   async getOrderById(db: DbOrTx, id: number): Promise<typeof ordersTable.$inferSelect | undefined> {

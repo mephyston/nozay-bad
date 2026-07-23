@@ -1,7 +1,7 @@
-import { type Db } from '@metacult/shared-db';
+import { type Db } from '@nba/db';
 import { CreateOrderRepository } from './repository';
 import { ProductNotFoundError, SeasonClosedError } from '../shared/errors';
-import { isSeasonClosed } from '@metacult/features-members-api';
+import { isSeasonClosed } from '@nba/members-api';
 import { CreateOrderInput, CreateOrderOutput } from "./dto";
 
 export async function createOrder(db: Db, body: CreateOrderInput): Promise<CreateOrderOutput> {
@@ -21,7 +21,7 @@ export async function createOrder(db: Db, body: CreateOrderInput): Promise<Creat
     productId: body.productId,
     quantity: body.quantity,
     totalAmount: product.price * body.quantity,
-    paymentMethod: body.paymentMethod,
+    paymentMethod: body.paymentMethod as any,
     status: 'pending',
     createdAt: new Date()
   });

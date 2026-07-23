@@ -1,4 +1,4 @@
-import { type Db, type Tx } from '@metacult/shared-db';
+import { type Db, type Tx } from '@nba/db';
 import { ImportBankStatementRepository } from './repository';
 import { ParseOFXInput, ParseOFXOutput } from "./dto";
 

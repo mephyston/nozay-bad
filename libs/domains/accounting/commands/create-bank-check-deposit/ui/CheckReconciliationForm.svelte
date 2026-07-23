@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button } from '@metacult/shared-ui';
+  import { Button } from '@nba/ui';
 
   let {
     selectedDepositToClear,

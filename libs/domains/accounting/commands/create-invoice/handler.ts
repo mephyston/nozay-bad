@@ -1,6 +1,6 @@
-import { AppError, type Db, type Tx } from '@metacult/shared-db';
+import { AppError, type Db, type Tx } from '@nba/db';
 import { CreateInvoiceRepository } from './repository';
-import { isSeasonClosed } from '@metacult/features-members-api';
+import { isSeasonClosed } from '@nba/members-api';
 import { SeasonClosedError } from '../../shared/errors';
 import { CreateInvoiceInput, CreateInvoiceOutput } from "./dto";
 

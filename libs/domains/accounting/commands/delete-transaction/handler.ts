@@ -1,8 +1,8 @@
 import { DeleteTransactionRepository } from './repository';
-import { isSeasonClosed } from '@metacult/features-members-api';
-import { AppError, type Db, type Tx } from '@metacult/shared-db';
+import { isSeasonClosed } from '@nba/members-api';
+import { AppError, type Db, type Tx } from '@nba/db';
 import { SeasonClosedError } from '../../shared/errors';
-import { applyPaymentToMember } from '@metacult/features-members-api';
+import { applyPaymentToMember } from '@nba/members-api';
 
 export async function deleteTransaction(db: Db, id: number) {
   const repo = new DeleteTransactionRepository();

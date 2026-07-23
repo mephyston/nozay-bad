@@ -15,11 +15,11 @@ export default defineConfig({
     optimizeDeps: {
       exclude: [
         '@astrojs/cloudflare',
-        '@metacult/shared-ui',
-        '@metacult/features-members-ui',
-        '@metacult/features-accounting-ui',
-        '@metacult/features-expenses-ui',
-        '@metacult/features-shop-ui'
+        '@nba/ui',
+        '@nba/members-ui',
+        '@nba/accounting-ui',
+        '@nba/expenses-ui',
+        '@nba/shop-ui'
       ]
     }
   },

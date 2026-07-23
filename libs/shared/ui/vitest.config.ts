@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [svelte()],
   resolve: {
     alias: {
-      '@metacult/shared-ui': path.resolve(__dirname, './src/index.ts'),
+      '@nba/ui': path.resolve(__dirname, './src/index.ts'),
       'libs/shared/ui': path.resolve(__dirname, '../../shared/ui'),
     },
     conditions: ['browser'],

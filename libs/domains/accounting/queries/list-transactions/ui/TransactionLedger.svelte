@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Search, Plus, Trash2, ArrowLeftRight, Check, AlertCircle, ChevronLeft, ChevronRight, MoreVertical, Edit2 } from '@lucide/svelte';
-  import { Button, Table, Input, Badge, Card, Sheet, Popover, Label, Tabs } from '@metacult/shared-ui';
+  import { Button, Table, Input, Badge, Card, Sheet, Popover, Label, Tabs } from '@nba/ui';
 
   interface Transaction {
     id: number;

@@ -1,5 +1,5 @@
-import { type Db } from '@metacult/shared-db';
-import { isSeasonClosed } from '@metacult/features-members-api';
+import { type Db } from '@nba/db';
+import { isSeasonClosed } from '@nba/members-api';
 import { SeasonClosedError } from '../../shared/errors';
 import { UpdateSeasonBudgetRepository } from './repository';
 import { UpdateSeasonBudgetSeasonId, UpdateSeasonBudgetInput, UpdateSeasonBudgetOutput } from "./dto";

@@ -1,7 +1,7 @@
-import { type Db } from '@metacult/shared-db';
+import { type Db } from '@nba/db';
 import { CreateExpenseRepository } from './repository';
-import { isSeasonClosed } from '@metacult/features-members-api';
-import { normalizeCategory } from '@metacult/features-accounting-api';
+import { isSeasonClosed } from '@nba/members-api';
+import { normalizeCategory } from '@nba/accounting-api';
 import { SeasonClosedError } from '../shared/errors';
 import { CreateExpenseInput, CreateExpenseOutput } from "./dto";
 

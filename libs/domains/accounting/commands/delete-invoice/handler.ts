@@ -1,8 +1,8 @@
-import { type Db, type Tx } from '@metacult/shared-db';
+import { type Db, type Tx } from '@nba/db';
 import { DeleteInvoiceRepository } from './repository';
 import { Invoice } from '../../shared/invoice';
 import { InvoiceNotFoundError, InvoiceNotDeletableError, SeasonClosedError } from '../../shared/errors';
-import { isSeasonClosed } from '@metacult/features-members-api';
+import { isSeasonClosed } from '@nba/members-api';
 import { DeleteInvoiceInput, DeleteInvoiceOutput } from "./dto";
 
 export async function deleteInvoice(db: Db, id: DeleteInvoiceInput): Promise<DeleteInvoiceOutput> {

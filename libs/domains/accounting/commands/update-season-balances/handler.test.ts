@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { updateSeasonBalances } from './handler';
 import { UpdateSeasonBalancesRepository } from './repository';
-import { isSeasonClosed } from '@metacult/features-members-api';
-vi.mock('@metacult/features-members-api', () => ({ isSeasonClosed: vi.fn() }));
+import { isSeasonClosed } from '@nba/members-api';
+vi.mock('@nba/members-api', () => ({ isSeasonClosed: vi.fn() }));
 
 vi.mock('./repository');
 

@@ -1,4 +1,4 @@
-import { type Db } from '@metacult/shared-db';
+import { type Db } from '@nba/db';
 import { GetInvoiceRepository } from './repository';
 import { InvoiceNotFoundError } from '../../shared/errors';
 import { GetInvoiceInput, GetInvoiceOutput } from "./dto";

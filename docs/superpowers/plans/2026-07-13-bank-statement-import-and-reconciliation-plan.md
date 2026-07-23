@@ -4,7 +4,7 @@
 
 **Goal:** Mettre en place l'importation de relevés bancaires au format OFX (Société Générale) et l'interface de rapprochement (pointage) semi-automatique avec les transactions du Grand Livre.
 
-**Architecture:** Approche relationnelle Drizzle ORM avec une nouvelle table `bank_transactions` dans `@metacult/shared-db`, un parseur de fichiers OFX dans l'API Hono avec détection automatique du compte courant/livret de l'asso, et une interface en split-screen sous Svelte 5.
+**Architecture:** Approche relationnelle Drizzle ORM avec une nouvelle table `bank_transactions` dans `@nba/db`, un parseur de fichiers OFX dans l'API Hono avec détection automatique du compte courant/livret de l'asso, et une interface en split-screen sous Svelte 5.
 
 **Tech Stack:** Astro v7, Svelte v5, Hono (Cloudflare Workers), Drizzle ORM (SQLite / D1), Vitest.
 
@@ -24,7 +24,7 @@
 * Create: `libs/shared/db/migrations/0005_create_bank_transactions_table.sql` (généré par Drizzle-Kit)
 
 **Interfaces:**
-* Produces: `bankTransactionsTable` dans le module `@metacult/shared-db` (exposé par index.ts).
+* Produces: `bankTransactionsTable` dans le module `@nba/db` (exposé par index.ts).
 
 - [ ] **Step 1: Mettre à jour le schéma Drizzle**
   Ouvrir [schema.ts](file:///Users/david/Lab/nozay-bad/libs/shared/db/src/schema.ts) et ajouter la définition de `bankTransactionsTable` à la fin du fichier :
@@ -106,7 +106,7 @@
 * Modify: `apps/api/src/index.test.ts`
 
 **Interfaces:**
-* Consumes: `bankTransactionsTable` et `transactionsTable` de `@metacult/shared-db`.
+* Consumes: `bankTransactionsTable` et `transactionsTable` de `@nba/db`.
 * Produces:
   * Parseur OFX interne.
   * Endpoint `POST /bank-transactions/import` (importation sans doublons).

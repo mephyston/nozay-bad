@@ -25,7 +25,7 @@
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
   import ThemeToggle from "./ThemeToggle.svelte";
-  import { Sidebar, Breadcrumb, Separator, Avatar } from "@metacult/shared-ui";
+  import { Sidebar, Breadcrumb, Separator, Avatar } from "@nba/ui";
 
   let { children, email, breadcrumb } = $props<{
     children?: import('svelte').Snippet;

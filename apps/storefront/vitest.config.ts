@@ -7,7 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       'cloudflare:workers': path.resolve(__dirname, '../admin/src/mocks/cloudflare-workers.ts'),
-      '@metacult/shared-ui': path.resolve(__dirname, '../../libs/shared/ui/src/index.ts'),
+      '@nba/ui': path.resolve(__dirname, '../../libs/shared/ui/src/index.ts'),
     },
     conditions: ['browser'],
   },

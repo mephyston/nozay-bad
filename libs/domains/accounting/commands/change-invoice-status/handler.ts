@@ -1,4 +1,4 @@
-import { type Db } from '@metacult/shared-db';
+import { type Db } from '@nba/db';
 import { ChangeInvoiceStatusRepository, ChangeInvoiceStatusRepositoryInterface } from './repository';
 import { InvoiceNotFoundError, SeasonClosedError, InvalidStatusError } from '../../shared/errors';
 import { ChangeInvoiceStatusId, ChangeInvoiceStatusStatus, ChangeInvoiceStatusOutput } from "./dto";

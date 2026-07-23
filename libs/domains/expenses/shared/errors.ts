@@ -1,4 +1,4 @@
-import { AppError } from '@metacult/shared-db';
+import { AppError } from '@nba/db';
 
 export class SeasonClosedError extends AppError {
   constructor(message = 'La saison est clôturée.') {

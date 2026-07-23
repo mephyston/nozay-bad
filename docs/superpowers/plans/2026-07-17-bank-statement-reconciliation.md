@@ -4,7 +4,7 @@
 
 **Goal:** Remplacer les cases à cocher (checkboxes) brutes par le composant standard `<Checkbox>` dans `BankStatementReconciliation.svelte` et mettre à jour la suite de tests pour utiliser les sélecteurs accessibles.
 
-**Tech Stack:** Svelte 5, `@metacult/shared-ui` (Checkbox, Button, Table, Input, Badge, Card, Dialog, Tabs).
+**Tech Stack:** Svelte 5, `@nba/ui` (Checkbox, Button, Table, Input, Badge, Card, Dialog, Tabs).
 
 ## Global Constraints
 
@@ -78,13 +78,13 @@ git commit -m "test(accounting): refactor reconciliation tests to use accessible
 * Modify: `libs/features/accounting/ui/src/BankStatementReconciliation.svelte`
 
 **Interfaces:**
-* Consumes: Primitives `Checkbox` de `@metacult/shared-ui`.
+* Consumes: Primitives `Checkbox` de `@nba/ui`.
 * Produces: Cases à cocher standardisées et animées.
 
 - [ ] **Step 1: Replace raw input checkboxes with Checkbox component**
 
 Ouvrir [BankStatementReconciliation.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/BankStatementReconciliation.svelte) :
-1. Importer `Checkbox` depuis `@metacult/shared-ui` à la ligne 3.
+1. Importer `Checkbox` depuis `@nba/ui` à la ligne 3.
 2. Remplacer la case à cocher de transaction bancaire (ligne ~1232) :
    - Remplacer :
      ```html

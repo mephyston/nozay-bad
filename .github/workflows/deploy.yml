@@ -49,6 +49,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Derive appropriate SHAs for affected commands
+        uses: nrwl/nx-set-shas@v4
+
       - name: Detect affected projects
         id: affected
         run: |
@@ -60,13 +63,7 @@ jobs:
             STOREFRONT_COUNT=1
             ADMIN_COUNT=1
           else
-            if [ "${{ github.event_name }}" = "pull_request" ]; then
-              BASE_SHA="${{ github.event.pull_request.base.sha }}"
-            else
-              BASE_SHA="HEAD~1"
-            fi
-
-            AFFECTED=$(npx nx show projects --affected --base=$BASE_SHA --head=HEAD 2>/dev/null || echo "")
+            AFFECTED=$(npx nx show projects --affected --base=$NX_BASE --head=$NX_HEAD 2>/dev/null || echo "")
             echo "Affected projects: [$AFFECTED]"
 
             API_COUNT=$(echo "$AFFECTED" | grep -cw 'api' || true)
@@ -103,10 +100,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Derive appropriate SHAs for affected commands
+        uses: nrwl/nx-set-shas@v4
+
       - name: Run affected tests
         run: |
-          BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          npx nx affected -t test --base=$BASE_SHA --head=HEAD --parallel=3
+          npx nx affected -t test --base=$NX_BASE --head=$NX_HEAD --parallel=3
 
   # ──────────────────────────────────────────────────────────────
   # 3. Deploy API (en premier — les autres apps en dépendent via Service Binding)

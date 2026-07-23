@@ -101,7 +101,7 @@ Run: `git commit -am "chore(eslint): correct routes file patterns and restrict d
     ```typescript
     import { describe, it, expect } from 'vitest';
     import { createAccountClassRoute } from './route';
-    import { setupMockDb } from '@metacult/shared-db/test-utils';
+    import { setupMockDb } from '@nba/db/test-utils';
     describe('CreateAccountClass Route', () => {
       it('should return 400 on invalid body', async () => {
         const { mockD1 } = await setupMockDb();

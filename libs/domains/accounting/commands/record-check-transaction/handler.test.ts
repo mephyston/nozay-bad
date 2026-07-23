@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createCheck, deleteCheck, analyzeCheckImage } from './handler';
-import { AppError } from '@metacult/shared-db';
+import { AppError } from '@nba/db';
 
 vi.mock('./repository', () => {
   return {
@@ -21,7 +21,7 @@ vi.mock('../../shared/helpers', () => ({
   cleanName: vi.fn((s) => s)
 }));
 
-vi.mock('@metacult/features-members-api', () => ({
+vi.mock('@nba/members-api', () => ({
   applyPaymentToMember: vi.fn()
 }));
 

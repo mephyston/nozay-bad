@@ -12,7 +12,7 @@ export default defineConfig({
     alias: {
       'astro:middleware': path.resolve(__dirname, './src/mocks/astro-middleware.ts'),
       'cloudflare:workers': path.resolve(__dirname, './src/mocks/cloudflare-workers.ts'),
-      '@metacult/shared-ui': path.resolve(__dirname, '../../libs/shared/ui/src/index.ts'),
+      '@nba/ui': path.resolve(__dirname, '../../libs/shared/ui/src/index.ts'),
       'libs/shared/ui': path.resolve(__dirname, '../../libs/shared/ui'),
     },
     conditions: ['browser'],

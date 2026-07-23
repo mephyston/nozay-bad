@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
-import { membersRouter } from '@metacult/features-members-api';
-import { setupMockDb } from '@metacult/shared-db/test-utils';
+import { membersRouter } from '@nba/members-api';
+import { setupMockDb } from '@nba/db/test-utils';
 import { membersTable, seasonsTable } from '../../../libs/domains/members/shared/schema';
 import { sql } from 'drizzle-orm';
-import { AppError } from '@metacult/shared-db';
+import { AppError } from '@nba/db';
 
 const app = new Hono<{ Bindings: { DB: any } }>();
 app.onError((err, c) => {

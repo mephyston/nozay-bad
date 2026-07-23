@@ -1,4 +1,4 @@
-import { type Db } from '@metacult/shared-db';
+import { type Db } from '@nba/db';
 import { AnalyzeBankTransactionsRepository } from './repository';
 import { cleanName } from '../../shared/helpers';
 import { resolveCategoryMap, resolveProductAccountingCategory } from '../../shared/category';

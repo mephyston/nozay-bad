@@ -1,4 +1,4 @@
-import { type Db } from '@metacult/shared-db';
+import { type Db } from '@nba/db';
 import { CreateCategoryRepository } from './repository';
 import { CreateCategoryInput, CreateCategoryOutput } from "./dto";
 

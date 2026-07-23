@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { createDb } from '@metacult/shared-db';
+import { createDb } from '@nba/db';
 import { tbValidator } from '@hono/typebox-validator';
 import { analyzeCheckImage, createCheck, deleteCheck } from './handler';
 import { createCheckSchema } from './validator';
@@ -26,7 +26,7 @@ recordCheckTransactionRoute.post(
   '/checks',
   tbValidator('json', createCheckSchema, (result, c) => {
     if (!result.success) {
-      return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+      return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
     }
   }),
   async (c) => {

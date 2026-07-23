@@ -1,4 +1,4 @@
-import { type Db, type Tx } from '@metacult/shared-db';
+import { type Db, type Tx } from '@nba/db';
 import { ApproveOrderRepository } from './repository';
 import { Order } from '../shared/order';
 import {
@@ -9,7 +9,7 @@ import {
   ProductNotFoundError,
   ConcurrentModificationError
 } from '../shared/errors';
-import { isSeasonClosed } from '@metacult/features-members-api';
+import { isSeasonClosed } from '@nba/members-api';
 import { ApproveOrderInput, ApproveOrderOutput } from "./dto";
 
 export async function approveOrder(db: Db, id: ApproveOrderInput): Promise<ApproveOrderOutput> {

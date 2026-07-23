@@ -1,7 +1,7 @@
 import { RecordCheckTransactionRepository } from './repository';
-import { AppError, type Db, type Tx } from '@metacult/shared-db';
+import { AppError, type Db, type Tx } from '@nba/db';
 import { cleanName } from '../../shared/helpers';
-import { applyPaymentToMember } from '@metacult/features-members-api';
+import { applyPaymentToMember } from '@nba/members-api';
 import type { CreateCheckInput, AnalyzeCheckOutput } from './dto';
 
 export async function analyzeCheckImage(

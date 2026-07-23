@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { createDb } from '@metacult/shared-db';
+import { createDb } from '@nba/db';
 import { tbValidator } from '@hono/typebox-validator';
 import { createOrder } from './handler';
 import { createOrderSchema } from './validator';
@@ -12,7 +12,7 @@ export const createOrderRoute = new Hono<{ Bindings: Bindings }>();
 
 createOrderRoute.post('/orders', tbValidator('json', createOrderSchema, (result, c) => {
   if (!result.success) {
-    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
   }
 }), async (c) => {
   if (!c.env || !c.env.DB) {

@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { tbValidator } from '@hono/typebox-validator';
-import { AppError, createDb } from '@metacult/shared-db';
+import { AppError, createDb } from '@nba/db';
 import { importMembersSchema } from './validator';
 import { importMembersFromCsv } from './handler';
 
@@ -18,7 +18,7 @@ importMembersRoute.post('/import', async (c, next) => {
   await next();
 }, tbValidator('form', importMembersSchema, (result, c) => {
   if (!result.success) {
-    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
   }
 }), async (c) => {
   if (!c.env || !c.env.DB) {

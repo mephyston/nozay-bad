@@ -1,4 +1,4 @@
-import { AppError, type Db } from '@metacult/shared-db';
+import { AppError, type Db } from '@nba/db';
 import { GetSeasonBalanceRepository } from './repository';
 import { GetSeasonBalanceInput, GetSeasonBalanceOutput } from "./dto";
 

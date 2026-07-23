@@ -27,7 +27,7 @@ npx nx show projects
 Output:
 ```
 admin-console
-@metacult/shared-db
+@nba/db
 boutique
 api
 ```

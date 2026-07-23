@@ -1,4 +1,4 @@
-import { type Db } from '@metacult/shared-db';
+import { type Db } from '@nba/db';
 import { ListInvoicesRepository } from './repository';
 import { ListInvoicesInput, ListInvoicesOutput } from "./dto";
 

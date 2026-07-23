@@ -1,4 +1,4 @@
-import { type Db } from '@metacult/shared-db';
+import { type Db } from '@nba/db';
 import { GetSeasonBalancesRepository } from './repository';
 import { GetSeasonBalancesInput, GetSeasonBalancesOutput } from "./dto";
 

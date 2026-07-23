@@ -4,7 +4,7 @@
 
 **Goal:** Remplacer la modale Dialog par un volet coulissant (Sheet) lors de la saisie d'écriture, et ajouter des onglets (Tabs) pour filtrer les transactions par compte de trésorerie (Courant, Épargne, Caisse).
 
-**Tech Stack:** Svelte 5, AstroJS, `@metacult/shared-ui` (Sheet, Tabs, Label, Input, Button, Table).
+**Tech Stack:** Svelte 5, AstroJS, `@nba/ui` (Sheet, Tabs, Label, Input, Button, Table).
 
 ## Global Constraints
 
@@ -23,7 +23,7 @@
 * Modify: `libs/features/accounting/ui/src/TransactionLedger.test.ts`
 
 **Interfaces:**
-* Consumes: Onglets `Tabs` de `@metacult/shared-ui` et paramètre `accountId` de l'API Hono.
+* Consumes: Onglets `Tabs` de `@nba/ui` et paramètre `accountId` de l'API Hono.
 * Produces: Une interface d'onglets de filtrage par compte synchronisée avec l'URL.
 
 - [ ] **Step 1: Read and forward accountId in index.astro**
@@ -48,7 +48,7 @@ Ouvrir [index.astro](file:///Users/david/Lab/nozay-bad/apps/admin-console/src/pa
 - [ ] **Step 2: Add Tabs and effect in TransactionLedger.svelte**
 
 Ouvrir [TransactionLedger.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/TransactionLedger.svelte) :
-1. Importer `Tabs` depuis `@metacult/shared-ui`.
+1. Importer `Tabs` depuis `@nba/ui`.
 2. Déclarer la prop `accountId` :
    ```typescript
    accountId = ''
@@ -134,13 +134,13 @@ git commit -m "feat(accounting): add account filtering tabs and persist state in
 * Modify: `libs/features/accounting/ui/src/TransactionLedger.svelte`
 
 **Interfaces:**
-* Consumes: Primitives `Sheet` de `@metacult/shared-ui`.
+* Consumes: Primitives `Sheet` de `@nba/ui`.
 * Produces: Une interface de saisie/édition d'écritures coulissante (Sheet) sur le bord droit de l'écran.
 
 - [ ] **Step 1: Replace Dialog components with Sheet components**
 
 Ouvrir [TransactionLedger.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/TransactionLedger.svelte) :
-1. Importer `Sheet` depuis `@metacult/shared-ui`. Supprimer l'import inutile de `Dialog` (si plus utilisé).
+1. Importer `Sheet` depuis `@nba/ui`. Supprimer l'import inutile de `Dialog` (si plus utilisé).
 2. Remplacer les tags de modale :
    - `<Dialog.Root bind:open>` ➔ `<Sheet.Root bind:open>`
    - `<Dialog.Content class="max-w-md p-6 bg-card border-border overflow-y-auto max-h-[90vh]">` ➔ `<Sheet.Content class="sm:max-w-md p-6 bg-card border-border overflow-y-auto h-full">`

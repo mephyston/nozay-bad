@@ -6,7 +6,7 @@
 
 **Architecture:** Le composant lira localement le fichier CSV sélectionné avec `FileReader` pour en extraire les métadonnées et prévisualiser les 5 premières lignes dans un tableau. Après soumission et succès, le résultat de l'import sera affiché via des cartes statistiques thématiques.
 
-**Tech Stack:** Svelte 5, TypeScript, Lucide Icons, Shadcn Svelte (@metacult/shared-ui : Table, Card, Button, Alert).
+**Tech Stack:** Svelte 5, TypeScript, Lucide Icons, Shadcn Svelte (@nba/ui : Table, Card, Button, Alert).
 
 ## Global Constraints
 
@@ -112,7 +112,7 @@ Modifier [PoonaImporter.svelte](file:///Users/david/Lab/nozay-bad/libs/features/
 ```html
 <script lang="ts">
   import { Upload, AlertCircle, CheckCircle, RefreshCw, FileText } from 'lucide-svelte';
-  import { Button, Card, Input, Alert, Table } from '@metacult/shared-ui';
+  import { Button, Card, Input, Alert, Table } from '@nba/ui';
 
   interface ImportResult {
     success: boolean;

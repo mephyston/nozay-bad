@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { deleteTransaction } from './handler';
 import { DeleteTransactionRepository } from './repository';
-import * as membersDataAccess from '@metacult/features-members-api';
+import * as membersDataAccess from '@nba/members-api';
 
 vi.mock('./repository');
-vi.mock('@metacult/features-members-api', () => ({
+vi.mock('@nba/members-api', () => ({
   isSeasonClosed: vi.fn()
 }));
 

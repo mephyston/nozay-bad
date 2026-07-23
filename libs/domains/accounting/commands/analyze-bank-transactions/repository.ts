@@ -1,7 +1,7 @@
 import { and, eq, desc, sql } from 'drizzle-orm';
-import { type DbOrTx } from '@metacult/shared-db';
+import { type DbOrTx } from '@nba/db';
 import { bankTransactionsTable, categoriesTable, transactionsTable } from '../../shared/schema';
-import { getMembersBySeason, getMembersByIds } from '@metacult/features-members-api';
+import { getMembersBySeason, getMembersByIds } from '@nba/members-api';
 
 export class AnalyzeBankTransactionsRepository {
   async getCategories(db: DbOrTx): Promise<(typeof categoriesTable.$inferSelect)[]> {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ShoppingBag, Search, Check, AlertCircle, ChevronDown, User } from "@lucide/svelte";
-  import { Button, Card, Input, Label, Badge } from '@metacult/shared-ui';
+  import { Button, Card, Input, Label, Badge } from '@nba/ui';
 
   interface Member {
     id: number;

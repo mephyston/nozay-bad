@@ -1,7 +1,7 @@
 # Spécification de Design - Migration des Composants de la Boutique vers Shadcn-Svelte
 
 ## Contexte et Objectif
-Dans le cadre de l'uniformisation du design system de l'application, nous migrons les composants de l'application **Boutique** vers les composants standardisés Shadcn-Svelte disponibles dans `@metacult/shared-ui`.
+Dans le cadre de l'uniformisation du design system de l'application, nous migrons les composants de l'application **Boutique** vers les composants standardisés Shadcn-Svelte disponibles dans `@nba/ui`.
 
 Les deux composants ciblés sont :
 1. `apps/boutique/src/components/ExpenseReportForm.svelte` (Formulaire de note de frais)
@@ -10,7 +10,7 @@ Les deux composants ciblés sont :
 Toute la logique métier, la gestion des runes Svelte 5 (`$state`, `$derived`, `$props`), les interactions réseau (fetch), les validations Turnstile et le comportement clavier/focus doivent être préservés à l'identique pour éviter toute régression.
 
 ## Composants de Design System Consommés
-Nous utiliserons les primitives importées depuis `@metacult/shared-ui` :
+Nous utiliserons les primitives importées depuis `@nba/ui` :
 * **`Button`** : Pour soumettre les notes de frais et les commandes.
 * **`Input`** : Pour les saisies de recherche, montants et quantités.
 * **`Badge`** : Pour l'affichage des prix et de l'état des stocks.

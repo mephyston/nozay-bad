@@ -3,7 +3,7 @@
     Plus, Edit, Trash2, Check, AlertCircle, Search, X, MoreVertical, 
     Printer, Send, Ban, FileText, Mail, MapPin, Calendar, Users, Info
   } from '@lucide/svelte';
-  import { Button, Table, Input, Badge, Card, Sheet, Alert, Textarea } from '@metacult/shared-ui';
+  import { Button, Table, Input, Badge, Card, Sheet, Alert, Textarea } from '@nba/ui';
 
   interface InvoiceItem {
     id?: number;

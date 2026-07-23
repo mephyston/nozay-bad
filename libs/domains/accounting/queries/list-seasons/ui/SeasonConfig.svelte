@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Calendar, Plus } from "@lucide/svelte";
-  import { Button, Input, Badge } from "@metacult/shared-ui";
+  import { Button, Input, Badge } from "@nba/ui";
 
   let {
     seasons = [],

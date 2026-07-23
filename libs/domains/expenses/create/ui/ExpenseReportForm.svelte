@@ -1,6 +1,6 @@
 <script lang="ts">
   import { UploadCloud, CheckCircle, AlertCircle, Coins, Search, ChevronDown } from '@lucide/svelte';
-  import { Button, Card, Input, Label, Badge } from '@metacult/shared-ui';
+  import { Button, Card, Input, Label, Badge } from '@nba/ui';
 
   interface Member {
     id: number;

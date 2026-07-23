@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createBankCheckDepositRoute } from './route';
-import { setupMockDb } from '@metacult/shared-db/test-utils';
+import { setupMockDb } from '@nba/db/test-utils';
 
 vi.mock('./repository', () => {
   return {

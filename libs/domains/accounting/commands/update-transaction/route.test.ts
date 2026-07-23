@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { updateTransactionRoute } from './route';
-import { setupMockDb } from '@metacult/shared-db/test-utils';
+import { setupMockDb } from '@nba/db/test-utils';
 import { updateTransaction } from './handler';
 
 vi.mock('./handler', () => ({

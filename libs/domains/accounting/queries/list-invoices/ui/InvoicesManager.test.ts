@@ -28,14 +28,14 @@ describe('InvoicesManager Component', () => {
     }
   ];
 
-  let originalFetch: typeof global.fetch;
+  let originalFetch: typeof globalThis.fetch;
   let component: any;
   let targets: HTMLDivElement[] = [];
 
   beforeEach(() => {
     vi.useFakeTimers();
-    originalFetch = global.fetch;
-    global.fetch = vi.fn().mockImplementation(() =>
+    originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockImplementation(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ success: true })
@@ -44,7 +44,7 @@ describe('InvoicesManager Component', () => {
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
     if (component) {
       unmount(component);
       component = undefined;

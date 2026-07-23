@@ -1,4 +1,4 @@
-import { type Db } from '@metacult/shared-db';
+import { type Db } from '@nba/db';
 import { ListMembersRepository } from './repository';
 import { ListMembersFilters, ListMembersPagination, ListMembersOutput } from "./dto";
 

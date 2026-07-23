@@ -12,7 +12,7 @@ import {
   accountClassesTable
 } from '../../../libs/domains/accounting/shared/schema';
 import { productsTable, ordersTable } from '../../../libs/domains/shop/shared/schema';
-import { setupMockDb } from '@metacult/shared-db/test-utils';
+import { setupMockDb } from '@nba/db/test-utils';
 
 describe('Database Tests', () => {
   it('should run migrations and insert/retrieve a member and a user', async () => {

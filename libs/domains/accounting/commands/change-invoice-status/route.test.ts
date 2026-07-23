@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { changeInvoiceStatusRoute } from './route';
-import { setupMockDb } from '@metacult/shared-db/test-utils';
+import { setupMockDb } from '@nba/db/test-utils';
 import { changeInvoiceStatus } from './handler';
 
 vi.mock('./handler', () => ({
@@ -18,7 +18,7 @@ describe('ChangeInvoiceStatus Route', () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.success).toBe(false);
-    expect(body.error).toContain('Validation failed');
+    expect(body.error).toBe('Statut invalide');
   });
 
   it('should return 200 on valid body', async () => {

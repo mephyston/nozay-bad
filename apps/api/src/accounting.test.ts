@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
-import { accountingRouter } from '@metacult/features-accounting-api';
-import { setupMockDb } from '@metacult/shared-db/test-utils';
+import { accountingRouter } from '@nba/accounting-api';
+import { setupMockDb } from '@nba/db/test-utils';
 import { seasonsTable, membersTable } from '../../../libs/domains/accounting/shared/schema';
 import {
   seasonBalancesTable,
@@ -16,7 +16,7 @@ import {
 } from '../../../libs/domains/accounting/shared/schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq, sql } from 'drizzle-orm';
-import { AppError } from '@metacult/shared-db';
+import { AppError } from '@nba/db';
 
 const app = new Hono<{ Bindings: { DB: any; AI: any } }>();
 app.onError((err, c) => {
@@ -2393,7 +2393,7 @@ describe('Final Improvements API checks', () => {
     expect(res.status).toBe(400);
     const body = await res.json() as any;
     expect(body.success).toBe(false);
-    expect(body.error).toContain('Validation failed');
+    expect(body.error).toBe('Statut invalide');
 
     // Send valid status
     const resValid = await app.request(`http://localhost/accounting/invoices/${inv.id}/status`, {

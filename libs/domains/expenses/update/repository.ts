@@ -1,5 +1,5 @@
 import { eq, sql } from 'drizzle-orm';
-import { type DbOrTx } from '@metacult/shared-db';
+import { type DbOrTx } from '@nba/db';
 import { expensesTable } from '../shared/schema';
 
 export class UpdateExpenseRepository {

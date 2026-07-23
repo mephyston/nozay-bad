@@ -7,7 +7,7 @@ describe('CheckDepositManager Component', () => {
 
   beforeAll(() => {
     // Mock ResizeObserver which is required by Radix / bits-ui
-    global.ResizeObserver = class ResizeObserver {
+    globalThis.ResizeObserver = class ResizeObserver {
       observe() {}
       unobserve() {}
       disconnect() {}

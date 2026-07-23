@@ -6,7 +6,7 @@
 
 **Architecture:** Extraction de la logique de sélection de saison et de titre vers l'Astro Controller (avec script de rechargement par URL `?season=xx-yy`). Les composants Svelte reçoivent `seasonId` et `seasons` en tant que props en lecture seule et adaptent leur interface (désactivation des boutons de modification si la saison est clôturée).
 
-**Tech Stack:** AstroJS, Svelte 5 (Runes), Tailwind CSS v4, Vitest, `@metacult/shared-ui`.
+**Tech Stack:** AstroJS, Svelte 5 (Runes), Tailwind CSS v4, Vitest, `@nba/ui`.
 
 ## Global Constraints
 - Préserver l'intégralité du typage TypeScript et de la couverture de tests unitaires.

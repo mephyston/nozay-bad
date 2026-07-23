@@ -1,7 +1,7 @@
-import { type DbOrTx } from '@metacult/shared-db';
+import { type DbOrTx } from '@nba/db';
 import { eq } from 'drizzle-orm';
 import { transactionsTable, checksTable } from '../../shared/schema';
-import { getAllMembers } from '@metacult/features-members-api';
+import { getAllMembers } from '@nba/members-api';
 
 export class RecordCheckTransactionRepository {
   async getAllMembers(db: DbOrTx): Promise<any[]> {

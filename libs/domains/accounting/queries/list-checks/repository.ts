@@ -1,7 +1,7 @@
-import { type DbOrTx } from '@metacult/shared-db';
+import { type DbOrTx } from '@nba/db';
 import { eq, and, desc } from 'drizzle-orm';
 import { checksTable, checkDepositsTable } from '../../shared/schema';
-import { getMembersByIds } from '@metacult/features-members-api';
+import { getMembersByIds } from '@nba/members-api';
 
 export class ListChecksRepository {
   async listChecks(db: DbOrTx, seasonId: string, status?: string) {

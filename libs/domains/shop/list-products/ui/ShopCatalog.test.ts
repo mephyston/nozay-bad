@@ -126,7 +126,7 @@ describe('ShopCatalog Component', () => {
     flushSync();
 
     // Expect fetch to be called with correct body
-    expect(global.fetch).toHaveBeenCalledWith('', {
+    expect(globalThis.fetch).toHaveBeenCalledWith('', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -343,7 +343,7 @@ describe('ShopCatalog Component', () => {
     flushSync();
 
     // Check that fetch was called with the query
-    expect(global.fetch).toHaveBeenCalledWith('/api/members-search?q=Dubois');
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/members-search?q=Dubois');
 
     // Check if dropdown contains the fetched member
     expect(target.innerHTML).toContain('D. Pierre');

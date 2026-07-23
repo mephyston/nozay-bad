@@ -1,10 +1,10 @@
 
 import { Hono } from 'hono';
-import { membersRouter } from '@metacult/features-members-api';
-import { accountingRouter } from '@metacult/features-accounting-api';
-import { expensesRouter } from '@metacult/features-expenses-api';
-import { shopRouter } from '@metacult/features-shop-api';
-import { AppError } from '@metacult/shared-db';
+import { membersRouter } from '@nba/members-api';
+import { accountingRouter } from '@nba/accounting-api';
+import { expensesRouter } from '@nba/expenses-api';
+import { shopRouter } from '@nba/shop-api';
+import { AppError } from '@nba/db';
 
 type Bindings = {
   DB: D1Database;
@@ -32,4 +32,3 @@ app.route('/expenses', expensesRouter);
 app.route('/shop', shopRouter);
 
 export default app;
-// deploy: 2026-07-18-4

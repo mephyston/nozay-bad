@@ -1,6 +1,6 @@
 # Progress Ledger - Typage Strict Drizzle / D1 et Élimination de `db: any`
 
-- [x] Task 1: Module Client Partagé `@metacult/shared-db` (complete, commit 4e56423)
+- [x] Task 1: Module Client Partagé `@nba/db` (complete, commit 4e56423)
 - [x] Task 2: Domaine `members` (complete, commit 32c0bc2)
 - [x] Task 3: Domaine `expenses` (complete, commit 28b0bc8)
 - [x] Task 4: Domaine `shop` (complete, commit 8b65f15)

@@ -1,4 +1,4 @@
-import { type Db, type Tx } from '@metacult/shared-db';
+import { type Db, type Tx } from '@nba/db';
 import { ImportMembersRepository } from './repository';
 import { CsvHeadersInvalidError } from '../shared/errors';
 import { ImportMembersFromCsvInput, ImportMembersFromCsvOutput } from "./dto";
@@ -189,7 +189,7 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
       }
     });
 
-    await repo.batchUpsertMembers(txDb, membersArray);
+    await repo.batchUpsertMembers(txDb, membersArray.map(m => ({ ...m, importedAt: (m as any).importedAt || new Date() })));
 
     return {
       inserted,

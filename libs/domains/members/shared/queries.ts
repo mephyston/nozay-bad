@@ -1,5 +1,5 @@
 import { eq, inArray } from 'drizzle-orm';
-import { type DbOrTx } from '@metacult/shared-db';
+import { type DbOrTx } from '@nba/db';
 import { membersTable, seasonsTable } from './schema';
 
 export interface MemberSummary {
@@ -51,5 +51,5 @@ export async function isSeasonClosed(db: DbOrTx, seasonId: string): Promise<bool
     .from(seasonsTable)
     .where(eq(seasonsTable.id, seasonId))
     .get();
-  return season?.closed === 1 || season?.closed === true || season?.closed === '1';
+  return Boolean(season?.closed);
 }

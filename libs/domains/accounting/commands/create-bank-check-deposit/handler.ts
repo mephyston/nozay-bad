@@ -1,5 +1,5 @@
 import { CreateBankCheckDepositRepository } from './repository';
-import { AppError, type Db, type Tx } from '@metacult/shared-db';
+import { AppError, type Db, type Tx } from '@nba/db';
 import type { CreateCheckDepositInput, ClearCheckDepositInput } from './dto';
 import { Check } from '../../shared/check';
 

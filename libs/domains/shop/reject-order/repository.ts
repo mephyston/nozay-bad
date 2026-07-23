@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm';
-import { type DbOrTx } from '@metacult/shared-db';
+import { type DbOrTx } from '@nba/db';
 import { ordersTable } from '../shared/schema';
 
 export class RejectOrderRepository {

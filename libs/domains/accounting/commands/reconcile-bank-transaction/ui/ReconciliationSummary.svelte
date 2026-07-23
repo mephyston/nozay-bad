@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Trash2 } from '@lucide/svelte';
-  import { Badge } from '@metacult/shared-ui';
+  import { Badge } from '@nba/ui';
 
   let {
     selectedTx,

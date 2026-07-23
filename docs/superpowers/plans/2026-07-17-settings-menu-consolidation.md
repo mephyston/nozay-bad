@@ -6,7 +6,7 @@
 
 **Architecture:** Modification de l'arborescence de navigation statique dans `AdminLayoutInner.svelte`.
 
-**Tech Stack:** Svelte 5 (Runes), Tailwind CSS v4, `@metacult/shared-ui`.
+**Tech Stack:** Svelte 5 (Runes), Tailwind CSS v4, `@nba/ui`.
 
 ## Global Constraints
 - Utiliser l'icône `Settings` existante ou l'importer depuis `lucide-svelte`.

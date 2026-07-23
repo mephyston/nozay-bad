@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ArrowLeft, User, Mail, Phone, Calendar, Shield, Tag, Landmark, FileText } from '@lucide/svelte';
-  import { Table, Button, Badge, Card, Tabs } from '@metacult/shared-ui';
+  import { Table, Button, Badge, Card, Tabs } from '@nba/ui';
 
   interface Member {
     id: number;

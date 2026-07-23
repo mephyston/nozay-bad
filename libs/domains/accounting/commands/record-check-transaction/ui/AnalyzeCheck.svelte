@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Camera, Loader2 } from '@lucide/svelte';
-  import { Button } from '@metacult/shared-ui';
+  import { Button } from '@nba/ui';
 
   let {
     isAnalyzing = false,

@@ -1,8 +1,8 @@
 import { CreateTransactionRepository } from './repository';
-import { isSeasonClosed } from '@metacult/features-members-api';
-import { AppError, type Db } from '@metacult/shared-db';
+import { isSeasonClosed } from '@nba/members-api';
+import { AppError, type Db } from '@nba/db';
 import { SeasonClosedError } from '../../shared/errors';
-import { normalizeCategory } from '@metacult/features-accounting-api';
+import { normalizeCategory } from '@nba/accounting-api';
 import type { CreateTransactionDTO } from './dto';
 
 export async function createTransaction(db: Db, body: CreateTransactionDTO) {

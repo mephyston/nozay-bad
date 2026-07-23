@@ -1,4 +1,4 @@
-import { type Db } from '@metacult/shared-db';
+import { type Db } from '@nba/db';
 import { UpdateCategoryRepository } from './repository';
 import { UpdateCategoryId, UpdateCategoryInput, UpdateCategoryOutput } from "./dto";
 

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { createDb } from '@metacult/shared-db';
+import { createDb } from '@nba/db';
 import { approveOrder } from './handler';
 
 export type Bindings = {

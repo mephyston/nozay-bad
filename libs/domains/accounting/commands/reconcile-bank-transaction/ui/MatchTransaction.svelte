@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, Sparkles } from '@lucide/svelte';
-  import { Button, Input, Table } from '@metacult/shared-ui';
+  import { Button, Input, Table } from '@nba/ui';
 
   let {
     glTransactions = [],

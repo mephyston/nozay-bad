@@ -1,4 +1,4 @@
-import { type Db } from '@metacult/shared-db';
+import { type Db } from '@nba/db';
 import { ApplyPaymentRepository } from './repository';
 import { Member } from '../shared/member';
 import { ApplyPaymentToMemberMemberId, ApplyPaymentToMemberAmountCents, ApplyPaymentToMemberOutput } from "./dto";

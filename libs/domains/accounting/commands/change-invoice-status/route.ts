@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { createDb } from '@metacult/shared-db';
+import { createDb } from '@nba/db';
 import { tbValidator } from '@hono/typebox-validator';
 import { changeInvoiceStatus } from './handler';
 import { changeInvoiceStatusSchema } from './validator';
@@ -21,11 +21,11 @@ changeInvoiceStatusRoute.post(
   },
   tbValidator('json', changeInvoiceStatusSchema, (result, c) => {
     if (!result.success) {
-      const hasStatusError = result.errors.some(e => e.instancePath === '/status');
+      const hasStatusError = result.errors.some(e => (e as any).path || (e as any).instancePath === '/status');
       if (hasStatusError) {
         return c.json({ success: false, error: 'Statut invalide' }, 400);
       }
-      return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+      return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
     }
   }),
   async (c) => {

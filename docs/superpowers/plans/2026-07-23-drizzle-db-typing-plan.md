@@ -2,13 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Remplacer les 192+ occurrences de `db: any`, `tx: any` et `any` résiduels dans les domaines par les types stricts Drizzle `Db`, `Tx` et `DbOrTx` introduits dans `@metacult/shared-db`.
+**Goal:** Remplacer les 192+ occurrences de `db: any`, `tx: any` et `any` résiduels dans les domaines par les types stricts Drizzle `Db`, `Tx` et `DbOrTx` introduits dans `@nba/db`.
 
 **Tech Stack:** TypeScript, Drizzle ORM (`drizzle-orm/d1`), Cloudflare Workers (D1), Hono, Vitest.
 
 ---
 
-### Task 1: Module Client Partagé `@metacult/shared-db`
+### Task 1: Module Client Partagé `@nba/db`
 
 **Files:**
 - Create: `libs/shared/db/src/client.ts`
@@ -31,7 +31,7 @@ export * from './client';
 export * from './errors';
 ```
 
-- [ ] **Step 3: Vérifier le typage de `@metacult/shared-db`**
+- [ ] **Step 3: Vérifier le typage de `@nba/db`**
 Run: `npx tsc --noEmit`
 
 - [ ] **Step 4: Commiter le changement**

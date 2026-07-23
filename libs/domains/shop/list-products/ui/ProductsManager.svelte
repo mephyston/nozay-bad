@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus, Edit, Trash2, Check, AlertCircle, ShoppingBag, Search, X, MoreVertical } from "@lucide/svelte";
-  import { Button, Input, Badge, Card, Table } from "@metacult/shared-ui";
+  import { Button, Input, Badge, Card, Table } from "@nba/ui";
 
 
   interface Product {

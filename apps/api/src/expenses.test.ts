@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
-import { expensesRouter } from '@metacult/features-expenses-api';
-import { setupMockDb } from '@metacult/shared-db/test-utils';
+import { expensesRouter } from '@nba/expenses-api';
+import { setupMockDb } from '@nba/db/test-utils';
 import { expensesTable } from '../../../libs/domains/expenses/shared/schema';
 import { eq, sql } from 'drizzle-orm';
-import { AppError } from '@metacult/shared-db';
+import { AppError } from '@nba/db';
 
 const app = new Hono<{ Bindings: { DB: any } }>();
 app.onError((err, c) => {

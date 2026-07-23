@@ -1,4 +1,4 @@
-import { type Db } from '@metacult/shared-db';
+import { type Db } from '@nba/db';
 import { ListAccountClassesRepository } from './repository';
 import { ListAccountClassesInput, ListAccountClassesOutput } from "./dto";
 import { AccountClass } from '../../shared/account-class';

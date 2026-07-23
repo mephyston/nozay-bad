@@ -95,11 +95,11 @@ describe('OrdersManager Component', () => {
     }
   ];
 
-  let originalFetch: typeof global.fetch;
+  let originalFetch: typeof globalThis.fetch;
 
   beforeEach(() => {
-    originalFetch = global.fetch;
-    global.fetch = vi.fn().mockImplementation(() =>
+    originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockImplementation(() =>
       Promise.resolve({
         ok: true,
         text: () => Promise.resolve(''),
@@ -115,7 +115,7 @@ describe('OrdersManager Component', () => {
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
@@ -222,7 +222,7 @@ describe('OrdersManager Component', () => {
     approveBtn.click();
     flushSync();
 
-    expect(global.fetch).toHaveBeenCalledWith('', {
+    expect(globalThis.fetch).toHaveBeenCalledWith('', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'approve', id: 1 })
@@ -257,7 +257,7 @@ describe('OrdersManager Component', () => {
     flushSync();
 
     expect(window.confirm).toHaveBeenCalledWith('Êtes-vous sûr de vouloir refuser cette commande ?');
-    expect(global.fetch).toHaveBeenCalledWith('', {
+    expect(globalThis.fetch).toHaveBeenCalledWith('', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'reject', id: 1 })

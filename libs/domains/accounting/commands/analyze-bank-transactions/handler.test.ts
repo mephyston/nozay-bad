@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { setupMockDb } from '@metacult/shared-db/test-utils';
+import { setupMockDb } from '@nba/db/test-utils';
 import { analyzeBankTransactions } from './handler';
 import { bankTransactionsTable, categoriesTable, seasonsTable } from '../../shared/schema';
 import { eq, sql } from 'drizzle-orm';

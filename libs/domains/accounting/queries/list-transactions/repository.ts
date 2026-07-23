@@ -1,7 +1,7 @@
-import { type DbOrTx } from '@metacult/shared-db';
+import { type DbOrTx } from '@nba/db';
 import { and, or, eq, sql, inArray, isNull, desc } from 'drizzle-orm';
 import { transactionsTable, categoriesTable } from '../../shared/schema';
-import { getMembersByIds } from '@metacult/features-members-api';
+import { getMembersByIds } from '@nba/members-api';
 import type { ListTransactionsFilters } from './dto';
 
 export class ListTransactionsRepository {

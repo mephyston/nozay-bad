@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { createDb } from '@metacult/shared-db';
+import { createDb } from '@nba/db';
 import { tbValidator } from '@hono/typebox-validator';
 import { createExpense } from './handler';
 import { createExpenseSchema } from './validator';
@@ -12,7 +12,7 @@ export const createExpenseRoute = new Hono<{ Bindings: Bindings }>();
 
 createExpenseRoute.post('/', tbValidator('json', createExpenseSchema, (result, c) => {
   if (!result.success) {
-    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
   }
 }), async (c) => {
   if (!c.env || !c.env.DB) {

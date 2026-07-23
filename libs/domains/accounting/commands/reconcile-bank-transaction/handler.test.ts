@@ -2,13 +2,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { reconcileBankTransaction } from './handler';
 import { ReconcileBankTransactionRepository } from './repository';
-import { isSeasonClosed, applyPaymentToMember } from '@metacult/features-members-api';
-vi.mock('@metacult/features-members-api', () => ({
+import { isSeasonClosed, applyPaymentToMember } from '@nba/members-api';
+vi.mock('@nba/members-api', () => ({
   isSeasonClosed: vi.fn(),
   applyPaymentToMember: vi.fn()
 }));
 vi.mock('./repository');
-vi.mock('@metacult/features-accounting-api', () => ({ normalizeCategory: vi.fn().mockReturnValue(1) }));
+vi.mock('@nba/accounting-api', () => ({ normalizeCategory: vi.fn().mockReturnValue(1) }));
 
 
 describe('reconcileBankTransaction', () => {

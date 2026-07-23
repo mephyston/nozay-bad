@@ -1,4 +1,4 @@
-import { type Db } from '@metacult/shared-db';
+import { type Db } from '@nba/db';
 import { MemberCseDataRepository } from './repository';
 import { Member } from '../shared/member';
 import { MemberNotFoundError, MemberNotFullyPaidError } from '../shared/errors';

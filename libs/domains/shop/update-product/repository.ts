@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { type DbOrTx } from '@metacult/shared-db';
+import { type DbOrTx } from '@nba/db';
 import { productsTable } from '../shared/schema';
 
 export class UpdateProductRepository {

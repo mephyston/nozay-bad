@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Table, Input, Card, Tabs } from '@metacult/shared-ui';
+  import { Button, Table, Input, Card, Tabs } from '@nba/ui';
 
   interface CategoryTotal {
     type: 'recette' | 'depense';

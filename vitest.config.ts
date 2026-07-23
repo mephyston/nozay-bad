@@ -6,17 +6,17 @@ import path from 'path';
 export default defineConfig({
   resolve: {
     alias: {
-      '@metacult/shared-db/test-utils': path.resolve(__dirname, './libs/shared/db/src/test-utils.ts'),
-      '@metacult/shared-db': path.resolve(__dirname, './libs/shared/db/src/index.ts'),
-      '@metacult/shared-ui': path.resolve(__dirname, './libs/shared/ui/src/index.ts'),
-      '@metacult/features-members-api': path.resolve(__dirname, './libs/domains/members/index.ts'),
-      '@metacult/features-members-ui': path.resolve(__dirname, './libs/domains/members/shared/ui.ts'),
-      '@metacult/features-accounting-api': path.resolve(__dirname, './libs/domains/accounting/index.ts'),
-      '@metacult/features-accounting-ui': path.resolve(__dirname, './libs/domains/accounting/shared/ui.ts'),
-      '@metacult/features-expenses-api': path.resolve(__dirname, './libs/domains/expenses/index.ts'),
-      '@metacult/features-expenses-ui': path.resolve(__dirname, './libs/domains/expenses/shared/ui.ts'),
-      '@metacult/features-shop-api': path.resolve(__dirname, './libs/domains/shop/index.ts'),
-      '@metacult/features-shop-ui': path.resolve(__dirname, './libs/domains/shop/shared/ui.ts'),
+      '@nba/db/test-utils': path.resolve(__dirname, './libs/shared/db/src/test-utils.ts'),
+      '@nba/db': path.resolve(__dirname, './libs/shared/db/src/index.ts'),
+      '@nba/ui': path.resolve(__dirname, './libs/shared/ui/src/index.ts'),
+      '@nba/members-api': path.resolve(__dirname, './libs/domains/members/index.ts'),
+      '@nba/members-ui': path.resolve(__dirname, './libs/domains/members/shared/ui.ts'),
+      '@nba/accounting-api': path.resolve(__dirname, './libs/domains/accounting/index.ts'),
+      '@nba/accounting-ui': path.resolve(__dirname, './libs/domains/accounting/shared/ui.ts'),
+      '@nba/expenses-api': path.resolve(__dirname, './libs/domains/expenses/index.ts'),
+      '@nba/expenses-ui': path.resolve(__dirname, './libs/domains/expenses/shared/ui.ts'),
+      '@nba/shop-api': path.resolve(__dirname, './libs/domains/shop/index.ts'),
+      '@nba/shop-ui': path.resolve(__dirname, './libs/domains/shop/shared/ui.ts'),
     },
   },
   test: {

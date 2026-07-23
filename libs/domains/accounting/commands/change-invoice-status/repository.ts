@@ -1,7 +1,7 @@
-import { type DbOrTx } from '@metacult/shared-db';
+import { type DbOrTx } from '@nba/db';
 import { eq } from 'drizzle-orm';
 import { invoicesTable } from '../../shared/schema';
-import { isSeasonClosed as drizzleIsSeasonClosed } from '@metacult/features-members-api';
+import { isSeasonClosed as drizzleIsSeasonClosed } from '@nba/members-api';
 
 export interface ChangeInvoiceStatusRepositoryInterface {
   getById(db: DbOrTx, id: number): Promise<any | undefined>;

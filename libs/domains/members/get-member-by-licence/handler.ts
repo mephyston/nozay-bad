@@ -1,4 +1,4 @@
-import { type Db } from '@metacult/shared-db';
+import { type Db } from '@nba/db';
 import { GetMemberRepository } from './repository';
 import { MemberNotFoundError } from '../shared/errors';
 import { GetMemberByLicenceLicence, GetMemberByLicenceSeason, GetMemberByLicenceOutput } from "./dto";

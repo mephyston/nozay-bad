@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Wallet2, Check, Loader2, Save, AlertCircle } from "@lucide/svelte";
-  import { Button, Input, Card, Alert } from "@metacult/shared-ui";
+  import { Button, Input, Card, Alert } from "@nba/ui";
 
   interface Season {
     id: string;

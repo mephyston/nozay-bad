@@ -117,15 +117,15 @@ git commit -m "feat(accounting): move invoices header and season selector to Ast
 - Modify: `libs/features/accounting/ui/src/InvoicesManager.svelte`
 
 **Interfaces:**
-- Consumes: `@metacult/shared-ui` package components (Sheet instead of Dialog).
+- Consumes: `@nba/ui` package components (Sheet instead of Dialog).
 - Produces: Cleaned component without season selector and Dialog, using imported Sheet component.
 
 - [ ] **Step 1: Replace Dialog with Sheet in imports**
 
-Modify imports from `@metacult/shared-ui` on line 6 of `libs/features/accounting/ui/src/InvoicesManager.svelte`:
+Modify imports from `@nba/ui` on line 6 of `libs/features/accounting/ui/src/InvoicesManager.svelte`:
 
 ```typescript
-import { Button, Table, Input, Badge, Card, Sheet, Alert, Textarea } from '@metacult/shared-ui';
+import { Button, Table, Input, Badge, Card, Sheet, Alert, Textarea } from '@nba/ui';
 ```
 
 - [ ] **Step 2: Remove internal season selector and duplicate headers**
@@ -152,7 +152,7 @@ git commit -m "refactor(accounting): remove internal season selector and update 
 - Modify: `libs/features/accounting/ui/src/InvoicesManager.svelte`
 
 **Interfaces:**
-- Consumes: `<Sheet>` components from `@metacult/shared-ui`.
+- Consumes: `<Sheet>` components from `@nba/ui`.
 - Produces: Drawer for invoice create/edit, styled with Outfit typography, having a sticky footer.
 
 - [ ] **Step 1: Replace Dialog components with Sheet components**

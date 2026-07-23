@@ -4,7 +4,7 @@
 
 **Goal:** Decouple monolithic integration tests into domain route test suites, set up domain-specific Svelte UI libraries, integrate Shadcn-Svelte, and migrate frontend components into their respective VSA slices.
 
-**Architecture:** Create `@metacult/shared-db/test-utils` for sharing mock D1 databases across test suites, partition integration tests into feature route test files, scaffold 5 new Svelte UI packages in the Nx monorepo, configure Shadcn-Svelte to target the shared UI library, and update page imports to use path aliases.
+**Architecture:** Create `@nba/db/test-utils` for sharing mock D1 databases across test suites, partition integration tests into feature route test files, scaffold 5 new Svelte UI packages in the Nx monorepo, configure Shadcn-Svelte to target the shared UI library, and update page imports to use path aliases.
 
 **Tech Stack:** Svelte 5, Astro, Hono, Drizzle ORM, Vitest, Tailwind CSS, Shadcn-Svelte, ESLint.
 
@@ -24,8 +24,8 @@
 - Modify: `libs/shared/db/src/db.test.ts`
 
 **Interfaces:**
-- Consumes: Database schema from `@metacult/shared-db`
-- Produces: `MockD1Database`, `MockD1PreparedStatement`, `setupMockDb` functions exported from `@metacult/shared-db/test-utils` or `@metacult/shared-db`
+- Consumes: Database schema from `@nba/db`
+- Produces: `MockD1Database`, `MockD1PreparedStatement`, `setupMockDb` functions exported from `@nba/db/test-utils` or `@nba/db`
 
 - [ ] **Step 1: Create the shared test utilities file**
   Create `libs/shared/db/src/test-utils.ts` with the Mock D1 implementation and a helper to run migrations on it:
@@ -166,7 +166,7 @@
 
 - [ ] **Step 1: Split Members API Tests**
   Create `libs/features/members/api/src/routes.test.ts` containing members-related test blocks (`POST /members/import`, `GET /members`, `GET /members/:licence`, `/members/:id/cse-data`) extracted from `apps/api/src/index.test.ts`. Use a local `Hono` test instance with `membersRouter`.
-  Ensure to import `setupMockDb` from `@metacult/features-members-data-access` (or `@metacult/shared-db`).
+  Ensure to import `setupMockDb` from `@metacult/features-members-data-access` (or `@nba/db`).
 
 - [ ] **Step 2: Split Accounting API Tests**
   Create `libs/features/accounting/api/src/routes.test.ts` containing accounting, reconciliation, checking, categories, and account classes test blocks. Use a local `Hono` test instance with `accountingRouter`.
@@ -206,11 +206,11 @@
 - Consumes: Nx config, tsconfig base
 - Produces: 5 library folders with mappings inside `tsconfig.base.json`
 
-- [ ] **Step 1: Scaffold `@metacult/shared-ui` files**
+- [ ] **Step 1: Scaffold `@nba/ui` files**
   Create `libs/shared/ui/project.json`:
   ```json
   {
-    "name": "@metacult/shared-ui",
+    "name": "@nba/ui",
     "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "projectType": "library",
     "sourceRoot": "libs/shared/ui/src",
@@ -241,16 +241,16 @@
 - [ ] **Step 3: Update `tsconfig.base.json` path mappings**
   Modify `tsconfig.base.json` under `compilerOptions.paths` to register:
   ```json
-  "@metacult/shared-ui": ["libs/shared/ui/src/index.ts"],
-  "@metacult/features-members-ui": ["libs/features/members/ui/src/index.ts"],
-  "@metacult/features-accounting-ui": ["libs/features/accounting/ui/src/index.ts"],
-  "@metacult/features-expenses-ui": ["libs/features/expenses/ui/src/index.ts"],
-  "@metacult/features-shop-ui": ["libs/features/shop/ui/src/index.ts"]
+  "@nba/ui": ["libs/shared/ui/src/index.ts"],
+  "@nba/members-ui": ["libs/features/members/ui/src/index.ts"],
+  "@nba/accounting-ui": ["libs/features/accounting/ui/src/index.ts"],
+  "@nba/expenses-ui": ["libs/features/expenses/ui/src/index.ts"],
+  "@nba/shop-ui": ["libs/features/shop/ui/src/index.ts"]
   ```
 
 - [ ] **Step 4: Verify Nx shows the new libraries**
   Run: `npx nx show projects`
-  Expected: Includes `@metacult/shared-ui`, `@metacult/features-members-ui`, `@metacult/features-accounting-ui`, `@metacult/features-expenses-ui`, `@metacult/features-shop-ui`.
+  Expected: Includes `@nba/ui`, `@nba/members-ui`, `@nba/accounting-ui`, `@nba/expenses-ui`, `@nba/shop-ui`.
 
 - [ ] **Step 5: Commit work**
   ```bash
@@ -271,7 +271,7 @@
 - Produces: Shadcn Svelte configuration files and tailwind classes hook
 
 - [ ] **Step 1: Write `components.json` at root**
-  Create `components.json` configuring paths to resolve directly inside `@metacult/shared-ui`:
+  Create `components.json` configuring paths to resolve directly inside `@nba/ui`:
   ```json
   {
     "$schema": "https://shadcn-svelte.com/schema.json",
@@ -337,22 +337,22 @@
 - Delete: `apps/admin-console/src/components/*.{svelte,test.ts}` (moved)
 
 **Interfaces:**
-- Consumes: Components exported from `@metacult/shared-ui`
+- Consumes: Components exported from `@nba/ui`
 - Produces: Astro pages importing components via `@metacult/features-[feature]-ui` path aliases
 
 - [ ] **Step 1: Move members Svelte components**
   Move `MemberProfile.svelte`, `MembersTable.svelte`, `PoonaImporter.svelte` (and `.test.ts`) from `apps/admin-console/src/components` to `libs/features/members/ui/src/`.
   Modify `libs/features/members/ui/src/index.ts` to export them.
-  Rewrite their internal markup to consume `Table`, `Button`, `Badge` from `@metacult/shared-ui` instead of raw HTML tables and custom classes.
+  Rewrite their internal markup to consume `Table`, `Button`, `Badge` from `@nba/ui` instead of raw HTML tables and custom classes.
 
 - [ ] **Step 2: Move accounting Svelte components**
   Move accounting components (`BankStatementReconciliation`, `InitialBalancesConfig`, `TransactionLedger`, `CheckDepositManager`, `CashBoxManager`, `GeneralMeetingReport`, `SettingsManager`) to `libs/features/accounting/ui/src/`.
   Modify `libs/features/accounting/ui/src/index.ts` to export them.
-  Rewrite their markup to use `@metacult/shared-ui`.
+  Rewrite their markup to use `@nba/ui`.
 
 - [ ] **Step 3: Move expenses and shop Svelte components**
   Move `ExpensesManager` to expenses UI library, and `OrdersManager`/`ProductsManager` to shop UI library. Export them.
-  Rewrite markup using `@metacult/shared-ui`.
+  Rewrite markup using `@nba/ui`.
 
 - [ ] **Step 4: Update page import paths in Astro pages**
   Update Astro page controller files in `apps/admin-console/src/pages/admin/` to import from `@metacult/features-[feature]-ui` instead of `../../../components/`.

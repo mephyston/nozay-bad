@@ -4,7 +4,7 @@
 
 **Goal:** Déplacer l'en-tête et le sélecteur de saison au niveau d'Astro, migrer les onglets et les checkboxes vers les composants accessibles standards, uniformiser les polices avec Outfit et résoudre les fuites de mémoire de test.
 
-**Tech Stack:** Astro, Svelte 5, Tailwind CSS, `@metacult/shared-ui` (Tabs, Checkbox, Button, Card, Table, Dialog, Alert).
+**Tech Stack:** Astro, Svelte 5, Tailwind CSS, `@nba/ui` (Tabs, Checkbox, Button, Card, Table, Dialog, Alert).
 
 ## Global Constraints
 
@@ -119,13 +119,13 @@ git commit -m "style(accounting): remove top header card from CheckDepositManage
 * Modify: `libs/features/accounting/ui/src/CheckDepositManager.svelte`
 
 **Interfaces:**
-* Consumes: Primitives `Tabs` de `@metacult/shared-ui`.
+* Consumes: Primitives `Tabs` de `@nba/ui`.
 * Produces: Onglets thématiques pour l'affichage de la remise de chèques.
 
 - [ ] **Step 1: Import Tabs and refactor layout**
 
 Ouvrir [CheckDepositManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/CheckDepositManager.svelte) :
-1. Ajouter `Tabs` dans les imports de `@metacult/shared-ui` à la ligne 3.
+1. Ajouter `Tabs` dans les imports de `@nba/ui` à la ligne 3.
 2. Remplacer les boutons d'onglets personnalisés (lignes ~463 à ~480) par `<Tabs.Root bind:value={activeTab}>`, `<Tabs.List>` et `<Tabs.Trigger>`.
 3. Envelopper les contenus correspondants dans des blocs `<Tabs.Content value="checks">` et `<Tabs.Content value="deposits">`.
 4. S'assurer que les boutons dynamiques (d'enregistrement de chèque et de remise) se trouvent à l'intérieur de l'en-tête de l'onglet ou juste à côté pour rester réactifs.
@@ -149,13 +149,13 @@ git commit -m "feat(accounting): migrate CheckDepositManager layout to standard 
 * Modify: `libs/features/accounting/ui/src/CheckDepositManager.svelte`
 
 **Interfaces:**
-* Consumes: Primitives `Checkbox` de `@metacult/shared-ui`.
+* Consumes: Primitives `Checkbox` de `@nba/ui`.
 * Produces: Checkboxes accessibles et montants en Outfit sans-serif.
 
 - [ ] **Step 1: Migrate raw checkboxes to Checkbox component**
 
 Ouvrir [CheckDepositManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/CheckDepositManager.svelte) :
-1. Importer `Checkbox` depuis `@metacult/shared-ui` à la ligne 3.
+1. Importer `Checkbox` depuis `@nba/ui` à la ligne 3.
 2. Remplacer la checkbox de sélection générale du tableau (lignes ~524 à ~533) par le composant `<Checkbox>` avec propriété `checked` et callback `onCheckedChange`.
 3. Remplacer les checkboxes individuelles de chaque ligne (lignes ~548 à ~553) par `<Checkbox>` avec liaison `checked` bidirectionnelle ou `onCheckedChange`.
 

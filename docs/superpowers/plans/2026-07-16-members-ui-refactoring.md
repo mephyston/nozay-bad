@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Refactoriser les composants `MembersTable.svelte` et `MemberProfile.svelte` pour utiliser les primitives Shadcn Svelte de `@metacult/shared-ui`.
+**Goal:** Refactoriser les composants `MembersTable.svelte` et `MemberProfile.svelte` pour utiliser les primitives Shadcn Svelte de `@nba/ui`.
 
 **Architecture:** Approche composant par composant (Vertical Slice Architecture). Migration de la table de recherche et de la fiche profil vers des composants structurés en onglets et popovers. Gestion d'état conservée via les paramètres d'URL (SSR).
 
@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Utiliser uniquement les composants importés depuis `@metacult/shared-ui`.
+- Utiliser uniquement les composants importés depuis `@nba/ui`.
 - Tous les tests unitaires et d'intégration doivent passer via `npx vitest run`.
 - Le typage complet doit compiler proprement sans erreurs ni avertissements sous `npx astro check --root apps/admin-console`.
 - Les changements doivent être commités après chaque tâche.
@@ -24,13 +24,13 @@
 - Test: `libs/features/members/ui/src/MembersTable.test.ts`
 
 **Interfaces:**
-- Consumes: `@metacult/shared-ui` (`Table`, `Button`, `Badge`, `Input`, `Popover`)
+- Consumes: `@nba/ui` (`Table`, `Button`, `Badge`, `Input`, `Popover`)
 
 - [ ] **Étape 1 : Mettre à jour les imports et le balisage de recherche**
   Modifier les imports au début du fichier `libs/features/members/ui/src/MembersTable.svelte` :
   ```typescript
   import { Search, ChevronLeft, ChevronRight, User, MoreVertical, Eye, Filter } from 'lucide-svelte';
-  import { Table, Button, Badge, Input, Popover } from '@metacult/shared-ui';
+  import { Table, Button, Badge, Input, Popover } from '@nba/ui';
   ```
   Remplacer la barre d'outils de filtres existante (lignes 95-160) par le nouveau conteneur de recherche et popover de filtres :
   ```html
@@ -202,13 +202,13 @@
 - Test: `libs/features/members/ui/src/MemberProfile.test.ts`
 
 **Interfaces:**
-- Consumes: `@metacult/shared-ui` (`Card`, `Tabs`, `Table`, `Button`, `Badge`)
+- Consumes: `@nba/ui` (`Card`, `Tabs`, `Table`, `Button`, `Badge`)
 
 - [ ] **Étape 1 : Mettre à jour les imports**
   Modifier les imports au début de `libs/features/members/ui/src/MemberProfile.svelte` :
   ```typescript
   import { ArrowLeft, User, Mail, Phone, Calendar, Shield, CreditCard, Tag, Landmark, FileText } from 'lucide-svelte';
-  import { Table, Button, Badge, Card, Tabs } from '@metacult/shared-ui';
+  import { Table, Button, Badge, Card, Tabs } from '@nba/ui';
   ```
 
 - [ ] **Étape 2 : Réorganiser le corps en utilisant les Onglets (Tabs)**

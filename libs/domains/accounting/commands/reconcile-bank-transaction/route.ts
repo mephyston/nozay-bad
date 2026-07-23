@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { createDb } from '@metacult/shared-db';
+import { createDb } from '@nba/db';
 import { tbValidator } from '@hono/typebox-validator';
 import { reconcileBankTransaction, reconcileBulkTransactions } from './handler';
 import { reconcileBankTransactionSchema, reconcileBulkTransactionsSchema } from './validator';
@@ -14,7 +14,7 @@ reconcileBankTransactionRoute.post(
   '/bank-transactions/reconcile-bulk',
   tbValidator('json', reconcileBulkTransactionsSchema, (result, c) => {
     if (!result.success) {
-      return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+      return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
     }
   }),
   async (c) => {
@@ -43,7 +43,7 @@ reconcileBankTransactionRoute.post(
   },
   tbValidator('json', reconcileBankTransactionSchema, (result, c) => {
     if (!result.success) {
-      return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+      return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
     }
   }),
   async (c) => {
