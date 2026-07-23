@@ -15,14 +15,10 @@
   });
 
   function handleToggle() {
-    try {
-      toggleMode();
-    } catch (err) {
-      console.warn("mode-watcher toggleMode failed, using fallback:", err);
-    }
-
     const html = document.documentElement;
-    if (currentMode === "dark") {
+    const isDark = html.classList.contains("dark");
+
+    if (isDark) {
       html.classList.remove("dark");
       html.style.colorScheme = "light";
       localStorage.setItem("mode-watcher-mode", '"light"');
@@ -33,10 +29,15 @@
       localStorage.setItem("mode-watcher-mode", '"dark"');
       currentMode = "dark";
     }
+
+    try {
+      toggleMode();
+    } catch {}
   }
 </script>
 
 <button
+  type="button"
   onclick={handleToggle}
   class="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-transparent text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
   aria-label="Changer de thème"
