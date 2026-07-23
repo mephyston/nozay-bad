@@ -94,7 +94,7 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
 ---
 
 <Layout title="Soldes initiaux - NBA 91">
-  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Soldes initiaux">
+  <AdminLayout client:load email={userEmail} breadcrumb="Comptabilité / Soldes initiaux">
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>
