@@ -28,11 +28,11 @@ export class ListChecksRepository {
       .orderBy(desc(checksTable.createdAt))
       .all();
 
-    const memberIds = Array.from(new Set(checks.map((c: any) => c.memberId).filter((id: any) => id !== null))) as number[];
+    const memberIds = Array.from(new Set(checks.map((c) => c.memberId).filter((id) => id !== null))) as number[];
     const members = await getMembersByIds(db, memberIds);
-    const membersMap = new Map(members.map((m: any) => [m.id, m]));
+    const membersMap = new Map(members.map((m) => [m.id, m]));
 
-    return checks.map((c: any) => {
+    return checks.map((c) => {
       const m = c.memberId ? membersMap.get(c.memberId) : null;
       return {
         ...c,

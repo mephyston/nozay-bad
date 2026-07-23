@@ -245,7 +245,7 @@
       if (typeof window !== 'undefined' && (window as any).turnstile) {
         (window as any).turnstile.reset();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || "Une erreur est survenue.";
       // Reset Turnstile widget on failure
       if (typeof window !== 'undefined' && (window as any).turnstile) {

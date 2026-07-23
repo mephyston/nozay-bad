@@ -136,7 +136,7 @@
       setTimeout(() => {
         window.location.reload();
       }, 1000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || 'Une erreur est survenue.';
       isSubmitting = false;
     }
@@ -154,7 +154,7 @@
 
       if (!res.ok) throw new Error('Impossible de supprimer.');
       window.location.reload();
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message);
     }
   }

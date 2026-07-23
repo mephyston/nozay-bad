@@ -50,7 +50,7 @@ import { createBankCheckDepositRoute } from './commands/create-bank-check-deposi
 
 export type Bindings = {
   DB: D1Database;
-  AI: any;
+  AI: unknown;
 };
 
 export const accountingRouter = new Hono<{ Bindings: Bindings }>();

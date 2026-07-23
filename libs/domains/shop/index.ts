@@ -9,7 +9,7 @@ import { rejectOrderRoute } from './reject-order/route';
 
 export type Bindings = {
   DB: D1Database;
-  AI: any;
+  AI: unknown;
 };
 
 export const shopRouter = new Hono<{ Bindings: Bindings }>();

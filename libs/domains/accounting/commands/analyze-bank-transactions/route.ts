@@ -6,7 +6,7 @@ import { analyzeBankTransactionsQuerySchema } from './validator';
 
 export type Bindings = {
   DB: D1Database;
-  AI: any;
+  AI: unknown;
 };
 
 export const analyzeBankTransactionsRoute = new Hono<{ Bindings: Bindings }>();

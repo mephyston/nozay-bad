@@ -16,7 +16,7 @@ listCategoriesRoute.get('/categories', async (c) => {
   try {
     const list = await listCategories(db);
     return c.json({ success: true, data: list });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return c.json({ success: false, error: err.message }, 500);
   }
 });

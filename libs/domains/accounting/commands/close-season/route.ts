@@ -17,7 +17,7 @@ closeSeasonRoute.post('/:id/close', async (c) => {
   try {
     const data = await closeSeason(db, id);
     return c.json({ success: true, data });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return c.json({ success: false, error: err.message }, 400);
   }
 });

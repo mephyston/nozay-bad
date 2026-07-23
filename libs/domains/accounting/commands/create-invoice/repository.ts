@@ -12,7 +12,7 @@ export class CreateInvoiceRepository {
       .all();
     let nextNum = 1;
     if (lastInvoices.length > 0) {
-      const nums = lastInvoices.map((inv: any) => {
+      const nums = lastInvoices.map((inv) => {
         const parts = inv.invoiceNumber.split('-');
         return parseInt(parts[parts.length - 1]) || 0;
       });

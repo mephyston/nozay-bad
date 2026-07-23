@@ -5,7 +5,7 @@ import { updateExpenseRoute } from './update/route';
 
 export type Bindings = {
   DB: D1Database;
-  AI: any;
+  AI: unknown;
 };
 
 export const expensesRouter = new Hono<{ Bindings: Bindings }>();

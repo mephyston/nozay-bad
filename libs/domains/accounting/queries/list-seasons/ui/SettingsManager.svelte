@@ -122,7 +122,7 @@
       }
 
       showMessage('Saison créée avec succès !');
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || 'Une erreur est survenue.';
       isSubmitting = false;
     }
@@ -149,7 +149,7 @@
       }
 
       showMessage('Saison active mise à jour !');
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || 'Une erreur est survenue.';
       isSubmitting = false;
     }
@@ -179,7 +179,7 @@
       }
 
       showMessage('Saison clôturée avec succès !');
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || 'Une erreur est survenue.';
       isSubmitting = false;
     }
@@ -216,7 +216,7 @@
       }
 
       showMessage('Catégorie créée avec succès !');
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || 'Une erreur est survenue.';
       isSubmitting = false;
     }
@@ -265,7 +265,7 @@
 
       editingCatId = null;
       showMessage('Catégorie mise à jour avec succès.');
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || 'Une erreur est survenue.';
       isSubmitting = false;
     }
@@ -293,7 +293,7 @@
       }
 
       showMessage('Catégorie supprimée avec succès.');
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || 'Une erreur est survenue.';
       isSubmitting = false;
     }
@@ -329,7 +329,7 @@
       newClassCode = '';
       newClassLabel = '';
       showMessage('Classe de compte créée avec succès !');
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || 'Une erreur est survenue.';
       isSubmitting = false;
     }
@@ -368,7 +368,7 @@
 
       editingClassCode = null;
       showMessage('Classe de compte mise à jour avec succès.');
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || 'Une erreur est survenue.';
       isSubmitting = false;
     }
@@ -395,7 +395,7 @@
       }
 
       showMessage('Classe de compte supprimée avec succès.');
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || 'Une erreur est survenue.';
       isSubmitting = false;
     }

@@ -16,7 +16,7 @@ listAccountClassesRoute.get('/account-classes', async (c) => {
   try {
     const list = await listAccountClasses(db);
     return c.json({ success: true, data: list });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return c.json({ success: false, error: err.message }, 500);
   }
 });

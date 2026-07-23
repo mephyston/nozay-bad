@@ -241,7 +241,7 @@
       } else {
         throw new Error(json.error || 'Erreur lors de la lecture des données.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       formError = "L'analyse IA a échoué (" + (err.message || 'erreur de connexion') + "). Vous pouvez saisir les informations manuellement.";
     } finally {
@@ -291,7 +291,7 @@
       matchedMemberName = '';
       categorySearchQuery = '';
       window.location.reload();
-    } catch (err: any) {
+    } catch (err: unknown) {
       formError = err.message || 'Erreur lors de l\'enregistrement du chèque.';
     } finally {
       isSubmittingCheck = false;

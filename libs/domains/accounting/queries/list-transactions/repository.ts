@@ -38,7 +38,7 @@ export class ListTransactionsRepository {
         .from(categoriesTable)
         .where(or(eq(categoriesTable.receiptCode, filters.classCode), eq(categoriesTable.expenseCode, filters.classCode)))
         .all();
-      const catIds = matchingCats.map((cat: any) => cat.id);
+      const catIds = matchingCats.map((cat) => cat.id);
       if (catIds.length > 0) {
         conditions.push(inArray(transactionsTable.category, catIds));
       } else {
@@ -59,7 +59,7 @@ export class ListTransactionsRepository {
         .from(categoriesTable)
         .where(or(eq(categoriesTable.receiptCode, filters.classCode), eq(categoriesTable.expenseCode, filters.classCode)))
         .all();
-      const catIds = matchingCats.map((cat: any) => cat.id);
+      const catIds = matchingCats.map((cat) => cat.id);
       if (catIds.length > 0) {
         conditions.push(inArray(transactionsTable.category, catIds));
       } else {
@@ -88,11 +88,11 @@ export class ListTransactionsRepository {
       .offset(pagination.offset)
       .all();
 
-    const memberIds = Array.from(new Set(txs.map((t: any) => t.memberId).filter((id: any) => id !== null))) as number[];
+    const memberIds = Array.from(new Set(txs.map((t) => t.memberId).filter((id) => id !== null))) as number[];
     const members = await getMembersByIds(db, memberIds);
-    const membersMap = new Map(members.map((m: any) => [m.id, m]));
+    const membersMap = new Map(members.map((m) => [m.id, m]));
 
-    return txs.map((t: any) => {
+    return txs.map((t) => {
       const m = t.memberId ? membersMap.get(t.memberId) : null;
       return {
         ...t,

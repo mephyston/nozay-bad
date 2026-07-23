@@ -20,7 +20,7 @@ deleteAccountClassRoute.delete('/account-classes/:code', async (c) => {
       return c.json({ success: false, error: 'Classe de compte introuvable' }, 404);
     }
     return c.json({ success: true, data: deleted });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return c.json({ success: false, error: err.message }, 400);
   }
 });

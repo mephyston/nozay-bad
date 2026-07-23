@@ -35,11 +35,11 @@ export class AnalyzeBankTransactionsRepository {
       .limit(20)
       .all();
 
-    const memberIds = Array.from(new Set(txs.map((t: any) => t.memberId).filter((id: any) => id !== null))) as number[];
+    const memberIds = Array.from(new Set(txs.map((t) => t.memberId).filter((id) => id !== null))) as number[];
     const members = memberIds.length > 0 ? await getMembersByIds(db, memberIds) : [];
-    const membersMap = new Map(members.map((m: any) => [m.id, m]));
+    const membersMap = new Map(members.map((m) => [m.id, m]));
 
-    return txs.map((t: any) => {
+    return txs.map((t) => {
       const m = t.memberId ? membersMap.get(t.memberId) : null;
       return {
         fitid: t.fitid,

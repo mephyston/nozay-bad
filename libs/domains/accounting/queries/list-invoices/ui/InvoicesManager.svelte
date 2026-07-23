@@ -177,7 +177,7 @@
         items = [{ description: '', quantity: 1, unitPriceStr: '' }];
       }
       showModal = true;
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || "Erreur de chargement des détails.";
     }
   }
@@ -285,7 +285,7 @@
         showModal = false;
         window.location.reload();
       }, 1000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || "Erreur de communication avec le serveur.";
     } finally {
       isSubmitting = false;
@@ -314,7 +314,7 @@
       setTimeout(() => {
         window.location.reload();
       }, 1000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || "Erreur serveur.";
     }
   }
@@ -338,7 +338,7 @@
       setTimeout(() => {
         window.location.reload();
       }, 1000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || "Erreur serveur.";
     }
   }

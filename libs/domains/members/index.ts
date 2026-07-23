@@ -6,7 +6,7 @@ import { getMemberCseDataRoute } from './get-member-cse-data/route';
 
 export type Bindings = {
   DB: D1Database;
-  AI: any;
+  AI: unknown;
 };
 
 export const membersRouter = new Hono<{ Bindings: Bindings }>();

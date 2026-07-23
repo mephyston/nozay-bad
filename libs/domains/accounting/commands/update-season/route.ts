@@ -27,7 +27,7 @@ updateSeasonRoute.put(
     try {
       const data = await updateSeason(db, id, body);
       return c.json({ success: true, data });
-    } catch (err: any) {
+    } catch (err: unknown) {
       return c.json({ success: false, error: err.message }, 400);
     }
   }

@@ -27,7 +27,7 @@ updateSeasonBalancesRoute.post(
     try {
       await updateSeasonBalances(db, seasonId, body);
       return c.json({ success: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
       return c.json({ success: false, error: err.message }, 400);
     }
   }

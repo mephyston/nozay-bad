@@ -38,7 +38,7 @@ changeInvoiceStatusRoute.post(
     try {
       await changeInvoiceStatus(db, id, status);
       return c.json({ success: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
       return c.json({ success: false, error: err.message }, err.status || 400);
     }
   }

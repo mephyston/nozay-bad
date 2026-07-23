@@ -6,7 +6,7 @@ import { createCheckSchema } from './validator';
 
 export type Bindings = {
   DB: D1Database;
-  AI: any;
+  AI: unknown;
 };
 
 export const recordCheckTransactionRoute = new Hono<{ Bindings: Bindings }>();
@@ -38,7 +38,7 @@ recordCheckTransactionRoute.post(
     try {
       const data = await createCheck(db, body);
       return c.json({ success: true, data });
-    } catch (err: any) {
+    } catch (err: unknown) {
       return c.json({ success: false, error: err.message }, 400);
     }
   }

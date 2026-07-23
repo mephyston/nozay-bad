@@ -36,7 +36,7 @@ export class ApproveOrderRepository {
     amount: number;
     description: string;
     memberId: number;
-    paymentMethod: any;
+    paymentMethod: string;
   }): Promise<{ id: number }> {
     return db.insert(transactionsTable)
       .values({

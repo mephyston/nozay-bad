@@ -266,7 +266,7 @@
 
       selectedTxIds = {};
       window.location.reload();
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message);
       isSubmitting = false;
     }
@@ -296,7 +296,7 @@
       
       selectedTxIds = {};
       window.location.reload();
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message);
       isSubmitting = false;
     }
@@ -398,7 +398,7 @@
       });
       if (!res.ok) throw new Error('Erreur association facture.');
       window.location.reload();
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message);
       isSubmitting = false;
     }
@@ -439,7 +439,7 @@
       });
       if (!res.ok) throw new Error('Erreur association factures.');
       window.location.reload();
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message);
       isSubmitting = false;
     }
@@ -501,7 +501,7 @@
       });
       if (!res.ok) throw new Error(await res.text() || 'Erreur importation.');
       window.location.reload();
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || 'Une erreur est survenue.';
       isSubmitting = false;
     }
@@ -518,7 +518,7 @@
       });
       if (!res.ok) throw new Error(await res.text() || 'Erreur analyse.');
       window.location.reload();
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message);
       isAnalyzing = false;
     }
@@ -539,7 +539,7 @@
       });
       if (!res.ok) throw new Error(await res.text() || 'Erreur analyse.');
       window.location.reload();
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message);
       isAnalyzingSingle = false;
     }
@@ -805,7 +805,7 @@
       });
       if (!res.ok) throw new Error('Erreur association.');
       window.location.reload();
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message);
       isSubmitting = false;
     }
@@ -873,7 +873,7 @@
         if (!res.ok) throw new Error('Erreur création.');
         window.location.reload();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message);
       isSubmitting = false;
     }
@@ -906,7 +906,7 @@
       });
       if (!res.ok) throw new Error('Erreur validation IA.');
       window.location.reload();
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message);
       isSubmitting = false;
     }
@@ -927,7 +927,7 @@
       });
       if (!res.ok) throw new Error('Erreur lors de la suppression.');
       window.location.reload();
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message);
       isSubmitting = false;
     }
@@ -945,7 +945,7 @@
       });
       if (!res.ok) throw new Error('Erreur réactivation.');
       window.location.reload();
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message);
       isSubmitting = false;
     }
@@ -964,7 +964,7 @@
       });
       if (!res.ok) throw new Error('Erreur ignore.');
       window.location.reload();
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message);
       isSubmitting = false;
     }

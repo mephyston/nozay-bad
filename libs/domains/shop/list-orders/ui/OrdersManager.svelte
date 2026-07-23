@@ -164,7 +164,7 @@
       setTimeout(() => {
         window.location.reload();
       }, 1000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || 'Une erreur est survenue';
     } finally {
       processingId = null;
@@ -203,7 +203,7 @@
       setTimeout(() => {
         window.location.reload();
       }, 1000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || 'Une erreur est survenue';
     } finally {
       processingId = null;

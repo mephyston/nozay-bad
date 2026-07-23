@@ -141,7 +141,7 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
   }
 
   if (memberId) {
-    const isMembershipCategory = (cat: any) => {
+    const isMembershipCategory = (cat) => {
       const norm = normalizeCategory(cat);
       return norm === 1 || cat === 'adhesions_inscriptions' || String(cat) === '1';
     };
@@ -151,7 +151,7 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
 
     if (body.action === 'create') {
       if (body.transactions && Array.isArray(body.transactions)) {
-        const membershipTxs = body.transactions.filter((t: any) => isMembershipCategory(t.category));
+        const membershipTxs = body.transactions.filter((t) => isMembershipCategory(t.category));
         if (membershipTxs.length > 0) {
           hasMembershipTx = true;
           amountToApply = membershipTxs.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);

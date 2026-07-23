@@ -77,7 +77,7 @@ export async function importBankStatement(db: Db, fileContent: string, seasonId:
     insertedCount = await db.transaction(async (txDb: Tx) => {
       return runSequential(txDb);
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err.message && err.message.includes('begin')) {
       insertedCount = await runSequential(db);
     } else {

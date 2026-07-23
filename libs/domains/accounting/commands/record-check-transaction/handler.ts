@@ -48,7 +48,7 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
       prompt: systemPrompt,
       image: [...new Uint8Array(bytes)]
     });
-  } catch (llamaErr: any) {
+  } catch (llamaErr: unknown) {
     let agreed = false;
     if (llamaErr.message && (llamaErr.message.includes("submit the prompt 'agree'") || llamaErr.message.includes("5016"))) {
       try {

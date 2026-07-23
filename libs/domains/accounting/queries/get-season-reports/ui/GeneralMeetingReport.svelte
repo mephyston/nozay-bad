@@ -258,7 +258,7 @@
         const errText = await res.text();
         throw new Error(errText);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       saveStatus = { type: 'error', message: err.message || "Impossible d'enregistrer le budget." };
     } finally {
       isSaving = false;
