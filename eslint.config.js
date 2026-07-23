@@ -25,7 +25,6 @@ export default tseslint.config(
         'error',
         {
           enforceBuildableLibDependency: true,
-          allow: ['../*', '../**/*', '../../**/*', '../../../**/*'],
           depConstraints: [
             {
               sourceTag: 'type:app',
@@ -78,8 +77,8 @@ export default tseslint.config(
               message: 'Please do not import drizzle-orm in route files. Database logic should be confined to repository files. Only drizzle-orm/d1 is allowed for client creation.'
             },
             {
-              group: ['**/data-access/**', '**/schema'],
-              message: 'Please do not import data-access or schemas directly in route files. Confine database logic to repository files.'
+              group: ['**/repository.ts', '**/schema.ts', '**/schema'],
+              message: 'Please do not import repository or schemas directly in route files.'
             }
           ]
         }
@@ -104,7 +103,7 @@ export default tseslint.config(
   },
   {
     files: ['libs/domains/*/*/**/*.ts'],
-    ignores: ['libs/domains/*/shared/**/*.ts', 'libs/domains/*/api/**/*.ts', 'libs/domains/*/data-access/**/*.ts', 'libs/domains/*/ui/**/*.ts'],
+    ignores: ['libs/domains/*/shared/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -112,12 +111,12 @@ export default tseslint.config(
           patterns: [
             {
               group: [
-                '../!(shared|data-access)',
-                '../!(shared|data-access)/**',
-                '../../!(shared|data-access)',
-                '../../!(shared|data-access)/**'
+                '../!(shared)',
+                '../!(shared)/**',
+                '../../!(shared)',
+                '../../!(shared)/**'
               ],
-              message: 'Slice-to-slice imports are forbidden. You can only import from shared or data-access.'
+              message: 'Slice-to-slice imports are forbidden. You can only import from shared.'
             }
           ]
         }
@@ -126,12 +125,6 @@ export default tseslint.config(
   },
   {
     files: [
-      'libs/domains/*/api/src/index.ts',
-      'libs/domains/*/ui/src/index.ts',
-      'libs/domains/*/api/src/routes/**/*.ts',
-      'libs/domains/*/api/src/routes/*.ts',
-      'libs/domains/*/api/src/routes.ts',
-      'libs/domains/*/api/src/**/*.test.ts',
       'apps/api/src/**/*.test.ts'
     ],
     rules: {
