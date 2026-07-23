@@ -1,3 +1,4 @@
+import { type Db } from '@metacult/shared-db';
 import { CreateExpenseRepository } from './repository';
 import { isSeasonClosed } from '@metacult/features-members-api';
 import { normalizeCategory } from '@metacult/features-accounting-api';
@@ -5,7 +6,7 @@ import { SeasonClosedError } from '../shared/errors';
 import { CreateExpenseInput, CreateExpenseOutput } from "./dto";
 
 export async function createExpense(
-  db: any,
+  db: Db,
   body: CreateExpenseInput
 ): Promise<CreateExpenseOutput> {
   if (await isSeasonClosed(db, body.seasonId)) {

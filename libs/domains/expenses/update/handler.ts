@@ -1,3 +1,4 @@
+import { type Db, type Tx } from '@metacult/shared-db';
 import { UpdateExpenseRepository } from './repository';
 import { isSeasonClosed } from '@metacult/features-members-api';
 import { normalizeCategory } from '@metacult/features-accounting-api';
@@ -10,10 +11,10 @@ import {
 } from '../shared/errors';
 import { ApproveExpenseInput, ApproveExpenseOutput } from "./dto";
 
-export async function approveExpense(db: any, id: ApproveExpenseInput): Promise<ApproveExpenseOutput> {
+export async function approveExpense(db: Db, id: ApproveExpenseInput): Promise<ApproveExpenseOutput> {
   const repo = new UpdateExpenseRepository();
 
-  return db.transaction(async (txDb: any) => {
+  return db.transaction(async (txDb: Tx) => {
     const expenseData = await repo.getById(txDb, id);
     if (!expenseData) {
       throw new ExpenseNotFoundError();
@@ -41,7 +42,7 @@ export async function approveExpense(db: any, id: ApproveExpenseInput): Promise<
   });
 }
 
-export async function rejectExpense(db: any, id: number) {
+export async function rejectExpense(db: Db, id: number) {
   const repo = new UpdateExpenseRepository();
   const expenseData = await repo.getById(db, id);
   if (!expenseData) {
@@ -58,10 +59,10 @@ export async function rejectExpense(db: any, id: number) {
   return repo.reject(db, id);
 }
 
-export async function cancelExpenseApproval(db: any, id: number) {
+export async function cancelExpenseApproval(db: Db, id: number) {
   const repo = new UpdateExpenseRepository();
 
-  return db.transaction(async (txDb: any) => {
+  return db.transaction(async (txDb: Tx) => {
     const expenseData = await repo.getById(txDb, id);
     if (!expenseData) {
       throw new ExpenseNotFoundError();
@@ -108,7 +109,7 @@ export async function cancelExpenseApproval(db: any, id: number) {
 }
 
 export async function updateExpense(
-  db: any,
+  db: Db,
   id: number,
   body: {
     seasonId?: string;

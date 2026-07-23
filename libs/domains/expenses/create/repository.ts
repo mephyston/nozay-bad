@@ -1,17 +1,8 @@
+import { type DbOrTx } from '@metacult/shared-db';
 import { expensesTable } from '../shared/schema';
 
 export class CreateExpenseRepository {
-  async create(db: any, values: {
-    seasonId: string;
-    description: string;
-    category: number;
-    amount: number;
-    photoUrl: string | null;
-    status: 'pending';
-    emitterName: string;
-    memberId: number | null;
-    createdAt: Date;
-  }): Promise<any> {
+  async create(db: DbOrTx, values: typeof expensesTable.$inferInsert): Promise<typeof expensesTable.$inferSelect> {
     return db.insert(expensesTable).values(values).returning().get();
   }
 }
