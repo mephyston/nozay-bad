@@ -53,4 +53,5 @@ Thumbs.db
 
 # TypeScript build info
 *.tsbuildinfo
+graph.json
 

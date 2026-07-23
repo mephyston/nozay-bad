@@ -3,6 +3,10 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "projectType": "library",
   "sourceRoot": "libs/shared/ui/src",
-  "targets": {},
+  "targets": {
+    "lint": {
+      "command": "eslint {projectRoot}"
+    }
+  },
   "tags": ["type:ui", "scope:shared"]
 }
