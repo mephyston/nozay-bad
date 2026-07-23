@@ -97,17 +97,15 @@
     }
   });
 
-  // Debounced member search with 3-character minimum requirement
+  // Debounced member search from API
   $effect(() => {
     if (!isMemberDropdownOpen) return;
-    if (members.length > 0) return;
 
     const query = memberSearchQuery.trim();
     if (lastSelectedMember && memberSearchQuery === formatMemberName(lastSelectedMember)) {
       return;
     }
 
-    // Require at least 3 characters when typing a search query
     if (query.length > 0 && query.length < 3) {
       return;
     }
@@ -148,14 +146,15 @@
   );
 
   let filteredMembers = $derived(
-    members.length > 0
-      ? (memberSearchQuery.trim() === ''
-          ? sortedMembers
+    memberSearchQuery.trim() === ''
+      ? (fetchedMembers.length > 0 ? fetchedMembers : sortedMembers)
+      : (fetchedMembers.length > 0
+          ? fetchedMembers
           : sortedMembers.filter(m =>
-              `${m.lastName} ${m.firstName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase())
+              `${m.lastName} ${m.firstName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
+              `${m.firstName} ${m.lastName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase())
             )
         )
-      : fetchedMembers
   );
 
   function selectMember(m: Member) {
