@@ -50,8 +50,8 @@ export class SharedRateLimiter {
         const newCount = stored.count + 1;
         await kv.put(key, JSON.stringify({ count: newCount, resetTime: stored.resetTime }), { expirationTtl: Math.ceil((stored.resetTime - now) / 1000) });
         return newCount > limit;
-      } catch {
-        // Fallback to memory store if KV call fails
+      } catch (err: any) {
+        console.error('[RateLimiter] Workers KV is rate limited or unavailable, degrading to in-memory store:', err);
       }
     }
 
@@ -69,8 +69,8 @@ export class SharedRateLimiter {
     if (kv && typeof kv.delete === 'function') {
       try {
         await kv.delete(key);
-      } catch {
-        // Ignore
+      } catch (err: any) {
+        console.error('[RateLimiter] Workers KV reset failed, degrading to in-memory store:', err);
       }
     }
     this.memoryStore.delete(key);
@@ -82,8 +82,8 @@ export class SharedRateLimiter {
       try {
         const seen = await kv.get(key);
         if (seen) return true;
-      } catch {
-        // Fallback to memory store
+      } catch (err: any) {
+        console.error('[RateLimiter] Workers KV token check failed, degrading to in-memory store:', err);
       }
     }
     const expiry = this.seenTokens.get(token);
@@ -98,8 +98,8 @@ export class SharedRateLimiter {
     if (kv && typeof kv.put === 'function') {
       try {
         await kv.put(key, 'used', { expirationTtl: ttlSeconds });
-      } catch {
-        // Ignore
+      } catch (err: any) {
+        console.error('[RateLimiter] Workers KV markTokenUsed failed, degrading to in-memory store:', err);
       }
     }
     this.seenTokens.set(token, Date.now() + ttlSeconds * 1000);

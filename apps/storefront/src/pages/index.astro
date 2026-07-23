@@ -35,12 +35,13 @@ if (Astro.request.method === 'POST') {
     const body = await Astro.request.json();
     const turnstileToken = body.turnstileToken;
     const ip = Astro.request.headers.get('CF-Connecting-IP') || Astro.request.headers.get('x-real-ip') || '127.0.0.1';
-    let runtimeEnv = {};
+    let runtimeEnv: any = {};
     try {
       runtimeEnv = (Astro.locals as any).runtime?.env || {};
     } catch {}
+    const kv = (env as any)?.RATE_LIMIT_KV || runtimeEnv.RATE_LIMIT_KV;
 
-    const verifyResult = await verifyTurnstileToken(turnstileToken, ip, { runtimeEnv });
+    const verifyResult = await verifyTurnstileToken(turnstileToken, ip, { kv, runtimeEnv });
     if (!verifyResult.success) {
       return new Response(JSON.stringify({ success: false, error: verifyResult.error || 'Validation anti-bot échouée.' }), {
         status: 400,

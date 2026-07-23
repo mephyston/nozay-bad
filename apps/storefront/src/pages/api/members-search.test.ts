@@ -21,6 +21,9 @@ describe('members-search API endpoint', () => {
     if ((env as any).TURNSTILE_SECRET_KEY) {
       delete (env as any).TURNSTILE_SECRET_KEY;
     }
+    if ((env as any).RATE_LIMIT_KV) {
+      delete (env as any).RATE_LIMIT_KV;
+    }
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
@@ -92,28 +95,24 @@ describe('members-search API endpoint', () => {
       json: () => Promise.resolve({ success: true, data: [] })
     });
 
-    // 1. Send 30 requests
     for (let i = 0; i < 30; i++) {
       const request = new Request('http://localhost/api/members-search?q=pierre', { headers: ipHeaders });
       const res = await GET({ request } as any);
       expect(res.status).toBe(200);
     }
 
-    // 2. 31st request triggers rate limit (429)
     const blockedRequest = new Request('http://localhost/api/members-search?q=pierre', { headers: ipHeaders });
     const blockedRes = await GET({ request: blockedRequest } as any);
     expect(blockedRes.status).toBe(429);
     const blockedJson = await blockedRes.json();
     expect(blockedJson.error).toContain('Rate limit exceeded');
 
-    // 3. Stub global fetch for Turnstile siteverify
     const mockGlobalFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ success: true })
     });
     vi.stubGlobal('fetch', mockGlobalFetch);
 
-    // 4. Request with valid Turnstile token resets rate limit
     const bypassRequest = new Request('http://localhost/api/members-search?q=pierre&token=fresh-token-1', {
       headers: ipHeaders
     });
@@ -130,6 +129,48 @@ describe('members-search API endpoint', () => {
         })
       })
     );
+  });
+
+  it('uses Workers KV binding when RATE_LIMIT_KV is provided', async () => {
+    const mockKvStore: Record<string, any> = {};
+    const mockKv = {
+      get: vi.fn(async (key: string) => mockKvStore[key] || null),
+      put: vi.fn(async (key: string, val: any) => { mockKvStore[key] = typeof val === 'string' ? JSON.parse(val) : val; }),
+      delete: vi.fn(async (key: string) => { delete mockKvStore[key]; })
+    };
+    (env as any).RATE_LIMIT_KV = mockKv;
+
+    const ipHeaders = { 'CF-Connecting-IP': '10.0.0.1' };
+    mockFetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({ success: true, data: [] }) });
+
+    const request = new Request('http://localhost/api/members-search?q=pierre', { headers: ipHeaders });
+    const res = await GET({ request } as any);
+    expect(res.status).toBe(200);
+
+    expect(mockKv.get).toHaveBeenCalledWith('rl:10.0.0.1', { type: 'json' });
+    expect(mockKv.put).toHaveBeenCalledWith('rl:10.0.0.1', expect.any(String), expect.any(Object));
+  });
+
+  it('logs explicit error when Workers KV operation throws an exception', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const failingKv = {
+      get: vi.fn().mockRejectedValue(new Error('KV connection failure')),
+      put: vi.fn().mockRejectedValue(new Error('KV connection failure'))
+    };
+    (env as any).RATE_LIMIT_KV = failingKv;
+
+    const ipHeaders = { 'CF-Connecting-IP': '10.0.0.2' };
+    mockFetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({ success: true, data: [] }) });
+
+    const request = new Request('http://localhost/api/members-search?q=pierre', { headers: ipHeaders });
+    const res = await GET({ request } as any);
+    expect(res.status).toBe(200);
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[RateLimiter] Workers KV'),
+      expect.any(Error)
+    );
+    consoleSpy.mockRestore();
   });
 
   it('rejects duplicate token presentation (token replay attack)', async () => {
