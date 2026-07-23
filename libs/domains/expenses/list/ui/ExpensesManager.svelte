@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Coins, FileText, Check, X, Calendar, AlertCircle, Eye, Search, Edit2, Image as ImageIcon, MoreVertical, RefreshCw } from 'lucide-svelte';
+  import { Coins, FileText, Check, X, Calendar, AlertCircle, Eye, Search, Edit2, Image as ImageIcon, MoreVertical, RefreshCw } from '@lucide/svelte';
   import { Button, Table, Input, Badge, Alert, Card, Textarea } from '@metacult/shared-ui';
 
   interface Expense {

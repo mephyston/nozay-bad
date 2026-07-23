@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Camera, Loader2 } from 'lucide-svelte';
+  import { Camera, Loader2 } from '@lucide/svelte';
   import { Button } from '@metacult/shared-ui';
 
   let {

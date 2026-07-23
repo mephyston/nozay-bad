@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, Sparkles } from 'lucide-svelte';
+  import { Check, Sparkles } from '@lucide/svelte';
   import { Button, Input, Table } from '@metacult/shared-ui';
 
   let {

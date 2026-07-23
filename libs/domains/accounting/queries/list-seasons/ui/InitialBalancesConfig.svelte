@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Wallet2, Check, Loader2, Save, AlertCircle } from "lucide-svelte";
+  import { Wallet2, Check, Loader2, Save, AlertCircle } from "@lucide/svelte";
   import { Button, Input, Card, Alert } from "@metacult/shared-ui";
 
   interface Season {

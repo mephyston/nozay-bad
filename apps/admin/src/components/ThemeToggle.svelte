@@ -1,6 +1,6 @@
 <script lang="ts">
   import { toggleMode } from "mode-watcher";
-  import { Sun, Moon } from "lucide-svelte";
+  import { Sun, Moon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   let currentMode = $state("light");

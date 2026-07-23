@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, X, Clock, ShoppingBag, Search, AlertCircle, Calendar, History, User, MoreVertical } from "lucide-svelte";
+  import { Check, X, Clock, ShoppingBag, Search, AlertCircle, Calendar, History, User, MoreVertical } from "@lucide/svelte";
   import { Button, Input, Badge, Card, Table } from "@metacult/shared-ui";
 
 

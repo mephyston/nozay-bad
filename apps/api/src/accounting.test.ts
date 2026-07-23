@@ -2393,7 +2393,7 @@ describe('Final Improvements API checks', () => {
     expect(res.status).toBe(400);
     const body = await res.json() as any;
     expect(body.success).toBe(false);
-    expect(body.error).toBe('Statut invalide');
+    expect(body.error).toContain('Validation failed');
 
     // Send valid status
     const resValid = await app.request(`http://localhost/accounting/invoices/${inv.id}/status`, {

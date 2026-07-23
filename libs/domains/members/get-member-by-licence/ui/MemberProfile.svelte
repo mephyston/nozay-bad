@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowLeft, User, Mail, Phone, Calendar, Shield, Tag, Landmark, FileText } from 'lucide-svelte';
+  import { ArrowLeft, User, Mail, Phone, Calendar, Shield, Tag, Landmark, FileText } from '@lucide/svelte';
   import { Table, Button, Badge, Card, Tabs } from '@metacult/shared-ui';
 
   interface Member {

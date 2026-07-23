@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Search, Plus, Trash2, ArrowLeftRight, Check, AlertCircle, ChevronLeft, ChevronRight, MoreVertical, Edit2 } from 'lucide-svelte';
+  import { Search, Plus, Trash2, ArrowLeftRight, Check, AlertCircle, ChevronLeft, ChevronRight, MoreVertical, Edit2 } from '@lucide/svelte';
   import { Button, Table, Input, Badge, Card, Sheet, Popover, Label, Tabs } from '@metacult/shared-ui';
 
   interface Transaction {
@@ -76,7 +76,7 @@
   } = $props();
 
   import { onMount } from 'svelte';
-  import { X } from 'lucide-svelte';
+  import { X } from '@lucide/svelte';
 
   function getPageRange(current: number, total: number) {
     if (total <= 0) return [];

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { LogOut, User, Settings } from "lucide-svelte";
+  import { LogOut, User, Settings } from "@lucide/svelte";
   import { DropdownMenu } from "bits-ui";
 
   // Reçoit l'email de l'utilisateur connecté via Astro.locals.user

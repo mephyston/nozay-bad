@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, Calendar, Plus, Trash2, Edit2, X, AlertCircle, Settings, MoreVertical } from "lucide-svelte";
+  import { Check, Calendar, Plus, Trash2, Edit2, X, AlertCircle, Settings, MoreVertical } from "@lucide/svelte";
   import { Button, Input, Badge, Card, Alert, Table, Tabs } from "@metacult/shared-ui";
   import SeasonConfig from "./SeasonConfig.svelte";
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { UploadCloud, CheckCircle, AlertCircle, Coins, Search, ChevronDown } from 'lucide-svelte';
+  import { UploadCloud, CheckCircle, AlertCircle, Coins, Search, ChevronDown } from '@lucide/svelte';
   import { Button, Card, Input, Label, Badge } from '@metacult/shared-ui';
 
   interface Member {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Wallet, TrendingUp, TrendingDown, Trash2, Calendar, FileText, Check, AlertCircle, Plus, Search } from 'lucide-svelte';
+  import { Wallet, TrendingUp, TrendingDown, Trash2, Calendar, FileText, Check, AlertCircle, Plus, Search } from '@lucide/svelte';
   import { Button, Input, Badge, Card, Alert, Table } from '@metacult/shared-ui';
 
   interface CashTransaction {

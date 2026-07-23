@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Upload, Check, AlertCircle, Trash2, ShieldAlert, Sparkles, RefreshCw } from 'lucide-svelte';
+  import { Upload, Check, AlertCircle, Trash2, ShieldAlert, Sparkles, RefreshCw } from '@lucide/svelte';
   import { Button, Table, Input, Badge, Card, Dialog, Tabs, Checkbox } from '@metacult/shared-ui';
   import ReconciliationSummary from './ReconciliationSummary.svelte';
   import MatchTransaction from './MatchTransaction.svelte';

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Upload, AlertCircle, CheckCircle, RefreshCw, FileText, UserPlus, AlertTriangle } from 'lucide-svelte';
+  import { Upload, AlertCircle, CheckCircle, RefreshCw, FileText, UserPlus, AlertTriangle } from '@lucide/svelte';
   import { Button, Card, Alert, Table } from '@metacult/shared-ui';
 
   interface ImportResult {
