@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { listProducts } from './handler';
 
 export type Bindings = {
@@ -14,7 +14,7 @@ listProductsRoute.get('/products', async (c) => {
   }
   const category = c.req.query('category');
   const activeStr = c.req.query('active');
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
 
   let active: boolean | undefined = undefined;
   if (activeStr === 'true') active = true;

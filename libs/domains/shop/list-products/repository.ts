@@ -1,8 +1,9 @@
 import { eq, and } from 'drizzle-orm';
+import { type DbOrTx } from '@metacult/shared-db';
 import { productsTable } from '../shared/schema';
 
 export class ListProductsRepository {
-  async list(db: any, filters: { category?: string; active?: boolean }): Promise<any[]> {
+  async list(db: DbOrTx, filters: { category?: string; active?: boolean }): Promise<(typeof productsTable.$inferSelect)[]> {
     const conditions = [];
     if (filters.category) conditions.push(eq(productsTable.category, filters.category as any));
     if (filters.active !== undefined) conditions.push(eq(productsTable.active, filters.active));

@@ -1,3 +1,5 @@
+import { productsTable } from '../shared/schema';
+
 export type UpdateProductId = number;
 export interface UpdateProductInput {
   name?: string;
@@ -6,4 +8,4 @@ export interface UpdateProductInput {
   active?: boolean;
 }
 
-export type UpdateProductOutput = any;
+export type UpdateProductOutput = typeof productsTable.$inferSelect;

@@ -1,3 +1,5 @@
+import { ordersTable } from '../shared/schema';
+
 export interface CreateOrderInput {
   seasonId: string;
   memberId: number;
@@ -6,4 +8,4 @@ export interface CreateOrderInput {
   paymentMethod: string;
 }
 
-export type CreateOrderOutput = any;
+export type CreateOrderOutput = typeof ordersTable.$inferSelect;

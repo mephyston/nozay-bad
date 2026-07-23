@@ -1,3 +1,5 @@
+import { productsTable } from '../shared/schema';
+
 export interface CreateProductInput {
   name: string;
   category: 'shuttlecock' | 'string' | 'other';
@@ -6,4 +8,4 @@ export interface CreateProductInput {
   active?: boolean;
 }
 
-export type CreateProductOutput = any;
+export type CreateProductOutput = typeof productsTable.$inferSelect;

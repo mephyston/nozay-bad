@@ -1,3 +1,4 @@
+import { type Db, type Tx } from '@metacult/shared-db';
 import { ApproveOrderRepository } from './repository';
 import { Order } from '../shared/order';
 import {
@@ -11,10 +12,10 @@ import {
 import { isSeasonClosed } from '@metacult/features-members-api';
 import { ApproveOrderInput, ApproveOrderOutput } from "./dto";
 
-export async function approveOrder(db: any, id: ApproveOrderInput): Promise<ApproveOrderOutput> {
+export async function approveOrder(db: Db, id: ApproveOrderInput): Promise<ApproveOrderOutput> {
   const repo = new ApproveOrderRepository();
 
-  return db.transaction(async (tx: any) => {
+  return db.transaction(async (tx: Tx) => {
     const orderData = await repo.getOrderById(tx, id);
     if (!orderData) {
       throw new OrderNotFoundError();

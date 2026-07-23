@@ -1,7 +1,8 @@
+import { type Db } from '@metacult/shared-db';
 import { ListOrdersRepository } from './repository';
 import { ListOrdersInput, ListOrdersOutput } from "./dto";
 
-export async function listOrders(db: any, filters: ListOrdersInput): Promise<ListOrdersOutput> {
+export async function listOrders(db: Db, filters: ListOrdersInput): Promise<ListOrdersOutput> {
   const repo = new ListOrdersRepository();
   const orders = await repo.list(db, filters);
 

@@ -1,13 +1,14 @@
 import { eq } from 'drizzle-orm';
+import { type DbOrTx } from '@metacult/shared-db';
 import { productsTable } from '../shared/schema';
 
 export class UpdateProductRepository {
-  async update(db: any, id: number, values: {
+  async update(db: DbOrTx, id: number, values: {
     name?: string;
     price?: number;
     stock?: number;
     active?: boolean;
-  }): Promise<any | undefined> {
+  }): Promise<typeof productsTable.$inferSelect | undefined> {
     return db.update(productsTable).set(values).where(eq(productsTable.id, id)).returning().get();
   }
 }

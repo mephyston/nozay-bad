@@ -1,3 +1,4 @@
+import { type Db } from '@metacult/shared-db';
 import { RejectOrderRepository } from './repository';
 import { Order } from '../shared/order';
 import {
@@ -9,7 +10,7 @@ import {
 import { isSeasonClosed } from '@metacult/features-members-api';
 import { RejectOrderInput, RejectOrderOutput } from "./dto";
 
-export async function rejectOrder(db: any, id: RejectOrderInput): Promise<RejectOrderOutput> {
+export async function rejectOrder(db: Db, id: RejectOrderInput): Promise<RejectOrderOutput> {
   const repo = new RejectOrderRepository();
 
   const orderData = await repo.getOrderById(db, id);

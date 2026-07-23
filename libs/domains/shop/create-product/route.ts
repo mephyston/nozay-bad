@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { tbValidator } from '@hono/typebox-validator';
 import { createProduct } from './handler';
 import { createProductSchema } from './validator';
@@ -19,7 +19,7 @@ createProductRoute.post('/products', tbValidator('json', createProductSchema, (r
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
   const body = c.req.valid('json');
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
   const prod = await createProduct(db, body);
   return c.json({ success: true, data: prod });
 });

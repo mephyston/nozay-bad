@@ -1,9 +1,10 @@
+import { type Db } from '@metacult/shared-db';
 import { CreateOrderRepository } from './repository';
 import { ProductNotFoundError, SeasonClosedError } from '../shared/errors';
 import { isSeasonClosed } from '@metacult/features-members-api';
 import { CreateOrderInput, CreateOrderOutput } from "./dto";
 
-export async function createOrder(db: any, body: CreateOrderInput): Promise<CreateOrderOutput> {
+export async function createOrder(db: Db, body: CreateOrderInput): Promise<CreateOrderOutput> {
   if (await isSeasonClosed(db, body.seasonId)) {
     throw new SeasonClosedError('La saison est clôturée. Impossible de soumettre une commande.');
   }
