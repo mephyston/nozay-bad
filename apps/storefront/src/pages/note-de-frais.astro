@@ -1,0 +1,116 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import { ExpenseReportForm } from '@nba/expenses-ui';
+import { env } from 'cloudflare:workers';
+import { verifyTurnstileToken } from '../lib/turnstile';
+
+interface Season {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
+interface Member {
+  id: number;
+  firstName: string;
+  lastName: string;
+  licence: string;
+}
+
+const apiService = env.API_SERVICE;
+
+if (Astro.request.method === 'POST') {
+  try {
+    const body = await Astro.request.json();
+    const turnstileToken = body.turnstileToken;
+    const ip = Astro.request.headers.get('CF-Connecting-IP') || Astro.request.headers.get('x-real-ip') || '127.0.0.1';
+    let runtimeEnv: any = {};
+    try {
+      runtimeEnv = (Astro.locals as any).runtime?.env || {};
+    } catch {}
+    const kv = (env as any)?.RATE_LIMIT_KV || runtimeEnv.RATE_LIMIT_KV;
+
+    const verifyResult = await verifyTurnstileToken(turnstileToken, ip, { kv, runtimeEnv });
+    if (!verifyResult.success) {
+      return new Response(JSON.stringify({ success: false, error: verifyResult.error || 'Validation anti-bot échouée.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (body.action === 'expense') {
+      return apiService.fetch('http://localhost/expenses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body.data)
+      });
+    }
+  } catch (err: any) {
+    return new Response(JSON.stringify({ success: false, error: err.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+let members: Member[] = [];
+let seasons: Season[] = [];
+let categories: any[] = [];
+let errorMsg = '';
+
+try {
+  const membersRes = await apiService.fetch('http://localhost/members?limit=1000');
+  if (membersRes.ok) {
+    const json = await membersRes.json() as any;
+    members = json.data || [];
+  } else {
+    errorMsg = 'Impossible de charger les adhérents.';
+  }
+
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasons = json.data || [];
+  } else {
+    errorMsg = 'Impossible de charger les saisons.';
+  }
+
+  const categoriesRes = await apiService.fetch('http://localhost/accounting/categories');
+  if (categoriesRes.ok) {
+    const json = await categoriesRes.json() as any;
+    categories = json.data || [];
+  }
+} catch (e: any) {
+  errorMsg = 'Une erreur de connexion est survenue lors du chargement des données.';
+}
+
+const activeSeason = seasons.find((s: Season) => s.active) || seasons[0] || { id: '25-26', name: 'Saison 2025-2026', active: false };
+const activeSeasonId = activeSeason.id;
+---
+
+<Layout title="Notes de frais - NBA 91">
+  <Header currentPath="/note-de-frais" activeSeasonName={activeSeason.name || activeSeasonId} />
+
+  <main class="flex-1 p-6 max-w-6xl mx-auto w-full">
+    {errorMsg && (
+      <div class="mb-6 p-4 bg-destructive/15 border border-destructive/20 text-destructive text-sm rounded-xl font-medium flex items-center gap-2">
+        <span>⚠️ {errorMsg}</span>
+      </div>
+    )}
+
+    <ExpenseReportForm
+      client:load
+      activeSeasonId={activeSeasonId}
+      members={members}
+      categories={categories}
+    />
+  </main>
+
+  <footer class="border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground">
+    <p>© {new Date().getFullYear()} Nozay Badminton Associatif. Tous droits réservés.</p>
+    <p class="mt-1">Les notes de frais sont soumises à la validation du trésorier.</p>
+  </footer>
+</Layout>
