@@ -189,13 +189,14 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           node -e "
             const fs = require('fs');
             const cfg = JSON.parse(fs.readFileSync('dist/server/wrangler.json', 'utf8'));
             cfg.kv_namespaces = (cfg.kv_namespaces || []).filter(kv => kv.id);
             delete cfg.images;
-            if ('${{ github.ref_name }}' !== 'main') {
+            if (process.env.REF_NAME !== 'main') {
               cfg.name = 'nba-boutique-staging';
               cfg.services = [{ binding: 'API_SERVICE', service: 'nba-api-staging' }];
             }
@@ -230,13 +231,14 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           node -e "
             const fs = require('fs');
             const cfg = JSON.parse(fs.readFileSync('dist/server/wrangler.json', 'utf8'));
             cfg.kv_namespaces = (cfg.kv_namespaces || []).filter(kv => kv.id);
             delete cfg.images;
-            if ('${{ github.ref_name }}' !== 'main') {
+            if (process.env.REF_NAME !== 'main') {
               cfg.name = 'nba-admin-console-staging';
               cfg.services = [{ binding: 'API_SERVICE', service: 'nba-api-staging' }];
             }
