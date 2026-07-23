@@ -3,12 +3,23 @@ export class Category {
   adminLabel: string;
   adherentLabel: string;
   hideInExpenses: boolean;
+  receiptCode?: string | null;
+  expenseCode?: string | null;
 
-  constructor(data: { id: number; adminLabel: string; adherentLabel: string; hideInExpenses?: boolean }) {
+  constructor(data: {
+    id: number;
+    adminLabel: string;
+    adherentLabel: string;
+    hideInExpenses?: boolean;
+    receiptCode?: string | null;
+    expenseCode?: string | null;
+  }) {
     this.id = data.id;
     this.adminLabel = data.adminLabel;
     this.adherentLabel = data.adherentLabel;
     this.hideInExpenses = !!data.hideInExpenses;
+    this.receiptCode = data.receiptCode ?? null;
+    this.expenseCode = data.expenseCode ?? null;
   }
 
   canBeExpense(): boolean {
