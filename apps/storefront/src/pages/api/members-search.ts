@@ -1,27 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-
-// Simple in-memory rate limit map for Cloudflare Worker isolates
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-
-function isRateLimited(ip: string, limit = 30, windowMs = 60000): boolean {
-  const now = Date.now();
-  const record = rateLimitMap.get(ip);
-  if (!record) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });
-    return false;
-  }
-  if (now > record.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });
-    return false;
-  }
-  record.count++;
-  return record.count > limit;
-}
-
-function resetRateLimit(ip: string) {
-  rateLimitMap.delete(ip);
-}
+import { rateLimiter, verifyTurnstileToken } from '../../lib/turnstile';
 
 export const GET: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
@@ -35,28 +14,16 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  // 2. Simple IP-based rate limiting
+  // 2. IP-based rate limiting with KV / Shared Store persistence
   const ip = request.headers.get('CF-Connecting-IP') || request.headers.get('x-real-ip') || '127.0.0.1';
-  if (isRateLimited(ip)) {
+  const kv = (env as any)?.RATE_LIMIT_KV;
+
+  if (await rateLimiter.isRateLimited(ip, 30, 60000, kv)) {
     const turnstileToken = request.headers.get('cf-turnstile-response') || url.searchParams.get('token') || '';
     if (turnstileToken) {
-      try {
-        const verifyRes = await fetch('https://turnstile-siteverify-nba.mephyston.workers.dev', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: turnstileToken })
-        });
-        const verifyJson = (await verifyRes.json()) as any;
-        if (verifyJson.success) {
-          resetRateLimit(ip);
-        } else {
-          return new Response(JSON.stringify({ error: 'Rate limit exceeded. Captcha verification failed.' }), {
-            status: 429,
-            headers: { 'Content-Type': 'application/json' }
-          });
-        }
-      } catch (err) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Captcha verification error.' }), {
+      const verifyResult = await verifyTurnstileToken(turnstileToken, ip, kv);
+      if (!verifyResult.success) {
+        return new Response(JSON.stringify({ error: `Rate limit exceeded. ${verifyResult.error || 'Captcha verification failed.'}` }), {
           status: 429,
           headers: { 'Content-Type': 'application/json' }
         });

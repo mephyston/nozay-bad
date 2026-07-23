@@ -3,6 +3,7 @@ import '../styles/global.css';
 import { ExpenseReportForm } from '@nba/expenses-ui';
 import { env } from 'cloudflare:workers';
 import { ModeWatcher } from 'mode-watcher';
+import { getTurnstileSiteverifyUrl } from '../lib/turnstile';
 
 interface Season {
   id: string;
@@ -30,7 +31,7 @@ if (Astro.request.method === 'POST') {
       });
     }
 
-    const verifyRes = await fetch('https://turnstile-siteverify-nba.mephyston.workers.dev', {
+    const verifyRes = await fetch(getTurnstileSiteverifyUrl(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

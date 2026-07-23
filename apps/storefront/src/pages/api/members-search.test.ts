@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { env } from 'cloudflare:workers';
 import { GET } from './members-search';
+import { rateLimiter, DEFAULT_TURNSTILE_SITEVERIFY_URL } from '../../lib/turnstile';
 
 describe('members-search API endpoint', () => {
   let mockFetch: any;
 
   beforeEach(() => {
+    rateLimiter.clearAll();
     vi.stubGlobal('fetch', vi.fn());
     mockFetch = vi.fn();
     (env as any).API_SERVICE = {
@@ -78,45 +80,83 @@ describe('members-search API endpoint', () => {
     ]);
   });
 
-  it('rate limits after 30 requests and allows bypass via Turnstile token verification', async () => {
-    // 1. Simulate 30 successful requests from same IP
+  it('rate limits after 30 requests and allows bypass via valid Turnstile token verification', async () => {
     const ipHeaders = { 'CF-Connecting-IP': '192.168.1.1' };
     mockFetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ success: true, data: [] })
     });
 
+    // 1. Send 30 requests
     for (let i = 0; i < 30; i++) {
       const request = new Request('http://localhost/api/members-search?q=pierre', { headers: ipHeaders });
       const res = await GET({ request } as any);
       expect(res.status).toBe(200);
     }
 
-    // 2. The 31st request should be rate-limited (429)
+    // 2. 31st request triggers rate limit (429)
     const blockedRequest = new Request('http://localhost/api/members-search?q=pierre', { headers: ipHeaders });
     const blockedRes = await GET({ request: blockedRequest } as any);
     expect(blockedRes.status).toBe(429);
     const blockedJson = await blockedRes.json();
     expect(blockedJson.error).toContain('Rate limit exceeded');
 
-    // 3. Stub global fetch to mock the Turnstile verification worker success response
+    // 3. Stub global fetch for Turnstile siteverify
     const mockGlobalFetch = vi.fn().mockResolvedValue({
+      ok: true,
       json: () => Promise.resolve({ success: true })
     });
     vi.stubGlobal('fetch', mockGlobalFetch);
 
-    // 4. Request with a Turnstile token should bypass the rate limit
-    const bypassRequest = new Request('http://localhost/api/members-search?q=pierre&token=valid-token', {
+    // 4. Request with valid Turnstile token resets rate limit
+    const bypassRequest = new Request('http://localhost/api/members-search?q=pierre&token=fresh-token-1', {
       headers: ipHeaders
     });
     const bypassRes = await GET({ request: bypassRequest } as any);
     expect(bypassRes.status).toBe(200);
     expect(mockGlobalFetch).toHaveBeenCalledWith(
-      'https://turnstile-siteverify-nba.mephyston.workers.dev',
+      DEFAULT_TURNSTILE_SITEVERIFY_URL,
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ token: 'valid-token' })
+        body: JSON.stringify({ token: 'fresh-token-1' })
       })
     );
+  });
+
+  it('rejects duplicate token presentation (token replay attack)', async () => {
+    const ipHeaders = { 'CF-Connecting-IP': '192.168.1.2' };
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true, data: [] })
+    });
+
+    // Exhaust rate limit limit (30 requests)
+    for (let i = 0; i < 30; i++) {
+      await GET({ request: new Request('http://localhost/api/members-search?q=test', { headers: ipHeaders }) } as any);
+    }
+
+    // Stub global fetch for Turnstile verification
+    const mockGlobalFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true })
+    });
+    vi.stubGlobal('fetch', mockGlobalFetch);
+
+    // Presentation 1: Valid fresh token succeeds and resets rate limit
+    const req1 = new Request('http://localhost/api/members-search?q=test&token=reused-token-xyz', { headers: ipHeaders });
+    const res1 = await GET({ request: req1 } as any);
+    expect(res1.status).toBe(200);
+
+    // Exhaust rate limit again (30 requests)
+    for (let i = 0; i < 30; i++) {
+      await GET({ request: new Request('http://localhost/api/members-search?q=test', { headers: ipHeaders }) } as any);
+    }
+
+    // Presentation 2: Same token presented again -> MUST FAIL (token replay attempt)
+    const req2 = new Request('http://localhost/api/members-search?q=test&token=reused-token-xyz', { headers: ipHeaders });
+    const res2 = await GET({ request: req2 } as any);
+    expect(res2.status).toBe(429);
+    const body2 = await res2.json();
+    expect(body2.error).toContain('Token captcha déjà utilisé');
   });
 });
