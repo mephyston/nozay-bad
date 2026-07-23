@@ -23,12 +23,12 @@ import { updateAccountClassRoute } from './config/update-account-class/route';
 import { deleteAccountClassRoute } from './config/delete-account-class/route';
 
 // Invoices Routes
-import { listInvoicesRoute } from './queries/list-invoices/route';
-import { getInvoiceRoute } from './queries/get-invoice/route';
-import { createInvoiceRoute } from './commands/create-invoice/route';
-import { updateInvoiceRoute } from './commands/update-invoice/route';
-import { deleteInvoiceRoute } from './commands/delete-invoice/route';
-import { changeInvoiceStatusRoute } from './commands/change-invoice-status/route';
+import { listInvoicesRoute } from './invoices/list-invoices/route';
+import { getInvoiceRoute } from './invoices/get-invoice/route';
+import { createInvoiceRoute } from './invoices/create-invoice/route';
+import { updateInvoiceRoute } from './invoices/update-invoice/route';
+import { deleteInvoiceRoute } from './invoices/delete-invoice/route';
+import { changeInvoiceStatusRoute } from './invoices/change-invoice-status/route';
 
 // Bank Transactions Routes
 import { listBankTransactionsRoute } from './queries/list-bank-transactions/route';
