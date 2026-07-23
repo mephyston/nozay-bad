@@ -44,11 +44,13 @@ export class SharedRateLimiter {
       try {
         const stored = await kv.get(key, { type: 'json' });
         if (!stored || now > stored.resetTime) {
-          await kv.put(key, JSON.stringify({ count: 1, resetTime: now + windowMs }), { expirationTtl: Math.ceil(windowMs / 1000) });
+          const initialTtl = Math.max(60, Math.ceil(windowMs / 1000));
+          await kv.put(key, JSON.stringify({ count: 1, resetTime: now + windowMs }), { expirationTtl: initialTtl });
           return false;
         }
         const newCount = stored.count + 1;
-        await kv.put(key, JSON.stringify({ count: newCount, resetTime: stored.resetTime }), { expirationTtl: Math.ceil((stored.resetTime - now) / 1000) });
+        const remainingTtl = Math.max(60, Math.ceil((stored.resetTime - now) / 1000));
+        await kv.put(key, JSON.stringify({ count: newCount, resetTime: stored.resetTime }), { expirationTtl: remainingTtl });
         return newCount > limit;
       } catch (err: any) {
         console.error('[RateLimiter] Workers KV is rate limited or unavailable, degrading to in-memory store:', err);
@@ -97,7 +99,8 @@ export class SharedRateLimiter {
     const key = `token:${token}`;
     if (kv && typeof kv.put === 'function') {
       try {
-        await kv.put(key, 'used', { expirationTtl: ttlSeconds });
+        const tokenTtl = Math.max(60, ttlSeconds);
+        await kv.put(key, 'used', { expirationTtl: tokenTtl });
       } catch (err: any) {
         console.error('[RateLimiter] Workers KV markTokenUsed failed, degrading to in-memory store:', err);
       }
