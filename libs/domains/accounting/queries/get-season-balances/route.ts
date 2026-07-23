@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { createDb } from '@nba/db';
+import { tbValidator } from '@hono/typebox-validator';
 import { getSeasonBalances } from './handler';
+import { getSeasonBalancesParamSchema } from './validator';
 
 export type Bindings = {
   DB: D1Database;
@@ -8,12 +10,20 @@ export type Bindings = {
 
 export const getSeasonBalancesRoute = new Hono<{ Bindings: Bindings }>();
 
-getSeasonBalancesRoute.get('/:seasonId/balances', async (c) => {
-  if (!c.env || !c.env.DB) {
-    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+getSeasonBalancesRoute.get(
+  '/:seasonId/balances',
+  tbValidator('param', getSeasonBalancesParamSchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+    }
+  }),
+  async (c) => {
+    if (!c.env || !c.env.DB) {
+      return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+    }
+    const { seasonId } = c.req.valid('param');
+    const db = createDb(c.env.DB);
+    const data = await getSeasonBalances(db, seasonId);
+    return c.json({ success: true, data });
   }
-  const seasonId = c.req.param('seasonId');
-  const db = createDb(c.env.DB);
-  const data = await getSeasonBalances(db, seasonId);
-  return c.json({ success: true, data });
-});
+);

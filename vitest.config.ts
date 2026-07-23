@@ -52,7 +52,7 @@ export default defineConfig({
           name: 'features-members-api',
           globals: true,
           root: path.resolve(__dirname, 'libs/domains/members'),
-          include: ['commands/**/*.test.ts', 'queries/**/*.test.ts', 'shared/**/*.test.ts'],
+          include: ['**/*.test.ts'],
           exclude: ['**/ui/**', '**/node_modules/**'],
         }
       },
@@ -87,7 +87,7 @@ export default defineConfig({
           name: 'features-accounting-api',
           globals: true,
           root: path.resolve(__dirname, 'libs/domains/accounting'),
-          include: ['commands/**/*.test.ts', 'queries/**/*.test.ts'],
+          include: ['**/*.test.ts'],
           exclude: ['**/ui/**', '**/node_modules/**'],
         }
       },
@@ -122,7 +122,7 @@ export default defineConfig({
           name: 'features-expenses-api',
           globals: true,
           root: path.resolve(__dirname, 'libs/domains/expenses'),
-          include: ['commands/**/*.test.ts', 'queries/**/*.test.ts', 'shared/**/*.test.ts'],
+          include: ['**/*.test.ts'],
           exclude: ['**/ui/**', '**/node_modules/**'],
         }
       },
@@ -157,7 +157,7 @@ export default defineConfig({
           name: 'features-shop-api',
           globals: true,
           root: path.resolve(__dirname, 'libs/domains/shop'),
-          include: ['commands/**/*.test.ts', 'queries/**/*.test.ts', 'shared/**/*.test.ts'],
+          include: ['**/*.test.ts'],
           exclude: ['**/ui/**', '**/node_modules/**'],
         }
       },
