@@ -84,13 +84,12 @@ jobs:
           echo "Debug outputs → api=$API_AFFECTED storefront=$STOREFRONT_AFFECTED admin=$ADMIN_AFFECTED"
 
   # ──────────────────────────────────────────────────────────────
-  # 2. Tests sur PR uniquement
+  # 2. Tests affectés (exécutés sur PR et sur Push)
   # ──────────────────────────────────────────────────────────────
   test:
     name: Test affected
     runs-on: ubuntu-latest
     needs: detect-changes
-    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -121,8 +120,8 @@ jobs:
   deploy-api:
     name: Deploy API Worker
     runs-on: ubuntu-latest
-    needs: detect-changes
-    if: github.event_name == 'push' && needs.detect-changes.outputs.api == 'true'
+    needs: [detect-changes, test]
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.api == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -166,8 +165,8 @@ jobs:
   deploy-storefront:
     name: Deploy Storefront Worker
     runs-on: ubuntu-latest
-    needs: [detect-changes, deploy-api]
-    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.storefront == 'true' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    needs: [detect-changes, test, deploy-api]
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.storefront == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -207,8 +206,8 @@ jobs:
   deploy-admin:
     name: Deploy Admin Worker
     runs-on: ubuntu-latest
-    needs: [detect-changes, deploy-api]
-    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.admin == 'true' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    needs: [detect-changes, test, deploy-api]
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.admin == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
