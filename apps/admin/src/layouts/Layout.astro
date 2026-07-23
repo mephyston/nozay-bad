@@ -48,6 +48,10 @@ const { title } = Astro.props;
         } catch (e) {}
       })();
     </script>
+    <style is:inline>
+      html.dark, html.dark body { background-color: rgb(38, 38, 36) !important; color: rgb(241, 241, 239); }
+      html:not(.dark), html:not(.dark) body { background-color: rgb(250, 249, 245); color: rgb(61, 57, 41); }
+    </style>
   </head>
   <body class="bg-background text-foreground min-h-screen antialiased font-sans">
     <ModeWatcher client:load />
