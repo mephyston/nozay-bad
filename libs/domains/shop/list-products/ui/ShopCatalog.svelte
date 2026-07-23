@@ -49,7 +49,6 @@
   let fetchedMembers = $state<Member[]>([]);
   let debounceTimeout: any;
 
-  // Helper functions for privacy protection
   function formatMemberName(m: Member | null): string {
     if (!m) return '';
     const maskedLast = m.lastName
@@ -77,15 +76,12 @@
     }
   });
 
+  // Debounced member search from API (fetches initial list when opened)
   $effect(() => {
+    if (!isMemberDropdownOpen) return;
     if (members.length > 0) return;
 
     const query = memberSearchQuery;
-    if (query.trim() === '') {
-      fetchedMembers = [];
-      return;
-    }
-
     if (lastSelectedMember && query === formatMemberName(lastSelectedMember)) {
       return;
     }
@@ -99,14 +95,12 @@
         const response = await fetch(`/api/members-search?q=${encodeURIComponent(query)}`);
         if (response.ok) {
           const data = await response.json() as Member[];
-          if (memberSearchQuery === query) {
-            fetchedMembers = data;
-          }
+          fetchedMembers = data;
         }
       } catch (err) {
         console.error('Error fetching members from API:', err);
       }
-    }, 300);
+    }, query.trim() === '' ? 0 : 250);
 
     return () => {
       if (debounceTimeout) {

@@ -318,18 +318,21 @@ describe('ShopCatalog Component', () => {
     expect(target.innerHTML).toContain('Adhérent sélectionné : <span class="font-bold">D. Pierre</span>');
   });
 
-  it('clears fetched members when search query is empty', async () => {
+  it('clears fetched members when search query returns empty list', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    const searchMembers = [
-      { id: 3, firstName: 'Pierre', lastName: 'D.', licence: '78***12' }
-    ];
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
       if (url.includes('/api/members-search')) {
+        if (url.includes('q=Dubois')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve([{ id: 3, firstName: 'Pierre', lastName: 'D.', licence: '78***12' }])
+          } as any);
+        }
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve(searchMembers)
+          json: () => Promise.resolve([])
         } as any);
       }
       return Promise.resolve({} as any);
@@ -358,8 +361,11 @@ describe('ShopCatalog Component', () => {
 
     expect(target.innerHTML).toContain('D. Pierre');
 
-    input.value = '';
+    input.value = 'UnknownUserXYZ';
     input.dispatchEvent(new Event('input', { bubbles: true }));
+    flushSync();
+
+    await vi.advanceTimersByTimeAsync(300);
     flushSync();
 
     expect(target.innerHTML).toContain('Aucun adhérent trouvé');

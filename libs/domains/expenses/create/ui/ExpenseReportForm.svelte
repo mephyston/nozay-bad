@@ -70,7 +70,6 @@
     }
   });
 
-  // Helper functions for privacy protection
   function formatMemberName(m: Member | null): string {
     if (!m) return '';
     const maskedLast = m.lastName
@@ -86,30 +85,24 @@
     return `${licence.slice(0, 2)}***${licence.slice(-2)}`;
   }
 
-  // Reset highlightedIndex when dropdown closes
   $effect(() => {
     if (!isMemberDropdownOpen) {
       highlightedIndex = -1;
     }
   });
 
-  // Clamp highlightedIndex when filteredMembers changes
   $effect(() => {
     if (highlightedIndex >= filteredMembers.length) {
       highlightedIndex = filteredMembers.length - 1;
     }
   });
 
-  // Debounced member search from API
+  // Debounced member search from API (fetches initial list when opened)
   $effect(() => {
+    if (!isMemberDropdownOpen) return;
     if (members.length > 0) return;
 
     const query = memberSearchQuery;
-    if (query.trim() === '') {
-      fetchedMembers = [];
-      return;
-    }
-
     if (lastSelectedMember && query === formatMemberName(lastSelectedMember)) {
       return;
     }
@@ -123,14 +116,12 @@
         const response = await fetch(`/api/members-search?q=${encodeURIComponent(query)}`);
         if (response.ok) {
           const data = await response.json() as Member[];
-          if (memberSearchQuery === query) {
-            fetchedMembers = data;
-          }
+          fetchedMembers = data;
         }
       } catch (err) {
         console.error('Error fetching members from API:', err);
       }
-    }, 300);
+    }, query.trim() === '' ? 0 : 250);
 
     return () => {
       if (debounceTimeout) {
@@ -139,7 +130,6 @@
     };
   });
 
-  // Derived member lists for dropdown
   let sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
 
   let selectedMember = $derived(
