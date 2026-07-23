@@ -39,8 +39,16 @@
     { value: 'up_loisir', label: 'Up Loisir' }
   ];
 
+  const categoriesList = [
+    { value: 'all', label: 'Toutes les catégories' },
+    { value: 'shuttlecock', label: 'Volants' },
+    { value: 'string', label: 'Cordages' },
+    { value: 'other', label: 'Autres' }
+  ];
+
   let productsList = $derived(products);
 
+  // Member selection state
   let selectedMemberId = $state<string>('');
   let memberSearchQuery = $state<string>('');
   let isMemberDropdownOpen = $state<boolean>(false);
@@ -48,6 +56,57 @@
   let lastSelectedMember = $state<Member | null>(null);
   let fetchedMembers = $state<Member[]>([]);
   let debounceTimeout: any;
+
+  // Order form state
+  let selectedCategory = $state<string>('all');
+  let selectedProductId = $state<number | null>(null);
+  let selectedQuantity = $state<number>(1);
+  let selectedPaymentMethod = $state<string>('virement');
+  let submitting = $state<boolean>(false);
+  let successMessage = $state<string | null>(null);
+  let errorMessage = $state<string | null>(null);
+
+  let filteredProducts = $derived(
+    selectedCategory === 'all'
+      ? productsList
+      : productsList.filter(p => p.category === selectedCategory)
+  );
+
+  let selectedProduct = $derived(
+    selectedProductId !== null
+      ? productsList.find(p => p.id === Number(selectedProductId)) || null
+      : null
+  );
+
+  let totalPriceCents = $derived(
+    selectedProduct ? selectedProduct.price * selectedQuantity : 0
+  );
+
+  let maxQuantity = $derived(
+    selectedProduct ? Math.min(selectedProduct.stock, 99) : 1
+  );
+
+  $effect(() => {
+    if (filteredProducts.length > 0) {
+      const currentId = selectedProductId !== null ? Number(selectedProductId) : null;
+      if (currentId === null || !filteredProducts.some(p => p.id === currentId)) {
+        selectedProductId = filteredProducts[0].id;
+      }
+    } else {
+      selectedProductId = null;
+    }
+  });
+
+  $effect(() => {
+    if (selectedProduct) {
+      const max = Math.min(selectedProduct.stock, 99);
+      if (max > 0 && selectedQuantity > max) {
+        selectedQuantity = max;
+      } else if (selectedQuantity < 1) {
+        selectedQuantity = 1;
+      }
+    }
+  });
 
   function formatMemberName(m: Member | null): string {
     if (!m) return '';
@@ -172,21 +231,8 @@
     }, 0);
   }
 
-  let quantities = $state<Record<number, number>>({});
-  let paymentMethods = $state<Record<number, string>>({});
-  let submitting = $state<Record<number, boolean>>({});
-  let successMessages = $state<Record<number, string | null>>({});
-  let errorMessages = $state<Record<number, string | null>>({});
-
-  $effect(() => {
-    productsList.forEach(p => {
-      if (quantities[p.id] === undefined) quantities[p.id] = 1;
-      if (paymentMethods[p.id] === undefined) paymentMethods[p.id] = 'virement';
-    });
-  });
-
   let sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
-  
+
   let selectedMember = $derived(
     members.length > 0
       ? (members.find(m => m.id.toString() === selectedMemberId) || null)
@@ -209,18 +255,31 @@
         )
   );
 
-  async function handleOrder(productId: number) {
-    const qty = quantities[productId] || 1;
-    const pm = paymentMethods[productId] || 'virement';
-    const product = productsList.find(p => p.id === productId);
+  function incrementQty() {
+    if (selectedQuantity < maxQuantity) {
+      selectedQuantity += 1;
+    }
+  }
 
+  function decrementQty() {
+    if (selectedQuantity > 1) {
+      selectedQuantity -= 1;
+    }
+  }
+
+  async function handleOrder() {
     if (!selectedMemberId) {
-      errorMessages[productId] = "Veuillez sélectionner un adhérent pour commander.";
+      errorMessage = "Veuillez sélectionner un adhérent pour commander.";
       return;
     }
 
-    if (!product) {
-      errorMessages[productId] = "Produit inexistant.";
+    if (!selectedProduct) {
+      errorMessage = "Veuillez sélectionner un produit.";
+      return;
+    }
+
+    if (selectedProduct.stock < selectedQuantity || selectedProduct.stock <= 0) {
+      errorMessage = "Stock insuffisant pour ce produit.";
       return;
     }
 
@@ -229,13 +288,13 @@
       ? 'mock-test-token'
       : (document.getElementsByName('cf-turnstile-response')[0] as HTMLInputElement)?.value;
     if (!turnstileResponse) {
-      errorMessages[productId] = "Veuillez valider le test de sécurité anti-bot.";
+      errorMessage = "Veuillez valider le test de sécurité anti-bot.";
       return;
     }
 
-    errorMessages[productId] = null;
-    successMessages[productId] = null;
-    submitting[productId] = true;
+    errorMessage = null;
+    successMessage = null;
+    submitting = true;
 
     try {
       const res = await fetch('', {
@@ -246,9 +305,9 @@
         body: JSON.stringify({
           seasonId: activeSeasonId,
           memberId: parseInt(selectedMemberId),
-          productId: productId,
-          quantity: qty,
-          paymentMethod: pm,
+          productId: selectedProduct.id,
+          quantity: selectedQuantity,
+          paymentMethod: selectedPaymentMethod,
           turnstileToken: turnstileResponse
         })
       });
@@ -259,39 +318,25 @@
         throw new Error(data.error || "Une erreur est survenue lors de l'enregistrement de la commande.");
       }
 
-      successMessages[productId] = `Votre souhait d'achat de ${qty} ${product.name} a bien été enregistré. Il sera comptabilisé dès validation par le trésorier.`;
-      quantities[productId] = 1;
+      successMessage = `Votre souhait d'achat de ${selectedQuantity} ${selectedProduct.name} a bien été enregistré. Il sera comptabilisé dès validation par le trésorier.`;
+      selectedQuantity = 1;
 
       if (typeof window !== 'undefined' && (window as any).turnstile) {
         (window as any).turnstile.reset();
       }
-    } catch (err: unknown) {
-      errorMessages[productId] = err.message || "Une erreur est survenue.";
+    } catch (err: any) {
+      errorMessage = err.message || "Une erreur est survenue.";
       if (typeof window !== 'undefined' && (window as any).turnstile) {
         (window as any).turnstile.reset();
       }
     } finally {
-      submitting[productId] = false;
-    }
-  }
-
-  function incrementQty(productId: number, max: number) {
-    const current = quantities[productId] || 1;
-    if (current < max) {
-      quantities[productId] = current + 1;
-    }
-  }
-
-  function decrementQty(productId: number) {
-    const current = quantities[productId] || 1;
-    if (current > 1) {
-      quantities[productId] = current - 1;
+      submitting = false;
     }
   }
 </script>
 
 <Card.Root class="max-w-2xl mx-auto shadow-xl">
-  <!-- Matching Card Header Banner -->
+  <!-- Card Header Banner -->
   <Card.Header class="bg-gradient-to-r from-primary to-primary/80 p-6 text-primary-foreground flex flex-row items-center gap-4 rounded-t-xl">
     <div class="bg-primary-foreground/10 p-3 rounded-xl backdrop-blur-md">
       <ShoppingBag class="w-7 h-7 text-primary-foreground" />
@@ -303,7 +348,7 @@
   </Card.Header>
 
   <Card.Content class="p-6 space-y-6">
-    <!-- Member Selection Section -->
+    <!-- Section 1: Member Selection (Buyer) -->
     <div class="space-y-3 pb-4 border-b border-border">
       <Label for="member-input" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Acheteur (Adhérent)</Label>
 
@@ -374,7 +419,7 @@
         {/if}
       </div>
 
-      <!-- Member Selection Badge & Turnstile Widget -->
+      <!-- Member Selection Badge -->
       <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
         {#if selectedMember}
           <Badge variant="outline" class="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg text-xs font-semibold self-start sm:self-auto">
@@ -387,127 +432,162 @@
             Sélectionnez votre nom d'adhérent pour débloquer la commande.
           </Badge>
         {/if}
-        <div class="cf-turnstile" style={!selectedMember ? 'display: none;' : ''} data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1"></div>
       </div>
     </div>
 
-    <!-- Catalog Section -->
-    <div class="space-y-4">
-      <Label class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Articles disponibles</Label>
+    <!-- Section 2: Mode de Paiement -->
+    <div class="space-y-2 pb-4 border-b border-border">
+      <Label for="payment-method-select" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Mode de paiement</Label>
+      <div class="relative">
+        <select
+          id="payment-method-select"
+          bind:value={selectedPaymentMethod}
+          class="w-full px-3 h-10 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground pr-8 appearance-none font-semibold"
+        >
+          {#each paymentMethodsList as pm}
+            <option value={pm.value}>{pm.label}</option>
+          {/each}
+        </select>
+        <ChevronDown class="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+      </div>
+    </div>
 
-      {#if productsList.length === 0}
-        <div class="border border-border rounded-xl p-8 text-center text-muted-foreground bg-muted/20">
-          <ShoppingBag class="mx-auto h-10 w-10 text-muted-foreground/30 mb-2" />
-          <p class="text-sm font-semibold">Aucun article disponible pour le moment.</p>
+    <!-- Section 3: Article & Quantité -->
+    <div class="space-y-4 pb-4 border-b border-border">
+      <Label class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Article & Quantité</Label>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Select 1: Type de produit -->
+        <div class="space-y-1.5">
+          <Label for="category-select" class="block text-xs font-semibold text-foreground">Type de produit</Label>
+          <div class="relative">
+            <select
+              id="category-select"
+              bind:value={selectedCategory}
+              class="w-full px-3 h-10 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground pr-8 appearance-none font-semibold"
+            >
+              {#each categoriesList as cat}
+                <option value={cat.value}>{cat.label}</option>
+              {/each}
+            </select>
+            <ChevronDown class="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+          </div>
         </div>
-      {:else}
-        <div class="space-y-4">
-          {#each productsList as product (product.id)}
-            <div class="border border-border rounded-xl p-4 bg-card hover:border-primary/40 transition-colors shadow-sm space-y-3">
-              <div class="flex justify-between items-start gap-3">
-                <div>
-                  <h3 class="font-bold text-base text-foreground tracking-tight">{product.name}</h3>
-                  <div class="flex items-center gap-2 mt-1">
-                    <Badge variant="outline" class="uppercase tracking-wider text-[10px]
-                      {product.category === 'shuttlecock' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' : product.category === 'string' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'}">
-                      {product.category === 'shuttlecock' ? 'Volants' : product.category === 'string' ? 'Cordages' : 'Autre'}
-                    </Badge>
-                    <Badge variant={product.stock > 0 ? "outline" : "destructive"} class="text-[10px]">
-                      {product.stock > 0 ? `Stock: ${product.stock}` : "Rupture"}
-                    </Badge>
-                  </div>
-                </div>
 
-                <div class="text-right">
-                  <span class="text-lg font-extrabold text-primary block">
-                    {(product.price / 100).toFixed(2)} €
-                  </span>
-                </div>
-              </div>
-
-              {#if product.stock > 0}
-                <div class="pt-2 border-t border-border/50 grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
-                  <!-- Payment Method -->
-                  <div class="space-y-1">
-                    <Label for="pm-{product.id}" class="block text-[11px] font-bold text-muted-foreground uppercase">Mode de paiement</Label>
-                    <div class="relative">
-                      <select
-                        id="pm-{product.id}"
-                        bind:value={paymentMethods[product.id]}
-                        class="w-full px-3 h-9 border border-border bg-background rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground pr-8 appearance-none font-medium"
-                      >
-                        {#each paymentMethodsList as pm}
-                          <option value={pm.value}>{pm.label}</option>
-                        {/each}
-                      </select>
-                      <ChevronDown class="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                    </div>
-                  </div>
-
-                  <!-- Quantity & Submit -->
-                  <div class="flex items-center gap-2">
-                    <div class="flex items-center border border-border bg-background rounded-lg overflow-hidden shrink-0">
-                      <Button
-                        variant="ghost"
-                        onclick={() => decrementQty(product.id)}
-                        disabled={quantities[product.id] <= 1}
-                        class="px-2 py-1 h-9 text-xs hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0"
-                      >
-                        -
-                      </Button>
-                      <Input
-                        id="qty-{product.id}"
-                        type="number"
-                        min="1"
-                        max={99}
-                        bind:value={quantities[product.id]}
-                        class="w-10 h-9 text-center text-xs font-semibold border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0"
-                      />
-                      <Button
-                        variant="ghost"
-                        onclick={() => incrementQty(product.id, 99)}
-                        disabled={quantities[product.id] >= 99}
-                        class="px-2 py-1 h-9 text-xs hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0"
-                      >
-                        +
-                      </Button>
-                    </div>
-
-                    <Button
-                      onclick={() => handleOrder(product.id)}
-                      disabled={!selectedMemberId || submitting[product.id]}
-                      class="flex-1 flex justify-center items-center gap-1.5 font-bold h-9 text-xs shadow-sm disabled:opacity-50 disabled:cursor-not-allowed bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg"
-                    >
-                      {#if submitting[product.id]}
-                        <span class="animate-pulse">Envoi...</span>
-                      {:else}
-                        <ShoppingBag class="w-3.5 h-3.5" />
-                        Commander
-                      {/if}
-                    </Button>
-                  </div>
-                </div>
+        <!-- Select 2: Produit -->
+        <div class="space-y-1.5">
+          <Label for="product-select" class="block text-xs font-semibold text-foreground">Produit</Label>
+          <div class="relative">
+            <select
+              id="product-select"
+              bind:value={selectedProductId}
+              class="w-full px-3 h-10 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground pr-8 appearance-none font-semibold"
+              disabled={filteredProducts.length === 0}
+            >
+              {#if filteredProducts.length === 0}
+                <option value={null}>Aucun article disponible</option>
               {:else}
-                <div class="text-center py-2 text-xs text-muted-foreground italic border-t border-border/50">
-                  Cet article n'est plus disponible.
-                </div>
+                {#each filteredProducts as product (product.id)}
+                  <option value={product.id}>
+                    {product.name} — {(product.price / 100).toFixed(2)} € ({product.stock > 0 ? `Stock: ${product.stock}` : 'Rupture'})
+                  </option>
+                {/each}
               {/if}
+            </select>
+            <ChevronDown class="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+          </div>
+        </div>
+      </div>
 
-              {#if successMessages[product.id]}
-                <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs rounded-lg flex items-start gap-1.5">
-                  <Check class="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{successMessages[product.id]}</span>
-                </div>
-              {/if}
+      <!-- Quantity Selector -->
+      <div class="space-y-1.5 pt-1">
+        <Label for="quantity-input" class="block text-xs font-semibold text-foreground">Quantité</Label>
+        <div class="flex items-center gap-2">
+          <div class="flex items-center border border-border bg-background rounded-xl overflow-hidden shrink-0">
+            <Button
+              variant="ghost"
+              onclick={decrementQty}
+              disabled={selectedQuantity <= 1 || !selectedProduct || selectedProduct.stock <= 0}
+              class="px-3 py-1 h-10 text-sm hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0"
+            >
+              -
+            </Button>
+            <Input
+              id="quantity-input"
+              type="number"
+              min="1"
+              max={maxQuantity}
+              bind:value={selectedQuantity}
+              disabled={!selectedProduct || selectedProduct.stock <= 0}
+              class="w-12 h-10 text-center text-sm font-semibold border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0"
+            />
+            <Button
+              variant="ghost"
+              onclick={incrementQty}
+              disabled={!selectedProduct || selectedQuantity >= maxQuantity || selectedProduct.stock <= 0}
+              class="px-3 py-1 h-10 text-sm hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0"
+            >
+              +
+            </Button>
+          </div>
 
-              {#if errorMessages[product.id]}
-                <div class="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-lg flex items-start gap-1.5">
-                  <AlertCircle class="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{errorMessages[product.id]}</span>
-                </div>
+          {#if selectedProduct}
+            <div class="text-xs text-muted-foreground ml-2">
+              {#if selectedProduct.stock <= 0}
+                <Badge variant="destructive" class="text-[10px]">Rupture de stock</Badge>
+              {:else}
+                <span>Stock disponible : <strong class="text-foreground">{selectedProduct.stock}</strong></span>
               {/if}
             </div>
-          {/each}
+          {/if}
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Récapitulatif & Valider -->
+    <div class="space-y-4">
+      <div class="bg-muted/30 border border-border rounded-xl p-4 space-y-2">
+        <div class="flex justify-between items-center text-sm font-semibold text-muted-foreground">
+          <span>Article sélectionné :</span>
+          <span class="text-foreground">{selectedProduct ? selectedProduct.name : '—'}</span>
+        </div>
+        <div class="flex justify-between items-center pt-2 border-t border-border/50">
+          <span class="text-base font-bold text-foreground">Montant total :</span>
+          <span class="text-xl font-extrabold text-primary">
+            {(totalPriceCents / 100).toFixed(2)} €
+          </span>
+        </div>
+      </div>
+
+      <!-- Turnstile Widget -->
+      <div class="cf-turnstile" style={!selectedMember ? 'display: none;' : ''} data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1"></div>
+
+      <!-- Submit Button -->
+      <Button
+        onclick={handleOrder}
+        disabled={!selectedMemberId || !selectedProduct || selectedProduct.stock <= 0 || selectedQuantity > selectedProduct.stock || submitting}
+        class="w-full flex justify-center items-center gap-2 font-bold h-11 text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
+      >
+        {#if submitting}
+          <span class="animate-pulse">Envoi de la commande...</span>
+        {:else}
+          <ShoppingBag class="w-4 h-4" />
+          Valider la commande
+        {/if}
+      </Button>
+
+      <!-- Feedback Messages -->
+      {#if successMessage}
+        <div class="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm rounded-xl flex items-start gap-2">
+          <Check class="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{successMessage}</span>
+        </div>
+      {/if}
+
+      {#if errorMessage}
+        <div class="p-3.5 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-xl flex items-start gap-2">
+          <AlertCircle class="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{errorMessage}</span>
         </div>
       {/if}
     </div>

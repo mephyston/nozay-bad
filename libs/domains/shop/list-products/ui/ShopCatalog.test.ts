@@ -45,13 +45,12 @@ describe('ShopCatalog Component', () => {
     flushSync();
 
     expect(target.innerHTML).toContain("Boutique Club");
-    expect(target.innerHTML).toContain("Articles disponibles");
+    expect(target.innerHTML).toContain("Article &amp; Quantité");
 
     expect(target.innerHTML).toContain("Volant RSL Grade 1");
     expect(target.innerHTML).toContain("15.00 €");
 
     expect(target.innerHTML).toContain("Cordage Yonex BG65");
-    expect(target.innerHTML).toContain("20.00 €");
   });
 
   it('allows member selection from combobox with privacy masking', async () => {
@@ -106,12 +105,12 @@ describe('ShopCatalog Component', () => {
     jeanBtn!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     flushSync();
 
-    const commanderButtons = Array.from(target.querySelectorAll('button')).filter(
-      b => b.textContent?.trim().includes('Commander')
+    const submitBtn = Array.from(target.querySelectorAll('button')).find(
+      b => b.textContent?.trim().includes('Valider la commande')
     );
-    expect(commanderButtons.length).toBe(2);
+    expect(submitBtn).not.toBeUndefined();
 
-    commanderButtons[0].click();
+    submitBtn!.click();
     flushSync();
 
     expect(globalThis.fetch).toHaveBeenCalledWith('', {
@@ -135,6 +134,59 @@ describe('ShopCatalog Component', () => {
     expect(target.innerHTML).toContain(
       "Votre souhait d'achat de 1 Volant RSL Grade 1 a bien été enregistré. Il sera comptabilisé dès validation par le trésorier."
     );
+  });
+
+  it('filters product dropdown when category changes', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(ShopCatalog, {
+      target,
+      props: {
+        members,
+        products,
+        activeSeasonId: '25-26'
+      }
+    });
+    flushSync();
+
+    const categorySelect = target.querySelector('select#category-select') as HTMLSelectElement;
+    expect(categorySelect).not.toBeNull();
+
+    categorySelect.value = 'string';
+    categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+    flushSync();
+
+    const productSelect = target.querySelector('select#product-select') as HTMLSelectElement;
+    const options = Array.from(productSelect.querySelectorAll('option'));
+    expect(options.length).toBe(1);
+    expect(options[0].textContent).toContain('Cordage Yonex BG65');
+  });
+
+  it('updates total price dynamically when quantity or product changes', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(ShopCatalog, {
+      target,
+      props: {
+        members,
+        products,
+        activeSeasonId: '25-26'
+      }
+    });
+    flushSync();
+
+    // Default total for 1 Volant RSL (15.00 €)
+    expect(target.innerHTML).toContain('15.00 €');
+
+    const qtyInput = target.querySelector('input#quantity-input') as HTMLInputElement;
+    qtyInput.value = '3';
+    qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
+    flushSync();
+
+    // Total for 3 Volant RSL (45.00 €)
+    expect(target.innerHTML).toContain('45.00 €');
   });
 
   it('supports keyboard navigation through the members listbox', () => {
