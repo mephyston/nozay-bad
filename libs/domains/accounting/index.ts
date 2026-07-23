@@ -13,14 +13,14 @@ import { updateSeasonBudgetRoute } from './seasons/update-season-budget/route';
 import { updateSeasonBalancesRoute } from './seasons/update-season-balances/route';
 
 // Config Routes
-import { listCategoriesRoute } from './queries/list-categories/route';
-import { listAccountClassesRoute } from './queries/list-account-classes/route';
-import { createCategoryRoute } from './commands/create-category/route';
-import { updateCategoryRoute } from './commands/update-category/route';
-import { deleteCategoryRoute } from './commands/delete-category/route';
-import { createAccountClassRoute } from './commands/create-account-class/route';
-import { updateAccountClassRoute } from './commands/update-account-class/route';
-import { deleteAccountClassRoute } from './commands/delete-account-class/route';
+import { listCategoriesRoute } from './config/list-categories/route';
+import { listAccountClassesRoute } from './config/list-account-classes/route';
+import { createCategoryRoute } from './config/create-category/route';
+import { updateCategoryRoute } from './config/update-category/route';
+import { deleteCategoryRoute } from './config/delete-category/route';
+import { createAccountClassRoute } from './config/create-account-class/route';
+import { updateAccountClassRoute } from './config/update-account-class/route';
+import { deleteAccountClassRoute } from './config/delete-account-class/route';
 
 // Invoices Routes
 import { listInvoicesRoute } from './queries/list-invoices/route';
