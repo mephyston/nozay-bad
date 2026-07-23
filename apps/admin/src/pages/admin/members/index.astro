@@ -20,13 +20,16 @@ let seasonsList = [];
 let errorMsg = '';
 
 try {
-  const res = await apiService.fetch(`http://localhost/members?${queryParams.toString()}`);
+  const [res, seasonsRes] = await Promise.all([
+    apiService.fetch(`http://localhost/members?${queryParams.toString()}`),
+    apiService.fetch('http://localhost/accounting/seasons')
+  ]);
+
   if (!res.ok) {
     throw new Error('Impossible de récupérer la liste des adhérents');
   }
   membersData = await res.json();
 
-  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];

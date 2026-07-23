@@ -39,9 +39,9 @@ try {
   const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
-    const rawSeasons = json.data || [];
+    const rawSeasons: any[] = json.data || [];
 
-    for (const s of rawSeasons) {
+    seasonsList = await Promise.all(rawSeasons.map(async (s) => {
       const balRes = await apiService.fetch(`http://localhost/accounting/seasons/${s.id}/balances`);
       let initialCurrentBalance = 0;
       let initialSavingsBalance = 0;
@@ -78,14 +78,14 @@ try {
           }
         }
       }
-      seasonsList.push({
+      return {
         ...s,
         initialCurrentBalance,
         initialSavingsBalance,
         initialCashBalance,
         isAutoFilled
-      });
-    }
+      };
+    }));
   }
 } catch (err: any) {
   errorMsg = 'Impossible de charger la liste des saisons comptables.';

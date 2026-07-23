@@ -69,7 +69,19 @@ let prevReportData = null;
 let errorMsg = '';
 
 try {
-  const res = await apiService.fetch(`http://localhost/accounting/seasons/${season}/reports`);
+  const prevSeason = getPreviousSeasonId(season);
+  const [res, prevResResult, seasonsRes, categoriesRes, classesRes, budgetRes] = await Promise.all([
+    apiService.fetch(`http://localhost/accounting/seasons/${season}/reports`),
+    prevSeason ? apiService.fetch(`http://localhost/accounting/seasons/${prevSeason}/reports`).catch((e) => {
+      console.error('Failed to fetch previous season reports', e);
+      return null;
+    }) : Promise.resolve(null),
+    apiService.fetch('http://localhost/accounting/seasons'),
+    apiService.fetch('http://localhost/accounting/categories'),
+    apiService.fetch('http://localhost/accounting/account-classes'),
+    apiService.fetch(`http://localhost/accounting/seasons/${season}/budget`)
+  ]);
+
   if (res.ok) {
     const json = await res.json() as any;
     reportData = json.data;
@@ -77,38 +89,26 @@ try {
     throw new Error('Erreur récupération du rapport');
   }
 
-  const prevSeason = getPreviousSeasonId(season);
-  if (prevSeason) {
-    try {
-      const prevRes = await apiService.fetch(`http://localhost/accounting/seasons/${prevSeason}/reports`);
-      if (prevRes.ok) {
-        const json = await prevRes.json() as any;
-        prevReportData = json.data;
-      }
-    } catch (e) {
-      console.error('Failed to fetch previous season reports', e);
-    }
+  if (prevResResult && prevResResult.ok) {
+    const json = await prevResResult.json() as any;
+    prevReportData = json.data;
   }
 
-  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];
   }
 
-  const categoriesRes = await apiService.fetch('http://localhost/accounting/categories');
   if (categoriesRes.ok) {
     const json = await categoriesRes.json() as any;
     categoriesList = json.data || [];
   }
 
-  const classesRes = await apiService.fetch('http://localhost/accounting/account-classes');
   if (classesRes.ok) {
     const json = await classesRes.json() as any;
     accountClassesList = json.data || [];
   }
 
-  const budgetRes = await apiService.fetch(`http://localhost/accounting/seasons/${season}/budget`);
   if (budgetRes.ok) {
     const json = await budgetRes.json() as any;
     budgetList = json.data || [];

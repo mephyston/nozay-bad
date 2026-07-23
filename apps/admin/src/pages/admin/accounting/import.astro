@@ -98,33 +98,34 @@ let categoriesList = [];
 let errorMsg = '';
 
 try {
-  // Récupérer toutes les transactions bancaires (non filtrées par statut au niveau de l'API pour pouvoir changer d'onglet)
-  const btRes = await apiService.fetch(`http://localhost/accounting/bank-transactions?season=${season}`);
+  const [btRes, glRes, seasonsRes, membersRes, categoriesRes] = await Promise.all([
+    apiService.fetch(`http://localhost/accounting/bank-transactions?season=${season}`),
+    apiService.fetch(`http://localhost/accounting/transactions?season=${season}&page=1&limit=500`),
+    apiService.fetch('http://localhost/accounting/seasons'),
+    apiService.fetch(`http://localhost/members?season=${season}&limit=500`),
+    apiService.fetch('http://localhost/accounting/categories')
+  ]);
+
   if (btRes.ok) {
     const json = await btRes.json() as any;
     bankTransactionsList = json.data || [];
   }
 
-  // Récupérer toutes les transactions du grand livre pour faire des suggestions de pointage et la ventilation
-  const glRes = await apiService.fetch(`http://localhost/accounting/transactions?season=${season}&page=1&limit=500`);
   if (glRes.ok) {
     const json = await glRes.json() as any;
     glTransactionsList = json.data || [];
   }
 
-  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];
   }
 
-  const membersRes = await apiService.fetch(`http://localhost/members?season=${season}&limit=500`);
   if (membersRes.ok) {
     const json = await membersRes.json() as any;
     membersList = json.data || [];
   }
 
-  const categoriesRes = await apiService.fetch('http://localhost/accounting/categories');
   if (categoriesRes.ok) {
     const json = await categoriesRes.json() as any;
     categoriesList = json.data || [];
