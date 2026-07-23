@@ -1,7 +1,8 @@
+import { type Db } from '@metacult/shared-db';
 import { UpdateCategoryRepository } from './repository';
 import { UpdateCategoryId, UpdateCategoryInput, UpdateCategoryOutput } from "./dto";
 
-export async function updateCategory(db: any, id: UpdateCategoryId, body: UpdateCategoryInput): Promise<UpdateCategoryOutput> {
+export async function updateCategory(db: Db, id: UpdateCategoryId, body: UpdateCategoryInput): Promise<UpdateCategoryOutput> {
   const repo = new UpdateCategoryRepository();
   return repo.updateCategory(db, id, {
     adminLabel: body.adminLabel,

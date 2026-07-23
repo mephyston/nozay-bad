@@ -1,7 +1,8 @@
+import { type DbOrTx } from '@metacult/shared-db';
 import { accountClassesTable } from '../../shared/schema';
 
 export class CreateAccountClassRepository {
-  async createAccountClass(db: any, values: {
+  async createAccountClass(db: DbOrTx, values: {
     code: string;
     label: string;
     type: 'recette' | 'depense';

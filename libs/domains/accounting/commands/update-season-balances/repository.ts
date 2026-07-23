@@ -1,7 +1,8 @@
+import { type DbOrTx } from '@metacult/shared-db';
 import { seasonBalancesTable } from '../../shared/schema';
 
 export class UpdateSeasonBalancesRepository {
-  async updateBalances(db: any, seasonId: string, balances: { accountId: 'current' | 'savings' | 'cash'; initialBalance: number }[]): Promise<void> {
+  async updateBalances(db: DbOrTx, seasonId: string, balances: { accountId: 'current' | 'savings' | 'cash'; initialBalance: number }[]): Promise<void> {
     for (const item of balances) {
       await db.insert(seasonBalancesTable)
         .values({

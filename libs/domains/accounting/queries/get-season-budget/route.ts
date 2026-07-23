@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { getSeasonBudget } from './handler';
 
 export type Bindings = {
@@ -13,7 +13,7 @@ getSeasonBudgetRoute.get('/:seasonId/budget', async (c) => {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
   const seasonId = c.req.param('seasonId');
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
   try {
     const data = await getSeasonBudget(db, seasonId);
     return c.json({ success: true, data });

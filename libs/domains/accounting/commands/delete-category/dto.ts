@@ -1,3 +1,2 @@
 export type DeleteCategoryInput = number;
-
-export type DeleteCategoryOutput = any;
+export type DeleteCategoryOutput = { success: boolean };

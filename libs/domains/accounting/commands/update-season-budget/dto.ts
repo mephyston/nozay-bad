@@ -1,4 +1,4 @@
+import { budgetsTable } from '../../shared/schema';
 export type UpdateSeasonBudgetSeasonId = string;
-export type UpdateSeasonBudgetInput = { categoryId: number; type: 'recette' | 'depense'; amount: number }[]
-
-export type UpdateSeasonBudgetOutput = any;
+export interface UpdateSeasonBudgetInput { items: { categoryId: number; type: 'recette' | 'depense'; amount: number }[] }
+export type UpdateSeasonBudgetOutput = (typeof budgetsTable.$inferSelect)[];

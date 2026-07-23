@@ -1,13 +1,13 @@
 import { ReconcileBankTransactionRepository } from './repository';
 import { isSeasonClosed } from '@metacult/features-members-api';
 import { applyPaymentToMember } from '@metacult/features-members-api';
-import { AppError } from '@metacult/shared-db';
+import { AppError, type Db, type Tx } from '@metacult/shared-db';
 import { normalizeCategory } from '@metacult/features-accounting-api';
 import { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
 import { ReconcileBankTxInternalId, ReconcileBankTxInternalInput, ReconcileBankTxInternalOutput } from "./dto";
 import { BankTransaction } from '../../shared/bank-transaction';
 
-export async function reconcileBankTxInternal(db: any, id: ReconcileBankTxInternalId, body: ReconcileBankTxInternalInput): Promise<ReconcileBankTxInternalOutput> {
+export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInternalId, body: ReconcileBankTxInternalInput): Promise<ReconcileBankTxInternalOutput> {
   const repo = new ReconcileBankTransactionRepository();
   const bankTxData = await repo.getBankTransactionById(db, id);
   if (!bankTxData) {
@@ -180,8 +180,8 @@ export async function reconcileBankTxInternal(db: any, id: ReconcileBankTxIntern
   return { success: true };
 }
 
-export async function reconcileBankTransaction(db: any, id: number, body: any) {
-  const runReconciliation = async (txDb: any) => {
+export async function reconcileBankTransaction(db: Db, id: number, body: any) {
+  const runReconciliation = async (txDb: Tx) => {
     const result = await reconcileBankTxInternal(txDb, id, body);
     if (!result.success) {
       throw new AppError(result.error || 'Reconciliation failed', result.status || 400);
@@ -191,14 +191,14 @@ export async function reconcileBankTransaction(db: any, id: number, body: any) {
   if (db instanceof SQLiteTransaction) {
     await runReconciliation(db);
   } else {
-    await db.transaction(async (txDb: any) => {
+    await db.transaction(async (txDb: Tx) => {
       await runReconciliation(txDb);
     });
   }
 }
 
-export async function reconcileBulkTransactions(db: any, requests: any[]) {
-  const runBulk = async (txDb: any) => {
+export async function reconcileBulkTransactions(db: Db, requests: any[]) {
+  const runBulk = async (txDb: Tx) => {
     let count = 0;
     for (const req of requests) {
       const result = await reconcileBankTxInternal(txDb, req.btId, req);
@@ -213,7 +213,7 @@ export async function reconcileBulkTransactions(db: any, requests: any[]) {
   if (db instanceof SQLiteTransaction) {
     return await runBulk(db);
   } else {
-    return await db.transaction(async (txDb: any) => {
+    return await db.transaction(async (txDb: Tx) => {
       return await runBulk(txDb);
     });
   }

@@ -1,3 +1,2 @@
 export type DeleteAccountClassInput = string;
-
-export type DeleteAccountClassOutput = any;
+export type DeleteAccountClassOutput = { success: boolean };

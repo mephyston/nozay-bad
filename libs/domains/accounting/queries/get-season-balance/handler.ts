@@ -1,8 +1,8 @@
-import { AppError } from '@metacult/shared-db';
+import { AppError, type Db } from '@metacult/shared-db';
 import { GetSeasonBalanceRepository } from './repository';
 import { GetSeasonBalanceInput, GetSeasonBalanceOutput } from "./dto";
 
-export async function getSeasonBalance(db: any, seasonId: GetSeasonBalanceInput): Promise<GetSeasonBalanceOutput> {
+export async function getSeasonBalance(db: Db, seasonId: GetSeasonBalanceInput): Promise<GetSeasonBalanceOutput> {
   const repo = new GetSeasonBalanceRepository();
   const [yy, zz] = seasonId.split('-');
   if (!yy || !zz || yy.length !== 2 || zz.length !== 2) {

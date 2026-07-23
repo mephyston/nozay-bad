@@ -1,3 +1,2 @@
-export type ListSeasonsInput = void;
-
-export type ListSeasonsOutput = any;
+import { seasonsTable } from '../../shared/schema';
+export type ListSeasonsOutput = (typeof seasonsTable.$inferSelect)[];

@@ -1,10 +1,11 @@
+import { type Db, type Tx } from '@metacult/shared-db';
 import { CreateInvoiceRepository } from './repository';
 import { isSeasonClosed } from '@metacult/features-members-api';
 import { SeasonClosedError } from '../../shared/errors';
 import { CreateInvoiceInput, CreateInvoiceOutput } from "./dto";
 
-export async function createInvoice(db: any, body: CreateInvoiceInput): Promise<CreateInvoiceOutput> {
-  return db.transaction(async (txDb: any) => {
+export async function createInvoice(db: Db, body: CreateInvoiceInput): Promise<CreateInvoiceOutput> {
+  return db.transaction(async (txDb: Tx) => {
     if (await isSeasonClosed(txDb, body.seasonId)) {
       throw new SeasonClosedError('Saison clôturée');
     }

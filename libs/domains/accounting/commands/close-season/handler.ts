@@ -1,10 +1,10 @@
-import { AppError } from '@metacult/shared-db';
+import { AppError, type Db } from '@metacult/shared-db';
 import { CloseSeasonRepository, CloseSeasonRepositoryInterface } from './repository';
 import { CloseSeasonInput, CloseSeasonOutput } from "./dto";
 import { Season } from '../../shared/season';
 
 export async function closeSeason(
-  db: any,
+  db: Db,
   id: CloseSeasonInput,
   repo: CloseSeasonRepositoryInterface = new CloseSeasonRepository()
 ): Promise<CloseSeasonOutput> {

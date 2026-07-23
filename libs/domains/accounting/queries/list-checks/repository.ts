@@ -1,9 +1,10 @@
+import { type DbOrTx } from '@metacult/shared-db';
 import { eq, and, desc } from 'drizzle-orm';
 import { checksTable, checkDepositsTable } from '../../shared/schema';
 import { getMembersByIds } from '@metacult/features-members-api';
 
 export class ListChecksRepository {
-  async listChecks(db: any, seasonId: string, status?: string) {
+  async listChecks(db: DbOrTx, seasonId: string, status?: string) {
     const conditions = [eq(checksTable.seasonId, seasonId)];
     if (status) {
       conditions.push(eq(checksTable.status, status as any));
@@ -41,7 +42,7 @@ export class ListChecksRepository {
     });
   }
 
-  async listCheckDeposits(db: any, seasonId: string) {
+  async listCheckDeposits(db: DbOrTx, seasonId: string) {
     return db.select()
       .from(checkDepositsTable)
       .where(eq(checkDepositsTable.seasonId, seasonId))

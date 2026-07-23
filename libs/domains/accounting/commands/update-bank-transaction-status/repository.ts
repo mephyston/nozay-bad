@@ -1,8 +1,9 @@
+import { type DbOrTx } from '@metacult/shared-db';
 import { eq } from 'drizzle-orm';
 import { bankTransactionsTable } from '../../shared/schema';
 
 export class UpdateBankTransactionStatusRepository {
-  async updateStatus(db: any, id: number, status: 'pending' | 'ignored'): Promise<void> {
+  async updateStatus(db: DbOrTx, id: number, status: 'pending' | 'ignored'): Promise<void> {
     await db.update(bankTransactionsTable)
       .set({ status })
       .where(eq(bankTransactionsTable.id, id))

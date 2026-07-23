@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { listTransactions } from './handler';
 
 export type Bindings = {
@@ -27,7 +27,7 @@ listTransactionsRoute.get('/transactions', async (c) => {
   const classCode = c.req.query('classCode');
   const memberId = c.req.query('memberId');
 
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
   const result = await listTransactions(db, {
     seasonId,
     accountId,

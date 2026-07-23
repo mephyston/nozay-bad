@@ -1,3 +1,2 @@
 export type DeleteInvoiceInput = number;
-
-export type DeleteInvoiceOutput = any;
+export type DeleteInvoiceOutput = { success: boolean };

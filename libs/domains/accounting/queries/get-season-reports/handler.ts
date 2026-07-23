@@ -1,8 +1,9 @@
+import { type Db } from '@metacult/shared-db';
 import { normalizeCategory } from '@metacult/features-accounting-api';
 import { GetSeasonReportsRepository } from './repository';
 import { GetSeasonReportsInput, GetSeasonReportsOutput } from "./dto";
 
-export async function getSeasonReports(db: any, seasonId: GetSeasonReportsInput): Promise<GetSeasonReportsOutput> {
+export async function getSeasonReports(db: Db, seasonId: GetSeasonReportsInput): Promise<GetSeasonReportsOutput> {
   const repo = new GetSeasonReportsRepository();
   const [yy, zz] = seasonId.split('-');
   const startYear = 2000 + parseInt(yy);

@@ -1,13 +1,13 @@
 import { DeleteTransactionRepository } from './repository';
 import { isSeasonClosed } from '@metacult/features-members-api';
-import { AppError } from '@metacult/shared-db';
+import { AppError, type Db, type Tx } from '@metacult/shared-db';
 import { SeasonClosedError } from '../../shared/errors';
 import { applyPaymentToMember } from '@metacult/features-members-api';
 
-export async function deleteTransaction(db: any, id: number) {
+export async function deleteTransaction(db: Db, id: number) {
   const repo = new DeleteTransactionRepository();
 
-  return db.transaction(async (txDb: any) => {
+  return db.transaction(async (txDb: Tx) => {
     const tx = await repo.getById(txDb, id);
     if (!tx) {
       throw new AppError('Transaction non trouvée', 404);

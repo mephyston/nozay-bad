@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { updateBankTransactionStatus } from './handler';
 
 export type Bindings = {
@@ -13,7 +13,7 @@ updateBankTransactionStatusRoute.post('/bank-transactions/:id/ignore', async (c)
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
   const id = parseInt(c.req.param('id'));
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
   await updateBankTransactionStatus(db, { id, status: 'ignored' });
   return c.json({ success: true });
 });
@@ -23,7 +23,7 @@ updateBankTransactionStatusRoute.post('/bank-transactions/:id/unignore', async (
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
   const id = parseInt(c.req.param('id'));
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
   await updateBankTransactionStatus(db, { id, status: 'pending' });
   return c.json({ success: true });
 });

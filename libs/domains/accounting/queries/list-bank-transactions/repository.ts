@@ -1,8 +1,9 @@
+import { type DbOrTx } from '@metacult/shared-db';
 import { and, eq, desc } from 'drizzle-orm';
 import { bankTransactionsTable } from '../../shared/schema';
 
 export class ListBankTransactionsRepository {
-  async listBankTransactions(db: any, seasonId: string, filters: { status?: string; accountId?: string }): Promise<any[]> {
+  async listBankTransactions(db: DbOrTx, seasonId: string, filters: { status?: string; accountId?: string }): Promise<any[]> {
     const conditions = [eq(bankTransactionsTable.seasonId, seasonId)];
     if (filters?.status) {
       conditions.push(eq(bankTransactionsTable.status, filters.status as any));

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { tbValidator } from '@hono/typebox-validator';
 import { updateTransaction } from './handler';
 import { updateTransactionSchema } from './validator';
@@ -26,7 +26,7 @@ updateTransactionRoute.put(
       return c.json({ success: false, error: 'Identifiant invalide' }, 400);
     }
     const body = c.req.valid('json');
-    const db = drizzle(c.env.DB);
+    const db = createDb(c.env.DB);
     try {
       const data = await updateTransaction(db, id, body);
       return c.json({ success: true, data });

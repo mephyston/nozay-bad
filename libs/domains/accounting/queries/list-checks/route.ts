@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { tbValidator } from '@hono/typebox-validator';
 import { listChecks, listCheckDeposits } from './handler';
 import { listChecksQuerySchema } from './validator';
@@ -22,7 +22,7 @@ listChecksRoute.get(
       return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
     }
     const { season, status } = c.req.valid('query');
-    const db = drizzle(c.env.DB);
+    const db = createDb(c.env.DB);
     const data = await listChecks(db, season, status);
     return c.json({ success: true, data });
   }
@@ -40,7 +40,7 @@ listChecksRoute.get(
       return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
     }
     const { season } = c.req.valid('query');
-    const db = drizzle(c.env.DB);
+    const db = createDb(c.env.DB);
     const data = await listCheckDeposits(db, season);
     return c.json({ success: true, data });
   }

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { tbValidator } from '@hono/typebox-validator';
 import { updateAccountClass } from './handler';
 import { updateAccountClassSchema } from './validator';
@@ -23,7 +23,7 @@ updateAccountClassRoute.put(
     }
     const code = c.req.param('code');
     const body = c.req.valid('json');
-    const db = drizzle(c.env.DB);
+    const db = createDb(c.env.DB);
     try {
       const updated = await updateAccountClass(db, code, body);
       if (!updated) {

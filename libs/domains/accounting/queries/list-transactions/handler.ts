@@ -1,8 +1,9 @@
+import { type Db } from '@metacult/shared-db';
 import { ListTransactionsRepository } from './repository';
 import type { ListTransactionsFilters, Pagination } from './dto';
 
 export async function listTransactions(
-  db: any,
+  db: Db,
   filters: ListTransactionsFilters,
   pagination: Pagination
 ) {

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { tbValidator } from '@hono/typebox-validator';
 import { updateSeason } from './handler';
 import { updateSeasonSchema } from './validator';
@@ -23,7 +23,7 @@ updateSeasonRoute.put(
     }
     const id = c.req.param('id');
     const body = c.req.valid('json');
-    const db = drizzle(c.env.DB);
+    const db = createDb(c.env.DB);
     try {
       const data = await updateSeason(db, id, body);
       return c.json({ success: true, data });

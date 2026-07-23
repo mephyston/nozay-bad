@@ -1,7 +1,8 @@
+import { type DbOrTx } from '@metacult/shared-db';
 import { bankTransactionsTable } from '../../shared/schema';
 
 export class ImportBankStatementRepository {
-  async insertBankTransaction(db: any, values: {
+  async insertBankTransaction(db: DbOrTx, values: {
     fitid: string;
     seasonId: string;
     accountId: 'current' | 'savings';

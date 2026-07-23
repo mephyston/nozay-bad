@@ -1,7 +1,8 @@
+import { type Db } from '@metacult/shared-db';
 import { CreateCategoryRepository } from './repository';
 import { CreateCategoryInput, CreateCategoryOutput } from "./dto";
 
-export async function createCategory(db: any, body: CreateCategoryInput): Promise<CreateCategoryOutput> {
+export async function createCategory(db: Db, body: CreateCategoryInput): Promise<CreateCategoryOutput> {
   const repo = new CreateCategoryRepository();
   return repo.createCategory(db, {
     adminLabel: body.adminLabel,

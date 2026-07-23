@@ -1,4 +1,4 @@
+import { seasonsTable } from '../../shared/schema';
 export type UpdateSeasonId = string;
-export interface UpdateSeasonInput { name?: string; active?: boolean; closed?: boolean }
-
-export type UpdateSeasonOutput = any;
+export interface UpdateSeasonInput { name?: string; active?: boolean }
+export type UpdateSeasonOutput = typeof seasonsTable.$inferSelect;

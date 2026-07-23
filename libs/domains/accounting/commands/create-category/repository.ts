@@ -1,7 +1,8 @@
+import { type DbOrTx } from '@metacult/shared-db';
 import { categoriesTable } from '../../shared/schema';
 
 export class CreateCategoryRepository {
-  async createCategory(db: any, values: {
+  async createCategory(db: DbOrTx, values: {
     adminLabel: string;
     adherentLabel: string;
     hideInExpenses?: boolean;

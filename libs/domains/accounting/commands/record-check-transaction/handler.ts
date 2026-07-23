@@ -1,11 +1,11 @@
 import { RecordCheckTransactionRepository } from './repository';
-import { AppError } from '@metacult/shared-db';
+import { AppError, type Db, type Tx } from '@metacult/shared-db';
 import { cleanName } from '../../shared/helpers';
 import { applyPaymentToMember } from '@metacult/features-members-api';
 import type { CreateCheckInput, AnalyzeCheckOutput } from './dto';
 
 export async function analyzeCheckImage(
-  db: any,
+  db: Db,
   ai: any,
   file: any
 ): Promise<AnalyzeCheckOutput> {
@@ -197,14 +197,14 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
   };
 }
 
-export async function createCheck(db: any, body: CreateCheckInput) {
+export async function createCheck(db: Db, body: CreateCheckInput) {
   if (!body.seasonId || !body.number || !body.amount || !body.emitter) {
     throw new AppError('Champs requis manquants.', 400);
   }
 
   const repo = new RecordCheckTransactionRepository();
 
-  return db.transaction(async (txDb: any) => {
+  return db.transaction(async (txDb: Tx) => {
     const categoryVal = body.category ? Number(body.category) : 1;
     const descStr = body.description || `Règlement par chèque n°${body.number} de ${body.emitter}`;
 
@@ -243,10 +243,10 @@ export async function createCheck(db: any, body: CreateCheckInput) {
   });
 }
 
-export async function deleteCheck(db: any, id: number) {
+export async function deleteCheck(db: Db, id: number) {
   const repo = new RecordCheckTransactionRepository();
 
-  return db.transaction(async (txDb: any) => {
+  return db.transaction(async (txDb: Tx) => {
     const check = await repo.getCheckById(txDb, id);
     if (!check) {
       throw new AppError('Chèque non trouvé.', 404);

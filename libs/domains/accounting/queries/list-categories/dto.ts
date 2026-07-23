@@ -1,3 +1,2 @@
-export type ListCategoriesInput = void;
-
-export type ListCategoriesOutput = any;
+import { categoriesTable } from '../../shared/schema';
+export type ListCategoriesOutput = (typeof categoriesTable.$inferSelect)[];

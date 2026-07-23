@@ -1,7 +1,8 @@
+import { type Db } from '@metacult/shared-db';
 import { UpdateBankTransactionStatusRepository } from './repository';
 import type { UpdateBankTransactionStatusInput } from './dto';
 
-export async function updateBankTransactionStatus(db: any, input: UpdateBankTransactionStatusInput): Promise<void> {
+export async function updateBankTransactionStatus(db: Db, input: UpdateBankTransactionStatusInput): Promise<void> {
   const repo = new UpdateBankTransactionStatusRepository();
   if (!input.id) {
     throw new Error('Transaction ID is required');

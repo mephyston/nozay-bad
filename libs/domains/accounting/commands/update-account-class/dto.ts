@@ -1,4 +1,4 @@
+import { accountClassesTable } from '../../shared/schema';
 export type UpdateAccountClassCode = string;
-export type UpdateAccountClassInput = Record<string, any>;
-
-export type UpdateAccountClassOutput = any;
+export interface UpdateAccountClassInput { label: string }
+export type UpdateAccountClassOutput = typeof accountClassesTable.$inferSelect;

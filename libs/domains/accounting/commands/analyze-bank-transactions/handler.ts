@@ -1,8 +1,9 @@
+import { type Db } from '@metacult/shared-db';
 import { AnalyzeBankTransactionsRepository } from './repository';
 import { cleanName } from '../../shared/helpers';
 import type { AnalyzeBankTransactionsInput, AnalyzeBankTransactionsOutput } from './dto';
 
-export async function analyzeBankTransactions(db: any, ai: any, input: AnalyzeBankTransactionsInput): Promise<AnalyzeBankTransactionsOutput> {
+export async function analyzeBankTransactions(db: Db, ai: any, input: AnalyzeBankTransactionsInput): Promise<AnalyzeBankTransactionsOutput> {
   const repo = new AnalyzeBankTransactionsRepository();
   const pendingTxs = await repo.getPendingTransactions(db, input.seasonId, input.singleId);
   const members = await repo.getMembersBySeason(db, input.seasonId);

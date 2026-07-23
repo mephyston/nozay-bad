@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { tbValidator } from '@hono/typebox-validator';
 import { reconcileBankTransaction, reconcileBulkTransactions } from './handler';
 import { reconcileBankTransactionSchema, reconcileBulkTransactionsSchema } from './validator';
@@ -22,7 +22,7 @@ reconcileBankTransactionRoute.post(
       return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
     }
     const body = c.req.valid('json');
-    const db = drizzle(c.env.DB);
+    const db = createDb(c.env.DB);
     try {
       const count = await reconcileBulkTransactions(db, body.requests);
       return c.json({ success: true, count });
@@ -52,7 +52,7 @@ reconcileBankTransactionRoute.post(
     }
     const id = parseInt(c.req.param('id'));
     const body = c.req.valid('json');
-    const db = drizzle(c.env.DB);
+    const db = createDb(c.env.DB);
     try {
       await reconcileBankTransaction(db, id, body);
       return c.json({ success: true });

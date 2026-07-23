@@ -1,3 +1,2 @@
 export type GetSeasonBalanceInput = string;
-
-export type GetSeasonBalanceOutput = any;
+export type GetSeasonBalanceOutput = { balance: number };

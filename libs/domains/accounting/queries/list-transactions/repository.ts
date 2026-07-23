@@ -1,3 +1,4 @@
+import { type DbOrTx } from '@metacult/shared-db';
 import { and, or, eq, sql, inArray, isNull, desc } from 'drizzle-orm';
 import { transactionsTable, categoriesTable } from '../../shared/schema';
 import { getMembersByIds } from '@metacult/features-members-api';
@@ -30,7 +31,7 @@ export class ListTransactionsRepository {
     return conditions;
   }
 
-  async count(db: any, filters: ListTransactionsFilters): Promise<number> {
+  async count(db: DbOrTx, filters: ListTransactionsFilters): Promise<number> {
     const conditions = this.buildConditions(filters);
     if (filters.classCode) {
       const matchingCats = await db.select({ id: categoriesTable.id })
@@ -51,7 +52,7 @@ export class ListTransactionsRepository {
     return countRes?.count || 0;
   }
 
-  async list(db: any, filters: ListTransactionsFilters, pagination: { limit: number; offset: number }): Promise<any[]> {
+  async list(db: DbOrTx, filters: ListTransactionsFilters, pagination: { limit: number; offset: number }): Promise<any[]> {
     const conditions = this.buildConditions(filters);
     if (filters.classCode) {
       const matchingCats = await db.select({ id: categoriesTable.id })

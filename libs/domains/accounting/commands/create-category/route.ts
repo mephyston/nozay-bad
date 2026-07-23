@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { tbValidator } from '@hono/typebox-validator';
 import { createCategory } from './handler';
 import { createCategorySchema } from './validator';
@@ -22,7 +22,7 @@ createCategoryRoute.post(
       return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
     }
     const body = c.req.valid('json');
-    const db = drizzle(c.env.DB);
+    const db = createDb(c.env.DB);
     try {
       const newCat = await createCategory(db, body);
       return c.json({ success: true, data: newCat });

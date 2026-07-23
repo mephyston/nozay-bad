@@ -1,3 +1,4 @@
+import { type Db, type Tx } from '@metacult/shared-db';
 import { ImportBankStatementRepository } from './repository';
 import { ParseOFXInput, ParseOFXOutput } from "./dto";
 
@@ -38,7 +39,7 @@ export function parseOFX(ofxContent: string): ParseOFXOutput {
   return { transactions };
 }
 
-export async function importBankStatement(db: any, fileContent: string, seasonId: string, forcedAccountId: string) {
+export async function importBankStatement(db: Db, fileContent: string, seasonId: string, forcedAccountId: string) {
   const { transactions } = parseOFX(fileContent);
   if (transactions.length === 0) {
     return { count: 0 };
@@ -47,7 +48,7 @@ export async function importBankStatement(db: any, fileContent: string, seasonId
   const repo = new ImportBankStatementRepository();
   let insertedCount = 0;
 
-  const runSequential = async (txDb: any) => {
+  const runSequential = async (txDb: Tx) => {
     let count = 0;
     for (const tx of transactions) {
       const targetAccount = (forcedAccountId && forcedAccountId !== 'auto') 
@@ -73,7 +74,7 @@ export async function importBankStatement(db: any, fileContent: string, seasonId
   };
 
   try {
-    insertedCount = await db.transaction(async (txDb: any) => {
+    insertedCount = await db.transaction(async (txDb: Tx) => {
       return runSequential(txDb);
     });
   } catch (err: any) {

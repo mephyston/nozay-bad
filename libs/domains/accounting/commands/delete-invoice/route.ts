@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { deleteInvoice } from './handler';
 
 export type Bindings = {
@@ -16,7 +16,7 @@ deleteInvoiceRoute.delete('/invoices/:id', async (c) => {
   if (isNaN(id)) {
     return c.json({ success: false, error: 'Identifiant invalide' }, 400);
   }
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
   await deleteInvoice(db, id);
   return c.json({ success: true });
 });

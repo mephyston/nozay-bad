@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { importBankStatement } from './handler';
 
 export type Bindings = {
@@ -38,7 +38,7 @@ importBankStatementRoute.post('/bank-transactions/import', async (c) => {
     return c.json({ success: false, error: 'Format de fichier invalide.' }, 400);
   }
 
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
   const result = await importBankStatement(db, content, seasonId, forcedAccountId);
   return c.json({ success: true, ...result });
 });

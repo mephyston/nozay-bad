@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { tbValidator } from '@hono/typebox-validator';
 import { analyzeBankTransactions } from './handler';
 import { analyzeBankTransactionsQuerySchema } from './validator';
@@ -24,7 +24,7 @@ analyzeBankTransactionsRoute.post(
     }
     const { season, id } = c.req.valid('query');
     const idNum = id ? parseInt(id) : undefined;
-    const db = drizzle(c.env.DB);
+    const db = createDb(c.env.DB);
     const result = await analyzeBankTransactions(db, c.env.AI, { seasonId: season, singleId: idNum });
     return c.json({ success: true, ...result });
   }

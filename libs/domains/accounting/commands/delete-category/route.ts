@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { deleteCategory } from './handler';
 
 export type Bindings = {
@@ -13,7 +13,7 @@ deleteCategoryRoute.delete('/categories/:id', async (c) => {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
   const id = parseInt(c.req.param('id'));
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
   try {
     const deleted = await deleteCategory(db, id);
     if (!deleted) {

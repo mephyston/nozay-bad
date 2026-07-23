@@ -1,16 +1,16 @@
 import { CreateBankCheckDepositRepository } from './repository';
-import { AppError } from '@metacult/shared-db';
+import { AppError, type Db, type Tx } from '@metacult/shared-db';
 import type { CreateCheckDepositInput, ClearCheckDepositInput } from './dto';
 import { Check } from '../../shared/check';
 
-export async function createCheckDeposit(db: any, body: CreateCheckDepositInput) {
+export async function createCheckDeposit(db: Db, body: CreateCheckDepositInput) {
   if (!body.seasonId || !body.reference || !body.date || !body.checkIds || body.checkIds.length === 0) {
     throw new AppError('Champs requis manquants.', 400);
   }
 
   const repo = new CreateBankCheckDepositRepository();
 
-  return db.transaction(async (txDb: any) => {
+  return db.transaction(async (txDb: Tx) => {
     const checksToDeposit = await repo.getChecksByIds(txDb, body.checkIds);
     if (checksToDeposit.length === 0) {
       throw new AppError('Aucun chèque valide trouvé.', 400);
@@ -40,14 +40,14 @@ export async function createCheckDeposit(db: any, body: CreateCheckDepositInput)
   });
 }
 
-export async function clearCheckDeposit(db: any, id: number, body: ClearCheckDepositInput) {
+export async function clearCheckDeposit(db: Db, id: number, body: ClearCheckDepositInput) {
   if (!body.bankTransactionId) {
     throw new AppError('bankTransactionId requis.', 400);
   }
 
   const repo = new CreateBankCheckDepositRepository();
 
-  return db.transaction(async (txDb: any) => {
+  return db.transaction(async (txDb: Tx) => {
     await repo.updateCheckDeposit(txDb, id, {
       status: 'cleared',
       bankTransactionId: body.bankTransactionId
@@ -57,10 +57,10 @@ export async function clearCheckDeposit(db: any, id: number, body: ClearCheckDep
   });
 }
 
-export async function deleteCheckDeposit(db: any, id: number) {
+export async function deleteCheckDeposit(db: Db, id: number) {
   const repo = new CreateBankCheckDepositRepository();
 
-  return db.transaction(async (txDb: any) => {
+  return db.transaction(async (txDb: Tx) => {
     const deposit = await repo.getCheckDepositById(txDb, id);
     if (!deposit) {
       throw new AppError('Remise de chèques non trouvée.', 404);

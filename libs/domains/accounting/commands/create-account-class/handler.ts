@@ -1,7 +1,8 @@
+import { type Db } from '@metacult/shared-db';
 import { CreateAccountClassRepository } from './repository';
 import { CreateAccountClassInput, CreateAccountClassOutput } from "./dto";
 
-export async function createAccountClass(db: any, body: CreateAccountClassInput): Promise<CreateAccountClassOutput> {
+export async function createAccountClass(db: Db, body: CreateAccountClassInput): Promise<CreateAccountClassOutput> {
   const repo = new CreateAccountClassRepository();
   return repo.createAccountClass(db, {
     code: body.code.trim(),

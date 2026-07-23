@@ -1,9 +1,10 @@
 import { and, eq, desc, sql } from 'drizzle-orm';
+import { type DbOrTx } from '@metacult/shared-db';
 import { bankTransactionsTable, transactionsTable } from '../../shared/schema';
 import { getMembersBySeason, getMembersByIds } from '@metacult/features-members-api';
 
 export class AnalyzeBankTransactionsRepository {
-  async getPendingTransactions(db: any, seasonId: string, singleId?: number): Promise<any[]> {
+  async getPendingTransactions(db: DbOrTx, seasonId: string, singleId?: number): Promise<(typeof bankTransactionsTable.$inferSelect)[]> {
     const conditions = [
       eq(bankTransactionsTable.seasonId, seasonId),
       eq(bankTransactionsTable.status, 'pending')
@@ -14,11 +15,11 @@ export class AnalyzeBankTransactionsRepository {
     return db.select().from(bankTransactionsTable).where(and(...conditions)).all();
   }
 
-  async getMembersBySeason(db: any, seasonId: string): Promise<any[]> {
+  async getMembersBySeason(db: DbOrTx, seasonId: string): Promise<any[]> {
     return getMembersBySeason(db, seasonId);
   }
 
-  async getPastReconciledTransactions(db: any): Promise<any[]> {
+  async getPastReconciledTransactions(db: DbOrTx): Promise<any[]> {
     const txs = await db.select({
       fitid: bankTransactionsTable.fitid,
       name: bankTransactionsTable.name,
@@ -52,14 +53,14 @@ export class AnalyzeBankTransactionsRepository {
     });
   }
 
-  async getActiveProducts(db: any): Promise<any[]> {
+  async getActiveProducts(db: DbOrTx): Promise<any[]> {
     return db.all(sql`
       SELECT id, name, category, price, stock, active, created_at as createdAt 
       FROM products WHERE active = 1
     `);
   }
 
-  async updateAISuggestions(db: any, id: number, suggestions: any): Promise<void> {
+  async updateAISuggestions(db: DbOrTx, id: number, suggestions: any): Promise<void> {
     await db.update(bankTransactionsTable)
       .set({ aiSuggestions: JSON.stringify(suggestions) })
       .where(eq(bankTransactionsTable.id, id))

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { tbValidator } from '@hono/typebox-validator';
 import { analyzeCheckImage, createCheck, deleteCheck } from './handler';
 import { createCheckSchema } from './validator';
@@ -17,7 +17,7 @@ recordCheckTransactionRoute.post('/checks/analyze', async (c) => {
   }
   const formData = await c.req.parseBody();
   const file = formData.file;
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
   const data = await analyzeCheckImage(db, c.env.AI, file);
   return c.json({ success: true, data });
 });
@@ -34,7 +34,7 @@ recordCheckTransactionRoute.post(
       return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
     }
     const body = c.req.valid('json');
-    const db = drizzle(c.env.DB);
+    const db = createDb(c.env.DB);
     try {
       const data = await createCheck(db, body);
       return c.json({ success: true, data });
@@ -49,7 +49,7 @@ recordCheckTransactionRoute.delete('/checks/:id', async (c) => {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
   const id = parseInt(c.req.param('id'));
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
   await deleteCheck(db, id);
   return c.json({ success: true });
 });

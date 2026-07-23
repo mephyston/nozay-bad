@@ -1,8 +1,9 @@
+import { type DbOrTx } from '@metacult/shared-db';
 import { eq } from 'drizzle-orm';
 import { seasonCategoryBudgetsTable } from '../../shared/schema';
 
 export class UpdateSeasonBudgetRepository {
-  async updateBudget(db: any, seasonId: string, items: { categoryId: number; type: 'recette' | 'depense'; amount: number }[]): Promise<any[]> {
+  async updateBudget(db: DbOrTx, seasonId: string, items: { categoryId: number; type: 'recette' | 'depense'; amount: number }[]): Promise<any[]> {
     await db.delete(seasonCategoryBudgetsTable).where(eq(seasonCategoryBudgetsTable.seasonId, seasonId)).run();
     const inserted = [];
     for (const item of items) {

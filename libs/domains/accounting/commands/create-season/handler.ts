@@ -1,7 +1,8 @@
+import { type Db } from '@metacult/shared-db';
 import { CreateSeasonRepository } from './repository';
 import { CreateSeasonInput, CreateSeasonOutput } from "./dto";
 
-export async function createSeason(db: any, body: CreateSeasonInput): Promise<CreateSeasonOutput> {
+export async function createSeason(db: Db, body: CreateSeasonInput): Promise<CreateSeasonOutput> {
   const repo = new CreateSeasonRepository();
   if (body.active) {
     await repo.deactivateAllSeasonsExcept(db);

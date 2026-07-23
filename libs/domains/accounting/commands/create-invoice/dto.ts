@@ -1,3 +1,5 @@
+import { invoicesTable } from '../../shared/schema';
+
 export interface CreateInvoiceInput {
   seasonId: string;
   date: string;
@@ -13,4 +15,4 @@ export interface CreateInvoiceInput {
   items?: { description: string; quantity: number; unitPrice: number }[];
 }
 
-export type CreateInvoiceOutput = any;
+export type CreateInvoiceOutput = typeof invoicesTable.$inferSelect;

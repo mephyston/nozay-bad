@@ -1,8 +1,9 @@
+import { type DbOrTx } from '@metacult/shared-db';
 import { like } from 'drizzle-orm';
 import { invoicesTable, invoiceItemsTable } from '../../shared/schema';
 
 export class CreateInvoiceRepository {
-  async generateInvoiceNumber(db: any, seasonId: string): Promise<string> {
+  async generateInvoiceNumber(db: DbOrTx, seasonId: string): Promise<string> {
     const seasonShort = seasonId.replace('-', '');
     const prefix = `FAC-${seasonShort}-NBA91-`;
     const lastInvoices = await db.select()
@@ -20,7 +21,7 @@ export class CreateInvoiceRepository {
     return `${prefix}${String(nextNum).padStart(4, '0')}`;
   }
 
-  async create(db: any, values: any, items: any[]): Promise<any> {
+  async create(db: DbOrTx, values: any, items: any[]): Promise<any> {
     const newInvoice = await db.insert(invoicesTable).values(values).returning().get();
     if (items && items.length > 0) {
       for (const item of items) {

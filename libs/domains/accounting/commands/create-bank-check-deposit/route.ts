@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { tbValidator } from '@hono/typebox-validator';
 import { createCheckDeposit, clearCheckDeposit, deleteCheckDeposit } from './handler';
 import { createCheckDepositSchema, clearCheckDepositSchema } from './validator';
@@ -22,7 +22,7 @@ createBankCheckDepositRoute.post(
       return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
     }
     const body = c.req.valid('json');
-    const db = drizzle(c.env.DB);
+    const db = createDb(c.env.DB);
     const data = await createCheckDeposit(db, body);
     return c.json({ success: true, data });
   }
@@ -41,7 +41,7 @@ createBankCheckDepositRoute.post(
     }
     const id = parseInt(c.req.param('id'));
     const body = c.req.valid('json');
-    const db = drizzle(c.env.DB);
+    const db = createDb(c.env.DB);
     await clearCheckDeposit(db, id, body);
     return c.json({ success: true });
   }
@@ -52,7 +52,7 @@ createBankCheckDepositRoute.post('/check-deposits/:id/delete', async (c) => {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
   const id = parseInt(c.req.param('id'));
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
   await deleteCheckDeposit(db, id);
   return c.json({ success: true });
 });

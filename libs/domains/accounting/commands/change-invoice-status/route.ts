@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@metacult/shared-db';
 import { tbValidator } from '@hono/typebox-validator';
 import { changeInvoiceStatus } from './handler';
 import { changeInvoiceStatusSchema } from './validator';
@@ -34,7 +34,7 @@ changeInvoiceStatusRoute.post(
     }
     const id = parseInt(c.req.param('id'));
     const { status } = c.req.valid('json');
-    const db = drizzle(c.env.DB);
+    const db = createDb(c.env.DB);
     try {
       await changeInvoiceStatus(db, id, status);
       return c.json({ success: true });
