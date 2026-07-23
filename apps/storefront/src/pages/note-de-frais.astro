@@ -94,7 +94,7 @@ const activeSeasonId = activeSeason.id;
 <Layout title="Notes de frais - NBA 91">
   <Header currentPath="/note-de-frais" activeSeasonName={activeSeason.name || activeSeasonId} />
 
-  <main class="flex-1 p-6 max-w-6xl mx-auto w-full">
+  <main class="flex-1 p-6 w-full">
     {errorMsg && (
       <div class="mb-6 p-4 bg-destructive/15 border border-destructive/20 text-destructive text-sm rounded-xl font-medium flex items-center gap-2">
         <span>⚠️ {errorMsg}</span>
