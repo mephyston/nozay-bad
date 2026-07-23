@@ -9,11 +9,11 @@
     paymentMethod = $bindable('virement'),
     selectedMemberId = $bindable(''),
     isSubmitting = false,
-    onCreate,
+    handleCreateAndMatch,
     isSplitMode = $bindable(false),
     splits = $bindable([]),
-    onAddSplit,
-    onRemoveSplit,
+    addSplitRow,
+    removeSplitRow,
     categories = [],
     sortedMembers = [],
     isMemberDropdownOpen = $bindable(false),
@@ -27,11 +27,11 @@
     paymentMethod: string;
     selectedMemberId: string;
     isSubmitting: boolean;
-    onCreate: () => void;
+    handleCreateAndMatch: () => void;
     isSplitMode: boolean;
     splits: { category: string; amount: number }[];
-    onAddSplit: () => void;
-    onRemoveSplit: (idx: number) => void;
+    addSplitRow: () => void;
+    removeSplitRow: (idx: number) => void;
     categories: any[];
     sortedMembers: any[];
     isMemberDropdownOpen: boolean;
@@ -222,7 +222,7 @@
 
       <button 
         type="button" 
-        onclick={onAddSplit}
+        onclick={addSplitRow}
         class="text-blue-500 hover:text-blue-700 text-xs font-medium"
       >
         + Ajouter une ligne de ventilation
@@ -232,7 +232,7 @@
 
   <div class="pt-2">
     <Button 
-      onclick={onCreate}
+      onclick={handleCreateAndMatch}
       disabled={isSubmitting || (isSplitMode && splitSum !== remainingAmount)}
       class="w-full"
     >

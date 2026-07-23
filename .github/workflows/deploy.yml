@@ -20,6 +20,10 @@ concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  actions: read
+
 env:
   NODE_VERSION: "22"
 
@@ -51,6 +55,8 @@ jobs:
 
       - name: Derive appropriate SHAs for affected commands
         uses: nrwl/nx-set-shas@v4
+        with:
+          main-branch-name: 'main'
 
       - name: Detect affected projects
         id: affected
@@ -102,6 +108,8 @@ jobs:
 
       - name: Derive appropriate SHAs for affected commands
         uses: nrwl/nx-set-shas@v4
+        with:
+          main-branch-name: 'main'
 
       - name: Run affected tests
         run: |
