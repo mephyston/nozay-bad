@@ -1,6 +1,7 @@
 import { type Db } from '@metacult/shared-db';
 import { AnalyzeBankTransactionsRepository } from './repository';
 import { cleanName } from '../../shared/helpers';
+import { resolveCategoryMap, resolveProductAccountingCategory } from '../../shared/category';
 import type { AnalyzeBankTransactionsInput, AnalyzeBankTransactionsOutput } from './dto';
 
 export async function analyzeBankTransactions(db: Db, ai: any, input: AnalyzeBankTransactionsInput): Promise<AnalyzeBankTransactionsOutput> {
@@ -8,6 +9,8 @@ export async function analyzeBankTransactions(db: Db, ai: any, input: AnalyzeBan
   const pendingTxs = await repo.getPendingTransactions(db, input.seasonId, input.singleId);
   const members = await repo.getMembersBySeason(db, input.seasonId);
   const pastReconciled = await repo.getPastReconciledTransactions(db);
+  const categories = await repo.getCategories(db);
+  const catMap = resolveCategoryMap(categories);
 
   let examplesPrompt = "";
   if (pastReconciled.length > 0) {
@@ -22,37 +25,19 @@ export async function analyzeBankTransactions(db: Db, ai: any, input: AnalyzeBan
 
   const activeProducts = await repo.getActiveProducts(db);
 
-  function getProductAccountingCategory(prodCat: string): number {
-    if (prodCat === 'shuttlecock') return 8;
-    if (prodCat === 'string') return 7;
-    return 10;
-  }
-
   const productsPrompt = activeProducts.map(p => {
-    const accCat = getProductAccountingCategory(p.category);
+    const accCat = resolveProductAccountingCategory(p.category, categories);
     return `- Produit : "${p.name}" | Prix : ${(p.price / 100).toFixed(2)} EUR | Catégorie Comptable associée : ${accCat}`;
   }).join('\n');
 
+  const categoriesPrompt = categories.map(c =>
+    `- ID: ${c.id} (${c.adminLabel} / ${c.adherentLabel})`
+  ).join('\n');
+
   let analyzedCount = 0;
 
-  const CAT_ADHESIONS = 1;
-  const CAT_SPONSORING = 2;
-  const CAT_SUBVENTIONS = 3;
-  const CAT_ACTIONS_JEUNES = 4;
-  const CAT_TOURNOIS_SENIOR = 5;
-  const CAT_EVENEMENTS_BUVETTES = 6;
-  const CAT_CORDAGE_VENTE = 7;
-  const CAT_VOLANTS = 8;
-  const CAT_SALAIRES_CHARGES = 9;
-  const CAT_MATERIEL_CLUB = 10;
-  const CAT_LICENCES_FEDERATION = 11;
-  const CAT_CHAMPIONNATS = 12;
-  const CAT_STAGES_FORMATIONS = 13;
-  const CAT_FONCTIONNEMENT_ADMIN = 14;
-  const CAT_VIREMENTS_INTERNES = 15;
-
   for (const tx of pendingTxs) {
-    let suggestedCategory = tx.amount < 0 ? CAT_FONCTIONNEMENT_ADMIN : CAT_ADHESIONS;
+    let suggestedCategory = tx.amount < 0 ? catMap.fonctionnement : catMap.adhesions;
     const absAmount = Math.abs(tx.amount);
     const matchingProduct = activeProducts.find(p => {
       if (p.price === absAmount) return true;
@@ -61,7 +46,7 @@ export async function analyzeBankTransactions(db: Db, ai: any, input: AnalyzeBan
       return false;
     });
     if (matchingProduct) {
-      suggestedCategory = getProductAccountingCategory(matchingProduct.category);
+      suggestedCategory = resolveProductAccountingCategory(matchingProduct.category, categories);
     }
 
     const textToLower = `${tx.name} ${tx.memo || ''}`.toLowerCase();
@@ -78,7 +63,7 @@ export async function analyzeBankTransactions(db: Db, ai: any, input: AnalyzeBan
       textToLower.includes('pour: nba') ||
       (textToLower.includes('nozay badminton') && textToLower.includes('recharge'))
     ) {
-      suggestedCategory = CAT_VIREMENTS_INTERNES;
+      suggestedCategory = catMap.virementsInternes;
     } else if (
       textToLower.includes('adhesion') || 
       textToLower.includes('cotisation') || 
@@ -86,11 +71,11 @@ export async function analyzeBankTransactions(db: Db, ai: any, input: AnalyzeBan
       (textToLower.includes('licence') && tx.amount > 0) ||
       (textToLower.includes('licences') && tx.amount > 0)
     ) {
-      suggestedCategory = CAT_ADHESIONS;
+      suggestedCategory = catMap.adhesions;
     } else if (textToLower.includes('ionos')) {
-      suggestedCategory = CAT_FONCTIONNEMENT_ADMIN;
+      suggestedCategory = catMap.fonctionnement;
     } else if (textToLower.includes('urssaf') || textToLower.includes('afdas')) {
-      suggestedCategory = CAT_SALAIRES_CHARGES;
+      suggestedCategory = catMap.salaires;
     } else if (
       textToLower.includes('deplacement jeune') || 
       textToLower.includes('deplacement jeunes') || 
@@ -112,7 +97,7 @@ export async function analyzeBankTransactions(db: Db, ai: any, input: AnalyzeBan
       textToLower.includes('airbnb') ||
       textToLower.includes('air bnb')
     ) {
-      suggestedCategory = CAT_ACTIONS_JEUNES;
+      suggestedCategory = catMap.actionsJeunes;
     } else if (
       textToLower.includes('ebad') || 
       textToLower.includes('e-bad') || 
@@ -121,17 +106,17 @@ export async function analyzeBankTransactions(db: Db, ai: any, input: AnalyzeBan
       textToLower.includes('blackminton') ||
       (textToLower.includes('tournoi') && !textToLower.includes('jeune'))
     ) {
-      suggestedCategory = CAT_TOURNOIS_SENIOR;
+      suggestedCategory = catMap.tournoisSenior;
     } else if (textToLower.includes('larde')) {
       if (textToLower.includes('cordage')) {
-        suggestedCategory = CAT_CORDAGE_VENTE;
+        suggestedCategory = catMap.cordage;
       } else if (textToLower.includes('volant')) {
-        suggestedCategory = CAT_VOLANTS;
+        suggestedCategory = catMap.volants;
       } else {
-        suggestedCategory = CAT_MATERIEL_CLUB;
+        suggestedCategory = catMap.materiel;
       }
     } else if (textToLower.includes('ligue') || textToLower.includes('badminton')) {
-      suggestedCategory = textToLower.includes('licence') ? CAT_LICENCES_FEDERATION : CAT_CHAMPIONNATS;
+      suggestedCategory = textToLower.includes('licence') ? catMap.licences : catMap.championnats;
     } else if (
       textToLower.includes('codep91') || 
       textToLower.includes('comite') ||
@@ -139,24 +124,24 @@ export async function analyzeBankTransactions(db: Db, ai: any, input: AnalyzeBan
       textToLower.includes('interclub') ||
       textToLower.includes('interclubs')
     ) {
-      suggestedCategory = CAT_CHAMPIONNATS;
+      suggestedCategory = catMap.championnats;
     } else if (textToLower.includes('sumup') || textToLower.includes('buvette')) {
-      suggestedCategory = CAT_EVENEMENTS_BUVETTES;
+      suggestedCategory = catMap.buvette;
     } else if (textToLower.includes('cordage') || textToLower.includes('raquette')) {
-      suggestedCategory = CAT_CORDAGE_VENTE;
+      suggestedCategory = catMap.cordage;
     } else if (textToLower.includes('volant')) {
-      suggestedCategory = CAT_VOLANTS;
+      suggestedCategory = catMap.volants;
     } else if (textToLower.includes('stage')) {
-      suggestedCategory = CAT_STAGES_FORMATIONS;
+      suggestedCategory = catMap.stagesFormations;
     } else if (
       (textToLower.includes('licence') && tx.amount < 0) ||
       (textToLower.includes('licences') && tx.amount < 0)
     ) {
-      suggestedCategory = CAT_LICENCES_FEDERATION;
+      suggestedCategory = catMap.licences;
     } else if (textToLower.includes('salaire') || textToLower.includes('tetevuide') || textToLower.includes('meunier')) {
-      suggestedCategory = CAT_SALAIRES_CHARGES;
+      suggestedCategory = catMap.salaires;
     } else if (textToLower.includes('versement express')) {
-      suggestedCategory = CAT_ADHESIONS;
+      suggestedCategory = catMap.adhesions;
     }
 
     const candidates = members.filter(m => {
@@ -208,21 +193,7 @@ Opération bancaire à rapprocher :
 - Montant : ${(tx.amount / 100).toFixed(2)} EUR (${tx.amount < 0 ? 'Débit' : 'Crédit'})
 
 Catégories valides pour l'écriture :
-- 1 (adhesions_inscriptions : cotisations, dossiers d'adhésion)
-- 2 (sponsoring : partenaires)
-- 3 (subventions : aides publiques)
-- 4 (actions_jeunes : stages et événements jeunes)
-- 5 (tournois_senior : inscriptions tournois)
-- 6 (evenements_buvettes : consommations, soirées, SumUp)
-- 7 (cordage_vente : achat cordage par adhérent ou achat de bobines/fournitures de cordages auprès d'un fournisseur)
-- 8 (volants : achat de tubes de volants par adhérent ou achat fournisseur)
-- 9 (salaires_charges : salaires entraîneurs, URSSAF)
-- 10 (materiel_club : poteaux, filets, volants club - hors cordages)
-- 11 (licences_federation : reversement FFBad)
-- 12 (championnats : frais d'inscriptions des équipes du club, volants interclubs, repas/courses d'interclubs comme icr, icd, icp)
-- 13 (stages_formations : stages adultes ou formations d'arbitres)
-- 14 (fonctionnement_administratif : frais bancaires, assurances, licences)
-- 15 (virements_internes : virements de compte à compte du club, transit de trésorerie)
+${categoriesPrompt}
 ${examplesPrompt}
 
 Tarifs des produits de la boutique (si le montant correspond exactement, sers-toi en pour déduire la catégorie) :
@@ -234,10 +205,10 @@ ${candidates.map(c => `- ID: ${c.id}, Nom: ${c.lastName} ${c.firstName}, Parent 
 Instructions :
 1. Associe l'adhérent (memberId et memberName) si son nom ou prénom (ou celui d'un de ses parents) apparaît clairement dans le libellé ou memo de l'opération, même si son "Montant Restant Dû Adhésion" est de 0.00 EUR.
 2. Choisis la catégorie la plus adaptée parmi la liste des catégories valides ci-dessus.
-3. Si le libellé bancaire ou le mémo est composé principalement d'une longue suite de chiffres (plus de 20 chiffres d'affilée), il s'agit d'un virement interne de compte à compte. Associe impérativement la catégorie 15 et aucun adhérent.
-4. Si le montant correspond exactement au tarif d'un produit (par exemple 31.50 EUR pour les volants) ou à un multiple entier de celui-ci (comme 63.00 EUR pour 2 boîtes de volants, ou 30.00 EUR pour 2 cordages), et qu'il n'y a pas d'autre indication de catégorie dans le texte, choisis la catégorie associée à ce produit. Si le texte mentionne explicitement "adhesion", "cotisation" ou "inscription", choisis impérativement la catégorie 1.
-5. Si le libellé bancaire ou le mémo mentionne des déplacements, tournois, accompagnements pour les jeunes (ex: "deplacement jeune", "tournoi jeune") ou des stages de vacances scolaires ou d'entraînement pour jeunes (ex: "minibad", "stage minibad", "toussaint", "paques", "pâques", "stage février", "stage toussaint", "stg paques", "stage d'hiver", "stage de pâques", "stage de printemps", "stage jeunes", "course stage hivers") ou des frais d'hébergement/logement liés à ces déplacements pour les jeunes ou parents accompagnateurs (ex: "airbnb", "air bnb"), choisis impérativement la catégorie 4.
-6. Si le libellé bancaire ou le mémo mentionne l'application "ebad" (ex: "ebad", "e-bad", "portefeuille ebad", "portefeuille e-bad") ou des tournois/événements adultes comme "blackminton", ou des inscriptions à des tournois adultes/seniors (sans mention de jeunes), choisis impérativement la catégorie 5.
+3. Si le libellé bancaire ou le mémo est composé principalement d'une longue suite de chiffres (plus de 20 chiffres d'affilée), il s'agit d'un virement interne de compte à compte. Associe impérativement la catégorie ${catMap.virementsInternes} et aucun adhérent.
+4. Si le montant correspond exactement au tarif d'un produit (par exemple 31.50 EUR pour les volants) ou à un multiple entier de celui-ci (comme 63.00 EUR pour 2 boîtes de volants, ou 30.00 EUR pour 2 cordages), et qu'il n'y a pas d'autre indication de catégorie dans le texte, choisis la catégorie associée à ce produit. Si le texte mentionne explicitement "adhesion", "cotisation" ou "inscription", choisis impérativement la catégorie ${catMap.adhesions}.
+5. Si le libellé bancaire ou le mémo mentionne des déplacements, tournois, accompagnements pour les jeunes (ex: "deplacement jeune", "tournoi jeune") ou des stages de vacances scolaires ou d'entraînement pour jeunes (ex: "minibad", "stage minibad", "toussaint", "paques", "pâques", "stage février", "stage toussaint", "stg paques", "stage d'hiver", "stage de pâques", "stage de printemps", "stage jeunes", "course stage hivers") ou des frais d'hébergement/logement liés à ces déplacements pour les jeunes ou parents accompagnateurs (ex: "airbnb", "air bnb"), choisis impérativement la catégorie ${catMap.actionsJeunes}.
+6. Si le libellé bancaire ou le mémo mentionne l'application "ebad" (ex: "ebad", "e-bad", "portefeuille ebad", "portefeuille e-bad") ou des tournois/événements adultes comme "blackminton", ou des inscriptions à des tournois adultes/seniors (sans mention de jeunes), choisis impérativement la catégorie ${catMap.tournoisSenior}.
 
 Renvoie STRICTEMENT un objet JSON sous la forme suivante :
 {
@@ -279,8 +250,8 @@ Renvoie STRICTEMENT un objet JSON sous la forme suivante :
         const currentYear = new Date().getFullYear();
         const age = currentYear - birthYear;
         if (age <= 18) {
-          if (suggestionResult.category === CAT_STAGES_FORMATIONS || suggestionResult.category === CAT_TOURNOIS_SENIOR) {
-            suggestionResult.category = CAT_ACTIONS_JEUNES;
+          if (suggestionResult.category === catMap.stagesFormations || suggestionResult.category === catMap.tournoisSenior) {
+            suggestionResult.category = catMap.actionsJeunes;
           }
         }
       }

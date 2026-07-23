@@ -1,9 +1,12 @@
 import { and, eq, desc, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@metacult/shared-db';
-import { bankTransactionsTable, transactionsTable } from '../../shared/schema';
+import { bankTransactionsTable, categoriesTable, transactionsTable } from '../../shared/schema';
 import { getMembersBySeason, getMembersByIds } from '@metacult/features-members-api';
 
 export class AnalyzeBankTransactionsRepository {
+  async getCategories(db: DbOrTx): Promise<(typeof categoriesTable.$inferSelect)[]> {
+    return db.select().from(categoriesTable).all();
+  }
   async getPendingTransactions(db: DbOrTx, seasonId: string, singleId?: number): Promise<(typeof bankTransactionsTable.$inferSelect)[]> {
     const conditions = [
       eq(bankTransactionsTable.seasonId, seasonId),
