@@ -21,22 +21,28 @@ const { title } = Astro.props;
     <title>{title}</title>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" is:inline async defer></script>
     <script is:inline>
-      const theme = (() => {
-        if (typeof localStorage !== 'undefined' && localStorage.getItem('mode-watcher-mode')) {
-          return localStorage.getItem('mode-watcher-mode').replace(/"/g, '');
-        }
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          return 'dark';
-        }
-        return 'light';
+      (function() {
+        try {
+          let theme = 'light';
+          if (typeof localStorage !== 'undefined') {
+            const storedMode = localStorage.getItem('mode-watcher-mode') || localStorage.getItem('mode-watcher-user-preference');
+            if (storedMode) {
+              theme = storedMode.replace(/"/g, '').trim();
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              theme = 'dark';
+            }
+          } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            theme = 'dark';
+          }
+          
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+          document.documentElement.style.colorScheme = theme;
+        } catch (e) {}
       })();
-      
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-      document.documentElement.style.colorScheme = theme;
     </script>
   </head>
   <body class="bg-background text-foreground transition-colors duration-200 min-h-screen flex flex-col antialiased font-sans">

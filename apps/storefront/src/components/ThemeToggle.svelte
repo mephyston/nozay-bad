@@ -17,17 +17,24 @@
   function handleToggle() {
     const html = document.documentElement;
     const isDark = html.classList.contains("dark");
+    const newMode = isDark ? "light" : "dark";
 
-    if (isDark) {
-      html.classList.remove("dark");
-      html.style.colorScheme = "light";
-      localStorage.setItem("mode-watcher-mode", '"light"');
-      currentMode = "light";
-    } else {
+    if (newMode === "dark") {
       html.classList.add("dark");
       html.style.colorScheme = "dark";
-      localStorage.setItem("mode-watcher-mode", '"dark"');
+      try {
+        localStorage.setItem("mode-watcher-mode", '"dark"');
+        localStorage.setItem("mode-watcher-user-preference", '"dark"');
+      } catch {}
       currentMode = "dark";
+    } else {
+      html.classList.remove("dark");
+      html.style.colorScheme = "light";
+      try {
+        localStorage.setItem("mode-watcher-mode", '"light"');
+        localStorage.setItem("mode-watcher-user-preference", '"light"');
+      } catch {}
+      currentMode = "light";
     }
 
     try {
