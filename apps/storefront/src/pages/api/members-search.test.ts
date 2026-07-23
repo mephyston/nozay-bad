@@ -13,9 +13,14 @@ describe('members-search API endpoint', () => {
     (env as any).API_SERVICE = {
       fetch: mockFetch
     };
+    process.env.TURNSTILE_SECRET_KEY = 'test-secret-key-123';
   });
 
   afterEach(() => {
+    delete process.env.TURNSTILE_SECRET_KEY;
+    if ((env as any).TURNSTILE_SECRET_KEY) {
+      delete (env as any).TURNSTILE_SECRET_KEY;
+    }
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
@@ -118,7 +123,11 @@ describe('members-search API endpoint', () => {
       DEFAULT_TURNSTILE_SITEVERIFY_URL,
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ token: 'fresh-token-1' })
+        body: JSON.stringify({
+          secret: 'test-secret-key-123',
+          response: 'fresh-token-1',
+          remoteip: '192.168.1.1'
+        })
       })
     );
   });
@@ -130,33 +139,73 @@ describe('members-search API endpoint', () => {
       json: () => Promise.resolve({ success: true, data: [] })
     });
 
-    // Exhaust rate limit limit (30 requests)
     for (let i = 0; i < 30; i++) {
       await GET({ request: new Request('http://localhost/api/members-search?q=test', { headers: ipHeaders }) } as any);
     }
 
-    // Stub global fetch for Turnstile verification
     const mockGlobalFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ success: true })
     });
     vi.stubGlobal('fetch', mockGlobalFetch);
 
-    // Presentation 1: Valid fresh token succeeds and resets rate limit
     const req1 = new Request('http://localhost/api/members-search?q=test&token=reused-token-xyz', { headers: ipHeaders });
     const res1 = await GET({ request: req1 } as any);
     expect(res1.status).toBe(200);
 
-    // Exhaust rate limit again (30 requests)
     for (let i = 0; i < 30; i++) {
       await GET({ request: new Request('http://localhost/api/members-search?q=test', { headers: ipHeaders }) } as any);
     }
 
-    // Presentation 2: Same token presented again -> MUST FAIL (token replay attempt)
     const req2 = new Request('http://localhost/api/members-search?q=test&token=reused-token-xyz', { headers: ipHeaders });
     const res2 = await GET({ request: req2 } as any);
     expect(res2.status).toBe(429);
     const body2 = await res2.json();
     expect(body2.error).toContain('Token captcha déjà utilisé');
+  });
+
+  it('rejects verification when Cloudflare returns success: false with error-codes', async () => {
+    const ipHeaders = { 'CF-Connecting-IP': '192.168.1.3' };
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true, data: [] })
+    });
+
+    for (let i = 0; i < 30; i++) {
+      await GET({ request: new Request('http://localhost/api/members-search?q=test', { headers: ipHeaders }) } as any);
+    }
+
+    const mockGlobalFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: false, 'error-codes': ['invalid-input-response'] })
+    });
+    vi.stubGlobal('fetch', mockGlobalFetch);
+
+    const req = new Request('http://localhost/api/members-search?q=test&token=bad-token', { headers: ipHeaders });
+    const res = await GET({ request: req } as any);
+    expect(res.status).toBe(429);
+    const json = await res.json();
+    expect(json.error).toContain('invalid-input-response');
+  });
+
+  it('fails closed when TURNSTILE_SECRET_KEY is missing in environment', async () => {
+    delete process.env.TURNSTILE_SECRET_KEY;
+    (env as any).TURNSTILE_SECRET_KEY = undefined;
+
+    const ipHeaders = { 'CF-Connecting-IP': '192.168.1.4' };
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true, data: [] })
+    });
+
+    for (let i = 0; i < 30; i++) {
+      await GET({ request: new Request('http://localhost/api/members-search?q=test', { headers: ipHeaders }) } as any);
+    }
+
+    const req = new Request('http://localhost/api/members-search?q=test&token=token-without-secret', { headers: ipHeaders });
+    const res = await GET({ request: req } as any);
+    expect(res.status).toBe(429);
+    const json = await res.json();
+    expect(json.error).toContain('clé secrète Turnstile manquante');
   });
 });

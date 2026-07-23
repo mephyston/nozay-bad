@@ -1,3 +1,5 @@
+import { env as cfEnv } from 'cloudflare:workers';
+
 /**
  * Turnstile verification configuration and rate limiting helpers.
  * Compatible with Cloudflare Workers Free Tier (using Workers KV or process-global store).
@@ -7,7 +9,8 @@ export const DEFAULT_TURNSTILE_SITEVERIFY_URL = 'https://turnstile.cloudflare.co
 
 export function getTurnstileSiteverifyUrl(): string {
   return (
-    import.meta.env.PUBLIC_TURNSTILE_SITEVERIFY_URL ||
+    (typeof process !== 'undefined' && process.env?.PUBLIC_TURNSTILE_SITEVERIFY_URL) ||
+    (import.meta.env && import.meta.env.PUBLIC_TURNSTILE_SITEVERIFY_URL) ||
     DEFAULT_TURNSTILE_SITEVERIFY_URL
   );
 }
@@ -110,13 +113,57 @@ export class SharedRateLimiter {
 
 export const rateLimiter = new SharedRateLimiter();
 
+export interface VerifyTurnstileOptions {
+  kv?: any;
+  secretKey?: string;
+  runtimeEnv?: any;
+}
+
 export async function verifyTurnstileToken(
   token: string,
   ip: string,
-  kv?: any
-): Promise<{ success: boolean; error?: string }> {
+  optionsOrKv?: VerifyTurnstileOptions | any,
+  explicitSecretKey?: string
+): Promise<{ success: boolean; error?: string; errorCodes?: string[] }> {
   if (!token) {
     return { success: false, error: 'Validation anti-bot manquante.' };
+  }
+
+  let kv: any;
+  let customRuntimeEnv: any;
+  let customSecretKey = explicitSecretKey;
+
+  if (optionsOrKv && typeof optionsOrKv === 'object' && !('get' in optionsOrKv) && !('put' in optionsOrKv)) {
+    kv = optionsOrKv.kv;
+    customRuntimeEnv = optionsOrKv.runtimeEnv;
+    if (optionsOrKv.secretKey) {
+      customSecretKey = optionsOrKv.secretKey;
+    }
+  } else {
+    kv = optionsOrKv;
+  }
+
+  // Resolve secret key from runtime environment (never inlined import.meta.env)
+  let cfEnvObj: Record<string, any> = {};
+  try {
+    cfEnvObj = (cfEnv as any) || {};
+  } catch {
+    // Ignore
+  }
+
+  const secretKey =
+    customSecretKey ||
+    customRuntimeEnv?.TURNSTILE_SECRET_KEY ||
+    cfEnvObj?.TURNSTILE_SECRET_KEY ||
+    (typeof process !== 'undefined' ? process.env?.TURNSTILE_SECRET_KEY : undefined);
+
+  // Fail closed if secret key is missing in environment
+  if (!secretKey) {
+    console.error('[Turnstile] Missing TURNSTILE_SECRET_KEY in environment');
+    return {
+      success: false,
+      error: 'Erreur de configuration serveur (clé secrète Turnstile manquante).'
+    };
   }
 
   if (await rateLimiter.hasTokenBeenUsed(token, kv)) {
@@ -130,7 +177,11 @@ export async function verifyTurnstileToken(
     const verifyRes = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
+      body: JSON.stringify({
+        secret: secretKey,
+        response: token,
+        remoteip: ip
+      })
     });
 
     const verifyJson = (await verifyRes.json()) as any;
@@ -139,11 +190,18 @@ export async function verifyTurnstileToken(
       return { success: true };
     }
 
+    const errorCodes = verifyJson['error-codes'] || [];
+    console.error('[Turnstile] Verification failed:', errorCodes, verifyJson);
+
     return {
       success: false,
-      error: verifyJson['error-codes']?.join(', ') || 'Validation anti-bot échouée.'
+      error: errorCodes.length > 0
+        ? `Validation anti-bot échouée (${errorCodes.join(', ')}).`
+        : 'Validation anti-bot échouée.',
+      errorCodes
     };
   } catch (err: any) {
+    console.error('[Turnstile] Network error during siteverify fetch:', err);
     return {
       success: false,
       error: 'Erreur réseau lors de la vérification du captcha.'

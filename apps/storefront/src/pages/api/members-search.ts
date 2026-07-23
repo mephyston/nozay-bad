@@ -21,7 +21,7 @@ export const GET: APIRoute = async ({ request }) => {
   if (await rateLimiter.isRateLimited(ip, 30, 60000, kv)) {
     const turnstileToken = request.headers.get('cf-turnstile-response') || url.searchParams.get('token') || '';
     if (turnstileToken) {
-      const verifyResult = await verifyTurnstileToken(turnstileToken, ip, kv);
+      const verifyResult = await verifyTurnstileToken(turnstileToken, ip, { kv, runtimeEnv: env });
       if (!verifyResult.success) {
         return new Response(JSON.stringify({ error: `Rate limit exceeded. ${verifyResult.error || 'Captcha verification failed.'}` }), {
           status: 429,

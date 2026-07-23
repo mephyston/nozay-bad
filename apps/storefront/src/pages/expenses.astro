@@ -3,7 +3,7 @@ import '../styles/global.css';
 import { ExpenseReportForm } from '@nba/expenses-ui';
 import { env } from 'cloudflare:workers';
 import { ModeWatcher } from 'mode-watcher';
-import { getTurnstileSiteverifyUrl } from '../lib/turnstile';
+import { verifyTurnstileToken } from '../lib/turnstile';
 
 interface Season {
   id: string;
@@ -24,24 +24,15 @@ if (Astro.request.method === 'POST') {
   try {
     const body = await Astro.request.json();
     const turnstileToken = body.turnstileToken;
-    if (!turnstileToken) {
-      return new Response(JSON.stringify({ success: false, error: 'Validation anti-bot manquante.' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
+    const ip = Astro.request.headers.get('CF-Connecting-IP') || Astro.request.headers.get('x-real-ip') || '127.0.0.1';
+    let runtimeEnv = {};
+    try {
+      runtimeEnv = (Astro.locals as any).runtime?.env || {};
+    } catch {}
 
-    const verifyRes = await fetch(getTurnstileSiteverifyUrl(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ token: turnstileToken })
-    });
-    
-    const verifyData = await verifyRes.json() as any;
-    if (!verifyRes.ok || !verifyData.success) {
-      return new Response(JSON.stringify({ success: false, error: 'Validation anti-bot échouée.' }), {
+    const verifyResult = await verifyTurnstileToken(turnstileToken, ip, { runtimeEnv });
+    if (!verifyResult.success) {
+      return new Response(JSON.stringify({ success: false, error: verifyResult.error || 'Validation anti-bot échouée.' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
