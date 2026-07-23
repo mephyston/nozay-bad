@@ -1,5 +1,5 @@
 {
-  "name": "nba-boutique",
+  "name": "nba-storefront",
   "compatibility_date": "2024-09-23",
   "compatibility_flags": [
     "nodejs_compat"
@@ -29,7 +29,7 @@
   ],
   "env": {
     "staging": {
-      "name": "nba-boutique-staging",
+      "name": "nba-storefront-staging",
       "kv_namespaces": [
         {
           "binding": "RATE_LIMIT_KV",
