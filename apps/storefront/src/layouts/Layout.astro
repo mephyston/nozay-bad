@@ -50,8 +50,38 @@ const { title } = Astro.props;
       })();
     </script>
     <style is:inline>
-      html.dark, html.dark body { background-color: rgb(38, 38, 36) !important; color: rgb(241, 241, 239); }
-      html:not(.dark), html:not(.dark) body { background-color: rgb(250, 249, 245); color: rgb(61, 57, 41); }
+      html.dark {
+        background-color: rgb(38, 38, 36) !important;
+        color: rgb(241, 241, 239);
+        --background: rgb(38, 38, 36);
+        --foreground: rgb(241, 241, 239);
+        --sidebar: rgb(31, 30, 29);
+        --sidebar-foreground: rgb(195, 192, 182);
+        --card: rgb(44, 44, 43);
+        --card-foreground: rgb(250, 249, 245);
+        --popover: rgb(48, 48, 46);
+        --popover-foreground: rgb(229, 229, 226);
+        --muted: rgb(27, 27, 25);
+        --muted-foreground: rgb(183, 181, 169);
+        --accent: rgb(26, 25, 21);
+        --border: rgb(62, 62, 56);
+      }
+      html:not(.dark) {
+        background-color: rgb(250, 249, 245);
+        color: rgb(61, 57, 41);
+        --background: rgb(250, 249, 245);
+        --foreground: rgb(61, 57, 41);
+        --sidebar: rgb(245, 244, 238);
+        --sidebar-foreground: rgb(61, 61, 58);
+        --card: rgb(245, 244, 239);
+        --card-foreground: rgb(20, 20, 19);
+        --popover: rgb(255, 255, 255);
+        --popover-foreground: rgb(40, 38, 27);
+        --muted: rgb(237, 233, 222);
+        --muted-foreground: rgb(110, 109, 104);
+        --accent: rgb(233, 230, 220);
+        --border: rgb(218, 217, 212);
+      }
     </style>
   </head>
   <body class="bg-background text-foreground min-h-screen flex flex-col antialiased font-sans">
