@@ -37,11 +37,20 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   try {
-    const apiService = (env as any).API_SERVICE;
+    const apiService = (env as any)?.API_SERVICE;
+    const fetchApi = (path: string, opts?: any) => {
+      if (apiService && typeof apiService.fetch === 'function') {
+        return apiService.fetch(`http://localhost${path}`, opts);
+      }
+      // Fallback for standalone local dev when API worker runs on port 8787
+      const devApiUrl = (typeof process !== 'undefined' && process.env?.API_URL) || 'http://127.0.0.1:8787';
+      return fetch(`${devApiUrl}${path}`, opts);
+    };
+
     let membersData: any[] = [];
 
     if (/^\d+$/.test(q) && q.length >= 7) {
-      const res = await apiService.fetch(`http://localhost/members/${encodeURIComponent(q)}`);
+      const res = await fetchApi(`/members/${encodeURIComponent(q)}`);
       if (res.status === 200) {
         const json = await res.json() as any;
         if (json.success && json.data) {
@@ -50,7 +59,7 @@ export const GET: APIRoute = async ({ request }) => {
       }
     } else {
       const searchParam = q ? `search=${encodeURIComponent(q)}&limit=30` : 'limit=30';
-      const res = await apiService.fetch(`http://localhost/members?${searchParam}`);
+      const res = await fetchApi(`/members?${searchParam}`);
       if (res.ok) {
         const json = await res.json() as any;
         membersData = json.data || [];

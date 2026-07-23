@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { toggleMode } from "mode-watcher";
+  import { toggleMode, setMode } from "mode-watcher";
   import { Sun, Moon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
@@ -11,27 +11,24 @@
 
   function handleToggle() {
     isDark = !isDark;
+    const newMode = isDark ? "dark" : "light";
     const html = document.documentElement;
 
-    if (isDark) {
+    if (newMode === "dark") {
       html.classList.add("dark");
       html.style.colorScheme = "dark";
-      try {
-        localStorage.setItem("mode-watcher-mode", '"dark"');
-        localStorage.setItem("mode-watcher-user-preference", '"dark"');
-      } catch {}
     } else {
       html.classList.remove("dark");
       html.style.colorScheme = "light";
-      try {
-        localStorage.setItem("mode-watcher-mode", '"light"');
-        localStorage.setItem("mode-watcher-user-preference", '"light"');
-      } catch {}
     }
 
     try {
-      toggleMode();
-    } catch {}
+      setMode(newMode);
+    } catch {
+      try {
+        toggleMode();
+      } catch {}
+    }
   }
 </script>
 
