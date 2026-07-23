@@ -44,9 +44,9 @@ import { updateTransactionRoute } from './transactions/update-transaction/route'
 import { deleteTransactionRoute } from './transactions/delete-transaction/route';
 
 // Checks Routes
-import { listChecksRoute } from './queries/list-checks/route';
-import { recordCheckTransactionRoute } from './commands/record-check-transaction/route';
-import { createBankCheckDepositRoute } from './commands/create-bank-check-deposit/route';
+import { listChecksRoute } from './checks/list-checks/route';
+import { recordCheckTransactionRoute } from './checks/record-check-transaction/route';
+import { createBankCheckDepositRoute } from './checks/create-bank-check-deposit/route';
 
 export type Bindings = {
   DB: D1Database;
