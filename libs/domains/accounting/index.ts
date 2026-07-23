@@ -1,16 +1,16 @@
 import { Hono } from 'hono';
 
 // Seasons Routes
-import { listSeasonsRoute } from './queries/list-seasons/route';
-import { getSeasonBudgetRoute } from './queries/get-season-budget/route';
-import { getSeasonBalanceRoute } from './queries/get-season-balance/route';
-import { getSeasonBalancesRoute } from './queries/get-season-balances/route';
-import { getSeasonReportsRoute } from './queries/get-season-reports/route';
-import { createSeasonRoute } from './commands/create-season/route';
-import { updateSeasonRoute } from './commands/update-season/route';
-import { closeSeasonRoute } from './commands/close-season/route';
-import { updateSeasonBudgetRoute } from './commands/update-season-budget/route';
-import { updateSeasonBalancesRoute } from './commands/update-season-balances/route';
+import { listSeasonsRoute } from './seasons/list-seasons/route';
+import { getSeasonBudgetRoute } from './seasons/get-season-budget/route';
+import { getSeasonBalanceRoute } from './seasons/get-season-balance/route';
+import { getSeasonBalancesRoute } from './seasons/get-season-balances/route';
+import { getSeasonReportsRoute } from './seasons/get-season-reports/route';
+import { createSeasonRoute } from './seasons/create-season/route';
+import { updateSeasonRoute } from './seasons/update-season/route';
+import { closeSeasonRoute } from './seasons/close-season/route';
+import { updateSeasonBudgetRoute } from './seasons/update-season-budget/route';
+import { updateSeasonBalancesRoute } from './seasons/update-season-balances/route';
 
 // Config Routes
 import { listCategoriesRoute } from './queries/list-categories/route';
