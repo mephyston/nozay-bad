@@ -1,7 +1,8 @@
-# Progress Ledger - Validation TypeBox des Routes Accounting
+# Progress Ledger - Typage Strict Drizzle / D1 et Élimination de `db: any`
 
-- [x] Task 1: Correction de la Règle ESLint (complete, commits 68b5bd4..ef35600, review clean)
-- [x] Task 2: Validateurs pour les Commandes de Création de Base (complete, commits ef35600..09d1c48, review clean)
-- [x] Task 3: Validateurs pour les Commandes de Création Complexes (complete, commits 09d1c48..c0547f2, review clean)
-- [x] Task 4: Validateurs pour les Commandes de Modification (complete, commits c0547f2..fdbebc8, review clean)
-- [x] Task 5: Validateurs pour les Requêtes de Lecture et Query Params (complete, commits fdbebc8..236fa54, review clean)
+- [ ] Task 1: Module Client Partagé `@metacult/shared-db`
+- [ ] Task 2: Domaine `members`
+- [ ] Task 3: Domaine `expenses`
+- [ ] Task 4: Domaine `shop`
+- [ ] Task 5: Domaine `accounting`
+- [ ] Task 6: Vérification Globale Finale
