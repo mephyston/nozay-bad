@@ -21,6 +21,9 @@ export default defineConfig({
         '@nba/expenses-ui',
         '@nba/shop-ui'
       ]
+    },
+    ssr: {
+      external: ['@astrojs/cloudflare']
     }
   },
   srcDir: './src'
