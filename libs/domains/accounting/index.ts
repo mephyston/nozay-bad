@@ -31,11 +31,11 @@ import { deleteInvoiceRoute } from './invoices/delete-invoice/route';
 import { changeInvoiceStatusRoute } from './invoices/change-invoice-status/route';
 
 // Bank Transactions Routes
-import { listBankTransactionsRoute } from './queries/list-bank-transactions/route';
-import { importBankStatementRoute } from './commands/import-bank-statement/route';
-import { analyzeBankTransactionsRoute } from './commands/analyze-bank-transactions/route';
-import { reconcileBankTransactionRoute } from './commands/reconcile-bank-transaction/route';
-import { updateBankTransactionStatusRoute } from './commands/update-bank-transaction-status/route';
+import { listBankTransactionsRoute } from './bank/list-bank-transactions/route';
+import { importBankStatementRoute } from './bank/import-bank-statement/route';
+import { analyzeBankTransactionsRoute } from './bank/analyze-bank-transactions/route';
+import { reconcileBankTransactionRoute } from './bank/reconcile-bank-transaction/route';
+import { updateBankTransactionStatusRoute } from './bank/update-bank-transaction-status/route';
 
 // Transactions Routes
 import { listTransactionsRoute } from './queries/list-transactions/route';
