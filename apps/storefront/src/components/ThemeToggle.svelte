@@ -27,6 +27,11 @@
     }
 
     try {
+      localStorage.setItem("mode-watcher-mode", newMode);
+      localStorage.setItem("mode-watcher-user-preference", newMode);
+    } catch {}
+
+    try {
       setMode(newMode);
     } catch {
       try {
