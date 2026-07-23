@@ -71,7 +71,7 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
 ---
 
 <Layout title="Gestion de la Caisse - NBA 91">
-  <AdminLayout client:load email={userEmail} breadcrumb="Comptabilité / Caisse">
+  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Caisse">
     <div class="space-y-6">
       {errorMsg && (
         <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
