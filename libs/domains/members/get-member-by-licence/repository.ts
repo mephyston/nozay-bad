@@ -1,8 +1,9 @@
 import { eq, and } from 'drizzle-orm';
+import { type DbOrTx } from '@metacult/shared-db';
 import { membersTable } from '../shared/schema';
 
 export class GetMemberRepository {
-  async getByLicence(db: any, licence: string, season?: string): Promise<any | undefined> {
+  async getByLicence(db: DbOrTx, licence: string, season?: string): Promise<typeof membersTable.$inferSelect | undefined> {
     const conditions = [eq(membersTable.licence, licence)];
     if (season) {
       conditions.push(eq(membersTable.season, season));

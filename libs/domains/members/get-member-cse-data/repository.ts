@@ -1,12 +1,13 @@
 import { eq, sql } from 'drizzle-orm';
+import { type DbOrTx } from '@metacult/shared-db';
 import { membersTable } from '../shared/schema';
 
 export class MemberCseDataRepository {
-  async getById(db: any, id: number): Promise<any | undefined> {
+  async getById(db: DbOrTx, id: number): Promise<typeof membersTable.$inferSelect | undefined> {
     return db.select().from(membersTable).where(eq(membersTable.id, id)).get();
   }
 
-  async getLastPaymentTransaction(db: any, memberId: number): Promise<{ paymentMethod: string; date: string } | undefined> {
+  async getLastPaymentTransaction(db: DbOrTx, memberId: number): Promise<{ paymentMethod: string; date: string } | undefined> {
     return db.select({
       paymentMethod: sql<string>`payment_method`,
       date: sql<string>`date`

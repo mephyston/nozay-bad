@@ -1,8 +1,9 @@
 import { inArray } from 'drizzle-orm';
+import { type DbOrTx } from '@metacult/shared-db';
 import { membersTable, seasonsTable } from '../shared/schema';
 
 export class ImportMembersRepository {
-  async insertSeasons(db: any, seasons: { id: string; name: string; active: boolean; createdAt: Date }[]): Promise<void> {
+  async insertSeasons(db: DbOrTx, seasons: (typeof seasonsTable.$inferInsert)[]): Promise<void> {
     for (const season of seasons) {
       await db.insert(seasonsTable)
         .values(season)
@@ -11,7 +12,7 @@ export class ImportMembersRepository {
     }
   }
 
-  async getExistingLicenceSeasons(db: any, licences: string[]): Promise<Set<string>> {
+  async getExistingLicenceSeasons(db: DbOrTx, licences: string[]): Promise<Set<string>> {
     const existingLicenceSeasons = new Set<string>();
     if (licences.length > 0) {
       const chunkSize = 80;
@@ -21,13 +22,13 @@ export class ImportMembersRepository {
           .from(membersTable)
           .where(inArray(membersTable.licence, chunk))
           .all();
-        existing.forEach((m: any) => existingLicenceSeasons.add(`${m.licence}-${m.season}`));
+        existing.forEach((m) => existingLicenceSeasons.add(`${m.licence}-${m.season}`));
       }
     }
     return existingLicenceSeasons;
   }
 
-  async batchUpsertMembers(db: any, members: any[]): Promise<void> {
+  async batchUpsertMembers(db: DbOrTx, members: (typeof membersTable.$inferInsert)[]): Promise<void> {
     if (members.length === 0) return;
 
     const importedAt = new Date();

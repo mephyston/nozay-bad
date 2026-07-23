@@ -1,9 +1,10 @@
+import { type Db } from '@metacult/shared-db';
 import { ApplyPaymentRepository } from './repository';
 import { Member } from '../shared/member';
 import { ApplyPaymentToMemberMemberId, ApplyPaymentToMemberAmountCents, ApplyPaymentToMemberOutput } from "./dto";
 
 export async function applyPaymentToMember(
-  db: any,
+  db: Db,
   memberId: ApplyPaymentToMemberMemberId,
   amountCents: ApplyPaymentToMemberAmountCents
 ): Promise<ApplyPaymentToMemberOutput> {

@@ -1,9 +1,10 @@
+import { type Db } from '@metacult/shared-db';
 import { MemberCseDataRepository } from './repository';
 import { Member } from '../shared/member';
 import { MemberNotFoundError, MemberNotFullyPaidError } from '../shared/errors';
 import { GetMemberCseDataInput, GetMemberCseDataOutput } from "./dto";
 
-export async function getMemberCseData(db: any, id: GetMemberCseDataInput): Promise<GetMemberCseDataOutput> {
+export async function getMemberCseData(db: Db, id: GetMemberCseDataInput): Promise<GetMemberCseDataOutput> {
   const repo = new MemberCseDataRepository();
   const memberData = await repo.getById(db, id);
   if (!memberData) {

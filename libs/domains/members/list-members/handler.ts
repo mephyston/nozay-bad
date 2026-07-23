@@ -1,8 +1,9 @@
+import { type Db } from '@metacult/shared-db';
 import { ListMembersRepository } from './repository';
 import { ListMembersFilters, ListMembersPagination, ListMembersOutput } from "./dto";
 
 export async function listMembers(
-  db: any,
+  db: Db,
   filters: ListMembersFilters,
   pagination: ListMembersPagination
 ): Promise<ListMembersOutput> {

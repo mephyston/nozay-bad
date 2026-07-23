@@ -1,4 +1,5 @@
 import { eq, inArray } from 'drizzle-orm';
+import { type DbOrTx } from '@metacult/shared-db';
 import { membersTable, seasonsTable } from './schema';
 
 export interface MemberSummary {
@@ -19,23 +20,23 @@ export interface MemberSummary {
   paid: boolean;
 }
 
-export async function getMemberById(db: any, id: number): Promise<MemberSummary | undefined> {
+export async function getMemberById(db: DbOrTx, id: number): Promise<MemberSummary | undefined> {
   const result = await db.select().from(membersTable).where(eq(membersTable.id, id)).get();
   return result as MemberSummary | undefined;
 }
 
-export async function getMembersByIds(db: any, ids: number[]): Promise<MemberSummary[]> {
+export async function getMembersByIds(db: DbOrTx, ids: number[]): Promise<MemberSummary[]> {
   if (ids.length === 0) return [];
   const result = await db.select().from(membersTable).where(inArray(membersTable.id, ids)).all();
   return result as MemberSummary[];
 }
 
-export async function getMembersBySeason(db: any, seasonId: string): Promise<MemberSummary[]> {
+export async function getMembersBySeason(db: DbOrTx, seasonId: string): Promise<MemberSummary[]> {
   const result = await db.select().from(membersTable).where(eq(membersTable.season, seasonId)).all();
   return result as MemberSummary[];
 }
 
-export async function getAllMembers(db: any): Promise<MemberSummary[]> {
+export async function getAllMembers(db: DbOrTx): Promise<MemberSummary[]> {
   const result = await db.select().from(membersTable).all();
   return result as MemberSummary[];
 }
@@ -44,7 +45,7 @@ export async function getAllMembers(db: any): Promise<MemberSummary[]> {
  * Domain helper: check whether a season is closed.
  * Belongs to the `members` domain — canonical owner of `seasonsTable`.
  */
-export async function isSeasonClosed(db: any, seasonId: string): Promise<boolean> {
+export async function isSeasonClosed(db: DbOrTx, seasonId: string): Promise<boolean> {
   const season = await db
     .select({ closed: seasonsTable.closed })
     .from(seasonsTable)
