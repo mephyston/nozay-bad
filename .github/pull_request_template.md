@@ -26,3 +26,4 @@
 - [ ] Aucun import entre deux slices d'un même domaine (`create` n'importe pas `delete`)
 - [ ] Toute écriture touchant plusieurs tables est dans un `db.transaction()`
 - [ ] Le déploiement reste inchangé (toujours un seul Worker par app, aucun appel réseau introduit entre domaines)
+- [ ] Toute variable lue via c.env, import.meta.env ou un binding est déclarée dans le wrangler.json correspondant (prod ET staging) et documentée dans .env.example.

@@ -53,7 +53,7 @@ Chaque cas d'usage doit contenir la structure suivante :
 ## 3. Règles d'Implantation de l'UI
 
 - **Localisation** : Tout composant UI métier doit vivre dans le sous-dossier `ui/` de sa tranche verticale.
-- **Interdiction** : Il est strictement interdit d'avoir un dossier `ui/` à la racine d'un domaine ou dans `libs/shared/`.
+- **Interdiction** : Il est strictly interdit d'avoir un dossier `ui/` à la racine d'un domaine ou dans `libs/shared/`.
 - **Composants génériques** : Les composants d'interface purement visuels et réutilisables (Button, Input, Card, Modal) vivent exclusivement dans la bibliothèque `@nba/ui` (`libs/shared/ui`).
 
 ---
@@ -78,3 +78,11 @@ Chaque cas d'usage doit contenir la structure suivante :
 2. **Accès inter-domaines** : Un domaine ne doit jamais importer directement les tables SQL ou les fichiers internes d'un autre domaine.
 3. **Isolation des Slices** : Deux tranches verticales d'un même domaine ne doivent jamais s'importer directement entre elles (ex: `create-invoice` n'importe pas `delete-invoice`).
 4. **Taille maximale des fichiers** : **200 lignes maximum par fichier** dans un domaine (validé en CI).
+
+---
+
+## 6. Variables d'Environnement et Bindings Cloudflare
+
+1. **Déclaration Obligatoire** : Toute variable d'environnement ou binding Cloudflare lu dans le code (`c.env`, `import.meta.env`, `process.env`, `cfEnv`, etc.) doit obligatoirement être déclaré dans le fichier `wrangler.json` correspondant (environnement par défaut ET `env.staging`) et documenté dans `.env.example`.
+2. **Vérification Automatisée** : Le script `node scripts/check-env-declarations.js` est exécuté lors du job de test CI. Toute variable lue dans le code applicatif non déclarée entraînera l'échec immédiat du build.
+3. **Secret Key Naming** : Les clés secrètes serveur ne doivent jamais utiliser le préfixe `PUBLIC_` (réservé aux variables injectées au build client). Elles doivent être posées via `wrangler secret put <NOM>`.
