@@ -3,7 +3,11 @@
   import { Sun, Moon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
-  let isDark = $state(false);
+  let isDark = $state(
+    typeof document !== "undefined"
+      ? document.documentElement.classList.contains("dark")
+      : false
+  );
 
   onMount(() => {
     isDark = document.documentElement.classList.contains("dark");
