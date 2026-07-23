@@ -38,10 +38,10 @@ import { reconcileBankTransactionRoute } from './bank/reconcile-bank-transaction
 import { updateBankTransactionStatusRoute } from './bank/update-bank-transaction-status/route';
 
 // Transactions Routes
-import { listTransactionsRoute } from './queries/list-transactions/route';
-import { createTransactionRoute } from './commands/create-transaction/route';
-import { updateTransactionRoute } from './commands/update-transaction/route';
-import { deleteTransactionRoute } from './commands/delete-transaction/route';
+import { listTransactionsRoute } from './transactions/list-transactions/route';
+import { createTransactionRoute } from './transactions/create-transaction/route';
+import { updateTransactionRoute } from './transactions/update-transaction/route';
+import { deleteTransactionRoute } from './transactions/delete-transaction/route';
 
 // Checks Routes
 import { listChecksRoute } from './queries/list-checks/route';
