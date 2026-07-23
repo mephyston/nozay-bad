@@ -1,3 +1,4 @@
+import { type Db } from '@nba/db';
 import { RejectOrderRepository } from './repository';
 import { Order } from '../shared/order';
 import {
@@ -6,9 +7,10 @@ import {
   SeasonClosedError,
   ConcurrentModificationError
 } from '../shared/errors';
-import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { isSeasonClosed } from '@nba/members-api';
+import { RejectOrderInput, RejectOrderOutput } from "./dto";
 
-export async function rejectOrder(db: any, id: number) {
+export async function rejectOrder(db: Db, id: RejectOrderInput): Promise<RejectOrderOutput> {
   const repo = new RejectOrderRepository();
 
   const orderData = await repo.getOrderById(db, id);

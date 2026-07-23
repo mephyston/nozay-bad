@@ -1,7 +1,7 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { PoonaImporter } from '@metacult/features-members-ui';
+import { PoonaImporter } from '@nba/members-ui';
 
 import { env } from 'cloudflare:workers';
 
@@ -39,7 +39,7 @@ if (Astro.request.method === 'POST') {
 ---
 
 <Layout title="Import Adhérents Poona - NBA 91">
-  <AdminLayout client:load breadcrumb="Adhérents / Import Poona">
+  <AdminLayout client:idle breadcrumb="Adhérents / Import Poona">
     <div class="space-y-6">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">Import Adhérents</h1>

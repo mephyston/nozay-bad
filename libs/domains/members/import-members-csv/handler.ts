@@ -1,5 +1,7 @@
+import { type Db, type Tx } from '@nba/db';
 import { ImportMembersRepository } from './repository';
 import { CsvHeadersInvalidError } from '../shared/errors';
+import { ImportMembersFromCsvInput, ImportMembersFromCsvOutput } from "./dto";
 
 interface ParsedMember {
   licence: string;
@@ -24,7 +26,7 @@ interface ParsedMember {
   parent2Phone: string | null;
 }
 
-export async function importMembersFromCsv(db: any, csvText: string) {
+export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsvInput): Promise<ImportMembersFromCsvOutput> {
   const lines = csvText.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
   if (lines.length === 0) {
     throw new CsvHeadersInvalidError('Le fichier CSV est vide.');
@@ -168,7 +170,7 @@ export async function importMembersFromCsv(db: any, csvText: string) {
     };
   });
 
-  return db.transaction(async (txDb: any) => {
+  return db.transaction(async (txDb: Tx) => {
     await repo.insertSeasons(txDb, seasonsToInsert);
 
     const membersArray = Array.from(validRowsMap.values());
@@ -187,7 +189,7 @@ export async function importMembersFromCsv(db: any, csvText: string) {
       }
     });
 
-    await repo.batchUpsertMembers(txDb, membersArray);
+    await repo.batchUpsertMembers(txDb, membersArray.map(m => ({ ...m, importedAt: (m as any).importedAt || new Date() })));
 
     return {
       inserted,

@@ -7,9 +7,9 @@ We have successfully decoupled database schemas and mounted Hono sub-routers int
 
 ### Objectives
 * **Isolate API route tests** into their respective vertical slice libraries (`libs/features/[feature]/api/src/routes.test.ts`).
-* **Extract shared test utilities** (Mock D1, SQLite memory schema builder, Drizzle runner) to `@metacult/shared-db` to share them across tests and eliminate duplication.
+* **Extract shared test utilities** (Mock D1, SQLite memory schema builder, Drizzle runner) to `@nba/db` to share them across tests and eliminate duplication.
 * **Initialize domain-specific UI libraries** (`@metacult/features-[feature]-ui`) under `libs/features/[feature]/ui` and move Svelte components there.
-* **Initialize a shared UI components library** (`@metacult/shared-ui`) containing standardized, tailwind-styled **Shadcn-Svelte** primitives (Button, Table, Pagination, Badge, Alert, Card, Input, Modal, Drawer, etc.) to guarantee absolute UX/UI consistency.
+* **Initialize a shared UI components library** (`@nba/ui`) containing standardized, tailwind-styled **Shadcn-Svelte** primitives (Button, Table, Pagination, Badge, Alert, Card, Input, Modal, Drawer, etc.) to guarantee absolute UX/UI consistency.
 * **Update Astro page controllers** to reference components via path aliases.
 
 ---
@@ -85,7 +85,7 @@ graph TD
 ## 3. Detail Specifications
 
 ### Part 1: API Tests Decoupling
-To avoid repeating Mock D1 logic, we will introduce `libs/shared/db/src/test-utils.ts` and expose it under `@metacult/shared-db/test-utils` or direct export:
+To avoid repeating Mock D1 logic, we will introduce `libs/shared/db/src/test-utils.ts` and expose it under `@nba/db/test-utils` or direct export:
 * **MockD1Database** & **MockD1PreparedStatement**: Relocated from `index.test.ts` to `test-utils.ts`.
 * **setupMockDb()**: Runs migrations dynamically on a new in-memory `DatabaseSync` instance, returning a ready-to-use Drizzle connection object:
   ```typescript
@@ -106,7 +106,7 @@ In each `routes.test.ts` file, Hono route handlers will be tested independently 
 ```typescript
 import { Hono } from 'hono';
 import { membersRouter } from './routes';
-import { setupMockDb } from '@metacult/shared-db';
+import { setupMockDb } from '@nba/db';
 
 const app = new Hono<{ Bindings: { DB: any } }>();
 app.route('/members', membersRouter);
@@ -124,23 +124,23 @@ describe('Members API Routes', () => {
 
 ### Part 2: UI Feature Libraries & Shared UI
 We will configure 5 new Nx libraries:
-* `libs/shared/ui` (`@metacult/shared-ui`) - containing Shadcn Svelte primitives.
-* `libs/features/members/ui` (`@metacult/features-members-ui`)
-* `libs/features/accounting/ui` (`@metacult/features-accounting-ui`)
-* `libs/features/expenses/ui` (`@metacult/features-expenses-ui`)
-* `libs/features/shop/ui` (`@metacult/features-shop-ui`)
+* `libs/shared/ui` (`@nba/ui`) - containing Shadcn Svelte primitives.
+* `libs/features/members/ui` (`@nba/members-ui`)
+* `libs/features/accounting/ui` (`@nba/accounting-ui`)
+* `libs/features/expenses/ui` (`@nba/expenses-ui`)
+* `libs/features/shop/ui` (`@nba/shop-ui`)
 
 #### Component Distribution Mapping
-1. **`@metacult/features-members-ui`**:
+1. **`@nba/members-ui`**:
    * `MemberProfile.svelte`, `MembersTable.svelte`, `PoonaImporter.svelte` (and `.test.ts` files).
-2. **`@metacult/features-accounting-ui`**:
+2. **`@nba/accounting-ui`**:
    * `BankStatementReconciliation.svelte`, `InitialBalancesConfig.svelte`, `TransactionLedger.svelte`, `CheckDepositManager.svelte`, `CashBoxManager.svelte`, `GeneralMeetingReport.svelte`, `SettingsManager.svelte`.
-3. **`@metacult/features-expenses-ui`**:
+3. **`@nba/expenses-ui`**:
    * `ExpensesManager.svelte`.
-4. **`@metacult/features-shop-ui`**:
+4. **`@nba/shop-ui`**:
    * `OrdersManager.svelte`, `ProductsManager.svelte`.
 
-#### Shared UI Primitives (`@metacult/shared-ui`)
+#### Shared UI Primitives (`@nba/ui`)
 We will generate Shadcn-Svelte components into `libs/shared/ui/src/components/ui/` and export them:
 * **`button`**: Standard tailwind button.
 * **`table`**: Table, TableHeader, TableBody, TableHead, TableRow, TableCell.
@@ -150,7 +150,7 @@ We will generate Shadcn-Svelte components into `libs/shared/ui/src/components/ui
 * **`card`**: Card, CardHeader, CardTitle, CardContent, CardFooter.
 * **`dialog` / `drawer`**: Dialog components for modales and slide-out drawers.
 
-Feature Svelte components will import components from `@metacult/shared-ui` rather than repeating inline styles, achieving visual uniformity across all screens.
+Feature Svelte components will import components from `@nba/ui` rather than repeating inline styles, achieving visual uniformity across all screens.
 
 ---
 
@@ -158,10 +158,10 @@ Feature Svelte components will import components from `@metacult/shared-ui` rath
 Under `eslint.config.js`, we will enforce:
 * `type:ui` projects can only depend on `type:ui` and `scope:shared`.
 * Domain UI libraries can only depend on their own domain scopes and shared scopes:
-  * `scope:accounting` UI -> `@metacult/shared-ui`, `@metacult/features-members-ui` (allowed dependency for accounting), `@metacult/shared-db`.
-  * `scope:members` UI -> `@metacult/shared-ui`, `@metacult/shared-db`.
-  * `scope:expenses` UI -> `@metacult/shared-ui`, `@metacult/shared-db`.
-  * `scope:shop` UI -> `@metacult/shared-ui`, `@metacult/shared-db`.
+  * `scope:accounting` UI -> `@nba/ui`, `@nba/members-ui` (allowed dependency for accounting), `@nba/db`.
+  * `scope:members` UI -> `@nba/ui`, `@nba/db`.
+  * `scope:expenses` UI -> `@nba/ui`, `@nba/db`.
+  * `scope:shop` UI -> `@nba/ui`, `@nba/db`.
 
 ---
 

@@ -24,7 +24,7 @@
 - Modify: `libs/features/accounting/api/src/routes.ts`
 
 **Interfaces:**
-- Consumes: Database schema, `isSeasonClosed`, `normalizeCategory`, and `AppError` from `@metacult/shared-db`.
+- Consumes: Database schema, `isSeasonClosed`, `normalizeCategory`, and `AppError` from `@nba/db`.
 - Produces: `cleanName`, `parseOFX`, and `reconcileBankTxInternal` inside `libs/features/accounting/api/src/helpers.ts`.
 
 - [ ] **Step 1: Create helpers.ts**

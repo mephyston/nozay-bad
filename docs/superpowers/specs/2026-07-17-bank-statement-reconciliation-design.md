@@ -4,7 +4,7 @@ Ce document spécifie le design, l'architecture et les exigences pour la standar
 
 ## 1. Objectifs et Expérience Utilisateur (UX)
 
-* **Cases à cocher standardisées** : Remplacement de l'ensemble des balises `<input type="checkbox">` brutes par le composant `<Checkbox>` de `@metacult/shared-ui`.
+* **Cases à cocher standardisées** : Remplacement de l'ensemble des balises `<input type="checkbox">` brutes par le composant `<Checkbox>` de `@nba/ui`.
 * **Tests unitaires robustes et accessibles** : Mise à jour des sélecteurs de tests dans `BankStatementReconciliation.test.ts` pour cibler les éléments via leur rôle accessible `[role="checkbox"]` plutôt que leur balise HTML.
 
 ## 2. Structure et Propriétés du Composant Checkbox

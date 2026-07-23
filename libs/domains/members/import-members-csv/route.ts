@@ -1,7 +1,6 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
 import { tbValidator } from '@hono/typebox-validator';
-import { AppError } from '@metacult/shared-db';
+import { AppError, createDb } from '@nba/db';
 import { importMembersSchema } from './validator';
 import { importMembersFromCsv } from './handler';
 
@@ -19,7 +18,7 @@ importMembersRoute.post('/import', async (c, next) => {
   await next();
 }, tbValidator('form', importMembersSchema, (result, c) => {
   if (!result.success) {
-    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
   }
 }), async (c) => {
   if (!c.env || !c.env.DB) {
@@ -57,7 +56,7 @@ importMembersRoute.post('/import', async (c, next) => {
     return c.json({ success: false, error: 'Invalid file format' }, 400);
   }
 
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
   const result = await importMembersFromCsv(db, csvText);
 
   return c.json({

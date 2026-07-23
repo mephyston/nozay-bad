@@ -1,12 +1,8 @@
+import { type Db } from '@nba/db';
 import { CreateProductRepository } from './repository';
+import { CreateProductInput, CreateProductOutput } from "./dto";
 
-export async function createProduct(db: any, body: {
-  name: string;
-  category: 'shuttlecock' | 'string' | 'other';
-  price: number;
-  stock: number;
-  active?: boolean;
-}) {
+export async function createProduct(db: Db, body: CreateProductInput): Promise<CreateProductOutput> {
   const repo = new CreateProductRepository();
   return repo.create(db, {
     name: body.name,

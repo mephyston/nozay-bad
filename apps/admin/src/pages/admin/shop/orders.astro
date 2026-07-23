@@ -1,7 +1,7 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { OrdersManager } from '@metacult/features-shop-ui';
+import { OrdersManager } from '@nba/shop-ui';
 
 import { env } from 'cloudflare:workers';
 
@@ -41,8 +41,11 @@ let seasonsList = [];
 let errorMsg = '';
 
 try {
-  // 1. Fetch seasons
-  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
+  const [seasonsRes, ordersRes] = await Promise.all([
+    apiService.fetch('http://localhost/accounting/seasons'),
+    apiService.fetch(`http://localhost/shop/orders?season=${season}`)
+  ]);
+
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];
@@ -50,8 +53,6 @@ try {
     errorMsg = 'Impossible de charger la liste des saisons.';
   }
 
-  // 2. Fetch all orders (which return mapped orders: order, member, product)
-  const ordersRes = await apiService.fetch(`http://localhost/shop/orders?season=${season}`);
   if (ordersRes.ok) {
     const json = await ordersRes.json() as any;
     ordersList = json.data || [];
@@ -66,7 +67,7 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
 ---
 
 <Layout title="Validation des Commandes - NBA 91">
-  <AdminLayout client:load email={userEmail} breadcrumb="Boutique / Commandes">
+  <AdminLayout client:idle email={userEmail} breadcrumb="Boutique / Commandes">
     <div class="space-y-6">
       {errorMsg && (
         <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">

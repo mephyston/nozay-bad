@@ -6,7 +6,7 @@
 ---
 
 ## 1. Objectif & Portée
-L'objectif est d'harmoniser l'interface utilisateur du module **Membres** (Adhérents) en migrant les composants Svelte existants vers la bibliothèque de primitives partagées **Shadcn Svelte** intégrée dans `@metacult/shared-ui`.
+L'objectif est d'harmoniser l'interface utilisateur du module **Membres** (Adhérents) en migrant les composants Svelte existants vers la bibliothèque de primitives partagées **Shadcn Svelte** intégrée dans `@nba/ui`.
 
 Les composants cibles sont :
 * `MembersTable.svelte` : Liste des adhérents avec recherche, filtres et pagination.

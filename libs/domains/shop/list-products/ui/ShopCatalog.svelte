@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { ShoppingBag, Search, Check, AlertCircle, ChevronDown, User } from "lucide-svelte";
-  import { Button, Card, Input, Label, Badge } from '@metacult/shared-ui';
+  import { ShoppingBag, Search, Check, AlertCircle, ChevronDown } from "@lucide/svelte";
+  import { Button, Card, Input, Label, Badge } from '@nba/ui';
 
   interface Member {
     id: number;
@@ -39,10 +39,16 @@
     { value: 'up_loisir', label: 'Up Loisir' }
   ];
 
-  // Derived products list to ensure reactivity
+  const categoriesList = [
+    { value: 'all', label: 'Toutes les catégories' },
+    { value: 'shuttlecock', label: 'Volants' },
+    { value: 'string', label: 'Cordages' },
+    { value: 'other', label: 'Autres' }
+  ];
+
   let productsList = $derived(products);
 
-  // Local state for member selection combobox
+  // Member selection state
   let selectedMemberId = $state<string>('');
   let memberSearchQuery = $state<string>('');
   let isMemberDropdownOpen = $state<boolean>(false);
@@ -51,14 +57,78 @@
   let fetchedMembers = $state<Member[]>([]);
   let debounceTimeout: any;
 
-  // Reset highlightedIndex when dropdown closes
+  // Order form state
+  let selectedCategory = $state<string>('all');
+  let selectedProductId = $state<number | null>(null);
+  let selectedQuantity = $state<number>(1);
+  let selectedPaymentMethod = $state<string>('virement');
+  let submitting = $state<boolean>(false);
+  let successMessage = $state<string | null>(null);
+  let errorMessage = $state<string | null>(null);
+
+  let filteredProducts = $derived(
+    selectedCategory === 'all'
+      ? productsList
+      : productsList.filter(p => p.category === selectedCategory)
+  );
+
+  let selectedProduct = $derived(
+    selectedProductId !== null
+      ? productsList.find(p => p.id === Number(selectedProductId)) || null
+      : null
+  );
+
+  let totalPriceCents = $derived(
+    selectedProduct ? selectedProduct.price * selectedQuantity : 0
+  );
+
+  let maxQuantity = $derived(
+    selectedProduct ? Math.min(selectedProduct.stock, 99) : 1
+  );
+
+  $effect(() => {
+    if (filteredProducts.length > 0) {
+      const currentId = selectedProductId !== null ? Number(selectedProductId) : null;
+      if (currentId === null || !filteredProducts.some(p => p.id === currentId)) {
+        selectedProductId = filteredProducts[0].id;
+      }
+    } else {
+      selectedProductId = null;
+    }
+  });
+
+  $effect(() => {
+    if (selectedProduct) {
+      const max = Math.min(selectedProduct.stock, 99);
+      if (max > 0 && selectedQuantity > max) {
+        selectedQuantity = max;
+      } else if (selectedQuantity < 1) {
+        selectedQuantity = 1;
+      }
+    }
+  });
+
+  function formatMemberName(m: Member | null): string {
+    if (!m) return '';
+    const maskedLast = m.lastName
+      ? (m.lastName.length > 2 && !m.lastName.endsWith('.') ? `${m.lastName[0]}.` : m.lastName)
+      : '';
+    return `${maskedLast} ${m.firstName}`.trim();
+  }
+
+  function formatLicence(licence: string): string {
+    if (!licence) return '***';
+    if (licence.includes('*')) return licence;
+    if (licence.length <= 4) return '***';
+    return `${licence.slice(0, 2)}***${licence.slice(-2)}`;
+  }
+
   $effect(() => {
     if (!isMemberDropdownOpen) {
       highlightedIndex = -1;
     }
   });
 
-  // Clamp highlightedIndex when filteredMembers changes
   $effect(() => {
     if (highlightedIndex >= filteredMembers.length) {
       highlightedIndex = filteredMembers.length - 1;
@@ -67,15 +137,14 @@
 
   // Debounced member search from API
   $effect(() => {
-    if (members.length > 0) return;
+    if (!isMemberDropdownOpen) return;
 
-    const query = memberSearchQuery;
-    if (query.trim() === '') {
-      fetchedMembers = [];
+    const query = memberSearchQuery.trim();
+    if (lastSelectedMember && memberSearchQuery === formatMemberName(lastSelectedMember)) {
       return;
     }
 
-    if (lastSelectedMember && query === `${lastSelectedMember.lastName} ${lastSelectedMember.firstName}`) {
+    if (query.length > 0 && query.length < 3) {
       return;
     }
 
@@ -88,14 +157,12 @@
         const response = await fetch(`/api/members-search?q=${encodeURIComponent(query)}`);
         if (response.ok) {
           const data = await response.json() as Member[];
-          if (memberSearchQuery === query) {
-            fetchedMembers = data;
-          }
+          fetchedMembers = data;
         }
       } catch (err) {
         console.error('Error fetching members from API:', err);
       }
-    }, 300);
+    }, query === '' ? 0 : 300);
 
     return () => {
       if (debounceTimeout) {
@@ -107,7 +174,7 @@
   function selectMember(m: Member) {
     selectedMemberId = m.id.toString();
     lastSelectedMember = m;
-    memberSearchQuery = `${m.lastName} ${m.firstName}`;
+    memberSearchQuery = formatMemberName(m);
     isMemberDropdownOpen = false;
     highlightedIndex = -1;
   }
@@ -164,24 +231,8 @@
     }, 0);
   }
 
-  // Local state for product ordering inputs
-  let quantities = $state<Record<number, number>>({});
-  let paymentMethods = $state<Record<number, string>>({});
-  let submitting = $state<Record<number, boolean>>({});
-  let successMessages = $state<Record<number, string | null>>({});
-  let errorMessages = $state<Record<number, string | null>>({});
-
-  // Ensure default quantity and payment method for each product
-  $effect(() => {
-    productsList.forEach(p => {
-      if (quantities[p.id] === undefined) quantities[p.id] = 1;
-      if (paymentMethods[p.id] === undefined) paymentMethods[p.id] = 'virement';
-    });
-  });
-
-  // Derived member lists for dropdown
   let sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
-  
+
   let selectedMember = $derived(
     members.length > 0
       ? (members.find(m => m.id.toString() === selectedMemberId) || null)
@@ -189,47 +240,61 @@
   );
 
   let memberDisplayVal = $derived(
-    selectedMember ? `${selectedMember.lastName} ${selectedMember.firstName}` : ''
+    selectedMember ? formatMemberName(selectedMember) : ''
   );
 
   let filteredMembers = $derived(
-    members.length > 0
-      ? (memberSearchQuery.trim() === ''
-          ? sortedMembers
+    memberSearchQuery.trim() === ''
+      ? (fetchedMembers.length > 0 ? fetchedMembers : sortedMembers)
+      : (fetchedMembers.length > 0
+          ? fetchedMembers
           : sortedMembers.filter(m =>
-              `${m.lastName} ${m.firstName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase())
+              `${m.lastName} ${m.firstName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
+              `${m.firstName} ${m.lastName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase())
             )
         )
-      : fetchedMembers
   );
 
-  async function handleOrder(productId: number) {
-    const qty = quantities[productId] || 1;
-    const pm = paymentMethods[productId] || 'virement';
-    const product = productsList.find(p => p.id === productId);
+  function incrementQty() {
+    if (selectedQuantity < maxQuantity) {
+      selectedQuantity += 1;
+    }
+  }
 
+  function decrementQty() {
+    if (selectedQuantity > 1) {
+      selectedQuantity -= 1;
+    }
+  }
+
+  async function handleOrder() {
     if (!selectedMemberId) {
-      errorMessages[productId] = "Veuillez sélectionner un adhérent pour commander.";
+      errorMessage = "Veuillez sélectionner un adhérent pour commander.";
       return;
     }
 
-    if (!product) {
-      errorMessages[productId] = "Produit inexistant.";
+    if (!selectedProduct) {
+      errorMessage = "Veuillez sélectionner un produit.";
       return;
     }
-    // Retrieve Turnstile response token (bypassed in test environment)
+
+    if (selectedProduct.stock < selectedQuantity || selectedProduct.stock <= 0) {
+      errorMessage = "Stock insuffisant pour ce produit.";
+      return;
+    }
+
     const isTest = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
     const turnstileResponse = isTest
       ? 'mock-test-token'
       : (document.getElementsByName('cf-turnstile-response')[0] as HTMLInputElement)?.value;
     if (!turnstileResponse) {
-      errorMessages[productId] = "Veuillez valider le test de sécurité anti-bot.";
+      errorMessage = "Veuillez valider le test de sécurité anti-bot.";
       return;
     }
 
-    errorMessages[productId] = null;
-    successMessages[productId] = null;
-    submitting[productId] = true;
+    errorMessage = null;
+    successMessage = null;
+    submitting = true;
 
     try {
       const res = await fetch('', {
@@ -240,9 +305,9 @@
         body: JSON.stringify({
           seasonId: activeSeasonId,
           memberId: parseInt(selectedMemberId),
-          productId: productId,
-          quantity: qty,
-          paymentMethod: pm,
+          productId: selectedProduct.id,
+          quantity: selectedQuantity,
+          paymentMethod: selectedPaymentMethod,
           turnstileToken: turnstileResponse
         })
       });
@@ -253,271 +318,278 @@
         throw new Error(data.error || "Une erreur est survenue lors de l'enregistrement de la commande.");
       }
 
-      // Success message
-      successMessages[productId] = `Votre souhait d'achat de ${qty} ${product.name} a bien été enregistré. Il sera comptabilisé dès validation par le trésorier.`;
-      
-      // Update local qty
-      quantities[productId] = 1;
+      successMessage = `Votre souhait d'achat de ${selectedQuantity} ${selectedProduct.name} a bien été enregistré. Il sera comptabilisé dès validation par le trésorier.`;
+      selectedQuantity = 1;
 
-      // Reset Turnstile on success to allow another order
       if (typeof window !== 'undefined' && (window as any).turnstile) {
         (window as any).turnstile.reset();
       }
     } catch (err: any) {
-      errorMessages[productId] = err.message || "Une erreur est survenue.";
-      // Reset Turnstile on failure so they can retry
+      errorMessage = err.message || "Une erreur est survenue.";
       if (typeof window !== 'undefined' && (window as any).turnstile) {
         (window as any).turnstile.reset();
       }
     } finally {
-      submitting[productId] = false;
-    }
-  }
-
-  function incrementQty(productId: number, max: number) {
-    const current = quantities[productId] || 1;
-    if (current < max) {
-      quantities[productId] = current + 1;
-    }
-  }
-
-  function decrementQty(productId: number) {
-    const current = quantities[productId] || 1;
-    if (current > 1) {
-      quantities[productId] = current - 1;
+      submitting = false;
     }
   }
 </script>
 
-<div class="space-y-8 max-w-6xl mx-auto px-4 py-8">
-  <!-- Member Selection Section -->
-  <div class="bg-card text-card-foreground p-6 rounded-2xl border border-border shadow-md space-y-4">
-    <div class="flex items-center gap-3">
-      <div class="p-2 bg-primary/10 text-primary rounded-lg">
-        <User class="w-6 h-6" />
+<Card.Root class="max-w-2xl mx-auto shadow-xl">
+  <!-- Card Header Banner -->
+  <Card.Header class="bg-gradient-to-r from-primary to-primary/80 p-6 text-primary-foreground flex flex-row items-center gap-4 rounded-t-xl">
+    <div class="bg-primary-foreground/10 p-3 rounded-xl backdrop-blur-md">
+      <ShoppingBag class="w-7 h-7 text-primary-foreground" />
+    </div>
+    <div>
+      <Card.Title class="text-xl font-bold tracking-tight text-primary-foreground">Boutique Club</Card.Title>
+      <p class="text-xs text-primary-foreground/80 mt-1">Commandez vos volants, cordages et équipements du club en quelques clics.</p>
+    </div>
+  </Card.Header>
+
+  <Card.Content class="p-6 space-y-6">
+    <!-- Section 1: Member Selection (Buyer) -->
+    <div class="space-y-3 pb-4 border-b border-border">
+      <Label for="member-input" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Acheteur (Adhérent)</Label>
+
+      <div class="relative">
+        <div class="relative">
+          <Search class="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground z-10" />
+          <Input
+            id="member-input"
+            type="text"
+            role="combobox"
+            autocomplete="off"
+            aria-expanded={isMemberDropdownOpen}
+            aria-autocomplete="list"
+            aria-controls="member-listbox"
+            aria-activedescendant={highlightedIndex >= 0 ? `member-option-${highlightedIndex}` : undefined}
+            placeholder="Rechercher par Nom, Prénom, ou N° Licence (min 3 caractères)..."
+            class="w-full pl-10 pr-10 h-10 rounded-xl font-semibold"
+            value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
+            oninput={(e) => {
+              isMemberDropdownOpen = true;
+              memberSearchQuery = (e.target as HTMLInputElement).value;
+            }}
+            onfocus={(e) => {
+              isMemberDropdownOpen = true;
+              if (selectedMember) {
+                memberSearchQuery = formatMemberName(selectedMember);
+              } else {
+                memberSearchQuery = '';
+              }
+              (e.target as HTMLInputElement).select();
+            }}
+            onblur={() => {
+              setTimeout(() => { isMemberDropdownOpen = false; }, 200);
+            }}
+            onkeydown={handleKeyDown}
+          />
+          <ChevronDown class="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+        </div>
+
+        {#if isMemberDropdownOpen}
+          <div
+            role="listbox"
+            id="member-listbox"
+            class="absolute z-50 w-full mt-1 max-h-56 overflow-y-auto bg-popover border border-border rounded-xl shadow-xl divide-y divide-border"
+          >
+            {#each filteredMembers as m, index}
+              <button
+                type="button"
+                role="option"
+                aria-selected={selectedMemberId === m.id.toString()}
+                id={`member-option-${index}`}
+                class="w-full text-left px-4 py-2.5 text-sm transition-colors font-semibold border-0 cursor-pointer {index === highlightedIndex ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground'}"
+                onmousedown={() => {
+                  selectMember(m);
+                }}
+              >
+                <div class="flex justify-between items-center">
+                  <span>{formatMemberName(m)}</span>
+                  <Badge variant="outline" class="font-mono">Licence: {formatLicence(m.licence)}</Badge>
+                </div>
+              </button>
+            {:else}
+              <div class="px-4 py-3 text-sm text-muted-foreground italic bg-popover">
+                {memberSearchQuery.trim().length > 0 && memberSearchQuery.trim().length < 3 ? 'Saisissez au moins 3 caractères pour rechercher' : 'Aucun adhérent trouvé'}
+              </div>
+            {/each}
+          </div>
+        {/if}
       </div>
-      <div>
-        <Label for="member-input" class="text-xl font-bold tracking-tight block cursor-pointer">Qui effectue l'achat ?</Label>
-        <p class="text-xs text-muted-foreground font-medium mt-1">Sélectionnez votre nom dans la liste des adhérents du club.</p>
+
+      <!-- Member Selection Badge -->
+      <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
+        {#if selectedMember}
+          <Badge variant="outline" class="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg text-xs font-semibold self-start sm:self-auto">
+            <Check class="w-4 h-4" />
+            Adhérent sélectionné : <span class="font-bold">{formatMemberName(selectedMember)}</span>
+          </Badge>
+        {:else}
+          <Badge variant="destructive" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold self-start sm:self-auto">
+            <AlertCircle class="w-4 h-4" />
+            Sélectionnez votre nom d'adhérent pour débloquer la commande.
+          </Badge>
+        {/if}
       </div>
     </div>
 
-    <!-- Dropdown / Autocomplete Combobox -->
-    <div class="relative max-w-md">
+    <!-- Section 2: Mode de Paiement -->
+    <div class="space-y-2 pb-4 border-b border-border">
+      <Label for="payment-method-select" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Mode de paiement</Label>
       <div class="relative">
-        <Search class="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
-        <Input
-          id="member-input"
-          type="text"
-          role="combobox"
-          autocomplete="off"
-          aria-expanded={isMemberDropdownOpen}
-          aria-autocomplete="list"
-          aria-controls="member-listbox"
-          aria-activedescendant={highlightedIndex >= 0 ? `member-option-${highlightedIndex}` : undefined}
-          placeholder="Rechercher par Nom, Prénom, ou N° Licence..."
-          class="w-full pl-10 pr-10 h-10 bg-background text-sm text-foreground font-medium"
-          value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
-          oninput={(e) => {
-            isMemberDropdownOpen = true;
-            memberSearchQuery = (e.target as HTMLInputElement).value;
-          }}
-          onfocus={(e) => {
-            isMemberDropdownOpen = true;
-            if (selectedMember) {
-              memberSearchQuery = `${selectedMember.lastName} ${selectedMember.firstName}`;
-            } else {
-              memberSearchQuery = '';
-            }
-            (e.target as HTMLInputElement).select();
-          }}
-          onblur={() => {
-            // Delay to allow onmousedown selection of buttons
-            setTimeout(() => { isMemberDropdownOpen = false; }, 200);
-          }}
-          onkeydown={handleKeyDown}
-        />
-        <ChevronDown class="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+        <select
+          id="payment-method-select"
+          bind:value={selectedPaymentMethod}
+          class="w-full px-3 h-10 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground pr-8 appearance-none font-semibold"
+        >
+          {#each paymentMethodsList as pm}
+            <option value={pm.value}>{pm.label}</option>
+          {/each}
+        </select>
+        <ChevronDown class="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+      </div>
+    </div>
+
+    <!-- Section 3: Article & Quantité -->
+    <div class="space-y-4 pb-4 border-b border-border">
+      <Label class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Article & Quantité</Label>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Select 1: Type de produit -->
+        <div class="space-y-1.5">
+          <Label for="category-select" class="block text-xs font-semibold text-foreground">Type de produit</Label>
+          <div class="relative">
+            <select
+              id="category-select"
+              bind:value={selectedCategory}
+              class="w-full px-3 h-10 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground pr-8 appearance-none font-semibold"
+            >
+              {#each categoriesList as cat}
+                <option value={cat.value}>{cat.label}</option>
+              {/each}
+            </select>
+            <ChevronDown class="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+          </div>
+        </div>
+
+        <!-- Select 2: Produit -->
+        <div class="space-y-1.5">
+          <Label for="product-select" class="block text-xs font-semibold text-foreground">Produit</Label>
+          <div class="relative">
+            <select
+              id="product-select"
+              bind:value={selectedProductId}
+              class="w-full px-3 h-10 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground pr-8 appearance-none font-semibold"
+              disabled={filteredProducts.length === 0}
+            >
+              {#if filteredProducts.length === 0}
+                <option value={null}>Aucun article disponible</option>
+              {:else}
+                {#each filteredProducts as product (product.id)}
+                  <option value={product.id}>
+                    {product.name} — {(product.price / 100).toFixed(2)} € ({product.stock > 0 ? `Stock: ${product.stock}` : 'Rupture'})
+                  </option>
+                {/each}
+              {/if}
+            </select>
+            <ChevronDown class="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+          </div>
+        </div>
       </div>
 
-      {#if isMemberDropdownOpen}
-        <div
-          role="listbox"
-          id="member-listbox"
-          class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-popover border border-border rounded-lg shadow-xl divide-y divide-border"
-        >
-          {#each filteredMembers as m, index}
-            <button
-              type="button"
-              role="option"
-              aria-selected={selectedMemberId === m.id.toString()}
-              id={`member-option-${index}`}
-              class="w-full text-left px-4 py-2.5 text-sm transition-colors font-medium border-0 cursor-pointer {index === highlightedIndex ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground'}"
-              onmousedown={() => {
-                selectMember(m);
-              }}
+      <!-- Quantity Selector -->
+      <div class="space-y-1.5 pt-1">
+        <Label for="quantity-input" class="block text-xs font-semibold text-foreground">Quantité</Label>
+        <div class="flex items-center gap-2">
+          <div class="flex items-center border border-border bg-background rounded-xl overflow-hidden shrink-0">
+            <Button
+              variant="ghost"
+              onclick={decrementQty}
+              disabled={selectedQuantity <= 1 || !selectedProduct || selectedProduct.stock <= 0}
+              class="px-3 py-1 h-10 text-sm hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0"
             >
-              <div class="flex justify-between items-center">
-                <span>{m.lastName} {m.firstName}</span>
-                <Badge variant="outline" class="font-mono">Licence: {m.licence}</Badge>
-              </div>
-            </button>
-          {:else}
-            <div class="px-4 py-3 text-sm text-muted-foreground italic">Aucun adhérent trouvé</div>
-          {/each}
+              -
+            </Button>
+            <Input
+              id="quantity-input"
+              type="number"
+              min="1"
+              max={maxQuantity}
+              bind:value={selectedQuantity}
+              disabled={!selectedProduct || selectedProduct.stock <= 0}
+              class="w-12 h-10 text-center text-sm font-semibold border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0"
+            />
+            <Button
+              variant="ghost"
+              onclick={incrementQty}
+              disabled={!selectedProduct || selectedQuantity >= maxQuantity || selectedProduct.stock <= 0}
+              class="px-3 py-1 h-10 text-sm hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0"
+            >
+              +
+            </Button>
+          </div>
+
+          {#if selectedProduct}
+            <div class="text-xs text-muted-foreground ml-2">
+              {#if selectedProduct.stock <= 0}
+                <Badge variant="destructive" class="text-[10px]">Rupture de stock</Badge>
+              {:else}
+                <span>Stock disponible : <strong class="text-foreground">{selectedProduct.stock}</strong></span>
+              {/if}
+            </div>
+          {/if}
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Récapitulatif & Valider -->
+    <div class="space-y-4">
+      <div class="bg-muted/30 border border-border rounded-xl p-4 space-y-2">
+        <div class="flex justify-between items-center text-sm font-semibold text-muted-foreground">
+          <span>Article sélectionné :</span>
+          <span class="text-foreground">{selectedProduct ? selectedProduct.name : '—'}</span>
+        </div>
+        <div class="flex justify-between items-center pt-2 border-t border-border/50">
+          <span class="text-base font-bold text-foreground">Montant total :</span>
+          <span class="text-xl font-extrabold text-primary">
+            {(totalPriceCents / 100).toFixed(2)} €
+          </span>
+        </div>
+      </div>
+
+      <!-- Turnstile Widget -->
+      <div class="cf-turnstile" style={!selectedMember ? 'display: none;' : ''} data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1"></div>
+
+      <!-- Submit Button -->
+      <Button
+        onclick={handleOrder}
+        disabled={!selectedMemberId || !selectedProduct || selectedProduct.stock <= 0 || selectedQuantity > selectedProduct.stock || submitting}
+        class="w-full flex justify-center items-center gap-2 font-bold h-11 text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
+      >
+        {#if submitting}
+          <span class="animate-pulse">Envoi de la commande...</span>
+        {:else}
+          <ShoppingBag class="w-4 h-4" />
+          Valider la commande
+        {/if}
+      </Button>
+
+      <!-- Feedback Messages -->
+      {#if successMessage}
+        <div class="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm rounded-xl flex items-start gap-2">
+          <Check class="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{successMessage}</span>
+        </div>
+      {/if}
+
+      {#if errorMessage}
+        <div class="p-3.5 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-xl flex items-start gap-2">
+          <AlertCircle class="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{errorMessage}</span>
         </div>
       {/if}
     </div>
-
-    <!-- Active Member Badge & Security Check -->
-    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-      {#if selectedMember}
-        <Badge variant="outline" class="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg text-xs font-semibold self-start sm:self-auto">
-          <Check class="w-4 h-4" />
-          Adhérent sélectionné : <span class="underline">{selectedMember.lastName} {selectedMember.firstName}</span>
-        </Badge>
-      {:else}
-        <Badge variant="destructive" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold self-start sm:self-auto">
-          <AlertCircle class="w-4 h-4" />
-          Veuillez sélectionner un adhérent pour débloquer les commandes.
-        </Badge>
-      {/if}
-      <div class="cf-turnstile" style={!selectedMember ? 'display: none;' : ''} data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1"></div>
-    </div>
-  </div>
-
-  <!-- Catalog Section -->
-  <div>
-    <h2 class="text-2xl font-bold tracking-tight flex items-center gap-2 mb-6">
-      <ShoppingBag class="w-6 h-6 text-primary" />
-      Articles Disponibles
-    </h2>
-
-    {#if productsList.length === 0}
-      <div class="bg-card border border-border rounded-2xl p-12 text-center text-muted-foreground">
-        <ShoppingBag class="mx-auto h-12 w-12 text-muted-foreground/30 mb-3" />
-        <p class="text-lg font-medium">La boutique est vide pour le moment.</p>
-        <p class="text-sm">Aucun produit actif n'est disponible.</p>
-      </div>
-    {:else}
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {#each productsList as product (product.id)}
-          <Card.Root class="overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
-            
-            <!-- Card Header -->
-            <Card.Header class="p-6 pb-4 space-y-2">
-              <div class="flex justify-between items-start gap-2">
-                <Card.Title class="text-lg font-bold tracking-tight text-foreground">{product.name}</Card.Title>
-                <Badge variant={product.stock > 0 ? "outline" : "destructive"}>
-                  {product.stock > 0 ? `Stock: ${product.stock}` : "Rupture"}
-                </Badge>
-              </div>
-            </Card.Header>
-
-            <!-- Card Content -->
-            <Card.Content class="p-6 pt-0 flex-grow flex flex-col justify-between space-y-2">
-              <div class="flex justify-between items-center mt-2">
-                <Badge variant="outline" class="uppercase tracking-wider
-                  {product.category === 'shuttlecock' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : product.category === 'string' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'}">
-                  {product.category === 'shuttlecock' ? 'Volants' : product.category === 'string' ? 'Cordages' : 'Autre'}
-                </Badge>
-                
-                <span class="text-lg font-bold text-primary">
-                  {(product.price / 100).toFixed(2)} €
-                </span>
-              </div>
-            </Card.Content>
-
-            <!-- Card Footer / Order Panel -->
-            <Card.Footer class="p-6 pt-0 border-t border-border/50 bg-muted/20 flex flex-col items-stretch w-full gap-4">
-              {#if product.stock > 0}
-                <div class="space-y-3 mt-4 w-full">
-                  <!-- Quantity Selector -->
-                  <div class="flex justify-between items-center">
-                    <Label for="qty-{product.id}" class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Quantité</Label>
-                    <div class="flex items-center border border-border bg-background rounded-lg overflow-hidden">
-                      <Button
-                        variant="ghost"
-                        onclick={() => decrementQty(product.id)}
-                        disabled={quantities[product.id] <= 1}
-                        class="px-2.5 py-1 h-8 text-sm hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0"
-                      >
-                        -
-                      </Button>
-                      <Input
-                        id="qty-{product.id}"
-                        type="number"
-                        min="1"
-                        max={99}
-                        bind:value={quantities[product.id]}
-                        class="w-12 h-8 text-center text-sm font-semibold border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-                      />
-                      <Button
-                        variant="ghost"
-                        onclick={() => incrementQty(product.id, 99)}
-                        disabled={quantities[product.id] >= 99}
-                        class="px-2.5 py-1 h-8 text-sm hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0"
-                      >
-                        +
-                      </Button>
-                    </div>
-                  </div>
-
-                  <!-- Payment Method -->
-                  <div class="space-y-1">
-                    <Label for="pm-{product.id}" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Mode de paiement prévu</Label>
-                    <div class="relative">
-                      <select
-                        id="pm-{product.id}"
-                        bind:value={paymentMethods[product.id]}
-                        class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground pr-8 appearance-none"
-                      >
-                        {#each paymentMethodsList as pm}
-                          <option value={pm.value}>{pm.label}</option>
-                        {/each}
-                      </select>
-                      <ChevronDown class="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                    </div>
-                  </div>
-
-                  <!-- Submit button -->
-                  <Button
-                    onclick={() => handleOrder(product.id)}
-                    disabled={!selectedMemberId || submitting[product.id]}
-                    class="w-full flex justify-center items-center gap-2 font-semibold h-10 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-                  >
-                    {#if submitting[product.id]}
-                      <span class="animate-pulse">Envoi en cours...</span>
-                    {:else}
-                      <ShoppingBag class="w-4 h-4" />
-                      Commander
-                    {/if}
-                  </Button>
-                </div>
-              {:else}
-                <div class="text-center py-6 text-sm text-muted-foreground italic mt-4 w-full">
-                  Cet article n'est plus en stock.
-                </div>
-              {/if}
-
-              <!-- Individual Feedbacks -->
-              {#if successMessages[product.id]}
-                <div class="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs rounded-lg flex items-start gap-1.5 w-full">
-                  <Check class="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{successMessages[product.id]}</span>
-                </div>
-              {/if}
-
-              {#if errorMessages[product.id]}
-                <div class="mt-3 p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-lg flex items-start gap-1.5 w-full">
-                  <AlertCircle class="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{errorMessages[product.id]}</span>
-                </div>
-              {/if}
-            </Card.Footer>
-          </Card.Root>
-        {/each}
-      </div>
-    {/if}
-  </div>
-</div>
+  </Card.Content>
+</Card.Root>

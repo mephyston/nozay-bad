@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@nba/db';
 import { tbValidator } from '@hono/typebox-validator';
 import {
   approveExpense,
@@ -23,7 +23,7 @@ updateExpenseRoute.post('/:id/approve', async (c) => {
   if (isNaN(id)) {
     return c.json({ success: false, error: 'Identifiant invalide' }, 400);
   }
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
 
   const updatedExpense = await approveExpense(db, id);
   return c.json({ success: true, data: updatedExpense });
@@ -37,7 +37,7 @@ updateExpenseRoute.post('/:id/reject', async (c) => {
   if (isNaN(id)) {
     return c.json({ success: false, error: 'Identifiant invalide' }, 400);
   }
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
 
   const updatedExpense = await rejectExpense(db, id);
   return c.json({ success: true, data: updatedExpense });
@@ -51,7 +51,7 @@ updateExpenseRoute.post('/:id/cancel', async (c) => {
   if (isNaN(id)) {
     return c.json({ success: false, error: 'Identifiant invalide' }, 400);
   }
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
 
   const updatedExpense = await cancelExpenseApproval(db, id);
   return c.json({ success: true, data: updatedExpense });
@@ -59,7 +59,7 @@ updateExpenseRoute.post('/:id/cancel', async (c) => {
 
 updateExpenseRoute.put('/:id', tbValidator('json', updateExpenseSchema, (result, c) => {
   if (!result.success) {
-    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
   }
 }), async (c) => {
   if (!c.env || !c.env.DB) {
@@ -70,7 +70,7 @@ updateExpenseRoute.put('/:id', tbValidator('json', updateExpenseSchema, (result,
     return c.json({ success: false, error: 'Identifiant invalide' }, 400);
   }
   const body = c.req.valid('json');
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
 
   const updated = await updateExpense(db, id, body);
   return c.json({ success: true, data: updated });

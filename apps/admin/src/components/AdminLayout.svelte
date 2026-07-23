@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Sidebar } from "@metacult/shared-ui";
+  import { Sidebar } from "@nba/ui";
   import AdminLayoutInner from "./AdminLayoutInner.svelte";
   import { onMount } from "svelte";
 
@@ -9,8 +9,12 @@
     breadcrumb?: string;
   }>();
 
-  // Keep track of desktop sidebar open state in localstorage
-  let sidebarOpen = $state(true);
+  // Synchronously initialize sidebar open state to prevent layout shift during hydration
+  let sidebarOpen = $state(
+    typeof localStorage !== "undefined" && localStorage.getItem("sidebar_collapsed") !== null
+      ? localStorage.getItem("sidebar_collapsed") !== "true"
+      : true
+  );
 
   onMount(() => {
     const saved = localStorage.getItem("sidebar_collapsed");

@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Refactor all relocated Svelte UI components in the workspace to consume the unified Shadcn-Svelte components from `@metacult/shared-ui` (such as `Button`, `Table`, `Input`, `Badge`, `Alert`, `Card`, `Dialog`, and `Drawer`) instead of raw HTML elements and custom styles.
+**Goal:** Refactor all relocated Svelte UI components in the workspace to consume the unified Shadcn-Svelte components from `@nba/ui` (such as `Button`, `Table`, `Input`, `Badge`, `Alert`, `Card`, `Dialog`, and `Drawer`) instead of raw HTML elements and custom styles.
 
 **Architecture:** We will proceed block-by-block, feature-by-feature, starting with the simplest components (Shop and Expenses) and moving towards the most complex (Accounting ledgers and reconciliation views). Every refactoring task will preserve functional logic, binding, and event handlers while changing ONLY the markup/styling structure.
 
-**Tech Stack:** Svelte 5 (Runes), Tailwind CSS v4 (configured via Vite), Vitest (jsdom environment), `@metacult/shared-ui`.
+**Tech Stack:** Svelte 5 (Runes), Tailwind CSS v4 (configured via Vite), Vitest (jsdom environment), `@nba/ui`.
 
 ## Global Constraints
 - Do not modify functional logic or query parameter behaviors in components.
@@ -25,14 +25,14 @@
 - Test: `libs/features/shop/ui/src/OrdersManager.test.ts`
 
 **Interfaces:**
-- Consumes: `Button`, `Table`, `Input`, `Badge`, `Card` from `@metacult/shared-ui`
+- Consumes: `Button`, `Table`, `Input`, `Badge`, `Card` from `@nba/ui`
 - Produces: Visual components using unified design tokens
 
 - [ ] **Step 1: Refactor ProductsManager.svelte**
-  Import UI primitives from `@metacult/shared-ui` and rewrite the markup:
+  Import UI primitives from `@nba/ui` and rewrite the markup:
   ```svelte
   <script lang="ts">
-    import { Button, Input, Badge, Card, Table } from '@metacult/shared-ui';
+    import { Button, Input, Badge, Card, Table } from '@nba/ui';
     // ... logic remains untouched ...
   </script>
 
@@ -67,7 +67,7 @@
   ```
 
 - [ ] **Step 2: Refactor OrdersManager.svelte**
-  Import UI primitives and refactor lists/buttons to use `@metacult/shared-ui` `Table`, `Button`, and `Badge`.
+  Import UI primitives and refactor lists/buttons to use `@nba/ui` `Table`, `Button`, and `Badge`.
 
 - [ ] **Step 3: Run Vitest tests**
   Run: `npx vitest run libs/features/shop/ui`
@@ -92,11 +92,11 @@
 - Test: `libs/features/expenses/ui/src/ExpensesManager.test.ts`
 
 **Interfaces:**
-- Consumes: `Button`, `Table`, `Input`, `Badge`, `Alert`, `Card` from `@metacult/shared-ui`
+- Consumes: `Button`, `Table`, `Input`, `Badge`, `Alert`, `Card` from `@nba/ui`
 - Produces: Standardized ExpensesManager view
 
 - [ ] **Step 1: Refactor ExpensesManager.svelte**
-  Import UI primitives from `@metacult/shared-ui` and rewrite markup to replace raw table elements, buttons, inputs, alerts, and card sections.
+  Import UI primitives from `@nba/ui` and rewrite markup to replace raw table elements, buttons, inputs, alerts, and card sections.
 
 - [ ] **Step 2: Run Vitest tests**
   Run: `npx vitest run libs/features/expenses/ui`
@@ -121,11 +121,11 @@
 - Test: `libs/features/members/ui/src/PoonaImporter.test.ts`
 
 **Interfaces:**
-- Consumes: `Button`, `Card`, `Input` from `@metacult/shared-ui`
+- Consumes: `Button`, `Card`, `Input` from `@nba/ui`
 - Produces: Standardized PoonaImporter file uploader view
 
 - [ ] **Step 1: Refactor PoonaImporter.svelte**
-  Import UI primitives and refactor card layout, file selector drop-area inputs, and import triggers to use `@metacult/shared-ui` components.
+  Import UI primitives and refactor card layout, file selector drop-area inputs, and import triggers to use `@nba/ui` components.
 
 - [ ] **Step 2: Run Vitest tests**
   Run: `npx vitest run libs/features/members/ui`
@@ -154,17 +154,17 @@
 - Test: `libs/features/accounting/ui/src/SettingsManager.test.ts`
 
 **Interfaces:**
-- Consumes: `Button`, `Table`, `Input`, `Badge`, `Card`, `Alert`, `Tabs` from `@metacult/shared-ui`
+- Consumes: `Button`, `Table`, `Input`, `Badge`, `Card`, `Alert`, `Tabs` from `@nba/ui`
 - Produces: Standardized compta config pages
 
 - [ ] **Step 1: Refactor InitialBalancesConfig.svelte**
-  Replace raw balance inputs and tables with `Table` and `Input` from `@metacult/shared-ui`.
+  Replace raw balance inputs and tables with `Table` and `Input` from `@nba/ui`.
 
 - [ ] **Step 2: Refactor CashBoxManager.svelte**
   Update inputs, buttons, and cash flow history table.
 
 - [ ] **Step 3: Refactor SettingsManager.svelte**
-  Integrate the `Tabs` and `Card` components from `@metacult/shared-ui` for managing categories, seasons, and account classes.
+  Integrate the `Tabs` and `Card` components from `@nba/ui` for managing categories, seasons, and account classes.
 
 - [ ] **Step 4: Run Vitest tests**
   Run: `npx vitest run libs/features/accounting/ui/src/InitialBalancesConfig.test.ts libs/features/accounting/ui/src/CashBoxManager.test.ts libs/features/accounting/ui/src/SettingsManager.test.ts`
@@ -193,7 +193,7 @@
 - Test: `libs/features/accounting/ui/src/GeneralMeetingReport.test.ts`
 
 **Interfaces:**
-- Consumes: `Button`, `Table`, `Input`, `Badge`, `Card`, `Dialog` from `@metacult/shared-ui`
+- Consumes: `Button`, `Table`, `Input`, `Badge`, `Card`, `Dialog` from `@nba/ui`
 - Produces: Standardized accounting reports and managers
 
 - [ ] **Step 1: Refactor CheckDepositManager.svelte**
@@ -230,7 +230,7 @@
 - Test: `libs/features/accounting/ui/src/BankStatementReconciliation.test.ts`
 
 **Interfaces:**
-- Consumes: `Button`, `Table`, `Input`, `Badge`, `Card`, `Dialog`, `Drawer`, `Tabs` from `@metacult/shared-ui`
+- Consumes: `Button`, `Table`, `Input`, `Badge`, `Card`, `Dialog`, `Drawer`, `Tabs` from `@nba/ui`
 - Produces: Fully standardized high-complexity accounting views
 
 - [ ] **Step 1: Refactor TransactionLedger.svelte**

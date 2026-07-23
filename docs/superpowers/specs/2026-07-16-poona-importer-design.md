@@ -34,7 +34,7 @@ Le script de validation locale vérifiera la présence des colonnes indispensabl
 
 ## 3. Composants et Structure HTML (Shadcn Svelte)
 
-Le balisage utilisera les primitives de `@metacult/shared-ui` :
+Le balisage utilisera les primitives de `@nba/ui` :
 
 * **Card** (`Card.Root`, `Card.Content`) : Pour encapsuler le formulaire d'importation.
 * **Zone de dépôt (Dropzone)** :

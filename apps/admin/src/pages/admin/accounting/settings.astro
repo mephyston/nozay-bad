@@ -1,7 +1,7 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { SettingsManager } from '@metacult/features-accounting-ui';
+import { SettingsManager } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
 
 const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
@@ -132,14 +132,17 @@ let accountClassesList: any[] = [];
 let errorMsg = '';
 
 try {
-  // Fetch seasons
-  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
+  const [seasonsRes, categoriesRes, classesRes] = await Promise.all([
+    apiService.fetch('http://localhost/accounting/seasons'),
+    apiService.fetch('http://localhost/accounting/categories'),
+    apiService.fetch('http://localhost/accounting/account-classes')
+  ]);
+
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
-    const rawSeasons = json.data || [];
-    
-    // Fetch initial balances for each season to embed in the list
-    for (const s of rawSeasons) {
+    const rawSeasons: any[] = json.data || [];
+
+    seasonsList = await Promise.all(rawSeasons.map(async (s) => {
       const balRes = await apiService.fetch(`http://localhost/accounting/seasons/${s.id}/balances`);
       let initialCurrentBalance = 0;
       let initialSavingsBalance = 0;
@@ -154,24 +157,20 @@ try {
         if (sav) initialSavingsBalance = sav.initialBalance;
         if (csh) initialCashBalance = csh.initialBalance;
       }
-      seasonsList.push({
+      return {
         ...s,
         initialCurrentBalance,
         initialSavingsBalance,
         initialCashBalance
-      });
-    }
+      };
+    }));
   }
 
-  // Fetch categories
-  const categoriesRes = await apiService.fetch('http://localhost/accounting/categories');
   if (categoriesRes.ok) {
     const json = await categoriesRes.json() as any;
     categoriesList = json.data || [];
   }
 
-  // Fetch account classes
-  const classesRes = await apiService.fetch('http://localhost/accounting/account-classes');
   if (classesRes.ok) {
     const json = await classesRes.json() as any;
     accountClassesList = json.data || [];
@@ -182,7 +181,7 @@ try {
 ---
 
 <Layout title="Réglages - NBA 91">
-  <AdminLayout client:load email={userEmail} breadcrumb="Réglages">
+  <AdminLayout client:idle email={userEmail} breadcrumb="Réglages">
     <div class="space-y-6">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">Réglages Association</h1>

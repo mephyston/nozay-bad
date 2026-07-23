@@ -6,7 +6,7 @@
 
 **Architecture:** Remplacement du popup d'actions manuel par `<Popover.Root>`, ce qui permet de supprimer les fonctions et effets globaux de gestion de clics obsolètes. Réorganisation des champs de formulaires avec des classes de grille Tailwind CSS et le composant `<Label>` standard.
 
-**Tech Stack:** Svelte 5, TypeScript, Lucide Icons, Shadcn Svelte (@metacult/shared-ui : Popover, Label, Input, Button, Table).
+**Tech Stack:** Svelte 5, TypeScript, Lucide Icons, Shadcn Svelte (@nba/ui : Popover, Label, Input, Button, Table).
 
 ## Global Constraints
 
@@ -24,7 +24,7 @@
 * Modify: `libs/features/accounting/ui/src/TransactionLedger.test.ts`
 
 **Interfaces:**
-* Consumes: Popover de `@metacult/shared-ui`.
+* Consumes: Popover de `@nba/ui`.
 * Produces: Une interface d'action popover accessible et standardisée pour chaque ligne de transaction.
 
 - [ ] **Step 1: Write the failing test in TransactionLedger.test.ts**
@@ -90,7 +90,7 @@ Expected: FAIL (l'importation ou l'ouverture du Popover échoue ou n'est pas cod
 - [ ] **Step 3: Implement Popover and clean up manual event handlers**
 
 Modifier [TransactionLedger.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/TransactionLedger.svelte) :
-1. Importer `Popover` de `@metacult/shared-ui`.
+1. Importer `Popover` de `@nba/ui`.
 2. Supprimer `openDropdownId`, `toggleDropdown` et l'effet `$effect` d'écouteur global de clic.
 3. Remplacer le bloc d'actions absolu par la structure `<Popover.Root>`, `<Popover.Trigger asChild>` et `<Popover.Content>`.
 
@@ -98,7 +98,7 @@ Modifier [TransactionLedger.svelte](file:///Users/david/Lab/nozay-bad/libs/featu
 <!-- Fichier : libs/features/accounting/ui/src/TransactionLedger.svelte -->
 <script lang="ts">
   import { Search, Plus, Trash2, ArrowLeftRight, Check, AlertCircle, ChevronLeft, ChevronRight, MoreVertical, Edit2 } from 'lucide-svelte';
-  import { Button, Table, Input, Badge, Card, Dialog, Popover } from '@metacult/shared-ui';
+  import { Button, Table, Input, Badge, Card, Dialog, Popover } from '@nba/ui';
 
   // ... interfaces et types ...
 
@@ -220,20 +220,20 @@ git commit -m "feat(accounting): migrate transaction ledger actions to Popover c
 * Modify: `libs/features/accounting/ui/src/TransactionLedger.svelte`
 
 **Interfaces:**
-* Consumes: Primitives `Label`, `Input`, `Dialog` de `@metacult/shared-ui`.
+* Consumes: Primitives `Label`, `Input`, `Dialog` de `@nba/ui`.
 * Produces: Un formulaire en grille responsive pour la saisie des écritures.
 
 - [ ] **Step 1: Implement grid structure in TransactionLedger.svelte**
 
 Ouvrir [TransactionLedger.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/TransactionLedger.svelte) et modifier le contenu `<Dialog.Content>` :
-1. Importer `Label` de `@metacult/shared-ui`.
+1. Importer `Label` de `@nba/ui`.
 2. Restructurer les champs en `grid grid-cols-2 gap-4`.
 
 ```html
 <!-- Fichier : libs/features/accounting/ui/src/TransactionLedger.svelte -->
 <script lang="ts">
   import { Search, Plus, Trash2, ArrowLeftRight, Check, AlertCircle, ChevronLeft, ChevronRight, MoreVertical, Edit2 } from 'lucide-svelte';
-  import { Button, Table, Input, Badge, Card, Dialog, Popover, Label } from '@metacult/shared-ui';
+  import { Button, Table, Input, Badge, Card, Dialog, Popover, Label } from '@nba/ui';
   // ... reste du script ...
 </script>
 

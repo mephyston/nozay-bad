@@ -1,13 +1,13 @@
 import { eq } from 'drizzle-orm';
-import { membersTable } from '../data-access/src/schema';
-import { ApplyPaymentRepositoryInterface } from '../shared/repository';
+import { type DbOrTx } from '@nba/db';
+import { membersTable } from '../shared/schema';
 
-export class ApplyPaymentRepository implements ApplyPaymentRepositoryInterface {
-  async getById(db: any, id: number): Promise<any | undefined> {
+export class ApplyPaymentRepository {
+  async getById(db: DbOrTx, id: number): Promise<typeof membersTable.$inferSelect | undefined> {
     return db.select().from(membersTable).where(eq(membersTable.id, id)).get();
   }
 
-  async updatePayment(db: any, id: number, values: { amountReceived: number; amountRemaining: number; paid: boolean }): Promise<void> {
+  async updatePayment(db: DbOrTx, id: number, values: { amountReceived: number; amountRemaining: number; paid: boolean }): Promise<void> {
     await db.update(membersTable)
       .set(values)
       .where(eq(membersTable.id, id))

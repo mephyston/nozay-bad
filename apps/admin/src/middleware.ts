@@ -30,8 +30,14 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
     return new Response('Non autorisé. Authentification Cloudflare Access requise.', { status: 401 });
   }
 
-  // Resolve environment variables from cloudflare:workers
-  const resolvedEnv = cfEnv || {};
+  // Resolve environment variables from cloudflare:workers or Astro runtime context
+  let runtimeEnv = {};
+  try {
+    runtimeEnv = (context.locals as any).runtime?.env || {};
+  } catch (err) {
+    // Ignore. Astro.locals.runtime.env throws in Astro v6 production.
+  }
+  const resolvedEnv = { ...cfEnv, ...runtimeEnv };
 
   const CF_TEAM_DOMAIN = resolvedEnv.CF_TEAM_DOMAIN;
   const CF_AUDIENCE = resolvedEnv.CF_AUDIENCE;

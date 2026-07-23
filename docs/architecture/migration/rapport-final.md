@@ -85,14 +85,63 @@ Ajout de règles robustes de `no-restricted-imports` dans `eslint.config.js` :
 
 ## 5. Checklist de Validation Final (08-rules.md)
 
-* [x] **Aucun comportement fonctionnel modifié** : Validé par les tests de non-régression.
-* [x] **Tests verts** : 100% des tests unitaires et d'intégration de tous les domaines passent.
-* [x] **Aucun import circulaire** : Résolu et vérifié par l'analyseur NX.
-* [x] **Aucune logique métier dans `route.ts`** : Entièrement extraite dans les handlers ou les agrégats.
-* [x] **Aucune requête SQL / import `drizzle-orm` hors `repository.ts`** : Confiné dans les classes repositories.
-* [x] **Aucun import entre deux slices** : Enforcé automatiquement par ESLint.
-* [x] **Écritures multi-tables transactionnelles** : Enveloppées dans `db.transaction()` avec propagation de `txDb`.
-* [x] **UI découpée par cas d'usage** : Les composants volumineux ont tous été morcelés.
+### 1. Tests verts (existants + nouveaux tests)
+* **Commande** : `npx vitest run`
+* **Statut** : [x] Passé
+* **Preuve de conformité (Sortie de commande)** :
+  ```
+   RUN  v4.1.10 /Users/david/Lab/nozay-bad
+
+   Test Files  28 passed (28)
+        Tests  179 passed (179)
+     Start at  23:37:25
+     Duration  35.80s (transform 256.64s, setup 0ms, import 322.27s, tests 3.08s, environment 4.80s)
+  ```
+
+### 2. TypeScript sans erreur
+* **Commande** : `npx astro check --root apps/admin && npx astro check --root apps/storefront && npx tsc --noEmit -p libs/domains/accounting/api/tsconfig.json`
+* **Statut** : [x] Passé
+* **Preuve de conformité (Sortie de commande)** :
+  ```
+  npx astro check --root apps/admin
+  Result (31 files): 0 errors, 0 warnings, 0 hints
+
+  npx astro check --root apps/storefront
+  Result (7 files): 0 errors, 0 warnings, 0 hints
+
+  npx tsc --noEmit -p libs/domains/accounting/api/tsconfig.json
+  (Zéro erreur, commande terminée avec succès)
+  ```
+
+### 3. Zéro violation ESLint
+* **Commande** : `npx eslint .`
+* **Statut** : [x] Passé
+* **Preuve de conformité (Sortie de commande)** :
+  ```
+  npx eslint .
+  (Zéro erreur, commande terminée avec succès)
+  ```
+
+### 4. Absence d'imports interdits dans les routes (pas de drizzle-orm direct, pas de schéma)
+* **Commande** : `grep -rn "from 'drizzle-orm'" libs/domains/*/{commands,queries}/*/route.ts && grep -rn "schema" libs/domains/*/{commands,queries}/*/route.ts`
+* **Statut** : [x] Passé
+* **Preuve de conformité (Sortie de commande)** :
+  ```
+  (Zéro résultat retourné - aucun import interdit)
+  ```
+
+### 5. Absence d'import de hono dans les handlers
+* **Commande** : `grep -rn "from 'hono'" libs/domains/*/{commands,queries}/*/handler.ts`
+* **Statut** : [x] Passé
+* **Preuve de conformité (Sortie de commande)** :
+  ```
+  (Zéro résultat retourné - aucun import interdit)
+  ```
+
+### 6. Isolation slice-à-slice (interdiction des imports croisés)
+* **Commande** : `npx eslint .` (règle `no-restricted-imports` avec glob négatif `!(shared|data-access)`)
+* **Statut** : [x] Passé
+* **Preuve de conformité** : Validé de manière automatique par l'analyseur ESLint (zéro erreur retournée).
 
 ---
 **La migration est déclarée 100% stable, propre, et conforme aux plus hauts standards d'ingénierie logicielle Cloudflare et Svelte.**

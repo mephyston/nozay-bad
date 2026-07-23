@@ -1,15 +1,14 @@
 import { and, eq } from 'drizzle-orm';
-import { ordersTable, productsTable } from '../data-access/src/schema';
-import { getMemberById } from '@metacult/features-members-api';
-import { categoriesTable, transactionsTable } from '@metacult/features-accounting-data-access';
-import { ApproveOrderRepositoryInterface } from '../shared/repository';
+import { type DbOrTx } from '@nba/db';
+import { ordersTable, productsTable, categoriesTable, transactionsTable } from '../shared/schema';
+import { getMemberById } from '@nba/members-api';
 
-export class ApproveOrderRepository implements ApproveOrderRepositoryInterface {
-  async getOrderById(db: any, id: number): Promise<any | undefined> {
+export class ApproveOrderRepository {
+  async getOrderById(db: DbOrTx, id: number): Promise<typeof ordersTable.$inferSelect | undefined> {
     return db.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
   }
 
-  async getMemberById(db: any, id: number): Promise<any | undefined> {
+  async getMemberById(db: DbOrTx, id: number): Promise<{ id: number; lastName: string; firstName: string } | undefined> {
     const member = await getMemberById(db, id);
     if (!member) return undefined;
     return {
@@ -19,11 +18,11 @@ export class ApproveOrderRepository implements ApproveOrderRepositoryInterface {
     };
   }
 
-  async getProductById(db: any, id: number): Promise<any | undefined> {
+  async getProductById(db: DbOrTx, id: number): Promise<typeof productsTable.$inferSelect | undefined> {
     return db.select().from(productsTable).where(eq(productsTable.id, id)).get();
   }
 
-  async getBoutiqueCategory(db: any): Promise<number | null> {
+  async getBoutiqueCategory(db: DbOrTx): Promise<number | null> {
     const boutiqueCat = await db.select({ id: categoriesTable.id })
       .from(categoriesTable)
       .where(eq(categoriesTable.adminLabel, 'Boutique'))
@@ -31,7 +30,7 @@ export class ApproveOrderRepository implements ApproveOrderRepositoryInterface {
     return boutiqueCat ? boutiqueCat.id : null;
   }
 
-  async createRecetteTransaction(db: any, values: {
+  async createRecetteTransaction(db: DbOrTx, values: {
     seasonId: string;
     category: number | null;
     amount: number;
@@ -56,7 +55,7 @@ export class ApproveOrderRepository implements ApproveOrderRepositoryInterface {
       .get();
   }
 
-  async approveWithLock(db: any, id: number, transactionId: number): Promise<any | undefined> {
+  async approveWithLock(db: DbOrTx, id: number, transactionId: number): Promise<typeof ordersTable.$inferSelect | undefined> {
     return db.update(ordersTable)
       .set({ status: 'approved', transactionId })
       .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')))

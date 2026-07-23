@@ -1,6 +1,0 @@
-{
-  "name": "@metacult/features-shop-data-access",
-  "projectType": "library",
-  "sourceRoot": "libs/domains/shop/data-access/src",
-  "tags": ["type:data-access", "scope:shop"]
-}

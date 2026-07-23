@@ -1,20 +1,14 @@
+import { type Db } from '@nba/db';
 import { CreateExpenseRepository } from './repository';
-import { isSeasonClosed } from '@metacult/features-members-data-access';
-import { normalizeCategory } from '@metacult/features-accounting-data-access';
+import { isSeasonClosed } from '@nba/members-api';
+import { normalizeCategory } from '@nba/accounting-api';
 import { SeasonClosedError } from '../shared/errors';
+import { CreateExpenseInput, CreateExpenseOutput } from "./dto";
 
 export async function createExpense(
-  db: any,
-  body: {
-    seasonId: string;
-    description: string;
-    category: string | number;
-    amount: number;
-    photoUrl?: string | null;
-    emitterName: string;
-    memberId?: number | null;
-  }
-) {
+  db: Db,
+  body: CreateExpenseInput
+): Promise<CreateExpenseOutput> {
   if (await isSeasonClosed(db, body.seasonId)) {
     throw new SeasonClosedError('La saison est clôturée. Impossible de soumettre une note de frais.');
   }

@@ -20,6 +20,10 @@ concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  actions: read
+
 env:
   NODE_VERSION: "22"
 
@@ -49,6 +53,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Derive appropriate SHAs for affected commands
+        uses: nrwl/nx-set-shas@v4
+        with:
+          main-branch-name: 'main'
+
       - name: Detect affected projects
         id: affected
         run: |
@@ -56,38 +65,31 @@ jobs:
           
           if [ "${{ github.event.inputs.force_all }}" = "true" ] || echo "$COMMIT_MSG" | grep -qiE "force deploy|deploy all"; then
             echo "Forcing deployment of all applications"
-            API_COUNT=1
-            STOREFRONT_COUNT=1
-            ADMIN_COUNT=1
+            API_AFFECTED="true"
+            STOREFRONT_AFFECTED="true"
+            ADMIN_AFFECTED="true"
           else
-            if [ "${{ github.event_name }}" = "pull_request" ]; then
-              BASE_SHA="${{ github.event.pull_request.base.sha }}"
-            else
-              BASE_SHA="HEAD~1"
-            fi
-
-            AFFECTED=$(npx nx show projects --affected --base=$BASE_SHA --head=HEAD 2>/dev/null || echo "")
+            AFFECTED=$(npx nx show projects --affected --base=$NX_BASE --head=$NX_HEAD 2>/dev/null || echo "")
             echo "Affected projects: [$AFFECTED]"
 
-            API_COUNT=$(echo "$AFFECTED" | grep -cw 'api' || true)
-            STOREFRONT_COUNT=$(echo "$AFFECTED" | grep -cw 'storefront' || true)
-            ADMIN_COUNT=$(echo "$AFFECTED" | grep -cw 'admin' || true)
+            if echo "$AFFECTED" | grep -qx 'api'; then API_AFFECTED="true"; else API_AFFECTED="false"; fi
+            if echo "$AFFECTED" | grep -qx 'storefront'; then STOREFRONT_AFFECTED="true"; else STOREFRONT_AFFECTED="false"; fi
+            if echo "$AFFECTED" | grep -qx 'admin'; then ADMIN_AFFECTED="true"; else ADMIN_AFFECTED="false"; fi
           fi
 
-          echo "api=$API_COUNT" >> $GITHUB_OUTPUT
-          echo "storefront=$STOREFRONT_COUNT" >> $GITHUB_OUTPUT
-          echo "admin=$ADMIN_COUNT" >> $GITHUB_OUTPUT
+          echo "api=$API_AFFECTED" >> $GITHUB_OUTPUT
+          echo "storefront=$STOREFRONT_AFFECTED" >> $GITHUB_OUTPUT
+          echo "admin=$ADMIN_AFFECTED" >> $GITHUB_OUTPUT
 
-          echo "Debug outputs → api=$API_COUNT storefront=$STOREFRONT_COUNT admin=$ADMIN_COUNT"
+          echo "Debug outputs → api=$API_AFFECTED storefront=$STOREFRONT_AFFECTED admin=$ADMIN_AFFECTED"
 
   # ──────────────────────────────────────────────────────────────
-  # 2. Tests sur PR uniquement
+  # 2. Tests affectés (exécutés sur PR et sur Push)
   # ──────────────────────────────────────────────────────────────
   test:
     name: Test affected
     runs-on: ubuntu-latest
     needs: detect-changes
-    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -103,10 +105,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Derive appropriate SHAs for affected commands
+        uses: nrwl/nx-set-shas@v4
+        with:
+          main-branch-name: 'main'
+
+      - name: Verify environment variable & binding declarations
+        run: node scripts/check-env-declarations.js
+
       - name: Run affected tests
         run: |
-          BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          npx nx affected -t test --base=$BASE_SHA --head=HEAD --parallel=3
+          npx nx affected -t test --base=$NX_BASE --head=$NX_HEAD --parallel=3
 
   # ──────────────────────────────────────────────────────────────
   # 3. Deploy API (en premier — les autres apps en dépendent via Service Binding)
@@ -114,8 +123,8 @@ jobs:
   deploy-api:
     name: Deploy API Worker
     runs-on: ubuntu-latest
-    needs: detect-changes
-    if: github.event_name == 'push' && needs.detect-changes.outputs.api == '1'
+    needs: [detect-changes, test]
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.api == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -159,8 +168,8 @@ jobs:
   deploy-storefront:
     name: Deploy Storefront Worker
     runs-on: ubuntu-latest
-    needs: [detect-changes, deploy-api]
-    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.storefront == '1' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    needs: [detect-changes, test, deploy-api]
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.storefront == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -183,15 +192,17 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           node -e "
             const fs = require('fs');
             const cfg = JSON.parse(fs.readFileSync('dist/server/wrangler.json', 'utf8'));
             cfg.kv_namespaces = (cfg.kv_namespaces || []).filter(kv => kv.id);
             delete cfg.images;
-            if ('${{ github.ref_name }}' !== 'main') {
-              cfg.name = 'nba-boutique-staging';
+            if (process.env.REF_NAME !== 'main') {
+              cfg.name = 'nba-storefront-staging';
               cfg.services = [{ binding: 'API_SERVICE', service: 'nba-api-staging' }];
+              cfg.kv_namespaces = [{ binding: 'RATE_LIMIT_KV', id: 'e1f0b19b7ea44399ba66d10fe7907ce9' }];
             }
             fs.writeFileSync('dist/server/wrangler.json', JSON.stringify(cfg, null, 2));
           "
@@ -200,8 +211,8 @@ jobs:
   deploy-admin:
     name: Deploy Admin Worker
     runs-on: ubuntu-latest
-    needs: [detect-changes, deploy-api]
-    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.admin == '1' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    needs: [detect-changes, test, deploy-api]
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.admin == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -224,14 +235,15 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           node -e "
             const fs = require('fs');
             const cfg = JSON.parse(fs.readFileSync('dist/server/wrangler.json', 'utf8'));
             cfg.kv_namespaces = (cfg.kv_namespaces || []).filter(kv => kv.id);
             delete cfg.images;
-            if ('${{ github.ref_name }}' !== 'main') {
-              cfg.name = 'nba-admin-console-staging';
+            if (process.env.REF_NAME !== 'main') {
+              cfg.name = 'nba-admin-staging';
               cfg.services = [{ binding: 'API_SERVICE', service: 'nba-api-staging' }];
             }
             fs.writeFileSync('dist/server/wrangler.json', JSON.stringify(cfg, null, 2));

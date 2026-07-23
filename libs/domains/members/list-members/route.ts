@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@nba/db';
+import { tbValidator } from '@hono/typebox-validator';
 import { listMembers } from './handler';
+import { listMembersQuerySchema } from './validator';
 
 export type Bindings = {
   DB: D1Database;
@@ -8,32 +10,42 @@ export type Bindings = {
 
 export const listMembersRoute = new Hono<{ Bindings: Bindings }>();
 
-listMembersRoute.get('/', async (c) => {
-  if (!c.env || !c.env.DB) {
-    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+listMembersRoute.get(
+  '/',
+  tbValidator('query', listMembersQuerySchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+    }
+  }),
+  async (c) => {
+    if (!c.env || !c.env.DB) {
+      return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+    }
+
+    const query = c.req.valid('query');
+    const page = parseInt(query.page || '1', 10);
+    const rawLimit = parseInt(query.limit || '20', 10);
+    const limit = Math.min(Math.max(1, rawLimit), 100);
+    const search = query.search || '';
+    const gender = query.gender || '';
+    const type = query.type || '';
+    const status = query.status || '';
+    const season = query.season || '';
+
+    const paidParam = query.paid;
+    let paid: boolean | undefined = undefined;
+    if (paidParam === 'true') {
+      paid = true;
+    } else if (paidParam === 'false') {
+      paid = false;
+    }
+
+    const db = createDb(c.env.DB);
+    const result = await listMembers(db, { search, gender: gender as any, type, status, season, paid }, { page, limit });
+
+    return c.json({
+      success: true,
+      ...result
+    });
   }
-
-  const page = parseInt(c.req.query('page') || '1', 10);
-  const limit = parseInt(c.req.query('limit') || '20', 10);
-  const search = c.req.query('search') || '';
-  const gender = c.req.query('gender') || '';
-  const type = c.req.query('type') || '';
-  const status = c.req.query('status') || '';
-  const season = c.req.query('season') || '';
-
-  const paidParam = c.req.query('paid');
-  let paid: boolean | undefined = undefined;
-  if (paidParam === 'true') {
-    paid = true;
-  } else if (paidParam === 'false') {
-    paid = false;
-  }
-
-  const db = drizzle(c.env.DB);
-  const result = await listMembers(db, { search, gender: gender as any, type, status, season, paid }, { page, limit });
-
-  return c.json({
-    success: true,
-    ...result
-  });
-});
+);

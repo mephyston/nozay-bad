@@ -1,0 +1,91 @@
+---
+import { ModeWatcher } from 'mode-watcher';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
+    <title>{title}</title>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" is:inline async defer></script>
+    <script is:inline>
+      (function() {
+        try {
+          let theme = 'light';
+          if (typeof localStorage !== 'undefined') {
+            let rawMode = localStorage.getItem('mode-watcher-mode') || localStorage.getItem('mode-watcher-user-preference');
+            if (rawMode) {
+              theme = rawMode.replace(/"/g, '').trim();
+              if (rawMode !== theme) {
+                localStorage.setItem('mode-watcher-mode', theme);
+                localStorage.setItem('mode-watcher-user-preference', theme);
+              }
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              theme = 'dark';
+            }
+          } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            theme = 'dark';
+          }
+          
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+            document.documentElement.style.colorScheme = 'dark';
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.style.colorScheme = 'light';
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <style is:inline>
+      html.dark {
+        background-color: rgb(38, 38, 36) !important;
+        color: rgb(241, 241, 239);
+        --background: rgb(38, 38, 36);
+        --foreground: rgb(241, 241, 239);
+        --sidebar: rgb(31, 30, 29);
+        --sidebar-foreground: rgb(195, 192, 182);
+        --card: rgb(44, 44, 43);
+        --card-foreground: rgb(250, 249, 245);
+        --popover: rgb(48, 48, 46);
+        --popover-foreground: rgb(229, 229, 226);
+        --muted: rgb(27, 27, 25);
+        --muted-foreground: rgb(183, 181, 169);
+        --accent: rgb(26, 25, 21);
+        --border: rgb(62, 62, 56);
+      }
+      html:not(.dark) {
+        background-color: rgb(250, 249, 245);
+        color: rgb(61, 57, 41);
+        --background: rgb(250, 249, 245);
+        --foreground: rgb(61, 57, 41);
+        --sidebar: rgb(245, 244, 238);
+        --sidebar-foreground: rgb(61, 61, 58);
+        --card: rgb(245, 244, 239);
+        --card-foreground: rgb(20, 20, 19);
+        --popover: rgb(255, 255, 255);
+        --popover-foreground: rgb(40, 38, 27);
+        --muted: rgb(237, 233, 222);
+        --muted-foreground: rgb(110, 109, 104);
+        --accent: rgb(233, 230, 220);
+        --border: rgb(218, 217, 212);
+      }
+    </style>
+  </head>
+  <body class="bg-background text-foreground min-h-screen flex flex-col antialiased font-sans">
+    <ModeWatcher client:load />
+    <slot />
+  </body>
+</html>

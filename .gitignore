@@ -53,4 +53,8 @@ Thumbs.db
 
 # TypeScript build info
 *.tsbuildinfo
+graph.json
+
+# Local superpowers brainstorm server state
+.superpowers/brainstorm/
 

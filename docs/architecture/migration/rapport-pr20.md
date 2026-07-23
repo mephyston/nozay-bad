@@ -16,8 +16,8 @@ Les composants de storefront `ExpenseReportForm.svelte` (note de frais) et `Shop
 * **shop/ui/src/index.ts** : Ajout de l'export public de `ShopCatalog`.
 
 ### C. Mises à Jour des Applications
-* **apps/storefront/src/pages/expenses.astro** : Redirection de l'import de `ExpenseReportForm` pour passer par le barrel public du domaine `@metacult/features-expenses-ui`.
-* **apps/storefront/src/pages/index.astro** : Redirection de l'import de `ShopCatalog` pour passer par le barrel public du domaine `@metacult/features-shop-ui`.
+* **apps/storefront/src/pages/expenses.astro** : Redirection de l'import de `ExpenseReportForm` pour passer par le barrel public du domaine `@nba/expenses-ui`.
+* **apps/storefront/src/pages/index.astro** : Redirection de l'import de `ShopCatalog` pour passer par le barrel public du domaine `@nba/shop-ui`.
 
 ---
 

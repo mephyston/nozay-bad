@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { UploadCloud, CheckCircle, AlertCircle, Coins, Search, ChevronDown } from 'lucide-svelte';
-  import { Button, Card, Input, Label, Badge } from '@metacult/shared-ui';
+  import { UploadCloud, CheckCircle, AlertCircle, Coins, Search, ChevronDown } from '@lucide/svelte';
+  import { Button, Card, Input, Label, Badge } from '@nba/ui';
 
   interface Member {
     id: number;
@@ -33,6 +33,9 @@
   let memberSearchQuery = $state('');
   let isMemberDropdownOpen = $state(false);
   let highlightedIndex = $state(-1);
+  let lastSelectedMember = $state<Member | null>(null);
+  let fetchedMembers = $state<Member[]>([]);
+  let debounceTimeout: any;
 
   let submitting = $state(false);
   let successMsg = $state<string | null>(null);
@@ -67,35 +70,99 @@
     }
   });
 
-  // Derived member lists for dropdown
-  const filteredMembers = $derived(
-    memberSearchQuery.trim() === ''
-      ? members
-      : members.filter(m => 
-          `${m.lastName} ${m.firstName}`.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
-          m.licence.toLowerCase().includes(memberSearchQuery.toLowerCase())
-        )
-  );
+  function formatMemberName(m: Member | null): string {
+    if (!m) return '';
+    const maskedLast = m.lastName
+      ? (m.lastName.length > 2 && !m.lastName.endsWith('.') ? `${m.lastName[0]}.` : m.lastName)
+      : '';
+    return `${maskedLast} ${m.firstName}`.trim();
+  }
 
-  const selectedMember = $derived(
-    members.find(m => m.id.toString() === selectedMemberId) || null
-  );
+  function formatLicence(licence: string): string {
+    if (!licence) return '***';
+    if (licence.includes('*')) return licence;
+    if (licence.length <= 4) return '***';
+    return `${licence.slice(0, 2)}***${licence.slice(-2)}`;
+  }
 
-  const memberDisplayVal = $derived(
-    selectedMember ? `${selectedMember.lastName} ${selectedMember.firstName}` : ''
-  );
+  $effect(() => {
+    if (!isMemberDropdownOpen) {
+      highlightedIndex = -1;
+    }
+  });
 
-  // Clamp highlightedIndex when filteredMembers changes
   $effect(() => {
     if (highlightedIndex >= filteredMembers.length) {
       highlightedIndex = filteredMembers.length - 1;
     }
   });
 
+  // Debounced member search from API
+  $effect(() => {
+    if (!isMemberDropdownOpen) return;
+
+    const query = memberSearchQuery.trim();
+    if (lastSelectedMember && memberSearchQuery === formatMemberName(lastSelectedMember)) {
+      return;
+    }
+
+    if (query.length > 0 && query.length < 3) {
+      return;
+    }
+
+    if (debounceTimeout) {
+      clearTimeout(debounceTimeout);
+    }
+
+    debounceTimeout = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/members-search?q=${encodeURIComponent(query)}`);
+        if (response.ok) {
+          const data = await response.json() as Member[];
+          fetchedMembers = data;
+        }
+      } catch (err) {
+        console.error('Error fetching members from API:', err);
+      }
+    }, query === '' ? 0 : 300);
+
+    return () => {
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
+    };
+  });
+
+  let sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
+
+  let selectedMember = $derived(
+    members.length > 0
+      ? (members.find(m => m.id.toString() === selectedMemberId) || null)
+      : lastSelectedMember
+  );
+
+  let memberDisplayVal = $derived(
+    selectedMember ? formatMemberName(selectedMember) : ''
+  );
+
+  let filteredMembers = $derived(
+    memberSearchQuery.trim() === ''
+      ? (fetchedMembers.length > 0 ? fetchedMembers : sortedMembers)
+      : (fetchedMembers.length > 0
+          ? fetchedMembers
+          : sortedMembers.filter(m =>
+              `${m.lastName} ${m.firstName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
+              `${m.firstName} ${m.lastName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase())
+            )
+        )
+  );
+
   function selectMember(m: Member) {
     selectedMemberId = m.id.toString();
-    memberSearchQuery = `${m.lastName} ${m.firstName}`;
-    emitterName = `${m.lastName} ${m.firstName}`;
+    lastSelectedMember = m;
+    const name = formatMemberName(m);
+    memberSearchQuery = name;
+    emitterName = name;
     isMemberDropdownOpen = false;
     highlightedIndex = -1;
   }
@@ -111,13 +178,17 @@
     }
 
     if (e.key === 'ArrowDown') {
-      highlightedIndex = (highlightedIndex + 1) % filteredMembers.length;
+      if (filteredMembers.length > 0) {
+        highlightedIndex = (highlightedIndex + 1) % filteredMembers.length;
+        scrollOptionIntoView(highlightedIndex);
+      }
       e.preventDefault();
-      scrollOptionIntoView(highlightedIndex);
     } else if (e.key === 'ArrowUp') {
-      highlightedIndex = (highlightedIndex - 1 + filteredMembers.length) % filteredMembers.length;
+      if (filteredMembers.length > 0) {
+        highlightedIndex = (highlightedIndex - 1 + filteredMembers.length) % filteredMembers.length;
+        scrollOptionIntoView(highlightedIndex);
+      }
       e.preventDefault();
-      scrollOptionIntoView(highlightedIndex);
     } else if (e.key === 'Enter') {
       if (highlightedIndex >= 0 && highlightedIndex < filteredMembers.length) {
         selectMember(filteredMembers[highlightedIndex]);
@@ -191,7 +262,6 @@
       return;
     }
 
-    // Retrieve Turnstile response token (bypassed in test environment)
     const isTest = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
     const turnstileResponse = isTest
       ? 'mock-test-token'
@@ -215,7 +285,7 @@
             seasonId: activeSeasonId,
             description,
             category,
-            amount: Math.round(parsedAmount * 100), // convert to cents
+            amount: Math.round(parsedAmount * 100),
             photoUrl,
             emitterName,
             memberId: parseInt(selectedMemberId)
@@ -231,9 +301,9 @@
 
       successMsg = "Votre note de frais a été soumise avec succès ! Le trésorier procédera à sa validation et remboursement.";
       
-      // Reset form
       emitterName = '';
       selectedMemberId = '';
+      lastSelectedMember = null;
       memberSearchQuery = '';
       category = visibleCategories[0]?.value || 'fonctionnement_administratif';
       description = '';
@@ -241,13 +311,11 @@
       photoUrl = null;
       if (fileInput) fileInput.value = '';
 
-      // Reset Turnstile widget on success
       if (typeof window !== 'undefined' && (window as any).turnstile) {
         (window as any).turnstile.reset();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || "Une erreur est survenue.";
-      // Reset Turnstile widget on failure
       if (typeof window !== 'undefined' && (window as any).turnstile) {
         (window as any).turnstile.reset();
       }
@@ -257,14 +325,14 @@
   }
 </script>
 
-<Card.Root class="max-w-2xl mx-auto shadow-xl mt-6">
-  <Card.Header class="bg-gradient-to-r from-violet-600 to-indigo-600 p-6 text-white flex flex-row items-center gap-4 rounded-t-xl">
-    <div class="bg-white/10 p-3 rounded-xl backdrop-blur-md">
-      <Coins class="w-7 h-7 text-white" />
+<Card.Root class="max-w-2xl mx-auto shadow-xl">
+  <Card.Header class="bg-gradient-to-r from-primary to-primary/80 p-6 text-primary-foreground flex flex-row items-center gap-4 rounded-t-xl">
+    <div class="bg-primary-foreground/10 p-3 rounded-xl backdrop-blur-md">
+      <Coins class="w-7 h-7 text-primary-foreground" />
     </div>
     <div>
-      <Card.Title class="text-xl font-bold tracking-tight text-white">Saisir une note de frais</Card.Title>
-      <p class="text-xs text-white/80 mt-1">Soumettez vos dépenses engagées pour le compte de l'association.</p>
+      <Card.Title class="text-xl font-bold tracking-tight text-primary-foreground">Saisir une note de frais</Card.Title>
+      <p class="text-xs text-primary-foreground/80 mt-1">Soumettez vos dépenses engagées pour le compte de l'association.</p>
     </div>
   </Card.Header>
 
@@ -293,11 +361,12 @@
             id="expense-member-input"
             type="text"
             role="combobox"
+            autocomplete="off"
             aria-expanded={isMemberDropdownOpen}
             aria-autocomplete="list"
             aria-controls="expense-member-listbox"
             aria-activedescendant={highlightedIndex >= 0 ? `expense-member-option-${highlightedIndex}` : undefined}
-            placeholder="Rechercher votre nom (Nom, Prénom, Licence...)"
+            placeholder="Rechercher par Nom, Prénom, ou N° Licence (min 3 caractères)..."
             class="w-full pl-10 pr-10 h-10 rounded-xl font-semibold"
             value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
             oninput={(e) => {
@@ -307,20 +376,19 @@
             onfocus={(e) => {
               isMemberDropdownOpen = true;
               if (selectedMember) {
-                memberSearchQuery = `${selectedMember.lastName} ${selectedMember.firstName}`;
+                memberSearchQuery = formatMemberName(selectedMember);
               } else {
                 memberSearchQuery = '';
               }
               (e.target as HTMLInputElement).select();
             }}
             onblur={() => {
-              // Delay to allow onmousedown selection of options
               setTimeout(() => { isMemberDropdownOpen = false; }, 200);
             }}
             onkeydown={handleKeyDown}
             required
           />
-          <ChevronDown class="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <ChevronDown class="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
         </div>
 
         {#if isMemberDropdownOpen}
@@ -335,18 +403,20 @@
                 role="option"
                 aria-selected={selectedMemberId === m.id.toString()}
                 id={`expense-member-option-${index}`}
-                class="w-full text-left px-4 py-2.5 text-sm transition-colors font-semibold border-0 cursor-pointer {index === highlightedIndex ? 'bg-accent text-accent-foreground' : 'hover:bg-muted text-foreground'}"
+                class="w-full text-left px-4 py-2.5 text-sm transition-colors font-semibold border-0 cursor-pointer {index === highlightedIndex ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground'}"
                 onmousedown={() => {
                   selectMember(m);
                 }}
               >
                 <div class="flex justify-between items-center">
-                  <span>{m.lastName} {m.firstName}</span>
-                  <Badge variant="outline" class="font-mono">Licence: {m.licence}</Badge>
+                  <span>{formatMemberName(m)}</span>
+                  <Badge variant="outline" class="font-mono">Licence: {formatLicence(m.licence)}</Badge>
                 </div>
               </button>
             {:else}
-              <div class="px-4 py-3 text-sm text-muted-foreground italic bg-popover">Aucun adhérent trouvé</div>
+              <div class="px-4 py-3 text-sm text-muted-foreground italic bg-popover">
+                {memberSearchQuery.trim().length > 0 && memberSearchQuery.trim().length < 3 ? 'Saisissez au moins 3 caractères pour rechercher' : 'Aucun adhérent trouvé'}
+              </div>
             {/each}
           </div>
         {/if}
@@ -422,13 +492,13 @@
       </div>
 
       <div class="flex justify-center my-4">
-        <div class="cf-turnstile" data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1"></div>
+        <div class="cf-turnstile" data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1" data-size="invisible"></div>
       </div>
 
       <Button
         type="submit"
         disabled={submitting}
-        class="w-full h-auto py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-bold rounded-xl text-sm transition-colors shadow-lg border-0 mt-4"
+        class="w-full h-auto py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl text-sm transition-colors shadow-lg border-0 mt-4"
       >
         {#if submitting}
           <span class="animate-pulse">Soumission en cours...</span>

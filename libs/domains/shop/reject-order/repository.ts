@@ -1,13 +1,13 @@
 import { and, eq } from 'drizzle-orm';
-import { ordersTable } from '../data-access/src/schema';
-import { RejectOrderRepositoryInterface } from '../shared/repository';
+import { type DbOrTx } from '@nba/db';
+import { ordersTable } from '../shared/schema';
 
-export class RejectOrderRepository implements RejectOrderRepositoryInterface {
-  async getOrderById(db: any, id: number): Promise<any | undefined> {
+export class RejectOrderRepository {
+  async getOrderById(db: DbOrTx, id: number): Promise<typeof ordersTable.$inferSelect | undefined> {
     return db.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
   }
 
-  async rejectWithLock(db: any, id: number): Promise<any | undefined> {
+  async rejectWithLock(db: DbOrTx, id: number): Promise<typeof ordersTable.$inferSelect | undefined> {
     return db.update(ordersTable)
       .set({ status: 'rejected' })
       .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')))

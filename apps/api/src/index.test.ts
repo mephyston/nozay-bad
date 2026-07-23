@@ -1,16 +1,45 @@
 import { describe, it, expect } from 'vitest';
 import app from './index';
-import { setupMockDb } from '@metacult/shared-db/test-utils';
-import { seasonsTable } from '@metacult/features-members-data-access';
-import { expensesTable } from '../../../libs/domains/expenses/data-access/src/schema';
+import { setupMockDb } from '@nba/db/test-utils';
+import { seasonsTable } from '../../../libs/domains/members/shared/schema';
+import { expensesTable } from '../../../libs/domains/expenses/shared/schema';
 import { eq } from 'drizzle-orm';
-import { AppError } from '@metacult/shared-db';
+import { AppError } from '@nba/db';
 
-describe('API Health Endpoint', () => {
-  it('should return 200 OK and status ok', async () => {
+describe('API Health & Defense-in-Depth Auth Middleware', () => {
+  it('should return 200 OK for /health without authentication', async () => {
     const res = await app.request('/health');
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ status: 'ok' });
+  });
+
+  it('should reject direct external request without header with 401', async () => {
+    const res = await app.request('https://nba-api.workers.dev/members', {
+      headers: { 'cf-connecting-ip': '203.0.113.19' }
+    }, { INTERNAL_API_KEY: 'secret123' });
+
+    expect(res.status).toBe(401);
+    const body = await res.json() as any;
+    expect(body.success).toBe(false);
+    expect(body.error).toBe('Accès non autorisé');
+  });
+
+  it('should accept direct external request with valid x-api-key header with 200', async () => {
+    const { mockD1 } = await setupMockDb();
+    const res = await app.request('https://nba-api.workers.dev/members', {
+      headers: {
+        'cf-connecting-ip': '203.0.113.19',
+        'x-api-key': 'secret123'
+      }
+    }, { DB: mockD1 as any, INTERNAL_API_KEY: 'secret123' });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('should accept internal Service Binding requests (localhost) with 200', async () => {
+    const { mockD1 } = await setupMockDb();
+    const res = await app.request('http://localhost/members', {}, { DB: mockD1 as any, INTERNAL_API_KEY: 'secret123' });
+    expect(res.status).toBe(200);
   });
 });
 

@@ -1,7 +1,7 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { CheckDepositManager } from '@metacult/features-accounting-ui';
+import { CheckDepositManager } from '@nba/accounting-ui';
 
 import { env } from 'cloudflare:workers';
 
@@ -89,36 +89,34 @@ let pendingBankTx = [];
 let errorMsg = '';
 
 try {
-  // 1. Récupérer les chèques de la saison
-  const checksRes = await apiService.fetch(`http://localhost/accounting/checks?season=${season}`);
+  const [checksRes, depositsRes, membersRes, seasonsRes, bankTxRes] = await Promise.all([
+    apiService.fetch(`http://localhost/accounting/checks?season=${season}`),
+    apiService.fetch(`http://localhost/accounting/check-deposits?season=${season}`),
+    apiService.fetch(`http://localhost/members?limit=1000&season=${season}`),
+    apiService.fetch('http://localhost/accounting/seasons'),
+    apiService.fetch(`http://localhost/accounting/bank-transactions?season=${season}`)
+  ]);
+
   if (checksRes.ok) {
     const json = await checksRes.json() as any;
     checksList = json.data || [];
   }
 
-  // 2. Récupérer les remises de chèques de la saison
-  const depositsRes = await apiService.fetch(`http://localhost/accounting/check-deposits?season=${season}`);
   if (depositsRes.ok) {
     const json = await depositsRes.json() as any;
     depositsList = json.data || [];
   }
 
-  // 3. Récupérer les adhérents pour le select
-  const membersRes = await apiService.fetch(`http://localhost/members?limit=1000&season=${season}`);
   if (membersRes.ok) {
     const json = await membersRes.json() as any;
     membersList = json.data || [];
   }
 
-  // 4. Récupérer les saisons
-  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];
   }
 
-  // 5. Récupérer les écritures bancaires de crédit en attente (supérieures à 0)
-  const bankTxRes = await apiService.fetch(`http://localhost/accounting/bank-transactions?season=${season}`);
   if (bankTxRes.ok) {
     const json = await bankTxRes.json() as any;
     const allBankTx = json.data || [];
@@ -132,7 +130,7 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
 ---
 
 <Layout title="Remises de Chèques - NBA 91">
-  <AdminLayout client:load email={userEmail} breadcrumb="Comptabilité / Remises de chèques">
+  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Remises de chèques">
     <div class="space-y-6">
       {errorMsg && (
         <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">

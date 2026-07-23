@@ -12,13 +12,8 @@ create-invoice/
   handler.test.ts         # test du handler, indépendant du framework HTTP
 ```
 
-Le gabarit d'une tranche est identique qu'il s'agisse d'une commande ou d'une
-requête. Ce qui change, c'est où elle vit une fois le domaine devenu gros
-(cf. `01-principles.md`, règle 12) : `commands/create-invoice/` pour ce qui
-écrit, `queries/list-invoices/` pour ce qui lit seul. Une tranche `queries/`
-n'a jamais de `db.transaction` dans son `handler.ts` — si vous en trouvez
-une, c'est le signe qu'elle a été mal classée ou qu'elle fait plus qu'une
-lecture.
+Le gabarit d'une tranche est identique quel que soit le cas d'usage. Ce qui change, c'est où elle vit une fois le domaine devenu volumineux
+(cf. `01-principles.md`, règle 12 & `ADR-0003`) : dans un sous-dossier par capacité métier (`invoices/create-invoice/`, `seasons/list-seasons/`). Pour les domaines comportant moins de 10 tranches, la tranche vit directement à la racine du domaine (`members/list-members/`).
 
 ## Exemple concret basé sur le code existant
 
@@ -46,10 +41,28 @@ Cible : `libs/domains/accounting/create-invoice/` :
 ## Règle de composition
 
 Décision actée : le `route.ts` de chaque cas d'usage exporte son propre
-sous-routeur Hono. Le fichier `api/src/index.ts` du domaine ne fait que les
-monter (`app.route('/', createInvoiceRoute)`, etc.) — c'est un fichier de
-composition pur, sans logique. Il n'existe plus de fichier `routes.ts`
-central ni de dossier `api/src/routes/` regroupant plusieurs cas d'usage :
-ce modèle intermédiaire (utile pendant la migration) est désormais remplacé
-partout, y compris pour `accounting` qui l'utilisait comme étape
-transitoire.
+sous-routeur Hono. Un unique fichier de composition les monte
+(`app.route('/', createInvoiceRoute)`, etc.) — c'est un fichier de câblage
+pur, sans logique. Il n'existe plus de fichier `routes.ts` central ni de
+dossier `api/src/routes/` regroupant plusieurs cas d'usage.
+
+**Emplacement du fichier de composition : à la racine du domaine**
+(`libs/domains/accounting/index.ts`), pas dans un sous-dossier `api/`.
+`api/` est un vestige de l'architecture en couches — il n'y a pas de raison
+de le garder pour un seul fichier de câblage une fois que le routing, la
+validation et la persistance vivent dans les tranches. `shared/` n'est pas
+non plus le bon endroit pour ce fichier : `shared/` est réservé au modèle
+métier partagé entre tranches (agrégats, interfaces de repository, erreurs),
+jamais au code d'assemblage/routing.
+
+**Sort du schéma Drizzle** (aujourd'hui dans `data-access/src/schema.ts`) :
+il déménage dans `shared/schema.ts` du domaine — visible par les
+repositories de toutes les tranches du domaine, mais jamais exporté en
+dehors du domaine (contrairement à l'ancien `data-access/index.ts` qui
+faisait `export * from './schema'`).
+
+**Sort de `ui/` à la racine du domaine** : il disparaît une fois chaque
+composant redistribué dans le `ui/` de sa tranche (`<capacité>/<cas-usage>/ui/`
+ou `<cas-usage>/ui/`). Un domaine cible n'a donc plus que
+`shared/` et ses dossiers de capacités métier ou ses tranches à plat (selon la règle des 10 tranches ADR-0003) — aucun dossier `api/`,
+`data-access/` ni `ui/` à sa racine.

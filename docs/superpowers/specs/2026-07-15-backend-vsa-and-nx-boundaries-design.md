@@ -69,7 +69,7 @@ libs/features/[domain]/
 ```
 
 ### Règles d'Imports autorisés :
-- `apps/api` importe uniquement les modules `api` de chaque feature (ex: `@metacult/features-members-api`).
+- `apps/api` importe uniquement les modules `api` de chaque feature (ex: `@nba/members-api`).
 - Chaque feature `api` importe sa propre feature `data-access` (ex: `members/api` -> `members/data-access`).
 - **Jointures SQL transversales** : `accounting/data-access` est autorisé à importer `members/data-access` (pour les jointures SQL entre `transactions` et `members`), mais `accounting/api` ne peut jamais importer directement `members/api` ou `members/data-access`.
 

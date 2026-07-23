@@ -32,7 +32,7 @@ Ce document spécifie le design, l'architecture et les exigences pour uniformise
 
 ## 2. Refonte en Onglets Standards (`CheckDepositManager.svelte`)
 
-Le composant utilisera le composant `<Tabs>` standard de `@metacult/shared-ui` pour découper la vue :
+Le composant utilisera le composant `<Tabs>` standard de `@nba/ui` pour découper la vue :
 
 ```html
 <Tabs.Root value={activeTab} onValueChange={(val) => activeTab = val as any} class="w-full space-y-6">
@@ -53,7 +53,7 @@ Le composant utilisera le composant `<Tabs>` standard de `@metacult/shared-ui` p
 
 ## 3. Checkboxes Accessibles
 
-Toutes les balises `<input type="checkbox">` brutes sont remplacées par le composant accessible `<Checkbox>` de `@metacult/shared-ui`.
+Toutes les balises `<input type="checkbox">` brutes sont remplacées par le composant accessible `<Checkbox>` de `@nba/ui`.
 
 ## 4. Uniformisation des Polices (Outfit)
 

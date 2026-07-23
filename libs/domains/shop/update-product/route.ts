@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@nba/db';
 import { tbValidator } from '@hono/typebox-validator';
 import { updateProduct } from './handler';
 import { updateProductSchema } from './validator';
@@ -12,7 +12,7 @@ export const updateProductRoute = new Hono<{ Bindings: Bindings }>();
 
 updateProductRoute.put('/products/:id', tbValidator('json', updateProductSchema, (result, c) => {
   if (!result.success) {
-    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${e.instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
   }
 }), async (c) => {
   if (!c.env || !c.env.DB) {
@@ -23,7 +23,7 @@ updateProductRoute.put('/products/:id', tbValidator('json', updateProductSchema,
     return c.json({ success: false, error: 'Identifiant invalide' }, 400);
   }
   const body = c.req.valid('json');
-  const db = drizzle(c.env.DB);
+  const db = createDb(c.env.DB);
 
   const prod = await updateProduct(db, id, body);
   return c.json({ success: true, data: prod });

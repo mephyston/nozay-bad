@@ -1,16 +1,10 @@
 import { eq, and, or, like, sql } from 'drizzle-orm';
-import { membersTable } from '../data-access/src/schema';
-import { ListMembersRepositoryInterface } from '../shared/repository';
+import { type DbOrTx } from '@nba/db';
+import { membersTable } from '../shared/schema';
+import { ListMembersFilters } from './dto';
 
-export class ListMembersRepository implements ListMembersRepositoryInterface {
-  private buildConditions(filters: {
-    search?: string;
-    gender?: 'M' | 'F';
-    type?: string;
-    status?: string;
-    season?: string;
-    paid?: boolean;
-  }) {
+export class ListMembersRepository {
+  private buildConditions(filters: ListMembersFilters) {
     const conditions = [];
     if (filters.search) {
       conditions.push(
@@ -39,7 +33,7 @@ export class ListMembersRepository implements ListMembersRepositoryInterface {
     return conditions;
   }
 
-  async count(db: any, filters: any): Promise<number> {
+  async count(db: DbOrTx, filters: ListMembersFilters): Promise<number> {
     const conditions = this.buildConditions(filters);
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     const countRes = await db.select({ count: sql<number>`count(*)` })
@@ -49,7 +43,7 @@ export class ListMembersRepository implements ListMembersRepositoryInterface {
     return countRes[0]?.count || 0;
   }
 
-  async list(db: any, filters: any, pagination: { limit: number; offset: number }): Promise<any[]> {
+  async list(db: DbOrTx, filters: ListMembersFilters, pagination: { limit: number; offset: number }): Promise<(typeof membersTable.$inferSelect)[]> {
     const conditions = this.buildConditions(filters);
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     return db.select()

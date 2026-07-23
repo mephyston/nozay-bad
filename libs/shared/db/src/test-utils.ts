@@ -1,101 +1,150 @@
-import { DatabaseSync } from 'node:sqlite';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import { env } from 'cloudflare:test';
 import { drizzle } from 'drizzle-orm/d1';
 
-export class MockD1Database {
-  private db: DatabaseSync;
-
-  constructor() {
-    this.db = new DatabaseSync(':memory:');
-  }
-
-  async exec(query: string) {
-    this.db.exec(query);
-    return { count: 0, duration: 0 };
-  }
-
-  prepare(query: string) {
-    const stmt = this.db.prepare(query);
-    return new MockD1PreparedStatement(stmt);
-  }
-
-  async batch(statements: MockD1PreparedStatement[]) {
-    const results = [];
-    for (const stmt of statements) {
-      results.push(await stmt.all());
-    }
-    return results;
-  }
-}
-
-export class MockD1PreparedStatement {
-  private stmt: any;
-  private params: any[] = [];
-
-  constructor(stmt: any) {
-    this.stmt = stmt;
-  }
-
-  bind(...params: any[]) {
-    const newStmt = new MockD1PreparedStatement(this.stmt);
-    newStmt.params = params.map(p => {
-      if (p instanceof Date) return p.getTime();
-      if (typeof p === 'boolean') return p ? 1 : 0;
-      return p;
-    });
-    return newStmt;
-  }
-
-  async first(key?: string) {
-    const results = this.stmt.all(...this.params);
-    if (results.length === 0) return null;
-    const row = results[0];
-    if (key) return row[key];
-    return row;
-  }
-
-  async all() {
-    const results = this.stmt.all(...this.params);
-    return {
-      results,
-      success: true,
-      meta: { duration: 0, rows_read: results.length, rows_written: 0 }
-    };
-  }
-
-  async run() {
-    const runResult = this.stmt.run(...this.params);
-    return {
-      success: true,
-      meta: {
-        changes: runResult.changes,
-        last_row_id: runResult.lastInsertRowid,
-        duration: 0,
-        rows_read: 0,
-        rows_written: 1
-      }
-    };
-  }
-
-  async raw() {
-    const results = this.stmt.all(...this.params);
-    return results.map((row: any) => Object.values(row));
-  }
-}
-
 export async function setupMockDb() {
-  const mockD1 = new MockD1Database();
-  const db = drizzle(mockD1 as any);
+  const rawDb = env.DB;
 
-  // Load migrations sequentially
-  const migrationsDir = path.join(process.cwd(), 'libs/shared/db/migrations');
-  const files = fs.readdirSync(migrationsDir)
-    .filter(f => f.endsWith('.sql'))
-    .sort();
+  // Topological sorting of tables (child tables dropped/deleted before parent tables to avoid foreign key errors)
+  const tables = [
+    'checks',
+    'transactions',
+    'invoice_items',
+    'invoices',
+    'check_deposits',
+    'bank_transactions',
+    'orders',
+    'products',
+    'members',
+    'season_balances',
+    'season_category_budgets',
+    'categories',
+    'expenses',
+    'users',
+    'seasons',
+    'account_classes'
+  ];
 
-  for (const file of files) {
-    const sqlContent = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
+  // Transaction backups stack for rollback emulation
+  const transactionStack: Record<string, any[]>[] = [];
+
+  // Transparent JavaScript Proxy to intercept transaction SQL and forward everything else
+  const dbProxy = new Proxy(rawDb, {
+    get(target, prop, receiver) {
+      if (prop === 'prepare') {
+        return (query: string) => {
+          const q = query.trim().toLowerCase();
+          if (q === 'begin' || q === 'begin transaction') {
+            const stmt = {
+              bind: () => stmt,
+              run: async () => {
+                // Snapshot all tables
+                const snapshot: Record<string, any[]> = {};
+                for (const table of tables) {
+                  try {
+                    const res = await target.prepare(`SELECT * FROM "${table}"`).all();
+                    snapshot[table] = res.results || [];
+                  } catch (e) {
+                    // Table might not exist yet
+                  }
+                }
+                transactionStack.push(snapshot);
+                return { success: true, meta: { changes: 0, duration: 0, rows_read: 0, rows_written: 0 } };
+              },
+              all: async () => ({ results: [], success: true, meta: { changes: 0, duration: 0, rows_read: 0, rows_written: 0 } }),
+              first: async () => null,
+              raw: async () => []
+            };
+            return stmt;
+          }
+          if (q === 'commit') {
+            const stmt = {
+              bind: () => stmt,
+              run: async () => {
+                // Discard the latest snapshot
+                transactionStack.pop();
+                return { success: true, meta: { changes: 0, duration: 0, rows_read: 0, rows_written: 0 } };
+              },
+              all: async () => ({ results: [], success: true, meta: { changes: 0, duration: 0, rows_read: 0, rows_written: 0 } }),
+              first: async () => null,
+              raw: async () => []
+            };
+            return stmt;
+          }
+          if (q === 'rollback') {
+            const stmt = {
+              bind: () => stmt,
+              run: async () => {
+                // Restore from the latest snapshot
+                const snapshot = transactionStack.pop();
+                if (snapshot) {
+                  // Delete records from child tables to parent tables
+                  for (const table of tables) {
+                    try {
+                      await target.prepare(`DELETE FROM "${table}"`).run();
+                    } catch (e) {
+                      // Table might not exist
+                    }
+                  }
+                  // Restore records from parent tables to child tables (reverse order)
+                  const reverseTables = [...tables].reverse();
+                  for (const table of reverseTables) {
+                    const rows = snapshot[table] || [];
+                    for (const row of rows) {
+                      try {
+                        const keys = Object.keys(row).map(k => `"${k}"`).join(', ');
+                        const placeholders = Object.keys(row).map(() => '?').join(', ');
+                        const values = Object.values(row);
+                        await target.prepare(`INSERT INTO "${table}" (${keys}) VALUES (${placeholders})`).bind(...values).run();
+                      } catch (e) {
+                        // Failed to restore row
+                      }
+                    }
+                  }
+                }
+                return { success: true, meta: { changes: 0, duration: 0, rows_read: 0, rows_written: 0 } };
+              },
+              all: async () => ({ results: [], success: true, meta: { changes: 0, duration: 0, rows_read: 0, rows_written: 0 } }),
+              first: async () => null,
+              raw: async () => []
+            };
+            return stmt;
+          }
+          return target.prepare(query);
+        };
+      }
+      if (prop === 'exec') {
+        return (query: string) => {
+          const q = query.trim().toLowerCase();
+          if (q === 'begin' || q === 'begin transaction') {
+            // Emulate begin
+            return rawDb.prepare(q).run().then(() => ({ count: 0, duration: 0 }));
+          }
+          if (q === 'commit') {
+            return Promise.resolve({ count: 0, duration: 0 });
+          }
+          if (q === 'rollback') {
+            return Promise.resolve({ count: 0, duration: 0 });
+          }
+          return target.exec(query);
+        };
+      }
+      return Reflect.get(target, prop, receiver);
+    }
+  });
+
+  // Disable foreign keys temporarily during drop to avoid constraint violations
+  await rawDb.prepare('PRAGMA foreign_keys = OFF;').run();
+  for (const table of tables) {
+    await rawDb.prepare(`DROP TABLE IF EXISTS "${table}";`).run();
+  }
+  await rawDb.prepare('PRAGMA foreign_keys = ON;').run();
+
+  // Load migrations sequentially using Vite's static raw glob import (loaded at build time)
+  const migrationFiles = import.meta.glob('../../db/migrations/*.sql', { query: '?raw', import: 'default', eager: true });
+  const sortedFiles = Object.keys(migrationFiles).sort();
+
+  for (const file of sortedFiles) {
+    const sqlContent = migrationFiles[file] as string;
     let statements: string[];
     if (sqlContent.includes('--> statement-breakpoint')) {
       statements = sqlContent.split('--> statement-breakpoint');
@@ -105,10 +154,10 @@ export async function setupMockDb() {
     for (const stmt of statements) {
       const trimmed = stmt.trim();
       if (trimmed.length > 0) {
-        await mockD1.exec(trimmed);
+        await rawDb.prepare(trimmed).run();
       }
     }
   }
 
-  return { mockD1, db };
+  return { mockD1: dbProxy, db: drizzle(dbProxy) };
 }

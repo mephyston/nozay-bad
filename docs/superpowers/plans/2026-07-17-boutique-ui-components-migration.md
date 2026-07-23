@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Migrer les composants de l'application Boutique (`ExpenseReportForm.svelte` et `ShopCatalog.svelte`) pour consommer les primitives standardisées de `@metacult/shared-ui` (Card, Input, Button, Badge, Label) au lieu des éléments HTML bruts et styles personnalisés.
+**Goal:** Migrer les composants de l'application Boutique (`ExpenseReportForm.svelte` et `ShopCatalog.svelte`) pour consommer les primitives standardisées de `@nba/ui` (Card, Input, Button, Badge, Label) au lieu des éléments HTML bruts et styles personnalisés.
 
-**Architecture:** Approche modulaire composant par composant. Nous remplaçons les structures HTML de présentation et de saisie par les composants importés de `@metacult/shared-ui` tout en préservant à 100% l'état réactif Svelte 5, les événements, et la logique de validation.
+**Architecture:** Approche modulaire composant par composant. Nous remplaçons les structures HTML de présentation et de saisie par les composants importés de `@nba/ui` tout en préservant à 100% l'état réactif Svelte 5, les événements, et la logique de validation.
 
-**Tech Stack:** Svelte 5 (Runes), Tailwind CSS v4, Vitest, `@metacult/shared-ui`.
+**Tech Stack:** Svelte 5 (Runes), Tailwind CSS v4, Vitest, `@nba/ui`.
 
 ## Global Constraints
 - Utiliser les versions de bibliothèques déjà présentes dans le monorépo.
@@ -24,18 +24,18 @@
 - Test: `apps/boutique/src/components/ExpenseReportForm.test.ts`
 
 **Interfaces:**
-- Consumes: `Button`, `Input`, `Badge`, `Card`, `Label` de `@metacult/shared-ui`
+- Consumes: `Button`, `Input`, `Badge`, `Card`, `Label` de `@nba/ui`
 - Produces: Formulaire de note de frais standardisé
 
 - [ ] **Step 1: Inspecter et préparer le fichier de tests**
   Consulter [ExpenseReportForm.test.ts](file:///Users/david/Lab/nozay-bad/apps/boutique/src/components/ExpenseReportForm.test.ts) pour identifier les sélecteurs DOM actuels.
-  Ajouter un test unitaire validant l'utilisation des composants de `@metacult/shared-ui` (par exemple, la présence de classes spécifiques à Card ou Input dans le rendu HTML).
+  Ajouter un test unitaire validant l'utilisation des composants de `@nba/ui` (par exemple, la présence de classes spécifiques à Card ou Input dans le rendu HTML).
   S'assurer que `beforeEach`/`afterEach` gèrent correctement les timers virtuels avec `vi.useFakeTimers()` et `vi.runAllTimers()` pour éviter les fuites de timers asynchrones de bits-ui.
 
 - [ ] **Step 2: Importer les composants de design system**
   Ajouter les imports en haut du script de `ExpenseReportForm.svelte` :
   ```typescript
-  import { Button, Card, Input, Label, Badge } from '@metacult/shared-ui';
+  import { Button, Card, Input, Label, Badge } from '@nba/ui';
   ```
 
 - [ ] **Step 3: Refactoriser le markup du formulaire**
@@ -69,7 +69,7 @@
 - Test: `apps/boutique/src/components/ShopCatalog.test.ts`
 
 **Interfaces:**
-- Consumes: `Button`, `Input`, `Badge`, `Card`, `Label` de `@metacult/shared-ui`
+- Consumes: `Button`, `Input`, `Badge`, `Card`, `Label` de `@nba/ui`
 - Produces: Catalogue de commande de boutique standardisé
 
 - [ ] **Step 1: Préparer le fichier de tests**
@@ -80,7 +80,7 @@
 - [ ] **Step 2: Importer les composants de design system**
   Ajouter les imports en haut du script de `ShopCatalog.svelte` :
   ```typescript
-  import { Button, Card, Input, Label, Badge } from '@metacult/shared-ui';
+  import { Button, Card, Input, Label, Badge } from '@nba/ui';
   ```
 
 - [ ] **Step 3: Refactoriser le sélecteur d'adhérent et le catalogue**

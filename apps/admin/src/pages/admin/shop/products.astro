@@ -1,7 +1,7 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { ProductsManager } from '@metacult/features-shop-ui';
+import { ProductsManager } from '@nba/shop-ui';
 
 import { env } from 'cloudflare:workers';
 
@@ -66,7 +66,7 @@ try {
 ---
 
 <Layout title="Gestion des Produits - NBA 91">
-  <AdminLayout client:load email={userEmail} breadcrumb="Boutique / Produits">
+  <AdminLayout client:idle email={userEmail} breadcrumb="Boutique / Produits">
     <div class="space-y-6">
       {errorMsg && (
         <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">

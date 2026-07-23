@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Coins, FileText, Check, X, Calendar, AlertCircle, Eye, Search, Edit2, Image as ImageIcon, MoreVertical, RefreshCw } from 'lucide-svelte';
-  import { Button, Table, Input, Badge, Alert, Card, Textarea } from '@metacult/shared-ui';
+  import { Coins, FileText, Check, X, Calendar, AlertCircle, Eye, Search, Edit2, Image as ImageIcon, MoreVertical, RefreshCw } from '@lucide/svelte';
+  import { Button, Table, Input, Badge, Alert, Card, Textarea } from '@nba/ui';
 
   interface Expense {
     id: number;
@@ -191,7 +191,7 @@
       setTimeout(() => {
         window.location.reload();
       }, 1000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || "Une erreur est survenue.";
     } finally {
       isSaving = false;
@@ -219,7 +219,7 @@
       setTimeout(() => {
         window.location.reload();
       }, 1000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || "Une erreur est survenue.";
     } finally {
       submittingId = null;
@@ -264,7 +264,7 @@
       setTimeout(() => {
         window.location.reload();
       }, 1000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || "Une erreur est survenue.";
     } finally {
       submittingId = null;

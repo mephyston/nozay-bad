@@ -1,18 +1,8 @@
-import { expensesTable } from '../data-access/src/schema';
-import { CreateExpenseRepositoryInterface } from '../shared/repository';
+import { type DbOrTx } from '@nba/db';
+import { expensesTable } from '../shared/schema';
 
-export class CreateExpenseRepository implements CreateExpenseRepositoryInterface {
-  async create(db: any, values: {
-    seasonId: string;
-    description: string;
-    category: number;
-    amount: number;
-    photoUrl: string | null;
-    status: 'pending';
-    emitterName: string;
-    memberId: number | null;
-    createdAt: Date;
-  }): Promise<any> {
+export class CreateExpenseRepository {
+  async create(db: DbOrTx, values: typeof expensesTable.$inferInsert): Promise<typeof expensesTable.$inferSelect> {
     return db.insert(expensesTable).values(values).returning().get();
   }
 }

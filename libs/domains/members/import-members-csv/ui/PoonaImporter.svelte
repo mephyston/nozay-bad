@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Upload, AlertCircle, CheckCircle, RefreshCw, FileText, UserPlus, AlertTriangle } from 'lucide-svelte';
-  import { Button, Card, Alert, Table } from '@metacult/shared-ui';
+  import { Upload, AlertCircle, CheckCircle, RefreshCw, FileText, UserPlus, AlertTriangle } from '@lucide/svelte';
+  import { Button, Card, Alert, Table } from '@nba/ui';
 
   interface ImportResult {
     success: boolean;

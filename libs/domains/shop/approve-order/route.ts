@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
+import { createDb } from '@nba/db';
+import { tbValidator } from '@hono/typebox-validator';
 import { approveOrder } from './handler';
+import { approveOrderParamSchema } from './validator';
 
 export type Bindings = {
   DB: D1Database;
@@ -8,16 +10,22 @@ export type Bindings = {
 
 export const approveOrderRoute = new Hono<{ Bindings: Bindings }>();
 
-approveOrderRoute.post('/orders/:id/approve', async (c) => {
-  if (!c.env || !c.env.DB) {
-    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-  }
-  const id = parseInt(c.req.param('id'));
-  if (isNaN(id)) {
-    return c.json({ success: false, error: 'Identifiant invalide' }, 400);
-  }
-  const db = drizzle(c.env.DB);
+approveOrderRoute.post(
+  '/orders/:id/approve',
+  tbValidator('param', approveOrderParamSchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+    }
+  }),
+  async (c) => {
+    if (!c.env || !c.env.DB) {
+      return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+    }
+    const { id: idStr } = c.req.valid('param');
+    const id = parseInt(idStr, 10);
+    const db = createDb(c.env.DB);
 
-  const updatedOrder = await approveOrder(db, id);
-  return c.json({ success: true, data: updatedOrder });
-});
+    const updatedOrder = await approveOrder(db, id);
+    return c.json({ success: true, data: updatedOrder });
+  }
+);

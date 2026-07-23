@@ -1,0 +1,66 @@
+---
+import ThemeToggle from './ThemeToggle.svelte';
+
+interface Props {
+  currentPath: string;
+  activeSeasonName?: string;
+}
+
+const { currentPath, activeSeasonName = 'Saison 2025-2026' } = Astro.props;
+
+const isBoutique = currentPath === '/boutique';
+const isExpenses = currentPath === '/note-de-frais';
+---
+
+<header class="flex h-14 shrink-0 items-center justify-between px-6 border-b border-border bg-background sticky top-0 z-40">
+  <div class="flex items-center gap-6">
+    <a href="/boutique" class="flex items-center gap-2.5 group">
+      <div class="p-1.5 rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 shrink-0">
+          <path d="M9 16c0-1.5 1-2 3-2s3 .5 3 2v2a3 3 0 0 1-6 0v-2z" />
+          <path d="M12 14V3" />
+          <path d="m8 14 2-10" />
+          <path d="m16 14-2-10" />
+          <path d="m6 14 3-10" />
+          <path d="m18 14-3-10" />
+          <path d="M8 8h8" />
+          <path d="M6 11h12" />
+        </svg>
+      </div>
+      <div>
+        <span class="font-bold text-sm text-foreground tracking-tight block">Nozay Bad Association</span>
+        <span class="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold block -mt-0.5">Espace Adhérents</span>
+      </div>
+    </a>
+
+    <nav class="flex items-center gap-1 border-l border-border pl-6 h-6">
+      <a
+        href="/boutique"
+        class={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+          isBoutique
+            ? 'bg-accent text-accent-foreground font-semibold'
+            : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+        }`}
+      >
+        Boutique
+      </a>
+      <a
+        href="/note-de-frais"
+        class={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+          isExpenses
+            ? 'bg-accent text-accent-foreground font-semibold'
+            : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+        }`}
+      >
+        Note de frais
+      </a>
+    </nav>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <div class="text-xs text-muted-foreground bg-muted border border-border px-2.5 py-1 rounded-md font-medium">
+      Saison : <span class="text-foreground font-semibold">{activeSeasonName}</span>
+    </div>
+    <ThemeToggle client:load />
+  </div>
+</header>

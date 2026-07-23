@@ -5,7 +5,7 @@ Ce document spécifie le design, l'architecture et les exigences pour la refonte
 ## 1. Objectifs et Expérience Utilisateur (UX)
 
 La refonte vise à standardiser le journal des écritures comptables avec les composants Shadcn Svelte :
-* **Popover d'actions** : Remplacement du menu d'actions customisé par un composant `<Popover.Root>` standardisé de `@metacult/shared-ui`.
+* **Popover d'actions** : Remplacement du menu d'actions customisé par un composant `<Popover.Root>` standardisé de `@nba/ui`.
 * **Formulaire en Grille** : Optimisation visuelle du formulaire de saisie dans le tiroir `<Dialog.Content>` via des conteneurs grids et des libellés `<Label>`.
 * **Simplification du Code** : Retrait des écouteurs globaux de clic manuels et de la gestion réactive de l'ID du menu ouvert.
 

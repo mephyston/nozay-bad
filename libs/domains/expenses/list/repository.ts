@@ -1,12 +1,12 @@
 import { eq, and } from 'drizzle-orm';
-import { expensesTable } from '../data-access/src/schema';
-import { ListExpensesRepositoryInterface } from '../shared/repository';
+import { type DbOrTx } from '@nba/db';
+import { expensesTable } from '../shared/schema';
 
-export class ListExpensesRepository implements ListExpensesRepositoryInterface {
-  async list(db: any, filters: { season?: string; status?: string }): Promise<any[]> {
+export class ListExpensesRepository {
+  async list(db: DbOrTx, filters: { season?: string; status?: string }): Promise<(typeof expensesTable.$inferSelect)[]> {
     const conditions = [];
     if (filters.season) conditions.push(eq(expensesTable.seasonId, filters.season));
-    if (filters.status) conditions.push(eq(expensesTable.status, filters.status as any));
+    if (filters.status) conditions.push(eq(expensesTable.status, filters.status as 'pending' | 'approved' | 'rejected'));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     return db.select().from(expensesTable).where(whereClause).all();

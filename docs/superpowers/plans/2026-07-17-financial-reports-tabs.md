@@ -4,7 +4,7 @@
 
 **Goal:** Renommer le module en « Rapports financiers », structurer la page de rapports en 3 onglets thématiques distincts (Compte de résultat, Bilan de trésorerie, Budget prévisionnel) et adapter la suite de tests unitaires avec résolution des fuites de mémoire.
 
-**Tech Stack:** Astro, Svelte 5, `@metacult/shared-ui` (Tabs, Button, Input, Table, Card).
+**Tech Stack:** Astro, Svelte 5, `@nba/ui` (Tabs, Button, Input, Table, Card).
 
 ## Global Constraints
 
@@ -59,13 +59,13 @@ git commit -m "style(accounting): rename accounting reports module to Rapports f
 * Modify: `libs/features/accounting/ui/src/GeneralMeetingReport.svelte`
 
 **Interfaces:**
-* Consumes: Primitives `Tabs` de `@metacult/shared-ui`.
+* Consumes: Primitives `Tabs` de `@nba/ui`.
 * Produces: Onglets thématiques pour l'affichage des rapports.
 
 - [ ] **Step 1: Import Tabs and define activeTab state**
 
 Ouvrir [GeneralMeetingReport.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/GeneralMeetingReport.svelte) :
-1. Ajouter `Tabs` dans les imports de `@metacult/shared-ui` à la ligne 3.
+1. Ajouter `Tabs` dans les imports de `@nba/ui` à la ligne 3.
 2. Remplacer la variable `reportMode` par une dérivation réactive basée sur la valeur de l'onglet actif :
    - Déclarer : `let activeTab = $state<'resultat' | 'tresorerie' | 'budget'>('resultat');`
    - Remplacer `reportMode = $state(...)` par un `$derived(activeTab === 'budget' ? 'previsionnel' : 'realise')`

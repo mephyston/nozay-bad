@@ -4,7 +4,7 @@
 
 **Goal:** Remplacer la boîte de dialogue modale classique (`Dialog`) par un volet coulissant latéral droit (`Sheet`) pour l'enregistrement d'un chèque physique dans `CheckDepositManager.svelte`.
 
-**Tech Stack:** Svelte 5, Tailwind CSS, `@metacult/shared-ui` (Sheet, Button, Input, Dialog, Card, Table).
+**Tech Stack:** Svelte 5, Tailwind CSS, `@nba/ui` (Sheet, Button, Input, Dialog, Card, Table).
 
 ## Global Constraints
 
@@ -21,13 +21,13 @@
 * Modify: `libs/features/accounting/ui/src/CheckDepositManager.svelte`
 
 **Interfaces:**
-* Consumes: Primitives `Sheet` de `@metacult/shared-ui`.
+* Consumes: Primitives `Sheet` de `@nba/ui`.
 * Produces: Panel latéral coulissant droit de saisie/OCR chèque.
 
 - [ ] **Step 1: Import Sheet from shared-ui**
 
 Ouvrir [CheckDepositManager.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/CheckDepositManager.svelte) :
-1. Ajouter `Sheet` dans les imports de `@metacult/shared-ui` à la ligne 3.
+1. Ajouter `Sheet` dans les imports de `@nba/ui` à la ligne 3.
 
 - [ ] **Step 2: Replace Dialog markup with Sheet markup**
 

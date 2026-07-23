@@ -44,3 +44,11 @@ exposer `applyPaymentToMember` — `accounting` n'a plus besoin de connaître
 Cette interface permet d'injecter un repository en mémoire dans
 `handler.test.ts` (cf. `04-vsa.md`) sans monter Drizzle/D1 dans les tests
 unitaires — à réserver aux tests d'intégration du repository lui-même.
+
+## Choix de conception : Non-utilisation des interfaces de repositories inutilisées (PR30)
+
+Il a été décidé d'éliminer les interfaces de repository globales ou de tranches (`*RepositoryInterface`) qui n'étaient pas réellement exploitées pour l'injection de dépendances (les handlers dépendant directement de la classe concrète, et Vitest mockant la classe via prototype spys). Conserver du code mort complexifiait inutilement le typage et l'architecture en donnant une fausse impression de conformité. Les interfaces de repository inutilisées dans `accounting`, `expenses`, `members`, et `shop` ont donc été purement et simplement supprimées.
+
+## Schémas de base de données internes au domaine
+
+Le schéma Drizzle interne (tables du domaine) peut être conservé centralisé dans `data-access/src/schema.ts` s'il est partagé par plusieurs repositories du domaine (par exemple dans le cas de `accounting` ou `members`). Cela évite la redéfinition des tables tout en le gardant privé et non exporté à l'extérieur du domaine.

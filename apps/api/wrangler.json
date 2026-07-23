@@ -2,6 +2,7 @@
   "name": "nba-api",
   "main": "src/index.ts",
   "compatibility_date": "2024-03-01",
+  "workers_dev": false,
   "observability": {
     "enabled": true,
     "logs": {
@@ -30,6 +31,7 @@
   "env": {
     "staging": {
       "name": "nba-api-staging",
+      "workers_dev": false,
       "d1_databases": [
         {
           "binding": "DB",

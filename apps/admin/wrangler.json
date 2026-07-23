@@ -1,5 +1,5 @@
 {
-  "name": "nba-admin-console",
+  "name": "nba-admin",
   "compatibility_date": "2024-09-23",
   "compatibility_flags": [
     "nodejs_compat"
@@ -23,7 +23,7 @@
   ],
   "env": {
     "staging": {
-      "name": "nba-admin-console-staging",
+      "name": "nba-admin-staging",
       "services": [
         { "binding": "API_SERVICE", "service": "nba-api-staging" }
       ]

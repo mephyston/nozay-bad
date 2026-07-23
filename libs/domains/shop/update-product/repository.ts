@@ -1,14 +1,14 @@
 import { eq } from 'drizzle-orm';
-import { productsTable } from '../data-access/src/schema';
-import { UpdateProductRepositoryInterface } from '../shared/repository';
+import { type DbOrTx } from '@nba/db';
+import { productsTable } from '../shared/schema';
 
-export class UpdateProductRepository implements UpdateProductRepositoryInterface {
-  async update(db: any, id: number, values: {
+export class UpdateProductRepository {
+  async update(db: DbOrTx, id: number, values: {
     name?: string;
     price?: number;
     stock?: number;
     active?: boolean;
-  }): Promise<any | undefined> {
+  }): Promise<typeof productsTable.$inferSelect | undefined> {
     return db.update(productsTable).set(values).where(eq(productsTable.id, id)).returning().get();
   }
 }

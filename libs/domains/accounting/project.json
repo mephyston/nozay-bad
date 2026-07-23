@@ -1,0 +1,12 @@
+{
+  "name": "@nba/accounting-api",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/domains/accounting",
+  "targets": {
+    "lint": {
+      "command": "eslint {projectRoot}"
+    }
+  },
+  "tags": ["type:api", "scope:accounting"]
+}

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Plus, Edit, Trash2, Check, AlertCircle, ShoppingBag, Search, X, MoreVertical } from "lucide-svelte";
-  import { Button, Input, Badge, Card, Table } from "@metacult/shared-ui";
+  import { Plus, Edit, Trash2, Check, AlertCircle, ShoppingBag, Search, X, MoreVertical } from "@lucide/svelte";
+  import { Button, Input, Badge, Card, Table } from "@nba/ui";
 
 
   interface Product {
@@ -136,7 +136,7 @@
       setTimeout(() => {
         window.location.reload();
       }, 1000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       errorMsg = err.message || 'Une erreur est survenue.';
       isSubmitting = false;
     }
@@ -164,7 +164,7 @@
       if (index !== -1) {
         productsList[index].active = !product.active;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message);
     }
   }
@@ -192,7 +192,7 @@
       if (index !== -1) {
         productsList[index].active = false;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message);
     }
   }

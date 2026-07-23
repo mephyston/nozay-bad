@@ -4,7 +4,7 @@
 
 **Goal:** Supprimer le sous-filtrage intelligent obsolète ("Tout", "Évidences", "Récurrents") de la vue rapprochement bancaire pour épurer l'affichage.
 
-**Tech Stack:** Svelte 5, `@metacult/shared-ui` (Tabs, Input, Table, Card, Button, Checkbox).
+**Tech Stack:** Svelte 5, `@nba/ui` (Tabs, Input, Table, Card, Button, Checkbox).
 
 ## Global Constraints
 

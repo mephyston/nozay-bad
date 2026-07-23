@@ -1,7 +1,7 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { InitialBalancesConfig } from '@metacult/features-accounting-ui';
+import { InitialBalancesConfig } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
 
 const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
@@ -39,9 +39,9 @@ try {
   const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
-    const rawSeasons = json.data || [];
+    const rawSeasons: any[] = json.data || [];
 
-    for (const s of rawSeasons) {
+    seasonsList = await Promise.all(rawSeasons.map(async (s) => {
       const balRes = await apiService.fetch(`http://localhost/accounting/seasons/${s.id}/balances`);
       let initialCurrentBalance = 0;
       let initialSavingsBalance = 0;
@@ -78,14 +78,14 @@ try {
           }
         }
       }
-      seasonsList.push({
+      return {
         ...s,
         initialCurrentBalance,
         initialSavingsBalance,
         initialCashBalance,
         isAutoFilled
-      });
-    }
+      };
+    }));
   }
 } catch (err: any) {
   errorMsg = 'Impossible de charger la liste des saisons comptables.';
@@ -94,7 +94,7 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
 ---
 
 <Layout title="Soldes initiaux - NBA 91">
-  <AdminLayout client:load email={userEmail} breadcrumb="Comptabilité / Soldes initiaux">
+  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Soldes initiaux">
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>

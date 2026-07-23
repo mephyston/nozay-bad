@@ -1,17 +1,12 @@
+import { type Db } from '@nba/db';
 import { ListMembersRepository } from './repository';
+import { ListMembersFilters, ListMembersPagination, ListMembersOutput } from "./dto";
 
 export async function listMembers(
-  db: any,
-  filters: {
-    search?: string;
-    gender?: 'M' | 'F';
-    type?: string;
-    status?: string;
-    season?: string;
-    paid?: boolean;
-  },
-  pagination: { page: number; limit: number }
-) {
+  db: Db,
+  filters: ListMembersFilters,
+  pagination: ListMembersPagination
+): Promise<ListMembersOutput> {
   const repo = new ListMembersRepository();
   const offset = (pagination.page - 1) * pagination.limit;
 

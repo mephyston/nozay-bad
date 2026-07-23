@@ -10,7 +10,7 @@ Ce document spécifie le design, l'architecture et les exigences pour la réorga
 
 ## 2. Découpage en Onglets (`GeneralMeetingReport.svelte`)
 
-Le composant utilisera les onglets standards de `@metacult/shared-ui` :
+Le composant utilisera les onglets standards de `@nba/ui` :
 
 ```html
 <Tabs.Root value={activeTab} onValueChange={(val) => activeTab = val as any} class="w-full space-y-6">

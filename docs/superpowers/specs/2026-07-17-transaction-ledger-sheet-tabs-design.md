@@ -4,7 +4,7 @@ Ce document spécifie le design, l'architecture et les exigences pour l'intégra
 
 ## 1. Objectifs et Expérience Utilisateur (UX)
 
-* **Sheet d'édition** : Utilisation du composant `<Sheet.Root>` de `@metacult/shared-ui` pour libérer la vue centrale de l'écran lors de la saisie d'écritures comptables.
+* **Sheet d'édition** : Utilisation du composant `<Sheet.Root>` de `@nba/ui` pour libérer la vue centrale de l'écran lors de la saisie d'écritures comptables.
 * **Boutons d'onglets de comptes** : Ajout d'onglets de filtrage (`Tous les comptes`, `Compte Courant`, `Compte Livret`, `Caisse Physique`) juste au-dessus de la table pour isoler les relevés de comptes spécifiques.
 * **Filtres persistés par URL** : Utilisation du paramètre de recherche `accountId` pour propager le filtre du frontend au serveur et vice-versa.
 

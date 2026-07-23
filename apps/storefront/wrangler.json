@@ -1,5 +1,5 @@
 {
-  "name": "nba-boutique",
+  "name": "nba-storefront",
   "compatibility_date": "2024-09-23",
   "compatibility_flags": [
     "nodejs_compat"
@@ -18,12 +18,24 @@
       "head_sampling_rate": 1
     }
   },
+  "kv_namespaces": [
+    {
+      "binding": "RATE_LIMIT_KV",
+      "id": "281c9992dd914501a709ef8f03fe2ab8"
+    }
+  ],
   "services": [
     { "binding": "API_SERVICE", "service": "nba-api" }
   ],
   "env": {
     "staging": {
-      "name": "nba-boutique-staging",
+      "name": "nba-storefront-staging",
+      "kv_namespaces": [
+        {
+          "binding": "RATE_LIMIT_KV",
+          "id": "e1f0b19b7ea44399ba66d10fe7907ce9"
+        }
+      ],
       "services": [
         { "binding": "API_SERVICE", "service": "nba-api-staging" }
       ]

@@ -24,7 +24,7 @@
 * Create: `libs/shared/db/migrations/0004_create_accounting_tables.sql` (généré par Drizzle-Kit)
 
 **Interfaces:**
-* Produces: `seasonBalancesTable` et `transactionsTable` dans le module `@metacult/shared-db` (exposé par index.ts).
+* Produces: `seasonBalancesTable` et `transactionsTable` dans le module `@nba/db` (exposé par index.ts).
 
 - [ ] **Step 1: Mettre à jour le schéma Drizzle**
   Ouvrir [schema.ts](file:///Users/david/Lab/nozay-bad/libs/shared/db/src/schema.ts) et ajouter les définitions des tables `seasonBalancesTable` et `transactionsTable` à la fin du fichier :
@@ -131,7 +131,7 @@
 * Modify: `apps/api/src/index.test.ts`
 
 **Interfaces:**
-* Consumes: `seasonBalancesTable` et `transactionsTable` de `@metacult/shared-db`.
+* Consumes: `seasonBalancesTable` et `transactionsTable` de `@nba/db`.
 * Produces: Endpoints HTTP `/seasons/:seasonId/balances`, `/transactions`, `/transactions/:id`, et `/seasons/:seasonId/reports`.
 
 - [ ] **Step 1: Importer les schémas dans l'API**

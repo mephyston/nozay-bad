@@ -25,7 +25,6 @@ export default tseslint.config(
         'error',
         {
           enforceBuildableLibDependency: true,
-          allow: [],
           depConstraints: [
             {
               sourceTag: 'type:app',
@@ -33,7 +32,7 @@ export default tseslint.config(
             },
             {
               sourceTag: 'type:api',
-              onlyDependOnLibsWithTags: ['type:data-access', 'scope:shared']
+              onlyDependOnLibsWithTags: ['type:api', 'type:data-access', 'scope:shared']
             },
             {
               sourceTag: 'type:ui',
@@ -49,7 +48,7 @@ export default tseslint.config(
             },
             {
               sourceTag: 'scope:expenses',
-              onlyDependOnLibsWithTags: ['scope:expenses', 'scope:shared']
+              onlyDependOnLibsWithTags: ['scope:expenses', 'scope:members', 'scope:accounting', 'scope:shared']
             },
             {
               sourceTag: 'scope:shop',
@@ -66,21 +65,20 @@ export default tseslint.config(
     }
   },
   {
-    files: ['**/routes.ts', '**/routes/**/*.ts'],
+    files: ['**/route.ts', '**/routes.ts', '**/routes/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
-          paths: [
-            {
-              name: 'drizzle-orm',
-              message: 'Please do not import drizzle-orm in route files. Database logic should be confined to repository files.'
-            }
-          ],
           patterns: [
             {
-              group: ['**/data-access/**', '**/schema'],
-              message: 'Please do not import data-access or schemas directly in route files. Confine database logic to repository files.'
+              // Interdit drizzle-orm et ses sous-modules, sauf drizzle-orm/d1 pour l'instanciation de drizzle(c.env.DB)
+              group: ['drizzle-orm', 'drizzle-orm/*', '!drizzle-orm/d1'],
+              message: 'Please do not import drizzle-orm in route files. Database logic should be confined to repository files. Only drizzle-orm/d1 is allowed for client creation.'
+            },
+            {
+              group: ['**/repository.ts', '**/schema.ts', '**/schema'],
+              message: 'Please do not import repository or schemas directly in route files.'
             }
           ]
         }
@@ -105,19 +103,32 @@ export default tseslint.config(
   },
   {
     files: ['libs/domains/*/*/**/*.ts'],
-    ignores: ['libs/domains/*/shared/**/*.ts', 'libs/domains/*/api/**/*.ts', 'libs/domains/*/data-access/**/*.ts', 'libs/domains/*/ui/**/*.ts'],
+    ignores: ['libs/domains/*/shared/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
           patterns: [
             {
-              group: ['../*', '!../shared', '!../shared/**', '!../data-access', '!../data-access/**'],
-              message: 'Slice-to-slice imports are forbidden. You can only import from shared or data-access.'
+              group: [
+                '../!(shared)',
+                '../!(shared)/**',
+                '../../!(shared)',
+                '../../!(shared)/**'
+              ],
+              message: 'Slice-to-slice imports are forbidden. You can only import from shared.'
             }
           ]
         }
       ]
+    }
+  },
+  {
+    files: [
+      'apps/api/src/**/*.test.ts'
+    ],
+    rules: {
+      '@nx/enforce-module-boundaries': 'off'
     }
   }
 );

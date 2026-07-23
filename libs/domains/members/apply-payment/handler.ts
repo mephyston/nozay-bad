@@ -1,11 +1,13 @@
+import { type Db } from '@nba/db';
 import { ApplyPaymentRepository } from './repository';
 import { Member } from '../shared/member';
+import { ApplyPaymentToMemberMemberId, ApplyPaymentToMemberAmountCents, ApplyPaymentToMemberOutput } from "./dto";
 
 export async function applyPaymentToMember(
-  db: any,
-  memberId: number,
-  amountCents: number
-): Promise<void> {
+  db: Db,
+  memberId: ApplyPaymentToMemberMemberId,
+  amountCents: ApplyPaymentToMemberAmountCents
+): Promise<ApplyPaymentToMemberOutput> {
   const repo = new ApplyPaymentRepository();
   const memberData = await repo.getById(db, memberId);
   if (!memberData) return;

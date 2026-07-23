@@ -24,7 +24,7 @@
 * Create: `libs/shared/db/migrations/0006_enrich_tables_for_ai_and_members.sql` (généré par Drizzle-Kit)
 
 **Interfaces:**
-* Produces: Nouveaux champs dans `membersTable`, `transactionsTable` et `bankTransactionsTable` dans le module `@metacult/shared-db`.
+* Produces: Nouveaux champs dans `membersTable`, `transactionsTable` et `bankTransactionsTable` dans le module `@nba/db`.
 
 - [ ] **Step 1: Modifier le schéma Drizzle**
   Ouvrir [schema.ts](file:///Users/david/Lab/nozay-bad/libs/shared/db/src/schema.ts) et appliquer les modifications suivantes :
@@ -126,7 +126,7 @@
 * Modify: `apps/api/src/index.test.ts`
 
 **Interfaces:**
-* Consumes: `membersTable` de `@metacult/shared-db`.
+* Consumes: `membersTable` de `@nba/db`.
 * Produces: Importateur Poona prenant en compte les montants financiers et les coordonnées des parents.
 
 - [ ] **Step 1: Mettre à jour le mapping des en-têtes Poona**

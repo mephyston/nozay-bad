@@ -1,7 +1,7 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { ExpensesManager } from '@metacult/features-expenses-ui';
+import { ExpensesManager } from '@nba/expenses-ui';
 
 import { env } from 'cloudflare:workers';
 
@@ -58,22 +58,22 @@ let categoriesList = [];
 let errorMsg = '';
 
 try {
-  // 1. Récupérer les notes de frais de la saison
-  const expensesRes = await apiService.fetch(`http://localhost/expenses?season=${season}`);
+  const [expensesRes, seasonsRes, categoriesRes] = await Promise.all([
+    apiService.fetch(`http://localhost/expenses?season=${season}`),
+    apiService.fetch('http://localhost/accounting/seasons'),
+    apiService.fetch('http://localhost/accounting/categories')
+  ]);
+
   if (expensesRes.ok) {
     const json = await expensesRes.json() as any;
     expensesList = json.data || [];
   }
 
-  // 2. Récupérer la liste des saisons
-  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];
   }
 
-  // 3. Récupérer les catégories
-  const categoriesRes = await apiService.fetch('http://localhost/accounting/categories');
   if (categoriesRes.ok) {
     const json = await categoriesRes.json() as any;
     categoriesList = json.data || [];
@@ -85,7 +85,7 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
 ---
 
 <Layout title="Notes de Frais - NBA 91">
-  <AdminLayout client:load email={userEmail} breadcrumb="Comptabilité / Notes de frais">
+  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Notes de frais">
     <div class="space-y-6">
       {errorMsg && (
         <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">

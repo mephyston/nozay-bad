@@ -1,7 +1,7 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { TransactionLedger } from '@metacult/features-accounting-ui';
+import { TransactionLedger } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
 
 const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
@@ -65,32 +65,35 @@ try {
   if (unreconciledChequesOnly) queryParams.set('unreconciledCheques', 'true');
   if (accountId) queryParams.set('accountId', accountId);
 
-  const txRes = await apiService.fetch(`http://localhost/accounting/transactions?${queryParams.toString()}`);
+  const [txRes, reportRes, seasonsRes, categoriesRes, classesRes] = await Promise.all([
+    apiService.fetch(`http://localhost/accounting/transactions?${queryParams.toString()}`),
+    apiService.fetch(`http://localhost/accounting/seasons/${season}/reports`),
+    apiService.fetch('http://localhost/accounting/seasons'),
+    apiService.fetch('http://localhost/accounting/categories'),
+    apiService.fetch('http://localhost/accounting/account-classes')
+  ]);
+
   if (txRes.ok) {
     const json = await txRes.json() as any;
     transactionsList = json.data || [];
     pagination = json.pagination;
   }
 
-  const reportRes = await apiService.fetch(`http://localhost/accounting/seasons/${season}/reports`);
   if (reportRes.ok) {
     const json = await reportRes.json() as any;
     balances = json.data?.bilanTrésorerie || [];
   }
 
-  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     seasonsList = json.data || [];
   }
 
-  const categoriesRes = await apiService.fetch('http://localhost/accounting/categories');
   if (categoriesRes.ok) {
     const json = await categoriesRes.json() as any;
     categoriesList = json.data || [];
   }
 
-  const classesRes = await apiService.fetch('http://localhost/accounting/account-classes');
   if (classesRes.ok) {
     const json = await classesRes.json() as any;
     accountClassesList = json.data || [];
@@ -101,7 +104,7 @@ try {
 ---
 
 <Layout title="Comptabilité - NBA 91">
-  <AdminLayout client:load email={userEmail} breadcrumb="Comptabilité / Grand Livre">
+  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Grand Livre">
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>

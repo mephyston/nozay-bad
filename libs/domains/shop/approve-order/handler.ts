@@ -1,3 +1,4 @@
+import { type Db, type Tx } from '@nba/db';
 import { ApproveOrderRepository } from './repository';
 import { Order } from '../shared/order';
 import {
@@ -8,12 +9,13 @@ import {
   ProductNotFoundError,
   ConcurrentModificationError
 } from '../shared/errors';
-import { isSeasonClosed } from '@metacult/features-members-data-access';
+import { isSeasonClosed } from '@nba/members-api';
+import { ApproveOrderInput, ApproveOrderOutput } from "./dto";
 
-export async function approveOrder(db: any, id: number) {
+export async function approveOrder(db: Db, id: ApproveOrderInput): Promise<ApproveOrderOutput> {
   const repo = new ApproveOrderRepository();
 
-  return db.transaction(async (tx: any) => {
+  return db.transaction(async (tx: Tx) => {
     const orderData = await repo.getOrderById(tx, id);
     if (!orderData) {
       throw new OrderNotFoundError();

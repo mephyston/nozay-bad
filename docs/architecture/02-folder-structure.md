@@ -3,14 +3,12 @@
 ```
 libs/
   domains/
-    accounting/                    # seul domaine au-dessus du seuil de 8 tranches (principe 12)
-      shared/                      # partagé par commands/ et queries/
-        invoice.ts                 # agrégat : canBeEdited(), markAsPaid()...
+    accounting/                    # domaine au-dessus du seuil de 10 tranches (ADR-0003)
+      shared/                      # partagé entre toutes les tranches du domaine
+        invoice.ts
         bank-transaction.ts
-        season.ts                  # si la propriété de "season" est confirmée ici
-        accounting-errors.ts
-        category.ts                 # normalisation des catégories comptables
-      commands/                     # tout ce qui écrit — soumis à la règle 9 (transactions)
+        season.ts
+      invoices/                    # capacité métier
         create-invoice/
           route.ts
           validator.ts
@@ -22,26 +20,12 @@ libs/
             InvoiceForm.svelte
         update-invoice/
         delete-invoice/
-        change-invoice-status/
-        create-season/
-        close-season/
-        create-bank-check-deposit/
-        record-check-transaction/    # extrait de l'actuel checks/ (partie écriture)
-        import-bank-statement/       # parseOFX(), extrait de l'actuel api/src/helpers.ts
-        reconcile-bank-transaction/  # reconcileBankTxInternal(), découpé
-          ui/
-            MatchTransaction.svelte
-            CreateTransactionFromBankLine.svelte
-        update-category/             # extrait de l'actuel categories/ (partie écriture)
-      queries/                       # tout ce qui lit seul — jamais de db.transaction
         list-invoices/
-        get-invoice/
-        list-transactions/
-        list-checks/                 # extrait de l'actuel checks/ (partie lecture)
-        list-categories/             # extrait de l'actuel categories/ (partie lecture)
-        get-reconciliation-summary/
-          ui/
-            ReconciliationSummary.svelte
+      seasons/                     # capacité métier
+      config/                      # capacité métier
+      bank/                        # capacité métier
+      transactions/                # capacité métier
+      checks/                      # capacité métier
 
     expenses/
       shared/

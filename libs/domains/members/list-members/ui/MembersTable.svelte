@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Search, ChevronLeft, ChevronRight, User, MoreVertical, Eye, Filter } from 'lucide-svelte';
-  import { Table, Button, Badge, Input, Popover } from '@metacult/shared-ui';
+  import { Search, ChevronLeft, ChevronRight, User, MoreVertical, Eye, Filter } from '@lucide/svelte';
+  import { Table, Button, Badge, Input, Popover } from '@nba/ui';
 
   interface Member {
     id: number;
