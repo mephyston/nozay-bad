@@ -16,12 +16,17 @@ export const GET: APIRoute = async ({ request }) => {
 
   // IP-based rate limiting with KV / Shared Store persistence
   const ip = request.headers.get('CF-Connecting-IP') || request.headers.get('x-real-ip') || '127.0.0.1';
-  const kv = (env as any)?.RATE_LIMIT_KV;
+  let kv: any = undefined;
+  try {
+    kv = (env as any)?.RATE_LIMIT_KV;
+  } catch {}
 
-  if (await rateLimiter.isRateLimited(ip, 60, 60000, kv)) {
+  if (await rateLimiter.isRateLimited(ip, 30, 60000, kv)) {
     const turnstileToken = request.headers.get('cf-turnstile-response') || url.searchParams.get('token') || '';
     if (turnstileToken) {
-      const verifyResult = await verifyTurnstileToken(turnstileToken, ip, { kv, runtimeEnv: env });
+      let runtimeEnv: any = undefined;
+      try { runtimeEnv = env; } catch {}
+      const verifyResult = await verifyTurnstileToken(turnstileToken, ip, { kv, runtimeEnv });
       if (!verifyResult.success) {
         return new Response(JSON.stringify({ error: `Rate limit exceeded. ${verifyResult.error || 'Captcha verification failed.'}` }), {
           status: 429,
@@ -37,30 +42,35 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   try {
-    const apiService = (env as any)?.API_SERVICE;
-    const fetchApi = (path: string, opts?: any) => {
+    let apiService: any = undefined;
+    try {
+      apiService = (env as any)?.API_SERVICE;
+    } catch {}
+
+    const fetchApi = (path: string) => {
       if (apiService && typeof apiService.fetch === 'function') {
-        return apiService.fetch(`http://localhost${path}`, opts);
+        return apiService.fetch(`http://localhost${path}`);
       }
-      // Fallback for standalone local dev when API worker runs on port 8787
-      const devApiUrl = (typeof process !== 'undefined' && process.env?.API_URL) || 'http://127.0.0.1:8787';
-      return fetch(`${devApiUrl}${path}`, opts);
+      const devApiUrl = (typeof process !== 'undefined' && process.env?.API_URL) || 'http://localhost';
+      return fetch(`${devApiUrl}${path}`);
     };
 
     let membersData: any[] = [];
 
-    if (/^\d+$/.test(q) && q.length >= 7) {
-      const res = await fetchApi(`/members/${encodeURIComponent(q)}`);
-      if (res.status === 200) {
-        const json = await res.json() as any;
-        if (json.success && json.data) {
-          membersData = [json.data];
+    if (/^\d+$/.test(q)) {
+      if (q.length >= 7) {
+        const res = await fetchApi(`/members/${encodeURIComponent(q)}`);
+        if (res && res.status === 200) {
+          const json = await res.json() as any;
+          if (json.success && json.data) {
+            membersData = [json.data];
+          }
         }
       }
     } else {
-      const searchParam = q ? `search=${encodeURIComponent(q)}&limit=30` : 'limit=30';
+      const searchParam = q ? `search=${encodeURIComponent(q)}&limit=10` : 'limit=10';
       const res = await fetchApi(`/members?${searchParam}`);
-      if (res.ok) {
+      if (res && res.ok) {
         const json = await res.json() as any;
         membersData = json.data || [];
       }
