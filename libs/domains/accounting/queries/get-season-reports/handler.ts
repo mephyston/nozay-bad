@@ -1,5 +1,5 @@
 import { type Db } from '@nba/db';
-import { normalizeCategory } from '@nba/accounting-api';
+import { normalizeCategory } from '../../shared/helpers';
 import { GetSeasonReportsRepository } from './repository';
 import { GetSeasonReportsInput, GetSeasonReportsOutput } from "./dto";
 

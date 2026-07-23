@@ -32,7 +32,7 @@ export default tseslint.config(
             },
             {
               sourceTag: 'type:api',
-              onlyDependOnLibsWithTags: ['type:data-access', 'scope:shared']
+              onlyDependOnLibsWithTags: ['type:api', 'type:data-access', 'scope:shared']
             },
             {
               sourceTag: 'type:ui',
@@ -48,7 +48,7 @@ export default tseslint.config(
             },
             {
               sourceTag: 'scope:expenses',
-              onlyDependOnLibsWithTags: ['scope:expenses', 'scope:shared']
+              onlyDependOnLibsWithTags: ['scope:expenses', 'scope:members', 'scope:accounting', 'scope:shared']
             },
             {
               sourceTag: 'scope:shop',

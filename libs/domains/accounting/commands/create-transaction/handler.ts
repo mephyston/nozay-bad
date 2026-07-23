@@ -2,7 +2,7 @@ import { CreateTransactionRepository } from './repository';
 import { isSeasonClosed } from '@nba/members-api';
 import { AppError, type Db } from '@nba/db';
 import { SeasonClosedError } from '../../shared/errors';
-import { normalizeCategory } from '@nba/accounting-api';
+import { normalizeCategory } from '../../shared/helpers';
 import type { CreateTransactionDTO } from './dto';
 
 export async function createTransaction(db: Db, body: CreateTransactionDTO) {

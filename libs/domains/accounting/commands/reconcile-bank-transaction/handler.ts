@@ -2,7 +2,7 @@ import { ReconcileBankTransactionRepository } from './repository';
 import { isSeasonClosed } from '@nba/members-api';
 import { applyPaymentToMember } from '@nba/members-api';
 import { AppError, type Db, type Tx } from '@nba/db';
-import { normalizeCategory } from '@nba/accounting-api';
+import { normalizeCategory } from '../../shared/helpers';
 import { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
 import { ReconcileBankTxInternalId, ReconcileBankTxInternalInput, ReconcileBankTxInternalOutput } from "./dto";
 import { BankTransaction } from '../../shared/bank-transaction';
