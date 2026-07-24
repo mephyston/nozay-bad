@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
-import { reconcileBankStatementLine, reconcileBulkTransactions } from './handler';
-import { bankStatementLinesTable, ledgerEntriesTable, seasonsTable } from '../../shared/schema';
+import { reconcileBankStatementLine } from './handler';
+import { bankStatementLinesTable, ledgerEntriesTable, seasonsTable, accountsTable, accountClassesTable, paymentMethodsTable } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
 
 describe('reconcileBankStatementLine Real D1 Atomicity (PROMPT B3)', () => {
@@ -13,15 +13,26 @@ describe('reconcileBankStatementLine Real D1 Atomicity (PROMPT B3)', () => {
   });
 
   it('verifies that reconciliation operates atomically via db.batch', async () => {
-    // Seed season & bank line
-    await db.insert(seasonsTable).values({
+    const season = await db.insert(seasonsTable).values({
       code: '25-26', name: 'Saison 25-26', startDate: '2025-09-01', endDate: '2026-08-31', active: true, createdAt: new Date()
-    });
+    }).returning().get();
+
+    const accClass = await db.insert(accountClassesTable).values({
+      code: '512', label: 'Banque', type: 'tresorerie', createdAt: new Date()
+    }).returning().get();
+
+    const acc = await db.insert(accountsTable).values({
+      code: '512000', label: 'Compte Courant', accountClassId: accClass.id, createdAt: new Date()
+    }).returning().get();
+
+    const pm = await db.insert(paymentMethodsTable).values({
+      code: 'virement', label: 'Virement', createdAt: new Date()
+    }).returning().get();
 
     const btx = await db.insert(bankStatementLinesTable).values({
       fitid: 'FIT-RECON-1',
-      accountId: 'current',
-      amount: 15000,
+      accountId: acc.id,
+      amountCents: 15000,
       date: '2026-07-24',
       name: 'Virement Recette',
       status: 'pending',
@@ -33,14 +44,14 @@ describe('reconcileBankStatementLine Real D1 Atomicity (PROMPT B3)', () => {
     await reconcileBankStatementLine(db, btx.id, {
       action: 'create',
       transaction: {
-        seasonId: '25-26',
+        seasonId: season.id,
         type: 'recette',
-        accountId: 'current',
+        accountId: acc.id,
         category: 1,
         amount: 15000,
         date: '2026-07-24',
-        paymentMethod: 'virement',
-        description: 'Recette raprochée'
+        paymentMethod: pm.id,
+        description: 'Recette rapprochée'
       }
     });
 
