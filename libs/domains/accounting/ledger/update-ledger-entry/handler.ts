@@ -1,5 +1,7 @@
-import { UpdateTransactionRepository } from './repository';
+import { UpdateLedgerEntryRepository } from './repository';
+import { isSeasonClosed } from '@nba/members-api';
 import { AppError, type Db } from '@nba/db';
+import { SeasonClosedError } from '../../shared/errors';
 import { normalizeCategory } from '../../shared/helpers';
 import type { UpdateTransactionDTO } from './dto';
 import { validateAccrualAndFiscalPhase } from '../../shared/accruals';
@@ -9,7 +11,7 @@ export async function updateLedgerEntry(db: Db, id: number, body: UpdateTransact
     throw new AppError('Champs requis manquants.', 400);
   }
 
-  const repo = new UpdateTransactionRepository();
+  const repo = new UpdateLedgerEntryRepository();
   const existing = await repo.getById(db, id);
   if (!existing) {
     throw new AppError('Transaction introuvable', 404);

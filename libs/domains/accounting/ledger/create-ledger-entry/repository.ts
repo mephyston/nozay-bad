@@ -1,7 +1,7 @@
 import { type DbOrTx } from '@nba/db';
 import { ledgerEntriesTable } from '../../shared/schema';
 
-export class CreateTransactionRepository {
+export class CreateLedgerEntryRepository {
   buildCreateStatement(db: DbOrTx, values: any): any {
     return db.insert(ledgerEntriesTable).values(values);
   }

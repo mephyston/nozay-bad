@@ -2,7 +2,7 @@ import { type DbOrTx } from '@nba/db';
 import { eq } from 'drizzle-orm';
 import { ledgerEntriesTable } from '../../shared/schema';
 
-export class UpdateTransactionRepository {
+export class UpdateLedgerEntryRepository {
   async getById(db: DbOrTx, id: number): Promise<any | undefined> {
     return db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, id)).get();
   }

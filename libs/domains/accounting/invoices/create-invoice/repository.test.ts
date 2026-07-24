@@ -14,7 +14,7 @@ describe('CreateInvoiceRepository', () => {
     if (existingSeason.length > 0) {
       seasonIdNum = existingSeason[0].id;
     } else {
-      const res = await db.insert(seasonsTable).values({ code: '25-26', name: 'Saison 25-26', startDate: '2025-09-01', endDate: '2026-08-31', active: 1, createdAt: Date.now() }).returning().get();
+      const res = await db.insert(seasonsTable).values({ code: '25-26', name: 'Saison 25-26', startDate: '2025-09-01', endDate: '2026-08-31', active: true, createdAt: new Date() }).returning().get();
       seasonIdNum = res.id;
     }
   });

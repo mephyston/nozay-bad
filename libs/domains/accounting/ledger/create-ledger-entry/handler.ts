@@ -1,4 +1,4 @@
-import { CreateTransactionRepository } from './repository';
+import { CreateLedgerEntryRepository } from './repository';
 import { AppError, type Db } from '@nba/db';
 import { normalizeCategory } from '../../shared/helpers';
 import type { CreateTransactionDTO } from './dto';
@@ -27,7 +27,7 @@ export async function createLedgerEntry(db: Db, body: CreateTransactionDTO & { a
     }
   }
 
-  const repo = new CreateTransactionRepository();
+  const repo = new CreateLedgerEntryRepository();
   return repo.create(db, {
     seasonId: body.seasonId,
     type: body.type,
