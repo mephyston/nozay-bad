@@ -1,6 +1,6 @@
 # ADR-0004: Modèle de données cible, intégrité et règles comptables associatives
 
-- **Statut** : Accepté
+- **Statut** : Accepté (Mis à jour suite révision C1)
 - **Date** : 2026-07-24
 - **Décideurs** : Équipe d'architecture NBA, DBA Senior, Expert-Comptable spécialisé en comptabilité associative (Loi 1901)
 
@@ -11,9 +11,11 @@
 L'application `nozay-bad` (Nozay Badminton) gère la vie administrative et financière d'un club sportif associatif : adhésions des membres, ventes de la boutique du club, remboursements de notes de frais et tenue de la comptabilité.
 
 L'audit de la base de données SQLite/Cloudflare D1 (16 tables, 23 migrations accumulées) a révélé des régressions et fragilités majeures :
-1. **Érosion des identifiants métier et clés secondaires** : La migration 0013 a supprimé la colonne `code` de la table `categories`, transformant la clé primaire auto-incrémentée en unique identifiant. En conséquence, le code applicatif a recours à des filtres par libellé texte (`admin_label = 'Boutique'`) ou à des identifiants numériques hardcodés (ex: `1` pour les adhésions).
-2. **Identifiants textuels comme PK et cibles de FK** : La table `seasons` utilisait une clé textuelle (`id = '25-26'`) référencée par 8 tables. De même, `account_classes` utilisait son code textuel (`'60'`) comme PK.
-3. **Disparition des clés étrangères (FK)** : La migration 0022 a supprimé 6 contraintes FK sur `expenses` et `orders` suite à la génération automatique Drizzle depuis des schémas TS non liés. De nombreuses colonnes jouant le rôle de FK (`transactions.category`, `expenses.category`, `categories.receipt_code`) n'ont jamais été contraintes en base.
+1. **Identifiants textuels comme PK et cibles de FK** : La table `seasons` utilisait une clé textuelle (`id = '25-26'`) référencée par 8 tables. De même, `account_classes` utilisait son code textuel (`'60'`) comme PK.
+2. **Disparition des clés étrangères (FK)** : La migration 0022 a supprimé 6 contraintes FK sur `expenses` et `orders` suite à la génération automatique Drizzle depuis des schémas TS non liés. De nombreuses colonnes jouant le rôle de FK (`ledger_entries.category_id`, `expenses.category_id`, `categories.receipt_account_class_id`) n'ont jamais été contraintes en base.
+3. **Ambiguïté de nommage et responsabilité des tables** :
+   - `bank_transactions` regroupait sous un nom ambigu des lignes d'extraits bancaires importées, et portait à tort un `season_id` (une ligne de relevé dépend d'une période bancaire, non d'un exercice comptable). Elle est clarifiée en `bank_statement_lines`.
+   - `transactions` cumulait trois sens concurrents (transaction bancaire, transaction DB, écriture comptable). Elle est renommée en `ledger_entries` (Le Grand Livre / Écritures de Trésorerie).
 4. **Duplication de tables inter-domaines** : `libs/domains/shop/shared/schema.ts` redéfinissait ses propres versions de `transactions` et `categories` avec des contraintes affaiblies.
 5. **Comptabilité approximative et ambiguïtés temporelles** :
    - Les montants sont exprimés en centimes mais nommés `amount` ou `price`, l'unité n'étant visible que dans l'UI.
@@ -36,10 +38,25 @@ Conformément à la réglementation des associations loi 1901 de petite taille (
 ### 2.2 Règle Structurante des Clés & Cibles d'Intégrité
 
 1. **Clé primaire (PK)** : Toute table possède une clé primaire entière auto-incrémentée nommée `id` (`INTEGER PRIMARY KEY AUTOINCREMENT`).
-2. **Clé métier (`code`)** : Toute clé fonctionnelle ou identifiant métier naturel est conservé dans une colonne dédiée (ex: `code`, `fitid`, `licence`, `number`, `invoice_number`), configurée en `TEXT UNIQUE NOT NULL`, immuable.
-3. **Clé étrangère (FK)** : Toute clé étrangère pointe **exclusivement vers une PK entière auto-incrémentée (`id`)**.
+2. **Clé étrangère (FK)** : Toute clé étrangère pointe **exclusivement vers une PK entière auto-incrémentée (`id`)**.
 
-### 2.3 Convention de Nommage des Montants
+### 2.3 Règle d'Attribution de la Colonne `code`
+
+**Règle d'Architecture** : Une colonne `code` (`TEXT UNIQUE NOT NULL`) est attribuée à une table si et seulement si son identité fonctionnelle est définie à l'extérieur du système ou directement référencée par la logique applicative / les fichiers d'import. Les données de configuration analytiques gérées par le trésorier (comme les catégories) ne portent pas de `code`.
+
+| Table | `code` | Justification Métier |
+| :--- | :---: | :--- |
+| `seasons` | ✅ | Identifiant externe naturel — l'import Poona / MyFFBaD lit une colonne Saison valant `'25-26'`. |
+| `account_classes` | ✅ | Plan Comptable Associatif (PCA), défini à l'extérieur du système, universel et immuable. |
+| `accounts` | ✅ | Liste fermée et stable des comptes financiers (`current`, `savings`, `cash`), référencée en configuration. |
+| `payment_methods` | ✅ | Liste fermée et stable des modes de règlement (`virement`, `cheque`, `cb`), mappée depuis les imports. |
+| `categories` | ❌ | Nomenclature analytique évolutive gérée par le trésorier. L'absence de code permet de scinder, fusionner ou renommer des catégories librement sans briser d'invariants système. |
+
+**Pivot opérationnel pour Seed & Reprise** : Pour le seed (`0001_seed_reference_data.sql`) et les scripts de reprise, `admin_label` sert de pivot ponctuel. Arbitrage assumé : léger inconfort ponctuel de script compensé par la souplesse permanente du modèle.
+
+**Impact Reprise & Conversion des Transferts** : La catégorie-marqueur "Virements Internes (Transit)" disparaît. Les écritures de transferts inter-comptes sont désormais structurellement reconnues par `type = 'transfert'` et `destination_account_id NOT NULL`. Lors de la reprise des données, les écritures historiquement catégorisées `virements_internes` doivent être converties avec un `destination_account_id` valide sous peine de violer l'invariant du `CHECK` de transfert.
+
+### 2.4 Convention de Nommage des Montants
 
 Toute colonne représentant un montant financier est obligatoirement exprimée en **centimes d'euros** et porte le suffixe `_cents` (ex: `amount_cents`, `total_amount_cents`, `price_cents`, `initial_balance_cents`).
 
@@ -52,7 +69,7 @@ Le modèle cible comprend 18 tables réparties entre les 4 domaines métier de l
 ```mermaid
 erDiagram
     SEASONS ||--o{ MEMBERS : "concerne"
-    SEASONS ||--o{ TRANSACTIONS : "rattachement"
+    SEASONS ||--o{ LEDGER_ENTRIES : "rattachement"
     SEASONS ||--o{ SEASON_BALANCES : "ouvre"
     SEASONS ||--o{ SEASON_CATEGORY_BUDGETS : "budgete"
     SEASONS ||--o{ INVOICES : "emet"
@@ -61,32 +78,32 @@ erDiagram
     ACCOUNT_CLASSES ||--o{ CATEGORIES : "ventile_depense"
     ACCOUNT_CLASSES ||--o{ ACCOUNTS : "rattache"
     
-    ACCOUNTS ||--o{ TRANSACTIONS : "source"
-    ACCOUNTS ||--o{ TRANSACTIONS : "destination"
-    ACCOUNTS ||--o{ BANK_TRANSACTIONS : "enregistre"
+    ACCOUNTS ||--o{ LEDGER_ENTRIES : "source"
+    ACCOUNTS ||--o{ LEDGER_ENTRIES : "destination"
+    ACCOUNTS ||--o{ BANK_STATEMENT_LINES : "enregistre"
     ACCOUNTS ||--o{ SEASON_BALANCES : "solde"
     
-    PAYMENT_METHODS ||--o{ TRANSACTIONS : "regle"
+    PAYMENT_METHODS ||--o{ LEDGER_ENTRIES : "regle"
     PAYMENT_METHODS ||--o{ ORDERS : "regle"
 
-    CATEGORIES ||--o{ TRANSACTIONS : "impute"
+    CATEGORIES ||--o{ LEDGER_ENTRIES : "impute"
     CATEGORIES ||--o{ EXPENSES : "impute"
     CATEGORIES ||--o{ SEASON_CATEGORY_BUDGETS : "budgete"
 
-    MEMBERS ||--o{ TRANSACTIONS : "paye"
+    MEMBERS ||--o{ LEDGER_ENTRIES : "paye"
     MEMBERS ||--o{ EXPENSES : "engage"
     MEMBERS ||--o{ CHECKS : "emet"
     MEMBERS ||--o{ ORDERS : "passe"
 
-    BANK_TRANSACTIONS ||--o{ TRANSACTIONS : "rapproche"
-    BANK_TRANSACTIONS ||--o{ CHECK_DEPOSITS : "credite"
+    BANK_STATEMENT_LINES ||--o{ LEDGER_ENTRIES : "rapproche"
+    BANK_STATEMENT_LINES ||--o{ CHECK_DEPOSITS : "credite"
 
     CHECK_DEPOSITS ||--o{ CHECKS : "regroupe"
 
-    TRANSACTIONS ||--o{ CHECKS : "associe"
-    TRANSACTIONS ||--o{ EXPENSES : "rembourse"
-    TRANSACTIONS ||--o{ ORDERS : "regle"
-    TRANSACTIONS ||--o{ INVOICES : "solde"
+    LEDGER_ENTRIES ||--o{ CHECKS : "associe"
+    LEDGER_ENTRIES ||--o{ EXPENSES : "rembourse"
+    LEDGER_ENTRIES ||--o{ ORDERS : "regle"
+    LEDGER_ENTRIES ||--o{ INVOICES : "solde"
 
     INVOICES ||--o{ INVOICE_ITEMS : "detaille"
     PRODUCTS ||--o{ ORDERS : "contient"
@@ -112,6 +129,7 @@ erDiagram
 | `created_at` | `INTEGER` | `NOT NULL` | Date de création de la saison (timestamp Unix ms). |
 
 - **Contrainte CHECK** : `CHECK(end_date > start_date)`
+- **Création lors des Imports CSV** : L'import refuse de créer une saison inconnue à la volée. Une saison représentant un exercice comptable formel avec des bornes légales (`start_date`, `end_date`), sa création exige un acte délibéré préalable du trésorier dans les paramètres de l'application.
 
 #### Table `users` (Comptes d'accès applicatif)
 | Colonne | Type SQL | Contraintes / Modificateurs | Rôle & Justification Métier |
@@ -170,7 +188,7 @@ erDiagram
 | `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Clé technique unique. |
 | `code` | `TEXT` | `UNIQUE NOT NULL` | Code fonctionnel (ex: `'current'`, `'savings'`, `'cash'`). |
 | `label` | `TEXT` | `NOT NULL` | Nom d'usage (ex: `'Compte Courant LCL'`, `'Livret A'`, `'Caisse Buvette'`). |
-| `account_class_id` | `INTEGER` | `NOT NULL REFERENCES account_classes(id)` | Rattachement PCA (ex: compte 512100, 517100, 530000). |
+| `account_class_id` | `INTEGER` | `NOT NULL REFERENCES account_classes(id)` | Rattachement PCA (ex: compte 512, 517, 530). |
 | `created_at` | `INTEGER` | `NOT NULL` | Timestamp de création. |
 
 #### Table `payment_methods` (Modes de Règlement)
@@ -186,17 +204,16 @@ erDiagram
 #### Table `categories` (Nomenclature Analytique et Budgétaire)
 | Colonne | Type SQL | Contraintes / Modificateurs | Rôle & Justification Métier |
 | :--- | :--- | :--- | :--- |
-| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Clé technique. |
-| `code` | `TEXT` | `UNIQUE NOT NULL` | Code analytique immuable (ex: `'adhesions'`, `'boutique'`, `'tournois'`). |
-| `admin_label` | `TEXT` | `NOT NULL` | Nom pour le trésorier / back-office. |
+| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Clé technique unique. |
+| `admin_label` | `TEXT` | `NOT NULL` | Nom pour le trésorier / back-office (ex: `'Adhésions & Inscriptions'`). |
 | `adherent_label` | `TEXT` | `NOT NULL` | Nom présenté aux adhérents sur les reçus/formulaires. |
 | `hide_in_expenses` | `INTEGER` | `NOT NULL DEFAULT 0` | 1 si la catégorie ne doit pas apparaître dans les notes de frais. |
 | `receipt_account_class_id` | `INTEGER` | `NULL REFERENCES account_classes(id)` | Compte de produit associé (Classe 7). |
 | `expense_account_class_id` | `INTEGER` | `NULL REFERENCES account_classes(id)` | Compte de charge associé (Classe 6). |
 | `created_at` | `INTEGER` | `NOT NULL` | Timestamp de création. |
 
-#### Table `transactions` (Le Grand Livre / Écritures de Trésorerie)
-*Table centrale enregistrant l'ensemble des mouvements financiers.*
+#### Table `ledger_entries` (Le Grand Livre / Écritures de Trésorerie)
+*Anciennement nommée `transactions`. Table centrale enregistrant l'ensemble des mouvements financiers.*
 
 | Colonne | Type SQL | Contraintes / Modificateurs | Rôle & Justification Métier |
 | :--- | :--- | :--- | :--- |
@@ -214,12 +231,12 @@ erDiagram
 | `accrual_type` | `TEXT` | `NOT NULL DEFAULT 'normal'` | Qualification du rattachement temporel. |
 | `accrual_note` | `TEXT` | `NULL` | Motif obligatoire en cas de décalage d'exercice (`accrual_type != 'normal'`). |
 | `member_id` | `INTEGER` | `NULL REFERENCES members(id)` | Adhérent lié à l'écriture le cas échéant. |
-| `bank_transaction_id` | `INTEGER` | `NULL REFERENCES bank_transactions(id)` | Écriture bancaire rapprochée. |
+| `bank_statement_line_id` | `INTEGER` | `NULL REFERENCES bank_statement_lines(id)` | Ligne d'extrait bancaire rapprochée. |
 | `invoice_id` | `INTEGER` | `NULL REFERENCES invoices(id)` | Facture acquittée par cette écriture. |
 | `status` | `TEXT` | `NOT NULL DEFAULT 'cleared'` | Statut de trésorerie (`'pending_debit'`, `'in_vault'`, `'cleared'`). |
 | `created_at` | `INTEGER` | `NOT NULL` | Horodatage de création de l'enregistrement. |
 
-- **Contraintes CHECK sur `transactions`** :
+- **Contraintes CHECK sur `ledger_entries`** :
   1. `CHECK(amount_cents > 0)`
   2. `CHECK(type IN ('recette', 'depense', 'transfert'))`
   3. `CHECK(status IN ('pending_debit', 'in_vault', 'cleared'))`
@@ -231,12 +248,13 @@ erDiagram
   7. **Note de régularisation obligatoire** :
      `CHECK((accrual_type = 'normal') OR (accrual_type <> 'normal' AND accrual_note IS NOT NULL))`
 
-#### Table `bank_transactions` (Relevés de Compte Bancaire Importés)
+#### Table `bank_statement_lines` (Lignes d'Extraits Bancaires Importées)
+*Anciennement nommée `bank_transactions`. Représente les données d'extraits de compte externe (OFX/CSV) en attente de rapprochement.*
+
 | Colonne | Type SQL | Contraintes / Modificateurs | Rôle & Justification Métier |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Clé technique. |
 | `fitid` | `TEXT` | `UNIQUE NOT NULL` | Identifiant unique de la transaction de la banque (OFX FITID). |
-| `season_id` | `INTEGER` | `NOT NULL REFERENCES seasons(id)` | Saison de réception de l'extrait. |
 | `account_id` | `INTEGER` | `NOT NULL REFERENCES accounts(id)` | Compte bancaire concerné. |
 | `amount_cents` | `INTEGER` | `NOT NULL` | Montant signé (positif = crédit, négatif = débit). |
 | `date` | `TEXT` | `NOT NULL` | Date de l'opération sur le relevé (`YYYY-MM-DD`). |
@@ -246,6 +264,7 @@ erDiagram
 | `ai_suggestions` | `TEXT` | `NULL` | Prédictions JSON générées par l'IA. |
 | `created_at` | `INTEGER` | `NOT NULL` | Timestamp d'import. |
 
+- **Remarque de Modélisation** : La colonne `season_id` est supprimée de cette table. Une ligne d'extrait bancaire appartient à une période bancaire et un compte, non à un exercice comptable.
 - **Contrainte CHECK** : `CHECK(status IN ('pending', 'reconciled', 'ignored'))`
 
 #### Table `check_deposits` (Bordereaux de Remise de Chèques)
@@ -257,7 +276,7 @@ erDiagram
 | `date` | `TEXT` | `NOT NULL` | Date de dépôt à la banque (`YYYY-MM-DD`). |
 | `amount_cents` | `INTEGER` | `NOT NULL` | Somme totale des chèques de la remise. |
 | `status` | `TEXT` | `NOT NULL DEFAULT 'pending'` | État (`'pending'`, `'deposited'`, `'cleared'`). |
-| `bank_transaction_id` | `INTEGER` | `NULL REFERENCES bank_transactions(id)` | Ligne du relevé bancaire correspondant à la remise. |
+| `bank_statement_line_id` | `INTEGER` | `NULL REFERENCES bank_statement_lines(id)` | Ligne du relevé bancaire correspondant à la remise. |
 | `created_at` | `INTEGER` | `NOT NULL` | Horodatage de création. |
 
 #### Table `checks` (Registre des Chèques Reçus)
@@ -271,7 +290,7 @@ erDiagram
 | `emitter` | `TEXT` | `NOT NULL` | Nom du titulaire du compte émetteur. |
 | `bank` | `TEXT` | `NULL` | Nom de la banque émettrice. |
 | `member_id` | `INTEGER` | `NULL REFERENCES members(id)` | Adhérent associé au chèque. |
-| `transaction_id` | `INTEGER` | `NULL REFERENCES transactions(id)` | Écriture comptable générée. |
+| `ledger_entry_id` | `INTEGER` | `NULL REFERENCES ledger_entries(id)` | Écriture comptable générée. |
 | `status` | `TEXT` | `NOT NULL DEFAULT 'received'` | État du chèque (`'received'`, `'deposited'`). |
 | `photo_url` | `TEXT` | `NULL` | URL de la photo/scan du chèque. |
 | `created_at` | `INTEGER` | `NOT NULL` | Timestamp d'enregistrement. |
@@ -286,7 +305,8 @@ erDiagram
 | `amount_cents` | `INTEGER` | `NOT NULL DEFAULT 0` | Montant prévisionnel en centimes. |
 | `created_at` | `INTEGER` | `NOT NULL` | Date de saisie du budget. |
 
-- **Index Unique** : `UNIQUE(season_id, category_id)` *(Correction de l'omission de l'ancien modèle)*.
+- **Index Unique** : `UNIQUE(season_id, category_id, type)`
+- **Note d'Architecture sur l'Index Unique** : Les trois colonnes `(season_id, category_id, type)` sont indispensables. Une même catégorie (ex: "Tournois") peut légitimement posséder à la fois un budget de recette (droit d'inscription perçus) et un budget de dépense (frais d'arbitrage et de location de salle) sur une même saison. Restreindre l'unicité à `(season_id, category_id)` interdirait d'exprimer les deux côtés.
 
 #### Table `season_balances` (Soldes d'Ouverture de Trésorerie)
 | Colonne | Type SQL | Contraintes / Modificateurs | Rôle & Justification Métier |
@@ -316,7 +336,7 @@ erDiagram
 | `attendees` | `TEXT` | `NULL` | Liste des bénéficiaires. |
 | `status` | `TEXT` | `NOT NULL DEFAULT 'draft'` | État de la facture (`'draft'`, `'sent'`, `'paid'`, `'cancelled'`). |
 | `total_amount_cents` | `INTEGER` | `NOT NULL` | Montant total TTC en centimes. |
-| `bank_transaction_id` | `INTEGER` | `NULL REFERENCES bank_transactions(id)` | Virement bancaire acquittant la facture. |
+| `bank_statement_line_id` | `INTEGER` | `NULL REFERENCES bank_statement_lines(id)` | Virement bancaire acquittant la facture. |
 | `created_at` | `INTEGER` | `NOT NULL` | Timestamp de création. |
 
 #### Table `invoice_items` (Lignes de Détail des Factures)
@@ -346,7 +366,7 @@ erDiagram
 | `status` | `TEXT` | `NOT NULL DEFAULT 'pending'` | État (`'pending'`, `'approved'`, `'rejected'`). |
 | `emitter_name` | `TEXT` | `NOT NULL` | Nom du bénévole effectuant la demande. |
 | `member_id` | `INTEGER` | `NULL REFERENCES members(id)` | Fiche adhérent du bénévole si inscrit. |
-| `transaction_id` | `INTEGER` | `NULL REFERENCES transactions(id)` | Écriture de virement de remboursement *(FK restaurée)*. |
+| `ledger_entry_id` | `INTEGER` | `NULL REFERENCES ledger_entries(id)` | Écriture de virement de remboursement *(FK restaurée)*. |
 | `created_at` | `INTEGER` | `NOT NULL` | Date de la demande. |
 
 - **Contrainte CHECK** : `CHECK(amount_cents > 0)` et `CHECK(status IN ('pending', 'approved', 'rejected'))`.
@@ -377,7 +397,7 @@ erDiagram
 | `total_amount_cents` | `INTEGER` | `NOT NULL` | Total de la commande en centimes (`quantity * price_cents`). |
 | `payment_method_id` | `INTEGER` | `NOT NULL REFERENCES payment_methods(id)` | Mode de règlement sélectionné. |
 | `status` | `TEXT` | `NOT NULL DEFAULT 'pending'` | État de la commande (`'pending'`, `'approved'`, `'rejected'`). |
-| `transaction_id` | `INTEGER` | `NULL REFERENCES transactions(id)` | Écriture de recette enregistrée à la validation *(FK restaurée)*. |
+| `ledger_entry_id` | `INTEGER` | `NULL REFERENCES ledger_entries(id)` | Écriture de recette enregistrée à la validation *(FK restaurée)*. |
 | `created_at` | `INTEGER` | `NOT NULL` | Timestamp d'enregistrement. |
 
 ---
@@ -413,7 +433,7 @@ stateDiagram-v2
 
 #### Phase 3 : Arrêté définitif des comptes (`closed_at IS NOT NULL`)
 - **Période** : Postérieure à l'action de clôture par le bureau / trésorier.
-- **Règles d'écriture** : **Verrouillage absolu et immuable**. Aucune création, modification ou suppression d'écriture (`transactions`, `invoices`, `checks`, `expenses`) n'est autorisée sur cette saison.
+- **Règles d'écriture** : **Verrouillage absolu et immuable**. Aucune création, modification ou suppression d'écriture (`ledger_entries`, `invoices`, `checks`, `expenses`) n'est autorisée sur cette saison.
 
 #### Traitement des pièces comptables tardives (Post-Arrêté)
 Si une facture ou une pièce comptable concernant l'exercice N arrive **après** le renseignement de `closed_at` :
@@ -424,7 +444,7 @@ Si une facture ou une pièce comptable concernant l'exercice N arrive **après**
 
 ## 5. Explicitation des Statuts de Trésorerie : `pending_debit` & `in_vault`
 
-L'audit relevait une non-utilisation dans le code des valeurs `pending_debit` et `in_vault` sur `transactions.status`.
+L'audit relevait une non-utilisation dans le code des valeurs `pending_debit` et `in_vault` sur `ledger_entries.status`.
 
 ### Décision d'Architecture : Maintien & Activation Fonctionnelle
 
@@ -466,14 +486,14 @@ Où les recettes et dépenses rattachées comprennent :
 
 Conformément à l'ADR-0001 (Modular Monolith & VSA) et l'ADR-0003 :
 
-1. **Suppression intégrale de la duplication de tables** : Les fichiers `libs/domains/shop/shared/schema.ts` et `libs/domains/expenses/shared/schema.ts` ne contiennent plus de définitions réitérées de `transactions` ou `categories`.
+1. **Suppression intégrale de la duplication de tables** : Les fichiers `libs/domains/shop/shared/schema.ts` et `libs/domains/expenses/shared/schema.ts` ne contiennent plus de définitions réitérées de `ledger_entries` ou `categories`.
 2. **Propriété exclusive** :
-   - Domaine `accounting` : Propriétaire de `transactions`, `categories`, `account_classes`, `accounts`, `payment_methods`, `season_balances`, `season_category_budgets`, `bank_transactions`, `checks`, `check_deposits`, `invoices`, `invoice_items`.
+   - Domaine `accounting` : Propriétaire de `ledger_entries`, `categories`, `account_classes`, `accounts`, `payment_methods`, `season_balances`, `season_category_budgets`, `bank_statement_lines`, `checks`, `check_deposits`, `invoices`, `invoice_items`.
    - Domaine `members` : Propriétaire de `seasons`, `members`, `users`.
    - Domaine `expenses` : Propriétaire de `expenses`.
    - Domaine `shop` : Propriétaire de `products`, `orders`.
 3. **Accès inter-domaines par API publique (Barrels)** :
-   - La création d'une transaction depuis la boutique (`approve-order`) ou depuis les notes de frais (`approve-expense`) s'effectue obligatoirement via la fonction exposée par `@nba/accounting-api` (`createRecetteTransaction`, `createDepenseTransaction`).
+   - La création d'une transaction depuis la boutique (`approve-order`) ou depuis les notes de frais (`approve-expense`) s'effectue obligatoirement via la fonction exposée par `@nba/accounting-api` (`createRevenueTransaction`, `createExpenseTransaction`).
 
 ---
 
@@ -498,16 +518,16 @@ Si le club vient à dépasser les seuils légaux et doit produire des comptes an
 
 ---
 
-## 9. Audit des Contradictions (Docs, Standards et Code Réel)
+## 9. Audit des Contradictions & Corrections Apportées (Révision C1)
 
-Au cours de l'analyse préalable à cet ADR, les contradictions suivantes ont été identifiées :
+Au cours de la révision C1 de cet ADR, les points de cadrage suivants ont été formalisés :
 
-1. **Migration 0013 vs Principe de Clé Métier (`categories`)** :
-   - *Code réel* : La migration 0013 a supprimé `code` dans `categories`, forçant des recherches par libellé texte (`admin_label = 'Boutique'`).
-   - *Correction* : Réintroduction de la colonne `code` (ex: `'boutique'`, `'adhesions'`) `UNIQUE NOT NULL`.
-2. **Omission des FK dans la Migration 0022** :
-   - *Code réel* : Disparition de `expenses.transaction_id` et `orders.transaction_id`.
-   - *Correction* : Rétablissement explicite des contraintes `.references(() => transactionsTable.id)`.
-3. **Incompatibilité entre `seasons.closed` et le besoin de rattachement** :
-   - *Code réel* : `closed` était un booléen binaire.
-   - *Correction* : Remplacement par `closed_at` (timestamp) et introduction de `start_date` / `end_date` pour distinguer la fin de saison de la clôture des comptes.
+1. **Suppression de `code` sur `categories`** :
+   - *Raison* : Les catégories sont une nomenclature analytique interne modifiable par le trésorier. L'attribution d'un `code` figé nuisait à l'évolutivité. Seule la catégorie-marqueur "Virements Internes" utilisait un code ; elle est supprimée et remplacée par la contrainte structurelle `CHECK` sur les transferts (`type = 'transfert'` et `destination_account_id NOT NULL`).
+2. **Unicité des Budgets Prévisionnels (`season_category_budgets`)** :
+   - *Correction* : `UNIQUE(season_id, category_id, type)` englobe `type` pour permettre à une même catégorie d'avoir à la fois un budget de recette et un budget de dépense.
+3. **Clarification du Nommage (`bank_statement_lines` & `ledger_entries`)** :
+   - *`bank_statement_lines`* remplace `bank_transactions` (suppression du `season_id` induit à tort sur cette table externe).
+   - *`ledger_entries`* remplace `transactions` (suppression des ambiguïtés avec `db.transaction()` et les opérations bancaires).
+4. **Comportement d'Import des Saisons (Poona / Members CSV)** :
+   - *Décision* : L'import CSV refuse les saisons inconnues. Une saison est un exercice comptable formel exigeant la déclaration explicite de ses bornes d'exercice (`start_date` et `end_date`).
