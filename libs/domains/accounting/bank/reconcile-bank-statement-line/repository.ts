@@ -19,6 +19,31 @@ export class ReconcileBankStatementLineRepository {
     return db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, id)).get();
   }
 
+  buildLinkTransactionToBankStatement(db: DbOrTx, ledgerEntryId: number, bankStatementLineId: number, memberId?: number): any {
+    return db.update(ledgerEntriesTable)
+      .set({ 
+        bankStatementLineId,
+        memberId: memberId || undefined
+      })
+      .where(eq(ledgerEntriesTable.id, ledgerEntryId));
+  }
+
+  buildCreateLedgerEntryStatement(db: DbOrTx, values: any): any {
+    return db.insert(ledgerEntriesTable).values(values);
+  }
+
+  buildMarkInvoiceAsPaidStatement(db: DbOrTx, id: number, bankStatementLineId: number): any {
+    return db.update(invoicesTable)
+      .set({ status: 'paid', bankStatementLineId })
+      .where(eq(invoicesTable.id, id));
+  }
+
+  buildMarkBankStatementLineReconciledStatement(db: DbOrTx, id: number): any {
+    return db.update(bankStatementLinesTable)
+      .set({ status: 'reconciled' })
+      .where(eq(bankStatementLinesTable.id, id));
+  }
+
   async linkTransactionToBank(db: DbOrTx, ledgerEntryId: number, bankStatementLineId: number, memberId?: number): Promise<void> {
     await db.update(ledgerEntriesTable)
       .set({ 

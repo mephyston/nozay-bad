@@ -15,21 +15,21 @@ describe('reconcileBankStatementLine', () => {
   let db: any;
   beforeEach(() => {
     vi.clearAllMocks();
-    db = { transaction: vi.fn(async (cb) => cb(db)) };
+    db = { batch: vi.fn().mockResolvedValue([]) };
   });
   it('should execute successfully', async () => {
     (isSeasonClosed as any).mockResolvedValue(false);
     const mockRepoInstance = {
       getBankStatementLineById: vi.fn().mockResolvedValue({ id: 1, seasonId: '23-24', amount: 10, status: 'pending', date: '2023-01-01', label: 'test' }),
       getTransactionById: vi.fn().mockResolvedValue({ seasonId: '23-24', amount: 10, category: 1 }),
-      linkTransactionToBank: vi.fn().mockResolvedValue(true),
+      buildLinkTransactionToBankStatement: vi.fn().mockReturnValue('stmt1'),
       getLedgerEntriesForBankStatementLine: vi.fn().mockResolvedValue([{ amount: 10 }]),
-      markBankStatementLineReconciled: vi.fn().mockResolvedValue(true),
+      buildMarkBankStatementLineReconciledStatement: vi.fn().mockReturnValue('stmt2'),
     };
     (vi.mocked(ReconcileBankStatementLineRepository) as any).mockImplementation(function() { return mockRepoInstance; });
     const payload = { action: 'match', ledgerEntryId: 1, memberId: 1 };
     await (reconcileBankStatementLine as any)(db, 1, payload);
-    expect(db.transaction).toHaveBeenCalled();
+    expect(db.batch).toHaveBeenCalled();
   });
   it('should throw error', async () => {
     (isSeasonClosed as any).mockResolvedValue(false);

@@ -1,27 +1,25 @@
 import { ReconcileBankStatementLineRepository } from './repository';
-import { isSeasonClosed } from '@nba/members-api';
-import { applyPaymentToMember } from '@nba/members-api';
-import { AppError, type Db, type Tx } from '@nba/db';
+import { isSeasonClosed, getMemberById, buildApplyPaymentStatement } from '@nba/members-api';
+import { AppError, type Db } from '@nba/db';
 import { normalizeCategory } from '../../shared/helpers';
-import { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
 import { ReconcileBankTxInternalId, ReconcileBankTxInternalInput, ReconcileBankTxInternalOutput } from "./dto";
 import { BankStatementLine } from '../../shared/bank-statement-line';
 import { validateAccrualAndFiscalPhase } from '../../shared/accruals';
 
-export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInternalId, body: ReconcileBankTxInternalInput): Promise<ReconcileBankTxInternalOutput> {
+export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxInternalId, body: ReconcileBankTxInternalInput): Promise<{ statements: any[]; error?: string; status?: number }> {
   const repo = new ReconcileBankStatementLineRepository();
   const bankTxData = await repo.getBankStatementLineById(db, id);
   if (!bankTxData) {
-    return { success: false, error: 'Écriture bancaire non trouvée.', status: 404 };
+    return { statements: [], error: 'Écriture bancaire non trouvée.', status: 404 };
   }
-  
+
   const bankTx = new BankStatementLine(bankTxData);
   if (!bankTx.canBeReconciled()) {
-    return { success: false, error: 'Écriture bancaire déjà rapprochée.', status: 400 };
+    return { statements: [], error: 'Écriture bancaire déjà rapprochée.', status: 400 };
   }
 
   if (await isSeasonClosed(db, bankTx.seasonId)) {
-    return { success: false, error: 'La saison de l\'écriture bancaire est clôturée.', status: 400 };
+    return { statements: [], error: 'La saison de l\'écriture bancaire est clôturée.', status: 400 };
   }
 
   const memberId = body.memberId || body.transaction?.memberId;
@@ -31,13 +29,13 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
   if (invoiceId) {
     const invoice = await repo.getInvoiceById(db, invoiceId);
     if (!invoice) {
-      return { success: false, error: 'Facture introuvable', status: 404 };
+      return { statements: [], error: 'Facture introuvable', status: 404 };
     }
     if (invoice.status === 'paid' || invoice.status === 'cancelled') {
-      return { success: false, error: 'La facture a déjà été payée ou a été annulée.', status: 400 };
+      return { statements: [], error: 'La facture a déjà été payée ou a été annulée.', status: 400 };
     }
     if (await isSeasonClosed(db, invoice.seasonId)) {
-      return { success: false, error: 'La saison de la facture est clôturée.', status: 400 };
+      return { statements: [], error: 'La saison de la facture est clôturée.', status: 400 };
     }
   }
 
@@ -45,30 +43,29 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
     for (const invId of invoiceIds) {
       const invoice = await repo.getInvoiceById(db, invId);
       if (!invoice) {
-        return { success: false, error: 'Facture introuvable', status: 404 };
+        return { statements: [], error: 'Facture introuvable', status: 404 };
       }
       if (invoice.status === 'paid' || invoice.status === 'cancelled') {
-        return { success: false, error: 'La facture a déjà été payée ou a été annulée.', status: 400 };
+        return { statements: [], error: 'La facture a déjà été payée ou a été annulée.', status: 400 };
       }
       if (await isSeasonClosed(db, invoice.seasonId)) {
-        return { success: false, error: 'La saison de la facture est clôturée.', status: 400 };
+        return { statements: [], error: 'La saison de la facture est clôturée.', status: 400 };
       }
     }
   }
 
-  let lastTxId = null;
+  const statements: any[] = [];
 
   if (body.action === 'match') {
     const existingTx = await repo.getTransactionById(db, body.ledgerEntryId);
     if (!existingTx) {
-      return { success: false, error: 'Transaction cible introuvable.', status: 404 };
+      return { statements: [], error: 'Transaction cible introuvable.', status: 404 };
     }
     if (await isSeasonClosed(db, existingTx.seasonId)) {
-      return { success: false, error: 'La saison de la transaction est clôturée. Rapprochement impossible.', status: 400 };
+      return { statements: [], error: 'La saison de la transaction est clôturée. Rapprochement impossible.', status: 400 };
     }
 
-    await repo.linkTransactionToBank(db, body.ledgerEntryId, id, memberId);
-    lastTxId = body.ledgerEntryId;
+    statements.push(repo.buildLinkTransactionToBankStatement(db, body.ledgerEntryId, id, memberId));
   } else if (body.action === 'create') {
     if (body.transactions && Array.isArray(body.transactions)) {
       for (const txItem of body.transactions) {
@@ -80,7 +77,7 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
           accrualNote: txItem.accrualNote || txItem.accrual_note
         });
 
-        await repo.createLedgerEntry(db, {
+        statements.push(repo.buildCreateLedgerEntryStatement(db, {
           seasonId: txItem.seasonId,
           type: txItem.type,
           accountId: txItem.accountId,
@@ -97,14 +94,14 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
           invoiceId: invoiceId || null,
           bankStatementLineId: id,
           createdAt: new Date()
-        });
+        }));
       }
     } else {
       const tx = body.transaction;
       if (!tx) {
-        return { success: false, error: 'Détails de la transaction manquants.', status: 400 };
+        return { statements: [], error: 'Détails de la transaction manquants.', status: 400 };
       }
-      
+
       await validateAccrualAndFiscalPhase(db, {
         seasonId: tx.seasonId,
         type: tx.type,
@@ -113,7 +110,7 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
         accrualNote: tx.accrualNote || tx.accrual_note
       });
 
-      const newTx = await repo.createLedgerEntry(db, {
+      statements.push(repo.buildCreateLedgerEntryStatement(db, {
         seasonId: tx.seasonId,
         type: tx.type,
         accountId: tx.accountId,
@@ -130,29 +127,37 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
         invoiceId: (invoiceIds && invoiceIds.length > 0) ? invoiceIds[0] : (invoiceId || null),
         bankStatementLineId: id,
         createdAt: new Date()
-      });
-
-      lastTxId = newTx.id;
+      }));
     }
 
     if (invoiceId) {
-      await repo.markInvoiceAsPaid(db, invoiceId, id);
+      statements.push(repo.buildMarkInvoiceAsPaidStatement(db, invoiceId, id));
     }
 
     if (invoiceIds && Array.isArray(invoiceIds)) {
       for (const invId of invoiceIds) {
-        await repo.markInvoiceAsPaid(db, invId, id);
+        statements.push(repo.buildMarkInvoiceAsPaidStatement(db, invId, id));
       }
     }
   } else {
-    return { success: false, error: 'Action invalide.', status: 400 };
+    return { statements: [], error: 'Action invalide.', status: 400 };
   }
 
   const linkedTxs = await repo.getLedgerEntriesForBankStatementLine(db, id);
-  const totalLinked = linkedTxs.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
+  const existingLinkedTotal = linkedTxs.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
+  let newTxAmount = 0;
+  if (body.action === 'create') {
+    if (body.transactions && Array.isArray(body.transactions)) {
+      newTxAmount = body.transactions.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
+    } else if (body.transaction) {
+      newTxAmount = Math.abs(body.transaction.amount);
+    }
+  } else if (body.action === 'match') {
+    newTxAmount = Math.abs(bankTx.amount);
+  }
 
-  if (totalLinked >= Math.abs(bankTx.amount)) {
-    await repo.markBankStatementLineReconciled(db, id);
+  if (existingLinkedTotal + newTxAmount >= Math.abs(bankTx.amount)) {
+    statements.push(repo.buildMarkBankStatementLineReconciledStatement(db, id));
   }
 
   if (memberId) {
@@ -188,48 +193,43 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
     }
 
     if (hasMembershipTx) {
-      await applyPaymentToMember(db, memberId, amountToApply);
+      const memberData = await getMemberById(db, memberId);
+      if (memberData) {
+        statements.push(buildApplyPaymentStatement(db, memberData, amountToApply));
+      }
     }
   }
 
+  return { statements };
+}
+
+export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInternalId, body: ReconcileBankTxInternalInput): Promise<ReconcileBankTxInternalOutput> {
+  const result = await buildReconciliationStatements(db, id, body);
+  if (result.error) {
+    return { success: false, error: result.error, status: result.status };
+  }
+
+  await db.batch(result.statements as any);
   return { success: true };
 }
 
 export async function reconcileBankStatementLine(db: Db, id: number, body: any) {
-  const runReconciliation = async (txDb: Tx) => {
-    const result = await reconcileBankTxInternal(txDb, id, body);
-    if (!result.success) {
-      throw new AppError(result.error || 'Reconciliation failed', result.status || 400);
-    }
-  };
-
-  if (db instanceof SQLiteTransaction) {
-    await runReconciliation(db);
-  } else {
-    await db.transaction(async (txDb: Tx) => {
-      await runReconciliation(txDb);
-    });
+  const result = await reconcileBankTxInternal(db, id, body);
+  if (!result.success) {
+    throw new AppError(result.error || 'Reconciliation failed', result.status || 400);
   }
 }
 
 export async function reconcileBulkTransactions(db: Db, requests: any[]) {
-  const runBulk = async (txDb: Tx) => {
-    let count = 0;
-    for (const req of requests) {
-      const result = await reconcileBankTxInternal(txDb, req.btId, req);
-      if (!result.success) {
-        throw new AppError(result.error || 'Matching operation failed', result.status || 400);
-      }
-      count++;
+  const allStatements: any[] = [];
+  for (const req of requests) {
+    const res = await buildReconciliationStatements(db, req.btId, req);
+    if (res.error) {
+      throw new AppError(res.error || 'Matching operation failed', res.status || 400);
     }
-    return count;
-  };
-
-  if (db instanceof SQLiteTransaction) {
-    return await runBulk(db);
-  } else {
-    return await db.transaction(async (txDb: Tx) => {
-      return await runBulk(txDb);
-    });
+    allStatements.push(...res.statements);
   }
+
+  await db.batch(allStatements as any);
+  return requests.length;
 }
