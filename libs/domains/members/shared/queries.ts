@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, or } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { membersTable, seasonsTable } from './schema';
 

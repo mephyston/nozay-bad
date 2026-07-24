@@ -29,7 +29,24 @@ export class ReconcileBankStatementLineRepository {
   }
 
   buildCreateLedgerEntryStatement(db: DbOrTx, values: any): any {
-    return db.insert(ledgerEntriesTable).values(values);
+    return db.insert(ledgerEntriesTable).values({
+      seasonId: typeof values.seasonId === 'number' ? values.seasonId : Number(values.seasonId),
+      type: values.type,
+      accountId: typeof values.accountId === 'number' ? values.accountId : (Number(values.accountId) || 1),
+      destinationAccountId: values.destinationAccountId ? Number(values.destinationAccountId) : null,
+      categoryId: values.categoryId ?? values.category ?? null,
+      amountCents: values.amountCents ?? (values.amount !== undefined ? Math.round(values.amount) : 0),
+      date: values.date,
+      paymentMethodId: typeof values.paymentMethodId === 'number' ? values.paymentMethodId : (typeof values.paymentMethod === 'number' ? values.paymentMethod : (Number(values.paymentMethod) || 1)),
+      description: values.description,
+      reference: values.reference || null,
+      accrualType: values.accrualType || 'normal',
+      accrualNote: values.accrualNote || null,
+      memberId: values.memberId || null,
+      invoiceId: values.invoiceId || null,
+      bankStatementLineId: values.bankStatementLineId || null,
+      createdAt: values.createdAt || new Date()
+    });
   }
 
   buildMarkInvoiceAsPaidStatement(db: DbOrTx, id: number, bankStatementLineId: number): any {
