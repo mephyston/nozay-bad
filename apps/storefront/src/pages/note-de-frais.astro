@@ -21,8 +21,6 @@ interface Member {
   licence: string;
 }
 
-const apiService = env.API_SERVICE;
-
 if (Astro.request.method === 'POST') {
   try {
     const body = await Astro.request.json();
