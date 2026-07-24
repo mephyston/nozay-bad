@@ -4,9 +4,17 @@ import {
   ledgerEntriesTable,
   bankStatementLinesTable,
   invoicesTable,
+  seasonsTable
 } from '../../shared/schema';
 
 export class ReconcileBankStatementLineRepository {
+  async resolveSeasonId(db: DbOrTx, seasonIdOrCode: string | number): Promise<number> {
+    if (typeof seasonIdOrCode === 'number') return seasonIdOrCode;
+    const num = Number(seasonIdOrCode);
+    if (!isNaN(num)) return num;
+    const row = await db.select({ id: seasonsTable.id }).from(seasonsTable).where(eq(seasonsTable.code, seasonIdOrCode)).get();
+    return row?.id || 1;
+  }
   async getBankStatementLineById(db: DbOrTx, id: number): Promise<any | undefined> {
     return db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, id)).get();
   }

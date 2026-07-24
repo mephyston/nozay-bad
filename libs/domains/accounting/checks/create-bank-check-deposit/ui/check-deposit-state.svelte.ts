@@ -55,14 +55,14 @@ export function createCheckDepositState(props: () => {
   });
 
   const categoryDisplayVal = $derived.by(() => {
-    const cat = categoriesList.find(c => c.id === checkCategory);
+    const cat = categoriesList.find((c: any) => c.id === checkCategory);
     return cat ? cat.name : '';
   });
 
   const filteredCategories = $derived.by(() => {
     if (!categorySearchQuery.trim()) return categoriesList;
     const q = categorySearchQuery.toLowerCase();
-    return categoriesList.filter(c => c.name.toLowerCase().includes(q));
+    return categoriesList.filter((c: any) => c.name.toLowerCase().includes(q));
   });
 
   const filteredMembers = $derived.by(() => {

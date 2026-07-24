@@ -14,8 +14,9 @@ export class CreateSeasonRepository {
     return db.insert(seasonsTable).values(values).returning().get();
   }
 
-  async deactivateAllSeasonsExcept(db: DbOrTx, activeId?: string): Promise<void> {
-    const whereClause = activeId ? ne(seasonsTable.id, activeId) : undefined;
+  async deactivateAllSeasonsExcept(db: DbOrTx, activeId?: string | number): Promise<void> {
+    const num = activeId !== undefined ? Number(activeId) : NaN;
+    const whereClause = !isNaN(num) ? ne(seasonsTable.id, num) : undefined;
     await db.update(seasonsTable).set({ active: false }).where(whereClause).run();
   }
 }

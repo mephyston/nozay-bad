@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { membersRouter } from '@nba/members-api';
 import { setupMockDb } from '@nba/db/test-utils';
 import { membersTable, seasonsTable } from '../../../libs/domains/members/shared/schema';
-import { sql } from 'drizzle-orm';
+import { sql, eq } from 'drizzle-orm';
 import { AppError } from '@nba/db';
 
 const app = new Hono<{ Bindings: { DB: any } }>();
@@ -82,9 +82,9 @@ describe('POST /members/import', () => {
     expect(m1.phone).toBe('0600000001');
     expect(m1.status).toBe('valide');
     expect(m1.type).toBe('Competiteur');
-    expect(m1.amountDue).toBe(25000);
-    expect(m1.amountReceived).toBe(10000);
-    expect(m1.amountRemaining).toBe(15000);
+    expect(m1.amountDueCents).toBe(25000);
+    expect(m1.amountReceivedCents).toBe(10000);
+    expect(m1.amountRemainingCents).toBe(15000);
     expect(m1.paid).toBe(false);
     expect(m1.parent1Name).toBe('Martin Jacques');
     expect(m1.parent1Email).toBe('jacques@example.com');
@@ -127,9 +127,9 @@ describe('POST /members/import', () => {
     expect(m1Updated.email).toBe('pierre.martin.new@example.com');
     expect(m1Updated.phone).toBe('0600000099');
     expect(m1Updated.status).toBe('suspendu');
-    expect(m1Updated.amountDue).toBe(25000);
-    expect(m1Updated.amountReceived).toBe(25000);
-    expect(m1Updated.amountRemaining).toBe(0);
+    expect(m1Updated.amountDueCents).toBe(25000);
+    expect(m1Updated.amountReceivedCents).toBe(25000);
+    expect(m1Updated.amountRemainingCents).toBe(0);
     expect(m1Updated.paid).toBe(true);
   });
 
@@ -169,20 +169,20 @@ describe('POST /members/import', () => {
 
     const m1 = dbMembers.find(m => m.licence === '07104079')!;
     expect(m1).toBeDefined();
-    expect(m1.season).toBe('25-26');
+    expect(m1.seasonId).toBeDefined();
     expect(m1.lastName).toBe('ABADIE');
     expect(m1.firstName).toBe('Christophe');
     expect(m1.gender).toBe('M'); // H mapped to M
     expect(m1.birthDate).toBe('1969-09-22'); // DD-MM-YYYY mapped to YYYY-MM-DD
     expect(m1.email).toBe('CA@SPECTRUMFR-DESIGN.COM');
     expect(m1.status).toBe('valide'); // Oui/Dossier finalisé mapped to valide
-    expect(m1.amountDue).toBe(0);
+    expect(m1.amountDueCents).toBe(0);
     expect(m1.parent1Phone).toBe('+33682681335');
     expect(m1.parent1Name).toBeNull();
 
     const m2 = dbMembers.find(m => m.licence === '07684632')!;
     expect(m2).toBeDefined();
-    expect(m2.season).toBe('25-26');
+    expect(m2.seasonId).toBeDefined();
     expect(m2.gender).toBe('F');
     expect(m2.birthDate).toBe('2017-09-17');
     expect(m2.status).toBe('suspendu'); // Non/Dossier annulé mapped to suspendu
@@ -234,11 +234,19 @@ describe('GET /members', () => {
   it('should return paginated list of members', async () => {
     const { mockD1, db } = await setupMockDb();
 
+    let season = await db.select().from(seasonsTable).get();
+    if (!season) {
+      season = await db.insert(seasonsTable).values({
+        code: '25-26', name: 'Saison 2025-2026', startDate: '2025-09-01', endDate: '2026-08-31', active: true, createdAt: new Date()
+      }).returning().get();
+    }
+    const seasonId = season.id;
+
     // Insert dummy members
     await db.insert(membersTable).values([
-      { licence: '1000001', lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'Competiteur', importedAt: new Date() },
-      { licence: '1000002', lastName: 'Martin', firstName: 'Sophie', gender: 'F', birthDate: '1985-05-15', status: 'valide', type: 'Loisir', importedAt: new Date() },
-      { licence: '1000003', lastName: 'Durand', firstName: 'Luc', gender: 'M', birthDate: '1995-12-25', status: 'suspendu', type: 'Competiteur', importedAt: new Date() },
+      { seasonId, licence: '1000001', lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'Competiteur', importedAt: new Date() },
+      { seasonId, licence: '1000002', lastName: 'Martin', firstName: 'Sophie', gender: 'F', birthDate: '1985-05-15', status: 'valide', type: 'Loisir', importedAt: new Date() },
+      { seasonId, licence: '1000003', lastName: 'Durand', firstName: 'Luc', gender: 'M', birthDate: '1995-12-25', status: 'suspendu', type: 'Competiteur', importedAt: new Date() },
     ]).run();
 
     // Test simple list
@@ -270,19 +278,33 @@ describe('GET /members', () => {
   it('should filter members by season', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    // Insert season 24-25 to respect foreign key constraint
-    await db.insert(seasonsTable).values({
-      id: '24-25',
+    // Insert seasons
+    const season2425 = await db.insert(seasonsTable).values({
+      code: '24-25',
       name: 'Saison 2024-2025',
+      startDate: '2024-09-01',
+      endDate: '2025-08-31',
       active: false,
       createdAt: new Date()
-    }).run();
+    }).returning().get();
+
+    let season2526 = await db.select().from(seasonsTable).where(eq(seasonsTable.code, '25-26')).get();
+    if (!season2526) {
+      season2526 = await db.insert(seasonsTable).values({
+        code: '25-26',
+        name: 'Saison 2025-2026',
+        startDate: '2025-09-01',
+        endDate: '2026-08-31',
+        active: true,
+        createdAt: new Date()
+      }).returning().get();
+    }
 
     // Insert dummy members in different seasons
     await db.insert(membersTable).values([
-      { licence: '1000001', season: '24-25', lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'Competiteur', importedAt: new Date() },
-      { licence: '1000001', season: '25-26', lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'Competiteur', importedAt: new Date() },
-      { licence: '1000002', season: '25-26', lastName: 'Martin', firstName: 'Sophie', gender: 'F', birthDate: '1985-05-15', status: 'valide', type: 'Loisir', importedAt: new Date() },
+      { seasonId: season2425.id, licence: '1000001', lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'Competiteur', importedAt: new Date() },
+      { seasonId: season2526.id, licence: '1000001', lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'Competiteur', importedAt: new Date() },
+      { seasonId: season2526.id, licence: '1000002', lastName: 'Martin', firstName: 'Sophie', gender: 'F', birthDate: '1985-05-15', status: 'valide', type: 'Loisir', importedAt: new Date() },
     ]).run();
 
     // Query for 24-25
@@ -441,7 +463,7 @@ describe('/members/:id/cse-data', () => {
     // Add a transaction for Marie Dupont
     await db.run(sql`
       INSERT INTO ledger_entries (id, season_id, type, account_id, category_id, amount_cents, date, payment_method_id, description, member_id, created_at)
-      VALUES (50, 1, 'recette', 1, 1, 20000, '2026-07-10', 1, 'Cotisation Marie Dupont', 20, strftime('%s', 'now'))
+      VALUES (50, 1, 'recette', 1, 1, 20000, '2026-07-10', 2, 'Cotisation Marie Dupont', 20, strftime('%s', 'now'))
     `);
 
     // GET /members/:id/cse-data for paid member WITH transaction
@@ -449,7 +471,7 @@ describe('/members/:id/cse-data', () => {
     expect(paidWithTxRes.status).toBe(200);
     const paidWithTxData = await paidWithTxRes.json() as any;
     expect(paidWithTxData.success).toBe(true);
-    expect(paidWithTxData.data.paymentMethod).toBe('cheque');
+    expect(paidWithTxData.data.paymentMethod).toBe('Chèque');
     expect(paidWithTxData.data.paymentDate).toBe('2026-07-10');
     expect(paidWithTxData.data.amount).toBe(20000);
   });

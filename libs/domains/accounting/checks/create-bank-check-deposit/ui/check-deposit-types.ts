@@ -58,4 +58,9 @@ export interface CategoryItem {
   code?: string;
 }
 
+export const categoriesList: CategoryItem[] = [
+  { id: '1', name: 'Adhésion', code: '70' },
+  { id: '2', name: 'Vente', code: '70' }
+];
+
 

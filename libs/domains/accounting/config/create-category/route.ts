@@ -26,7 +26,7 @@ createCategoryRoute.post(
     try {
       const newCat = await createCategory(db, body);
       return c.json({ success: true, data: newCat });
-    } catch (err: unknown) {
+    } catch (err: any) {
       return c.json({ success: false, error: err.message }, 400);
     }
   }

@@ -8,7 +8,7 @@ export function buildApplyPaymentStatement(
   memberData: any,
   amountCents: number
 ): any {
-  const member = new Member(memberData);
+  const member = new Member(memberData as any);
   const updatedValues = member.calculatePayment(amountCents);
   const repo = new ApplyPaymentRepository();
   return repo.buildUpdatePaymentStatement(db, memberData.id, updatedValues);
@@ -23,7 +23,7 @@ export async function applyPaymentToMember(
   const memberData = await repo.getById(db, memberId);
   if (!memberData) return;
 
-  const member = new Member(memberData);
+  const member = new Member(memberData as any);
   const updatedValues = member.calculatePayment(amountCents);
 
   await repo.updatePayment(db, memberId, updatedValues);

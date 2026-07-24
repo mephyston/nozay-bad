@@ -1,11 +1,20 @@
 import { type DbOrTx } from '@nba/db';
 import { eq, and, desc } from 'drizzle-orm';
-import { checksTable, checkDepositsTable } from '../../shared/schema';
+import { checksTable, checkDepositsTable, seasonsTable } from '../../shared/schema';
 import { getMembersByIds } from '@nba/members-api';
 
 export class ListChecksRepository {
+  async resolveSeasonId(db: DbOrTx, seasonIdOrCode: string | number): Promise<number> {
+    if (typeof seasonIdOrCode === 'number') return seasonIdOrCode;
+    const num = Number(seasonIdOrCode);
+    if (!isNaN(num)) return num;
+    const row = await db.select({ id: seasonsTable.id }).from(seasonsTable).where(eq(seasonsTable.code, seasonIdOrCode)).get();
+    return row?.id || 1;
+  }
+
   async listChecks(db: DbOrTx, seasonId: string, status?: string) {
-    const conditions = [eq(checksTable.seasonId, seasonId)];
+    const seasonIdInt = await this.resolveSeasonId(db, seasonId);
+    const conditions = [eq(checksTable.seasonId, seasonIdInt)];
     if (status) {
       conditions.push(eq(checksTable.status, status as any));
     }
@@ -14,7 +23,7 @@ export class ListChecksRepository {
       checkDepositId: checksTable.checkDepositId,
       seasonId: checksTable.seasonId,
       number: checksTable.number,
-      amount: checksTable.amount,
+      amount: checksTable.amountCents,
       emitter: checksTable.emitter,
       bank: checksTable.bank,
       memberId: checksTable.memberId,
@@ -43,9 +52,10 @@ export class ListChecksRepository {
   }
 
   async listCheckDeposits(db: DbOrTx, seasonId: string) {
+    const seasonIdInt = await this.resolveSeasonId(db, seasonId);
     return db.select()
       .from(checkDepositsTable)
-      .where(eq(checkDepositsTable.seasonId, seasonId))
+      .where(eq(checkDepositsTable.seasonId, seasonIdInt))
       .orderBy(desc(checkDepositsTable.date), desc(checkDepositsTable.id))
       .all();
   }

@@ -11,6 +11,8 @@ export async function createCheckDeposit(db: Db, body: CreateCheckDepositInput) 
 
   const repo = new CreateBankCheckDepositRepository();
 
+  const seasonIdInt = await repo.resolveSeasonId(db, body.seasonId);
+
   // Phase 1 : Lecture (hors batch)
   const checksToDeposit = await repo.getChecksByIds(db, body.checkIds);
   if (checksToDeposit.length === 0) {
@@ -26,23 +28,18 @@ export async function createCheckDeposit(db: Db, body: CreateCheckDepositInput) 
     totalAmount += check.amount;
   }
 
-  // Phase 2 : Décision (en mémoire)
-  const stmt1 = repo.buildCreateCheckDepositStatement(db, {
-    seasonId: body.seasonId,
+  const createdDeposit = await repo.createCheckDeposit(db, {
+    seasonId: seasonIdInt,
     reference: body.reference,
     date: body.date,
-    amount: totalAmount,
+    amountCents: totalAmount,
     status: 'deposited',
     createdAt: new Date()
   });
 
-  const stmt2 = repo.buildUpdateChecksDepositStatement(db, body.checkIds, sql`(SELECT last_insert_rowid())`, 'deposited');
+  await repo.updateChecksDeposit(db, body.checkIds, createdDeposit.id, 'deposited');
 
-  // Phase 3 : Écriture (db.batch)
-  const results = await db.batch([stmt1, stmt2]);
-  const createdDepositId = results[0]?.meta?.last_row_id;
-
-  return repo.getCheckDepositById(db, createdDepositId);
+  return repo.getCheckDepositById(db, createdDeposit.id);
 }
 
 export async function clearCheckDeposit(db: Db, id: number, body: ClearCheckDepositInput) {

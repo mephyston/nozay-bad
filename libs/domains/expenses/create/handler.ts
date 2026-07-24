@@ -14,11 +14,15 @@ export async function createExpense(
   }
 
   const repo = new CreateExpenseRepository();
+  const seasonId = await repo.resolveSeasonId(db, body.seasonId);
+  const categoryId = normalizeCategory(body.category) || 1;
+  const amountCents = (body as any).amountCents || body.amount;
+
   return repo.create(db, {
-    seasonId: body.seasonId,
+    seasonId,
     description: body.description,
-    category: normalizeCategory(body.category) || 1,
-    amount: body.amount,
+    categoryId,
+    amountCents,
     photoUrl: body.photoUrl || null,
     status: 'pending',
     emitterName: body.emitterName,

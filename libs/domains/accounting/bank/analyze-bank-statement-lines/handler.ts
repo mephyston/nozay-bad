@@ -18,7 +18,8 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
     for (const ex of pastReconciled) {
       const memberName = ex.memberLastName ? `${ex.memberLastName} ${ex.memberFirstName}` : "Aucun";
       const catLabel = ex.category ? String(ex.category) : "Inconnue";
-      examplesPrompt += `- Libellé bancaire : "${ex.name}" | Mémo : "${ex.memo || ''}" | Montant : ${(ex.amount / 100).toFixed(2)} EUR | Catégorie attribuée : ${catLabel} | Adhérent lié : ${memberName}\n`;
+      const exAmt = ex.amountCents ?? ex.amount ?? 0;
+      examplesPrompt += `- Libellé bancaire : "${ex.name}" | Mémo : "${ex.memo || ''}" | Montant : ${(exAmt / 100).toFixed(2)} EUR | Catégorie attribuée : ${catLabel} | Adhérent lié : ${memberName}\n`;
     }
     examplesPrompt += "\nSers-toi de ces exemples historiques pour orienter ton choix de catégorie ou de membre si l'opération à rapprocher est similaire.\n";
   }
@@ -37,8 +38,9 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
   let analyzedCount = 0;
 
   for (const tx of pendingTxs) {
-    let suggestedCategory = tx.amount < 0 ? catMap.fonctionnement : catMap.adhesions;
-    const absAmount = Math.abs(tx.amount);
+    const txAmount = tx.amountCents ?? (tx as any).amount ?? 0;
+    let suggestedCategory = txAmount < 0 ? catMap.fonctionnement : catMap.adhesions;
+    const absAmount = Math.abs(txAmount);
     const matchingProduct = activeProducts.find(p => {
       if (p.price === absAmount) return true;
       if (p.category === 'shuttlecock' && absAmount % p.price === 0 && absAmount <= p.price * 4) return true;
@@ -68,8 +70,8 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
       textToLower.includes('adhesion') || 
       textToLower.includes('cotisation') || 
       (textToLower.includes('inscription') && !textToLower.includes('tournoi') && !textToLower.includes('ebad')) ||
-      (textToLower.includes('licence') && tx.amount > 0) ||
-      (textToLower.includes('licences') && tx.amount > 0)
+      (textToLower.includes('licence') && txAmount > 0) ||
+      (textToLower.includes('licences') && txAmount > 0)
     ) {
       suggestedCategory = catMap.adhesions;
     } else if (textToLower.includes('ionos')) {
@@ -134,8 +136,8 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
     } else if (textToLower.includes('stage')) {
       suggestedCategory = catMap.stagesFormations;
     } else if (
-      (textToLower.includes('licence') && tx.amount < 0) ||
-      (textToLower.includes('licences') && tx.amount < 0)
+      (textToLower.includes('licence') && txAmount < 0) ||
+      (textToLower.includes('licences') && txAmount < 0)
     ) {
       suggestedCategory = catMap.licences;
     } else if (textToLower.includes('salaire') || textToLower.includes('tetevuide') || textToLower.includes('meunier')) {
@@ -154,7 +156,8 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
       const matchesFirstName = cleanFirst && textToLower.includes(cleanFirst);
       const matchesParent1 = cleanP1 && textToLower.includes(cleanP1);
       const matchesParent2 = cleanP2 && textToLower.includes(cleanP2);
-      const matchesAmount = Math.abs(m.amountRemaining) === Math.abs(tx.amount);
+      const memberRem = m.amountRemainingCents ?? m.amountRemaining ?? 0;
+      const matchesAmount = Math.abs(memberRem) === Math.abs(txAmount);
       
       return matchesLastName || matchesFirstName || matchesParent1 || matchesParent2 || matchesAmount;
     }).slice(0, 5);
@@ -190,7 +193,7 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
 Opération bancaire à rapprocher :
 - Libellé : "${tx.name}"
 - Détails : "${tx.memo || 'Aucun'}"
-- Montant : ${(tx.amount / 100).toFixed(2)} EUR (${tx.amount < 0 ? 'Débit' : 'Crédit'})
+- Montant : ${(txAmount / 100).toFixed(2)} EUR (${txAmount < 0 ? 'Débit' : 'Crédit'})
 
 Catégories valides pour l'écriture :
 ${categoriesPrompt}

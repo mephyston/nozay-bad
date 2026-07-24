@@ -4,5 +4,5 @@ import type { ListBankStatementLinesInput, ListBankStatementLinesOutput } from '
 
 export async function listBankStatementLines(db: Db, input: ListBankStatementLinesInput): Promise<ListBankStatementLinesOutput> {
   const repo = new ListBankStatementLinesRepository();
-  return repo.listBankStatementLines(db, input.seasonId, input.filters || {});
+  return repo.listBankStatementLines(db, input.seasonId, input as any);
 }

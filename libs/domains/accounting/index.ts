@@ -104,8 +104,10 @@ accountingRouter.route('/', recordCheckTransactionRoute);
 accountingRouter.route('/', createBankCheckDepositRoute);
 
 export { normalizeCategory, cleanName } from './shared/helpers';
+export { getSeasonReports } from './seasons/get-season-reports/handler';
 
-export { CreateTransactionRepository } from './ledger/create-ledger-entry/repository';
+import { CreateLedgerEntryRepository } from './ledger/create-ledger-entry/repository';
+export { CreateLedgerEntryRepository };
 
 export interface CreateRevenueTransactionParams {
   seasonId: number;
@@ -120,7 +122,7 @@ export interface CreateRevenueTransactionParams {
 }
 
 export function buildCreateRevenueLedgerEntryStatement(db: any, params: CreateRevenueTransactionParams): any {
-  const repository = new (require('./ledger/create-ledger-entry/repository')).CreateLedgerEntryRepository();
+  const repository = new CreateLedgerEntryRepository();
   return repository.buildCreateStatement(db, {
     seasonId: params.seasonId,
     type: 'recette',
@@ -138,7 +140,7 @@ export function buildCreateRevenueLedgerEntryStatement(db: any, params: CreateRe
 }
 
 export async function createRevenueLedgerEntry(db: any, params: CreateRevenueTransactionParams): Promise<{ id: number }> {
-  const repository = new (await import('./ledger/create-ledger-entry/repository')).CreateTransactionRepository();
+  const repository = new CreateLedgerEntryRepository();
   return repository.create(db, {
     seasonId: params.seasonId,
     type: 'recette',

@@ -175,7 +175,7 @@ describe('closeSeason (Pre-closure Checks, Rollover & Reopen - PROMPT 13)', () =
     expect(reopenRes.season.closedAt).toBeNull();
 
     // Verify season is open again
-    const seasonData = await db.select().from(seasonsTable).where(seasonsTable.id === 1).get();
+    const seasonData = await db.select().from(seasonsTable).where(eq(seasonsTable.id, 1)).get();
     expect(seasonData.closedAt).toBeNull();
   });
 });

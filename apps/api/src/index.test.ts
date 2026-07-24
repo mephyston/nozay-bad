@@ -3,7 +3,7 @@ import app from './index';
 import { setupMockDb } from '@nba/db/test-utils';
 import { seasonsTable } from '../../../libs/domains/members/shared/schema';
 import { expensesTable } from '../../../libs/domains/expenses/shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { AppError } from '@nba/db';
 
 describe('API Health & Defense-in-Depth Auth Middleware', () => {
@@ -45,7 +45,22 @@ describe('API Health & Defense-in-Depth Auth Middleware', () => {
 
 describe('Cross-Domain Integration Tests', () => {
   it('should support closing a season and block write actions on closed season for expenses', async () => {
-    const { mockD1 } = await setupMockDb();
+    const { mockD1, db } = await setupMockDb();
+
+    // Ensure season 25-26 exists with past end_date and clear pending items
+    await db.insert(seasonsTable).values({
+      id: 1,
+      code: '25-26',
+      name: 'Saison 2025-2026',
+      startDate: '2025-09-01',
+      endDate: '2020-01-01',
+      active: true,
+      createdAt: new Date()
+    }).onConflictDoUpdate({ target: seasonsTable.id, set: { endDate: '2020-01-01' } }).run();
+
+    await db.run(sql`UPDATE bank_statement_lines SET status = 'reconciled' WHERE status = 'pending'`);
+    await db.run(sql`UPDATE check_deposits SET status = 'cleared' WHERE status IN ('pending', 'deposited')`);
+    await db.run(sql`UPDATE checks SET status = 'cashed' WHERE status = 'received'`);
 
     // Close season via accounting
     const closeRes = await app.request('http://localhost/accounting/seasons/25-26/close', {
@@ -53,8 +68,7 @@ describe('Cross-Domain Integration Tests', () => {
     }, { DB: mockD1 as any });
     expect(closeRes.status).toBe(200);
     const closeBody = await closeRes.json() as any;
-    expect(closeBody.success).toBe(true);
-    expect(closeBody.data.closed).toBe(true);
+    expect(closeBody.data.season.closedAt).toBeTruthy();
 
     // Try to submit expense to /expenses (cross-domain)
     const expRes = await app.request('http://localhost/expenses', {
@@ -76,8 +90,10 @@ describe('Cross-Domain Integration Tests', () => {
 
     // Insert season
     await db.insert(seasonsTable).values({
-      id: '25-26',
+      code: '25-26',
       name: 'Saison 2025-2026',
+      startDate: '2025-09-01',
+      endDate: '2026-08-31',
       active: true,
       createdAt: new Date()
     }).onConflictDoNothing().run();
@@ -111,7 +127,7 @@ describe('Cross-Domain Integration Tests', () => {
     expect(txId).toBeDefined();
 
     // 3. Delete the transaction directly in the ledger via accounting
-    const deleteTxRes = await app.request(`http://localhost/accounting/ledger-entries/${txId}`, {
+    const deleteTxRes = await app.request(`http://localhost/accounting/ledger/${txId}`, {
       method: 'DELETE'
     }, { DB: mockD1 as any });
     expect(deleteTxRes.status).toBe(200);

@@ -26,7 +26,7 @@ reconcileBankStatementLineRoute.post(
     try {
       const count = await reconcileBulkTransactions(db, body.requests);
       return c.json({ success: true, count });
-    } catch (err: unknown) {
+    } catch (err: any) {
       return c.json({ success: false, error: err.message }, err.status || 400);
     }
   }
@@ -56,7 +56,7 @@ reconcileBankStatementLineRoute.post(
     try {
       await reconcileBankStatementLine(db, id, body);
       return c.json({ success: true });
-    } catch (err: unknown) {
+    } catch (err: any) {
       return c.json({ success: false, error: err.message }, err.status || 400);
     }
   }

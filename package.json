@@ -8,7 +8,6 @@
     "check:env": "node scripts/check-env-declarations.js",
     "check:schema": "node scripts/check-schema-integrity.js"
   },
-
   "private": true,
   "type": "module",
   "devDependencies": {
@@ -18,6 +17,7 @@
     "@nx/eslint-plugin": "^23.0.1",
     "@nx/js": "23.0.1",
     "@nx/workspace": "23.0.1",
+    "@types/node": "^26.1.1",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.10.0",
     "jsdom": "^26.0.0",

@@ -18,19 +18,26 @@ export async function getSeasonBalance(db: Db, seasonId: GetSeasonBalanceInput):
   const cashFlowTxs = await repo.getTransactionsForPeriod(db, startDateStr, endDateStr);
 
   const accounts = ['current', 'savings', 'cash'] as const;
+  const accountIdMap: Record<string, number> = { current: 1, savings: 2, cash: 3 };
   let totalBalance = 0;
 
   for (const acc of accounts) {
-    const initBal = balances.find(b => b.accountId === acc)?.initialBalance || 0;
+    const numericAccId = accountIdMap[acc];
+    const initBalRow = balances.find(b => b.accountId === acc || b.accountId === numericAccId);
+    const initBal = initBalRow ? (initBalRow.initialBalanceCents ?? initBalRow.initialBalance ?? 0) : 0;
     let finalBal = initBal;
     for (const tx of cashFlowTxs) {
-      if (tx.type === 'recette' && tx.accountId === acc) {
-        finalBal += tx.amount;
-      } else if (tx.type === 'depense' && tx.accountId === acc) {
-        finalBal -= tx.amount;
+      const txAmount = tx.amountCents ?? (tx.amount ? tx.amount * 100 : 0);
+      const isTargetAcc = tx.accountId === acc || tx.accountId === numericAccId;
+      const isDestAcc = tx.destinationAccountId === acc || tx.destinationAccountId === numericAccId;
+
+      if (tx.type === 'recette' && isTargetAcc) {
+        finalBal += txAmount;
+      } else if (tx.type === 'depense' && isTargetAcc) {
+        finalBal -= txAmount;
       } else if (tx.type === 'transfert') {
-        if (tx.accountId === acc) finalBal -= tx.amount;
-        if (tx.destinationAccountId === acc) finalBal += tx.amount;
+        if (isTargetAcc) finalBal -= txAmount;
+        if (isDestAcc) finalBal += txAmount;
       }
     }
     totalBalance += finalBal;

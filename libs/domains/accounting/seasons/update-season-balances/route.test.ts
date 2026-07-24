@@ -16,14 +16,14 @@ describe('UpdateSeasonBalances Route', () => {
       body: JSON.stringify([{ accountId: 'invalid_account', initialBalanceCents: 100 }])
     }, { DB: mockD1 as any });
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error).toContain('Validation failed');
   });
 
   it('should return 200 on valid body', async () => {
     const { mockD1 } = await setupMockDb();
-    vi.mocked(updateSeasonBalances).mockResolvedValue(undefined);
+    vi.mocked(updateSeasonBalances).mockResolvedValue(undefined as any);
     
     const payload = [
       { accountId: 1, initialBalanceCents: 150000 },
@@ -36,7 +36,7 @@ describe('UpdateSeasonBalances Route', () => {
       body: JSON.stringify(payload)
     }, { DB: mockD1 as any });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(updateSeasonBalances).toHaveBeenCalledWith(expect.anything(), '25-26', payload);
   });

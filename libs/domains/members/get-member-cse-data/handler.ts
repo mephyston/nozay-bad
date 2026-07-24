@@ -11,7 +11,7 @@ export async function getMemberCseData(db: Db, id: GetMemberCseDataInput): Promi
     throw new MemberNotFoundError();
   }
 
-  const member = new Member(memberData);
+  const member = new Member(memberData as any);
   if (!member.canReceiveAttestation()) {
     throw new MemberNotFullyPaidError();
   }

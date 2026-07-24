@@ -17,7 +17,7 @@ describe('importBankStatementRoute', () => {
     }, { DB: {} as any });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
   });
 
@@ -31,7 +31,7 @@ describe('importBankStatementRoute', () => {
     }, { DB: {} as any });
 
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
   });
 });

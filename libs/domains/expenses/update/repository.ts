@@ -1,22 +1,22 @@
 import { eq, sql, and, ne } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { expensesTable } from '../shared/schema';
+import { expensesTable, seasonsTable } from '../shared/schema';
 import { ledgerEntriesTable, bankStatementLinesTable } from '@nba/accounting/schema';
 
 export class UpdateExpenseRepository {
+  async resolveSeasonId(db: DbOrTx, seasonIdOrCode: string | number): Promise<number> {
+    if (typeof seasonIdOrCode === 'number') return seasonIdOrCode;
+    const num = Number(seasonIdOrCode);
+    if (!isNaN(num)) return num;
+    const row = await db.select({ id: seasonsTable.id }).from(seasonsTable).where(eq(seasonsTable.code, seasonIdOrCode)).get();
+    return row?.id || 1;
+  }
+
   async getById(db: DbOrTx, id: number): Promise<typeof expensesTable.$inferSelect | undefined> {
     return db.select().from(expensesTable).where(eq(expensesTable.id, id)).get();
   }
 
-  async update(db: DbOrTx, id: number, values: {
-    description?: string;
-    category?: number;
-    amount?: number;
-    seasonId?: string;
-    photoUrl?: string | null;
-    emitterName?: string;
-    memberId?: number | null;
-  }): Promise<typeof expensesTable.$inferSelect | undefined> {
+  async update(db: DbOrTx, id: number, values: Partial<typeof expensesTable.$inferInsert>): Promise<typeof expensesTable.$inferSelect | undefined> {
     return db.update(expensesTable).set(values).where(eq(expensesTable.id, id)).returning().get();
   }
 
@@ -30,9 +30,9 @@ export class UpdateExpenseRepository {
   }
 
   buildInsertTransactionStatement(db: DbOrTx, values: {
-    seasonId: string;
-    category: number;
-    amount: number;
+    seasonId: number;
+    categoryId: number;
+    amountCents: number;
     emitterName: string;
     description: string;
     memberId: number | null;
@@ -41,11 +41,11 @@ export class UpdateExpenseRepository {
     return db.insert(ledgerEntriesTable).values({
       seasonId: values.seasonId,
       type: 'depense',
-      accountId: 'current',
-      category: values.category,
-      amount: values.amount,
+      accountId: 1,
+      categoryId: values.categoryId,
+      amountCents: values.amountCents,
       date: today,
-      paymentMethod: 'virement',
+      paymentMethodId: 1,
       description: `Remboursement frais - ${values.emitterName} - ${values.description}`,
       memberId: values.memberId,
       createdAt: new Date()
@@ -89,25 +89,25 @@ export class UpdateExpenseRepository {
       .returning().get();
   }
 
-  async getTransactionDetails(db: DbOrTx, txId: number): Promise<{ id: number; bankStatementLineId: number | null; amount: number } | undefined> {
+  async getTransactionDetails(db: DbOrTx, txId: number): Promise<{ id: number; bankStatementLineId: number | null; amountCents: number } | undefined> {
     return db.select({
       id: ledgerEntriesTable.id,
       bankStatementLineId: ledgerEntriesTable.bankStatementLineId,
-      amount: ledgerEntriesTable.amount
+      amountCents: ledgerEntriesTable.amountCents
     }).from(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, txId)).get() as any;
   }
 
-  async getBankTransactionDetails(db: DbOrTx, bankTxId: number): Promise<{ id: number; amount: number } | undefined> {
+  async getBankTransactionDetails(db: DbOrTx, bankTxId: number): Promise<{ id: number; amountCents: number } | undefined> {
     return db.select({
       id: bankStatementLinesTable.id,
-      amount: bankStatementLinesTable.amount
+      amountCents: bankStatementLinesTable.amountCents
     }).from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bankTxId)).get() as any;
   }
 
-  async getRemainingTransactionsForBankTx(db: DbOrTx, bankTxId: number, excludeTxId: number): Promise<{ id: number; amount: number }[]> {
+  async getRemainingTransactionsForBankTx(db: DbOrTx, bankTxId: number, excludeTxId: number): Promise<{ id: number; amountCents: number }[]> {
     return db.select({
       id: ledgerEntriesTable.id,
-      amount: ledgerEntriesTable.amount
+      amountCents: ledgerEntriesTable.amountCents
     }).from(ledgerEntriesTable).where(and(eq(ledgerEntriesTable.bankStatementLineId, bankTxId), ne(ledgerEntriesTable.id, excludeTxId))).all() as any;
   }
 
@@ -120,7 +120,7 @@ export class UpdateExpenseRepository {
   }
 
   async insertTransaction(db: DbOrTx, values: {
-    seasonId: string;
+    seasonId: number | string;
     category: number;
     amount: number;
     emitterName: string;
@@ -128,14 +128,15 @@ export class UpdateExpenseRepository {
     memberId: number | null;
   }): Promise<{ id: number }> {
     const today = new Date().toISOString().split('T')[0];
+    const seasonIdInt = await this.resolveSeasonId(db, values.seasonId);
     const res = await db.insert(ledgerEntriesTable).values({
-      seasonId: values.seasonId,
+      seasonId: seasonIdInt,
       type: 'depense',
-      accountId: 'current',
-      category: values.category,
-      amount: values.amount,
+      accountId: 1,
+      paymentMethodId: 3,
+      categoryId: values.category,
+      amountCents: values.amount,
       date: today,
-      paymentMethod: 'virement',
       description: `Remboursement frais - ${values.emitterName} - ${values.description}`,
       memberId: values.memberId,
       createdAt: new Date()

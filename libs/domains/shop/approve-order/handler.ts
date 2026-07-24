@@ -67,9 +67,10 @@ export async function approveOrder(db: Db, id: ApproveOrderInput): Promise<Appro
   });
 
   const stmt2 = repo.buildApproveOrderStatement(db, id);
+  const stmt3 = repo.buildDecrementStockStatement(db, product.id, order.quantity);
 
   // Phase 3 : Écriture (db.batch)
-  const results = await db.batch([stmt1, stmt2]);
+  const results = await db.batch([stmt1, stmt2, stmt3]);
 
   // Détection d'échec du verrou optimiste (status !== 'pending' au moment de l'écriture)
   const changes = results[1]?.meta?.changes;

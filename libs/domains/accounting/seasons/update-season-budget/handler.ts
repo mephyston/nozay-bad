@@ -9,5 +9,6 @@ export async function updateSeasonBudget(db: Db, seasonId: UpdateSeasonBudgetSea
     throw new SeasonClosedError('La saison est clôturée. Impossible de modifier son prévisionnel.');
   }
   const repo = new UpdateSeasonBudgetRepository();
-  return repo.updateBudget(db, seasonId, body);
+  const items = Array.isArray(body) ? body : (body as any)?.items || body;
+  return repo.updateBudget(db, seasonId, items as any);
 }

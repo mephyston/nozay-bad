@@ -26,14 +26,14 @@ describe('ReconcileBankStatementLine Route', () => {
       }, { DB: mockD1 as any });
 
       expect(res.status).toBe(400);
-      const body = await res.json();
+      const body = await res.json() as any;
       expect(body.success).toBe(false);
       expect(body.error).toContain('Validation failed');
     });
 
     it('should return 200 on valid body', async () => {
       const { mockD1 } = await setupMockDb();
-      vi.mocked(reconcileBulkTransactions).mockResolvedValue(1);
+      vi.mocked(reconcileBulkTransactions).mockResolvedValue(1 as any);
 
       const res = await reconcileBankStatementLineRoute.request('http://localhost/bank-statement-lines/reconcile-bulk', {
         method: 'POST',
@@ -50,7 +50,7 @@ describe('ReconcileBankStatementLine Route', () => {
       }, { DB: mockD1 as any });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = await res.json() as any;
       expect(body.success).toBe(true);
       expect(body.count).toBe(1);
     });
@@ -68,14 +68,14 @@ describe('ReconcileBankStatementLine Route', () => {
       }, { DB: mockD1 as any });
 
       expect(res.status).toBe(400);
-      const body = await res.json();
+      const body = await res.json() as any;
       expect(body.success).toBe(false);
       expect(body.error).toContain('Validation failed');
     });
 
     it('should return 200 on valid body', async () => {
       const { mockD1 } = await setupMockDb();
-      vi.mocked(reconcileBankStatementLine).mockResolvedValue(undefined);
+      vi.mocked(reconcileBankStatementLine).mockResolvedValue(undefined as any);
 
       const res = await reconcileBankStatementLineRoute.request('http://localhost/bank-statement-lines/123/reconcile', {
         method: 'POST',
@@ -95,7 +95,7 @@ describe('ReconcileBankStatementLine Route', () => {
       }, { DB: mockD1 as any });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = await res.json() as any;
       expect(body.success).toBe(true);
     });
   });

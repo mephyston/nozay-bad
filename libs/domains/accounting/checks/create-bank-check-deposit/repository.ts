@@ -1,8 +1,15 @@
 import { type DbOrTx } from '@nba/db';
 import { eq, inArray } from 'drizzle-orm';
-import { checksTable, checkDepositsTable, bankStatementLinesTable } from '../../shared/schema';
+import { checksTable, checkDepositsTable, bankStatementLinesTable, seasonsTable } from '../../shared/schema';
 
 export class CreateBankCheckDepositRepository {
+  async resolveSeasonId(db: DbOrTx, seasonIdOrCode: string | number): Promise<number> {
+    if (typeof seasonIdOrCode === 'number') return seasonIdOrCode;
+    const num = Number(seasonIdOrCode);
+    if (!isNaN(num)) return num;
+    const row = await db.select({ id: seasonsTable.id }).from(seasonsTable).where(eq(seasonsTable.code, seasonIdOrCode)).get();
+    return row?.id || 1;
+  }
   async getChecksByIds(db: DbOrTx, ids: number[]): Promise<any[]> {
     if (ids.length === 0) return [];
     return db.select().from(checksTable).where(inArray(checksTable.id, ids)).all();
@@ -62,7 +69,12 @@ export class CreateBankCheckDepositRepository {
   }
 
   async getCheckDepositById(db: DbOrTx, id: number): Promise<any | undefined> {
-    return db.select().from(checkDepositsTable).where(eq(checkDepositsTable.id, id)).get();
+    const dep = await db.select().from(checkDepositsTable).where(eq(checkDepositsTable.id, id)).get();
+    if (!dep) return undefined;
+    return {
+      ...dep,
+      amount: dep.amountCents
+    };
   }
 
   async updateCheckDeposit(db: DbOrTx, id: number, values: any): Promise<void> {

@@ -17,7 +17,7 @@ describe('analyzeBankStatementLines Route', () => {
       { DB: mockD1 as any, AI: aiMock as any }
     );
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error).toContain('Validation failed');
   });
@@ -34,7 +34,7 @@ describe('analyzeBankStatementLines Route', () => {
       { DB: mockD1 as any, AI: aiMock as any }
     );
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(body.analyzedCount).toBe(5);
     expect(analyzeBankStatementLines).toHaveBeenCalledWith(

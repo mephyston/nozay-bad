@@ -1,3 +1,3 @@
-import { budgetsTable } from '../../shared/schema';
+import { seasonCategoryBudgetsTable } from '../../shared/schema';
 export type GetSeasonBudgetInput = string;
-export type GetSeasonBudgetOutput = (typeof budgetsTable.$inferSelect)[];
+export type GetSeasonBudgetOutput = (typeof seasonCategoryBudgetsTable.$inferSelect)[];

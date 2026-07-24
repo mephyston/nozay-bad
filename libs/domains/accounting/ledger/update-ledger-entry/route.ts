@@ -30,7 +30,7 @@ updateTransactionRoute.put(
     try {
       const data = await updateLedgerEntry(db, id, body);
       return c.json({ success: true, data });
-    } catch (err: unknown) {
+    } catch (err: any) {
       return c.json({ success: false, error: err.message }, 400);
     }
   }

@@ -1,11 +1,11 @@
-import { type Db, type Tx } from '@nba/db';
+import { type Db } from '@nba/db';
 import { ImportMembersRepository } from './repository';
 import { CsvHeadersInvalidError } from '../shared/errors';
 import { ImportMembersFromCsvInput, ImportMembersFromCsvOutput } from "./dto";
 
 interface ParsedMember {
   licence: string;
-  season: string;
+  seasonCode: string;
   lastName: string;
   firstName: string;
   gender: 'M' | 'F';
@@ -14,9 +14,9 @@ interface ParsedMember {
   phone: string | null;
   status: string;
   type: string;
-  amountDue: number;
-  amountReceived: number;
-  amountRemaining: number;
+  amountDueCents: number;
+  amountReceivedCents: number;
+  amountRemainingCents: number;
   paid: boolean;
   parent1Name: string | null;
   parent1Email: string | null;
@@ -70,7 +70,7 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
     const columns = line.split(separator).map(col => col.trim().replace(/^"(.*)"$/, '$1').trim());
 
     const licence = columns[licenceIdx];
-    const season = columns[seasonIdx];
+    const seasonCode = columns[seasonIdx];
     const lastName = columns[lastNameIdx];
     const firstName = columns[firstNameIdx];
     const rawGender = columns[genderIdx];
@@ -80,7 +80,7 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
     const rawStatus = statusIdx !== -1 ? (columns[statusIdx] || 'valide') : 'valide';
     const type = columns[typeIdx];
 
-    if (!licence || !lastName || !firstName || !rawBirthDate || !type) {
+    if (!licence || !lastName || !firstName || !rawBirthDate || !type || !seasonCode) {
       errorsCount++;
       continue;
     }
@@ -118,9 +118,9 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
       return isNaN(parsed) ? 0 : Math.round(parsed * 100);
     };
 
-    const amountDue = parseAmount(amountDueIdx);
-    const amountReceived = parseAmount(amountReceivedIdx);
-    const amountRemaining = parseAmount(amountRemainingIdx);
+    const amountDueCents = parseAmount(amountDueIdx);
+    const amountReceivedCents = parseAmount(amountReceivedIdx);
+    const amountRemainingCents = parseAmount(amountRemainingIdx);
     const paid = paidIdx !== -1 && columns[paidIdx] === 'Oui';
 
     const parent1Name = parent1NameIdx !== -1 ? (columns[parent1NameIdx] || null) : null;
@@ -130,9 +130,9 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
     const parent2Email = parent2EmailIdx !== -1 ? (columns[parent2EmailIdx] || null) : null;
     const parent2Phone = parent2PhoneIdx !== -1 ? (columns[parent2PhoneIdx] || null) : null;
 
-    validRowsMap.set(`${licence}-${season}`, {
+    validRowsMap.set(`${licence}-${seasonCode}`, {
       licence,
-      season,
+      seasonCode,
       lastName,
       firstName,
       gender: genderStr,
@@ -141,9 +141,9 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
       phone,
       status,
       type,
-      amountDue,
-      amountReceived,
-      amountRemaining,
+      amountDueCents,
+      amountReceivedCents,
+      amountRemainingCents,
       paid,
       parent1Name,
       parent1Email,
@@ -157,30 +157,37 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
   const repo = new ImportMembersRepository();
 
   const uniqueSeasons = new Set<string>();
-  validRowsMap.forEach(member => uniqueSeasons.add(member.season));
-  
-  const seasonsToInsert = Array.from(uniqueSeasons).map(seasonName => {
-    const parts = seasonName.split('-');
-    const name = parts.length === 2 ? `Saison 20${parts[0]}-20${parts[1]}` : `Saison ${seasonName}`;
+  validRowsMap.forEach(member => uniqueSeasons.add(member.seasonCode));
+
+  const seasonsToInsert = Array.from(uniqueSeasons).map(seasonCode => {
+    const parts = seasonCode.split('-');
+    const name = parts.length === 2 ? `Saison 20${parts[0]}-20${parts[1]}` : `Saison ${seasonCode}`;
+    const startYear = parts.length === 2 ? `20${parts[0]}` : '2025';
+    const endYear = parts.length === 2 ? `20${parts[1]}` : '2026';
     return {
-      id: seasonName,
+      code: seasonCode,
       name,
+      startDate: `${startYear}-09-01`,
+      endDate: `${endYear}-08-31`,
       active: false,
       createdAt: new Date()
     };
   });
 
   await repo.insertSeasons(db, seasonsToInsert);
+  const seasonIdMap = await repo.getSeasonIdMap(db, Array.from(uniqueSeasons));
 
   const membersArray = Array.from(validRowsMap.values());
   const licencesList = membersArray.map(m => m.licence);
-  const existingLicenceSeasons = await repo.getExistingLicenceSeasons(db, licencesList);
+  const seasonIdsList = Array.from(seasonIdMap.values());
+  const existingLicenceSeasons = await repo.getExistingLicenceSeasons(db, licencesList, seasonIdsList);
 
   let inserted = 0;
   let updated = 0;
 
   membersArray.forEach(member => {
-    const key = `${member.licence}-${member.season}`;
+    const sId = seasonIdMap.get(member.seasonCode)!;
+    const key = `${member.licence}-${sId}`;
     if (existingLicenceSeasons.has(key)) {
       updated++;
     } else {
@@ -188,7 +195,18 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
     }
   });
 
-  await repo.batchUpsertMembers(db, membersArray.map(m => ({ ...m, importedAt: (m as any).importedAt || new Date() })));
+  const importedAt = new Date();
+  const membersToUpsert = membersArray.map(m => {
+    const seasonId = seasonIdMap.get(m.seasonCode)!;
+    const { seasonCode, ...rest } = m;
+    return {
+      ...rest,
+      seasonId,
+      importedAt
+    };
+  });
+
+  await repo.batchUpsertMembers(db, membersToUpsert);
 
   return {
     inserted,

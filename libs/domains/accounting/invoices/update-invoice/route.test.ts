@@ -16,14 +16,14 @@ describe('UpdateInvoice Route', () => {
       body: JSON.stringify({ date: '', clientName: 'John' }) // date minLength 1, missing dueDate, missing totalAmount
     }, { DB: mockD1 as any });
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error).toContain('Validation failed');
   });
 
   it('should return 200 on valid body', async () => {
     const { mockD1 } = await setupMockDb();
-    vi.mocked(updateInvoice).mockResolvedValue(undefined);
+    vi.mocked(updateInvoice).mockResolvedValue({ id: 123 } as any);
     
     const validPayload = {
       date: '2026-07-22',
@@ -41,7 +41,7 @@ describe('UpdateInvoice Route', () => {
       body: JSON.stringify(validPayload)
     }, { DB: mockD1 as any });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(updateInvoice).toHaveBeenCalledWith(expect.anything(), 123, validPayload);
   });

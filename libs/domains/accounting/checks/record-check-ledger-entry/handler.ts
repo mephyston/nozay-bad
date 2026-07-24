@@ -48,9 +48,9 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
       prompt: systemPrompt,
       image: [...new Uint8Array(bytes)]
     });
-  } catch (llamaErr: unknown) {
+  } catch (llamaErr: any) {
     let agreed = false;
-    if (llamaErr.message && (llamaErr.message.includes("submit the prompt 'agree'") || llamaErr.message.includes("5016"))) {
+    if (llamaErr?.message && (llamaErr.message.includes("submit the prompt 'agree'") || llamaErr.message.includes("5016"))) {
       try {
         await ai.run('@cf/meta/llama-3.2-11b-vision-instruct', {
           prompt: 'agree',
@@ -211,17 +211,19 @@ export async function createCheck(db: Db, body: CreateCheckInput) {
     memberData = await getMemberById(db, body.memberId);
   }
 
+  const seasonIdInt = await repo.resolveSeasonId(db, body.seasonId);
+
   // Phase 2 : Décision (en mémoire)
   const descStr = body.description || `Règlement par chèque n°${body.number} de ${body.emitter}`;
 
   const stmtLedgerEntry = repo.buildCreateLedgerEntryStatement(db, {
-    seasonId: body.seasonId,
+    seasonId: seasonIdInt,
     type: 'recette',
-    accountId: 'current',
+    accountId: 1,
     category: categoryVal,
     amount: body.amount,
     date: body.date || new Date().toISOString().split('T')[0],
-    paymentMethod: 'cheque',
+    paymentMethodId: 2,
     description: descStr,
     reference: `Chèque n°${body.number}`,
     memberId: body.memberId || null,
@@ -229,7 +231,7 @@ export async function createCheck(db: Db, body: CreateCheckInput) {
   });
 
   const stmtCheck = repo.buildCreateCheckStatement(db, {
-    seasonId: body.seasonId,
+    seasonId: seasonIdInt,
     number: body.number,
     amount: body.amount,
     emitter: body.emitter,
@@ -268,7 +270,7 @@ export async function deleteCheck(db: Db, id: number) {
 
   if (check.ledgerEntryId) {
     tx = await repo.getTransactionById(db, check.ledgerEntryId);
-    if (tx && tx.memberId && (tx.category === 1 || String(tx.category) === '1')) {
+    if (tx && tx.memberId && (tx.category === 1 || String(tx.category) === '1' || tx.categoryId === 1)) {
       memberData = await getMemberById(db, tx.memberId);
     }
   }
@@ -281,7 +283,8 @@ export async function deleteCheck(db: Db, id: number) {
   }
 
   if (tx && memberData) {
-    const stmtMember = buildApplyPaymentStatement(db, memberData, -Math.abs(tx.amount));
+    const txAmt = tx.amountCents ?? tx.amount ?? 0;
+    const stmtMember = buildApplyPaymentStatement(db, memberData, -Math.abs(txAmt));
     statements.push(stmtMember);
   }
 

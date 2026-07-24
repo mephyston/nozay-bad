@@ -16,7 +16,7 @@ describe('UpdateLedgerEntry Route', () => {
       body: JSON.stringify({ seasonId: '', type: 'invalid_type', accountId: 'current' })
     }, { DB: mockD1 as any });
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error).toContain('Validation failed');
   });
@@ -24,7 +24,7 @@ describe('UpdateLedgerEntry Route', () => {
   it('should return 200 on valid body', async () => {
     const { mockD1 } = await setupMockDb();
     const expectedData = { id: 123, amount: 50 };
-    vi.mocked(updateLedgerEntry).mockResolvedValue(expectedData);
+    vi.mocked(updateLedgerEntry).mockResolvedValue(expectedData as any);
     
     const payload = {
       seasonId: '25-26',
@@ -42,7 +42,7 @@ describe('UpdateLedgerEntry Route', () => {
       body: JSON.stringify(payload)
     }, { DB: mockD1 as any });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(body.data).toEqual(expectedData);
     expect(updateLedgerEntry).toHaveBeenCalledWith(expect.anything(), 123, payload);

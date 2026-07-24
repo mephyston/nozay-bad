@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { sql } from 'drizzle-orm';
+import { sql, eq } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
 import { approveOrder } from './handler';
 import { ordersTable, productsTable, productCategoriesTable } from '../shared/schema';

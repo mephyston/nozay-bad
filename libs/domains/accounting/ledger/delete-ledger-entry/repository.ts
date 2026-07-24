@@ -21,7 +21,7 @@ export class DeleteTransactionRepository {
       .all();
   }
 
-  buildUpdateBankStatementLineStatusStatement(db: DbOrTx, id: number, status: string): any {
+  buildUpdateBankStatementLineStatusStatement(db: DbOrTx, id: number, status: any): any {
     return db.update(bankStatementLinesTable).set({ status }).where(eq(bankStatementLinesTable.id, id));
   }
 
@@ -35,14 +35,8 @@ export class DeleteTransactionRepository {
     return db.delete(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, id));
   }
 
-  async updateBankStatementLineStatus(db: DbOrTx, id: number, status: string): Promise<void> {
+  async updateBankStatementLineStatus(db: DbOrTx, id: number, status: any): Promise<void> {
     await db.update(bankStatementLinesTable).set({ status }).where(eq(bankStatementLinesTable.id, id)).run();
-  }
-
-  async resetExpenseStatusByTxId(db: DbOrTx, txId: number): Promise<void> {
-    await db.run(sql`
-      UPDATE expenses SET status = 'pending', ledger_entry_id = NULL WHERE ledger_entry_id = ${txId}
-    `);
   }
 
   async delete(db: DbOrTx, id: number): Promise<void> {

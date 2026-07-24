@@ -33,11 +33,12 @@ export async function updateInvoice(db: Db, id: UpdateInvoiceId, body: UpdateInv
     location: body.location || null,
     period: body.period || null,
     attendees: body.attendees || null,
-    totalAmount: body.totalAmount
+    totalAmountCents: (body as any).totalAmountCents ?? body.totalAmount ?? 0
   };
 
   const statements = repo.buildUpdateStatements(db, id, updateValues, body.items || []);
 
   // Phase 3 : Écriture (db.batch)
   await db.batch(statements as any);
+  return repo.getById(db, id) as any;
 }

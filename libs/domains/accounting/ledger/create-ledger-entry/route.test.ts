@@ -25,14 +25,14 @@ describe('CreateLedgerEntry Route', () => {
     }, { DB: mockD1 as any });
 
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error).toContain('Validation failed');
   });
 
   it('should return 200 on valid body', async () => {
     const { mockD1 } = await setupMockDb();
-    vi.mocked(createLedgerEntry).mockResolvedValue({ id: 1 });
+    vi.mocked(createLedgerEntry).mockResolvedValue({ id: 1 } as any);
 
     const res = await createTransactionRoute.request('http://localhost/ledger-entries', {
       method: 'POST',
@@ -49,7 +49,7 @@ describe('CreateLedgerEntry Route', () => {
     }, { DB: mockD1 as any });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(body.data).toEqual({ id: 1 });
   });
@@ -73,7 +73,7 @@ describe('CreateLedgerEntry Route', () => {
     }, { DB: mockD1 as any });
 
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error).toBe('Saison clôturée');
   });

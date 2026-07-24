@@ -22,7 +22,7 @@ export async function handlePhotoSelected(e: Event, seasonId: string, state: Che
       throw new Error(await res.text() || 'Failed to analyze check');
     }
 
-    const json = await res.json();
+    const json = await res.json() as any;
     if (json.success && json.data) {
       state.checkNumber = json.data.number || '';
       state.checkAmount = json.data.amount ? json.data.amount.toString() : '';

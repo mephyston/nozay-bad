@@ -27,7 +27,7 @@ createAccountClassRoute.post(
     try {
       const newClass = await createAccountClass(db, body);
       return c.json({ success: true, data: newClass });
-    } catch (err: unknown) {
+    } catch (err: any) {
       return c.json({ success: false, error: err.message }, 400);
     }
   }

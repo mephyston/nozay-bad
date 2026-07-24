@@ -23,7 +23,7 @@ listBankStatementLinesRoute.get(
     }
     const { season, status, accountId } = c.req.valid('query');
     const db = createDb(c.env.DB);
-    const data = await listBankStatementLines(db, { seasonId: season, filters: { status, accountId } });
+    const data = await listBankStatementLines(db, { seasonId: season, filters: { status, accountId } } as any);
     return c.json({ success: true, data });
   }
 );

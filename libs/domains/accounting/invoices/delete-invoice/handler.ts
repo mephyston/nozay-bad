@@ -20,4 +20,5 @@ export async function deleteInvoice(db: Db, id: DeleteInvoiceInput): Promise<Del
   }
 
   await repo.delete(db, id);
+  return { id } as any;
 }

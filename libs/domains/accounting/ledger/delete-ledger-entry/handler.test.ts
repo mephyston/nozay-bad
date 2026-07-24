@@ -20,7 +20,7 @@ describe('deleteLedgerEntry', () => {
     vi.mocked(DeleteTransactionRepository.prototype.buildDeleteLedgerEntryStatement).mockReturnValue('stmt1' as any);
     vi.mocked(DeleteTransactionRepository.prototype.resetExpenseStatusByTxId).mockResolvedValue();
 
-    await deleteLedgerEntry(mockDb, mockId);
+    await deleteLedgerEntry(mockDb as any, mockId);
 
     expect(mockDb.batch).toHaveBeenCalled();
   });
@@ -34,6 +34,6 @@ describe('deleteLedgerEntry', () => {
     vi.mocked(DeleteTransactionRepository.prototype.getById).mockResolvedValue({ id: 1, seasonId: 'season1' });
     vi.mocked(membersDataAccess.isSeasonClosed).mockResolvedValue(true);
 
-    await expect(deleteLedgerEntry(mockDb, mockId)).rejects.toThrowError(/La saison est clôturée/);
+    await expect(deleteLedgerEntry(mockDb as any, mockId)).rejects.toThrowError(/La saison est clôturée/);
   });
 });

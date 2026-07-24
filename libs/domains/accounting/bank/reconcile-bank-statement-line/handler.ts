@@ -77,8 +77,10 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
           accrualNote: txItem.accrualNote || txItem.accrual_note
         });
 
+        const seasonId = await repo.resolveSeasonId(db, txItem.seasonId);
+
         statements.push(repo.buildCreateLedgerEntryStatement(db, {
-          seasonId: txItem.seasonId,
+          seasonId,
           type: txItem.type,
           accountId: txItem.accountId,
           destinationAccountId: txItem.destinationAccountId || null,
@@ -110,8 +112,10 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
         accrualNote: tx.accrualNote || tx.accrual_note
       });
 
+      const seasonId = await repo.resolveSeasonId(db, tx.seasonId);
+
       statements.push(repo.buildCreateLedgerEntryStatement(db, {
-        seasonId: tx.seasonId,
+        seasonId,
         type: tx.type,
         accountId: tx.accountId,
         destinationAccountId: tx.destinationAccountId || null,

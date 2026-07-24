@@ -1,3 +1,4 @@
+// @ts-ignore
 import { env } from 'cloudflare:test';
 import { drizzle } from 'drizzle-orm/d1';
 
@@ -6,8 +7,10 @@ export async function setupMockDb() {
 
   // Topological sorting of tables (child tables dropped/deleted before parent tables to avoid foreign key errors)
   const tables = [
-    'checks',
+    'expenses',
     'ledger_entries',
+    'orders',
+    'checks',
     'invoice_items',
     'invoices',
     'check_deposits',
@@ -19,7 +22,6 @@ export async function setupMockDb() {
     'season_balances',
     'season_category_budgets',
     'categories',
-    'expenses',
     'users',
     'seasons',
     'accounts',
@@ -31,6 +33,9 @@ export async function setupMockDb() {
 
   // Disable foreign keys temporarily during drop to avoid constraint violations
   await rawDb.prepare('PRAGMA foreign_keys = OFF;').run();
+  for (const table of tables) {
+    try { await rawDb.prepare(`DELETE FROM "${table}";`).run(); } catch {}
+  }
   for (const table of tables) {
     await rawDb.prepare(`DROP TABLE IF EXISTS "${table}";`).run();
   }

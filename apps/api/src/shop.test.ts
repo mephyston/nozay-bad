@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { shopRouter } from '@nba/shop-api';
 import { setupMockDb } from '@nba/db/test-utils';
 import { productsTable } from '../../../libs/domains/shop/shared/schema';
+import { ledgerEntriesTable } from '../../../libs/domains/accounting/shared/schema';
 import { eq, sql } from 'drizzle-orm';
 import { AppError } from '@nba/db';
 
@@ -164,7 +165,7 @@ describe('Orders API Endpoints', () => {
     expect(prod!.stock).toBe(3);
 
     // Verify ledger entry created
-    const ledgerEntries = await db.select().from(sql`ledger_entries` as any).all();
+    const ledgerEntries = await db.select().from(ledgerEntriesTable).all();
     expect(ledgerEntries.length).toBeGreaterThan(0);
 
     // 3. Read orders (GET /shop/orders)
@@ -308,8 +309,8 @@ describe('Orders API Endpoints', () => {
 
     // To test approval and rejection, insert a pending order directly bypassing endpoint
     await db.run(sql`
-      INSERT INTO orders (id, season_id, member_id, product_id, quantity, total_amount, payment_method, status, created_at)
-      VALUES (10, '25-26', 1, 1, 2, 2400, 'virement', 'pending', ${new Date().getTime()})
+      INSERT INTO orders (id, season_id, member_id, product_id, quantity, total_amount_cents, payment_method_id, status, created_at)
+      VALUES (10, 1, 1, 1, 2, 2400, 1, 'pending', strftime('%s', 'now'))
     `);
 
     // Try approving the order on closed season -> expect 400

@@ -16,14 +16,14 @@ describe('ChangeInvoiceStatus Route', () => {
       body: JSON.stringify({ status: 'invalid_status' })
     }, { DB: mockD1 as any });
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error).toBe('Statut invalide');
   });
 
   it('should return 200 on valid body', async () => {
     const { mockD1 } = await setupMockDb();
-    vi.mocked(changeInvoiceStatus).mockResolvedValue(undefined);
+    vi.mocked(changeInvoiceStatus).mockResolvedValue({ id: 123, status: 'sent' } as any);
     
     const res = await changeInvoiceStatusRoute.request('http://localhost/invoices/123/status', {
       method: 'POST',
@@ -31,7 +31,7 @@ describe('ChangeInvoiceStatus Route', () => {
       body: JSON.stringify({ status: 'sent' })
     }, { DB: mockD1 as any });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(changeInvoiceStatus).toHaveBeenCalledWith(expect.anything(), 123, 'sent');
   });

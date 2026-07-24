@@ -13,7 +13,7 @@ describe('listLedgerEntries', () => {
     vi.mocked(ListTransactionsRepository.prototype.count).mockResolvedValue(25);
     vi.mocked(ListTransactionsRepository.prototype.list).mockResolvedValue([{ id: 1 }, { id: 2 }]);
 
-    const result = await listLedgerEntries(mockDb, mockFilters, mockPagination);
+    const result = await listLedgerEntries(mockDb as any, mockFilters, mockPagination);
 
     expect(result.data).toHaveLength(2);
     expect(result.pagination.total).toBe(25);

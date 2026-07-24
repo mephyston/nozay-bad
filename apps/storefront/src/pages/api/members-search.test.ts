@@ -104,7 +104,7 @@ describe('members-search API endpoint', () => {
     const blockedRequest = new Request('http://localhost/api/members-search?q=pierre', { headers: ipHeaders });
     const blockedRes = await GET({ request: blockedRequest } as any);
     expect(blockedRes.status).toBe(429);
-    const blockedJson = await blockedRes.json();
+    const blockedJson = await blockedRes.json() as any;
     expect(blockedJson.error).toContain('Rate limit exceeded');
 
     const mockGlobalFetch = vi.fn().mockResolvedValue({
@@ -201,7 +201,7 @@ describe('members-search API endpoint', () => {
     const req2 = new Request('http://localhost/api/members-search?q=test&token=reused-token-xyz', { headers: ipHeaders });
     const res2 = await GET({ request: req2 } as any);
     expect(res2.status).toBe(429);
-    const body2 = await res2.json();
+    const body2 = await res2.json() as any;
     expect(body2.error).toContain('Token captcha déjà utilisé');
   });
 
@@ -225,7 +225,7 @@ describe('members-search API endpoint', () => {
     const req = new Request('http://localhost/api/members-search?q=test&token=bad-token', { headers: ipHeaders });
     const res = await GET({ request: req } as any);
     expect(res.status).toBe(429);
-    const json = await res.json();
+    const json = await res.json() as any;
     expect(json.error).toContain('invalid-input-response');
   });
 
@@ -246,7 +246,7 @@ describe('members-search API endpoint', () => {
     const req = new Request('http://localhost/api/members-search?q=test&token=token-without-secret', { headers: ipHeaders });
     const res = await GET({ request: req } as any);
     expect(res.status).toBe(429);
-    const json = await res.json();
+    const json = await res.json() as any;
     expect(json.error).toContain('clé secrète Turnstile manquante');
   });
 });

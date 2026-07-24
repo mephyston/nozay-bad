@@ -1,30 +1,41 @@
 import { type DbOrTx } from '@nba/db';
 import { and, or, eq, sql, inArray, isNull, desc } from 'drizzle-orm';
-import { ledgerEntriesTable, categoriesTable } from '../../shared/schema';
+import { ledgerEntriesTable, categoriesTable, seasonsTable } from '../../shared/schema';
 import { getMembersByIds } from '@nba/members-api';
 import type { ListTransactionsFilters } from './dto';
 
 export class ListTransactionsRepository {
-  private buildConditions(filters: ListTransactionsFilters) {
+  async resolveSeasonId(db: DbOrTx, seasonIdOrCode: string | number): Promise<number> {
+    if (typeof seasonIdOrCode === 'number') return seasonIdOrCode;
+    const num = Number(seasonIdOrCode);
+    if (!isNaN(num)) return num;
+    const row = await db.select({ id: seasonsTable.id }).from(seasonsTable).where(eq(seasonsTable.code, seasonIdOrCode)).get();
+    return row?.id || 1;
+  }
+
+  private async buildConditions(db: DbOrTx, filters: ListTransactionsFilters) {
     const conditions = [];
     if (filters.seasonId) {
-      conditions.push(eq(ledgerEntriesTable.seasonId, filters.seasonId));
+      const seasonIdInt = await this.resolveSeasonId(db, filters.seasonId);
+      conditions.push(eq(ledgerEntriesTable.seasonId, seasonIdInt));
     }
     if (filters.accountId) {
-      conditions.push(or(eq(ledgerEntriesTable.accountId, filters.accountId as any), eq(ledgerEntriesTable.destinationAccountId, filters.accountId as any)) as any);
+      const accountIdMap: Record<string, number> = { current: 1, savings: 2, cash: 3 };
+      const accId = typeof filters.accountId === 'number' ? filters.accountId : accountIdMap[filters.accountId as string] || Number(filters.accountId) || 1;
+      conditions.push(or(eq(ledgerEntriesTable.accountId, accId), eq(ledgerEntriesTable.destinationAccountId, accId)) as any);
     }
     if (filters.type) {
       conditions.push(eq(ledgerEntriesTable.type, filters.type as any));
     }
     if (filters.category) {
-      conditions.push(eq(ledgerEntriesTable.category, parseInt(filters.category)));
+      conditions.push(eq(ledgerEntriesTable.categoryId, parseInt(filters.category)));
     }
     if (filters.memberId) {
       conditions.push(eq(ledgerEntriesTable.memberId, parseInt(filters.memberId)));
     }
     if (filters.unreconciledChequesOnly) {
       conditions.push(
-        eq(ledgerEntriesTable.paymentMethod, 'cheque'),
+        eq(ledgerEntriesTable.paymentMethodId, 2),
         isNull(ledgerEntriesTable.bankStatementLineId)
       );
     }
@@ -32,15 +43,15 @@ export class ListTransactionsRepository {
   }
 
   async count(db: DbOrTx, filters: ListTransactionsFilters): Promise<number> {
-    const conditions = this.buildConditions(filters);
+    const conditions = await this.buildConditions(db, filters);
     if (filters.classCode) {
       const matchingCats = await db.select({ id: categoriesTable.id })
         .from(categoriesTable)
-        .where(or(eq(categoriesTable.receiptCode, filters.classCode), eq(categoriesTable.expenseCode, filters.classCode)))
+        .where(or(eq(categoriesTable.receiptAccountClassId, Number(filters.classCode)), eq(categoriesTable.expenseAccountClassId, Number(filters.classCode))))
         .all();
       const catIds = matchingCats.map((cat) => cat.id);
       if (catIds.length > 0) {
-        conditions.push(inArray(ledgerEntriesTable.category, catIds));
+        conditions.push(inArray(ledgerEntriesTable.categoryId, catIds));
       } else {
         conditions.push(sql`1 = 0`);
       }
@@ -53,15 +64,15 @@ export class ListTransactionsRepository {
   }
 
   async list(db: DbOrTx, filters: ListTransactionsFilters, pagination: { limit: number; offset: number }): Promise<any[]> {
-    const conditions = this.buildConditions(filters);
+    const conditions = await this.buildConditions(db, filters);
     if (filters.classCode) {
       const matchingCats = await db.select({ id: categoriesTable.id })
         .from(categoriesTable)
-        .where(or(eq(categoriesTable.receiptCode, filters.classCode), eq(categoriesTable.expenseCode, filters.classCode)))
+        .where(or(eq(categoriesTable.receiptAccountClassId, Number(filters.classCode)), eq(categoriesTable.expenseAccountClassId, Number(filters.classCode))))
         .all();
       const catIds = matchingCats.map((cat) => cat.id);
       if (catIds.length > 0) {
-        conditions.push(inArray(ledgerEntriesTable.category, catIds));
+        conditions.push(inArray(ledgerEntriesTable.categoryId, catIds));
       } else {
         conditions.push(sql`1 = 0`);
       }
@@ -72,10 +83,10 @@ export class ListTransactionsRepository {
       type: ledgerEntriesTable.type,
       accountId: ledgerEntriesTable.accountId,
       destinationAccountId: ledgerEntriesTable.destinationAccountId,
-      category: ledgerEntriesTable.category,
-      amount: ledgerEntriesTable.amount,
+      category: ledgerEntriesTable.categoryId,
+      amount: ledgerEntriesTable.amountCents,
       date: ledgerEntriesTable.date,
-      paymentMethod: ledgerEntriesTable.paymentMethod,
+      paymentMethod: sql<string>`'cheque'`,
       description: ledgerEntriesTable.description,
       reference: ledgerEntriesTable.reference,
       memberId: ledgerEntriesTable.memberId,

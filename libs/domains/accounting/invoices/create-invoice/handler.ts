@@ -13,11 +13,12 @@ export async function createInvoice(db: Db, body: CreateInvoiceInput): Promise<C
 
     const repo = new CreateInvoiceRepository();
     const invoiceNumber = await repo.generateInvoiceNumber(db, body.seasonId);
+    const seasonIdInt = await repo.resolveSeasonId(db, body.seasonId);
 
     // Phase 2 : Décision (en mémoire)
     const invoiceValues = {
       invoiceNumber,
-      seasonId: body.seasonId,
+      seasonId: seasonIdInt,
       date: body.date,
       dueDate: body.dueDate,
       clientName: body.clientName,
@@ -27,7 +28,7 @@ export async function createInvoice(db: Db, body: CreateInvoiceInput): Promise<C
       location: body.location || null,
       period: body.period || null,
       attendees: body.attendees || null,
-      totalAmount: body.totalAmount,
+      totalAmountCents: (body as any).totalAmountCents ?? body.totalAmount ?? 0,
       status: 'draft',
       createdAt: new Date()
     };
@@ -40,7 +41,6 @@ export async function createInvoice(db: Db, body: CreateInvoiceInput): Promise<C
     const createdId = results[0]?.meta?.last_row_id;
     return {
       id: createdId,
-      invoiceNumber,
       ...invoiceValues
     } as any;
   } catch (err: unknown) {

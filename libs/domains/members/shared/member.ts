@@ -18,11 +18,11 @@ export class Member {
   }) {}
 
   get amountReceived(): number {
-    return this.data.amountReceived;
+    return (this.data as any).amountReceivedCents ?? this.data.amountReceived;
   }
 
   get amountDue(): number {
-    return this.data.amountDue;
+    return (this.data as any).amountDueCents ?? this.data.amountDue;
   }
 
   get paid(): boolean {
@@ -49,13 +49,15 @@ export class Member {
     return this.data.paid;
   }
 
-  calculatePayment(amountCents: number): { amountReceived: number; amountRemaining: number; paid: boolean } {
-    const newReceived = this.data.amountReceived + amountCents;
-    const newRemaining = Math.max(0, this.data.amountDue - newReceived);
+  calculatePayment(amountCents: number): { amountReceivedCents: number; amountRemainingCents: number; paid: boolean } {
+    const currentReceived = (this.data as any).amountReceivedCents ?? this.data.amountReceived ?? 0;
+    const currentDue = (this.data as any).amountDueCents ?? this.data.amountDue ?? 0;
+    const newReceived = currentReceived + amountCents;
+    const newRemaining = Math.max(0, currentDue - newReceived);
     const isPaid = newRemaining === 0;
     return {
-      amountReceived: newReceived,
-      amountRemaining: newRemaining,
+      amountReceivedCents: newReceived,
+      amountRemainingCents: newRemaining,
       paid: isPaid
     };
   }

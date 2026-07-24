@@ -16,14 +16,14 @@ vi.mock('./repository', () => {
 
 describe('list-checks handler', () => {
   it('should list checks', async () => {
-    const db = {};
+    const db = {} as any;
     const result = await listChecks(db, '2023');
     expect(result).toHaveLength(1);
     expect(result[0].number).toBe('1234567');
   });
 
   it('should list check deposits', async () => {
-    const db = {};
+    const db = {} as any;
     const result = await listCheckDeposits(db, '2023');
     expect(result).toHaveLength(1);
     expect(result[0].reference).toBe('DEP-1');

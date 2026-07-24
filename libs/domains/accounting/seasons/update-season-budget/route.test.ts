@@ -16,7 +16,7 @@ describe('UpdateSeasonBudget Route', () => {
       body: JSON.stringify([{ categoryId: 'not-a-number', type: 'invalid_type', amount: 200 }])
     }, { DB: mockD1 as any });
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error).toContain('Validation failed');
   });
@@ -24,7 +24,7 @@ describe('UpdateSeasonBudget Route', () => {
   it('should return 200 on valid body', async () => {
     const { mockD1 } = await setupMockDb();
     const expectedData = [{ categoryId: 1, type: 'depense' as const, amount: 500 }];
-    vi.mocked(updateSeasonBudget).mockResolvedValue(expectedData);
+    vi.mocked(updateSeasonBudget).mockResolvedValue(expectedData as any);
     
     const payload = [
       { categoryId: 1, type: 'depense' as const, amount: 500 }
@@ -36,7 +36,7 @@ describe('UpdateSeasonBudget Route', () => {
       body: JSON.stringify(payload)
     }, { DB: mockD1 as any });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(body.data).toEqual(expectedData);
     expect(updateSeasonBudget).toHaveBeenCalledWith(expect.anything(), '25-26', payload);

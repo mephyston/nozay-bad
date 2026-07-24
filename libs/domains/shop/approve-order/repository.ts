@@ -67,6 +67,12 @@ export class ApproveOrderRepository {
       .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')));
   }
 
+  buildDecrementStockStatement(db: DbOrTx, productId: number, quantity: number): any {
+    return db.update(productsTable)
+      .set({ stock: sql`${productsTable.stock} - ${quantity}` })
+      .where(eq(productsTable.id, productId));
+  }
+
   async createRecetteTransaction(db: DbOrTx, values: {
     seasonId: number;
     accountId: number;

@@ -1,4 +1,4 @@
-import { inArray } from 'drizzle-orm';
+import { inArray, eq } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { membersTable, seasonsTable } from '../shared/schema';
 
@@ -12,34 +12,45 @@ export class ImportMembersRepository {
     }
   }
 
-  async getExistingLicenceSeasons(db: DbOrTx, licences: string[]): Promise<Set<string>> {
-    const existingLicenceSeasons = new Set<string>();
-    if (licences.length > 0) {
-      const chunkSize = 80;
-      for (let i = 0; i < licences.length; i += chunkSize) {
-        const chunk = licences.slice(i, i + chunkSize);
-        const existing = await db.select({ licence: membersTable.licence, season: membersTable.season })
-          .from(membersTable)
-          .where(inArray(membersTable.licence, chunk))
-          .all();
-        existing.forEach((m) => existingLicenceSeasons.add(`${m.licence}-${m.season}`));
-      }
+  async getSeasonIdMap(db: DbOrTx, seasonCodes: string[]): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    if (seasonCodes.length === 0) return map;
+
+    const seasons = await db.select({ id: seasonsTable.id, code: seasonsTable.code })
+      .from(seasonsTable)
+      .where(inArray(seasonsTable.code, seasonCodes))
+      .all();
+
+    for (const s of seasons) {
+      map.set(s.code, s.id);
     }
-    return existingLicenceSeasons;
+    return map;
+  }
+
+  async getExistingLicenceSeasons(db: DbOrTx, licences: string[], seasonIds: number[]): Promise<Set<string>> {
+    const existingSet = new Set<string>();
+    if (licences.length === 0 || seasonIds.length === 0) return existingSet;
+
+    const chunkSize = 80;
+    for (let i = 0; i < licences.length; i += chunkSize) {
+      const chunk = licences.slice(i, i + chunkSize);
+      const existing = await db.select({ licence: membersTable.licence, seasonId: membersTable.seasonId })
+        .from(membersTable)
+        .where(inArray(membersTable.licence, chunk))
+        .all();
+      existing.forEach((m) => existingSet.add(`${m.licence}-${m.seasonId}`));
+    }
+    return existingSet;
   }
 
   async batchUpsertMembers(db: DbOrTx, members: (typeof membersTable.$inferInsert)[]): Promise<void> {
     if (members.length === 0) return;
 
-    const importedAt = new Date();
-    const batchPromises = members.map(member => {
+    const statements = members.map(member => {
       return db.insert(membersTable)
-        .values({
-          ...member,
-          importedAt
-        })
+        .values(member)
         .onConflictDoUpdate({
-          target: [membersTable.licence, membersTable.season],
+          target: [membersTable.licence, membersTable.seasonId],
           set: {
             lastName: member.lastName,
             firstName: member.firstName,
@@ -49,9 +60,9 @@ export class ImportMembersRepository {
             phone: member.phone,
             status: member.status,
             type: member.type,
-            amountDue: member.amountDue,
-            amountReceived: member.amountReceived,
-            amountRemaining: member.amountRemaining,
+            amountDueCents: member.amountDueCents,
+            amountReceivedCents: member.amountReceivedCents,
+            amountRemainingCents: member.amountRemainingCents,
             paid: member.paid,
             parent1Name: member.parent1Name,
             parent1Email: member.parent1Email,
@@ -59,17 +70,14 @@ export class ImportMembersRepository {
             parent2Name: member.parent2Name,
             parent2Email: member.parent2Email,
             parent2Phone: member.parent2Phone,
-            importedAt,
+            importedAt: member.importedAt
           }
         });
     });
 
-    const batchChunkSize = 200;
-    for (let i = 0; i < batchPromises.length; i += batchChunkSize) {
-      const chunk = batchPromises.slice(i, i + batchChunkSize);
-      for (const query of chunk) {
-        await query.run();
-      }
+    const chunkSize = 50;
+    for (let i = 0; i < statements.length; i += chunkSize) {
+      await (db as any).batch(statements.slice(i, i + chunkSize));
     }
   }
 }

@@ -11,7 +11,7 @@ describe('listBankStatementLines', () => {
       all: vi.fn().mockResolvedValue([{ id: 1, name: 'Tx 1' }]),
     };
 
-    const result = await listBankStatementLines(dbMock, { seasonId: '2024-2025' });
+    const result = await listBankStatementLines(dbMock as any, { seasonId: '2024-2025' });
     expect(result).toHaveLength(1);
     expect(dbMock.select).toHaveBeenCalled();
   });

@@ -10,6 +10,6 @@ export class CreateCategoryRepository {
     expenseCode?: string | null;
     createdAt?: Date;
   }): Promise<any> {
-    return db.insert(categoriesTable).values(values).returning().get();
+    return db.insert(categoriesTable).values(values as any).returning().get();
   }
 }

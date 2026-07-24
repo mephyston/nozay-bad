@@ -33,7 +33,7 @@ updateCategoryRoute.put(
         return c.json({ success: false, error: 'Catégorie introuvable' }, 404);
       }
       return c.json({ success: true, data: updated });
-    } catch (err: unknown) {
+    } catch (err: any) {
       return c.json({ success: false, error: err.message }, 400);
     }
   }

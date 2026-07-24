@@ -1,13 +1,22 @@
 import { and, eq, desc, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { bankStatementLinesTable, categoriesTable, ledgerEntriesTable } from '../../shared/schema';
+import { bankStatementLinesTable, categoriesTable, ledgerEntriesTable, seasonsTable } from '../../shared/schema';
 import { getMembersBySeason, getMembersByIds } from '@nba/members-api';
 
 export class AnalyzeBankStatementLinesRepository {
+  async resolveSeasonId(db: DbOrTx, seasonIdOrCode: string | number): Promise<number> {
+    if (typeof seasonIdOrCode === 'number') return seasonIdOrCode;
+    const num = Number(seasonIdOrCode);
+    if (!isNaN(num)) return num;
+    const row = await db.select({ id: seasonsTable.id }).from(seasonsTable).where(eq(seasonsTable.code, seasonIdOrCode)).get();
+    return row?.id || 1;
+  }
+
   async getCategories(db: DbOrTx): Promise<(typeof categoriesTable.$inferSelect)[]> {
     return db.select().from(categoriesTable).all();
   }
-  async getPendingTransactions(db: DbOrTx, seasonId: string, singleId?: number): Promise<(typeof bankStatementLinesTable.$inferSelect)[]> {
+
+  async getPendingTransactions(db: DbOrTx, seasonId?: string, singleId?: number): Promise<(typeof bankStatementLinesTable.$inferSelect)[]> {
     const conditions = [
       eq(bankStatementLinesTable.status, 'pending')
     ];
@@ -56,10 +65,14 @@ export class AnalyzeBankStatementLinesRepository {
   }
 
   async getActiveProducts(db: DbOrTx): Promise<any[]> {
-    return db.all(sql`
-      SELECT id, name, category, price, stock, active, created_at as createdAt 
-      FROM products WHERE active = 1
-    `);
+    try {
+      return await db.all(sql`
+        SELECT id, name, category, price, stock, active, created_at as createdAt 
+        FROM products WHERE active = 1
+      `);
+    } catch {
+      return [];
+    }
   }
 
   async updateAISuggestions(db: DbOrTx, id: number, suggestions: any): Promise<void> {

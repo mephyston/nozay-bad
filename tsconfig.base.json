@@ -9,7 +9,7 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "ignoreDeprecations": "6.0",
-    "types": ["@cloudflare/workers-types"],
+    "types": ["@cloudflare/workers-types", "node"],
     "paths": {
       "@nba/db": ["libs/shared/db/src/index.ts"],
       "@nba/db/test-utils": ["libs/shared/db/src/test-utils.ts"],

@@ -1,21 +1,49 @@
 import { type DbOrTx } from '@nba/db';
 import { eq, sql } from 'drizzle-orm';
-import { ledgerEntriesTable, checksTable } from '../../shared/schema';
+import { ledgerEntriesTable, checksTable, seasonsTable } from '../../shared/schema';
 import { getAllMembers } from '@nba/members-api';
 
 export class RecordCheckTransactionRepository {
+  async resolveSeasonId(db: DbOrTx, seasonIdOrCode: string | number): Promise<number> {
+    if (typeof seasonIdOrCode === 'number') return seasonIdOrCode;
+    const num = Number(seasonIdOrCode);
+    if (!isNaN(num)) return num;
+    const row = await db.select({ id: seasonsTable.id }).from(seasonsTable).where(eq(seasonsTable.code, seasonIdOrCode)).get();
+    return row?.id || 1;
+  }
+
   async getAllMembers(db: DbOrTx): Promise<any[]> {
     return getAllMembers(db);
   }
 
   buildCreateLedgerEntryStatement(db: DbOrTx, values: any): any {
-    return db.insert(ledgerEntriesTable).values(values);
+    return db.insert(ledgerEntriesTable).values({
+      seasonId: typeof values.seasonId === 'number' ? values.seasonId : Number(values.seasonId),
+      type: values.type,
+      accountId: typeof values.accountId === 'number' ? values.accountId : (Number(values.accountId) || 1),
+      categoryId: values.categoryId ?? values.category ?? null,
+      amountCents: values.amountCents ?? (values.amount !== undefined ? Math.round(values.amount) : 0),
+      date: values.date,
+      paymentMethodId: typeof values.paymentMethodId === 'number' ? values.paymentMethodId : 2,
+      description: values.description,
+      reference: values.reference || null,
+      memberId: values.memberId || null,
+      createdAt: values.createdAt || new Date()
+    });
   }
 
   buildCreateCheckStatement(db: DbOrTx, values: any): any {
     return db.insert(checksTable).values({
-      ...values,
-      ledgerEntryId: sql`(SELECT last_insert_rowid())`
+      seasonId: typeof values.seasonId === 'number' ? values.seasonId : Number(values.seasonId),
+      number: values.number,
+      amountCents: values.amountCents ?? (values.amount !== undefined ? Math.round(values.amount) : 0),
+      emitter: values.emitter,
+      bank: values.bank || null,
+      memberId: values.memberId || null,
+      status: values.status || 'received',
+      photoUrl: values.photoUrl || null,
+      ledgerEntryId: sql`(SELECT last_insert_rowid())`,
+      createdAt: values.createdAt || new Date()
     });
   }
 

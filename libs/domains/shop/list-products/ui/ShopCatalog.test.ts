@@ -150,14 +150,14 @@ describe('ShopCatalog Component', () => {
     });
     flushSync();
 
-    const categorySelect = target.querySelector('select#category-select') as HTMLSelectElement;
+    const categorySelect = target.querySelector('select#category-select') as unknown as HTMLSelectElement;
     expect(categorySelect).not.toBeNull();
 
     categorySelect.value = '2';
     categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
     flushSync();
 
-    const productSelect = target.querySelector('select#product-select') as HTMLSelectElement;
+    const productSelect = target.querySelector('select#product-select') as unknown as HTMLSelectElement;
     const options = Array.from(productSelect.querySelectorAll('option'));
     expect(options.length).toBe(1);
     expect(options[0].textContent).toContain('Cordage Yonex BG65');

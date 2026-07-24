@@ -197,13 +197,13 @@ export function createReconciliationState(initialProps: ReconciliationStateProps
 
   const matchingInvoices = $derived(
     selectedTx && selectedTx.amount > 0
-      ? unpaidInvoices.filter(inv => inv.totalAmount === selectedTx.amount)
+      ? unpaidInvoices.filter(inv => inv.totalAmount === selectedTx?.amount)
       : []
   );
 
   const otherUnpaidInvoices = $derived(
     selectedTx && selectedTx.amount > 0
-      ? unpaidInvoices.filter(inv => inv.totalAmount !== selectedTx.amount)
+      ? unpaidInvoices.filter(inv => inv.totalAmount !== selectedTx?.amount)
       : unpaidInvoices
   );
 
@@ -264,7 +264,7 @@ export function createReconciliationState(initialProps: ReconciliationStateProps
         })
       });
       if (res.ok) {
-        const json = await res.json();
+        const json = await res.json() as any;
         unpaidInvoices = (json.data || []).filter((inv: Invoice) => inv.status === 'draft' || inv.status === 'sent');
       }
     } catch (err) {

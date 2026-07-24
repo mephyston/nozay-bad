@@ -1,8 +1,16 @@
 import { type DbOrTx } from '@nba/db';
 import { desc, like, sql } from 'drizzle-orm';
-import { invoicesTable, invoiceItemsTable } from '../../shared/schema';
+import { eq } from 'drizzle-orm';
+import { invoicesTable, invoiceItemsTable, seasonsTable } from '../../shared/schema';
 
 export class CreateInvoiceRepository {
+  async resolveSeasonId(db: DbOrTx, seasonIdOrCode: string | number): Promise<number> {
+    if (typeof seasonIdOrCode === 'number') return seasonIdOrCode;
+    const num = Number(seasonIdOrCode);
+    if (!isNaN(num)) return num;
+    const row = await db.select({ id: seasonsTable.id }).from(seasonsTable).where(eq(seasonsTable.code, seasonIdOrCode)).get();
+    return row?.id || 1;
+  }
   async generateInvoiceNumber(db: DbOrTx, seasonId: string): Promise<string> {
     const seasonShort = seasonId.replace('-', '');
     const prefix = `FAC-${seasonShort}-NBA91-`;

@@ -22,27 +22,31 @@ export interface MemberSummary {
 
 export async function getMemberById(db: DbOrTx, id: number): Promise<MemberSummary | undefined> {
   const result = await db.select().from(membersTable).where(eq(membersTable.id, id)).get();
-  return result as MemberSummary | undefined;
+  return result as unknown as MemberSummary | undefined;
 }
 
 export async function getMembersByIds(db: DbOrTx, ids: number[]): Promise<MemberSummary[]> {
   if (ids.length === 0) return [];
   const result = await db.select().from(membersTable).where(inArray(membersTable.id, ids)).all();
-  return result as MemberSummary[];
+  return result as unknown as MemberSummary[];
 }
 
 export async function getMembersBySeason(db: DbOrTx, seasonId: string | number): Promise<MemberSummary[]> {
-  const numericId = Number(seasonId);
+  let numericId = Number(seasonId);
+  if (isNaN(numericId) && typeof seasonId === 'string') {
+    const s = await db.select({ id: seasonsTable.id }).from(seasonsTable).where(eq(seasonsTable.code, seasonId)).get();
+    if (s) numericId = s.id;
+  }
   const condition = !isNaN(numericId)
-    ? or(eq(membersTable.seasonId, numericId), eq(membersTable.seasonId, seasonId as any))
+    ? eq(membersTable.seasonId, numericId)
     : eq(membersTable.seasonId, seasonId as any);
   const result = await db.select().from(membersTable).where(condition).all();
-  return result as MemberSummary[];
+  return result as unknown as MemberSummary[];
 }
 
 export async function getAllMembers(db: DbOrTx): Promise<MemberSummary[]> {
   const result = await db.select().from(membersTable).all();
-  return result as MemberSummary[];
+  return result as unknown as MemberSummary[];
 }
 
 export async function isSeasonClosed(db: DbOrTx, seasonId: string | number): Promise<boolean> {
