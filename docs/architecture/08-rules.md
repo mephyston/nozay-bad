@@ -14,6 +14,12 @@
 - [ ] Toute écriture touchant plusieurs tables est dans un `db.transaction()`
 - [ ] Le déploiement reste inchangé (toujours un seul Worker par app, aucun appel réseau introduit entre domaines)
 - [ ] Toute variable lue via c.env, import.meta.env ou un binding est déclarée dans le wrangler.json correspondant (prod ET staging) et documentée dans .env.example.
+- [ ] Contrôle d'intégrité du schéma valide (`node scripts/check-schema-integrity.js`)
+- [ ] Aucune dérive de schéma Drizzle vs migrations SQL (`drizzle-kit generate` sans diff)
+- [ ] Aucune suppression de contrainte (FK, UNIQUE, CHECK) sans dérogation explicite `[allow-constraint-loss]`
+- [ ] Aucune duplication de déclaration de table physique dans les `schema.ts`
+- [ ] Alignement des données de référence (`0001_seed_reference_data.sql`) avec les codes métiers applicatifs
+
 
 ## Garde-fous automatiques à mettre en place (une fois, avant la migration)
 

@@ -86,3 +86,15 @@ Chaque cas d'usage doit contenir la structure suivante :
 1. **Déclaration Obligatoire** : Toute variable d'environnement ou binding Cloudflare lu dans le code (`c.env`, `import.meta.env`, `process.env`, `cfEnv`, etc.) doit obligatoirement être déclaré dans le fichier `wrangler.json` correspondant (environnement par défaut ET `env.staging`) et documenté dans `.env.example`.
 2. **Vérification Automatisée** : Le script `node scripts/check-env-declarations.js` est exécuté lors du job de test CI. Toute variable lue dans le code applicatif non déclarée entraînera l'échec immédiat du build.
 3. **Secret Key Naming** : Les clés secrètes serveur ne doivent jamais utiliser le préfixe `PUBLIC_` (réservé aux variables injectées au build client). Elles doivent être posées via `wrangler secret put <NOM>`.
+
+---
+
+## 7. Contrôles d'Intégrité de Schéma (CI / Pre-commit)
+
+Le script `node scripts/check-schema-integrity.js` valide automatiquement 5 règles d'intégrité de schéma avant chaque déploiement :
+1. **Résolution du schéma** : Le glob de `libs/shared/db/drizzle.config.ts` résout bien tous les `schema.ts` de domaine.
+2. **Unicité des définitions de tables** : Chaque table physique D1 (`sqliteTable`) est déclarée dans un seul `schema.ts` propriétaire.
+3. **Dérive du schéma (Schema Drift)** : `drizzle-kit generate` s'exécute sans produire de migration SQL non vide.
+4. **Conservation des contraintes (FK, UNIQUE, CHECK)** : Détection automatique de toute suppression non intentionnelle de contraintes. Toute suppression volontaire exige la dérogation `[allow-constraint-loss]` dans le message de commit.
+5. **Alignement des données de référence** : Tous les codes métiers requis (`categories`, `account_classes`, `accounts`, `payment_methods`) sont présents dans `0001_seed_reference_data.sql`.
+

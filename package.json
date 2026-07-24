@@ -3,8 +3,11 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "test": "vitest"
+    "test": "vitest",
+    "check:env": "node scripts/check-env-declarations.js",
+    "check:schema": "node scripts/check-schema-integrity.js"
   },
+
   "private": true,
   "type": "module",
   "devDependencies": {
