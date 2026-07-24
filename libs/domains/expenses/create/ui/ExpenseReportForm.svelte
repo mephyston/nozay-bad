@@ -1,24 +1,16 @@
 <script lang="ts">
-  import { UploadCloud, CheckCircle, AlertCircle, Coins, Search, ChevronDown } from '@lucide/svelte';
-  import { Button, Card, Input, Label, Badge } from '@nba/ui';
+  import { CheckCircle, AlertCircle, Coins } from '@lucide/svelte';
+  import { Button, Card } from '@nba/ui';
+  import type { Member, Props } from './expense-form-types';
+  import { formatMemberName, scrollOptionIntoView } from './expense-form-utils';
+  import { submitExpenseReport } from './expense-form-submit';
+  import ExpenseFormMemberSelect from './ExpenseFormMemberSelect.svelte';
+  import ExpenseFormDetails from './ExpenseFormDetails.svelte';
+  import ExpenseFormFileInput from './ExpenseFormFileInput.svelte';
 
-  interface Member {
-    id: number;
-    firstName: string;
-    lastName: string;
-    licence: string;
-  }
-
-  interface Props {
-    activeSeasonId: string;
-    members?: Member[];
-    categories?: {
-      id: string;
-      adminLabel: string;
-      adherentLabel: string;
-      hideInExpenses: boolean;
-    }[];
-  }
+  export * from './expense-form-types';
+  export * from './expense-form-utils';
+  export * from './expense-form-submit';
 
   const { activeSeasonId, members = [], categories = [] }: Props = $props();
 
@@ -41,94 +33,35 @@
   let successMsg = $state<string | null>(null);
   let errorMsg = $state<string | null>(null);
 
-  const visibleCategories = $derived(
-    categories
-      .filter(c => !c.hideInExpenses)
-      .map(c => ({ value: c.id, label: c.adherentLabel }))
-  );
-
+  const visibleCategories = $derived(categories.filter(c => !c.hideInExpenses).map(c => ({ value: c.id, label: c.adherentLabel })));
 
   $effect(() => {
-    if (visibleCategories.length > 0 && !category) {
-      category = visibleCategories[0].value;
-    }
+    if (visibleCategories.length > 0 && !category) category = visibleCategories[0].value;
   });
 
-  function formatMemberName(m: Member | null): string {
-    if (!m) return '';
-    const maskedLast = m.lastName
-      ? (m.lastName.length > 2 && !m.lastName.endsWith('.') ? `${m.lastName[0]}.` : m.lastName)
-      : '';
-    return `${maskedLast} ${m.firstName}`.trim();
-  }
+  $effect(() => { if (!isMemberDropdownOpen) highlightedIndex = -1; });
+  $effect(() => { if (highlightedIndex >= filteredMembers.length) highlightedIndex = filteredMembers.length - 1; });
 
-  function formatLicence(licence: string): string {
-    if (!licence) return '***';
-    if (licence.includes('*')) return licence;
-    if (licence.length <= 4) return '***';
-    return `${licence.slice(0, 2)}***${licence.slice(-2)}`;
-  }
-
-  $effect(() => {
-    if (!isMemberDropdownOpen) {
-      highlightedIndex = -1;
-    }
-  });
-
-  $effect(() => {
-    if (highlightedIndex >= filteredMembers.length) {
-      highlightedIndex = filteredMembers.length - 1;
-    }
-  });
-
-  // Debounced member search from API
   $effect(() => {
     if (!isMemberDropdownOpen) return;
-
     const query = memberSearchQuery.trim();
-    if (lastSelectedMember && memberSearchQuery === formatMemberName(lastSelectedMember)) {
-      return;
-    }
+    if (lastSelectedMember && memberSearchQuery === formatMemberName(lastSelectedMember)) return;
+    if (query.length > 0 && query.length < 3) return;
 
-    if (query.length > 0 && query.length < 3) {
-      return;
-    }
-
-    if (debounceTimeout) {
-      clearTimeout(debounceTimeout);
-    }
-
+    if (debounceTimeout) clearTimeout(debounceTimeout);
     debounceTimeout = setTimeout(async () => {
       try {
         const response = await fetch(`/api/members-search?q=${encodeURIComponent(query)}`);
-        if (response.ok) {
-          const data = await response.json() as Member[];
-          fetchedMembers = data;
-        }
-      } catch (err) {
-        console.error('Error fetching members from API:', err);
-      }
+        if (response.ok) fetchedMembers = await response.json() as Member[];
+      } catch (err) { console.error('Error fetching members from API:', err); }
     }, query === '' ? 0 : 300);
 
-    return () => {
-      if (debounceTimeout) {
-        clearTimeout(debounceTimeout);
-      }
-    };
+    return () => { if (debounceTimeout) clearTimeout(debounceTimeout); };
   });
 
   let sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
-
-  let selectedMember = $derived(
-    members.length > 0
-      ? (members.find(m => m.id.toString() === selectedMemberId) || null)
-      : lastSelectedMember
-  );
-
-  let memberDisplayVal = $derived(
-    selectedMember ? formatMemberName(selectedMember) : ''
-  );
-
+  let selectedMember = $derived(members.length > 0 ? (members.find(m => m.id.toString() === selectedMemberId) || null) : lastSelectedMember);
+  let memberDisplayVal = $derived(selectedMember ? formatMemberName(selectedMember) : '');
   let filteredMembers = $derived(
     memberSearchQuery.trim() === ''
       ? (fetchedMembers.length > 0 ? fetchedMembers : sortedMembers)
@@ -153,158 +86,34 @@
 
   function handleKeyDown(e: KeyboardEvent) {
     if (!isMemberDropdownOpen) {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        isMemberDropdownOpen = true;
-        highlightedIndex = 0;
-        e.preventDefault();
-      }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { isMemberDropdownOpen = true; highlightedIndex = 0; e.preventDefault(); }
       return;
     }
-
     if (e.key === 'ArrowDown') {
-      if (filteredMembers.length > 0) {
-        highlightedIndex = (highlightedIndex + 1) % filteredMembers.length;
-        scrollOptionIntoView(highlightedIndex);
-      }
+      if (filteredMembers.length > 0) { highlightedIndex = (highlightedIndex + 1) % filteredMembers.length; scrollOptionIntoView(highlightedIndex); }
       e.preventDefault();
     } else if (e.key === 'ArrowUp') {
-      if (filteredMembers.length > 0) {
-        highlightedIndex = (highlightedIndex - 1 + filteredMembers.length) % filteredMembers.length;
-        scrollOptionIntoView(highlightedIndex);
-      }
+      if (filteredMembers.length > 0) { highlightedIndex = (highlightedIndex - 1 + filteredMembers.length) % filteredMembers.length; scrollOptionIntoView(highlightedIndex); }
       e.preventDefault();
     } else if (e.key === 'Enter') {
-      if (highlightedIndex >= 0 && highlightedIndex < filteredMembers.length) {
-        selectMember(filteredMembers[highlightedIndex]);
-        e.preventDefault();
-      }
-    } else if (e.key === 'Escape') {
-      isMemberDropdownOpen = false;
-      e.preventDefault();
-    }
-  }
-
-  function scrollOptionIntoView(index: number) {
-    setTimeout(() => {
-      const container = document.getElementById('expense-member-listbox');
-      const option = document.getElementById(`expense-member-option-${index}`);
-      if (container && option) {
-        const containerTop = container.scrollTop;
-        const containerBottom = containerTop + container.clientHeight;
-        const optionTop = option.offsetTop;
-        const optionBottom = optionTop + option.clientHeight;
-
-        if (optionTop < containerTop) {
-          container.scrollTop = optionTop;
-        } else if (optionBottom > containerBottom) {
-          container.scrollTop = optionBottom - container.clientHeight;
-        }
-      }
-    }, 0);
-  }
-
-  function handleFileChange(e: Event) {
-    const target = e.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 800 * 1024) {
-      errorMsg = "Le fichier est trop volumineux (max 800 Ko pour le stockage D1).";
-      target.value = '';
-      return;
-    }
-
-    errorMsg = null;
-    const reader = new FileReader();
-    reader.onload = () => {
-      photoUrl = reader.result as string;
-    };
-    reader.onerror = () => {
-      errorMsg = "Erreur lors de la lecture du justificatif.";
-    };
-    reader.readAsDataURL(file);
+      if (highlightedIndex >= 0 && highlightedIndex < filteredMembers.length) { selectMember(filteredMembers[highlightedIndex]); e.preventDefault(); }
+    } else if (e.key === 'Escape') { isMemberDropdownOpen = false; e.preventDefault(); }
   }
 
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
-    errorMsg = null;
-    successMsg = null;
+    errorMsg = null; successMsg = null; submitting = true;
+    const res = await submitExpenseReport({ activeSeasonId, description, category, amountStr, photoUrl, emitterName, selectedMemberId });
+    submitting = false;
 
-    if (!selectedMemberId) {
-      errorMsg = "Veuillez sélectionner un demandeur dans la liste.";
-      return;
-    }
-
-    const parsedAmount = parseFloat(amountStr);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      errorMsg = "Veuillez saisir un montant supérieur à 0 €.";
-      return;
-    }
-
-    if (!photoUrl) {
-      errorMsg = "Une photo du justificatif est obligatoire pour le remboursement.";
-      return;
-    }
-
-    const isTest = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
-    const turnstileResponse = isTest
-      ? 'mock-test-token'
-      : (document.getElementsByName('cf-turnstile-response')[0] as HTMLInputElement)?.value;
-    if (!turnstileResponse) {
-      errorMsg = "Veuillez valider le test de sécurité anti-bot.";
-      return;
-    }
-
-    submitting = true;
-
-    try {
-      const res = await fetch('', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          action: 'expense',
-          data: {
-            seasonId: activeSeasonId,
-            description,
-            category,
-            amount: Math.round(parsedAmount * 100),
-            photoUrl,
-            emitterName,
-            memberId: parseInt(selectedMemberId)
-          },
-          turnstileToken: turnstileResponse
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Une erreur est survenue lors de l'envoi de la note de frais.");
-      }
-
-      successMsg = "Votre note de frais a été soumise avec succès ! Le trésorier procédera à sa validation et remboursement.";
-      
-      emitterName = '';
-      selectedMemberId = '';
-      lastSelectedMember = null;
-      memberSearchQuery = '';
+    if (res.success) {
+      successMsg = res.message || null;
+      emitterName = ''; selectedMemberId = ''; lastSelectedMember = null; memberSearchQuery = '';
       category = visibleCategories[0]?.value || 'fonctionnement_administratif';
-      description = '';
-      amountStr = '';
-      photoUrl = null;
+      description = ''; amountStr = ''; photoUrl = null;
       if (fileInput) fileInput.value = '';
-
-      if (typeof window !== 'undefined' && (window as any).turnstile) {
-        (window as any).turnstile.reset();
-      }
-    } catch (err: unknown) {
-      errorMsg = err.message || "Une erreur est survenue.";
-      if (typeof window !== 'undefined' && (window as any).turnstile) {
-        (window as any).turnstile.reset();
-      }
-    } finally {
-      submitting = false;
+    } else {
+      errorMsg = res.error || null;
     }
   }
 </script>
@@ -336,144 +145,21 @@
         </div>
       {/if}
 
-      <!-- Searchable Member Combobox Dropdown -->
-      <div class="space-y-1.5 relative">
-        <Label for="expense-member-input" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Demandeur (Adhérent)</Label>
-        <div class="relative">
-          <Search class="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground z-10" />
-          <Input
-            id="expense-member-input"
-            type="text"
-            role="combobox"
-            autocomplete="off"
-            aria-expanded={isMemberDropdownOpen}
-            aria-autocomplete="list"
-            aria-controls="expense-member-listbox"
-            aria-activedescendant={highlightedIndex >= 0 ? `expense-member-option-${highlightedIndex}` : undefined}
-            placeholder="Rechercher par Nom, Prénom, ou N° Licence (min 3 caractères)..."
-            class="w-full pl-10 pr-10 h-10 rounded-xl font-semibold"
-            value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
-            oninput={(e) => {
-              isMemberDropdownOpen = true;
-              memberSearchQuery = (e.target as HTMLInputElement).value;
-            }}
-            onfocus={(e) => {
-              isMemberDropdownOpen = true;
-              if (selectedMember) {
-                memberSearchQuery = formatMemberName(selectedMember);
-              } else {
-                memberSearchQuery = '';
-              }
-              (e.target as HTMLInputElement).select();
-            }}
-            onblur={() => {
-              setTimeout(() => { isMemberDropdownOpen = false; }, 200);
-            }}
-            onkeydown={handleKeyDown}
-            required
-          />
-          <ChevronDown class="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
-        </div>
+      <ExpenseFormMemberSelect
+        bind:selectedMemberId
+        bind:memberSearchQuery
+        bind:isMemberDropdownOpen
+        bind:highlightedIndex
+        {selectedMember}
+        {memberDisplayVal}
+        {filteredMembers}
+        onSelectMember={selectMember}
+        onKeyDown={handleKeyDown}
+      />
 
-        {#if isMemberDropdownOpen}
-          <div
-            role="listbox"
-            id="expense-member-listbox"
-            class="absolute z-50 w-full mt-1 max-h-56 overflow-y-auto bg-popover border border-border rounded-xl shadow-xl divide-y divide-border"
-          >
-            {#each filteredMembers as m, index}
-              <button
-                type="button"
-                role="option"
-                aria-selected={selectedMemberId === m.id.toString()}
-                id={`expense-member-option-${index}`}
-                class="w-full text-left px-4 py-2.5 text-sm transition-colors font-semibold border-0 cursor-pointer {index === highlightedIndex ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground'}"
-                onmousedown={() => {
-                  selectMember(m);
-                }}
-              >
-                <div class="flex justify-between items-center">
-                  <span>{formatMemberName(m)}</span>
-                  <Badge variant="outline" class="font-mono">Licence: {formatLicence(m.licence)}</Badge>
-                </div>
-              </button>
-            {:else}
-              <div class="px-4 py-3 text-sm text-muted-foreground italic bg-popover">
-                {memberSearchQuery.trim().length > 0 && memberSearchQuery.trim().length < 3 ? 'Saisissez au moins 3 caractères pour rechercher' : 'Aucun adhérent trouvé'}
-              </div>
-            {/each}
-          </div>
-        {/if}
-      </div>
+      <ExpenseFormDetails bind:category bind:amountStr bind:description {visibleCategories} />
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="space-y-1.5">
-          <Label for="category" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Catégorie de dépense</Label>
-          <select
-            id="category"
-            bind:value={category}
-            class="w-full px-3 h-10 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-          >
-            {#each visibleCategories as cat}
-              <option value={cat.value}>{cat.label}</option>
-            {/each}
-          </select>
-        </div>
-
-        <div class="space-y-1.5">
-          <Label for="amount" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Montant (€)</Label>
-          <Input
-            type="number"
-            id="amount"
-            step="0.01"
-            min="0.01"
-            placeholder="0.00"
-            bind:value={amountStr}
-            class="w-full h-10 rounded-xl font-semibold"
-            required
-          />
-        </div>
-      </div>
-
-      <div class="space-y-1.5">
-        <Label for="description" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Description / Motif des frais</Label>
-        <textarea
-          id="description"
-          bind:value={description}
-          rows="3"
-          placeholder="Ex: Achat de volants de compétition pour le tournoi régional."
-          class="w-full px-3 py-2.5 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
-          required
-        ></textarea>
-      </div>
-
-      <div class="space-y-1.5">
-        <span class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Justificatif (reçu, facture...)</span>
-        
-        <div class="flex flex-col items-center justify-center border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-4 bg-muted/10 cursor-pointer relative">
-          <input
-            type="file"
-            id="receipt"
-            accept="image/*"
-            bind:this={fileInput}
-            onchange={handleFileChange}
-            class="absolute inset-0 opacity-0 cursor-pointer z-10"
-          />
-          
-          {#if photoUrl}
-            <div class="flex flex-col items-center space-y-2 py-2">
-              <img src={photoUrl} alt="Aperçu du justificatif" class="max-h-40 rounded-lg shadow-md border border-border object-contain" />
-              <span class="text-xs text-muted-foreground font-semibold">Justificatif chargé</span>
-            </div>
-          {:else}
-            <div class="flex flex-col items-center justify-center py-4 text-center">
-              <UploadCloud class="w-10 h-10 text-muted-foreground mb-2" />
-              <span class="text-sm font-semibold text-foreground">Cliquez ou glissez-déposez la photo</span>
-              <span class="text-xs text-muted-foreground mt-1">PNG, JPG jusqu'à 800 Ko</span>
-            </div>
-          {/if}
-        </div>
-      </div>
+      <ExpenseFormFileInput bind:photoUrl bind:fileInput onError={(msg) => { errorMsg = msg; }} />
 
       <div class="flex justify-center my-4">
         <div class="cf-turnstile" data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1" data-size="invisible"></div>
