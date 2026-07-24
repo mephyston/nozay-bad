@@ -41,7 +41,7 @@
           </div>
           <div>
             <span class="text-muted-foreground font-medium">Compte de dépôt :</span>
-            <span class="font-bold text-foreground block mt-0.5">Société Générale (Compte Courant)</span>
+            <span class="font-bold text-foreground block mt-0.5">Compte Courant</span>
           </div>
         </div>
 

@@ -47,7 +47,8 @@ export class CloseSeasonRepository implements CloseSeasonRepositoryInterface {
     return db.select()
       .from(bankStatementLinesTable)
       .where(and(
-        eq(bankStatementLinesTable.seasonId, season.id),
+        gte(bankStatementLinesTable.date, season.startDate),
+        lte(bankStatementLinesTable.date, season.endDate),
         eq(bankStatementLinesTable.status, 'pending')
       ))
       .all();
@@ -111,7 +112,8 @@ export class CloseSeasonRepository implements CloseSeasonRepositoryInterface {
     const txs = await db.select()
       .from(bankStatementLinesTable)
       .where(and(
-        eq(bankStatementLinesTable.seasonId, season.id),
+        gte(bankStatementLinesTable.date, season.startDate),
+        lte(bankStatementLinesTable.date, season.endDate),
         eq(bankStatementLinesTable.accountId, accountId),
         eq(bankStatementLinesTable.status, 'reconciled')
       ))

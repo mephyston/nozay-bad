@@ -19,7 +19,7 @@ INSERT INTO `account_classes` (`code`, `label`, `type`, `created_at`) VALUES
 
 -- 2. ACCOUNTS (Comptes de trésorerie de l'association)
 INSERT INTO `accounts` (`code`, `label`, `account_class_id`, `created_at`) VALUES
-('current', 'Compte Courant LCL', (SELECT `id` FROM `account_classes` WHERE `code` = '512'), 1783962600),
+('current', 'Compte Courant', (SELECT `id` FROM `account_classes` WHERE `code` = '512'), 1783962600),
 ('savings', 'Livret A / Épargne', (SELECT `id` FROM `account_classes` WHERE `code` = '517'), 1783962600),
 ('cash', 'Caisse Buvette', (SELECT `id` FROM `account_classes` WHERE `code` = '530'), 1783962600);
 

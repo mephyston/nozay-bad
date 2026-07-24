@@ -9,7 +9,6 @@ export class AnalyzeBankStatementLinesRepository {
   }
   async getPendingTransactions(db: DbOrTx, seasonId: string, singleId?: number): Promise<(typeof bankStatementLinesTable.$inferSelect)[]> {
     const conditions = [
-      eq(bankStatementLinesTable.seasonId, seasonId),
       eq(bankStatementLinesTable.status, 'pending')
     ];
     if (singleId) {
