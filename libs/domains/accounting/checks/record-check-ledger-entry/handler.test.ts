@@ -13,6 +13,10 @@ vi.mock('./repository', () => {
       deleteLedgerEntry = vi.fn();
       deleteCheck = vi.fn();
       getAllMembers = vi.fn().mockResolvedValue([]);
+      buildCreateLedgerEntryStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) });
+      buildCreateCheckStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) });
+      buildDeleteCheckStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) });
+      buildDeleteLedgerEntryStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) });
     }
   };
 });
@@ -22,11 +26,13 @@ vi.mock('../../shared/helpers', () => ({
 }));
 
 vi.mock('@nba/members-api', () => ({
-  applyPaymentToMember: vi.fn()
+  applyPaymentToMember: vi.fn(),
+  getMemberById: vi.fn().mockResolvedValue({ id: 1 }),
+  buildApplyPaymentStatement: vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) })
 }));
 
 const mockDb = {
-  transaction: async (cb: any) => cb(mockDb)
+  batch: vi.fn().mockResolvedValue([{ meta: { last_row_id: 10 } }, { meta: { last_row_id: 1 } }])
 };
 
 describe('record-check-ledger-entry handler', () => {

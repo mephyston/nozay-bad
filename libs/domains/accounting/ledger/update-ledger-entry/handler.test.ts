@@ -5,10 +5,10 @@ import * as membersDataAccess from '@nba/members-api';
 
 vi.mock('./repository', () => {
   return {
-    UpdateLedgerEntryRepository: vi.fn().mockImplementation(() => ({
-      getById: vi.fn().mockResolvedValue({ id: 1, seasonId: 'season1' }),
-      update: vi.fn().mockResolvedValue({ id: 1, seasonId: 'season1' })
-    }))
+    UpdateLedgerEntryRepository: class {
+      getById = vi.fn().mockResolvedValue({ id: 1, seasonId: 'season1' });
+      update = vi.fn().mockResolvedValue({ id: 1, seasonId: 'season1' });
+    }
   };
 });
 

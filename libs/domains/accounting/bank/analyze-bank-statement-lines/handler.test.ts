@@ -50,9 +50,8 @@ describe('analyzeBankStatementLines', () => {
     await db.insert(bankStatementLinesTable).values({
       id: 1,
       fitid: 'TX1001',
-      seasonId: '25-26',
-      accountId: 'current',
-      amount: 15000,
+      accountId: 1,
+      amountCents: 15000,
       date: '2026-07-22',
       name: 'Adhesion Dupont Marc',
       memo: 'Cotisation 25-26',
