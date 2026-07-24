@@ -113,6 +113,9 @@ jobs:
       - name: Verify environment variable & binding declarations
         run: node scripts/check-env-declarations.js
 
+      - name: Run TypeScript typecheck
+        run: npm run typecheck
+
       - name: Run affected tests
         run: |
           npx nx affected -t test --base=$NX_BASE --head=$NX_HEAD --parallel=3

@@ -4,6 +4,7 @@
   "license": "MIT",
   "scripts": {
     "test": "vitest",
+    "typecheck": "tsc --noEmit",
     "check:env": "node scripts/check-env-declarations.js",
     "check:schema": "node scripts/check-schema-integrity.js"
   },
