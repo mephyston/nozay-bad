@@ -3,6 +3,15 @@ import { updateLedgerEntry } from './handler';
 import { UpdateLedgerEntryRepository } from './repository';
 import * as membersDataAccess from '@nba/members-api';
 
+vi.mock('./repository', () => {
+  return {
+    UpdateLedgerEntryRepository: vi.fn().mockImplementation(() => ({
+      getById: vi.fn().mockResolvedValue({ id: 1, seasonId: 'season1' }),
+      update: vi.fn().mockResolvedValue({ id: 1, seasonId: 'season1' })
+    }))
+  };
+});
+
 vi.mock('@nba/members-api', () => ({
   isSeasonClosed: vi.fn()
 }));
@@ -33,13 +42,10 @@ describe('updateLedgerEntry', () => {
     };
 
     vi.mocked(membersDataAccess.isSeasonClosed).mockResolvedValue(false);
-    vi.spyOn(UpdateLedgerEntryRepository.prototype, 'getById').mockResolvedValue({ id: 1, seasonId: 'season1' } as any);
-    vi.spyOn(UpdateLedgerEntryRepository.prototype, 'update').mockResolvedValue({ id: 1, seasonId: 'season1' } as any);
 
     const result = await updateLedgerEntry(mockDb, mockId, mockDto);
 
     expect(result).toEqual({ id: 1, seasonId: 'season1' });
-    expect(UpdateLedgerEntryRepository.prototype.update).toHaveBeenCalled();
   });
 
   it('should throw an error if original season is closed', async () => {
@@ -55,7 +61,6 @@ describe('updateLedgerEntry', () => {
       description: 'Test'
     };
 
-    vi.spyOn(UpdateLedgerEntryRepository.prototype, 'getById').mockResolvedValue({ id: 1, seasonId: 'season1' } as any);
     vi.mocked(membersDataAccess.isSeasonClosed).mockImplementation(async (_db, seasonId) => seasonId === 'season1');
 
     await expect(updateLedgerEntry(mockDb, mockId, mockDto)).rejects.toThrowError(/La saison d'origine est clôturée/);

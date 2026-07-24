@@ -15,8 +15,8 @@ describe('getSeasonReports (As-of Cut-off Date & Projections - PROMPT 12)', () =
 
     // Retrieve categories seeded by reference data seed (0001)
     const cats = await db.select().from(categoriesTable).all();
-    const adhCat = cats.find((c: any) => c.code === 'adhesions_inscriptions') || cats[0];
-    const tourCat = cats.find((c: any) => c.code === 'tournois_senior') || cats[1];
+    const adhCat = cats.find((c: any) => c.adminLabel === 'Adhésions & Inscriptions') || cats[0];
+    const tourCat = cats.find((c: any) => c.adminLabel === 'Tournois Senior') || cats[1];
     adhCatId = adhCat.id;
     tourCatId = tourCat.id;
 

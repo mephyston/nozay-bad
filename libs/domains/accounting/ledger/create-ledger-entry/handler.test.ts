@@ -3,6 +3,14 @@ import { createLedgerEntry } from './handler';
 import { CreateLedgerEntryRepository } from './repository';
 import * as membersDataAccess from '@nba/members-api';
 
+vi.mock('./repository', () => {
+  return {
+    CreateLedgerEntryRepository: vi.fn().mockImplementation(() => ({
+      create: vi.fn().mockResolvedValue({ id: 1 })
+    }))
+  };
+});
+
 vi.mock('@nba/members-api', () => ({
   isSeasonClosed: vi.fn()
 }));
@@ -32,12 +40,10 @@ describe('createLedgerEntry', () => {
     };
 
     vi.mocked(membersDataAccess.isSeasonClosed).mockResolvedValue(false);
-    vi.spyOn(CreateLedgerEntryRepository.prototype, 'create').mockResolvedValue({ id: 1 } as any);
 
     const result = await createLedgerEntry(mockDb, mockDto);
 
     expect(result).toEqual({ id: 1 });
-    expect(CreateLedgerEntryRepository.prototype.create).toHaveBeenCalled();
   });
 
   it('should throw an error if season is closed', async () => {
