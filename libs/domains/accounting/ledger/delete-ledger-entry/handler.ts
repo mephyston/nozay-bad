@@ -1,44 +1,53 @@
 import { DeleteTransactionRepository } from './repository';
-import { isSeasonClosed } from '@nba/members-api';
-import { AppError, type Db, type Tx } from '@nba/db';
+import { isSeasonClosed, getMemberById, buildApplyPaymentStatement } from '@nba/members-api';
+import { AppError, type Db } from '@nba/db';
 import { SeasonClosedError } from '../../shared/errors';
-import { applyPaymentToMember } from '@nba/members-api';
 
 export async function deleteLedgerEntry(db: Db, id: number) {
   const repo = new DeleteTransactionRepository();
 
-  return db.transaction(async (txDb: Tx) => {
-    const tx = await repo.getById(txDb, id);
-    if (!tx) {
-      throw new AppError('Transaction non trouvée', 404);
-    }
+  // Phase 1 : Lecture (hors batch)
+  const tx = await repo.getById(db, id);
+  if (!tx) {
+    throw new AppError('Transaction non trouvée', 404);
+  }
 
-    if (await isSeasonClosed(txDb, tx.seasonId)) {
-      throw new SeasonClosedError('La saison est clôturée. Impossible de supprimer cette transaction.');
-    }
+  if (await isSeasonClosed(db, tx.seasonId)) {
+    throw new SeasonClosedError('La saison est clôturée. Impossible de supprimer cette transaction.');
+  }
 
-    // 2. Si liée à un relevé bancaire, recalculer le pointage restant
-    if (tx.bankStatementLineId) {
-      const bankTx = await repo.getBankStatementLineById(txDb, tx.bankStatementLineId);
-      if (bankTx) {
-        const remainingTxs = await repo.getRemainingTransactionsForBankTx(txDb, tx.bankStatementLineId, id);
-        const totalRemaining = remainingTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  let resetBankTxNeeded = false;
+  if (tx.bankStatementLineId) {
+    const bankTx = await repo.getBankStatementLineById(db, tx.bankStatementLineId);
+    if (bankTx) {
+      const remainingTxs = await repo.getRemainingTransactionsForBankTx(db, tx.bankStatementLineId, id);
+      const totalRemaining = remainingTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
-        if (totalRemaining < Math.abs(bankTx.amount)) {
-          await repo.updateBankStatementLineStatus(txDb, tx.bankStatementLineId, 'pending');
-        }
+      if (totalRemaining < Math.abs(bankTx.amount)) {
+        resetBankTxNeeded = true;
       }
     }
+  }
 
-    // 3. Si liée à un adhérent pour une adhésion, déduire le montant reçu
-    if (tx.memberId && (tx.category === 1 || String(tx.category) === '1')) {
-      await applyPaymentToMember(txDb, tx.memberId, -Math.abs(tx.amount));
-    }
+  let memberData: any = null;
+  if (tx.memberId && (tx.category === 1 || String(tx.category) === '1')) {
+    memberData = await getMemberById(db, tx.memberId);
+  }
 
-    // 3.5. Si liée à une note de frais, la repasser en 'pending'
-    await repo.resetExpenseStatusByTxId(txDb, id);
+  // Phase 2 : Décision (en mémoire)
+  const statements: any[] = [];
 
-    // 4. Supprimer la transaction du Grand Livre
-    await repo.delete(txDb, id);
-  });
+  if (tx.bankStatementLineId && resetBankTxNeeded) {
+    statements.push(repo.buildUpdateBankStatementLineStatusStatement(db, tx.bankStatementLineId, 'pending'));
+  }
+
+  if (memberData) {
+    statements.push(buildApplyPaymentStatement(db, memberData, -Math.abs(tx.amount)));
+  }
+
+  statements.push(repo.buildResetExpenseStatusStatement(db, id));
+  statements.push(repo.buildDeleteLedgerEntryStatement(db, id));
+
+  // Phase 3 : Écriture (db.batch)
+  await db.batch(statements as any);
 }

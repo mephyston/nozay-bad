@@ -9,25 +9,25 @@ vi.mock('@nba/members-api', () => ({
 }));
 
 describe('deleteLedgerEntry', () => {
-  it('should delete a transaction within a db transaction', async () => {
+  it('should delete a transaction within a db batch', async () => {
     const mockDb = {
-      transaction: vi.fn(async (cb) => cb(mockDb))
+      batch: vi.fn().mockResolvedValue([])
     };
     const mockId = 1;
 
     vi.mocked(membersDataAccess.isSeasonClosed).mockResolvedValue(false);
     vi.mocked(DeleteTransactionRepository.prototype.getById).mockResolvedValue({ id: 1, seasonId: 'season1' });
-    vi.mocked(DeleteTransactionRepository.prototype.delete).mockResolvedValue();
+    vi.mocked(DeleteTransactionRepository.prototype.buildDeleteLedgerEntryStatement).mockReturnValue('stmt1' as any);
+    vi.mocked(DeleteTransactionRepository.prototype.buildResetExpenseStatusStatement).mockReturnValue('stmt2' as any);
 
     await deleteLedgerEntry(mockDb, mockId);
 
-    expect(mockDb.transaction).toHaveBeenCalled();
-    expect(DeleteTransactionRepository.prototype.delete).toHaveBeenCalledWith(mockDb, mockId);
+    expect(mockDb.batch).toHaveBeenCalled();
   });
 
   it('should throw error if season is closed', async () => {
     const mockDb = {
-      transaction: vi.fn(async (cb) => cb(mockDb))
+      batch: vi.fn().mockResolvedValue([])
     };
     const mockId = 1;
 

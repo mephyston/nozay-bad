@@ -21,6 +21,20 @@ export class DeleteTransactionRepository {
       .all();
   }
 
+  buildUpdateBankStatementLineStatusStatement(db: DbOrTx, id: number, status: string): any {
+    return db.update(bankStatementLinesTable).set({ status }).where(eq(bankStatementLinesTable.id, id));
+  }
+
+  buildResetExpenseStatusStatement(db: DbOrTx, txId: number): any {
+    return db.run(sql`
+      UPDATE expenses SET status = 'pending', ledger_entry_id = NULL WHERE ledger_entry_id = ${txId}
+    `);
+  }
+
+  buildDeleteLedgerEntryStatement(db: DbOrTx, id: number): any {
+    return db.delete(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, id));
+  }
+
   async updateBankStatementLineStatus(db: DbOrTx, id: number, status: string): Promise<void> {
     await db.update(bankStatementLinesTable).set({ status }).where(eq(bankStatementLinesTable.id, id)).run();
   }
