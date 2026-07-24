@@ -11,7 +11,7 @@ describe('createInvoice', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    db = { transaction: vi.fn(async (cb) => cb(db)) };
+    db = { batch: vi.fn().mockResolvedValue([{ meta: { last_row_id: 1 } }]) };
   });
 
   it('should execute successfully (nominal case)', async () => {
@@ -20,8 +20,8 @@ describe('createInvoice', () => {
     (isSeasonClosed as any).mockResolvedValue(false);
     
     const mockRepoInstance = {
-      generateInvoiceNumber: vi.fn().mockResolvedValue(true),
-      create: vi.fn().mockResolvedValue(true)
+      generateInvoiceNumber: vi.fn().mockResolvedValue('FAC-2324-NBA91-0001'),
+      buildCreateStatements: vi.fn().mockReturnValue(['stmt1'])
     };
     (vi.mocked(CreateInvoiceRepository) as any).mockImplementation(function() { return mockRepoInstance; });
 
@@ -30,8 +30,8 @@ describe('createInvoice', () => {
     await (createInvoice as any)(...args);
 
     // Assert
-    expect(db.transaction).toHaveBeenCalled();
-    expect(mockRepoInstance.create).toHaveBeenCalled();
+    expect(db.batch).toHaveBeenCalled();
+    expect(mockRepoInstance.buildCreateStatements).toHaveBeenCalled();
   });
 
   it('should throw a business error', async () => {
@@ -54,9 +54,10 @@ describe('createInvoice', () => {
     const payload = { seasonId: '25-26', items: [] } as any;
     (isSeasonClosed as any).mockResolvedValue(false);
 
+    db.batch.mockRejectedValue(new Error('UNIQUE constraint failed: invoices.invoice_number'));
     const mockRepoInstance = {
       generateInvoiceNumber: vi.fn().mockResolvedValue('FAC-2526-NBA91-0001'),
-      create: vi.fn().mockRejectedValue(new Error('UNIQUE constraint failed: invoices.invoice_number'))
+      buildCreateStatements: vi.fn().mockReturnValue(['stmt1'])
     };
     (vi.mocked(CreateInvoiceRepository) as any).mockImplementation(function() { return mockRepoInstance; });
 

@@ -1,5 +1,5 @@
 import { type DbOrTx } from '@nba/db';
-import { desc, like } from 'drizzle-orm';
+import { desc, like, sql } from 'drizzle-orm';
 import { invoicesTable, invoiceItemsTable } from '../../shared/schema';
 
 export class CreateInvoiceRepository {
@@ -23,6 +23,26 @@ export class CreateInvoiceRepository {
       }
     }
     return `${prefix}${String(nextNum).padStart(4, '0')}`;
+  }
+
+  buildCreateStatements(db: DbOrTx, values: any, items: any[]): any[] {
+    const insertInvoiceStmt = db.insert(invoicesTable).values(values);
+    const statements: any[] = [insertInvoiceStmt];
+
+    if (items && items.length > 0) {
+      for (const item of items) {
+        const itemStmt = db.insert(invoiceItemsTable).values({
+          invoiceId: sql`(SELECT last_insert_rowid())`,
+          description: item.description,
+          quantity: item.quantity,
+          unitPriceCents: item.unitPriceCents ?? item.unitPrice ?? 0,
+          totalPriceCents: item.totalPriceCents ?? (item.quantity * (item.unitPriceCents ?? item.unitPrice ?? 0)),
+          createdAt: new Date()
+        });
+        statements.push(itemStmt);
+      }
+    }
+    return statements;
   }
 
   async create(db: DbOrTx, values: any, items: any[]): Promise<any> {

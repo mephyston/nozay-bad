@@ -7,6 +7,27 @@ export class UpdateInvoiceRepository {
     return db.select().from(invoicesTable).where(eq(invoicesTable.id, id)).get();
   }
 
+  buildUpdateStatements(db: DbOrTx, id: number, values: any, items: any[]): any[] {
+    const updateInvoiceStmt = db.update(invoicesTable).set(values).where(eq(invoicesTable.id, id));
+    const deleteItemsStmt = db.delete(invoiceItemsTable).where(eq(invoiceItemsTable.invoiceId, id));
+    const statements: any[] = [updateInvoiceStmt, deleteItemsStmt];
+
+    if (items && items.length > 0) {
+      for (const item of items) {
+        const itemStmt = db.insert(invoiceItemsTable).values({
+          invoiceId: id,
+          description: item.description,
+          quantity: item.quantity,
+          unitPriceCents: item.unitPriceCents ?? item.unitPrice ?? 0,
+          totalPriceCents: item.totalPriceCents ?? (item.quantity * (item.unitPriceCents ?? item.unitPrice ?? 0)),
+          createdAt: new Date()
+        });
+        statements.push(itemStmt);
+      }
+    }
+    return statements;
+  }
+
   async update(db: DbOrTx, id: number, values: any, items: any[]): Promise<void> {
     await db.update(invoicesTable).set(values).where(eq(invoicesTable.id, id)).run();
     await db.delete(invoiceItemsTable).where(eq(invoiceItemsTable.invoiceId, id)).run();
@@ -16,8 +37,8 @@ export class UpdateInvoiceRepository {
           invoiceId: id,
           description: item.description,
           quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          totalPrice: item.quantity * item.unitPrice,
+          unitPriceCents: item.unitPriceCents ?? item.unitPrice ?? 0,
+          totalPriceCents: item.totalPriceCents ?? (item.quantity * (item.unitPriceCents ?? item.unitPrice ?? 0)),
           createdAt: new Date()
         }).run();
       }

@@ -10,17 +10,17 @@ describe('updateInvoice', () => {
   let db: any;
   beforeEach(() => {
     vi.clearAllMocks();
-    db = { transaction: vi.fn(async (cb) => cb(db)) };
+    db = { batch: vi.fn().mockResolvedValue([]) };
   });
   it('should execute successfully', async () => {
     (isSeasonClosed as any).mockResolvedValue(false);
     const mockRepoInstance = {
       getById: vi.fn().mockResolvedValue({ seasonId: 'season-1', status: 'draft' }),
-      update: vi.fn().mockResolvedValue(true)
+      buildUpdateStatements: vi.fn().mockReturnValue(['stmt1'])
     };
     (vi.mocked(UpdateInvoiceRepository) as any).mockImplementation(function() { return mockRepoInstance; });
     await (updateInvoice as any)(db, 1, { totalAmount: 10 });
-    expect(db.transaction).toHaveBeenCalled();
+    expect(db.batch).toHaveBeenCalled();
   });
   it('should throw error', async () => {
     (isSeasonClosed as any).mockResolvedValue(true);
