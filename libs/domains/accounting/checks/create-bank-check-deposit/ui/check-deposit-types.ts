@@ -58,8 +58,9 @@ export interface CategoryItem {
 }
 
 export const categoriesList: CategoryItem[] = [
-  { id: '1', name: 'Cotisation / Adhésion' },
-  { id: '6', name: 'Recette Buvette' },
-  { id: '7', name: 'Vente Cordage' },
-  { id: '14', name: 'Divers / Recettes annexes' }
+  { id: '1', name: 'Adhésions & Inscriptions' },
+  { id: '6', name: 'Evénements & Buvettes' },
+  { id: '7', name: 'Cordage (vente aux adhérents)' },
+  { id: '14', name: 'Frais de fonctionnement & administratif' }
 ];
+
