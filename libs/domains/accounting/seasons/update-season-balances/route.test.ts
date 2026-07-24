@@ -13,7 +13,7 @@ describe('UpdateSeasonBalances Route', () => {
     const res = await updateSeasonBalancesRoute.request('http://localhost/25-26/balances', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify([{ accountId: 'invalid_account', initialBalanceCents: 100 }])
+      body: JSON.stringify([{ accountId: 1, initialBalanceCents: 'not_a_number' }])
     }, { DB: mockD1 as any });
     expect(res.status).toBe(400);
     const body = await res.json() as any;

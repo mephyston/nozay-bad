@@ -5,6 +5,7 @@ import { setupMockDb } from '@nba/db/test-utils';
 vi.mock('./repository', () => {
   return {
     CreateBankCheckDepositRepository: class {
+      resolveSeasonId = vi.fn().mockResolvedValue(1);
       getChecksByIds = vi.fn().mockResolvedValue([{ id: 1, amount: 100, number: '123', seasonId: '23-24', status: 'received' }]);
       createCheckDeposit = vi.fn().mockResolvedValue({ id: 2 });
       updateChecksDeposit = vi.fn();

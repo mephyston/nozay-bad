@@ -20,6 +20,7 @@ describe('createInvoice', () => {
     (isSeasonClosed as any).mockResolvedValue(false);
     
     const mockRepoInstance = {
+      resolveSeasonId: vi.fn().mockResolvedValue(1),
       generateInvoiceNumber: vi.fn().mockResolvedValue('FAC-2324-NBA91-0001'),
       buildCreateStatements: vi.fn().mockReturnValue(['stmt1'])
     };
@@ -40,6 +41,7 @@ describe('createInvoice', () => {
     (isSeasonClosed as any).mockResolvedValue(true);
 
     const mockRepoInstance = {
+      resolveSeasonId: vi.fn().mockResolvedValue(1),
       generateInvoiceNumber: vi.fn().mockRejectedValue(new Error('Business error')),
       create: vi.fn().mockRejectedValue(new Error('Business error'))
     };
@@ -56,6 +58,7 @@ describe('createInvoice', () => {
 
     db.batch.mockRejectedValue(new Error('UNIQUE constraint failed: invoices.invoice_number'));
     const mockRepoInstance = {
+      resolveSeasonId: vi.fn().mockResolvedValue(1),
       generateInvoiceNumber: vi.fn().mockResolvedValue('FAC-2526-NBA91-0001'),
       buildCreateStatements: vi.fn().mockReturnValue(['stmt1'])
     };

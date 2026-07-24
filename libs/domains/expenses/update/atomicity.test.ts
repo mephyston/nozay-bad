@@ -20,13 +20,13 @@ describe('approveExpense Real D1 Atomicity (PROMPT B3)', () => {
     }).returning().get();
 
     await db.insert(seasonsTable).values({
-      code: '25-26', name: 'Saison 25-26', startDate: '2025-09-01', endDate: '2026-08-31', active: true, createdAt: new Date()
-    });
+      id: 1, code: '25-26', name: 'Saison 25-26', startDate: '2025-09-01', endDate: '2026-08-31', active: true, createdAt: new Date()
+    }).run();
 
     const exp = await db.insert(expensesTable).values({
       description: 'Déplacement tournoi',
       amountCents: 4500,
-      seasonId: '25-26',
+      seasonId: 1,
       categoryId: cat.id,
       emitterName: 'Paul Martin',
       status: 'pending',

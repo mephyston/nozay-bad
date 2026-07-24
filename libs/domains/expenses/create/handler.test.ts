@@ -7,6 +7,7 @@ import { SeasonClosedError } from '../shared/errors';
 vi.mock('./repository', () => {
   const CreateExpenseRepository = vi.fn();
   CreateExpenseRepository.prototype.create = vi.fn().mockResolvedValue({ id: 1, status: 'pending' });
+  CreateExpenseRepository.prototype.resolveSeasonId = vi.fn().mockResolvedValue(1);
   return { CreateExpenseRepository };
 });
 
@@ -42,10 +43,10 @@ describe('createExpense handler', () => {
     expect(CreateExpenseRepository).toHaveBeenCalled();
     const repoInstance = vi.mocked(CreateExpenseRepository).mock.results[0]?.value;
     expect(repoInstance.create).toHaveBeenCalledWith(db, expect.objectContaining({
-      seasonId: 'season-1',
+      seasonId: 1,
       description: 'Test expense',
-      category: 1,
-      amount: 100,
+      categoryId: 1,
+      amountCents: 100,
       status: 'pending',
       emitterName: 'John Doe',
     }));

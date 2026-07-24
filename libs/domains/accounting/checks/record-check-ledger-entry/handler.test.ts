@@ -5,6 +5,7 @@ import { AppError } from '@nba/db';
 vi.mock('./repository', () => {
   return {
     RecordCheckTransactionRepository: class {
+      resolveSeasonId = vi.fn().mockResolvedValue(1);
       createLedgerEntry = vi.fn().mockResolvedValue({ id: 10 });
       createCheck = vi.fn().mockResolvedValue({ id: 1, number: '123' });
       getCheckById = vi.fn().mockResolvedValue({ id: 1, ledgerEntryId: 10 });

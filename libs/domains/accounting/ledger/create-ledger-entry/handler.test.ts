@@ -6,6 +6,7 @@ import * as membersDataAccess from '@nba/members-api';
 vi.mock('./repository', () => {
   return {
     CreateLedgerEntryRepository: class {
+      resolveSeasonId = vi.fn().mockResolvedValue(1);
       create = vi.fn().mockResolvedValue({ id: 1 });
     }
   };

@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { sql, eq } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
 import { approveOrder } from './handler';
+import { ApproveOrderRepository } from './repository';
 import { ordersTable, productsTable, productCategoriesTable } from '../shared/schema';
 import { categoriesTable, ledgerEntriesTable, paymentMethodsTable, accountsTable } from '@nba/accounting/schema';
 import { seasonsTable, membersTable } from '@nba/members/schema';
@@ -250,27 +251,19 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
   });
 
   it('4. Rejects approval when product family has no accounting category configured', async () => {
-    const pCat5 = await db.insert(productCategoriesTable).values({
-      label: 'Famille Non Configurée',
-      accountingCategoryId: volantsAccountingCatId,
-      createdAt: new Date()
-    }).returning().get();
+    vi.spyOn(ApproveOrderRepository.prototype, 'getProductCategoryById').mockResolvedValueOnce(null as any);
 
-    const unconfiguredProduct = await db.insert(productsTable).values({
+    const product = await db.insert(productsTable).values({
       name: 'Objet Mystère',
-      productCategoryId: pCat5.id,
+      productCategoryId: volantsProductCatId,
       priceCents: 1000,
       stock: 5,
       active: true,
       createdAt: new Date()
     }).returning().get();
 
-    await db.run(sql`PRAGMA foreign_keys = OFF;`);
-    await db.run(sql`DELETE FROM product_categories WHERE id = ${pCat5.id};`);
-    await db.run(sql`PRAGMA foreign_keys = ON;`);
-
     const order = await db.insert(ordersTable).values({
-      seasonId, memberId, productId: unconfiguredProduct.id, quantity: 1, totalAmountCents: 1000,
+      seasonId, memberId, productId: product.id, quantity: 1, totalAmountCents: 1000,
       paymentMethodId: virementPaymentMethodId, status: 'pending', createdAt: new Date()
     }).returning().get();
 

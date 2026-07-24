@@ -21,7 +21,7 @@
     products?: Product[];
   } = $props();
 
-  let formProductCategoryId = $state<number>(1);
+  let formCategory = $state<string>('shuttlecock');
 
   // Local state
   let productsList = $state<Product[]>(products);
