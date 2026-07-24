@@ -21,8 +21,11 @@ export async function setupMockDb() {
     'expenses',
     'users',
     'seasons',
-    'account_classes'
+    'accounts',
+    'account_classes',
+    'payment_methods'
   ];
+
 
   // Transaction backups stack for rollback emulation
   const transactionStack: Record<string, any[]>[] = [];
