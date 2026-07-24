@@ -13,7 +13,7 @@ describe('UpdateSeasonBalances Route', () => {
     const res = await updateSeasonBalancesRoute.request('http://localhost/25-26/balances', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify([{ accountId: 'invalid_account', initialBalance: 100 }])
+      body: JSON.stringify([{ accountId: 'invalid_account', initialBalanceCents: 100 }])
     }, { DB: mockD1 as any });
     expect(res.status).toBe(400);
     const body = await res.json();
@@ -26,8 +26,8 @@ describe('UpdateSeasonBalances Route', () => {
     vi.mocked(updateSeasonBalances).mockResolvedValue(undefined);
     
     const payload = [
-      { accountId: 'current' as const, initialBalance: 1500 },
-      { accountId: 'savings' as const, initialBalance: 5000 }
+      { accountId: 1, initialBalanceCents: 150000 },
+      { accountId: 2, initialBalanceCents: 500000 }
     ];
 
     const res = await updateSeasonBalancesRoute.request('http://localhost/25-26/balances', {
@@ -41,3 +41,4 @@ describe('UpdateSeasonBalances Route', () => {
     expect(updateSeasonBalances).toHaveBeenCalledWith(expect.anything(), '25-26', payload);
   });
 });
+
