@@ -1,21 +1,14 @@
 <script lang="ts">
-  import { Sparkles, Trash2, RefreshCw, Check } from '@lucide/svelte';
+  import { Sparkles, Trash2, RefreshCw } from '@lucide/svelte';
   import { Button, Card, Tabs, Badge } from '@nba/ui';
   import MatchTransaction from './MatchTransaction.svelte';
   import CreateLedgerEntryFromBankLine from './CreateLedgerEntryFromBankLine.svelte';
-  import type { ReconciliationState, BankStatementLine } from './reconciliation.svelte';
+  import ReconciliationAiSuggestion from './ReconciliationAiSuggestion.svelte';
+  import ReconciliationLinkedEntries from './ReconciliationLinkedEntries.svelte';
+  import ReconciliationInvoicesTab from './ReconciliationInvoicesTab.svelte';
+  import type { ReconciliationState } from './reconciliation.svelte';
 
   let { state }: { state: ReconciliationState } = $props();
-
-  function renderAiSuggestions(bt: BankStatementLine) {
-    if (!bt.aiSuggestions) return null;
-    try {
-      const sug = JSON.parse(bt.aiSuggestions);
-      return sug;
-    } catch (e) {
-      return null;
-    }
-  }
 </script>
 
 {#if !state.selectedTx}
@@ -118,105 +111,13 @@
 
     <!-- Zone principale avec scroll -->
     <div class="flex-1 overflow-y-auto p-4 space-y-6">
-      <!-- Section IA Suggestions -->
       {#if state.selectedTx.aiSuggestions && state.selectedTx.status === 'pending'}
-        {@const sug = renderAiSuggestions(state.selectedTx)}
-        {#if sug}
-          <div class="rounded-xl border border-purple-200 bg-purple-50/50 dark:bg-purple-950/20 dark:border-purple-900/40 p-4 space-y-3">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-semibold text-sm">
-                <Sparkles class="h-4 w-4" />
-                <span>Suggestion d'analyse automatique IA</span>
-              </div>
-              {#if sug.confidence}
-                <Badge variant="outline" class="bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700 text-[10px]">
-                  Confiance : {Math.round(sug.confidence * 100)}%
-                </Badge>
-              {/if}
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div>
-                <span class="text-muted-foreground block">Catégorie suggérée :</span>
-                <span class="font-medium text-foreground">
-                  {state.categories.find(c => c.id === String(sug.category))?.name || `Catégorie #${sug.category}`}
-                </span>
-              </div>
-
-              <div>
-                <span class="text-muted-foreground block">Adhérent identifié :</span>
-                <span class="font-medium text-foreground">
-                  {sug.memberName || (sug.memberId ? `Adhérent #${sug.memberId}` : 'Aucun (Général)')}
-                </span>
-              </div>
-            </div>
-
-            {#if sug.reason}
-              <p class="text-xs text-muted-foreground italic border-t border-purple-200/60 dark:border-purple-900/40 pt-2 mt-2">
-                « {sug.reason} »
-              </p>
-            {/if}
-
-            <div class="pt-1 flex justify-end">
-              <Button
-                size="sm"
-                class="bg-purple-600 hover:bg-purple-700 text-white text-xs gap-1.5"
-                disabled={state.isClosed || state.isSubmitting}
-                onclick={() => state.handleMatchWithAI(
-                  state.selectedTx!.id,
-                  sug.memberId ? parseInt(sug.memberId) : null,
-                  String(sug.category || '1')
-                )}
-              >
-                <Check class="h-3.5 w-3.5" />
-                <span>Valider cette suggestion</span>
-              </Button>
-            </div>
-          </div>
-        {/if}
+        <ReconciliationAiSuggestion {state} selectedTx={state.selectedTx} />
       {/if}
 
-      <!-- Écritures liées existantes (Ventilation partielle) -->
-      {#if state.linkedGlTxs.length > 0}
-        <div class="space-y-2">
-          <div class="flex items-center justify-between text-xs">
-            <span class="font-semibold text-muted-foreground uppercase tracking-wider">Écritures comptables déjà liées ({state.linkedGlTxs.length})</span>
-            <span class="font-medium">Total lié : {(state.totalLinked / 100).toFixed(2)} € / {(Math.abs(state.selectedTx.amount) / 100).toFixed(2)} €</span>
-          </div>
+      <ReconciliationLinkedEntries {state} selectedTx={state.selectedTx} />
 
-          <div class="rounded-lg border border-border divide-y divide-border bg-card">
-            {#each state.linkedGlTxs as gt}
-              <div class="p-2.5 flex items-center justify-between text-xs">
-                <div>
-                  <div class="font-medium">{gt.description}</div>
-                  <div class="text-[11px] text-muted-foreground">{gt.date} • {gt.type}</div>
-                </div>
-
-                <div class="flex items-center gap-3">
-                  <span class="font-mono font-semibold">{(Math.abs(gt.amount) / 100).toFixed(2)} €</span>
-                  <button
-                    type="button"
-                    class="text-muted-foreground hover:text-destructive p-1 rounded"
-                    disabled={state.isClosed || state.isSubmitting}
-                    onclick={() => state.handleDeletePart(gt.id)}
-                    title="Supprimer cette écriture"
-                  >
-                    <Trash2 class="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-            {/each}
-          </div>
-
-          {#if state.remainingAmount > 10}
-            <div class="p-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md font-medium">
-              Reste à rapprocher : {(state.remainingAmount / 100).toFixed(2)} €
-            </div>
-          {/if}
-        </div>
-      {/if}
-
-      <!-- Onglets de rapprochement (Grand Livre vs Création directe vs Factures) -->
+      <!-- Onglets de rapprochement -->
       <Tabs.Root bind:value={state.activeRightTab} class="w-full">
         <Tabs.List class="grid grid-cols-3 w-full mb-4">
           <Tabs.Trigger value="manual" class="text-xs">Saisir écriture</Tabs.Trigger>
@@ -262,90 +163,7 @@
         </Tabs.Content>
 
         <Tabs.Content value="invoice">
-          <div class="space-y-4">
-            {#if state.matchingInvoices.length > 0}
-              <div class="space-y-2">
-                <div class="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                  <Sparkles class="h-3.5 w-3.5" />
-                  <span>Suggestion de Facture (Montant exact : {(state.selectedTx.amount / 100).toFixed(2)} €)</span>
-                </div>
-                <div class="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/20 p-3 space-y-2">
-                  {#each state.matchingInvoices as inv}
-                    <div class="flex items-center justify-between text-xs">
-                      <div>
-                        <div class="font-bold text-foreground">{inv.clientName}</div>
-                        <div class="text-[11px] text-muted-foreground">{inv.invoiceNumber} • Du {inv.date}</div>
-                        {#if inv.subject}
-                          <div class="text-[11px] text-muted-foreground italic">{inv.subject}</div>
-                        {/if}
-                      </div>
-                      <div class="flex items-center gap-3">
-                        <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">{(inv.totalAmount / 100).toFixed(2)} €</span>
-                        <Button
-                          size="sm"
-                          class="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-                          disabled={state.isClosed || state.isSubmitting}
-                          onclick={() => state.handleReconcile('create', state.selectedTx!, inv.id)}
-                        >
-                          Associer
-                        </Button>
-                      </div>
-                    </div>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-
-            <div class="space-y-2">
-              <div class="flex items-center justify-between text-xs font-semibold text-muted-foreground">
-                <span>Sélection multiple de factures ({state.selectedInvoiceIds.size} sélectionnée(s))</span>
-                <span class="font-mono">Total : {(state.selectedSum / 100).toFixed(2)} € / {(state.selectedTx.amount / 100).toFixed(2)} €</span>
-              </div>
-
-              {#if state.otherUnpaidInvoices.length === 0 && state.matchingInvoices.length === 0}
-                <div class="p-6 text-center text-xs text-muted-foreground border border-dashed rounded-lg">
-                  Aucune facture impayée trouvée pour cette saison.
-                </div>
-              {:else}
-                <div class="rounded-lg border border-border divide-y divide-border bg-card max-h-[300px] overflow-y-auto">
-                  {#each state.otherUnpaidInvoices as inv}
-                    <div class="p-2.5 flex items-center justify-between text-xs hover:bg-muted/50 transition-colors">
-                      <div class="flex items-center gap-2.5">
-                        <input
-                          type="checkbox"
-                          class="invoice-checkbox h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                          checked={state.selectedInvoiceIds.has(inv.id)}
-                          onchange={() => state.toggleInvoiceSelection(inv.id)}
-                        />
-                        <div>
-                          <div class="font-medium">{inv.clientName}</div>
-                          <div class="text-[11px] text-muted-foreground">{inv.invoiceNumber} • {inv.date}</div>
-                        </div>
-                      </div>
-
-                      <div class="flex items-center gap-3">
-                        <span class="font-mono font-semibold">{(inv.totalAmount / 100).toFixed(2)} €</span>
-                      </div>
-                    </div>
-                  {/each}
-                </div>
-
-                {#if state.selectedInvoiceIds.size > 0}
-                  <div class="pt-2 flex justify-end">
-                    <Button
-                      id="btn-valider-association"
-                      size="sm"
-                      class="text-xs"
-                      disabled={state.isClosed || state.isSubmitting || Math.abs(state.selectedSum - state.selectedTx.amount) > 10}
-                      onclick={state.handleMultiInvoiceReconcile}
-                    >
-                      Rapprocher avec ces {state.selectedInvoiceIds.size} factures ({(state.selectedSum / 100).toFixed(2)} €)
-                    </Button>
-                  </div>
-                {/if}
-              {/if}
-            </div>
-          </div>
+          <ReconciliationInvoicesTab {state} selectedTx={state.selectedTx} />
         </Tabs.Content>
       </Tabs.Root>
     </div>
