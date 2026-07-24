@@ -178,4 +178,57 @@ describe('closeSeason (Pre-closure Checks, Rollover & Reopen - PROMPT 13)', () =
     const seasonData = await db.select().from(seasonsTable).where(eq(seasonsTable.id, 1)).get();
     expect(seasonData.closedAt).toBeNull();
   });
+
+  it('refuses closing an already closed season', async () => {
+    // Perform initial closure
+    await closeSeason(db, '24-25');
+
+    // Second closure attempt should be blocked
+    const checks = await getCloseSeasonChecks(db, '24-25');
+    expect(checks.canClose).toBe(false);
+    expect(checks.blockingItems.some(i => i.code === 'ALREADY_CLOSED')).toBe(true);
+
+    await expect(closeSeason(db, '24-25')).rejects.toThrow('Clôture refusée');
+  });
+
+  it('leaves season open if rollover batch fails and allows clean retry', async () => {
+    // Spy on db.batch to throw error on first call
+    const originalBatch = db.batch.bind(db);
+    let failOnce = true;
+    db.batch = async (stmts: any[]) => {
+      if (failOnce) {
+        failOnce = false;
+        throw new Error('Simulated D1 write failure during rollover');
+      }
+      return originalBatch(stmts);
+    };
+
+    // First attempt fails during rollover
+    await expect(closeSeason(db, '24-25')).rejects.toThrow('Simulated D1 write failure during rollover');
+
+    // Verify season remains OPEN (closedAt is null) because UPDATE seasons SET closed_at = now was at the end of the batch
+    const seasonData = await db.select().from(seasonsTable).where(eq(seasonsTable.id, 1)).get();
+    expect(seasonData.closedAt).toBeNull();
+
+    // Retry attempt succeeds
+    const res = await closeSeason(db, '24-25');
+    expect(res.season.closedAt).not.toBeNull();
+  });
+
+  it('handles retry and overwrite without producing duplicate initial balances', async () => {
+    // First successful closure with overwrite
+    await closeSeason(db, '24-25');
+
+    // Verify balance inserted
+    const season2BalancesInitial = await db.select().from(seasonBalancesTable).where(eq(seasonBalancesTable.seasonId, 2)).all();
+    const initialCount = season2BalancesInitial.length;
+
+    // Reopen and re-close
+    await reopenSeason(db, '24-25');
+    await closeSeason(db, '24-25');
+
+    // Count should be identical (no duplicates due to ON CONFLICT DO UPDATE)
+    const season2BalancesFinal = await db.select().from(seasonBalancesTable).where(eq(seasonBalancesTable.seasonId, 2)).all();
+    expect(season2BalancesFinal.length).toBe(initialCount);
+  });
 });

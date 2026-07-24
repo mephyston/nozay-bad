@@ -22,6 +22,13 @@ export async function getCloseSeasonChecks(
   const blockingItems: CloseSeasonCheckItem[] = [];
   const warnings: CloseSeasonCheckItem[] = [];
 
+  if (season.closedAt !== null && season.closedAt !== undefined) {
+    blockingItems.push({
+      code: 'ALREADY_CLOSED',
+      message: `L'exercice comptable est déjà clôturé.`
+    });
+  }
+
   const todayStr = new Date().toISOString().split('T')[0];
   if (todayStr < season.endDate) {
     blockingItems.push({

@@ -141,44 +141,28 @@ export class CloseSeasonRepository implements CloseSeasonRepositoryInterface {
     const sId = season.id;
     const now = new Date();
 
-    // 1. Close current season
-    const updatedSeason = await db.update(seasonsTable)
-      .set({ closedAt: now })
-      .where(eq(seasonsTable.id, sId))
-      .returning()
-      .get();
-
-
-    // 2. Rollover balances to next season if next season exists
+    const statements: any[] = [];
     const rolledOver: { accountId: number; accountCode: string; initialBalanceCents: number }[] = [];
     let budgetsCopiedCount = 0;
 
+    // 1. Rollover balances to next season if next season exists (INSERT ... ON CONFLICT DO UPDATE)
     if (nextSeasonId) {
       const dbAccounts = await this.getAccounts(db);
       for (const b of balancesToRollover) {
         const acc = dbAccounts.find(a => a.id === b.accountId);
         const accCode = acc ? acc.code : String(b.accountId);
 
-        const existing = await db.select()
-          .from(seasonBalancesTable)
-          .where(and(
-            eq(seasonBalancesTable.seasonId, nextSeasonId),
-            eq(seasonBalancesTable.accountId, b.accountId)
-          ))
-          .get();
-
-        if (existing) {
-          await db.update(seasonBalancesTable)
-            .set({ initialBalanceCents: b.finalBalanceCents })
-            .where(eq(seasonBalancesTable.id, existing.id));
-        } else {
-          await db.insert(seasonBalancesTable).values({
+        statements.push(
+          db.insert(seasonBalancesTable).values({
             seasonId: nextSeasonId,
             accountId: b.accountId,
             initialBalanceCents: b.finalBalanceCents,
             createdAt: now
-          });
-        }
+          }).onConflictDoUpdate({
+            target: [seasonBalancesTable.seasonId, seasonBalancesTable.accountId],
+            set: { initialBalanceCents: b.finalBalanceCents }
+          })
+        );
 
         rolledOver.push({
           accountId: b.accountId,
@@ -187,26 +171,39 @@ export class CloseSeasonRepository implements CloseSeasonRepositoryInterface {
         });
       }
 
-      // Copy budgets if requested
+      // 2. Copy budgets if requested (INSERT ... ON CONFLICT DO UPDATE)
       if (copyBudgets) {
         const currentBudgets = await this.getCategoryBudgets(db, sId);
-        const nextBudgets = await this.getCategoryBudgets(db, nextSeasonId);
 
         for (const cb of currentBudgets) {
-          const exists = nextBudgets.find(nb => nb.categoryId === cb.categoryId && nb.type === cb.type);
-          if (!exists) {
-            await db.insert(seasonCategoryBudgetsTable).values({
+          statements.push(
+            db.insert(seasonCategoryBudgetsTable).values({
               seasonId: nextSeasonId,
               categoryId: cb.categoryId,
               type: cb.type,
               amountCents: cb.amountCents ?? 0,
               createdAt: now
-            });
-            budgetsCopiedCount++;
-          }
+            }).onConflictDoUpdate({
+              target: [seasonCategoryBudgetsTable.seasonId, seasonCategoryBudgetsTable.categoryId, seasonCategoryBudgetsTable.type],
+              set: { amountCents: cb.amountCents ?? 0 }
+            })
+          );
+          budgetsCopiedCount++;
         }
       }
     }
+
+    // 3. Close current season (LAST: act of commit)
+    statements.push(
+      db.update(seasonsTable)
+        .set({ closedAt: now })
+        .where(eq(seasonsTable.id, sId))
+    );
+
+    // Group all statements in a single batch
+    await db.batch(statements as any);
+
+    const updatedSeason = await this.getSeasonById(db, sId);
 
     return {
       season: updatedSeason,
