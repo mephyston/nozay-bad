@@ -12,5 +12,8 @@
   ],
   "ai": {
     "binding": "AI"
+  },
+  "vars": {
+    "INTERNAL_API_KEY": "dev-secret-key-12345"
   }
 }

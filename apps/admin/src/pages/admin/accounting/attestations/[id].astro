@@ -1,9 +1,10 @@
 ---
 import Layout from '../../../../layouts/Layout.astro';
 import { env } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
 
 const { id } = Astro.params;
-const apiService = env.API_SERVICE;
+const apiService = createApiClient(env);
 
 let cseData = null;
 let errorMsg = '';

@@ -6,39 +6,51 @@ import { expensesTable } from '../../../libs/domains/expenses/shared/schema';
 import { eq, sql } from 'drizzle-orm';
 import { AppError } from '@nba/db';
 
-describe('API Health & Defense-in-Depth Auth Middleware', () => {
+describe('API Health & Strict API Key Auth Middleware', () => {
   it('should return 200 OK for /health without authentication', async () => {
     const res = await app.request('/health');
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ status: 'ok' });
   });
 
-  it('should reject direct external request without header with 401', async () => {
-    const res = await app.request('https://nba-api.workers.dev/members', {
-      headers: { 'cf-connecting-ip': '203.0.113.19' }
-    }, { INTERNAL_API_KEY: 'secret123' });
+  it('should return 500 when INTERNAL_API_KEY is not configured in worker environment', async () => {
+    const res = await app.request('http://localhost/members', {}, {});
+    expect(res.status).toBe(500);
+    const body = await res.json() as any;
+    expect(body.success).toBe(false);
+    expect(body.error).toBe('Erreur de configuration serveur');
+  });
 
+  it('should reject request without key with 401', async () => {
+    const res = await app.request('http://localhost/members', {}, { INTERNAL_API_KEY: 'secret123' });
     expect(res.status).toBe(401);
     const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error).toBe('Accès non autorisé');
   });
 
-  it('should accept direct external request with valid x-api-key header with 200', async () => {
+  it('should reject request with invalid key with 401', async () => {
+    const res = await app.request('http://localhost/members', {
+      headers: { 'x-api-key': 'wrongkey' }
+    }, { INTERNAL_API_KEY: 'secret123' });
+    expect(res.status).toBe(401);
+  });
+
+  it('should accept request with valid x-api-key header with 200', async () => {
     const { mockD1 } = await setupMockDb();
-    const res = await app.request('https://nba-api.workers.dev/members', {
-      headers: {
-        'cf-connecting-ip': '203.0.113.19',
-        'x-api-key': 'secret123'
-      }
+    const res = await app.request('http://localhost/members', {
+      headers: { 'x-api-key': 'secret123' }
     }, { DB: mockD1 as any, INTERNAL_API_KEY: 'secret123' });
 
     expect(res.status).toBe(200);
   });
 
-  it('should accept internal Service Binding requests (localhost) with 200', async () => {
+  it('should accept request with valid Authorization Bearer header with 200', async () => {
     const { mockD1 } = await setupMockDb();
-    const res = await app.request('http://localhost/members', {}, { DB: mockD1 as any, INTERNAL_API_KEY: 'secret123' });
+    const res = await app.request('http://localhost/members', {
+      headers: { 'Authorization': 'Bearer secret123' }
+    }, { DB: mockD1 as any, INTERNAL_API_KEY: 'secret123' });
+
     expect(res.status).toBe(200);
   });
 });
@@ -64,8 +76,9 @@ describe('Cross-Domain Integration Tests', () => {
 
     // Close season via accounting
     const closeRes = await app.request('http://localhost/accounting/seasons/25-26/close', {
-      method: 'POST'
-    }, { DB: mockD1 as any });
+      method: 'POST',
+      headers: { 'x-api-key': 'secret123' }
+    }, { DB: mockD1 as any, INTERNAL_API_KEY: 'secret123' });
     expect(closeRes.status).toBe(200);
     const closeBody = await closeRes.json() as any;
     expect(closeBody.data.season.closedAt).toBeTruthy();
@@ -73,7 +86,7 @@ describe('Cross-Domain Integration Tests', () => {
     // Try to submit expense to /expenses (cross-domain)
     const expRes = await app.request('http://localhost/expenses', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': 'secret123' },
       body: JSON.stringify({
         seasonId: '25-26',
         description: 'Should fail',
@@ -81,7 +94,7 @@ describe('Cross-Domain Integration Tests', () => {
         amount: 2000,
         emitterName: 'Test'
       })
-    }, { DB: mockD1 as any });
+    }, { DB: mockD1 as any, INTERNAL_API_KEY: 'secret123' });
     expect(expRes.status).toBe(400);
   });
 
@@ -101,7 +114,7 @@ describe('Cross-Domain Integration Tests', () => {
     // 1. Create a pending expense report
     const res = await app.request('http://localhost/expenses', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': 'secret123' },
       body: JSON.stringify({
         seasonId: '25-26',
         description: 'Achat de cartons pour tournoi',
@@ -110,7 +123,7 @@ describe('Cross-Domain Integration Tests', () => {
         photoUrl: 'justificatif_carton.jpg',
         emitterName: 'Marie Curie'
       })
-    }, { DB: mockD1 as any });
+    }, { DB: mockD1 as any, INTERNAL_API_KEY: 'secret123' });
     expect(res.status).toBe(200);
     const createJson = await res.json() as any;
     expect(createJson.success).toBe(true);
@@ -118,8 +131,9 @@ describe('Cross-Domain Integration Tests', () => {
 
     // 2. Approve expense
     const approveRes = await app.request(`http://localhost/expenses/${expenseId}/approve`, {
-      method: 'POST'
-    }, { DB: mockD1 as any });
+      method: 'POST',
+      headers: { 'x-api-key': 'secret123' }
+    }, { DB: mockD1 as any, INTERNAL_API_KEY: 'secret123' });
     expect(approveRes.status).toBe(200);
     const approveJson = await approveRes.json() as any;
     expect(approveJson.success).toBe(true);
@@ -128,8 +142,9 @@ describe('Cross-Domain Integration Tests', () => {
 
     // 3. Delete the transaction directly in the ledger via accounting
     const deleteTxRes = await app.request(`http://localhost/accounting/ledger/${txId}`, {
-      method: 'DELETE'
-    }, { DB: mockD1 as any });
+      method: 'DELETE',
+      headers: { 'x-api-key': 'secret123' }
+    }, { DB: mockD1 as any, INTERNAL_API_KEY: 'secret123' });
     expect(deleteTxRes.status).toBe(200);
 
     // 4. Verify the expense claim status went back to pending
@@ -149,13 +164,17 @@ app.get('/test-generic-error', () => {
 
 describe('Global Error Handling', () => {
   it('should handle AppError and return custom message and status code', async () => {
-    const res = await app.request('/test-app-error');
+    const res = await app.request('/test-app-error', {
+      headers: { 'x-api-key': 'secret123' }
+    }, { INTERNAL_API_KEY: 'secret123' });
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ success: false, error: 'Custom bad request' });
   });
 
   it('should handle generic Error and return 500 status code', async () => {
-    const res = await app.request('/test-generic-error');
+    const res = await app.request('/test-generic-error', {
+      headers: { 'x-api-key': 'secret123' }
+    }, { INTERNAL_API_KEY: 'secret123' });
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ success: false, error: 'Erreur interne du serveur' });
   });

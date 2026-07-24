@@ -4,6 +4,7 @@ import AdminLayout from '../../../components/AdminLayout.svelte';
 import { PoonaImporter } from '@nba/members-ui';
 
 import { env } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
 
 let result = null;
 let error = null;
@@ -17,7 +18,7 @@ if (Astro.request.method === 'POST') {
       throw new Error('Aucun fichier fourni ou fichier vide.');
     }
 
-    const apiService = env.API_SERVICE;
+    const apiService = createApiClient(env);
     const apiFormData = new FormData();
     apiFormData.append('file', file);
 

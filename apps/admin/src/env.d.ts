@@ -10,6 +10,7 @@ declare namespace App {
 }
 interface Env {
   API_SERVICE: import('@cloudflare/workers-types').Fetcher;
+  INTERNAL_API_KEY?: string;
   CF_TEAM_DOMAIN?: string;
   CF_AUDIENCE?: string;
   DB: import('@cloudflare/workers-types').D1Database;

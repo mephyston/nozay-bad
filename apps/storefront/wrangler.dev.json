@@ -17,5 +17,8 @@
   ],
   "services": [
     { "binding": "API_SERVICE", "service": "nba-api" }
-  ]
+  ],
+  "vars": {
+    "INTERNAL_API_KEY": "dev-secret-key-12345"
+  }
 }

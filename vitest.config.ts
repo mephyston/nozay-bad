@@ -9,6 +9,7 @@ export default defineConfig({
       '@nba/db/test-utils': path.resolve(__dirname, './libs/shared/db/src/test-utils.ts'),
       '@nba/db': path.resolve(__dirname, './libs/shared/db/src/index.ts'),
       '@nba/ui': path.resolve(__dirname, './libs/shared/ui/src/index.ts'),
+      '@nba/api-client': path.resolve(__dirname, './libs/shared/api-client/src/index.ts'),
       '@nba/members-api': path.resolve(__dirname, './libs/domains/members/index.ts'),
       '@nba/members/schema': path.resolve(__dirname, './libs/domains/members/shared/schema.ts'),
       '@nba/members-ui': path.resolve(__dirname, './libs/domains/members/shared/ui.ts'),

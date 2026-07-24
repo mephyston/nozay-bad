@@ -3,9 +3,10 @@ import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
 import { TransactionLedger } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
 
 const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
-const apiService = env.API_SERVICE;
+const apiService = createApiClient(env);
 
 const season = Astro.url.searchParams.get('season') || '25-26';
 const page = Astro.url.searchParams.get('page') || '1';

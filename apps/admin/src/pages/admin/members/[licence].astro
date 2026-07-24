@@ -4,10 +4,11 @@ import AdminLayout from '../../../components/AdminLayout.svelte';
 import { MemberProfile } from '@nba/members-ui';
 
 import { env } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
 
 const { licence } = Astro.params;
 const season = Astro.url.searchParams.get('season') || '25-26';
-const apiService = env.API_SERVICE;
+const apiService = createApiClient(env);
 
 let member = null;
 let memberTransactionsList = [];

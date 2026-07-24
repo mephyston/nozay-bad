@@ -9,7 +9,6 @@ type Bindings = {
   DB: D1Database;
   AI: any;
   INTERNAL_API_KEY?: string;
-  CATALOG_API_KEY?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -22,35 +21,29 @@ app.onError((err, c) => {
   return c.json({ success: false, error: 'Erreur interne du serveur' }, 500);
 });
 
-// Middleware d'authentification et de défense en profondeur
+// Middleware d'authentification stricte par clé d'API partagée
 app.use('*', async (c, next) => {
   if (c.req.path === '/health') {
     return next();
   }
 
-  const apiKey = c.env?.INTERNAL_API_KEY || c.env?.CATALOG_API_KEY;
+  const apiKey = c.env?.INTERNAL_API_KEY;
+
+  // Échec en fermeture : clé non configurée sur le Worker
+  if (!apiKey) {
+    console.error('INTERNAL_API_KEY is not configured in worker environment');
+    return c.json({ success: false, error: 'Erreur de configuration serveur' }, 500);
+  }
+
   const reqKey =
     c.req.header('x-api-key') ||
     c.req.header('x-internal-secret') ||
     c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
 
-  // 1. Clé d'API valide fournie en en-tête
-  if (apiKey && reqKey === apiKey) {
+  if (reqKey === apiKey) {
     return next();
   }
 
-  // 2. Détection des appels internes via Service Binding (requêtes internes sur localhost sans cf-connecting-ip)
-  const url = new URL(c.req.url);
-  const isServiceBinding =
-    url.hostname === 'localhost' ||
-    url.hostname === '127.0.0.1' ||
-    !c.req.header('cf-connecting-ip');
-
-  if (isServiceBinding) {
-    return next();
-  }
-
-  // 3. Rejet des requêtes externes directes non authentifiées
   return c.json({ success: false, error: 'Accès non autorisé' }, 401);
 });
 

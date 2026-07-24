@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import AdminLayout from '../components/AdminLayout.svelte';
 import { env } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
 import {
   resolveActiveSeason,
   fetchTreasuryBalance,
@@ -12,7 +13,7 @@ import {
 } from '../utils/dashboard';
 
 const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
-const apiService = env.API_SERVICE;
+const apiService = createApiClient(env);
 
 // Fetch data in SSR
 const activeSeasonId = await resolveActiveSeason(apiService);

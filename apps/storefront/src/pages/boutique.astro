@@ -3,7 +3,10 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import { ShopCatalog } from '@nba/shop-ui';
 import { env } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
 import { verifyTurnstileToken } from '../lib/turnstile';
+
+const apiService = createApiClient(env);
 
 interface Season {
   id: string;

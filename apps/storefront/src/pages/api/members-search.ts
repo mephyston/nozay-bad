@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
 import { rateLimiter, verifyTurnstileToken } from '../../lib/turnstile';
 
 export const GET: APIRoute = async ({ request }) => {
@@ -44,7 +45,9 @@ export const GET: APIRoute = async ({ request }) => {
   try {
     let apiService: any = undefined;
     try {
-      apiService = (env as any)?.API_SERVICE;
+      if ((env as any)?.API_SERVICE) {
+        apiService = createApiClient(env as any);
+      }
     } catch {}
 
     const fetchApi = (path: string) => {
