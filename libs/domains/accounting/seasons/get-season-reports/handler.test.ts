@@ -129,7 +129,7 @@ describe('getSeasonReports (As-of Cut-off Date & Projections - PROMPT 12)', () =
     const projList = res.projections!.categories;
 
     // Adhésions (Realised: 28400, Budget: 29000, Remaining: 600, Projection: 29000)
-    const adhProj = projList.find(p => p.categoryCode === 'adhesions_inscriptions');
+    const adhProj = projList.find(p => p.categoryName === 'Adhésions & Inscriptions');
     expect(adhProj).toBeDefined();
     expect(adhProj!.realisedCents).toBe(2840000);
     expect(adhProj!.budgetCents).toBe(2900000);
@@ -137,7 +137,7 @@ describe('getSeasonReports (As-of Cut-off Date & Projections - PROMPT 12)', () =
     expect(adhProj!.projectedCents).toBe(2900000);    // 29 000 €
 
     // Tournois (Realised: 4200, Budget: 6000, Remaining: 1800, Projection: 6000)
-    const tourProj = projList.find(p => p.categoryCode === 'tournois_senior');
+    const tourProj = projList.find(p => p.categoryName === 'Tournois Senior');
     expect(tourProj).toBeDefined();
     expect(tourProj!.realisedCents).toBe(420000);
     expect(tourProj!.budgetCents).toBe(600000);

@@ -5,15 +5,18 @@ import { invoicesTable, invoiceItemsTable, seasonsTable } from '../../shared/sch
 
 describe('CreateInvoiceRepository', () => {
   let db: any;
+  let seasonIdNum = 1;
 
   beforeEach(async () => {
     const mock = await setupMockDb();
     db = mock.db;
     const existingSeason = await db.select().from(seasonsTable).all();
-    if (!existingSeason.some((s: any) => s.code === '25-26' || s.id === 1)) {
-      await db.insert(seasonsTable).values({ code: '25-26', name: 'Saison 25-26', startDate: '2025-09-01', endDate: '2026-08-31', active: 1, createdAt: Date.now() }).run();
+    if (existingSeason.length > 0) {
+      seasonIdNum = existingSeason[0].id;
+    } else {
+      const res = await db.insert(seasonsTable).values({ code: '25-26', name: 'Saison 25-26', startDate: '2025-09-01', endDate: '2026-08-31', active: 1, createdAt: Date.now() }).returning().get();
+      seasonIdNum = res.id;
     }
-
   });
 
   describe('generateInvoiceNumber', () => {
@@ -26,11 +29,11 @@ describe('CreateInvoiceRepository', () => {
     it('should generate 0002 when 1 existing invoice exists', async () => {
       await db.insert(invoicesTable).values({
         invoiceNumber: 'FAC-2526-NBA91-0001',
-        seasonId: '25-26',
+        seasonId: seasonIdNum,
         date: '2026-07-22',
         dueDate: '2026-08-22',
         clientName: 'Client A',
-        totalAmount: 1000,
+        totalAmountCents: 100000,
         createdAt: new Date()
       }).run();
 
@@ -43,29 +46,29 @@ describe('CreateInvoiceRepository', () => {
       await db.insert(invoicesTable).values([
         {
           invoiceNumber: 'FAC-2526-NBA91-0001',
-          seasonId: '25-26',
+          seasonId: seasonIdNum,
           date: '2026-07-22',
           dueDate: '2026-08-22',
           clientName: 'Client A',
-          totalAmount: 1000,
+          totalAmountCents: 100000,
           createdAt: new Date()
         },
         {
           invoiceNumber: 'FAC-2526-NBA91-0003',
-          seasonId: '25-26',
+          seasonId: seasonIdNum,
           date: '2026-07-22',
           dueDate: '2026-08-22',
           clientName: 'Client B',
-          totalAmount: 2000,
+          totalAmountCents: 200000,
           createdAt: new Date()
         },
         {
           invoiceNumber: 'FAC-2526-NBA91-0005',
-          seasonId: '25-26',
+          seasonId: seasonIdNum,
           date: '2026-07-22',
           dueDate: '2026-08-22',
           clientName: 'Client C',
-          totalAmount: 3000,
+          totalAmountCents: 300000,
           createdAt: new Date()
         }
       ]).run();
@@ -81,18 +84,18 @@ describe('CreateInvoiceRepository', () => {
       const repo = new CreateInvoiceRepository();
       const invoiceData = {
         invoiceNumber: 'FAC-2526-NBA91-0001',
-        seasonId: '25-26',
+        seasonId: seasonIdNum,
         date: '2026-07-22',
         dueDate: '2026-08-22',
         clientName: 'Client 3 Items',
-        totalAmount: 6000,
+        totalAmountCents: 600000,
         createdAt: new Date()
       };
 
       const items = [
-        { description: 'Item 1', quantity: 2, unitPrice: 1000 },
-        { description: 'Item 2', quantity: 1, unitPrice: 2000 },
-        { description: 'Item 3', quantity: 4, unitPrice: 500 }
+        { description: 'Item 1', quantity: 2, unitPriceCents: 100000 },
+        { description: 'Item 2', quantity: 1, unitPriceCents: 200000 },
+        { description: 'Item 3', quantity: 4, unitPriceCents: 50000 }
       ];
 
       const created = await repo.create(db, invoiceData, items);
@@ -101,9 +104,9 @@ describe('CreateInvoiceRepository', () => {
 
       const savedItems = await db.select().from(invoiceItemsTable).all();
       expect(savedItems).toHaveLength(3);
-      expect(savedItems[0]).toMatchObject({ description: 'Item 1', quantity: 2, unitPrice: 1000, totalPrice: 2000 });
-      expect(savedItems[1]).toMatchObject({ description: 'Item 2', quantity: 1, unitPrice: 2000, totalPrice: 2000 });
-      expect(savedItems[2]).toMatchObject({ description: 'Item 3', quantity: 4, unitPrice: 500, totalPrice: 2000 });
+      expect(savedItems[0]).toMatchObject({ description: 'Item 1', quantity: 2, unitPriceCents: 100000, totalPriceCents: 200000 });
+      expect(savedItems[1]).toMatchObject({ description: 'Item 2', quantity: 1, unitPriceCents: 200000, totalPriceCents: 200000 });
+      expect(savedItems[2]).toMatchObject({ description: 'Item 3', quantity: 4, unitPriceCents: 50000, totalPriceCents: 200000 });
     });
   });
 });

@@ -11,7 +11,7 @@ export type Bindings = {
 export const updateTransactionRoute = new Hono<{ Bindings: Bindings }>();
 
 updateTransactionRoute.put(
-  '/ledger/:id',
+  '/ledger-entries/:id',
   tbValidator('json', updateTransactionSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);

@@ -4,8 +4,10 @@ import { seasonsTable } from '../../shared/schema';
 
 export class CreateSeasonRepository {
   async createSeason(db: DbOrTx, values: {
-    id: string;
+    code: string;
     name: string;
+    startDate: string;
+    endDate: string;
     active: boolean;
     createdAt: Date;
   }): Promise<any> {

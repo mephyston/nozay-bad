@@ -4,13 +4,13 @@ export type GetSeasonReportsInput = string | {
 };
 
 export interface DeferredCashBreakdown {
-  categoryCode: string;
+  categoryId: number;
   categoryName: string;
   amountCents: number;
 }
 
 export interface CategoryProjection {
-  categoryCode: string;
+  categoryId: number;
   categoryName: string;
   type: 'recette' | 'depense';
   realisedCents: number;

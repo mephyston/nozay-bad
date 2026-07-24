@@ -7,9 +7,15 @@ export async function createSeason(db: Db, body: CreateSeasonInput): Promise<Cre
   if (body.active) {
     await repo.deactivateAllSeasonsExcept(db);
   }
+  const [yy, zz] = body.id.split('-');
+  const startDate = body.startDate || (yy ? `${2000 + parseInt(yy, 10)}-09-01` : '2023-09-01');
+  const endDate = body.endDate || (zz ? `${2000 + parseInt(zz, 10)}-08-31` : '2024-08-31');
+
   return repo.createSeason(db, {
-    id: body.id,
+    code: body.id,
     name: body.name,
+    startDate,
+    endDate,
     active: body.active || false,
     createdAt: new Date()
   });

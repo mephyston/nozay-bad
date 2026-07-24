@@ -150,7 +150,7 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
         const catKey = `${cat.id}_${type}`;
         const realisedCents = categoryTotals[catKey]?.total || 0;
 
-        const budgetRow = categoryBudgets.find(b => (b.categoryId === cat.id || b.categoryId === cat.code) && b.type === type);
+        const budgetRow = categoryBudgets.find(b => b.categoryId === cat.id && b.type === type);
         const budgetCents = budgetRow ? budgetRow.amountCents || budgetRow.amount || 0 : 0;
 
         const remainingBudgetCents = Math.max(0, budgetCents - realisedCents);
@@ -159,7 +159,7 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
 
         if (realisedCents > 0 || budgetCents > 0) {
           projList.push({
-            categoryCode: cat.code,
+            categoryId: cat.id,
             categoryName: cat.adminLabel,
             type,
             realisedCents,

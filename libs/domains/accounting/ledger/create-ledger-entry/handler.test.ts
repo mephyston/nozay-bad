@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createLedgerEntry } from './handler';
-import { CreateTransactionRepository } from './repository';
+import { CreateLedgerEntryRepository } from './repository';
 import * as membersDataAccess from '@nba/members-api';
 
 vi.mock('./repository');
@@ -9,8 +9,18 @@ vi.mock('@nba/members-api', () => ({
 }));
 
 describe('createLedgerEntry', () => {
+  const mockSeason = { id: 1, code: 'season1', startDate: '2023-01-01', endDate: '2023-12-31', closedAt: null };
+  const mockDb: any = {
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          get: vi.fn().mockResolvedValue(mockSeason)
+        })
+      })
+    })
+  };
+
   it('should create a transaction successfully', async () => {
-    const mockDb = {};
     const mockDto = {
       seasonId: 'season1',
       type: 'recette' as const,
@@ -23,16 +33,15 @@ describe('createLedgerEntry', () => {
     };
 
     vi.mocked(membersDataAccess.isSeasonClosed).mockResolvedValue(false);
-    vi.mocked(CreateTransactionRepository.prototype.create).mockResolvedValue({ id: 1 });
+    vi.mocked(CreateLedgerEntryRepository.prototype.create).mockResolvedValue({ id: 1 });
 
     const result = await createLedgerEntry(mockDb, mockDto);
 
     expect(result).toEqual({ id: 1 });
-    expect(CreateTransactionRepository.prototype.create).toHaveBeenCalled();
+    expect(CreateLedgerEntryRepository.prototype.create).toHaveBeenCalled();
   });
 
   it('should throw an error if season is closed', async () => {
-    const mockDb = {};
     const mockDto = {
       seasonId: 'season1',
       type: 'recette' as const,

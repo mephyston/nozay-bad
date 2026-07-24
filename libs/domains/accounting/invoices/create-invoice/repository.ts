@@ -32,8 +32,8 @@ export class CreateInvoiceRepository {
         invoiceId: newInvoice.id,
         description: item.description,
         quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        totalPrice: item.quantity * item.unitPrice,
+        unitPriceCents: item.unitPriceCents ?? item.unitPrice ?? 0,
+        totalPriceCents: item.totalPriceCents ?? (item.quantity * (item.unitPriceCents ?? item.unitPrice ?? 0)),
         createdAt: new Date()
       }));
       await db.insert(invoiceItemsTable).values(itemsArray).run();
