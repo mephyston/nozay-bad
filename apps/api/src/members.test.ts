@@ -300,11 +300,19 @@ describe('GET /members', () => {
   it('should filter members by payment status (paid=true/false)', async () => {
     const { mockD1, db } = await setupMockDb();
 
+    let season = await db.select().from(seasonsTable).get();
+    if (!season) {
+      season = await db.insert(seasonsTable).values({
+        code: '25-26', name: 'Saison 2025-2026', startDate: '2025-09-01', endDate: '2026-08-31', active: true, createdAt: new Date()
+      }).returning().get();
+    }
+    const seasonId = season.id;
+
     // Insert dummy members with different payment status
     await db.insert(membersTable).values([
-      { licence: '1000001', lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'Competiteur', importedAt: new Date(), paid: true },
-      { licence: '1000002', lastName: 'Martin', firstName: 'Sophie', gender: 'F', birthDate: '1985-05-15', status: 'valide', type: 'Loisir', importedAt: new Date(), paid: false },
-      { licence: '1000003', lastName: 'Durand', firstName: 'Luc', gender: 'M', birthDate: '1995-12-25', status: 'suspendu', type: 'Competiteur', importedAt: new Date(), paid: false },
+      { seasonId, licence: '1000001', lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'Competiteur', importedAt: new Date(), paid: true },
+      { seasonId, licence: '1000002', lastName: 'Martin', firstName: 'Sophie', gender: 'F', birthDate: '1985-05-15', status: 'valide', type: 'Loisir', importedAt: new Date(), paid: false },
+      { seasonId, licence: '1000003', lastName: 'Durand', firstName: 'Luc', gender: 'M', birthDate: '1995-12-25', status: 'suspendu', type: 'Competiteur', importedAt: new Date(), paid: false },
     ]).run();
 
     // Query for paid=true
@@ -327,7 +335,16 @@ describe('GET /members/:licence', () => {
   it('should return member details if found', async () => {
     const { mockD1, db } = await setupMockDb();
 
+    let season = await db.select().from(seasonsTable).get();
+    if (!season) {
+      season = await db.insert(seasonsTable).values({
+        code: '25-26', name: 'Saison 2025-2026', startDate: '2025-09-01', endDate: '2026-08-31', active: true, createdAt: new Date()
+      }).returning().get();
+    }
+    const seasonId = season.id;
+
     await db.insert(membersTable).values({
+      seasonId,
       licence: '7654321',
       lastName: 'Lemoine',
       firstName: 'Paul',
@@ -358,21 +375,19 @@ describe('/members/:id/cse-data', () => {
     const { mockD1, db } = await setupMockDb();
 
     // Ensure season exists
-    await db.insert(seasonsTable).values({
-      id: 1,
-      code: '25-26',
-      name: 'Saison 2025-2026',
-      startDate: '2025-09-01',
-      endDate: '2026-08-31',
-      active: true,
-      createdAt: new Date()
-    }).onConflictDoNothing().run();
+    let season = await db.select().from(seasonsTable).get();
+    if (!season) {
+      season = await db.insert(seasonsTable).values({
+        code: '25-26', name: 'Saison 2025-2026', startDate: '2025-09-01', endDate: '2026-08-31', active: true, createdAt: new Date()
+      }).returning().get();
+    }
+    const seasonId = season.id;
 
     // Create a member who has NOT paid fully
     await db.insert(membersTable).values({
       id: 10,
       licence: '1234500',
-      seasonId: 1,
+      seasonId,
       lastName: 'Durand',
       firstName: 'Alain',
       gender: 'M',
@@ -390,7 +405,7 @@ describe('/members/:id/cse-data', () => {
     await db.insert(membersTable).values({
       id: 20,
       licence: '1234511',
-      seasonId: 1,
+      seasonId,
       lastName: 'Dupont',
       firstName: 'Marie',
       gender: 'F',

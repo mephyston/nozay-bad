@@ -143,7 +143,7 @@ describe('Orders API Endpoints', () => {
     const createRes = await app.request('http://localhost/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seasonId: '25-26', memberId: 1, productId: 1, quantity: 2, paymentMethod: 'virement' })
+      body: JSON.stringify({ seasonId: 1, memberId: 1, productId: 1, quantity: 2, paymentMethodId: 1 })
     }, { DB: mockD1 as any });
 
     expect(createRes.status).toBe(200);
@@ -206,7 +206,7 @@ describe('Orders API Endpoints', () => {
     const res = await app.request('http://localhost/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seasonId: '25-26', memberId: 1, productId: 1, quantity: 2, paymentMethod: 'virement' })
+      body: JSON.stringify({ seasonId: 1, memberId: 1, productId: 1, quantity: 2, paymentMethodId: 1 })
     }, { DB: mockD1 as any });
     const order = (await res.json() as any).data;
 
@@ -262,7 +262,7 @@ describe('Orders API Endpoints', () => {
     const res = await app.request('http://localhost/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seasonId: '25-26', memberId: 1, productId: 1, quantity: 2, paymentMethod: 'virement' })
+      body: JSON.stringify({ seasonId: 1, memberId: 1, productId: 1, quantity: 2, paymentMethodId: 1 })
     }, { DB: mockD1 as any });
     expect(res.status).toBe(200);
     const json = await res.json() as any;
@@ -299,7 +299,7 @@ describe('Orders API Endpoints', () => {
     const createRes = await app.request('http://localhost/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seasonId: '25-26', memberId: 1, productId: 1, quantity: 2, paymentMethod: 'virement' })
+      body: JSON.stringify({ seasonId: 1, memberId: 1, productId: 1, quantity: 2, paymentMethodId: 1 })
     }, { DB: mockD1 as any });
     expect(createRes.status).toBe(400);
     const createJson = await createRes.json() as any;
