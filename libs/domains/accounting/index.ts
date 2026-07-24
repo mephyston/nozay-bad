@@ -119,6 +119,24 @@ export interface CreateRevenueTransactionParams {
   reference?: string | null;
 }
 
+export function buildCreateRevenueLedgerEntryStatement(db: any, params: CreateRevenueTransactionParams): any {
+  const repository = new (require('./ledger/create-ledger-entry/repository')).CreateTransactionRepository();
+  return repository.buildCreateStatement(db, {
+    seasonId: params.seasonId,
+    type: 'recette',
+    accountId: params.accountId,
+    paymentMethodId: params.paymentMethodId,
+    amountCents: params.amountCents,
+    description: params.description,
+    date: params.date,
+    categoryId: params.categoryId ?? null,
+    memberId: params.memberId ?? null,
+    reference: params.reference ?? null,
+    status: 'cleared',
+    createdAt: new Date()
+  });
+}
+
 export async function createRevenueLedgerEntry(db: any, params: CreateRevenueTransactionParams): Promise<{ id: number }> {
   const repository = new (await import('./ledger/create-ledger-entry/repository')).CreateTransactionRepository();
   return repository.create(db, {

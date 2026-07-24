@@ -1,10 +1,10 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { ordersTable, productsTable, productCategoriesTable } from '../shared/schema';
 import { paymentMethodsTable } from '@nba/accounting/schema';
 import { accountsTable } from '@nba/accounting/schema';
 import { getMemberById } from '@nba/members-api';
-import { createRevenueLedgerEntry } from '@nba/accounting-api';
+import { createRevenueLedgerEntry, buildCreateRevenueLedgerEntryStatement } from '@nba/accounting-api';
 
 export class ApproveOrderRepository {
   async getOrderById(db: DbOrTx, id: number): Promise<typeof ordersTable.$inferSelect | undefined> {
@@ -35,6 +35,36 @@ export class ApproveOrderRepository {
 
   async getAccountByCode(db: DbOrTx, code: string): Promise<typeof accountsTable.$inferSelect | undefined> {
     return db.select().from(accountsTable).where(eq(accountsTable.code, code)).get();
+  }
+
+  buildRecetteTransactionStatement(db: DbOrTx, values: {
+    seasonId: number;
+    accountId: number;
+    paymentMethodId: number;
+    categoryId: number | null;
+    amountCents: number;
+    description: string;
+    memberId: number;
+  }): any {
+    return buildCreateRevenueLedgerEntryStatement(db, {
+      seasonId: values.seasonId,
+      accountId: values.accountId,
+      paymentMethodId: values.paymentMethodId,
+      categoryId: values.categoryId,
+      amountCents: values.amountCents,
+      description: values.description,
+      memberId: values.memberId,
+      date: new Date().toISOString().split('T')[0]
+    });
+  }
+
+  buildApproveOrderStatement(db: DbOrTx, id: number): any {
+    return db.update(ordersTable)
+      .set({
+        status: 'approved',
+        ledgerEntryId: sql`(SELECT last_insert_rowid())`
+      })
+      .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')));
   }
 
   async createRecetteTransaction(db: DbOrTx, values: {
