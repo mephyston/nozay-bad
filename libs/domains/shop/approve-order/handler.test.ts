@@ -116,13 +116,8 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
     }).returning().get();
     equipmentProductCatId = pCat4.id;
 
-    // Family 5: Unconfigured family (missing accounting category id = 0 or invalid)
-    const pCat5 = await db.insert(productCategoriesTable).values({
-      label: 'Famille Non Configurée',
-      accountingCategoryId: null,
-      createdAt: new Date()
-    }).returning().get();
-    unconfiguredProductCatId = pCat5.id;
+    // Family 5: Unconfigured family (non-existent category ID 999999)
+    unconfiguredProductCatId = 999999;
   });
 
   it('1. Nominal case: approves order and creates revenue ledger entry with resolved accounting category', async () => {
@@ -254,14 +249,24 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
   });
 
   it('4. Rejects approval when product family has no accounting category configured', async () => {
+    const pCat5 = await db.insert(productCategoriesTable).values({
+      label: 'Famille Non Configurée',
+      accountingCategoryId: volantsAccountingCatId,
+      createdAt: new Date()
+    }).returning().get();
+
     const unconfiguredProduct = await db.insert(productsTable).values({
       name: 'Objet Mystère',
-      productCategoryId: unconfiguredProductCatId,
+      productCategoryId: pCat5.id,
       priceCents: 1000,
       stock: 5,
       active: true,
       createdAt: new Date()
     }).returning().get();
+
+    await db.run(sql`PRAGMA foreign_keys = OFF;`);
+    await db.run(sql`DELETE FROM product_categories WHERE id = ${pCat5.id};`);
+    await db.run(sql`PRAGMA foreign_keys = ON;`);
 
     const order = await db.insert(ordersTable).values({
       seasonId, memberId, productId: unconfiguredProduct.id, quantity: 1, totalAmountCents: 1000,

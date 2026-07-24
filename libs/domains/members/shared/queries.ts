@@ -31,8 +31,12 @@ export async function getMembersByIds(db: DbOrTx, ids: number[]): Promise<Member
   return result as MemberSummary[];
 }
 
-export async function getMembersBySeason(db: DbOrTx, seasonId: string): Promise<MemberSummary[]> {
-  const result = await db.select().from(membersTable).where(eq(membersTable.season, seasonId)).all();
+export async function getMembersBySeason(db: DbOrTx, seasonId: string | number): Promise<MemberSummary[]> {
+  const numericId = Number(seasonId);
+  const condition = !isNaN(numericId)
+    ? or(eq(membersTable.seasonId, numericId), eq(membersTable.seasonId, seasonId as any))
+    : eq(membersTable.seasonId, seasonId as any);
+  const result = await db.select().from(membersTable).where(condition).all();
   return result as MemberSummary[];
 }
 
