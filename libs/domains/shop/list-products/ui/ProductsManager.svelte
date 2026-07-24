@@ -6,8 +6,8 @@
   interface Product {
     id: number;
     name: string;
-    category: 'shuttlecock' | 'string' | 'other';
-    price: number;
+    productCategoryId: number;
+    priceCents: number;
     stock: number;
     active: boolean;
     createdAt: string;
@@ -17,17 +17,13 @@
     category,
     products = []
   }: {
-    category?: 'shuttlecock' | 'string' | 'other' | 'all';
+    category?: number | 'all';
     products?: Product[];
   } = $props();
 
-  // svelte-ignore state_referenced_locally
-  let formCategory = $state<'shuttlecock' | 'string' | 'other'>(
-    category && category !== 'all' ? category : 'shuttlecock'
-  );
+  let formProductCategoryId = $state<number>(1);
 
   // Local state
-  // svelte-ignore state_referenced_locally
   let productsList = $state<Product[]>(products);
   let searchTerm = $state('');
   let isSubmitting = $state(false);
@@ -49,9 +45,10 @@
   let filteredProducts = $derived(
     productsList.filter(prod => {
       const term = searchTerm.toLowerCase();
+      const priceVal = prod.priceCents ?? (prod as any).price ?? 0;
       return (
         prod.name.toLowerCase().includes(term) ||
-        (prod.price / 100).toFixed(2).includes(term) ||
+        (priceVal / 100).toFixed(2).includes(term) ||
         prod.stock.toString().includes(term)
       );
     })
@@ -63,15 +60,16 @@
     price = '';
     active = true;
     errorMsg = '';
-    formCategory = category && category !== 'all' ? category : 'shuttlecock';
+    formProductCategoryId = 1;
   }
 
   function startEdit(product: Product) {
     editingId = product.id;
     name = product.name;
-    price = (product.price / 100).toString();
+    const priceVal = product.priceCents ?? (product as any).price ?? 0;
+    price = (priceVal / 100).toString();
     active = product.active;
-    formCategory = product.category;
+    formProductCategoryId = product.productCategoryId ?? 1;
     errorMsg = '';
     successMsg = '';
   }

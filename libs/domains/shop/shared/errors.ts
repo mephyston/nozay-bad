@@ -41,3 +41,13 @@ export class ConcurrentModificationError extends AppError {
     this.name = 'ConcurrentModificationError';
   }
 }
+
+export class ShopCategoryNotConfiguredError extends AppError {
+  constructor(label?: string) {
+    const message = label
+      ? `La famille de produit '${label}' n'est pas rattachée à une catégorie comptable.`
+      : "Famille de produit non rattachée à une catégorie comptable.";
+    super(message, 400);
+    this.name = 'ShopCategoryNotConfiguredError';
+  }
+}

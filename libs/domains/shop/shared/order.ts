@@ -2,12 +2,12 @@ export type OrderStatus = 'pending' | 'approved' | 'rejected';
 
 export interface OrderData {
   id: number;
-  seasonId: string;
+  seasonId: number;
   memberId: number;
   productId: number;
   quantity: number;
-  totalAmount: number;
-  paymentMethod: string;
+  totalAmountCents: number;
+  paymentMethodId: number;
   status: OrderStatus;
   ledgerEntryId: number | null;
   createdAt: Date;
@@ -16,11 +16,15 @@ export interface OrderData {
 export class Order {
   constructor(private readonly data: OrderData) {}
 
+  get id(): number {
+    return this.data.id;
+  }
+
   get status(): OrderStatus {
     return this.data.status;
   }
 
-  get seasonId(): string {
+  get seasonId(): number {
     return this.data.seasonId;
   }
 
@@ -36,12 +40,12 @@ export class Order {
     return this.data.quantity;
   }
 
-  get totalAmount(): number {
-    return this.data.totalAmount;
+  get totalAmountCents(): number {
+    return this.data.totalAmountCents;
   }
 
-  get paymentMethod(): string {
-    return this.data.paymentMethod;
+  get paymentMethodId(): number {
+    return this.data.paymentMethodId;
   }
 
   canBeApproved(): boolean {

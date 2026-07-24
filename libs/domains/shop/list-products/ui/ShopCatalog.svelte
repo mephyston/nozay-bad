@@ -12,8 +12,8 @@
   interface Product {
     id: number;
     name: string;
-    category: 'shuttlecock' | 'string' | 'other';
-    price: number; // in cents
+    productCategoryId: number;
+    priceCents: number; // in cents
     stock: number;
     active: boolean;
   }
@@ -40,10 +40,10 @@
   ];
 
   const categoriesList = [
-    { value: 'all', label: 'Toutes les catégories' },
-    { value: 'shuttlecock', label: 'Volants' },
-    { value: 'string', label: 'Cordages' },
-    { value: 'other', label: 'Autres' }
+    { value: 0, label: 'Toutes les catégories' },
+    { value: 1, label: 'Volants' },
+    { value: 2, label: 'Cordages' },
+    { value: 3, label: 'Textile & Accessoires' }
   ];
 
   let productsList = $derived(products);
@@ -58,7 +58,7 @@
   let debounceTimeout: any;
 
   // Order form state
-  let selectedCategory = $state<string>('all');
+  let selectedCategory = $state<number>(0);
   let selectedProductId = $state<number | null>(null);
   let selectedQuantity = $state<number>(1);
   let selectedPaymentMethod = $state<string>('virement');
@@ -67,9 +67,9 @@
   let errorMessage = $state<string | null>(null);
 
   let filteredProducts = $derived(
-    selectedCategory === 'all'
+    selectedCategory === 0
       ? productsList
-      : productsList.filter(p => p.category === selectedCategory)
+      : productsList.filter(p => p.productCategoryId === selectedCategory)
   );
 
   let selectedProduct = $derived(
@@ -79,7 +79,7 @@
   );
 
   let totalPriceCents = $derived(
-    selectedProduct ? selectedProduct.price * selectedQuantity : 0
+    selectedProduct ? (selectedProduct.priceCents ?? (selectedProduct as any).price ?? 0) * selectedQuantity : 0
   );
 
   let maxQuantity = $derived(
@@ -489,7 +489,7 @@
               {:else}
                 {#each filteredProducts as product (product.id)}
                   <option value={product.id}>
-                    {product.name} — {(product.price / 100).toFixed(2)} € ({product.stock > 0 ? `Stock: ${product.stock}` : 'Rupture'})
+                    {product.name} — {((product.priceCents ?? (product as any).price ?? 0) / 100).toFixed(2)} € ({product.stock > 0 ? `Stock: ${product.stock}` : 'Rupture'})
                   </option>
                 {/each}
               {/if}

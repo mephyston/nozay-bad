@@ -6,9 +6,9 @@ export async function createProduct(db: Db, body: CreateProductInput): Promise<C
   const repo = new CreateProductRepository();
   return repo.create(db, {
     name: body.name,
-    category: body.category,
-    price: body.price,
-    stock: body.stock,
+    productCategoryId: body.productCategoryId,
+    priceCents: body.priceCents,
+    stock: body.stock ?? 0,
     active: body.active !== false,
     createdAt: new Date()
   });

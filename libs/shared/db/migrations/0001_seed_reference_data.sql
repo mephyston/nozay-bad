@@ -45,10 +45,17 @@ INSERT INTO `categories` (`admin_label`, `adherent_label`, `hide_in_expenses`, `
 ('Cordage (vente aux adhérents)', 'Cordages', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '60'), 1783962600),
 ('Volants (vente ou achat)', 'Volants', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '60'), 1783962600),
 ('Salaires et Charges', 'Salaires & Charges', 1, NULL, (SELECT `id` FROM `account_classes` WHERE `code` = '64'), 1783962600),
-('Matériel (hors cordages)', 'Matériel (raquettes, poteaux...)', 0, NULL, (SELECT `id` FROM `account_classes` WHERE `code` = '60'), 1783962600),
+('Matériel (hors cordages)', 'Matériel (raquettes, poteaux...)', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '60'), 1783962600),
 ('Licences (versements fédération)', 'Licences FFBaD', 1, NULL, (SELECT `id` FROM `account_classes` WHERE `code` = '65'), 1783962600),
 ('Championnats (frais équipes)', 'Frais d''inscriptions tournois / championnats', 0, NULL, (SELECT `id` FROM `account_classes` WHERE `code` = '62'), 1783962600),
 ('Stages & Formations', 'Formations & Stages', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '62'), 1783962600),
 ('Frais de fonctionnement & administratif', 'Frais de fonctionnement, bureau...', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '75'), (SELECT `id` FROM `account_classes` WHERE `code` = '61'), 1783962600),
 ('Virements Internes (Transit)', 'Virement Interne', 1, NULL, NULL, 1783962600),
 ('Intérêts Livret A', 'Intérêts Livret A', 1, (SELECT `id` FROM `account_classes` WHERE `code` = '75'), NULL, 1783962600);
+
+-- 5. PRODUCT CATEGORIES (Familles de produits boutique rattachées aux catégories comptables)
+INSERT INTO `product_categories` (`label`, `accounting_category_id`, `created_at`) VALUES
+('Volants', (SELECT `id` FROM `categories` WHERE `admin_label` = 'Volants (vente ou achat)'), 1783962600),
+('Cordages', (SELECT `id` FROM `categories` WHERE `admin_label` = 'Cordage (vente aux adhérents)'), 1783962600),
+('Textile & Accessoires', (SELECT `id` FROM `categories` WHERE `admin_label` = 'Matériel (hors cordages)'), 1783962600);
+

@@ -4,9 +4,9 @@ import { ordersTable, productsTable } from '../shared/schema';
 import { getMembersByIds } from '@nba/members-api';
 
 export class ListOrdersRepository {
-  async list(db: DbOrTx, filters: { season?: string; status?: string }): Promise<(typeof ordersTable.$inferSelect)[]> {
+  async list(db: DbOrTx, filters: { seasonId?: number; status?: string }): Promise<(typeof ordersTable.$inferSelect)[]> {
     const conditions = [];
-    if (filters.season) conditions.push(eq(ordersTable.seasonId, filters.season));
+    if (filters.seasonId) conditions.push(eq(ordersTable.seasonId, filters.seasonId));
     if (filters.status) conditions.push(eq(ordersTable.status, filters.status as 'pending' | 'approved' | 'rejected'));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

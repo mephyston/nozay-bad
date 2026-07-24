@@ -1,6 +1,6 @@
 import { Type } from '@sinclair/typebox';
 
 export const listOrdersQuerySchema = Type.Object({
-  season: Type.Optional(Type.String()),
+  seasonId: Type.Optional(Type.Integer({ minimum: 1 })),
   status: Type.Optional(Type.String())
 });

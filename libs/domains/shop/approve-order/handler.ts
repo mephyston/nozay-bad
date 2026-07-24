@@ -1,4 +1,4 @@
-import { type Db, type Tx } from '@nba/db';
+import { type Db, type Tx, AppError } from '@nba/db';
 import { ApproveOrderRepository } from './repository';
 import { Order } from '../shared/order';
 import {
@@ -7,7 +7,8 @@ import {
   SeasonClosedError,
   MemberNotFoundError,
   ProductNotFoundError,
-  ConcurrentModificationError
+  ConcurrentModificationError,
+  ShopCategoryNotConfiguredError
 } from '../shared/errors';
 import { isSeasonClosed } from '@nba/members-api';
 import { ApproveOrderInput, ApproveOrderOutput } from "./dto";
@@ -40,17 +41,29 @@ export async function approveOrder(db: Db, id: ApproveOrderInput): Promise<Appro
       throw new ProductNotFoundError();
     }
 
-    const boutiqueCatId = await repo.getBoutiqueCategory(tx);
+    const productCategory = await repo.getProductCategoryById(tx, product.productCategoryId);
+    if (!productCategory || !productCategory.accountingCategoryId) {
+      throw new ShopCategoryNotConfiguredError(productCategory?.label);
+    }
+
+    const paymentMethod = await repo.getPaymentMethodById(tx, order.paymentMethodId);
+    const targetAccountCode = paymentMethod?.code === 'especes' ? 'cash' : 'current';
+    const account = await repo.getAccountByCode(tx, targetAccountCode);
+    if (!account) {
+      throw new AppError(`Compte de trésorerie '${targetAccountCode}' introuvable.`, 400);
+    }
+
     const description = `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`;
 
     // 1. Créer la transaction de recette
     const recipeTx = await repo.createRecetteTransaction(tx, {
       seasonId: order.seasonId,
-      category: boutiqueCatId,
-      amount: order.totalAmount,
+      accountId: account.id,
+      paymentMethodId: order.paymentMethodId,
+      categoryId: productCategory.accountingCategoryId,
+      amountCents: order.totalAmountCents,
       description,
       memberId: member.id,
-      paymentMethod: order.paymentMethod,
     });
 
     // 2. Mettre à jour la commande avec optimistic locking

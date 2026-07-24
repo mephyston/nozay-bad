@@ -803,12 +803,12 @@
           "memberId",
           "productId",
           "quantity",
-          "paymentMethod"
+          "paymentMethodId"
         ],
         "properties": {
           "seasonId": {
-            "minLength": 1,
-            "type": "string"
+            "minimum": 1,
+            "type": "integer"
           },
           "memberId": {
             "minimum": 1,
@@ -822,41 +822,9 @@
             "minimum": 1,
             "type": "integer"
           },
-          "paymentMethod": {
-            "anyOf": [
-              {
-                "const": "virement",
-                "type": "string"
-              },
-              {
-                "const": "cheque",
-                "type": "string"
-              },
-              {
-                "const": "especes",
-                "type": "string"
-              },
-              {
-                "const": "labaz",
-                "type": "string"
-              },
-              {
-                "const": "ancv",
-                "type": "string"
-              },
-              {
-                "const": "pass_sport",
-                "type": "string"
-              },
-              {
-                "const": "ticket_loisir",
-                "type": "string"
-              },
-              {
-                "const": "up_loisir",
-                "type": "string"
-              }
-            ]
+          "paymentMethodId": {
+            "minimum": 1,
+            "type": "integer"
           }
         }
       },
@@ -864,8 +832,8 @@
         "type": "object",
         "required": [
           "name",
-          "category",
-          "price",
+          "productCategoryId",
+          "priceCents",
           "stock"
         ],
         "properties": {
@@ -873,23 +841,11 @@
             "minLength": 1,
             "type": "string"
           },
-          "category": {
-            "anyOf": [
-              {
-                "const": "shuttlecock",
-                "type": "string"
-              },
-              {
-                "const": "string",
-                "type": "string"
-              },
-              {
-                "const": "other",
-                "type": "string"
-              }
-            ]
+          "productCategoryId": {
+            "minimum": 1,
+            "type": "integer"
           },
-          "price": {
+          "priceCents": {
             "minimum": 0,
             "type": "integer"
           },
