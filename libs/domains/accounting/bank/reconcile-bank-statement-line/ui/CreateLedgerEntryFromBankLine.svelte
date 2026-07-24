@@ -71,7 +71,7 @@
   {#if !isSplitMode}
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Catégorie Comptable</label>
+        <span class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Catégorie Comptable</span>
         <div class="relative">
           <button
             type="button"
@@ -102,8 +102,8 @@
       </div>
 
       <div>
-        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Mode de règlement</label>
-        <select bind:value={paymentMethod} class="w-full bg-white border rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <label for="payment-method-select" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Mode de règlement</label>
+        <select id="payment-method-select" bind:value={paymentMethod} class="w-full bg-white border rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="virement">Virement bancaire</option>
           <option value="cheque">Chèque</option>
           <option value="especes">Espèces</option>
@@ -117,7 +117,7 @@
     </div>
 
     <div>
-      <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Associer à un adhérent</label>
+      <span class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Associer à un adhérent</span>
       <div class="relative">
         <button
           type="button"

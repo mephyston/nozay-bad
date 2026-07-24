@@ -114,9 +114,9 @@
   {/if}
 
   <div class="border-t pt-4">
-    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+    <span class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
       Lier à un adhérent (optionnel)
-    </label>
+    </span>
     <div class="relative">
       <button
         type="button"

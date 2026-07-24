@@ -11,15 +11,16 @@ import { createReconciliationActions } from './reconciliation-actions';
 import { createReconciliationProxy } from './reconciliation-proxy';
 import { createRefHandlers } from './reconciliation-refs';
 
-export function createReconciliationState(initialProps: ReconciliationStateProps) {
-  let bankStatementLines = $state(initialProps.bankStatementLines);
-  let glTransactions = $state(initialProps.glTransactions);
-  let seasonId = $state(initialProps.seasonId);
-  let seasons = $state(initialProps.seasons);
-  let members = $state(initialProps.members);
-  let dbCategories = $state(initialProps.dbCategories || []);
+export function createReconciliationState(initialPropsOrGetter: ReconciliationStateProps | (() => ReconciliationStateProps)) {
+  const getProps = typeof initialPropsOrGetter === 'function' ? initialPropsOrGetter : () => initialPropsOrGetter;
+  let bankStatementLines = $state(getProps().bankStatementLines);
+  let glTransactions = $state(getProps().glTransactions);
+  let seasonId = $state(getProps().seasonId);
+  let seasons = $state(getProps().seasons);
+  let members = $state(getProps().members);
+  let dbCategories = $state(getProps().dbCategories || []);
 
-  let selectedSeason = $state(initialProps.seasonId);
+  let selectedSeason = $state(getProps().seasonId);
   let selectedTx = $state<BankStatementLine | null>(null);
   let isSubmitting = $state(false);
   let isAnalyzing = $state(false);
@@ -46,7 +47,7 @@ export function createReconciliationState(initialProps: ReconciliationStateProps
   let isCategoryDropdownOpen = $state(false);
   let memberSearchQuery = $state('');
   let categorySearchQuery = $state('');
-  let targetSeasonId = $state(initialProps.seasonId);
+  let targetSeasonId = $state(getProps().seasonId);
 
   let selectedTxIds = $state<Record<number, boolean>>({});
   let searchQuery = $state('');

@@ -9,7 +9,7 @@
   import ReconciliationDetailPanel from './ReconciliationDetailPanel.svelte';
 
   let props: ReconciliationStateProps = $props();
-  const state = createReconciliationState(props);
+  const state = createReconciliationState(() => props);
 
   onMount(() => {
     const handleOpen = () => {
