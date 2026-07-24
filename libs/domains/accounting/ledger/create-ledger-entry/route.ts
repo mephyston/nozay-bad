@@ -10,24 +10,26 @@ export type Bindings = {
 
 export const createTransactionRoute = new Hono<{ Bindings: Bindings }>();
 
-createTransactionRoute.post(
-  '/ledger-entries',
-  tbValidator('json', createTransactionSchema, (result, c) => {
-    if (!result.success) {
-      return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
-    }
-  }),
-  async (c) => {
-    if (!c.env || !c.env.DB) {
-      return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-    }
-    const body = c.req.valid('json');
-    const db = createDb(c.env.DB);
-    try {
-      const data = await createLedgerEntry(db, body);
-      return c.json({ success: true, data });
-    } catch (err: any) {
-      return c.json({ success: false, error: err.message }, 400);
-    }
+const handleCreate = async (c: any) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
-);
+  const body = c.req.valid('json');
+  const db = createDb(c.env.DB);
+  try {
+    const data = await createLedgerEntry(db, body);
+    return c.json({ success: true, data });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+};
+
+const createValidator = tbValidator('json', createTransactionSchema, (result, c) => {
+  if (!result.success) {
+    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+  }
+});
+
+createTransactionRoute.post('/ledger-entries', createValidator, handleCreate);
+createTransactionRoute.post('/transactions', createValidator, handleCreate);
+

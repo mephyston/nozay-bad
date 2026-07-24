@@ -21,22 +21,12 @@ const handleDelete = async (c: any) => {
   return c.json({ success: true });
 };
 
-deleteTransactionRoute.delete(
-  '/ledger-entries/:id',
-  tbValidator('param', deleteTransactionParamSchema, (result, c) => {
-    if (!result.success) {
-      return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
-    }
-  }),
-  handleDelete
-);
+const deleteValidator = tbValidator('param', deleteTransactionParamSchema, (result, c) => {
+  if (!result.success) {
+    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+  }
+});
 
-deleteTransactionRoute.delete(
-  '/ledger/:id',
-  tbValidator('param', deleteTransactionParamSchema, (result, c) => {
-    if (!result.success) {
-      return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
-    }
-  }),
-  handleDelete
-);
+deleteTransactionRoute.delete('/ledger-entries/:id', deleteValidator, handleDelete);
+deleteTransactionRoute.delete('/transactions/:id', deleteValidator, handleDelete);
+deleteTransactionRoute.delete('/ledger/:id', deleteValidator, handleDelete);
