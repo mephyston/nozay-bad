@@ -5,7 +5,7 @@ import { setupMockDb } from '@nba/db/test-utils';
 vi.mock('./repository', () => {
   return {
     CreateBankCheckDepositRepository: class {
-      getChecksByIds = vi.fn().mockResolvedValue([{ id: 1, amount: 100, number: '123', seasonId: '23-24', status: 'pending' }]);
+      getChecksByIds = vi.fn().mockResolvedValue([{ id: 1, amount: 100, number: '123', seasonId: '23-24', status: 'received' }]);
       createCheckDeposit = vi.fn().mockResolvedValue({ id: 2 });
       updateChecksDeposit = vi.fn();
       getCheckDepositById = vi.fn().mockResolvedValue({ id: 2, bankStatementLineId: 3 });
@@ -13,6 +13,10 @@ vi.mock('./repository', () => {
       updateBankStatementLineStatus = vi.fn();
       unlinkChecksForDeposit = vi.fn();
       deleteCheckDeposit = vi.fn();
+      buildCreateCheckDepositStatement = vi.fn().mockReturnValue('stmt1');
+      buildUpdateChecksDepositStatement = vi.fn().mockReturnValue('stmt2');
+      buildUpdateCheckDepositStatement = vi.fn().mockReturnValue('stmt3');
+      buildUpdateBankStatementLineStatusStatement = vi.fn().mockReturnValue('stmt4');
     }
   };
 });

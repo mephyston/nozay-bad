@@ -20,7 +20,7 @@ describe('deleteInvoice', () => {
     };
     (vi.mocked(DeleteInvoiceRepository) as any).mockImplementation(function() { return mockRepoInstance; });
     await (deleteInvoice as any)(db, 1);
-    expect(db.transaction).toHaveBeenCalled();
+    expect(mockRepoInstance.delete).toHaveBeenCalledWith(db, 1);
   });
   it('should throw error', async () => {
     (isSeasonClosed as any).mockResolvedValue(true);

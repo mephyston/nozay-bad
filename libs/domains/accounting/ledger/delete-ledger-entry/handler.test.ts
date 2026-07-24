@@ -18,7 +18,7 @@ describe('deleteLedgerEntry', () => {
     vi.mocked(membersDataAccess.isSeasonClosed).mockResolvedValue(false);
     vi.mocked(DeleteTransactionRepository.prototype.getById).mockResolvedValue({ id: 1, seasonId: 'season1' });
     vi.mocked(DeleteTransactionRepository.prototype.buildDeleteLedgerEntryStatement).mockReturnValue('stmt1' as any);
-    vi.mocked(DeleteTransactionRepository.prototype.buildResetExpenseStatusStatement).mockReturnValue('stmt2' as any);
+    vi.mocked(DeleteTransactionRepository.prototype.resetExpenseStatusByTxId).mockResolvedValue();
 
     await deleteLedgerEntry(mockDb, mockId);
 

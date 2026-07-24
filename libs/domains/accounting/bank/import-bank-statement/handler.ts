@@ -48,40 +48,24 @@ export async function importBankStatement(db: Db, fileContent: string, seasonId:
   const repo = new ImportBankStatementRepository();
   let insertedCount = 0;
 
-  const runSequential = async (txDb: Tx) => {
-    let count = 0;
-    for (const tx of transactions) {
-      const targetAccount = (forcedAccountId && forcedAccountId !== 'auto') 
-        ? (forcedAccountId as 'current' | 'savings') 
-        : tx.accountId;
+  for (const tx of transactions) {
+    const targetAccount = (forcedAccountId && forcedAccountId !== 'auto') 
+      ? (forcedAccountId as 'current' | 'savings') 
+      : tx.accountId;
 
-      const res = await repo.insertBankStatementLine(txDb, {
-        fitid: tx.fitid,
-        seasonId,
-        accountId: targetAccount,
-        amount: tx.amount,
-        date: tx.date,
-        name: tx.name,
-        memo: tx.memo,
-        status: 'pending',
-        createdAt: new Date()
-      });
-      if (res.changes > 0) {
-        count++;
-      }
-    }
-    return count;
-  };
-
-  try {
-    insertedCount = await db.transaction(async (txDb: Tx) => {
-      return runSequential(txDb);
+    const res = await repo.insertBankStatementLine(db, {
+      fitid: tx.fitid,
+      seasonId,
+      accountId: targetAccount,
+      amount: tx.amount,
+      date: tx.date,
+      name: tx.name,
+      memo: tx.memo,
+      status: 'pending',
+      createdAt: new Date()
     });
-  } catch (err: unknown) {
-    if (err.message && err.message.includes('begin')) {
-      insertedCount = await runSequential(db);
-    } else {
-      throw err;
+    if (res.changes > 0) {
+      insertedCount++;
     }
   }
 
