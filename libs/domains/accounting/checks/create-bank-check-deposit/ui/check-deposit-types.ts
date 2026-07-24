@@ -7,7 +7,7 @@ export interface Check {
   emitter: string;
   bank: string | null;
   memberId: number | null;
-  transactionId: number | null;
+  ledgerEntryId: number | null;
   status: 'received' | 'deposited';
   photoUrl: string | null;
   createdAt: string;
@@ -22,7 +22,7 @@ export interface CheckDeposit {
   date: string;
   amount: number;
   status: 'pending' | 'deposited' | 'cleared';
-  bankTransactionId: number | null;
+  bankStatementLineId: number | null;
   createdAt: string;
 }
 

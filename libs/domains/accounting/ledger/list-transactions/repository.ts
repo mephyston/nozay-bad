@@ -1,6 +1,6 @@
 import { type DbOrTx } from '@nba/db';
 import { and, or, eq, sql, inArray, isNull, desc } from 'drizzle-orm';
-import { transactionsTable, categoriesTable } from '../../shared/schema';
+import { ledgerEntriesTable, categoriesTable } from '../../shared/schema';
 import { getMembersByIds } from '@nba/members-api';
 import type { ListTransactionsFilters } from './dto';
 
@@ -8,24 +8,24 @@ export class ListTransactionsRepository {
   private buildConditions(filters: ListTransactionsFilters) {
     const conditions = [];
     if (filters.seasonId) {
-      conditions.push(eq(transactionsTable.seasonId, filters.seasonId));
+      conditions.push(eq(ledgerEntriesTable.seasonId, filters.seasonId));
     }
     if (filters.accountId) {
-      conditions.push(or(eq(transactionsTable.accountId, filters.accountId as any), eq(transactionsTable.destinationAccountId, filters.accountId as any)) as any);
+      conditions.push(or(eq(ledgerEntriesTable.accountId, filters.accountId as any), eq(ledgerEntriesTable.destinationAccountId, filters.accountId as any)) as any);
     }
     if (filters.type) {
-      conditions.push(eq(transactionsTable.type, filters.type as any));
+      conditions.push(eq(ledgerEntriesTable.type, filters.type as any));
     }
     if (filters.category) {
-      conditions.push(eq(transactionsTable.category, parseInt(filters.category)));
+      conditions.push(eq(ledgerEntriesTable.category, parseInt(filters.category)));
     }
     if (filters.memberId) {
-      conditions.push(eq(transactionsTable.memberId, parseInt(filters.memberId)));
+      conditions.push(eq(ledgerEntriesTable.memberId, parseInt(filters.memberId)));
     }
     if (filters.unreconciledChequesOnly) {
       conditions.push(
-        eq(transactionsTable.paymentMethod, 'cheque'),
-        isNull(transactionsTable.bankTransactionId)
+        eq(ledgerEntriesTable.paymentMethod, 'cheque'),
+        isNull(ledgerEntriesTable.bankStatementLineId)
       );
     }
     return conditions;
@@ -40,13 +40,13 @@ export class ListTransactionsRepository {
         .all();
       const catIds = matchingCats.map((cat) => cat.id);
       if (catIds.length > 0) {
-        conditions.push(inArray(transactionsTable.category, catIds));
+        conditions.push(inArray(ledgerEntriesTable.category, catIds));
       } else {
         conditions.push(sql`1 = 0`);
       }
     }
     const countRes = await db.select({ count: sql<number>`count(*)` })
-      .from(transactionsTable)
+      .from(ledgerEntriesTable)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .get();
     return countRes?.count || 0;
@@ -61,29 +61,29 @@ export class ListTransactionsRepository {
         .all();
       const catIds = matchingCats.map((cat) => cat.id);
       if (catIds.length > 0) {
-        conditions.push(inArray(transactionsTable.category, catIds));
+        conditions.push(inArray(ledgerEntriesTable.category, catIds));
       } else {
         conditions.push(sql`1 = 0`);
       }
     }
     const txs = await db.select({
-      id: transactionsTable.id,
-      seasonId: transactionsTable.seasonId,
-      type: transactionsTable.type,
-      accountId: transactionsTable.accountId,
-      destinationAccountId: transactionsTable.destinationAccountId,
-      category: transactionsTable.category,
-      amount: transactionsTable.amount,
-      date: transactionsTable.date,
-      paymentMethod: transactionsTable.paymentMethod,
-      description: transactionsTable.description,
-      reference: transactionsTable.reference,
-      memberId: transactionsTable.memberId,
-      bankTransactionId: transactionsTable.bankTransactionId
+      id: ledgerEntriesTable.id,
+      seasonId: ledgerEntriesTable.seasonId,
+      type: ledgerEntriesTable.type,
+      accountId: ledgerEntriesTable.accountId,
+      destinationAccountId: ledgerEntriesTable.destinationAccountId,
+      category: ledgerEntriesTable.category,
+      amount: ledgerEntriesTable.amount,
+      date: ledgerEntriesTable.date,
+      paymentMethod: ledgerEntriesTable.paymentMethod,
+      description: ledgerEntriesTable.description,
+      reference: ledgerEntriesTable.reference,
+      memberId: ledgerEntriesTable.memberId,
+      bankStatementLineId: ledgerEntriesTable.bankStatementLineId
     })
-      .from(transactionsTable)
+      .from(ledgerEntriesTable)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(desc(transactionsTable.date), desc(transactionsTable.id))
+      .orderBy(desc(ledgerEntriesTable.date), desc(ledgerEntriesTable.id))
       .limit(pagination.limit)
       .offset(pagination.offset)
       .all();

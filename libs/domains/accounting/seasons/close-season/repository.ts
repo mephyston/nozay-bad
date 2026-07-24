@@ -2,8 +2,8 @@ import { type DbOrTx, type Db } from '@nba/db';
 import { eq, and, gte, lte, or, inArray } from 'drizzle-orm';
 import {
   seasonsTable,
-  transactionsTable,
-  bankTransactionsTable,
+  ledgerEntriesTable,
+  bankStatementLinesTable,
   checkDepositsTable,
   checksTable,
   seasonBalancesTable,
@@ -45,10 +45,10 @@ export class CloseSeasonRepository implements CloseSeasonRepositoryInterface {
     const season = await this.getSeasonById(db, seasonId);
     if (!season) return [];
     return db.select()
-      .from(bankTransactionsTable)
+      .from(bankStatementLinesTable)
       .where(and(
-        eq(bankTransactionsTable.seasonId, season.id),
-        eq(bankTransactionsTable.status, 'pending')
+        eq(bankStatementLinesTable.seasonId, season.id),
+        eq(bankStatementLinesTable.status, 'pending')
       ))
       .all();
   }
@@ -81,10 +81,10 @@ export class CloseSeasonRepository implements CloseSeasonRepositoryInterface {
     const season = await this.getSeasonById(db, seasonId);
     if (!season) return [];
     return db.select()
-      .from(transactionsTable)
+      .from(ledgerEntriesTable)
       .where(and(
-        eq(transactionsTable.seasonId, season.id),
-        eq(transactionsTable.status, 'pending_debit')
+        eq(ledgerEntriesTable.seasonId, season.id),
+        eq(ledgerEntriesTable.status, 'pending_debit')
       ))
       .all();
   }
@@ -98,7 +98,7 @@ export class CloseSeasonRepository implements CloseSeasonRepositoryInterface {
   async getTransactionsForSeason(db: DbOrTx, seasonId: number | string): Promise<any[]> {
     const season = await this.getSeasonById(db, seasonId);
     if (!season) return [];
-    return db.select().from(transactionsTable).where(eq(transactionsTable.seasonId, season.id)).all();
+    return db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.seasonId, season.id)).all();
   }
 
   async getAccounts(db: DbOrTx): Promise<any[]> {
@@ -109,11 +109,11 @@ export class CloseSeasonRepository implements CloseSeasonRepositoryInterface {
     const season = await this.getSeasonById(db, seasonId);
     if (!season) return undefined;
     const txs = await db.select()
-      .from(bankTransactionsTable)
+      .from(bankStatementLinesTable)
       .where(and(
-        eq(bankTransactionsTable.seasonId, season.id),
-        eq(bankTransactionsTable.accountId, accountId),
-        eq(bankTransactionsTable.status, 'reconciled')
+        eq(bankStatementLinesTable.seasonId, season.id),
+        eq(bankStatementLinesTable.accountId, accountId),
+        eq(bankStatementLinesTable.status, 'reconciled')
       ))
       .all();
     if (txs.length === 0) return undefined;

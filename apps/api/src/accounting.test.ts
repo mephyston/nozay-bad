@@ -5,8 +5,8 @@ import { setupMockDb } from '@nba/db/test-utils';
 import { seasonsTable, membersTable } from '../../../libs/domains/accounting/shared/schema';
 import {
   seasonBalancesTable,
-  transactionsTable,
-  bankTransactionsTable,
+  ledgerEntriesTable,
+  bankStatementLinesTable,
   checksTable,
   checkDepositsTable,
   invoicesTable,
@@ -391,7 +391,7 @@ VERSION:102
     }).returning().then(r => r[0]);
 
     // 2. Insérer une ligne de relevé bancaire de 150.00 €
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-RECON-INV-1',
       accountId: 'current',
       seasonId: '25-26',
@@ -426,14 +426,14 @@ VERSION:102
     // 4. Vérifier que la facture est payée et que la ligne D1 pointe dessus
     const updatedInv = (await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv.id)).get())!;
     expect(updatedInv.status).toBe('paid');
-    expect(updatedInv.bankTransactionId).toBe(bt.id);
+    expect(updatedInv.bankStatementLineId).toBe(bt.id);
   });
 
   it('should return 404 when reconciling with a non-existent invoiceId', async () => {
     const { mockD1, db } = await setupMockDb();
 
     // 1. Insérer une ligne de relevé bancaire
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-RECON-INV-404',
       accountId: 'current',
       seasonId: '25-26',
@@ -495,7 +495,7 @@ VERSION:102
     }).returning().then(r => r[0]);
 
     // 3. Insérer une ligne de relevé bancaire
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-RECON-INV-CLOSED',
       accountId: 'current',
       seasonId: '25-26',
@@ -628,7 +628,7 @@ VERSION:102
       importedAt: new Date()
     }).returning();
 
-    const [bt] = await db.insert(bankTransactionsTable).values({
+    const [bt] = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-PIGNON-TEST',
       seasonId: '25-26',
       accountId: 'current',
@@ -698,7 +698,7 @@ VERSION:102
     expect(updatedMember.paid).toBe(true);
 
     // 5. Récupérer la transaction créée
-    const createdTx = (await db.select().from(transactionsTable).where(eq(transactionsTable.bankTransactionId, bt.id)).get())!;
+    const createdTx = (await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.bankStatementLineId, bt.id)).get())!;
     expect(createdTx).toBeDefined();
 
     // 6. Supprimer la transaction du Grand Livre via l'API
@@ -708,7 +708,7 @@ VERSION:102
     expect(deleteRes.status).toBe(200);
 
     // 7. Vérifier que la transaction bancaire est repassée en status = 'pending'
-    const resetBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const resetBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(resetBt.status).toBe('pending');
 
     // 8. Vérifier que l'adhérent a son solde rétabli
@@ -738,7 +738,7 @@ VERSION:102
       importedAt: new Date()
     }).returning().then(r => r[0]);
 
-    const bt1 = await db.insert(bankTransactionsTable).values({
+    const bt1 = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-SINGLE-1',
       accountId: 'current',
       seasonId: '25-26',
@@ -750,7 +750,7 @@ VERSION:102
       createdAt: new Date()
     }).returning().then(r => r[0]);
 
-    const bt2 = await db.insert(bankTransactionsTable).values({
+    const bt2 = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-SINGLE-2',
       accountId: 'current',
       seasonId: '25-26',
@@ -784,17 +784,17 @@ VERSION:102
     expect(analyzeJson.count).toBe(1);
     expect(aiCallsCount).toBe(1);
 
-    const updatedBt1 = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get())!;
+    const updatedBt1 = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt1.id)).get())!;
     expect(updatedBt1.aiSuggestions).not.toBeNull();
 
-    const updatedBt2 = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get())!;
+    const updatedBt2 = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt2.id)).get())!;
     expect(updatedBt2.aiSuggestions).toBeNull();
   });
 
   it('classifies club recharges and long numeric IDs as internal transfers (category 15)', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    const bt1 = await db.insert(bankTransactionsTable).values({
+    const bt1 = await db.insert(bankStatementLinesTable).values({
       fitid: '30930863000300846000500078472020260602',
       accountId: 'current',
       seasonId: '25-26',
@@ -806,7 +806,7 @@ VERSION:102
       createdAt: new Date()
     }).returning().then(r => r[0]);
 
-    const bt2 = await db.insert(bankTransactionsTable).values({
+    const bt2 = await db.insert(bankStatementLinesTable).values({
       fitid: '15509713000300846000500078472020260618',
       accountId: 'current',
       seasonId: '25-26',
@@ -823,13 +823,13 @@ VERSION:102
     }, { DB: mockD1 as any, AI: { run: async () => ({}) } as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt1 = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get())!;
+    const updatedBt1 = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt1.id)).get())!;
     expect(updatedBt1.aiSuggestions).not.toBeNull();
     const sug1 = JSON.parse(updatedBt1.aiSuggestions!);
     expect(sug1.category).toBe(15);
     expect(sug1.memberId).toBeNull();
 
-    const updatedBt2 = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get())!;
+    const updatedBt2 = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt2.id)).get())!;
     expect(updatedBt2.aiSuggestions).not.toBeNull();
     const sug2 = JSON.parse(updatedBt2.aiSuggestions!);
     expect(sug2.category).toBe(15);
@@ -844,7 +844,7 @@ VERSION:102
       VALUES ('Babolat 2', 'shuttlecock', 3150, 50, 1, ${new Date().getTime()})
     `);
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '13800243000300846000500078472020260423',
       accountId: 'current',
       seasonId: '25-26',
@@ -891,7 +891,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: aiMock as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     const suggestions = JSON.parse(updatedBt.aiSuggestions!);
     expect(suggestions.category).toBe(8);
@@ -906,7 +906,7 @@ VERSION:102
       VALUES ('Cordage adulte', 'string', 1500, 50, 1, ${new Date().getTime()})
     `);
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '16271243000300846000500078472020260324',
       accountId: 'current',
       seasonId: '25-26',
@@ -953,7 +953,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: aiMock as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     const suggestions = JSON.parse(updatedBt.aiSuggestions!);
     expect(suggestions.category).toBe(7);
@@ -1000,7 +1000,7 @@ VERSION:102
     }).run();
 
     // Insérer la transaction de Laurence Madrange pour du cordage
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '62517463000300846000500078472020260704',
       seasonId: '25-26',
       accountId: 'current',
@@ -1059,7 +1059,7 @@ VERSION:102
     }).returning().then(r => r[0]);
 
     // Insérer la transaction
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '18444113000300846000500078472020260708',
       seasonId: '25-26',
       accountId: 'current',
@@ -1114,7 +1114,7 @@ VERSION:102
       importedAt: new Date()
     }).returning().then(r => r[0]);
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '58441093000300846000500078472020260511',
       seasonId: '25-26',
       accountId: 'current',
@@ -1137,7 +1137,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
     const sug = JSON.parse(updatedBt.aiSuggestions!);
@@ -1148,7 +1148,7 @@ VERSION:102
   it('correctly maps young vacation camp stage expenses to actions_jeunes category in deterministic fallback', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '33178713000300846000500078472020260401',
       seasonId: '25-26',
       accountId: 'current',
@@ -1171,7 +1171,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
     const sug = JSON.parse(updatedBt.aiSuggestions!);
@@ -1181,7 +1181,7 @@ VERSION:102
   it('correctly maps ebad wallet tournament registrations to tournois_senior category in deterministic fallback', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '34353683000300846000500078472020260321',
       seasonId: '25-26',
       accountId: 'current',
@@ -1204,7 +1204,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
     const sug = JSON.parse(updatedBt.aiSuggestions!);
@@ -1214,7 +1214,7 @@ VERSION:102
   it('correctly maps airbnb accommodation expenses to actions_jeunes category in deterministic fallback', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '33286893000300846000500078472020260223',
       seasonId: '25-26',
       accountId: 'current',
@@ -1237,7 +1237,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
     const sug = JSON.parse(updatedBt.aiSuggestions!);
@@ -1247,7 +1247,7 @@ VERSION:102
   it('prioritizes membership keywords over exact amount product matches in deterministic fallback', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '2184623000300846000500078472020260508',
       seasonId: '25-26',
       accountId: 'current',
@@ -1270,7 +1270,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
     const sug = JSON.parse(updatedBt.aiSuggestions!);
@@ -1280,7 +1280,7 @@ VERSION:102
   it('correctly maps Easter young camp stage expenses to actions_jeunes category in deterministic fallback', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '70699513000300846000500078472020260504',
       seasonId: '25-26',
       accountId: 'current',
@@ -1303,7 +1303,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
     const sug = JSON.parse(updatedBt.aiSuggestions!);
@@ -1313,7 +1313,7 @@ VERSION:102
   it('correctly maps February young camp stage expenses to actions_jeunes category in deterministic fallback', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '45257253000300846000500078472020260305',
       seasonId: '25-26',
       accountId: 'current',
@@ -1336,7 +1336,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
     const sug = JSON.parse(updatedBt.aiSuggestions!);
@@ -1362,7 +1362,7 @@ VERSION:102
       importedAt: new Date()
     }).returning().then(r => r[0]);
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '48510893000300846000500078472020260302',
       seasonId: '25-26',
       accountId: 'current',
@@ -1385,7 +1385,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
     const sug = JSON.parse(updatedBt.aiSuggestions!);
@@ -1412,7 +1412,7 @@ VERSION:102
       importedAt: new Date()
     }).returning().then(r => r[0]);
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '48510903000300846000500078472020260302',
       seasonId: '25-26',
       accountId: 'current',
@@ -1435,7 +1435,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
     const sug = JSON.parse(updatedBt.aiSuggestions!);
@@ -1446,7 +1446,7 @@ VERSION:102
   it('correctly maps coach displacement during holiday months to actions_jeunes category in deterministic fallback', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '19050983000300846000500078472020260227',
       seasonId: '25-26',
       accountId: 'current',
@@ -1469,7 +1469,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
     const sug = JSON.parse(updatedBt.aiSuggestions!);
@@ -1479,7 +1479,7 @@ VERSION:102
   it('correctly maps coach air bnb accommodation during holiday months to actions_jeunes category in deterministic fallback', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '17777713000300846000500078472020260225',
       seasonId: '25-26',
       accountId: 'current',
@@ -1502,7 +1502,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
     const sug = JSON.parse(updatedBt.aiSuggestions!);
@@ -1512,7 +1512,7 @@ VERSION:102
   it('correctly maps stages of players containing name in between stage and month to actions_jeunes category in deterministic fallback', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '33286873000300846000500078472020260223',
       seasonId: '25-26',
       accountId: 'current',
@@ -1535,7 +1535,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
     const sug = JSON.parse(updatedBt.aiSuggestions!);
@@ -1545,7 +1545,7 @@ VERSION:102
   it('correctly maps minibad stage expenses to actions_jeunes category in deterministic fallback', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '33286863000300846000500078472020260223',
       seasonId: '25-26',
       accountId: 'current',
@@ -1568,7 +1568,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
     const sug = JSON.parse(updatedBt.aiSuggestions!);
@@ -1578,7 +1578,7 @@ VERSION:102
   it('correctly maps supplier cordage purchases from Larde Sports to cordage category in deterministic fallback', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '15816003000300846000500078472020260211',
       seasonId: '25-26',
       accountId: 'current',
@@ -1601,7 +1601,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
     const sug = JSON.parse(updatedBt.aiSuggestions!);
@@ -1611,7 +1611,7 @@ VERSION:102
   it('correctly maps blackminton event registration to tournois_senior category in deterministic fallback', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '57168863000300846000500078472020260131',
       seasonId: '25-26',
       accountId: 'current',
@@ -1634,7 +1634,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
     const sug = JSON.parse(updatedBt.aiSuggestions!);
@@ -1644,7 +1644,7 @@ VERSION:102
   it('correctly maps ICR/interclubs related expenses to championnats category in deterministic fallback', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '34937793000300846000500078472020260126',
       seasonId: '25-26',
       accountId: 'current',
@@ -1667,7 +1667,7 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt.aiSuggestions).not.toBeNull();
     
     const sug = JSON.parse(updatedBt.aiSuggestions!);
@@ -1677,7 +1677,7 @@ VERSION:102
   it('correctly maps licence keyword to membership category when amount is positive, and to licences_federation when amount is negative', async () => {
     const { mockD1, db } = await setupMockDb();
 
-    const bt1 = await db.insert(bankTransactionsTable).values({
+    const bt1 = await db.insert(bankStatementLinesTable).values({
       fitid: 'GEN-2526-115',
       seasonId: '25-26',
       accountId: 'current',
@@ -1689,7 +1689,7 @@ VERSION:102
       createdAt: new Date()
     }).returning().then(r => r[0]);
 
-    const bt2 = await db.insert(bankTransactionsTable).values({
+    const bt2 = await db.insert(bankStatementLinesTable).values({
       fitid: 'GEN-2526-116',
       seasonId: '25-26',
       accountId: 'current',
@@ -1712,11 +1712,11 @@ VERSION:102
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
-    const updatedBt1 = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get())!;
+    const updatedBt1 = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt1.id)).get())!;
     const sug1 = JSON.parse(updatedBt1.aiSuggestions!);
     expect(sug1.category).toBe(1); // Adhesions
 
-    const updatedBt2 = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get())!;
+    const updatedBt2 = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt2.id)).get())!;
     const sug2 = JSON.parse(updatedBt2.aiSuggestions!);
     expect(sug2.category).toBe(11); // Licences Federation
   });
@@ -1741,7 +1741,7 @@ VERSION:102
     }).returning().then(r => r[0]);
 
     // 2. Insérer une transaction bancaire de cordage (15.00 €)
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: 'TEST-CORDAGE-BT',
       seasonId: '25-26',
       accountId: 'current',
@@ -1784,7 +1784,7 @@ VERSION:102
     expect(updatedMember.paid).toBe(false);
 
     // 5. Récupérer la transaction créée
-    const createdTx = (await db.select().from(transactionsTable).where(eq(transactionsTable.bankTransactionId, bt.id)).get())!;
+    const createdTx = (await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.bankStatementLineId, bt.id)).get())!;
     expect(createdTx).toBeDefined();
 
     // 6. Supprimer cette transaction
@@ -1850,8 +1850,8 @@ VERSION:102
     expect(getBody.data[0].memberName).toBe('DUPONT Jean');
 
     const checkId = getBody.data[0].id;
-    const txId = getBody.data[0].transactionId;
-    const checkTx = (await db.select().from(transactionsTable).where(eq(transactionsTable.id, txId)).get())!;
+    const txId = getBody.data[0].ledgerEntryId;
+    const checkTx = (await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, txId)).get())!;
     expect(checkTx.date).toBe('2026-07-10');
 
     // 5. Créer un bordereau de remise de chèques
@@ -1878,7 +1878,7 @@ VERSION:102
 
     // 7. Simuler le rapprochement avec une transaction de relevé bancaire (id: 999)
     // On doit d'abord insérer cette transaction fictive ou simuler son existence
-    await db.insert(bankTransactionsTable).values({
+    await db.insert(bankStatementLinesTable).values({
       id: 999,
       fitid: 'SG-DEPOT-999',
       seasonId: '25-26',
@@ -1894,7 +1894,7 @@ VERSION:102
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        bankTransactionId: 999
+        bankStatementLineId: 999
       })
     }, { DB: mockD1 as any });
     expect(clearRes.status).toBe(200);
@@ -1902,7 +1902,7 @@ VERSION:102
     // Vérifier le statut de la remise
     const finalDeposit = (await db.select().from(checkDepositsTable).where(eq(checkDepositsTable.id, depositId)).get())!;
     expect(finalDeposit.status).toBe('cleared');
-    expect(finalDeposit.bankTransactionId).toBe(999);
+    expect(finalDeposit.bankStatementLineId).toBe(999);
 
     // 8. Supprimer le chèque
     const delCheckRes = await app.request(`http://localhost/accounting/checks/${checkId}`, {
@@ -1974,7 +1974,7 @@ VERSION:102
     const { mockD1, db } = await setupMockDb();
 
     // 1. Insert a bank transaction to link with the reconciled check
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-CHECK-RECON-1',
       accountId: 'current',
       seasonId: '25-26',
@@ -1986,8 +1986,8 @@ VERSION:102
     }).returning().then(r => r[0]);
 
     // 2. Insert the three transactions:
-    // - Outstanding check: paymentMethod = 'cheque', bankTransactionId = null
-    const outstandingCheck = await db.insert(transactionsTable).values({
+    // - Outstanding check: paymentMethod = 'cheque', bankStatementLineId = null
+    const outstandingCheck = await db.insert(ledgerEntriesTable).values({
       seasonId: '25-26',
       type: 'recette',
       accountId: 'current',
@@ -1998,8 +1998,8 @@ VERSION:102
       createdAt: new Date()
     }).returning().then(r => r[0]);
 
-    // - Reconciled check: paymentMethod = 'cheque', bankTransactionId = bt.id
-    await db.insert(transactionsTable).values({
+    // - Reconciled check: paymentMethod = 'cheque', bankStatementLineId = bt.id
+    await db.insert(ledgerEntriesTable).values({
       seasonId: '25-26',
       type: 'recette',
       accountId: 'current',
@@ -2007,12 +2007,12 @@ VERSION:102
       date: '2026-07-14',
       paymentMethod: 'cheque',
       description: 'Reconciled Check Tx',
-      bankTransactionId: bt.id,
+      bankStatementLineId: bt.id,
       createdAt: new Date()
     }).run();
 
-    // - Non-check unreconciled transaction: paymentMethod = 'virement', bankTransactionId = null
-    await db.insert(transactionsTable).values({
+    // - Non-check unreconciled transaction: paymentMethod = 'virement', bankStatementLineId = null
+    await db.insert(ledgerEntriesTable).values({
       seasonId: '25-26',
       type: 'recette',
       accountId: 'current',
@@ -2032,7 +2032,7 @@ VERSION:102
     expect(json.data).toHaveLength(1);
     expect(json.data[0].id).toBe(outstandingCheck.id);
     expect(json.data[0].paymentMethod).toBe('cheque');
-    expect(json.data[0].bankTransactionId).toBeNull();
+    expect(json.data[0].bankStatementLineId).toBeNull();
   });
 });
 
@@ -2443,7 +2443,7 @@ describe('Final Improvements API checks', () => {
     }).run();
 
     // 2. Create bank transaction in closed season
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-CLOSED-SEASON',
       accountId: 'current',
       seasonId: '24-25',
@@ -2507,7 +2507,7 @@ describe('Final Improvements API checks', () => {
     }).returning().then(r => r[0]);
 
     // Create bank transaction
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-RECON-PAID',
       accountId: 'current',
       seasonId: '25-26',
@@ -2583,7 +2583,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     }).onConflictDoNothing().run();
 
     // Create bank transactions
-    const bt1 = await db.insert(bankTransactionsTable).values({
+    const bt1 = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-BULK-1',
       accountId: 'current',
       seasonId: '25-26',
@@ -2594,7 +2594,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
       createdAt: new Date()
     }).returning().then(r => r[0]);
 
-    const bt2 = await db.insert(bankTransactionsTable).values({
+    const bt2 = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-BULK-2',
       accountId: 'current',
       seasonId: '25-26',
@@ -2649,15 +2649,15 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     expect(body.count).toBe(2);
 
     // Verify bank transactions are reconciled
-    const updatedBt1 = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt1.id)).get())!;
-    const updatedBt2 = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt2.id)).get())!;
+    const updatedBt1 = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt1.id)).get())!;
+    const updatedBt2 = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt2.id)).get())!;
     expect(updatedBt1!.status).toBe('reconciled');
     expect(updatedBt2!.status).toBe('reconciled');
 
     // Verify ledger transactions were created
-    const ledgerTxs = await db.select().from(transactionsTable).all();
-    expect(ledgerTxs.filter(t => t.bankTransactionId === bt1.id)).toHaveLength(1);
-    expect(ledgerTxs.filter(t => t.bankTransactionId === bt2.id)).toHaveLength(1);
+    const ledgerTxs = await db.select().from(ledgerEntriesTable).all();
+    expect(ledgerTxs.filter(t => t.bankStatementLineId === bt1.id)).toHaveLength(1);
+    expect(ledgerTxs.filter(t => t.bankStatementLineId === bt2.id)).toHaveLength(1);
   });
 
   it('POST /accounting/bank-transactions/reconcile-bulk rolls back all changes if one matching operation fails or is closed', async () => {
@@ -2680,7 +2680,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     }).onConflictDoNothing().run();
 
     // Create bank transactions
-    const btValid = await db.insert(bankTransactionsTable).values({
+    const btValid = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-BULK-VALID',
       accountId: 'current',
       seasonId: '25-26',
@@ -2691,7 +2691,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
       createdAt: new Date()
     }).returning().then(r => r[0]);
 
-    const btClosed = await db.insert(bankTransactionsTable).values({
+    const btClosed = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-BULK-CLOSED',
       accountId: 'current',
       seasonId: '24-25', // closed season
@@ -2746,10 +2746,10 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     expect(body.success).toBe(false);
 
     // Verify rollback: valid bt remains pending, no ledger transactions created
-    const updatedBtValid = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, btValid.id)).get())!;
+    const updatedBtValid = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, btValid.id)).get())!;
     expect(updatedBtValid!.status).toBe('pending');
 
-    const ledgerTxs = await db.select().from(transactionsTable).all();
+    const ledgerTxs = await db.select().from(ledgerEntriesTable).all();
     expect(ledgerTxs).toHaveLength(0);
   });
 
@@ -2763,7 +2763,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
       createdAt: new Date()
     }).onConflictDoNothing().run();
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-SPLIT',
       accountId: 'current',
       seasonId: '25-26',
@@ -2808,11 +2808,11 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     expect(res.status).toBe(200);
 
     // Verify bank transaction is reconciled
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt!.status).toBe('reconciled');
 
     // Verify multiple entries are created
-    const ledgerTxs = await db.select().from(transactionsTable).where(eq(transactionsTable.bankTransactionId, bt.id)).all();
+    const ledgerTxs = await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.bankStatementLineId, bt.id)).all();
     expect(ledgerTxs).toHaveLength(2);
     expect(ledgerTxs.map(t => t.amount)).toContain(10000);
     expect(ledgerTxs.map(t => t.amount)).toContain(5000);
@@ -2851,7 +2851,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
       createdAt: new Date()
     }).returning().then(r => r[0]);
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-MULTI-MATCH',
       accountId: 'current',
       seasonId: '25-26',
@@ -2888,12 +2888,12 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     const updatedInv1 = (await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv1.id)).get())!;
     const updatedInv2 = (await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv2.id)).get())!;
     expect(updatedInv1!.status).toBe('paid');
-    expect(updatedInv1!.bankTransactionId).toBe(bt.id);
+    expect(updatedInv1!.bankStatementLineId).toBe(bt.id);
     expect(updatedInv2!.status).toBe('paid');
-    expect(updatedInv2!.bankTransactionId).toBe(bt.id);
+    expect(updatedInv2!.bankStatementLineId).toBe(bt.id);
 
     // Verify bank transaction is reconciled
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt!.status).toBe('reconciled');
   });
 
@@ -2925,7 +2925,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
       importedAt: new Date()
     }).returning().then(r => r[0]);
 
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-SPLIT-MEMBER',
       accountId: 'current',
       seasonId: '25-26',
@@ -2979,7 +2979,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     expect(updatedMember!.paid).toBe(false);
 
     // Verify bank transaction is reconciled
-    const updatedBt = (await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, bt.id)).get())!;
+    const updatedBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(updatedBt!.status).toBe('reconciled');
   });
 });

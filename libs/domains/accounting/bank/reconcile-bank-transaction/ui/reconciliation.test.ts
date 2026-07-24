@@ -49,7 +49,7 @@ describe('createReconciliationState logic unit tests', () => {
       date: '2026-03-01',
       description: 'Achat materiel',
       category: '10',
-      bankTransactionId: null
+      bankStatementLineId: null
     },
     {
       id: 11,
@@ -59,7 +59,7 @@ describe('createReconciliationState logic unit tests', () => {
       date: '2026-03-02',
       description: 'Adhesion Dupont',
       category: '1',
-      bankTransactionId: 99
+      bankStatementLineId: 99
     }
   ];
 
@@ -187,7 +187,7 @@ describe('createReconciliationState logic unit tests', () => {
     expect(sug1.length).toBe(1);
     expect(sug1[0].id).toBe(10);
 
-    // Transaction 2 (15000, recette) matches GL entry 11 (15000, recette), but entry 11 has bankTransactionId=99 so excluded
+    // Transaction 2 (15000, recette) matches GL entry 11 (15000, recette), but entry 11 has bankStatementLineId=99 so excluded
     const sug2 = state.getSuggestions(mockBankTransactions[1]);
     expect(sug2.length).toBe(0);
   });

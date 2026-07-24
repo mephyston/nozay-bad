@@ -44,9 +44,9 @@ export class ApproveOrderRepository {
     });
   }
 
-  async approveWithLock(db: DbOrTx, id: number, transactionId: number): Promise<typeof ordersTable.$inferSelect | undefined> {
+  async approveWithLock(db: DbOrTx, id: number, ledgerEntryId: number): Promise<typeof ordersTable.$inferSelect | undefined> {
     return db.update(ordersTable)
-      .set({ status: 'approved', transactionId })
+      .set({ status: 'approved', ledgerEntryId })
       .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')))
       .returning()
       .get();

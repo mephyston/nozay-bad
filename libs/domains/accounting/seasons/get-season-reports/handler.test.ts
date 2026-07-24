@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { getSeasonReports } from './handler';
-import { seasonsTable, transactionsTable, seasonCategoryBudgetsTable, categoriesTable } from '../../shared/schema';
+import { seasonsTable, ledgerEntriesTable, seasonCategoryBudgetsTable, categoriesTable } from '../../shared/schema';
 import { AppError } from '@nba/db';
 
 describe('getSeasonReports (As-of Cut-off Date & Projections - PROMPT 12)', () => {
@@ -51,7 +51,7 @@ describe('getSeasonReports (As-of Cut-off Date & Projections - PROMPT 12)', () =
     ]);
 
     // Seed Transactions for 25-26 (dated before and after 2026-06-30)
-    await db.insert(transactionsTable).values([
+    await db.insert(ledgerEntriesTable).values([
       {
         id: 1,
         seasonId: 1,

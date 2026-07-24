@@ -1,6 +1,6 @@
 import { type DbOrTx } from '@nba/db';
 import { eq, and, gte, lte } from 'drizzle-orm';
-import { seasonBalancesTable, transactionsTable } from '../../shared/schema';
+import { seasonBalancesTable, ledgerEntriesTable } from '../../shared/schema';
 
 export class GetSeasonBalanceRepository {
   async getBalances(db: DbOrTx, seasonId: string): Promise<any[]> {
@@ -9,10 +9,10 @@ export class GetSeasonBalanceRepository {
 
   async getTransactionsForPeriod(db: DbOrTx, startDate: string, endDate: string): Promise<any[]> {
     return db.select()
-      .from(transactionsTable)
+      .from(ledgerEntriesTable)
       .where(and(
-        gte(transactionsTable.date, startDate),
-        lte(transactionsTable.date, endDate)
+        gte(ledgerEntriesTable.date, startDate),
+        lte(ledgerEntriesTable.date, endDate)
       ))
       .all();
   }

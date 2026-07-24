@@ -18,14 +18,14 @@ export async function deleteTransaction(db: Db, id: number) {
     }
 
     // 2. Si liée à un relevé bancaire, recalculer le pointage restant
-    if (tx.bankTransactionId) {
-      const bankTx = await repo.getBankTransactionById(txDb, tx.bankTransactionId);
+    if (tx.bankStatementLineId) {
+      const bankTx = await repo.getBankTransactionById(txDb, tx.bankStatementLineId);
       if (bankTx) {
-        const remainingTxs = await repo.getRemainingTransactionsForBankTx(txDb, tx.bankTransactionId, id);
+        const remainingTxs = await repo.getRemainingTransactionsForBankTx(txDb, tx.bankStatementLineId, id);
         const totalRemaining = remainingTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
         if (totalRemaining < Math.abs(bankTx.amount)) {
-          await repo.updateBankTransactionStatus(txDb, tx.bankTransactionId, 'pending');
+          await repo.updateBankTransactionStatus(txDb, tx.bankStatementLineId, 'pending');
         }
       }
     }

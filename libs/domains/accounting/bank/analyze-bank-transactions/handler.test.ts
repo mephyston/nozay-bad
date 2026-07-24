@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { analyzeBankTransactions } from './handler';
-import { bankTransactionsTable, categoriesTable, seasonsTable } from '../../shared/schema';
+import { bankStatementLinesTable, categoriesTable, seasonsTable } from '../../shared/schema';
 import { eq, sql } from 'drizzle-orm';
 
 describe('analyzeBankTransactions', () => {
@@ -45,7 +45,7 @@ describe('analyzeBankTransactions', () => {
   });
 
   it('should load categories dynamically from db and analyze pending bank transactions', async () => {
-    await db.insert(bankTransactionsTable).values({
+    await db.insert(bankStatementLinesTable).values({
       id: 1,
       fitid: 'TX1001',
       seasonId: '25-26',
@@ -85,7 +85,7 @@ describe('analyzeBankTransactions', () => {
     expect(capturedPrompt).toContain('- ID: 101 (Adhésions & Inscriptions / Adhésions)');
     expect(capturedPrompt).toContain('- ID: 115 (Virements Internes (Transit) / Virements Internes)');
 
-    const updatedTx = await db.select().from(bankTransactionsTable).where(eq(bankTransactionsTable.id, 1)).all();
+    const updatedTx = await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, 1)).all();
     const suggestions = JSON.parse(updatedTx[0].aiSuggestions);
     expect(suggestions.category).toBe(101);
   });

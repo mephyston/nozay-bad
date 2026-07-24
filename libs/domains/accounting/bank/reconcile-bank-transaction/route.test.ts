@@ -43,7 +43,7 @@ describe('ReconcileBankTransaction Route', () => {
             {
               btId: 123,
               action: 'match',
-              transactionId: 456
+              ledgerEntryId: 456
             }
           ]
         })

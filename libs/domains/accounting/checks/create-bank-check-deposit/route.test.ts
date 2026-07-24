@@ -8,7 +8,7 @@ vi.mock('./repository', () => {
       getChecksByIds = vi.fn().mockResolvedValue([{ id: 1, amount: 100, number: '123', seasonId: '23-24', status: 'pending' }]);
       createCheckDeposit = vi.fn().mockResolvedValue({ id: 2 });
       updateChecksDeposit = vi.fn();
-      getCheckDepositById = vi.fn().mockResolvedValue({ id: 2, bankTransactionId: 3 });
+      getCheckDepositById = vi.fn().mockResolvedValue({ id: 2, bankStatementLineId: 3 });
       updateCheckDeposit = vi.fn();
       updateBankTransactionStatus = vi.fn();
       unlinkChecksForDeposit = vi.fn();
@@ -43,7 +43,7 @@ describe('CreateBankCheckDeposit Route', () => {
     const res = await createBankCheckDepositRoute.request('http://localhost/check-deposits/2/clear', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bankTransactionId: 'invalid' }) // Should be a number
+      body: JSON.stringify({ bankStatementLineId: 'invalid' }) // Should be a number
     }, { DB: mockD1 as any });
     expect(res.status).toBe(400);
   });
@@ -53,7 +53,7 @@ describe('CreateBankCheckDeposit Route', () => {
     const res = await createBankCheckDepositRoute.request('http://localhost/check-deposits/2/clear', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bankTransactionId: 3 })
+      body: JSON.stringify({ bankStatementLineId: 3 })
     }, { DB: mockD1 as any });
     expect(res.status).toBe(200);
   });

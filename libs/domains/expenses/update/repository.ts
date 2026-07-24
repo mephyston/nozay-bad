@@ -19,9 +19,9 @@ export class UpdateExpenseRepository {
     return db.update(expensesTable).set(values).where(eq(expensesTable.id, id)).returning().get();
   }
 
-  async approve(db: DbOrTx, id: number, transactionId: number): Promise<typeof expensesTable.$inferSelect> {
+  async approve(db: DbOrTx, id: number, ledgerEntryId: number): Promise<typeof expensesTable.$inferSelect> {
     return db.update(expensesTable)
-      .set({ status: 'approved', transactionId })
+      .set({ status: 'approved', ledgerEntryId })
       .where(eq(expensesTable.id, id))
       .returning().get();
   }
@@ -35,14 +35,14 @@ export class UpdateExpenseRepository {
 
   async cancelApproval(db: DbOrTx, id: number): Promise<typeof expensesTable.$inferSelect> {
     return db.update(expensesTable)
-      .set({ status: 'pending', transactionId: null })
+      .set({ status: 'pending', ledgerEntryId: null })
       .where(eq(expensesTable.id, id))
       .returning().get();
   }
 
-  async getTransactionDetails(db: DbOrTx, txId: number): Promise<{ id: number; bankTransactionId: number | null; amount: number } | undefined> {
+  async getTransactionDetails(db: DbOrTx, txId: number): Promise<{ id: number; bankStatementLineId: number | null; amount: number } | undefined> {
     return db.get(sql`
-      SELECT id, bank_transaction_id as bankTransactionId, amount FROM transactions WHERE id = ${txId}
+      SELECT id, bank_statement_line_id as bankStatementLineId, amount FROM transactions WHERE id = ${txId}
     `);
   }
 
@@ -55,7 +55,7 @@ export class UpdateExpenseRepository {
   async getRemainingTransactionsForBankTx(db: DbOrTx, bankTxId: number, excludeTxId: number): Promise<{ id: number; amount: number }[]> {
     return db.all(sql`
       SELECT id, amount FROM transactions 
-      WHERE bank_transaction_id = ${bankTxId} AND id != ${excludeTxId}
+      WHERE bank_statement_line_id = ${bankTxId} AND id != ${excludeTxId}
     `);
   }
 

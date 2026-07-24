@@ -24,7 +24,7 @@ describe('ExpensesManager Component', () => {
       status: 'pending' as const,
       emitterName: 'Marie Curie',
       memberId: null,
-      transactionId: null,
+      ledgerEntryId: null,
       createdAt: '2026-07-13T10:00:00.000Z'
     }
   ];

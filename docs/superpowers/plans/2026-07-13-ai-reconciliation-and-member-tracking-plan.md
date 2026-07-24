@@ -24,7 +24,7 @@
 * Create: `libs/shared/db/migrations/0006_enrich_tables_for_ai_and_members.sql` (généré par Drizzle-Kit)
 
 **Interfaces:**
-* Produces: Nouveaux champs dans `membersTable`, `transactionsTable` et `bankTransactionsTable` dans le module `@nba/db`.
+* Produces: Nouveaux champs dans `membersTable`, `ledgerEntriesTable` et `bankStatementLinesTable` dans le module `@nba/db`.
 
 - [ ] **Step 1: Modifier le schéma Drizzle**
   Ouvrir [schema.ts](file:///Users/david/Lab/nozay-bad/libs/shared/db/src/schema.ts) et appliquer les modifications suivantes :
@@ -41,11 +41,11 @@
     parent2Email: text('parent2_email'),
     parent2Phone: text('parent2_phone')
     ```
-  * Dans `transactionsTable`, ajouter à la fin :
+  * Dans `ledgerEntriesTable`, ajouter à la fin :
     ```typescript
     memberId: integer('member_id').references(() => membersTable.id)
     ```
-  * Dans `bankTransactionsTable`, ajouter à la fin :
+  * Dans `bankStatementLinesTable`, ajouter à la fin :
     ```typescript
     aiSuggestions: text('ai_suggestions')
     ```
@@ -74,7 +74,7 @@
     expect(member.amountDue).toBe(25000);
     expect(member.parent1Name).toBe('Dupont Marc');
 
-    const [tx] = await db.insert(transactionsTable).values({
+    const [tx] = await db.insert(ledgerEntriesTable).values({
       seasonId: '25-26',
       type: 'recette',
       accountId: 'current',
@@ -240,10 +240,10 @@
     
     // 1. Récupérer toutes les transactions bancaires pending de la saison
     const pendingTxs = await db.select()
-      .from(bankTransactionsTable)
+      .from(bankStatementLinesTable)
       .where(and(
-        eq(bankTransactionsTable.seasonId, season),
-        eq(bankTransactionsTable.status, 'pending')
+        eq(bankStatementLinesTable.seasonId, season),
+        eq(bankStatementLinesTable.status, 'pending')
       ))
       .all();
 
@@ -333,9 +333,9 @@ Renvoie STRICTEMENT un objet JSON sous la forme suivante (sans aucun autre texte
       }
 
       // Sauvegarder la suggestion en base de données
-      await db.update(bankTransactionsTable)
+      await db.update(bankStatementLinesTable)
         .set({ aiSuggestions: JSON.stringify(suggestionResult) })
-        .where(eq(bankTransactionsTable.id, tx.id))
+        .where(eq(bankStatementLinesTable.id, tx.id))
         .run();
       
       analyzedCount++;
@@ -393,7 +393,7 @@ Renvoie STRICTEMENT un objet JSON sous la forme suivante (sans aucun autre texte
       importedAt: new Date()
     }).returning();
 
-    const [bt] = await db.insert(bankTransactionsTable).values({
+    const [bt] = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-PIGNON-TEST',
       seasonId: '25-26',
       accountId: 'current',

@@ -160,7 +160,7 @@ describe('Orders API Endpoints', () => {
     expect(appRes.status).toBe(200);
     const json = await appRes.json() as any;
     expect(json.data.status).toBe('approved');
-    expect(json.data.transactionId).toBeDefined();
+    expect(json.data.ledgerEntryId).toBeDefined();
 
     // 3. Verify stock is unchanged
     const updatedProd = await db.select().from(productsTable).where(eq(productsTable.id, 1)).get();
@@ -168,7 +168,7 @@ describe('Orders API Endpoints', () => {
 
     // 4. Verify transaction is created
     const tx = await db.get(sql`
-      SELECT amount, category, member_id FROM transactions WHERE id = ${json.data.transactionId}
+      SELECT amount, category, member_id FROM transactions WHERE id = ${json.data.ledgerEntryId}
     `) as { amount: number; category: number; member_id: number };
     expect(tx).toBeDefined();
     expect(tx.amount).toBe(2400);

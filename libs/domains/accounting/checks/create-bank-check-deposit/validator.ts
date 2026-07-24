@@ -8,5 +8,5 @@ export const createCheckDepositSchema = Type.Object({
 });
 
 export const clearCheckDepositSchema = Type.Object({
-  bankTransactionId: Type.Number()
+  bankStatementLineId: Type.Number()
 });

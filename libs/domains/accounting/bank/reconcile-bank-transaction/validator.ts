@@ -27,7 +27,7 @@ export const reconcileBankTransactionSchema = Type.Object({
   invoiceId: Type.Optional(Type.Number()),
   invoiceIds: Type.Optional(Type.Array(Type.Number())),
   action: Type.Union([Type.Literal('match'), Type.Literal('create')]),
-  transactionId: Type.Optional(Type.Number()),
+  ledgerEntryId: Type.Optional(Type.Number()),
   transactions: Type.Optional(Type.Array(transactionDetailsSchema)),
   transaction: Type.Optional(transactionDetailsSchema)
 });

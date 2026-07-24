@@ -177,7 +177,7 @@ export async function handleClearDeposit(e: SubmitEvent, seasonId: string, state
       body: JSON.stringify({
         action: 'clear-deposit',
         id: state.selectedDepositToClear.id,
-        bankTransactionId: parseInt(state.selectedBankTransactionId)
+        bankStatementLineId: parseInt(state.selectedBankTransactionId)
       })
     });
 

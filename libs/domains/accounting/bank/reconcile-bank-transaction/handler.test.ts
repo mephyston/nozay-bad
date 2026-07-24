@@ -27,7 +27,7 @@ describe('reconcileBankTransaction', () => {
       markBankTransactionReconciled: vi.fn().mockResolvedValue(true),
     };
     (vi.mocked(ReconcileBankTransactionRepository) as any).mockImplementation(function() { return mockRepoInstance; });
-    const payload = { action: 'match', transactionId: 1, memberId: 1 };
+    const payload = { action: 'match', ledgerEntryId: 1, memberId: 1 };
     await (reconcileBankTransaction as any)(db, 1, payload);
     expect(db.transaction).toHaveBeenCalled();
   });

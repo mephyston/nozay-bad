@@ -12,9 +12,9 @@ Nous ajoutons une nouvelle table `bank_transactions` pour conserver les lignes d
 ### Schéma Drizzle (`libs/shared/db/src/schema.ts`)
 ```typescript
 import { sqliteTable, integer, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
-import { seasonsTable, transactionsTable } from './schema';
+import { seasonsTable, ledgerEntriesTable } from './schema';
 
-export const bankTransactionsTable = sqliteTable('bank_transactions', {
+export const bankStatementLinesTable = sqliteTable('bank_transactions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   
   // Identifiant de transaction unique fourni par la banque (FITID)
@@ -32,7 +32,7 @@ export const bankTransactionsTable = sqliteTable('bank_transactions', {
   status: text('status', { enum: ['pending', 'reconciled', 'ignored'] }).notNull().default('pending'),
   
   // Clé étrangère vers la table transactions si rapproché
-  transactionId: integer('transaction_id').references(() => transactionsTable.id),
+  ledgerEntryId: integer('ledger_entry_id').references(() => ledgerEntriesTable.id),
   
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
@@ -72,11 +72,11 @@ Un utilitaire de parsing pour extraire les données d'un fichier OFX (SGML) :
 
 #### 3. `POST /bank-transactions/:id/reconcile`
 * **Body** :
-  * Mode association simple : `{ action: 'match', transactionId: number }`
+  * Mode association simple : `{ action: 'match', ledgerEntryId: number }`
   * Mode création et association : `{ action: 'create', transaction: { type, accountId, category, amount, date, paymentMethod, description, reference } }`
 * **Traitement** :
-  * Si `match` : Met à jour la table `bank_transactions` avec `status = 'reconciled'` et `transactionId`.
-  * Si `create` : Insère la transaction dans le Grand Livre, puis met à jour `bank_transactions` avec `status = 'reconciled'` et `transactionId = newTx.id`.
+  * Si `match` : Met à jour la table `bank_transactions` avec `status = 'reconciled'` et `ledgerEntryId`.
+  * Si `create` : Insère la transaction dans le Grand Livre, puis met à jour `bank_transactions` avec `status = 'reconciled'` et `ledgerEntryId = newTx.id`.
 * **Réponse** : `{ success: true }`
 
 #### 4. `POST /bank-transactions/:id/ignore`

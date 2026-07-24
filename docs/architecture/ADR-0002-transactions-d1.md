@@ -124,10 +124,10 @@ Un test d'intégration contre D1 staging pour `shop/approve-order` n'est **pas r
 **Handlers nécessitant restructuration pour batch :**
 | Handler | Dépendance inter-requêtes |
 |---|---|
-| shop/approve-order | `recipeTx.id` → `orders.transactionId` |
-| checks/createCheck | `newTx.id` → `checks.transactionId` |
+| shop/approve-order | `recipeTx.id` → `orders.ledgerEntryId` |
+| checks/createCheck | `newTx.id` → `checks.ledgerEntryId` |
 | checks/deleteCheck | lecture → décision → suppression |
-| expenses/approveExpense | `tx.id` → `expenses.transactionId` |
+| expenses/approveExpense | `tx.id` → `expenses.ledgerEntryId` |
 | invoices/create-invoice | `invoice.id` → `invoice_items.invoiceId` |
 | checks/createCheckDeposit | `deposit.id` → `checks.checkDepositId` |
 

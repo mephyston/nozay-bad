@@ -18,7 +18,7 @@ export class ListChecksRepository {
       emitter: checksTable.emitter,
       bank: checksTable.bank,
       memberId: checksTable.memberId,
-      transactionId: checksTable.transactionId,
+      ledgerEntryId: checksTable.ledgerEntryId,
       status: checksTable.status,
       photoUrl: checksTable.photoUrl,
       createdAt: checksTable.createdAt

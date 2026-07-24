@@ -38,10 +38,10 @@ import { reconcileBankTransactionRoute } from './bank/reconcile-bank-transaction
 import { updateBankTransactionStatusRoute } from './bank/update-bank-transaction-status/route';
 
 // Transactions Routes
-import { listTransactionsRoute } from './transactions/list-transactions/route';
-import { createTransactionRoute } from './transactions/create-transaction/route';
-import { updateTransactionRoute } from './transactions/update-transaction/route';
-import { deleteTransactionRoute } from './transactions/delete-transaction/route';
+import { listTransactionsRoute } from './ledger/list-transactions/route';
+import { createTransactionRoute } from './ledger/create-transaction/route';
+import { updateTransactionRoute } from './ledger/update-transaction/route';
+import { deleteTransactionRoute } from './ledger/delete-transaction/route';
 
 // Checks Routes
 import { listChecksRoute } from './checks/list-checks/route';
@@ -105,7 +105,7 @@ accountingRouter.route('/', createBankCheckDepositRoute);
 
 export { normalizeCategory, cleanName } from './shared/helpers';
 
-export { CreateTransactionRepository } from './transactions/create-transaction/repository';
+export { CreateTransactionRepository } from './ledger/create-transaction/repository';
 
 export interface CreateRevenueTransactionParams {
   seasonId: number;
@@ -120,7 +120,7 @@ export interface CreateRevenueTransactionParams {
 }
 
 export async function createRevenueTransaction(db: any, params: CreateRevenueTransactionParams): Promise<{ id: number }> {
-  const repository = new (await import('./transactions/create-transaction/repository')).CreateTransactionRepository();
+  const repository = new (await import('./ledger/create-transaction/repository')).CreateTransactionRepository();
   return repository.create(db, {
     seasonId: params.seasonId,
     type: 'recette',

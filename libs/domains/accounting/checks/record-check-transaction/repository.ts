@@ -1,6 +1,6 @@
 import { type DbOrTx } from '@nba/db';
 import { eq } from 'drizzle-orm';
-import { transactionsTable, checksTable } from '../../shared/schema';
+import { ledgerEntriesTable, checksTable } from '../../shared/schema';
 import { getAllMembers } from '@nba/members-api';
 
 export class RecordCheckTransactionRepository {
@@ -9,7 +9,7 @@ export class RecordCheckTransactionRepository {
   }
 
   async createTransaction(db: DbOrTx, values: any): Promise<any> {
-    return db.insert(transactionsTable).values(values).returning().get();
+    return db.insert(ledgerEntriesTable).values(values).returning().get();
   }
 
   async createCheck(db: DbOrTx, values: any): Promise<any> {
@@ -21,15 +21,15 @@ export class RecordCheckTransactionRepository {
   }
 
   async getTransactionById(db: DbOrTx, id: number): Promise<any | undefined> {
-    return db.select().from(transactionsTable).where(eq(transactionsTable.id, id)).get();
+    return db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, id)).get();
   }
 
   async unlinkCheckTransaction(db: DbOrTx, id: number): Promise<void> {
-    await db.update(checksTable).set({ transactionId: null }).where(eq(checksTable.id, id)).run();
+    await db.update(checksTable).set({ ledgerEntryId: null }).where(eq(checksTable.id, id)).run();
   }
 
   async deleteTransaction(db: DbOrTx, id: number): Promise<void> {
-    await db.delete(transactionsTable).where(eq(transactionsTable.id, id)).run();
+    await db.delete(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, id)).run();
   }
 
   async deleteCheck(db: DbOrTx, id: number): Promise<void> {

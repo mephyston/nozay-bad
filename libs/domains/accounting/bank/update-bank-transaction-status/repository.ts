@@ -1,12 +1,12 @@
 import { type DbOrTx } from '@nba/db';
 import { eq } from 'drizzle-orm';
-import { bankTransactionsTable } from '../../shared/schema';
+import { bankStatementLinesTable } from '../../shared/schema';
 
 export class UpdateBankTransactionStatusRepository {
   async updateStatus(db: DbOrTx, id: number, status: 'pending' | 'ignored'): Promise<void> {
-    await db.update(bankTransactionsTable)
+    await db.update(bankStatementLinesTable)
       .set({ status })
-      .where(eq(bankTransactionsTable.id, id))
+      .where(eq(bankStatementLinesTable.id, id))
       .run();
   }
 }

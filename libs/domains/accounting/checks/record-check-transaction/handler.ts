@@ -229,7 +229,7 @@ export async function createCheck(db: Db, body: CreateCheckInput) {
       emitter: body.emitter,
       bank: body.bank || null,
       memberId: body.memberId || null,
-      transactionId: newTx.id,
+      ledgerEntryId: newTx.id,
       status: 'received',
       photoUrl: body.photoUrl || null,
       createdAt: new Date()
@@ -252,10 +252,10 @@ export async function deleteCheck(db: Db, id: number) {
       throw new AppError('Chèque non trouvé.', 404);
     }
 
-    if (check.transactionId) {
+    if (check.ledgerEntryId) {
       await repo.unlinkCheckTransaction(txDb, id);
 
-      const tx = await repo.getTransactionById(txDb, check.transactionId);
+      const tx = await repo.getTransactionById(txDb, check.ledgerEntryId);
       if (tx) {
         if (tx.memberId && (tx.category === 1 || String(tx.category) === '1')) {
           await applyPaymentToMember(txDb, tx.memberId, -Math.abs(tx.amount));

@@ -7,7 +7,7 @@ export interface ListChecksOutput {
   emitter: string;
   bank: string | null;
   memberId: number | null;
-  transactionId: number | null;
+  ledgerEntryId: number | null;
   status: 'received' | 'deposited' | 'cleared' | 'bounced';
   photoUrl: string | null;
   createdAt: Date;
@@ -22,6 +22,6 @@ export interface ListCheckDepositsOutput {
   date: string;
   amount: number;
   status: 'deposited' | 'cleared';
-  bankTransactionId: number | null;
+  bankStatementLineId: number | null;
   createdAt: Date;
 }

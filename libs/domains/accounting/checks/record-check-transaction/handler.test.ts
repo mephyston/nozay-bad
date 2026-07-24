@@ -7,7 +7,7 @@ vi.mock('./repository', () => {
     RecordCheckTransactionRepository: class {
       createTransaction = vi.fn().mockResolvedValue({ id: 10 });
       createCheck = vi.fn().mockResolvedValue({ id: 1, number: '123' });
-      getCheckById = vi.fn().mockResolvedValue({ id: 1, transactionId: 10 });
+      getCheckById = vi.fn().mockResolvedValue({ id: 1, ledgerEntryId: 10 });
       getTransactionById = vi.fn().mockResolvedValue({ id: 10, amount: 100, memberId: 1, category: 1 });
       unlinkCheckTransaction = vi.fn();
       deleteTransaction = vi.fn();

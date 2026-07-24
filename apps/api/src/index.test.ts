@@ -107,7 +107,7 @@ describe('Cross-Domain Integration Tests', () => {
     expect(approveRes.status).toBe(200);
     const approveJson = await approveRes.json() as any;
     expect(approveJson.success).toBe(true);
-    const txId = approveJson.data.transactionId;
+    const txId = approveJson.data.ledgerEntryId;
     expect(txId).toBeDefined();
 
     // 3. Delete the transaction directly in the ledger via accounting
@@ -119,7 +119,7 @@ describe('Cross-Domain Integration Tests', () => {
     // 4. Verify the expense claim status went back to pending
     const finalExpense = await db.select().from(expensesTable).where(eq(expensesTable.id, expenseId)).get();
     expect(finalExpense!.status).toBe('pending');
-    expect(finalExpense!.transactionId).toBeNull();
+    expect(finalExpense!.ledgerEntryId).toBeNull();
   });
 });
 

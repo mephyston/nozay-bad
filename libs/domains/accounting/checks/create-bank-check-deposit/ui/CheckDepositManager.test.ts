@@ -64,7 +64,7 @@ describe('CheckDepositManager Component', () => {
             emitter: 'Dupont Marc',
             bank: 'Société Générale',
             memberId: 10,
-            transactionId: 100,
+            ledgerEntryId: 100,
             status: 'received',
             photoUrl: null,
             createdAt: '2026-07-13T12:00:00Z',
@@ -80,7 +80,7 @@ describe('CheckDepositManager Component', () => {
             date: '2026-07-12',
             amount: 30000,
             status: 'deposited',
-            bankTransactionId: null,
+            bankStatementLineId: null,
             createdAt: '2026-07-12T12:00:00Z'
           }
         ],
@@ -118,7 +118,7 @@ describe('CheckDepositManager Component', () => {
             emitter: 'Dupont Marc',
             bank: 'Société Générale',
             memberId: 10,
-            transactionId: 100,
+            ledgerEntryId: 100,
             status: 'received',
             photoUrl: null,
             createdAt: '2026-07-13T12:00:00Z',
@@ -134,7 +134,7 @@ describe('CheckDepositManager Component', () => {
             date: '2026-07-12',
             amount: 30000,
             status: 'deposited',
-            bankTransactionId: null,
+            bankStatementLineId: null,
             createdAt: '2026-07-12T12:00:00Z'
           }
         ],

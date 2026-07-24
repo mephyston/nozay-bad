@@ -59,7 +59,7 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
   let lastTxId = null;
 
   if (body.action === 'match') {
-    const existingTx = await repo.getTransactionById(db, body.transactionId);
+    const existingTx = await repo.getTransactionById(db, body.ledgerEntryId);
     if (!existingTx) {
       return { success: false, error: 'Transaction cible introuvable.', status: 404 };
     }
@@ -67,8 +67,8 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
       return { success: false, error: 'La saison de la transaction est clôturée. Rapprochement impossible.', status: 400 };
     }
 
-    await repo.linkTransactionToBank(db, body.transactionId, id, memberId);
-    lastTxId = body.transactionId;
+    await repo.linkTransactionToBank(db, body.ledgerEntryId, id, memberId);
+    lastTxId = body.ledgerEntryId;
   } else if (body.action === 'create') {
     if (body.transactions && Array.isArray(body.transactions)) {
       for (const txItem of body.transactions) {
@@ -95,7 +95,7 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
           accrualNote: txItem.accrualNote || txItem.accrual_note || null,
           memberId: memberId || null,
           invoiceId: invoiceId || null,
-          bankTransactionId: id,
+          bankStatementLineId: id,
           createdAt: new Date()
         });
       }
@@ -128,7 +128,7 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
         accrualNote: tx.accrualNote || tx.accrual_note || null,
         memberId: memberId || null,
         invoiceId: (invoiceIds && invoiceIds.length > 0) ? invoiceIds[0] : (invoiceId || null),
-        bankTransactionId: id,
+        bankStatementLineId: id,
         createdAt: new Date()
       });
 
@@ -179,7 +179,7 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
         }
       }
     } else if (body.action === 'match') {
-      const matchedTx = await repo.getTransactionById(db, body.transactionId);
+      const matchedTx = await repo.getTransactionById(db, body.ledgerEntryId);
       const categoryStr = matchedTx ? matchedTx.category : null;
       if (isMembershipCategory(categoryStr)) {
         hasMembershipTx = true;

@@ -25,7 +25,7 @@
 
 **Interfaces:**
 - Produces: `POST /bank-transactions/reconcile-bulk`
-  - Request body: `{ requests: Array<{ btId: number, action: 'match' | 'create', transactionId?: number, memberId?: number | null, invoiceId?: number, transaction?: any }> }`
+  - Request body: `{ requests: Array<{ btId: number, action: 'match' | 'create', ledgerEntryId?: number, memberId?: number | null, invoiceId?: number, transaction?: any }> }`
   - Response: `{ success: true, count: number }`
 - Produces: `POST /bank-transactions/:id/reconcile` (updated)
   - Request body for split entries: `{ action: 'create', transactions: Array<{ category: string, amount: number, description: string, paymentMethod: string, seasonId: string, accountId: string }> }`
@@ -35,7 +35,7 @@
   Add test blocks to `apps/api/src/index.test.ts` asserting:
   - `POST /bank-transactions/reconcile-bulk` executes successfully when multiple valid suggestions are matched.
   - `POST /bank-transactions/reconcile-bulk` rolls back all changes if one matching operation fails or is closed.
-  - `POST /bank-transactions/:id/reconcile` successfully processes split transactions creating multiple entries in `transactionsTable` linked to the same `bankTransactionId`.
+  - `POST /bank-transactions/:id/reconcile` successfully processes split transactions creating multiple entries in `ledgerEntriesTable` linked to the same `bankStatementLineId`.
   - `POST /bank-transactions/:id/reconcile` successfully matches a single bank transaction to multiple `invoiceIds` by marking their status as `'paid'`.
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -45,8 +45,8 @@
 - [ ] **Step 3: Implement Hono API changes**
   In `apps/api/src/index.ts`:
   - Implement `POST /bank-transactions/reconcile-bulk` route. Wrap all request executions in a `db.transaction()` block. For each item in `requests`, run the same matching/creation checks as the individual endpoint.
-  - In `POST /bank-transactions/:id/reconcile`, add support for `body.transactions` array. If present, map each item to insert multiple rows in the Drizzle `transactionsTable`.
-  - In `POST /bank-transactions/:id/reconcile`, add support for `body.invoiceIds` array. Loop over `invoiceIds` and update status to `'paid'` and `bankTransactionId` to `:id`.
+  - In `POST /bank-transactions/:id/reconcile`, add support for `body.transactions` array. If present, map each item to insert multiple rows in the Drizzle `ledgerEntriesTable`.
+  - In `POST /bank-transactions/:id/reconcile`, add support for `body.invoiceIds` array. Loop over `invoiceIds` and update status to `'paid'` and `bankStatementLineId` to `:id`.
 
 - [ ] **Step 4: Run test to verify it passes**
   Run: `npx vitest run apps/api/src/index.test.ts`

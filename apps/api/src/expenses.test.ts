@@ -63,11 +63,11 @@ describe('Expenses API Endpoints', () => {
     const approveJson = await approveRes.json() as any;
     expect(approveJson.success).toBe(true);
     expect(approveJson.data.status).toBe('approved');
-    expect(approveJson.data.transactionId).toBeDefined();
+    expect(approveJson.data.ledgerEntryId).toBeDefined();
 
     // Verify transaction was created in compta
     const tx = await db.get(sql`
-      SELECT type, amount, category, description FROM transactions WHERE id = ${approveJson.data.transactionId}
+      SELECT type, amount, category, description FROM transactions WHERE id = ${approveJson.data.ledgerEntryId}
     `) as { type: string; amount: number; category: number; description: string };
     expect(tx).toBeDefined();
     expect(tx.type).toBe('depense');
@@ -122,11 +122,11 @@ describe('Expenses API Endpoints', () => {
     const cancelJson = await cancelRes.json() as any;
     expect(cancelJson.success).toBe(true);
     expect(cancelJson.data.status).toBe('pending');
-    expect(cancelJson.data.transactionId).toBeNull();
+    expect(cancelJson.data.ledgerEntryId).toBeNull();
 
     // Check associated transaction is deleted
     const txDeleted = await db.get(sql`
-      SELECT id FROM transactions WHERE id = ${approveJson.data.transactionId}
+      SELECT id FROM transactions WHERE id = ${approveJson.data.ledgerEntryId}
     `);
     expect(txDeleted).toBeUndefined();
 

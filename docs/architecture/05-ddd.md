@@ -32,9 +32,9 @@ export class Invoice {
     return this.status === 'draft' || this.status === 'cancelled';
   }
 
-  markAsPaid(bankTransactionId: number): void {
+  markAsPaid(bankStatementLineId: number): void {
     this.status = 'paid';
-    this.bankTransactionId = bankTransactionId;
+    this.bankStatementLineId = bankStatementLineId;
   }
 }
 ```

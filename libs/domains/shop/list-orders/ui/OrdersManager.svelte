@@ -12,7 +12,7 @@
     totalAmount: number;
     paymentMethod: 'virement' | 'cheque' | 'especes' | 'labaz' | 'ancv' | 'pass_sport' | 'ticket_loisir' | 'up_loisir';
     status: 'pending' | 'approved' | 'rejected';
-    transactionId: number | null;
+    ledgerEntryId: number | null;
     createdAt: string | Date;
   }
 
@@ -446,9 +446,9 @@
                             <Check class="w-3 h-3" />
                             Validée
                           </Badge>
-                          {#if item.order.transactionId}
+                          {#if item.order.ledgerEntryId}
                             <div class="text-[10px] text-muted-foreground mt-0.5">
-                              Tx: #{item.order.transactionId}
+                              Tx: #{item.order.ledgerEntryId}
                             </div>
                           {/if}
                         {:else if item.order.status === 'rejected'}

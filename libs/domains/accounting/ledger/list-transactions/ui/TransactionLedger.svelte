@@ -15,7 +15,7 @@
     description: string;
     reference: string | null;
     memberId?: number | null;
-    bankTransactionId?: number | null;
+    bankStatementLineId?: number | null;
     memberName?: string | null;
     memberLicence?: string | null;
   }
@@ -480,7 +480,7 @@
                       Adhérent : {tx.memberName}
                     </a>
                   {/if}
-                  {#if tx.bankTransactionId}
+                  {#if tx.bankStatementLineId}
                     <Badge variant="outline" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold border-transparent">
                       <Check class="w-2.5 h-2.5" />
                       Rapprochée (SG)

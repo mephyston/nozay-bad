@@ -9,7 +9,7 @@ export interface OrderData {
   totalAmount: number;
   paymentMethod: string;
   status: OrderStatus;
-  transactionId: number | null;
+  ledgerEntryId: number | null;
   createdAt: Date;
 }
 

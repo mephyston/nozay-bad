@@ -1,6 +1,6 @@
 import { type DbOrTx } from '@nba/db';
 import { eq, inArray } from 'drizzle-orm';
-import { checksTable, checkDepositsTable, bankTransactionsTable } from '../../shared/schema';
+import { checksTable, checkDepositsTable, bankStatementLinesTable } from '../../shared/schema';
 
 export class CreateBankCheckDepositRepository {
   async getChecksByIds(db: DbOrTx, ids: number[]): Promise<any[]> {
@@ -28,7 +28,7 @@ export class CreateBankCheckDepositRepository {
   }
 
   async updateBankTransactionStatus(db: DbOrTx, id: number, status: string): Promise<void> {
-    await db.update(bankTransactionsTable).set({ status: status as any }).where(eq(bankTransactionsTable.id, id)).run();
+    await db.update(bankStatementLinesTable).set({ status: status as any }).where(eq(bankStatementLinesTable.id, id)).run();
   }
 
   async unlinkChecksForDeposit(db: DbOrTx, depositId: number): Promise<void> {

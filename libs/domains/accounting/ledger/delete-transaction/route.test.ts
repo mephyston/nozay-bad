@@ -7,14 +7,14 @@ vi.mock('./handler', () => ({
 
 describe('deleteTransactionRoute', () => {
   it('handles valid numeric id param', async () => {
-    const res = await deleteTransactionRoute.request('/transactions/1', { method: 'DELETE' }, { DB: {} as any });
+    const res = await deleteTransactionRoute.request('/ledger/1', { method: 'DELETE' }, { DB: {} as any });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
   });
 
   it('returns 400 for non-numeric id param', async () => {
-    const res = await deleteTransactionRoute.request('/transactions/abc', { method: 'DELETE' }, { DB: {} as any });
+    const res = await deleteTransactionRoute.request('/ledger/abc', { method: 'DELETE' }, { DB: {} as any });
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.success).toBe(false);

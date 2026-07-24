@@ -6,5 +6,5 @@ export interface CreateCheckDepositInput {
 }
 
 export interface ClearCheckDepositInput {
-  bankTransactionId: number;
+  bankStatementLineId: number;
 }

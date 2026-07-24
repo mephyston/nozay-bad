@@ -11,7 +11,7 @@ export type Bindings = {
 export const deleteTransactionRoute = new Hono<{ Bindings: Bindings }>();
 
 deleteTransactionRoute.delete(
-  '/transactions/:id',
+  '/ledger/:id',
   tbValidator('param', deleteTransactionParamSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);

@@ -1,5 +1,5 @@
 import { type DbOrTx } from '@nba/db';
-import { bankTransactionsTable } from '../../shared/schema';
+import { bankStatementLinesTable } from '../../shared/schema';
 
 export class ImportBankStatementRepository {
   async insertBankTransaction(db: DbOrTx, values: {
@@ -13,7 +13,7 @@ export class ImportBankStatementRepository {
     status: 'pending';
     createdAt: Date;
   }): Promise<{ changes: number }> {
-    const res = await db.insert(bankTransactionsTable)
+    const res = await db.insert(bankStatementLinesTable)
       .values(values)
       .onConflictDoNothing()
       .run();

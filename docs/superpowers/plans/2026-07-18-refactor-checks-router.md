@@ -31,8 +31,8 @@
   import { drizzle } from 'drizzle-orm/d1';
   import { and, eq, inArray, desc, sql } from 'drizzle-orm';
   import {
-    transactionsTable,
-    bankTransactionsTable,
+    ledgerEntriesTable,
+    bankStatementLinesTable,
     checksTable,
     checkDepositsTable,
   } from '@metacult/features-accounting-data-access';
@@ -273,7 +273,7 @@
       emitter: checksTable.emitter,
       bank: checksTable.bank,
       memberId: checksTable.memberId,
-      transactionId: checksTable.transactionId,
+      ledgerEntryId: checksTable.ledgerEntryId,
       status: checksTable.status,
       photoUrl: checksTable.photoUrl,
       createdAt: checksTable.createdAt,
@@ -304,7 +304,7 @@
     const categoryVal = body.category ? Number(body.category) : 1;
     const descStr = body.description || `Règlement par chèque n°${body.number} de ${body.emitter}`;
 
-    const [newTx] = await db.insert(transactionsTable).values({
+    const [newTx] = await db.insert(ledgerEntriesTable).values({
       seasonId: body.seasonId,
       type: 'recette',
       accountId: 'current',
@@ -325,7 +325,7 @@
       emitter: body.emitter,
       bank: body.bank || null,
       memberId: body.memberId || null,
-      transactionId: newTx.id,
+      ledgerEntryId: newTx.id,
       status: 'received',
       photoUrl: body.photoUrl || null,
       createdAt: new Date()
@@ -365,13 +365,13 @@
       return c.json({ success: false, error: 'Chèque non trouvé.' }, 404);
     }
 
-    if (check.transactionId) {
+    if (check.ledgerEntryId) {
       await db.update(checksTable)
-        .set({ transactionId: null })
+        .set({ ledgerEntryId: null })
         .where(eq(checksTable.id, id))
         .run();
 
-      const tx = await db.select().from(transactionsTable).where(eq(transactionsTable.id, check.transactionId)).get();
+      const tx = await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, check.ledgerEntryId)).get();
       if (tx) {
         if (tx.memberId && (tx.category === 1 || String(tx.category) === '1')) {
           const member = await db.select().from(membersTable).where(eq(membersTable.id, tx.memberId)).get();
@@ -390,7 +390,7 @@
               .run();
           }
         }
-        await db.delete(transactionsTable).where(eq(transactionsTable.id, tx.id)).run();
+        await db.delete(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, tx.id)).run();
       }
     }
 
@@ -465,23 +465,23 @@
     const body = await c.req.json() as any;
     const db = drizzle(c.env.DB);
 
-    if (!body.bankTransactionId) {
-      return c.json({ success: false, error: 'bankTransactionId requis.' }, 400);
+    if (!body.bankStatementLineId) {
+      return c.json({ success: false, error: 'bankStatementLineId requis.' }, 400);
     }
 
     await db.update(checkDepositsTable)
       .set({
         status: 'cleared',
-        bankTransactionId: body.bankTransactionId
+        bankStatementLineId: body.bankStatementLineId
       })
       .where(eq(checkDepositsTable.id, id))
       .run();
 
-    await db.update(bankTransactionsTable)
+    await db.update(bankStatementLinesTable)
       .set({
         status: 'reconciled'
       })
-      .where(eq(bankTransactionsTable.id, body.bankTransactionId))
+      .where(eq(bankStatementLinesTable.id, body.bankStatementLineId))
       .run();
 
     return c.json({ success: true });
@@ -500,10 +500,10 @@
       return c.json({ success: false, error: 'Remise de chèques non trouvée.' }, 404);
     }
 
-    if (deposit.bankTransactionId) {
-      await db.update(bankTransactionsTable)
+    if (deposit.bankStatementLineId) {
+      await db.update(bankStatementLinesTable)
         .set({ status: 'pending' })
-        .where(eq(bankTransactionsTable.id, deposit.bankTransactionId))
+        .where(eq(bankStatementLinesTable.id, deposit.bankStatementLineId))
         .run();
     }
 

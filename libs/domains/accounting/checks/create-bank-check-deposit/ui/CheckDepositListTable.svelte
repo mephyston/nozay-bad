@@ -52,7 +52,7 @@
                 {#if dep.status === 'cleared'}
                   <span class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
                     <CheckCircle class="w-3.5 h-3.5" />
-                    Rapproché (SG #{dep.bankTransactionId})
+                    Rapproché (SG #{dep.bankStatementLineId})
                   </span>
                 {:else}
                   <span class="text-xs text-muted-foreground italic font-medium">Non rapproché</span>

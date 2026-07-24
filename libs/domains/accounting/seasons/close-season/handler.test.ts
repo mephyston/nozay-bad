@@ -5,8 +5,8 @@ import { setupMockDb } from '@nba/db/test-utils';
 import { closeSeason, getCloseSeasonChecks, reopenSeason } from './handler';
 import {
   seasonsTable,
-  transactionsTable,
-  bankTransactionsTable,
+  ledgerEntriesTable,
+  bankStatementLinesTable,
   checkDepositsTable,
   checksTable,
   seasonBalancesTable,
@@ -69,7 +69,7 @@ describe('closeSeason (Pre-closure Checks, Rollover & Reopen - PROMPT 13)', () =
 
   it('blocks closure if pending bank transactions exist', async () => {
     // Insert pending bank transaction on 24-25
-    await db.insert(bankTransactionsTable).values({
+    await db.insert(bankStatementLinesTable).values({
       id: 100,
       fitid: 'FIT-100',
       seasonId: 1,
@@ -131,7 +131,7 @@ describe('closeSeason (Pre-closure Checks, Rollover & Reopen - PROMPT 13)', () =
     });
 
     // Seed transaction 2 500 € revenue on 24-25
-    await db.insert(transactionsTable).values({
+    await db.insert(ledgerEntriesTable).values({
       id: 1,
       seasonId: 1,
       type: 'recette',

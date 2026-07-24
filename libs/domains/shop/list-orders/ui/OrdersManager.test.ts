@@ -19,7 +19,7 @@ describe('OrdersManager Component', () => {
         totalAmount: 5000, // 50.00 €
         paymentMethod: 'virement' as const,
         status: 'pending' as const,
-        transactionId: null,
+        ledgerEntryId: null,
         createdAt: '2026-07-13T10:00:00.000Z'
       },
       member: {
@@ -47,7 +47,7 @@ describe('OrdersManager Component', () => {
         totalAmount: 1550, // 15.50 €
         paymentMethod: 'cheque' as const,
         status: 'approved' as const,
-        transactionId: 55,
+        ledgerEntryId: 55,
         createdAt: '2026-07-12T10:00:00.000Z'
       },
       member: {
@@ -75,7 +75,7 @@ describe('OrdersManager Component', () => {
         totalAmount: 4650, // 46.50 €
         paymentMethod: 'especes' as const,
         status: 'rejected' as const,
-        transactionId: null,
+        ledgerEntryId: null,
         createdAt: '2025-07-12T10:00:00.000Z'
       },
       member: {

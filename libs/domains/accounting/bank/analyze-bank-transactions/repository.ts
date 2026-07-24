@@ -1,21 +1,21 @@
 import { and, eq, desc, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { bankTransactionsTable, categoriesTable, transactionsTable } from '../../shared/schema';
+import { bankStatementLinesTable, categoriesTable, ledgerEntriesTable } from '../../shared/schema';
 import { getMembersBySeason, getMembersByIds } from '@nba/members-api';
 
 export class AnalyzeBankTransactionsRepository {
   async getCategories(db: DbOrTx): Promise<(typeof categoriesTable.$inferSelect)[]> {
     return db.select().from(categoriesTable).all();
   }
-  async getPendingTransactions(db: DbOrTx, seasonId: string, singleId?: number): Promise<(typeof bankTransactionsTable.$inferSelect)[]> {
+  async getPendingTransactions(db: DbOrTx, seasonId: string, singleId?: number): Promise<(typeof bankStatementLinesTable.$inferSelect)[]> {
     const conditions = [
-      eq(bankTransactionsTable.seasonId, seasonId),
-      eq(bankTransactionsTable.status, 'pending')
+      eq(bankStatementLinesTable.seasonId, seasonId),
+      eq(bankStatementLinesTable.status, 'pending')
     ];
     if (singleId) {
-      conditions.push(eq(bankTransactionsTable.id, singleId));
+      conditions.push(eq(bankStatementLinesTable.id, singleId));
     }
-    return db.select().from(bankTransactionsTable).where(and(...conditions)).all();
+    return db.select().from(bankStatementLinesTable).where(and(...conditions)).all();
   }
 
   async getMembersBySeason(db: DbOrTx, seasonId: string): Promise<any[]> {
@@ -24,17 +24,17 @@ export class AnalyzeBankTransactionsRepository {
 
   async getPastReconciledTransactions(db: DbOrTx): Promise<any[]> {
     const txs = await db.select({
-      fitid: bankTransactionsTable.fitid,
-      name: bankTransactionsTable.name,
-      memo: bankTransactionsTable.memo,
-      amount: bankTransactionsTable.amount,
-      category: transactionsTable.category,
-      memberId: transactionsTable.memberId
+      fitid: bankStatementLinesTable.fitid,
+      name: bankStatementLinesTable.name,
+      memo: bankStatementLinesTable.memo,
+      amount: bankStatementLinesTable.amount,
+      category: ledgerEntriesTable.category,
+      memberId: ledgerEntriesTable.memberId
     })
-      .from(bankTransactionsTable)
-      .innerJoin(transactionsTable, eq(transactionsTable.bankTransactionId, bankTransactionsTable.id))
-      .where(eq(bankTransactionsTable.status, 'reconciled'))
-      .orderBy(desc(bankTransactionsTable.id))
+      .from(bankStatementLinesTable)
+      .innerJoin(ledgerEntriesTable, eq(ledgerEntriesTable.bankStatementLineId, bankStatementLinesTable.id))
+      .where(eq(bankStatementLinesTable.status, 'reconciled'))
+      .orderBy(desc(bankStatementLinesTable.id))
       .limit(20)
       .all();
 
@@ -64,9 +64,9 @@ export class AnalyzeBankTransactionsRepository {
   }
 
   async updateAISuggestions(db: DbOrTx, id: number, suggestions: any): Promise<void> {
-    await db.update(bankTransactionsTable)
+    await db.update(bankStatementLinesTable)
       .set({ aiSuggestions: JSON.stringify(suggestions) })
-      .where(eq(bankTransactionsTable.id, id))
+      .where(eq(bankStatementLinesTable.id, id))
       .run();
   }
 }

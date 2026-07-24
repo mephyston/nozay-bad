@@ -28,7 +28,7 @@ export const invoicesTable = sqliteTable('invoices', {
 
   status: text('status', { enum: ['draft', 'sent', 'paid', 'cancelled'] }).notNull().default('draft'),
   totalAmount: integer('total_amount').notNull(), // TTC en centimes
-  bankTransactionId: integer('bank_transaction_id').references(() => bankTransactionsTable.id),
+  bankStatementLineId: integer('bank_statement_line_id').references(() => bankStatementLinesTable.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 ```
@@ -46,7 +46,7 @@ export const invoiceItemsTable = sqliteTable('invoice_items', {
 });
 ```
 
-### Ajout dans `transactionsTable` (Lien Grand Livre)
+### Ajout dans `ledgerEntriesTable` (Lien Grand Livre)
 Ajout d'une colonne optionnelle pour lier les écritures de recettes du Grand Livre à une facture émise :
 ```typescript
 invoiceId: integer('invoice_id').references(() => invoicesTable.id)
@@ -69,9 +69,9 @@ Les endpoints suivants sont ajoutés dans [`apps/api/src/index.ts`](file:///User
 
 ### Rapprochement
 * Mise à jour de `POST /bank-transactions/:id/reconcile` pour accepter le paramètre optionnel `invoiceId` :
-  1. Crée une ligne dans `transactionsTable` avec `invoiceId`, la catégorie comptable adéquate, et le montant perçu.
+  1. Crée une ligne dans `ledgerEntriesTable` avec `invoiceId`, la catégorie comptable adéquate, et le montant perçu.
   2. Modifie le statut de la facture associée à `paid`.
-  3. Lie la ligne de relevé `bankTransactionsTable` via `bankTransactionId`.
+  3. Lie la ligne de relevé `bankStatementLinesTable` via `bankStatementLineId`.
 
 ### Attestation CSE
 * `GET /members/:id/cse-data` : Retourne les informations validées d'adhésion pour le CSE.

@@ -51,7 +51,7 @@
     attendees: text('attendees'),  // Personnes concernées
     status: text('status', { enum: ['draft', 'sent', 'paid', 'cancelled'] }).notNull().default('draft'),
     totalAmount: integer('total_amount').notNull(),
-    bankTransactionId: integer('bank_transaction_id').references(() => bankTransactionsTable.id),
+    bankStatementLineId: integer('bank_statement_line_id').references(() => bankStatementLinesTable.id),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
   });
 
@@ -65,7 +65,7 @@
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
   });
   ```
-  Et modifier `transactionsTable` pour y adjoindre :
+  Et modifier `ledgerEntriesTable` pour y adjoindre :
   ```typescript
   invoiceId: integer('invoice_id').references(() => invoicesTable.id),
   ```
@@ -296,9 +296,9 @@
 
     // Trouver le règlement comptable lié à ce membre
     const tx = await db.select()
-      .from(transactionsTable)
-      .where(and(eq(transactionsTable.memberId, id), eq(transactionsTable.type, 'recette')))
-      .orderBy(desc(transactionsTable.date))
+      .from(ledgerEntriesTable)
+      .where(and(eq(ledgerEntriesTable.memberId, id), eq(ledgerEntriesTable.type, 'recette')))
+      .orderBy(desc(ledgerEntriesTable.date))
       .get();
 
     return c.json({
@@ -381,7 +381,7 @@
   if (body.action === 'create') {
     const tx = body.transaction;
     // ...
-    const [newTx] = await db.insert(transactionsTable).values({
+    const [newTx] = await db.insert(ledgerEntriesTable).values({
       seasonId: tx.seasonId,
       type: tx.type,
       accountId: tx.accountId,
@@ -394,14 +394,14 @@
       reference: tx.reference || null,
       memberId: memberId || null,
       invoiceId: invoiceId || null, // Associer la facture
-      bankTransactionId: id,
+      bankStatementLineId: id,
       createdAt: new Date()
     }).returning();
     
     // Si lié à une facture, la marquer comme payée et lui associer la transaction bancaire
     if (invoiceId) {
       await db.update(invoicesTable)
-        .set({ status: 'paid', bankTransactionId: id })
+        .set({ status: 'paid', bankStatementLineId: id })
         .where(eq(invoicesTable.id, invoiceId))
         .run();
     }
@@ -429,7 +429,7 @@
     }).returning().then(r => r[0]);
 
     // 2. Insérer une ligne de relevé bancaire de 150.00 €
-    const bt = await db.insert(bankTransactionsTable).values({
+    const bt = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-RECON-INV-1',
       accountId: 'current',
       seasonId: '25-26',
@@ -464,7 +464,7 @@
     // 4. Vérifier que la facture est payée et que la ligne D1 pointe dessus
     const updatedInv = await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv.id)).get();
     expect(updatedInv.status).toBe('paid');
-    expect(updatedInv.bankTransactionId).toBe(bt.id);
+    expect(updatedInv.bankStatementLineId).toBe(bt.id);
   });
   ```
 

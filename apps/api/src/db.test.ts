@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { membersTable, usersTable, seasonsTable } from '../../../libs/domains/members/shared/schema';
 import {
   seasonBalancesTable,
-  transactionsTable,
-  bankTransactionsTable,
+  ledgerEntriesTable,
+  bankStatementLinesTable,
   checkDepositsTable,
   checksTable,
   categoriesTable,
@@ -94,7 +94,7 @@ describe('Database Tests', () => {
       description: 'Adhésion Dupont Jean',
       createdAt: new Date()
     };
-    const [insertedTx] = await db.insert(transactionsTable).values(transaction).returning();
+    const [insertedTx] = await db.insert(ledgerEntriesTable).values(transaction).returning();
     expect(insertedTx.amount).toBe(4500);
     expect(insertedTx.category).toBe(1);
   });
@@ -112,7 +112,7 @@ describe('Database Tests', () => {
       memo: 'Facture Site Web',
       createdAt: new Date()
     };
-    const [inserted] = await db.insert(bankTransactionsTable).values(op).returning();
+    const [inserted] = await db.insert(bankStatementLinesTable).values(op).returning();
     expect(inserted.fitid).toBe('SG-123456-COURANT');
     expect(inserted.amount).toBe(-1560);
     expect(inserted.status).toBe('pending');
@@ -140,7 +140,7 @@ describe('Database Tests', () => {
     expect(member.amountDue).toBe(25000);
     expect(member.parent1Name).toBe('Dupont Marc');
 
-    const [bt] = await db.insert(bankTransactionsTable).values({
+    const [bt] = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-RECONCILE-TEST',
       seasonId: '25-26',
       accountId: 'current',
@@ -151,7 +151,7 @@ describe('Database Tests', () => {
       createdAt: new Date()
     }).returning();
 
-    const [tx] = await db.insert(transactionsTable).values({
+    const [tx] = await db.insert(ledgerEntriesTable).values({
       seasonId: '25-26',
       type: 'recette',
       accountId: 'current',
@@ -161,12 +161,12 @@ describe('Database Tests', () => {
       paymentMethod: 'virement',
       description: 'Acompte Dupont Jean',
       memberId: member.id,
-      bankTransactionId: bt.id,
+      bankStatementLineId: bt.id,
       createdAt: new Date()
     }).returning();
 
     expect(tx.memberId).toBe(member.id);
-    expect(tx.bankTransactionId).toBe(bt.id);
+    expect(tx.bankStatementLineId).toBe(bt.id);
   });
 
   it('should support check deposits and checks insertion and linking', async () => {

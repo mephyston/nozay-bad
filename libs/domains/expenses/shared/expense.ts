@@ -10,7 +10,7 @@ export interface ExpenseData {
   status: ExpenseStatus;
   emitterName: string;
   memberId: number | null;
-  transactionId: number | null;
+  ledgerEntryId: number | null;
   createdAt: Date;
 }
 

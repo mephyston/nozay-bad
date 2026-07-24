@@ -128,7 +128,7 @@ describe('BankStatementReconciliation Component', () => {
             date: '2026-02-16',
             description: 'Facture Ionos',
             category: null,
-            bankTransactionId: null
+            bankStatementLineId: null
           }
         ],
         seasonId: '25-26',
@@ -194,7 +194,7 @@ describe('BankStatementReconciliation Component', () => {
             date: '2026-04-23',
             description: 'Volants Clement',
             category: null,
-            bankTransactionId: 99
+            bankStatementLineId: 99
           }
         ],
         seasonId: '25-26',

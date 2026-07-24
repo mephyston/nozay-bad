@@ -1,6 +1,6 @@
 import { type DbOrTx } from '@nba/db';
 import { eq, and, gte, lte, or, inArray } from 'drizzle-orm';
-import { seasonBalancesTable, transactionsTable, categoriesTable, seasonCategoryBudgetsTable, accountsTable } from '../../shared/schema';
+import { seasonBalancesTable, ledgerEntriesTable, categoriesTable, seasonCategoryBudgetsTable, accountsTable } from '../../shared/schema';
 
 
 export class GetSeasonReportsRepository {
@@ -14,10 +14,10 @@ export class GetSeasonReportsRepository {
 
   async getTransactionsForPeriod(db: DbOrTx, startDate: string, endDate: string): Promise<any[]> {
     return db.select()
-      .from(transactionsTable)
+      .from(ledgerEntriesTable)
       .where(and(
-        gte(transactionsTable.date, startDate),
-        lte(transactionsTable.date, endDate)
+        gte(ledgerEntriesTable.date, startDate),
+        lte(ledgerEntriesTable.date, endDate)
       ))
       .all();
   }
@@ -25,9 +25,9 @@ export class GetSeasonReportsRepository {
   async getTransactionsForSeason(db: DbOrTx, seasonId: number | string): Promise<any[]> {
     const numericId = Number(seasonId);
     const cond = !isNaN(numericId)
-      ? or(eq(transactionsTable.seasonId, numericId), eq(transactionsTable.seasonId, seasonId as any))
-      : eq(transactionsTable.seasonId, seasonId as any);
-    return db.select().from(transactionsTable).where(cond).all();
+      ? or(eq(ledgerEntriesTable.seasonId, numericId), eq(ledgerEntriesTable.seasonId, seasonId as any))
+      : eq(ledgerEntriesTable.seasonId, seasonId as any);
+    return db.select().from(ledgerEntriesTable).where(cond).all();
   }
 
   async getTransitCategory(db: DbOrTx): Promise<any> {
@@ -36,10 +36,10 @@ export class GetSeasonReportsRepository {
 
   async getDeferredTransactions(db: DbOrTx, cutoffDate: string): Promise<any[]> {
     return db.select()
-      .from(transactionsTable)
+      .from(ledgerEntriesTable)
       .where(and(
-        lte(transactionsTable.date, cutoffDate),
-        inArray(transactionsTable.accrualType, ['produit_constate_avance', 'charge_constatee_avance'])
+        lte(ledgerEntriesTable.date, cutoffDate),
+        inArray(ledgerEntriesTable.accrualType, ['produit_constate_avance', 'charge_constatee_avance'])
       ))
       .all();
   }

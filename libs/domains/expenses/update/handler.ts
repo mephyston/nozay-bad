@@ -75,7 +75,7 @@ export async function cancelExpenseApproval(db: Db, id: number) {
       throw new ExpenseAlreadyPendingError();
     }
 
-    const txId = expenseData.transactionId;
+    const txId = expenseData.ledgerEntryId;
 
     // 1. Mettre à jour la note de frais d'abord pour couper la clé étrangère
     const updatedExpense = await repo.cancelApproval(txDb, id);
@@ -87,14 +87,14 @@ export async function cancelExpenseApproval(db: Db, id: number) {
 
       if (tx) {
         // Rapprochement bancaire : si la transaction est pointée, libérer l'écriture bancaire
-        if (tx.bankTransactionId) {
-          const bankTx = await repo.getBankTransactionDetails(txDb, tx.bankTransactionId);
+        if (tx.bankStatementLineId) {
+          const bankTx = await repo.getBankTransactionDetails(txDb, tx.bankStatementLineId);
 
           if (bankTx) {
-            const remainingTxs = await repo.getRemainingTransactionsForBankTx(txDb, tx.bankTransactionId, tx.id);
+            const remainingTxs = await repo.getRemainingTransactionsForBankTx(txDb, tx.bankStatementLineId, tx.id);
             const totalRemaining = remainingTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
             if (totalRemaining < Math.abs(bankTx.amount)) {
-              await repo.resetBankTransactionStatus(txDb, tx.bankTransactionId);
+              await repo.resetBankTransactionStatus(txDb, tx.bankStatementLineId);
             }
           }
         }

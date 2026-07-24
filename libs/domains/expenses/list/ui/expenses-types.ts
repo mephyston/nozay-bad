@@ -8,7 +8,7 @@ export interface Expense {
   status: 'pending' | 'approved' | 'rejected';
   emitterName: string;
   memberId: number | null;
-  transactionId: number | null;
+  ledgerEntryId: number | null;
   createdAt: string;
 }
 

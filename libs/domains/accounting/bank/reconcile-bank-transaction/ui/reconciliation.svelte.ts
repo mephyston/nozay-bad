@@ -18,7 +18,7 @@ export interface GLTransaction {
   date: string;
   description: string;
   category?: string | null;
-  bankTransactionId?: number | null;
+  bankStatementLineId?: number | null;
 }
 
 export interface Season {
@@ -123,7 +123,7 @@ export function createReconciliationState(initialProps: ReconciliationStateProps
 
   function getSuggestions(bt: BankTransaction) {
     return glTransactions.filter(gt => {
-      if (gt.bankTransactionId) return false;
+      if (gt.bankStatementLineId) return false;
       const matchesAmount = Math.abs(gt.amount) === Math.abs(bt.amount);
       if (!matchesAmount) return false;
       const isBankDebit = bt.amount < 0;
@@ -141,7 +141,7 @@ export function createReconciliationState(initialProps: ReconciliationStateProps
 
   const suggestions = $derived(selectedTx ? getSuggestions(selectedTx) : []);
 
-  const linkedGlTxs = $derived(selectedTx ? glTransactions.filter(gt => gt.bankTransactionId === selectedTx!.id) : []);
+  const linkedGlTxs = $derived(selectedTx ? glTransactions.filter(gt => gt.bankStatementLineId === selectedTx!.id) : []);
   const totalLinked = $derived(linkedGlTxs.reduce((sum, gt) => sum + Math.abs(gt.amount), 0));
   const remainingAmount = $derived(selectedTx ? Math.abs(selectedTx.amount) - totalLinked : 0);
 
@@ -632,10 +632,10 @@ export function createReconciliationState(initialProps: ReconciliationStateProps
     }, 0);
   }
 
-  async function handleMatch(btId: number, transactionId: number) {
+  async function handleMatch(btId: number, ledgerEntryId: number) {
     isSubmitting = true;
     try {
-      const matchedTx = glTransactions.find(t => t.id === transactionId);
+      const matchedTx = glTransactions.find(t => t.id === ledgerEntryId);
       const matchedAmount = matchedTx ? Math.abs(matchedTx.amount) : 0;
       const isFullyReconciled = (remainingAmount - matchedAmount) <= 10;
       prepareNextFocus(btId, isFullyReconciled);
@@ -646,7 +646,7 @@ export function createReconciliationState(initialProps: ReconciliationStateProps
         body: JSON.stringify({
           action: 'match',
           btId,
-          transactionId,
+          ledgerEntryId,
           memberId: selectedMemberId ? parseInt(selectedMemberId) : null
         })
       });

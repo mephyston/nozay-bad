@@ -8,7 +8,7 @@ vi.mock('./repository', () => {
       getChecksByIds = vi.fn().mockResolvedValue([{ id: 1, amount: 100, number: '123', seasonId: '23-24', status: 'pending' }]);
       createCheckDeposit = vi.fn().mockResolvedValue({ id: 2 });
       updateChecksDeposit = vi.fn();
-      getCheckDepositById = vi.fn().mockResolvedValue({ id: 2, bankTransactionId: 3 });
+      getCheckDepositById = vi.fn().mockResolvedValue({ id: 2, bankStatementLineId: 3 });
       updateCheckDeposit = vi.fn();
       updateBankTransactionStatus = vi.fn();
       unlinkChecksForDeposit = vi.fn();
@@ -42,7 +42,7 @@ describe('create-bank-check-deposit handler', () => {
   });
 
   it('should clear deposit', async () => {
-    await expect(clearCheckDeposit(mockDb as any, 2, { bankTransactionId: 3 })).resolves.toBeUndefined();
+    await expect(clearCheckDeposit(mockDb as any, 2, { bankStatementLineId: 3 })).resolves.toBeUndefined();
   });
 
   it('should delete deposit', async () => {

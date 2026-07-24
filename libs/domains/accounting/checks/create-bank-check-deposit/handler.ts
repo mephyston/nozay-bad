@@ -41,8 +41,8 @@ export async function createCheckDeposit(db: Db, body: CreateCheckDepositInput) 
 }
 
 export async function clearCheckDeposit(db: Db, id: number, body: ClearCheckDepositInput) {
-  if (!body.bankTransactionId) {
-    throw new AppError('bankTransactionId requis.', 400);
+  if (!body.bankStatementLineId) {
+    throw new AppError('bankStatementLineId requis.', 400);
   }
 
   const repo = new CreateBankCheckDepositRepository();
@@ -50,10 +50,10 @@ export async function clearCheckDeposit(db: Db, id: number, body: ClearCheckDepo
   return db.transaction(async (txDb: Tx) => {
     await repo.updateCheckDeposit(txDb, id, {
       status: 'cleared',
-      bankTransactionId: body.bankTransactionId
+      bankStatementLineId: body.bankStatementLineId
     });
 
-    await repo.updateBankTransactionStatus(txDb, body.bankTransactionId, 'reconciled');
+    await repo.updateBankTransactionStatus(txDb, body.bankStatementLineId, 'reconciled');
   });
 }
 
@@ -66,8 +66,8 @@ export async function deleteCheckDeposit(db: Db, id: number) {
       throw new AppError('Remise de chèques non trouvée.', 404);
     }
 
-    if (deposit.bankTransactionId) {
-      await repo.updateBankTransactionStatus(txDb, deposit.bankTransactionId, 'pending');
+    if (deposit.bankStatementLineId) {
+      await repo.updateBankTransactionStatus(txDb, deposit.bankStatementLineId, 'pending');
     }
 
     await repo.unlinkChecksForDeposit(txDb, id);
