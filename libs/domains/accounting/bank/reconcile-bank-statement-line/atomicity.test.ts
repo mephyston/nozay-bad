@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { reconcileBankStatementLine } from './handler';
-import { bankStatementLinesTable, ledgerEntriesTable, seasonsTable, accountsTable, accountClassesTable, paymentMethodsTable } from '../../shared/schema';
+import { bankStatementLinesTable, ledgerEntriesTable, seasonsTable, accountsTable, paymentMethodsTable } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
 
 describe('reconcileBankStatementLine Real D1 Atomicity (PROMPT B3)', () => {
@@ -17,17 +17,8 @@ describe('reconcileBankStatementLine Real D1 Atomicity (PROMPT B3)', () => {
       code: '25-26', name: 'Saison 25-26', startDate: '2025-09-01', endDate: '2026-08-31', active: true, createdAt: new Date()
     }).returning().get();
 
-    const accClass = await db.insert(accountClassesTable).values({
-      code: '512', label: 'Banque', type: 'tresorerie', createdAt: new Date()
-    }).returning().get();
-
-    const acc = await db.insert(accountsTable).values({
-      code: '512000', label: 'Compte Courant', accountClassId: accClass.id, createdAt: new Date()
-    }).returning().get();
-
-    const pm = await db.insert(paymentMethodsTable).values({
-      code: 'virement', label: 'Virement', createdAt: new Date()
-    }).returning().get();
+    const acc = await db.select().from(accountsTable).limit(1).get();
+    const pm = await db.select().from(paymentMethodsTable).limit(1).get();
 
     const btx = await db.insert(bankStatementLinesTable).values({
       fitid: 'FIT-RECON-1',

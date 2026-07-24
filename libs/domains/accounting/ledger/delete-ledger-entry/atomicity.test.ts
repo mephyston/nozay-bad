@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { deleteLedgerEntry } from './handler';
-import { ledgerEntriesTable, seasonsTable, accountsTable, paymentMethodsTable, accountClassesTable } from '../../shared/schema';
+import { ledgerEntriesTable, seasonsTable, accountsTable, paymentMethodsTable } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
 
 describe('deleteLedgerEntry Real D1 Atomicity (PROMPT B3)', () => {
@@ -17,17 +17,8 @@ describe('deleteLedgerEntry Real D1 Atomicity (PROMPT B3)', () => {
       code: '25-26', name: 'Saison 25-26', startDate: '2025-09-01', endDate: '2026-08-31', active: true, createdAt: new Date()
     }).returning().get();
 
-    const accClass = await db.insert(accountClassesTable).values({
-      code: '512', label: 'Banque', type: 'tresorerie', createdAt: new Date()
-    }).returning().get();
-
-    const acc = await db.insert(accountsTable).values({
-      code: '512000', label: 'Compte Courant', accountClassId: accClass.id, createdAt: new Date()
-    }).returning().get();
-
-    const pm = await db.insert(paymentMethodsTable).values({
-      code: 'virement', label: 'Virement', createdAt: new Date()
-    }).returning().get();
+    const acc = await db.select().from(accountsTable).limit(1).get();
+    const pm = await db.select().from(paymentMethodsTable).limit(1).get();
 
     const tx = await db.insert(ledgerEntriesTable).values({
       seasonId: season.id,
