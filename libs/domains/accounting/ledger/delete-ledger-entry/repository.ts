@@ -1,7 +1,6 @@
 import { type DbOrTx } from '@nba/db';
 import { eq, and, ne, sql } from 'drizzle-orm';
 import { ledgerEntriesTable, bankStatementLinesTable } from '../../shared/schema';
-import { expensesTable } from '@nba/expenses/schema';
 
 export class DeleteTransactionRepository {
   async getById(db: DbOrTx, id: number): Promise<any | undefined> {
@@ -27,7 +26,7 @@ export class DeleteTransactionRepository {
   }
 
   buildResetExpenseStatusStatement(db: DbOrTx, txId: number): any {
-    return db.update(expensesTable).set({ status: 'pending', ledgerEntryId: null }).where(eq(expensesTable.ledgerEntryId, txId));
+    return sql`UPDATE expenses SET status = 'pending', ledger_entry_id = NULL WHERE ledger_entry_id = ${txId}`;
   }
 
   buildDeleteLedgerEntryStatement(db: DbOrTx, id: number): any {
