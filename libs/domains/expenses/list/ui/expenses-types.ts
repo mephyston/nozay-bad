@@ -21,6 +21,7 @@ export interface Season {
 
 export interface Category {
   id: string;
+  code?: string;
   adminLabel: string;
   adherentLabel: string;
   hideInExpenses: boolean;
@@ -30,40 +31,6 @@ export interface CategoryOption {
   value: string;
   label: string;
 }
-
-export const fallbackCategoriesList: CategoryOption[] = [
-  { value: 'fonctionnement_administratif', label: 'Frais de fonctionnement & administratif' },
-  { value: 'materiel_club', label: 'Matériel (hors cordages)' },
-  { value: 'volants', label: 'Volants (vente ou achat)' },
-  { value: 'evenements_buvettes', label: 'Evénements & Buvettes' },
-  { value: 'championnats', label: 'Championnats (frais équipes)' },
-  { value: 'stages_formations', label: 'Stages & Formations' },
-  { value: 'adhesions_inscriptions', label: 'Adhésions & Inscriptions' },
-  { value: 'sponsoring', label: 'Sponsoring' },
-  { value: 'subventions', label: 'Subventions (aides publiques)' },
-  { value: 'actions_jeunes', label: 'Actions Jeunes (stages jeunes...)' },
-  { value: 'tournois_senior', label: 'Tournois Senior' },
-  { value: 'cordage_vente', label: 'Cordage (vente aux adhérents)' },
-  { value: 'salaires_charges', label: 'Salaires et Charges' },
-  { value: 'licences_federation', label: 'Licences (versements fédération)' }
-];
-
-export const fallbackCategoryLabels: Record<string, string> = {
-  fonctionnement_administratif: 'Frais de fonctionnement & administratif',
-  materiel_club: 'Matériel (hors cordages)',
-  volants: 'Volants (vente ou achat)',
-  evenements_buvettes: 'Evénements & Buvettes',
-  championnats: 'Championnats (frais équipes)',
-  stages_formations: 'Stages & Formations',
-  adhesions_inscriptions: 'Adhésions & Inscriptions',
-  sponsoring: 'Sponsoring',
-  subventions: 'Subventions (aides publiques)',
-  actions_jeunes: 'Actions Jeunes (stages jeunes...)',
-  tournois_senior: 'Tournois Senior',
-  cordage_vente: 'Cordage (vente aux adhérents)',
-  salaires_charges: 'Salaires et Charges',
-  licences_federation: 'Licences (versements fédération)'
-};
 
 export const categoryColors: Record<string, string> = {
   fonctionnement_administratif: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20',
@@ -82,18 +49,14 @@ export const categoryColors: Record<string, string> = {
   licences_federation: 'bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-500/20'
 };
 
-export function getCategoryOptions(categories?: Category[]): CategoryOption[] {
-  return categories && categories.length > 0
-    ? categories.map(c => ({ value: c.id, label: c.adminLabel }))
-    : fallbackCategoriesList;
+export function getCategoryOptions(categories: Category[] = []): CategoryOption[] {
+  return categories.map(c => ({ value: c.id, label: c.adminLabel }));
 }
 
-export function getCategoryLabels(categories?: Category[]): Record<string, string> {
-  return categories && categories.length > 0
-    ? categories.reduce((acc, c) => {
-        acc[c.id] = c.adminLabel;
-        return acc;
-      }, {} as Record<string, string>)
-    : fallbackCategoryLabels;
+export function getCategoryLabels(categories: Category[] = []): Record<string, string> {
+  return categories.reduce((acc, c) => {
+    acc[c.id] = c.adminLabel;
+    if (c.code) acc[c.code] = c.adminLabel;
+    return acc;
+  }, {} as Record<string, string>);
 }
-

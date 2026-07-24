@@ -22,6 +22,7 @@ export class GetSeasonReportsRepository {
   }
 
   async getTransitCategory(db: DbOrTx): Promise<any> {
-    return db.select().from(categoriesTable).where(eq(categoriesTable.adminLabel, 'Virements Internes (Transit)')).get();
+    return db.select().from(categoriesTable).where(eq(categoriesTable.code, 'virements_internes')).get();
   }
+
 }

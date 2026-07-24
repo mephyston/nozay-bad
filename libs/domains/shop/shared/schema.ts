@@ -1,6 +1,6 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
-import { seasonsTable, membersTable } from '../../members/shared/schema';
-import { paymentMethodsTable, transactionsTable } from '../../accounting/shared/schema';
+import { seasonsTable, membersTable } from '@nba/members/schema';
+import { paymentMethodsTable, transactionsTable } from '@nba/accounting/schema';
 
 export { seasonsTable, membersTable, paymentMethodsTable, transactionsTable };
 

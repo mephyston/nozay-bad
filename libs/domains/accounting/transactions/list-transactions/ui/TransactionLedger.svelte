@@ -217,29 +217,10 @@
     up_loisir: 'Up & Loisir'
   };
 
-  const fallbackCategories = [
-    { id: '1', name: 'Adhésions & Inscriptions' },
-    { id: '2', name: 'Sponsoring' },
-    { id: '3', name: 'Subventions (aides publiques)' },
-    { id: '4', name: 'Actions Jeunes (stages jeunes...)' },
-    { id: '5', name: 'Tournois Senior' },
-    { id: '6', name: 'Evénements & Buvettes' },
-    { id: '7', name: 'Cordage (vente aux adhérents)' },
-    { id: '8', name: 'Volants (vente ou achat)' },
-    { id: '9', name: 'Salaires et Charges' },
-    { id: '10', name: 'Matériel (hors cordages)' },
-    { id: '11', name: 'Licences (versements fédération)' },
-    { id: '12', name: 'Championnats (frais équipes)' },
-    { id: '13', name: 'Stages & Formations' },
-    { id: '14', name: 'Frais de fonctionnement & administratif' },
-    { id: '15', name: 'Virements Internes (Transit)' }
-  ];
-
   const activeCategories = $derived(
-    categories && categories.length > 0
-      ? categories.map(c => ({ id: String(c.id), name: c.adminLabel }))
-      : fallbackCategories
+    categories.map(c => ({ id: String(c.id), code: c.code, name: c.adminLabel }))
   );
+
 
   function getAccountBalance(acc: 'current' | 'savings' | 'cash') {
     const match = balances.find(b => b.accountId === acc);

@@ -15,14 +15,19 @@
       "@nba/db/test-utils": ["libs/shared/db/src/test-utils.ts"],
       "@nba/ui": ["libs/shared/ui/src/index.ts"],
       "@nba/members-api": ["libs/domains/members/index.ts"],
+      "@nba/members/schema": ["libs/domains/members/shared/schema.ts"],
       "@nba/accounting-api": ["libs/domains/accounting/index.ts"],
+      "@nba/accounting/schema": ["libs/domains/accounting/shared/schema.ts"],
       "@nba/expenses-api": ["libs/domains/expenses/index.ts"],
+      "@nba/expenses/schema": ["libs/domains/expenses/shared/schema.ts"],
       "@nba/shop-api": ["libs/domains/shop/index.ts"],
+      "@nba/shop/schema": ["libs/domains/shop/shared/schema.ts"],
       "@nba/members-ui": ["libs/domains/members/shared/ui.ts"],
       "@nba/accounting-ui": ["libs/domains/accounting/shared/ui.ts"],
       "@nba/expenses-ui": ["libs/domains/expenses/shared/ui.ts"],
       "@nba/shop-ui": ["libs/domains/shop/shared/ui.ts"]
     }
+
   },
   "include": ["libs/**/*.ts", "apps/**/*.ts"],
   "exclude": ["node_modules", "dist", "apps/*/dist", "apps/*/.astro"]

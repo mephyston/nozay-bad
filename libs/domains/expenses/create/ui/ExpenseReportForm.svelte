@@ -41,28 +41,12 @@
   let successMsg = $state<string | null>(null);
   let errorMsg = $state<string | null>(null);
 
-  const fallbackCategories = [
-    { value: 'fonctionnement_administratif', label: 'Frais de fonctionnement & administratif' },
-    { value: 'materiel_club', label: 'Matériel (hors cordages)' },
-    { value: 'volants', label: 'Volants (vente ou achat)' },
-    { value: 'evenements_buvettes', label: 'Evénements & Buvettes' },
-    { value: 'championnats', label: 'Championnats (frais équipes)' },
-    { value: 'stages_formations', label: 'Stages & Formations' },
-    { value: 'adhesions_inscriptions', label: 'Adhésions & Inscriptions' },
-    { value: 'sponsoring', label: 'Sponsoring' },
-    { value: 'subventions', label: 'Subventions (aides publiques)' },
-    { value: 'actions_jeunes', label: 'Actions Jeunes (stages jeunes...)' },
-    { value: 'tournois_senior', label: 'Tournois Senior' },
-    { value: 'cordage_vente', label: 'Cordage (vente aux adhérents)' }
-  ];
-
   const visibleCategories = $derived(
-    categories && categories.length > 0
-      ? categories
-          .filter(c => !c.hideInExpenses)
-          .map(c => ({ value: c.id, label: c.adherentLabel }))
-      : fallbackCategories
+    categories
+      .filter(c => !c.hideInExpenses)
+      .map(c => ({ value: c.id, label: c.adherentLabel }))
   );
+
 
   $effect(() => {
     if (visibleCategories.length > 0 && !category) {

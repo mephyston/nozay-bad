@@ -69,24 +69,6 @@ export const accountLabels = {
   cash: 'Caisse Physique'
 };
 
-export const fallbackCategories = [
-  { id: '1', name: 'Adhésions & Inscriptions' },
-  { id: '2', name: 'Sponsoring' },
-  { id: '3', name: 'Subventions (aides publiques)' },
-  { id: '4', name: 'Actions Jeunes (stages jeunes...)' },
-  { id: '5', name: 'Tournois Senior' },
-  { id: '6', name: 'Evénements & Buvettes' },
-  { id: '7', name: 'Cordage (vente aux adhérents)' },
-  { id: '8', name: 'Volants (vente ou achat)' },
-  { id: '9', name: 'Salaires et Charges' },
-  { id: '10', name: 'Matériel (hors cordages)' },
-  { id: '11', name: 'Licences (versements fédération)' },
-  { id: '12', name: 'Championnats (frais équipes)' },
-  { id: '13', name: 'Stages & Formations' },
-  { id: '14', name: 'Frais de fonctionnement & administratif' },
-  { id: '15', name: 'Virements Internes (Transit)' }
-];
-
 export function createReconciliationState(initialProps: ReconciliationStateProps) {
   let bankTransactions = $state(initialProps.bankTransactions);
   let glTransactions = $state(initialProps.glTransactions);
@@ -133,10 +115,9 @@ export function createReconciliationState(initialProps: ReconciliationStateProps
   const isClosed = $derived(seasons.find(s => s.id === selectedSeason)?.closed || false);
 
   const categories = $derived(
-    dbCategories && dbCategories.length > 0
-      ? dbCategories.map(c => ({ id: String(c.id), name: c.adminLabel }))
-      : fallbackCategories
+    dbCategories.map(c => ({ id: String(c.id), code: c.code, name: c.adminLabel }))
   );
+
 
   const sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
 

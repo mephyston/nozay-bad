@@ -265,28 +265,6 @@
     }
   }
 
-  const legacyCategoryLabels: Record<string, string> = {
-    adhesions: 'Adhésions / Inscriptions membres',
-    partenariats: 'Partenariats / Sponsoring',
-    subventions: 'Subventions publiques',
-    buvette: 'Ventes buvette',
-    boutique: 'Ventes boutique',
-    evenements: 'Inscriptions événements',
-    stages: 'Stages',
-    divers_recette: 'Autres recettes',
-    salaires: 'Salaires & Charges',
-    achats_boutique: 'Achats matériels (revente)',
-    achats_club: 'Achats matériels club',
-    licences_ffbad: 'Reversement licences FFBad',
-    championnats: 'Inscriptions Championnats',
-    formations: 'Formations',
-    evenements_club: 'Dépenses Événements',
-    frais_deplacement: 'Notes de frais bénévoles',
-    assurances: 'Assurances',
-    frais_administratifs: 'Frais Admin / Banque',
-    divers_depense: 'Autres dépenses'
-  };
-
   function getCategoryLabel(key: string): string {
     const id = parseInt(key);
     if (!isNaN(id)) {
@@ -295,8 +273,13 @@
         return found.adminLabel;
       }
     }
-    return legacyCategoryLabels[key] || key;
+    const foundByCode = categories.find(c => (c as any).code === key);
+    if (foundByCode) {
+      return foundByCode.adminLabel;
+    }
+    return key;
   }
+
 
   function formatAmount(cents: number): string {
     const euros = cents / 100;

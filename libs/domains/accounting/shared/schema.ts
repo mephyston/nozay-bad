@@ -1,6 +1,8 @@
 import { sqliteTable, text, integer, uniqueIndex, check } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
-import { seasonsTable, membersTable } from '../../members/shared/schema';
+import { seasonsTable, membersTable } from '@nba/members/schema';
+
+
 
 export { seasonsTable, membersTable };
 

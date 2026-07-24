@@ -55,12 +55,7 @@ export interface SeasonOption {
 export interface CategoryItem {
   id: string;
   name: string;
+  code?: string;
 }
 
-export const categoriesList: CategoryItem[] = [
-  { id: '1', name: 'Adhésions & Inscriptions' },
-  { id: '6', name: 'Evénements & Buvettes' },
-  { id: '7', name: 'Cordage (vente aux adhérents)' },
-  { id: '14', name: 'Frais de fonctionnement & administratif' }
-];
 

@@ -130,5 +130,19 @@ export default tseslint.config(
     rules: {
       '@nx/enforce-module-boundaries': 'off'
     }
+  },
+  {
+    files: ['**/repository.ts', '**/repository/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'CallExpression[callee.name="eq"] > MemberExpression[property.name=/^(adminLabel|adherentLabel|label|name)$/]',
+          message: 'Direct queries or literal comparisons on label fields (adminLabel, adherentLabel, label, name) in repository files are forbidden. Use business code fields (code) instead.'
+        }
+      ]
+    }
   }
 );
+
+
