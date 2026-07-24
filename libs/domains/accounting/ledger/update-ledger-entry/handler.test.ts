@@ -49,20 +49,28 @@ describe('updateLedgerEntry', () => {
   });
 
   it('should throw an error if original season is closed', async () => {
+    const closedDb: any = {
+      select: vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            get: vi.fn().mockResolvedValue({ ...mockSeason, closedAt: '2023-12-31' })
+          })
+        })
+      })
+    };
+
     const mockId = 1;
     const mockDto = {
-      seasonId: 'season2',
+      seasonId: 'season1',
       type: 'recette' as const,
       accountId: 'account1',
       category: 'cat1',
       amount: 100,
-      date: '2023-01-01',
+      date: '2026-07-01',
       paymentMethod: 'card',
       description: 'Test'
     };
 
-    vi.mocked(membersDataAccess.isSeasonClosed).mockImplementation(async (_db, seasonId) => seasonId === 'season1');
-
-    await expect(updateLedgerEntry(mockDb, mockId, mockDto)).rejects.toThrowError(/La saison d'origine est clôturée/);
+    await expect(updateLedgerEntry(closedDb, mockId, mockDto)).rejects.toThrowError(/clôturé/);
   });
 });

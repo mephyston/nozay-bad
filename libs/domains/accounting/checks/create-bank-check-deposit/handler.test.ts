@@ -13,12 +13,18 @@ vi.mock('./repository', () => {
       updateBankStatementLineStatus = vi.fn();
       unlinkChecksForDeposit = vi.fn();
       deleteCheckDeposit = vi.fn();
+      buildCreateCheckDepositStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) });
+      buildUpdateChecksDepositStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) });
+      buildUpdateCheckDepositStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) });
+      buildUpdateBankStatementLineStatusStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) });
+      buildUnlinkChecksForDepositStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) });
+      buildDeleteCheckDepositStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) });
     }
   };
 });
 
 const mockDb = {
-  transaction: async (cb: any) => cb(mockDb)
+  batch: vi.fn().mockResolvedValue([{ meta: { last_row_id: 2 } }])
 };
 
 describe('create-bank-check-deposit handler', () => {

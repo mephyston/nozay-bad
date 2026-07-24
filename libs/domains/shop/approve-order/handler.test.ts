@@ -55,6 +55,7 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
       email: 'jean.dupont@example.com',
       status: 'active',
       type: 'senior',
+      importedAt: new Date(),
       createdAt: new Date()
     }).returning().get();
     memberId = memberRes.id;

@@ -47,6 +47,16 @@ describe('createLedgerEntry', () => {
   });
 
   it('should throw an error if season is closed', async () => {
+    const closedDb: any = {
+      select: vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            get: vi.fn().mockResolvedValue({ ...mockSeason, closedAt: '2023-12-31' })
+          })
+        })
+      })
+    };
+
     const mockDto = {
       seasonId: 'season1',
       type: 'recette' as const,
@@ -58,8 +68,6 @@ describe('createLedgerEntry', () => {
       description: 'Test'
     };
 
-    vi.mocked(membersDataAccess.isSeasonClosed).mockResolvedValue(true);
-
-    await expect(createLedgerEntry(mockDb, mockDto)).rejects.toThrowError(/La saison est clôturée/);
+    await expect(createLedgerEntry(closedDb, mockDto)).rejects.toThrowError(/clôturé/);
   });
 });

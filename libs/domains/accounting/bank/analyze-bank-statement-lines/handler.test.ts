@@ -60,8 +60,8 @@ describe('analyzeBankStatementLines', () => {
     }).run();
 
     await db.run(sql`
-      INSERT INTO members (licence, season, last_name, first_name, gender, birth_date, type, imported_at, amount_due, amount_received, amount_remaining)
-      VALUES ('123456', '25-26', 'Dupont', 'Marc', 'M', '1990-01-01', 'Adulte', strftime('%s', 'now'), 15000, 0, 15000)
+      INSERT INTO members (licence, season_id, last_name, first_name, gender, birth_date, type, imported_at, amount_due, amount_received, amount_remaining)
+      VALUES ('123456', 1, 'Dupont', 'Marc', 'M', '1990-01-01', 'Adulte', strftime('%s', 'now'), 15000, 0, 15000)
     `);
 
     let capturedPrompt = '';
