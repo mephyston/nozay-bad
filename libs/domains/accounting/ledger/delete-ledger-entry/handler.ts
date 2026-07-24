@@ -45,8 +45,10 @@ export async function deleteLedgerEntry(db: Db, id: number) {
     statements.push(buildApplyPaymentStatement(db, memberData, -Math.abs(tx.amount)));
   }
 
-  statements.push(repo.buildResetExpenseStatusStatement(db, id));
   statements.push(repo.buildDeleteLedgerEntryStatement(db, id));
+
+  // Reset expense status if linked
+  await repo.resetExpenseStatusByTxId(db, id);
 
   // Phase 3 : Écriture (db.batch)
   await db.batch(statements as any);

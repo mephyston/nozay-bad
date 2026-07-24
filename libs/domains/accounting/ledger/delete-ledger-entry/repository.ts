@@ -25,8 +25,10 @@ export class DeleteTransactionRepository {
     return db.update(bankStatementLinesTable).set({ status }).where(eq(bankStatementLinesTable.id, id));
   }
 
-  buildResetExpenseStatusStatement(db: DbOrTx, txId: number): any {
-    return sql`UPDATE expenses SET status = 'pending', ledger_entry_id = NULL WHERE ledger_entry_id = ${txId}`;
+  async resetExpenseStatusByTxId(db: DbOrTx, txId: number): Promise<void> {
+    await db.run(sql`
+      UPDATE expenses SET status = 'pending', ledger_entry_id = NULL WHERE ledger_entry_id = ${txId}
+    `);
   }
 
   buildDeleteLedgerEntryStatement(db: DbOrTx, id: number): any {
