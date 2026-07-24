@@ -6,13 +6,13 @@ export class BankStatementLine {
   date: string;
   label: string;
 
-  constructor(data: { id: number; status?: string; amount: number; seasonId: string; date: string; label: string }) {
+  constructor(data: any) {
     this.id = data.id;
     this.status = data.status || 'pending';
-    this.amount = data.amount;
-    this.seasonId = data.seasonId;
+    this.amount = data.amountCents ?? data.amount ?? 0;
+    this.seasonId = data.seasonId ?? '';
     this.date = data.date;
-    this.label = data.label;
+    this.label = data.name ?? data.label ?? '';
   }
 
   canBeReconciled(): boolean {
