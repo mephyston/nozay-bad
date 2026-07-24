@@ -26,8 +26,8 @@ export class AnalyzeBankStatementLinesRepository {
       fitid: bankStatementLinesTable.fitid,
       name: bankStatementLinesTable.name,
       memo: bankStatementLinesTable.memo,
-      amount: bankStatementLinesTable.amount,
-      category: ledgerEntriesTable.category,
+      amountCents: bankStatementLinesTable.amountCents,
+      categoryId: ledgerEntriesTable.categoryId,
       memberId: ledgerEntriesTable.memberId
     })
       .from(bankStatementLinesTable)
@@ -47,8 +47,8 @@ export class AnalyzeBankStatementLinesRepository {
         fitid: t.fitid,
         name: t.name,
         memo: t.memo,
-        amount: t.amount,
-        category: t.category,
+        amountCents: t.amountCents,
+        categoryId: t.categoryId,
         memberLastName: m ? m.lastName : null,
         memberFirstName: m ? m.firstName : null
       };

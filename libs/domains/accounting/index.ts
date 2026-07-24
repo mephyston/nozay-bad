@@ -120,7 +120,7 @@ export interface CreateRevenueTransactionParams {
 }
 
 export function buildCreateRevenueLedgerEntryStatement(db: any, params: CreateRevenueTransactionParams): any {
-  const repository = new (require('./ledger/create-ledger-entry/repository')).CreateTransactionRepository();
+  const repository = new (require('./ledger/create-ledger-entry/repository')).CreateLedgerEntryRepository();
   return repository.buildCreateStatement(db, {
     seasonId: params.seasonId,
     type: 'recette',
