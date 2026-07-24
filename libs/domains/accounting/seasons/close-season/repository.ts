@@ -1,5 +1,6 @@
 import { type DbOrTx, type Db } from '@nba/db';
-import { eq, and, gte, lte, or, inArray } from 'drizzle-orm';
+import { eq, and, gte, lte, or, inArray, isNotNull } from 'drizzle-orm';
+import { ordersTable } from '@nba/shop/schema';
 import {
   seasonsTable,
   ledgerEntriesTable,
@@ -18,6 +19,7 @@ export interface CloseSeasonRepositoryInterface {
   getUnresolvedCheckDeposits(db: DbOrTx, seasonId: number | string): Promise<any[]>;
   getInVaultChecks(db: DbOrTx, seasonId: number | string): Promise<any[]>;
   getPendingDebitTransactions(db: DbOrTx, seasonId: number | string): Promise<any[]>;
+  getUnvalidatedPaidOrders(db: DbOrTx, seasonId: number | string): Promise<any[]>;
   getSeasonBalances(db: DbOrTx, seasonId: number | string): Promise<any[]>;
   getTransactionsForSeason(db: DbOrTx, seasonId: number | string): Promise<any[]>;
   getAccounts(db: DbOrTx): Promise<any[]>;
@@ -96,6 +98,19 @@ export class CloseSeasonRepository implements CloseSeasonRepositoryInterface {
       .where(and(
         eq(ledgerEntriesTable.seasonId, season.id),
         eq(ledgerEntriesTable.status, 'pending_debit')
+      ))
+      .all();
+  }
+
+  async getUnvalidatedPaidOrders(db: DbOrTx, seasonId: number | string): Promise<any[]> {
+    const season = await this.getSeasonById(db, seasonId);
+    if (!season) return [];
+    return db.select()
+      .from(ordersTable)
+      .where(and(
+        eq(ordersTable.seasonId, season.id),
+        eq(ordersTable.status, 'pending'),
+        isNotNull(ordersTable.paidAt)
       ))
       .all();
   }

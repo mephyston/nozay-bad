@@ -127,7 +127,7 @@ describe('Orders API Endpoints', () => {
     // Insert a member
     await db.run(sql`
       INSERT INTO members (id, licence, season_id, last_name, first_name, gender, birth_date, status, type, amount_due_cents, amount_received_cents, amount_remaining_cents, imported_at)
-      VALUES (1, '123456', 1, 'Dupont', 'Jean', 'M', '1990-01-01', 'active', 'senior', 0, 0, 0, strftime('%s', 'now'))
+      VALUES (1, '123456', 1, 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'senior', 0, 0, 0, strftime('%s', 'now'))
     `);
 
     // Insert a product category

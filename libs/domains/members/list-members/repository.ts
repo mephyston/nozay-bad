@@ -22,7 +22,7 @@ export class ListMembersRepository {
       conditions.push(eq(membersTable.type, filters.type));
     }
     if (filters.status) {
-      conditions.push(eq(membersTable.status, filters.status));
+      conditions.push(eq(membersTable.status, filters.status as any));
     }
     if (filters.season) {
       const num = Number(filters.season);

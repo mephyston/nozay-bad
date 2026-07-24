@@ -121,6 +121,8 @@ export interface CreateRevenueTransactionParams {
   categoryId?: number | null;
   memberId?: number | null;
   reference?: string | null;
+  accrualType?: string | null;
+  accrualNote?: string | null;
 }
 
 export function buildCreateRevenueLedgerEntryStatement(db: any, params: CreateRevenueTransactionParams): any {
@@ -136,6 +138,8 @@ export function buildCreateRevenueLedgerEntryStatement(db: any, params: CreateRe
     categoryId: params.categoryId ?? null,
     memberId: params.memberId ?? null,
     reference: params.reference ?? null,
+    accrualType: params.accrualType ?? 'normal',
+    accrualNote: params.accrualNote ?? null,
     status: sql`(SELECT default_entry_status FROM payment_methods WHERE id = ${params.paymentMethodId})` as any,
     createdAt: new Date()
   });
@@ -162,6 +166,8 @@ export async function createRevenueLedgerEntry(db: any, params: CreateRevenueTra
     categoryId: params.categoryId ?? null,
     memberId: params.memberId ?? null,
     reference: params.reference ?? null,
+    accrualType: params.accrualType ?? 'normal',
+    accrualNote: params.accrualNote ?? null,
     status,
     createdAt: new Date()
   });

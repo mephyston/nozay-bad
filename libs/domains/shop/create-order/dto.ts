@@ -6,6 +6,7 @@ export interface CreateOrderInput {
   productId: number;
   quantity: number;
   paymentMethodId: number;
+  paidAt?: string;
 }
 
 export type CreateOrderOutput = typeof ordersTable.$inferSelect;

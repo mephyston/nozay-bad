@@ -30,7 +30,7 @@ export const membersTable = sqliteTable('members', {
   birthDate: text('birth_date').notNull(),
   email: text('email'),
   phone: text('phone'),
-  status: text('status').notNull().default('valide'),
+  status: text('status', { enum: ['valide', 'suspendu', 'incomplet', 'en_attente'] }).notNull().default('valide'),
   type: text('type').notNull(),
   importedAt: integer('imported_at', { mode: 'timestamp' }).notNull(),
   amountDueCents: integer('amount_due_cents').notNull().default(0),

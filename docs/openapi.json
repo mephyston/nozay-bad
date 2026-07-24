@@ -825,6 +825,10 @@
           "paymentMethodId": {
             "minimum": 1,
             "type": "integer"
+          },
+          "paidAt": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
           }
         }
       },

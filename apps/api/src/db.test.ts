@@ -52,7 +52,7 @@ describe('Database Tests', () => {
       birthDate: '1990-01-01',
       email: 'jean.dupont@example.com',
       phone: '0612345678',
-      status: 'valide',
+      status: 'valide' as any,
       type: 'Competiteur',
       importedAt: new Date('2026-07-07T12:00:00Z'),
     };

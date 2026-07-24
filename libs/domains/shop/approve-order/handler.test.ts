@@ -269,4 +269,50 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
 
     await expect(approveOrder(db, order.id)).rejects.toThrowError(ShopCategoryNotConfiguredError);
   });
+
+  it('5. Approving an order paid in a past closed season creates ledger entry on active season with recette_exercice_anterieur accrual', async () => {
+    // Seed closed past season 24-25 (2024-09-01 to 2025-08-31, closedAt = set)
+    const closedSeason = await db.insert(seasonsTable).values({
+      code: '24-25',
+      name: 'Saison 2024-2025',
+      startDate: '2024-09-01',
+      endDate: '2025-08-31',
+      active: false,
+      closedAt: new Date('2025-09-02'),
+      createdAt: new Date()
+    }).returning().get();
+
+    const product = await db.insert(productsTable).values({
+      name: 'Grip Yonex',
+      productCategoryId: volantsProductCatId,
+      priceCents: 500,
+      stock: 10,
+      active: true,
+      createdAt: new Date()
+    }).returning().get();
+
+    const order = await db.insert(ordersTable).values({
+      seasonId,
+      memberId,
+      productId: product.id,
+      quantity: 1,
+      totalAmountCents: 500,
+      paymentMethodId: virementPaymentMethodId,
+      paidAt: '2025-08-28', // Paid inside closed season 24-25
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().get();
+
+    const result = await approveOrder(db, order.id);
+
+    expect(result.status).toBe('approved');
+    expect(result.paidAt).toBe('2025-08-28');
+
+    const entry = await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, result.ledgerEntryId!)).get();
+    expect(entry).toBeDefined();
+    expect(entry.seasonId).toBe(seasonId); // Routed to current active season 25-26
+    expect(entry.date).toBe('2025-08-28'); // Dated on paidAt
+    expect(entry.accrualType).toBe('recette_exercice_anterieur');
+    expect(entry.accrualNote).toContain("Régularisation recette commande boutique");
+  });
 });

@@ -1,6 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { ordersTable, productsTable, productCategoriesTable } from '../shared/schema';
+import { ordersTable, productsTable, productCategoriesTable, seasonsTable } from '../shared/schema';
 import { paymentMethodsTable } from '@nba/accounting/schema';
 import { accountsTable } from '@nba/accounting/schema';
 import { getMemberById } from '@nba/members-api';
@@ -37,6 +37,10 @@ export class ApproveOrderRepository {
     return db.select().from(accountsTable).where(eq(accountsTable.code, code)).get();
   }
 
+  async getAllSeasons(db: DbOrTx): Promise<any[]> {
+    return db.select().from(seasonsTable).all();
+  }
+
   buildRecetteTransactionStatement(db: DbOrTx, values: {
     seasonId: number;
     paymentMethodId: number;
@@ -44,6 +48,9 @@ export class ApproveOrderRepository {
     amountCents: number;
     description: string;
     memberId: number;
+    date: string;
+    accrualType?: string | null;
+    accrualNote?: string | null;
   }): any {
     return buildCreateRevenueLedgerEntryStatement(db, {
       seasonId: values.seasonId,
@@ -52,14 +59,17 @@ export class ApproveOrderRepository {
       amountCents: values.amountCents,
       description: values.description,
       memberId: values.memberId,
-      date: new Date().toISOString().split('T')[0]
+      date: values.date,
+      accrualType: values.accrualType,
+      accrualNote: values.accrualNote
     });
   }
 
-  buildApproveOrderStatement(db: DbOrTx, id: number): any {
+  buildApproveOrderStatement(db: DbOrTx, id: number, paidAt: string): any {
     return db.update(ordersTable)
       .set({
         status: 'approved',
+        paidAt: paidAt,
         ledgerEntryId: sql`(SELECT last_insert_rowid())`
       })
       .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')));
@@ -78,6 +88,9 @@ export class ApproveOrderRepository {
     amountCents: number;
     description: string;
     memberId: number;
+    date: string;
+    accrualType?: string | null;
+    accrualNote?: string | null;
   }): Promise<{ id: number }> {
     return createRevenueLedgerEntry(db, {
       seasonId: values.seasonId,
@@ -86,7 +99,9 @@ export class ApproveOrderRepository {
       amountCents: values.amountCents,
       description: values.description,
       memberId: values.memberId,
-      date: new Date().toISOString().split('T')[0]
+      date: values.date,
+      accrualType: values.accrualType,
+      accrualNote: values.accrualNote
     });
   }
 

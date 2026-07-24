@@ -51,3 +51,10 @@ export class ShopCategoryNotConfiguredError extends AppError {
     this.name = 'ShopCategoryNotConfiguredError';
   }
 }
+
+export class MemberNotEligibleError extends AppError {
+  constructor(message = "L'adhérent n'est pas éligible pour commander en boutique (statut non validé ou saison incompatible).") {
+    super(message, 400);
+    this.name = 'MemberNotEligibleError';
+  }
+}

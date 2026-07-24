@@ -13,8 +13,10 @@ import {
 import { isSeasonClosed } from '@nba/members-api';
 import { ApproveOrderInput, ApproveOrderOutput } from "./dto";
 
-export async function approveOrder(db: Db, id: ApproveOrderInput): Promise<ApproveOrderOutput> {
+export async function approveOrder(db: Db, input: ApproveOrderInput): Promise<ApproveOrderOutput> {
   const repo = new ApproveOrderRepository();
+  const id = typeof input === 'number' ? input : input.id;
+  const requestedPaidAt = typeof input === 'object' ? input.paidAt : undefined;
 
   // Phase 1 : Lecture (hors batch)
   const orderData = await repo.getOrderById(db, id);
@@ -27,7 +29,33 @@ export async function approveOrder(db: Db, id: ApproveOrderInput): Promise<Appro
     throw new OrderInvalidOrProcessedError();
   }
 
-  if (await isSeasonClosed(db, order.seasonId)) {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const paidAt = requestedPaidAt || orderData.paidAt || todayStr;
+
+  if (paidAt > todayStr) {
+    throw new AppError("La date de paiement ne peut pas être postérieure à la date du jour.", 400);
+  }
+
+  // Resolve target accounting season from paidAt
+  const allSeasons = await repo.getAllSeasons(db);
+  const targetSeason = allSeasons.find(s => paidAt >= s.startDate && paidAt <= s.endDate);
+
+  let effectiveSeasonId = order.seasonId;
+  let accrualType: string | null = null;
+  let accrualNote: string | null = null;
+
+  if (targetSeason) {
+    if (targetSeason.closedAt !== null && targetSeason.closedAt !== undefined) {
+      const activeSeason = allSeasons.find(s => s.active || s.closedAt === null) || allSeasons[0];
+      effectiveSeasonId = activeSeason.id;
+      accrualType = 'recette_exercice_anterieur';
+      accrualNote = `Régularisation recette commande boutique #${order.id} payée le ${paidAt} sur l'exercice arrêté ${targetSeason.code}`;
+    } else {
+      effectiveSeasonId = targetSeason.id;
+    }
+  }
+
+  if (await isSeasonClosed(db, effectiveSeasonId)) {
     throw new SeasonClosedError();
   }
 
@@ -50,15 +78,18 @@ export async function approveOrder(db: Db, id: ApproveOrderInput): Promise<Appro
 
   // Phase 2 : Décision (en mémoire)
   const stmt1 = repo.buildRecetteTransactionStatement(db, {
-    seasonId: order.seasonId,
+    seasonId: effectiveSeasonId,
     paymentMethodId: order.paymentMethodId,
     categoryId: productCategory.accountingCategoryId,
     amountCents: order.totalAmountCents,
     description,
     memberId: member.id,
+    date: paidAt,
+    accrualType,
+    accrualNote
   });
 
-  const stmt2 = repo.buildApproveOrderStatement(db, id);
+  const stmt2 = repo.buildApproveOrderStatement(db, id, paidAt);
   const stmt3 = repo.buildDecrementStockStatement(db, product.id, order.quantity);
 
   // Phase 3 : Écriture (db.batch)

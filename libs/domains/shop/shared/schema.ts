@@ -31,6 +31,7 @@ export const ordersTable = sqliteTable('orders', {
   totalAmountCents: integer('total_amount_cents').notNull(),
   paymentMethodId: integer('payment_method_id').notNull().references(() => paymentMethodsTable.id),
   status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
+  paidAt: text('paid_at'),
   ledgerEntryId: integer('ledger_entry_id').references(() => ledgerEntriesTable.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });

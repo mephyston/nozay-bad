@@ -231,4 +231,44 @@ describe('closeSeason (Pre-closure Checks, Rollover & Reopen - PROMPT 13)', () =
     const season2BalancesFinal = await db.select().from(seasonBalancesTable).where(eq(seasonBalancesTable.seasonId, 2)).all();
     expect(season2BalancesFinal.length).toBe(initialCount);
   });
+
+  it('blocks closure if unvalidated paid shop orders exist', async () => {
+    // Insert an order with paidAt set but status pending on season 1
+    const { ordersTable, productsTable, productCategoriesTable, paymentMethodsTable } = await import('@nba/shop/schema');
+    const { sql } = await import('drizzle-orm');
+
+    const member = await db.get(sql`
+      INSERT INTO members (licence, season_id, last_name, first_name, gender, birth_date, status, type, imported_at)
+      VALUES ('999111', 1, 'Valentin', 'Luc', 'M', '1990-01-01', 'valide', 'senior', strftime('%s', 'now'))
+      RETURNING id
+    `) as { id: number };
+
+    const pCat = await db.insert(productCategoriesTable).values({
+      label: 'Cordages', accountingCategoryId: 1, createdAt: new Date()
+    }).returning().get();
+
+    const product = await db.insert(productsTable).values({
+      name: 'Cordage BG65', productCategoryId: pCat.id, priceCents: 1200, stock: 10, active: true, createdAt: new Date()
+    }).returning().get();
+
+    const pm = await db.select().from(paymentMethodsTable).all();
+
+    await db.insert(ordersTable).values({
+      seasonId: 1,
+      memberId: member.id,
+      productId: product.id,
+      quantity: 1,
+      totalAmountCents: 1200,
+      paymentMethodId: pm[0].id,
+      paidAt: '2025-05-15',
+      status: 'pending',
+      createdAt: new Date()
+    });
+
+    const checks = await getCloseSeasonChecks(db, '24-25');
+    expect(checks.canClose).toBe(false);
+    expect(checks.blockingItems.some(i => i.code === 'UNVALIDATED_PAID_ORDERS')).toBe(true);
+
+    await expect(closeSeason(db, '24-25')).rejects.toThrow("commande(s) boutique payée(s) non validée(s)");
+  });
 });

@@ -30,12 +30,14 @@ export async function validateAccrualAndFiscalPhase(db: DbOrTx, params: AccrualV
 
   // Phase 3: Arrêté (closed_at IS NOT NULL) -> READ ONLY!
   if (season.closedAt !== null && season.closedAt !== undefined) {
-    throw new AppError("L'exercice comptable est arrêté et clôturé (closed_at). Aucune écriture ni modification n'est autorisée.", 400);
+    if (accrualType !== 'recette_exercice_anterieur') {
+      throw new AppError("L'exercice comptable est arrêté et clôturé (closed_at). Aucune écriture ni modification n'est autorisée.", 400);
+    }
   }
 
   // Phase 2: Inventaire (today > season.endDate AND closed_at IS NULL)
   if (todayStr > season.endDate) {
-    if (accrualType !== 'charge_a_payer' && accrualType !== 'produit_a_recevoir') {
+    if (accrualType !== 'charge_a_payer' && accrualType !== 'produit_a_recevoir' && accrualType !== 'recette_exercice_anterieur') {
       throw new AppError("L'exercice est en période d'inventaire. Seules les régularisations de fin d'exercice (charge à payer, produit à recevoir) sont autorisées.", 400);
     }
   }

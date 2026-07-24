@@ -251,6 +251,7 @@ CREATE TABLE `orders` (
 	`total_amount_cents` integer NOT NULL,
 	`payment_method_id` integer NOT NULL,
 	`status` text DEFAULT 'pending' NOT NULL,
+	`paid_at` text,
 	`ledger_entry_id` integer,
 	`created_at` integer NOT NULL,
 	FOREIGN KEY (`season_id`) REFERENCES `seasons`(`id`) ON UPDATE no action ON DELETE no action,

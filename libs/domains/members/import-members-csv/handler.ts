@@ -201,6 +201,7 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
     const { seasonCode, ...rest } = m;
     return {
       ...rest,
+      status: m.status as any,
       seasonId,
       importedAt
     };
