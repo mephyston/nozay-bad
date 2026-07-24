@@ -55,6 +55,8 @@ Thumbs.db
 *.tsbuildinfo
 graph.json
 
-# Local superpowers brainstorm server state
-.superpowers/brainstorm/
+# Local dev secrets
+.dev.vars
+.dev.vars.*
+
 
