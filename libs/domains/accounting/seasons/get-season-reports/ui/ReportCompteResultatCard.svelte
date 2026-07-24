@@ -1,0 +1,136 @@
+<script lang="ts">
+  import { Button, Card } from '@nba/ui';
+  import type { ReportData, Season, DbCategory, AccountClass } from './report-types';
+  import ReportChargesColumn from './ReportChargesColumn.svelte';
+  import ReportProduitsColumn from './ReportProduitsColumn.svelte';
+
+  let {
+    mode,
+    report,
+    prevReport = null,
+    selectedSeason,
+    seasons = [],
+    categories = [],
+    chargeClasses,
+    produitClasses,
+    editableBudget = $bindable({}),
+    isClosed,
+    isSaving,
+    saveStatus,
+    getClassCategories,
+    getClassSumRealise,
+    getClassSumPrevisionnel,
+    getCatTotal,
+    getTotalDepensesRealise,
+    getTotalRecettesRealise,
+    totalDepensesPrevisionnel,
+    totalRecettesPrevisionnel,
+    onSaveBudget
+  }: {
+    mode: 'realise' | 'previsionnel';
+    report: ReportData;
+    prevReport?: ReportData | null;
+    selectedSeason: string;
+    seasons?: Season[];
+    categories?: DbCategory[];
+    chargeClasses: AccountClass[];
+    produitClasses: AccountClass[];
+    editableBudget: Record<string, number>;
+    isClosed: boolean;
+    isSaving: boolean;
+    saveStatus: { type: 'success' | 'error'; message: string } | null;
+    getClassCategories: (classCode: string, type: 'recette' | 'depense') => DbCategory[];
+    getClassSumRealise: (classCode: string, type: 'recette' | 'depense', mode: 'realise' | 'previsionnel') => number;
+    getClassSumPrevisionnel: (classCode: string, type: 'recette' | 'depense') => number;
+    getCatTotal: (id: string, type: 'recette' | 'depense', mode: 'realise' | 'previsionnel') => number;
+    getTotalDepensesRealise: (mode: 'realise' | 'previsionnel') => number;
+    getTotalRecettesRealise: (mode: 'realise' | 'previsionnel') => number;
+    totalDepensesPrevisionnel: number;
+    totalRecettesPrevisionnel: number;
+    onSaveBudget: () => void;
+  } = $props();
+
+  const totalDepReal = $derived(getTotalDepensesRealise(mode));
+  const totalRecReal = $derived(getTotalRecettesRealise(mode));
+  const netResReal = $derived(totalRecReal - totalDepReal);
+  const netResPrev = $derived(totalRecettesPrevisionnel - totalDepensesPrevisionnel);
+</script>
+
+<Card.Root class="print-container">
+  <Card.Content class="p-6 space-y-6">
+    <div class="hidden print:block text-center space-y-1 mb-6">
+      <h3 class="text-xl font-bold tracking-tight">
+        {mode === 'realise' ? 'Compte de Résultat Simplifié (Réalisé)' : 'Budget Prévisionnel'}
+      </h3>
+      <p class="text-xs text-muted-foreground">Saison {seasons.find(s => s.id === selectedSeason)?.name || selectedSeason}</p>
+    </div>
+
+    <div class="flex items-center justify-between border-b border-border pb-4 no-print">
+      <h3 class="text-lg font-semibold">
+        {mode === 'realise' ? '1. Compte de Résultat' : '3. Budget Prévisionnel'}
+      </h3>
+    </div>
+
+    <div class="grid gap-6 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
+      <ReportChargesColumn
+        {mode}
+        {prevReport}
+        {selectedSeason}
+        {seasons}
+        {chargeClasses}
+        bind:editableBudget
+        {isClosed}
+        {getClassCategories}
+        {getClassSumRealise}
+        {getClassSumPrevisionnel}
+        {getCatTotal}
+        {netResReal}
+        {netResPrev}
+        {totalDepReal}
+        {totalDepensesPrevisionnel}
+      />
+
+      <ReportProduitsColumn
+        {mode}
+        {prevReport}
+        {selectedSeason}
+        {seasons}
+        {produitClasses}
+        bind:editableBudget
+        {isClosed}
+        {getClassCategories}
+        {getClassSumRealise}
+        {getClassSumPrevisionnel}
+        {getCatTotal}
+        {netResReal}
+        {netResPrev}
+        {totalRecReal}
+        {totalRecettesPrevisionnel}
+      />
+    </div>
+
+    {#if mode === 'previsionnel' && !isClosed}
+      <div class="flex flex-col gap-3 pt-4 border-t border-border mt-6 no-print">
+        {#if saveStatus}
+          <div class="p-3 text-xs rounded-lg {saveStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-destructive/10 text-destructive border border-destructive/20'}">
+            {saveStatus.message}
+          </div>
+        {/if}
+        
+        <div class="flex justify-end">
+          <Button
+            onclick={onSaveBudget}
+            disabled={isSaving}
+            class="flex items-center gap-1.5"
+          >
+            {#if isSaving}
+              Enregistrement...
+            {:else}
+              Enregistrer le Prévisionnel
+            {/if}
+          </Button>
+        </div>
+      </div>
+    {/if}
+  </Card.Content>
+</Card.Root>

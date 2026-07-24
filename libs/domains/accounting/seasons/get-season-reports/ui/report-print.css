@@ -1,0 +1,79 @@
+@media print {
+  @page {
+    size: landscape;
+    margin: 0.8cm;
+  }
+  :global(body) {
+    background: white !important;
+    color: black !important;
+    font-size: 10px !important;
+  }
+  :global(aside), :global(nav), :global(header) {
+    display: none !important;
+  }
+  :global(main), :global(.px-6), :global(.py-8), :global(.container), :global(.mx-auto), :global(.max-w-7xl) {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  :global(.page-break) {
+    page-break-before: always;
+    break-before: page;
+    margin-top: 0 !important;
+    padding-top: 1.5rem !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  :global(.bg-card) {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+  :global(.print-container) {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  :global(.print-container) :global(.grid) {
+    gap: 1rem !important;
+  }
+  :global(.print-container) :global(.space-y-4) {
+    margin-top: 0.3rem !important;
+  }
+  :global(.print-container) :global(.py-1) {
+    padding-top: 0.1rem !important;
+    padding-bottom: 0.1rem !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  :global(.print-container) :global(h4) {
+    font-size: 12px !important;
+    padding-bottom: 0.25rem !important;
+  }
+  :global(.print-container) :global(.text-sm) {
+    font-size: 11px !important;
+  }
+  :global(.print-container) :global(.text-xs), :global(.print-container) :global(.text-\[11px\]) {
+    font-size: 9.5px !important;
+  }
+  :global(.print-container) :global(.mt-8) {
+    margin-top: 1rem !important;
+  }
+  :global(.print-container) :global(.pt-4) {
+    padding-top: 0.5rem !important;
+  }
+
+  :global([data-slot="tabs-content"]) {
+    display: block !important;
+    page-break-before: always;
+    break-before: page;
+  }
+  :global([data-slot="tabs-content"]:first-of-type) {
+    page-break-before: avoid;
+    break-before: avoid;
+  }
+}
