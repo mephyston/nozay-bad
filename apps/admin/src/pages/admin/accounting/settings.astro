@@ -8,7 +8,7 @@ import { createApiClient } from '@nba/api-client';
 const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
 const apiService = createApiClient(env);
 
-const season = Astro.url.searchParams.get('season') || '25-26';
+const requestedSeason = Astro.url.searchParams.get('season');
 const view = (Astro.url.searchParams.get('view') || 'seasons') as 'seasons' | 'compta' | 'classes';
 
 if (Astro.request.method === 'POST') {
@@ -131,6 +131,7 @@ let seasonsList: any[] = [];
 let categoriesList: any[] = [];
 let accountClassesList: any[] = [];
 let errorMsg = '';
+let season = requestedSeason || '25-26';
 
 try {
   const [seasonsRes, categoriesRes, classesRes] = await Promise.all([
@@ -142,9 +143,15 @@ try {
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     const rawSeasons: any[] = json.data || [];
+    rawSeasons.sort((a: any, b: any) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
+
+    if (!requestedSeason && rawSeasons.length > 0) {
+      const activeSeasonObj = rawSeasons.find((s: any) => s.active || s.active === 1) || rawSeasons[rawSeasons.length - 1];
+      season = activeSeasonObj.code || String(activeSeasonObj.id);
+    }
 
     seasonsList = await Promise.all(rawSeasons.map(async (s) => {
-      const balRes = await apiService.fetch(`http://localhost/accounting/seasons/${s.id}/balances`);
+      const balRes = await apiService.fetch(`http://localhost/accounting/seasons/${s.code || s.id}/balances`);
       let initialCurrentBalance = 0;
       let initialSavingsBalance = 0;
       let initialCashBalance = 0;

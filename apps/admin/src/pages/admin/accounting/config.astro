@@ -8,21 +8,16 @@ import { createApiClient } from '@nba/api-client';
 const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
 const apiService = createApiClient(env);
 
-const season = Astro.url.searchParams.get('season') || '25-26';
+const requestedSeason = Astro.url.searchParams.get('season');
 
 // Proxying POST requests to configure initial balances for a season
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
-    const balancesArray = [
-      { accountId: 'current', initialBalance: data.balances?.current || 0 },
-      { accountId: 'savings', initialBalance: data.balances?.savings || 0 },
-      { accountId: 'cash', initialBalance: data.balances?.cash || 0 }
-    ];
     const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.seasonId}/balances`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(balancesArray)
+      body: JSON.stringify(data.balances)
     });
     if (!apiRes.ok) {
       return new Response('Erreur configuration soldes', { status: apiRes.status });
@@ -35,15 +30,22 @@ if (Astro.request.method === 'POST') {
 
 let seasonsList: any[] = [];
 let errorMsg = '';
+let season = requestedSeason || '25-26';
 
 try {
   const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     const rawSeasons: any[] = json.data || [];
+    rawSeasons.sort((a: any, b: any) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
+
+    if (!requestedSeason && rawSeasons.length > 0) {
+      const activeSeasonObj = rawSeasons.find((s: any) => s.active || s.active === 1) || rawSeasons[rawSeasons.length - 1];
+      season = activeSeasonObj.code || String(activeSeasonObj.id);
+    }
 
     seasonsList = await Promise.all(rawSeasons.map(async (s) => {
-      const balRes = await apiService.fetch(`http://localhost/accounting/seasons/${s.id}/balances`);
+      const balRes = await apiService.fetch(`http://localhost/accounting/seasons/${s.code || s.id}/balances`);
       let initialCurrentBalance = 0;
       let initialSavingsBalance = 0;
       let initialCashBalance = 0;
@@ -59,7 +61,8 @@ try {
           if (sav) initialSavingsBalance = sav.initialBalance;
           if (csh) initialCashBalance = csh.initialBalance;
         } else {
-          const match = s.id.match(/^(\d+)-(\d+)$/);
+          const sCode = s.code || String(s.id);
+          const match = sCode.match(/^(\d+)-(\d+)$/);
           if (match) {
             const yy = parseInt(match[1]);
             const zz = parseInt(match[2]);
@@ -91,7 +94,7 @@ try {
 } catch (err: any) {
   errorMsg = 'Impossible de charger la liste des saisons comptables.';
 }
-const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
+const isClosed = !!seasonsList.find((s: any) => (s.code || String(s.id)) === season || String(s.id) === season)?.closed;
 ---
 
 <Layout title="Soldes initiaux - NBA 91">
@@ -114,9 +117,13 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
             id="season-selector"
             class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9"
           >
-            {seasonsList.map((s: any) => (
-              <option value={s.id} selected={s.id === season}>{s.name}</option>
-            ))}
+            {seasonsList.map((s: any) => {
+              const val = s.code || String(s.id);
+              const isSelected = val === season || String(s.id) === season;
+              return (
+                <option value={val} selected={isSelected}>{s.name}</option>
+              );
+            })}
             {seasonsList.length === 0 && (
               <option value="25-26" selected>Saison 2025-2026</option>
             )}

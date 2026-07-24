@@ -9,7 +9,7 @@ import { createApiClient } from '@nba/api-client';
 const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
 const apiService = createApiClient(env);
 
-const season = Astro.url.searchParams.get('season') || '25-26';
+const requestedSeason = Astro.url.searchParams.get('season');
 
 if (Astro.request.method === 'POST') {
   try {
@@ -85,16 +85,27 @@ if (Astro.request.method === 'POST') {
 let checksList = [];
 let depositsList = [];
 let membersList = [];
-let seasonsList = [];
+let seasonsList: any[] = [];
 let pendingBankTx = [];
 let errorMsg = '';
+let season = requestedSeason || '25-26';
 
 try {
-  const [checksRes, depositsRes, membersRes, seasonsRes, bankTxRes] = await Promise.all([
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasonsList = json.data || [];
+    seasonsList.sort((a: any, b: any) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
+    if (!requestedSeason && seasonsList.length > 0) {
+      const activeSeasonObj = seasonsList.find((s: any) => s.active || s.active === 1) || seasonsList[seasonsList.length - 1];
+      season = activeSeasonObj.code || String(activeSeasonObj.id);
+    }
+  }
+
+  const [checksRes, depositsRes, membersRes, bankTxRes] = await Promise.all([
     apiService.fetch(`http://localhost/accounting/checks?season=${season}`),
     apiService.fetch(`http://localhost/accounting/check-deposits?season=${season}`),
     apiService.fetch(`http://localhost/members?limit=1000&season=${season}`),
-    apiService.fetch('http://localhost/accounting/seasons'),
     apiService.fetch(`http://localhost/accounting/bank-transactions?season=${season}`)
   ]);
 
@@ -113,11 +124,6 @@ try {
     membersList = json.data || [];
   }
 
-  if (seasonsRes.ok) {
-    const json = await seasonsRes.json() as any;
-    seasonsList = json.data || [];
-  }
-
   if (bankTxRes.ok) {
     const json = await bankTxRes.json() as any;
     const allBankTx = json.data || [];
@@ -127,7 +133,7 @@ try {
   errorMsg = 'Erreur lors de la récupération des données de remise de chèques.';
 }
 
-const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
+const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id) === season)?.closed;
 ---
 
 <Layout title="Remises de Chèques - NBA 91">
@@ -156,17 +162,19 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
             id="season-selector"
             class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9"
           >
-            {seasonsList.map((s: any) => (
-              <option value={s.id} selected={s.id === season}>{s.name}</option>
-            ))}
+            {seasonsList.map((s: any) => {
+              const val = s.code || String(s.id);
+              const isSelected = val === season || String(s.id) === season;
+              return (
+                <option value={val} selected={isSelected}>{s.name}</option>
+              );
+            })}
             {seasonsList.length === 0 && (
               <option value="25-26" selected>Saison 2025-2026</option>
             )}
           </select>
         </div>
       </div>
-
-
 
       <CheckDepositManager
         client:load

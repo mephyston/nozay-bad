@@ -39,7 +39,7 @@
       onchange={onApplySeasonChange}
     >
       {#each seasons as season}
-        <option value={season.id}>{season.name}</option>
+        <option value={season.code || season.id}>{season.name}</option>
       {/each}
       {#if seasons.length === 0}
         <option value="25-26">Saison 2025-2026</option>

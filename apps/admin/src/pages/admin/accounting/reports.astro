@@ -8,7 +8,7 @@ import { createApiClient } from '@nba/api-client';
 const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
 const apiService = createApiClient(env);
 
-const season = Astro.url.searchParams.get('season') || '25-26';
+const requestedSeason = Astro.url.searchParams.get('season');
 
 // Si requête POST, intercepter pour modifier les soldes initiaux ou le budget (proxying)
 if (Astro.request.method === 'POST') {
@@ -40,6 +40,14 @@ if (Astro.request.method === 'POST') {
   }
 }
 
+let seasonsList: any[] = [];
+let categoriesList: any[] = [];
+let accountClassesList: any[] = [];
+let budgetList: any[] = [];
+let prevReportData: any = null;
+let errorMsg = '';
+let season = requestedSeason || '25-26';
+
 let reportData = {
   compteResultat: { totalRecettes: 0, totalDepenses: 0, netResult: 0, categories: {} },
   bilanTrésorerie: [
@@ -48,6 +56,7 @@ let reportData = {
     { accountId: 'cash' as const, initialBalance: 0, finalBalance: 0 }
   ]
 };
+
 function getPreviousSeasonId(currentId: string): string {
   const parts = currentId.split('-');
   if (parts.length === 2) {
@@ -62,22 +71,26 @@ function getPreviousSeasonId(currentId: string): string {
   return '';
 }
 
-let seasonsList = [];
-let categoriesList = [];
-let accountClassesList = [];
-let budgetList = [];
-let prevReportData = null;
-let errorMsg = '';
-
 try {
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasonsList = json.data || [];
+    // Tri chronologique des saisons par date de début / code (ordre croissant)
+    seasonsList.sort((a: any, b: any) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
+    if (!requestedSeason && seasonsList.length > 0) {
+      const activeSeasonObj = seasonsList.find((s: any) => s.active || s.active === 1) || seasonsList[seasonsList.length - 1];
+      season = activeSeasonObj.code || String(activeSeasonObj.id);
+    }
+  }
+
   const prevSeason = getPreviousSeasonId(season);
-  const [res, prevResResult, seasonsRes, categoriesRes, classesRes, budgetRes] = await Promise.all([
+  const [res, prevResResult, categoriesRes, classesRes, budgetRes] = await Promise.all([
     apiService.fetch(`http://localhost/accounting/seasons/${season}/reports`),
     prevSeason ? apiService.fetch(`http://localhost/accounting/seasons/${prevSeason}/reports`).catch((e) => {
       console.error('Failed to fetch previous season reports', e);
       return null;
     }) : Promise.resolve(null),
-    apiService.fetch('http://localhost/accounting/seasons'),
     apiService.fetch('http://localhost/accounting/categories'),
     apiService.fetch('http://localhost/accounting/account-classes'),
     apiService.fetch(`http://localhost/accounting/seasons/${season}/budget`)
@@ -93,11 +106,6 @@ try {
   if (prevResResult && prevResResult.ok) {
     const json = await prevResResult.json() as any;
     prevReportData = json.data;
-  }
-
-  if (seasonsRes.ok) {
-    const json = await seasonsRes.json() as any;
-    seasonsList = json.data || [];
   }
 
   if (categoriesRes.ok) {
@@ -134,9 +142,13 @@ try {
             id="season-selector"
             class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9"
           >
-            {seasonsList.map((s: any) => (
-              <option value={s.id} selected={s.id === season}>{s.name}</option>
-            ))}
+            {seasonsList.map((s: any) => {
+              const val = s.code || String(s.id);
+              const isSelected = val === season || String(s.id) === season;
+              return (
+                <option value={val} selected={isSelected}>{s.name}</option>
+              );
+            })}
             {seasonsList.length === 0 && (
               <option value="25-26" selected>Saison 2025-2026</option>
             )}

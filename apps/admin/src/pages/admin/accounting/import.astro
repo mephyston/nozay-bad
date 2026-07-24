@@ -8,7 +8,7 @@ import { createApiClient } from '@nba/api-client';
 const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
 const apiService = createApiClient(env);
 
-const season = Astro.url.searchParams.get('season') || '25-26';
+const requestedSeason = Astro.url.searchParams.get('season');
 
 // Si requête POST, intercepter pour les actions d'écriture (import ou reconcile/ignore/unignore/analyze/delete-transaction)
 if (Astro.request.method === 'POST') {
@@ -30,26 +30,27 @@ if (Astro.request.method === 'POST') {
         const url = data.btId
           ? `http://localhost/accounting/bank-transactions/analyze?season=${data.season}&id=${data.btId}`
           : `http://localhost/accounting/bank-transactions/analyze?season=${data.season}`;
-        const apiRes = await apiService.fetch(url, {
-          method: 'POST'
-        });
+        const apiRes = await apiService.fetch(url, { method: 'POST' });
         if (!apiRes.ok) {
           return new Response(await apiRes.text(), { status: apiRes.status });
         }
-      } else if (data.action === 'match' || data.action === 'create') {
+        return new Response(await apiRes.text(), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } else if (data.action === 'reconcile') {
         const apiRes = await apiService.fetch(`http://localhost/accounting/bank-transactions/${data.btId}/reconcile`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
+          body: JSON.stringify(data.match)
         });
         if (!apiRes.ok) {
           return new Response(await apiRes.text(), { status: apiRes.status });
         }
-      } else if (data.action === 'bulk') {
+      } else if (data.action === 'reconcile-bulk') {
         const apiRes = await apiService.fetch('http://localhost/accounting/bank-transactions/reconcile-bulk', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
+          body: JSON.stringify({ requests: data.requests })
         });
         if (!apiRes.ok) {
           return new Response(await apiRes.text(), { status: apiRes.status });
@@ -59,21 +60,21 @@ if (Astro.request.method === 'POST') {
           method: 'POST'
         });
         if (!apiRes.ok) {
-          return new Response('Erreur ignore', { status: apiRes.status });
+          return new Response('Erreur masquage ligne', { status: apiRes.status });
         }
       } else if (data.action === 'unignore') {
         const apiRes = await apiService.fetch(`http://localhost/accounting/bank-transactions/${data.btId}/unignore`, {
           method: 'POST'
         });
         if (!apiRes.ok) {
-          return new Response('Erreur unignore', { status: apiRes.status });
+          return new Response('Erreur réaffichage ligne', { status: apiRes.status });
         }
       } else if (data.action === 'delete-transaction') {
         const apiRes = await apiService.fetch(`http://localhost/accounting/transactions/${data.txId}`, {
           method: 'DELETE'
         });
         if (!apiRes.ok) {
-          return new Response(await apiRes.text(), { status: apiRes.status });
+          return new Response('Erreur suppression transaction', { status: apiRes.status });
         }
       } else if (data.action === 'get-unpaid-invoices') {
         const apiRes = await apiService.fetch(`http://localhost/accounting/invoices?season=${data.season}`);
@@ -93,16 +94,27 @@ if (Astro.request.method === 'POST') {
 
 let bankTransactionsList = [];
 let glTransactionsList = [];
-let seasonsList = [];
+let seasonsList: any[] = [];
 let membersList = [];
 let categoriesList = [];
 let errorMsg = '';
+let season = requestedSeason || '25-26';
 
 try {
-  const [btRes, glRes, seasonsRes, membersRes, categoriesRes] = await Promise.all([
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasonsList = json.data || [];
+    seasonsList.sort((a: any, b: any) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
+    if (!requestedSeason && seasonsList.length > 0) {
+      const activeSeasonObj = seasonsList.find((s: any) => s.active || s.active === 1) || seasonsList[seasonsList.length - 1];
+      season = activeSeasonObj.code || String(activeSeasonObj.id);
+    }
+  }
+
+  const [btRes, glRes, membersRes, categoriesRes] = await Promise.all([
     apiService.fetch(`http://localhost/accounting/bank-transactions?season=${season}`),
     apiService.fetch(`http://localhost/accounting/transactions?season=${season}&page=1&limit=500`),
-    apiService.fetch('http://localhost/accounting/seasons'),
     apiService.fetch(`http://localhost/members?season=${season}&limit=500`),
     apiService.fetch('http://localhost/accounting/categories')
   ]);
@@ -115,11 +127,6 @@ try {
   if (glRes.ok) {
     const json = await glRes.json() as any;
     glTransactionsList = json.data || [];
-  }
-
-  if (seasonsRes.ok) {
-    const json = await seasonsRes.json() as any;
-    seasonsList = json.data || [];
   }
 
   if (membersRes.ok) {
@@ -135,38 +142,12 @@ try {
   errorMsg = 'Une erreur est survenue lors de la communication avec le serveur comptable.';
 }
 
-const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
+const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id) === season)?.closed;
 ---
 
-<Layout title="Importation & Rapprochement - NBA 91">
+<Layout title="Rapprochement Bancaire - NBA 91">
   <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Rapprochement bancaire">
     <div class="space-y-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-3xl font-bold tracking-tight">Rapprochement bancaire</h1>
-          <p class="text-muted-foreground mt-2">
-            Rapprochez les relevés bancaires importés avec les écritures du grand livre et validez les factures.
-          </p>
-        </div>
-        <div class="flex items-center gap-3 shrink-0">
-          {isClosed && (
-            <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
-              Saison clôturée (Lecture seule)
-            </span>
-          )}
-          {!isClosed && bankTransactionsList.length > 0 && (
-            <button
-              id="trigger-import-btn"
-              onclick="window.dispatchEvent(new CustomEvent('open-bank-import'))"
-              class="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow hover:bg-primary/90 cursor-pointer inline-flex items-center gap-2 border-0"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-              Importer un relevé bancaire
-            </button>
-          )}
-        </div>
-      </div>
-
       {errorMsg && (
         <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
           {errorMsg}
@@ -177,8 +158,8 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
         client:load
         bankTransactions={bankTransactionsList}
         glTransactions={glTransactionsList}
-        seasonId={season}
         seasons={seasonsList}
+        selectedSeason={season}
         members={membersList}
         dbCategories={categoriesList}
       />

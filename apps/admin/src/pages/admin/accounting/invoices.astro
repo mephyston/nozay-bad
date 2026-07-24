@@ -78,7 +78,7 @@ if (Astro.request.method === 'POST') {
 }
 
 let invoicesList = [];
-let seasonsList = [];
+let seasonsList: any[] = [];
 let errorMsg = '';
 
 try {
@@ -89,11 +89,12 @@ try {
   }
   const seasonsJson = await seasonsRes.json() as any;
   seasonsList = seasonsJson.data || [];
+  seasonsList.sort((a: any, b: any) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
 
   // Déterminer la saison par défaut dynamiquement
   if (!season) {
-    const activeSeason = seasonsList.find((s: any) => s.active === true || s.active === 1);
-    season = activeSeason ? activeSeason.id : '25-26';
+    const activeSeason = seasonsList.find((s: any) => s.active === true || s.active === 1) || seasonsList[seasonsList.length - 1];
+    season = activeSeason ? (activeSeason.code || String(activeSeason.id)) : '25-26';
   }
 
   // 2. Récupérer les factures de la saison
@@ -107,7 +108,7 @@ try {
   errorMsg = err.message || 'Une erreur est survenue lors du chargement des données.';
 }
 
-const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
+const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id) === season)?.closed;
 ---
 
 <Layout title="Factures - NBA 91">
@@ -136,12 +137,13 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
             id="season-selector"
             class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9"
           >
-            {seasonsList.map((s: any) => (
-              <option value={s.id} selected={s.id === season}>{s.name}</option>
-            ))}
-            {seasonsList.length === 0 && (
-              <option value="25-26" selected>Saison 2025-2026</option>
-            )}
+            {seasonsList.map((s: any) => {
+              const val = s.code || String(s.id);
+              const isSelected = val === season || String(s.id) === season;
+              return (
+                <option value={val} selected={isSelected}>{s.name}</option>
+              );
+            })}
           </select>
         </div>
       </div>

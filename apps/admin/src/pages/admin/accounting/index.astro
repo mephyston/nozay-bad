@@ -8,7 +8,7 @@ import { createApiClient } from '@nba/api-client';
 const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
 const apiService = createApiClient(env);
 
-const season = Astro.url.searchParams.get('season') || '25-26';
+const requestedSeason = Astro.url.searchParams.get('season');
 const page = Astro.url.searchParams.get('page') || '1';
 const category = Astro.url.searchParams.get('category') || '';
 const classCode = Astro.url.searchParams.get('classCode') || '';
@@ -54,22 +54,33 @@ if (Astro.request.method === 'POST') {
 let transactionsList = [];
 let pagination = { total: 0, page: 1, limit: 20, totalPages: 1 };
 let balances = [];
-let seasonsList = [];
+let seasonsList: any[] = [];
 let categoriesList = [];
 let accountClassesList = [];
 let errorMsg = '';
+let season = requestedSeason || '25-26';
 
 try {
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasonsList = json.data || [];
+    seasonsList.sort((a: any, b: any) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
+    if (!requestedSeason && seasonsList.length > 0) {
+      const activeSeasonObj = seasonsList.find((s: any) => s.active || s.active === 1) || seasonsList[seasonsList.length - 1];
+      season = activeSeasonObj.code || String(activeSeasonObj.id);
+    }
+  }
+
   const queryParams = new URLSearchParams({ season, page, limit: '20' });
   if (category) queryParams.set('category', category);
   if (classCode) queryParams.set('classCode', classCode);
   if (unreconciledChequesOnly) queryParams.set('unreconciledCheques', 'true');
   if (accountId) queryParams.set('accountId', accountId);
 
-  const [txRes, reportRes, seasonsRes, categoriesRes, classesRes] = await Promise.all([
+  const [txRes, reportRes, categoriesRes, classesRes] = await Promise.all([
     apiService.fetch(`http://localhost/accounting/transactions?${queryParams.toString()}`),
     apiService.fetch(`http://localhost/accounting/seasons/${season}/reports`),
-    apiService.fetch('http://localhost/accounting/seasons'),
     apiService.fetch('http://localhost/accounting/categories'),
     apiService.fetch('http://localhost/accounting/account-classes')
   ]);
@@ -83,11 +94,6 @@ try {
   if (reportRes.ok) {
     const json = await reportRes.json() as any;
     balances = json.data?.bilanTrésorerie || [];
-  }
-
-  if (seasonsRes.ok) {
-    const json = await seasonsRes.json() as any;
-    seasonsList = json.data || [];
   }
 
   if (categoriesRes.ok) {
