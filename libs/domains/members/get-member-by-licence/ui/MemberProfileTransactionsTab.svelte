@@ -1,0 +1,50 @@
+<script lang="ts">
+  import { Table, Badge, Card } from '@nba/ui';
+  import type { GLTransaction } from './member-profile-types';
+  import { categoryLabels } from './member-profile-types';
+
+  let { transactions = [] }: { transactions: GLTransaction[] } = $props();
+</script>
+
+<Card.Root class="space-y-4">
+  <Card.Content class="p-6 space-y-4">
+    <h3 class="font-bold text-lg border-b border-border pb-2 text-foreground">
+      Écritures associées au Grand Livre
+    </h3>
+    
+    {#if transactions.length === 0}
+      <p class="text-sm text-muted-foreground italic p-4 text-center">Aucune transaction enregistrée pour cet adhérent.</p>
+    {:else}
+      <div class="overflow-x-auto">
+        <Table.Root>
+          <Table.Header>
+            <Table.Row>
+              <Table.Head>Date</Table.Head>
+              <Table.Head>Description</Table.Head>
+              <Table.Head>Catégorie</Table.Head>
+              <Table.Head>Paiement</Table.Head>
+              <Table.Head class="text-right">Montant</Table.Head>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {#each transactions as tx}
+              <Table.Row class="hover:bg-muted/50 transition-colors">
+                <Table.Cell class="text-muted-foreground">{tx.date}</Table.Cell>
+                <Table.Cell class="font-medium">{tx.description}</Table.Cell>
+                <Table.Cell>
+                  <Badge variant="secondary">
+                    {tx.category ? (categoryLabels[tx.category] || tx.category) : 'Divers'}
+                  </Badge>
+                </Table.Cell>
+                <Table.Cell class="capitalize">{tx.paymentMethod}</Table.Cell>
+                <Table.Cell class="text-right font-semibold font-mono text-emerald-600">
+                  +{(tx.amount / 100).toFixed(2)} €
+                </Table.Cell>
+              </Table.Row>
+            {/each}
+          </Table.Body>
+        </Table.Root>
+      </div>
+    {/if}
+  </Card.Content>
+</Card.Root>
