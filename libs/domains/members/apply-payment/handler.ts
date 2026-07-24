@@ -3,6 +3,17 @@ import { ApplyPaymentRepository } from './repository';
 import { Member } from '../shared/member';
 import { ApplyPaymentToMemberMemberId, ApplyPaymentToMemberAmountCents, ApplyPaymentToMemberOutput } from "./dto";
 
+export function buildApplyPaymentStatement(
+  db: Db,
+  memberData: any,
+  amountCents: number
+): any {
+  const member = new Member(memberData);
+  const updatedValues = member.calculatePayment(amountCents);
+  const repo = new ApplyPaymentRepository();
+  return repo.buildUpdatePaymentStatement(db, memberData.id, updatedValues);
+}
+
 export async function applyPaymentToMember(
   db: Db,
   memberId: ApplyPaymentToMemberMemberId,

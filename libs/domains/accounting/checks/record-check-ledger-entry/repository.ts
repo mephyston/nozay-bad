@@ -1,11 +1,30 @@
 import { type DbOrTx } from '@nba/db';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { ledgerEntriesTable, checksTable } from '../../shared/schema';
 import { getAllMembers } from '@nba/members-api';
 
 export class RecordCheckTransactionRepository {
   async getAllMembers(db: DbOrTx): Promise<any[]> {
     return getAllMembers(db);
+  }
+
+  buildCreateLedgerEntryStatement(db: DbOrTx, values: any): any {
+    return db.insert(ledgerEntriesTable).values(values);
+  }
+
+  buildCreateCheckStatement(db: DbOrTx, values: any): any {
+    return db.insert(checksTable).values({
+      ...values,
+      ledgerEntryId: sql`(SELECT last_insert_rowid())`
+    });
+  }
+
+  buildDeleteLedgerEntryStatement(db: DbOrTx, id: number): any {
+    return db.delete(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, id));
+  }
+
+  buildDeleteCheckStatement(db: DbOrTx, id: number): any {
+    return db.delete(checksTable).where(eq(checksTable.id, id));
   }
 
   async createLedgerEntry(db: DbOrTx, values: any): Promise<any> {

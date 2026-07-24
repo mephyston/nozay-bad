@@ -16,7 +16,7 @@ membersRouter.route('/', listMembersRoute);
 membersRouter.route('/', getMemberByLicenceRoute);
 membersRouter.route('/', getMemberCseDataRoute);
 
-export { applyPaymentToMember } from './apply-payment/handler';
+export { applyPaymentToMember, buildApplyPaymentStatement } from './apply-payment/handler';
 export {
   getMemberById,
   getMembersByIds,

@@ -1,7 +1,7 @@
 import { RecordCheckTransactionRepository } from './repository';
 import { AppError, type Db, type Tx } from '@nba/db';
 import { cleanName } from '../../shared/helpers';
-import { applyPaymentToMember } from '@nba/members-api';
+import { getMemberById, buildApplyPaymentStatement } from '@nba/members-api';
 import type { CreateCheckInput, AnalyzeCheckOutput } from './dto';
 
 export async function analyzeCheckImage(
@@ -204,66 +204,87 @@ export async function createCheck(db: Db, body: CreateCheckInput) {
 
   const repo = new RecordCheckTransactionRepository();
 
-  return db.transaction(async (txDb: Tx) => {
-    const categoryVal = body.category ? Number(body.category) : 1;
-    const descStr = body.description || `Règlement par chèque n°${body.number} de ${body.emitter}`;
+  // Phase 1 : Lecture (hors batch)
+  let memberData: any = null;
+  const categoryVal = body.category ? Number(body.category) : 1;
+  if (body.memberId && (categoryVal === 1 || String(categoryVal) === '1')) {
+    memberData = await getMemberById(db, body.memberId);
+  }
 
-    const newTx = await repo.createLedgerEntry(txDb, {
-      seasonId: body.seasonId,
-      type: 'recette',
-      accountId: 'current',
-      category: categoryVal,
-      amount: body.amount,
-      date: body.date || new Date().toISOString().split('T')[0],
-      paymentMethod: 'cheque',
-      description: descStr,
-      reference: `Chèque n°${body.number}`,
-      memberId: body.memberId || null,
-      createdAt: new Date()
-    });
+  // Phase 2 : Décision (en mémoire)
+  const descStr = body.description || `Règlement par chèque n°${body.number} de ${body.emitter}`;
 
-    const newCheck = await repo.createCheck(txDb, {
-      seasonId: body.seasonId,
-      number: body.number,
-      amount: body.amount,
-      emitter: body.emitter,
-      bank: body.bank || null,
-      memberId: body.memberId || null,
-      ledgerEntryId: newTx.id,
-      status: 'received',
-      photoUrl: body.photoUrl || null,
-      createdAt: new Date()
-    });
-
-    if (body.memberId && (categoryVal === 1 || String(categoryVal) === '1')) {
-      await applyPaymentToMember(txDb, body.memberId, body.amount);
-    }
-
-    return newCheck;
+  const stmtLedgerEntry = repo.buildCreateLedgerEntryStatement(db, {
+    seasonId: body.seasonId,
+    type: 'recette',
+    accountId: 'current',
+    category: categoryVal,
+    amount: body.amount,
+    date: body.date || new Date().toISOString().split('T')[0],
+    paymentMethod: 'cheque',
+    description: descStr,
+    reference: `Chèque n°${body.number}`,
+    memberId: body.memberId || null,
+    createdAt: new Date()
   });
+
+  const stmtCheck = repo.buildCreateCheckStatement(db, {
+    seasonId: body.seasonId,
+    number: body.number,
+    amount: body.amount,
+    emitter: body.emitter,
+    bank: body.bank || null,
+    memberId: body.memberId || null,
+    status: 'received',
+    photoUrl: body.photoUrl || null,
+    createdAt: new Date()
+  });
+
+  const statements: any[] = [stmtLedgerEntry, stmtCheck];
+
+  if (memberData) {
+    const stmtMember = buildApplyPaymentStatement(db, memberData, body.amount);
+    statements.push(stmtMember);
+  }
+
+  // Phase 3 : Écriture (db.batch)
+  const results = await db.batch(statements as any);
+  const createdCheckId = results[1]?.meta?.last_row_id;
+
+  return repo.getCheckById(db, createdCheckId);
 }
 
 export async function deleteCheck(db: Db, id: number) {
   const repo = new RecordCheckTransactionRepository();
 
-  return db.transaction(async (txDb: Tx) => {
-    const check = await repo.getCheckById(txDb, id);
-    if (!check) {
-      throw new AppError('Chèque non trouvé.', 404);
+  // Phase 1 : Lecture (hors batch)
+  const check = await repo.getCheckById(db, id);
+  if (!check) {
+    throw new AppError('Chèque non trouvé.', 404);
+  }
+
+  let tx: any = null;
+  let memberData: any = null;
+
+  if (check.ledgerEntryId) {
+    tx = await repo.getTransactionById(db, check.ledgerEntryId);
+    if (tx && tx.memberId && (tx.category === 1 || String(tx.category) === '1')) {
+      memberData = await getMemberById(db, tx.memberId);
     }
+  }
 
-    if (check.ledgerEntryId) {
-      await repo.unlinkCheckTransaction(txDb, id);
+  // Phase 2 : Décision (en mémoire)
+  const statements: any[] = [repo.buildDeleteCheckStatement(db, id)];
 
-      const tx = await repo.getTransactionById(txDb, check.ledgerEntryId);
-      if (tx) {
-        if (tx.memberId && (tx.category === 1 || String(tx.category) === '1')) {
-          await applyPaymentToMember(txDb, tx.memberId, -Math.abs(tx.amount));
-        }
-        await repo.deleteLedgerEntry(txDb, tx.id);
-      }
-    }
+  if (check.ledgerEntryId) {
+    statements.push(repo.buildDeleteLedgerEntryStatement(db, check.ledgerEntryId));
+  }
 
-    await repo.deleteCheck(txDb, id);
-  });
+  if (tx && memberData) {
+    const stmtMember = buildApplyPaymentStatement(db, memberData, -Math.abs(tx.amount));
+    statements.push(stmtMember);
+  }
+
+  // Phase 3 : Écriture (db.batch)
+  await db.batch(statements as any);
 }

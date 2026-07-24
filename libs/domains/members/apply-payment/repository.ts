@@ -7,6 +7,12 @@ export class ApplyPaymentRepository {
     return db.select().from(membersTable).where(eq(membersTable.id, id)).get();
   }
 
+  buildUpdatePaymentStatement(db: DbOrTx, id: number, values: { amountReceived: number; amountRemaining: number; paid: boolean }): any {
+    return db.update(membersTable)
+      .set(values)
+      .where(eq(membersTable.id, id));
+  }
+
   async updatePayment(db: DbOrTx, id: number, values: { amountReceived: number; amountRemaining: number; paid: boolean }): Promise<void> {
     await db.update(membersTable)
       .set(values)
