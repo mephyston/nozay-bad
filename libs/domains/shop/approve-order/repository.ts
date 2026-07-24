@@ -1,7 +1,8 @@
 import { and, eq } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { ordersTable, productsTable, categoriesTable, transactionsTable } from '../shared/schema';
+import { ordersTable, productsTable } from '../shared/schema';
 import { getMemberById } from '@nba/members-api';
+import { createRevenueTransaction } from '@nba/accounting-api';
 
 export class ApproveOrderRepository {
   async getOrderById(db: DbOrTx, id: number): Promise<typeof ordersTable.$inferSelect | undefined> {
@@ -22,37 +23,25 @@ export class ApproveOrderRepository {
     return db.select().from(productsTable).where(eq(productsTable.id, id)).get();
   }
 
-  async getBoutiqueCategory(db: DbOrTx): Promise<number | null> {
-    const boutiqueCat = await db.select({ id: categoriesTable.id })
-      .from(categoriesTable)
-      .where(eq(categoriesTable.adminLabel, 'Boutique'))
-      .get();
-    return boutiqueCat ? boutiqueCat.id : null;
-  }
-
   async createRecetteTransaction(db: DbOrTx, values: {
-    seasonId: string;
-    category: number | null;
-    amount: number;
+    seasonId: number;
+    accountId: number;
+    paymentMethodId: number;
+    categoryId: number | null;
+    amountCents: number;
     description: string;
     memberId: number;
-    paymentMethod: string;
   }): Promise<{ id: number }> {
-    return db.insert(transactionsTable)
-      .values({
-        seasonId: values.seasonId,
-        type: 'recette',
-        accountId: 'current',
-        category: values.category,
-        amount: values.amount,
-        date: new Date().toISOString().split('T')[0],
-        paymentMethod: values.paymentMethod as any,
-        description: values.description,
-        memberId: values.memberId,
-        createdAt: new Date(),
-      })
-      .returning({ id: transactionsTable.id })
-      .get();
+    return createRevenueTransaction(db, {
+      seasonId: values.seasonId,
+      accountId: values.accountId,
+      paymentMethodId: values.paymentMethodId,
+      categoryId: values.categoryId,
+      amountCents: values.amountCents,
+      description: values.description,
+      memberId: values.memberId,
+      date: new Date().toISOString().split('T')[0]
+    });
   }
 
   async approveWithLock(db: DbOrTx, id: number, transactionId: number): Promise<typeof ordersTable.$inferSelect | undefined> {

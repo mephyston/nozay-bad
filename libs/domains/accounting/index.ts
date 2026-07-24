@@ -104,3 +104,36 @@ accountingRouter.route('/', recordCheckTransactionRoute);
 accountingRouter.route('/', createBankCheckDepositRoute);
 
 export { normalizeCategory, cleanName } from './shared/helpers';
+
+export { CreateTransactionRepository } from './transactions/create-transaction/repository';
+
+export interface CreateRevenueTransactionParams {
+  seasonId: number;
+  accountId: number;
+  paymentMethodId: number;
+  amountCents: number;
+  description: string;
+  date: string;
+  categoryId?: number | null;
+  memberId?: number | null;
+  reference?: string | null;
+}
+
+export async function createRevenueTransaction(db: any, params: CreateRevenueTransactionParams): Promise<{ id: number }> {
+  const repository = new (await import('./transactions/create-transaction/repository')).CreateTransactionRepository();
+  return repository.create(db, {
+    seasonId: params.seasonId,
+    type: 'recette',
+    accountId: params.accountId,
+    paymentMethodId: params.paymentMethodId,
+    amountCents: params.amountCents,
+    description: params.description,
+    date: params.date,
+    categoryId: params.categoryId ?? null,
+    memberId: params.memberId ?? null,
+    reference: params.reference ?? null,
+    status: 'cleared',
+    createdAt: new Date()
+  });
+}
+
