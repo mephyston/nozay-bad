@@ -22,8 +22,9 @@ getSeasonReportsRoute.get(
       return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
     }
     const { seasonId } = c.req.valid('param');
+    const arretedAu = c.req.query('arretedAu');
     const db = createDb(c.env.DB);
-    const data = await getSeasonReports(db, seasonId);
+    const data = await getSeasonReports(db, { seasonId, arretedAu });
     return c.json({ success: true, data });
   }
 );

@@ -382,7 +382,7 @@
                   <Table.Head class="p-4">Compte Financier</Table.Head>
                   <Table.Head class="p-4 text-right">Solde Initial (1er sept.)</Table.Head>
                   <Table.Head class="p-4 text-right">Mouvements de saison</Table.Head>
-                  <Table.Head class="p-4 text-right">Solde Réel Final (31 août)</Table.Head>
+                  <Table.Head class="p-4 text-right">Solde Réel Final</Table.Head>
                 </Table.Row>
               </Table.Header>
               <Table.Body class="divide-y divide-border">
@@ -399,8 +399,50 @@
               </Table.Body>
             </Table.Root>
           </div>
+
+          {#if report.tresorerieDisponible}
+            <div class="mt-6 pt-6 border-t border-border space-y-3">
+              <h4 class="text-md font-bold text-foreground">Trésorerie Disponible & Régularisations</h4>
+              <div class="bg-muted/30 rounded-xl p-4 space-y-2 border border-border text-sm">
+                <div class="flex justify-between font-semibold">
+                  <span>Trésorerie brute cumulée au {report.arretedAu || '31/08'}</span>
+                  <span>{formatAmount(report.tresorerieDisponible.totalGrossCashCents)}</span>
+                </div>
+
+                {#if report.tresorerieDisponible.deferredRevenues.length > 0}
+                  <div class="pl-4 space-y-1 text-xs text-muted-foreground">
+                    <span class="font-medium text-amber-600 dark:text-amber-400 block">• dont encaissé d'avance au titre de la saison suivante :</span>
+                    {#each report.tresorerieDisponible.deferredRevenues as defRev}
+                      <div class="flex justify-between pl-4">
+                        <span>{defRev.categoryName}</span>
+                        <span>({formatAmount(defRev.amountCents)})</span>
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+
+                {#if report.tresorerieDisponible.deferredExpenses.length > 0}
+                  <div class="pl-4 space-y-1 text-xs text-muted-foreground">
+                    <span class="font-medium text-indigo-600 dark:text-indigo-400 block">• dont décaissé d'avance au titre de la saison suivante :</span>
+                    {#each report.tresorerieDisponible.deferredExpenses as defExp}
+                      <div class="flex justify-between pl-4">
+                        <span>{defExp.categoryName}</span>
+                        <span>+{formatAmount(defExp.amountCents)}</span>
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+
+                <div class="flex justify-between font-bold text-base pt-2 border-t border-border/60 text-primary">
+                  <span>Trésorerie réellement disponible</span>
+                  <span>{formatAmount(report.tresorerieDisponible.netAvailableCashCents)}</span>
+                </div>
+              </div>
+            </div>
+          {/if}
         </Card.Content>
       </Card.Root>
+
     </Tabs.Content>
 
     <!-- Onglet 3 : « Budget prévisionnel » (value="budget") -->

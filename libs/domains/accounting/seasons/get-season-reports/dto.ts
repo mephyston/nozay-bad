@@ -1,5 +1,35 @@
-export type GetSeasonReportsInput = string;
+export type GetSeasonReportsInput = string | {
+  seasonId: string | number;
+  arretedAu?: string | null;
+};
+
+export interface DeferredCashBreakdown {
+  categoryCode: string;
+  categoryName: string;
+  amountCents: number;
+}
+
+export interface CategoryProjection {
+  categoryCode: string;
+  categoryName: string;
+  type: 'recette' | 'depense';
+  realisedCents: number;
+  budgetCents: number;
+  remainingBudgetCents: number;
+  projectedCents: number;
+  isUnbudgeted: boolean;
+}
+
 export type GetSeasonReportsOutput = {
+  arretedAu?: string | null;
+  season?: {
+    id: number;
+    code: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    closedAt: number | null;
+  };
   compteResultat: {
     totalRecettes: number;
     totalDepenses: number;
@@ -11,4 +41,18 @@ export type GetSeasonReportsOutput = {
     initialBalance: number;
     finalBalance: number;
   }[];
+  tresorerieDisponible?: {
+    totalGrossCashCents: number;
+    totalDeferredRevenueCents: number;
+    totalDeferredExpensesCents: number;
+    netAvailableCashCents: number;
+    deferredRevenues: DeferredCashBreakdown[];
+    deferredExpenses: DeferredCashBreakdown[];
+  };
+  projections?: {
+    categories: CategoryProjection[];
+    totalProjectedRecettes: number;
+    totalProjectedDepenses: number;
+    projectedNetResult: number;
+  };
 };
