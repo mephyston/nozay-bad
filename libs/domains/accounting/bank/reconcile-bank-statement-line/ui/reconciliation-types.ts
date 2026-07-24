@@ -23,6 +23,7 @@ export interface GLTransaction {
 
 export interface Season {
   id: string;
+  code?: string;
   name: string;
   active: boolean;
   closed?: boolean;

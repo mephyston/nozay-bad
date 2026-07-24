@@ -156,10 +156,10 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
 
       <BankStatementReconciliation
         client:load
-        bankTransactions={bankTransactionsList}
+        bankStatementLines={bankTransactionsList}
         glTransactions={glTransactionsList}
         seasons={seasonsList}
-        selectedSeason={season}
+        seasonId={season}
         members={membersList}
         dbCategories={categoriesList}
       />

@@ -54,7 +54,7 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
   let memberHighlightedIndex = $state(-1);
   let categoryHighlightedIndex = $state(-1);
 
-  const isClosed = $derived(seasons.find(s => s.id === selectedSeason)?.closed || false);
+  const isClosed = $derived(seasons.find(s => s.code === selectedSeason || String(s.id) === selectedSeason)?.closed || false);
   const categories = $derived(dbCategories.map(c => ({ id: String(c.id), code: c.code, name: c.adminLabel })));
   const sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
 
