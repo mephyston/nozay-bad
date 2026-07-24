@@ -199,7 +199,7 @@ export class CloseSeasonRepository implements CloseSeasonRepositoryInterface {
               seasonId: nextSeasonId,
               categoryId: cb.categoryId,
               type: cb.type,
-              amountCents: cb.amountCents || cb.amount || 0,
+              amountCents: cb.amountCents ?? 0,
               createdAt: now
             });
             budgetsCopiedCount++;

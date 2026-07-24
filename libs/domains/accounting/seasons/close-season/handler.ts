@@ -83,7 +83,7 @@ export async function getCloseSeasonChecks(
 
     let finalBal = initBal;
     for (const tx of seasonTxs) {
-      const amount = tx.amountCents ?? tx.amount ?? 0;
+      const amount = tx.amountCents ?? 0;
       const isTargetAcc = Number(tx.accountId) === Number(acc.id) || tx.accountId === acc.code;
       const isTargetDestAcc = Number(tx.destinationAccountId) === Number(acc.id) || tx.destinationAccountId === acc.code;
 

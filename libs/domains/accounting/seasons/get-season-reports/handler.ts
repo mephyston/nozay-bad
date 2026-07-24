@@ -38,7 +38,7 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     // Exclude transactions dated after cut-off date
     if (tx.date > effectiveEndDate) continue;
 
-    const amount = tx.amountCents ?? tx.amount ?? 0;
+    const amount = tx.amountCents ?? 0;
     const catId = normalizeCategory(tx.categoryId ?? tx.category);
     const cat = catId !== null ? catId.toString() : 'divers';
     const key = `${cat}_${tx.type}`;
@@ -64,11 +64,11 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     const accId = accObj ? accObj.id : null;
 
     const initBalRow = balances.find(b => b.accountId === accId || b.accountId === accCode);
-    const initBal = initBalRow ? (initBalRow.initialBalanceCents ?? initBalRow.initialBalance ?? 0) : 0;
+    const initBal = initBalRow ? (initBalRow.initialBalanceCents ?? 0) : 0;
 
     let finalBal = initBal;
     for (const tx of cashFlowTxs) {
-      const amount = tx.amountCents ?? tx.amount ?? 0;
+      const amount = tx.amountCents ?? 0;
       const isTargetAcc = (accId !== null && tx.accountId === accId) || tx.accountId === accCode;
       const isTargetDestAcc = (accId !== null && tx.destinationAccountId === accId) || tx.destinationAccountId === accCode;
 
@@ -89,7 +89,6 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     };
   });
 
-
   const totalGrossCashCents = reportBalances.reduce((sum, b) => sum + b.finalBalance, 0);
 
   // 3. Trésorerie Disponible & Repartition des Accruals (Deferred Revenues / Expenses)
@@ -101,28 +100,27 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
   let totalDeferredExpensesCents = 0;
 
   for (const tx of deferredTxs) {
-    const amount = tx.amountCents ?? tx.amount ?? 0;
-    const catObj = dbCategories.find(c => c.id === tx.categoryId || c.code === tx.category);
-    const catCode = catObj ? catObj.code : (tx.category || 'divers');
-    const catName = catObj ? catObj.adminLabel : catCode;
+    const amount = tx.amountCents ?? 0;
+    const catId = normalizeCategory(tx.categoryId ?? tx.category);
+    const catObj = dbCategories.find(c => c.id === catId);
+    const catName = catObj ? catObj.adminLabel : 'Non catégorisé';
 
     if (tx.accrualType === 'produit_constate_avance' && tx.type === 'recette') {
       totalDeferredRevenueCents += amount;
       deferredRevenues.push({
-        categoryCode: catCode,
+        categoryId: catId ?? 0,
         categoryName: catName,
         amountCents: amount
       });
     } else if (tx.accrualType === 'charge_constatee_avance' && tx.type === 'depense') {
       totalDeferredExpensesCents += amount;
       deferredExpenses.push({
-        categoryCode: catCode,
+        categoryId: catId ?? 0,
         categoryName: catName,
         amountCents: amount
       });
     }
   }
-
 
   const netAvailableCashCents = totalGrossCashCents - totalDeferredRevenueCents + totalDeferredExpensesCents;
 
@@ -151,7 +149,7 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
         const realisedCents = categoryTotals[catKey]?.total || 0;
 
         const budgetRow = categoryBudgets.find(b => b.categoryId === cat.id && b.type === type);
-        const budgetCents = budgetRow ? budgetRow.amountCents || budgetRow.amount || 0 : 0;
+        const budgetCents = budgetRow?.amountCents ?? 0;
 
         const remainingBudgetCents = Math.max(0, budgetCents - realisedCents);
         const projectedCents = realisedCents + remainingBudgetCents;

@@ -3,7 +3,6 @@ import { createLedgerEntry } from './handler';
 import { CreateLedgerEntryRepository } from './repository';
 import * as membersDataAccess from '@nba/members-api';
 
-vi.mock('./repository');
 vi.mock('@nba/members-api', () => ({
   isSeasonClosed: vi.fn()
 }));
@@ -33,7 +32,7 @@ describe('createLedgerEntry', () => {
     };
 
     vi.mocked(membersDataAccess.isSeasonClosed).mockResolvedValue(false);
-    vi.mocked(CreateLedgerEntryRepository.prototype.create).mockResolvedValue({ id: 1 });
+    vi.spyOn(CreateLedgerEntryRepository.prototype, 'create').mockResolvedValue({ id: 1 } as any);
 
     const result = await createLedgerEntry(mockDb, mockDto);
 
