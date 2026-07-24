@@ -83,7 +83,7 @@ describe('createReconciliationState logic unit tests', () => {
 
     // Default tab is 'pending'
     expect(state.displayedTransactions.length).toBe(2);
-    expect(state.displayedTransactions.map(t => t.id)).toEqual([1, 2]);
+    expect(state.displayedTransactions.map((t: any) => t.id)).toEqual([1, 2]);
 
     // Search query filtering
     state.searchQuery = 'dupont';

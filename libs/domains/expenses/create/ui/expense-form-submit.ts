@@ -48,7 +48,7 @@ export async function submitExpenseReport(params: {
       })
     });
 
-    const data = await res.json();
+    const data = await res.json() as any;
     if (!res.ok || !data.success) {
       return { success: false, error: data.error || "Une erreur est survenue lors de l'envoi de la note de frais." };
     }
