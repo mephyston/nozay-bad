@@ -171,7 +171,7 @@ CREATE TABLE `season_category_budgets` (
 	FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `season_category_idx` ON `season_category_budgets` (`season_id`,`category_id`);--> statement-breakpoint
+CREATE UNIQUE INDEX `season_category_idx` ON `season_category_budgets` (`season_id`,`category_id`,`type`);--> statement-breakpoint
 CREATE TABLE `seasons` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`code` text NOT NULL,

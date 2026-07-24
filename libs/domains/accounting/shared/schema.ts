@@ -154,5 +154,6 @@ export const seasonCategoryBudgetsTable = sqliteTable('season_category_budgets',
   amountCents: integer('amount_cents').notNull().default(0),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 }, (table) => ({
-  seasonCategoryIdx: uniqueIndex('season_category_idx').on(table.seasonId, table.categoryId),
+  seasonCategoryIdx: uniqueIndex('season_category_idx').on(table.seasonId, table.categoryId, table.type),
 }));
+

@@ -34,7 +34,7 @@ INSERT INTO `payment_methods` (`code`, `label`, `created_at`) VALUES
 ('pass_sport', 'Pass''Sport', 1783962600),
 ('up_loisir', 'Coupon Sport / Up''Loisir', 1783962600);
 
--- 4. CATEGORIES (Nomenclature analytique et budgétaire - 15 catégories)
+-- 4. CATEGORIES (Nomenclature analytique et budgétaire - 16 catégories)
 INSERT INTO `categories` (`code`, `admin_label`, `adherent_label`, `hide_in_expenses`, `receipt_account_class_id`, `expense_account_class_id`, `created_at`) VALUES
 ('adhesions_inscriptions', 'Adhésions & Inscriptions', 'Adhésions & Inscriptions', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), NULL, 1783962600),
 ('sponsoring', 'Sponsoring', 'Partenariat & Sponsoring', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), NULL, 1783962600),
@@ -50,4 +50,5 @@ INSERT INTO `categories` (`code`, `admin_label`, `adherent_label`, `hide_in_expe
 ('championnats', 'Championnats (frais équipes)', 'Frais d''inscriptions tournois / championnats', 0, NULL, (SELECT `id` FROM `account_classes` WHERE `code` = '62'), 1783962600),
 ('stages_formations', 'Stages & Formations', 'Formations & Stages', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '62'), 1783962600),
 ('fonctionnement_administratif', 'Frais de fonctionnement & administratif', 'Frais de fonctionnement, bureau...', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '75'), (SELECT `id` FROM `account_classes` WHERE `code` = '61'), 1783962600),
-('virements_internes', 'Virements Internes (Transit)', 'Virement Interne', 1, NULL, NULL, 1783962600);
+('virements_internes', 'Virements Internes (Transit)', 'Virement Interne', 1, NULL, NULL, 1783962600),
+('interets_livret_a', 'Intérêts Livret A', 'Intérêts Livret A', 1, (SELECT `id` FROM `account_classes` WHERE `code` = '75'), NULL, 1783962600);
