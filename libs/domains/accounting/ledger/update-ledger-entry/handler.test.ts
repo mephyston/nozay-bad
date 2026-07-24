@@ -17,7 +17,7 @@ vi.mock('@nba/members-api', () => ({
 }));
 
 describe('updateLedgerEntry', () => {
-  const mockSeason = { id: 1, code: 'season1', startDate: '2023-01-01', endDate: '2023-12-31', closedAt: null };
+  const mockSeason = { id: 1, code: 'season1', startDate: '2023-01-01', endDate: '2099-12-31', closedAt: null };
   const mockDb: any = {
     select: vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
@@ -36,7 +36,7 @@ describe('updateLedgerEntry', () => {
       accountId: 'account1',
       category: 'cat1',
       amount: 100,
-      date: '2023-01-01',
+      date: '2026-07-01',
       paymentMethod: 'card',
       description: 'Test'
     };

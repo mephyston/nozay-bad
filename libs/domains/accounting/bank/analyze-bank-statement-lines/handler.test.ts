@@ -12,12 +12,14 @@ describe('analyzeBankStatementLines', () => {
     db = mock.db;
 
     const existingSeasons = await db.select().from(seasonsTable).all();
-    if (!existingSeasons.some((s: any) => s.id === '25-26')) {
+    if (!existingSeasons.some((s: any) => s.code === '25-26')) {
       await db.insert(seasonsTable).values({
-        id: '25-26',
+        code: '25-26',
         name: 'Saison 25-26',
+        startDate: '2025-09-01',
+        endDate: '2026-08-31',
         active: true,
-        closed: false,
+        closedAt: null,
         createdAt: new Date()
       }).run();
     }
