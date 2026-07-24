@@ -718,9 +718,13 @@ describe('BankStatementReconciliation Component', () => {
             firstName: 'Jean',
             amountRemaining: 15000
           }
+        ],
+        dbCategories: [
+          { id: 5, code: 'tournois_senior', adminLabel: 'Tournois Senior' }
         ]
       }
     });
+
 
     flushSync();
 
