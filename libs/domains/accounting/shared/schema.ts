@@ -2,8 +2,6 @@ import { sqliteTable, text, integer, uniqueIndex, check } from 'drizzle-orm/sqli
 import { sql } from 'drizzle-orm';
 import { seasonsTable, membersTable } from '@nba/members/schema';
 
-
-
 export { seasonsTable, membersTable };
 
 export const accountClassesTable = sqliteTable('account_classes', {
@@ -50,10 +48,9 @@ export const seasonBalancesTable = sqliteTable('season_balances', {
   seasonAccountIdx: uniqueIndex('season_account_idx').on(table.seasonId, table.accountId),
 }));
 
-export const bankTransactionsTable = sqliteTable('bank_transactions', {
+export const bankStatementLinesTable = sqliteTable('bank_statement_lines', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   fitid: text('fitid').notNull().unique(),
-  seasonId: integer('season_id').notNull().references(() => seasonsTable.id),
   accountId: integer('account_id').notNull().references(() => accountsTable.id),
   amountCents: integer('amount_cents').notNull(),
   date: text('date').notNull(),
@@ -71,7 +68,7 @@ export const checkDepositsTable = sqliteTable('check_deposits', {
   date: text('date').notNull(),
   amountCents: integer('amount_cents').notNull(),
   status: text('status', { enum: ['pending', 'deposited', 'cleared'] }).notNull().default('pending'),
-  bankTransactionId: integer('bank_transaction_id').references(() => bankTransactionsTable.id),
+  bankStatementLineId: integer('bank_statement_line_id').references(() => bankStatementLinesTable.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
@@ -90,7 +87,7 @@ export const invoicesTable = sqliteTable('invoices', {
   attendees: text('attendees'),
   status: text('status', { enum: ['draft', 'sent', 'paid', 'cancelled'] }).notNull().default('draft'),
   totalAmountCents: integer('total_amount_cents').notNull(),
-  bankTransactionId: integer('bank_transaction_id').references(() => bankTransactionsTable.id),
+  bankStatementLineId: integer('bank_statement_line_id').references(() => bankStatementLinesTable.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
@@ -104,7 +101,7 @@ export const invoiceItemsTable = sqliteTable('invoice_items', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
-export const transactionsTable = sqliteTable('transactions', {
+export const ledgerEntriesTable = sqliteTable('ledger_entries', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   seasonId: integer('season_id').notNull().references(() => seasonsTable.id),
   type: text('type', { enum: ['recette', 'depense', 'transfert'] }).notNull(),
@@ -121,14 +118,14 @@ export const transactionsTable = sqliteTable('transactions', {
   }).notNull().default('normal'),
   accrualNote: text('accrual_note'),
   memberId: integer('member_id').references(() => membersTable.id),
-  bankTransactionId: integer('bank_transaction_id').references(() => bankTransactionsTable.id),
+  bankStatementLineId: integer('bank_statement_line_id').references(() => bankStatementLinesTable.id),
   invoiceId: integer('invoice_id').references(() => invoicesTable.id),
   status: text('status', { enum: ['pending_debit', 'in_vault', 'cleared'] }).notNull().default('cleared'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 }, (table) => ({
-  amountCheck: check('transactions_amount_cents_check', sql`${table.amountCents} > 0`),
+  amountCheck: check('ledger_entries_amount_cents_check', sql`${table.amountCents} > 0`),
   transfertCheck: check(
-    'transactions_transfert_check',
+    'ledger_entries_transfert_check',
     sql`(${table.type} = 'transfert' AND ${table.destinationAccountId} IS NOT NULL AND ${table.destinationAccountId} <> ${table.accountId} AND ${table.categoryId} IS NULL) OR (${table.type} <> 'transfert' AND ${table.destinationAccountId} IS NULL)`
   )
 }));
@@ -142,7 +139,7 @@ export const checksTable = sqliteTable('checks', {
   emitter: text('emitter').notNull(),
   bank: text('bank'),
   memberId: integer('member_id').references(() => membersTable.id),
-  transactionId: integer('transaction_id').references(() => transactionsTable.id),
+  ledgerEntryId: integer('ledger_entry_id').references(() => ledgerEntriesTable.id),
   status: text('status', { enum: ['received', 'deposited'] }).notNull().default('received'),
   photoUrl: text('photo_url'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
@@ -158,4 +155,3 @@ export const seasonCategoryBudgetsTable = sqliteTable('season_category_budgets',
 }, (table) => ({
   seasonCategoryIdx: uniqueIndex('season_category_idx').on(table.seasonId, table.categoryId, table.type),
 }));
-

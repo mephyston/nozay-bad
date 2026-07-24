@@ -1,8 +1,8 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { seasonsTable, membersTable } from '@nba/members/schema';
-import { paymentMethodsTable, transactionsTable } from '@nba/accounting/schema';
+import { paymentMethodsTable, ledgerEntriesTable } from '@nba/accounting/schema';
 
-export { seasonsTable, membersTable, paymentMethodsTable, transactionsTable };
+export { seasonsTable, membersTable, paymentMethodsTable, ledgerEntriesTable };
 
 export const productsTable = sqliteTable('products', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -23,6 +23,6 @@ export const ordersTable = sqliteTable('orders', {
   totalAmountCents: integer('total_amount_cents').notNull(),
   paymentMethodId: integer('payment_method_id').notNull().references(() => paymentMethodsTable.id),
   status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
-  transactionId: integer('transaction_id').references(() => transactionsTable.id),
+  ledgerEntryId: integer('ledger_entry_id').references(() => ledgerEntriesTable.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });

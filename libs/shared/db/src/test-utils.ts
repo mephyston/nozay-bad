@@ -7,11 +7,11 @@ export async function setupMockDb() {
   // Topological sorting of tables (child tables dropped/deleted before parent tables to avoid foreign key errors)
   const tables = [
     'checks',
-    'transactions',
+    'ledger_entries',
     'invoice_items',
     'invoices',
     'check_deposits',
-    'bank_transactions',
+    'bank_statement_lines',
     'orders',
     'products',
     'members',
@@ -25,6 +25,7 @@ export async function setupMockDb() {
     'account_classes',
     'payment_methods'
   ];
+
 
 
   // Transaction backups stack for rollback emulation
