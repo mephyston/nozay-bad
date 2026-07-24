@@ -1,18 +1,21 @@
 import { CreateTransactionRepository } from './repository';
-import { isSeasonClosed } from '@nba/members-api';
 import { AppError, type Db } from '@nba/db';
-import { SeasonClosedError } from '../../shared/errors';
 import { normalizeCategory } from '../../shared/helpers';
 import type { CreateTransactionDTO } from './dto';
+import { validateAccrualAndFiscalPhase } from '../../shared/accruals';
 
-export async function createTransaction(db: Db, body: CreateTransactionDTO) {
+export async function createTransaction(db: Db, body: CreateTransactionDTO & { accrualType?: string; accrualNote?: string }) {
   if (!body.seasonId || !body.type || !body.accountId || !body.amount || !body.date || !body.paymentMethod || !body.description) {
     throw new AppError('Champs requis manquants.', 400);
   }
 
-  if (await isSeasonClosed(db, body.seasonId)) {
-    throw new SeasonClosedError('La saison est clôturée. Impossible de créer une transaction.');
-  }
+  await validateAccrualAndFiscalPhase(db, {
+    seasonId: body.seasonId,
+    type: body.type,
+    date: body.date,
+    accrualType: body.accrualType,
+    accrualNote: body.accrualNote
+  });
 
   if (body.type === 'transfert') {
     if (!body.destinationAccountId || body.accountId === body.destinationAccountId) {
@@ -36,6 +39,8 @@ export async function createTransaction(db: Db, body: CreateTransactionDTO) {
     paymentMethod: body.paymentMethod,
     description: body.description,
     reference: body.reference || null,
+    accrualType: body.accrualType || 'normal',
+    accrualNote: body.accrualNote || null,
     createdAt: new Date()
   });
 }

@@ -2,14 +2,17 @@ import { type Db } from '@nba/db';
 import { normalizeCategory } from '../../shared/helpers';
 import { GetSeasonReportsRepository } from './repository';
 import { GetSeasonReportsInput, GetSeasonReportsOutput } from "./dto";
+import { getSeasonFromDb } from '../../shared/accruals';
 
 export async function getSeasonReports(db: Db, seasonId: GetSeasonReportsInput): Promise<GetSeasonReportsOutput> {
   const repo = new GetSeasonReportsRepository();
-  const [yy, zz] = seasonId.split('-');
-  const startYear = 2000 + parseInt(yy);
-  const endYear = 2000 + parseInt(zz);
-  const startDateStr = `${startYear}-09-01`;
-  const endDateStr = `${endYear}-08-31`;
+  const season = await getSeasonFromDb(db, seasonId);
+  if (!season) {
+    throw new Error("Saison introuvable");
+  }
+
+  const startDateStr = season.startDate;
+  const endDateStr = season.endDate;
 
   const balances = await repo.getBalances(db, seasonId);
   const allTxs = await repo.getTransactionsForSeason(db, seasonId);

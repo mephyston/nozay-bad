@@ -1,11 +1,10 @@
 import { UpdateTransactionRepository } from './repository';
-import { isSeasonClosed } from '@nba/members-api';
 import { AppError, type Db } from '@nba/db';
-import { SeasonClosedError } from '../../shared/errors';
 import { normalizeCategory } from '../../shared/helpers';
 import type { UpdateTransactionDTO } from './dto';
+import { validateAccrualAndFiscalPhase } from '../../shared/accruals';
 
-export async function updateTransaction(db: Db, id: number, body: UpdateTransactionDTO) {
+export async function updateTransaction(db: Db, id: number, body: UpdateTransactionDTO & { accrualType?: string; accrualNote?: string }) {
   if (!body.seasonId || !body.type || !body.accountId || !body.amount || !body.date || !body.paymentMethod || !body.description) {
     throw new AppError('Champs requis manquants.', 400);
   }
@@ -16,13 +15,13 @@ export async function updateTransaction(db: Db, id: number, body: UpdateTransact
     throw new AppError('Transaction introuvable', 404);
   }
 
-  if (await isSeasonClosed(db, existing.seasonId)) {
-    throw new SeasonClosedError('La saison d\'origine est clôturée. Impossible de modifier cette transaction.');
-  }
-
-  if (await isSeasonClosed(db, body.seasonId)) {
-    throw new SeasonClosedError('La saison cible est clôturée. Impossible d\'affecter cette transaction.');
-  }
+  await validateAccrualAndFiscalPhase(db, {
+    seasonId: body.seasonId,
+    type: body.type,
+    date: body.date,
+    accrualType: body.accrualType,
+    accrualNote: body.accrualNote
+  });
 
   if (body.type === 'transfert') {
     if (!body.destinationAccountId || body.accountId === body.destinationAccountId) {
@@ -44,7 +43,9 @@ export async function updateTransaction(db: Db, id: number, body: UpdateTransact
     date: body.date,
     paymentMethod: body.paymentMethod,
     description: body.description,
-    reference: body.reference || null
+    reference: body.reference || null,
+    accrualType: body.accrualType || 'normal',
+    accrualNote: body.accrualNote || null
   });
 
   if (!updated) {

@@ -41,15 +41,17 @@ export async function getAllMembers(db: DbOrTx): Promise<MemberSummary[]> {
   return result as MemberSummary[];
 }
 
-/**
- * Domain helper: check whether a season is closed.
- * Belongs to the `members` domain — canonical owner of `seasonsTable`.
- */
-export async function isSeasonClosed(db: DbOrTx, seasonId: string): Promise<boolean> {
+export async function isSeasonClosed(db: DbOrTx, seasonId: string | number): Promise<boolean> {
+  const numericId = Number(seasonId);
+  const condition = !isNaN(numericId)
+    ? or(eq(seasonsTable.id, numericId), eq(seasonsTable.code, String(seasonId)))
+    : eq(seasonsTable.code, String(seasonId));
+
   const season = await db
-    .select({ closed: seasonsTable.closed })
+    .select({ closedAt: seasonsTable.closedAt })
     .from(seasonsTable)
-    .where(eq(seasonsTable.id, seasonId))
+    .where(condition)
     .get();
-  return Boolean(season?.closed);
+  return Boolean(season?.closedAt);
 }
+

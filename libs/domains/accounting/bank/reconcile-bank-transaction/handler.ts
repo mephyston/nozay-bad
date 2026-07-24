@@ -6,6 +6,7 @@ import { normalizeCategory } from '../../shared/helpers';
 import { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
 import { ReconcileBankTxInternalId, ReconcileBankTxInternalInput, ReconcileBankTxInternalOutput } from "./dto";
 import { BankTransaction } from '../../shared/bank-transaction';
+import { validateAccrualAndFiscalPhase } from '../../shared/accruals';
 
 export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInternalId, body: ReconcileBankTxInternalInput): Promise<ReconcileBankTxInternalOutput> {
   const repo = new ReconcileBankTransactionRepository();
@@ -71,9 +72,14 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
   } else if (body.action === 'create') {
     if (body.transactions && Array.isArray(body.transactions)) {
       for (const txItem of body.transactions) {
-        if (await isSeasonClosed(db, txItem.seasonId)) {
-          return { success: false, error: 'La saison cible est clôturée. Rapprochement impossible.', status: 400 };
-        }
+        await validateAccrualAndFiscalPhase(db, {
+          seasonId: txItem.seasonId,
+          type: txItem.type,
+          date: txItem.date,
+          accrualType: txItem.accrualType || txItem.accrual_type,
+          accrualNote: txItem.accrualNote || txItem.accrual_note
+        });
+
         await repo.createTransaction(db, {
           seasonId: txItem.seasonId,
           type: txItem.type,
@@ -85,6 +91,8 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
           paymentMethod: txItem.paymentMethod,
           description: txItem.description,
           reference: txItem.reference || null,
+          accrualType: txItem.accrualType || txItem.accrual_type || 'normal',
+          accrualNote: txItem.accrualNote || txItem.accrual_note || null,
           memberId: memberId || null,
           invoiceId: invoiceId || null,
           bankTransactionId: id,
@@ -96,9 +104,14 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
       if (!tx) {
         return { success: false, error: 'Détails de la transaction manquants.', status: 400 };
       }
-      if (await isSeasonClosed(db, tx.seasonId)) {
-        return { success: false, error: 'La saison cible est clôturée. Rapprochement impossible.', status: 400 };
-      }
+      
+      await validateAccrualAndFiscalPhase(db, {
+        seasonId: tx.seasonId,
+        type: tx.type,
+        date: tx.date,
+        accrualType: tx.accrualType || tx.accrual_type,
+        accrualNote: tx.accrualNote || tx.accrual_note
+      });
 
       const newTx = await repo.createTransaction(db, {
         seasonId: tx.seasonId,
@@ -111,6 +124,8 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
         paymentMethod: tx.paymentMethod,
         description: tx.description,
         reference: tx.reference || null,
+        accrualType: tx.accrualType || tx.accrual_type || 'normal',
+        accrualNote: tx.accrualNote || tx.accrual_note || null,
         memberId: memberId || null,
         invoiceId: (invoiceIds && invoiceIds.length > 0) ? invoiceIds[0] : (invoiceId || null),
         bankTransactionId: id,
@@ -141,7 +156,7 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
   }
 
   if (memberId) {
-    const isMembershipCategory = (cat) => {
+    const isMembershipCategory = (cat: any) => {
       const norm = normalizeCategory(cat);
       return norm === 1 || cat === 'adhesions_inscriptions' || String(cat) === '1';
     };
