@@ -400,7 +400,6 @@ VERSION:102
     const formData = new FormData();
     const file = new File([ofxContent], 'statement.ofx', { type: 'text/plain' });
     formData.append('file', file);
-    formData.append('seasonId', '25-26');
 
     const importRes = await app.request('http://localhost/accounting/bank-statement-lines/import', {
       method: 'POST',
@@ -674,7 +673,6 @@ VERSION:102
     const formData = new FormData();
     const file = new File([ofxContent], 'statement.ofx', { type: 'text/plain' });
     formData.append('file', file);
-    formData.append('seasonId', '25-26');
 
     const importRes = await app.request('http://localhost/accounting/bank-statement-lines/import', {
       method: 'POST',

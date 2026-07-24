@@ -1,5 +1,5 @@
 import { type DbOrTx } from '@nba/db';
-import { eq } from 'drizzle-orm';
+import { eq, and, lte, gte } from 'drizzle-orm';
 import {
   ledgerEntriesTable,
   bankStatementLinesTable,
@@ -8,6 +8,15 @@ import {
 } from '../../shared/schema';
 
 export class ReconcileBankStatementLineRepository {
+  async getSeasonIdByDate(db: DbOrTx, date: string): Promise<number | undefined> {
+    if (!date) return undefined;
+    const row = await db.select({ id: seasonsTable.id })
+      .from(seasonsTable)
+      .where(and(lte(seasonsTable.startDate, date), gte(seasonsTable.endDate, date)))
+      .get();
+    return row?.id;
+  }
+
   async resolveSeasonId(db: DbOrTx, seasonIdOrCode: string | number): Promise<number> {
     if (typeof seasonIdOrCode === 'number') return seasonIdOrCode;
     const num = Number(seasonIdOrCode);

@@ -21,10 +21,10 @@ importBankStatementRoute.post(
     if (!c.env || !c.env.DB) {
       return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
     }
-    const { seasonId, accountId: forcedAccountId, file } = c.req.valid('form');
+    const { accountId: forcedAccountId, file } = c.req.valid('form');
 
     if (!file) {
-      return c.json({ success: false, error: 'Fichier et saison obligatoires.' }, 400);
+      return c.json({ success: false, error: 'Fichier obligatoire.' }, 400);
     }
 
     let content: string;
@@ -45,7 +45,7 @@ importBankStatementRoute.post(
     }
 
     const db = createDb(c.env.DB);
-    const result = await importBankStatement(db, content, seasonId, forcedAccountId as string);
+    const result = await importBankStatement(db, content, forcedAccountId as string);
     return c.json({ success: true, ...result });
   }
 );

@@ -457,7 +457,6 @@ export function createReconciliationState(initialProps: ReconciliationStateProps
 
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
-    formData.append('seasonId', selectedSeason);
     formData.append('accountId', selectedAccount);
 
     try {

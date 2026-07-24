@@ -39,7 +39,7 @@ export function parseOFX(ofxContent: string): ParseOFXOutput {
   return { transactions };
 }
 
-export async function importBankStatement(db: Db, fileContent: string, seasonId: string, forcedAccountId: string) {
+export async function importBankStatement(db: Db, fileContent: string, forcedAccountId?: string) {
   const { transactions } = parseOFX(fileContent);
   if (transactions.length === 0) {
     return { count: 0 };
@@ -55,7 +55,6 @@ export async function importBankStatement(db: Db, fileContent: string, seasonId:
 
     const res = await repo.insertBankStatementLine(db, {
       fitid: tx.fitid,
-      seasonId,
       accountId: targetAccount,
       amount: tx.amount,
       date: tx.date,

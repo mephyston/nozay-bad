@@ -18,10 +18,6 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
     return { statements: [], error: 'Écriture bancaire déjà rapprochée.', status: 400 };
   }
 
-  if (await isSeasonClosed(db, bankTx.seasonId)) {
-    return { statements: [], error: 'La saison de l\'écriture bancaire est clôturée.', status: 400 };
-  }
-
   const memberId = body.memberId || body.transaction?.memberId;
   const invoiceId = body.invoiceId;
   const invoiceIds = body.invoiceIds;
@@ -69,15 +65,19 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
   } else if (body.action === 'create') {
     if (body.transactions && Array.isArray(body.transactions)) {
       for (const txItem of body.transactions) {
+        const rawSeason = txItem.seasonId || (await repo.getSeasonIdByDate(db, txItem.date || bankTx.date));
+        if (!rawSeason) {
+          return { statements: [], error: "Impossible de déterminer l'exercice comptable pour la date indiquée.", status: 400 };
+        }
         await validateAccrualAndFiscalPhase(db, {
-          seasonId: txItem.seasonId,
+          seasonId: rawSeason,
           type: txItem.type,
           date: txItem.date,
           accrualType: txItem.accrualType || txItem.accrual_type,
           accrualNote: txItem.accrualNote || txItem.accrual_note
         });
 
-        const seasonId = await repo.resolveSeasonId(db, txItem.seasonId);
+        const seasonId = await repo.resolveSeasonId(db, rawSeason);
 
         statements.push(repo.buildCreateLedgerEntryStatement(db, {
           seasonId,
@@ -104,15 +104,19 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
         return { statements: [], error: 'Détails de la transaction manquants.', status: 400 };
       }
 
+      const rawSeason = tx.seasonId || (await repo.getSeasonIdByDate(db, tx.date || bankTx.date));
+      if (!rawSeason) {
+        return { statements: [], error: "Impossible de déterminer l'exercice comptable pour la date indiquée.", status: 400 };
+      }
       await validateAccrualAndFiscalPhase(db, {
-        seasonId: tx.seasonId,
+        seasonId: rawSeason,
         type: tx.type,
         date: tx.date,
         accrualType: tx.accrualType || tx.accrual_type,
         accrualNote: tx.accrualNote || tx.accrual_note
       });
 
-      const seasonId = await repo.resolveSeasonId(db, tx.seasonId);
+      const seasonId = await repo.resolveSeasonId(db, rawSeason);
 
       statements.push(repo.buildCreateLedgerEntryStatement(db, {
         seasonId,
