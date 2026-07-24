@@ -7,14 +7,14 @@ Permettre l'importation de fichiers de relevés bancaires au format **OFX** (Soc
 
 ## 2. Base de Données
 
-Nous ajoutons une nouvelle table `bank_transactions` pour conserver les lignes de relevé importées de l'OFX.
+Nous ajoutons une nouvelle table `bank_statement_lines` pour conserver les lignes de relevé importées de l'OFX.
 
 ### Schéma Drizzle (`libs/shared/db/src/schema.ts`)
 ```typescript
 import { sqliteTable, integer, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { seasonsTable, ledgerEntriesTable } from './schema';
 
-export const bankStatementLinesTable = sqliteTable('bank_transactions', {
+export const bankStatementLinesTable = sqliteTable('bank_statement_lines', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   
   // Identifiant de transaction unique fourni par la banque (FITID)
@@ -68,19 +68,19 @@ Un utilitaire de parsing pour extraire les données d'un fichier OFX (SGML) :
 
 #### 2. `GET /bank-transactions`
 * **Query Params** : `season` (requis), `status` (optionnel, par défaut `'pending'`), `accountId` (optionnel).
-* **Réponse** : `{ success: true, data: BankTransaction[] }`
+* **Réponse** : `{ success: true, data: BankStatementLine[] }`
 
 #### 3. `POST /bank-transactions/:id/reconcile`
 * **Body** :
   * Mode association simple : `{ action: 'match', ledgerEntryId: number }`
   * Mode création et association : `{ action: 'create', transaction: { type, accountId, category, amount, date, paymentMethod, description, reference } }`
 * **Traitement** :
-  * Si `match` : Met à jour la table `bank_transactions` avec `status = 'reconciled'` et `ledgerEntryId`.
-  * Si `create` : Insère la transaction dans le Grand Livre, puis met à jour `bank_transactions` avec `status = 'reconciled'` et `ledgerEntryId = newTx.id`.
+  * Si `match` : Met à jour la table `bank_statement_lines` avec `status = 'reconciled'` et `ledgerEntryId`.
+  * Si `create` : Insère la transaction dans le Grand Livre, puis met à jour `bank_statement_lines` avec `status = 'reconciled'` et `ledgerEntryId = newTx.id`.
 * **Réponse** : `{ success: true }`
 
 #### 4. `POST /bank-transactions/:id/ignore`
-* **Traitement** : Met à jour la table `bank_transactions` avec `status = 'ignored'`.
+* **Traitement** : Met à jour la table `bank_statement_lines` avec `status = 'ignored'`.
 * **Réponse** : `{ success: true }`
 
 ---

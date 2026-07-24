@@ -10,7 +10,7 @@ vi.mock('./repository', () => {
       updateChecksDeposit = vi.fn();
       getCheckDepositById = vi.fn().mockResolvedValue({ id: 2, bankStatementLineId: 3 });
       updateCheckDeposit = vi.fn();
-      updateBankTransactionStatus = vi.fn();
+      updateBankStatementLineStatus = vi.fn();
       unlinkChecksForDeposit = vi.fn();
       deleteCheckDeposit = vi.fn();
     }

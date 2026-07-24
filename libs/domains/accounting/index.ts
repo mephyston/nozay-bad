@@ -31,21 +31,21 @@ import { deleteInvoiceRoute } from './invoices/delete-invoice/route';
 import { changeInvoiceStatusRoute } from './invoices/change-invoice-status/route';
 
 // Bank Transactions Routes
-import { listBankTransactionsRoute } from './bank/list-bank-transactions/route';
+import { listBankStatementLinesRoute } from './bank/list-bank-statement-lines/route';
 import { importBankStatementRoute } from './bank/import-bank-statement/route';
-import { analyzeBankTransactionsRoute } from './bank/analyze-bank-transactions/route';
-import { reconcileBankTransactionRoute } from './bank/reconcile-bank-transaction/route';
-import { updateBankTransactionStatusRoute } from './bank/update-bank-transaction-status/route';
+import { analyzeBankStatementLinesRoute } from './bank/analyze-bank-statement-lines/route';
+import { reconcileBankStatementLineRoute } from './bank/reconcile-bank-statement-line/route';
+import { updateBankStatementLineStatusRoute } from './bank/update-bank-statement-line-status/route';
 
 // Transactions Routes
-import { listTransactionsRoute } from './ledger/list-transactions/route';
-import { createTransactionRoute } from './ledger/create-transaction/route';
-import { updateTransactionRoute } from './ledger/update-transaction/route';
-import { deleteTransactionRoute } from './ledger/delete-transaction/route';
+import { listTransactionsRoute } from './ledger/list-ledger-entries/route';
+import { createTransactionRoute } from './ledger/create-ledger-entry/route';
+import { updateTransactionRoute } from './ledger/update-ledger-entry/route';
+import { deleteTransactionRoute } from './ledger/delete-ledger-entry/route';
 
 // Checks Routes
 import { listChecksRoute } from './checks/list-checks/route';
-import { recordCheckTransactionRoute } from './checks/record-check-transaction/route';
+import { recordCheckTransactionRoute } from './checks/record-check-ledger-entry/route';
 import { createBankCheckDepositRoute } from './checks/create-bank-check-deposit/route';
 
 export type Bindings = {
@@ -86,11 +86,11 @@ accountingRouter.route('/', deleteInvoiceRoute);
 accountingRouter.route('/', changeInvoiceStatusRoute);
 
 // 4. BANK TRANSACTIONS ROUTES
-accountingRouter.route('/', listBankTransactionsRoute);
+accountingRouter.route('/', listBankStatementLinesRoute);
 accountingRouter.route('/', importBankStatementRoute);
-accountingRouter.route('/', analyzeBankTransactionsRoute);
-accountingRouter.route('/', reconcileBankTransactionRoute);
-accountingRouter.route('/', updateBankTransactionStatusRoute);
+accountingRouter.route('/', analyzeBankStatementLinesRoute);
+accountingRouter.route('/', reconcileBankStatementLineRoute);
+accountingRouter.route('/', updateBankStatementLineStatusRoute);
 
 // 5. TRANSACTIONS ROUTES
 accountingRouter.route('/', listTransactionsRoute);
@@ -105,7 +105,7 @@ accountingRouter.route('/', createBankCheckDepositRoute);
 
 export { normalizeCategory, cleanName } from './shared/helpers';
 
-export { CreateTransactionRepository } from './ledger/create-transaction/repository';
+export { CreateTransactionRepository } from './ledger/create-ledger-entry/repository';
 
 export interface CreateRevenueTransactionParams {
   seasonId: number;
@@ -119,8 +119,8 @@ export interface CreateRevenueTransactionParams {
   reference?: string | null;
 }
 
-export async function createRevenueTransaction(db: any, params: CreateRevenueTransactionParams): Promise<{ id: number }> {
-  const repository = new (await import('./ledger/create-transaction/repository')).CreateTransactionRepository();
+export async function createRevenueLedgerEntry(db: any, params: CreateRevenueTransactionParams): Promise<{ id: number }> {
+  const repository = new (await import('./ledger/create-ledger-entry/repository')).CreateTransactionRepository();
   return repository.create(db, {
     seasonId: params.seasonId,
     type: 'recette',

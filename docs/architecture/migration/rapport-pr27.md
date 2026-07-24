@@ -4,18 +4,18 @@
 Ce correctif finalise la migration VSA de l'ensemble du domaine `accounting` en divisant tous les dossiers restants hors du découpage commands/queries vers les nouvelles tranches unitaires.
 
 1. **Dossier bank/** (relevés bancaires) divisé en :
-   - `queries/list-bank-transactions/`
-   - `commands/update-bank-transaction-status/`
-   - `commands/analyze-bank-transactions/`
+   - `queries/list-bank-statement-lines/`
+   - `commands/update-bank-statement-line-status/`
+   - `commands/analyze-bank-statement-lines/`
 2. **Dossier checks/** (chèques et remises) divisé en :
    - `queries/list-checks/`
-   - `commands/record-check-transaction/`
+   - `commands/record-check-ledger-entry/`
    - `commands/create-bank-check-deposit/`
 3. **Dossier transactions/** (grand livre) divisé en :
-   - `queries/list-transactions/`
-   - `commands/create-transaction/`
-   - `commands/update-transaction/`
-   - `commands/delete-transaction/`
+   - `queries/list-ledger-entries/`
+   - `commands/create-ledger-entry/`
+   - `commands/update-ledger-entry/`
+   - `commands/delete-ledger-entry/`
 4. **Nettoyage des dossiers d'UI legacy** :
    - Déplacement de `cash-box/ui` vers `queries/get-season-balance/ui/`
    - Déplacement de `reports/ui` vers `queries/get-season-reports/ui/`

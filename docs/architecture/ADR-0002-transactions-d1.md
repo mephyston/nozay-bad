@@ -69,12 +69,12 @@ Ces handlers écrivent dans des tables financières distinctes. Sans atomicité,
 | Handler | Tables écrites | Scénario d'orphelinage | Impact métier |
 |---|---|---|---|
 | **shop/approve-order** | `transactions` → `orders` | Transaction de recette créée, commande non mise à jour | Recette comptabilisée sans commande approuvée. Double-comptabilisation possible si retry. |
-| **checks/record-check-transaction** (`createCheck`) | `transactions` → `checks` → `members` | Transaction créée, chèque non lié | Chèque sans transaction associée. Montant adhérent non mis à jour. |
-| **checks/record-check-transaction** (`deleteCheck`) | `checks` → `transactions` → `members` | Chèque délié, transaction non supprimée | Transaction orpheline dans le Grand Livre. Comptabilité fausse. |
+| **checks/record-check-ledger-entry** (`createCheck`) | `transactions` → `checks` → `members` | Transaction créée, chèque non lié | Chèque sans transaction associée. Montant adhérent non mis à jour. |
+| **checks/record-check-ledger-entry** (`deleteCheck`) | `checks` → `transactions` → `members` | Chèque délié, transaction non supprimée | Transaction orpheline dans le Grand Livre. Comptabilité fausse. |
 | **expenses/update** (`approveExpense`) | `transactions` → `expenses` | Transaction de dépense créée, note de frais non validée | Dépense comptabilisée mais note de frais reste "pending". |
-| **expenses/update** (`cancelExpenseApproval`) | `expenses` → `bank_transactions` → `transactions` | Note de frais annulée, transaction non supprimée | Transaction fantôme dans le Grand Livre. |
-| **transactions/delete-transaction** | `bank_transactions` → `members` → `expenses` → `transactions` | Bank tx réinitialisée, transaction non supprimée | État de rapprochement incohérent avec le relevé bancaire. |
-| **bank/reconcile-bank-transaction** | `transactions` → `invoices` → `bank_transactions` → `members` | Transaction créée, facture non marquée payée, écriture bancaire non pointée | Écart entre comptabilité et relevé bancaire. Facture affichée impayée alors que le paiement est enregistré. |
+| **expenses/update** (`cancelExpenseApproval`) | `expenses` → `bank_statement_lines` → `transactions` | Note de frais annulée, transaction non supprimée | Transaction fantôme dans le Grand Livre. |
+| **transactions/delete-ledger-entry** | `bank_statement_lines` → `members` → `expenses` → `transactions` | Bank tx réinitialisée, transaction non supprimée | État de rapprochement incohérent avec le relevé bancaire. |
+| **bank/reconcile-bank-statement-line** | `transactions` → `invoices` → `bank_statement_lines` → `members` | Transaction créée, facture non marquée payée, écriture bancaire non pointée | Écart entre comptabilité et relevé bancaire. Facture affichée impayée alors que le paiement est enregistré. |
 | **bank/reconcile-bulk** | Itération sur N réconciliations | 3 sur 5 réussies, les 2 suivantes échouent | État partiellement rapproché sans moyen de savoir où ça s'est arrêté. |
 
 ### 🟡 Risque MODÉRÉ — Cohérence structurelle
@@ -85,14 +85,14 @@ Ces handlers écrivent dans des tables financières distinctes. Sans atomicité,
 | **invoices/update-invoice** | `invoices` + `invoice_items` (delete + re-insert) | Items supprimés, nouveaux non insérés | Facture vidée de ses lignes. |
 | **invoices/delete-invoice** | `invoices` + `invoice_items` (cascade) | Cascade gérée par FK `ON DELETE CASCADE` | ✅ Pas de risque si FK cascade est active. |
 | **checks/create-bank-check-deposit** | `check_deposits` → `checks` | Remise créée, chèques non rattachés | Remise avec montant mais sans chèques. |
-| **checks/clear-check-deposit** | `check_deposits` → `bank_transactions` | Remise clearée, écriture bancaire non rapprochée | Incohérence entre pointage bancaire et remise de chèques. |
-| **checks/delete-check-deposit** | `bank_transactions` → `checks` → `check_deposits` | Bank tx réinitialisée, remise non supprimée | Données de remise fantôme. |
+| **checks/clear-check-deposit** | `check_deposits` → `bank_statement_lines` | Remise clearée, écriture bancaire non rapprochée | Incohérence entre pointage bancaire et remise de chèques. |
+| **checks/delete-check-deposit** | `bank_statement_lines` → `checks` → `check_deposits` | Bank tx réinitialisée, remise non supprimée | Données de remise fantôme. |
 
 ### 🟢 Risque FAIBLE — Single-table ou idempotent
 
 | Handler | Tables écrites | Justification |
 |---|---|---|
-| **bank/import-bank-statement** | `bank_transactions` (N inserts) | Single table. Duplicates gérées par UNIQUE sur `fitid`. Fallback non-transactionnel déjà implémenté. Import partiel acceptable. |
+| **bank/import-bank-statement** | `bank_statement_lines` (N inserts) | Single table. Duplicates gérées par UNIQUE sur `fitid`. Fallback non-transactionnel déjà implémenté. Import partiel acceptable. |
 | **members/import-members-csv** | `seasons` → `members` | Upsert idempotent (`ON CONFLICT DO UPDATE`). Re-import corrige automatiquement un import partiel. |
 
 ## Analyse du test d'intégration demandé

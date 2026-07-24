@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Loader2 } from '@lucide/svelte';
   import { Button, Badge, Sheet, Alert } from '@nba/ui';
-  import AnalyzeCheck from '../../record-check-transaction/ui/AnalyzeCheck.svelte';
+  import AnalyzeCheck from '../../record-check-ledger-entry/ui/AnalyzeCheck.svelte';
   import CheckManualForm from './CheckManualForm.svelte';
   import type { CheckDepositState } from './check-deposit-state.svelte';
 

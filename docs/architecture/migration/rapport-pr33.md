@@ -25,12 +25,12 @@ $ find libs/domains -iname "dto.ts" | wc -l
 Exemple de fichiers `dto.ts` existants :
 ```bash
 libs/domains/accounting/queries/get-invoice/dto.ts
-libs/domains/accounting/queries/list-bank-transactions/dto.ts
+libs/domains/accounting/queries/list-bank-statement-lines/dto.ts
 libs/domains/accounting/queries/list-seasons/dto.ts
 libs/domains/accounting/queries/list-invoices/dto.ts
-libs/domains/accounting/queries/list-transactions/dto.ts
+libs/domains/accounting/queries/list-ledger-entries/dto.ts
 libs/domains/accounting/commands/delete-invoice/dto.ts
-libs/domains/accounting/commands/analyze-bank-transactions/dto.ts
+libs/domains/accounting/commands/analyze-bank-statement-lines/dto.ts
 libs/domains/expenses/create/dto.ts
 libs/domains/members/apply-payment/dto.ts
 libs/domains/shop/create-order/dto.ts

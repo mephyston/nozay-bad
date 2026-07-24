@@ -48,7 +48,7 @@ export class UpdateExpenseRepository {
 
   async getBankTransactionDetails(db: DbOrTx, bankTxId: number): Promise<{ id: number; amount: number } | undefined> {
     return db.get(sql`
-      SELECT id, amount FROM bank_transactions WHERE id = ${bankTxId}
+      SELECT id, amount FROM bank_statement_lines WHERE id = ${bankTxId}
     `);
   }
 
@@ -61,11 +61,11 @@ export class UpdateExpenseRepository {
 
   async resetBankTransactionStatus(db: DbOrTx, bankTxId: number): Promise<void> {
     await db.run(sql`
-      UPDATE bank_transactions SET status = 'pending' WHERE id = ${bankTxId}
+      UPDATE bank_statement_lines SET status = 'pending' WHERE id = ${bankTxId}
     `);
   }
 
-  async deleteTransaction(db: DbOrTx, txId: number): Promise<void> {
+  async deleteLedgerEntry(db: DbOrTx, txId: number): Promise<void> {
     await db.run(sql`DELETE FROM transactions WHERE id = ${txId}`);
   }
 

@@ -55,7 +55,7 @@ export async function importBankStatement(db: Db, fileContent: string, seasonId:
         ? (forcedAccountId as 'current' | 'savings') 
         : tx.accountId;
 
-      const res = await repo.insertBankTransaction(txDb, {
+      const res = await repo.insertBankStatementLine(txDb, {
         fitid: tx.fitid,
         seasonId,
         accountId: targetAccount,

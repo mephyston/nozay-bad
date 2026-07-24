@@ -35,7 +35,7 @@ export interface Member {
   parent2Name: string | null;
 }
 
-export interface BankTransaction {
+export interface BankStatementLine {
   id: number;
   fitid: string;
   amount: number;

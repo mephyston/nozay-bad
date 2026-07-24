@@ -2,7 +2,7 @@ import { type DbOrTx } from '@nba/db';
 import { bankStatementLinesTable } from '../../shared/schema';
 
 export class ImportBankStatementRepository {
-  async insertBankTransaction(db: DbOrTx, values: {
+  async insertBankStatementLine(db: DbOrTx, values: {
     fitid: string;
     seasonId: string;
     accountId: 'current' | 'savings';

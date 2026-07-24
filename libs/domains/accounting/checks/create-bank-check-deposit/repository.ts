@@ -27,7 +27,7 @@ export class CreateBankCheckDepositRepository {
     await db.update(checkDepositsTable).set(values).where(eq(checkDepositsTable.id, id)).run();
   }
 
-  async updateBankTransactionStatus(db: DbOrTx, id: number, status: string): Promise<void> {
+  async updateBankStatementLineStatus(db: DbOrTx, id: number, status: string): Promise<void> {
     await db.update(bankStatementLinesTable).set({ status: status as any }).where(eq(bankStatementLinesTable.id, id)).run();
   }
 

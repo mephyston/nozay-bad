@@ -53,7 +53,7 @@ export async function clearCheckDeposit(db: Db, id: number, body: ClearCheckDepo
       bankStatementLineId: body.bankStatementLineId
     });
 
-    await repo.updateBankTransactionStatus(txDb, body.bankStatementLineId, 'reconciled');
+    await repo.updateBankStatementLineStatus(txDb, body.bankStatementLineId, 'reconciled');
   });
 }
 
@@ -67,7 +67,7 @@ export async function deleteCheckDeposit(db: Db, id: number) {
     }
 
     if (deposit.bankStatementLineId) {
-      await repo.updateBankTransactionStatus(txDb, deposit.bankStatementLineId, 'pending');
+      await repo.updateBankStatementLineStatus(txDb, deposit.bankStatementLineId, 'pending');
     }
 
     await repo.unlinkChecksForDeposit(txDb, id);

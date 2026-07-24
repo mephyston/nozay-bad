@@ -14,7 +14,7 @@ L'audit de la base de données SQLite/Cloudflare D1 (16 tables, 23 migrations ac
 1. **Identifiants textuels comme PK et cibles de FK** : La table `seasons` utilisait une clé textuelle (`id = '25-26'`) référencée par 8 tables. De même, `account_classes` utilisait son code textuel (`'60'`) comme PK.
 2. **Disparition des clés étrangères (FK)** : La migration 0022 a supprimé 6 contraintes FK sur `expenses` et `orders` suite à la génération automatique Drizzle depuis des schémas TS non liés. De nombreuses colonnes jouant le rôle de FK (`ledger_entries.category_id`, `expenses.category_id`, `categories.receipt_account_class_id`) n'ont jamais été contraintes en base.
 3. **Ambiguïté de nommage et responsabilité des tables** :
-   - `bank_transactions` regroupait sous un nom ambigu des lignes d'extraits bancaires importées, et portait à tort un `season_id` (une ligne de relevé dépend d'une période bancaire, non d'un exercice comptable). Elle est clarifiée en `bank_statement_lines`.
+   - `bank_statement_lines` regroupait sous un nom ambigu des lignes d'extraits bancaires importées, et portait à tort un `season_id` (une ligne de relevé dépend d'une période bancaire, non d'un exercice comptable). Elle est clarifiée en `bank_statement_lines`.
    - `transactions` cumulait trois sens concurrents (transaction bancaire, transaction DB, écriture comptable). Elle est renommée en `ledger_entries` (Le Grand Livre / Écritures de Trésorerie).
 4. **Duplication de tables inter-domaines** : `libs/domains/shop/shared/schema.ts` redéfinissait ses propres versions de `transactions` et `categories` avec des contraintes affaiblies.
 5. **Comptabilité approximative et ambiguïtés temporelles** :
@@ -249,7 +249,7 @@ erDiagram
      `CHECK((accrual_type = 'normal') OR (accrual_type <> 'normal' AND accrual_note IS NOT NULL))`
 
 #### Table `bank_statement_lines` (Lignes d'Extraits Bancaires Importées)
-*Anciennement nommée `bank_transactions`. Représente les données d'extraits de compte externe (OFX/CSV) en attente de rapprochement.*
+*Anciennement nommée `bank_statement_lines`. Représente les données d'extraits de compte externe (OFX/CSV) en attente de rapprochement.*
 
 | Colonne | Type SQL | Contraintes / Modificateurs | Rôle & Justification Métier |
 | :--- | :--- | :--- | :--- |
@@ -493,7 +493,7 @@ Conformément à l'ADR-0001 (Modular Monolith & VSA) et l'ADR-0003 :
    - Domaine `expenses` : Propriétaire de `expenses`.
    - Domaine `shop` : Propriétaire de `products`, `orders`.
 3. **Accès inter-domaines par API publique (Barrels)** :
-   - La création d'une transaction depuis la boutique (`approve-order`) ou depuis les notes de frais (`approve-expense`) s'effectue obligatoirement via la fonction exposée par `@nba/accounting-api` (`createRevenueTransaction`, `createExpenseTransaction`).
+   - La création d'une transaction depuis la boutique (`approve-order`) ou depuis les notes de frais (`approve-expense`) s'effectue obligatoirement via la fonction exposée par `@nba/accounting-api` (`createRevenueLedgerEntry`, `createExpenseTransaction`).
 
 ---
 
@@ -527,7 +527,7 @@ Au cours de la révision C1 de cet ADR, les points de cadrage suivants ont été
 2. **Unicité des Budgets Prévisionnels (`season_category_budgets`)** :
    - *Correction* : `UNIQUE(season_id, category_id, type)` englobe `type` pour permettre à une même catégorie d'avoir à la fois un budget de recette et un budget de dépense.
 3. **Clarification du Nommage (`bank_statement_lines` & `ledger_entries`)** :
-   - *`bank_statement_lines`* remplace `bank_transactions` (suppression du `season_id` induit à tort sur cette table externe).
+   - *`bank_statement_lines`* remplace `bank_statement_lines` (suppression du `season_id` induit à tort sur cette table externe).
    - *`ledger_entries`* remplace `transactions` (suppression des ambiguïtés avec `db.transaction()` et les opérations bancaires).
 4. **Comportement d'Import des Saisons (Poona / Members CSV)** :
    - *Décision* : L'import CSV refuse les saisons inconnues. Une saison est un exercice comptable formel exigeant la déclaration explicite de ses bornes d'exercice (`start_date` et `end_date`).

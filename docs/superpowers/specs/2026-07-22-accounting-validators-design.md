@@ -23,22 +23,22 @@ Création d'un fichier `validator.ts` dans chacune des 16 slices de commandes du
 4. `create-category`
 5. `create-invoice`
 6. `create-season`
-7. `create-transaction`
-8. `reconcile-bank-transaction`
-9. `record-check-transaction`
+7. `create-ledger-entry`
+8. `reconcile-bank-statement-line`
+9. `record-check-ledger-entry`
 10. `update-account-class`
 11. `update-category`
 12. `update-invoice`
 13. `update-season-balances`
 14. `update-season-budget`
 15. `update-season`
-16. `update-transaction`
+16. `update-ledger-entry`
 
 De plus, des schémas de query-params simples seront ajoutés pour les requêtes avec des paramètres obligatoires :
-- `queries/list-bank-transactions`
+- `queries/list-bank-statement-lines`
 - `queries/list-checks`
 - `queries/list-invoices`
-- `commands/analyze-bank-transactions`
+- `commands/analyze-bank-statement-lines`
 
 ### 3. Routes Hono (`route.ts`)
 - Import de `tbValidator` et du schéma.

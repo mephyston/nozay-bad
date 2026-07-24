@@ -12,7 +12,7 @@ describe('importBankStatement', () => {
   });
   it('should execute successfully', async () => {
     const mockRepoInstance = {
-      insertBankTransaction: vi.fn().mockResolvedValue({ changes: 1 })
+      insertBankStatementLine: vi.fn().mockResolvedValue({ changes: 1 })
     };
     (vi.mocked(ImportBankStatementRepository) as any).mockImplementation(function() { return mockRepoInstance; });
     const content = "<ACCTID>123\n<STMTTRN>\n<FITID>123\n<TRNAMT>12.0\n<DTPOSTED>20230101\n<NAME>Test\n</STMTTRN>";
@@ -21,7 +21,7 @@ describe('importBankStatement', () => {
   });
   it('should throw error', async () => {
     const mockRepoInstance = {
-      insertBankTransaction: vi.fn().mockRejectedValue(new Error('err'))
+      insertBankStatementLine: vi.fn().mockRejectedValue(new Error('err'))
     };
     (vi.mocked(ImportBankStatementRepository) as any).mockImplementation(function() { return mockRepoInstance; });
     const content = "<ACCTID>123\n<STMTTRN>\n<FITID>123\n<TRNAMT>12.0\n<DTPOSTED>20230101\n<NAME>Test\n</STMTTRN>";

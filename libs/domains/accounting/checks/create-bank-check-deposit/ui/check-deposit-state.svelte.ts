@@ -1,4 +1,4 @@
-import { Check, CheckDeposit, Member, BankTransaction, SeasonOption, categoriesList } from './check-deposit-types';
+import { Check, CheckDeposit, Member, BankStatementLine, SeasonOption, categoriesList } from './check-deposit-types';
 
 export function createCheckDepositState(props: () => {
   seasonId: string;
@@ -6,7 +6,7 @@ export function createCheckDepositState(props: () => {
   checks: Check[];
   checkDeposits: CheckDeposit[];
   members: Member[];
-  pendingBankTransactions: BankTransaction[];
+  pendingBankTransactions: BankStatementLine[];
 }) {
   const p = $derived(props());
 

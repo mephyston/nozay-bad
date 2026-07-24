@@ -12,11 +12,11 @@ Ce domaine est le plus complexe et regroupe la gestion des écritures bancaires,
 
 | Route Actuelle | Cas d'Usage Cible | Tranche Cible | Description & Invariants Métier |
 | :--- | :--- | :--- | :--- |
-| `GET /` | Lister les écritures bancaires | `list-bank-transactions` | Récupère les écritures bancaires d'une saison avec filtres (statut, compte source). |
+| `GET /` | Lister les écritures bancaires | `list-bank-statement-lines` | Récupère les écritures bancaires d'une saison avec filtres (statut, compte source). |
 | `POST /import` | Importer un relevé bancaire | `import-bank-statement` | Analyse un fichier OFX (via `parseOFX`) et insère les écritures bancaires uniques (`onConflictDoNothing`) pour une saison et un compte donnés. |
 | `POST /analyze` | Suggérer des rapprochements bancaires par IA | `suggest-reconciliation-ai` | **Logique complexe / IA :** Utilise Workers AI (Llama 3) pour suggérer des adhérents ou des catégories de rapprochement en s'appuyant sur l'historique et le catalogue de produits boutique. |
 | `POST /reconcile-bulk` | Rapprocher des écritures bancaires en lot | `reconcile-bank-transactions-bulk` | Orchestre le rapprochement de plusieurs écritures en lot. Doit être transactionnel. |
-| `POST /:id/reconcile` | Rapprocher une écriture bancaire | `reconcile-bank-transaction` | **Écritures multi-tables / Cross-domaine :** Crée ou associe des transactions dans le Grand Livre, change le statut de la facture si applicable, et appelle le domaine `members` (`applyPaymentToMember`) s'il s'agit d'une adhésion. Doit s'exécuter dans une transaction SQL. |
+| `POST /:id/reconcile` | Rapprocher une écriture bancaire | `reconcile-bank-statement-line` | **Écritures multi-tables / Cross-domaine :** Crée ou associe des transactions dans le Grand Livre, change le statut de la facture si applicable, et appelle le domaine `members` (`applyPaymentToMember`) s'il s'agit d'une adhésion. Doit s'exécuter dans une transaction SQL. |
 | `POST /:id/ignore` | Ignorer une écriture bancaire | `ignore-bank-transaction` | Passe le statut d'une écriture bancaire à `ignored`. |
 | `POST /:id/unignore` | Rétablir une écriture bancaire | `unignore-bank-transaction` | Repasse le statut d'une écriture bancaire ignorée à `pending`. |
 
@@ -63,10 +63,10 @@ Ce domaine est le plus complexe et regroupe la gestion des écritures bancaires,
 
 | Route Actuelle | Cas d'Usage Cible | Tranche Cible | Description & Invariants Métier |
 | :--- | :--- | :--- | :--- |
-| `GET /` | Lister les transactions | `list-transactions` | Récupère les transactions de Grand Livre avec des filtres multicritères (compte, type, catégorie, classe de compte, adhérent, chèques non pointés) et pagination. |
-| `POST /` | Créer une transaction | `create-transaction` | Crée une transaction de recette, dépense ou transfert entre comptes. Valide que la catégorie est fournie (hors virements internes) et que la saison n'est pas clôturée. |
-| `PUT /:id` | Modifier une transaction | `update-transaction` | Met à jour une transaction du Grand Livre si la saison d'origine et la saison cible ne sont pas clôturées. |
-| `DELETE /:id` | Supprimer une transaction | `delete-transaction` | **Écritures multi-tables / Cross-domaine :** Supprime la transaction, met à jour l'écriture bancaire liée en `pending` si le seuil de pointage tombe, réajuste le montant reçu de l'adhérent s'il s'agissait d'une adhésion (via le domaine `members`), et repasse les notes de frais liées à l'état `pending`. Doit être transactionnel. |
+| `GET /` | Lister les transactions | `list-ledger-entries` | Récupère les transactions de Grand Livre avec des filtres multicritères (compte, type, catégorie, classe de compte, adhérent, chèques non pointés) et pagination. |
+| `POST /` | Créer une transaction | `create-ledger-entry` | Crée une transaction de recette, dépense ou transfert entre comptes. Valide que la catégorie est fournie (hors virements internes) et que la saison n'est pas clôturée. |
+| `PUT /:id` | Modifier une transaction | `update-ledger-entry` | Met à jour une transaction du Grand Livre si la saison d'origine et la saison cible ne sont pas clôturées. |
+| `DELETE /:id` | Supprimer une transaction | `delete-ledger-entry` | **Écritures multi-tables / Cross-domaine :** Supprime la transaction, met à jour l'écriture bancaire liée en `pending` si le seuil de pointage tombe, réajuste le montant reçu de l'adhérent s'il s'agissait d'une adhésion (via le domaine `members`), et repasse les notes de frais liées à l'état `pending`. Doit être transactionnel. |
 
 ### 1.6. Sous-domaine : Configuration & Référentiels (`routes/config.ts`)
 

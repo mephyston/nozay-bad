@@ -4,7 +4,7 @@
 
 **Goal:** Mettre en place l'importation de relevés bancaires au format OFX (Société Générale) et l'interface de rapprochement (pointage) semi-automatique avec les transactions du Grand Livre.
 
-**Architecture:** Approche relationnelle Drizzle ORM avec une nouvelle table `bank_transactions` dans `@nba/db`, un parseur de fichiers OFX dans l'API Hono avec détection automatique du compte courant/livret de l'asso, et une interface en split-screen sous Svelte 5.
+**Architecture:** Approche relationnelle Drizzle ORM avec une nouvelle table `bank_statement_lines` dans `@nba/db`, un parseur de fichiers OFX dans l'API Hono avec détection automatique du compte courant/livret de l'asso, et une interface en split-screen sous Svelte 5.
 
 **Tech Stack:** Astro v7, Svelte v5, Hono (Cloudflare Workers), Drizzle ORM (SQLite / D1), Vitest.
 
@@ -29,7 +29,7 @@
 - [ ] **Step 1: Mettre à jour le schéma Drizzle**
   Ouvrir [schema.ts](file:///Users/david/Lab/nozay-bad/libs/shared/db/src/schema.ts) et ajouter la définition de `bankStatementLinesTable` à la fin du fichier :
   ```typescript
-  export const bankStatementLinesTable = sqliteTable('bank_transactions', {
+  export const bankStatementLinesTable = sqliteTable('bank_statement_lines', {
     id: integer('id').primaryKey({ autoIncrement: true }),
     fitid: text('fitid').notNull().unique(),
     seasonId: text('season_id').notNull().references(() => seasonsTable.id),
@@ -94,7 +94,7 @@
 - [ ] **Step 6: Valider et commiter**
   ```bash
   git add libs/shared/db
-  git commit -m "chore(db): create bank_transactions table with Drizzle migrations"
+  git commit -m "chore(db): create bank_statement_lines table with Drizzle migrations"
   ```
 
 ---
@@ -438,7 +438,7 @@ VERSION:102
   <script lang="ts">
     import { Upload, Check, AlertCircle, Trash2, ShieldAlert } from 'lucide-svelte';
 
-    interface BankTransaction {
+    interface BankStatementLine {
       id: number;
       fitid: string;
       accountId: 'current' | 'savings' | 'cash';
@@ -465,19 +465,19 @@ VERSION:102
     }
 
     let {
-      bankTransactions = [],
+      bankStatementLines = [],
       glTransactions = [],
       seasonId,
       seasons = []
     }: {
-      bankTransactions: BankTransaction[];
+      bankStatementLines: BankStatementLine[];
       glTransactions: GLTransaction[];
       seasonId: string;
       seasons: Season[];
     } = $props();
 
     let selectedSeason = $state(seasonId);
-    let selectedTx = $state<BankTransaction | null>(null);
+    let selectedTx = $state<BankStatementLine | null>(null);
     let isSubmitting = $state(false);
     let errorMsg = $state('');
 
@@ -510,7 +510,7 @@ VERSION:102
     ];
 
     // Trouver les suggestions correspondantes du Grand Livre (même montant absolu et +/- 7 jours)
-    function getSuggestions(bt: BankTransaction) {
+    function getSuggestions(bt: BankStatementLine) {
       return glTransactions.filter(gt => {
         // Le montant de la banque peut être négatif (débit). On compare en valeur absolue.
         const matchesAmount = Math.abs(gt.amount) === Math.abs(bt.amount);
@@ -565,7 +565,7 @@ VERSION:102
       }
     }
 
-    async function handleCreateAndMatch(bt: BankTransaction) {
+    async function handleCreateAndMatch(bt: BankStatementLine) {
       isSubmitting = true;
       try {
         const res = await fetch('/admin/compta/import', {
@@ -614,7 +614,7 @@ VERSION:102
   </script>
 
   <div class="space-y-6">
-    {#if bankTransactions.length === 0}
+    {#if bankStatementLines.length === 0}
       <!-- Zone d'Importation initial -->
       <div class="bg-card border border-border rounded-xl p-8 shadow-sm max-w-xl">
         <h2 class="text-lg font-semibold mb-4">Importer un relevé Société Générale</h2>
@@ -651,10 +651,10 @@ VERSION:102
         <!-- Liste de gauche (8/12) -->
         <div class="md:col-span-7 bg-card border border-border rounded-xl shadow-sm flex flex-col h-full overflow-hidden">
           <div class="p-4 border-b border-border bg-muted flex items-center justify-between">
-            <span class="font-bold text-sm">Opérations bancaires en attente ({bankTransactions.length})</span>
+            <span class="font-bold text-sm">Opérations bancaires en attente ({bankStatementLines.length})</span>
           </div>
           <div class="flex-1 overflow-y-auto divide-y divide-border">
-            {#each bankTransactions as bt}
+            {#each bankStatementLines as bt}
               <button
                 type="button"
                 onclick={() => selectedTx = bt}
@@ -861,7 +861,7 @@ VERSION:102
 
         <BankStatementReconciliation
           client:load
-          bankTransactions={bankTransactionsList}
+          bankStatementLines={bankTransactionsList}
           glTransactions={glTransactionsList}
           seasonId={season}
           seasons={seasonsList}
@@ -886,7 +886,7 @@ VERSION:102
       mount(BankStatementReconciliation, {
         target,
         props: {
-          bankTransactions: [],
+          bankStatementLines: [],
           glTransactions: [],
           seasonId: '25-26',
           seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }]
@@ -904,7 +904,7 @@ VERSION:102
       mount(BankStatementReconciliation, {
         target,
         props: {
-          bankTransactions: [
+          bankStatementLines: [
             {
               id: 1,
               fitid: 'TEST-FITID',

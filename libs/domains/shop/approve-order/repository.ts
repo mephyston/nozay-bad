@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { ordersTable, productsTable } from '../shared/schema';
 import { getMemberById } from '@nba/members-api';
-import { createRevenueTransaction } from '@nba/accounting-api';
+import { createRevenueLedgerEntry } from '@nba/accounting-api';
 
 export class ApproveOrderRepository {
   async getOrderById(db: DbOrTx, id: number): Promise<typeof ordersTable.$inferSelect | undefined> {
@@ -32,7 +32,7 @@ export class ApproveOrderRepository {
     description: string;
     memberId: number;
   }): Promise<{ id: number }> {
-    return createRevenueTransaction(db, {
+    return createRevenueLedgerEntry(db, {
       seasonId: values.seasonId,
       accountId: values.accountId,
       paymentMethodId: values.paymentMethodId,

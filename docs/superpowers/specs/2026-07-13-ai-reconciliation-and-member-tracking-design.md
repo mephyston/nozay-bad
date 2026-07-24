@@ -7,7 +7,7 @@ Optimiser le rapprochement des relevés bancaires en intégrant des suggestions 
 
 ## 2. Base de Données
 
-Nous modifions les tables `members` et `transactions` pour intégrer les champs requis par Poona et les liaisons comptables, et ajoutons un champ de stockage des suggestions IA dans `bank_transactions`.
+Nous modifions les tables `members` et `transactions` pour intégrer les champs requis par Poona et les liaisons comptables, et ajoutons un champ de stockage des suggestions IA dans `bank_statement_lines`.
 
 ### Schéma Drizzle (`libs/shared/db/src/schema.ts`)
 ```typescript
@@ -69,7 +69,7 @@ export const ledgerEntriesTable = sqliteTable('transactions', {
 });
 
 // 3. Mise à jour de bankStatementLinesTable : ajout du stockage des suggestions IA
-export const bankStatementLinesTable = sqliteTable('bank_transactions', {
+export const bankStatementLinesTable = sqliteTable('bank_statement_lines', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   fitid: text('fitid').notNull().unique(),
   seasonId: text('season_id').notNull().references(() => seasonsTable.id),
@@ -115,7 +115,7 @@ Pour chaque opération :
    Si au moins un candidat est trouvé, nous interrogeons Workers AI (`@cf/meta/llama-3-8b-instruct`) avec un prompt ciblé :
    * **Entrée** : Le libellé bancaire (ex: *"VIR INST RE 651196118756 DE: MR FABIEN LE BLEVEC"*) et la liste des 5 candidats avec leurs détails (Noms, Prénoms, Parents, Montants attendus).
    * **Sortie attendue** : Un format JSON strict `{ memberId: number | null, category: string, confidence: number, reasoning: string }`.
-3. **Mise à jour** : Les suggestions retournées sont enregistrées dans la colonne `aiSuggestions` de `bank_transactions`.
+3. **Mise à jour** : Les suggestions retournées sont enregistrées dans la colonne `aiSuggestions` de `bank_statement_lines`.
 
 ---
 

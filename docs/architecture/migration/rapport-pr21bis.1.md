@@ -27,7 +27,7 @@
    - Déplacement de `update-invoice` -> `commands/update-invoice`
    - Déplacement de `delete-invoice` -> `commands/delete-invoice`
    - Déplacement de `change-invoice-status` -> `commands/change-invoice-status`
-   - Déplacement de `reconcile-bank-transaction` -> `commands/reconcile-bank-transaction`
+   - Déplacement de `reconcile-bank-statement-line` -> `commands/reconcile-bank-statement-line`
    - Déplacement de `import-bank-statement` -> `commands/import-bank-statement`
    - Déplacement de `list-invoices` -> `queries/list-invoices`
    - Déplacement de `get-invoice` -> `queries/get-invoice`
@@ -46,7 +46,7 @@
  ✓  features-accounting-ui  ../seasons/ui/SettingsManager.test.ts (3 tests) 124ms
  ✓  features-accounting-ui  ../transactions/ui/TransactionLedger.test.ts (4 tests) 184ms
  ✓  features-accounting-ui  ../checks/ui/CheckDepositManager.test.ts (3 tests) 125ms
- ✓  features-accounting-ui  ../commands/reconcile-bank-transaction/ui/BankStatementReconciliation.test.ts (12 tests) 525ms
+ ✓  features-accounting-ui  ../commands/reconcile-bank-statement-line/ui/BankStatementReconciliation.test.ts (12 tests) 525ms
 
  Test Files  8 passed (8)
       Tests  31 passed (31)

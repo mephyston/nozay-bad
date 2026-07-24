@@ -102,7 +102,7 @@ Ouvrir [BankStatementReconciliation.svelte](file:///Users/david/Lab/nozay-bad/li
 Ouvrir [BankStatementReconciliation.svelte](file:///Users/david/Lab/nozay-bad/libs/features/accounting/ui/src/BankStatementReconciliation.svelte) :
 1. Supprimer l'ancien bloc bouton/badge en haut (lignes ~982 à ~1002) :
    ```html
-     {#if isClosed || (bankTransactions.length > 0 && !isClosed)}
+     {#if isClosed || (bankStatementLines.length > 0 && !isClosed)}
        <div class="flex items-center justify-between">
          <div class="flex items-center gap-3">
            {#if isClosed}
@@ -111,7 +111,7 @@ Ouvrir [BankStatementReconciliation.svelte](file:///Users/david/Lab/nozay-bad/li
              </Badge>
            {/if}
          </div>
-         {#if bankTransactions.length > 0 && !isClosed}
+         {#if bankStatementLines.length > 0 && !isClosed}
            <Button 
              type="button"
              onclick={() => showImportModal = true}

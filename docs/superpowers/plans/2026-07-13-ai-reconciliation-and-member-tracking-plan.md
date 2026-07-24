@@ -199,7 +199,7 @@
 
 **Interfaces:**
 * Consumes:
-  * Table `bank_transactions`, `members`
+  * Table `bank_statement_lines`, `members`
   * Cloudflare binding `env.AI` (Workers AI)
 * Produces:
   * Endpoint `POST /bank-transactions/analyze` (génère et persiste les suggestions).
@@ -521,7 +521,7 @@ Renvoie STRICTEMENT un objet JSON sous la forme suivante (sans aucun autre texte
   * Mettre à jour l'en-tête de la liste de gauche pour ajouter le bouton :
     ```html
     <div class="p-4 border-b border-border bg-muted flex items-center justify-between">
-      <span class="font-bold text-sm">Opérations bancaires en attente ({bankTransactions.length})</span>
+      <span class="font-bold text-sm">Opérations bancaires en attente ({bankStatementLines.length})</span>
       <button onclick={handleAnalyze} disabled={isAnalyzing} class="px-2.5 py-1 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-semibold rounded cursor-pointer">
         {isAnalyzing ? 'Analyse IA...' : 'Lancer l\'analyse IA'}
       </button>

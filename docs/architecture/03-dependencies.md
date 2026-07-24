@@ -35,7 +35,7 @@ d'appeler une fonction exportée par `libs/domains/members/index.ts`.
   le schéma).
 - Interdiction d'import entre sous-dossiers d'un même domaine
   (`accounting/create-invoice` ne doit pas importer
-  `accounting/reconcile-bank-transaction`), à faire respecter par une règle
+  `accounting/reconcile-bank-statement-line`), à faire respecter par une règle
   ESLint locale (`no-restricted-imports` avec pattern par dossier) en
   complément des tags Nx, qui ne descendent pas à ce niveau de granularité.
 

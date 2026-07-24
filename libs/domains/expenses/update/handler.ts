@@ -100,7 +100,7 @@ export async function cancelExpenseApproval(db: Db, id: number) {
         }
 
         // Supprimer la transaction du Grand Livre
-        await repo.deleteTransaction(txDb, tx.id);
+        await repo.deleteLedgerEntry(txDb, tx.id);
       }
     }
 

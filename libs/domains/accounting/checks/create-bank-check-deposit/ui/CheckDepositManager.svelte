@@ -16,7 +16,7 @@
     handleDeleteDeposit,
     handleClearDeposit
   } from './check-deposit-api';
-  import type { Check, CheckDeposit, Member, BankTransaction, SeasonOption } from './check-deposit-types';
+  import type { Check, CheckDeposit, Member, BankStatementLine, SeasonOption } from './check-deposit-types';
 
   interface Props {
     seasonId: string;
@@ -24,7 +24,7 @@
     checks: Check[];
     checkDeposits: CheckDeposit[];
     members: Member[];
-    pendingBankTransactions: BankTransaction[];
+    pendingBankTransactions: BankStatementLine[];
   }
 
   let props: Props = $props();

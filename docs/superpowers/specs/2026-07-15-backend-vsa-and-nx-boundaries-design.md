@@ -22,7 +22,7 @@ Le code sera découpé en 4 domaines principaux et une section partagée (Shared
 
 ### B. Comptabilité (`accounting`)
 - **Responsabilités** : Grand livre comptable, rapprochement bancaire, rapports d'assemblée générale (compte de résultat, prévisionnel), catégories comptables, classes de comptes, factures émises.
-- **Tables de base de données** : `seasons`, `season_balances`, `transactions`, `bank_transactions`, `check_deposits`, `checks`, `categories`, `account_classes`, `season_category_budgets`, `invoices`, `invoice_items`.
+- **Tables de base de données** : `seasons`, `season_balances`, `transactions`, `bank_statement_lines`, `check_deposits`, `checks`, `categories`, `account_classes`, `season_category_budgets`, `invoices`, `invoice_items`.
 - **Bibliothèques Nx** :
   - `libs/features/accounting/data-access`
   - `libs/features/accounting/api`
