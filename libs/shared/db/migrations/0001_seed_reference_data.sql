@@ -3,7 +3,7 @@
 -- Aucune valeur d'identifiant numérique entière codée en dur.
 
 -- 1. ACCOUNT CLASSES (Classes du Plan Comptable Associatif)
-INSERT INTO `account_classes` (`code`, `label`, `type`, `created_at`) VALUES
+INSERT OR IGNORE INTO `account_classes` (`code`, `label`, `type`, `created_at`) VALUES
 ('70', '70 - Ventes de produits et prestations', 'recette', 1783962600),
 ('74', '74 - Subventions et aides publiques', 'recette', 1783962600),
 ('75', '75 - Autres produits de gestion courante', 'recette', 1783962600),
@@ -18,13 +18,13 @@ INSERT INTO `account_classes` (`code`, `label`, `type`, `created_at`) VALUES
 ('530', '530 - Caisse', 'tresorerie', 1783962600);
 
 -- 2. ACCOUNTS (Comptes de trésorerie de l'association)
-INSERT INTO `accounts` (`code`, `label`, `account_class_id`, `created_at`) VALUES
+INSERT OR IGNORE INTO `accounts` (`code`, `label`, `account_class_id`, `created_at`) VALUES
 ('current', 'Compte Courant', (SELECT `id` FROM `account_classes` WHERE `code` = '512'), 1783962600),
 ('savings', 'Livret A / Épargne', (SELECT `id` FROM `account_classes` WHERE `code` = '517'), 1783962600),
 ('cash', 'Caisse Buvette', (SELECT `id` FROM `account_classes` WHERE `code` = '530'), 1783962600);
 
 -- 3. PAYMENT METHODS (Modes de règlement)
-INSERT INTO `payment_methods` (`code`, `label`, `default_account_id`, `default_entry_status`, `created_at`) VALUES
+INSERT OR IGNORE INTO `payment_methods` (`code`, `label`, `default_account_id`, `default_entry_status`, `created_at`) VALUES
 ('virement', 'Virement bancaire', (SELECT `id` FROM `accounts` WHERE `code` = 'current'), 'cleared', 1783962600),
 ('cheque', 'Chèque', (SELECT `id` FROM `accounts` WHERE `code` = 'current'), 'in_vault', 1783962600),
 ('especes', 'Espèces', (SELECT `id` FROM `accounts` WHERE `code` = 'cash'), 'cleared', 1783962600),
@@ -36,7 +36,7 @@ INSERT INTO `payment_methods` (`code`, `label`, `default_account_id`, `default_e
 ('up_loisir', 'Coupon Sport / Up''Loisir', (SELECT `id` FROM `accounts` WHERE `code` = 'current'), 'in_vault', 1783962600);
 
 -- 4. CATEGORIES (Nomenclature analytique et budgétaire - 16 catégories sans colonne code)
-INSERT INTO `categories` (`admin_label`, `adherent_label`, `hide_in_expenses`, `receipt_account_class_id`, `expense_account_class_id`, `created_at`) VALUES
+INSERT OR IGNORE INTO `categories` (`admin_label`, `adherent_label`, `hide_in_expenses`, `receipt_account_class_id`, `expense_account_class_id`, `created_at`) VALUES
 ('Adhésions & Inscriptions', 'Adhésions & Inscriptions', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), NULL, 1783962600),
 ('Sponsoring', 'Partenariat & Sponsoring', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), NULL, 1783962600),
 ('Subventions (aides publiques)', 'Subventions', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '74'), NULL, 1783962600),
@@ -55,7 +55,7 @@ INSERT INTO `categories` (`admin_label`, `adherent_label`, `hide_in_expenses`, `
 ('Intérêts Livret A', 'Intérêts Livret A', 1, (SELECT `id` FROM `account_classes` WHERE `code` = '75'), NULL, 1783962600);
 
 -- 5. PRODUCT CATEGORIES (Familles de produits boutique rattachées aux catégories comptables)
-INSERT INTO `product_categories` (`label`, `accounting_category_id`, `created_at`) VALUES
+INSERT OR IGNORE INTO `product_categories` (`label`, `accounting_category_id`, `created_at`) VALUES
 ('Volants', (SELECT `id` FROM `categories` WHERE `admin_label` = 'Volants (vente ou achat)'), 1783962600),
 ('Cordages', (SELECT `id` FROM `categories` WHERE `admin_label` = 'Cordage (vente aux adhérents)'), 1783962600),
 ('Textile & Accessoires', (SELECT `id` FROM `categories` WHERE `admin_label` = 'Matériel (hors cordages)'), 1783962600);
