@@ -46,19 +46,11 @@ export async function approveOrder(db: Db, id: ApproveOrderInput): Promise<Appro
     throw new ShopCategoryNotConfiguredError(productCategory?.label);
   }
 
-  const paymentMethod = await repo.getPaymentMethodById(db, order.paymentMethodId);
-  const targetAccountCode = paymentMethod?.code === 'especes' ? 'cash' : 'current';
-  const account = await repo.getAccountByCode(db, targetAccountCode);
-  if (!account) {
-    throw new AppError(`Compte de trésorerie '${targetAccountCode}' introuvable.`, 400);
-  }
-
   const description = `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`;
 
   // Phase 2 : Décision (en mémoire)
   const stmt1 = repo.buildRecetteTransactionStatement(db, {
     seasonId: order.seasonId,
-    accountId: account.id,
     paymentMethodId: order.paymentMethodId,
     categoryId: productCategory.accountingCategoryId,
     amountCents: order.totalAmountCents,

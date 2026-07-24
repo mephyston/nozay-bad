@@ -186,8 +186,8 @@ describe('Accounting API Endpoints', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify([
-        { accountId: 'current', initialBalance: 100000 }, // 1000 €
-        { accountId: 'cash', initialBalance: 5000 }      // 50 €
+        { accountId: 'current', initialBalanceCents: 100000 }, // 1000 €
+        { accountId: 'cash', initialBalanceCents: 5000 }      // 50 €
       ])
     }, { DB: mockD1 as any });
     expect(balRes.status).toBe(200);

@@ -21,8 +21,8 @@ export async function deleteLedgerEntry(db: Db, id: number) {
     const bankTx = await repo.getBankStatementLineById(db, tx.bankStatementLineId);
     if (bankTx) {
       const remainingTxs = await repo.getRemainingTransactionsForBankTx(db, tx.bankStatementLineId, id);
-      const totalRemaining = remainingTxs.reduce((sum, t) => sum + Math.abs(t.amountCents ?? (t as any).amount ?? 0), 0);
-      const bankTxAmt = Math.abs(bankTx.amountCents ?? bankTx.amount ?? 0);
+      const totalRemaining = remainingTxs.reduce((sum, t) => sum + Math.abs(t.amountCents ?? 0), 0);
+      const bankTxAmt = Math.abs(bankTx.amountCents ?? 0);
 
       if (totalRemaining < bankTxAmt) {
         resetBankTxNeeded = true;
@@ -43,7 +43,7 @@ export async function deleteLedgerEntry(db: Db, id: number) {
   }
 
   if (memberData) {
-    const txAmt = tx.amountCents ?? (tx as any).amount ?? 0;
+    const txAmt = tx.amountCents ?? 0;
     statements.push(buildApplyPaymentStatement(db, memberData, -Math.abs(txAmt)));
   }
 

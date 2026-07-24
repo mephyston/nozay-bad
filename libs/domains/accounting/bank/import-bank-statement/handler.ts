@@ -29,7 +29,7 @@ export function parseOFX(ofxContent: string): ParseOFXOutput {
     transactions.push({
       fitid: fitidMatch[1].trim(),
       accountId,
-      amount: amountCents,
+      amountCents,
       date: dateFormatted,
       name: nameMatch[1].trim(),
       memo: memoMatch ? memoMatch[1].trim() : null
@@ -56,7 +56,7 @@ export async function importBankStatement(db: Db, fileContent: string, forcedAcc
     const res = await repo.insertBankStatementLine(db, {
       fitid: tx.fitid,
       accountId: targetAccount,
-      amount: tx.amount,
+      amountCents: tx.amountCents,
       date: tx.date,
       name: tx.name,
       memo: tx.memo,

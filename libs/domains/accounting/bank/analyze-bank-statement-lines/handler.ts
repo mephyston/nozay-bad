@@ -18,7 +18,7 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
     for (const ex of pastReconciled) {
       const memberName = ex.memberLastName ? `${ex.memberLastName} ${ex.memberFirstName}` : "Aucun";
       const catLabel = ex.category ? String(ex.category) : "Inconnue";
-      const exAmt = ex.amountCents ?? ex.amount ?? 0;
+      const exAmt = ex.amountCents ?? 0;
       examplesPrompt += `- Libellé bancaire : "${ex.name}" | Mémo : "${ex.memo || ''}" | Montant : ${(exAmt / 100).toFixed(2)} EUR | Catégorie attribuée : ${catLabel} | Adhérent lié : ${memberName}\n`;
     }
     examplesPrompt += "\nSers-toi de ces exemples historiques pour orienter ton choix de catégorie ou de membre si l'opération à rapprocher est similaire.\n";
@@ -38,7 +38,7 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
   let analyzedCount = 0;
 
   for (const tx of pendingTxs) {
-    const txAmount = tx.amountCents ?? (tx as any).amount ?? 0;
+    const txAmount = tx.amountCents ?? 0;
     let suggestedCategory = txAmount < 0 ? catMap.fonctionnement : catMap.adhesions;
     const absAmount = Math.abs(txAmount);
     const matchingProduct = activeProducts.find(p => {
@@ -156,7 +156,7 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
       const matchesFirstName = cleanFirst && textToLower.includes(cleanFirst);
       const matchesParent1 = cleanP1 && textToLower.includes(cleanP1);
       const matchesParent2 = cleanP2 && textToLower.includes(cleanP2);
-      const memberRem = m.amountRemainingCents ?? m.amountRemaining ?? 0;
+      const memberRem = m.amountRemainingCents ?? 0;
       const matchesAmount = Math.abs(memberRem) === Math.abs(txAmount);
       
       return matchesLastName || matchesFirstName || matchesParent1 || matchesParent2 || matchesAmount;

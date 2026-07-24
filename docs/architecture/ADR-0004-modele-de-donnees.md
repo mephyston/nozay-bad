@@ -192,13 +192,15 @@ erDiagram
 | `created_at` | `INTEGER` | `NOT NULL` | Timestamp de création. |
 
 #### Table `payment_methods` (Modes de Règlement)
-*Nouvelle table de référence éliminant les strings magiques dans le code.*
+*Table de référence paramétrant le compte de trésorerie cible et le statut initial de chaque moyen de règlement.*
 
 | Colonne | Type SQL | Contraintes / Modificateurs | Rôle & Justification Métier |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Clé technique. |
 | `code` | `TEXT` | `UNIQUE NOT NULL` | Code technique (ex: `'virement'`, `'cheque'`, `'especes'`, `'pass_sport'`). |
 | `label` | `TEXT` | `NOT NULL` | Libellé d'affichage (ex: `'Virement bancaire'`, `'Chèque'`, `'Pass\'Sport'`). |
+| `default_account_id` | `INTEGER` | `NOT NULL REFERENCES accounts(id)` | Compte de trésorerie crédité par défaut (ex: Compte courant, Caisse). |
+| `default_entry_status` | `TEXT` | `NOT NULL` | Statut initial de l'écriture (`'cleared'`, `'in_vault'`, `'pending_debit'`). |
 | `created_at` | `INTEGER` | `NOT NULL` | Timestamp de création. |
 
 #### Table `categories` (Nomenclature Analytique et Budgétaire)

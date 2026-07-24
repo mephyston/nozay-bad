@@ -24,10 +24,10 @@ export async function getSeasonBalance(db: Db, seasonId: GetSeasonBalanceInput):
   for (const acc of accounts) {
     const numericAccId = accountIdMap[acc];
     const initBalRow = balances.find(b => b.accountId === acc || b.accountId === numericAccId);
-    const initBal = initBalRow ? (initBalRow.initialBalanceCents ?? initBalRow.initialBalance ?? 0) : 0;
+    const initBal = initBalRow ? (initBalRow.initialBalanceCents ?? 0) : 0;
     let finalBal = initBal;
     for (const tx of cashFlowTxs) {
-      const txAmount = tx.amountCents ?? (tx.amount ? tx.amount * 100 : 0);
+      const txAmount = tx.amountCents ?? 0;
       const isTargetAcc = tx.accountId === acc || tx.accountId === numericAccId;
       const isDestAcc = tx.destinationAccountId === acc || tx.destinationAccountId === numericAccId;
 

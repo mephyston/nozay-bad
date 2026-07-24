@@ -15,7 +15,7 @@ export class UpdateSeasonBalancesRepository {
     const accountIdMap: Record<string, number> = { current: 1, savings: 2, cash: 3 };
     for (const item of balances) {
       const numericAccId = typeof item.accountId === 'number' ? item.accountId : accountIdMap[item.accountId] || Number(item.accountId) || 1;
-      const balCents = item.initialBalanceCents ?? item.initialBalance ?? 0;
+      const balCents = item.initialBalanceCents ?? 0;
 
       await db.insert(seasonBalancesTable)
         .values({

@@ -141,6 +141,8 @@ CREATE TABLE `payment_methods` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`code` text NOT NULL,
 	`label` text NOT NULL,
+	`default_account_id` integer NOT NULL REFERENCES `accounts`(`id`),
+	`default_entry_status` text NOT NULL,
 	`created_at` integer NOT NULL
 );
 --> statement-breakpoint

@@ -283,7 +283,7 @@ export async function deleteCheck(db: Db, id: number) {
   }
 
   if (tx && memberData) {
-    const txAmt = tx.amountCents ?? tx.amount ?? 0;
+    const txAmt = tx.amountCents ?? 0;
     const stmtMember = buildApplyPaymentStatement(db, memberData, -Math.abs(txAmt));
     statements.push(stmtMember);
   }

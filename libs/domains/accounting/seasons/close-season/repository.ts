@@ -69,13 +69,23 @@ export class CloseSeasonRepository implements CloseSeasonRepositoryInterface {
   async getInVaultChecks(db: DbOrTx, seasonId: number | string): Promise<any[]> {
     const season = await this.getSeasonById(db, seasonId);
     if (!season) return [];
-    return db.select()
+    const checks = await db.select()
       .from(checksTable)
       .where(and(
         eq(checksTable.seasonId, season.id),
         eq(checksTable.status, 'received')
       ))
       .all();
+
+    const inVaultLedgerEntries = await db.select()
+      .from(ledgerEntriesTable)
+      .where(and(
+        eq(ledgerEntriesTable.seasonId, season.id),
+        eq(ledgerEntriesTable.status, 'in_vault')
+      ))
+      .all();
+
+    return [...checks, ...inVaultLedgerEntries];
   }
 
   async getPendingDebitTransactions(db: DbOrTx, seasonId: number | string): Promise<any[]> {

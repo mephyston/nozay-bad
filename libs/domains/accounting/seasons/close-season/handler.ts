@@ -86,7 +86,7 @@ export async function getCloseSeasonChecks(
 
   for (const acc of dbAccounts) {
     const initBalRow = balances.find(b => Number(b.accountId) === Number(acc.id) || b.accountId === acc.code);
-    const initBal = initBalRow ? (initBalRow.initialBalanceCents ?? initBalRow.initialBalance ?? 0) : 0;
+    const initBal = initBalRow ? (initBalRow.initialBalanceCents ?? 0) : 0;
 
     let finalBal = initBal;
     for (const tx of seasonTxs) {
@@ -130,7 +130,7 @@ export async function getCloseSeasonChecks(
     for (const b of balancesToRollover) {
       const nextBalRow = nextBalances.find(nb => nb.accountId === b.accountId);
       if (nextBalRow) {
-        const existingVal = nextBalRow.initialBalanceCents ?? nextBalRow.initialBalance ?? 0;
+        const existingVal = nextBalRow.initialBalanceCents ?? 0;
         const diff = existingVal !== b.finalBalanceCents;
 
         existingInitialBalancesOnNextSeason.push({

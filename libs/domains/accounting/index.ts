@@ -109,9 +109,11 @@ export { getSeasonReports } from './seasons/get-season-reports/handler';
 import { CreateLedgerEntryRepository } from './ledger/create-ledger-entry/repository';
 export { CreateLedgerEntryRepository };
 
+import { sql, eq } from 'drizzle-orm';
+import { paymentMethodsTable } from './shared/schema';
+
 export interface CreateRevenueTransactionParams {
   seasonId: number;
-  accountId: number;
   paymentMethodId: number;
   amountCents: number;
   description: string;
@@ -126,7 +128,7 @@ export function buildCreateRevenueLedgerEntryStatement(db: any, params: CreateRe
   return repository.buildCreateStatement(db, {
     seasonId: params.seasonId,
     type: 'recette',
-    accountId: params.accountId,
+    accountId: sql`(SELECT default_account_id FROM payment_methods WHERE id = ${params.paymentMethodId})` as any,
     paymentMethodId: params.paymentMethodId,
     amountCents: params.amountCents,
     description: params.description,
@@ -134,17 +136,25 @@ export function buildCreateRevenueLedgerEntryStatement(db: any, params: CreateRe
     categoryId: params.categoryId ?? null,
     memberId: params.memberId ?? null,
     reference: params.reference ?? null,
-    status: 'cleared',
+    status: sql`(SELECT default_entry_status FROM payment_methods WHERE id = ${params.paymentMethodId})` as any,
     createdAt: new Date()
   });
 }
 
 export async function createRevenueLedgerEntry(db: any, params: CreateRevenueTransactionParams): Promise<{ id: number }> {
+  const method = await db.select({
+    accountId: paymentMethodsTable.defaultAccountId,
+    status: paymentMethodsTable.defaultEntryStatus
+  }).from(paymentMethodsTable).where(eq(paymentMethodsTable.id, params.paymentMethodId)).get();
+
+  const accountId = method?.accountId ?? 1;
+  const status = (method?.status as any) || 'cleared';
+
   const repository = new CreateLedgerEntryRepository();
   return repository.create(db, {
     seasonId: params.seasonId,
     type: 'recette',
-    accountId: params.accountId,
+    accountId,
     paymentMethodId: params.paymentMethodId,
     amountCents: params.amountCents,
     description: params.description,
@@ -152,7 +162,7 @@ export async function createRevenueLedgerEntry(db: any, params: CreateRevenueTra
     categoryId: params.categoryId ?? null,
     memberId: params.memberId ?? null,
     reference: params.reference ?? null,
-    status: 'cleared',
+    status,
     createdAt: new Date()
   });
 }

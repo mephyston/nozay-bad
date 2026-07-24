@@ -24,6 +24,8 @@ export const paymentMethodsTable = sqliteTable('payment_methods', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   code: text('code').notNull().unique(),
   label: text('label').notNull(),
+  defaultAccountId: integer('default_account_id').notNull().references(() => accountsTable.id),
+  defaultEntryStatus: text('default_entry_status', { enum: ['cleared', 'in_vault', 'pending_debit'] }).notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 

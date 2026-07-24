@@ -7,7 +7,7 @@ export class ImportBankStatementRepository {
       .values({
         fitid: values.fitid,
         accountId: typeof values.accountId === 'number' ? values.accountId : 1,
-        amountCents: values.amountCents ?? values.amount ?? 0,
+        amountCents: values.amountCents ?? 0,
         date: values.date,
         name: values.name,
         memo: values.memo || null,

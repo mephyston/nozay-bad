@@ -24,9 +24,9 @@ export async function setupMockDb() {
     'categories',
     'users',
     'seasons',
+    'payment_methods',
     'accounts',
-    'account_classes',
-    'payment_methods'
+    'account_classes'
   ];
 
 

@@ -39,7 +39,6 @@ export class ApproveOrderRepository {
 
   buildRecetteTransactionStatement(db: DbOrTx, values: {
     seasonId: number;
-    accountId: number;
     paymentMethodId: number;
     categoryId: number | null;
     amountCents: number;
@@ -48,7 +47,6 @@ export class ApproveOrderRepository {
   }): any {
     return buildCreateRevenueLedgerEntryStatement(db, {
       seasonId: values.seasonId,
-      accountId: values.accountId,
       paymentMethodId: values.paymentMethodId,
       categoryId: values.categoryId,
       amountCents: values.amountCents,
@@ -75,7 +73,6 @@ export class ApproveOrderRepository {
 
   async createRecetteTransaction(db: DbOrTx, values: {
     seasonId: number;
-    accountId: number;
     paymentMethodId: number;
     categoryId: number | null;
     amountCents: number;
@@ -84,7 +81,6 @@ export class ApproveOrderRepository {
   }): Promise<{ id: number }> {
     return createRevenueLedgerEntry(db, {
       seasonId: values.seasonId,
-      accountId: values.accountId,
       paymentMethodId: values.paymentMethodId,
       categoryId: values.categoryId,
       amountCents: values.amountCents,

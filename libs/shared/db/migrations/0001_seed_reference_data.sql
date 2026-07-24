@@ -24,15 +24,16 @@ INSERT INTO `accounts` (`code`, `label`, `account_class_id`, `created_at`) VALUE
 ('cash', 'Caisse Buvette', (SELECT `id` FROM `account_classes` WHERE `code` = '530'), 1783962600);
 
 -- 3. PAYMENT METHODS (Modes de règlement)
-INSERT INTO `payment_methods` (`code`, `label`, `created_at`) VALUES
-('virement', 'Virement bancaire', 1783962600),
-('cheque', 'Chèque', 1783962600),
-('especes', 'Espèces', 1783962600),
-('cb', 'Carte bancaire / Stripe', 1783962600),
-('labaz', 'Chèque LABAZ', 1783962600),
-('ancv', 'Chèque-Vacances ANCV', 1783962600),
-('pass_sport', 'Pass''Sport', 1783962600),
-('up_loisir', 'Coupon Sport / Up''Loisir', 1783962600);
+INSERT INTO `payment_methods` (`code`, `label`, `default_account_id`, `default_entry_status`, `created_at`) VALUES
+('virement', 'Virement bancaire', (SELECT `id` FROM `accounts` WHERE `code` = 'current'), 'cleared', 1783962600),
+('cheque', 'Chèque', (SELECT `id` FROM `accounts` WHERE `code` = 'current'), 'in_vault', 1783962600),
+('especes', 'Espèces', (SELECT `id` FROM `accounts` WHERE `code` = 'cash'), 'cleared', 1783962600),
+('cb', 'Carte bancaire / Stripe', (SELECT `id` FROM `accounts` WHERE `code` = 'current'), 'cleared', 1783962600),
+('labaz', 'Chèque LABAZ', (SELECT `id` FROM `accounts` WHERE `code` = 'current'), 'in_vault', 1783962600),
+('ancv', 'Chèque-Vacances ANCV', (SELECT `id` FROM `accounts` WHERE `code` = 'current'), 'in_vault', 1783962600),
+('pass_sport', 'Pass''Sport', (SELECT `id` FROM `accounts` WHERE `code` = 'current'), 'in_vault', 1783962600),
+('ticket_loisir', 'Ticket Loisir', (SELECT `id` FROM `accounts` WHERE `code` = 'current'), 'in_vault', 1783962600),
+('up_loisir', 'Coupon Sport / Up''Loisir', (SELECT `id` FROM `accounts` WHERE `code` = 'current'), 'in_vault', 1783962600);
 
 -- 4. CATEGORIES (Nomenclature analytique et budgétaire - 16 catégories sans colonne code)
 INSERT INTO `categories` (`admin_label`, `adherent_label`, `hide_in_expenses`, `receipt_account_class_id`, `expense_account_class_id`, `created_at`) VALUES
