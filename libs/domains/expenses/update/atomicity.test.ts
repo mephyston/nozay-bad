@@ -21,9 +21,9 @@ describe('approveExpense Real D1 Atomicity (PROMPT B3)', () => {
 
     const exp = await db.insert(expensesTable).values({
       description: 'Déplacement tournoi',
-      amount: 4500,
+      amountCents: 4500,
       seasonId: '25-26',
-      category: 1,
+      categoryId: 1,
       emitterName: 'Paul Martin',
       status: 'pending',
       createdAt: new Date()

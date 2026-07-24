@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { analyzeBankStatementLines } from './handler';
-import { bankStatementLinesTable, categoriesTable, seasonsTable } from '../../shared/schema';
+import { bankStatementLinesTable, categoriesTable, seasonsTable, membersTable } from '../../shared/schema';
 import { eq, sql } from 'drizzle-orm';
 
 describe('analyzeBankStatementLines', () => {
@@ -59,10 +59,20 @@ describe('analyzeBankStatementLines', () => {
       createdAt: new Date()
     }).run();
 
-    await db.run(sql`
-      INSERT INTO members (licence, season_id, last_name, first_name, gender, birth_date, type, imported_at, amount_due, amount_received, amount_remaining)
-      VALUES ('123456', 1, 'Dupont', 'Marc', 'M', '1990-01-01', 'Adulte', strftime('%s', 'now'), 15000, 0, 15000)
-    `);
+    await db.insert(membersTable).values({
+      id: 1,
+      licence: '123456',
+      seasonId: 1,
+      lastName: 'Dupont',
+      firstName: 'Marc',
+      gender: 'M',
+      birthDate: '1990-01-01',
+      type: 'Adulte',
+      importedAt: new Date(),
+      amountDueCents: 15000,
+      amountReceivedCents: 0,
+      amountRemainingCents: 15000
+    }).run();
 
     let capturedPrompt = '';
     const aiMock = {

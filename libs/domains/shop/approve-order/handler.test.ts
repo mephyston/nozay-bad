@@ -119,7 +119,7 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
     // Family 5: Unconfigured family (missing accounting category id = 0 or invalid)
     const pCat5 = await db.insert(productCategoriesTable).values({
       label: 'Famille Non Configurée',
-      accountingCategoryId: 0,
+      accountingCategoryId: null,
       createdAt: new Date()
     }).returning().get();
     unconfiguredProductCatId = pCat5.id;

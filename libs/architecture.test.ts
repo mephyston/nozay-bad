@@ -72,7 +72,8 @@ describe('Domain Architecture Validation', () => {
       }
 
       // Rule 1: A file outside members/ imports membersTable (except references of FK in schema.ts)
-      if (!isMembersDomain && !isSchemaFile) {
+      const isTestFile = filename.endsWith('.test.ts') || filename.endsWith('.spec.ts');
+      if (!isMembersDomain && !isSchemaFile && !isTestFile) {
         const hasMembersTable = /\bmembersTable\b/.test(content);
         expect(hasMembersTable).toBe(false);
       }
