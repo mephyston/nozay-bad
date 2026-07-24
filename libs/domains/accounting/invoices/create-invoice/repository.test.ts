@@ -10,9 +10,10 @@ describe('CreateInvoiceRepository', () => {
     const mock = await setupMockDb();
     db = mock.db;
     const existingSeason = await db.select().from(seasonsTable).all();
-    if (!existingSeason.some(s => s.id === '25-26')) {
-      await db.insert(seasonsTable).values({ id: '25-26', name: 'Saison 25-26', active: true, createdAt: new Date() }).run();
+    if (!existingSeason.some((s: any) => s.code === '25-26' || s.id === 1)) {
+      await db.insert(seasonsTable).values({ code: '25-26', name: 'Saison 25-26', startDate: '2025-09-01', endDate: '2026-08-31', active: 1, createdAt: Date.now() }).run();
     }
+
   });
 
   describe('generateInvoiceNumber', () => {
