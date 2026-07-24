@@ -27,9 +27,7 @@ app.use('*', async (c, next) => {
     return next();
   }
 
-  const apiKey =
-    c.env?.INTERNAL_API_KEY ||
-    (process.env.NODE_ENV !== 'production' ? 'dev-secret-key-12345' : '');
+  const apiKey = c.env?.INTERNAL_API_KEY;
 
   // Échec en fermeture : clé non configurée sur le Worker
   if (!apiKey) {

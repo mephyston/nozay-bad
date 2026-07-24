@@ -53,7 +53,7 @@ describe('members-search API endpoint', () => {
     expect(response.status).toBe(200);
     const data = await response.json();
 
-    expect(mockFetch).toHaveBeenCalledWith('http://localhost/members?search=dup&limit=10');
+    expect(mockFetch).toHaveBeenCalledWith('http://localhost/members?search=dup&limit=10', expect.anything());
     expect(data).toEqual([
       { id: 1, firstName: 'Jean', lastName: 'D.', licence: '12***67' }
     ]);
@@ -82,7 +82,7 @@ describe('members-search API endpoint', () => {
     expect(response.status).toBe(200);
     const data = await response.json();
 
-    expect(mockFetch).toHaveBeenCalledWith('http://localhost/members/7890123');
+    expect(mockFetch).toHaveBeenCalledWith('http://localhost/members/7890123', expect.anything());
     expect(data).toEqual([
       { id: 2, firstName: 'Pierre', lastName: 'D.', licence: '78***23' }
     ]);
