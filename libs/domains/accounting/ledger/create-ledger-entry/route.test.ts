@@ -10,7 +10,7 @@ vi.mock('./handler', () => ({
 describe('CreateLedgerEntry Route', () => {
   it('should return 400 on invalid body', async () => {
     const { mockD1 } = await setupMockDb();
-    const res = await createTransactionRoute.request('http://localhost/transactions', {
+    const res = await createTransactionRoute.request('http://localhost/ledger-entries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -34,7 +34,7 @@ describe('CreateLedgerEntry Route', () => {
     const { mockD1 } = await setupMockDb();
     vi.mocked(createLedgerEntry).mockResolvedValue({ id: 1 });
 
-    const res = await createTransactionRoute.request('http://localhost/transactions', {
+    const res = await createTransactionRoute.request('http://localhost/ledger-entries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -58,7 +58,7 @@ describe('CreateLedgerEntry Route', () => {
     const { mockD1 } = await setupMockDb();
     vi.mocked(createLedgerEntry).mockRejectedValue(new Error('Saison clôturée'));
 
-    const res = await createTransactionRoute.request('http://localhost/transactions', {
+    const res = await createTransactionRoute.request('http://localhost/ledger-entries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

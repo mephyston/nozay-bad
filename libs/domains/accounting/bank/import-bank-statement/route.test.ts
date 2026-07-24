@@ -11,7 +11,7 @@ describe('importBankStatementRoute', () => {
     formData.append('seasonId', '25-26');
     formData.append('file', 'Date;Label;Amount\n2026-01-01;Test;10.00');
 
-    const res = await importBankStatementRoute.request('/bank-transactions/import', {
+    const res = await importBankStatementRoute.request('/bank-statement-lines/import', {
       method: 'POST',
       body: formData
     }, { DB: {} as any });
@@ -25,7 +25,7 @@ describe('importBankStatementRoute', () => {
     const formData = new FormData();
     formData.append('file', 'test');
 
-    const res = await importBankStatementRoute.request('/bank-transactions/import', {
+    const res = await importBankStatementRoute.request('/bank-statement-lines/import', {
       method: 'POST',
       body: formData
     }, { DB: {} as any });

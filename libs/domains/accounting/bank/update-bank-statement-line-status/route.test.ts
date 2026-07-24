@@ -7,21 +7,21 @@ vi.mock('./handler', () => ({
 
 describe('updateBankStatementLineStatusRoute', () => {
   it('handles valid numeric id param for ignore', async () => {
-    const res = await updateBankStatementLineStatusRoute.request('/bank-transactions/1/ignore', { method: 'POST' }, { DB: {} as any });
+    const res = await updateBankStatementLineStatusRoute.request('/bank-statement-lines/1/ignore', { method: 'POST' }, { DB: {} as any });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
   });
 
   it('handles valid numeric id param for unignore', async () => {
-    const res = await updateBankStatementLineStatusRoute.request('/bank-transactions/1/unignore', { method: 'POST' }, { DB: {} as any });
+    const res = await updateBankStatementLineStatusRoute.request('/bank-statement-lines/1/unignore', { method: 'POST' }, { DB: {} as any });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
   });
 
   it('returns 400 for non-numeric id param', async () => {
-    const res = await updateBankStatementLineStatusRoute.request('/bank-transactions/abc/ignore', { method: 'POST' }, { DB: {} as any });
+    const res = await updateBankStatementLineStatusRoute.request('/bank-statement-lines/abc/ignore', { method: 'POST' }, { DB: {} as any });
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.success).toBe(false);

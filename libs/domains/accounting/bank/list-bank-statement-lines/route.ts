@@ -11,7 +11,7 @@ export type Bindings = {
 export const listBankStatementLinesRoute = new Hono<{ Bindings: Bindings }>();
 
 listBankStatementLinesRoute.get(
-  '/bank-transactions',
+  '/bank-statement-lines',
   tbValidator('query', listBankStatementLinesQuerySchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);

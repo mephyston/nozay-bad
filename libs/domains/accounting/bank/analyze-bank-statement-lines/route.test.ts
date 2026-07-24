@@ -12,7 +12,7 @@ describe('analyzeBankStatementLines Route', () => {
     const { mockD1 } = await setupMockDb();
     const aiMock = {};
     const res = await analyzeBankStatementLinesRoute.request(
-      'http://localhost/bank-transactions/analyze',
+      'http://localhost/bank-statement-lines/analyze',
       { method: 'POST' },
       { DB: mockD1 as any, AI: aiMock as any }
     );
@@ -29,7 +29,7 @@ describe('analyzeBankStatementLines Route', () => {
     vi.mocked(analyzeBankStatementLines).mockResolvedValue(mockData as any);
 
     const res = await analyzeBankStatementLinesRoute.request(
-      'http://localhost/bank-transactions/analyze?season=2024-2025&id=42',
+      'http://localhost/bank-statement-lines/analyze?season=2024-2025&id=42',
       { method: 'POST' },
       { DB: mockD1 as any, AI: aiMock as any }
     );

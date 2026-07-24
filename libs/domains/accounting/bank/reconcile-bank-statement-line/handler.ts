@@ -5,7 +5,7 @@ import { AppError, type Db, type Tx } from '@nba/db';
 import { normalizeCategory } from '../../shared/helpers';
 import { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
 import { ReconcileBankTxInternalId, ReconcileBankTxInternalInput, ReconcileBankTxInternalOutput } from "./dto";
-import { BankStatementLine } from '../../shared/bank-transaction';
+import { BankStatementLine } from '../../shared/bank-statement-line';
 import { validateAccrualAndFiscalPhase } from '../../shared/accruals';
 
 export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInternalId, body: ReconcileBankTxInternalInput): Promise<ReconcileBankTxInternalOutput> {

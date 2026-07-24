@@ -11,7 +11,7 @@ export type Bindings = {
 export const importBankStatementRoute = new Hono<{ Bindings: Bindings }>();
 
 importBankStatementRoute.post(
-  '/bank-transactions/import',
+  '/bank-statement-lines/import',
   tbValidator('form', importBankStatementFormSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);

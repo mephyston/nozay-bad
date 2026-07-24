@@ -10,7 +10,7 @@ vi.mock('./handler', () => ({
 describe('UpdateLedgerEntry Route', () => {
   it('should return 400 on invalid body', async () => {
     const { mockD1 } = await setupMockDb();
-    const res = await updateTransactionRoute.request('http://localhost/transactions/123', {
+    const res = await updateTransactionRoute.request('http://localhost/ledger-entries/123', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ seasonId: '', type: 'invalid_type', accountId: 'current' })
@@ -36,7 +36,7 @@ describe('UpdateLedgerEntry Route', () => {
       description: 'test update'
     };
 
-    const res = await updateTransactionRoute.request('http://localhost/transactions/123', {
+    const res = await updateTransactionRoute.request('http://localhost/ledger-entries/123', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

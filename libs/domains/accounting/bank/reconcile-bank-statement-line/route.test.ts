@@ -9,10 +9,10 @@ vi.mock('./handler', () => ({
 }));
 
 describe('ReconcileBankStatementLine Route', () => {
-  describe('POST /bank-transactions/reconcile-bulk', () => {
+  describe('POST /bank-statement-lines/reconcile-bulk', () => {
     it('should return 400 on invalid body', async () => {
       const { mockD1 } = await setupMockDb();
-      const res = await reconcileBankStatementLineRoute.request('http://localhost/bank-transactions/reconcile-bulk', {
+      const res = await reconcileBankStatementLineRoute.request('http://localhost/bank-statement-lines/reconcile-bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -35,7 +35,7 @@ describe('ReconcileBankStatementLine Route', () => {
       const { mockD1 } = await setupMockDb();
       vi.mocked(reconcileBulkTransactions).mockResolvedValue(1);
 
-      const res = await reconcileBankStatementLineRoute.request('http://localhost/bank-transactions/reconcile-bulk', {
+      const res = await reconcileBankStatementLineRoute.request('http://localhost/bank-statement-lines/reconcile-bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -56,10 +56,10 @@ describe('ReconcileBankStatementLine Route', () => {
     });
   });
 
-  describe('POST /bank-transactions/:id/reconcile', () => {
+  describe('POST /bank-statement-lines/:id/reconcile', () => {
     it('should return 400 on invalid body', async () => {
       const { mockD1 } = await setupMockDb();
-      const res = await reconcileBankStatementLineRoute.request('http://localhost/bank-transactions/123/reconcile', {
+      const res = await reconcileBankStatementLineRoute.request('http://localhost/bank-statement-lines/123/reconcile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -77,7 +77,7 @@ describe('ReconcileBankStatementLine Route', () => {
       const { mockD1 } = await setupMockDb();
       vi.mocked(reconcileBankStatementLine).mockResolvedValue(undefined);
 
-      const res = await reconcileBankStatementLineRoute.request('http://localhost/bank-transactions/123/reconcile', {
+      const res = await reconcileBankStatementLineRoute.request('http://localhost/bank-statement-lines/123/reconcile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

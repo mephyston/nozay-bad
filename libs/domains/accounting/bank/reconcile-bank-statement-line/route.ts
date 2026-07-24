@@ -11,7 +11,7 @@ export type Bindings = {
 export const reconcileBankStatementLineRoute = new Hono<{ Bindings: Bindings }>();
 
 reconcileBankStatementLineRoute.post(
-  '/bank-transactions/reconcile-bulk',
+  '/bank-statement-lines/reconcile-bulk',
   tbValidator('json', reconcileBulkTransactionsSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
@@ -33,7 +33,7 @@ reconcileBankStatementLineRoute.post(
 );
 
 reconcileBankStatementLineRoute.post(
-  '/bank-transactions/:id/reconcile',
+  '/bank-statement-lines/:id/reconcile',
   async (c, next) => {
     const id = parseInt(c.req.param('id'));
     if (isNaN(id)) {

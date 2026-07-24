@@ -11,7 +11,7 @@ export type Bindings = {
 export const updateBankStatementLineStatusRoute = new Hono<{ Bindings: Bindings }>();
 
 updateBankStatementLineStatusRoute.post(
-  '/bank-transactions/:id/ignore',
+  '/bank-statement-lines/:id/ignore',
   tbValidator('param', updateBankTransactionStatusParamSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
@@ -30,7 +30,7 @@ updateBankStatementLineStatusRoute.post(
 );
 
 updateBankStatementLineStatusRoute.post(
-  '/bank-transactions/:id/unignore',
+  '/bank-statement-lines/:id/unignore',
   tbValidator('param', updateBankTransactionStatusParamSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);

@@ -12,7 +12,7 @@ export type Bindings = {
 export const analyzeBankStatementLinesRoute = new Hono<{ Bindings: Bindings }>();
 
 analyzeBankStatementLinesRoute.post(
-  '/bank-transactions/analyze',
+  '/bank-statement-lines/analyze',
   tbValidator('query', analyzeBankStatementLinesQuerySchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);

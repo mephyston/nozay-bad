@@ -11,7 +11,7 @@ describe('listBankStatementLines Route', () => {
   it('should return 400 when season is missing or empty', async () => {
     const { mockD1 } = await setupMockDb();
     const res = await listBankStatementLinesRoute.request(
-      'http://localhost/bank-transactions',
+      'http://localhost/bank-statement-lines',
       { method: 'GET' },
       { DB: mockD1 as any }
     );
@@ -27,7 +27,7 @@ describe('listBankStatementLines Route', () => {
     vi.mocked(listBankStatementLines).mockResolvedValue(mockData as any);
 
     const res = await listBankStatementLinesRoute.request(
-      'http://localhost/bank-transactions?season=2024-2025&status=reconciled&accountId=abc',
+      'http://localhost/bank-statement-lines?season=2024-2025&status=reconciled&accountId=abc',
       { method: 'GET' },
       { DB: mockD1 as any }
     );

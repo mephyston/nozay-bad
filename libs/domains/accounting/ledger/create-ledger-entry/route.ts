@@ -11,7 +11,7 @@ export type Bindings = {
 export const createTransactionRoute = new Hono<{ Bindings: Bindings }>();
 
 createTransactionRoute.post(
-  '/transactions',
+  '/ledger-entries',
   tbValidator('json', createTransactionSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);

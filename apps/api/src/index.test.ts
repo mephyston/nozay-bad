@@ -111,7 +111,7 @@ describe('Cross-Domain Integration Tests', () => {
     expect(txId).toBeDefined();
 
     // 3. Delete the transaction directly in the ledger via accounting
-    const deleteTxRes = await app.request(`http://localhost/accounting/transactions/${txId}`, {
+    const deleteTxRes = await app.request(`http://localhost/accounting/ledger-entries/${txId}`, {
       method: 'DELETE'
     }, { DB: mockD1 as any });
     expect(deleteTxRes.status).toBe(200);

@@ -103,7 +103,7 @@ describe('POST and PUT /accounting/seasons', () => {
     expect(closeBody.data.closed).toBe(true);
 
     // Try to create transaction
-    const txRes = await app.request('http://localhost/accounting/transactions', {
+    const txRes = await app.request('http://localhost/accounting/ledger-entries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -140,7 +140,7 @@ describe('Accounting API Endpoints', () => {
     expect(balRes.status).toBe(200);
 
     // 2. Add dynamic transaction
-    const txRes = await app.request('http://localhost/accounting/transactions', {
+    const txRes = await app.request('http://localhost/accounting/ledger-entries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -157,7 +157,7 @@ describe('Accounting API Endpoints', () => {
     expect(txRes.status).toBe(200);
 
     // 3. Add internal transfer (current -> cash)
-    const transferRes = await app.request('http://localhost/accounting/transactions', {
+    const transferRes = await app.request('http://localhost/accounting/ledger-entries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -214,17 +214,17 @@ describe('Accounting API Endpoints', () => {
     expect(getBalJson.success).toBe(true);
     expect(getBalJson.data).toHaveLength(2);
 
-    // 6. Test GET /accounting/transactions
-    const getTxRes = await app.request('http://localhost/accounting/transactions?season=25-26&page=1&limit=20', undefined, { DB: mockD1 as any });
+    // 6. Test GET /accounting/ledger-entries
+    const getTxRes = await app.request('http://localhost/accounting/ledger-entries?season=25-26&page=1&limit=20', undefined, { DB: mockD1 as any });
     expect(getTxRes.status).toBe(200);
     const getTxJson = await getTxRes.json() as any;
     expect(getTxJson.success).toBe(true);
     expect(getTxJson.data).toHaveLength(2);
     expect(getTxJson.pagination.total).toBe(2);
 
-    // 7. Test DELETE /accounting/transactions/:id
+    // 7. Test DELETE /accounting/ledger-entries/:id
     const txIdToDelete = getTxJson.data[0].id;
-    const delRes = await app.request(`http://localhost/accounting/transactions/${txIdToDelete}`, {
+    const delRes = await app.request(`http://localhost/accounting/ledger-entries/${txIdToDelete}`, {
       method: 'DELETE'
     }, { DB: mockD1 as any });
     expect(delRes.status).toBe(200);
@@ -232,7 +232,7 @@ describe('Accounting API Endpoints', () => {
     expect(delJson.success).toBe(true);
 
     // Verify deletion
-    const getTxRes2 = await app.request('http://localhost/accounting/transactions?season=25-26', undefined, { DB: mockD1 as any });
+    const getTxRes2 = await app.request('http://localhost/accounting/ledger-entries?season=25-26', undefined, { DB: mockD1 as any });
     const getTxJson2 = await getTxRes2.json() as any;
     expect(getTxJson2.data).toHaveLength(1);
   });
@@ -320,13 +320,13 @@ VERSION:102
 </BANKMSGSRSV1>
 </OFX>`;
 
-    // 1. Simuler l'importation via POST /accounting/bank-transactions/import
+    // 1. Simuler l'importation via POST /accounting/bank-statement-lines/import
     const formData = new FormData();
     const file = new File([ofxContent], 'statement.ofx', { type: 'text/plain' });
     formData.append('file', file);
     formData.append('seasonId', '25-26');
 
-    const importRes = await app.request('http://localhost/accounting/bank-transactions/import', {
+    const importRes = await app.request('http://localhost/accounting/bank-statement-lines/import', {
       method: 'POST',
       body: formData
     }, { DB: mockD1 as any });
@@ -335,8 +335,8 @@ VERSION:102
     expect(importJson.success).toBe(true);
     expect(importJson.count).toBe(1);
 
-    // 2. Récupérer les transactions importées via GET /accounting/bank-transactions
-    const getRes = await app.request('http://localhost/accounting/bank-transactions?season=25-26&status=pending', undefined, { DB: mockD1 as any });
+    // 2. Récupérer les transactions importées via GET /accounting/bank-statement-lines
+    const getRes = await app.request('http://localhost/accounting/bank-statement-lines?season=25-26&status=pending', undefined, { DB: mockD1 as any });
     expect(getRes.status).toBe(200);
     const getJson = await getRes.json() as any;
     expect(getJson.success).toBe(true);
@@ -347,8 +347,8 @@ VERSION:102
     expect(bankTx.amount).toBe(-1560); // converti en centimes
     expect(bankTx.accountId).toBe('current');
 
-    // 3. Pointer en créant une nouvelle transaction via POST /accounting/bank-transactions/:id/reconcile
-    const reconRes = await app.request(`http://localhost/accounting/bank-transactions/${bankTx.id}/reconcile`, {
+    // 3. Pointer en créant une nouvelle transaction via POST /accounting/bank-statement-lines/:id/reconcile
+    const reconRes = await app.request(`http://localhost/accounting/bank-statement-lines/${bankTx.id}/reconcile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -369,7 +369,7 @@ VERSION:102
     expect(reconRes.status).toBe(200);
 
     // Vérifier le changement de statut
-    const checkRes = await app.request('http://localhost/accounting/bank-transactions?season=25-26&status=reconciled', undefined, { DB: mockD1 as any });
+    const checkRes = await app.request('http://localhost/accounting/bank-statement-lines?season=25-26&status=reconciled', undefined, { DB: mockD1 as any });
     const checkJson = await checkRes.json() as any;
     expect(checkJson.data).toHaveLength(1);
     expect(checkJson.data[0].status).toBe('reconciled');
@@ -403,7 +403,7 @@ VERSION:102
     }).returning().then(r => r[0]);
 
     // 3. Rapprocher via l'API
-    const reconcileRes = await app.request(`http://localhost/accounting/bank-transactions/${bt.id}/reconcile`, {
+    const reconcileRes = await app.request(`http://localhost/accounting/bank-statement-lines/${bt.id}/reconcile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -445,7 +445,7 @@ VERSION:102
     }).returning().then(r => r[0]);
 
     // 2. Rapprocher avec un invoiceId inexistant
-    const reconcileRes = await app.request(`http://localhost/accounting/bank-transactions/${bt.id}/reconcile`, {
+    const reconcileRes = await app.request(`http://localhost/accounting/bank-statement-lines/${bt.id}/reconcile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -507,7 +507,7 @@ VERSION:102
     }).returning().then(r => r[0]);
 
     // 4. Tenter de rapprocher via l'API
-    const reconcileRes = await app.request(`http://localhost/accounting/bank-transactions/${bt.id}/reconcile`, {
+    const reconcileRes = await app.request(`http://localhost/accounting/bank-statement-lines/${bt.id}/reconcile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -561,13 +561,13 @@ VERSION:102
 </BANKMSGSRSV1>
 </OFX>`;
 
-    // 1. Simuler l'importation via POST /accounting/bank-transactions/import
+    // 1. Simuler l'importation via POST /accounting/bank-statement-lines/import
     const formData = new FormData();
     const file = new File([ofxContent], 'statement.ofx', { type: 'text/plain' });
     formData.append('file', file);
     formData.append('seasonId', '25-26');
 
-    const importRes = await app.request('http://localhost/accounting/bank-transactions/import', {
+    const importRes = await app.request('http://localhost/accounting/bank-statement-lines/import', {
       method: 'POST',
       body: formData
     }, { DB: mockD1 as any });
@@ -576,8 +576,8 @@ VERSION:102
     expect(importJson.success).toBe(true);
     expect(importJson.count).toBe(1);
 
-    // 2. Récupérer les transactions importées via GET /accounting/bank-transactions (note: savings account because of 00070007847)
-    const getRes = await app.request('http://localhost/accounting/bank-transactions?season=25-26&status=pending', undefined, { DB: mockD1 as any });
+    // 2. Récupérer les transactions importées via GET /accounting/bank-statement-lines (note: savings account because of 00070007847)
+    const getRes = await app.request('http://localhost/accounting/bank-statement-lines?season=25-26&status=pending', undefined, { DB: mockD1 as any });
     expect(getRes.status).toBe(200);
     const getJson = await getRes.json() as any;
     expect(getJson.success).toBe(true);
@@ -588,14 +588,14 @@ VERSION:102
     expect(bankTx.amount).toBe(5000); // 50.00 -> 5000 cents
     expect(bankTx.accountId).toBe('savings');
 
-    // 3. Ignorer via POST /accounting/bank-transactions/:id/ignore
-    const ignoreRes = await app.request(`http://localhost/accounting/bank-transactions/${bankTx.id}/ignore`, {
+    // 3. Ignorer via POST /accounting/bank-statement-lines/:id/ignore
+    const ignoreRes = await app.request(`http://localhost/accounting/bank-statement-lines/${bankTx.id}/ignore`, {
       method: 'POST'
     }, { DB: mockD1 as any });
     expect(ignoreRes.status).toBe(200);
 
     // Vérifier le changement de statut
-    const checkRes = await app.request('http://localhost/accounting/bank-transactions?season=25-26&status=ignored', undefined, { DB: mockD1 as any });
+    const checkRes = await app.request('http://localhost/accounting/bank-statement-lines?season=25-26&status=ignored', undefined, { DB: mockD1 as any });
     const checkJson = await checkRes.json() as any;
     expect(checkJson.data).toHaveLength(1);
     expect(checkJson.data[0].status).toBe('ignored');
@@ -655,13 +655,13 @@ VERSION:102
     };
 
     // 1. Appeler l'endpoint d'analyse
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
     // 2. Vérifier que la suggestion a été enregistrée
-    const getRes = await app.request('http://localhost/accounting/bank-transactions?season=25-26&status=pending', undefined, { DB: mockD1 as any });
+    const getRes = await app.request('http://localhost/accounting/bank-statement-lines?season=25-26&status=pending', undefined, { DB: mockD1 as any });
     const getJson = await getRes.json() as any;
     const updatedBt = getJson.data.find((x: any) => x.id === bt.id);
     expect(updatedBt.aiSuggestions).not.toBeNull();
@@ -669,7 +669,7 @@ VERSION:102
     expect(suggestions.memberId).toBe(m.id);
 
     // 3. Réaliser le pointage
-    const reconRes = await app.request(`http://localhost/accounting/bank-transactions/${bt.id}/reconcile`, {
+    const reconRes = await app.request(`http://localhost/accounting/bank-statement-lines/${bt.id}/reconcile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -702,7 +702,7 @@ VERSION:102
     expect(createdTx).toBeDefined();
 
     // 6. Supprimer la transaction du Grand Livre via l'API
-    const deleteRes = await app.request(`http://localhost/accounting/transactions/${createdTx.id}`, {
+    const deleteRes = await app.request(`http://localhost/accounting/ledger-entries/${createdTx.id}`, {
       method: 'DELETE'
     }, { DB: mockD1 as any });
     expect(deleteRes.status).toBe(200);
@@ -776,7 +776,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request(`http://localhost/accounting/bank-transactions/analyze?season=25-26&id=${bt1.id}`, {
+    const analyzeRes = await app.request(`http://localhost/accounting/bank-statement-lines/analyze?season=25-26&id=${bt1.id}`, {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -818,7 +818,7 @@ VERSION:102
       createdAt: new Date()
     }).returning().then(r => r[0]);
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: { run: async () => ({}) } as any });
     expect(analyzeRes.status).toBe(200);
@@ -886,7 +886,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: aiMock as any });
     expect(analyzeRes.status).toBe(200);
@@ -948,7 +948,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: aiMock as any });
     expect(analyzeRes.status).toBe(200);
@@ -1020,13 +1020,13 @@ VERSION:102
     };
 
     // Lancer l'analyse
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
     // Vérifier que Laurence Madrange a été identifiée de manière déterministe
-    const getRes = await app.request('http://localhost/accounting/bank-transactions?season=25-26&status=pending', undefined, { DB: mockD1 as any });
+    const getRes = await app.request('http://localhost/accounting/bank-statement-lines?season=25-26&status=pending', undefined, { DB: mockD1 as any });
     const json = await getRes.json() as any;
     const updatedBt = json.data.find((x: any) => x.id === bt.id);
     expect(updatedBt.aiSuggestions).not.toBeNull();
@@ -1078,13 +1078,13 @@ VERSION:102
     };
 
     // Lancer l'analyse
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
 
     // Vérifier le match déterministe
-    const getRes = await app.request('http://localhost/accounting/bank-transactions?season=25-26&status=pending', undefined, { DB: mockD1 as any });
+    const getRes = await app.request('http://localhost/accounting/bank-statement-lines?season=25-26&status=pending', undefined, { DB: mockD1 as any });
     const json = await getRes.json() as any;
     const updatedBt = json.data.find((x: any) => x.id === bt.id);
     expect(updatedBt.aiSuggestions).not.toBeNull();
@@ -1132,7 +1132,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1166,7 +1166,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1199,7 +1199,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1232,7 +1232,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1265,7 +1265,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1298,7 +1298,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1331,7 +1331,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1380,7 +1380,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1430,7 +1430,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1464,7 +1464,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1497,7 +1497,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1530,7 +1530,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1563,7 +1563,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1596,7 +1596,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1629,7 +1629,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1662,7 +1662,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1707,7 +1707,7 @@ VERSION:102
       }
     };
 
-    const analyzeRes = await app.request('http://localhost/accounting/bank-transactions/analyze?season=25-26', {
+    const analyzeRes = await app.request('http://localhost/accounting/bank-statement-lines/analyze?season=25-26', {
       method: 'POST'
     }, { DB: mockD1 as any, AI: mockAI as any });
     expect(analyzeRes.status).toBe(200);
@@ -1754,7 +1754,7 @@ VERSION:102
     }).returning().then(r => r[0]);
 
     // 3. Réaliser le pointage avec la catégorie 'cordage_vente'
-    const reconRes = await app.request(`http://localhost/accounting/bank-transactions/${bt.id}/reconcile`, {
+    const reconRes = await app.request(`http://localhost/accounting/bank-statement-lines/${bt.id}/reconcile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1788,7 +1788,7 @@ VERSION:102
     expect(createdTx).toBeDefined();
 
     // 6. Supprimer cette transaction
-    const deleteRes = await app.request(`http://localhost/accounting/transactions/${createdTx.id}`, {
+    const deleteRes = await app.request(`http://localhost/accounting/ledger-entries/${createdTx.id}`, {
       method: 'DELETE'
     }, { DB: mockD1 as any });
     expect(deleteRes.status).toBe(200);
@@ -2023,7 +2023,7 @@ VERSION:102
       createdAt: new Date()
     }).run();
 
-    const res = await app.request('http://localhost/accounting/transactions?unreconciledCheques=true', undefined, { DB: mockD1 as any });
+    const res = await app.request('http://localhost/accounting/ledger-entries?unreconciledCheques=true', undefined, { DB: mockD1 as any });
     expect(res.status).toBe(200);
     const json = await res.json() as any;
     expect(json.success).toBe(true);
@@ -2455,7 +2455,7 @@ describe('Final Improvements API checks', () => {
     }).returning().then(r => r[0]);
 
     // 3. Attempt to reconcile
-    const res = await app.request(`http://localhost/accounting/bank-transactions/${bt.id}/reconcile`, {
+    const res = await app.request(`http://localhost/accounting/bank-statement-lines/${bt.id}/reconcile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2519,7 +2519,7 @@ describe('Final Improvements API checks', () => {
     }).returning().then(r => r[0]);
 
     // 1. Attempt reconcile with already paid invoice
-    const resPaid = await app.request(`http://localhost/accounting/bank-transactions/${bt.id}/reconcile`, {
+    const resPaid = await app.request(`http://localhost/accounting/bank-statement-lines/${bt.id}/reconcile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2544,7 +2544,7 @@ describe('Final Improvements API checks', () => {
     expect(bodyPaid.error).toBe('La facture a déjà été payée ou a été annulée.');
 
     // 2. Attempt reconcile with cancelled invoice
-    const resCancelled = await app.request(`http://localhost/accounting/bank-transactions/${bt.id}/reconcile`, {
+    const resCancelled = await app.request(`http://localhost/accounting/bank-statement-lines/${bt.id}/reconcile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2571,7 +2571,7 @@ describe('Final Improvements API checks', () => {
 });
 
 describe('Task 1: API Endpoints Advanced Reconciliation', () => {
-  it('POST /accounting/bank-transactions/reconcile-bulk executes successfully when multiple valid suggestions are matched', async () => {
+  it('POST /accounting/bank-statement-lines/reconcile-bulk executes successfully when multiple valid suggestions are matched', async () => {
     const { mockD1, db } = await setupMockDb();
 
     // Create active season '25-26'
@@ -2606,7 +2606,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     }).returning().then(r => r[0]);
 
     // Send bulk reconcile request
-    const res = await app.request('http://localhost/accounting/bank-transactions/reconcile-bulk', {
+    const res = await app.request('http://localhost/accounting/bank-statement-lines/reconcile-bulk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2660,7 +2660,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     expect(ledgerTxs.filter(t => t.bankStatementLineId === bt2.id)).toHaveLength(1);
   });
 
-  it('POST /accounting/bank-transactions/reconcile-bulk rolls back all changes if one matching operation fails or is closed', async () => {
+  it('POST /accounting/bank-statement-lines/reconcile-bulk rolls back all changes if one matching operation fails or is closed', async () => {
     const { mockD1, db } = await setupMockDb();
 
     // Create seasons
@@ -2703,7 +2703,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     }).returning().then(r => r[0]);
 
     // Send bulk reconcile request
-    const res = await app.request('http://localhost/accounting/bank-transactions/reconcile-bulk', {
+    const res = await app.request('http://localhost/accounting/bank-statement-lines/reconcile-bulk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2753,7 +2753,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     expect(ledgerTxs).toHaveLength(0);
   });
 
-  it('POST /accounting/bank-transactions/:id/reconcile successfully processes split transactions creating multiple entries', async () => {
+  it('POST /accounting/bank-statement-lines/:id/reconcile successfully processes split transactions creating multiple entries', async () => {
     const { mockD1, db } = await setupMockDb();
 
     await db.insert(seasonsTable).values({
@@ -2775,7 +2775,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     }).returning().then(r => r[0]);
 
     // Send split reconcile request
-    const res = await app.request(`http://localhost/accounting/bank-transactions/${bt.id}/reconcile`, {
+    const res = await app.request(`http://localhost/accounting/bank-statement-lines/${bt.id}/reconcile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2818,7 +2818,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     expect(ledgerTxs.map(t => t.amount)).toContain(5000);
   });
 
-  it('POST /accounting/bank-transactions/:id/reconcile successfully matches a single bank transaction to multiple invoiceIds', async () => {
+  it('POST /accounting/bank-statement-lines/:id/reconcile successfully matches a single bank transaction to multiple invoiceIds', async () => {
     const { mockD1, db } = await setupMockDb();
 
     await db.insert(seasonsTable).values({
@@ -2863,7 +2863,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     }).returning().then(r => r[0]);
 
     // Send multi-match reconcile request
-    const res = await app.request(`http://localhost/accounting/bank-transactions/${bt.id}/reconcile`, {
+    const res = await app.request(`http://localhost/accounting/bank-statement-lines/${bt.id}/reconcile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2897,7 +2897,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     expect(updatedBt!.status).toBe('reconciled');
   });
 
-  it('POST /accounting/bank-transactions/:id/reconcile filters and sums only split transaction items that belong to the membership category', async () => {
+  it('POST /accounting/bank-statement-lines/:id/reconcile filters and sums only split transaction items that belong to the membership category', async () => {
     const { mockD1, db } = await setupMockDb();
 
     await db.insert(seasonsTable).values({
@@ -2939,7 +2939,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     // Send split reconcile request where:
     // - One transaction belongs to category 1 (adhesions_inscriptions) with amount 10000
     // - One transaction belongs to category 7 (cordage_vente) with amount 5000
-    const res = await app.request(`http://localhost/accounting/bank-transactions/${bt.id}/reconcile`, {
+    const res = await app.request(`http://localhost/accounting/bank-statement-lines/${bt.id}/reconcile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
