@@ -14,6 +14,7 @@ export async function setupMockDb() {
     'bank_statement_lines',
     'orders',
     'products',
+    'product_categories',
     'members',
     'season_balances',
     'season_category_budgets',

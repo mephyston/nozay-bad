@@ -9,8 +9,8 @@ describe('ShopCatalog Component', () => {
   ];
 
   const products = [
-    { id: 10, name: 'Volant RSL Grade 1', category: 'shuttlecock' as const, price: 1500, stock: 10, active: true },
-    { id: 11, name: 'Cordage Yonex BG65', category: 'string' as const, price: 2000, stock: 5, active: true }
+    { id: 10, name: 'Volant RSL Grade 1', productCategoryId: 1, priceCents: 1500, stock: 10, active: true },
+    { id: 11, name: 'Cordage Yonex BG65', productCategoryId: 2, priceCents: 2000, stock: 5, active: true }
   ];
 
   beforeEach(() => {
@@ -153,7 +153,7 @@ describe('ShopCatalog Component', () => {
     const categorySelect = target.querySelector('select#category-select') as HTMLSelectElement;
     expect(categorySelect).not.toBeNull();
 
-    categorySelect.value = 'string';
+    categorySelect.value = '2';
     categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
     flushSync();
 
