@@ -359,10 +359,12 @@ describe('/members/:id/cse-data', () => {
 
     // Ensure season exists
     await db.insert(seasonsTable).values({
-      id: '25-26',
+      id: 1,
+      code: '25-26',
       name: 'Saison 2025-2026',
+      startDate: '2025-09-01',
+      endDate: '2026-08-31',
       active: true,
-      closed: false,
       createdAt: new Date()
     }).onConflictDoNothing().run();
 
@@ -370,16 +372,16 @@ describe('/members/:id/cse-data', () => {
     await db.insert(membersTable).values({
       id: 10,
       licence: '1234500',
-      season: '25-26',
+      seasonId: 1,
       lastName: 'Durand',
       firstName: 'Alain',
       gender: 'M',
       birthDate: '1990-05-12',
       status: 'valide',
       type: 'Competiteur',
-      amountDue: 25000,
-      amountReceived: 10000,
-      amountRemaining: 15000,
+      amountDueCents: 25000,
+      amountReceivedCents: 10000,
+      amountRemainingCents: 15000,
       paid: false,
       importedAt: new Date()
     }).run();
@@ -388,16 +390,16 @@ describe('/members/:id/cse-data', () => {
     await db.insert(membersTable).values({
       id: 20,
       licence: '1234511',
-      season: '25-26',
+      seasonId: 1,
       lastName: 'Dupont',
       firstName: 'Marie',
       gender: 'F',
       birthDate: '1992-08-24',
       status: 'valide',
       type: 'Loisir',
-      amountDue: 20000,
-      amountReceived: 20000,
-      amountRemaining: 0,
+      amountDueCents: 20000,
+      amountReceivedCents: 20000,
+      amountRemainingCents: 0,
       paid: true,
       importedAt: new Date()
     }).run();
@@ -423,8 +425,8 @@ describe('/members/:id/cse-data', () => {
 
     // Add a transaction for Marie Dupont
     await db.run(sql`
-      INSERT INTO transactions (id, season_id, type, account_id, category, amount, date, payment_method, description, member_id, created_at)
-      VALUES (50, '25-26', 'recette', 'current', 1, 20000, '2026-07-10', 'cheque', 'Cotisation Marie Dupont', 20, ${new Date().getTime()})
+      INSERT INTO ledger_entries (id, season_id, type, account_id, category_id, amount_cents, date, payment_method_id, description, member_id, created_at)
+      VALUES (50, 1, 'recette', 1, 1, 20000, '2026-07-10', 1, 'Cotisation Marie Dupont', 20, strftime('%s', 'now'))
     `);
 
     // GET /members/:id/cse-data for paid member WITH transaction
