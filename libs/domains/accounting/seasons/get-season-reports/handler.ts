@@ -33,9 +33,6 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
   let totalRecettes = 0;
   let totalDepenses = 0;
 
-  const transitCat = await repo.getTransitCategory(db);
-  const transitCatId = transitCat ? transitCat.id : null;
-
   for (const tx of allTxs) {
     if (tx.type === 'transfert') continue;
     // Exclude transactions dated after cut-off date
@@ -51,12 +48,10 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     }
     categoryTotals[key].total += amount;
 
-    if (catId !== transitCatId) {
-      if (tx.type === 'recette') {
-        totalRecettes += amount;
-      } else {
-        totalDepenses += amount;
-      }
+    if (tx.type === 'recette') {
+      totalRecettes += amount;
+    } else {
+      totalDepenses += amount;
     }
   }
 

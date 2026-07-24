@@ -34,21 +34,21 @@ INSERT INTO `payment_methods` (`code`, `label`, `created_at`) VALUES
 ('pass_sport', 'Pass''Sport', 1783962600),
 ('up_loisir', 'Coupon Sport / Up''Loisir', 1783962600);
 
--- 4. CATEGORIES (Nomenclature analytique et budgétaire - 16 catégories)
-INSERT INTO `categories` (`code`, `admin_label`, `adherent_label`, `hide_in_expenses`, `receipt_account_class_id`, `expense_account_class_id`, `created_at`) VALUES
-('adhesions_inscriptions', 'Adhésions & Inscriptions', 'Adhésions & Inscriptions', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), NULL, 1783962600),
-('sponsoring', 'Sponsoring', 'Partenariat & Sponsoring', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), NULL, 1783962600),
-('subventions', 'Subventions (aides publiques)', 'Subventions', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '74'), NULL, 1783962600),
-('actions_jeunes', 'Actions Jeunes (stages jeunes...)', 'Activités Jeunes', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '62'), 1783962600),
-('tournois_senior', 'Tournois Senior', 'Tournois', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '62'), 1783962600),
-('evenements_buvettes', 'Evénements & Buvettes', 'Buvette & Convivialité', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '60'), 1783962600),
-('cordage_vente', 'Cordage (vente aux adhérents)', 'Cordages', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '60'), 1783962600),
-('volants', 'Volants (vente ou achat)', 'Volants', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '60'), 1783962600),
-('salaires_charges', 'Salaires et Charges', 'Salaires & Charges', 1, NULL, (SELECT `id` FROM `account_classes` WHERE `code` = '64'), 1783962600),
-('materiel_club', 'Matériel (hors cordages)', 'Matériel (raquettes, poteaux...)', 0, NULL, (SELECT `id` FROM `account_classes` WHERE `code` = '60'), 1783962600),
-('licences_federation', 'Licences (versements fédération)', 'Licences FFBaD', 1, NULL, (SELECT `id` FROM `account_classes` WHERE `code` = '65'), 1783962600),
-('championnats', 'Championnats (frais équipes)', 'Frais d''inscriptions tournois / championnats', 0, NULL, (SELECT `id` FROM `account_classes` WHERE `code` = '62'), 1783962600),
-('stages_formations', 'Stages & Formations', 'Formations & Stages', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '62'), 1783962600),
-('fonctionnement_administratif', 'Frais de fonctionnement & administratif', 'Frais de fonctionnement, bureau...', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '75'), (SELECT `id` FROM `account_classes` WHERE `code` = '61'), 1783962600),
-('virements_internes', 'Virements Internes (Transit)', 'Virement Interne', 1, NULL, NULL, 1783962600),
-('interets_livret_a', 'Intérêts Livret A', 'Intérêts Livret A', 1, (SELECT `id` FROM `account_classes` WHERE `code` = '75'), NULL, 1783962600);
+-- 4. CATEGORIES (Nomenclature analytique et budgétaire - 16 catégories sans colonne code)
+INSERT INTO `categories` (`admin_label`, `adherent_label`, `hide_in_expenses`, `receipt_account_class_id`, `expense_account_class_id`, `created_at`) VALUES
+('Adhésions & Inscriptions', 'Adhésions & Inscriptions', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), NULL, 1783962600),
+('Sponsoring', 'Partenariat & Sponsoring', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), NULL, 1783962600),
+('Subventions (aides publiques)', 'Subventions', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '74'), NULL, 1783962600),
+('Actions Jeunes (stages jeunes...)', 'Activités Jeunes', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '62'), 1783962600),
+('Tournois Senior', 'Tournois', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '62'), 1783962600),
+('Evénements & Buvettes', 'Buvette & Convivialité', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '60'), 1783962600),
+('Cordage (vente aux adhérents)', 'Cordages', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '60'), 1783962600),
+('Volants (vente ou achat)', 'Volants', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '60'), 1783962600),
+('Salaires et Charges', 'Salaires & Charges', 1, NULL, (SELECT `id` FROM `account_classes` WHERE `code` = '64'), 1783962600),
+('Matériel (hors cordages)', 'Matériel (raquettes, poteaux...)', 0, NULL, (SELECT `id` FROM `account_classes` WHERE `code` = '60'), 1783962600),
+('Licences (versements fédération)', 'Licences FFBaD', 1, NULL, (SELECT `id` FROM `account_classes` WHERE `code` = '65'), 1783962600),
+('Championnats (frais équipes)', 'Frais d''inscriptions tournois / championnats', 0, NULL, (SELECT `id` FROM `account_classes` WHERE `code` = '62'), 1783962600),
+('Stages & Formations', 'Formations & Stages', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '70'), (SELECT `id` FROM `account_classes` WHERE `code` = '62'), 1783962600),
+('Frais de fonctionnement & administratif', 'Frais de fonctionnement, bureau...', 0, (SELECT `id` FROM `account_classes` WHERE `code` = '75'), (SELECT `id` FROM `account_classes` WHERE `code` = '61'), 1783962600),
+('Virements Internes (Transit)', 'Virement Interne', 1, NULL, NULL, 1783962600),
+('Intérêts Livret A', 'Intérêts Livret A', 1, (SELECT `id` FROM `account_classes` WHERE `code` = '75'), NULL, 1783962600);

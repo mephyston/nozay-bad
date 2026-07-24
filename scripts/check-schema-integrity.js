@@ -10,22 +10,22 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 // Mandatory Reference Data Business Codes required by application domain logic
 const REQUIRED_REFERENCE_CODES = {
   categories: [
-    'virements_internes',
-    'adhesions_inscriptions',
-    'sponsoring',
-    'subventions',
-    'actions_jeunes',
-    'tournois_senior',
-    'evenements_buvettes',
-    'cordage_vente',
-    'volants',
-    'salaires_charges',
-    'materiel_club',
-    'licences_federation',
-    'championnats',
-    'stages_formations',
-    'fonctionnement_administratif',
-    'interets_livret_a'
+    'Adhésions & Inscriptions',
+    'Sponsoring',
+    'Subventions (aides publiques)',
+    'Actions Jeunes (stages jeunes...)',
+    'Tournois Senior',
+    'Evénements & Buvettes',
+    'Cordage (vente aux adhérents)',
+    'Volants (vente ou achat)',
+    'Salaires et Charges',
+    'Matériel (hors cordages)',
+    'Licences (versements fédération)',
+    'Championnats (frais équipes)',
+    'Stages & Formations',
+    'Frais de fonctionnement & administratif',
+    'Virements Internes (Transit)',
+    'Intérêts Livret A'
   ],
   account_classes: ['60', '61', '62', '63', '64', '65', '70', '74', '75', '512', '517', '530'],
   accounts: ['current', 'savings', 'cash'],
@@ -249,9 +249,7 @@ function checkReferenceData() {
 
   for (const [table, codes] of Object.entries(REQUIRED_REFERENCE_CODES)) {
     for (const code of codes) {
-      // Check if code is present as string literal in seed SQL
-      const regex = new RegExp(`['"]${code}['"]`, 'i');
-      if (!regex.test(seedSql)) {
+      if (!seedSql.includes(code)) {
         missingCodes.push({ table, code });
       }
     }

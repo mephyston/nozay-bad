@@ -29,7 +29,6 @@ export const paymentMethodsTable = sqliteTable('payment_methods', {
 
 export const categoriesTable = sqliteTable('categories', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  code: text('code').notNull().unique(),
   adminLabel: text('admin_label').notNull(),
   adherentLabel: text('adherent_label').notNull(),
   hideInExpenses: integer('hide_in_expenses', { mode: 'boolean' }).notNull().default(false),

@@ -30,9 +30,6 @@ export class GetSeasonReportsRepository {
     return db.select().from(ledgerEntriesTable).where(cond).all();
   }
 
-  async getTransitCategory(db: DbOrTx): Promise<any> {
-    return db.select().from(categoriesTable).where(eq(categoriesTable.code, 'virements_internes')).get();
-  }
 
   async getDeferredTransactions(db: DbOrTx, cutoffDate: string): Promise<any[]> {
     return db.select()

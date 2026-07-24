@@ -17,10 +17,9 @@ CREATE TABLE `accounts` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `accounts_code_unique` ON `accounts` (`code`);--> statement-breakpoint
-CREATE TABLE `bank_transactions` (
+CREATE TABLE `bank_statement_lines` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`fitid` text NOT NULL,
-	`season_id` integer NOT NULL,
 	`account_id` integer NOT NULL,
 	`amount_cents` integer NOT NULL,
 	`date` text NOT NULL,
@@ -29,14 +28,12 @@ CREATE TABLE `bank_transactions` (
 	`status` text DEFAULT 'pending' NOT NULL,
 	`ai_suggestions` text,
 	`created_at` integer NOT NULL,
-	FOREIGN KEY (`season_id`) REFERENCES `seasons`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `bank_transactions_fitid_unique` ON `bank_transactions` (`fitid`);--> statement-breakpoint
+CREATE UNIQUE INDEX `bank_statement_lines_fitid_unique` ON `bank_statement_lines` (`fitid`);--> statement-breakpoint
 CREATE TABLE `categories` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`code` text NOT NULL,
 	`admin_label` text NOT NULL,
 	`adherent_label` text NOT NULL,
 	`hide_in_expenses` integer DEFAULT false NOT NULL,
@@ -47,7 +44,6 @@ CREATE TABLE `categories` (
 	FOREIGN KEY (`expense_account_class_id`) REFERENCES `account_classes`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `categories_code_unique` ON `categories` (`code`);--> statement-breakpoint
 CREATE TABLE `check_deposits` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`season_id` integer NOT NULL,
@@ -55,10 +51,10 @@ CREATE TABLE `check_deposits` (
 	`date` text NOT NULL,
 	`amount_cents` integer NOT NULL,
 	`status` text DEFAULT 'pending' NOT NULL,
-	`bank_transaction_id` integer,
+	`bank_statement_line_id` integer,
 	`created_at` integer NOT NULL,
 	FOREIGN KEY (`season_id`) REFERENCES `seasons`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`bank_transaction_id`) REFERENCES `bank_transactions`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`bank_statement_line_id`) REFERENCES `bank_statement_lines`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `check_deposits_reference_unique` ON `check_deposits` (`reference`);--> statement-breakpoint
@@ -71,14 +67,14 @@ CREATE TABLE `checks` (
 	`emitter` text NOT NULL,
 	`bank` text,
 	`member_id` integer,
-	`transaction_id` integer,
+	`ledger_entry_id` integer,
 	`status` text DEFAULT 'received' NOT NULL,
 	`photo_url` text,
 	`created_at` integer NOT NULL,
 	FOREIGN KEY (`check_deposit_id`) REFERENCES `check_deposits`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`season_id`) REFERENCES `seasons`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`transaction_id`) REFERENCES `transactions`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`ledger_entry_id`) REFERENCES `ledger_entries`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE TABLE `invoice_items` (
@@ -107,10 +103,10 @@ CREATE TABLE `invoices` (
 	`attendees` text,
 	`status` text DEFAULT 'draft' NOT NULL,
 	`total_amount_cents` integer NOT NULL,
-	`bank_transaction_id` integer,
+	`bank_statement_line_id` integer,
 	`created_at` integer NOT NULL,
 	FOREIGN KEY (`season_id`) REFERENCES `seasons`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`bank_transaction_id`) REFERENCES `bank_transactions`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`bank_statement_line_id`) REFERENCES `bank_statement_lines`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `invoices_invoice_number_unique` ON `invoices` (`invoice_number`);--> statement-breakpoint
@@ -185,7 +181,7 @@ CREATE TABLE `seasons` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `seasons_code_unique` ON `seasons` (`code`);--> statement-breakpoint
-CREATE TABLE `transactions` (
+CREATE TABLE `ledger_entries` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`season_id` integer NOT NULL,
 	`type` text NOT NULL,
@@ -200,7 +196,7 @@ CREATE TABLE `transactions` (
 	`accrual_type` text DEFAULT 'normal' NOT NULL,
 	`accrual_note` text,
 	`member_id` integer,
-	`bank_transaction_id` integer,
+	`bank_statement_line_id` integer,
 	`invoice_id` integer,
 	`status` text DEFAULT 'cleared' NOT NULL,
 	`created_at` integer NOT NULL,
@@ -210,10 +206,10 @@ CREATE TABLE `transactions` (
 	FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`payment_method_id`) REFERENCES `payment_methods`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`bank_transaction_id`) REFERENCES `bank_transactions`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`bank_statement_line_id`) REFERENCES `bank_statement_lines`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`invoice_id`) REFERENCES `invoices`(`id`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT "transactions_amount_cents_check" CHECK("transactions"."amount_cents" > 0),
-	CONSTRAINT "transactions_transfert_check" CHECK(("transactions"."type" = 'transfert' AND "transactions"."destination_account_id" IS NOT NULL AND "transactions"."destination_account_id" <> "transactions"."account_id" AND "transactions"."category_id" IS NULL) OR ("transactions"."type" <> 'transfert' AND "transactions"."destination_account_id" IS NULL))
+	CONSTRAINT "ledger_entries_amount_cents_check" CHECK("ledger_entries"."amount_cents" > 0),
+	CONSTRAINT "ledger_entries_transfert_check" CHECK(("ledger_entries"."type" = 'transfert' AND "ledger_entries"."destination_account_id" IS NOT NULL AND "ledger_entries"."destination_account_id" <> "ledger_entries"."account_id" AND "ledger_entries"."category_id" IS NULL) OR ("ledger_entries"."type" <> 'transfert' AND "ledger_entries"."destination_account_id" IS NULL))
 );
 --> statement-breakpoint
 CREATE TABLE `expenses` (
@@ -226,12 +222,12 @@ CREATE TABLE `expenses` (
 	`status` text DEFAULT 'pending' NOT NULL,
 	`emitter_name` text NOT NULL,
 	`member_id` integer,
-	`transaction_id` integer,
+	`ledger_entry_id` integer,
 	`created_at` integer NOT NULL,
 	FOREIGN KEY (`season_id`) REFERENCES `seasons`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`transaction_id`) REFERENCES `transactions`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`ledger_entry_id`) REFERENCES `ledger_entries`(`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "expenses_amount_cents_check" CHECK("expenses"."amount_cents" > 0)
 );
 --> statement-breakpoint
@@ -253,13 +249,13 @@ CREATE TABLE `orders` (
 	`total_amount_cents` integer NOT NULL,
 	`payment_method_id` integer NOT NULL,
 	`status` text DEFAULT 'pending' NOT NULL,
-	`transaction_id` integer,
+	`ledger_entry_id` integer,
 	`created_at` integer NOT NULL,
 	FOREIGN KEY (`season_id`) REFERENCES `seasons`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`payment_method_id`) REFERENCES `payment_methods`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`transaction_id`) REFERENCES `transactions`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`ledger_entry_id`) REFERENCES `ledger_entries`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE TABLE `products` (
