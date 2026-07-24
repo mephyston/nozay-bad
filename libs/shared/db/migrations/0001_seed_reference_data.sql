@@ -58,4 +58,3 @@ INSERT INTO `product_categories` (`label`, `accounting_category_id`, `created_at
 ('Volants', (SELECT `id` FROM `categories` WHERE `admin_label` = 'Volants (vente ou achat)'), 1783962600),
 ('Cordages', (SELECT `id` FROM `categories` WHERE `admin_label` = 'Cordage (vente aux adhérents)'), 1783962600),
 ('Textile & Accessoires', (SELECT `id` FROM `categories` WHERE `admin_label` = 'Matériel (hors cordages)'), 1783962600);
-
