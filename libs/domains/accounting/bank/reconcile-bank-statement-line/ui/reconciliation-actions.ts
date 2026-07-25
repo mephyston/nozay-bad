@@ -118,19 +118,21 @@ export function createReconciliationActions(s: any) {
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
-  async function handleCreateAndMatch(bt: BankStatementLine) {
+  async function handleCreateAndMatch(bt?: BankStatementLine) {
     s.isSubmitting = true;
     try {
+      const targetBt = (bt && typeof (bt as any).id === 'number') ? bt : s.selectedTx;
+      if (!targetBt) throw new Error('Aucune transaction bancaire sélectionnée.');
       const memId = s.selectedMemberId ? parseInt(s.selectedMemberId) : null;
       if (s.isSplitMode) {
         const splitSumCents = s.splits.reduce((acc: number, sp: any) => acc + Math.round((sp.amount || 0) * 100), 0);
         if (Math.abs(splitSumCents - s.remainingAmount) > 10) throw new Error("Le montant total ventilé doit être égal au reste à rapprocher.");
-        prepareNextFocus(bt.id, (s.remainingAmount - splitSumCents) <= 10);
-        await apiCreateAndMatchSplit(bt, memId, s.splits);
+        prepareNextFocus(targetBt.id, (s.remainingAmount - splitSumCents) <= 10);
+        await apiCreateAndMatchSplit(targetBt, memId, s.splits);
       } else {
         const linkedAmount = Math.round(s.amountToLink * 100);
-        prepareNextFocus(bt.id, (s.remainingAmount - linkedAmount) <= 10);
-        await apiCreateAndMatchSingle(bt, memId, s.targetSeasonId, s.category, s.amountToLink, s.paymentMethod);
+        prepareNextFocus(targetBt.id, (s.remainingAmount - linkedAmount) <= 10);
+        await apiCreateAndMatchSingle(targetBt, memId, s.targetSeasonId, s.category, s.amountToLink, s.paymentMethod);
       }
       toast.success('Écriture créée et rapprochée avec succès !');
       if (typeof window !== 'undefined') window.location.reload();

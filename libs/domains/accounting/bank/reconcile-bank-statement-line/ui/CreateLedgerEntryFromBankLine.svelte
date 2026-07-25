@@ -137,7 +137,7 @@
 
   <div class="pt-2">
     <Button 
-      onclick={handleCreateAndMatch}
+      onclick={() => handleCreateAndMatch(selectedTx)}
       disabled={isSubmitting || (isSplitMode && splitSum !== remainingAmount)}
       class="w-full font-bold"
     >
