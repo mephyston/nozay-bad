@@ -46,15 +46,33 @@ export class ReconcileBankStatementLineRepository {
   }
 
   buildCreateLedgerEntryStatement(db: DbOrTx, values: any): any {
+    const accountMap: Record<string, number> = { current: 1, savings: 2, cash: 3 };
+    const paymentMap: Record<string, number> = { virement: 1, cheque: 2, especes: 3, labaz: 4, ancv: 5, pass_sport: 6, ticket_loisir: 7, up_loisir: 8 };
+
+    const rawAcc = values.accountId;
+    const accountIdNum = typeof rawAcc === 'number' ? rawAcc : (accountMap[rawAcc] || (isNaN(Number(rawAcc)) ? 1 : Number(rawAcc)));
+
+    const rawDestAcc = values.destinationAccountId;
+    const destAccountIdNum = rawDestAcc ? (typeof rawDestAcc === 'number' ? rawDestAcc : (accountMap[rawDestAcc] || (isNaN(Number(rawDestAcc)) ? null : Number(rawDestAcc)))) : null;
+
+    const rawPay = values.paymentMethodId ?? values.paymentMethod;
+    const paymentMethodIdNum = typeof rawPay === 'number' ? rawPay : (paymentMap[rawPay] || (isNaN(Number(rawPay)) ? 1 : Number(rawPay)));
+
+    const rawCat = values.categoryId ?? values.category;
+    const categoryIdNum = rawCat !== undefined && rawCat !== null ? (typeof rawCat === 'number' ? rawCat : (isNaN(Number(rawCat)) ? 1 : Number(rawCat))) : null;
+
+    const rawSeason = values.seasonId;
+    const seasonIdNum = typeof rawSeason === 'number' ? rawSeason : (isNaN(Number(rawSeason)) ? 1 : Number(rawSeason));
+
     return db.insert(ledgerEntriesTable).values({
-      seasonId: typeof values.seasonId === 'number' ? values.seasonId : Number(values.seasonId),
+      seasonId: seasonIdNum,
       type: values.type,
-      accountId: typeof values.accountId === 'number' ? values.accountId : (Number(values.accountId) || 1),
-      destinationAccountId: values.destinationAccountId ? Number(values.destinationAccountId) : null,
-      categoryId: values.categoryId ?? values.category ?? null,
+      accountId: accountIdNum,
+      destinationAccountId: destAccountIdNum,
+      categoryId: categoryIdNum,
       amountCents: values.amountCents ?? (values.amount !== undefined ? Math.round(values.amount) : 0),
       date: values.date,
-      paymentMethodId: typeof values.paymentMethodId === 'number' ? values.paymentMethodId : (typeof values.paymentMethod === 'number' ? values.paymentMethod : (Number(values.paymentMethod) || 1)),
+      paymentMethodId: paymentMethodIdNum,
       description: values.description,
       reference: values.reference || null,
       accrualType: values.accrualType || 'normal',
