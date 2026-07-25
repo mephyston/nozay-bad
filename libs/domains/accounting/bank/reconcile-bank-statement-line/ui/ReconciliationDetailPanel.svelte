@@ -54,10 +54,10 @@
 
       <!-- Titre, Statut, Montant et Actions empilées -->
       <div class="flex items-start justify-between gap-3">
-        <!-- Détails de la transaction sur une ligne propre et lisible -->
+        <!-- Détails complets de la transaction (toujours 100% visibles sans être tronqués) -->
         <div class="min-w-0 flex-1 space-y-1">
           <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            <h3 class="font-bold text-sm sm:text-base text-foreground truncate">{state.selectedTx.name}</h3>
+            <h3 class="font-bold text-sm sm:text-base text-foreground break-words">{state.selectedTx.name}</h3>
             {#if state.selectedTx.status === 'reconciled'}
               <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-[11px] shrink-0">
                 Rapprochée
@@ -69,15 +69,15 @@
             {/if}
           </div>
 
-          <div class="flex items-center gap-2 text-xs text-muted-foreground flex-wrap whitespace-nowrap">
-            <span class="font-outfit font-bold text-sm sm:text-base tabular-nums {((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}">
+          <div class="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+            <span class="font-outfit font-bold text-sm sm:text-base tabular-nums whitespace-nowrap {((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}">
               {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) / 100).replace(/\s/g, '\u00a0')} €
             </span>
-            <span>•</span>
-            <span>{formatShortDate(state.selectedTx.date)}</span>
+            <span class="shrink-0">•</span>
+            <span class="whitespace-nowrap shrink-0">{formatShortDate(state.selectedTx.date)}</span>
             {#if state.selectedTx.memo}
-              <span>•</span>
-              <span class="truncate italic max-w-[180px] sm:max-w-xs">{state.selectedTx.memo}</span>
+              <span class="shrink-0">•</span>
+              <span class="italic break-words">{state.selectedTx.memo}</span>
             {/if}
           </div>
         </div>
