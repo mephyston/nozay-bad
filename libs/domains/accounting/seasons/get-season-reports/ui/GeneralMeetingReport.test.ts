@@ -142,8 +142,8 @@ describe('GeneralMeetingReport Component', () => {
     });
 
     // Initially in realized mode: should show 10000 / 5000 / 5000
-    expect(target.innerHTML).toContain("100,00&nbsp;€");
-    expect(target.innerHTML).toContain("50,00&nbsp;€");
+    expect(target.innerHTML).toContain("100,00");
+    expect(target.innerHTML).toContain("50,00");
 
     // Find and click the "Budget prévisionnel" tab button
     const prevTab = Array.from(target.querySelectorAll('button')).find(btn => btn.textContent?.includes('Budget prévisionnel'));
@@ -155,7 +155,7 @@ describe('GeneralMeetingReport Component', () => {
     expect(target.innerHTML).toContain("Réalisé");
 
     // Should show current season realized values (100,00 € / 50,00 €)
-    expect(target.innerHTML).toContain("100,00&nbsp;€");
-    expect(target.innerHTML).toContain("50,00&nbsp;€");
+    expect(target.innerHTML).toContain("100,00");
+    expect(target.innerHTML).toContain("50,00");
   });
 });

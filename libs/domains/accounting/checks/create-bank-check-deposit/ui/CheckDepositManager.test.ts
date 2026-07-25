@@ -152,9 +152,9 @@ describe('CheckDepositManager Component', () => {
     const customCheckboxes = target.querySelectorAll('[role="checkbox"]');
     expect(customCheckboxes.length).toBeGreaterThan(0);
 
-    // 2. font-mono should be used on amount elements
-    const fontMonoElements = target.querySelectorAll('.font-mono');
-    expect(fontMonoElements.length).toBeGreaterThan(0);
+    // 2. font-outfit should be used on amount elements
+    const fontOutfitElements = target.querySelectorAll('.font-outfit');
+    expect(fontOutfitElements.length).toBeGreaterThan(0);
 
     // 3. no-print should be on the Tabs.List element
     const noPrintElements = target.querySelectorAll('.no-print');
