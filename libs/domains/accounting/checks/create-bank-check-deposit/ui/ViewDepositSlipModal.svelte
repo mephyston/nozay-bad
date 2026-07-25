@@ -69,8 +69,8 @@
                   <Table.Cell class="py-2 px-3 border-r border-border">
                     {check.memberName || '—'}
                   </Table.Cell>
-                  <Table.Cell class="py-2 px-3 font-semibold text-right text-foreground">
-                    {(check.amount / 100).toFixed(2)} €
+                  <Table.Cell class="py-2 px-3 font-mono font-semibold tabular-nums text-right text-foreground">
+                    {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((check as any).amountCents ?? check.amount ?? 0) / 100).replace(/\s/g, ' ')} €
                   </Table.Cell>
                 </Table.Row>
               {:else}
@@ -92,7 +92,7 @@
             </div>
             <div class="flex justify-between items-center text-sm border-t border-primary/20 pt-2">
               <span class="text-muted-foreground font-bold">MONTANT TOTAL DE LA REMISE :</span>
-              <span class="font-black text-primary text-lg">{(depositState.selectedDepositToView.amount / 100).toFixed(2)} €</span>
+              <span class="font-mono font-black text-primary text-lg tabular-nums">{new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((depositState.selectedDepositToView as any).amountCents ?? depositState.selectedDepositToView.amount ?? 0) / 100).replace(/\s/g, ' ')} €</span>
             </div>
           </div>
 

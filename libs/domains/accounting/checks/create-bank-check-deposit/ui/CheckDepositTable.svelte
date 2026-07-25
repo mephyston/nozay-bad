@@ -78,8 +78,8 @@
                   <span class="text-xs text-muted-foreground italic">Non associé</span>
                 {/if}
               </Table.Cell>
-              <Table.Cell class="p-4 text-right font-semibold text-foreground">
-                {(check.amount / 100).toFixed(2)} €
+              <Table.Cell class="p-4 text-right font-mono font-semibold tabular-nums text-foreground">
+                {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((check as any).amountCents ?? check.amount ?? 0) / 100).replace(/\s/g, ' ')} €
               </Table.Cell>
               <Table.Cell class="p-4 text-right relative">
                 {#if !depositState.isClosed}

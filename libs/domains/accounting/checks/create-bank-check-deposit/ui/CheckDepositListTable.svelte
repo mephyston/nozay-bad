@@ -45,8 +45,8 @@
                   </Badge>
                 {/if}
               </Table.Cell>
-              <Table.Cell class="p-4 text-right font-semibold text-foreground">
-                {(dep.amount / 100).toFixed(2)} €
+              <Table.Cell class="p-4 text-right font-mono font-semibold tabular-nums text-foreground">
+                {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((dep as any).amountCents ?? dep.amount ?? 0) / 100).replace(/\s/g, ' ')} €
               </Table.Cell>
               <Table.Cell class="p-4">
                 {#if dep.status === 'cleared'}
