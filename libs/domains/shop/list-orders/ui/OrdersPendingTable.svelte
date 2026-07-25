@@ -127,42 +127,10 @@
                   </div>
                 </Table.Cell>
               </Table.Row>
-                        class="text-muted-foreground hover:text-foreground h-8 w-8 cursor-pointer" 
-                        aria-label="Actions"
-                      >
-                        <MoreVertical class="w-4 h-4" />
-                      </Button>
-
-                      {#if openDropdownId === item.order.id}
-                        <div class="absolute right-4 mt-1 w-36 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border font-medium">
-                          <Button
-                            variant="ghost"
-                            onclick={() => onApprove(item.order.id)}
-                            disabled={processingId !== null || isClosed}
-                            class="w-full px-3 py-1.5 text-xs text-emerald-600 hover:bg-emerald-500/10 font-semibold flex items-center gap-1.5 cursor-pointer rounded-none justify-start h-auto bg-transparent border-0"
-                          >
-                            <Check class="w-3.5 h-3.5" />
-                            Valider
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            onclick={() => onReject(item.order.id)}
-                            disabled={processingId !== null || isClosed}
-                            class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer rounded-none justify-start h-auto bg-transparent border-0"
-                          >
-                            <X class="w-3.5 h-3.5" />
-                            Refuser
-                          </Button>
-                        </div>
-                      {/if}
-                    </div>
-                  </Table.Cell>
-                </Table.Row>
-              {/each}
-            </Table.Body>
-          </Table.Root>
-        </div>
-      </Card.Content>
-    </Card.Root>
-  {/if}
-</div>
+            {/each}
+          </Table.Body>
+        </Table.Root>
+      </div>
+    {/if}
+  </Card.Content>
+</Card.Root>
