@@ -1,5 +1,9 @@
 import type { DbCategory, AccountClass, ReportData } from './report-types';
 
+/**
+ * Renvoie la liste des catégories comptables rattachées à une classe de compte donnée (ex: '70', '60').
+ * La correspondance s'effectue strictement par clé étrangère / ID de classe comptable (FK).
+ */
 export function getClassCategories(
   categories: DbCategory[],
   classCode: string,
@@ -9,76 +13,47 @@ export function getClassCategories(
   const targetClass = accountClasses?.find(ac => ac.code === classCode || String((ac as any).id) === classCode);
   const targetClassId = targetClass ? (targetClass as any).id : null;
 
-  // Filtrer les catégories uniques par adminLabel pour éviter les doublons d'affichage
-  const seenLabels = new Set<string>();
-
   return categories.filter(cat => {
-    const rawVal = type === 'recette'
+    const fkVal = type === 'recette'
       ? (cat.receiptCode || (cat as any).receiptAccountClassId)
       : (cat.expenseCode || (cat as any).expenseAccountClassId);
 
-    if (rawVal === undefined || rawVal === null) return false;
+    if (fkVal === undefined || fkVal === null) return false;
 
-    const strVal = String(rawVal);
-    let matches = strVal === classCode;
-    if (!matches && targetClassId !== null && targetClassId !== undefined && (rawVal === targetClassId || strVal === String(targetClassId))) {
-      matches = true;
+    const fkStr = String(fkVal);
+
+    // 1. Correspondance par code textuel de la classe (ex: '70' === '70')
+    if (fkStr === classCode) return true;
+
+    // 2. Correspondance par identifiant numérique de la classe (ex: receiptAccountClassId === targetClass.id)
+    if (targetClassId !== null && targetClassId !== undefined) {
+      if (fkVal === targetClassId || fkStr === String(targetClassId)) return true;
     }
 
-    if (!matches) {
-      const defaultClassMap: Record<string, string[]> = {
-        '70': ['1', '70'],
-        '74': ['2', '74'],
-        '75': ['3', '75'],
-        '60': ['4', '60'],
-        '61': ['5', '61'],
-        '62': ['6', '62'],
-        '63': ['7', '63'],
-        '64': ['8', '64'],
-        '65': ['9', '65']
-      };
-      const allowed = defaultClassMap[classCode];
-      if (allowed && allowed.includes(strVal)) {
-        matches = true;
-      }
-    }
-
-    if (!matches) return false;
-
-    if (seenLabels.has(cat.adminLabel)) return false;
-    seenLabels.add(cat.adminLabel);
-    return true;
+    return false;
   });
 }
 
+/**
+ * Récupère le montant total réalisé ou prévisionnel pour une catégorie et un type d'écriture (recette/dépense).
+ * La clé dans report.compteResultat.categories est "${categoryId}_${type}".
+ */
 export function getCatTotal(
   report: ReportData,
   prevReport: ReportData | null,
   id: string,
   type: 'recette' | 'depense',
-  mode: 'realise' | 'previsionnel',
-  categories?: DbCategory[]
+  mode: 'realise' | 'previsionnel'
 ): number {
   const reportToUse = mode === 'previsionnel' && prevReport ? prevReport : report;
   if (!reportToUse || !reportToUse.compteResultat || !reportToUse.compteResultat.categories) return 0;
 
-  const directTotal = reportToUse.compteResultat.categories[`${id}_${type}`]?.total;
-  if (directTotal !== undefined) return directTotal;
-
-  if (categories) {
-    const currentCat = categories.find(c => String(c.id) === id);
-    if (currentCat) {
-      const sameNameCats = categories.filter(c => c.adminLabel === currentCat.adminLabel);
-      for (const cat of sameNameCats) {
-        const total = reportToUse.compteResultat.categories[`${cat.id}_${type}`]?.total;
-        if (total !== undefined && total > 0) return total;
-      }
-    }
-  }
-
-  return 0;
+  return reportToUse.compteResultat.categories[`${id}_${type}`]?.total || 0;
 }
 
+/**
+ * Calcule la somme totale réalisée des catégories appartenant à une classe de compte.
+ */
 export function getClassSumRealise(
   categories: DbCategory[],
   report: ReportData,
@@ -91,11 +66,14 @@ export function getClassSumRealise(
   const classCats = getClassCategories(categories, classCode, type, accountClasses);
   let sum = 0;
   for (const cat of classCats) {
-    sum += getCatTotal(report, prevReport, cat.id.toString(), type, mode, categories);
+    sum += getCatTotal(report, prevReport, cat.id.toString(), type, mode);
   }
   return sum;
 }
 
+/**
+ * Calcule la somme totale prévisionnelle (budget) des catégories appartenant à une classe de compte.
+ */
 export function getClassSumPrevisionnel(
   categories: DbCategory[],
   editableBudget: Record<string, number>,
@@ -107,6 +85,9 @@ export function getClassSumPrevisionnel(
   return classCats.reduce((sum, cat) => sum + (editableBudget[`${cat.id}_${type}`] || 0), 0);
 }
 
+/**
+ * Somme globale des dépenses réalisées ou prévisionnelles.
+ */
 export function getTotalDepensesRealise(
   accountClasses: AccountClass[],
   categories: DbCategory[],
@@ -119,6 +100,9 @@ export function getTotalDepensesRealise(
     .reduce((sum, ac) => sum + getClassSumRealise(categories, report, prevReport, ac.code, 'depense', mode, accountClasses), 0);
 }
 
+/**
+ * Somme globale des recettes réalisées ou prévisionnelles.
+ */
 export function getTotalRecettesRealise(
   accountClasses: AccountClass[],
   categories: DbCategory[],
