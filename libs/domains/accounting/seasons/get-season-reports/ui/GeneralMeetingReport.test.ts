@@ -44,6 +44,10 @@ describe('GeneralMeetingReport Component', () => {
           { id: 1, adminLabel: 'Cotisations membres', adherentLabel: 'Cotis', hideInExpenses: false, receiptCode: '75', expenseCode: '67' },
           { id: 9, adminLabel: 'Salaires et Charges', adherentLabel: 'Salaires', hideInExpenses: true, receiptCode: null, expenseCode: '64' }
         ],
+        accountClasses: [
+          { code: '75', label: 'Produits', type: 'recette' },
+          { code: '64', label: 'Charges', type: 'depense' }
+        ]
       }
     });
 
