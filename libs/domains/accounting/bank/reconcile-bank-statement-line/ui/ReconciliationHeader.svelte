@@ -15,15 +15,15 @@
   </div>
 {/if}
 
-<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+<div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
   <div>
     <h2 class="text-xl font-bold tracking-tight">Rapprochement & Pointage Bancaire</h2>
     <p class="text-sm text-muted-foreground">Importez vos relevés bancaires (OFX/CSV) et associez vos lignes aux écritures comptables.</p>
   </div>
 
-  <div class="flex items-center gap-2">
+  <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
     {#if state.seasons && state.seasons.length > 0}
-      <div class="flex items-center gap-2 mr-2">
+      <div class="flex items-center gap-2 shrink-0">
         <label for="select-season" class="text-xs font-medium text-muted-foreground whitespace-nowrap">Saison :</label>
         <select
           id="select-season"
@@ -33,7 +33,7 @@
             url.searchParams.set('season', state.selectedSeason);
             window.location.href = url.toString();
           }}
-          class="h-9 rounded-md border border-input bg-background px-3 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+          class="h-9 rounded-md border border-input bg-background px-3 text-xs focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
         >
           {#each state.seasons as s}
             <option value={s.code || String(s.id)}>{s.name || s.code} {s.active ? '(Active)' : ''}</option>
@@ -45,22 +45,22 @@
     <Button
       variant="outline"
       size="sm"
-      class="gap-2"
+      class="gap-2 text-xs flex-1 sm:flex-initial cursor-pointer"
       disabled={state.isClosed}
       onclick={() => state.showImportModal = true}
     >
-      <Upload class="h-4 w-4" />
-      <span>Importer Relevé (OFX)</span>
+      <Upload class="h-3.5 w-3.5" />
+      <span>Importer (OFX)</span>
     </Button>
 
     <Button
       size="sm"
-      class="gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+      class="gap-2 text-xs flex-1 sm:flex-initial cursor-pointer bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
       disabled={state.isClosed || state.isAnalyzing || state.pendingCount === 0}
       onclick={state.handleAnalyze}
     >
-      <Sparkles class="h-4 w-4" />
-      <span>{state.isAnalyzing ? 'Analyse en cours...' : 'Analyse IA des Lignes'}</span>
+      <Sparkles class="h-3.5 w-3.5" />
+      <span>{state.isAnalyzing ? 'Analyse...' : 'Analyse IA'}</span>
     </Button>
   </div>
 </div>
