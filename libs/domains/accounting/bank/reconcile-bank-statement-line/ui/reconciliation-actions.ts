@@ -143,7 +143,6 @@ export function createReconciliationActions(s: any) {
   }
 
   async function handleDeletePart(txId: number) {
-    if (typeof confirm !== 'undefined' && !confirm('Voulez-vous supprimer cette écriture liée ? Le solde de l\'adhérent et le rapprochement seront mis à jour.')) return;
     s.isSubmitting = true;
     try {
       if (s.selectedTx) prepareNextFocus(s.selectedTx.id, false);

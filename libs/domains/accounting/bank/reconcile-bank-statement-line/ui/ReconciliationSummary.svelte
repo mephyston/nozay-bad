@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Trash2 } from '@lucide/svelte';
-  import { Badge, Amount } from '@nba/ui';
+  import { Badge, Amount, AlertDialog } from '@nba/ui';
 
   let {
     selectedTx,
@@ -15,6 +15,22 @@
     remainingAmount: number;
     onDeleteGlLink: (glTxId: number) => void;
   } = $props();
+
+  let entryToDelete = $state<number | null>(null);
+  let showConfirmDialog = $state(false);
+
+  function confirmDissociate(id: number) {
+    entryToDelete = id;
+    showConfirmDialog = true;
+  }
+
+  function handleConfirmedDelete() {
+    if (entryToDelete !== null) {
+      onDeleteGlLink(entryToDelete);
+      entryToDelete = null;
+      showConfirmDialog = false;
+    }
+  }
 </script>
 
 <div class="space-y-4 border-b border-border pb-4 mb-4">
@@ -57,8 +73,8 @@
             <div class="flex items-center gap-2">
               <Amount cents={Math.abs(gt.amount)} class="font-semibold text-foreground" />
               <button 
-                onclick={() => onDeleteGlLink(gt.id)}
-                class="text-destructive hover:text-destructive/80 transition-colors"
+                onclick={() => confirmDissociate(gt.id)}
+                class="text-destructive hover:text-destructive/80 transition-colors cursor-pointer"
                 title="Supprimer ce rapprochement"
               >
                 <Trash2 class="w-3.5 h-3.5" />
@@ -70,3 +86,20 @@
     </div>
   {/if}
 </div>
+
+<AlertDialog.Root bind:open={showConfirmDialog}>
+  <AlertDialog.Content class="bg-card border-border">
+    <AlertDialog.Header>
+      <AlertDialog.Title>Dissocier l'écriture comptable ?</AlertDialog.Title>
+      <AlertDialog.Description>
+        Voulez-vous supprimer cette écriture liée ? Le solde de l'adhérent et le rapprochement seront mis à jour.
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel onclick={() => showConfirmDialog = false}>Annuler</AlertDialog.Cancel>
+      <AlertDialog.Action onclick={handleConfirmedDelete} class="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold">
+        Dissocier
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>
