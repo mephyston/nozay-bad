@@ -48,7 +48,7 @@ describe('ShopCatalog Component', () => {
     expect(target.innerHTML).toContain("Article &amp; Quantité");
 
     expect(target.innerHTML).toContain("Volant RSL Grade 1");
-    expect(target.innerHTML).toContain("15.00 €");
+    expect(target.innerHTML).toContain("15,00");
 
     expect(target.innerHTML).toContain("Cordage Yonex BG65");
   });
