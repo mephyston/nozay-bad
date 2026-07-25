@@ -178,7 +178,7 @@ describe('ShopCatalog Component', () => {
     flushSync();
 
     // Default total for 1 Volant RSL (15.00 €)
-    expect(target.innerHTML).toContain('15.00 €');
+    expect(target.innerHTML).toContain('15,00');
 
     const qtyInput = target.querySelector('input#quantity-input') as HTMLInputElement;
     qtyInput.value = '3';
@@ -186,7 +186,7 @@ describe('ShopCatalog Component', () => {
     flushSync();
 
     // Total for 3 Volant RSL (45.00 €)
-    expect(target.innerHTML).toContain('45.00 €');
+    expect(target.innerHTML).toContain('45,00');
   });
 
   it('supports keyboard navigation through the members listbox', () => {
