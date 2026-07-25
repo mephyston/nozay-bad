@@ -5,6 +5,8 @@
 	let {
 		ref = $bindable(null),
 		class: className,
+		onclick,
+		children,
 		...restProps
 	}: TabsPrimitive.TriggerProps = $props();
 </script>
@@ -20,4 +22,10 @@
 		className
 	)}
 	{...restProps}
-/>
+>
+	{#snippet child({ props })}
+		<button {...props} onclick={(e) => { props.onclick?.(e); onclick?.(e); }}>
+			{@render children?.()}
+		</button>
+	{/snippet}
+</TabsPrimitive.Trigger>
