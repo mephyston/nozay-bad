@@ -1,4 +1,5 @@
 import type { BankStatementLine } from './reconciliation-types';
+import { toast } from '@nba/ui';
 import {
   apiLoadUnpaidInvoices,
   apiReconcileInvoice,
@@ -55,8 +56,9 @@ export function createReconciliationActions(s: any) {
       if (!invoice) throw new Error('Facture introuvable.');
       prepareNextFocus(bt.id, (s.remainingAmount - invoice.totalAmount) <= 10);
       await apiReconcileInvoice(bt, invoice);
+      toast.success('Rapprochement de facture effectué !');
       if (typeof window !== 'undefined') window.location.reload();
-    } catch (err: any) { alert(err.message); s.isSubmitting = false; }
+    } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
   async function handleMultiInvoiceReconcile() {
@@ -69,8 +71,9 @@ export function createReconciliationActions(s: any) {
       if (!firstInvoice) throw new Error('Facture introuvable.');
       prepareNextFocus(s.selectedTx.id, Math.abs(s.selectedSum - s.selectedTx.amount) <= 10);
       await apiMultiInvoiceReconcile(s.selectedTx, firstInvoice, ids);
+      toast.success('Rapprochement des factures effectué !');
       if (typeof window !== 'undefined') window.location.reload();
-    } catch (err: any) { alert(err.message); s.isSubmitting = false; }
+    } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
   function selectMember(idStr: string, name: string) { s.selectedMemberId = idStr; s.memberSearchQuery = name; s.isMemberDropdownOpen = false; s.memberHighlightedIndex = -1; }
@@ -110,8 +113,9 @@ export function createReconciliationActions(s: any) {
       const matchedTx = s.glTransactions.find((t: any) => t.id === ledgerEntryId);
       prepareNextFocus(btId, (s.remainingAmount - (matchedTx ? Math.abs(matchedTx.amount) : 0)) <= 10);
       await apiMatchLedgerEntry(btId, ledgerEntryId, s.selectedMemberId ? parseInt(s.selectedMemberId) : null);
+      toast.success('Rapprochement effectué avec succès !');
       if (typeof window !== 'undefined') window.location.reload();
-    } catch (err: any) { alert(err.message); s.isSubmitting = false; }
+    } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
   async function handleCreateAndMatch(bt: BankStatementLine) {
@@ -128,8 +132,9 @@ export function createReconciliationActions(s: any) {
         prepareNextFocus(bt.id, (s.remainingAmount - linkedAmount) <= 10);
         await apiCreateAndMatchSingle(bt, memId, s.targetSeasonId, s.category, s.amountToLink, s.paymentMethod);
       }
+      toast.success('Écriture créée et rapprochée avec succès !');
       if (typeof window !== 'undefined') window.location.reload();
-    } catch (err: any) { alert(err.message); s.isSubmitting = false; }
+    } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
   async function handleMatchWithAI(btId: number, memberId: number | null, cat: string) {
@@ -138,8 +143,9 @@ export function createReconciliationActions(s: any) {
       prepareNextFocus(btId, true);
       if (!s.selectedTx) throw new Error('Transaction introuvable.');
       await apiCreateAndMatchSingle(s.selectedTx, memberId, s.selectedSeason, cat, Math.abs(s.selectedTx.amount) / 100, 'virement');
+      toast.success('Rapprochement IA appliqué !');
       if (typeof window !== 'undefined') window.location.reload();
-    } catch (err: any) { alert(err.message); s.isSubmitting = false; }
+    } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
   async function handleDeletePart(txId: number) {
@@ -147,8 +153,9 @@ export function createReconciliationActions(s: any) {
     try {
       if (s.selectedTx) prepareNextFocus(s.selectedTx.id, false);
       await apiDeleteLedgerEntry(txId);
+      toast.success('Écriture dissociée avec succès !');
       if (typeof window !== 'undefined') window.location.reload();
-    } catch (err: any) { alert(err.message); s.isSubmitting = false; }
+    } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
   async function handleUnignore(btId: number) {
@@ -156,8 +163,9 @@ export function createReconciliationActions(s: any) {
     try {
       prepareNextFocus(btId, false);
       await apiUnignore(btId);
+      toast.success('Transaction rétablie !');
       if (typeof window !== 'undefined') window.location.reload();
-    } catch (err: any) { alert(err.message); s.isSubmitting = false; }
+    } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
   async function handleIgnore(btId: number) {
@@ -166,8 +174,9 @@ export function createReconciliationActions(s: any) {
     try {
       prepareNextFocus(btId, true);
       await apiIgnore(btId);
+      toast.info('Transaction ignorée.');
       if (typeof window !== 'undefined') window.location.reload();
-    } catch (err: any) { alert(err.message); s.isSubmitting = false; }
+    } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
   return {

@@ -5,6 +5,7 @@
   import CashBoxStatsCards from './CashBoxStatsCards.svelte';
   import CashBoxFormCard from './CashBoxFormCard.svelte';
   import CashBoxHistoryTable from './CashBoxHistoryTable.svelte';
+  import { toast } from '@nba/ui';
 
   export * from './cashbox-types';
   export * from './cashbox-actions';
@@ -75,18 +76,21 @@
 
     if (res.success) {
       successMsg = 'Mouvement de caisse enregistré avec succès !';
+      toast.success(successMsg);
       amount = '';
       description = '';
     } else {
       errorMsg = res.error || 'Une erreur est survenue.';
+      toast.error(errorMsg);
     }
   }
 
   async function handleDelete(id: number) {
     try {
       await deleteCashMovement(id);
+      toast.success('Mouvement de caisse supprimé avec succès !');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   }
 </script>

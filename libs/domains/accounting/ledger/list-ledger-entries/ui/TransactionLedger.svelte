@@ -130,8 +130,9 @@
   async function handleDelete(id: number) {
     try {
       await deleteTransaction(id);
+      toast.success('Écriture supprimée avec succès !');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   }
 </script>

@@ -1,31 +1,27 @@
-import type { CheckDepositState } from './check-deposit-state.svelte';
+import { toast } from '@nba/ui';
 
-export async function handlePhotoSelected(e: Event, seasonId: string, state: CheckDepositState) {
-  const input = e.target as HTMLInputElement;
-  if (!input.files || input.files.length === 0) return;
-  const file = input.files[0];
+export async function handleAnalyzeScan(file: File, seasonId: string, state: any) {
+  if (!file) return;
 
   state.isAnalyzing = true;
   state.formError = '';
 
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('seasonId', seasonId);
 
   try {
-    const res = await fetch(`?season=${seasonId}`, {
+    const res = await fetch('/api/accounting/checks/analyze', {
       method: 'POST',
-      headers: { 'x-action': 'analyze' },
       body: formData
     });
 
-    if (!res.ok) {
-      throw new Error(await res.text() || 'Failed to analyze check');
-    }
-
     const json = await res.json() as any;
-    if (json.success && json.data) {
-      state.checkNumber = json.data.number || '';
-      state.checkAmount = json.data.amount ? json.data.amount.toString() : '';
+
+    if (res.ok && json.success) {
+      toast.success('Chèque analysé par IA !');
+      state.checkNumber = json.data.checkNumber || '';
+      state.checkAmount = json.data.amount ? (json.data.amount / 100).toString() : '';
       state.checkEmitter = json.data.emitter || '';
       state.checkBank = json.data.bank || '';
       state.checkMemberId = json.data.memberId ? json.data.memberId.toString() : '';
@@ -39,15 +35,17 @@ export async function handlePhotoSelected(e: Event, seasonId: string, state: Che
   } catch (err: any) {
     console.error(err);
     state.formError = "L'analyse IA a échoué (" + (err.message || 'erreur de connexion') + "). Vous pouvez saisir les informations manuellement.";
+    toast.error(state.formError);
   } finally {
     state.isAnalyzing = false;
   }
 }
 
-export async function handleAddCheck(e: SubmitEvent, seasonId: string, state: CheckDepositState) {
+export async function handleAddCheck(e: SubmitEvent, seasonId: string, state: any) {
   e.preventDefault();
   if (!state.checkNumber || !state.checkAmount || !state.checkEmitter) {
     state.formError = 'Veuillez renseigner le numéro, le montant et l\'émetteur.';
+    toast.error(state.formError);
     return;
   }
 
@@ -59,41 +57,37 @@ export async function handleAddCheck(e: SubmitEvent, seasonId: string, state: Ch
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        action: 'create-check',
+        action: 'add-check',
         seasonId,
-        number: state.checkNumber,
+        checkNumber: state.checkNumber,
         amount: Math.round(parseFloat(state.checkAmount) * 100),
         emitter: state.checkEmitter,
-        bank: state.checkBank || null,
-        memberId: state.checkMemberId ? parseInt(state.checkMemberId) : null,
-        category: state.checkCategory,
-        date: state.checkDate
+        bank: state.checkBank,
+        date: state.checkDate,
+        memberId: state.checkMemberId ? parseInt(state.checkMemberId) : null
       })
     });
 
-    if (!res.ok) {
-      throw new Error(await res.text());
+    if (res.ok) {
+      toast.success('Chèque ajouté avec succès !');
+      state.showAddCheckModal = false;
+      window.location.reload();
+    } else {
+      const data = await res.json() as any;
+      state.formError = data.error || 'Erreur lors de la création.';
+      toast.error(state.formError);
     }
-
-    state.showAddCheckModal = false;
-    state.checkNumber = '';
-    state.checkAmount = '';
-    state.checkEmitter = '';
-    state.checkBank = '';
-    state.checkMemberId = '';
-    state.checkDate = new Date().toISOString().split('T')[0];
-    state.matchedMemberName = '';
-    state.categorySearchQuery = '';
-    window.location.reload();
-  } catch (err: any) {
-    state.formError = err.message || 'Erreur lors de l\'enregistrement du chèque.';
+  } catch (err) {
+    console.error(err);
+    state.formError = 'Une erreur est survenue.';
+    toast.error(state.formError);
   } finally {
     state.isSubmittingCheck = false;
   }
 }
 
 export async function handleDeleteCheck(id: number, seasonId: string) {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer ce chèque ? Cette action annulera le règlement associé dans le Grand Livre.')) return;
+  if (!confirm('Êtes-vous sûr de vouloir supprimer ce chèque ?')) return;
 
   try {
     const res = await fetch(`?season=${seasonId}`, {
@@ -103,18 +97,19 @@ export async function handleDeleteCheck(id: number, seasonId: string) {
     });
 
     if (res.ok) {
+      toast.success('Chèque supprimé !');
       window.location.reload();
     } else {
-      alert('Erreur lors de la suppression.');
+      toast.error('Erreur lors de la suppression du chèque.');
     }
   } catch (err) {
     console.error(err);
+    toast.error('Erreur lors de la suppression.');
   }
 }
 
-export async function handleCreateDeposit(e: SubmitEvent, seasonId: string, state: CheckDepositState) {
-  e.preventDefault();
-  const checkIds = state.selectedChecksList.map(c => c.id);
+export async function handleCreateDeposit(seasonId: string, state: any) {
+  const checkIds = Object.keys(state.selectedCheckIds).map(Number).filter(id => state.selectedCheckIds[id]);
   if (checkIds.length === 0) return;
 
   state.isSubmittingDeposit = true;
@@ -132,14 +127,16 @@ export async function handleCreateDeposit(e: SubmitEvent, seasonId: string, stat
     });
 
     if (res.ok) {
+      toast.success('Bordereau de remise de chèques créé !');
       state.showCreateDepositModal = false;
       state.selectedCheckIds = {};
       window.location.reload();
     } else {
-      alert('Erreur lors de la création du bordereau.');
+      toast.error('Erreur lors de la création du bordereau.');
     }
   } catch (err) {
     console.error(err);
+    toast.error('Erreur lors de la création du bordereau.');
   } finally {
     state.isSubmittingDeposit = false;
   }
@@ -156,16 +153,18 @@ export async function handleDeleteDeposit(id: number, seasonId: string) {
     });
 
     if (res.ok) {
+      toast.success('Bordereau supprimé !');
       window.location.reload();
     } else {
-      alert('Erreur lors de la suppression.');
+      toast.error('Erreur lors de la suppression.');
     }
   } catch (err) {
     console.error(err);
+    toast.error('Erreur lors de la suppression.');
   }
 }
 
-export async function handleClearDeposit(e: SubmitEvent, seasonId: string, state: CheckDepositState) {
+export async function handleClearDeposit(e: SubmitEvent, seasonId: string, state: any) {
   e.preventDefault();
   if (!state.selectedDepositToClear || !state.selectedBankTransactionId) return;
 
@@ -182,15 +181,17 @@ export async function handleClearDeposit(e: SubmitEvent, seasonId: string, state
     });
 
     if (res.ok) {
+      toast.success('Bordereau encaissé !');
       state.showClearModal = false;
       state.selectedDepositToClear = null;
       state.selectedBankTransactionId = '';
       window.location.reload();
     } else {
-      alert('Erreur lors du rapprochement.');
+      toast.error('Erreur lors du rapprochement.');
     }
   } catch (err) {
     console.error(err);
+    toast.error('Erreur lors du rapprochement.');
   } finally {
     state.isSubmittingClear = false;
   }

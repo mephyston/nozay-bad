@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Sidebar } from "@nba/ui";
+  import { Sidebar, Toaster } from "@nba/ui";
   import AdminLayoutInner from "./AdminLayoutInner.svelte";
   import { onMount } from "svelte";
 
@@ -33,4 +33,5 @@
   <AdminLayoutInner {email} {breadcrumb}>
     {@render children?.()}
   </AdminLayoutInner>
+  <Toaster position="top-right" richColors />
 </Sidebar.Provider>

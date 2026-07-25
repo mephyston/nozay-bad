@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus, Edit } from "@lucide/svelte";
-  import { Sheet } from "@nba/ui";
+  import { Sheet, toast } from "@nba/ui";
   import type { Product } from './products-manager-types';
   import { submitProduct, toggleProductActive, archiveProduct } from './products-manager-actions';
   import ProductFormCard from './ProductFormCard.svelte';
@@ -82,10 +82,12 @@
 
     if (res.success) {
       successMsg = editingId ? 'Produit mis à jour avec succès !' : 'Produit ajouté avec succès !';
+      toast.success(successMsg);
       resetForm();
       showFormSheet = false;
     } else {
       errorMsg = res.error || 'Une erreur est survenue.';
+      toast.error(errorMsg);
     }
   }
 
@@ -96,8 +98,9 @@
       if (index !== -1) {
         productsList[index].active = newActive;
       }
+      toast.success(newActive ? 'Produit activé !' : 'Produit désactivé !');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   }
 
@@ -110,8 +113,9 @@
           productsList[index].active = false;
         }
       }
+      toast.success('Produit archivé !');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   }
 

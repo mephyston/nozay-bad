@@ -1,9 +1,10 @@
 <script lang="ts">
   import { Check, Calendar, AlertCircle, Plus } from "@lucide/svelte";
-  import { Card, Alert, Tabs, Button } from "@nba/ui";
+  import { Card, Alert, Tabs, Button, toast } from "@nba/ui";
   import SeasonConfig from "./SeasonConfig.svelte";
   import CategoriesConfig from "./CategoriesConfig.svelte";
   import AccountClassesConfig from "./AccountClassesConfig.svelte";
+  import { useSettingsState } from "./settings-state.svelte";
   import type { Season, Category, AccountClass } from "./settings-types";
   import * as api from "./settings-api";
 
@@ -21,10 +22,14 @@
     view?: 'seasons' | 'compta' | 'classes';
   } = $props();
 
-  let state = $state<api.SettingsState>({
-    successMsg: '',
-    errorMsg: '',
-    isSubmitting: false
+  const state = useSettingsState({ seasons, categories, accountClasses });
+
+  $effect(() => {
+    if (state.successMsg) toast.success(state.successMsg);
+  });
+
+  $effect(() => {
+    if (state.errorMsg) toast.error(state.errorMsg);
   });
 
   // --- SEASONS STATE ---
