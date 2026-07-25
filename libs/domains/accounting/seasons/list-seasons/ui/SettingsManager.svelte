@@ -4,7 +4,6 @@
   import SeasonConfig from "./SeasonConfig.svelte";
   import CategoriesConfig from "./CategoriesConfig.svelte";
   import AccountClassesConfig from "./AccountClassesConfig.svelte";
-  import { useSettingsState } from "./settings-state.svelte";
   import type { Season, Category, AccountClass } from "./settings-types";
   import * as api from "./settings-api";
 
@@ -22,7 +21,11 @@
     view?: 'seasons' | 'compta' | 'classes';
   } = $props();
 
-  const state = useSettingsState({ seasons, categories, accountClasses });
+  let state = $state<api.SettingsState>({
+    successMsg: '',
+    errorMsg: '',
+    isSubmitting: false
+  });
 
   $effect(() => {
     if (state.successMsg) toast.success(state.successMsg);
