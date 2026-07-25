@@ -38,9 +38,12 @@ export interface DbCategory {
   hideInExpenses: boolean;
   receiptCode?: string | null;
   expenseCode?: string | null;
+  receiptAccountClassId?: number | null;
+  expenseAccountClassId?: number | null;
 }
 
 export interface AccountClass {
+  id?: number;
   code: string;
   label: string;
   type: 'recette' | 'depense';
