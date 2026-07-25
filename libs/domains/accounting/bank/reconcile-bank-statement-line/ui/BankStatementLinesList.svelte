@@ -6,7 +6,7 @@
   let { state }: { state: ReconciliationState } = $props();
 </script>
 
-<Card.Root class="flex flex-col h-[750px] bg-card border-border overflow-hidden">
+<Card.Root class="flex flex-col min-h-[500px] h-auto lg:h-[750px] bg-card border-border overflow-hidden">
   <div class="p-3 border-b border-border bg-muted/40 space-y-3">
     <!-- Onglets de statut -->
     <Tabs.Root value={state.activeTab} onValueChange={(v) => state.activeTab = v as any} class="w-full">

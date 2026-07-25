@@ -126,10 +126,13 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
   safeEffect(() => { if (selectedSeason) actions.loadUnpaidInvoices(); });
   safeEffect(() => {
     if (!selectedTx && bankStatementLines.length > 0 && typeof sessionStorage !== 'undefined') {
-      const savedIdStr = sessionStorage.getItem('reconcile_active_bt_id');
-      if (savedIdStr) {
-        const found = bankStatementLines.find(t => t.id === parseInt(savedIdStr) && t.status === activeTab);
-        if (found) selectedTx = found;
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+      if (!isMobile) {
+        const savedIdStr = sessionStorage.getItem('reconcile_active_bt_id');
+        if (savedIdStr) {
+          const found = bankStatementLines.find(t => t.id === parseInt(savedIdStr) && t.status === activeTab);
+          if (found) selectedTx = found;
+        }
       }
     }
   });

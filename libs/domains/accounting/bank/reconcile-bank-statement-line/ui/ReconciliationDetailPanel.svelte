@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Sparkles, Trash2, RefreshCw } from '@lucide/svelte';
+  import { Sparkles, Trash2, RefreshCw, ArrowLeft } from '@lucide/svelte';
   import { Button, Card, Tabs, Badge } from '@nba/ui';
   import MatchTransaction from './MatchTransaction.svelte';
   import CreateLedgerEntryFromBankLine from './CreateLedgerEntryFromBankLine.svelte';
@@ -12,7 +12,7 @@
 </script>
 
 {#if !state.selectedTx}
-  <Card.Root class="h-[750px] bg-card border-border flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
+  <Card.Root class="min-h-[400px] lg:h-[750px] bg-card border-border flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
     <div class="rounded-full bg-muted p-4 mb-4">
       <Sparkles class="h-8 w-8 text-muted-foreground" />
     </div>
@@ -20,9 +20,25 @@
     <p class="text-sm max-w-md">Sélectionnez une transaction bancaire dans la liste de gauche pour afficher ses détails, consulter les suggestions IA ou la rapprocher.</p>
   </Card.Root>
 {:else}
-  <Card.Root class="h-[750px] bg-card border-border flex flex-col overflow-hidden">
+  <Card.Root class="min-h-[500px] h-auto lg:h-[750px] bg-card border-border flex flex-col overflow-hidden">
     <!-- En-tête de la transaction sélectionnée -->
     <div class="p-4 border-b border-border bg-muted/20 space-y-3">
+      <!-- Bouton de retour sur mobile -->
+      <div class="lg:hidden pb-1 border-b border-border/40">
+        <Button
+          variant="ghost"
+          size="sm"
+          class="gap-1.5 text-xs text-primary font-medium hover:text-primary/80 cursor-pointer -ml-2 h-7"
+          onclick={() => {
+            sessionStorage.removeItem('reconcile_active_bt_id');
+            state.selectedTx = null;
+          }}
+        >
+          <ArrowLeft class="h-3.5 w-3.5" />
+          <span>Retour aux transactions</span>
+        </Button>
+      </div>
+
       <div class="flex items-start justify-between gap-4">
         <div>
           <div class="flex items-center gap-2">
