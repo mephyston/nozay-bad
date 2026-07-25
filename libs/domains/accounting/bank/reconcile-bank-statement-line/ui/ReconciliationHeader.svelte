@@ -21,7 +21,7 @@
     <p class="text-sm text-muted-foreground">Importez vos relevés bancaires (OFX/CSV) et associez vos lignes aux écritures comptables.</p>
   </div>
 
-  <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+  <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
     {#if state.seasons && state.seasons.length > 0}
       <div class="flex items-center gap-2 shrink-0">
         <label for="select-season" class="text-xs font-medium text-muted-foreground whitespace-nowrap">Saison :</label>
@@ -42,25 +42,28 @@
       </div>
     {/if}
 
-    <Button
-      variant="outline"
-      size="sm"
-      class="gap-2 text-xs flex-1 sm:flex-initial cursor-pointer"
-      disabled={state.isClosed}
-      onclick={() => state.showImportModal = true}
-    >
-      <Upload class="h-3.5 w-3.5" />
-      <span>Importer (OFX)</span>
-    </Button>
+    <!-- Groupe de boutons toujours maintenus ensemble sur la même ligne (flex-nowrap) -->
+    <div class="flex items-center gap-2 flex-nowrap flex-1 sm:flex-initial">
+      <Button
+        variant="outline"
+        size="sm"
+        class="gap-1.5 text-xs flex-1 sm:flex-initial cursor-pointer whitespace-nowrap"
+        disabled={state.isClosed}
+        onclick={() => state.showImportModal = true}
+      >
+        <Upload class="h-3.5 w-3.5" />
+        <span>Importer (OFX)</span>
+      </Button>
 
-    <Button
-      size="sm"
-      class="gap-2 text-xs flex-1 sm:flex-initial cursor-pointer bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
-      disabled={state.isClosed || state.isAnalyzing || state.pendingCount === 0}
-      onclick={state.handleAnalyze}
-    >
-      <Sparkles class="h-3.5 w-3.5" />
-      <span>{state.isAnalyzing ? 'Analyse...' : 'Analyse IA'}</span>
-    </Button>
+      <Button
+        size="sm"
+        class="gap-1.5 text-xs flex-1 sm:flex-initial cursor-pointer whitespace-nowrap bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+        disabled={state.isClosed || state.isAnalyzing || state.pendingCount === 0}
+        onclick={state.handleAnalyze}
+      >
+        <Sparkles class="h-3.5 w-3.5" />
+        <span>{state.isAnalyzing ? 'Analyse...' : 'Analyse IA'}</span>
+      </Button>
+    </div>
   </div>
 </div>
