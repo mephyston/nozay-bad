@@ -35,91 +35,67 @@
 {:else}
   <Card.Root class="min-h-[500px] h-auto lg:h-[750px] bg-card border-border flex flex-col overflow-hidden">
     <!-- En-tête de la transaction sélectionnée -->
-    <div class="p-4 border-b border-border bg-muted/20 space-y-3">
-      <!-- Bouton de retour sur mobile -->
-      <div class="lg:hidden pb-1 border-b border-border/40">
-        <Button
-          variant="ghost"
-          size="sm"
-          class="gap-1.5 text-xs text-primary font-medium hover:text-primary/80 cursor-pointer -ml-2 h-7"
-          onclick={() => {
-            sessionStorage.removeItem('reconcile_active_bt_id');
-            state.selectedTx = null;
-          }}
-        >
-          <ArrowLeft class="h-3.5 w-3.5" />
-          <span>Retour aux transactions</span>
-        </Button>
-      </div>
-
-      <!-- Titre, Statut, Montant et Actions empilées -->
-      <div class="flex items-start justify-between gap-3">
-        <!-- Détails complets de la transaction (toujours 100% visibles sans être tronqués) -->
-        <div class="min-w-0 flex-1 space-y-1">
-          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            <h3 class="font-bold text-sm sm:text-base text-foreground break-words">{state.selectedTx.name}</h3>
-            {#if state.selectedTx.status === 'reconciled'}
-              <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-[11px] shrink-0">
-                Rapprochée
-              </Badge>
-            {:else if state.selectedTx.status === 'ignored'}
-              <Badge variant="outline" class="bg-muted text-muted-foreground text-[11px] shrink-0">
-                Ignorée
-              </Badge>
-            {/if}
-          </div>
-
-          <div class="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-            <span class="font-outfit font-bold text-sm sm:text-base tabular-nums whitespace-nowrap {((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}">
-              {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) / 100).replace(/\s/g, '\u00a0')} €
-            </span>
-            <span class="shrink-0">•</span>
-            <span class="whitespace-nowrap shrink-0">{formatShortDate(state.selectedTx.date)}</span>
-            {#if state.selectedTx.memo}
-              <span class="shrink-0">•</span>
-              <span class="italic break-words">{state.selectedTx.memo}</span>
-            {/if}
-          </div>
+    <div class="p-3 sm:p-4 border-b border-border bg-muted/20 space-y-3">
+      <!-- Barre supérieure d'actions & retour -->
+      <div class="flex items-center justify-between gap-2 pb-2 border-b border-border/40">
+        <!-- Bouton de retour sur mobile -->
+        <div class="lg:hidden">
+          <Button
+            variant="ghost"
+            size="sm"
+            class="gap-1.5 text-xs text-primary font-medium hover:text-primary/80 cursor-pointer -ml-2 h-7"
+            onclick={() => {
+              sessionStorage.removeItem('reconcile_active_bt_id');
+              state.selectedTx = null;
+            }}
+          >
+            <ArrowLeft class="h-3.5 w-3.5" />
+            <span>Retour</span>
+          </Button>
         </div>
 
-        <!-- Boutons d'action empilés verticalement sur mobile (flex-col) -->
-        <div class="flex flex-col sm:flex-row items-center gap-1.5 shrink-0 ml-1">
+        <div class="hidden lg:block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          Détails de la transaction
+        </div>
+
+        <!-- Boutons d'action rapides sur la transaction -->
+        <div class="flex items-center gap-2 shrink-0 ml-auto">
           {#if state.selectedTx.status === 'ignored'}
             <Button
               size="sm"
               variant="outline"
-              class="h-8 w-8 p-0 sm:w-auto sm:px-2.5 text-xs gap-1 cursor-pointer"
+              class="h-7 text-xs gap-1.5 cursor-pointer"
               title="Réactiver cette ligne"
               disabled={state.isClosed || state.isSubmitting}
               onclick={() => state.handleUnignore(state.selectedTx!.id)}
             >
-              <RefreshCw class="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-              <span class="hidden sm:inline">Réactiver</span>
+              <RefreshCw class="h-3.5 w-3.5" />
+              <span>Réactiver</span>
             </Button>
           {:else}
             <Button
               size="sm"
               variant="outline"
-              class="h-8 w-8 p-0 sm:w-auto sm:px-2.5 text-xs gap-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+              class="h-7 text-xs gap-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
               title="Ignorer cette ligne"
               disabled={state.isClosed || state.isSubmitting}
               onclick={() => state.handleIgnore(state.selectedTx!.id)}
             >
-              <Trash2 class="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-              <span class="hidden sm:inline">Ignorer</span>
+              <Trash2 class="h-3.5 w-3.5" />
+              <span>Ignorer</span>
             </Button>
           {/if}
 
           <Button
             size="sm"
             variant="ghost"
-            class="h-8 w-8 p-0 sm:w-auto sm:px-2.5 text-xs gap-1 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 cursor-pointer"
+            class="h-7 text-xs gap-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 cursor-pointer"
             title="Re-analyser avec l'IA"
             disabled={state.isClosed || state.isAnalyzingSingle}
             onclick={() => state.handleAnalyzeSingle(state.selectedTx!.id)}
           >
-            <Sparkles class="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-            <span class="hidden sm:inline">{state.isAnalyzingSingle ? 'Analyse...' : 'Re-analyser'}</span>
+            <Sparkles class="h-3.5 w-3.5" />
+            <span>{state.isAnalyzingSingle ? 'Analyse...' : 'Re-analyser (IA)'}</span>
           </Button>
 
           <button
@@ -133,6 +109,34 @@
           >
             ✕ <span class="sr-only">Fermer</span>
           </button>
+        </div>
+      </div>
+
+      <!-- Détails complets de la transaction (100% de la largeur du cadre sur mobile) -->
+      <div class="w-full space-y-1.5">
+        <div class="flex items-center gap-2 flex-wrap">
+          <h3 class="font-bold text-base sm:text-lg text-foreground break-words">{state.selectedTx.name}</h3>
+          {#if state.selectedTx.status === 'reconciled'}
+            <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-xs shrink-0">
+              Rapprochée
+            </Badge>
+          {:else if state.selectedTx.status === 'ignored'}
+            <Badge variant="outline" class="bg-muted text-muted-foreground text-xs shrink-0">
+              Ignorée
+            </Badge>
+          {/if}
+        </div>
+
+        <div class="flex items-center gap-2.5 text-xs text-muted-foreground flex-wrap">
+          <span class="font-outfit font-bold text-base sm:text-lg tabular-nums whitespace-nowrap {((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}">
+            {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) / 100).replace(/\s/g, '\u00a0')} €
+          </span>
+          <span class="shrink-0">•</span>
+          <span class="whitespace-nowrap shrink-0">{formatShortDate(state.selectedTx.date)}</span>
+          {#if state.selectedTx.memo}
+            <span class="shrink-0">•</span>
+            <span class="italic break-words">{state.selectedTx.memo}</span>
+          {/if}
         </div>
       </div>
     </div>
