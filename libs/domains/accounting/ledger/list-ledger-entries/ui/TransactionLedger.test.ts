@@ -44,9 +44,9 @@ describe('TransactionLedger Component', () => {
     });
 
     expect(target.innerHTML).toContain('Journal des écritures');
-    expect(target.innerHTML).toContain('1045.00 €'); // Compte Courant final balance
+    expect(target.innerHTML).toContain('1 045,00'); // Compte Courant final balance
     expect(target.innerHTML).toContain('Cotisation Martin');
-    expect(target.innerHTML).toContain('+45.00 €');
+    expect(target.innerHTML).toContain('+45,00');
     expect(target.innerHTML).toContain('VIR-9988');
 
     unmount(component);

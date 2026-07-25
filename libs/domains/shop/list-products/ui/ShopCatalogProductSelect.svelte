@@ -81,7 +81,7 @@
           {:else}
             {#each filteredProducts as product (product.id)}
               <option value={product.id}>
-                {product.name} — {((product.priceCents ?? (product as any).price ?? 0) / 100).toFixed(2)} € ({product.stock > 0 ? `Stock: ${product.stock}` : 'Rupture'})
+                {product.name} — {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((product.priceCents ?? (product as any).price ?? 0)) / 100).replace(/\s/g, ' ')} € ({product.stock > 0 ? `Stock: ${product.stock}` : 'Rupture'})
               </option>
             {/each}
           {/if}

@@ -108,6 +108,7 @@
           placeholder="0.00"
           bind:value={price}
           required
+          class="font-outfit tabular-nums"
         />
       </div>
 

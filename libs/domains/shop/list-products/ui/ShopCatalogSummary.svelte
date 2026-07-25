@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ShoppingBag, Check, AlertCircle } from "@lucide/svelte";
-  import { Button } from '@nba/ui';
+  import { Button, Amount } from '@nba/ui';
   import type { Product, Member } from './catalog-types';
 
   let {
@@ -34,9 +34,7 @@
     </div>
     <div class="flex justify-between items-center pt-2 border-t border-border/50">
       <span class="text-base font-bold text-foreground">Montant total :</span>
-      <span class="text-xl font-extrabold text-primary">
-        {(totalPriceCents / 100).toFixed(2)} €
-      </span>
+      <Amount cents={totalPriceCents ?? 0} class="text-xl font-extrabold text-primary" />
     </div>
   </div>
 

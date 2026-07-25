@@ -15,11 +15,25 @@ export async function listOrders(db: Db, filters: ListOrdersInput): Promise<List
   ]);
 
   const membersMap = new Map(membersList.map(m => [m.id, m]));
-  const productsMap = new Map(productsList.map(p => [p.id, p]));
+  const productsMap = new Map(productsList.map(p => [
+    p.id,
+    {
+      ...p,
+      price: p.priceCents ?? (p as any).price ?? 0,
+      priceCents: p.priceCents ?? (p as any).price ?? 0
+    }
+  ]));
 
-  return orders.map(order => ({
-    order,
-    member: membersMap.get(order.memberId),
-    product: productsMap.get(order.productId)
-  }));
+  return orders.map(order => {
+    const totCents = order.totalAmountCents ?? (order as any).totalAmount ?? 0;
+    return {
+      order: {
+        ...order,
+        totalAmount: totCents,
+        totalAmountCents: totCents
+      },
+      member: membersMap.get(order.memberId),
+      product: productsMap.get(order.productId)
+    };
+  }) as any;
 }

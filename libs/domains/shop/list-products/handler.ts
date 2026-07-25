@@ -4,5 +4,13 @@ import { ListProductsInput, ListProductsOutput } from "./dto";
 
 export async function listProducts(db: Db, filters: ListProductsInput): Promise<ListProductsOutput> {
   const repo = new ListProductsRepository();
-  return repo.list(db, filters);
+  const products = await repo.list(db, filters);
+  return products.map(p => {
+    const cents = p.priceCents ?? (p as any).price ?? 0;
+    return {
+      ...p,
+      price: cents,
+      priceCents: cents
+    };
+  }) as any;
 }

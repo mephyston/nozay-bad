@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Edit, Trash2, ShoppingBag, Search, MoreVertical } from "@lucide/svelte";
-  import { Button, Input, Badge, Card, Table } from "@nba/ui";
+  import { Button, Input, Badge, Card, Table, Amount } from "@nba/ui";
   import type { Product } from './products-manager-types';
 
   let {
@@ -19,33 +19,33 @@
     openDropdownId: number | null;
     onStartEdit: (p: Product) => void;
     onToggleActive: (p: Product) => void;
-    onArchive: (p: Product) => void;
-    onToggleDropdown: (id: number, e: MouseEvent) => void;
+    onArchive: (id: number, name: string) => void;
+    onToggleDropdown: (id: number, event: MouseEvent) => void;
   } = $props();
 </script>
 
-<Card.Root class="md:col-span-3">
-  <Card.Header class="pb-2 border-b border-border">
-    <Card.Title class="text-lg font-semibold flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-      <span class="flex items-center gap-2">
-        <ShoppingBag class="w-5 h-5 text-primary" />
-        Liste des articles
-      </span>
+<Card.Root class="overflow-hidden shadow-sm">
+  <Card.Header class="bg-card border-b border-border pb-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <Card.Title class="text-base font-semibold flex items-center gap-2">
+        <ShoppingBag class="h-4 w-4 text-primary" />
+        <span>Articles en vente</span>
+      </Card.Title>
       <div class="relative shrink-0">
-        <Search class="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+        <Search class="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground z-10" />
         <Input
           type="text"
-          placeholder="Rechercher..."
+          placeholder="Rechercher un article..."
           bind:value={searchTerm}
-          class="pl-8 pr-3 py-1.5 w-full sm:w-48 text-xs h-8"
+          class="pl-8 pr-3 w-full sm:w-64 h-8 text-xs"
         />
       </div>
-    </Card.Title>
+    </div>
   </Card.Header>
-  <Card.Content class="pt-4">
-    <div class="overflow-x-auto min-h-[180px]">
-      <Table.Root>
-        <Table.Header>
+  <Card.Content class="p-0">
+    <div class="overflow-x-auto min-h-[220px]">
+      <Table.Root class="w-full text-left border-collapse text-sm">
+        <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
           <Table.Row>
             <Table.Head>Nom</Table.Head>
             {#if !category || category === 'all'}
@@ -76,8 +76,8 @@
                     </Badge>
                   </Table.Cell>
                 {/if}
-                <Table.Cell class="font-semibold text-foreground">
-                  {((product.priceCents ?? product.price ?? 0) / 100).toFixed(2)} €
+                <Table.Cell class="font-bold text-foreground">
+                  <Amount cents={(product as any).priceCents ?? product.price} />
                 </Table.Cell>
                 <Table.Cell>
                   <Button 

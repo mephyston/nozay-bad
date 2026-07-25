@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, X, History } from "@lucide/svelte";
-  import { Badge, Card, Table } from "@nba/ui";
+  import { Badge, Card, Table, Amount } from "@nba/ui";
   import type { OrderItem } from './orders-manager-types';
   import { paymentMethodLabels } from './orders-manager-types';
 
@@ -18,7 +18,7 @@
   {:else}
     <Card.Root class="overflow-hidden shadow-sm">
       <Card.Content class="p-0">
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto min-h-[180px]">
           <Table.Root>
             <Table.Header>
               <Table.Row>
@@ -65,7 +65,7 @@
                     </Badge>
                   </Table.Cell>
                   <Table.Cell class="text-right font-bold text-foreground">
-                    {(item.order.totalAmount / 100).toFixed(2)} €
+                    <Amount cents={(item.order as any).totalAmountCents ?? item.order.totalAmount} />
                   </Table.Cell>
                   <Table.Cell class="text-center">
                     {#if item.order.status === 'approved'}
