@@ -116,7 +116,7 @@
 
 <div class="space-y-6">
   <Tabs.Root bind:value={activeTab} class="space-y-6">
-    <Tabs.List class="no-print">
+    <Tabs.List class="grid w-full max-w-2xl mx-auto grid-cols-3 mb-6 no-print">
       <Tabs.Trigger value="resultat">Compte de résultat</Tabs.Trigger>
       <Tabs.Trigger value="tresorerie">Bilan de trésorerie</Tabs.Trigger>
       <Tabs.Trigger value="budget">Budget prévisionnel</Tabs.Trigger>
