@@ -63,8 +63,10 @@ try {
   if (balancesRes.ok) {
     const json = await balancesRes.json() as any;
     const balances = json.data || [];
-    const cashBalance = balances.find((b: any) => b.accountId === 'cash');
-    initialBalance = cashBalance ? cashBalance.initialBalance : 0;
+    const cashBalance = balances.find((b: any) => b.accountId === 'cash' || b.accountId === 3);
+    if (cashBalance) {
+      initialBalance = cashBalance.initialBalanceCents ?? cashBalance.initialBalance ?? 0;
+    }
   }
 
   if (txRes.ok) {

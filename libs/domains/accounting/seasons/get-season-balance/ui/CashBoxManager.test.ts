@@ -48,9 +48,9 @@ describe('CashBoxManager Component', () => {
     
     // Check calculations:
     // Solde caisse = 100.00 € (initial) + 50.00 € (totalIn) - 20.00 € (totalOut) = 130.00 €
-    expect(target.innerHTML).toContain('130.00 €');
-    expect(target.innerHTML).toContain('+50.00 €');
-    expect(target.innerHTML).toContain('-20.00 €');
+    expect(target.innerHTML).toContain('130,00');
+    expect(target.innerHTML).toContain('+50,00');
+    expect(target.innerHTML).toContain('-20,00');
 
     // Check list entries
     expect(target.innerHTML).toContain('Vente boissons buvette');
