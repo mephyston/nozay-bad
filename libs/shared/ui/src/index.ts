@@ -30,3 +30,4 @@ export * as Tooltip from './components/ui/tooltip';
 export { Separator } from './components/ui/separator';
 export { Amount } from './components/ui/amount';
 export { Toaster, toast } from './components/ui/sonner';
+export { Combobox, type ComboboxItem } from './components/ui/combobox';
