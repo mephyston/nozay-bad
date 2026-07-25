@@ -53,7 +53,7 @@
 
 <div class="space-y-4">
   <div class="flex justify-between items-center">
-    <h4 class="text-sm font-semibold text-gray-700">Créer et rapprocher une nouvelle écriture</h4>
+    <h4 class="text-sm font-semibold text-foreground">Créer et rapprocher une nouvelle écriture</h4>
     <Button
       variant="outline"
       size="xs"
@@ -71,26 +71,26 @@
   {#if !isSplitMode}
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <span class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Catégorie Comptable</span>
+        <span class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Catégorie Comptable</span>
         <div class="relative">
           <button
             type="button"
             onclick={() => isCategoryDropdownOpen = !isCategoryDropdownOpen}
-            class="w-full flex justify-between items-center bg-white border rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full flex justify-between items-center bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <span class="truncate">{categories.find(c => String(c.id) === String(category))?.name || categories.find(c => String(c.id) === String(category))?.adminLabel || 'Choisir une catégorie...'}</span>
-            <span class="text-gray-400">▼</span>
+            <span class="text-muted-foreground">▼</span>
           </button>
 
           {#if isCategoryDropdownOpen}
-            <div class="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto p-2 space-y-2">
+            <div class="absolute z-50 w-full mt-1 bg-popover border border-border text-popover-foreground rounded-lg shadow-lg max-h-60 overflow-y-auto p-2 space-y-2">
               <Input placeholder="Rechercher une catégorie..." bind:value={categorySearchQuery} size="sm" />
               <div class="space-y-0.5">
                 {#each filteredCategories as cat}
                   <button
                     type="button"
                     onclick={() => { category = String(cat.id); isCategoryDropdownOpen = false; }}
-                    class="w-full text-left px-2 py-1.5 rounded hover:bg-gray-100 text-xs truncate"
+                    class="w-full text-left px-2 py-1.5 rounded hover:bg-muted text-xs truncate text-foreground"
                   >
                     {cat.name || cat.adminLabel}
                   </button>
@@ -102,11 +102,11 @@
       </div>
 
       <div>
-        <label for="payment-method-select" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Mode de règlement</label>
+        <label for="payment-method-select" class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Mode de règlement</label>
         <select
           id="payment-method-select"
           bind:value={paymentMethod}
-          class="w-full bg-white border rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+          class="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
         >
           <option value="virement">Virement bancaire</option>
           <option value="carte">Carte bancaire</option>
@@ -118,12 +118,12 @@
     </div>
 
     <div>
-      <span class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Adhérent Associé (Optionnel)</span>
+      <span class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Adhérent Associé (Optionnel)</span>
       <div class="relative">
         <button
           type="button"
           onclick={() => isMemberDropdownOpen = !isMemberDropdownOpen}
-          class="w-full flex justify-between items-center bg-white border rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full flex justify-between items-center bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <span class="truncate">
             {#if selectedMemberId}
@@ -132,16 +132,16 @@
               Aucun adhérent (Écriture générale)
             {/if}
           </span>
-          <span class="text-gray-400">▼</span>
+          <span class="text-muted-foreground">▼</span>
         </button>
 
-        <div class="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto p-2 space-y-2" class:hidden={!isMemberDropdownOpen}>
+        <div class="absolute z-50 w-full mt-1 bg-popover border border-border text-popover-foreground rounded-lg shadow-lg max-h-60 overflow-y-auto p-2 space-y-2" class:hidden={!isMemberDropdownOpen}>
           <Input placeholder="Tapez pour rechercher un adhérent..." bind:value={memberSearchQuery} onfocus={() => isMemberDropdownOpen = true} size="sm" />
           <div class="space-y-0.5">
             <button
               type="button"
               onclick={() => { selectedMemberId = ''; isMemberDropdownOpen = false; }}
-              class="w-full text-left px-2 py-1.5 rounded hover:bg-gray-100 text-xs text-gray-500 font-medium"
+              class="w-full text-left px-2 py-1.5 rounded hover:bg-muted text-xs text-muted-foreground font-medium"
             >
               Aucun adhérent (Écriture générale)
             </button>
@@ -149,10 +149,10 @@
               <button
                 type="button"
                 onclick={() => { selectedMemberId = String(member.id); isMemberDropdownOpen = false; }}
-                class="w-full text-left px-2 py-1.5 rounded hover:bg-gray-100 text-xs truncate flex justify-between items-center"
+                class="w-full text-left px-2 py-1.5 rounded hover:bg-muted text-xs truncate flex justify-between items-center text-foreground"
               >
                 <span>{member.lastName} {member.firstName}</span>
-                <span class="text-[10px] text-gray-400 font-mono">{member.licence}</span>
+                <span class="text-[10px] text-muted-foreground font-mono">{member.licence}</span>
               </button>
             {/each}
           </div>
@@ -174,7 +174,7 @@
     <Button 
       onclick={handleCreateAndMatch}
       disabled={isSubmitting || (isSplitMode && splitSum !== remainingAmount)}
-      class="w-full"
+      class="w-full font-bold"
     >
       {isSplitMode ? 'Enregistrer la ventilation' : `Créer et rapprocher ${(remainingAmount / 100).toFixed(2)} €`}
     </Button>
