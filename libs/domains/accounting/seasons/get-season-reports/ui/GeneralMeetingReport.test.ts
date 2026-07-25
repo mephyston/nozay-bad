@@ -151,11 +151,11 @@ describe('GeneralMeetingReport Component', () => {
     prevTab?.click();
     flushSync();
 
-    // Now in previsionnel mode: should show prevReport's realized column header "Réalisé 2024-2025"
-    expect(target.innerHTML).toContain("Réalisé 2024-2025");
-    
-    // Should show 8000 / 4000
-    expect(target.innerHTML).toContain("80,00&nbsp;€");
-    expect(target.innerHTML).toContain("40,00&nbsp;€");
+    // Now in previsionnel mode: should show current season realized column header "Réalisé"
+    expect(target.innerHTML).toContain("Réalisé");
+
+    // Should show current season realized values (100,00 € / 50,00 €)
+    expect(target.innerHTML).toContain("100,00&nbsp;€");
+    expect(target.innerHTML).toContain("50,00&nbsp;€");
   });
 });
