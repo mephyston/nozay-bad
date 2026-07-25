@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Tabs } from '@nba/ui';
+  import { Button, Dialog, Sheet, Tabs } from '@nba/ui';
   import type { Transaction, Pagination, BalanceReport, Season, Category, AccountClass } from './ledger-types';
   import { getPageRange } from './ledger-utils';
   import { submitTransaction, deleteTransaction, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange } from './ledger-actions';
@@ -135,6 +135,17 @@
       toast.error(err.message);
     }
   }
+
+  function handleAccountTabChange(newAcc: string) {
+    selectedAccount = newAcc;
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (newAcc === 'all') params.delete('accountId');
+      else params.set('accountId', newAcc);
+      params.set('page', '1');
+      window.location.href = `/admin/accounting?${params.toString()}`;
+    }
+  }
 </script>
 
 <div class="space-y-6">
@@ -154,65 +165,17 @@
     onClearFilters={clearFilters}
   />
 
-  <!-- Barre d'onglets des comptes du Grand Livre centrée et réactive -->
-  <div class="grid w-full grid-cols-2 sm:grid-cols-4 max-w-2xl mx-auto p-1 bg-muted rounded-xl no-print border border-border/50 shadow-xs">
-    <button
-      type="button"
-      data-state={selectedAccount === 'all' || !selectedAccount ? 'active' : 'inactive'}
-      onclick={() => {
-        selectedAccount = 'all';
-        const params = new URLSearchParams(window.location.search);
-        params.delete('accountId');
-        params.set('page', '1');
-        window.location.href = `/admin/accounting?${params.toString()}`;
-      }}
-      class="py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer border-0 {selectedAccount === 'all' || !selectedAccount ? 'bg-background text-foreground shadow-xs font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent'}"
-    >
-      Tous les comptes
-    </button>
-    <button
-      type="button"
-      data-state={selectedAccount === 'current' ? 'active' : 'inactive'}
-      onclick={() => {
-        selectedAccount = 'current';
-        const params = new URLSearchParams(window.location.search);
-        params.set('accountId', 'current');
-        params.set('page', '1');
-        window.location.href = `/admin/accounting?${params.toString()}`;
-      }}
-      class="py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer border-0 {selectedAccount === 'current' ? 'bg-background text-foreground shadow-xs font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent'}"
-    >
-      Compte Courant
-    </button>
-    <button
-      type="button"
-      data-state={selectedAccount === 'savings' ? 'active' : 'inactive'}
-      onclick={() => {
-        selectedAccount = 'savings';
-        const params = new URLSearchParams(window.location.search);
-        params.set('accountId', 'savings');
-        params.set('page', '1');
-        window.location.href = `/admin/accounting?${params.toString()}`;
-      }}
-      class="py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer border-0 {selectedAccount === 'savings' ? 'bg-background text-foreground shadow-xs font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent'}"
-    >
-      Compte Livret
-    </button>
-    <button
-      type="button"
-      data-state={selectedAccount === 'cash' ? 'active' : 'inactive'}
-      onclick={() => {
-        selectedAccount = 'cash';
-        const params = new URLSearchParams(window.location.search);
-        params.set('accountId', 'cash');
-        params.set('page', '1');
-        window.location.href = `/admin/accounting?${params.toString()}`;
-      }}
-      class="py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer border-0 {selectedAccount === 'cash' ? 'bg-background text-foreground shadow-xs font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent'}"
-    >
-      Caisse Physique
-    </button>
-  </div>
+  <!-- Barre d'onglets des comptes du Grand Livre centrée -->
+
+  <!-- Barre d'onglets des comptes du Grand Livre centrée -->
+  <Tabs.Root value={selectedAccount || 'all'} onValueChange={handleAccountTabChange} class="w-full no-print">
+    <Tabs.List class="grid w-full grid-cols-2 sm:grid-cols-4 max-w-2xl mx-auto mb-6">
+      <Tabs.Trigger value="all">Tous les comptes</Tabs.Trigger>
+      <Tabs.Trigger value="current">Compte Courant</Tabs.Trigger>
+      <Tabs.Trigger value="savings">Compte Livret</Tabs.Trigger>
+      <Tabs.Trigger value="cash">Caisse Physique</Tabs.Trigger>
+    </Tabs.List>
+  </Tabs.Root>
 
   <TransactionLedgerTable
     {transactions}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Tabs } from '@nba/ui';
   import type { ReportData, Season, DbCategory, AccountClass, BudgetRecord } from './report-types';
   import { generatePieSlices } from './report-utils';
   import { defaultChargeClasses, defaultProduitClasses } from './report-constants';
@@ -31,6 +32,10 @@
   let editableBudget = $state<Record<string, number>>({});
   let isSaving = $state(false);
   let saveStatus = $state<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  function handleTabChange(newTab: string) {
+    activeTab = newTab as 'resultat' | 'tresorerie' | 'budget';
+  }
 
   $effect(() => {
     const newMap: Record<string, number> = {};
@@ -114,47 +119,28 @@
 </script>
 
 <div class="space-y-6">
-  <!-- Barre d'onglets de rapports centrée et réactive -->
-  <div class="grid w-full max-w-2xl mx-auto grid-cols-3 p-1 bg-muted rounded-xl mb-6 no-print border border-border/50 shadow-xs">
-    <button
-      type="button"
-      data-state={activeTab === 'resultat' ? 'active' : 'inactive'}
-      onclick={() => activeTab = 'resultat'}
-      class="py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer border-0 {activeTab === 'resultat' ? 'bg-background text-foreground shadow-xs font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent'}"
-    >
-      Compte de résultat
-    </button>
-    <button
-      type="button"
-      data-state={activeTab === 'tresorerie' ? 'active' : 'inactive'}
-      onclick={() => activeTab = 'tresorerie'}
-      class="py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer border-0 {activeTab === 'tresorerie' ? 'bg-background text-foreground shadow-xs font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent'}"
-    >
-      Bilan de trésorerie
-    </button>
-    <button
-      type="button"
-      data-state={activeTab === 'budget' ? 'active' : 'inactive'}
-      onclick={() => activeTab = 'budget'}
-      class="py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer border-0 {activeTab === 'budget' ? 'bg-background text-foreground shadow-xs font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent'}"
-    >
-      Budget prévisionnel
-    </button>
-  </div>
+  <Tabs.Root value={activeTab} onValueChange={handleTabChange} class="space-y-6">
+    <Tabs.List class="grid w-full max-w-2xl mx-auto grid-cols-3 mb-6 no-print">
+      <Tabs.Trigger value="resultat">Compte de résultat</Tabs.Trigger>
+      <Tabs.Trigger value="tresorerie">Bilan de trésorerie</Tabs.Trigger>
+      <Tabs.Trigger value="budget">Budget prévisionnel</Tabs.Trigger>
+    </Tabs.List>
 
-  {#if activeTab === 'resultat'}
-    <div class="space-y-6">
+    <!-- Onglet 1 : « Compte de résultat » -->
+    <Tabs.Content value="resultat" class="space-y-6">
       <ReportCompteResultatCard mode="realise" bind:editableBudget {...compResultatProps} />
       <ReportGraphiquesCard mode="realise" chargesData={chargesChartDataRealise} recettesData={recettesChartDataRealise} />
-    </div>
-  {:else if activeTab === 'tresorerie'}
-    <div class="space-y-6">
+    </Tabs.Content>
+
+    <!-- Onglet 2 : « Bilan de trésorerie » -->
+    <Tabs.Content value="tresorerie" class="space-y-6">
       <ReportTresorerieTab {report} {selectedSeason} {seasons} />
-    </div>
-  {:else if activeTab === 'budget'}
-    <div class="space-y-6">
+    </Tabs.Content>
+
+    <!-- Onglet 3 : « Budget prévisionnel » -->
+    <Tabs.Content value="budget" class="space-y-6">
       <ReportCompteResultatCard mode="previsionnel" bind:editableBudget {...compResultatProps} />
       <ReportGraphiquesCard mode="previsionnel" chargesData={chargesChartDataPrevisionnel} recettesData={recettesChartDataPrevisionnel} />
-    </div>
-  {/if}
+    </Tabs.Content>
+  </Tabs.Root>
 </div>
