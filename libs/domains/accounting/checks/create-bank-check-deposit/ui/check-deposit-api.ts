@@ -41,6 +41,13 @@ export async function handleAnalyzeScan(file: File, seasonId: string, state: any
   }
 }
 
+export async function handlePhotoSelected(e: Event, seasonId: string, state: any) {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  await handleAnalyzeScan(file, seasonId, state);
+}
+
 export async function handleAddCheck(e: SubmitEvent, seasonId: string, state: any) {
   e.preventDefault();
   if (!state.checkNumber || !state.checkAmount || !state.checkEmitter) {
