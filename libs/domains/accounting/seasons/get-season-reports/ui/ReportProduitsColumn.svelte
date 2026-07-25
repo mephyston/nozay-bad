@@ -43,13 +43,7 @@
     <div class="flex justify-between items-center font-bold text-xs text-muted-foreground border-b border-border pb-2">
       <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400">PRODUITS (Recettes)</span>
       <div class="flex gap-8 text-[11px]">
-        <span class="w-20 text-right font-semibold">
-          {#if mode === 'previsionnel' && prevReport}
-            Réalisé {seasons.find(s => s.id === getPreviousSeasonId(selectedSeason))?.name.replace('Saison ', '') || getPreviousSeasonId(selectedSeason)}
-          {:else}
-            Réalisé
-          {/if}
-        </span>
+        <span class="w-20 text-right font-semibold">Réalisé</span>
         <span class="w-20 text-right font-semibold">Prévisionnel</span>
       </div>
     </div>

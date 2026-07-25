@@ -22,10 +22,8 @@ export function getClassCategories(
 
     const fkStr = String(fkVal);
 
-    // 1. Correspondance par code textuel de la classe (ex: '70' === '70')
     if (fkStr === classCode) return true;
 
-    // 2. Correspondance par identifiant numérique de la classe (ex: receiptAccountClassId === targetClass.id)
     if (targetClassId !== null && targetClassId !== undefined) {
       if (fkVal === targetClassId || fkStr === String(targetClassId)) return true;
     }
@@ -35,7 +33,7 @@ export function getClassCategories(
 }
 
 /**
- * Récupère le montant total réalisé ou prévisionnel pour une catégorie et un type d'écriture (recette/dépense).
+ * Récupère le montant total réalisé pour une catégorie et un type d'écriture (recette/dépense) de la saison courante.
  * La clé dans report.compteResultat.categories est "${categoryId}_${type}".
  */
 export function getCatTotal(
@@ -45,14 +43,12 @@ export function getCatTotal(
   type: 'recette' | 'depense',
   mode: 'realise' | 'previsionnel'
 ): number {
-  const reportToUse = mode === 'previsionnel' && prevReport ? prevReport : report;
-  if (!reportToUse || !reportToUse.compteResultat || !reportToUse.compteResultat.categories) return 0;
-
-  return reportToUse.compteResultat.categories[`${id}_${type}`]?.total || 0;
+  if (!report || !report.compteResultat || !report.compteResultat.categories) return 0;
+  return report.compteResultat.categories[`${id}_${type}`]?.total || 0;
 }
 
 /**
- * Calcule la somme totale réalisée des catégories appartenant à une classe de compte.
+ * Calcule la somme totale réalisée des catégories appartenant à une classe de compte pour la saison courante.
  */
 export function getClassSumRealise(
   categories: DbCategory[],
@@ -86,7 +82,7 @@ export function getClassSumPrevisionnel(
 }
 
 /**
- * Somme globale des dépenses réalisées ou prévisionnelles.
+ * Somme globale des dépenses réalisées de la saison courante.
  */
 export function getTotalDepensesRealise(
   accountClasses: AccountClass[],
@@ -101,7 +97,7 @@ export function getTotalDepensesRealise(
 }
 
 /**
- * Somme globale des recettes réalisées ou prévisionnelles.
+ * Somme globale des recettes réalisées de la saison courante.
  */
 export function getTotalRecettesRealise(
   accountClasses: AccountClass[],
