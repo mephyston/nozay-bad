@@ -101,21 +101,27 @@
   </div>
 {/if}
 
-<div class="flex flex-wrap gap-2 items-center no-print">
-  <Button 
-    variant={unreconciledChequesOnly ? 'default' : 'outline'}
-    class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer"
-    onclick={() => {
-      const params = new URLSearchParams(window.location.search);
-      if (unreconciledChequesOnly) {
-        params.delete('unreconciledCheques');
-      } else {
-        params.set('unreconciledCheques', 'true');
-      }
-      params.set('page', '1');
-      window.location.href = `/admin/accounting?${params.toString()}`;
-    }}
-  >
-    <span>🎫</span> Chèques en circulation
-  </Button>
+<div class="flex flex-wrap items-center gap-3 no-print">
+  <div class="flex items-center gap-2">
+    <label for="cheques-filter-select" class="text-xs font-semibold text-muted-foreground">Filtre écritures :</label>
+    <select
+      id="cheques-filter-select"
+      class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9"
+      value={unreconciledChequesOnly ? 'cheques' : 'all'}
+      onchange={(e) => {
+        const val = (e.target as HTMLSelectElement).value;
+        const params = new URLSearchParams(window.location.search);
+        if (val === 'cheques') {
+          params.set('unreconciledCheques', 'true');
+        } else {
+          params.delete('unreconciledCheques');
+        }
+        params.set('page', '1');
+        window.location.href = `/admin/accounting?${params.toString()}`;
+      }}
+    >
+      <option value="all">Toutes les écritures</option>
+      <option value="cheques">🎫 Chèques en circulation uniquement</option>
+    </select>
+  </div>
 </div>
