@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Trash2 } from '@lucide/svelte';
-  import { Badge } from '@nba/ui';
+  import { Badge, Amount } from '@nba/ui';
 
   let {
     selectedTx,
@@ -31,14 +31,14 @@
       </div>
     {/if}
     <div class="flex justify-between items-center pt-2 border-t border-border text-xs">
-      <div>
+      <div class="flex items-center gap-1">
         <span class="text-muted-foreground font-medium">Montant total :</span>
-        <span class="font-semibold text-foreground ml-1">{(Math.abs(selectedTx.amount) / 100).toFixed(2)} €</span>
+        <Amount cents={Math.abs(selectedTx.amount)} class="font-semibold text-foreground" />
       </div>
-      <div>
+      <div class="flex items-center gap-1">
         <span class="text-muted-foreground font-medium">Reste à rapprocher :</span>
-        <span class="font-bold ml-1" class:text-emerald-500={remainingAmount === 0} class:text-amber-500={remainingAmount > 0}>
-          {(remainingAmount / 100).toFixed(2)} €
+        <span class="font-bold" class:text-emerald-500={remainingAmount === 0} class:text-amber-500={remainingAmount > 0}>
+          <Amount cents={remainingAmount} />
         </span>
       </div>
     </div>
@@ -55,7 +55,7 @@
               <span class="truncate text-foreground font-medium">{gt.description}</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="font-semibold text-foreground">{(Math.abs(gt.amount) / 100).toFixed(2)} €</span>
+              <Amount cents={Math.abs(gt.amount)} class="font-semibold text-foreground" />
               <button 
                 onclick={() => onDeleteGlLink(gt.id)}
                 class="text-destructive hover:text-destructive/80 transition-colors"

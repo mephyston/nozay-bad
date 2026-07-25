@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, Sparkles } from '@lucide/svelte';
-  import { Button, Input, Table } from '@nba/ui';
+  import { Button, Input, Table, Amount } from '@nba/ui';
 
   let {
     glTransactions = [],
@@ -96,7 +96,7 @@
               <Table.Cell>{gt.date}</Table.Cell>
               <Table.Cell class="font-medium">{gt.description}</Table.Cell>
               <Table.Cell>{gt.type}</Table.Cell>
-              <Table.Cell class="font-semibold">{(Math.abs(gt.amount) / 100).toFixed(2)} €</Table.Cell>
+              <Table.Cell class="font-semibold"><Amount cents={Math.abs(gt.amount)} /></Table.Cell>
               <Table.Cell>
                 <Button 
                   size="sm" 

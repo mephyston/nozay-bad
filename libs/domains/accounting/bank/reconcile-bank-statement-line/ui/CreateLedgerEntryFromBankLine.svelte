@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Input } from '@nba/ui';
+  import { Button, Input, Amount } from '@nba/ui';
   import CreateLedgerEntrySplitRows from './CreateLedgerEntrySplitRows.svelte';
 
   let {
@@ -176,7 +176,14 @@
       disabled={isSubmitting || (isSplitMode && splitSum !== remainingAmount)}
       class="w-full font-bold"
     >
-      {isSplitMode ? 'Enregistrer la ventilation' : `Créer et rapprocher ${(remainingAmount / 100).toFixed(2)} €`}
+      {#if isSplitMode}
+        Enregistrer la ventilation
+      {:else}
+        <span class="flex items-center justify-center gap-1.5">
+          <span>Créer et rapprocher</span>
+          <Amount cents={remainingAmount} />
+        </span>
+      {/if}
     </Button>
   </div>
 </div>

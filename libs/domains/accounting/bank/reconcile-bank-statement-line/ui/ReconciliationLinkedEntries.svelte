@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Trash2 } from '@lucide/svelte';
+  import { Amount } from '@nba/ui';
   import type { ReconciliationState, BankStatementLine } from './reconciliation.svelte';
 
   let { state, selectedTx }: { state: ReconciliationState; selectedTx: BankStatementLine } = $props();
@@ -9,7 +10,12 @@
   <div class="space-y-2">
     <div class="flex items-center justify-between text-xs">
       <span class="font-semibold text-muted-foreground uppercase tracking-wider">Écritures comptables déjà liées ({state.linkedGlTxs.length})</span>
-      <span class="font-medium">Total lié : {(state.totalLinked / 100).toFixed(2)} € / {(Math.abs(selectedTx.amount) / 100).toFixed(2)} €</span>
+      <span class="font-medium flex items-center gap-1">
+        <span>Total lié :</span>
+        <Amount cents={state.totalLinked} />
+        <span>/</span>
+        <Amount cents={Math.abs(selectedTx.amount)} />
+      </span>
     </div>
 
     <div class="rounded-lg border border-border divide-y divide-border bg-card">
@@ -21,7 +27,7 @@
           </div>
 
           <div class="flex items-center gap-3">
-            <span class="font-mono font-semibold">{(Math.abs(gt.amount) / 100).toFixed(2)} €</span>
+            <Amount cents={Math.abs(gt.amount)} class="font-semibold" />
             <button
               type="button"
               class="text-muted-foreground hover:text-destructive p-1 rounded"
@@ -37,8 +43,9 @@
     </div>
 
     {#if state.remainingAmount > 10}
-      <div class="p-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md font-medium">
-        Reste à rapprocher : {(state.remainingAmount / 100).toFixed(2)} €
+      <div class="p-2 text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-md font-medium flex items-center gap-1">
+        <span>Reste à rapprocher :</span>
+        <Amount cents={state.remainingAmount} />
       </div>
     {/if}
   </div>

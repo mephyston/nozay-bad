@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Badge } from '@nba/ui';
+  import { Button, Badge, Amount } from '@nba/ui';
   import { Trash2, Plus, Split } from '@lucide/svelte';
 
   let {
@@ -29,8 +29,8 @@
     </div>
     <div class="text-xs font-medium flex items-center gap-2">
       <span class="text-muted-foreground">Total ventilé :</span>
-      <Badge variant={isComplete ? "default" : "destructive"} class="font-outfit tabular-nums text-xs">
-        {(splitSum / 100).toFixed(2)} € / {(remainingAmount / 100).toFixed(2)} €
+      <Badge variant={isComplete ? "default" : "destructive"} class="font-outfit tabular-nums text-xs flex items-center gap-1">
+        <Amount cents={splitSum} /> / <Amount cents={remainingAmount} />
       </Badge>
     </div>
   </div>

@@ -264,7 +264,7 @@ describe('BankStatementReconciliation Component', () => {
     // Verify invoice information is displayed
     expect(target.innerHTML).toContain('Client Test');
     expect(target.innerHTML).toContain('FAC-2026-0001');
-    expect(target.innerHTML).toContain('156.00 €'); // formatted totalAmount
+    expect(target.innerHTML).toContain('156,00'); // formatted totalAmount
     expect(target.innerHTML).toContain('Suggestion de Facture');
 
     // Verify the mock call triggers match
@@ -435,7 +435,7 @@ describe('BankStatementReconciliation Component', () => {
     flushSync();
 
     // The selected sum should be 156.00 € (15600 cents)
-    expect(target.innerHTML).toContain('156.00');
+    expect(target.innerHTML).toContain('156,00');
 
     // Since selectedSum (15600) != selectedTx.amount (20600), the validation button must be disabled
     const submitBtn = target.querySelector('#btn-valider-association') as HTMLButtonElement;
@@ -447,7 +447,7 @@ describe('BankStatementReconciliation Component', () => {
     flushSync();
 
     // Now both selected: sum is 20600 which matches selectedTx.amount (20600)
-    expect(target.innerHTML).toContain('206.00');
+    expect(target.innerHTML).toContain('206,00');
     expect(submitBtn.disabled).toBe(false);
 
     // Mock window.location
