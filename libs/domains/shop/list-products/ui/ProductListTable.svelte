@@ -24,6 +24,14 @@
     onArchive: (p: Product) => void;
     onToggleDropdown: (id: number, event: MouseEvent) => void;
   } = $props();
+  function getCategoryLabel(product: Product): string {
+    if ((product as any).categoryLabel) return (product as any).categoryLabel;
+    const cat = product.category ?? (product as any).productCategoryId;
+    if (cat === 'shuttlecock' || cat === 1 || cat === '1' || cat === 'Volants') return 'Volants';
+    if (cat === 'string' || cat === 2 || cat === '2' || cat === 'Cordages') return 'Cordages';
+    if (cat === 'other' || cat === 3 || cat === '3' || cat === 'Textile & Accessoires' || cat === 'autre') return 'Textile & Accessoires';
+    return typeof cat === 'string' && cat ? cat : 'Autre';
+  }
 </script>
 
 <Card.Root class="overflow-hidden shadow-sm w-full">
@@ -82,7 +90,7 @@
                 {#if !category || category === 'all'}
                   <Table.Cell>
                     <Badge variant="secondary" class="bg-primary/10 text-primary hover:bg-primary/10 font-semibold">
-                      {product.category === 'shuttlecock' ? 'Volants' : product.category === 'string' ? 'Cordages' : 'Autre'}
+                      {getCategoryLabel(product)}
                     </Badge>
                   </Table.Cell>
                 {/if}
