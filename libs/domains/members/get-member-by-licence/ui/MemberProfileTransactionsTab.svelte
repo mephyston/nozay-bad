@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Table, Badge, Card } from '@nba/ui';
+  import { Table, Badge, Card, Amount } from '@nba/ui';
   import type { GLTransaction } from './member-profile-types';
   import { categoryLabels } from './member-profile-types';
 
@@ -37,8 +37,8 @@
                   </Badge>
                 </Table.Cell>
                 <Table.Cell class="capitalize">{tx.paymentMethod}</Table.Cell>
-                <Table.Cell class="text-right font-semibold font-mono text-emerald-600">
-                  +{(tx.amount / 100).toFixed(2)} €
+                <Table.Cell class="text-right font-bold">
+                  <Amount cents={(tx as any).amountCents ?? tx.amount} showSign colored />
                 </Table.Cell>
               </Table.Row>
             {/each}

@@ -1,9 +1,15 @@
 <script lang="ts">
   import { Landmark } from '@lucide/svelte';
-  import { Card } from '@nba/ui';
+  import { Card, Amount } from '@nba/ui';
   import type { Member } from './member-profile-types';
 
   let { member }: { member: Member } = $props();
+
+  const dueCents = $derived((member as any).amountDueCents ?? member.amountDue ?? 0);
+  const receivedCents = $derived((member as any).amountReceivedCents ?? member.amountReceived ?? 0);
+  const remainingCents = $derived((member as any).amountRemainingCents ?? member.amountRemaining ?? (dueCents - receivedCents));
+
+  const progressPercent = $derived(dueCents > 0 ? Math.min(100, Math.round((receivedCents / dueCents) * 100)) : 0);
 </script>
 
 <Card.Root>
@@ -12,32 +18,36 @@
       <Landmark class="w-5 h-5 text-primary" />
       État financier de la cotisation (Poona)
     </h3>
-    <div class="grid grid-cols-3 gap-4 text-center">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
       <div class="p-3 bg-muted/40 rounded-lg">
         <div class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Montant dû</div>
-        <div class="text-lg font-bold mt-1">{(member.amountDue / 100).toFixed(2)} €</div>
+        <div class="text-lg font-bold mt-1 text-foreground">
+          <Amount cents={dueCents} />
+        </div>
       </div>
       <div class="p-3 bg-muted/40 rounded-lg">
         <div class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Montant reçu</div>
-        <div class="text-lg font-bold mt-1 text-emerald-600 font-semibold">{(member.amountReceived / 100).toFixed(2)} €</div>
+        <div class="text-lg font-bold mt-1 text-emerald-600 dark:text-emerald-400">
+          <Amount cents={receivedCents} />
+        </div>
       </div>
       <div class="p-3 bg-muted/40 rounded-lg">
         <div class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Solde restant</div>
-        <div class="text-lg font-bold mt-1 {member.amountRemaining > 0 ? 'text-amber-600' : 'text-foreground'}">
-          {(member.amountRemaining / 100).toFixed(2)} €
+        <div class="text-lg font-bold mt-1 {remainingCents > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'}">
+          <Amount cents={remainingCents} />
         </div>
       </div>
     </div>
-    
+
     <div class="space-y-2">
       <div class="flex justify-between text-xs text-muted-foreground font-semibold">
         <span>Progression du règlement</span>
-        <span>{member.amountDue > 0 ? Math.round((member.amountReceived / member.amountDue) * 100) : 0}%</span>
+        <span>{progressPercent}%</span>
       </div>
       <div class="w-full bg-muted h-3 rounded-full overflow-hidden border border-border">
         <div 
           class="bg-primary h-full transition-all duration-500" 
-          style="width: {member.amountDue > 0 ? Math.min(100, Math.round((member.amountReceived / member.amountDue) * 100)) : 0}%"
+          style="width: {progressPercent}%"
         ></div>
       </div>
     </div>
