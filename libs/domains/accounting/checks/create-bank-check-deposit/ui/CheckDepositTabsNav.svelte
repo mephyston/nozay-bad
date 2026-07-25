@@ -12,7 +12,7 @@
   let { depositState, checksCount, checkDepositsCount }: Props = $props();
 </script>
 
-<div class="border-b border-border flex items-center justify-between">
+<div class="flex items-center justify-between">
   <Tabs.List class="flex gap-4 no-print">
     <Tabs.Trigger value="checks">
       Chèques reçus ({checksCount})

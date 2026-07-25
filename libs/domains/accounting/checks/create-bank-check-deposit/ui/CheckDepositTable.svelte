@@ -14,14 +14,24 @@
 
 <Card.Root class="overflow-hidden shadow-sm">
   <Card.Content class="p-0">
-    <div class="p-4 border-b border-border flex items-center gap-3">
-      <Search class="h-4 w-4 text-muted-foreground" />
-      <Input
-        type="text"
-        placeholder="Rechercher par numéro, émetteur, banque, adhérent..."
-        bind:value={depositState.checkSearchQuery}
-        class="border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-none focus-visible:ring-transparent h-auto p-0 placeholder:text-muted-foreground text-foreground"
-      />
+    <div class="p-3 border-b border-border bg-muted/40">
+      <div class="relative">
+        <Input
+          type="text"
+          placeholder="Rechercher par numéro, émetteur, banque, adhérent..."
+          bind:value={depositState.checkSearchQuery}
+          class="h-8 text-xs pl-3 pr-8"
+        />
+        {#if depositState.checkSearchQuery}
+          <button
+            type="button"
+            class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+            onclick={() => depositState.checkSearchQuery = ''}
+          >
+            ✕
+          </button>
+        {/if}
+      </div>
     </div>
 
     <div class="overflow-x-auto min-h-[180px]">
