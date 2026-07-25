@@ -1,0 +1,203 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ThemeToggle from './ThemeToggle.svelte';
+import UserNav from './UserNav.svelte';
+import SidebarToggle from './SidebarToggle.svelte';
+import { Toaster } from '@nba/ui';
+
+interface Props {
+  title?: string;
+  email?: string;
+  breadcrumb?: string;
+}
+
+const { title = "Admin - NBA 91", email = "admin@nozay-bad.fr", breadcrumb = "Tableau de Bord" } = Astro.props;
+
+const breadcrumbParts = breadcrumb.split(" / ").map(p => p.trim());
+const currentPath = Astro.url.pathname;
+
+const navGroups = [
+  {
+    label: "",
+    items: [
+      { name: "Vue d'ensemble", href: "/admin", svgPath: "M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z" },
+      { name: "Note de frais", href: "/admin/expenses", svgPath: "M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" }
+    ]
+  },
+  {
+    label: "Adhérents",
+    items: [
+      { name: "Liste des adhérents", href: "/admin/members", svgPath: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm13 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" },
+      { name: "Import Poona", href: "/admin/members/import", svgPath: "M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242M12 12v9m-4-4 4-4 4 4" }
+    ]
+  },
+  {
+    label: "Comptabilité",
+    items: [
+      { name: "Rapports financiers", href: "/admin/accounting/reports", svgPath: "M3 3v18h18M18 17V9M13 17V5M8 17v-3" },
+      { name: "Grand Livre", href: "/admin/accounting", svgPath: "M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" },
+      { name: "Factures", href: "/admin/accounting/invoices", svgPath: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6" },
+      { name: "Rapprochement bancaire", href: "/admin/accounting/import", svgPath: "m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1zM2 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1zM7 21h10M12 3v18" },
+      { name: "Remises de chèques", href: "/admin/accounting/cheques", svgPath: "M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3" },
+      { name: "Caisse", href: "/admin/accounting/cash-box", svgPath: "M21 12V7H5a2 2 0 0 1 0-4h14v4M3 5v14a2 2 0 0 0 2 2h16v-5M18 12a2 2 0 0 0 0 4h4v-4z" },
+      { name: "Soldes initiaux", href: "/admin/accounting/config", svgPath: "M5 3l14 9-14 9V3z" }
+    ]
+  },
+  {
+    label: "Boutique",
+    items: [
+      { name: "Produits", href: "/admin/shop/products", svgPath: "m7.5 4.27 9 5.15M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" },
+      { name: "Commandes", href: "/admin/shop/orders", svgPath: "M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0" }
+    ]
+  },
+  {
+    label: "",
+    items: [
+      { name: "Réglages", href: "/admin/accounting/settings", svgPath: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" }
+    ]
+  }
+];
+
+function isItemActive(itemHref: string): boolean {
+  if (itemHref === "/admin") return currentPath === "/admin" || currentPath === "/admin/";
+  if (itemHref === "/admin/accounting") return currentPath === "/admin/accounting" || currentPath === "/admin/accounting/";
+  return currentPath.startsWith(itemHref);
+}
+
+function getBreadcrumbHref(part: string): string | undefined {
+  switch (part.toLowerCase().trim()) {
+    case "adhérents": return "/admin/members";
+    case "comptabilité": return "/admin/accounting/reports";
+    case "boutique": return "/admin/shop/products";
+    case "note de frais": return "/admin/expenses";
+    default: return undefined;
+  }
+}
+---
+
+<Layout title={title}>
+  <div class="flex min-h-screen bg-background text-foreground">
+    <!-- Sidebar navigation -->
+    <aside
+      id="admin-sidebar"
+      class="w-64 border-r border-border bg-card flex flex-col shrink-0 transition-all duration-200"
+    >
+      <!-- Header / Logo -->
+      <div class="h-14 border-b border-border flex items-center px-4 gap-3">
+        <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <path d="M9 16c0-1.5 1-2 3-2s3 .5 3 2v2a3 3 0 0 1-6 0v-2z"></path>
+            <path d="M12 14V3"></path>
+            <path d="m8 14 2-10"></path>
+            <path d="m16 14-2-10"></path>
+            <path d="m6 14 3-10"></path>
+            <path d="m18 14-3-10"></path>
+            <path d="M8 8h8"></path>
+            <path d="M6 11h12"></path>
+          </svg>
+        </div>
+        <a href="/admin" class="font-bold text-foreground hover:text-primary transition-colors text-sm truncate no-underline">
+          Nozay Bad Association
+        </a>
+      </div>
+
+      <!-- Navigation links -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-6">
+        {navGroups.map((group) => (
+          <div class="space-y-1">
+            {group.label && (
+              <p class="px-3 text-[10px] font-bold tracking-wider text-muted-foreground uppercase mb-1">
+                {group.label}
+              </p>
+            )}
+            {group.items.map((item) => {
+              const active = isItemActive(item.href);
+              return (
+                <a
+                  href={item.href}
+                  class={`flex items-center gap-3 px-3 py-2 text-xs font-semibold rounded-lg transition-colors no-underline ${
+                    active
+                      ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="w-4 h-4 shrink-0"
+                  >
+                    <path d={item.svgPath}></path>
+                  </svg>
+                  <span class="truncate">{item.name}</span>
+                </a>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      <!-- Footer / User info -->
+      <div class="p-3 border-t border-border flex items-center justify-between">
+        <div class="flex items-center gap-2 overflow-hidden">
+          <div class="w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-xs flex items-center justify-center shrink-0">
+            {email.slice(0, 2).toUpperCase()}
+          </div>
+          <div class="truncate text-xs">
+            <p class="font-semibold text-foreground truncate">Trésorier</p>
+            <p class="text-[10px] text-muted-foreground truncate">{email}</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <!-- Top header bar -->
+      <header class="h-14 border-b border-border bg-background flex items-center justify-between px-6 shrink-0">
+        <div class="flex items-center gap-3">
+          <SidebarToggle client:load />
+
+          <div class="h-4 w-px bg-border"></div>
+
+          <!-- Breadcrumb -->
+          <nav aria-label="Breadcrumb" class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <a href="/admin" class="hover:text-foreground transition-colors no-underline">Admin</a>
+            {breadcrumbParts.map((part, i) => {
+              const href = getBreadcrumbHref(part);
+              const isLast = i === breadcrumbParts.length - 1;
+              return (
+                <span class="flex items-center gap-1.5">
+                  <span class="text-muted-foreground/50">/</span>
+                  {isLast ? (
+                    <span class="font-semibold text-foreground">{part}</span>
+                  ) : href ? (
+                    <a href={href} class="hover:text-foreground transition-colors no-underline">{part}</a>
+                  ) : (
+                    <span>{part}</span>
+                  )}
+                </span>
+              );
+            })}
+          </nav>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <ThemeToggle client:load />
+          <UserNav client:load email={email} />
+        </div>
+      </header>
+
+      <!-- Main Content Slot -->
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6">
+        <slot />
+      </main>
+    </div>
+  </div>
+
+  <Toaster client:load position="top-right" richColors />
+</Layout>

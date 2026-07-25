@@ -1,6 +1,6 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
-import AdminLayout from '../../../components/AdminLayout.svelte';
+import AdminLayout from '../../../components/AdminLayout.astro';
 import { CheckDepositManager } from '@nba/accounting-ui';
 
 import { env } from 'cloudflare:workers';
@@ -137,7 +137,7 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
 ---
 
 <Layout title="Remises de Chèques - NBA 91">
-  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Remises de chèques">
+  <AdminLayout email={userEmail} breadcrumb="Comptabilité / Remises de chèques">
     <div class="space-y-6">
       {errorMsg && (
         <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">

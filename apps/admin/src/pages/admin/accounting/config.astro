@@ -1,6 +1,6 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
-import AdminLayout from '../../../components/AdminLayout.svelte';
+import AdminLayout from '../../../components/AdminLayout.astro';
 import { InitialBalancesConfig } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
@@ -98,7 +98,7 @@ const isClosed = !!seasonsList.find((s: any) => (s.code || String(s.id)) === sea
 ---
 
 <Layout title="Soldes initiaux - NBA 91">
-  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Soldes initiaux">
+  <AdminLayout email={userEmail} breadcrumb="Comptabilité / Soldes initiaux">
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>
