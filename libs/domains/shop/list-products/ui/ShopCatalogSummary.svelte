@@ -40,8 +40,8 @@
     </div>
   </div>
 
-  <!-- Turnstile Widget -->
-  <div class="cf-turnstile" style={!selectedMember ? 'display: none;' : ''} data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1"></div>
+  <!-- Turnstile Widget (Invisible) -->
+  <div class="cf-turnstile" style={!selectedMember ? 'display: none;' : ''} data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1" data-size="invisible"></div>
 
   <!-- Submit Button -->
   <Button
