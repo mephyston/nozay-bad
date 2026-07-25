@@ -49,7 +49,7 @@ describe("SettingsManager Component", () => {
     expect(target.innerHTML).toContain("Exercices Comptables / Saisons");
     expect(target.innerHTML).toContain("Saison 2025-2026");
     expect(target.innerHTML).toContain("Saison 2024-2025");
-    expect(target.innerHTML).toContain("Créer la saison");
+    expect(target.innerHTML).toContain("Nouvelle Saison");
 
     // Verify categories and balances are NOT visible
     expect(target.innerHTML).not.toContain("Gestion des Catégories de Trésorerie");
