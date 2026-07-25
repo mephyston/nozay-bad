@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Edit, Trash2, ShoppingBag, Search, MoreVertical } from "@lucide/svelte";
+  import { Edit, Trash2, ShoppingBag, Search, MoreVertical, Plus } from "@lucide/svelte";
   import { Button, Input, Badge, Card, Table, Amount } from "@nba/ui";
   import type { Product } from './products-manager-types';
 
@@ -8,6 +8,7 @@
     category,
     searchTerm = $bindable(''),
     openDropdownId = $bindable(null),
+    onOpenAdd,
     onStartEdit,
     onToggleActive,
     onArchive,
@@ -17,28 +18,37 @@
     category?: number | 'all';
     searchTerm: string;
     openDropdownId: number | null;
+    onOpenAdd?: () => void;
     onStartEdit: (p: Product) => void;
     onToggleActive: (p: Product) => void;
-    onArchive: (id: number, name: string) => void;
+    onArchive: (p: Product) => void;
     onToggleDropdown: (id: number, event: MouseEvent) => void;
   } = $props();
 </script>
 
-<Card.Root class="overflow-hidden shadow-sm">
+<Card.Root class="overflow-hidden shadow-sm w-full">
   <Card.Header class="bg-card border-b border-border pb-4">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <Card.Title class="text-base font-semibold flex items-center gap-2">
         <ShoppingBag class="h-4 w-4 text-primary" />
         <span>Articles en vente</span>
       </Card.Title>
-      <div class="relative shrink-0">
-        <Search class="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground z-10" />
-        <Input
-          type="text"
-          placeholder="Rechercher un article..."
-          bind:value={searchTerm}
-          class="pl-8 pr-3 w-full sm:w-64 h-8 text-xs"
-        />
+      <div class="flex items-center gap-3 shrink-0">
+        <div class="relative">
+          <Search class="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground z-10" />
+          <Input
+            type="text"
+            placeholder="Rechercher un article..."
+            bind:value={searchTerm}
+            class="pl-8 pr-3 w-full sm:w-64 h-8 text-xs"
+          />
+        </div>
+        {#if onOpenAdd}
+          <Button onclick={onOpenAdd} size="sm" class="font-bold flex items-center gap-1.5 shrink-0">
+            <Plus class="w-4 h-4" />
+            Nouveau produit
+          </Button>
+        {/if}
       </div>
     </div>
   </Card.Header>

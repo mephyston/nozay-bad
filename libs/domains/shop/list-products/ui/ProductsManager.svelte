@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { Plus, Edit } from "@lucide/svelte";
+  import { Sheet } from "@nba/ui";
   import type { Product } from './products-manager-types';
   import { submitProduct, toggleProductActive, archiveProduct } from './products-manager-actions';
   import ProductFormCard from './ProductFormCard.svelte';
@@ -22,6 +24,7 @@
   let isSubmitting = $state(false);
   let errorMsg = $state('');
   let successMsg = $state('');
+  let showFormSheet = $state(false);
 
   let editingId = $state<number | null>(null);
   let name = $state('');
@@ -52,6 +55,11 @@
     errorMsg = '';
   }
 
+  function openAddForm() {
+    resetForm();
+    showFormSheet = true;
+  }
+
   function startEdit(product: Product) {
     editingId = product.id;
     name = product.name;
@@ -60,6 +68,7 @@
     active = product.active;
     errorMsg = '';
     successMsg = '';
+    showFormSheet = true;
   }
 
   async function handleSubmit(e: Event) {
@@ -74,6 +83,7 @@
     if (res.success) {
       successMsg = editingId ? 'Produit mis à jour avec succès !' : 'Produit ajouté avec succès !';
       resetForm();
+      showFormSheet = false;
     } else {
       errorMsg = res.error || 'Une erreur est survenue.';
     }
@@ -120,7 +130,40 @@
 </script>
 
 <div class="space-y-6">
-  <div class="grid gap-6 md:grid-cols-5">
+  <ProductListTable
+    {filteredProducts}
+    {category}
+    bind:searchTerm
+    bind:openDropdownId
+    onOpenAdd={openAddForm}
+    onStartEdit={(p) => { startEdit(p); openDropdownId = null; }}
+    onToggleActive={handleToggleActive}
+    onArchive={(p) => { handleArchive(p); openDropdownId = null; }}
+    onToggleDropdown={toggleDropdown}
+  />
+</div>
+
+<Sheet.Root bind:open={showFormSheet}>
+  <Sheet.Content class="w-full sm:max-w-md p-6 bg-card border-border overflow-y-auto">
+    <Sheet.Header>
+      <Sheet.Title class="flex items-center gap-2">
+        {#if editingId}
+          <Edit class="w-5 h-5 text-primary" />
+          Modifier le produit
+        {:else}
+          <Plus class="w-5 h-5 text-primary" />
+          Nouveau produit
+        {/if}
+      </Sheet.Title>
+      <Sheet.Description>
+        {#if editingId}
+          Modifiez les informations du produit ci-dessous.
+        {:else}
+          Renseignez le nom, la catégorie et le prix du nouveau produit.
+        {/if}
+      </Sheet.Description>
+    </Sheet.Header>
+
     <ProductFormCard
       {editingId}
       bind:name
@@ -134,16 +177,5 @@
       onReset={resetForm}
       onSubmit={handleSubmit}
     />
-
-    <ProductListTable
-      {filteredProducts}
-      {category}
-      bind:searchTerm
-      bind:openDropdownId
-      onStartEdit={(p) => { startEdit(p); openDropdownId = null; }}
-      onToggleActive={handleToggleActive}
-      onArchive={(p) => { handleArchive(p); openDropdownId = null; }}
-      onToggleDropdown={toggleDropdown}
-    />
-  </div>
-</div>
+  </Sheet.Content>
+</Sheet.Root>
