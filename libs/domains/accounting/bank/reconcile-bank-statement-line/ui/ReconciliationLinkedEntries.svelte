@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Trash2 } from '@lucide/svelte';
-  import { Amount, AlertDialog } from '@nba/ui';
+  import { Amount, AlertDialog, Button } from '@nba/ui';
   import type { ReconciliationState, BankStatementLine } from './reconciliation.svelte';
 
   let { state: reconState, selectedTx }: { state: ReconciliationState; selectedTx: BankStatementLine } = $props();
@@ -15,14 +15,15 @@
 
   function handleConfirmedDelete() {
     if (entryToDelete !== null) {
-      reconState.handleDeletePart(entryToDelete);
+      const id = entryToDelete;
       entryToDelete = null;
       showConfirmDialog = false;
+      reconState?.handleDeletePart?.(id);
     }
   }
 </script>
 
-{#if reconState.linkedGlTxs.length > 0}
+{#if reconState?.linkedGlTxs && reconState.linkedGlTxs.length > 0}
   <div class="space-y-2">
     <div class="flex items-center justify-between text-xs">
       <span class="font-semibold text-muted-foreground uppercase tracking-wider">Écritures comptables déjà liées ({reconState.linkedGlTxs.length})</span>
@@ -30,7 +31,7 @@
         <span>Total lié :</span>
         <Amount cents={reconState.totalLinked} />
         <span>/</span>
-        <Amount cents={Math.abs(selectedTx.amount)} />
+        <Amount cents={Math.abs(selectedTx?.amount || 0)} />
       </span>
     </div>
 
@@ -77,9 +78,9 @@
     </AlertDialog.Header>
     <AlertDialog.Footer>
       <AlertDialog.Cancel onclick={() => showConfirmDialog = false}>Annuler</AlertDialog.Cancel>
-      <AlertDialog.Action onclick={handleConfirmedDelete} class="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold">
+      <Button variant="destructive" onclick={handleConfirmedDelete} class="font-bold">
         Dissocier
-      </AlertDialog.Action>
+      </Button>
     </AlertDialog.Footer>
   </AlertDialog.Content>
 </AlertDialog.Root>

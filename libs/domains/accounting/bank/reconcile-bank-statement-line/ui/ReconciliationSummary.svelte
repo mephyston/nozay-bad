@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Trash2 } from '@lucide/svelte';
-  import { Badge, Amount, AlertDialog } from '@nba/ui';
+  import { Badge, Amount, AlertDialog, Button } from '@nba/ui';
 
   let {
     selectedTx,
@@ -97,9 +97,9 @@
     </AlertDialog.Header>
     <AlertDialog.Footer>
       <AlertDialog.Cancel onclick={() => showConfirmDialog = false}>Annuler</AlertDialog.Cancel>
-      <AlertDialog.Action onclick={handleConfirmedDelete} class="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold">
+      <Button variant="destructive" onclick={handleConfirmedDelete} class="font-bold">
         Dissocier
-      </AlertDialog.Action>
+      </Button>
     </AlertDialog.Footer>
   </AlertDialog.Content>
 </AlertDialog.Root>
