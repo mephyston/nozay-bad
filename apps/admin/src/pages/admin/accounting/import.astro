@@ -38,7 +38,7 @@ if (Astro.request.method === 'POST') {
           headers: { 'Content-Type': 'application/json' }
         });
       } else if (data.action === 'create' || data.action === 'match' || data.action === 'reconcile') {
-        const btId = data.btId || (data.match && data.match.btId);
+        const btId = data.btId || (data.match && data.match.btId) || data.id || (data.match && data.match.bankStatementLineId) || data.bankStatementLineId;
         const apiRes = await apiService.fetch(`http://localhost/accounting/bank-transactions/${btId}/reconcile`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
