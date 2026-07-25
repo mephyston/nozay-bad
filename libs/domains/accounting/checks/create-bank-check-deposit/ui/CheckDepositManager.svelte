@@ -53,7 +53,7 @@
 </script>
 
 <div class="space-y-6">
-  <Tabs.Root bind:value={depositState.activeTab} class="space-y-6">
+  <Tabs.Root value={depositState.activeTab} onValueChange={(v) => depositState.activeTab = v as any} class="space-y-6">
     <CheckDepositTabsNav
       {depositState}
       checksCount={props.checks.filter(c => c.status === 'received').length}

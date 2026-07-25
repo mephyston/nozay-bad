@@ -14,10 +14,7 @@
 <TabsPrimitive.Root
 	bind:ref
 	bind:value
-	onValueChange={(v) => {
-		value = v;
-		onValueChange?.(v);
-	}}
+	{onValueChange}
 	data-slot="tabs"
 	class={cn("gap-2 group/tabs flex data-[orientation=horizontal]:flex-col", className)}
 	{...restProps}

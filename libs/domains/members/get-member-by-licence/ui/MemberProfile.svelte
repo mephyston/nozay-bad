@@ -9,6 +9,8 @@
   export * from './member-profile-types';
 
   let { member, transactions = [], seasonId = '25-26' }: { member: Member; transactions: GLTransaction[]; seasonId?: string } = $props();
+
+  let activeTab = $state<'profil' | 'cotisation' | 'transactions'>('profil');
 </script>
 
 <div class="space-y-6 max-w-3xl mx-auto">
@@ -53,7 +55,7 @@
     </div>
   </div>
 
-  <Tabs.Root value="profil" class="w-full">
+  <Tabs.Root value={activeTab} onValueChange={(v) => activeTab = v as any} class="w-full">
     <Tabs.List class="grid w-full grid-cols-3 mb-6">
       <Tabs.Trigger value="profil">Profil & Contacts</Tabs.Trigger>
       <Tabs.Trigger value="cotisation">Cotisation Poona</Tabs.Trigger>
