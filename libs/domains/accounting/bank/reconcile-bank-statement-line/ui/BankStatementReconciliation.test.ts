@@ -147,7 +147,7 @@ describe('BankStatementReconciliation Component', () => {
 
     expect(target.innerHTML).toContain('À rapprocher (1)');
     expect(target.innerHTML).toContain('IONOS');
-    expect(target.innerHTML).toContain('-15.60 €');
+    expect(target.innerHTML).toContain('-15,60');
 
     // Cliquer sur le bouton de la transaction pour l'activer dans le panneau droit
     const btn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('IONOS')) as HTMLButtonElement;

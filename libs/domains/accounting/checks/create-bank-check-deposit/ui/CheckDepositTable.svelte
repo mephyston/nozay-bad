@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Search, Link, MoreVertical, Trash2, FileText } from '@lucide/svelte';
-  import { Button, Table, Input, Card, Checkbox } from '@nba/ui';
+  import { Button, Table, Input, Card, Checkbox, Amount } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
 
   interface Props {
