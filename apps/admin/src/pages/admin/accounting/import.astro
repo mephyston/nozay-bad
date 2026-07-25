@@ -69,7 +69,7 @@ if (Astro.request.method === 'POST') {
         if (!apiRes.ok) {
           return new Response('Erreur réaffichage ligne', { status: apiRes.status });
         }
-      } else if (data.action === 'delete-transaction') {
+      } else if (data.action === 'delete-transaction' || data.action === 'delete-ledger-entry') {
         const apiRes = await apiService.fetch(`http://localhost/accounting/transactions/${data.txId}`, {
           method: 'DELETE'
         });

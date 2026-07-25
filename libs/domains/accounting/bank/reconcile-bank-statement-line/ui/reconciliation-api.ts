@@ -171,7 +171,7 @@ export async function apiDeleteLedgerEntry(txId: number): Promise<void> {
   const res = await fetch('/admin/accounting/import', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'delete-ledger-entry', txId })
+    body: JSON.stringify({ action: 'delete-transaction', txId })
   });
   if (!res.ok) throw new Error('Erreur lors de la suppression.');
 }
