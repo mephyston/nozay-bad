@@ -9,6 +9,19 @@
   import type { ReconciliationState } from './reconciliation.svelte';
 
   let { state }: { state: ReconciliationState } = $props();
+
+  function formatShortDate(dateStr: string) {
+    if (!dateStr) return '';
+    const parts = dateStr.includes('-') ? dateStr.split('-') : dateStr.split('/');
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        return `${parts[2]}/${parts[1]}/${parts[0].slice(2)}`;
+      } else {
+        return `${parts[0]}/${parts[1]}/${parts[2].slice(-2)}`;
+      }
+    }
+    return dateStr;
+  }
 </script>
 
 {#if !state.selectedTx}
@@ -39,8 +52,8 @@
         </Button>
       </div>
 
-      <!-- Titre et Montant -->
-      <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
+      <!-- Titre, Statut, Montant et Actions compactes -->
+      <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div class="space-y-1 min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
             <h3 class="font-bold text-base sm:text-lg text-foreground break-words">{state.selectedTx.name}</h3>
@@ -64,78 +77,66 @@
             <div class="font-outfit text-lg sm:text-xl font-bold tabular-nums whitespace-nowrap {((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}">
               {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) / 100).replace(/\s/g, '\u00a0')} €
             </div>
-            <div class="text-[11px] text-muted-foreground">{state.selectedTx.date}</div>
+            <div class="text-[11px] text-muted-foreground">
+              <span class="sm:hidden">{formatShortDate(state.selectedTx.date)}</span>
+              <span class="hidden sm:inline">{state.selectedTx.date}</span>
+            </div>
           </div>
 
-          <button
-            type="button"
-            class="hidden lg:block text-muted-foreground hover:text-foreground p-1 text-sm rounded hover:bg-muted ml-2"
-            onclick={() => {
-              sessionStorage.removeItem('reconcile_active_bt_id');
-              state.selectedTx = null;
-            }}
-            title="Fermer le panneau"
-          >
-            ✕ <span class="sr-only">Fermer</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Accordéon / Section repliable pour les détails secondaires -->
-      <details class="group pt-2 border-t border-border/40 text-xs">
-        <summary class="flex items-center justify-between font-medium cursor-pointer text-muted-foreground hover:text-foreground py-1 select-none">
-          <span class="text-[11px] font-medium text-primary flex items-center gap-1">
-            <span class="group-open:hidden">Afficher détails & actions ▼</span>
-            <span class="hidden group-open:inline">Masquer détails & actions ▲</span>
-          </span>
-        </summary>
-        
-        <div class="pt-2 space-y-2">
-          <div class="flex flex-wrap items-center justify-between gap-2 bg-muted/40 p-2.5 rounded-lg text-[11px]">
-            <div class="space-y-0.5">
-              <div>FITID: <span class="font-mono text-foreground font-medium">{state.selectedTx.fitid}</span></div>
-              <div>ID interne: <span class="font-mono text-foreground font-semibold">{state.selectedTx.id}</span></div>
-            </div>
-
-            <div class="flex items-center gap-2">
-              {#if state.selectedTx.status === 'ignored'}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  class="h-7 text-xs gap-1 cursor-pointer"
-                  disabled={state.isClosed || state.isSubmitting}
-                  onclick={() => state.handleUnignore(state.selectedTx!.id)}
-                >
-                  <RefreshCw class="h-3 w-3" />
-                  <span>Réactiver</span>
-                </Button>
-              {:else}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  class="h-7 text-xs gap-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                  disabled={state.isClosed || state.isSubmitting}
-                  onclick={() => state.handleIgnore(state.selectedTx!.id)}
-                >
-                  <Trash2 class="h-3 w-3" />
-                  <span>Ignorer cette ligne</span>
-                </Button>
-              {/if}
-
+          <!-- Boutons d'action compacts (icône seule sur mobile, icône + texte sur grand écran) -->
+          <div class="flex items-center gap-1.5 ml-1">
+            {#if state.selectedTx.status === 'ignored'}
               <Button
                 size="sm"
-                variant="ghost"
-                class="h-7 text-xs gap-1 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 cursor-pointer"
-                disabled={state.isClosed || state.isAnalyzingSingle}
-                onclick={() => state.handleAnalyzeSingle(state.selectedTx!.id)}
+                variant="outline"
+                class="h-8 w-8 p-0 sm:w-auto sm:px-2.5 text-xs gap-1 cursor-pointer"
+                title="Réactiver cette ligne"
+                disabled={state.isClosed || state.isSubmitting}
+                onclick={() => state.handleUnignore(state.selectedTx!.id)}
               >
-                <Sparkles class="h-3 w-3" />
-                <span>{state.isAnalyzingSingle ? 'Analyse...' : 'Re-analyser (IA)'}</span>
+                <RefreshCw class="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                <span class="hidden sm:inline">Réactiver</span>
               </Button>
-            </div>
+            {:else}
+              <Button
+                size="sm"
+                variant="outline"
+                class="h-8 w-8 p-0 sm:w-auto sm:px-2.5 text-xs gap-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                title="Ignorer cette ligne"
+                disabled={state.isClosed || state.isSubmitting}
+                onclick={() => state.handleIgnore(state.selectedTx!.id)}
+              >
+                <Trash2 class="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                <span class="hidden sm:inline">Ignorer</span>
+              </Button>
+            {/if}
+
+            <Button
+              size="sm"
+              variant="ghost"
+              class="h-8 w-8 p-0 sm:w-auto sm:px-2.5 text-xs gap-1 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 cursor-pointer"
+              title="Re-analyser avec l'IA"
+              disabled={state.isClosed || state.isAnalyzingSingle}
+              onclick={() => state.handleAnalyzeSingle(state.selectedTx!.id)}
+            >
+              <Sparkles class="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+              <span class="hidden sm:inline">{state.isAnalyzingSingle ? 'Analyse...' : 'Re-analyser'}</span>
+            </Button>
+
+            <button
+              type="button"
+              class="hidden lg:block text-muted-foreground hover:text-foreground p-1 text-sm rounded hover:bg-muted ml-1"
+              onclick={() => {
+                sessionStorage.removeItem('reconcile_active_bt_id');
+                state.selectedTx = null;
+              }}
+              title="Fermer le panneau"
+            >
+              ✕ <span class="sr-only">Fermer</span>
+            </button>
           </div>
         </div>
-      </details>
+      </div>
     </div>
 
     <!-- Zone principale avec scroll -->
