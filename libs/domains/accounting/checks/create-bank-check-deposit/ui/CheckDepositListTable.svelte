@@ -28,7 +28,7 @@
           </Table.Row>
         </Table.Header>
         <Table.Body class="divide-y divide-border">
-          {#each checkDeposits as dep}
+          {#each checkDeposits as dep, index}
             <Table.Row class="hover:bg-muted/50 transition-colors">
               <Table.Cell class="p-4 text-muted-foreground">
                 {new Date(dep.date).toLocaleDateString('fr-FR')}
@@ -71,7 +71,7 @@
                   </Button>
 
                   {#if depositState.openDropdownId === `deposit-${dep.id}`}
-                    <div class="absolute right-0 top-full mt-1 w-48 bg-popover border border-border rounded-lg shadow-xl z-50 py-1 text-left divide-y divide-border animate-in fade-in duration-100">
+                    <div class="absolute right-0 {checkDeposits.length <= 2 || index >= checkDeposits.length - 2 ? 'bottom-full mb-1' : 'top-full mt-1'} w-48 bg-popover border border-border rounded-lg shadow-xl z-50 py-1 text-left divide-y divide-border animate-in fade-in duration-100">
                       <Button
                         variant="ghost"
                         size="sm"

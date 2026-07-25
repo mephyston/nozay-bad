@@ -58,7 +58,7 @@
           </Table.Row>
         </Table.Header>
         <Table.Body class="divide-y divide-border">
-          {#each depositState.filteredChecks as check}
+          {#each depositState.filteredChecks as check, index}
             <Table.Row class="hover:bg-muted/50 transition-colors">
               <Table.Cell class="p-4">
                 <Checkbox
@@ -105,7 +105,7 @@
                     </Button>
 
                     {#if depositState.openDropdownId === `check-${check.id}`}
-                      <div class="absolute right-0 top-full mt-1 w-32 bg-popover border border-border rounded-lg shadow-xl z-50 py-1 text-left divide-y divide-border animate-in fade-in duration-100">
+                      <div class="absolute right-0 {depositState.filteredChecks.length <= 2 || index >= depositState.filteredChecks.length - 2 ? 'bottom-full mb-1' : 'top-full mt-1'} w-32 bg-popover border border-border rounded-lg shadow-xl z-50 py-1 text-left divide-y divide-border animate-in fade-in duration-100">
                         <Button
                           variant="ghost"
                           size="sm"
