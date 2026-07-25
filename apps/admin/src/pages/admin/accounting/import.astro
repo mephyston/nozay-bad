@@ -37,16 +37,17 @@ if (Astro.request.method === 'POST') {
         return new Response(await apiRes.text(), {
           headers: { 'Content-Type': 'application/json' }
         });
-      } else if (data.action === 'reconcile') {
-        const apiRes = await apiService.fetch(`http://localhost/accounting/bank-transactions/${data.btId}/reconcile`, {
+      } else if (data.action === 'create' || data.action === 'match' || data.action === 'reconcile') {
+        const btId = data.btId || (data.match && data.match.btId);
+        const apiRes = await apiService.fetch(`http://localhost/accounting/bank-transactions/${btId}/reconcile`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data.match)
+          body: JSON.stringify(data.match ? data.match : data)
         });
         if (!apiRes.ok) {
           return new Response(await apiRes.text(), { status: apiRes.status });
         }
-      } else if (data.action === 'reconcile-bulk') {
+      } else if (data.action === 'bulk' || data.action === 'reconcile-bulk') {
         const apiRes = await apiService.fetch('http://localhost/accounting/bank-transactions/reconcile-bulk', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
