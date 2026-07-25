@@ -92,7 +92,7 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-let bankTransactionsList = [];
+let bankStatementLines = [];
 let glTransactionsList = [];
 let seasonsList: any[] = [];
 let membersList = [];
@@ -121,7 +121,7 @@ try {
 
   if (btRes.ok) {
     const json = await btRes.json() as any;
-    bankTransactionsList = json.data || [];
+    bankStatementLines = json.data || [];
   }
 
   if (glRes.ok) {
@@ -156,7 +156,7 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
 
       <BankStatementReconciliation
         client:load
-        bankStatementLines={bankTransactionsList}
+        bankStatementLines={bankStatementLines}
         glTransactions={glTransactionsList}
         seasons={seasonsList}
         seasonId={season}
