@@ -1,14 +1,13 @@
 <script lang="ts">
-  import { Card } from '@nba/ui';
+  import { Card, Amount } from '@nba/ui';
   import type { BalanceReport } from './ledger-types';
   import { accountLabels } from './ledger-types';
 
   let { balances = [] }: { balances: BalanceReport[] } = $props();
 
-  function getAccountBalance(acc: 'current' | 'savings' | 'cash') {
+  function getAccountBalanceCents(acc: 'current' | 'savings' | 'cash') {
     const match = balances.find(b => b.accountId === acc);
-    const cents = match ? ((match as any).finalBalanceCents ?? match.finalBalance ?? 0) : 0;
-    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100).replace(/\s/g, ' ') + ' €';
+    return match ? ((match as any).finalBalanceCents ?? match.finalBalance ?? 0) : 0;
   }
 </script>
 
@@ -19,7 +18,9 @@
         <Card.Title class="text-sm font-medium text-muted-foreground">{label}</Card.Title>
       </Card.Header>
       <Card.Content>
-        <div class="text-3xl font-outfit font-bold tabular-nums text-foreground">{getAccountBalance(key as any)}</div>
+        <div class="text-3xl font-bold text-foreground">
+          <Amount cents={getAccountBalanceCents(key as any)} />
+        </div>
       </Card.Content>
     </Card.Root>
   {/each}

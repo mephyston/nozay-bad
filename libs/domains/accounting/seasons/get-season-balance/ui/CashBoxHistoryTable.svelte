@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FileText, Search, Trash2 } from '@lucide/svelte';
-  import { Button, Input, Badge, Card, Table } from '@nba/ui';
+  import { Button, Input, Badge, Card, Table, Amount } from '@nba/ui';
   import type { CashTransaction } from './cashbox-types';
   import { categoryLabels } from './cashbox-types';
 
@@ -61,15 +61,15 @@
             <Table.Cell class="py-3 px-2 text-xs text-muted-foreground">
               {tx.category ? (categoryLabels[tx.category] || tx.category) : 'Transfert'}
             </Table.Cell>
-            <Table.Cell class="py-3 px-2 text-right font-outfit font-bold tabular-nums">
+            <Table.Cell class="py-3 px-2 text-right font-bold">
               {#if tx.type === 'recette'}
-                <span class="text-emerald-600 dark:text-emerald-400">+{new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((tx.amount || 0) / 100).replace(/\s/g, ' ')} €</span>
+                <Amount cents={tx.amount} showSign colored />
               {:else if tx.type === 'depense'}
-                <span class="text-destructive">-{new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((tx.amount || 0) / 100).replace(/\s/g, ' ')} €</span>
+                <Amount cents={-tx.amount} showSign colored />
               {:else if tx.type === 'transfert' && tx.destinationAccountId === 'cash'}
-                <span class="text-emerald-600 dark:text-emerald-400">+{new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((tx.amount || 0) / 100).replace(/\s/g, ' ')} €</span>
+                <Amount cents={tx.amount} showSign colored />
               {:else}
-                <span class="text-destructive">-{new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((tx.amount || 0) / 100).replace(/\s/g, ' ')} €</span>
+                <Amount cents={-tx.amount} showSign colored />
               {/if}
             </Table.Cell>
             <Table.Cell class="py-3 px-2 text-right">

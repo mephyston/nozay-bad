@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CheckCircle, MoreVertical, FileText, Trash2 } from '@lucide/svelte';
-  import { Button, Table, Badge, Card } from '@nba/ui';
+  import { Button, Table, Badge, Card, Amount } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
   import type { CheckDeposit } from './check-deposit-types';
 
@@ -45,8 +45,8 @@
                   </Badge>
                 {/if}
               </Table.Cell>
-              <Table.Cell class="p-4 text-right font-outfit font-semibold tabular-nums text-foreground">
-                {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((dep as any).amountCents ?? dep.amount ?? 0) / 100).replace(/\s/g, ' ')} €
+              <Table.Cell class="p-4 text-right font-bold text-foreground">
+                <Amount cents={(dep as any).amountCents ?? dep.amount} />
               </Table.Cell>
               <Table.Cell class="p-4">
                 {#if dep.status === 'cleared'}

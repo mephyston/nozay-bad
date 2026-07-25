@@ -28,3 +28,4 @@ export { Calendar } from './components/ui/calendar';
 export * as Sidebar from './components/ui/sidebar';
 export * as Tooltip from './components/ui/tooltip';
 export { Separator } from './components/ui/separator';
+export { Amount } from './components/ui/amount';

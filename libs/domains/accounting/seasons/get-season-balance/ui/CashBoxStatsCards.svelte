@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Wallet, TrendingUp, TrendingDown } from '@lucide/svelte';
-  import { Card } from '@nba/ui';
+  import { Card, Amount } from '@nba/ui';
 
   let {
     initialBalance = 0,
@@ -13,20 +13,19 @@
     totalOut: number;
     currentBalance: number;
   } = $props();
-
-  function formatEuros(cents: number) {
-    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((cents || 0) / 100).replace(/\s/g, ' ') + ' €';
-  }
 </script>
 
 <div class="grid gap-4 md:grid-cols-3">
   <Card.Root class="flex items-center justify-between p-6">
     <div class="space-y-1">
       <Card.Title class="text-sm font-medium tracking-tight text-muted-foreground">Solde de la Caisse</Card.Title>
-      <div class="text-3xl font-outfit font-bold tabular-nums mt-2 text-emerald-600 dark:text-emerald-400">
-        {formatEuros(currentBalance)}
+      <div class="text-3xl font-bold mt-2">
+        <Amount cents={currentBalance} class="text-emerald-600 dark:text-emerald-400" />
       </div>
-      <Card.Description class="text-xs font-outfit tabular-nums text-muted-foreground mt-1">Solde d'ouverture : {formatEuros(initialBalance)}</Card.Description>
+      <Card.Description class="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+        <span>Solde d'ouverture :</span>
+        <Amount cents={initialBalance} class="font-normal text-muted-foreground" />
+      </Card.Description>
     </div>
     <div class="p-3 bg-emerald-500/10 rounded-full text-emerald-600 dark:text-emerald-400">
       <Wallet class="w-6 h-6" />
@@ -35,8 +34,8 @@
   <Card.Root class="flex items-center justify-between p-6">
     <div class="space-y-1">
       <Card.Title class="text-sm font-medium tracking-tight text-muted-foreground">Total Entrées (Buvette...)</Card.Title>
-      <div class="text-3xl font-outfit font-bold tabular-nums mt-2 text-primary">
-        +{formatEuros(totalIn)}
+      <div class="text-3xl font-bold mt-2">
+        <Amount cents={totalIn} showSign class="text-primary" />
       </div>
       <Card.Description class="text-xs text-muted-foreground mt-1">Saison en cours</Card.Description>
     </div>
@@ -47,8 +46,8 @@
   <Card.Root class="flex items-center justify-between p-6">
     <div class="space-y-1">
       <Card.Title class="text-sm font-medium tracking-tight text-muted-foreground">Total Sorties (Monnaie...)</Card.Title>
-      <div class="text-3xl font-outfit font-bold tabular-nums mt-2 text-destructive">
-        -{formatEuros(totalOut)}
+      <div class="text-3xl font-bold mt-2">
+        <Amount cents={-totalOut} showSign class="text-destructive" />
       </div>
       <Card.Description class="text-xs text-muted-foreground mt-1">Saison en cours</Card.Description>
     </div>

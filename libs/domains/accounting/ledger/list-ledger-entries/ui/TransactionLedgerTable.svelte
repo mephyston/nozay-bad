@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, MoreVertical, Edit2, Trash2, ChevronLeft, ChevronRight } from '@lucide/svelte';
-  import { Button, Table, Badge, Popover } from '@nba/ui';
+  import { Button, Table, Badge, Popover, Amount } from '@nba/ui';
   import type { Transaction, Pagination } from './ledger-types';
   import { accountLabels } from './ledger-types';
 
@@ -79,13 +79,13 @@
                 {/if}
               </div>
             </Table.Cell>
-            <Table.Cell class="p-4 text-right font-outfit font-bold tabular-nums">
+            <Table.Cell class="p-4 text-right font-bold">
               {#if tx.type === 'recette'}
-                <span class="text-emerald-600 dark:text-emerald-400">+{new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((tx as any).amountCents ?? tx.amount ?? 0) / 100).replace(/\s/g, ' ')} €</span>
+                <Amount cents={(tx as any).amountCents ?? tx.amount} showSign colored />
               {:else if tx.type === 'depense'}
-                <span class="text-destructive">-{new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((tx as any).amountCents ?? tx.amount ?? 0) / 100).replace(/\s/g, ' ')} €</span>
+                <Amount cents={-((tx as any).amountCents ?? tx.amount)} showSign colored />
               {:else}
-                <span class="text-muted-foreground">{new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((tx as any).amountCents ?? tx.amount ?? 0) / 100).replace(/\s/g, ' ')} €</span>
+                <Amount cents={(tx as any).amountCents ?? tx.amount} class="text-muted-foreground" />
               {/if}
             </Table.Cell>
             <Table.Cell class="p-4 text-right relative">

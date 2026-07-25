@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus, Check, FileText, Mail, MapPin, Calendar, Users, Info } from '@lucide/svelte';
-  import { Button, Input, Sheet, Alert, Textarea } from '@nba/ui';
+  import { Button, Input, Sheet, Alert, Textarea, Amount } from '@nba/ui';
   import type { InvoiceFormItem } from './invoices-types';
   import InvoiceItemRow from './InvoiceItemRow.svelte';
 
@@ -167,8 +167,9 @@
       </div>
 
       <Sheet.Footer class="p-6 border-t border-border bg-muted/20 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
-        <div class="text-sm font-medium">
-          Total : <span class="text-lg font-outfit font-bold text-primary tabular-nums">{new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(itemsTotal / 100).replace(/\s/g, ' ')} €</span>
+        <div class="text-sm font-medium flex items-center gap-1.5">
+          <span>Total :</span>
+          <Amount cents={itemsTotal} class="text-lg font-bold text-primary" />
         </div>
         <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
           <Button type="button" variant="outline" onclick={() => { showModal = false; }} disabled={isSubmitting}>

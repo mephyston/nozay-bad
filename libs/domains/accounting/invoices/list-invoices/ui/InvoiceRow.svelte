@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Edit, Trash2, Printer, Send, Ban, MoreVertical } from '@lucide/svelte';
-  import { Button, Table, Badge } from '@nba/ui';
+  import { Button, Table, Badge, Amount } from '@nba/ui';
   import type { Invoice } from './invoices-types';
 
   let {
@@ -21,14 +21,14 @@
     onDelete: (id: number, invoiceNumber: string) => void;
   } = $props();
 
-  const statusColors = {
-    draft: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20',
-    sent: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20',
-    paid: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20',
-    cancelled: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20'
+  const statusColors: Record<string, string> = {
+    draft: 'bg-muted text-muted-foreground border-transparent',
+    sent: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-transparent',
+    paid: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-transparent',
+    cancelled: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-transparent'
   };
 
-  const statusLabels = {
+  const statusLabels: Record<string, string> = {
     draft: 'Brouillon',
     sent: 'Envoyée',
     paid: 'Payée',
@@ -41,14 +41,14 @@
   }
 </script>
 
-<Table.Row class="hover:bg-muted/10 transition-colors">
-  <Table.Cell class="p-4 font-bold text-foreground">{inv.invoiceNumber}</Table.Cell>
-  <Table.Cell class="p-4 font-semibold text-foreground">{inv.clientName}</Table.Cell>
+<Table.Row class="hover:bg-muted/50 transition-colors">
+  <Table.Cell class="p-4 font-semibold text-foreground">{inv.invoiceNumber}</Table.Cell>
+  <Table.Cell class="p-4 font-medium text-foreground">{inv.clientName}</Table.Cell>
   <Table.Cell class="p-4 text-muted-foreground max-w-xs truncate">{inv.subject || '—'}</Table.Cell>
   <Table.Cell class="p-4 text-muted-foreground">{inv.date}</Table.Cell>
   <Table.Cell class="p-4 text-muted-foreground">{inv.dueDate}</Table.Cell>
-  <Table.Cell class="p-4 text-right font-outfit font-bold tabular-nums text-foreground">
-    {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((inv as any).totalAmountCents ?? inv.totalAmount ?? 0) / 100).replace(/\s/g, ' ')} €
+  <Table.Cell class="p-4 text-right font-bold text-foreground">
+    <Amount cents={(inv as any).totalAmountCents ?? inv.totalAmount} />
   </Table.Cell>
   <Table.Cell class="p-4 text-center">
     <Badge variant="outline" class={statusColors[inv.status]}>
