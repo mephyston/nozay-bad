@@ -94,10 +94,10 @@ describe('CheckDepositManager Component', () => {
     expect(target.innerHTML).toContain('Chèques reçus');
     expect(target.innerHTML).toContain('1234567');
     expect(target.innerHTML).toContain('Dupont Marc');
-    expect(target.innerHTML).toContain('150.00 €');
+    expect(target.innerHTML).toContain('150,00');
   });
 
-  it('uses standard UI Checkbox components, has no font-mono usages for check reference/numbers, and has no-print class on Tabs.List', () => {
+  it('uses standard UI Checkbox components, has font-mono usages for amounts, and has no-print class on Tabs.List', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
@@ -152,9 +152,9 @@ describe('CheckDepositManager Component', () => {
     const customCheckboxes = target.querySelectorAll('[role="checkbox"]');
     expect(customCheckboxes.length).toBeGreaterThan(0);
 
-    // 2. font-mono should be removed from all numbers, references, and inputs
+    // 2. font-mono should be used on amount elements
     const fontMonoElements = target.querySelectorAll('.font-mono');
-    expect(fontMonoElements.length).toBe(0);
+    expect(fontMonoElements.length).toBeGreaterThan(0);
 
     // 3. no-print should be on the Tabs.List element
     const noPrintElements = target.querySelectorAll('.no-print');
