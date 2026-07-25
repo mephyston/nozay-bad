@@ -18,6 +18,9 @@
       "head_sampling_rate": 1
     }
   },
+  "vars": {
+    "INTERNAL_API_KEY": "dev-secret-key-12345"
+  },
   "services": [
     { "binding": "API_SERVICE", "service": "nba-api" }
   ],

@@ -4,13 +4,19 @@ export interface ApiClientEnv {
   };
   INTERNAL_API_KEY?: string;
   API_URL?: string;
+  ENVIRONMENT?: string;
 }
 
 export function createApiClient(env?: ApiClientEnv) {
+  const isProd =
+    env?.ENVIRONMENT === 'production' ||
+    env?.ENVIRONMENT === 'staging' ||
+    (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production');
+
   const apiKey =
     env?.INTERNAL_API_KEY ||
     (typeof process !== 'undefined' && process.env?.INTERNAL_API_KEY) ||
-    (process.env.NODE_ENV !== 'production' ? 'dev-secret-key-12345' : '');
+    (!isProd ? 'dev-secret-key-12345' : '');
 
   return {
     fetch: (input: RequestInfo | URL, init?: RequestInit) => {

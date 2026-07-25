@@ -24,6 +24,9 @@
       "id": "281c9992dd914501a709ef8f03fe2ab8"
     }
   ],
+  "vars": {
+    "INTERNAL_API_KEY": "dev-secret-key-12345"
+  },
   "services": [
     { "binding": "API_SERVICE", "service": "nba-api" }
   ],
