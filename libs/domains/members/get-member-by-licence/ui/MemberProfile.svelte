@@ -57,9 +57,9 @@
 
   <Tabs.Root bind:value={activeTab} class="w-full">
     <Tabs.List class="grid w-full grid-cols-3 mb-6">
-      <Tabs.Trigger value="profil" onclick={() => activeTab = 'profil'}>Profil & Contacts</Tabs.Trigger>
-      <Tabs.Trigger value="cotisation" onclick={() => activeTab = 'cotisation'}>Cotisation Poona</Tabs.Trigger>
-      <Tabs.Trigger value="transactions" onclick={() => activeTab = 'transactions'}>Historique Financier</Tabs.Trigger>
+      <Tabs.Trigger value="profil">Profil & Contacts</Tabs.Trigger>
+      <Tabs.Trigger value="cotisation">Cotisation Poona</Tabs.Trigger>
+      <Tabs.Trigger value="transactions">Historique Financier</Tabs.Trigger>
     </Tabs.List>
 
     <Tabs.Content value="profil">

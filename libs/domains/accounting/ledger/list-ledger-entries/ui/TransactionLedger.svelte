@@ -156,10 +156,10 @@
 
   <Tabs.Root bind:value={selectedAccount} class="w-full no-print">
     <Tabs.List class="grid w-full grid-cols-2 sm:grid-cols-4 max-w-2xl mx-auto">
-      <Tabs.Trigger value="all" onclick={() => selectedAccount = 'all'}>Tous les comptes</Tabs.Trigger>
-      <Tabs.Trigger value="current" onclick={() => selectedAccount = 'current'}>Compte Courant</Tabs.Trigger>
-      <Tabs.Trigger value="savings" onclick={() => selectedAccount = 'savings'}>Compte Livret</Tabs.Trigger>
-      <Tabs.Trigger value="cash" onclick={() => selectedAccount = 'cash'}>Caisse Physique</Tabs.Trigger>
+      <Tabs.Trigger value="all">Tous les comptes</Tabs.Trigger>
+      <Tabs.Trigger value="current">Compte Courant</Tabs.Trigger>
+      <Tabs.Trigger value="savings">Compte Livret</Tabs.Trigger>
+      <Tabs.Trigger value="cash">Caisse Physique</Tabs.Trigger>
     </Tabs.List>
   </Tabs.Root>
 

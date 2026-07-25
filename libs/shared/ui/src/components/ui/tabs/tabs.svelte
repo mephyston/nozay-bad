@@ -5,7 +5,6 @@
 	let {
 		ref = $bindable(null),
 		value = $bindable(""),
-		onValueChange,
 		class: className,
 		...restProps
 	}: TabsPrimitive.RootProps = $props();
@@ -14,7 +13,6 @@
 <TabsPrimitive.Root
 	bind:ref
 	bind:value
-	{onValueChange}
 	data-slot="tabs"
 	class={cn("gap-2 group/tabs flex data-[orientation=horizontal]:flex-col", className)}
 	{...restProps}
