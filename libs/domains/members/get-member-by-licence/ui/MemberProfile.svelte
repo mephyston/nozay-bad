@@ -82,15 +82,11 @@
     </button>
   </div>
 
-  <div class={activeTab === 'profil' ? '' : 'hidden'}>
+  {#if activeTab === 'profil'}
     <MemberProfileInfoTab {member} />
-  </div>
-
-  <div class={activeTab === 'cotisation' ? '' : 'hidden'}>
+  {:else if activeTab === 'cotisation'}
     <MemberProfileCotisationTab {member} />
-  </div>
-
-  <div class={activeTab === 'transactions' ? '' : 'hidden'}>
+  {:else if activeTab === 'transactions'}
     <MemberProfileTransactionsTab {transactions} />
-  </div>
+  {/if}
 </div>

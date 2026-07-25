@@ -1,6 +1,6 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
-import AdminLayout from '../../../components/AdminLayout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
 import { InvoicesManager } from '@nba/accounting-ui';
 
 import { env } from 'cloudflare:workers';
@@ -112,7 +112,7 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
 ---
 
 <Layout title="Factures - NBA 91">
-  <AdminLayout email={userEmail} breadcrumb="Comptabilité / Factures">
+  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Factures">
     <div class="space-y-6">
       {errorMsg && (
         <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">

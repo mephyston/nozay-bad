@@ -142,17 +142,19 @@
     </button>
   </div>
 
-  <div class={activeTab === 'resultat' ? 'space-y-6' : 'hidden'}>
-    <ReportCompteResultatCard mode="realise" bind:editableBudget {...compResultatProps} />
-    <ReportGraphiquesCard mode="realise" chargesData={chargesChartDataRealise} recettesData={recettesChartDataRealise} />
-  </div>
-
-  <div class={activeTab === 'tresorerie' ? 'space-y-6' : 'hidden'}>
-    <ReportTresorerieTab {report} {selectedSeason} {seasons} />
-  </div>
-
-  <div class={activeTab === 'budget' ? 'space-y-6' : 'hidden'}>
-    <ReportCompteResultatCard mode="previsionnel" bind:editableBudget {...compResultatProps} />
-    <ReportGraphiquesCard mode="previsionnel" chargesData={chargesChartDataPrevisionnel} recettesData={recettesChartDataPrevisionnel} />
-  </div>
+  {#if activeTab === 'resultat'}
+    <div class="space-y-6">
+      <ReportCompteResultatCard mode="realise" bind:editableBudget {...compResultatProps} />
+      <ReportGraphiquesCard mode="realise" chargesData={chargesChartDataRealise} recettesData={recettesChartDataRealise} />
+    </div>
+  {:else if activeTab === 'tresorerie'}
+    <div class="space-y-6">
+      <ReportTresorerieTab {report} {selectedSeason} {seasons} />
+    </div>
+  {:else if activeTab === 'budget'}
+    <div class="space-y-6">
+      <ReportCompteResultatCard mode="previsionnel" bind:editableBudget {...compResultatProps} />
+      <ReportGraphiquesCard mode="previsionnel" chargesData={chargesChartDataPrevisionnel} recettesData={recettesChartDataPrevisionnel} />
+    </div>
+  {/if}
 </div>

@@ -1,6 +1,6 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
-import AdminLayout from '../../../components/AdminLayout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
 import { MembersTable } from '@nba/members-ui';
 
 import { env } from 'cloudflare:workers';
@@ -41,7 +41,7 @@ try {
 ---
 
 <Layout title="Gestion des Adhérents - NBA 91">
-  <AdminLayout email={userEmail} breadcrumb="Adhérents / Liste">
+  <AdminLayout client:idle breadcrumb="Adhérents / Liste">
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>
