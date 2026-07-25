@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Search, Link, MoreVertical, Trash2, FileText } from '@lucide/svelte';
-  import { Button, Table, Input, Card, Checkbox, Amount } from '@nba/ui';
+  import { Button, Table, Input, Card, Checkbox, Amount, Popover } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
 
   interface Props {
@@ -12,7 +12,7 @@
   let { depositState, seasonId, onDeleteCheck }: Props = $props();
 </script>
 
-<Card.Root class="shadow-sm">
+<Card.Root class="overflow-hidden shadow-sm">
   <Card.Content class="p-0">
     <div class="p-3 border-b border-border bg-muted/40">
       <div class="relative">
@@ -34,7 +34,7 @@
       </div>
     </div>
 
-    <div class="overflow-x-auto min-h-[300px] pb-24">
+    <div class="overflow-x-auto min-h-[180px]">
       <Table.Root class="w-full text-left border-collapse text-sm">
         <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
           <Table.Row>
@@ -58,7 +58,7 @@
           </Table.Row>
         </Table.Header>
         <Table.Body class="divide-y divide-border">
-          {#each depositState.filteredChecks as check, index}
+          {#each depositState.filteredChecks as check}
             <Table.Row class="hover:bg-muted/50 transition-colors">
               <Table.Cell class="p-4">
                 <Checkbox
@@ -93,31 +93,30 @@
               </Table.Cell>
               <Table.Cell class="p-4 text-right">
                 {#if !depositState.isClosed}
-                  <div class="relative inline-block text-left">
-                    <Button 
-                      variant="ghost"
-                      size="icon"
-                      onclick={(e) => depositState.toggleDropdown(`check-${check.id}`, e)} 
-                      class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
-                      aria-label="Actions"
-                    >
-                      <MoreVertical class="w-4 h-4" />
-                    </Button>
+                  <Popover.Root>
+                    <Popover.Trigger>
+                      <Button 
+                        variant="ghost"
+                        size="icon"
+                        class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
+                        aria-label="Actions"
+                      >
+                        <MoreVertical class="w-4 h-4" />
+                      </Button>
+                    </Popover.Trigger>
 
-                    {#if depositState.openDropdownId === `check-${check.id}`}
-                      <div class="absolute right-0 {depositState.filteredChecks.length <= 2 || index >= depositState.filteredChecks.length - 2 ? 'bottom-full mb-1' : 'top-full mt-1'} w-32 bg-popover border border-border rounded-lg shadow-xl z-50 py-1 text-left divide-y divide-border animate-in fade-in duration-100">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onclick={() => onDeleteCheck(check.id)}
-                          class="w-full justify-start rounded-none px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
-                        >
-                          <Trash2 class="w-3.5 h-3.5" />
-                          Supprimer
-                        </Button>
-                      </div>
-                    {/if}
-                  </div>
+                    <Popover.Content class="w-32 p-1 bg-popover border border-border rounded-lg shadow-xl z-50 text-left divide-y divide-border" align="end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onclick={() => onDeleteCheck(check.id)}
+                        class="w-full justify-start rounded-none px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent h-auto"
+                      >
+                        <Trash2 class="w-3.5 h-3.5" />
+                        Supprimer
+                      </Button>
+                    </Popover.Content>
+                  </Popover.Root>
                 {:else}
                   <span class="text-xs text-muted-foreground italic">Aucune</span>
                 {/if}

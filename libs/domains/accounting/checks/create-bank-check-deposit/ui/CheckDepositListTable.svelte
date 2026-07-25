@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CheckCircle, MoreVertical, FileText, Trash2 } from '@lucide/svelte';
-  import { Button, Table, Badge, Card, Amount } from '@nba/ui';
+  import { Button, Table, Badge, Card, Amount, Popover } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
   import type { CheckDeposit } from './check-deposit-types';
 
@@ -13,9 +13,9 @@
   let { depositState, checkDeposits, onDeleteDeposit }: Props = $props();
 </script>
 
-<Card.Root class="shadow-sm">
+<Card.Root class="overflow-hidden shadow-sm">
   <Card.Content class="p-0">
-    <div class="overflow-x-auto min-h-[300px] pb-24">
+    <div class="overflow-x-auto min-h-[220px]">
       <Table.Root class="w-full text-left border-collapse text-sm">
         <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
           <Table.Row>
@@ -28,7 +28,7 @@
           </Table.Row>
         </Table.Header>
         <Table.Body class="divide-y divide-border">
-          {#each checkDeposits as dep, index}
+          {#each checkDeposits as dep}
             <Table.Row class="hover:bg-muted/50 transition-colors">
               <Table.Cell class="p-4 text-muted-foreground">
                 {new Date(dep.date).toLocaleDateString('fr-FR')}
@@ -59,61 +59,60 @@
                 {/if}
               </Table.Cell>
               <Table.Cell class="p-4 text-right">
-                <div class="relative inline-block text-left font-normal">
-                  <Button 
-                    variant="ghost"
-                    size="icon"
-                    onclick={(e) => depositState.toggleDropdown(`deposit-${dep.id}`, e)} 
-                    class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
-                    aria-label="Actions"
-                  >
-                    <MoreVertical class="w-4 h-4" />
-                  </Button>
+                <Popover.Root>
+                  <Popover.Trigger>
+                    <Button 
+                      variant="ghost"
+                      size="icon"
+                      class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
+                      aria-label="Actions"
+                    >
+                      <MoreVertical class="w-4 h-4" />
+                    </Button>
+                  </Popover.Trigger>
 
-                  {#if depositState.openDropdownId === `deposit-${dep.id}`}
-                    <div class="absolute right-0 {checkDeposits.length <= 2 || index >= checkDeposits.length - 2 ? 'bottom-full mb-1' : 'top-full mt-1'} w-48 bg-popover border border-border rounded-lg shadow-xl z-50 py-1 text-left divide-y divide-border animate-in fade-in duration-100">
+                  <Popover.Content class="w-48 p-1 bg-popover border border-border rounded-lg shadow-xl z-50 text-left divide-y divide-border" align="end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onclick={() => {
+                        depositState.selectedDepositToView = dep;
+                        depositState.showViewDepositModal = true;
+                      }}
+                      class="w-full justify-start rounded-none px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent h-auto"
+                    >
+                      <FileText class="w-3.5 h-3.5" />
+                      Consulter / Imprimer
+                    </Button>
+                    
+                    {#if dep.status !== 'cleared' && !depositState.isClosed}
                       <Button
                         variant="ghost"
                         size="sm"
                         onclick={() => {
-                          depositState.selectedDepositToView = dep;
-                          depositState.showViewDepositModal = true;
+                          depositState.selectedDepositToClear = dep;
+                          depositState.showClearModal = true;
                         }}
-                        class="w-full justify-start rounded-none px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
+                        class="w-full justify-start rounded-none px-3 py-1.5 text-xs text-primary hover:bg-primary/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent h-auto"
                       >
-                        <FileText class="w-3.5 h-3.5" />
-                        Consulter / Imprimer
+                        <CheckCircle class="w-3.5 h-3.5" />
+                        Rapprocher (SG)
                       </Button>
-                      
-                      {#if dep.status !== 'cleared' && !depositState.isClosed}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onclick={() => {
-                            depositState.selectedDepositToClear = dep;
-                            depositState.showClearModal = true;
-                          }}
-                          class="w-full justify-start rounded-none px-3 py-1.5 text-xs text-primary hover:bg-primary/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
-                        >
-                          <CheckCircle class="w-3.5 h-3.5" />
-                          Rapprocher (SG)
-                        </Button>
-                      {/if}
+                    {/if}
 
-                      {#if !depositState.isClosed}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onclick={() => onDeleteDeposit(dep.id)}
-                          class="w-full justify-start rounded-none px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
-                        >
-                          <Trash2 class="w-3.5 h-3.5" />
-                          Supprimer la remise
-                        </Button>
-                      {/if}
-                    </div>
-                  {/if}
-                </div>
+                    {#if !depositState.isClosed}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onclick={() => onDeleteDeposit(dep.id)}
+                        class="w-full justify-start rounded-none px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent h-auto"
+                      >
+                        <Trash2 class="w-3.5 h-3.5" />
+                        Supprimer la remise
+                      </Button>
+                    {/if}
+                  </Popover.Content>
+                </Popover.Root>
               </Table.Cell>
             </Table.Row>
           {:else}
