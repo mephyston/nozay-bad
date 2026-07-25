@@ -26,7 +26,80 @@
 </script>
 
 <div class="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
-  <div class="overflow-x-auto min-h-[180px]">
+  <!-- Vue Cartes pour Mobile -->
+  <div class="block sm:hidden divide-y divide-border">
+    {#each transactions as tx}
+      <div class="p-4 space-y-2 bg-card">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              {#if tx.type === 'recette'}
+                <Badge variant="outline" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-transparent">Recette</Badge>
+              {:else if tx.type === 'depense'}
+                <Badge variant="outline" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-destructive/15 text-destructive border-transparent">Dépense</Badge>
+              {:else}
+                <Badge variant="outline" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-primary/15 text-primary border-transparent">Transfert</Badge>
+              {/if}
+              <span class="text-xs text-muted-foreground">{tx.date}</span>
+            </div>
+            <h4 class="font-bold text-sm text-foreground">{tx.description}</h4>
+          </div>
+          <div class="text-right shrink-0">
+            <span class="font-bold text-base block">
+              {#if tx.type === 'recette'}
+                <Amount cents={(tx as any).amountCents ?? tx.amount} showSign colored />
+              {:else if tx.type === 'depense'}
+                <Amount cents={-((tx as any).amountCents ?? tx.amount)} showSign colored />
+              {:else}
+                <Amount cents={(tx as any).amountCents ?? tx.amount} class="text-muted-foreground" />
+              {/if}
+            </span>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-1.5 text-xs pt-1">
+          <div class="text-muted-foreground">
+            Catégorie: <span class="font-medium text-foreground">{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</span>
+          </div>
+          {#if tx.bankStatementLineId}
+            <Badge variant="outline" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold border-transparent">
+              <Check class="w-2.5 h-2.5" /> Rapprochée
+            </Badge>
+          {/if}
+        </div>
+
+        {#if !isClosed}
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
+            <Button
+              variant="outline"
+              size="sm"
+              onclick={(e) => onStartEdit(tx, e)}
+              class="h-8 text-xs font-semibold gap-1.5 flex-1"
+            >
+              <Edit2 class="w-3.5 h-3.5" />
+              <span>Modifier</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onclick={() => onDelete(tx.id)}
+              class="h-8 text-xs font-semibold gap-1.5 text-destructive hover:bg-destructive/10 border-destructive/30"
+            >
+              <Trash2 class="w-3.5 h-3.5" />
+              <span>Supprimer</span>
+            </Button>
+          </div>
+        {/if}
+      </div>
+    {:else}
+      <div class="p-8 text-center text-muted-foreground text-sm">
+        Aucune écriture comptable pour cette saison.
+      </div>
+    {/each}
+  </div>
+
+  <!-- Vue Tableau pour Tablette / Desktop -->
+  <div class="hidden sm:block overflow-x-auto min-h-[180px]">
     <Table.Root class="w-full border-collapse text-left text-sm">
       <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
         <Table.Row>
@@ -136,11 +209,11 @@
   </div>
 
   <!-- Pagination Footer -->
-  <div class="p-4 border-t border-border flex items-center justify-between">
+  <div class="p-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
     <div class="text-xs text-muted-foreground">
       Total : {pagination.total} transaction(s)
     </div>
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-2 sm:gap-4">
       <span class="text-xs">
         Page {pagination.page} sur {pagination.totalPages}
       </span>
@@ -148,7 +221,7 @@
         <Button
           variant="outline"
           size="icon-xs"
-          class="p-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          class="p-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-h-[36px] min-w-[36px]"
           onclick={() => onChangePage(pagination.page - 1)}
           disabled={pagination.page <= 1}
           aria-label="Page précédente"
@@ -163,7 +236,7 @@
             <Button
               variant={Number(p) === pagination.page ? 'default' : 'outline'}
               size="xs"
-              class="px-3 py-1 text-xs font-semibold transition-colors cursor-pointer"
+              class="px-3 py-1 text-xs font-semibold transition-colors cursor-pointer min-h-[36px] min-w-[36px]"
               onclick={() => onChangePage(Number(p))}
               aria-current={Number(p) === pagination.page ? 'page' : undefined}
             >
@@ -175,7 +248,7 @@
         <Button
           variant="outline"
           size="icon-xs"
-          class="p-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          class="p-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-h-[36px] min-w-[36px]"
           onclick={() => onChangePage(pagination.page + 1)}
           disabled={pagination.page >= pagination.totalPages}
           aria-label="Page suivante"

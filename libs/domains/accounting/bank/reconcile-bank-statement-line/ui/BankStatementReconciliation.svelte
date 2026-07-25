@@ -79,11 +79,11 @@
     </Card.Root>
   {:else}
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-      <div class="lg:col-span-5">
+      <div class="lg:col-span-5 {state.selectedTx ? 'hidden lg:block' : 'block'}">
         <BankStatementLinesList {state} />
       </div>
 
-      <div class="lg:col-span-7">
+      <div class="lg:col-span-7 {state.selectedTx ? 'block' : 'hidden lg:block'}">
         <ReconciliationDetailPanel {state} />
       </div>
     </div>
