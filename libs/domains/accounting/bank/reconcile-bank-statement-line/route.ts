@@ -52,16 +52,7 @@ const reconcileValidator = tbValidator('json', reconcileBankTransactionSchema, (
 });
 
 const idCheckMiddleware = async (c: any, next: any) => {
-  let id = parseInt(c.req.param('id'), 10);
-  if (isNaN(id)) {
-    try {
-      const clonedReq = c.req.raw.clone();
-      const body = await clonedReq.json();
-      if (body) {
-        id = parseInt(body.btId || body.bankStatementLineId || body.id, 10);
-      }
-    } catch {}
-  }
+  const id = parseInt(c.req.param('id'));
   if (isNaN(id)) {
     return c.json({ success: false, error: 'Identifiant invalide' }, 400);
   }
