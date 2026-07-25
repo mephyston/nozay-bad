@@ -44,8 +44,12 @@
     editCatAdminLabel = c.adminLabel;
     editCatAdherentLabel = c.adherentLabel;
     editCatHideInExpenses = c.hideInExpenses;
-    editCatReceiptCode = c.receiptCode || '';
-    editCatExpenseCode = c.expenseCode || '';
+    
+    const rCode = c.receiptCode || (c.receiptAccountClassId ? accountClasses.find(ac => ac.id === c.receiptAccountClassId)?.code : '');
+    const eCode = c.expenseCode || (c.expenseAccountClassId ? accountClasses.find(ac => ac.id === c.expenseAccountClassId)?.code : '');
+
+    editCatReceiptCode = rCode || '';
+    editCatExpenseCode = eCode || '';
   }
 
   async function handleSave(id: number) {
@@ -89,11 +93,12 @@
       <select bind:value={editCatReceiptCode} class="w-full px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium">
         <option value="">N/A</option>
         {#each (accountClasses || []).filter(ac => ac.type === 'recette') as ac}
-          <option value={ac.code}>{ac.label}</option>
+          <option value={ac.code}>{ac.code} - {ac.label}</option>
         {/each}
       </select>
     {:else}
-      <span class="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded">{cat.receiptCode || 'N/A'}</span>
+      {@const rCode = cat.receiptCode || (cat.receiptAccountClassId ? accountClasses.find(ac => ac.id === cat.receiptAccountClassId)?.code : null)}
+      <span class="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded">{rCode || 'N/A'}</span>
     {/if}
   </Table.Cell>
   <Table.Cell class="p-4">
@@ -101,11 +106,12 @@
       <select bind:value={editCatExpenseCode} class="w-full px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium">
         <option value="">N/A</option>
         {#each (accountClasses || []).filter(ac => ac.type === 'depense') as ac}
-          <option value={ac.code}>{ac.label}</option>
+          <option value={ac.code}>{ac.code} - {ac.label}</option>
         {/each}
       </select>
     {:else}
-      <span class="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded">{cat.expenseCode || 'N/A'}</span>
+      {@const eCode = cat.expenseCode || (cat.expenseAccountClassId ? accountClasses.find(ac => ac.id === cat.expenseAccountClassId)?.code : null)}
+      <span class="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded">{eCode || 'N/A'}</span>
     {/if}
   </Table.Cell>
   <Table.Cell class="p-4">

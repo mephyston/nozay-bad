@@ -90,7 +90,7 @@
     </div>
 
     <div class="space-y-1.5">
-      <label for="new-cat-depense" class="block text-xs font-bold text-muted-foreground uppercase">Classe Dépense (CR)</label>
+      <label for="new-cat-depense" class="block text-xs font-bold text-muted-foreground uppercase">Classe Dépense (CD)</label>
       <select
         id="new-cat-depense"
         bind:value={newCatExpenseCode}

@@ -41,7 +41,7 @@
         <Table.Head class="p-4 font-medium text-muted-foreground">Libellé Admin (Compta)</Table.Head>
         <Table.Head class="p-4 font-medium text-muted-foreground">Libellé Adhérent (Notes de Frais)</Table.Head>
         <Table.Head class="p-4 font-medium text-muted-foreground">Classe Recette (CR)</Table.Head>
-        <Table.Head class="p-4 font-medium text-muted-foreground">Classe Dépense (CR)</Table.Head>
+        <Table.Head class="p-4 font-medium text-muted-foreground">Classe Dépense (CD)</Table.Head>
         <Table.Head class="p-4 font-medium text-muted-foreground">Notes de frais ?</Table.Head>
         <Table.Head class="p-4 text-right font-medium text-muted-foreground">Actions</Table.Head>
       </Table.Row>

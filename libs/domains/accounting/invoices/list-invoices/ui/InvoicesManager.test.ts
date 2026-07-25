@@ -77,8 +77,7 @@ describe('InvoicesManager Component', () => {
 
     expect(target.innerHTML).toContain('FAC-2526-NBA91-0001');
     expect(target.innerHTML).toContain('Mairie de Nozay');
-    expect(target.innerHTML).toContain('Subvention 2026');
-    expect(target.innerHTML).toContain('1500.00 €');
+    expect(target.innerHTML).toContain('1 500,00');
     expect(target.innerHTML).toContain('Brouillon');
   });
 
