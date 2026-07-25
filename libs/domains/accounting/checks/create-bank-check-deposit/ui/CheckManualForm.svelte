@@ -30,6 +30,7 @@
         bind:value={depositState.checkAmount}
         placeholder="Ex: 150.00"
         required
+        class="font-outfit tabular-nums"
       />
     </div>
   </div>

@@ -79,13 +79,13 @@
                 {/if}
               </div>
             </Table.Cell>
-            <Table.Cell class="p-4 text-right font-bold">
+            <Table.Cell class="p-4 text-right font-outfit font-bold tabular-nums">
               {#if tx.type === 'recette'}
-                <span class="text-emerald-600 dark:text-emerald-400">+{(tx.amount / 100).toFixed(2)} €</span>
+                <span class="text-emerald-600 dark:text-emerald-400">+{new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((tx as any).amountCents ?? tx.amount ?? 0) / 100).replace(/\s/g, ' ')} €</span>
               {:else if tx.type === 'depense'}
-                <span class="text-destructive">-{(tx.amount / 100).toFixed(2)} €</span>
+                <span class="text-destructive">-{new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((tx as any).amountCents ?? tx.amount ?? 0) / 100).replace(/\s/g, ' ')} €</span>
               {:else}
-                <span class="text-muted-foreground">{(tx.amount / 100).toFixed(2)} €</span>
+                <span class="text-muted-foreground">{new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((tx as any).amountCents ?? tx.amount ?? 0) / 100).replace(/\s/g, ' ')} €</span>
               {/if}
             </Table.Cell>
             <Table.Cell class="p-4 text-right relative">

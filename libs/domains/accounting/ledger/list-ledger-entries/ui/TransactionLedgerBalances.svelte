@@ -7,7 +7,8 @@
 
   function getAccountBalance(acc: 'current' | 'savings' | 'cash') {
     const match = balances.find(b => b.accountId === acc);
-    return match ? (match.finalBalance / 100).toFixed(2) : '0.00';
+    const cents = match ? ((match as any).finalBalanceCents ?? match.finalBalance ?? 0) : 0;
+    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100).replace(/\s/g, ' ') + ' €';
   }
 </script>
 
@@ -18,7 +19,7 @@
         <Card.Title class="text-sm font-medium text-muted-foreground">{label}</Card.Title>
       </Card.Header>
       <Card.Content>
-        <div class="text-3xl font-bold">{getAccountBalance(key as any)} €</div>
+        <div class="text-3xl font-outfit font-bold tabular-nums text-foreground">{getAccountBalance(key as any)}</div>
       </Card.Content>
     </Card.Root>
   {/each}

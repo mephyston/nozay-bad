@@ -4,6 +4,7 @@
 
   interface Season {
     id: string;
+    code?: string;
     name: string;
     closed?: boolean;
     isAutoFilled?: boolean;
@@ -25,13 +26,13 @@
   let successMsg = $state('');
   let errorMsg = $state('');
 
-  const currentSeason = $derived(seasons.find((s: Season) => s.id === seasonId));
+  const currentSeason = $derived(seasons.find((s: Season) => s.id === seasonId || s.code === seasonId || String(s.id) === seasonId));
   const isClosed = $derived(currentSeason?.closed || false);
   const isAutoFilled = $derived(currentSeason?.isAutoFilled || false);
 
   // Update initial inputs when seasonId changes
   $effect(() => {
-    const season = seasons.find((s: Season) => s.id === seasonId);
+    const season = seasons.find((s: Season) => s.id === seasonId || s.code === seasonId || String(s.id) === seasonId);
     if (season) {
       currentInitial = season.initialCurrentBalance !== undefined ? (season.initialCurrentBalance / 100).toFixed(2) : '0.00';
       savingsInitial = season.initialSavingsBalance !== undefined ? (season.initialSavingsBalance / 100).toFixed(2) : '0.00';
@@ -129,7 +130,7 @@
               id="current-initial" 
               type="number" 
               step="0.01" 
-              class="pl-3 pr-6 text-foreground font-semibold" 
+              class="pl-3 pr-6 text-foreground font-semibold font-outfit tabular-nums" 
               bind:value={currentInitial} 
               required
               disabled={isClosed}
@@ -145,7 +146,7 @@
               id="savings-initial" 
               type="number" 
               step="0.01" 
-              class="pl-3 pr-6 text-foreground font-semibold" 
+              class="pl-3 pr-6 text-foreground font-semibold font-outfit tabular-nums" 
               bind:value={savingsInitial} 
               required
               disabled={isClosed}
@@ -161,7 +162,7 @@
               id="cash-initial" 
               type="number" 
               step="0.01" 
-              class="pl-3 pr-6 text-foreground font-semibold" 
+              class="pl-3 pr-6 text-foreground font-semibold font-outfit tabular-nums" 
               bind:value={cashInitial} 
               required
               disabled={isClosed}

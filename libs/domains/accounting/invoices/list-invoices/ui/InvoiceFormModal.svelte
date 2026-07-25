@@ -168,7 +168,7 @@
 
       <Sheet.Footer class="p-6 border-t border-border bg-muted/20 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
         <div class="text-sm font-medium">
-          Total : <span class="text-lg font-bold text-primary">{(itemsTotal / 100).toFixed(2)} €</span>
+          Total : <span class="text-lg font-outfit font-bold text-primary tabular-nums">{new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(itemsTotal / 100).replace(/\s/g, ' ')} €</span>
         </div>
         <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
           <Button type="button" variant="outline" onclick={() => { showModal = false; }} disabled={isSubmitting}>

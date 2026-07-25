@@ -48,6 +48,7 @@
       placeholder="0.00"
       required
       disabled={isClosed}
+      class="font-outfit tabular-nums"
     />
   </div>
   {#if !isClosed}

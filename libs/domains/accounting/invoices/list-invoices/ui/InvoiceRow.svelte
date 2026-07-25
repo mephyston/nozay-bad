@@ -47,7 +47,9 @@
   <Table.Cell class="p-4 text-muted-foreground max-w-xs truncate">{inv.subject || '—'}</Table.Cell>
   <Table.Cell class="p-4 text-muted-foreground">{inv.date}</Table.Cell>
   <Table.Cell class="p-4 text-muted-foreground">{inv.dueDate}</Table.Cell>
-  <Table.Cell class="p-4 text-right font-bold text-foreground">{(inv.totalAmount / 100).toFixed(2)} €</Table.Cell>
+  <Table.Cell class="p-4 text-right font-outfit font-bold tabular-nums text-foreground">
+    {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((inv as any).totalAmountCents ?? inv.totalAmount ?? 0) / 100).replace(/\s/g, ' ')} €
+  </Table.Cell>
   <Table.Cell class="p-4 text-center">
     <Badge variant="outline" class={statusColors[inv.status]}>
       {statusLabels[inv.status]}
