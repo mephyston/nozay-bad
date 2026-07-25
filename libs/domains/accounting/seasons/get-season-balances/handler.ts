@@ -6,6 +6,8 @@ export async function getSeasonBalances(db: Db, seasonId: GetSeasonBalancesInput
   const repo = new GetSeasonBalancesRepository();
   const rawBalances = await repo.getBalances(db, seasonId);
 
+  if (!Array.isArray(rawBalances)) return rawBalances as any;
+
   const accMap: Record<number, 'current' | 'savings' | 'cash'> = { 1: 'current', 2: 'savings', 3: 'cash' };
 
   return rawBalances.map(b => {

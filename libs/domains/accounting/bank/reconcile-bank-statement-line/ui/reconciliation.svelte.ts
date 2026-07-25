@@ -59,10 +59,12 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
   const sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
 
   function getSuggestions(bt: BankStatementLine) {
+    const btAmt = (bt as any).amountCents ?? bt.amount ?? 0;
     return glTransactions.filter(gt => {
       if (gt.bankStatementLineId) return false;
-      if (Math.abs(gt.amount) !== Math.abs(bt.amount)) return false;
-      const isBankDebit = bt.amount < 0;
+      const gtAmt = (gt as any).amountCents ?? gt.amount ?? 0;
+      if (Math.abs(gtAmt) !== Math.abs(btAmt)) return false;
+      const isBankDebit = btAmt < 0;
       if (isBankDebit && gt.type === 'recette') return false;
       if (!isBankDebit && gt.type === 'depense') return false;
       return Math.abs(new Date(bt.date).getTime() - new Date(gt.date).getTime()) / 86400000 <= 7;
@@ -71,8 +73,8 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
 
   const suggestions = $derived(selectedTx ? getSuggestions(selectedTx) : []);
   const linkedGlTxs = $derived(selectedTx ? glTransactions.filter(gt => gt.bankStatementLineId === selectedTx!.id) : []);
-  const totalLinked = $derived(linkedGlTxs.reduce((sum, gt) => sum + Math.abs(gt.amount), 0));
-  const remainingAmount = $derived(selectedTx ? Math.abs(selectedTx.amount) - totalLinked : 0);
+  const totalLinked = $derived(linkedGlTxs.reduce((sum, gt) => sum + Math.abs((gt as any).amountCents ?? gt.amount ?? 0), 0));
+  const remainingAmount = $derived(selectedTx ? Math.abs((selectedTx as any).amountCents ?? selectedTx.amount ?? 0) - totalLinked : 0);
 
   const pendingCount = $derived(bankStatementLines.filter(t => t.status === 'pending').length);
   const reconciledCount = $derived(bankStatementLines.filter(t => t.status === 'reconciled').length);
