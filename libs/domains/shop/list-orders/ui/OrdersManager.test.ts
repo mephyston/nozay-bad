@@ -140,7 +140,7 @@ describe('OrdersManager Component', () => {
     expect(target.innerHTML).toContain('Dupont');
     expect(target.innerHTML).toContain('Jean');
     expect(target.innerHTML).toContain('Yonex BG65 String');
-    expect(target.innerHTML).toContain('50.00 €');
+    expect(target.innerHTML).toContain('50,00');
     expect(target.innerHTML).toContain('Virement');
 
     // Open dropdown to render actions
@@ -185,14 +185,14 @@ describe('OrdersManager Component', () => {
     expect(target.innerHTML).toContain('Martin');
     expect(target.innerHTML).toContain('Alice');
     expect(target.innerHTML).toContain('Validée');
-    expect(target.innerHTML).toContain('15.50 €');
+    expect(target.innerHTML).toContain('15,50');
     expect(target.innerHTML).toContain('Tx: #55');
 
     // Rejected order
     expect(target.innerHTML).toContain('Lefebvre');
     expect(target.innerHTML).toContain('Bob');
     expect(target.innerHTML).toContain('Refusée');
-    expect(target.innerHTML).toContain('46.50 €');
+    expect(target.innerHTML).toContain('46,50');
   });
 
   it('triggers approve action when Valider is clicked', async () => {
