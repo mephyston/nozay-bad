@@ -177,3 +177,21 @@
     @apply bg-background text-foreground;
   }
 }
+
+@utility font-outfit {
+  font-family: 'Outfit', sans-serif;
+}
+
+@utility font-amount {
+  font-family: 'Outfit', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.font-outfit {
+  font-family: 'Outfit', sans-serif;
+}
+
+.font-amount {
+  font-family: 'Outfit', sans-serif;
+  font-variant-numeric: tabular-nums;
+}

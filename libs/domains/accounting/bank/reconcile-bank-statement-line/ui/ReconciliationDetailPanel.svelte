@@ -44,8 +44,8 @@
 
         <div class="flex items-center gap-2 shrink-0">
           <div class="text-right">
-            <div class="font-mono text-xl font-bold {state.selectedTx.amount < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}">
-              {(state.selectedTx.amount / 100).toFixed(2)} €
+            <div class="font-outfit text-xl font-bold tabular-nums {((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}">
+              {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) / 100).replace(/\s/g, ' ')} €
             </div>
             <div class="text-[11px] text-muted-foreground">{state.selectedTx.date}</div>
           </div>

@@ -54,7 +54,7 @@
           <div class="space-y-1.5 py-1 {getClassSumRealise(pc.code, 'recette', mode) === 0 && getClassSumPrevisionnel(pc.code, 'recette') === 0 ? 'print:hidden' : ''}">
             <div class="flex justify-between items-center text-sm border-b border-border/40 pb-1 font-bold text-foreground">
               <a href="/admin/accounting?season={selectedSeason}&classCode={pc.code}" class="hover:underline hover:text-primary transition-colors cursor-pointer text-foreground/90 print:no-underline" title="Voir les écritures dans le grand livre">{pc.label}</a>
-              <div class="flex gap-8">
+              <div class="flex gap-8 font-outfit tabular-nums">
                 <span class="w-20 text-right">{formatAmount(getClassSumRealise(pc.code, 'recette', mode))}</span>
                 <span class="w-20 text-right">{formatAmount(getClassSumPrevisionnel(pc.code, 'recette'))}</span>
               </div>
@@ -65,7 +65,7 @@
                 {#if mode === 'previsionnel' || getCatTotal(cat.id.toString(), 'recette', mode) > 0 || (editableBudget[`${cat.id}_recette`] || 0) > 0}
                   <div class="flex justify-between items-center py-0.5 text-[11px] {getCatTotal(cat.id.toString(), 'recette', mode) === 0 && (editableBudget[`${cat.id}_recette`] || 0) === 0 ? 'print:hidden' : ''}">
                     <a href="/admin/accounting?season={selectedSeason}&category={cat.id}" class="font-sans text-muted-foreground hover:underline hover:text-primary transition-colors cursor-pointer print:no-underline" title="Voir les écritures de cette catégorie dans le grand livre">• {cat.adminLabel}</a>
-                    <div class="flex gap-8 items-center">
+                    <div class="flex gap-8 items-center font-outfit tabular-nums">
                       <span class="w-20 text-right">{formatAmount(getCatTotal(cat.id.toString(), 'recette', mode))}</span>
                       {#if mode === 'previsionnel' && !isClosed}
                         <div class="relative flex items-center w-20">
@@ -78,7 +78,7 @@
                               const val = parseFloat((e.target as HTMLInputElement).value) || 0;
                               editableBudget[`${cat.id}_recette`] = Math.round(val * 100);
                             }}
-                            class="w-20 h-7 px-1 py-0.5 text-right border border-border bg-background rounded text-[11px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium no-print"
+                            class="w-20 h-7 px-1 py-0.5 text-right border border-border bg-background rounded text-[11px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-outfit tabular-nums no-print"
                           />
                           <span class="absolute right-1 text-[10px] text-muted-foreground pointer-events-none no-print">€</span>
                           <span class="hidden print:inline text-right w-full">{formatAmount(editableBudget[`${cat.id}_recette`] || 0)}</span>
@@ -101,7 +101,7 @@
     {#if netResReal < 0 || netResPrev < 0}
       <div class="flex justify-between font-semibold text-xs text-destructive">
         <span>Déficit de l'exercice (Perte)</span>
-        <div class="flex gap-8">
+        <div class="flex gap-8 font-outfit tabular-nums">
           <span class="w-20 text-right">{netResReal < 0 ? formatAmount(-netResReal) : formatAmount(0)}</span>
           <span class="w-20 text-right">{netResPrev < 0 ? formatAmount(-netResPrev) : formatAmount(0)}</span>
         </div>
@@ -109,7 +109,7 @@
     {/if}
     <div class="flex justify-between text-foreground">
       <span>TOTAL GÉNÉRAL</span>
-      <div class="flex gap-8">
+      <div class="flex gap-8 font-outfit tabular-nums">
         <span class="w-20 text-right">{formatAmount(netResReal < 0 ? totalRecReal + (-netResReal) : totalRecReal)}</span>
         <span class="w-20 text-right">{formatAmount(netResPrev < 0 ? totalRecettesPrevisionnel + (-netResPrev) : totalRecettesPrevisionnel)}</span>
       </div>

@@ -29,7 +29,7 @@
     </div>
     <div class="text-xs font-medium flex items-center gap-2">
       <span class="text-muted-foreground">Total ventilé :</span>
-      <Badge variant={isComplete ? "default" : "destructive"} class="font-mono text-xs">
+      <Badge variant={isComplete ? "default" : "destructive"} class="font-outfit tabular-nums text-xs">
         {(splitSum / 100).toFixed(2)} € / {(remainingAmount / 100).toFixed(2)} €
       </Badge>
     </div>
@@ -59,7 +59,7 @@
             id="split-amount-{idx}"
             placeholder="0.00" 
             bind:value={sp.amount}
-            class="w-full bg-background border border-border rounded-md px-3 py-1.5 text-xs text-foreground font-mono text-right focus:ring-1 focus:ring-primary focus:outline-none"
+            class="w-full bg-background border border-border rounded-md px-3 py-1.5 text-xs text-foreground font-outfit tabular-nums text-right focus:ring-1 focus:ring-primary focus:outline-none"
           />
           <span class="absolute right-2 text-xs text-muted-foreground pointer-events-none">€</span>
         </div>

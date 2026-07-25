@@ -144,8 +144,8 @@
           >
             <div class="flex items-start justify-between gap-2">
               <div class="font-medium text-sm truncate">{bt.name}</div>
-              <div class="font-mono text-sm font-semibold shrink-0 {bt.amount < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}">
-                {(bt.amount / 100).toFixed(2)} €
+              <div class="font-outfit text-sm font-semibold tabular-nums shrink-0 {((bt as any).amountCents ?? bt.amount ?? 0) < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}">
+                {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((bt as any).amountCents ?? bt.amount ?? 0) / 100).replace(/\s/g, ' ')} €
               </div>
             </div>
 
