@@ -4,8 +4,8 @@ const transactionDetailsSchema = Type.Object({
   seasonId: Type.String({ minLength: 1 }),
   type: Type.Union([Type.Literal('recette'), Type.Literal('depense'), Type.Literal('transfert')]),
   accountId: Type.Union([Type.Literal('current'), Type.Literal('savings'), Type.Literal('cash')]),
-  destinationAccountId: Type.Optional(Type.Union([Type.Literal('current'), Type.Literal('savings'), Type.Literal('cash')])),
-  category: Type.Optional(Type.Union([Type.String(), Type.Number()])),
+  destinationAccountId: Type.Optional(Type.Union([Type.Literal('current'), Type.Literal('savings'), Type.Literal('cash'), Type.Null()])),
+  category: Type.Optional(Type.Union([Type.String(), Type.Number(), Type.Null()])),
   amount: Type.Number(),
   date: Type.String(),
   paymentMethod: Type.Union([
@@ -19,16 +19,16 @@ const transactionDetailsSchema = Type.Object({
     Type.Literal('up_loisir')
   ]),
   description: Type.String(),
-  reference: Type.Optional(Type.String())
+  reference: Type.Optional(Type.Union([Type.String(), Type.Null()]))
 });
 
 export const reconcileBankTransactionSchema = Type.Object({
-  memberId: Type.Optional(Type.Number()),
-  invoiceId: Type.Optional(Type.Number()),
-  invoiceIds: Type.Optional(Type.Array(Type.Number())),
-  action: Type.Union([Type.Literal('match'), Type.Literal('create')]),
-  ledgerEntryId: Type.Optional(Type.Number()),
-  transactions: Type.Optional(Type.Array(transactionDetailsSchema)),
+  memberId: Type.Optional(Type.Union([Type.Number(), Type.Null()])),
+  invoiceId: Type.Optional(Type.Union([Type.Number(), Type.Null()])),
+  invoiceIds: Type.Optional(Type.Union([Type.Array(Type.Number()), Type.Null()])),
+  action: Type.Union([Type.Literal('match'), Type.Literal('create'), Type.Literal('reconcile')]),
+  ledgerEntryId: Type.Optional(Type.Union([Type.Number(), Type.Null()])),
+  transactions: Type.Optional(Type.Union([Type.Array(transactionDetailsSchema), Type.Null()])),
   transaction: Type.Optional(transactionDetailsSchema)
 });
 
