@@ -54,12 +54,12 @@ try {
         const balJson = await balRes.json() as any;
         const balList: any[] = balJson.data || [];
         if (balList.length > 0) {
-          const curr = balList.find(b => b.accountId === 'current');
-          const sav = balList.find(b => b.accountId === 'savings');
-          const csh = balList.find(b => b.accountId === 'cash');
-          if (curr) initialCurrentBalance = curr.initialBalance;
-          if (sav) initialSavingsBalance = sav.initialBalance;
-          if (csh) initialCashBalance = csh.initialBalance;
+          const curr = balList.find(b => b.accountId === 'current' || b.accountId === 1);
+          const sav = balList.find(b => b.accountId === 'savings' || b.accountId === 2);
+          const csh = balList.find(b => b.accountId === 'cash' || b.accountId === 3);
+          if (curr) initialCurrentBalance = curr.initialBalanceCents ?? curr.initialBalance ?? 0;
+          if (sav) initialSavingsBalance = sav.initialBalanceCents ?? sav.initialBalance ?? 0;
+          if (csh) initialCashBalance = csh.initialBalanceCents ?? csh.initialBalance ?? 0;
         } else {
           const sCode = s.code || String(s.id);
           const match = sCode.match(/^(\d+)-(\d+)$/);
