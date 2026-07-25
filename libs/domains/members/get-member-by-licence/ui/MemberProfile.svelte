@@ -55,23 +55,38 @@
     </div>
   </div>
 
-  <Tabs.Root bind:value={activeTab} class="w-full">
-    <Tabs.List class="grid w-full grid-cols-3 mb-6">
-      <Tabs.Trigger value="profil">Profil & Contacts</Tabs.Trigger>
-      <Tabs.Trigger value="cotisation">Cotisation Poona</Tabs.Trigger>
-      <Tabs.Trigger value="transactions">Historique Financier</Tabs.Trigger>
-    </Tabs.List>
+  <div class="grid w-full grid-cols-3 p-1 bg-muted rounded-xl mb-6 border border-border/50 shadow-xs">
+    <button
+      type="button"
+      data-state={activeTab === 'profil' ? 'active' : 'inactive'}
+      onclick={() => activeTab = 'profil'}
+      class="py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer border-0 {activeTab === 'profil' ? 'bg-background text-foreground shadow-xs font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent'}"
+    >
+      Profil & Contacts
+    </button>
+    <button
+      type="button"
+      data-state={activeTab === 'cotisation' ? 'active' : 'inactive'}
+      onclick={() => activeTab = 'cotisation'}
+      class="py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer border-0 {activeTab === 'cotisation' ? 'bg-background text-foreground shadow-xs font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent'}"
+    >
+      Cotisation Poona
+    </button>
+    <button
+      type="button"
+      data-state={activeTab === 'transactions' ? 'active' : 'inactive'}
+      onclick={() => activeTab = 'transactions'}
+      class="py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer border-0 {activeTab === 'transactions' ? 'bg-background text-foreground shadow-xs font-bold' : 'text-muted-foreground hover:text-foreground bg-transparent'}"
+    >
+      Historique Financier
+    </button>
+  </div>
 
-    <Tabs.Content value="profil">
-      <MemberProfileInfoTab {member} />
-    </Tabs.Content>
-
-    <Tabs.Content value="cotisation">
-      <MemberProfileCotisationTab {member} />
-    </Tabs.Content>
-
-    <Tabs.Content value="transactions">
-      <MemberProfileTransactionsTab {transactions} />
-    </Tabs.Content>
-  </Tabs.Root>
+  {#if activeTab === 'profil'}
+    <MemberProfileInfoTab {member} />
+  {:else if activeTab === 'cotisation'}
+    <MemberProfileCotisationTab {member} />
+  {:else if activeTab === 'transactions'}
+    <MemberProfileTransactionsTab {transactions} />
+  {/if}
 </div>
