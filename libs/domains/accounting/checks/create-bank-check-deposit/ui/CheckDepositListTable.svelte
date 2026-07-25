@@ -36,12 +36,12 @@
               <Table.Cell class="p-4 font-medium">{dep.reference}</Table.Cell>
               <Table.Cell class="p-4">
                 {#if dep.status === 'cleared'}
-                  <Badge variant="secondary" class="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/10 px-2 py-0.5 rounded-full text-xs font-medium border-transparent">
-                    <CheckCircle class="h-3 w-3" /> Cleared (Rapproché)
+                  <Badge variant="outline" class="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 text-xs font-semibold">
+                    <CheckCircle class="h-3 w-3" /> Rapproché
                   </Badge>
                 {:else}
-                  <Badge variant="secondary" class="inline-flex items-center gap-1 bg-blue-500/10 text-blue-500 hover:bg-blue-500/10 px-2 py-0.5 rounded-full text-xs font-medium border-transparent animate-pulse">
-                    Deposited (Déposé)
+                  <Badge variant="outline" class="inline-flex items-center gap-1 bg-primary/10 text-primary border-primary/20 text-xs font-semibold">
+                    Déposé
                   </Badge>
                 {/if}
               </Table.Cell>
