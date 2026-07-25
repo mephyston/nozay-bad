@@ -70,7 +70,7 @@
 </Card.Root>
 
 <Sheet.Root bind:open={showAddSheet}>
-  <Sheet.Content class="w-full max-w-md bg-card border-border overflow-y-auto">
+  <Sheet.Content class="w-full sm:max-w-md p-6 bg-card border-border overflow-y-auto">
     <Sheet.Header>
       <Sheet.Title class="flex items-center gap-2">
         <Plus class="w-5 h-5 text-primary" />
