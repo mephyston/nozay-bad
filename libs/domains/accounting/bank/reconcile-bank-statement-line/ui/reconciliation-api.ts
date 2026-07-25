@@ -144,6 +144,7 @@ export async function apiCreateAndMatchSingle(
   amountToLink: number,
   paymentMethod: string
 ): Promise<void> {
+  const btAmt = (bt as any).amountCents ?? bt.amount ?? 0;
   const res = await fetch('/admin/accounting/import', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -153,7 +154,7 @@ export async function apiCreateAndMatchSingle(
       memberId,
       transaction: {
         seasonId: targetSeasonId,
-        type: bt.amount < 0 ? 'depense' : 'recette',
+        type: btAmt < 0 ? 'depense' : 'recette',
         accountId: bt.accountId,
         category,
         amount: Math.round(amountToLink * 100),
@@ -164,7 +165,10 @@ export async function apiCreateAndMatchSingle(
       }
     })
   });
-  if (!res.ok) throw new Error('Erreur création.');
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Erreur lors du rapprochement.');
+  }
 }
 
 export async function apiDeleteLedgerEntry(txId: number): Promise<void> {

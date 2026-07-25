@@ -141,8 +141,20 @@ export function createReconciliationActions(s: any) {
     s.isSubmitting = true;
     try {
       prepareNextFocus(btId, true);
-      if (!s.selectedTx) throw new Error('Transaction introuvable.');
-      await apiCreateAndMatchSingle(s.selectedTx, memberId, s.selectedSeason, cat, Math.abs(s.selectedTx.amount) / 100, 'virement');
+      const tx = s.bankStatementLines.find((t: any) => t.id === btId) || s.selectedTx;
+      if (!tx) throw new Error('Transaction introuvable.');
+
+      const btAmtCents = Math.abs((tx as any).amountCents ?? tx.amount ?? 0);
+      const amountToLink = s.remainingAmount > 0 ? (s.remainingAmount / 100) : (btAmtCents / 100);
+
+      let resolvedCat = String(cat || '1');
+      const numCat = parseInt(resolvedCat);
+      if (isNaN(numCat) || numCat <= 0) {
+        const found = s.categories.find((c: any) => c.id === resolvedCat || c.code === resolvedCat || c.name.toLowerCase().includes(resolvedCat.toLowerCase()));
+        resolvedCat = found ? found.id : '1';
+      }
+
+      await apiCreateAndMatchSingle(tx, memberId, s.selectedSeason, resolvedCat, amountToLink, 'virement');
       toast.success('Rapprochement IA appliqué !');
       if (typeof window !== 'undefined') window.location.reload();
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
