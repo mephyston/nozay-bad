@@ -36,7 +36,7 @@
           class="h-9 rounded-md border border-input bg-background px-3 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
         >
           {#each state.seasons as s}
-            <option value={s.id}>{s.name} {s.active ? '(Active)' : ''}</option>
+            <option value={s.code || String(s.id)}>{s.name || s.code} {s.active ? '(Active)' : ''}</option>
           {/each}
         </select>
       </div>
