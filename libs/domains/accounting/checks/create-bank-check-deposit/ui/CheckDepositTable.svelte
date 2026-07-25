@@ -91,9 +91,9 @@
               <Table.Cell class="p-4 text-right font-bold text-foreground">
                 <Amount cents={(check as any).amountCents ?? check.amount} />
               </Table.Cell>
-              <Table.Cell class="p-4 text-right relative">
+              <Table.Cell class="p-4 text-right">
                 {#if !depositState.isClosed}
-                  <div class="inline-block text-left">
+                  <div class="relative inline-block text-left">
                     <Button 
                       variant="ghost"
                       size="icon"
@@ -105,7 +105,7 @@
                     </Button>
 
                     {#if depositState.openDropdownId === `check-${check.id}`}
-                      <div class="absolute right-4 top-full mt-1 w-32 bg-popover border border-border rounded-lg shadow-xl z-50 py-1 text-left divide-y divide-border animate-in fade-in duration-100">
+                      <div class="absolute right-0 top-full mt-1 w-32 bg-popover border border-border rounded-lg shadow-xl z-50 py-1 text-left divide-y divide-border animate-in fade-in duration-100">
                         <Button
                           variant="ghost"
                           size="sm"

@@ -58,8 +58,8 @@
                   <span class="text-xs text-muted-foreground italic font-medium">Non rapproché</span>
                 {/if}
               </Table.Cell>
-              <Table.Cell class="p-4 text-right relative">
-                <div class="inline-block text-left font-normal">
+              <Table.Cell class="p-4 text-right">
+                <div class="relative inline-block text-left font-normal">
                   <Button 
                     variant="ghost"
                     size="icon"
@@ -71,7 +71,7 @@
                   </Button>
 
                   {#if depositState.openDropdownId === `deposit-${dep.id}`}
-                    <div class="absolute right-4 top-full mt-1 w-48 bg-popover border border-border rounded-lg shadow-xl z-50 py-1 text-left divide-y divide-border animate-in fade-in duration-100">
+                    <div class="absolute right-0 top-full mt-1 w-48 bg-popover border border-border rounded-lg shadow-xl z-50 py-1 text-left divide-y divide-border animate-in fade-in duration-100">
                       <Button
                         variant="ghost"
                         size="sm"
