@@ -13,9 +13,9 @@
   let { depositState, checkDeposits, onDeleteDeposit }: Props = $props();
 </script>
 
-<Card.Root class="overflow-hidden shadow-sm">
+<Card.Root class="shadow-sm">
   <Card.Content class="p-0">
-    <div class="overflow-x-auto min-h-[220px]">
+    <div class="overflow-x-auto min-h-[300px] pb-24">
       <Table.Root class="w-full text-left border-collapse text-sm">
         <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
           <Table.Row>
@@ -71,7 +71,7 @@
                   </Button>
 
                   {#if depositState.openDropdownId === `deposit-${dep.id}`}
-                    <div class="absolute right-4 mt-1 w-48 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border animate-in fade-in duration-100">
+                    <div class="absolute right-4 top-full mt-1 w-48 bg-popover border border-border rounded-lg shadow-xl z-50 py-1 text-left divide-y divide-border animate-in fade-in duration-100">
                       <Button
                         variant="ghost"
                         size="sm"
