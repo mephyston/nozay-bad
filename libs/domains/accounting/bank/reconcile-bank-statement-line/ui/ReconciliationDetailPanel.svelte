@@ -81,20 +81,20 @@
         </div>
       </div>
 
-      <!-- Accordéon / Section repliable pour les détails secondaires sur Mobile -->
+      <!-- Accordéon / Section repliable pour les détails secondaires -->
       <details class="group pt-2 border-t border-border/40 text-xs">
         <summary class="flex items-center justify-between font-medium cursor-pointer text-muted-foreground hover:text-foreground py-1 select-none">
-          <span class="text-[11px] font-mono">FITID: {state.selectedTx.fitid}</span>
           <span class="text-[11px] font-medium text-primary flex items-center gap-1">
-            <span class="group-open:hidden">Détails & Actions ▼</span>
-            <span class="hidden group-open:inline">Masquer ▲</span>
+            <span class="group-open:hidden">Afficher détails & actions ▼</span>
+            <span class="hidden group-open:inline">Masquer détails & actions ▲</span>
           </span>
         </summary>
         
         <div class="pt-2 space-y-2">
-          <div class="flex flex-wrap items-center justify-between gap-2 bg-muted/40 p-2 rounded-lg">
-            <div class="text-muted-foreground text-[11px]">
-              ID interne: <span class="font-mono text-foreground font-semibold">{state.selectedTx.id}</span>
+          <div class="flex flex-wrap items-center justify-between gap-2 bg-muted/40 p-2.5 rounded-lg text-[11px]">
+            <div class="space-y-0.5">
+              <div>FITID: <span class="font-mono text-foreground font-medium">{state.selectedTx.fitid}</span></div>
+              <div>ID interne: <span class="font-mono text-foreground font-semibold">{state.selectedTx.id}</span></div>
             </div>
 
             <div class="flex items-center gap-2">

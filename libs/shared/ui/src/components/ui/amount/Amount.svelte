@@ -32,7 +32,7 @@
     const str = new Intl.NumberFormat('fr-FR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(absEuros).replace(/\s/g, ' ');
+    }).format(absEuros).replace(/\s/g, '\u00a0');
     
     if (valueInCents < 0) return `-${str}`;
     if (showSign && valueInCents > 0) return `+${str}`;
@@ -47,6 +47,6 @@
   });
 </script>
 
-<span class={cn("font-outfit tabular-nums inline-block", colorClass, className)}>
+<span class={cn("font-outfit tabular-nums whitespace-nowrap inline-block", colorClass, className)}>
   {formattedNumber}&nbsp;{currency}
 </span>

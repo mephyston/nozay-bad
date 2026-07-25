@@ -18,7 +18,7 @@ export function formatAmount(cents: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(euros);
-  return formatted.replace(/\s/g, ' ') + ' €';
+  return formatted.replace(/\s/g, '\u00a0') + '\u00a0€';
 }
 
 export function formatDelta(cents: number): string {
