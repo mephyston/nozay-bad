@@ -100,8 +100,17 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
   });
 
   const categoryDisplayVal = $derived.by(() => categories.find(c => c.id === category)?.name || '');
-  const filteredMembers = $derived(memberSearchQuery.trim() === '' ? sortedMembers : sortedMembers.filter(m => `${m.lastName} ${m.firstName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase())));
   const filteredCategories = $derived(categorySearchQuery.trim() === '' ? categories : categories.filter(c => c.name.toLowerCase().includes(categorySearchQuery.toLowerCase())));
+
+  const filteredMembers = $derived.by(() => {
+    const q = (memberSearchQuery || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (!q) return sortedMembers;
+    return sortedMembers.filter(m => {
+      const lastFirst = `${m.lastName || ''} ${m.firstName || ''} ${m.licence || ''}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const firstLast = `${m.firstName || ''} ${m.lastName || ''} ${m.licence || ''}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return lastFirst.includes(q) || firstLast.includes(q);
+    });
+  });
   const matchingInvoices = $derived(selectedTx && selectedTx.amount > 0 ? unpaidInvoices.filter(inv => inv.totalAmount === selectedTx?.amount) : []);
   const otherUnpaidInvoices = $derived(selectedTx && selectedTx.amount > 0 ? unpaidInvoices.filter(inv => inv.totalAmount !== selectedTx?.amount) : unpaidInvoices);
 
