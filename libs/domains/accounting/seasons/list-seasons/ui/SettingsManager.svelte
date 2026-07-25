@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Check, Calendar, AlertCircle } from "@lucide/svelte";
-  import { Card, Alert, Tabs } from "@nba/ui";
+  import { Check, Calendar, AlertCircle, Plus } from "@lucide/svelte";
+  import { Card, Alert, Tabs, Button } from "@nba/ui";
   import SeasonConfig from "./SeasonConfig.svelte";
   import CategoriesConfig from "./CategoriesConfig.svelte";
   import AccountClassesConfig from "./AccountClassesConfig.svelte";
@@ -28,6 +28,7 @@
   });
 
   // --- SEASONS STATE ---
+  let showAddSeasonSheet = $state(false);
   let newSeasonId = $state('');
   let newSeasonName = $state('');
   let newSeasonActive = $state(false);
@@ -111,20 +112,27 @@
     <!-- VIEW: SEASONS -->
     <Tabs.Content value="seasons">
       {#if activeView === 'seasons'}
-        <Card.Root class="max-w-3xl">
-          <Card.Header>
-            <Card.Title class="text-lg font-bold flex items-center gap-2">
-              <Calendar class="w-5 h-5 text-primary" />
-              Exercices Comptables / Saisons
-            </Card.Title>
-            <Card.Description>
-              Gérez les saisons comptables et définissez la saison active de l'association.
-            </Card.Description>
+        <Card.Root class="w-full">
+          <Card.Header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border">
+            <div>
+              <Card.Title class="text-lg font-bold flex items-center gap-2">
+                <Calendar class="w-5 h-5 text-primary" />
+                Exercices Comptables / Saisons
+              </Card.Title>
+              <Card.Description class="mt-1">
+                Gérez les saisons comptables et définissez la saison active de l'association.
+              </Card.Description>
+            </div>
+            <Button onclick={() => showAddSeasonSheet = true} size="sm" class="font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+              <Plus class="w-4 h-4" />
+              Nouvelle Saison
+            </Button>
           </Card.Header>
-          <Card.Content class="space-y-6">
+          <Card.Content class="pt-6 space-y-6">
             <SeasonConfig
               {seasons}
               isSubmitting={state.isSubmitting}
+              bind:showAddSheet={showAddSeasonSheet}
               bind:newSeasonId
               bind:newSeasonName
               bind:newSeasonActive

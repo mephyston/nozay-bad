@@ -1,10 +1,11 @@
 <script lang="ts">
   import { Calendar, Plus } from "@lucide/svelte";
-  import { Button, Input, Badge } from "@nba/ui";
+  import { Button, Input, Badge, Sheet } from "@nba/ui";
 
   let {
     seasons = [],
     isSubmitting = false,
+    showAddSheet = $bindable(false),
     newSeasonId = $bindable(''),
     newSeasonName = $bindable(''),
     newSeasonActive = $bindable(false),
@@ -14,6 +15,7 @@
   }: {
     seasons: any[];
     isSubmitting: boolean;
+    showAddSheet?: boolean;
     newSeasonId: string;
     newSeasonName: string;
     newSeasonActive: boolean;
@@ -21,6 +23,11 @@
     onToggleSeasonActive: (id: string) => void;
     onCloseSeason: (id: string) => void;
   } = $props();
+
+  function handleSubmit(e: Event) {
+    onCreateSeason(e);
+    showAddSheet = false;
+  }
 </script>
 
 <div class="space-y-6">
@@ -65,51 +72,58 @@
     {/each}
   </div>
 
-  <!-- Add Season Form -->
-  <form onsubmit={onCreateSeason} class="border-t border-border pt-4 space-y-4">
-    <h3 class="text-sm font-bold text-foreground">Ajouter un exercice</h3>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="space-y-1.5">
-        <label for="new-season-id" class="block text-xs font-bold text-muted-foreground uppercase">ID (ex: 26-27)</label>
-        <Input
-          type="text"
-          id="new-season-id"
-          bind:value={newSeasonId}
-          placeholder="26-27"
-          required
-        />
-      </div>
-      <div class="space-y-1.5">
-        <label for="new-season-name" class="block text-xs font-bold text-muted-foreground uppercase">Libellé (ex: Saison 2026-2027)</label>
-        <Input
-          type="text"
-          id="new-season-name"
-          bind:value={newSeasonName}
-          placeholder="Saison 2026-2027"
-          required
-        />
-      </div>
-    </div>
+  <Sheet.Root bind:open={showAddSheet}>
+    <Sheet.Content class="w-full max-w-md bg-card border-border">
+      <Sheet.Header>
+        <Sheet.Title class="flex items-center gap-2">
+          <Calendar class="w-5 h-5 text-primary" />
+          Nouvelle Saison
+        </Sheet.Title>
+        <Sheet.Description>Ajoutez un nouvel exercice comptable pour l'association.</Sheet.Description>
+      </Sheet.Header>
+      <form onsubmit={handleSubmit} class="space-y-4 pt-4">
+        <div class="space-y-1.5">
+          <label for="new-season-id" class="block text-xs font-bold text-muted-foreground uppercase">ID (ex: 26-27)</label>
+          <Input
+            type="text"
+            id="new-season-id"
+            bind:value={newSeasonId}
+            placeholder="26-27"
+            required
+          />
+        </div>
+        <div class="space-y-1.5">
+          <label for="new-season-name" class="block text-xs font-bold text-muted-foreground uppercase">Libellé (ex: Saison 2026-2027)</label>
+          <Input
+            type="text"
+            id="new-season-name"
+            bind:value={newSeasonName}
+            placeholder="Saison 2026-2027"
+            required
+          />
+        </div>
 
-    <div class="flex items-center gap-2">
-      <input
-        type="checkbox"
-        id="new-season-active"
-        bind:checked={newSeasonActive}
-        class="rounded border-border focus:ring-primary h-4 w-4"
-      />
-      <label for="new-season-active" class="text-xs font-medium text-foreground">Définir comme active immédiatement</label>
-    </div>
+        <div class="flex items-center gap-2 pt-2">
+          <input
+            type="checkbox"
+            id="new-season-active"
+            bind:checked={newSeasonActive}
+            class="rounded border-border focus:ring-primary h-4 w-4"
+          />
+          <label for="new-season-active" class="text-xs font-medium text-foreground">Définir comme active immédiatement</label>
+        </div>
 
-    <Button
-      type="submit"
-      disabled={isSubmitting}
-      size="sm"
-      class="font-bold flex items-center gap-1"
-    >
-      <Plus class="w-3.5 h-3.5" />
-      Créer la saison
-    </Button>
-  </form>
+        <Sheet.Footer class="pt-6">
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            class="w-full font-bold flex items-center justify-center gap-1.5"
+          >
+            <Plus class="w-4 h-4" />
+            Créer la saison
+          </Button>
+        </Sheet.Footer>
+      </form>
+    </Sheet.Content>
+  </Sheet.Root>
 </div>
