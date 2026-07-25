@@ -145,6 +145,7 @@ export async function apiCreateAndMatchSingle(
   paymentMethod: string
 ): Promise<void> {
   const btAmt = (bt as any).amountCents ?? bt.amount ?? 0;
+  const rawAccountId = bt.accountId || 'current';
   const res = await fetch('/admin/accounting/import', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -155,11 +156,11 @@ export async function apiCreateAndMatchSingle(
       transaction: {
         seasonId: targetSeasonId,
         type: btAmt < 0 ? 'depense' : 'recette',
-        accountId: bt.accountId,
+        accountId: rawAccountId,
         category,
         amount: Math.round(amountToLink * 100),
         date: bt.date,
-        paymentMethod,
+        paymentMethod: paymentMethod || 'virement',
         description: bt.name,
         reference: bt.fitid
       }
