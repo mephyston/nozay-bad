@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Input, Amount } from '@nba/ui';
+  import { Button, Amount } from '@nba/ui';
   import CreateLedgerEntrySplitRows from './CreateLedgerEntrySplitRows.svelte';
 
   let {
@@ -40,6 +40,22 @@
     categorySearchQuery: string;
   } = $props();
 
+  const PAYMENT_METHODS = [
+    { value: 'virement', label: 'Virement bancaire' },
+    { value: 'carte', label: 'Carte bancaire' },
+    { value: 'cheque', label: 'Chèque' },
+    { value: 'especes', label: 'Espèces' },
+    { value: 'prelevement', label: 'Prélèvement' },
+    { value: 'pass_sport', label: 'Pass Sport' },
+    { value: 'ancv', label: 'Chèque vacances (ANCV)' },
+    { value: 'labaz', label: 'LABAZ' },
+    { value: 'ticket_loisir', label: 'Ticket Loisir' },
+    { value: 'up_loisir', label: 'Up Loisir' }
+  ];
+
+  let isPaymentDropdownOpen = $state(false);
+  let paymentSearchQuery = $state('');
+
   function normalizeString(str: string): string {
     return (str || '')
       .toLowerCase()
@@ -48,6 +64,8 @@
   }
 
   let selectedMember = $derived(sortedMembers.find(m => String(m.id) === String(selectedMemberId)));
+  let selectedCategory = $derived(categories.find(c => String(c.id) === String(category)));
+  let selectedPayment = $derived(PAYMENT_METHODS.find(p => p.value === paymentMethod) || PAYMENT_METHODS[0]);
 
   let filteredMembers = $derived.by(() => {
     const q = normalizeString(memberSearchQuery.trim());
@@ -59,9 +77,17 @@
     });
   });
 
-  let filteredCategories = $derived(
-    categorySearchQuery.trim() === '' ? categories : categories.filter(c => (c.name || c.adminLabel || '').toLowerCase().includes(categorySearchQuery.toLowerCase()))
-  );
+  let filteredCategories = $derived.by(() => {
+    const q = normalizeString(categorySearchQuery.trim());
+    if (!q) return categories;
+    return categories.filter(c => normalizeString(c.name || c.adminLabel || '').includes(q));
+  });
+
+  let filteredPaymentMethods = $derived.by(() => {
+    const q = normalizeString(paymentSearchQuery.trim());
+    if (!q) return PAYMENT_METHODS;
+    return PAYMENT_METHODS.filter(p => normalizeString(p.label).includes(q));
+  });
 
   let splitSum = $derived(splits.reduce((sum, s) => sum + Math.round((s.amount || 0) * 100), 0));
 </script>
@@ -86,49 +112,101 @@
   {#if !isSplitMode}
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <span class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Catégorie Comptable</span>
+        <label for="category-search-input" class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+          Catégorie Comptable
+        </label>
         <div class="relative">
-          <button
-            type="button"
-            onclick={() => isCategoryDropdownOpen = !isCategoryDropdownOpen}
-            class="w-full flex justify-between items-center bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-          >
-            <span class="truncate">{categories.find(c => String(c.id) === String(category))?.name || categories.find(c => String(c.id) === String(category))?.adminLabel || 'Choisir une catégorie...'}</span>
-            <span class="text-muted-foreground">▼</span>
-          </button>
+          <div class="relative flex items-center">
+            <input
+              id="category-search-input"
+              type="text"
+              placeholder="Rechercher une catégorie..."
+              value={isCategoryDropdownOpen ? categorySearchQuery : (selectedCategory ? (selectedCategory.name || selectedCategory.adminLabel) : '')}
+              oninput={(e) => {
+                categorySearchQuery = (e.target as HTMLInputElement).value;
+                isCategoryDropdownOpen = true;
+              }}
+              onfocus={() => {
+                isCategoryDropdownOpen = true;
+                categorySearchQuery = '';
+              }}
+              class="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary pr-8 cursor-pointer"
+            />
+            <span class="absolute right-3 text-xs text-muted-foreground pointer-events-none">▼</span>
+          </div>
 
           {#if isCategoryDropdownOpen}
-            <div class="absolute z-50 w-full mt-1 bg-popover border border-border text-popover-foreground rounded-lg shadow-lg max-h-60 overflow-y-auto p-2 space-y-2">
-              <Input placeholder="Rechercher une catégorie..." bind:value={categorySearchQuery} size="sm" />
-              <div class="space-y-0.5">
+            <div class="absolute z-50 w-full mt-1 bg-popover border border-border text-popover-foreground rounded-lg shadow-lg max-h-60 overflow-y-auto p-1 space-y-0.5">
+              {#if filteredCategories.length === 0}
+                <div class="px-2 py-2 text-xs text-muted-foreground italic text-center">
+                  Aucune catégorie trouvée
+                </div>
+              {:else}
                 {#each filteredCategories as cat}
                   <button
                     type="button"
-                    onclick={() => { category = String(cat.id); isCategoryDropdownOpen = false; }}
+                    onclick={() => {
+                      category = String(cat.id);
+                      isCategoryDropdownOpen = false;
+                    }}
                     class="w-full text-left px-2 py-1.5 rounded hover:bg-muted text-xs truncate text-foreground cursor-pointer"
                   >
                     {cat.name || cat.adminLabel}
                   </button>
                 {/each}
-              </div>
+              {/if}
             </div>
           {/if}
         </div>
       </div>
 
       <div>
-        <label for="payment-method-select" class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Mode de règlement</label>
-        <select
-          id="payment-method-select"
-          bind:value={paymentMethod}
-          class="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-        >
-          <option value="virement">Virement bancaire</option>
-          <option value="carte">Carte bancaire</option>
-          <option value="cheque">Chèque</option>
-          <option value="especes">Espèces</option>
-          <option value="prelevement">Prélèvement</option>
-        </select>
+        <label for="payment-method-search-input" class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+          Mode de règlement
+        </label>
+        <div class="relative">
+          <div class="relative flex items-center">
+            <input
+              id="payment-method-search-input"
+              type="text"
+              placeholder="Rechercher un mode..."
+              value={isPaymentDropdownOpen ? paymentSearchQuery : selectedPayment.label}
+              oninput={(e) => {
+                paymentSearchQuery = (e.target as HTMLInputElement).value;
+                isPaymentDropdownOpen = true;
+              }}
+              onfocus={() => {
+                isPaymentDropdownOpen = true;
+                paymentSearchQuery = '';
+              }}
+              class="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary pr-8 cursor-pointer"
+            />
+            <span class="absolute right-3 text-xs text-muted-foreground pointer-events-none">▼</span>
+          </div>
+
+          {#if isPaymentDropdownOpen}
+            <div class="absolute z-50 w-full mt-1 bg-popover border border-border text-popover-foreground rounded-lg shadow-lg max-h-60 overflow-y-auto p-1 space-y-0.5">
+              {#if filteredPaymentMethods.length === 0}
+                <div class="px-2 py-2 text-xs text-muted-foreground italic text-center">
+                  Aucun mode trouvé
+                </div>
+              {:else}
+                {#each filteredPaymentMethods as p}
+                  <button
+                    type="button"
+                    onclick={() => {
+                      paymentMethod = p.value;
+                      isPaymentDropdownOpen = false;
+                    }}
+                    class="w-full text-left px-2 py-1.5 rounded hover:bg-muted text-xs truncate text-foreground cursor-pointer"
+                  >
+                    {p.label}
+                  </button>
+                {/each}
+              {/if}
+            </div>
+          {/if}
+        </div>
       </div>
     </div>
 

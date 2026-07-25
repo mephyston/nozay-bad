@@ -25,7 +25,7 @@ listMembersRoute.get(
     const query = c.req.valid('query');
     const page = parseInt(query.page || '1', 10);
     const rawLimit = parseInt(query.limit || '20', 10);
-    const limit = Math.min(Math.max(1, rawLimit), 100);
+    const limit = Math.min(Math.max(1, rawLimit), 5000);
     const search = query.search || '';
     const gender = query.gender || '';
     const type = query.type || '';
