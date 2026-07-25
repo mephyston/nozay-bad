@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, Sparkles, Trash2 } from '@lucide/svelte';
-  import { Button, Input, Badge, Card, Checkbox } from '@nba/ui';
+  import { Button, Input, Badge, Card, Checkbox, Tabs } from '@nba/ui';
   import type { ReconciliationState } from './reconciliation.svelte';
 
   let { state }: { state: ReconciliationState } = $props();
@@ -9,28 +9,19 @@
 <Card.Root class="flex flex-col h-[750px] bg-card border-border overflow-hidden">
   <div class="p-3 border-b border-border bg-muted/40 space-y-3">
     <!-- Onglets de statut -->
-    <div class="flex items-center gap-1 bg-muted p-1 rounded-lg">
-      <button
-        class="flex-1 py-1.5 px-3 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 {state.activeTab === 'pending' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
-        onclick={() => state.activeTab = 'pending'}
-      >
-        À rapprocher ({state.pendingCount})
-      </button>
-
-      <button
-        class="flex-1 py-1.5 px-3 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 {state.activeTab === 'reconciled' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
-        onclick={() => state.activeTab = 'reconciled'}
-      >
-        Rapprochées ({state.reconciledCount})
-      </button>
-
-      <button
-        class="flex-1 py-1.5 px-3 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 {state.activeTab === 'ignored' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
-        onclick={() => state.activeTab = 'ignored'}
-      >
-        Ignorées ({state.ignoredCount})
-      </button>
-    </div>
+    <Tabs.Root value={state.activeTab} onValueChange={(v) => state.activeTab = v as any} class="w-full">
+      <Tabs.List class="grid grid-cols-3 w-full">
+        <Tabs.Trigger value="pending" class="text-xs gap-1.5 cursor-pointer">
+          À rapprocher ({state.pendingCount})
+        </Tabs.Trigger>
+        <Tabs.Trigger value="reconciled" class="text-xs gap-1.5 cursor-pointer">
+          Rapprochées ({state.reconciledCount})
+        </Tabs.Trigger>
+        <Tabs.Trigger value="ignored" class="text-xs gap-1.5 cursor-pointer">
+          Ignorées ({state.ignoredCount})
+        </Tabs.Trigger>
+      </Tabs.List>
+    </Tabs.Root>
 
     <!-- Champ de recherche textuel libre -->
     <div class="relative">
