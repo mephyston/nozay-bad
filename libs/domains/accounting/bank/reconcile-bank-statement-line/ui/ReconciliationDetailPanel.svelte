@@ -52,89 +52,87 @@
         </Button>
       </div>
 
-      <!-- Titre, Statut, Montant et Actions compactes -->
-      <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-        <div class="space-y-1 min-w-0 flex-1">
-          <div class="flex flex-wrap items-center gap-2">
-            <h3 class="font-bold text-base sm:text-lg text-foreground break-words">{state.selectedTx.name}</h3>
+      <!-- Titre, Statut, Montant et Actions empilées -->
+      <div class="flex items-start justify-between gap-3">
+        <!-- Détails de la transaction sur une ligne propre et lisible -->
+        <div class="min-w-0 flex-1 space-y-1">
+          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <h3 class="font-bold text-sm sm:text-base text-foreground truncate">{state.selectedTx.name}</h3>
             {#if state.selectedTx.status === 'reconciled'}
-              <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-xs shrink-0">
+              <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-[11px] shrink-0">
                 Rapprochée
               </Badge>
             {:else if state.selectedTx.status === 'ignored'}
-              <Badge variant="outline" class="bg-muted text-muted-foreground text-xs shrink-0">
+              <Badge variant="outline" class="bg-muted text-muted-foreground text-[11px] shrink-0">
                 Ignorée
               </Badge>
             {/if}
           </div>
-          {#if state.selectedTx.memo}
-            <p class="text-xs text-muted-foreground break-words">{state.selectedTx.memo}</p>
-          {/if}
+
+          <div class="flex items-center gap-2 text-xs text-muted-foreground flex-wrap whitespace-nowrap">
+            <span class="font-outfit font-bold text-sm sm:text-base tabular-nums {((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}">
+              {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) / 100).replace(/\s/g, '\u00a0')} €
+            </span>
+            <span>•</span>
+            <span>{formatShortDate(state.selectedTx.date)}</span>
+            {#if state.selectedTx.memo}
+              <span>•</span>
+              <span class="truncate italic max-w-[180px] sm:max-w-xs">{state.selectedTx.memo}</span>
+            {/if}
+          </div>
         </div>
 
-        <div class="flex items-center justify-between sm:justify-end gap-3 shrink-0">
-          <div class="text-left sm:text-right">
-            <div class="font-outfit text-lg sm:text-xl font-bold tabular-nums whitespace-nowrap {((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}">
-              {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) / 100).replace(/\s/g, '\u00a0')} €
-            </div>
-            <div class="text-[11px] text-muted-foreground">
-              <span class="sm:hidden">{formatShortDate(state.selectedTx.date)}</span>
-              <span class="hidden sm:inline">{state.selectedTx.date}</span>
-            </div>
-          </div>
-
-          <!-- Boutons d'action compacts (icône seule sur mobile, icône + texte sur grand écran) -->
-          <div class="flex items-center gap-1.5 ml-1">
-            {#if state.selectedTx.status === 'ignored'}
-              <Button
-                size="sm"
-                variant="outline"
-                class="h-8 w-8 p-0 sm:w-auto sm:px-2.5 text-xs gap-1 cursor-pointer"
-                title="Réactiver cette ligne"
-                disabled={state.isClosed || state.isSubmitting}
-                onclick={() => state.handleUnignore(state.selectedTx!.id)}
-              >
-                <RefreshCw class="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-                <span class="hidden sm:inline">Réactiver</span>
-              </Button>
-            {:else}
-              <Button
-                size="sm"
-                variant="outline"
-                class="h-8 w-8 p-0 sm:w-auto sm:px-2.5 text-xs gap-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                title="Ignorer cette ligne"
-                disabled={state.isClosed || state.isSubmitting}
-                onclick={() => state.handleIgnore(state.selectedTx!.id)}
-              >
-                <Trash2 class="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-                <span class="hidden sm:inline">Ignorer</span>
-              </Button>
-            {/if}
-
+        <!-- Boutons d'action empilés verticalement sur mobile (flex-col) -->
+        <div class="flex flex-col sm:flex-row items-center gap-1.5 shrink-0 ml-1">
+          {#if state.selectedTx.status === 'ignored'}
             <Button
               size="sm"
-              variant="ghost"
-              class="h-8 w-8 p-0 sm:w-auto sm:px-2.5 text-xs gap-1 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 cursor-pointer"
-              title="Re-analyser avec l'IA"
-              disabled={state.isClosed || state.isAnalyzingSingle}
-              onclick={() => state.handleAnalyzeSingle(state.selectedTx!.id)}
+              variant="outline"
+              class="h-8 w-8 p-0 sm:w-auto sm:px-2.5 text-xs gap-1 cursor-pointer"
+              title="Réactiver cette ligne"
+              disabled={state.isClosed || state.isSubmitting}
+              onclick={() => state.handleUnignore(state.selectedTx!.id)}
             >
-              <Sparkles class="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-              <span class="hidden sm:inline">{state.isAnalyzingSingle ? 'Analyse...' : 'Re-analyser'}</span>
+              <RefreshCw class="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+              <span class="hidden sm:inline">Réactiver</span>
             </Button>
-
-            <button
-              type="button"
-              class="hidden lg:block text-muted-foreground hover:text-foreground p-1 text-sm rounded hover:bg-muted ml-1"
-              onclick={() => {
-                sessionStorage.removeItem('reconcile_active_bt_id');
-                state.selectedTx = null;
-              }}
-              title="Fermer le panneau"
+          {:else}
+            <Button
+              size="sm"
+              variant="outline"
+              class="h-8 w-8 p-0 sm:w-auto sm:px-2.5 text-xs gap-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+              title="Ignorer cette ligne"
+              disabled={state.isClosed || state.isSubmitting}
+              onclick={() => state.handleIgnore(state.selectedTx!.id)}
             >
-              ✕ <span class="sr-only">Fermer</span>
-            </button>
-          </div>
+              <Trash2 class="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+              <span class="hidden sm:inline">Ignorer</span>
+            </Button>
+          {/if}
+
+          <Button
+            size="sm"
+            variant="ghost"
+            class="h-8 w-8 p-0 sm:w-auto sm:px-2.5 text-xs gap-1 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 cursor-pointer"
+            title="Re-analyser avec l'IA"
+            disabled={state.isClosed || state.isAnalyzingSingle}
+            onclick={() => state.handleAnalyzeSingle(state.selectedTx!.id)}
+          >
+            <Sparkles class="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+            <span class="hidden sm:inline">{state.isAnalyzingSingle ? 'Analyse...' : 'Re-analyser'}</span>
+          </Button>
+
+          <button
+            type="button"
+            class="hidden lg:block text-muted-foreground hover:text-foreground p-1 text-sm rounded hover:bg-muted ml-1"
+            onclick={() => {
+              sessionStorage.removeItem('reconcile_active_bt_id');
+              state.selectedTx = null;
+            }}
+            title="Fermer le panneau"
+          >
+            ✕ <span class="sr-only">Fermer</span>
+          </button>
         </div>
       </div>
     </div>
