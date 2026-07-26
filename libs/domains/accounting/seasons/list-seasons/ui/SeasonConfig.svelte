@@ -22,6 +22,7 @@
     onCreateSeason: (e: Event) => void;
     onToggleSeasonActive: (id: string) => void;
     onCloseSeason: (id: string, confirmOverwrite: boolean) => void;
+    onCheckCloseSeason: (id: string) => Promise<any>;
   } = $props();
 
   function handleSubmit(e: Event) {
@@ -32,6 +33,22 @@
   let closingSeasonId = $state<string | null>(null);
   let closingSeasonName = $derived(seasons.find(s => s.id === closingSeasonId)?.name || closingSeasonId);
   let confirmOverwrite = $state(false);
+  let checkData = $state<any>(null);
+  let isChecking = $state(false);
+
+  async function handleStartClose(id: string) {
+    closingSeasonId = id;
+    isChecking = true;
+    checkData = null;
+    confirmOverwrite = false;
+    try {
+      checkData = await onCheckCloseSeason(id);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      isChecking = false;
+    }
+  }
 
   function handleConfirmClose() {
     if (closingSeasonId) {
@@ -73,7 +90,7 @@
             <Button
               variant="destructive"
               size="xs"
-              onclick={() => closingSeasonId = s.id}
+              onclick={() => handleStartClose(s.id)}
               disabled={isSubmitting}
             >
               Clôturer
@@ -145,27 +162,66 @@
     <AlertDialog.Header>
       <AlertDialog.Title>Clôturer la {closingSeasonName} ?</AlertDialog.Title>
       <AlertDialog.Description>
-        Êtes-vous sûr de vouloir clôturer définitivement cette saison ?
-        Cette action est irréversible et bloquera toute modification comptable pour cette période.
+        {#if isChecking}
+          <div class="flex items-center gap-2 text-muted-foreground mt-4">
+            <span class="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></span>
+            Vérification comptable en cours...
+          </div>
+        {:else if checkData}
+          {#if checkData.canClose === false || (checkData.blockingItems && checkData.blockingItems.length > 0)}
+            <div class="mt-4 p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded text-sm">
+              <strong class="block mb-2">Clôture impossible :</strong>
+              <ul class="list-disc pl-4 space-y-1">
+                {#each checkData.blockingItems as item}
+                  <li>{item.message}</li>
+                {/each}
+              </ul>
+            </div>
+          {:else}
+            <div class="space-y-4">
+              <p>
+                Êtes-vous sûr de vouloir clôturer définitivement cette saison ?
+                Cette action est irréversible et bloquera toute modification comptable pour cette période.
+              </p>
+
+              {#if checkData.existingInitialBalancesOnNextSeason && checkData.existingInitialBalancesOnNextSeason.some(b => b.discrepancy)}
+                <div class="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded text-sm space-y-2">
+                  <strong>⚠️ Attention : écarts détectés sur la saison suivante ({checkData.nextSeasonCode}) !</strong>
+                  <p>Les soldes de départ actuels de la saison suivante vont être modifiés :</p>
+                  <ul class="list-disc pl-4 space-y-1">
+                    {#each checkData.existingInitialBalancesOnNextSeason.filter(b => b.discrepancy) as b}
+                      <li>
+                        <strong>{b.accountLabel || b.accountCode}</strong> : 
+                        Actuel = <strong>{(b.existingBalanceCents / 100).toFixed(2)} €</strong> 
+                        &rarr; Nouveau = <strong>{(b.newBalanceCents / 100).toFixed(2)} €</strong>
+                      </li>
+                    {/each}
+                  </ul>
+                </div>
+
+                <div class="flex items-start space-x-2 pt-2">
+                  <input
+                    type="checkbox"
+                    id="confirm-overwrite"
+                    bind:checked={confirmOverwrite}
+                    class="mt-1 rounded border-border text-destructive focus:ring-destructive"
+                  />
+                  <label for="confirm-overwrite" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Je confirme vouloir écraser les soldes initiaux de la saison {checkData.nextSeasonCode}.
+                  </label>
+                </div>
+              {/if}
+            </div>
+          {/if}
+        {/if}
       </AlertDialog.Description>
-      <div class="mt-4 flex items-start space-x-2">
-        <input
-          type="checkbox"
-          id="confirm-overwrite"
-          bind:checked={confirmOverwrite}
-          class="mt-1 rounded border-border text-destructive focus:ring-destructive"
-        />
-        <label for="confirm-overwrite" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-          Écraser les soldes de la saison suivante s'ils existent et sont différents.
-        </label>
-      </div>
     </AlertDialog.Header>
     <AlertDialog.Footer>
       <AlertDialog.Cancel>Annuler</AlertDialog.Cancel>
       <AlertDialog.Action 
         onclick={handleConfirmClose} 
         class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-        disabled={isSubmitting}
+        disabled={isSubmitting || isChecking || (checkData && !checkData.canClose) || (checkData?.existingInitialBalancesOnNextSeason?.some(b => b.discrepancy) && !confirmOverwrite)}
       >
         Clôturer définitivement
       </AlertDialog.Action>

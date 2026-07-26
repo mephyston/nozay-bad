@@ -57,6 +57,10 @@
     api.closeSeason(state, id, confirmOverwrite);
   }
 
+  function handleCheckCloseSeason(id: string) {
+    return api.checkCloseSeason(id);
+  }
+
   function handleCreateCategory(data: Parameters<typeof api.createCategory>[1]) {
     return api.createCategory(state, data);
   }
@@ -163,6 +167,7 @@
               onCreateSeason={handleCreateSeason}
               onToggleSeasonActive={handleToggleSeasonActive}
               onCloseSeason={handleCloseSeason}
+              onCheckCloseSeason={handleCheckCloseSeason}
             />
           </Card.Content>
         </Card.Root>

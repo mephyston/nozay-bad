@@ -46,6 +46,12 @@ if (Astro.request.method === 'POST') {
       if (!apiRes.ok) {
         return handleApiError(apiRes);
       }
+    } else if (data.action === 'check_close_season') {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.id}/close-checks`);
+      if (!apiRes.ok) {
+        return handleApiError(apiRes);
+      }
+      return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
     } else if (data.action === 'activate_season') {
       const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.id}`, {
         method: 'PUT',

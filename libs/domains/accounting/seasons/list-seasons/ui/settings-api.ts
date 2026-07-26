@@ -87,6 +87,23 @@ export async function closeSeason(state: SettingsState, id: string, confirmOverw
   }
 }
 
+export async function checkCloseSeason(id: string) {
+  const res = await fetch('/admin/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'check_close_season',
+      id
+    })
+  });
+
+  if (!res.ok) {
+    throw new Error(await res.text() || 'Erreur lors de la vérification de clôture.');
+  }
+
+  return await res.json();
+}
+
 
 export async function createCategory(state: SettingsState, data: {
   adminLabel: string;
