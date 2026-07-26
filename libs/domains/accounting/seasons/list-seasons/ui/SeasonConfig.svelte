@@ -21,7 +21,7 @@
     newSeasonActive: boolean;
     onCreateSeason: (e: Event) => void;
     onToggleSeasonActive: (id: string) => void;
-    onCloseSeason: (id: string) => void;
+    onCloseSeason: (id: string, confirmOverwrite: boolean) => void;
   } = $props();
 
   function handleSubmit(e: Event) {
@@ -31,11 +31,13 @@
 
   let closingSeasonId = $state<string | null>(null);
   let closingSeasonName = $derived(seasons.find(s => s.id === closingSeasonId)?.name || closingSeasonId);
+  let confirmOverwrite = $state(false);
 
   function handleConfirmClose() {
     if (closingSeasonId) {
-      onCloseSeason(closingSeasonId);
+      onCloseSeason(closingSeasonId, confirmOverwrite);
       closingSeasonId = null;
+      confirmOverwrite = false;
     }
   }
 </script>
@@ -146,6 +148,17 @@
         Êtes-vous sûr de vouloir clôturer définitivement cette saison ?
         Cette action est irréversible et bloquera toute modification comptable pour cette période.
       </AlertDialog.Description>
+      <div class="mt-4 flex items-start space-x-2">
+        <input
+          type="checkbox"
+          id="confirm-overwrite"
+          bind:checked={confirmOverwrite}
+          class="mt-1 rounded border-border text-destructive focus:ring-destructive"
+        />
+        <label for="confirm-overwrite" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+          Écraser les soldes de la saison suivante s'ils existent et sont différents.
+        </label>
+      </div>
     </AlertDialog.Header>
     <AlertDialog.Footer>
       <AlertDialog.Cancel>Annuler</AlertDialog.Cancel>

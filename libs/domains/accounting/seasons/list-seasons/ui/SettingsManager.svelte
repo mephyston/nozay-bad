@@ -53,8 +53,8 @@
     api.toggleSeasonActive(state, id);
   }
 
-  function handleCloseSeason(id: string) {
-    api.closeSeason(state, id);
+  function handleCloseSeason(id: string, confirmOverwrite: boolean) {
+    api.closeSeason(state, id, confirmOverwrite);
   }
 
   function handleCreateCategory(data: Parameters<typeof api.createCategory>[1]) {

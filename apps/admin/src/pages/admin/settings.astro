@@ -39,7 +39,9 @@ if (Astro.request.method === 'POST') {
       }
     } else if (data.action === 'close_season') {
       const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.id}/close`, {
-        method: 'POST'
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmOverwriteInitialBalances: !!data.confirmOverwrite })
       });
       if (!apiRes.ok) {
         return handleApiError(apiRes);

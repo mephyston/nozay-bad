@@ -60,7 +60,7 @@ export async function toggleSeasonActive(state: SettingsState, id: string) {
   }
 }
 
-export async function closeSeason(state: SettingsState, id: string) {
+export async function closeSeason(state: SettingsState, id: string, confirmOverwrite: boolean = false) {
   state.isSubmitting = true;
   state.errorMsg = '';
   state.successMsg = '';
@@ -71,7 +71,8 @@ export async function closeSeason(state: SettingsState, id: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'close_season',
-        id
+        id,
+        confirmOverwrite
       })
     });
 
