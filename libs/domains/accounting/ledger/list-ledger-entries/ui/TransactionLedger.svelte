@@ -353,11 +353,14 @@
     </DropdownMenu.Root>
   </div>
 
+  {@const currentSeasonObj = seasons.find(s => s.code === selectedSeason || String(s.id) === String(selectedSeason))}
+  {@const currentSeasonNumericId = currentSeasonObj?.id}
   <TransactionLedgerTable
     {transactions}
     {pagination}
     {activeCategories}
     {isClosed}
+    selectedSeasonId={currentSeasonNumericId}
     onStartEdit={startEdit}
     onDelete={handleDelete}
     onChangePage={(p) => actionChangePage(p, pagination.totalPages)}
