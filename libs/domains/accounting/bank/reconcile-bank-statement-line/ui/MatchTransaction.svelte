@@ -30,7 +30,7 @@
 
   let glCandidates = $derived(
     glTransactions.filter(
-      gt => !gt.bankStatementLineId && Math.abs(gt.amount) <= remainingAmount
+      gt => !gt.bankStatementLineId
     )
   );
 
