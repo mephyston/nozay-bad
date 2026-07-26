@@ -17,6 +17,16 @@
     max-width: 100% !important;
     width: 100% !important;
   }
+  :global(.h-screen) {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  :global(.overflow-hidden), :global(.overflow-y-auto), :global(.overflow-auto) {
+    overflow: visible !important;
+  }
+  :global(.flex-1) {
+    flex: none !important;
+  }
   .no-print {
     display: none !important;
   }
