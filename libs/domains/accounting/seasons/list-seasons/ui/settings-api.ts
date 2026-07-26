@@ -101,7 +101,8 @@ export async function checkCloseSeason(id: string) {
     throw new Error(await res.text() || 'Erreur lors de la vérification de clôture.');
   }
 
-  return await res.json();
+  const json = await res.json();
+  return json.data;
 }
 
 
