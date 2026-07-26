@@ -23,6 +23,10 @@
     onDeleteCategory: (id: number) => Promise<void>;
   } = $props();
 
+  const sortedCategories = $derived(
+    [...categories].sort((a, b) => (a.adminLabel || '').localeCompare(b.adminLabel || '', 'fr', { sensitivity: 'base' }))
+  );
+
   let editingCatId = $state<number | null>(null);
 </script>
 
@@ -39,7 +43,7 @@
       </Table.Row>
     </Table.Header>
     <Table.Body>
-      {#each categories as cat}
+      {#each sortedCategories as cat}
         <CategoryRow
           {cat}
           {accountClasses}

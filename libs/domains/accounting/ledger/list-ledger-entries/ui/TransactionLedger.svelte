@@ -130,6 +130,7 @@
     categories
       .filter(c => c.active !== false || (editingId && String(c.id) === category))
       .map(c => ({ id: String(c.id), code: c.code, name: c.adminLabel }))
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr', { sensitivity: 'base' }))
   );
 
   let editingId = $state<number | null>(null);
