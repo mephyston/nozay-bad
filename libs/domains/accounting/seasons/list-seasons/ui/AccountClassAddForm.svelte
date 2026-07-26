@@ -7,12 +7,12 @@
     onCreateAccountClass
   }: {
     isSubmitting: boolean;
-    onCreateAccountClass: (data: { code: string; label: string; type: 'recette' | 'depense' }) => Promise<void>;
+    onCreateAccountClass: (data: { code: string; label: string; type: 'recette' | 'depense' | 'tresorerie' }) => Promise<void>;
   } = $props();
 
   let newClassCode = $state('');
   let newClassLabel = $state('');
-  let newClassType = $state<'recette' | 'depense'>('recette');
+  let newClassType = $state<'recette' | 'depense' | 'tresorerie'>('recette');
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
@@ -59,6 +59,7 @@
     >
       <option value="recette">Produit (7 - Recette)</option>
       <option value="depense">Charge (6 - Dépense)</option>
+      <option value="tresorerie">Trésorerie (5)</option>
     </select>
   </div>
 

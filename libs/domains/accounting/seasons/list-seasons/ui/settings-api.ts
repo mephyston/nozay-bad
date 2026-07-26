@@ -86,6 +86,7 @@ export async function closeSeason(state: SettingsState, id: string) {
   }
 }
 
+
 export async function createCategory(state: SettingsState, data: {
   adminLabel: string;
   adherentLabel: string;

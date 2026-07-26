@@ -14,9 +14,9 @@
   }: {
     accountClasses?: AccountClass[];
     isSubmitting: boolean;
-    onUpdateAccountClass: (code: string, updates: { label: string; type: 'recette' | 'depense' }) => Promise<void>;
+    onUpdateAccountClass: (code: string, updates: { label: string; type: 'recette' | 'depense' | 'tresorerie' }) => Promise<void>;
     onDeleteAccountClass: (code: string) => Promise<void>;
-    onCreateAccountClass: (data: { code: string; label: string; type: 'recette' | 'depense' }) => Promise<void>;
+    onCreateAccountClass: (data: { code: string; label: string; type: 'recette' | 'depense' | 'tresorerie' }) => Promise<void>;
   } = $props();
 
   let showAddSheet = $state(false);

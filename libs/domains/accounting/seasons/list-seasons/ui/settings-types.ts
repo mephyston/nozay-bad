@@ -22,7 +22,7 @@ export interface Category {
 export interface AccountClass {
   code: string;
   label: string;
-  type: 'recette' | 'depense';
+  type: 'recette' | 'depense' | 'tresorerie';
 }
 
 export interface ProductCategory {

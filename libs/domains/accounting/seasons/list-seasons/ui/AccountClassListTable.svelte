@@ -11,13 +11,13 @@
   }: {
     accountClasses?: AccountClass[];
     isSubmitting: boolean;
-    onUpdateAccountClass: (code: string, updates: { label: string; type: 'recette' | 'depense' }) => Promise<void>;
+    onUpdateAccountClass: (code: string, updates: { label: string; type: 'recette' | 'depense' | 'tresorerie' }) => Promise<void>;
     onDeleteAccountClass: (code: string) => Promise<void>;
   } = $props();
 
   let editingClassCode = $state<string | null>(null);
   let editClassLabel = $state('');
-  let editClassType = $state<'recette' | 'depense'>('recette');
+  let editClassType = $state<'recette' | 'depense' | 'tresorerie'>('recette');
 
   function startEditAccountClass(ac: AccountClass) {
     editingClassCode = ac.code;
@@ -77,16 +77,22 @@
           <Table.Cell class="p-4">
             {#if editingClassCode === ac.code}
               <select
-                bind:value={editClassType}
+                value={editClassType}
+                onchange={(e) => editClassType = e.currentTarget.value as any}
                 class="px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
               >
                 <option value="recette">Produit (Recette)</option>
                 <option value="depense">Charge (Dépense)</option>
+                <option value="tresorerie">Trésorerie (5)</option>
               </select>
             {:else}
               {#if ac.type === 'recette'}
                 <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[11px] font-semibold">
                   Produit (7)
+                </Badge>
+              {:else if ac.type === 'tresorerie'}
+                <Badge variant="outline" class="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[11px] font-semibold">
+                  Trésorerie (5)
                 </Badge>
               {:else}
                 <Badge variant="outline" class="bg-destructive/10 text-destructive border-destructive/20 text-[11px] font-semibold">

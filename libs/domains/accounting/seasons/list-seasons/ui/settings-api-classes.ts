@@ -14,7 +14,7 @@ export function showMessage(state: SettingsState, success: string, error = '') {
   }
 }
 
-export async function createAccountClass(state: SettingsState, data: { code: string; label: string; type: 'recette' | 'depense' }) {
+export async function createAccountClass(state: SettingsState, data: { code: string; label: string; type: 'recette' | 'depense' | 'tresorerie' }) {
   if (!data.code.trim() || !data.label.trim()) {
     state.errorMsg = 'Le code et le libellé sont obligatoires.';
     return;
@@ -46,7 +46,7 @@ export async function createAccountClass(state: SettingsState, data: { code: str
   }
 }
 
-export async function updateAccountClass(state: SettingsState, code: string, updates: { label: string; type: 'recette' | 'depense' }) {
+export async function updateAccountClass(state: SettingsState, code: string, updates: { label: string; type: 'recette' | 'depense' | 'tresorerie' }) {
   if (!updates.label.trim()) {
     state.errorMsg = 'Le libellé ne peut pas être vide.';
     return;
