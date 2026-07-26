@@ -23,7 +23,7 @@ const handleList = async (c: any) => {
   }
   const page = parseInt(query.page || '1', 10);
   const rawLimit = parseInt(query.limit || '20', 10);
-  const limit = Math.min(Math.max(1, rawLimit), 100);
+  const limit = Math.min(Math.max(1, rawLimit), 2000);
 
   const accountId = query.accountId;
   const type = query.type;

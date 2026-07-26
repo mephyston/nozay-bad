@@ -124,7 +124,7 @@ try {
 
   const [btRes, glRes, membersRes, categoriesRes] = await Promise.all([
     apiService.fetch(`http://localhost/accounting/bank-transactions?season=${season}`),
-    apiService.fetch(`http://localhost/accounting/transactions?season=${season}&page=1&limit=500`),
+    apiService.fetch(`http://localhost/accounting/transactions?season=${season}&page=1&limit=2000`),
     apiService.fetch(`http://localhost/members?season=${season}&limit=500`),
     apiService.fetch('http://localhost/accounting/categories')
   ]);
