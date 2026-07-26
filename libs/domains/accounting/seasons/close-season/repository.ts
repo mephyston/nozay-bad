@@ -124,7 +124,12 @@ export class CloseSeasonRepository implements CloseSeasonRepositoryInterface {
   async getTransactionsForSeason(db: DbOrTx, seasonId: number | string): Promise<any[]> {
     const season = await this.getSeasonById(db, seasonId);
     if (!season) return [];
-    return db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.seasonId, season.id)).all();
+    return db.select().from(ledgerEntriesTable).where(
+      and(
+        gte(ledgerEntriesTable.date, season.startDate),
+        lte(ledgerEntriesTable.date, season.endDate)
+      )
+    ).all();
   }
 
   async getAccounts(db: DbOrTx): Promise<any[]> {
