@@ -107,7 +107,7 @@
 
 {#snippet desktopTxRow(tx: Transaction, isChild: boolean)}
   {@const isOtherSeason = selectedSeasonId && String(tx.seasonId) !== String(selectedSeasonId)}
-  <Table.Row id="tx-desktop-{tx.id}" class="{isChild ? 'bg-muted/5 relative border-l-4 border-l-primary/30' : ''} {isOtherSeason ? 'opacity-50 border-b border-dashed border-muted-foreground' : ''}">
+  <Table.Row id="tx-desktop-{tx.id}" class="{isChild ? 'bg-muted/5 relative border-l-4 border-l-primary/30' : ''} {isOtherSeason ? 'opacity-50 border-y border-dashed border-muted-foreground/40' : ''}">
     <Table.Cell class={isChild ? "pl-6 text-muted-foreground" : ""}>{tx.date}</Table.Cell>
     <Table.Cell>
       {#if tx.type === 'recette'}
@@ -192,7 +192,7 @@
 
 {#snippet mobileTxRow(item: Transaction, isChild: boolean)}
   {@const isOtherSeason = selectedSeasonId && String(item.seasonId) !== String(selectedSeasonId)}
-  <div id="tx-mobile-{item.id}" class="flex flex-col gap-2 p-4 border-b border-border/50 bg-card hover:bg-muted/20 transition-colors cursor-pointer group {isOtherSeason ? 'opacity-50 border-dashed' : ''}" onclick={(e) => onStartEdit(item, e)}>
+  <div id="tx-mobile-{item.id}" class="flex flex-col gap-2 p-4 border-b border-border/50 bg-card hover:bg-muted/20 transition-colors cursor-pointer group {isOtherSeason ? 'opacity-50 border-y border-dashed border-muted-foreground/40' : ''}" onclick={(e) => onStartEdit(item, e)}>
     <div class="flex items-start justify-between gap-2">
       <div>
         <div class="flex items-center gap-2 mb-1">
