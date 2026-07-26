@@ -27,6 +27,7 @@ export type CloseSeasonCheckResult = {
   existingInitialBalancesOnNextSeason?: {
     accountId: number;
     accountCode: string;
+    accountLabel?: string;
     existingBalanceCents: number;
     newBalanceCents: number;
     discrepancy: boolean;
