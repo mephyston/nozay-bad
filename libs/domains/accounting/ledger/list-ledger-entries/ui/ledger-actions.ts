@@ -65,7 +65,14 @@ export async function submitTransaction(
     body: JSON.stringify(payload)
   });
 
-  if (!res.ok) throw new Error((await res.text()) || 'Impossible d\'enregistrer la transaction');
+  if (!res.ok) {
+    let errStr = await res.text();
+    try {
+      const parsed = JSON.parse(errStr);
+      if (parsed.error) errStr = parsed.error;
+    } catch(e){}
+    throw new Error(errStr || 'Impossible d\'enregistrer la transaction');
+  }
   
   if (params.editingId) {
     sessionStorage.setItem('scrollToTx', params.editingId.toString());
@@ -80,7 +87,14 @@ export async function deleteTransaction(id: number): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'delete', id })
   });
-  if (!res.ok) throw new Error('Impossible de supprimer.');
+  if (!res.ok) {
+    let errStr = await res.text();
+    try {
+      const parsed = JSON.parse(errStr);
+      if (parsed.error) errStr = parsed.error;
+    } catch(e){}
+    throw new Error(errStr || 'Impossible de supprimer.');
+  }
   window.location.reload();
 }
 
