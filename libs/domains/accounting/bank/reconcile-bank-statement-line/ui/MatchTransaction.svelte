@@ -46,7 +46,31 @@
 </script>
 
 <div class="space-y-4">
-
+  {#if suggestions && suggestions.length > 0}
+    <div class="bg-primary/10 border border-primary/20 p-3 rounded-lg text-xs space-y-2">
+      <div class="flex items-center gap-1 text-primary font-semibold">
+        <Sparkles class="w-3.5 h-3.5" />
+        <span>Suggestion de rapprochement IA</span>
+      </div>
+      {#each suggestions as sug}
+        <div class="flex justify-between items-center bg-card p-2 rounded border border-border">
+          <div>
+            <span class="font-medium text-foreground">{sug.reasoning}</span>
+            {#if sug.memberName}
+              <div class="text-primary font-semibold mt-0.5">Adhérent détecté : {sug.memberName}</div>
+            {/if}
+          </div>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onclick={() => onSelectAiSuggestion(sug)}
+          >
+            Appliquer
+          </Button>
+        </div>
+      {/each}
+    </div>
+  {/if}
 
   <h4 class="text-sm font-semibold text-foreground">Associer à une écriture comptable existante</h4>
   
