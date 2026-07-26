@@ -147,6 +147,7 @@ export async function getCloseSeasonChecks(
         existingInitialBalancesOnNextSeason.push({
           accountId: b.accountId,
           accountCode: b.accountCode,
+          accountLabel: b.accountLabel,
           existingBalanceCents: existingVal,
           newBalanceCents: b.finalBalanceCents,
           discrepancy: diff
