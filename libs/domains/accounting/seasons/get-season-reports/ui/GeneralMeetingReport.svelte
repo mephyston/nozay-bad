@@ -14,6 +14,7 @@
   import ReportTresorerieTab from './ReportTresorerieTab.svelte';
   import ReportGraphiquesCard from './ReportGraphiquesCard.svelte';
   import ReportCompteResultatCard from './ReportCompteResultatCard.svelte';
+  import ReportAnalytiqueTab from './ReportAnalytiqueTab.svelte';
   import './report-print.css';
 
   export * from './report-types';
@@ -28,13 +29,13 @@
 
   // svelte-ignore state_referenced_locally
   let selectedSeason = $state(seasonId);
-  let activeTab = $state<'resultat' | 'tresorerie' | 'budget'>('resultat');
+  let activeTab = $state<'resultat' | 'analytique' | 'tresorerie' | 'budget'>('resultat');
   let editableBudget = $state<Record<string, number>>({});
   let isSaving = $state(false);
   let saveStatus = $state<{ type: 'success' | 'error'; message: string } | null>(null);
 
   function handleTabChange(newTab: string) {
-    activeTab = newTab as 'resultat' | 'tresorerie' | 'budget';
+    activeTab = newTab as 'resultat' | 'analytique' | 'tresorerie' | 'budget';
   }
 
   $effect(() => {
@@ -120,8 +121,9 @@
 
 <div class="space-y-6">
   <Tabs.Root value={activeTab} onValueChange={handleTabChange} class="space-y-6">
-    <Tabs.List class="grid w-full max-w-2xl mx-auto grid-cols-3 mb-6 no-print">
+    <Tabs.List class="grid w-full max-w-3xl mx-auto grid-cols-4 mb-6 no-print">
       <Tabs.Trigger value="resultat">Compte de résultat</Tabs.Trigger>
+      <Tabs.Trigger value="analytique">Suivi Analytique</Tabs.Trigger>
       <Tabs.Trigger value="tresorerie">Bilan de trésorerie</Tabs.Trigger>
       <Tabs.Trigger value="budget">Budget prévisionnel</Tabs.Trigger>
     </Tabs.List>
@@ -132,12 +134,17 @@
       <ReportGraphiquesCard mode="realise" chargesData={chargesChartDataRealise} recettesData={recettesChartDataRealise} />
     </Tabs.Content>
 
-    <!-- Onglet 2 : « Bilan de trésorerie » -->
+    <!-- Onglet 2 : « Suivi Analytique » -->
+    <Tabs.Content value="analytique" class="space-y-6">
+      <ReportAnalytiqueTab report={report} categories={categories} />
+    </Tabs.Content>
+
+    <!-- Onglet 3 : « Bilan de trésorerie » -->
     <Tabs.Content value="tresorerie" class="space-y-6">
       <ReportTresorerieTab {report} {selectedSeason} {seasons} />
     </Tabs.Content>
 
-    <!-- Onglet 3 : « Budget prévisionnel » -->
+    <!-- Onglet 4 : « Budget prévisionnel » -->
     <Tabs.Content value="budget" class="space-y-6">
       <ReportCompteResultatCard mode="previsionnel" bind:editableBudget {...compResultatProps} />
       <ReportGraphiquesCard mode="previsionnel" chargesData={chargesChartDataPrevisionnel} recettesData={recettesChartDataPrevisionnel} />
