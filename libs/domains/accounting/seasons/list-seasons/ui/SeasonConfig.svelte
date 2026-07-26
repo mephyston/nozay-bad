@@ -35,16 +35,19 @@
   let confirmOverwrite = $state(false);
   let checkData = $state<any>(null);
   let isChecking = $state(false);
+  let checkError = $state<string | null>(null);
 
   async function handleStartClose(id: string) {
     closingSeasonId = id;
     isChecking = true;
     checkData = null;
+    checkError = null;
     confirmOverwrite = false;
     try {
       checkData = await onCheckCloseSeason(id);
     } catch (e) {
       console.error(e);
+      checkError = e instanceof Error ? e.message : String(e);
     } finally {
       isChecking = false;
     }
@@ -166,6 +169,11 @@
           <div class="flex items-center gap-2 text-muted-foreground mt-4">
             <span class="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></span>
             Vérification comptable en cours...
+          </div>
+        {:else if checkError}
+          <div class="mt-4 p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded text-sm">
+            <strong class="block mb-2">Erreur lors de la vérification :</strong>
+            {checkError}
           </div>
         {:else if checkData}
           {#if checkData.canClose === false || (checkData.blockingItems && checkData.blockingItems.length > 0)}
