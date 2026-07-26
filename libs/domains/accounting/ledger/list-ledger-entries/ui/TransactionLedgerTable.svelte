@@ -10,6 +10,7 @@
     pagination,
     activeCategories = [],
     isClosed,
+    selectedSeasonId,
     pageRange,
     onStartEdit,
     onDelete,
@@ -19,6 +20,7 @@
     pagination: Pagination;
     activeCategories: { id: string; code: string; name: string }[];
     isClosed: boolean;
+    selectedSeasonId?: number | string;
     onStartEdit: (tx: Transaction, e: MouseEvent) => void;
     onDelete: (id: number) => void;
     onChangePage: (page: number) => void;
@@ -104,7 +106,8 @@
 </script>
 
 {#snippet desktopTxRow(tx: Transaction, isChild: boolean)}
-  <Table.Row id="tx-desktop-{tx.id}" class={isChild ? "bg-muted/5 relative border-l-4 border-l-primary/30" : ""}>
+  {@const isOtherSeason = selectedSeasonId && String(tx.seasonId) !== String(selectedSeasonId)}
+  <Table.Row id="tx-desktop-{tx.id}" class="{isChild ? 'bg-muted/5 relative border-l-4 border-l-primary/30' : ''} {isOtherSeason ? 'opacity-50 border-b border-dashed border-muted-foreground' : ''}">
     <Table.Cell class={isChild ? "pl-6 text-muted-foreground" : ""}>{tx.date}</Table.Cell>
     <Table.Cell>
       {#if tx.type === 'recette'}
@@ -113,6 +116,9 @@
         <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-destructive/15 text-destructive border-transparent">Dépense</Badge>
       {:else}
         <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-primary/15 text-primary border-transparent">Transfert</Badge>
+      {/if}
+      {#if isOtherSeason}
+        <Badge variant="outline" class="ml-1 px-1.5 py-0.5 text-[10px] bg-muted text-muted-foreground border-transparent" title="Écriture rattachée à une autre saison">Cut-off</Badge>
       {/if}
     </Table.Cell>
     <Table.Cell>{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</Table.Cell>
@@ -184,30 +190,34 @@
   </Table.Row>
 {/snippet}
 
-{#snippet mobileTxRow(tx: Transaction, isChild: boolean)}
-  <div class={isChild ? "p-3 space-y-2 border-t border-border/50" : "p-4 space-y-2 bg-card"} id="tx-mobile-{tx.id}">
+{#snippet mobileTxRow(item: Transaction, isChild: boolean)}
+  {@const isOtherSeason = selectedSeasonId && String(item.seasonId) !== String(selectedSeasonId)}
+  <div id="tx-mobile-{item.id}" class="flex flex-col gap-2 p-4 border-b border-border/50 bg-card hover:bg-muted/20 transition-colors cursor-pointer group {isOtherSeason ? 'opacity-50 border-dashed' : ''}" onclick={(e) => onStartEdit(item, e)}>
     <div class="flex items-start justify-between gap-2">
       <div>
         <div class="flex items-center gap-2 mb-1">
-          {#if tx.type === 'recette'}
+          {#if item.type === 'recette'}
             <Badge variant="outline" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-transparent">Recette</Badge>
-          {:else if tx.type === 'depense'}
+          {:else if item.type === 'depense'}
             <Badge variant="outline" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-destructive/15 text-destructive border-transparent">Dépense</Badge>
           {:else}
             <Badge variant="outline" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-primary/15 text-primary border-transparent">Transfert</Badge>
           {/if}
-          <span class="text-xs text-muted-foreground">{tx.date}</span>
+          <span class="text-xs text-muted-foreground">{item.date}</span>
         </div>
-        <h4 class="font-bold text-sm text-foreground">{tx.description}</h4>
+        <h4 class="font-bold text-sm text-foreground">{item.description}</h4>
+        {#if isOtherSeason}
+          <div class="text-[10px] font-semibold text-muted-foreground mt-1 bg-muted px-1.5 py-0.5 rounded inline-block w-max">Écriture d'une autre saison (Cut-off)</div>
+        {/if}
       </div>
       <div class="text-right shrink-0">
         <span class="font-bold text-base block">
-          {#if tx.type === 'recette'}
-            <Amount cents={(tx as any).amountCents ?? tx.amount} showSign colored />
-          {:else if tx.type === 'depense'}
-            <Amount cents={-((tx as any).amountCents ?? tx.amount)} showSign colored />
+          {#if item.type === 'recette'}
+            <Amount cents={(item as any).amountCents ?? item.amount} showSign colored />
+          {:else if item.type === 'depense'}
+            <Amount cents={-((item as any).amountCents ?? item.amount)} showSign colored />
           {:else}
-            <Amount cents={(tx as any).amountCents ?? tx.amount} class="text-muted-foreground" />
+            <Amount cents={(item as any).amountCents ?? item.amount} class="text-muted-foreground" />
           {/if}
         </span>
       </div>
@@ -215,16 +225,16 @@
 
     <div class="flex flex-wrap items-center justify-between gap-1.5 text-xs pt-1">
       <div class="text-muted-foreground">
-        Catégorie: <span class="font-medium text-foreground">{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</span>
+        Catégorie: <span class="font-medium text-foreground">{item.category ? (activeCategories.find(c => c.id === String(item.category))?.name || item.category) : 'Transfert'}</span>
       </div>
-      {#if tx.runningBalanceCents !== undefined && !isChild}
+      {#if item.runningBalanceCents !== undefined && !isChild}
         <div class="text-muted-foreground ml-auto">
-          Solde: <Amount cents={tx.runningBalanceCents} class="font-bold text-foreground" />
+          Solde: <Amount cents={item.runningBalanceCents} class="font-bold text-foreground" />
         </div>
       {:else if isChild}
         <div class="text-muted-foreground ml-auto italic opacity-50">inclus</div>
       {/if}
-      {#if tx.bankStatementLineId && !isChild}
+      {#if item.bankStatementLineId && !isChild}
         <Badge variant="outline" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold border-transparent">
           <Check class="w-2.5 h-2.5" /> Rapprochée
         </Badge>
@@ -236,7 +246,7 @@
         <Button
           variant="outline"
           size="sm"
-          onclick={(e) => onStartEdit(tx, e)}
+          onclick={(e) => { e.stopPropagation(); onStartEdit(item, e); }}
           class="h-8 text-xs font-semibold gap-1.5 flex-1"
         >
           <Edit2 class="w-3.5 h-3.5" />
@@ -245,7 +255,7 @@
         <Button
           variant="outline"
           size="sm"
-          onclick={() => onDelete(tx.id)}
+          onclick={(e) => { e.stopPropagation(); onDelete(item.id); }}
           class="h-8 text-xs font-semibold gap-1.5 text-destructive hover:bg-destructive/10 border-destructive/30"
         >
           <Trash2 class="w-3.5 h-3.5" />

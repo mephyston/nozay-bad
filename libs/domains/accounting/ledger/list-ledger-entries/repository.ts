@@ -17,7 +17,18 @@ export class ListTransactionsRepository {
     const conditions = [];
     if (filters.seasonId) {
       const seasonIdInt = await this.resolveSeasonId(db, filters.seasonId);
-      conditions.push(eq(ledgerEntriesTable.seasonId, seasonIdInt));
+      const season = await db.select().from(seasonsTable).where(eq(seasonsTable.id, seasonIdInt)).get();
+      if (season) {
+        conditions.push(or(
+          eq(ledgerEntriesTable.seasonId, seasonIdInt),
+          and(
+            sql`${ledgerEntriesTable.date} >= ${season.startDate}`,
+            sql`${ledgerEntriesTable.date} <= ${season.endDate}`
+          )
+        ) as any);
+      } else {
+        conditions.push(eq(ledgerEntriesTable.seasonId, seasonIdInt));
+      }
     }
     if (filters.accountId) {
       const accountIdMap: Record<string, number> = { current: 1, savings: 2, cash: 3 };
