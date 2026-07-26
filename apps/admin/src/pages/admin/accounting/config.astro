@@ -14,10 +14,15 @@ const requestedSeason = Astro.url.searchParams.get('season');
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
+    const balancesArray = [
+      { accountId: 'current', initialBalanceCents: data.balances.current },
+      { accountId: 'savings', initialBalanceCents: data.balances.savings },
+      { accountId: 'cash', initialBalanceCents: data.balances.cash }
+    ];
     const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.seasonId}/balances`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data.balances)
+      body: JSON.stringify(balancesArray)
     });
     if (!apiRes.ok) {
       return new Response('Erreur configuration soldes', { status: apiRes.status });
