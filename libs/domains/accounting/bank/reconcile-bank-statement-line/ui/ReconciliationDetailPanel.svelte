@@ -154,7 +154,7 @@
         <Tabs.List class="grid grid-cols-3 w-full mb-4">
           <Tabs.Trigger value="manual" class="text-xs cursor-pointer">Saisir écriture</Tabs.Trigger>
           <Tabs.Trigger value="ledger" class="text-xs cursor-pointer">
-            Suggestions ({state.suggestions.length})
+            Écritures existantes ({state.glTransactions.filter(gt => !gt.bankStatementLineId).length})
           </Tabs.Trigger>
           <Tabs.Trigger value="invoice" class="text-xs cursor-pointer">
             Associer Facture ({state.unpaidInvoices.length})
