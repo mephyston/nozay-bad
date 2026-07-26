@@ -57,6 +57,7 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
   // 2. Bilan de Trésorerie (Cash Flow Statement)
   const dbAccounts = await repo.getAccounts(db);
   const accountTypes: ('current' | 'savings' | 'cash')[] = ['current', 'savings', 'cash'];
+  const periodTxs = await repo.getTransactionsForPeriod(db, season.startDate, effectiveEndDate);
 
   const reportBalances = accountTypes.map(accCode => {
     const accObj = dbAccounts.find(a => a.code === accCode);
@@ -66,9 +67,7 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     const initBal = initBalRow ? (initBalRow.initialBalanceCents ?? 0) : 0;
 
     let finalBal = initBal;
-    for (const tx of allTxs) {
-      if (tx.date > effectiveEndDate || tx.date < season.startDate) continue;
-      
+    for (const tx of periodTxs) {
       const amount = tx.amountCents ?? 0;
       const isTargetAcc = (accId !== null && tx.accountId === accId) || tx.accountId === accCode;
       const isTargetDestAcc = (accId !== null && tx.destinationAccountId === accId) || tx.destinationAccountId === accCode;
