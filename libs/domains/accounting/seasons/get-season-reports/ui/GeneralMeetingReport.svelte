@@ -85,7 +85,7 @@
     saveStatus = null;
     try {
       const payload: BudgetRecord[] = Object.entries(editableBudget)
-        .map(([key, amount]) => { const [catIdStr, type] = key.split('_'); return { categoryId: parseInt(catIdStr), type: type as 'recette' | 'depense', amount }; })
+        .map(([key, amount]) => { const [catIdStr, type] = key.split('_'); return { categoryId: parseInt(catIdStr), type: type as 'recette' | 'depense', amount: Number(amount) || 0 }; })
         .filter(item => !isNaN(item.categoryId));
 
       const res = await fetch(window.location.pathname, {
