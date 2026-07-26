@@ -206,6 +206,8 @@ jobs:
               cfg.name = 'nba-storefront-staging';
               cfg.services = [{ binding: 'API_SERVICE', service: 'nba-api-staging' }];
               cfg.kv_namespaces = [{ binding: 'RATE_LIMIT_KV', id: 'e1f0b19b7ea44399ba66d10fe7907ce9' }];
+              cfg.vars = cfg.vars || {};
+              cfg.vars.INTERNAL_API_KEY = 'nba_stg_sec_7f9c8d2a1e4b3c5d6e8f9a0b1c2d3e4f';
             }
             fs.writeFileSync('dist/server/wrangler.json', JSON.stringify(cfg, null, 2));
           "
@@ -248,6 +250,8 @@ jobs:
             if (process.env.REF_NAME !== 'main') {
               cfg.name = 'nba-admin-staging';
               cfg.services = [{ binding: 'API_SERVICE', service: 'nba-api-staging' }];
+              cfg.vars = cfg.vars || {};
+              cfg.vars.INTERNAL_API_KEY = 'nba_stg_sec_7f9c8d2a1e4b3c5d6e8f9a0b1c2d3e4f';
             }
             fs.writeFileSync('dist/server/wrangler.json', JSON.stringify(cfg, null, 2));
           "
