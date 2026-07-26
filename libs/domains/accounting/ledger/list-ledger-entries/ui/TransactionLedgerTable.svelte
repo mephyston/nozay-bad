@@ -1,5 +1,6 @@
+
 <script lang="ts">
-  import { Check, MoreHorizontal, Edit2, Trash2, ChevronLeft, ChevronRight } from '@lucide/svelte';
+  import { Check, MoreHorizontal, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, SplitSquareVertical } from '@lucide/svelte';
   import { Button, Table, Badge, Popover, Amount, Card, DropdownMenu } from '@nba/ui';
   import type { Transaction, Pagination } from './ledger-types';
   import { accountLabels } from './ledger-types';
@@ -22,87 +23,311 @@
     onDelete: (id: number) => void;
     onChangePage: (page: number) => void;
   } = $props();
+
+  type GroupedTransaction = {
+    isGroup: true;
+    id: string;
+    date: string;
+    type: 'recette' | 'depense' | 'transfert';
+    amountCents: number;
+    runningBalanceCents: number | undefined;
+    bankStatementLineId: number;
+    description: string;
+    reference: string;
+    children: Transaction[];
+  };
+
+  type RowItem = Transaction | GroupedTransaction;
+
+  let expandedGroups = $state<Record<number, boolean>>({});
+
+  const groupedTransactions = $derived.by(() => {
+    const result: RowItem[] = [];
+    let currentGroup: GroupedTransaction | null = null;
+
+    for (let i = 0; i < transactions.length; i++) {
+      const tx = transactions[i];
+      const amt = tx.type === 'depense' ? -((tx as any).amountCents ?? tx.amount) : ((tx as any).amountCents ?? tx.amount);
+
+      if (tx.bankStatementLineId) {
+        if (currentGroup && currentGroup.bankStatementLineId === tx.bankStatementLineId) {
+          // Add to existing group
+          currentGroup.children.push(tx);
+          currentGroup.amountCents += amt;
+        } else {
+          // Start new group
+          if (currentGroup) {
+            result.push(currentGroup);
+          }
+          currentGroup = {
+            isGroup: true,
+            id: `group-${tx.bankStatementLineId}`,
+            date: tx.date,
+            type: tx.type, // Will be updated
+            amountCents: amt,
+            runningBalanceCents: tx.runningBalanceCents, // Chronologically last item has the real balance
+            bankStatementLineId: tx.bankStatementLineId,
+            description: 'Opération ventilée',
+            reference: tx.reference || '',
+            children: [tx]
+          };
+        }
+      } else {
+        // Not part of a group
+        if (currentGroup) {
+          result.push(currentGroup);
+          currentGroup = null;
+        }
+        result.push(tx);
+      }
+    }
+    if (currentGroup) {
+      result.push(currentGroup);
+    }
+
+    return result.map(item => {
+      if ('isGroup' in item && item.isGroup) {
+        if (item.children.length === 1) {
+          return item.children[0];
+        }
+        item.type = item.amountCents >= 0 ? 'recette' : 'depense';
+        item.amountCents = Math.abs(item.amountCents);
+        return item;
+      }
+      return item;
+    });
+  });
+
+  function toggleGroup(bankLineId: number) {
+    expandedGroups[bankLineId] = !expandedGroups[bankLineId];
+  }
 </script>
+
+{#snippet desktopTxRow(tx: Transaction, isChild: boolean)}
+  <Table.Row id="tx-desktop-{tx.id}" class={isChild ? "bg-muted/5 relative border-l-4 border-l-primary/30" : ""}>
+    <Table.Cell class={isChild ? "pl-6 text-muted-foreground" : ""}>{tx.date}</Table.Cell>
+    <Table.Cell>
+      {#if tx.type === 'recette'}
+        <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-transparent">Recette</Badge>
+      {:else if tx.type === 'depense'}
+        <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-destructive/15 text-destructive border-transparent">Dépense</Badge>
+      {:else}
+        <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-primary/15 text-primary border-transparent">Transfert</Badge>
+      {/if}
+    </Table.Cell>
+    <Table.Cell>{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</Table.Cell>
+    <Table.Cell class="font-medium max-w-[200px] md:max-w-[300px] lg:max-w-[400px]">
+      <div class="line-clamp-2" title={tx.description}>{tx.description}</div>
+      {#if tx.reference}
+        <div class="text-xs text-muted-foreground italic truncate mt-0.5" title={tx.reference}>Réf: {tx.reference}</div>
+      {/if}
+      <div class="flex flex-wrap gap-1.5 mt-1">
+        {#if tx.memberName}
+          <a href={`/admin/members/${tx.memberLicence}`} class="inline-flex items-center px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[10px] font-semibold hover:underline">
+            Adhérent : {tx.memberName}
+          </a>
+        {/if}
+        {#if tx.bankStatementLineId && !isChild}
+          <Badge variant="outline" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold border-transparent">
+            <Check class="w-2.5 h-2.5" />
+            Rapprochée (SG)
+          </Badge>
+        {/if}
+      </div>
+    </Table.Cell>
+    <Table.Cell class="text-right font-bold">
+      {#if tx.type === 'recette'}
+        <Amount cents={(tx as any).amountCents ?? tx.amount} showSign colored />
+      {:else if tx.type === 'depense'}
+        <Amount cents={-((tx as any).amountCents ?? tx.amount)} showSign colored />
+      {:else}
+        <Amount cents={(tx as any).amountCents ?? tx.amount} class="text-muted-foreground" />
+      {/if}
+    </Table.Cell>
+    <Table.Cell class="text-right">
+      {#if isChild}
+        <span class="text-muted-foreground text-xs italic opacity-50">inclus</span>
+      {:else if tx.runningBalanceCents !== undefined}
+        <Amount cents={tx.runningBalanceCents} class="font-bold text-foreground" />
+      {:else}
+        <span class="text-muted-foreground">-</span>
+      {/if}
+    </Table.Cell>
+    <Table.Cell class="text-right relative">
+      {#if !isClosed}
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            {#snippet child({ props })}
+              <Button 
+                {...props}
+                aria-haspopup="true"
+                size="icon"
+                variant="ghost"
+              >
+                <MoreHorizontal class="h-4 w-4" />
+                <span class="sr-only">Toggle menu</span>
+              </Button>
+            {/snippet}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="end">
+            <DropdownMenu.Label>Actions</DropdownMenu.Label>
+            <DropdownMenu.Item onclick={(e) => onStartEdit(tx, e)} class="cursor-pointer">
+              <Edit2 class="w-3.5 h-3.5 mr-2" /> Éditer
+            </DropdownMenu.Item>
+            <DropdownMenu.Item onclick={() => onDelete(tx.id)} class="text-destructive focus:text-destructive cursor-pointer">
+              <Trash2 class="w-3.5 h-3.5 mr-2" /> Supprimer
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      {/if}
+    </Table.Cell>
+  </Table.Row>
+{/snippet}
+
+{#snippet mobileTxRow(tx: Transaction, isChild: boolean)}
+  <div class={isChild ? "p-3 space-y-2 border-t border-border/50" : "p-4 space-y-2 bg-card"} id="tx-mobile-{tx.id}">
+    <div class="flex items-start justify-between gap-2">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          {#if tx.type === 'recette'}
+            <Badge variant="outline" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-transparent">Recette</Badge>
+          {:else if tx.type === 'depense'}
+            <Badge variant="outline" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-destructive/15 text-destructive border-transparent">Dépense</Badge>
+          {:else}
+            <Badge variant="outline" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-primary/15 text-primary border-transparent">Transfert</Badge>
+          {/if}
+          <span class="text-xs text-muted-foreground">{tx.date}</span>
+        </div>
+        <h4 class="font-bold text-sm text-foreground">{tx.description}</h4>
+      </div>
+      <div class="text-right shrink-0">
+        <span class="font-bold text-base block">
+          {#if tx.type === 'recette'}
+            <Amount cents={(tx as any).amountCents ?? tx.amount} showSign colored />
+          {:else if tx.type === 'depense'}
+            <Amount cents={-((tx as any).amountCents ?? tx.amount)} showSign colored />
+          {:else}
+            <Amount cents={(tx as any).amountCents ?? tx.amount} class="text-muted-foreground" />
+          {/if}
+        </span>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-between gap-1.5 text-xs pt-1">
+      <div class="text-muted-foreground">
+        Catégorie: <span class="font-medium text-foreground">{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</span>
+      </div>
+      {#if tx.runningBalanceCents !== undefined && !isChild}
+        <div class="text-muted-foreground ml-auto">
+          Solde: <Amount cents={tx.runningBalanceCents} class="font-bold text-foreground" />
+        </div>
+      {:else if isChild}
+        <div class="text-muted-foreground ml-auto italic opacity-50">inclus</div>
+      {/if}
+      {#if tx.bankStatementLineId && !isChild}
+        <Badge variant="outline" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold border-transparent">
+          <Check class="w-2.5 h-2.5" /> Rapprochée
+        </Badge>
+      {/if}
+    </div>
+
+    {#if !isClosed}
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
+        <Button
+          variant="outline"
+          size="sm"
+          onclick={(e) => onStartEdit(tx, e)}
+          class="h-8 text-xs font-semibold gap-1.5 flex-1"
+        >
+          <Edit2 class="w-3.5 h-3.5" />
+          <span>Modifier</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onclick={() => onDelete(tx.id)}
+          class="h-8 text-xs font-semibold gap-1.5 text-destructive hover:bg-destructive/10 border-destructive/30"
+        >
+          <Trash2 class="w-3.5 h-3.5" />
+          <span>Supprimer</span>
+        </Button>
+      </div>
+    {/if}
+  </div>
+{/snippet}
 
 <Card.Root>
   <!-- Vue Cartes pour Mobile -->
   <Card.Content class="p-0 block sm:hidden divide-y divide-border">
-    {#each transactions as tx, i}
-      {#if i > 0 && tx.date.substring(0, 7) !== transactions[i - 1].date.substring(0, 7) && tx.runningBalanceCents !== undefined}
-        {@const parts = tx.date.substring(0, 7).split('-')}
+    {#each groupedTransactions as item, i}
+      {#if i > 0 && item.date.substring(0, 7) !== groupedTransactions[i - 1].date.substring(0, 7) && item.runningBalanceCents !== undefined}
+        {@const parts = item.date.substring(0, 7).split('-')}
         {@const monthName = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][parseInt(parts[1]) - 1]}
         <div class="px-4 py-3 bg-muted/30 flex justify-between items-center">
           <span class="font-bold text-muted-foreground uppercase text-xs tracking-wider">Solde fin {monthName} {parts[0]}</span>
-          <Amount cents={tx.runningBalanceCents} class="font-bold text-muted-foreground" />
+          <Amount cents={item.runningBalanceCents} class="font-bold text-muted-foreground" />
         </div>
       {/if}
-      <div class="p-4 space-y-2 bg-card" id="tx-mobile-{tx.id}">
-        <div class="flex items-start justify-between gap-2">
-          <div>
-            <div class="flex items-center gap-2 mb-1">
-              {#if tx.type === 'recette'}
-                <Badge variant="outline" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-transparent">Recette</Badge>
-              {:else if tx.type === 'depense'}
-                <Badge variant="outline" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-destructive/15 text-destructive border-transparent">Dépense</Badge>
-              {:else}
-                <Badge variant="outline" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-primary/15 text-primary border-transparent">Transfert</Badge>
-              {/if}
-              <span class="text-xs text-muted-foreground">{tx.date}</span>
-            </div>
-            <h4 class="font-bold text-sm text-foreground">{tx.description}</h4>
-          </div>
-          <div class="text-right shrink-0">
-            <span class="font-bold text-base block">
-              {#if tx.type === 'recette'}
-                <Amount cents={(tx as any).amountCents ?? tx.amount} showSign colored />
-              {:else if tx.type === 'depense'}
-                <Amount cents={-((tx as any).amountCents ?? tx.amount)} showSign colored />
-              {:else}
-                <Amount cents={(tx as any).amountCents ?? tx.amount} class="text-muted-foreground" />
-              {/if}
-            </span>
-          </div>
-        </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-1.5 text-xs pt-1">
-          <div class="text-muted-foreground">
-            Catégorie: <span class="font-medium text-foreground">{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</span>
-          </div>
-          {#if tx.runningBalanceCents !== undefined}
-            <div class="text-muted-foreground ml-auto">
-              Solde: <Amount cents={tx.runningBalanceCents} class="font-bold text-foreground" />
+      {#if 'isGroup' in item && item.isGroup}
+        <div class="p-4 space-y-2 bg-muted/10 cursor-pointer" onclick={() => toggleGroup(item.bankStatementLineId)}>
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                {#if item.type === 'recette'}
+                  <Badge variant="outline" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-transparent">Recette</Badge>
+                {:else if item.type === 'depense'}
+                  <Badge variant="outline" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-destructive/15 text-destructive border-transparent">Dépense</Badge>
+                {:else}
+                  <Badge variant="outline" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-primary/15 text-primary border-transparent">Transfert</Badge>
+                {/if}
+                <span class="text-xs text-muted-foreground">{item.date}</span>
+              </div>
+              <h4 class="font-bold text-sm text-foreground flex items-center gap-2">
+                {#if expandedGroups[item.bankStatementLineId]}
+                  <ChevronDown class="w-4 h-4 text-muted-foreground shrink-0" />
+                {:else}
+                  <ChevronRight class="w-4 h-4 text-muted-foreground shrink-0" />
+                {/if}
+                Opération ventilée en {item.children.length} lignes
+              </h4>
             </div>
-          {/if}
-          {#if tx.bankStatementLineId}
+            <div class="text-right shrink-0">
+              <span class="font-bold text-base block">
+                {#if item.type === 'recette'}
+                  <Amount cents={item.amountCents} showSign colored />
+                {:else if item.type === 'depense'}
+                  <Amount cents={-item.amountCents} showSign colored />
+                {:else}
+                  <Amount cents={item.amountCents} class="text-muted-foreground" />
+                {/if}
+              </span>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-1.5 text-xs pt-1">
+            <div class="text-muted-foreground">
+              Catégorie: <span class="font-medium text-foreground">Ventilation</span>
+            </div>
+            <div class="text-muted-foreground ml-auto">
+              Solde: <Amount cents={item.runningBalanceCents} class="font-bold text-foreground" />
+            </div>
             <Badge variant="outline" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold border-transparent">
               <Check class="w-2.5 h-2.5" /> Rapprochée
             </Badge>
-          {/if}
+          </div>
         </div>
-
-        {#if !isClosed}
-          <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
-            <Button
-              variant="outline"
-              size="sm"
-              onclick={(e) => onStartEdit(tx, e)}
-              class="h-8 text-xs font-semibold gap-1.5 flex-1"
-            >
-              <Edit2 class="w-3.5 h-3.5" />
-              <span>Modifier</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onclick={() => onDelete(tx.id)}
-              class="h-8 text-xs font-semibold gap-1.5 text-destructive hover:bg-destructive/10 border-destructive/30"
-            >
-              <Trash2 class="w-3.5 h-3.5" />
-              <span>Supprimer</span>
-            </Button>
+        
+        {#if expandedGroups[item.bankStatementLineId]}
+          <div class="bg-muted/5 border-l-4 border-primary/30">
+            {#each item.children as tx}
+              {@render mobileTxRow(tx, true)}
+            {/each}
           </div>
         {/if}
-      </div>
+      {:else}
+        {@render mobileTxRow(item as Transaction, false)}
+      {/if}
     {:else}
       <div class="p-8 text-center text-muted-foreground text-sm">
         Aucune écriture comptable pour cette saison.
@@ -125,96 +350,84 @@
         </Table.Row>
       </Table.Header>
       <Table.Body>
-        {#each transactions as tx, i}
-          {#if i > 0 && tx.date.substring(0, 7) !== transactions[i - 1].date.substring(0, 7) && tx.runningBalanceCents !== undefined}
-            {@const parts = tx.date.substring(0, 7).split('-')}
+        {#each groupedTransactions as item, i}
+          {#if i > 0 && item.date.substring(0, 7) !== groupedTransactions[i - 1].date.substring(0, 7) && item.runningBalanceCents !== undefined}
+            {@const parts = item.date.substring(0, 7).split('-')}
             {@const monthName = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][parseInt(parts[1]) - 1]}
             <Table.Row class="bg-muted/20 hover:bg-muted/20">
               <Table.Cell colspan={5} class="text-right font-bold text-muted-foreground uppercase text-xs tracking-wider py-3">
                 Solde fin {monthName} {parts[0]}
               </Table.Cell>
               <Table.Cell class="text-right font-bold py-3 text-muted-foreground">
-                <Amount cents={tx.runningBalanceCents} />
+                <Amount cents={item.runningBalanceCents} />
               </Table.Cell>
               <Table.Cell class="py-3"></Table.Cell>
             </Table.Row>
           {/if}
-          <Table.Row id="tx-desktop-{tx.id}">
-            <Table.Cell>{tx.date}</Table.Cell>
-            <Table.Cell>
-              {#if tx.type === 'recette'}
-                <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-transparent">Recette</Badge>
-              {:else if tx.type === 'depense'}
-                <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-destructive/15 text-destructive border-transparent">Dépense</Badge>
-              {:else}
-                <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-primary/15 text-primary border-transparent">Transfert</Badge>
-              {/if}
-            </Table.Cell>
-            <Table.Cell>{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</Table.Cell>
-            <Table.Cell class="font-medium max-w-[200px] md:max-w-[300px] lg:max-w-[400px]">
-              <div class="line-clamp-2" title={tx.description}>{tx.description}</div>
-              {#if tx.reference}
-                <div class="text-xs text-muted-foreground italic truncate mt-0.5" title={tx.reference}>Réf: {tx.reference}</div>
-              {/if}
-              <div class="flex flex-wrap gap-1.5 mt-1">
-                {#if tx.memberName}
-                  <a href={`/admin/members/${tx.memberLicence}`} class="inline-flex items-center px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[10px] font-semibold hover:underline">
-                    Adhérent : {tx.memberName}
-                  </a>
+
+          {#if 'isGroup' in item && item.isGroup}
+            <Table.Row class="bg-muted/10 hover:bg-muted/20 cursor-pointer group" onclick={() => toggleGroup(item.bankStatementLineId)}>
+              <Table.Cell>{item.date}</Table.Cell>
+              <Table.Cell>
+                {#if item.type === 'recette'}
+                  <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-transparent">Recette</Badge>
+                {:else if item.type === 'depense'}
+                  <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-destructive/15 text-destructive border-transparent">Dépense</Badge>
+                {:else}
+                  <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-primary/15 text-primary border-transparent">Transfert</Badge>
                 {/if}
-                {#if tx.bankStatementLineId}
+              </Table.Cell>
+              <Table.Cell class="font-medium text-foreground">
+                <div class="flex items-center gap-2">
+                  <div class="bg-background rounded p-1 shadow-sm border border-border">
+                    {#if expandedGroups[item.bankStatementLineId]}
+                      <ChevronDown class="w-3 h-3 text-primary" />
+                    {:else}
+                      <ChevronRight class="w-3 h-3 text-primary" />
+                    {/if}
+                  </div>
+                  Ventilation ({item.children.length})
+                </div>
+              </Table.Cell>
+              <Table.Cell class="text-muted-foreground">
+                <div class="line-clamp-2" title={item.description}>{item.description}</div>
+                {#if item.reference}
+                  <div class="text-xs italic truncate mt-0.5">Réf: {item.reference}</div>
+                {/if}
+                <div class="flex flex-wrap gap-1.5 mt-1">
                   <Badge variant="outline" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold border-transparent">
                     <Check class="w-2.5 h-2.5" />
                     Rapprochée (SG)
                   </Badge>
+                </div>
+              </Table.Cell>
+              <Table.Cell class="text-right font-bold">
+                {#if item.type === 'recette'}
+                  <Amount cents={item.amountCents} showSign colored />
+                {:else if item.type === 'depense'}
+                  <Amount cents={-item.amountCents} showSign colored />
+                {:else}
+                  <Amount cents={item.amountCents} class="text-muted-foreground" />
                 {/if}
-              </div>
-            </Table.Cell>
-            <Table.Cell class="text-right font-bold">
-              {#if tx.type === 'recette'}
-                <Amount cents={(tx as any).amountCents ?? tx.amount} showSign colored />
-              {:else if tx.type === 'depense'}
-                <Amount cents={-((tx as any).amountCents ?? tx.amount)} showSign colored />
-              {:else}
-                <Amount cents={(tx as any).amountCents ?? tx.amount} class="text-muted-foreground" />
-              {/if}
-            </Table.Cell>
-            <Table.Cell class="text-right">
-              {#if tx.runningBalanceCents !== undefined}
-                <Amount cents={tx.runningBalanceCents} class="font-bold text-foreground" />
-              {:else}
-                <span class="text-muted-foreground">-</span>
-              {/if}
-            </Table.Cell>
-            <Table.Cell class="text-right relative">
-              {#if !isClosed}
-                <DropdownMenu.Root>
-                  <DropdownMenu.Trigger asChild>
-                    {#snippet child({ props })}
-                      <Button 
-                        {...props}
-                        aria-haspopup="true"
-                        size="icon"
-                        variant="ghost"
-                      >
-                        <MoreHorizontal class="h-4 w-4" />
-                        <span class="sr-only">Toggle menu</span>
-                      </Button>
-                    {/snippet}
-                  </DropdownMenu.Trigger>
-                  <DropdownMenu.Content align="end">
-                    <DropdownMenu.Label>Actions</DropdownMenu.Label>
-                    <DropdownMenu.Item onclick={(e) => onStartEdit(tx, e)} class="cursor-pointer">
-                      <Edit2 class="w-3.5 h-3.5 mr-2" /> Éditer
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item onclick={() => onDelete(tx.id)} class="text-destructive focus:text-destructive cursor-pointer">
-                      <Trash2 class="w-3.5 h-3.5 mr-2" /> Supprimer
-                    </DropdownMenu.Item>
-                  </DropdownMenu.Content>
-                </DropdownMenu.Root>
-              {/if}
-            </Table.Cell>
-          </Table.Row>
+              </Table.Cell>
+              <Table.Cell class="text-right">
+                <Amount cents={item.runningBalanceCents} class="font-bold text-foreground" />
+              </Table.Cell>
+              <Table.Cell class="text-right text-xs text-muted-foreground whitespace-nowrap">
+                {#if !expandedGroups[item.bankStatementLineId]}
+                  Cliquez pour détailler
+                {/if}
+              </Table.Cell>
+            </Table.Row>
+            
+            {#if expandedGroups[item.bankStatementLineId]}
+              {#each item.children as tx}
+                {@render desktopTxRow(tx, true)}
+              {/each}
+            {/if}
+          {:else}
+            {@render desktopTxRow(item as Transaction, false)}
+          {/if}
         {:else}
           <Table.Row>
             <Table.Cell colspan={7} class="h-24 text-center text-muted-foreground">Aucune écriture comptable pour cette saison.</Table.Cell>
