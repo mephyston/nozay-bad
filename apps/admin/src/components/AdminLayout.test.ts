@@ -77,7 +77,7 @@ describe('AdminLayout Component', () => {
     expect(navLinks).not.toContain('Classes de comptes');
 
     // Find the settings link
-    const settingsLink = target.querySelector('a[href="/admin/accounting/settings"]');
+    const settingsLink = target.querySelector('a[href="/admin/settings"]');
     expect(settingsLink).not.toBeNull();
     
     // Check that it is marked as active

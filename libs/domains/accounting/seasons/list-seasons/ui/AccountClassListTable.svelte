@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, Edit2, Trash2, X } from "@lucide/svelte";
-  import { Button, Input, Badge, Table } from "@nba/ui";
+  import { Button, Input, Badge, Table, AlertDialog, toast } from "@nba/ui";
   import type { AccountClass } from "./settings-types";
 
   let {
@@ -32,6 +32,19 @@
     });
     editingClassCode = null;
   }
+
+  let deletingAccountClass = $state<AccountClass | null>(null);
+
+  async function handleConfirmDelete() {
+    if (!deletingAccountClass) return;
+    try {
+      await onDeleteAccountClass(deletingAccountClass.code);
+    } catch (err: any) {
+      toast.error(err.message || 'Erreur lors de la suppression');
+    } finally {
+      deletingAccountClass = null;
+    }
+  }
 </script>
 
 <div class="overflow-x-auto border border-border rounded-lg bg-card min-h-[180px]">
@@ -47,7 +60,7 @@
     <Table.Body class="divide-y divide-border">
       {#each (accountClasses || []) as ac}
         <Table.Row class="hover:bg-muted/50 transition-colors">
-          <Table.Cell class="p-4 font-mono font-bold text-foreground">
+          <Table.Cell class="p-4 font-bold text-foreground">
             {ac.code}
           </Table.Cell>
           <Table.Cell class="p-4">
@@ -116,7 +129,7 @@
                   variant="outline"
                   size="icon-xs"
                   class="border-destructive/20 hover:bg-destructive/10 text-destructive"
-                  onclick={() => onDeleteAccountClass(ac.code)}
+                  onclick={() => deletingAccountClass = ac}
                   disabled={isSubmitting}
                   title="Supprimer"
                 >
@@ -137,3 +150,28 @@
     </Table.Body>
   </Table.Root>
 </div>
+
+<AlertDialog.Root open={!!deletingAccountClass} onOpenChange={(o) => { if(!o) deletingAccountClass = null; }}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>
+        Supprimer la classe {deletingAccountClass?.code} ?
+      </AlertDialog.Title>
+      <AlertDialog.Description>
+        Êtes-vous sûr de vouloir supprimer définitivement la classe de compte "{deletingAccountClass?.label}" ?
+        Cette action est irréversible.
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel>Annuler</AlertDialog.Cancel>
+      <AlertDialog.Action 
+        onclick={handleConfirmDelete} 
+        class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+        disabled={isSubmitting}
+      >
+        Supprimer
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>
+

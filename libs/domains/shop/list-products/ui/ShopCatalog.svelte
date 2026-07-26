@@ -1,3 +1,8 @@
+<script module>
+  export * from './catalog-types';
+  export * from './catalog-utils';
+  export * from './catalog-order-action';
+</script>
 <script lang="ts">
   import { ShoppingBag } from "@lucide/svelte";
   import { Card } from '@nba/ui';
@@ -7,10 +12,6 @@
   import ShopCatalogMemberSelect from './ShopCatalogMemberSelect.svelte';
   import ShopCatalogProductSelect from './ShopCatalogProductSelect.svelte';
   import ShopCatalogSummary from './ShopCatalogSummary.svelte';
-
-  export * from './catalog-types';
-  export * from './catalog-utils';
-  export * from './catalog-order-action';
 
   let { products = [], members = [], activeSeasonId = '' }: { products: Product[]; members: Member[]; activeSeasonId: string } = $props();
 

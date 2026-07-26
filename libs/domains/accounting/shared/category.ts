@@ -7,6 +7,7 @@ export class Category {
   expenseCode?: string | null;
   receiptAccountClassId?: number | null;
   expenseAccountClassId?: number | null;
+  active: boolean;
 
   constructor(data: {
     id: number;
@@ -17,6 +18,7 @@ export class Category {
     expenseCode?: string | null;
     receiptAccountClassId?: number | null;
     expenseAccountClassId?: number | null;
+    active?: boolean;
   }) {
     this.id = data.id;
     this.adminLabel = data.adminLabel;
@@ -26,6 +28,7 @@ export class Category {
     this.expenseCode = data.expenseCode ?? null;
     this.receiptAccountClassId = data.receiptAccountClassId ?? null;
     this.expenseAccountClassId = data.expenseAccountClassId ?? null;
+    this.active = data.active ?? true;
   }
 
   canBeExpense(): boolean {
@@ -42,6 +45,7 @@ export interface CategoryLike {
   expenseCode?: string | null;
   receiptAccountClassId?: number | null;
   expenseAccountClassId?: number | null;
+  active?: boolean;
 }
 
 export interface CategoryMap {

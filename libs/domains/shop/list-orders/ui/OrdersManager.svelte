@@ -1,3 +1,7 @@
+<script module>
+  export * from './orders-manager-types';
+  export * from './orders-manager-actions';
+</script>
 <script lang="ts">
   import { Check, AlertCircle } from "@lucide/svelte";
   import type { OrderItem, Season } from './orders-manager-types';
@@ -6,9 +10,6 @@
   import OrdersManagerHeader from './OrdersManagerHeader.svelte';
   import OrdersPendingTable from './OrdersPendingTable.svelte';
   import OrdersHistoryTable from './OrdersHistoryTable.svelte';
-
-  export * from './orders-manager-types';
-  export * from './orders-manager-actions';
 
   let {
     seasons = [],
@@ -98,19 +99,6 @@
       processingId = null;
     }
   }
-
-  let openDropdownId = $state<number | null>(null);
-
-  function toggleDropdown(id: number, e: MouseEvent) {
-    e.stopPropagation();
-    openDropdownId = openDropdownId === id ? null : id;
-  }
-
-  $effect(() => {
-    const handleGlobalClick = () => { openDropdownId = null; };
-    window.addEventListener('click', handleGlobalClick);
-    return () => window.removeEventListener('click', handleGlobalClick);
-  });
 </script>
 
 <div class="space-y-6">
@@ -141,10 +129,8 @@
       {pendingOrders}
       {processingId}
       {isClosed}
-      bind:openDropdownId
       onApprove={handleApprove}
       onReject={handleReject}
-      onToggleDropdown={toggleDropdown}
     />
   {:else}
     <OrdersHistoryTable {historyOrders} />

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CheckCircle, MoreVertical, FileText, Trash2 } from '@lucide/svelte';
-  import { Button, Table, Badge, Card, Amount, Popover } from '@nba/ui';
+  import { Button, Table, Badge, Card, Amount, DropdownMenu } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
   import type { CheckDeposit } from './check-deposit-types';
 
@@ -17,7 +17,7 @@
   <Card.Content class="p-0">
     <div class="overflow-x-auto min-h-[220px]">
       <Table.Root class="w-full text-left border-collapse text-sm">
-        <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
+        <Table.Header>
           <Table.Row>
             <Table.Head class="p-4">Date de dépôt</Table.Head>
             <Table.Head class="p-4">Référence</Table.Head>
@@ -59,60 +59,58 @@
                 {/if}
               </Table.Cell>
               <Table.Cell class="p-4 text-right">
-                <Popover.Root>
-                  <Popover.Trigger>
-                    <Button 
-                      variant="ghost"
-                      size="icon"
-                      class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
-                      aria-label="Actions"
-                    >
-                      <MoreVertical class="w-4 h-4" />
-                    </Button>
-                  </Popover.Trigger>
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger asChild>
+                    {#snippet child({ props })}
+                      <Button 
+                        {...props}
+                        variant="ghost"
+                        size="icon"
+                        class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
+                        aria-label="Actions"
+                      >
+                        <MoreVertical class="w-4 h-4" />
+                        <span class="sr-only">Toggle menu</span>
+                      </Button>
+                    {/snippet}
+                  </DropdownMenu.Trigger>
 
-                  <Popover.Content class="w-48 p-1 bg-popover border border-border rounded-lg shadow-xl z-50 text-left divide-y divide-border" align="end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                  <DropdownMenu.Content class="w-48" align="end">
+                    <DropdownMenu.Item
                       onclick={() => {
                         depositState.selectedDepositToView = dep;
                         depositState.showViewDepositModal = true;
                       }}
-                      class="w-full justify-start rounded-none px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent h-auto"
+                      class="cursor-pointer"
                     >
-                      <FileText class="w-3.5 h-3.5" />
+                      <FileText class="w-3.5 h-3.5 mr-2" />
                       Consulter / Imprimer
-                    </Button>
+                    </DropdownMenu.Item>
                     
                     {#if dep.status !== 'cleared' && !depositState.isClosed}
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <DropdownMenu.Item
                         onclick={() => {
                           depositState.selectedDepositToClear = dep;
                           depositState.showClearModal = true;
                         }}
-                        class="w-full justify-start rounded-none px-3 py-1.5 text-xs text-primary hover:bg-primary/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent h-auto"
+                        class="text-primary focus:text-primary cursor-pointer"
                       >
-                        <CheckCircle class="w-3.5 h-3.5" />
+                        <CheckCircle class="w-3.5 h-3.5 mr-2" />
                         Rapprocher (SG)
-                      </Button>
+                      </DropdownMenu.Item>
                     {/if}
 
                     {#if !depositState.isClosed}
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <DropdownMenu.Item
                         onclick={() => onDeleteDeposit(dep.id)}
-                        class="w-full justify-start rounded-none px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent h-auto"
+                        class="text-destructive focus:text-destructive cursor-pointer"
                       >
-                        <Trash2 class="w-3.5 h-3.5" />
+                        <Trash2 class="w-3.5 h-3.5 mr-2" />
                         Supprimer la remise
-                      </Button>
+                      </DropdownMenu.Item>
                     {/if}
-                  </Popover.Content>
-                </Popover.Root>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
               </Table.Cell>
             </Table.Row>
           {:else}

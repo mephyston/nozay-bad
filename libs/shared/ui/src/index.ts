@@ -31,3 +31,4 @@ export { Separator } from './components/ui/separator';
 export { Amount } from './components/ui/amount';
 export { Toaster, toast } from './components/ui/sonner';
 export { Combobox, type ComboboxItem } from './components/ui/combobox';
+export * as DropdownMenu from './components/ui/dropdown-menu';

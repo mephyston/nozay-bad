@@ -1,3 +1,7 @@
+<script module>
+  export * from './member-profile-types';
+</script>
+
 <script lang="ts">
   import { ArrowLeft, User, FileText } from '@lucide/svelte';
   import { Button, Badge, Tabs } from '@nba/ui';
@@ -5,8 +9,6 @@
   import MemberProfileInfoTab from './MemberProfileInfoTab.svelte';
   import MemberProfileCotisationTab from './MemberProfileCotisationTab.svelte';
   import MemberProfileTransactionsTab from './MemberProfileTransactionsTab.svelte';
-
-  export * from './member-profile-types';
 
   let { member, transactions = [], seasonId = '25-26' }: { member: Member; transactions: GLTransaction[]; seasonId?: string } = $props();
 

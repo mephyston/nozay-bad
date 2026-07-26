@@ -39,7 +39,9 @@ const handleList = async (c: any) => {
     category,
     classCode,
     memberId,
-    unreconciledChequesOnly
+    unreconciledChequesOnly,
+    month: query.month,
+    search: query.search
   }, { page, limit });
 
   return c.json({ success: true, ...result });

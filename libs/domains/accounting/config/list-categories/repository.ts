@@ -20,6 +20,7 @@ export class ListCategoriesRepository {
         receiptLabel: rc.label,
         expenseCode: ec.code,
         expenseLabel: ec.label,
+        active: categoriesTable.active,
         createdAt: categoriesTable.createdAt
       })
       .from(categoriesTable)

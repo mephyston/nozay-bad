@@ -12,7 +12,7 @@ export async function createSeason(state: SettingsState, id: string, name: strin
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/accounting/settings', {
+    const res = await fetch('/admin/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -40,7 +40,7 @@ export async function toggleSeasonActive(state: SettingsState, id: string) {
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/accounting/settings', {
+    const res = await fetch('/admin/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -61,15 +61,12 @@ export async function toggleSeasonActive(state: SettingsState, id: string) {
 }
 
 export async function closeSeason(state: SettingsState, id: string) {
-  if (!confirm(`Êtes-vous sûr de vouloir clôturer définitivement la saison ${id} ? Cette action est irréversible et bloquera toute modification.`)) {
-    return;
-  }
   state.isSubmitting = true;
   state.errorMsg = '';
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/accounting/settings', {
+    const res = await fetch('/admin/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -106,7 +103,7 @@ export async function createCategory(state: SettingsState, data: {
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/accounting/settings', {
+    const res = await fetch('/admin/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -147,7 +144,7 @@ export async function updateCategory(state: SettingsState, id: number, updates: 
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/accounting/settings', {
+    const res = await fetch('/admin/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -175,7 +172,7 @@ export async function deleteCategory(state: SettingsState, id: number) {
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/accounting/settings', {
+    const res = await fetch('/admin/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -189,6 +186,101 @@ export async function deleteCategory(state: SettingsState, id: number) {
     }
 
     showMessage(state, 'Catégorie supprimée avec succès.');
+  } catch (err: unknown) {
+    state.errorMsg = (err as Error).message || 'Une erreur est survenue.';
+    state.isSubmitting = false;
+  }
+}
+
+export async function createProductCategory(state: SettingsState, data: {
+  label: string;
+  accountingCategoryId: number;
+  active: boolean;
+}) {
+  if (!data.label.trim()) {
+    state.errorMsg = 'Le libellé ne peut pas être vide.';
+    return;
+  }
+  state.isSubmitting = true;
+  state.errorMsg = '';
+  state.successMsg = '';
+
+  try {
+    const res = await fetch('/admin/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create_product_category',
+        ...data
+      })
+    });
+
+    if (!res.ok) {
+      throw new Error(await res.text() || 'Erreur de création de la catégorie produit.');
+    }
+
+    showMessage(state, 'Catégorie produit créée avec succès !');
+  } catch (err: unknown) {
+    state.errorMsg = (err as Error).message || 'Une erreur est survenue.';
+    state.isSubmitting = false;
+  }
+}
+
+export async function updateProductCategory(state: SettingsState, id: number, updates: {
+  label: string;
+  accountingCategoryId: number;
+  active: boolean;
+}) {
+  if (!updates.label.trim()) {
+    state.errorMsg = 'Le libellé ne peut pas être vide.';
+    return;
+  }
+  state.isSubmitting = true;
+  state.errorMsg = '';
+  state.successMsg = '';
+
+  try {
+    const res = await fetch('/admin/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'update_product_category',
+        id,
+        updates
+      })
+    });
+
+    if (!res.ok) {
+      throw new Error(await res.text() || 'Erreur lors de la modification.');
+    }
+
+    showMessage(state, 'Catégorie produit mise à jour avec succès.');
+  } catch (err: unknown) {
+    state.errorMsg = (err as Error).message || 'Une erreur est survenue.';
+    state.isSubmitting = false;
+  }
+}
+
+export async function deleteProductCategory(state: SettingsState, id: number) {
+  state.isSubmitting = true;
+  state.errorMsg = '';
+  state.successMsg = '';
+
+  try {
+    const res = await fetch('/admin/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'delete_product_category',
+        id
+      })
+    });
+
+    if (!res.ok) {
+      throw new Error(await res.text() || 'Erreur lors de la suppression.');
+    }
+
+    showMessage(state, 'Catégorie produit supprimée avec succès.');
   } catch (err: unknown) {
     state.errorMsg = (err as Error).message || 'Une erreur est survenue.';
     state.isSubmitting = false;

@@ -65,19 +65,19 @@
   let isClosed = $derived(seasons.find(s => s.id === selectedSeason)?.closed || false);
 
   let chargesChartDataRealise = $derived(
-    generatePieSlices(accountClasses.filter(ac => ac.type === 'depense').map(ac => ({ label: ac.label, value: getClassSumRealise(ac.code, 'depense', 'realise') })))
+    generatePieSlices(accountClasses.filter(ac => ac.type === 'depense').map(ac => ({ label: `${ac.code} - ${ac.label}`, value: getClassSumRealise(ac.code, 'depense', 'realise') })))
   );
 
   let recettesChartDataRealise = $derived(
-    generatePieSlices(accountClasses.filter(ac => ac.type === 'recette').map(ac => ({ label: ac.label, value: getClassSumRealise(ac.code, 'recette', 'realise') })))
+    generatePieSlices(accountClasses.filter(ac => ac.type === 'recette').map(ac => ({ label: `${ac.code} - ${ac.label}`, value: getClassSumRealise(ac.code, 'recette', 'realise') })))
   );
 
   let chargesChartDataPrevisionnel = $derived(
-    generatePieSlices(accountClasses.filter(ac => ac.type === 'depense').map(ac => ({ label: ac.label, value: getClassSumPrevisionnel(ac.code, 'depense') })))
+    generatePieSlices(accountClasses.filter(ac => ac.type === 'depense').map(ac => ({ label: `${ac.code} - ${ac.label}`, value: getClassSumPrevisionnel(ac.code, 'depense') })))
   );
 
   let recettesChartDataPrevisionnel = $derived(
-    generatePieSlices(accountClasses.filter(ac => ac.type === 'recette').map(ac => ({ label: ac.label, value: getClassSumPrevisionnel(ac.code, 'recette') })))
+    generatePieSlices(accountClasses.filter(ac => ac.type === 'recette').map(ac => ({ label: `${ac.code} - ${ac.label}`, value: getClassSumPrevisionnel(ac.code, 'recette') })))
   );
 
   async function handleSaveBudget() {

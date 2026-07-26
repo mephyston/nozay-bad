@@ -9,5 +9,7 @@ export const listTransactionsQuerySchema = Type.Object({
   type: Type.Optional(Type.String()),
   category: Type.Optional(Type.String()),
   classCode: Type.Optional(Type.String()),
-  memberId: Type.Optional(Type.String())
+  memberId: Type.Optional(Type.String()),
+  month: Type.Optional(Type.String()),
+  search: Type.Optional(Type.String())
 });

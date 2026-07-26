@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Eye, MoreVertical, RefreshCw, FileText } from '@lucide/svelte';
-  import { Button, Table, Badge, Card } from '@nba/ui';
+  import { Button, Table, Badge, Card, DropdownMenu } from '@nba/ui';
   import type { Expense } from './expenses-types';
   import { categoryColors } from './expenses-types';
 
@@ -18,18 +18,7 @@
     onCancelValidation: (id: number) => void;
   } = $props();
 
-  let openDropdownId = $state<number | null>(null);
 
-  function toggleDropdown(id: number, e: MouseEvent) {
-    e.stopPropagation();
-    openDropdownId = openDropdownId === id ? null : id;
-  }
-
-  $effect(() => {
-    const handleGlobalClick = () => { openDropdownId = null; };
-    window.addEventListener('click', handleGlobalClick);
-    return () => window.removeEventListener('click', handleGlobalClick);
-  });
 </script>
 
 {#if historyExpenses.length === 0}
@@ -41,7 +30,10 @@
     </Card.Content>
   </Card.Root>
 {:else}
-  <Table.Root>
+<Card.Root class="overflow-hidden shadow-sm">
+  <Card.Content class="p-0">
+    <div class="overflow-x-auto">
+      <Table.Root>
     <Table.Header>
       <Table.Row>
         <Table.Head class="p-4">Date</Table.Head>
@@ -71,7 +63,7 @@
               {categoryLabels[exp.category] || exp.category}
             </Badge>
           </Table.Cell>
-          <Table.Cell class="p-4 font-mono font-bold text-foreground font-semibold">
+          <Table.Cell class="p-4 font-outfit tabular-nums font-bold text-foreground">
             {(exp.amount / 100).toFixed(2)} €
           </Table.Cell>
           <Table.Cell class="p-4">
@@ -100,32 +92,33 @@
               </Badge>
             {/if}
           </Table.Cell>
-          <Table.Cell class="p-4 text-right relative">
+          <Table.Cell class="p-4 text-right">
             {#if !isClosed}
-              <div class="inline-block text-left">
-                <Button 
-                  variant="ghost"
-                  size="icon-sm"
-                  onclick={(e) => toggleDropdown(exp.id, e)} 
-                  class="text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer" 
-                  aria-label="Actions"
-                >
-                  <MoreVertical class="w-4 h-4" />
-                </Button>
-
-                {#if openDropdownId === exp.id}
-                  <div class="absolute right-4 mt-1 w-44 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border font-medium">
-                    <Button
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  {#snippet child({ props })}
+                    <Button 
+                      {...props}
                       variant="ghost"
-                      onclick={() => { openDropdownId = null; onCancelValidation(exp.id); }}
-                      class="w-full px-3 py-1.5 text-xs text-primary hover:bg-primary/10 font-semibold flex items-center gap-1.5 justify-start h-auto"
+                      size="icon-sm"
+                      class="text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer" 
+                      aria-label="Actions"
                     >
-                      <RefreshCw class="w-3.5 h-3.5" />
-                      Remettre en attente
+                      <MoreVertical class="w-4 h-4" />
+                      <span class="sr-only">Toggle menu</span>
                     </Button>
-                  </div>
-                {/if}
-              </div>
+                  {/snippet}
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content class="w-44" align="end">
+                  <DropdownMenu.Item
+                    onclick={() => onCancelValidation(exp.id)}
+                    class="text-primary focus:text-primary cursor-pointer"
+                  >
+                    <RefreshCw class="w-3.5 h-3.5 mr-2" />
+                    Remettre en attente
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Root>
             {:else}
               <span class="text-xs text-muted-foreground italic">Aucune</span>
             {/if}
@@ -134,4 +127,7 @@
       {/each}
     </Table.Body>
   </Table.Root>
+    </div>
+  </Card.Content>
+</Card.Root>
 {/if}

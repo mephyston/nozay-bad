@@ -8,7 +8,7 @@ export class UpdateAccountClassRepository {
     type?: 'recette' | 'depense';
   }): Promise<any> {
     const numCode = Number(code);
-    const targetCode = !isNaN(numCode) ? numCode : (code as any);
+    const targetCode = !isNaN(numCode) ? String(numCode) : code;
     return db.update(accountClassesTable).set(values).where(eq(accountClassesTable.code, targetCode)).returning().get();
   }
 }

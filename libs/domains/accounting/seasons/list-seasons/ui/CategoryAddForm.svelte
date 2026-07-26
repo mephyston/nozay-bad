@@ -84,7 +84,7 @@
       >
         <option value="">Aucune (N/A)</option>
         {#each (accountClasses || []).filter(ac => ac.type === 'recette') as ac}
-          <option value={ac.code}>{ac.label}</option>
+          <option value={ac.code}>{ac.code} - {ac.label}</option>
         {/each}
       </select>
     </div>
@@ -98,7 +98,7 @@
       >
         <option value="">Aucune (N/A)</option>
         {#each (accountClasses || []).filter(ac => ac.type === 'depense') as ac}
-          <option value={ac.code}>{ac.label}</option>
+          <option value={ac.code}>{ac.code} - {ac.label}</option>
         {/each}
       </select>
     </div>

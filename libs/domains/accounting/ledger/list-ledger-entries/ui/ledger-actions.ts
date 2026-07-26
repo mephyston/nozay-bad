@@ -13,6 +13,8 @@ export async function submitTransaction(
     paymentMethod: string;
     description: string;
     reference: string;
+    accrualType: string;
+    accrualNote: string;
     targetSeasonId: string;
   }
 ): Promise<void> {
@@ -36,7 +38,9 @@ export async function submitTransaction(
           date: params.date,
           paymentMethod: params.paymentMethod,
           description: params.description,
-          reference: params.reference
+          reference: params.reference,
+          accrualType: params.accrualType,
+          accrualNote: params.accrualNote
         }
       }
     : {
@@ -50,7 +54,9 @@ export async function submitTransaction(
         date: params.date,
         paymentMethod: params.paymentMethod,
         description: params.description,
-        reference: params.reference
+        reference: params.reference,
+        accrualType: params.accrualType,
+        accrualNote: params.accrualNote
       };
 
   const res = await fetch('/admin/accounting', {

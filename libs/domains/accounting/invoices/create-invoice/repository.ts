@@ -43,8 +43,8 @@ export class CreateInvoiceRepository {
           invoiceId: sql`(SELECT last_insert_rowid())`,
           description: item.description,
           quantity: item.quantity,
-          unitPriceCents: item.unitPriceCents ?? 0,
-          totalPriceCents: item.totalPriceCents ?? (item.quantity * (item.unitPriceCents ?? 0)),
+          unitPriceCents: item.unitPrice ?? item.unitPriceCents ?? 0,
+          totalPriceCents: item.totalPriceCents ?? (item.quantity * (item.unitPrice ?? item.unitPriceCents ?? 0)),
           createdAt: new Date()
         });
         statements.push(itemStmt);
@@ -60,8 +60,8 @@ export class CreateInvoiceRepository {
         invoiceId: newInvoice.id,
         description: item.description,
         quantity: item.quantity,
-        unitPriceCents: item.unitPriceCents ?? 0,
-        totalPriceCents: item.totalPriceCents ?? (item.quantity * (item.unitPriceCents ?? 0)),
+        unitPriceCents: item.unitPrice ?? item.unitPriceCents ?? 0,
+        totalPriceCents: item.totalPriceCents ?? (item.quantity * (item.unitPrice ?? item.unitPriceCents ?? 0)),
         createdAt: new Date()
       }));
       await db.insert(invoiceItemsTable).values(itemsArray).run();

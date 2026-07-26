@@ -72,7 +72,7 @@
     {
       label: "",
       items: [
-        { name: "Réglages", icon: Settings, href: "/admin/accounting/settings" }
+        { name: "Réglages", icon: Settings, href: "/admin/settings" }
       ]
     }
   ];
@@ -278,13 +278,13 @@
               <div class="p-1 space-y-0.5">
                 <DropdownMenu.Item
                   class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer focus:bg-accent focus:text-accent-foreground focus:outline-none"
-                  onclick={() => window.location.href = "/admin/accounting/settings"}
+                  onclick={() => window.location.href = "/admin/settings"}
                 >
                   <User class="mr-2 h-3.5 w-3.5 text-muted-foreground" /> Mon profil
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
                   class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer focus:bg-accent focus:text-accent-foreground focus:outline-none"
-                  onclick={() => window.location.href = "/admin/accounting/settings"}
+                  onclick={() => window.location.href = "/admin/settings"}
                 >
                   <Settings class="mr-2 h-3.5 w-3.5 text-muted-foreground" /> Paramètres
                 </DropdownMenu.Item>

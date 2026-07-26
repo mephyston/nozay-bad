@@ -11,7 +11,9 @@ export async function apiLoadUnpaidInvoices(selectedSeason: string): Promise<Inv
   });
   if (!res.ok) throw new Error('Impossible de charger les factures');
   const json = (await res.json()) as any;
-  return (json.data || []).filter((inv: Invoice) => inv.status === 'draft' || inv.status === 'sent');
+  return (json.data || [])
+    .filter((inv: Invoice) => inv.status === 'draft' || inv.status === 'sent')
+    .map((inv: any) => ({ ...inv, totalAmount: inv.totalAmount ?? inv.totalAmountCents ?? 0 }));
 }
 
 export async function apiBulkReconcile(requests: any[]): Promise<void> {
@@ -54,7 +56,7 @@ export async function apiReconcileInvoice(bt: BankStatementLine, invoice: Invoic
         date: bt.date,
         paymentMethod: 'virement',
         description: `Facture ${invoice.invoiceNumber} - ${invoice.clientName}`,
-        reference: bt.fitid
+        reference: bt.memo || bt.fitid
       }
     })
   });
@@ -78,7 +80,7 @@ export async function apiMultiInvoiceReconcile(bt: BankStatementLine, firstInvoi
         date: bt.date,
         paymentMethod: 'virement',
         description: `Rapprochement de ${ids.length} factures`,
-        reference: bt.fitid
+        reference: bt.memo || bt.fitid
       }
     })
   });
@@ -112,7 +114,7 @@ export async function apiMatchLedgerEntry(btId: number, ledgerEntryId: number, m
   if (!res.ok) throw new Error('Erreur association.');
 }
 
-export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: number | null, splits: { category: string; amount: number }[]): Promise<void> {
+export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: number | null, splits: { category: string; amount: number }[], accrualType: string, accrualNote: string): Promise<void> {
   const res = await fetch('/admin/accounting/import', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -129,7 +131,9 @@ export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: nu
         date: bt.date,
         paymentMethod: 'virement',
         description: `${bt.name} (Partie ${index + 1})`,
-        reference: bt.fitid
+        reference: bt.memo || bt.fitid,
+        accrualType,
+        accrualNote
       }))
     })
   });
@@ -142,7 +146,9 @@ export async function apiCreateAndMatchSingle(
   targetSeasonId: string,
   category: string,
   amountToLink: number,
-  paymentMethod: string
+  paymentMethod: string,
+  accrualType: string,
+  accrualNote: string
 ): Promise<void> {
   const btAmt = (bt as any).amountCents ?? bt.amount ?? 0;
   const rawAccountId = bt.accountId || 'current';
@@ -162,7 +168,9 @@ export async function apiCreateAndMatchSingle(
         date: bt.date,
         paymentMethod: paymentMethod || 'virement',
         description: bt.name,
-        reference: bt.fitid
+        reference: bt.memo || bt.fitid,
+        accrualType,
+        accrualNote
       }
     })
   });

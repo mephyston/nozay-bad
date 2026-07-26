@@ -23,23 +23,43 @@
       </Tabs.List>
     </Tabs.Root>
 
-    <!-- Champ de recherche textuel libre -->
-    <div class="relative">
-      <Input
-        type="text"
-        placeholder="Rechercher une transaction..."
-        bind:value={state.searchQuery}
-        class="h-8 text-xs pl-3 pr-8"
-      />
-      {#if state.searchQuery}
-        <button
-          type="button"
-          class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
-          onclick={() => state.searchQuery = ''}
-        >
-          ✕
-        </button>
-      {/if}
+    <!-- Recherche et Filtre par mois -->
+    <div class="flex items-center gap-2">
+      <div class="relative flex-1">
+        <Input
+          type="text"
+          placeholder="Rechercher une transaction..."
+          bind:value={state.searchQuery}
+          class="h-8 text-xs pl-3 pr-8"
+        />
+        {#if state.searchQuery}
+          <button
+            type="button"
+            class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+            onclick={() => state.searchQuery = ''}
+          >
+            ✕
+          </button>
+        {/if}
+      </div>
+      <select
+        class="h-8 px-2 border border-border bg-background rounded-md text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary w-28 shrink-0 cursor-pointer"
+        bind:value={state.monthFilter}
+      >
+        <option value="">Tous</option>
+        <option value="01">Janvier</option>
+        <option value="02">Février</option>
+        <option value="03">Mars</option>
+        <option value="04">Avril</option>
+        <option value="05">Mai</option>
+        <option value="06">Juin</option>
+        <option value="07">Juillet</option>
+        <option value="08">Août</option>
+        <option value="09">Septembre</option>
+        <option value="10">Octobre</option>
+        <option value="11">Novembre</option>
+        <option value="12">Décembre</option>
+      </select>
     </div>
 
     <!-- Barre d'action en masse -->

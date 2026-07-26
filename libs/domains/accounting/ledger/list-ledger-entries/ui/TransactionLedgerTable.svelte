@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Check, MoreVertical, Edit2, Trash2, ChevronLeft, ChevronRight } from '@lucide/svelte';
-  import { Button, Table, Badge, Popover, Amount } from '@nba/ui';
+  import { Check, MoreHorizontal, Edit2, Trash2, ChevronLeft, ChevronRight } from '@lucide/svelte';
+  import { Button, Table, Badge, Popover, Amount, Card, DropdownMenu } from '@nba/ui';
   import type { Transaction, Pagination } from './ledger-types';
   import { accountLabels } from './ledger-types';
 
@@ -18,16 +18,15 @@
     pagination: Pagination;
     activeCategories: { id: string; code: string; name: string }[];
     isClosed: boolean;
-    pageRange: (number | string)[];
     onStartEdit: (tx: Transaction, e: MouseEvent) => void;
     onDelete: (id: number) => void;
     onChangePage: (page: number) => void;
   } = $props();
 </script>
 
-<div class="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+<Card.Root>
   <!-- Vue Cartes pour Mobile -->
-  <div class="block sm:hidden divide-y divide-border">
+  <Card.Content class="p-0 block sm:hidden divide-y divide-border">
     {#each transactions as tx}
       <div class="p-4 space-y-2 bg-card">
         <div class="flex items-start justify-between gap-2">
@@ -96,27 +95,27 @@
         Aucune écriture comptable pour cette saison.
       </div>
     {/each}
-  </div>
+  </Card.Content>
 
   <!-- Vue Tableau pour Tablette / Desktop -->
-  <div class="hidden sm:block overflow-x-auto min-h-[180px]">
+  <Card.Content class="p-0 hidden sm:block overflow-x-auto min-h-[180px]">
     <Table.Root class="w-full border-collapse text-left text-sm">
-      <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
+      <Table.Header>
         <Table.Row>
-          <Table.Head class="p-4">Date</Table.Head>
-          <Table.Head class="p-4">Type</Table.Head>
-          <Table.Head class="p-4">Compte(s)</Table.Head>
-          <Table.Head class="p-4">Catégorie</Table.Head>
-          <Table.Head class="p-4">Libellé</Table.Head>
-          <Table.Head class="p-4 text-right">Montant</Table.Head>
-          <Table.Head class="p-4 text-right">Actions</Table.Head>
+          <Table.Head>Date</Table.Head>
+          <Table.Head>Type</Table.Head>
+          <Table.Head>Compte(s)</Table.Head>
+          <Table.Head>Catégorie</Table.Head>
+          <Table.Head>Libellé</Table.Head>
+          <Table.Head class="text-right">Montant</Table.Head>
+          <Table.Head class="text-right">Actions</Table.Head>
         </Table.Row>
       </Table.Header>
-      <Table.Body class="divide-y divide-border">
+      <Table.Body>
         {#each transactions as tx}
-          <Table.Row class="hover:bg-muted/50 transition-colors">
-            <Table.Cell class="p-4">{tx.date}</Table.Cell>
-            <Table.Cell class="p-4">
+          <Table.Row>
+            <Table.Cell>{tx.date}</Table.Cell>
+            <Table.Cell>
               {#if tx.type === 'recette'}
                 <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-transparent">Recette</Badge>
               {:else if tx.type === 'depense'}
@@ -125,18 +124,18 @@
                 <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-primary/15 text-primary border-transparent">Transfert</Badge>
               {/if}
             </Table.Cell>
-            <Table.Cell class="p-4">
+            <Table.Cell>
               {#if tx.type === 'transfert'}
                 <span class="text-xs">{accountLabels[tx.accountId]} ➔ {accountLabels[tx.destinationAccountId!]}</span>
               {:else}
                 <span class="text-xs">{accountLabels[tx.accountId]}</span>
               {/if}
             </Table.Cell>
-            <Table.Cell class="p-4">{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</Table.Cell>
-            <Table.Cell class="p-4 font-medium">
-              <div>{tx.description}</div>
+            <Table.Cell>{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</Table.Cell>
+            <Table.Cell class="font-medium max-w-[200px] md:max-w-[300px] lg:max-w-[400px]">
+              <div class="line-clamp-2" title={tx.description}>{tx.description}</div>
               {#if tx.reference}
-                <div class="text-xs text-muted-foreground italic">Réf: {tx.reference}</div>
+                <div class="text-xs text-muted-foreground italic truncate mt-0.5" title={tx.reference}>Réf: {tx.reference}</div>
               {/if}
               <div class="flex flex-wrap gap-1.5 mt-1">
                 {#if tx.memberName}
@@ -152,7 +151,7 @@
                 {/if}
               </div>
             </Table.Cell>
-            <Table.Cell class="p-4 text-right font-bold">
+            <Table.Cell class="text-right font-bold">
               {#if tx.type === 'recette'}
                 <Amount cents={(tx as any).amountCents ?? tx.amount} showSign colored />
               {:else if tx.type === 'depense'}
@@ -161,101 +160,46 @@
                 <Amount cents={(tx as any).amountCents ?? tx.amount} class="text-muted-foreground" />
               {/if}
             </Table.Cell>
-            <Table.Cell class="p-4 text-right relative">
+            <Table.Cell class="text-right relative">
               {#if !isClosed}
-                <Popover.Root>
-                  <Popover.Trigger asChild>
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger asChild>
                     {#snippet child({ props })}
                       <Button 
                         {...props}
+                        aria-haspopup="true"
+                        size="icon"
                         variant="ghost"
-                        size="icon-xs"
-                        class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center" 
-                        aria-label="Actions"
                       >
-                        <MoreVertical class="w-4 h-4" />
+                        <MoreHorizontal class="h-4 w-4" />
+                        <span class="sr-only">Toggle menu</span>
                       </Button>
                     {/snippet}
-                  </Popover.Trigger>
-                  <Popover.Content class="w-32 p-1 bg-popover border border-border rounded-lg shadow-lg z-50 text-left divide-y divide-border" align="end">
-                    <Button
-                      variant="ghost"
-                      onclick={(e) => onStartEdit(tx, e)}
-                      class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent h-auto rounded-none justify-start"
-                    >
-                      <Edit2 class="w-3.5 h-3.5" />
-                      Éditer
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onclick={() => onDelete(tx.id)}
-                      class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent h-auto rounded-none justify-start"
-                    >
-                      <Trash2 class="w-3.5 h-3.5" />
-                      Supprimer
-                    </Button>
-                  </Popover.Content>
-                </Popover.Root>
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content align="end">
+                    <DropdownMenu.Label>Actions</DropdownMenu.Label>
+                    <DropdownMenu.Item onclick={(e) => onStartEdit(tx, e)} class="cursor-pointer">
+                      <Edit2 class="w-3.5 h-3.5 mr-2" /> Éditer
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item onclick={() => onDelete(tx.id)} class="text-destructive focus:text-destructive cursor-pointer">
+                      <Trash2 class="w-3.5 h-3.5 mr-2" /> Supprimer
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
               {/if}
             </Table.Cell>
           </Table.Row>
         {:else}
           <Table.Row>
-            <Table.Cell colspan={7} class="p-8 text-center text-muted-foreground">Aucune écriture comptable pour cette saison.</Table.Cell>
+            <Table.Cell colspan={7} class="h-24 text-center text-muted-foreground">Aucune écriture comptable pour cette saison.</Table.Cell>
           </Table.Row>
         {/each}
       </Table.Body>
     </Table.Root>
-  </div>
+  </Card.Content>
 
   <!-- Pagination Footer -->
-  <div class="p-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
-    <div class="text-xs text-muted-foreground">
-      Total : {pagination.total} transaction(s)
-    </div>
-    <div class="flex items-center gap-2 sm:gap-4">
-      <span class="text-xs">
-        Page {pagination.page} sur {pagination.totalPages}
-      </span>
-      <div class="flex gap-1 items-center">
-        <Button
-          variant="outline"
-          size="icon-xs"
-          class="p-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-h-[36px] min-w-[36px]"
-          onclick={() => onChangePage(pagination.page - 1)}
-          disabled={pagination.page <= 1}
-          aria-label="Page précédente"
-        >
-          <ChevronLeft class="w-4 h-4" />
-        </Button>
-
-        {#each pageRange as p}
-          {#if p === '...'}
-            <span class="px-2.5 py-1 text-xs text-muted-foreground select-none">...</span>
-          {:else}
-            <Button
-              variant={Number(p) === pagination.page ? 'default' : 'outline'}
-              size="xs"
-              class="px-3 py-1 text-xs font-semibold transition-colors cursor-pointer min-h-[36px] min-w-[36px]"
-              onclick={() => onChangePage(Number(p))}
-              aria-current={Number(p) === pagination.page ? 'page' : undefined}
-            >
-              {p}
-            </Button>
-          {/if}
-        {/each}
-
-        <Button
-          variant="outline"
-          size="icon-xs"
-          class="p-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-h-[36px] min-w-[36px]"
-          onclick={() => onChangePage(pagination.page + 1)}
-          disabled={pagination.page >= pagination.totalPages}
-          aria-label="Page suivante"
-        >
-          <ChevronRight class="w-4 h-4" />
-        </Button>
-      </div>
-    </div>
-  </div>
-</div>
+  <Card.Footer class="p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+    <Table.Pagination {pagination} {onChangePage} itemName="transaction(s)" />
+  </Card.Footer>
+</Card.Root>

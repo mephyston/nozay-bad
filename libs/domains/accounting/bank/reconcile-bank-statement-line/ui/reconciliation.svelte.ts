@@ -36,6 +36,8 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
   let category = $state('1');
   let paymentMethod = $state('virement');
   let selectedMemberId = $state<string>('');
+  let accrualType = $state('normal');
+  let accrualNote = $state('');
   let amountToLink = $state<number>(0);
   let lastProcessedTxId = $state<number | null>(null);
 
@@ -51,11 +53,12 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
 
   let selectedTxIds = $state<Record<number, boolean>>({});
   let searchQuery = $state('');
+  let monthFilter = $state('');
   let memberHighlightedIndex = $state(-1);
   let categoryHighlightedIndex = $state(-1);
 
   const isClosed = $derived(seasons.find(s => s.code === selectedSeason || String(s.id) === selectedSeason)?.closed || false);
-  const categories = $derived(dbCategories.map(c => ({ id: String(c.id), code: c.code, name: c.adminLabel })));
+  const categories = $derived(dbCategories.filter((c: any) => c.active !== false).map((c: any) => ({ id: String(c.id), code: c.code, name: c.adminLabel })));
   const sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
 
   function getSuggestions(bt: BankStatementLine) {
@@ -89,6 +92,9 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
         const query = searchQuery.toLowerCase().trim();
         if (!(t.name || '').toLowerCase().includes(query) && !(t.memo || '').toLowerCase().includes(query)) return false;
       }
+      if (monthFilter) {
+        if (!t.date.includes(`-${monthFilter}-`)) return false;
+      }
       return true;
     })
   );
@@ -116,7 +122,7 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
 
   function safeEffect(fn: () => void) { try { $effect(fn); } catch (e) {} }
 
-  safeEffect(() => { const _ = activeTab; selectedTxIds = {}; searchQuery = ''; });
+  safeEffect(() => { const _ = activeTab; selectedTxIds = {}; searchQuery = ''; monthFilter = ''; });
   safeEffect(() => {
     if (selectedTx) {
       amountToLink = parseFloat((remainingAmount / 100).toFixed(2));
@@ -159,11 +165,11 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
       selectedTx: () => selectedTx, isSubmitting: () => isSubmitting, isAnalyzing: () => isAnalyzing, isAnalyzingSingle: () => isAnalyzingSingle,
       errorMsg: () => errorMsg, showImportModal: () => showImportModal, selectedAccount: () => selectedAccount, activeTab: () => activeTab,
       unpaidInvoices: () => unpaidInvoices, activeRightTab: () => activeRightTab, category: () => category, paymentMethod: () => paymentMethod,
-      selectedMemberId: () => selectedMemberId, amountToLink: () => amountToLink, lastProcessedTxId: () => lastProcessedTxId,
+      selectedMemberId: () => selectedMemberId, accrualType: () => accrualType, accrualNote: () => accrualNote, amountToLink: () => amountToLink, lastProcessedTxId: () => lastProcessedTxId,
       selectedInvoiceIds: () => selectedInvoiceIds, isSplitMode: () => isSplitMode, splits: () => splits,
       isMemberDropdownOpen: () => isMemberDropdownOpen, isCategoryDropdownOpen: () => isCategoryDropdownOpen,
       memberSearchQuery: () => memberSearchQuery, categorySearchQuery: () => categorySearchQuery, targetSeasonId: () => targetSeasonId,
-      selectedTxIds: () => selectedTxIds, searchQuery: () => searchQuery, memberHighlightedIndex: () => memberHighlightedIndex,
+      selectedTxIds: () => selectedTxIds, searchQuery: () => searchQuery, monthFilter: () => monthFilter, memberHighlightedIndex: () => memberHighlightedIndex,
       categoryHighlightedIndex: () => categoryHighlightedIndex, isClosed: () => isClosed, categories: () => categories,
       sortedMembers: () => sortedMembers, suggestions: () => suggestions, linkedGlTxs: () => linkedGlTxs, totalLinked: () => totalLinked,
       remainingAmount: () => remainingAmount, pendingCount: () => pendingCount, reconciledCount: () => reconciledCount,
@@ -178,11 +184,11 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
       selectedTx: v => selectedTx = v, isSubmitting: v => isSubmitting = v, isAnalyzing: v => isAnalyzing = v, isAnalyzingSingle: v => isAnalyzingSingle = v,
       errorMsg: v => errorMsg = v, showImportModal: v => showImportModal = v, selectedAccount: v => selectedAccount = v, activeTab: v => activeTab = v,
       unpaidInvoices: v => unpaidInvoices = v, activeRightTab: v => activeRightTab = v, category: v => category = v, paymentMethod: v => paymentMethod = v,
-      selectedMemberId: v => selectedMemberId = v, amountToLink: v => amountToLink = v, lastProcessedTxId: v => lastProcessedTxId = v,
+      selectedMemberId: v => selectedMemberId = v, accrualType: v => accrualType = v, accrualNote: v => accrualNote = v, amountToLink: v => amountToLink = v, lastProcessedTxId: v => lastProcessedTxId = v,
       selectedInvoiceIds: v => selectedInvoiceIds = v, isSplitMode: v => isSplitMode = v, splits: v => splits = v,
       isMemberDropdownOpen: v => isMemberDropdownOpen = v, isCategoryDropdownOpen: v => isCategoryDropdownOpen = v,
       memberSearchQuery: v => memberSearchQuery = v, categorySearchQuery: v => categorySearchQuery = v, targetSeasonId: v => targetSeasonId = v,
-      selectedTxIds: v => selectedTxIds = v, searchQuery: v => searchQuery = v, memberHighlightedIndex: v => memberHighlightedIndex = v,
+      selectedTxIds: v => selectedTxIds = v, searchQuery: v => searchQuery = v, monthFilter: v => monthFilter = v, memberHighlightedIndex: v => memberHighlightedIndex = v,
       categoryHighlightedIndex: v => categoryHighlightedIndex = v
     }
   );

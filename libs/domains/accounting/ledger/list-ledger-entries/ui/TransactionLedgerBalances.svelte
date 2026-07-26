@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Card, Amount } from '@nba/ui';
   import type { BalanceReport } from './ledger-types';
-  import { accountLabels } from './ledger-types';
+  import { formAccountOptions } from './ledger-types';
 
   let { balances = [] }: { balances: BalanceReport[] } = $props();
 
@@ -12,14 +12,14 @@
 </script>
 
 <div class="grid gap-4 md:grid-cols-3">
-  {#each Object.entries(accountLabels) as [key, label]}
+  {#each formAccountOptions as { value, label }}
     <Card.Root>
       <Card.Header class="pb-2">
         <Card.Title class="text-sm font-medium text-muted-foreground">{label}</Card.Title>
       </Card.Header>
       <Card.Content>
         <div class="text-3xl font-bold text-foreground">
-          <Amount cents={getAccountBalanceCents(key as any)} />
+          <Amount cents={getAccountBalanceCents(value as any)} />
         </div>
       </Card.Content>
     </Card.Root>

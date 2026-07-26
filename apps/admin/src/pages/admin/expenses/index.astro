@@ -67,7 +67,11 @@ try {
 
   if (expensesRes.ok) {
     const json = await expensesRes.json() as any;
-    expensesList = json.data || [];
+    expensesList = (json.data || []).map((exp: any) => ({
+      ...exp,
+      amount: exp.amountCents,
+      category: exp.categoryId
+    }));
   }
 
   if (seasonsRes.ok) {

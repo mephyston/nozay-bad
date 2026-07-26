@@ -18,12 +18,6 @@ export function createCheckDepositState(props: () => {
   let selectedDepositToView = $state<CheckDeposit | null>(null);
   const checksInViewDeposit = $derived(selectedDepositToView ? p.checks.filter(c => c.checkDepositId === selectedDepositToView!.id) : []);
 
-  let openDropdownId = $state<string | number | null>(null);
-  function toggleDropdown(id: string | number, e: MouseEvent) {
-    e.stopPropagation();
-    openDropdownId = openDropdownId === id ? null : id;
-  }
-
   // Add Check Form State
   let showAddCheckModal = $state(false);
   let isAnalyzing = $state(false);
@@ -125,8 +119,6 @@ export function createCheckDepositState(props: () => {
     get showViewDepositModal() { return showViewDepositModal; }, set showViewDepositModal(v) { showViewDepositModal = v; },
     get selectedDepositToView() { return selectedDepositToView; }, set selectedDepositToView(v) { selectedDepositToView = v; },
     get checksInViewDeposit() { return checksInViewDeposit; },
-    get openDropdownId() { return openDropdownId; }, set openDropdownId(v) { openDropdownId = v; },
-    toggleDropdown,
     get showAddCheckModal() { return showAddCheckModal; }, set showAddCheckModal(v) { showAddCheckModal = v; },
     get isAnalyzing() { return isAnalyzing; }, set isAnalyzing(v) { isAnalyzing = v; },
     get isSubmittingCheck() { return isSubmittingCheck; }, set isSubmittingCheck(v) { isSubmittingCheck = v; },

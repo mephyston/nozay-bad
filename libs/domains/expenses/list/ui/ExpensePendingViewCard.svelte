@@ -32,7 +32,7 @@
     </Card.Description>
   </div>
   <div class="text-right">
-    <span class="text-2xl font-black text-primary font-mono">
+    <span class="text-2xl font-black text-primary font-outfit tabular-nums">
       {(exp.amount / 100).toFixed(2)} €
     </span>
   </div>

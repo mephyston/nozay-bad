@@ -4,21 +4,24 @@
   import SeasonConfig from "./SeasonConfig.svelte";
   import CategoriesConfig from "./CategoriesConfig.svelte";
   import AccountClassesConfig from "./AccountClassesConfig.svelte";
-  import type { Season, Category, AccountClass } from "./settings-types";
+  import ProductCategoriesConfig from "./ProductCategoriesConfig.svelte";
+  import type { Season, Category, AccountClass, ProductCategory } from "./settings-types";
   import * as api from "./settings-api";
 
   let {
     seasons = [],
     categories = [],
     accountClasses = [],
+    productCategories = [],
     seasonId,
     view = 'seasons'
   }: {
     seasons: Season[];
     categories: Category[];
     accountClasses?: AccountClass[];
+    productCategories?: ProductCategory[];
     seasonId: string;
-    view?: 'seasons' | 'compta' | 'classes';
+    view?: 'seasons' | 'compta' | 'classes' | 'shop';
   } = $props();
 
   let state = $state<api.SettingsState>({
@@ -78,6 +81,18 @@
     return api.deleteAccountClass(state, code);
   }
 
+  function handleCreateProductCategory(data: Parameters<typeof api.createProductCategory>[1]) {
+    return api.createProductCategory(state, data);
+  }
+
+  function handleUpdateProductCategory(id: number, updates: Parameters<typeof api.updateProductCategory>[2]) {
+    return api.updateProductCategory(state, id, updates);
+  }
+
+  function handleDeleteProductCategory(id: number) {
+    return api.deleteProductCategory(state, id);
+  }
+
   // svelte-ignore state_referenced_locally
   let activeView = $state(view);
   
@@ -86,7 +101,7 @@
   });
 
   function handleViewChange(newView: string) {
-    activeView = newView as 'seasons' | 'compta' | 'classes';
+    activeView = newView as 'seasons' | 'compta' | 'classes' | 'shop';
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('view', newView);
@@ -111,10 +126,11 @@
   {/if}
 
   <Tabs.Root value={activeView} onValueChange={handleViewChange} class="w-full">
-    <Tabs.List class="grid grid-cols-3 max-w-md mb-6">
+    <Tabs.List class="grid grid-cols-4 max-w-2xl mb-6">
       <Tabs.Trigger value="seasons">Exercices & Saisons</Tabs.Trigger>
       <Tabs.Trigger value="compta">Catégories Compta</Tabs.Trigger>
       <Tabs.Trigger value="classes">Plan Comptable</Tabs.Trigger>
+      <Tabs.Trigger value="shop">Catégories Produits</Tabs.Trigger>
     </Tabs.List>
 
     <!-- VIEW: SEASONS -->
@@ -176,6 +192,20 @@
           onUpdateAccountClass={handleUpdateAccountClass}
           onDeleteAccountClass={handleDeleteAccountClass}
           onCreateAccountClass={handleCreateAccountClass}
+        />
+      {/if}
+    </Tabs.Content>
+
+    <!-- VIEW: PRODUCT CATEGORIES -->
+    <Tabs.Content value="shop">
+      {#if activeView === 'shop'}
+        <ProductCategoriesConfig
+          {productCategories}
+          {categories}
+          isSubmitting={state.isSubmitting}
+          onUpdateProductCategory={handleUpdateProductCategory}
+          onDeleteProductCategory={handleDeleteProductCategory}
+          onCreateProductCategory={handleCreateProductCategory}
         />
       {/if}
     </Tabs.Content>

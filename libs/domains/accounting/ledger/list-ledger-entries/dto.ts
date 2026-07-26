@@ -6,6 +6,8 @@ export interface ListTransactionsFilters {
   classCode?: string;
   memberId?: string;
   unreconciledChequesOnly?: boolean;
+  search?: string;
+  month?: string;
 }
 
 export interface Pagination {

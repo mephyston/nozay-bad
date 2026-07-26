@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Button, Dialog, Sheet, Tabs } from '@nba/ui';
+  import { Search, X, Filter } from '@lucide/svelte';
+  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox } from '@nba/ui';
   import type { Transaction, Pagination, BalanceReport, Season, Category, AccountClass } from './ledger-types';
-  import { getPageRange } from './ledger-utils';
   import { submitTransaction, deleteTransaction, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange } from './ledger-actions';
   import TransactionLedgerBalances from './TransactionLedgerBalances.svelte';
   import TransactionLedgerHeader from './TransactionLedgerHeader.svelte';
@@ -10,7 +10,6 @@
   import TransactionFormSheet from './TransactionFormSheet.svelte';
 
   export * from './ledger-types';
-  export * from './ledger-utils';
   export * from './ledger-actions';
 
   let {
@@ -22,7 +21,9 @@
     categories = [],
     accountClasses = [],
     unreconciledChequesOnly = false,
-    accountId = ''
+    accountId = '',
+    searchQuery = '',
+    month = ''
   }: {
     transactions: Transaction[];
     pagination: Pagination;
@@ -33,9 +34,9 @@
     accountClasses?: AccountClass[];
     unreconciledChequesOnly?: boolean;
     accountId?: string;
+    searchQuery?: string;
+    month?: string;
   } = $props();
-
-  let pageRange = $derived(getPageRange(pagination.page, pagination.totalPages));
 
   // svelte-ignore state_referenced_locally
   let selectedAccount = $state(accountId || 'all');
@@ -63,6 +64,7 @@
     const params = new URLSearchParams(window.location.search);
     params.delete('category');
     params.delete('classCode');
+    params.delete('month');
     params.set('page', '1');
     window.location.href = `/admin/accounting?${params.toString()}`;
   }
@@ -80,6 +82,8 @@
   let paymentMethod = $state('virement');
   let description = $state('');
   let reference = $state('');
+  let accrualType = $state('normal');
+  let accrualNote = $state('');
   let isSubmitting = $state(false);
   let errorMsg = $state('');
 
@@ -89,7 +93,11 @@
   let targetSeasonId = $state(seasonId);
 
   const isClosed = $derived(seasons.find(s => s.id === selectedSeason)?.closed || false);
-  const activeCategories = $derived(categories.map(c => ({ id: String(c.id), code: c.code, name: c.adminLabel })));
+  const activeCategories = $derived(
+    categories
+      .filter(c => c.active !== false || (editingId && String(c.id) === category))
+      .map(c => ({ id: String(c.id), code: c.code, name: c.adminLabel }))
+  );
 
   let editingId = $state<number | null>(null);
 
@@ -97,6 +105,8 @@
     showPanel = type;
     amount = '';
     description = '';
+    accrualType = 'normal';
+    accrualNote = '';
     targetSeasonId = selectedSeason;
     editingId = null;
   }
@@ -104,14 +114,25 @@
   function startEdit(tx: Transaction, e: MouseEvent) {
     e.stopPropagation();
     editingId = tx.id;
+    const reverseAccountMap: Record<number | string, 'current' | 'savings' | 'cash'> = {
+      1: 'current',
+      2: 'savings',
+      3: 'cash',
+      'current': 'current',
+      'savings': 'savings',
+      'cash': 'cash'
+    };
+
     amount = (tx.amount / 100).toFixed(2);
     date = tx.date;
-    category = tx.category || '1';
-    formAccountId = tx.accountId;
-    destinationAccountId = tx.destinationAccountId || 'cash';
+    category = tx.category ? String(tx.category) : '1';
+    formAccountId = reverseAccountMap[tx.accountId as any] || 'current';
+    destinationAccountId = reverseAccountMap[tx.destinationAccountId as any] || 'cash';
     paymentMethod = tx.paymentMethod;
     description = tx.description;
     reference = tx.reference || '';
+    accrualType = (tx as any).accrualType || 'normal';
+    accrualNote = (tx as any).accrualNote || '';
     targetSeasonId = tx.seasonId;
     showPanel = tx.type;
   }
@@ -120,7 +141,7 @@
     isSubmitting = true;
     errorMsg = '';
     try {
-      await submitTransaction(e, { editingId, showPanel, amount, date, category, formAccountId, destinationAccountId, paymentMethod, description, reference, targetSeasonId });
+      await submitTransaction(e, { editingId, showPanel, amount, date, category, formAccountId, destinationAccountId, paymentMethod, description, reference, accrualType, accrualNote, targetSeasonId });
     } catch (err: any) {
       errorMsg = err.message || 'Une erreur est survenue.';
       isSubmitting = false;
@@ -160,6 +181,7 @@
     {categories}
     {accountClasses}
     {unreconciledChequesOnly}
+    {searchQuery}
     onOpenPanel={openPanel}
     onApplySeasonChange={() => actionApplySeasonChange(selectedSeason)}
     onClearFilters={clearFilters}
@@ -167,7 +189,6 @@
 
   <!-- Barre d'onglets des comptes du Grand Livre centrée -->
 
-  <!-- Barre d'onglets des comptes du Grand Livre centrée -->
   <Tabs.Root value={selectedAccount || 'all'} onValueChange={handleAccountTabChange} class="w-full no-print">
     <Tabs.List class="grid w-full grid-cols-2 sm:grid-cols-4 max-w-2xl mx-auto mb-6">
       <Tabs.Trigger value="all">Tous les comptes</Tabs.Trigger>
@@ -177,12 +198,107 @@
     </Tabs.List>
   </Tabs.Root>
 
+  <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-end w-full no-print mb-4">
+    <div class="relative w-full sm:w-80">
+      <Input
+        type="text"
+        placeholder="Rechercher par libellé ou référence..."
+        value={searchQuery}
+        onkeydown={(e) => {
+          if (e.key === 'Enter') {
+            const val = (e.target as HTMLInputElement).value;
+            const params = new URLSearchParams(window.location.search);
+            if (val) params.set('search', val);
+            else params.delete('search');
+            params.set('page', '1');
+            window.location.href = `/admin/accounting?${params.toString()}`;
+          }
+        }}
+        class="pl-9 pr-8 bg-background border-border h-9"
+      />
+      <Search class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+      {#if searchQuery}
+        <button
+          type="button"
+          class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1 cursor-pointer"
+          onclick={() => {
+            const params = new URLSearchParams(window.location.search);
+            params.delete('search');
+            params.set('page', '1');
+            window.location.href = `/admin/accounting?${params.toString()}`;
+          }}
+        >
+          <X class="h-3 w-3" />
+        </button>
+      {/if}
+    </div>
+
+    <select
+      class="px-3 py-1.5 border border-border bg-background rounded-md text-sm font-medium focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9 w-full sm:w-auto"
+      value={month}
+      onchange={(e) => {
+        const val = (e.target as HTMLSelectElement).value;
+        const params = new URLSearchParams(window.location.search);
+        if (val) params.set('month', val);
+        else params.delete('month');
+        params.set('page', '1');
+        window.location.href = `/admin/accounting?${params.toString()}`;
+      }}
+    >
+      <option value="">Tous les mois</option>
+      <option value="01">Janvier</option>
+      <option value="02">Février</option>
+      <option value="03">Mars</option>
+      <option value="04">Avril</option>
+      <option value="05">Mai</option>
+      <option value="06">Juin</option>
+      <option value="07">Juillet</option>
+      <option value="08">Août</option>
+      <option value="09">Septembre</option>
+      <option value="10">Octobre</option>
+      <option value="11">Novembre</option>
+      <option value="12">Décembre</option>
+    </select>
+
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        {#snippet child({ props })}
+          <Button {...props} variant="outline" class="flex items-center gap-2 h-9 relative">
+            <Filter class="w-4 h-4" /> Filtres
+            {#if unreconciledChequesOnly}
+              <span class="flex h-2 w-2 rounded-full bg-primary absolute -top-1 -right-1"></span>
+            {/if}
+          </Button>
+        {/snippet}
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content class="w-72 p-4" align="end">
+        <div class="space-y-4">
+          <h4 class="font-medium text-sm leading-none">Filtres rapides</h4>
+          <div class="space-y-2">
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox
+                checked={unreconciledChequesOnly}
+                onCheckedChange={(v) => {
+                  const params = new URLSearchParams(window.location.search);
+                  if (v) params.set('unreconciledCheques', 'true');
+                  else params.delete('unreconciledCheques');
+                  params.set('page', '1');
+                  window.location.href = `/admin/accounting?${params.toString()}`;
+                }}
+              />
+              Chèques en circulation
+            </label>
+          </div>
+        </div>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+  </div>
+
   <TransactionLedgerTable
     {transactions}
     {pagination}
     {activeCategories}
     {isClosed}
-    {pageRange}
     onStartEdit={startEdit}
     onDelete={handleDelete}
     onChangePage={(p) => actionChangePage(p, pagination.totalPages)}
@@ -200,6 +316,8 @@
     bind:paymentMethod
     bind:description
     bind:reference
+    bind:accrualType
+    bind:accrualNote
     bind:targetSeasonId
     {seasons}
     {activeCategories}

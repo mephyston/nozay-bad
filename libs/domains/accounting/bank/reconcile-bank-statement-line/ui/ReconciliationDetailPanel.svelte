@@ -168,6 +168,8 @@
             bind:category={state.category}
             bind:paymentMethod={state.paymentMethod}
             bind:selectedMemberId={state.selectedMemberId}
+            bind:accrualType={state.accrualType}
+            bind:accrualNote={state.accrualNote}
             isSubmitting={state.isSubmitting}
             handleCreateAndMatch={state.handleCreateAndMatch}
             bind:isSplitMode={state.isSplitMode}

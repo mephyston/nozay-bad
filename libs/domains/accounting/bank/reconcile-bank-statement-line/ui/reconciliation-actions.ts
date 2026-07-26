@@ -128,11 +128,11 @@ export function createReconciliationActions(s: any) {
         const splitSumCents = s.splits.reduce((acc: number, sp: any) => acc + Math.round((sp.amount || 0) * 100), 0);
         if (Math.abs(splitSumCents - s.remainingAmount) > 10) throw new Error("Le montant total ventilé doit être égal au reste à rapprocher.");
         prepareNextFocus(targetBt.id, (s.remainingAmount - splitSumCents) <= 10);
-        await apiCreateAndMatchSplit(targetBt, memId, s.splits);
+        await apiCreateAndMatchSplit(targetBt, memId, s.splits, s.accrualType, s.accrualNote);
       } else {
         const linkedAmount = Math.round(s.amountToLink * 100);
         prepareNextFocus(targetBt.id, (s.remainingAmount - linkedAmount) <= 10);
-        await apiCreateAndMatchSingle(targetBt, memId, s.targetSeasonId, s.category, s.amountToLink, s.paymentMethod);
+        await apiCreateAndMatchSingle(targetBt, memId, s.targetSeasonId, s.category, s.amountToLink, s.paymentMethod, s.accrualType, s.accrualNote);
       }
       toast.success('Écriture créée et rapprochée avec succès !');
       if (typeof window !== 'undefined') window.location.reload();
@@ -156,7 +156,7 @@ export function createReconciliationActions(s: any) {
         resolvedCat = found ? found.id : '1';
       }
 
-      await apiCreateAndMatchSingle(tx, memberId, s.selectedSeason, resolvedCat, amountToLink, 'virement');
+      await apiCreateAndMatchSingle(tx, memberId, s.selectedSeason, resolvedCat, amountToLink, 'virement', 'normal', '');
       toast.success('Rapprochement IA appliqué !');
       if (typeof window !== 'undefined') window.location.reload();
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }

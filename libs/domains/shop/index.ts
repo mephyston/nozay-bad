@@ -6,6 +6,7 @@ import { listOrdersRoute } from './list-orders/route';
 import { createOrderRoute } from './create-order/route';
 import { approveOrderRoute } from './approve-order/route';
 import { rejectOrderRoute } from './reject-order/route';
+import { manageProductCategoriesRoute } from './manage-product-categories/route';
 
 export type Bindings = {
   DB: D1Database;
@@ -21,3 +22,4 @@ shopRouter.route('/', listOrdersRoute);
 shopRouter.route('/', createOrderRoute);
 shopRouter.route('/', approveOrderRoute);
 shopRouter.route('/', rejectOrderRoute);
+shopRouter.route('/', manageProductCategoriesRoute);

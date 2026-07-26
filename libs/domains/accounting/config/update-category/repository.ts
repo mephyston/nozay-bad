@@ -11,11 +11,13 @@ export class UpdateCategoryRepository {
     expenseAccountClassId?: number | null;
     receiptCode?: string | null;
     expenseCode?: string | null;
+    active?: boolean;
   }): Promise<any> {
     const updateData: any = {};
     if (values.adminLabel !== undefined) updateData.adminLabel = values.adminLabel;
     if (values.adherentLabel !== undefined) updateData.adherentLabel = values.adherentLabel;
     if (values.hideInExpenses !== undefined) updateData.hideInExpenses = values.hideInExpenses;
+    if (values.active !== undefined) updateData.active = values.active;
 
     if (values.receiptAccountClassId !== undefined) {
       updateData.receiptAccountClassId = values.receiptAccountClassId;

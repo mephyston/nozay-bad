@@ -1,28 +1,24 @@
 <script lang="ts">
-  import { Edit, Trash2, ShoppingBag, Search, MoreVertical, Plus } from "@lucide/svelte";
-  import { Button, Input, Badge, Card, Table, Amount } from "@nba/ui";
+  import { Edit, Trash2, ShoppingBag, Search, MoreHorizontal, Plus } from "@lucide/svelte";
+  import { Button, Input, Badge, Card, Table, Amount, DropdownMenu } from "@nba/ui";
   import type { Product } from './products-manager-types';
 
   let {
     filteredProducts = [],
     category,
     searchTerm = $bindable(''),
-    openDropdownId = $bindable(null),
-    onOpenAdd,
     onStartEdit,
     onToggleActive,
     onArchive,
-    onToggleDropdown
+    onOpenAdd
   }: {
-    filteredProducts: Product[];
+    filteredProducts?: Product[];
     category?: number | 'all';
-    searchTerm: string;
-    openDropdownId: number | null;
-    onOpenAdd?: () => void;
+    searchTerm?: string;
     onStartEdit: (p: Product) => void;
     onToggleActive: (p: Product) => void;
     onArchive: (p: Product) => void;
-    onToggleDropdown: (id: number, event: MouseEvent) => void;
+    onOpenAdd?: () => void;
   } = $props();
 
   function getCategoryLabel(product: Product): string {
@@ -130,7 +126,7 @@
     <!-- Vue Tableau pour Tablette / Desktop -->
     <div class="hidden sm:block overflow-x-auto min-h-[220px]">
       <Table.Root class="w-full text-left border-collapse text-sm">
-        <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
+        <Table.Header>
           <Table.Row>
             <Table.Head>Nom</Table.Head>
             {#if !category || category === 'all'}
@@ -150,7 +146,7 @@
             </Table.Row>
           {:else}
             {#each filteredProducts as product (product.id)}
-              <Table.Row class="hover:bg-muted/50 transition-colors">
+              <Table.Row>
                 <Table.Cell class="font-medium">
                   {product.name}
                 </Table.Cell>
@@ -181,38 +177,39 @@
                   </Button>
                 </Table.Cell>
                 <Table.Cell class="text-right relative">
-                  <div class="inline-block text-left">
-                    <Button 
-                      variant="ghost"
-                      size="icon"
-                      onclick={(e) => onToggleDropdown(product.id, e)} 
-                      class="text-muted-foreground hover:text-foreground h-8 w-8 cursor-pointer" 
-                      aria-label="Actions"
-                    >
-                      <MoreVertical class="w-4 h-4" />
-                    </Button>
+                  <DropdownMenu.Root>
+                    <DropdownMenu.Trigger asChild>
+                      {#snippet child({ props })}
+                        <Button 
+                          {...props}
+                          aria-haspopup="true"
+                          size="icon"
+                          variant="ghost"
+                        >
+                          <MoreHorizontal class="h-4 w-4" />
+                          <span class="sr-only">Toggle menu</span>
+                        </Button>
+                      {/snippet}
+                    </DropdownMenu.Trigger>
 
-                    {#if openDropdownId === product.id}
-                      <div class="absolute right-4 mt-1 w-32 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border">
-                        <Button
-                          variant="ghost"
-                          onclick={(e) => { e.stopPropagation(); onStartEdit(product); }}
-                          class="w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent justify-start h-auto"
-                        >
-                          <Edit class="w-3.5 h-3.5" />
-                          Modifier
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onclick={(e) => { e.stopPropagation(); onArchive(product); }}
-                          class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent justify-start h-auto"
-                        >
-                          <Trash2 class="w-3.5 h-3.5" />
-                          Désactiver
-                        </Button>
-                      </div>
-                    {/if}
-                  </div>
+                    <DropdownMenu.Content align="end">
+                      <DropdownMenu.Label>Actions</DropdownMenu.Label>
+                      <DropdownMenu.Item
+                        onclick={(e) => { e.stopPropagation(); onStartEdit(product); }}
+                        class="cursor-pointer"
+                      >
+                        <Edit class="w-3.5 h-3.5 mr-2" />
+                        Modifier
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item
+                        onclick={(e) => { e.stopPropagation(); onArchive(product); }}
+                        class="text-destructive focus:text-destructive cursor-pointer"
+                      >
+                        <Trash2 class="w-3.5 h-3.5 mr-2" />
+                        Désactiver
+                      </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Root>
                 </Table.Cell>
               </Table.Row>
             {/each}

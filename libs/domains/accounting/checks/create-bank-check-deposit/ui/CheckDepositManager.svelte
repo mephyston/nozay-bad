@@ -30,11 +30,6 @@
   let props: Props = $props();
   const depositState = createCheckDepositState(() => props);
 
-  $effect(() => {
-    const handleGlobalClick = () => { depositState.openDropdownId = null; };
-    window.addEventListener('click', handleGlobalClick);
-    return () => window.removeEventListener('click', handleGlobalClick);
-  });
 
   $effect(() => {
     if (depositState.showCreateDepositModal) {

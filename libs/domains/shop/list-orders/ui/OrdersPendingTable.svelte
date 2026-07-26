@@ -1,25 +1,21 @@
 <script lang="ts">
-  import { Check, X, Clock, MoreVertical } from "@lucide/svelte";
-  import { Button, Badge, Card, Table, Amount } from "@nba/ui";
+  import { Check, X, Clock, MoreHorizontal } from "@lucide/svelte";
+  import { Button, Badge, Card, Table, Amount, DropdownMenu } from "@nba/ui";
   import type { OrderItem } from './orders-manager-types';
   import { paymentMethodLabels } from './orders-manager-types';
 
   let {
     pendingOrders = [],
-    processingId,
-    isClosed,
-    openDropdownId = $bindable(null),
+    processingId = null,
+    isClosed = false,
     onApprove,
-    onReject,
-    onToggleDropdown
+    onReject
   }: {
-    pendingOrders: OrderItem[];
-    processingId: number | null;
-    isClosed: boolean;
-    openDropdownId: number | null;
+    pendingOrders?: OrderItem[];
+    processingId?: number | null;
+    isClosed?: boolean;
     onApprove: (id: number) => void;
     onReject: (id: number) => void;
-    onToggleDropdown: (id: number, event: MouseEvent) => void;
   } = $props();
 </script>
 
@@ -108,20 +104,20 @@
       <!-- Vue Tableau pour Tablette / Desktop -->
       <div class="hidden sm:block overflow-x-auto">
         <Table.Root class="w-full text-left border-collapse text-sm">
-          <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
-            <Table.Row>
-              <Table.Head>Date</Table.Head>
-              <Table.Head>Adhérent</Table.Head>
-              <Table.Head>Produit</Table.Head>
-              <Table.Head class="text-center">Qté</Table.Head>
-              <Table.Head>Règlement</Table.Head>
-              <Table.Head class="text-right">Montant</Table.Head>
-              <Table.Head class="text-right">Actions</Table.Head>
-            </Table.Row>
-          </Table.Header>
+        <Table.Header>
+          <Table.Row>
+            <Table.Head>Date</Table.Head>
+            <Table.Head>Adhérent</Table.Head>
+            <Table.Head>Produit</Table.Head>
+            <Table.Head class="text-center">Qté</Table.Head>
+            <Table.Head>Règlement</Table.Head>
+            <Table.Head class="text-right">Montant</Table.Head>
+            <Table.Head class="text-right">Actions</Table.Head>
+          </Table.Row>
+        </Table.Header>
           <Table.Body>
             {#each pendingOrders as item (item.order.id)}
-              <Table.Row class="hover:bg-muted/50 transition-colors">
+              <Table.Row>
                 <Table.Cell class="text-muted-foreground whitespace-nowrap">
                   {new Date(item.order.createdAt).toLocaleDateString('fr-FR')}
                 </Table.Cell>
@@ -156,40 +152,41 @@
                   <Amount cents={(item.order as any).totalAmountCents ?? item.order.totalAmount} />
                 </Table.Cell>
                 <Table.Cell class="text-right relative">
-                  <div class="inline-block text-left">
-                    <Button 
-                      variant="ghost"
-                      size="icon"
-                      onclick={(e) => onToggleDropdown(item.order.id, e)} 
-                      class="text-muted-foreground hover:text-foreground h-8 w-8 cursor-pointer" 
-                      aria-label="Actions"
-                    >
-                      <MoreVertical class="w-4 h-4" />
-                    </Button>
+                  <DropdownMenu.Root>
+                    <DropdownMenu.Trigger asChild>
+                      {#snippet child({ props })}
+                        <Button 
+                          {...props}
+                          aria-haspopup="true"
+                          size="icon"
+                          variant="ghost"
+                        >
+                          <MoreHorizontal class="h-4 w-4" />
+                          <span class="sr-only">Toggle menu</span>
+                        </Button>
+                      {/snippet}
+                    </DropdownMenu.Trigger>
 
-                    {#if openDropdownId === item.order.id}
-                      <div class="absolute right-4 mt-1 w-36 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border font-medium">
-                        <Button
-                          variant="ghost"
-                          onclick={() => onApprove(item.order.id)}
-                          disabled={processingId !== null || isClosed}
-                          class="w-full px-3 py-1.5 text-xs text-emerald-600 hover:bg-emerald-500/10 font-semibold flex items-center gap-1.5 cursor-pointer rounded-none justify-start h-auto bg-transparent border-0"
-                        >
-                          <Check class="w-3.5 h-3.5" />
-                          Valider
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onclick={() => onReject(item.order.id)}
-                          disabled={processingId !== null || isClosed}
-                          class="w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer rounded-none justify-start h-auto bg-transparent border-0"
-                        >
-                          <X class="w-3.5 h-3.5" />
-                          Refuser
-                        </Button>
-                      </div>
-                    {/if}
-                  </div>
+                    <DropdownMenu.Content align="end">
+                      <DropdownMenu.Label>Actions</DropdownMenu.Label>
+                      <DropdownMenu.Item
+                        onclick={() => onApprove(item.order.id)}
+                        disabled={processingId !== null || isClosed}
+                        class="text-emerald-600 focus:text-emerald-600 font-semibold cursor-pointer"
+                      >
+                        <Check class="w-3.5 h-3.5 mr-2" />
+                        Valider
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item
+                        onclick={() => onReject(item.order.id)}
+                        disabled={processingId !== null || isClosed}
+                        class="text-destructive focus:text-destructive font-semibold cursor-pointer"
+                      >
+                        <X class="w-3.5 h-3.5 mr-2" />
+                        Refuser
+                      </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Root>
                 </Table.Cell>
               </Table.Row>
             {/each}

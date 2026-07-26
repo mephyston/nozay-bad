@@ -83,7 +83,7 @@ export class InvoiceFormState {
       if (isNaN(q) || q <= 0) {
         return `La quantité de la ligne ${i + 1} doit être supérieure à 0.`;
       }
-      const p = parseFloat(item.unitPriceStr);
+      const p = parseFloat(item.unitPriceStr.replace(',', '.'));
       if (isNaN(p) || p < 0) {
         return `Le prix unitaire de la ligne ${i + 1} doit être un nombre supérieur ou égal à 0.`;
       }

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Calendar, Plus } from "@lucide/svelte";
-  import { Button, Input, Badge, Sheet } from "@nba/ui";
+  import { Button, Input, Badge, Sheet, AlertDialog } from "@nba/ui";
 
   let {
     seasons = [],
@@ -27,6 +27,15 @@
   function handleSubmit(e: Event) {
     onCreateSeason(e);
     showAddSheet = false;
+  }
+
+  let closingSeasonId = $state<string | null>(null);
+
+  function handleConfirmClose() {
+    if (closingSeasonId) {
+      onCloseSeason(closingSeasonId);
+      closingSeasonId = null;
+    }
   }
 </script>
 
@@ -61,7 +70,7 @@
             <Button
               variant="destructive"
               size="xs"
-              onclick={() => onCloseSeason(s.id)}
+              onclick={() => closingSeasonId = s.id}
               disabled={isSubmitting}
             >
               Clôturer
@@ -127,3 +136,26 @@
     </Sheet.Content>
   </Sheet.Root>
 </div>
+
+<AlertDialog.Root open={!!closingSeasonId} onOpenChange={(o) => { if(!o) closingSeasonId = null; }}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>Clôturer la saison {closingSeasonId} ?</AlertDialog.Title>
+      <AlertDialog.Description>
+        Êtes-vous sûr de vouloir clôturer définitivement cette saison ?
+        Cette action est irréversible et bloquera toute modification comptable pour cette période.
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel>Annuler</AlertDialog.Cancel>
+      <AlertDialog.Action 
+        onclick={handleConfirmClose} 
+        class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+        disabled={isSubmitting}
+      >
+        Clôturer définitivement
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>
+

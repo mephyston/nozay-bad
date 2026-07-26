@@ -14,6 +14,7 @@ export interface Category {
   adminLabel: string;
   adherentLabel: string;
   hideInExpenses: boolean;
+  active?: boolean;
   receiptCode?: string | null;
   expenseCode?: string | null;
 }
@@ -22,4 +23,12 @@ export interface AccountClass {
   code: string;
   label: string;
   type: 'recette' | 'depense';
+}
+
+export interface ProductCategory {
+  id: number;
+  label: string;
+  accountingCategoryId: number;
+  active: boolean;
+  createdAt: string;
 }

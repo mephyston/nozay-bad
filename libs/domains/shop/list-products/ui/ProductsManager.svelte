@@ -1,3 +1,7 @@
+<script module>
+  export * from './products-manager-types';
+  export * from './products-manager-actions';
+</script>
 <script lang="ts">
   import { Plus, Edit } from "@lucide/svelte";
   import { Sheet, toast } from "@nba/ui";
@@ -5,9 +9,6 @@
   import { submitProduct, toggleProductActive, archiveProduct } from './products-manager-actions';
   import ProductFormCard from './ProductFormCard.svelte';
   import ProductListTable from './ProductListTable.svelte';
-
-  export * from './products-manager-types';
-  export * from './products-manager-actions';
 
   let {
     category,
@@ -118,19 +119,6 @@
       toast.error(err.message);
     }
   }
-
-  let openDropdownId = $state<number | null>(null);
-
-  function toggleDropdown(id: number, e: MouseEvent) {
-    e.stopPropagation();
-    openDropdownId = openDropdownId === id ? null : id;
-  }
-
-  $effect(() => {
-    const handleGlobalClick = () => { openDropdownId = null; };
-    window.addEventListener('click', handleGlobalClick);
-    return () => window.removeEventListener('click', handleGlobalClick);
-  });
 </script>
 
 <div class="space-y-6">
@@ -138,12 +126,10 @@
     {filteredProducts}
     {category}
     bind:searchTerm
-    bind:openDropdownId
     onOpenAdd={openAddForm}
-    onStartEdit={(p) => { startEdit(p); openDropdownId = null; }}
+    onStartEdit={(p) => { startEdit(p); }}
     onToggleActive={handleToggleActive}
-    onArchive={(p) => { handleArchive(p); openDropdownId = null; }}
-    onToggleDropdown={toggleDropdown}
+    onArchive={(p) => { handleArchive(p); }}
   />
 </div>
 

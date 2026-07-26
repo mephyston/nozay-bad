@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, AlertCircle } from '@lucide/svelte';
-  import { Alert } from '@nba/ui';
+  import { Alert, AlertDialog } from '@nba/ui';
   import type { Invoice, Season } from './invoices-types';
   import { InvoiceFormState } from './invoices-form-state.svelte';
   import * as api from './invoices-api';
@@ -46,7 +46,7 @@
   const itemsTotal = $derived(
     form.items.reduce((sum, item) => {
       const q = item.quantity || 0;
-      const p = parseFloat(item.unitPriceStr) || 0;
+      const p = parseFloat(item.unitPriceStr.replace(',', '.')) || 0;
       return sum + (q * Math.round(p * 100));
     }, 0)
   );
@@ -107,12 +107,20 @@
     }
   }
 
-  async function handleStatusChange(id: number, newStatus: 'sent' | 'cancelled') {
+  let statusDialogData = $state<{ id: number; newStatus: 'sent' | 'cancelled'; msg: string } | null>(null);
+  let deleteDialogData = $state<{ id: number; msg: string } | null>(null);
+
+  function handleStatusChange(id: number, newStatus: 'sent' | 'cancelled') {
     const confirmMsg = newStatus === 'cancelled' 
       ? "Êtes-vous sûr de vouloir annuler cette facture ?" 
       : "Êtes-vous sûr de vouloir marquer cette facture comme envoyée ?";
-    if (!confirm(confirmMsg)) return;
+    statusDialogData = { id, newStatus, msg: confirmMsg };
+  }
 
+  async function confirmStatusChange() {
+    if (!statusDialogData) return;
+    const { id, newStatus } = statusDialogData;
+    statusDialogData = null;
     try {
       successMsg = await api.updateInvoiceStatus(id, newStatus);
       setTimeout(() => {
@@ -123,9 +131,14 @@
     }
   }
 
-  async function handleDelete(id: number, num: string) {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer définitivement la facture ${num} ?`)) return;
+  function handleDelete(id: number, num: string) {
+    deleteDialogData = { id, msg: `Êtes-vous sûr de vouloir supprimer définitivement la facture ${num} ?` };
+  }
 
+  async function confirmDelete() {
+    if (!deleteDialogData) return;
+    const { id } = deleteDialogData;
+    deleteDialogData = null;
     try {
       successMsg = await api.deleteInvoice(id);
       setTimeout(() => {
@@ -191,3 +204,39 @@
   {itemsTotal}
   onSubmit={handleSubmit}
 />
+
+<AlertDialog.Root open={!!statusDialogData} onOpenChange={(o) => { if(!o) statusDialogData = null; }}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>Confirmation</AlertDialog.Title>
+      <AlertDialog.Description>
+        {statusDialogData?.msg}
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel>Annuler</AlertDialog.Cancel>
+      <AlertDialog.Action onclick={confirmStatusChange} class="bg-primary text-primary-foreground hover:bg-primary/90">
+        Confirmer
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>
+
+<AlertDialog.Root open={!!deleteDialogData} onOpenChange={(o) => { if(!o) deleteDialogData = null; }}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>Suppression</AlertDialog.Title>
+      <AlertDialog.Description>
+        {deleteDialogData?.msg}
+        <br/><br/>
+        Cette action est irréversible.
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel>Annuler</AlertDialog.Cancel>
+      <AlertDialog.Action onclick={confirmDelete} class="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+        Supprimer
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>

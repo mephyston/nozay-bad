@@ -36,6 +36,7 @@ export const categoriesTable = sqliteTable('categories', {
   hideInExpenses: integer('hide_in_expenses', { mode: 'boolean' }).notNull().default(false),
   receiptAccountClassId: integer('receipt_account_class_id').references(() => accountClassesTable.id),
   expenseAccountClassId: integer('expense_account_class_id').references(() => accountClassesTable.id),
+  active: integer('active', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 

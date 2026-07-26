@@ -1,3 +1,8 @@
+<script module>
+  export * from './poona-importer-types';
+  export * from './poona-importer-parser';
+</script>
+
 <script lang="ts">
   import { Upload, AlertCircle, RefreshCw, FileText } from '@lucide/svelte';
   import { Button, Card, Alert } from '@nba/ui';
@@ -5,9 +10,6 @@
   import { parseCsvContent } from './poona-importer-parser';
   import PoonaImporterResults from './PoonaImporterResults.svelte';
   import PoonaImporterPreview from './PoonaImporterPreview.svelte';
-
-  export * from './poona-importer-types';
-  export * from './poona-importer-parser';
 
   let { result = null, error = null }: { result: ImportResult | null; error: string | null } = $props();
 

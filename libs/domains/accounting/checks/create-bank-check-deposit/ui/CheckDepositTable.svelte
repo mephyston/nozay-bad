@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Search, Link, MoreVertical, Trash2, FileText } from '@lucide/svelte';
-  import { Button, Table, Input, Card, Checkbox, Amount, Popover } from '@nba/ui';
+  import { Search, Link, MoreHorizontal, Trash2, FileText } from '@lucide/svelte';
+  import { Button, Table, Input, Card, Checkbox, Amount, DropdownMenu } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
 
   interface Props {
@@ -12,33 +12,34 @@
   let { depositState, seasonId, onDeleteCheck }: Props = $props();
 </script>
 
+<div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-2">
+  <div class="relative w-full sm:w-96">
+    <Input
+      type="text"
+      placeholder="Rechercher par numéro, émetteur, banque, adhérent..."
+      bind:value={depositState.checkSearchQuery}
+      class="pl-9 pr-8 bg-background border-border"
+    />
+    <Search class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+    {#if depositState.checkSearchQuery}
+      <button
+        type="button"
+        class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+        onclick={() => depositState.checkSearchQuery = ''}
+      >
+        ✕
+      </button>
+    {/if}
+  </div>
+</div>
+
 <Card.Root class="overflow-hidden shadow-sm">
   <Card.Content class="p-0">
-    <div class="p-3 border-b border-border bg-muted/40">
-      <div class="relative">
-        <Input
-          type="text"
-          placeholder="Rechercher par numéro, émetteur, banque, adhérent..."
-          bind:value={depositState.checkSearchQuery}
-          class="h-8 text-xs pl-3 pr-8"
-        />
-        {#if depositState.checkSearchQuery}
-          <button
-            type="button"
-            class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
-            onclick={() => depositState.checkSearchQuery = ''}
-          >
-            ✕
-          </button>
-        {/if}
-      </div>
-    </div>
-
     <div class="overflow-x-auto min-h-[180px]">
       <Table.Root class="w-full text-left border-collapse text-sm">
-        <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
+        <Table.Header>
           <Table.Row>
-            <Table.Head class="p-4 w-10">
+            <Table.Head class="w-10">
               <Checkbox
                 checked={depositState.filteredChecks.length > 0 && depositState.filteredChecks.every(c => depositState.selectedCheckIds[c.id])}
                 onCheckedChange={(val) => {
@@ -48,19 +49,19 @@
                 disabled={depositState.isClosed}
               />
             </Table.Head>
-            <Table.Head class="p-4">Date de réception</Table.Head>
-            <Table.Head class="p-4">N° Chèque</Table.Head>
-            <Table.Head class="p-4">Banque</Table.Head>
-            <Table.Head class="p-4">Émetteur</Table.Head>
-            <Table.Head class="p-4">Adhérent associé</Table.Head>
-            <Table.Head class="p-4 text-right">Montant</Table.Head>
-            <Table.Head class="p-4 text-right">Actions</Table.Head>
+            <Table.Head>Date de réception</Table.Head>
+            <Table.Head>N° Chèque</Table.Head>
+            <Table.Head>Banque</Table.Head>
+            <Table.Head>Émetteur</Table.Head>
+            <Table.Head>Adhérent associé</Table.Head>
+            <Table.Head class="text-right">Montant</Table.Head>
+            <Table.Head class="text-right">Actions</Table.Head>
           </Table.Row>
         </Table.Header>
-        <Table.Body class="divide-y divide-border">
+        <Table.Body>
           {#each depositState.filteredChecks as check}
-            <Table.Row class="hover:bg-muted/50 transition-colors">
-              <Table.Cell class="p-4">
+            <Table.Row>
+              <Table.Cell>
                 <Checkbox
                   checked={!!depositState.selectedCheckIds[check.id]}
                   onCheckedChange={(val) => {
@@ -69,13 +70,13 @@
                   disabled={depositState.isClosed}
                 />
               </Table.Cell>
-              <Table.Cell class="p-4 text-muted-foreground">
+              <Table.Cell class="text-muted-foreground">
                 {new Date(check.createdAt).toLocaleDateString('fr-FR')}
               </Table.Cell>
-              <Table.Cell class="p-4 font-medium">{check.number}</Table.Cell>
-              <Table.Cell class="p-4">{check.bank || '—'}</Table.Cell>
-              <Table.Cell class="p-4 font-medium">{check.emitter}</Table.Cell>
-              <Table.Cell class="p-4">
+              <Table.Cell class="font-medium">{check.number}</Table.Cell>
+              <Table.Cell>{check.bank || '—'}</Table.Cell>
+              <Table.Cell class="font-medium">{check.emitter}</Table.Cell>
+              <Table.Cell>
                 {#if check.memberId && check.memberName}
                   <a
                     href={`/admin/members/${check.memberLicence}?season=${seasonId}`}
@@ -88,35 +89,37 @@
                   <span class="text-xs text-muted-foreground italic">Non associé</span>
                 {/if}
               </Table.Cell>
-              <Table.Cell class="p-4 text-right font-bold text-foreground">
+              <Table.Cell class="text-right font-bold text-foreground">
                 <Amount cents={(check as any).amountCents ?? check.amount} />
               </Table.Cell>
-              <Table.Cell class="p-4 text-right">
+              <Table.Cell class="text-right">
                 {#if !depositState.isClosed}
-                  <Popover.Root>
-                    <Popover.Trigger>
-                      <Button 
-                        variant="ghost"
-                        size="icon"
-                        class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
-                        aria-label="Actions"
-                      >
-                        <MoreVertical class="w-4 h-4" />
-                      </Button>
-                    </Popover.Trigger>
+                  <DropdownMenu.Root>
+                    <DropdownMenu.Trigger asChild>
+                      {#snippet child({ props })}
+                        <Button 
+                          {...props}
+                          aria-haspopup="true"
+                          size="icon"
+                          variant="ghost"
+                        >
+                          <MoreHorizontal class="h-4 w-4" />
+                          <span class="sr-only">Toggle menu</span>
+                        </Button>
+                      {/snippet}
+                    </DropdownMenu.Trigger>
 
-                    <Popover.Content class="w-32 p-1 bg-popover border border-border rounded-lg shadow-xl z-50 text-left divide-y divide-border" align="end">
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                    <DropdownMenu.Content align="end">
+                      <DropdownMenu.Label>Actions</DropdownMenu.Label>
+                      <DropdownMenu.Item
                         onclick={() => onDeleteCheck(check.id)}
-                        class="w-full justify-start rounded-none px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent h-auto"
+                        class="text-destructive focus:text-destructive cursor-pointer"
                       >
-                        <Trash2 class="w-3.5 h-3.5" />
+                        <Trash2 class="w-3.5 h-3.5 mr-2" />
                         Supprimer
-                      </Button>
-                    </Popover.Content>
-                  </Popover.Root>
+                      </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Root>
                 {:else}
                   <span class="text-xs text-muted-foreground italic">Aucune</span>
                 {/if}

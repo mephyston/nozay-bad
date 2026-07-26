@@ -52,8 +52,17 @@ export interface AccountClass {
 export const accountLabels: Record<string, string> = {
   current: 'Compte Courant',
   savings: 'Compte Livret',
-  cash: 'Caisse Physique'
+  cash: 'Caisse Physique',
+  '1': 'Compte Courant',
+  '2': 'Compte Livret',
+  '3': 'Caisse Physique'
 };
+
+export const formAccountOptions = [
+  { value: 'current', label: 'Compte Courant' },
+  { value: 'savings', label: 'Compte Livret' },
+  { value: 'cash', label: 'Caisse Physique' }
+];
 
 export const methodLabels: Record<string, string> = {
   virement: 'Virement',

@@ -1,11 +1,11 @@
+<script module>
+  export * from './members-table-types';
+</script>
 <script lang="ts">
-  import { User, MoreVertical, Eye, ChevronRight } from '@lucide/svelte';
-  import { Table, Button, Badge, Popover } from '@nba/ui';
+  import { User, MoreHorizontal, Eye, ChevronRight } from '@lucide/svelte';
+  import { Table, Button, Badge, Card, DropdownMenu } from '@nba/ui';
   import type { Member, Pagination, Filters, Season } from './members-table-types';
   import MembersTableFiltersPopover from './MembersTableFiltersPopover.svelte';
-  import MembersTablePagination from './MembersTablePagination.svelte';
-
-  export * from './members-table-types';
 
   let { data = [], pagination, filters, seasons = [] }: { data: Member[]; pagination: Pagination; filters: Filters; seasons?: Season[] } = $props();
 
@@ -66,9 +66,9 @@
     onReset={resetFilters}
   />
 
-  <div class="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+  <Card.Root class="overflow-hidden shadow-sm">
     <!-- Vue Compacte Cliquable pour Mobile -->
-    <div class="block sm:hidden divide-y divide-border">
+    <Card.Content class="p-0 block sm:hidden divide-y divide-border">
       {#each data as member}
         <div class="flex items-center justify-between p-3.5 hover:bg-muted/50 transition-colors">
           <a
@@ -98,48 +98,51 @@
           </a>
 
           <div class="flex items-center gap-1 shrink-0 ml-2">
-            <Popover.Root>
-              <Popover.Trigger>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
                 {#snippet child({ props })}
                   <Button 
                     {...props}
+                    aria-haspopup="true"
+                    size="icon"
                     variant="ghost"
-                    size="icon-sm"
-                    class="text-muted-foreground hover:text-foreground cursor-pointer h-9 w-9" 
-                    aria-label="Actions"
                   >
-                    <MoreVertical class="w-4 h-4" />
+                    <MoreHorizontal class="w-4 h-4" />
+                    <span class="sr-only">Toggle menu</span>
                   </Button>
                 {/snippet}
-              </Popover.Trigger>
-              <Popover.Content class="w-44 p-1 z-50 bg-popover border border-border" align="end">
-                <div class="flex flex-col">
-                  <a
-                    href={`/admin/members/${member.licence}?season=${filters.season || '25-26'}`}
-                    class="px-3 py-2 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-2 cursor-pointer no-underline rounded-md"
-                  >
-                    <Eye class="w-4 h-4 text-primary" />
-                    Voir la fiche
-                  </a>
-                  {#if member.paid}
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content class="w-44" align="end">
+                  <DropdownMenu.Label>Actions</DropdownMenu.Label>
+                  <DropdownMenu.Item asChild>
                     <a
-                      href={`/admin/accounting/attestations/${member.id}`}
-                      target="_blank"
-                      onclick={(e) => {
-                        e.preventDefault();
-                        window.open(`/admin/accounting/attestations/${member.id}`, '_blank');
-                      }}
-                      class="px-3 py-2 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-2 cursor-pointer no-underline rounded-md"
+                      href={`/admin/members/${member.licence}?season=${filters.season || '25-26'}`}
+                      class="cursor-pointer flex items-center w-full"
                     >
-                      <svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      Attestation CSE
+                      <Eye class="w-4 h-4 text-primary mr-2" />
+                      Voir la fiche
                     </a>
+                  </DropdownMenu.Item>
+                  {#if member.paid}
+                    <DropdownMenu.Item asChild>
+                      <a
+                        href={`/admin/accounting/attestations/${member.id}`}
+                        target="_blank"
+                        onclick={(e) => {
+                          e.preventDefault();
+                          window.open(`/admin/accounting/attestations/${member.id}`, '_blank');
+                        }}
+                        class="cursor-pointer flex items-center w-full"
+                      >
+                        <svg class="w-4 h-4 text-muted-foreground mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Attestation CSE
+                      </a>
+                    </DropdownMenu.Item>
                   {/if}
-                </div>
-              </Popover.Content>
-            </Popover.Root>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
 
             <a
               href={`/admin/members/${member.licence}?season=${filters.season || '25-26'}`}
@@ -155,10 +158,10 @@
           Aucun adhérent ne correspond à ces critères de recherche.
         </div>
       {/each}
-    </div>
+    </Card.Content>
 
     <!-- Vue Tableau pour Tablette / Desktop -->
-    <div class="hidden sm:block overflow-x-auto min-h-[150px]">
+    <Card.Content class="p-0 hidden sm:block overflow-x-auto min-h-[150px]">
       <Table.Root>
         <Table.Header>
           <Table.Row>
@@ -172,7 +175,7 @@
         </Table.Header>
         <Table.Body>
           {#each data as member}
-            <Table.Row class="hover:bg-muted/50 transition-colors">
+            <Table.Row>
               <Table.Cell class="font-medium">
                 <a
                   href={`/admin/members/${member.licence}?season=${filters.season || '25-26'}`}
@@ -206,48 +209,51 @@
                 {/if}
               </Table.Cell>
               <Table.Cell class="text-right">
-                <Popover.Root>
-                  <Popover.Trigger>
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger asChild>
                     {#snippet child({ props })}
                       <Button 
                         {...props}
+                        aria-haspopup="true"
+                        size="icon"
                         variant="ghost"
-                        size="icon-sm"
-                        class="text-muted-foreground hover:text-foreground cursor-pointer" 
-                        aria-label="Actions"
                       >
-                        <MoreVertical class="w-4 h-4" />
+                        <MoreHorizontal class="w-4 h-4" />
+                        <span class="sr-only">Toggle menu</span>
                       </Button>
                     {/snippet}
-                  </Popover.Trigger>
-                  <Popover.Content class="w-40 p-1 z-50 bg-popover border border-border" align="end">
-                    <div class="flex flex-col">
-                      <a
-                        href={`/admin/members/${member.licence}?season=${filters.season || '25-26'}`}
-                        class="px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer no-underline rounded-md"
-                      >
-                        <Eye class="w-3.5 h-3.5" />
-                        Voir profil
-                      </a>
-                      {#if member.paid}
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content class="w-44" align="end">
+                      <DropdownMenu.Label>Actions</DropdownMenu.Label>
+                      <DropdownMenu.Item asChild>
                         <a
-                          href={`/admin/accounting/attestations/${member.id}`}
-                          target="_blank"
-                          onclick={(e) => {
-                            e.preventDefault();
-                            window.open(`/admin/accounting/attestations/${member.id}`, '_blank');
-                          }}
-                          class="px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer no-underline rounded-md"
+                          href={`/admin/members/${member.licence}?season=${filters.season || '25-26'}`}
+                          class="cursor-pointer flex items-center w-full"
                         >
-                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          Attestation CSE
+                          <Eye class="w-3.5 h-3.5 mr-2" />
+                          Voir profil
                         </a>
+                      </DropdownMenu.Item>
+                      {#if member.paid}
+                        <DropdownMenu.Item asChild>
+                          <a
+                            href={`/admin/accounting/attestations/${member.id}`}
+                            target="_blank"
+                            onclick={(e) => {
+                              e.preventDefault();
+                              window.open(`/admin/accounting/attestations/${member.id}`, '_blank');
+                            }}
+                            class="cursor-pointer flex items-center w-full"
+                          >
+                            <svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Attestation CSE
+                          </a>
+                        </DropdownMenu.Item>
                       {/if}
-                    </div>
-                  </Popover.Content>
-                </Popover.Root>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
               </Table.Cell>
             </Table.Row>
           {:else}
@@ -259,8 +265,10 @@
           {/each}
         </Table.Body>
       </Table.Root>
-    </div>
+    </Card.Content>
 
-    <MembersTablePagination {pagination} onChangePage={changePage} />
-  </div>
+    <Card.Footer class="p-4 border-t border-border">
+      <Table.Pagination {pagination} onChangePage={changePage} itemName="adhérent(s)" />
+    </Card.Footer>
+  </Card.Root>
 </div>

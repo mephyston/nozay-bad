@@ -1,6 +1,6 @@
 import { type DbOrTx } from '@nba/db';
-import { and, or, eq, sql, inArray, isNull, desc } from 'drizzle-orm';
-import { ledgerEntriesTable, categoriesTable, seasonsTable } from '../../shared/schema';
+import { and, or, eq, sql, inArray, isNull, desc, like } from 'drizzle-orm';
+import { ledgerEntriesTable, categoriesTable, seasonsTable, bankStatementLinesTable } from '../../shared/schema';
 import { getMembersByIds } from '@nba/members-api';
 import type { ListTransactionsFilters } from './dto';
 
@@ -38,6 +38,16 @@ export class ListTransactionsRepository {
         eq(ledgerEntriesTable.paymentMethodId, 2),
         isNull(ledgerEntriesTable.bankStatementLineId)
       );
+    }
+    if (filters.search) {
+      const term = `%${filters.search}%`;
+      conditions.push(or(
+        like(ledgerEntriesTable.description, term),
+        like(ledgerEntriesTable.reference, term)
+      ) as any);
+    }
+    if (filters.month) {
+      conditions.push(like(ledgerEntriesTable.date, `%-${filters.month}-%`));
     }
     return conditions;
   }
@@ -88,11 +98,12 @@ export class ListTransactionsRepository {
       date: ledgerEntriesTable.date,
       paymentMethod: sql<string>`'cheque'`,
       description: ledgerEntriesTable.description,
-      reference: ledgerEntriesTable.reference,
+      reference: sql<string>`COALESCE(${bankStatementLinesTable.memo}, ${bankStatementLinesTable.name}, ${ledgerEntriesTable.reference})`,
       memberId: ledgerEntriesTable.memberId,
       bankStatementLineId: ledgerEntriesTable.bankStatementLineId
     })
       .from(ledgerEntriesTable)
+      .leftJoin(bankStatementLinesTable, eq(ledgerEntriesTable.bankStatementLineId, bankStatementLinesTable.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(ledgerEntriesTable.date), desc(ledgerEntriesTable.id))
       .limit(pagination.limit)

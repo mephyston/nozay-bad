@@ -10,7 +10,7 @@ export function showMessage(state: SettingsState, success: string, error = '') {
   if (success) {
     setTimeout(() => {
       window.location.reload();
-    }, 1000);
+    }, 2000);
   }
 }
 
@@ -24,7 +24,7 @@ export async function createAccountClass(state: SettingsState, data: { code: str
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/accounting/settings', {
+    const res = await fetch('/admin/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -56,7 +56,7 @@ export async function updateAccountClass(state: SettingsState, code: string, upd
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/accounting/settings', {
+    const res = await fetch('/admin/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -79,13 +79,12 @@ export async function updateAccountClass(state: SettingsState, code: string, upd
 }
 
 export async function deleteAccountClass(state: SettingsState, code: string) {
-  if (!confirm('Voulez-vous vraiment supprimer cette classe de compte ?')) return;
   state.isSubmitting = true;
   state.errorMsg = '';
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/accounting/settings', {
+    const res = await fetch('/admin/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
