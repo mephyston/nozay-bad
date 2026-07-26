@@ -28,7 +28,7 @@
   <!-- Vue Cartes pour Mobile -->
   <Card.Content class="p-0 block sm:hidden divide-y divide-border">
     {#each transactions as tx}
-      <div class="p-4 space-y-2 bg-card">
+      <div class="p-4 space-y-2 bg-card" id="tx-mobile-{tx.id}">
         <div class="flex items-start justify-between gap-2">
           <div>
             <div class="flex items-center gap-2 mb-1">
@@ -60,6 +60,11 @@
           <div class="text-muted-foreground">
             Catégorie: <span class="font-medium text-foreground">{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</span>
           </div>
+          {#if tx.runningBalanceCents !== undefined}
+            <div class="text-muted-foreground ml-auto">
+              Solde: <Amount cents={tx.runningBalanceCents} class="font-bold text-foreground" />
+            </div>
+          {/if}
           {#if tx.bankStatementLineId}
             <Badge variant="outline" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold border-transparent">
               <Check class="w-2.5 h-2.5" /> Rapprochée
@@ -104,16 +109,16 @@
         <Table.Row>
           <Table.Head>Date</Table.Head>
           <Table.Head>Type</Table.Head>
-          <Table.Head>Compte(s)</Table.Head>
           <Table.Head>Catégorie</Table.Head>
           <Table.Head>Libellé</Table.Head>
           <Table.Head class="text-right">Montant</Table.Head>
+          <Table.Head class="text-right">Solde</Table.Head>
           <Table.Head class="text-right">Actions</Table.Head>
         </Table.Row>
       </Table.Header>
       <Table.Body>
         {#each transactions as tx}
-          <Table.Row>
+          <Table.Row id="tx-desktop-{tx.id}">
             <Table.Cell>{tx.date}</Table.Cell>
             <Table.Cell>
               {#if tx.type === 'recette'}
@@ -122,13 +127,6 @@
                 <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-destructive/15 text-destructive border-transparent">Dépense</Badge>
               {:else}
                 <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-primary/15 text-primary border-transparent">Transfert</Badge>
-              {/if}
-            </Table.Cell>
-            <Table.Cell>
-              {#if tx.type === 'transfert'}
-                <span class="text-xs">{accountLabels[tx.accountId]} ➔ {accountLabels[tx.destinationAccountId!]}</span>
-              {:else}
-                <span class="text-xs">{accountLabels[tx.accountId]}</span>
               {/if}
             </Table.Cell>
             <Table.Cell>{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</Table.Cell>
@@ -158,6 +156,13 @@
                 <Amount cents={-((tx as any).amountCents ?? tx.amount)} showSign colored />
               {:else}
                 <Amount cents={(tx as any).amountCents ?? tx.amount} class="text-muted-foreground" />
+              {/if}
+            </Table.Cell>
+            <Table.Cell class="text-right">
+              {#if tx.runningBalanceCents !== undefined}
+                <Amount cents={tx.runningBalanceCents} class="font-bold text-foreground" />
+              {:else}
+                <span class="text-muted-foreground">-</span>
               {/if}
             </Table.Cell>
             <Table.Cell class="text-right relative">

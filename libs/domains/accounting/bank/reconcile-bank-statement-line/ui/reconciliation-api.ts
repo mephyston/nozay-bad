@@ -114,7 +114,7 @@ export async function apiMatchLedgerEntry(btId: number, ledgerEntryId: number, m
   if (!res.ok) throw new Error('Erreur association.');
 }
 
-export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: number | null, splits: { category: string; amount: number }[], accrualType: string, accrualNote: string): Promise<void> {
+export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: number | null, targetSeasonId: string, paymentMethod: string, splits: { category: string; amount: number }[], accrualType: string, accrualNote: string): Promise<void> {
   const res = await fetch('/admin/accounting/import', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -123,13 +123,13 @@ export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: nu
       btId: bt.id,
       memberId,
       transactions: splits.map((s, index) => ({
-        seasonId: bt.accountId,
-        type: bt.amount < 0 ? 'depense' : 'recette',
-        accountId: bt.accountId,
+        seasonId: targetSeasonId,
+        type: ((bt as any).amountCents ?? bt.amount ?? 0) < 0 ? 'depense' : 'recette',
+        accountId: bt.accountId || 'current',
         category: s.category,
         amount: Math.round(s.amount * 100),
         date: bt.date,
-        paymentMethod: 'virement',
+        paymentMethod: paymentMethod || 'virement',
         description: `${bt.name} (Partie ${index + 1})`,
         reference: bt.memo || bt.fitid,
         accrualType,
@@ -137,7 +137,10 @@ export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: nu
       }))
     })
   });
-  if (!res.ok) throw new Error('Erreur création.');
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(errText || 'Erreur création.');
+  }
 }
 
 export async function apiCreateAndMatchSingle(

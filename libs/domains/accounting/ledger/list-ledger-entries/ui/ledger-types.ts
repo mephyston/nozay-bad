@@ -14,6 +14,7 @@ export interface Transaction {
   bankStatementLineId?: number | null;
   memberName?: string | null;
   memberLicence?: string | null;
+  runningBalanceCents?: number;
 }
 
 export interface Pagination {

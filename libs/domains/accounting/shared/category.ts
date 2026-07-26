@@ -83,7 +83,7 @@ export function resolveCategoryMap(categories: CategoryLike[]): CategoryMap {
     sponsoring: findId(['sponsoring', 'partenariat'], 'sponsoring'),
     subventions: findId(['subvention'], 'subventions'),
     actionsJeunes: findId(['jeune', 'jeunes', 'activités jeunes'], 'actionsJeunes'),
-    tournoisSenior: findId(['tournois senior', 'tournoi senior', 'tournois'], 'tournoisSenior'),
+    tournoisSenior: findId(['tournois senior', 'tournoi senior', 'tournois', 'tournoi', 'hivers', 'eté', 'dep'], 'tournoisSenior'),
     buvette: findId(['buvette', 'buvettes', 'événement', 'evenement'], 'buvette'),
     cordage: findId(['cordage', 'cordages'], 'cordage'),
     volants: findId(['volant', 'volants'], 'volants'),

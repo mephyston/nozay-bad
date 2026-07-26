@@ -128,7 +128,7 @@ export function createReconciliationActions(s: any) {
         const splitSumCents = s.splits.reduce((acc: number, sp: any) => acc + Math.round((sp.amount || 0) * 100), 0);
         if (Math.abs(splitSumCents - s.remainingAmount) > 10) throw new Error("Le montant total ventilé doit être égal au reste à rapprocher.");
         prepareNextFocus(targetBt.id, (s.remainingAmount - splitSumCents) <= 10);
-        await apiCreateAndMatchSplit(targetBt, memId, s.splits, s.accrualType, s.accrualNote);
+        await apiCreateAndMatchSplit(targetBt, memId, s.targetSeasonId, s.paymentMethod, s.splits, s.accrualType, s.accrualNote);
       } else {
         const linkedAmount = Math.round(s.amountToLink * 100);
         prepareNextFocus(targetBt.id, (s.remainingAmount - linkedAmount) <= 10);
@@ -136,7 +136,11 @@ export function createReconciliationActions(s: any) {
       }
       toast.success('Écriture créée et rapprochée avec succès !');
       if (typeof window !== 'undefined') window.location.reload();
-    } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
+    } catch (err: any) { 
+      toast.error(err.message); 
+      s.errorMsg = err.message || 'Erreur lors de la création.';
+      s.isSubmitting = false; 
+    }
   }
 
   async function handleMatchWithAI(btId: number, memberId: number | null, cat: string) {

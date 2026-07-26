@@ -3,7 +3,7 @@
   import { Amount, AlertDialog, Button } from '@nba/ui';
   import type { ReconciliationState, BankStatementLine } from './reconciliation.svelte';
 
-  let { state: reconState, selectedTx }: { state: ReconciliationState; selectedTx: BankStatementLine } = $props();
+  let { state: reconState = $bindable(), selectedTx }: { state: ReconciliationState; selectedTx: BankStatementLine } = $props();
 
   let entryToDelete = $state<number | null>(null);
   let showConfirmDialog = $state(false);

@@ -31,7 +31,7 @@
     accrualType: string;
     accrualNote: string;
     isSubmitting: boolean;
-    handleCreateAndMatch: () => void;
+    handleCreateAndMatch: (memId: number | null) => void;
     isSplitMode: boolean;
     splits: { category: string; amount: number }[];
     addSplitRow: () => void;
@@ -93,64 +93,15 @@
   </div>
 
   {#if !isSplitMode}
-    <div class="grid grid-cols-2 gap-4">
-      <div>
-        <Combobox
-          id="category-search-input"
-          label="Catégorie Comptable"
-          placeholder="Rechercher une catégorie..."
-          bind:value={category}
-          items={categoryItems}
-          allowClear={false}
-        />
-      </div>
-
-      <div>
-        <Combobox
-          id="payment-method-search-input"
-          label="Mode de règlement"
-          placeholder="Rechercher un mode..."
-          bind:value={paymentMethod}
-          items={PAYMENT_METHODS}
-          allowClear={false}
-        />
-      </div>
-    </div>
-
     <div>
       <Combobox
-        id="member-search-input"
-        label="Adhérent Associé (Optionnel)"
-        placeholder="Tapez pour rechercher un adhérent..."
-        bind:value={selectedMemberId}
-        items={memberItems}
-        allowClear={true}
-        clearLabel="Aucun adhérent (Écriture générale)"
+        id="category-search-input"
+        label="Catégorie Comptable"
+        placeholder="Rechercher une catégorie..."
+        bind:value={category}
+        items={categoryItems}
+        allowClear={false}
       />
-    </div>
-
-    <div class="grid grid-cols-1 gap-4 mt-4">
-      <div>
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label class="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Régularisation (Cut-off)</label>
-        <select class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={accrualType}>
-          <option value="normal">Normal</option>
-          {#if selectedTx && selectedTx.amount > 0}
-            <option value="produit_constate_avance">Produit constaté d'avance (Ex: Cotisation en avance)</option>
-            <option value="produit_a_recevoir">Produit à recevoir (Ex: Subvention)</option>
-          {:else}
-            <option value="charge_constatee_avance">Charge constatée d'avance (Ex: Assurance en avance)</option>
-            <option value="charge_a_payer">Charge à payer (Ex: Facture non parvenue)</option>
-          {/if}
-        </select>
-      </div>
-      {#if accrualType !== 'normal'}
-        <div>
-          <!-- svelte-ignore a11y_label_has_associated_control -->
-          <label class="block text-xs font-bold text-destructive uppercase mb-1.5">Note justificative *</label>
-          <input type="text" class="w-full px-3 py-2 border border-destructive/50 bg-background rounded-md text-sm focus:ring-1 focus:ring-destructive" placeholder="Détail de la régularisation..." bind:value={accrualNote} required />
-        </div>
-      {/if}
     </div>
   {:else}
     <CreateLedgerEntrySplitRows
@@ -163,9 +114,57 @@
     />
   {/if}
 
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+    <div>
+      <Combobox
+        id="payment-method-search-input"
+        label="Mode de règlement"
+        placeholder="Rechercher un mode..."
+        bind:value={paymentMethod}
+        items={PAYMENT_METHODS}
+        allowClear={false}
+      />
+    </div>
+    <div>
+      <Combobox
+        id="member-search-input"
+        label="Adhérent Associé (Optionnel)"
+        placeholder="Tapez pour rechercher un adhérent..."
+        bind:value={selectedMemberId}
+        items={memberItems}
+        allowClear={true}
+        clearLabel="Aucun adhérent (Écriture générale)"
+      />
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 mt-4">
+    <div>
+      <!-- svelte-ignore a11y_label_has_associated_control -->
+      <label class="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Régularisation (Cut-off)</label>
+      <select class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={accrualType}>
+        <option value="normal">Normal</option>
+        {#if selectedTx && selectedTx.amount > 0}
+          <option value="produit_constate_avance">Produit constaté d'avance (Ex: Cotisation en avance)</option>
+          <option value="produit_a_recevoir">Produit à recevoir (Ex: Subvention)</option>
+        {:else}
+          <option value="charge_constatee_avance">Charge constatée d'avance (Ex: Assurance en avance)</option>
+          <option value="charge_a_payer">Charge à payer (Ex: Facture non parvenue)</option>
+        {/if}
+      </select>
+    </div>
+    {#if accrualType !== 'normal'}
+      <div>
+        <!-- svelte-ignore a11y_label_has_associated_control -->
+        <label class="block text-xs font-bold text-destructive uppercase mb-1.5">Note justificative *</label>
+        <input type="text" class="w-full px-3 py-2 border border-destructive/50 bg-background rounded-md text-sm focus:ring-1 focus:ring-destructive" placeholder="Détail de la régularisation..." bind:value={accrualNote} required />
+      </div>
+    {/if}
+  </div>
+
   <div class="pt-2">
     <Button 
-      onclick={() => handleCreateAndMatch(selectedTx)}
+      onclick={() => handleCreateAndMatch(selectedMemberId ? parseInt(selectedMemberId) : null)}
       disabled={isSubmitting || (isSplitMode && splitSum !== remainingAmount)}
       class="w-full font-bold"
     >

@@ -25,7 +25,6 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
 
   const balances = await repo.getBalances(db, season.id);
   const allTxs = await repo.getTransactionsForSeason(db, season.id);
-  const cashFlowTxs = await repo.getTransactionsForPeriod(db, season.startDate, effectiveEndDate);
   const dbCategories = await repo.getAllCategories(db);
 
   // 1. Compte de Résultat (Income Statement)
@@ -67,7 +66,9 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     const initBal = initBalRow ? (initBalRow.initialBalanceCents ?? 0) : 0;
 
     let finalBal = initBal;
-    for (const tx of cashFlowTxs) {
+    for (const tx of allTxs) {
+      if (tx.date > effectiveEndDate || tx.date < season.startDate) continue;
+      
       const amount = tx.amountCents ?? 0;
       const isTargetAcc = (accId !== null && tx.accountId === accId) || tx.accountId === accCode;
       const isTargetDestAcc = (accId !== null && tx.destinationAccountId === accId) || tx.destinationAccountId === accCode;

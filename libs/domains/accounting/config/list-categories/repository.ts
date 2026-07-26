@@ -28,6 +28,8 @@ export class ListCategoriesRepository {
       .leftJoin(ec, eq(categoriesTable.expenseAccountClassId, ec.id))
       .all();
 
+    rows.sort((a, b) => (a.adminLabel || '').localeCompare(b.adminLabel || '', 'fr', { sensitivity: 'base' }));
+
     return rows;
   }
 }

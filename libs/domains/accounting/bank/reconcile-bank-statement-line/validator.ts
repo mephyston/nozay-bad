@@ -10,7 +10,9 @@ const transactionDetailsSchema = Type.Object({
   date: Type.String(),
   paymentMethod: Type.Union([Type.String(), Type.Number()]),
   description: Type.String(),
-  reference: Type.Optional(Type.Union([Type.String(), Type.Null()]))
+  reference: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+  accrualType: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+  accrualNote: Type.Optional(Type.Union([Type.String(), Type.Null()]))
 });
 
 export const reconcileBankTransactionSchema = Type.Object({

@@ -9,7 +9,8 @@
   import ReconciliationDetailPanel from './ReconciliationDetailPanel.svelte';
 
   let props: ReconciliationStateProps = $props();
-  const state = createReconciliationState(() => props);
+  // svelte-ignore non_reactive_update
+  let state = createReconciliationState(() => props);
 
   onMount(() => {
     const handleOpen = () => {
@@ -25,9 +26,11 @@
 </script>
 
 <div class="space-y-6">
-  <ImportStatementDialog {state} />
+  <!-- svelte-ignore non_reactive_update -->
+  <ImportStatementDialog bind:state />
 
-  <ReconciliationHeader {state} />
+  <!-- svelte-ignore non_reactive_update -->
+  <ReconciliationHeader bind:state />
 
   {#if state.bankStatementLines.length === 0}
     <Card.Root class="p-12 text-center bg-card border-border shadow-sm flex flex-col items-center justify-center min-h-[400px]">
@@ -80,11 +83,13 @@
   {:else}
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       <div class="lg:col-span-5 {state.selectedTx ? 'hidden lg:block' : 'block'}">
-        <BankStatementLinesList {state} />
+        <!-- svelte-ignore non_reactive_update -->
+        <BankStatementLinesList bind:state />
       </div>
 
       <div class="lg:col-span-7 {state.selectedTx ? 'block' : 'hidden lg:block'}">
-        <ReconciliationDetailPanel {state} />
+        <!-- svelte-ignore non_reactive_update -->
+        <ReconciliationDetailPanel bind:state />
       </div>
     </div>
   {/if}

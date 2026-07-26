@@ -3,7 +3,7 @@
   import { Button, Amount } from '@nba/ui';
   import type { ReconciliationState, BankStatementLine } from './reconciliation.svelte';
 
-  let { state, selectedTx }: { state: ReconciliationState; selectedTx: BankStatementLine } = $props();
+  let { state = $bindable(), selectedTx }: { state: ReconciliationState; selectedTx: BankStatementLine } = $props();
 </script>
 
 <div class="space-y-4">

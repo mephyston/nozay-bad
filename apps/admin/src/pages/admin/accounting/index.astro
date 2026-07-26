@@ -13,9 +13,10 @@ const page = Astro.url.searchParams.get('page') || '1';
 const category = Astro.url.searchParams.get('category') || '';
 const classCode = Astro.url.searchParams.get('classCode') || '';
 const unreconciledChequesOnly = Astro.url.searchParams.get('unreconciledCheques') === 'true';
-const accountId = Astro.url.searchParams.get('accountId') || '';
+const accountId = Astro.url.searchParams.get('accountId') || 'current';
 const search = Astro.url.searchParams.get('search') || '';
 const month = Astro.url.searchParams.get('month') || '';
+const limit = Astro.url.searchParams.get('limit') || '20';
 
 // Si requête POST, intercepter pour les actions d'écriture (proxying vers Hono)
 if (Astro.request.method === 'POST') {
@@ -30,6 +31,7 @@ if (Astro.request.method === 'POST') {
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
+      return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
     } else if (data.action === 'update') {
       const apiRes = await apiService.fetch(`http://localhost/accounting/transactions/${data.id}`, {
         method: 'PUT',
@@ -39,6 +41,7 @@ if (Astro.request.method === 'POST') {
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
+      return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
     } else if (data.action === 'delete') {
       const apiRes = await apiService.fetch(`http://localhost/accounting/transactions/${data.id}`, {
         method: 'DELETE'
@@ -46,6 +49,7 @@ if (Astro.request.method === 'POST') {
       if (!apiRes.ok) {
         return new Response('Erreur suppression', { status: apiRes.status });
       }
+      return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
     }
     return new Response(JSON.stringify({ success: true }));
   } catch (err: any) {
@@ -74,11 +78,11 @@ try {
     }
   }
 
-  const queryParams = new URLSearchParams({ season, page, limit: '20' });
+  const queryParams = new URLSearchParams({ season, page, limit });
   if (category) queryParams.set('category', category);
   if (classCode) queryParams.set('classCode', classCode);
   if (unreconciledChequesOnly) queryParams.set('unreconciledCheques', 'true');
-  if (accountId) queryParams.set('accountId', accountId);
+  queryParams.set('accountId', accountId);
   if (search) queryParams.set('search', search);
   if (month) queryParams.set('month', month);
 
@@ -145,6 +149,7 @@ try {
         accountId={accountId}
         searchQuery={search}
         month={month}
+        limit={limit}
       />
     </div>
   </AdminLayout>

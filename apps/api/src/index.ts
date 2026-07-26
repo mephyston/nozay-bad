@@ -46,6 +46,7 @@ app.use('*', async (c, next) => {
     return next();
   }
 
+  console.error(`401 Unauthorized. reqKey: '${reqKey}', expected: '${apiKey}', path: ${c.req.path}`);
   return c.json({ success: false, error: 'Accès non autorisé' }, 401);
 });
 

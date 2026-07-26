@@ -1,6 +1,6 @@
 import { type DbOrTx } from '@nba/db';
 import { and, or, eq, sql, inArray, isNull, desc, like } from 'drizzle-orm';
-import { ledgerEntriesTable, categoriesTable, seasonsTable, bankStatementLinesTable } from '../../shared/schema';
+import { ledgerEntriesTable, categoriesTable, seasonsTable, bankStatementLinesTable, paymentMethodsTable, seasonBalancesTable } from '../../shared/schema';
 import { getMembersByIds } from '@nba/members-api';
 import type { ListTransactionsFilters } from './dto';
 
@@ -87,6 +87,53 @@ export class ListTransactionsRepository {
         conditions.push(sql`1 = 0`);
       }
     }
+    const accountIdMap: Record<string, number> = { current: 1, savings: 2, cash: 3 };
+    const accId = filters.accountId 
+      ? (typeof filters.accountId === 'number' ? filters.accountId : accountIdMap[filters.accountId as string] || Number(filters.accountId) || 1)
+      : 1;
+
+    let initialBalance = 0;
+    let seasonStartDate = '';
+    if (filters.seasonId) {
+      const seasonIdInt = await this.resolveSeasonId(db, filters.seasonId);
+      const balanceRow = await db.select({ 
+          initialBalanceCents: seasonBalancesTable.initialBalanceCents,
+          startDate: seasonsTable.startDate
+        })
+        .from(seasonBalancesTable)
+        .innerJoin(seasonsTable, eq(seasonBalancesTable.seasonId, seasonsTable.id))
+        .where(and(eq(seasonBalancesTable.seasonId, seasonIdInt), eq(seasonBalancesTable.accountId, accId)))
+        .get();
+      if (balanceRow) {
+        initialBalance = balanceRow.initialBalanceCents;
+        seasonStartDate = balanceRow.startDate;
+      }
+    }
+
+    let preSeasonSum = 0;
+    if (seasonStartDate && filters.seasonId) {
+      const seasonIdInt = await this.resolveSeasonId(db, filters.seasonId);
+      const preSeasonRes = await db.select({
+        total: sql<number>`SUM(
+          CASE
+            WHEN ${ledgerEntriesTable.type} = 'recette' THEN ${ledgerEntriesTable.amountCents}
+            WHEN ${ledgerEntriesTable.type} = 'depense' THEN -${ledgerEntriesTable.amountCents}
+            WHEN ${ledgerEntriesTable.type} = 'transfert' AND ${ledgerEntriesTable.accountId} = ${accId} THEN -${ledgerEntriesTable.amountCents}
+            WHEN ${ledgerEntriesTable.type} = 'transfert' AND ${ledgerEntriesTable.destinationAccountId} = ${accId} THEN ${ledgerEntriesTable.amountCents}
+            ELSE 0
+          END
+        )`
+      }).from(ledgerEntriesTable)
+        .where(and(
+           eq(ledgerEntriesTable.seasonId, seasonIdInt),
+           or(eq(ledgerEntriesTable.accountId, accId), eq(ledgerEntriesTable.destinationAccountId, accId)),
+           sql`${ledgerEntriesTable.date} < ${seasonStartDate}`
+        ))
+        .get();
+      preSeasonSum = preSeasonRes?.total || 0;
+    }
+    const trueInitialBalance = initialBalance - preSeasonSum;
+
     const txs = await db.select({
       id: ledgerEntriesTable.id,
       seasonId: ledgerEntriesTable.seasonId,
@@ -96,14 +143,30 @@ export class ListTransactionsRepository {
       category: ledgerEntriesTable.categoryId,
       amount: ledgerEntriesTable.amountCents,
       date: ledgerEntriesTable.date,
-      paymentMethod: sql<string>`'cheque'`,
+      paymentMethod: paymentMethodsTable.code,
       description: ledgerEntriesTable.description,
       reference: sql<string>`COALESCE(${bankStatementLinesTable.memo}, ${bankStatementLinesTable.name}, ${ledgerEntriesTable.reference})`,
       memberId: ledgerEntriesTable.memberId,
-      bankStatementLineId: ledgerEntriesTable.bankStatementLineId
+      bankStatementLineId: ledgerEntriesTable.bankStatementLineId,
+      runningBalanceCents: sql<number>`CAST(${trueInitialBalance} + COALESCE((
+        SELECT SUM(
+          CASE
+            WHEN le2.type = 'recette' THEN le2.amount_cents
+            WHEN le2.type = 'depense' THEN -le2.amount_cents
+            WHEN le2.type = 'transfert' AND le2.account_id = ${accId} THEN -le2.amount_cents
+            WHEN le2.type = 'transfert' AND le2.destination_account_id = ${accId} THEN le2.amount_cents
+            ELSE 0
+          END
+        )
+        FROM ledger_entries le2
+        WHERE le2.season_id = ${ledgerEntriesTable.seasonId}
+          AND (le2.account_id = ${accId} OR le2.destination_account_id = ${accId})
+          AND (le2.date < ${ledgerEntriesTable.date} OR (le2.date = ${ledgerEntriesTable.date} AND le2.id <= ${ledgerEntriesTable.id}))
+      ), 0) AS INTEGER)`.mapWith(Number)
     })
       .from(ledgerEntriesTable)
       .leftJoin(bankStatementLinesTable, eq(ledgerEntriesTable.bankStatementLineId, bankStatementLinesTable.id))
+      .leftJoin(paymentMethodsTable, eq(ledgerEntriesTable.paymentMethodId, paymentMethodsTable.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(ledgerEntriesTable.date), desc(ledgerEntriesTable.id))
       .limit(pagination.limit)

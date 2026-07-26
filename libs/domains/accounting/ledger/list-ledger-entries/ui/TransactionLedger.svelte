@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Search, X, Filter } from '@lucide/svelte';
-  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox } from '@nba/ui';
+  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog } from '@nba/ui';
   import type { Transaction, Pagination, BalanceReport, Season, Category, AccountClass } from './ledger-types';
   import { submitTransaction, deleteTransaction, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange } from './ledger-actions';
   import TransactionLedgerBalances from './TransactionLedgerBalances.svelte';
@@ -23,7 +23,8 @@
     unreconciledChequesOnly = false,
     accountId = '',
     searchQuery = '',
-    month = ''
+    month = '',
+    limit = '20'
   }: {
     transactions: Transaction[];
     pagination: Pagination;
@@ -36,16 +37,16 @@
     accountId?: string;
     searchQuery?: string;
     month?: string;
+    limit?: string;
   } = $props();
 
   // svelte-ignore state_referenced_locally
-  let selectedAccount = $state(accountId || 'all');
+  let selectedAccount = $state(accountId || 'current');
 
   $effect(() => {
-    if (selectedAccount !== (accountId || 'all')) {
+    if (selectedAccount !== (accountId || 'current')) {
       const params = new URLSearchParams(window.location.search);
-      if (selectedAccount === 'all') params.delete('accountId');
-      else params.set('accountId', selectedAccount);
+      params.set('accountId', selectedAccount);
       params.set('page', '1');
       window.location.href = `/admin/accounting?${params.toString()}`;
     }
@@ -58,6 +59,38 @@
     const params = new URLSearchParams(window.location.search);
     filteredCategory = params.get('category');
     filteredClassCode = params.get('classCode');
+  });
+
+  $effect(() => {
+    if (typeof history !== 'undefined' && 'scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+
+    const scrollToTx = sessionStorage.getItem('scrollToTx');
+    if (scrollToTx && transactions.length > 0) {
+      sessionStorage.removeItem('scrollToTx');
+      const tryScroll = (highlight = false) => {
+        const isMobile = window.innerWidth < 640;
+        const el = document.getElementById(isMobile ? `tx-mobile-${scrollToTx}` : `tx-desktop-${scrollToTx}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (highlight) {
+            el.classList.add('bg-muted', 'transition-colors', 'duration-1000');
+            setTimeout(() => el.classList.remove('bg-muted'), 2000);
+          }
+        }
+      };
+      setTimeout(() => tryScroll(true), 100);
+      setTimeout(() => tryScroll(false), 600);
+    }
+
+    const scrollYStr = sessionStorage.getItem('ledger_scroll_y');
+    if (scrollYStr && transactions.length > 0) {
+      sessionStorage.removeItem('ledger_scroll_y');
+      const targetY = parseInt(scrollYStr);
+      setTimeout(() => window.scrollTo({ top: targetY, behavior: 'instant' }), 100);
+      setTimeout(() => window.scrollTo({ top: targetY, behavior: 'instant' }), 600);
+    }
   });
 
   function clearFilters() {
@@ -148,12 +181,23 @@
     }
   }
 
-  async function handleDelete(id: number) {
+  let deleteDialogData = $state<{ id: number } | null>(null);
+
+  function handleDelete(id: number) {
+    deleteDialogData = { id };
+  }
+
+  async function confirmDelete() {
+    if (!deleteDialogData) return;
     try {
-      await deleteTransaction(id);
-      toast.success('Écriture supprimée avec succès !');
+      sessionStorage.setItem('ledger_scroll_y', window.scrollY.toString());
+      await deleteTransaction(deleteDialogData.id);
+      // @ts-ignore
+      if (typeof toast !== 'undefined') toast.success('Écriture supprimée avec succès !');
     } catch (err: any) {
-      toast.error(err.message);
+      // @ts-ignore
+      if (typeof toast !== 'undefined') toast.error(err.message);
+      deleteDialogData = null;
     }
   }
 
@@ -161,8 +205,7 @@
     selectedAccount = newAcc;
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (newAcc === 'all') params.delete('accountId');
-      else params.set('accountId', newAcc);
+      params.set('accountId', newAcc);
       params.set('page', '1');
       window.location.href = `/admin/accounting?${params.toString()}`;
     }
@@ -189,9 +232,8 @@
 
   <!-- Barre d'onglets des comptes du Grand Livre centrée -->
 
-  <Tabs.Root value={selectedAccount || 'all'} onValueChange={handleAccountTabChange} class="w-full no-print">
-    <Tabs.List class="grid w-full grid-cols-2 sm:grid-cols-4 max-w-2xl mx-auto mb-6">
-      <Tabs.Trigger value="all">Tous les comptes</Tabs.Trigger>
+  <Tabs.Root value={selectedAccount || 'current'} onValueChange={handleAccountTabChange} class="w-full no-print">
+    <Tabs.List class="grid w-full grid-cols-3 max-w-2xl mx-auto mb-6">
       <Tabs.Trigger value="current">Compte Courant</Tabs.Trigger>
       <Tabs.Trigger value="savings">Compte Livret</Tabs.Trigger>
       <Tabs.Trigger value="cash">Caisse Physique</Tabs.Trigger>
@@ -260,6 +302,23 @@
       <option value="12">Décembre</option>
     </select>
 
+    <select
+      class="px-3 py-1.5 border border-border bg-background rounded-md text-sm font-medium focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9 w-full sm:w-auto"
+      value={limit}
+      onchange={(e) => {
+        const val = (e.target as HTMLSelectElement).value;
+        const params = new URLSearchParams(window.location.search);
+        if (val && val !== '20') params.set('limit', val);
+        else params.delete('limit');
+        params.set('page', '1');
+        window.location.href = `/admin/accounting?${params.toString()}`;
+      }}
+    >
+      <option value="20">20 par page</option>
+      <option value="50">50 par page</option>
+      <option value="100">100 par page</option>
+    </select>
+
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         {#snippet child({ props })}
@@ -325,4 +384,23 @@
     bind:errorMsg
     onSubmit={handleAddTransaction}
   />
+
+  <AlertDialog.Root open={!!deleteDialogData} onOpenChange={(o) => { if(!o) deleteDialogData = null; }}>
+    <AlertDialog.Content>
+      <AlertDialog.Header>
+        <AlertDialog.Title>Confirmation de suppression</AlertDialog.Title>
+        <AlertDialog.Description>
+          Êtes-vous sûr de vouloir supprimer cette écriture comptable ?
+          <br/><br/>
+          Cette action est irréversible.
+        </AlertDialog.Description>
+      </AlertDialog.Header>
+      <AlertDialog.Footer>
+        <AlertDialog.Cancel>Annuler</AlertDialog.Cancel>
+        <AlertDialog.Action onclick={confirmDelete} class="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+          Supprimer
+        </AlertDialog.Action>
+      </AlertDialog.Footer>
+    </AlertDialog.Content>
+  </AlertDialog.Root>
 </div>

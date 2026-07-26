@@ -8,7 +8,7 @@
   import ReconciliationInvoicesTab from './ReconciliationInvoicesTab.svelte';
   import type { ReconciliationState } from './reconciliation.svelte';
 
-  let { state }: { state: ReconciliationState } = $props();
+  let { state = $bindable() }: { state: ReconciliationState } = $props();
 
   function formatShortDate(dateStr: string) {
     if (!dateStr) return '';

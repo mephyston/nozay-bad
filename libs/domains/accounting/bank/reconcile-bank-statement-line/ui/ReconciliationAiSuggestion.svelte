@@ -3,7 +3,7 @@
   import { Button, Badge } from '@nba/ui';
   import type { ReconciliationState, BankStatementLine } from './reconciliation.svelte';
 
-  let { state, selectedTx }: { state: ReconciliationState; selectedTx: BankStatementLine } = $props();
+  let { state = $bindable(), selectedTx }: { state: ReconciliationState; selectedTx: BankStatementLine } = $props();
 
   function renderAiSuggestions(bt: BankStatementLine) {
     if (!bt.aiSuggestions) return null;

@@ -66,12 +66,15 @@ export async function submitTransaction(
   });
 
   if (!res.ok) throw new Error((await res.text()) || 'Impossible d\'enregistrer la transaction');
+  
+  if (params.editingId) {
+    sessionStorage.setItem('scrollToTx', params.editingId.toString());
+  }
+  
   window.location.reload();
 }
 
 export async function deleteTransaction(id: number): Promise<void> {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cette transaction ?')) return;
-
   const res = await fetch('/admin/accounting', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

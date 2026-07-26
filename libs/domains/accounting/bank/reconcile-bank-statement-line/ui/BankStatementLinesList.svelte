@@ -3,7 +3,7 @@
   import { Button, Input, Badge, Card, Checkbox, Tabs } from '@nba/ui';
   import type { ReconciliationState } from './reconciliation.svelte';
 
-  let { state }: { state: ReconciliationState } = $props();
+  let { state = $bindable() }: { state: ReconciliationState } = $props();
 </script>
 
 <Card.Root class="flex flex-col min-h-[500px] h-auto lg:h-[750px] bg-card border-border overflow-hidden">

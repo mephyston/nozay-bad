@@ -35,15 +35,27 @@ export async function updateLedgerEntry(db: Db, id: number, body: UpdateTransact
     }
   }
 
+  const seasonIdNum = Number(body.seasonId);
+  const seasonIdInt = !isNaN(seasonIdNum) ? seasonIdNum : existing.seasonId;
+
+  const accountIdMap: Record<string, number> = { current: 1, savings: 2, cash: 3 };
+  const accountIdInt = typeof body.accountId === 'number' ? body.accountId : accountIdMap[body.accountId] || 1;
+  const destAccountIdInt = body.destinationAccountId ? (typeof body.destinationAccountId === 'number' ? body.destinationAccountId : accountIdMap[body.destinationAccountId] || 2) : null;
+
+  const paymentMethodMap: Record<string, number> = { virement: 1, cheque: 2, especes: 3, labaz: 4, ancv: 5, pass_sport: 6, ticket_loisir: 7, up_loisir: 8 };
+  const paymentMethodIdInt = typeof body.paymentMethod === 'number' ? body.paymentMethod : paymentMethodMap[body.paymentMethod] || 1;
+
+  const categoryIdInt = body.category ? (typeof body.category === 'number' ? body.category : Number(body.category) || 1) : null;
+
   const updated = await repo.update(db, id, {
-    seasonId: body.seasonId,
+    seasonId: seasonIdInt,
     type: body.type,
-    accountId: body.accountId,
-    destinationAccountId: body.type === 'transfert' ? body.destinationAccountId : null,
-    category: body.type !== 'transfert' ? normalizeCategory(body.category) : null,
-    amount: Math.round(body.amount),
+    accountId: accountIdInt,
+    destinationAccountId: body.type === 'transfert' ? destAccountIdInt : null,
+    categoryId: body.type !== 'transfert' ? categoryIdInt : null,
+    amountCents: (body as any).amountCents ?? (body.amount !== undefined ? Math.round(body.amount) : existing.amountCents),
     date: body.date,
-    paymentMethod: body.paymentMethod,
+    paymentMethodId: paymentMethodIdInt,
     description: body.description,
     reference: body.reference || null,
     accrualType: body.accrualType || 'normal',

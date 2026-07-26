@@ -2,7 +2,7 @@
   import { Button, Dialog } from '@nba/ui';
   import type { ReconciliationState } from './reconciliation.svelte';
 
-  let { state }: { state: ReconciliationState } = $props();
+  let { state = $bindable() }: { state: ReconciliationState } = $props();
 </script>
 
 <Dialog.Root bind:open={state.showImportModal}>
