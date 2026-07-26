@@ -1,13 +1,13 @@
-import type { DbClient } from '@nba/db';
+import type { Db } from '@nba/db';
 import { productCategoriesTable, productsTable } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 
-export async function listProductCategories(db: DbClient) {
+export async function listProductCategories(db: Db) {
   return db.select().from(productCategoriesTable).all();
 }
 
 export async function createProductCategory(
-  db: DbClient,
+  db: Db,
   data: { label: string; accountingCategoryId: number; active?: boolean }
 ) {
   const result = await db.insert(productCategoriesTable).values({
@@ -20,7 +20,7 @@ export async function createProductCategory(
 }
 
 export async function updateProductCategory(
-  db: DbClient,
+  db: Db,
   id: number,
   data: { label?: string; accountingCategoryId?: number; active?: boolean }
 ) {
@@ -37,7 +37,7 @@ export async function updateProductCategory(
     .returning().get();
 }
 
-export async function deleteProductCategory(db: DbClient, id: number) {
+export async function deleteProductCategory(db: Db, id: number) {
   const attachedProducts = await db.select().from(productsTable).where(eq(productsTable.productCategoryId, id)).limit(1).all();
   if (attachedProducts.length > 0) {
     throw new Error('Cette catégorie est rattachée à un ou plusieurs produits et ne peut pas être supprimée.');

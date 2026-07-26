@@ -156,7 +156,6 @@ try {
 
           <button
             id="print-btn"
-            onclick="window.print()"
             class="px-3 py-1.5 bg-primary text-primary-foreground text-xs font-medium rounded-md shadow hover:bg-primary/90 cursor-pointer inline-flex items-center gap-1.5 border-0 h-9"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -185,5 +184,10 @@ try {
       params.set('season', newSeason);
       window.location.href = `/admin/accounting/reports?${params.toString()}`;
     });
+  }
+
+  const printBtn = document.getElementById('print-btn');
+  if (printBtn) {
+    printBtn.addEventListener('click', () => window.print());
   }
 </script>

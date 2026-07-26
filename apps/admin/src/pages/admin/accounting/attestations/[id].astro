@@ -132,7 +132,7 @@ const formattedSeason = cseData ? formatSeason(cseData.season) : '';
     
     <!-- Float Print Button -->
     <button 
-      onclick="window.print()" 
+      id="print-btn"
       class="no-print fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-200 flex items-center gap-2 cursor-pointer z-50 hover:scale-105"
     >
       <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -272,3 +272,10 @@ const formattedSeason = cseData ? formatSeason(cseData.season) : '';
     }
   }
 </style>
+
+<script>
+  const printBtn = document.getElementById('print-btn');
+  if (printBtn) {
+    printBtn.addEventListener('click', () => window.print());
+  }
+</script>
