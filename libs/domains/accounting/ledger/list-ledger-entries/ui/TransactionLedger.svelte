@@ -183,6 +183,9 @@
 
   let deleteDialogData = $state<{ id: number } | null>(null);
 
+  let currentSeasonObj = $derived(seasons.find(s => s.code === selectedSeason || String(s.id) === String(selectedSeason)));
+  let currentSeasonNumericId = $derived(currentSeasonObj?.id);
+
   function handleDelete(id: number) {
     deleteDialogData = { id };
   }
@@ -353,8 +356,6 @@
     </DropdownMenu.Root>
   </div>
 
-  {@const currentSeasonObj = seasons.find(s => s.code === selectedSeason || String(s.id) === String(selectedSeason))}
-  {@const currentSeasonNumericId = currentSeasonObj?.id}
   <TransactionLedgerTable
     {transactions}
     {pagination}
