@@ -30,6 +30,7 @@
   }
 
   let closingSeasonId = $state<string | null>(null);
+  let closingSeasonName = $derived(seasons.find(s => s.id === closingSeasonId)?.name || closingSeasonId);
 
   function handleConfirmClose() {
     if (closingSeasonId) {
@@ -140,7 +141,7 @@
 <AlertDialog.Root open={!!closingSeasonId} onOpenChange={(o) => { if(!o) closingSeasonId = null; }}>
   <AlertDialog.Content>
     <AlertDialog.Header>
-      <AlertDialog.Title>Clôturer la saison {closingSeasonId} ?</AlertDialog.Title>
+      <AlertDialog.Title>Clôturer la {closingSeasonName} ?</AlertDialog.Title>
       <AlertDialog.Description>
         Êtes-vous sûr de vouloir clôturer définitivement cette saison ?
         Cette action est irréversible et bloquera toute modification comptable pour cette période.
