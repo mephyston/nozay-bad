@@ -110,29 +110,7 @@ export class ListTransactionsRepository {
       }
     }
 
-    let preSeasonSum = 0;
-    if (seasonStartDate && filters.seasonId) {
-      const seasonIdInt = await this.resolveSeasonId(db, filters.seasonId);
-      const preSeasonRes = await db.select({
-        total: sql<number>`SUM(
-          CASE
-            WHEN ${ledgerEntriesTable.type} = 'recette' THEN ${ledgerEntriesTable.amountCents}
-            WHEN ${ledgerEntriesTable.type} = 'depense' THEN -${ledgerEntriesTable.amountCents}
-            WHEN ${ledgerEntriesTable.type} = 'transfert' AND ${ledgerEntriesTable.accountId} = ${accId} THEN -${ledgerEntriesTable.amountCents}
-            WHEN ${ledgerEntriesTable.type} = 'transfert' AND ${ledgerEntriesTable.destinationAccountId} = ${accId} THEN ${ledgerEntriesTable.amountCents}
-            ELSE 0
-          END
-        )`
-      }).from(ledgerEntriesTable)
-        .where(and(
-           eq(ledgerEntriesTable.seasonId, seasonIdInt),
-           or(eq(ledgerEntriesTable.accountId, accId), eq(ledgerEntriesTable.destinationAccountId, accId)),
-           sql`${ledgerEntriesTable.date} < ${seasonStartDate}`
-        ))
-        .get();
-      preSeasonSum = preSeasonRes?.total || 0;
-    }
-    const trueInitialBalance = initialBalance - preSeasonSum;
+    const trueInitialBalance = initialBalance;
 
     const txs = await db.select({
       id: ledgerEntriesTable.id,
@@ -159,9 +137,9 @@ export class ListTransactionsRepository {
           END
         )
         FROM ledger_entries le2
-        WHERE le2.season_id = ${ledgerEntriesTable.seasonId}
-          AND (le2.account_id = ${accId} OR le2.destination_account_id = ${accId})
+        WHERE (le2.account_id = ${accId} OR le2.destination_account_id = ${accId})
           AND (le2.date < ${ledgerEntriesTable.date} OR (le2.date = ${ledgerEntriesTable.date} AND le2.id <= ${ledgerEntriesTable.id}))
+          ${seasonStartDate ? sql`AND le2.date >= ${seasonStartDate}` : sql``}
       ), 0) AS INTEGER)`.mapWith(Number)
     })
       .from(ledgerEntriesTable)
