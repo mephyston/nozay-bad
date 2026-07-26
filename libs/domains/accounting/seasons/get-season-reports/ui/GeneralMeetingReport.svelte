@@ -39,7 +39,7 @@
 
   $effect(() => {
     const newMap: Record<string, number> = {};
-    for (const item of budget) newMap[`${item.categoryId}_${item.type}`] = item.amount;
+    for (const item of budget as any[]) newMap[`${item.categoryId}_${item.type}`] = item.amountCents !== undefined ? item.amountCents / 100 : (item.amount || 0);
     for (const cat of categories) {
       if (cat.receiptCode) { const key = `${cat.id}_recette`; if (newMap[key] === undefined) newMap[key] = 0; }
       if (cat.expenseCode) { const key = `${cat.id}_depense`; if (newMap[key] === undefined) newMap[key] = 0; }
@@ -85,7 +85,7 @@
     saveStatus = null;
     try {
       const payload: BudgetRecord[] = Object.entries(editableBudget)
-        .map(([key, amount]) => { const [catIdStr, type] = key.split('_'); return { categoryId: parseInt(catIdStr), type: type as 'recette' | 'depense', amount: Number(amount) || 0 }; })
+        .map(([key, amount]) => { const [catIdStr, type] = key.split('_'); return { categoryId: parseInt(catIdStr), type: type as 'recette' | 'depense', amount: Math.round((Number(amount) || 0) * 100) }; })
         .filter(item => !isNaN(item.categoryId));
 
       const res = await fetch(window.location.pathname, {
