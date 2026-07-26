@@ -59,4 +59,7 @@ graph.json
 .dev.vars
 .dev.vars.*
 
-
+# Local databases
+*.sqlite
+*.sqlite3
+db.sqlite
