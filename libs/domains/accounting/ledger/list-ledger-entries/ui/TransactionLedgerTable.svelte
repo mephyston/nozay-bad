@@ -27,7 +27,15 @@
 <Card.Root>
   <!-- Vue Cartes pour Mobile -->
   <Card.Content class="p-0 block sm:hidden divide-y divide-border">
-    {#each transactions as tx}
+    {#each transactions as tx, i}
+      {#if i > 0 && tx.date.substring(0, 7) !== transactions[i - 1].date.substring(0, 7) && tx.runningBalanceCents !== undefined}
+        {@const parts = tx.date.substring(0, 7).split('-')}
+        {@const monthName = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][parseInt(parts[1]) - 1]}
+        <div class="px-4 py-3 bg-muted/30 flex justify-between items-center">
+          <span class="font-bold text-muted-foreground uppercase text-xs tracking-wider">Solde fin {monthName} {parts[0]}</span>
+          <Amount cents={tx.runningBalanceCents} class="font-bold text-muted-foreground" />
+        </div>
+      {/if}
       <div class="p-4 space-y-2 bg-card" id="tx-mobile-{tx.id}">
         <div class="flex items-start justify-between gap-2">
           <div>
@@ -117,7 +125,20 @@
         </Table.Row>
       </Table.Header>
       <Table.Body>
-        {#each transactions as tx}
+        {#each transactions as tx, i}
+          {#if i > 0 && tx.date.substring(0, 7) !== transactions[i - 1].date.substring(0, 7) && tx.runningBalanceCents !== undefined}
+            {@const parts = tx.date.substring(0, 7).split('-')}
+            {@const monthName = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][parseInt(parts[1]) - 1]}
+            <Table.Row class="bg-muted/20 hover:bg-muted/20">
+              <Table.Cell colspan={5} class="text-right font-bold text-muted-foreground uppercase text-xs tracking-wider py-3">
+                Solde fin {monthName} {parts[0]}
+              </Table.Cell>
+              <Table.Cell class="text-right font-bold py-3 text-muted-foreground">
+                <Amount cents={tx.runningBalanceCents} />
+              </Table.Cell>
+              <Table.Cell class="py-3"></Table.Cell>
+            </Table.Row>
+          {/if}
           <Table.Row id="tx-desktop-{tx.id}">
             <Table.Cell>{tx.date}</Table.Cell>
             <Table.Cell>
