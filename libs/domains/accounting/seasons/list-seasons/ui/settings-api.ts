@@ -87,14 +87,13 @@ export async function closeSeason(state: SettingsState, id: string) {
 }
 
 export async function createCategory(state: SettingsState, data: {
-  code: string;
   adminLabel: string;
   adherentLabel: string;
   hideInExpenses: boolean;
   receiptCode: string | null;
   expenseCode: string | null;
 }) {
-  if (!data.code.trim() || !data.adminLabel.trim() || !data.adherentLabel.trim()) {
+  if (!data.adminLabel.trim() || !data.adherentLabel.trim()) {
     state.errorMsg = 'Veuillez remplir tous les champs de la catégorie.';
     return;
   }
@@ -108,7 +107,6 @@ export async function createCategory(state: SettingsState, data: {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'create_category',
-        id: data.code,
         adminLabel: data.adminLabel,
         adherentLabel: data.adherentLabel,
         hideInExpenses: data.hideInExpenses,

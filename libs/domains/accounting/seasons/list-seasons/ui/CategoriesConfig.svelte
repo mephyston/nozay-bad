@@ -25,7 +25,6 @@
     }) => Promise<void>;
     onDeleteCategory: (id: number) => Promise<void>;
     onCreateCategory: (data: {
-      code: string;
       adminLabel: string;
       adherentLabel: string;
       hideInExpenses: boolean;

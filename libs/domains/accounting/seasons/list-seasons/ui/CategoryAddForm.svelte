@@ -11,7 +11,6 @@
     accountClasses?: AccountClass[];
     isSubmitting: boolean;
     onCreateCategory: (data: {
-      code: string;
       adminLabel: string;
       adherentLabel: string;
       hideInExpenses: boolean;
@@ -20,7 +19,6 @@
     }) => Promise<void>;
   } = $props();
 
-  let newCatCode = $state('');
   let newCatAdminLabel = $state('');
   let newCatAdherentLabel = $state('');
   let newCatHideInExpenses = $state(false);
@@ -30,7 +28,6 @@
   async function handleSubmit(e: Event) {
     e.preventDefault();
     await onCreateCategory({
-      code: newCatCode.trim().toLowerCase().replace(/\s+/g, '_'),
       adminLabel: newCatAdminLabel.trim(),
       adherentLabel: newCatAdherentLabel.trim(),
       hideInExpenses: newCatHideInExpenses,
@@ -41,17 +38,6 @@
 </script>
 
 <form onsubmit={handleSubmit} class="space-y-4">
-  <div class="space-y-1.5">
-    <label for="new-cat-code" class="block text-xs font-bold text-muted-foreground uppercase">Code ID (ex: grips)</label>
-    <Input
-      type="text"
-      id="new-cat-code"
-      bind:value={newCatCode}
-      placeholder="grips"
-      required
-    />
-  </div>
-
   <div class="space-y-1.5">
     <label for="new-cat-admin" class="block text-xs font-bold text-muted-foreground uppercase">Libellé Admin (Compta)</label>
     <Input
