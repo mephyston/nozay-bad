@@ -11,7 +11,8 @@
     newSeasonActive = $bindable(false),
     onCreateSeason,
     onToggleSeasonActive,
-    onCloseSeason
+    onCloseSeason,
+    onCheckCloseSeason
   }: {
     seasons: any[];
     isSubmitting: boolean;
