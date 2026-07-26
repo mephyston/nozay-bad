@@ -30,7 +30,6 @@
   <Table.Root>
     <Table.Header>
       <Table.Row>
-        <Table.Head>ID / Code</Table.Head>
         <Table.Head>Libellé Admin (Compta)</Table.Head>
         <Table.Head>Libellé Adhérent (Notes de Frais)</Table.Head>
         <Table.Head>Classe Recette (CR)</Table.Head>

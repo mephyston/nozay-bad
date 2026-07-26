@@ -121,17 +121,13 @@
 
 <Table.Row>
   <Table.Cell>
-    <span class="font-bold text-xs text-foreground bg-muted px-1.5 py-0.5 rounded">#{cat.id}</span>
-    <span class="ml-1.5 text-xs text-muted-foreground">{cat.code}</span>
-    {#if cat.active === false}
-      <Badge variant="outline" class="ml-2 bg-destructive/10 text-destructive border-destructive/20 text-[10px] py-0 px-1 font-semibold">Inactif</Badge>
-    {/if}
-  </Table.Cell>
-  <Table.Cell>
     {#if editingCatId === cat.id}
       <Input type="text" bind:value={editCatAdminLabel} class="h-7 text-xs font-medium" />
     {:else}
       <span class="font-semibold text-foreground">{cat.adminLabel}</span>
+      {#if cat.active === false}
+        <Badge variant="outline" class="ml-2 bg-destructive/10 text-destructive border-destructive/20 text-[10px] py-0 px-1 font-semibold">Inactif</Badge>
+      {/if}
     {/if}
   </Table.Cell>
   <Table.Cell>
