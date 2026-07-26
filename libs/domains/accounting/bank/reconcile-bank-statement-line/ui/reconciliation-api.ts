@@ -124,10 +124,12 @@ export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: nu
       memberId,
       transactions: splits.map((s, index) => ({
         seasonId: targetSeasonId,
-        type: ((bt as any).amountCents ?? bt.amount ?? 0) < 0 ? 'depense' : 'recette',
+        type: (((bt as any).amountCents ?? bt.amount ?? 0) < 0)
+          ? (s.amount >= 0 ? 'depense' : 'recette')
+          : (s.amount >= 0 ? 'recette' : 'depense'),
         accountId: bt.accountId || 'current',
         category: s.category,
-        amount: Math.round(s.amount * 100),
+        amount: Math.round(Math.abs(s.amount) * 100),
         date: bt.date,
         paymentMethod: paymentMethod || 'virement',
         description: `${bt.name} (Partie ${index + 1})`,
