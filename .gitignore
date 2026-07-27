@@ -63,3 +63,7 @@ graph.json
 *.sqlite
 *.sqlite3
 db.sqlite
+
+# Environment Variables
+.env
+.env.*
