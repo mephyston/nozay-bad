@@ -25,7 +25,14 @@
 
 <Card.Header class="pb-2 flex flex-row justify-between items-start space-y-0">
   <div>
-    <Card.Title class="font-bold text-lg text-foreground">{exp.emitterName}</Card.Title>
+    <div class="flex items-center gap-2">
+      <Card.Title class="font-bold text-lg text-foreground">{exp.emitterName}</Card.Title>
+      {#if !isClosed}
+        <Button variant="ghost" size="icon" onclick={() => onStartEdit(exp)} disabled={submittingId !== null} class="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted" title="Modifier">
+          <Edit2 class="w-3.5 h-3.5" />
+        </Button>
+      {/if}
+    </div>
     <Card.Description class="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
       <Calendar class="w-3.5 h-3.5" />
       Soumis le {new Date(exp.createdAt).toLocaleDateString('fr-FR')}
@@ -62,22 +69,16 @@
 </Card.Content>
 
 {#if !isClosed}
-  <Card.Footer class="border-t border-border bg-muted/20 px-5 py-3.5 flex justify-between items-center gap-3">
-    <Button variant="outline" onclick={() => onStartEdit(exp)} disabled={submittingId !== null} class="flex items-center gap-1.5">
-      <Edit2 class="w-3.5 h-3.5" /> Modifier
+  <Card.Footer class="border-t border-border bg-muted/20 px-5 py-3.5 grid grid-cols-2 gap-3">
+    <Button variant="outline" onclick={() => onAction(exp.id, 'reject')} disabled={submittingId !== null} class="w-full hover:bg-destructive/10 hover:text-destructive hover:border-destructive">
+      Rejeter
     </Button>
-
-    <div class="flex gap-3">
-      <Button variant="outline" onclick={() => onAction(exp.id, 'reject')} disabled={submittingId !== null} class="hover:bg-destructive/10 hover:text-destructive hover:border-destructive">
-        Rejeter
-      </Button>
-      <Button onclick={() => onAction(exp.id, 'approve')} disabled={submittingId !== null} class="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1">
-        {#if submittingId === exp.id}
-          <span class="animate-pulse">Validation...</span>
-        {:else}
-          <Check class="w-4 h-4" /> Rembourser
-        {/if}
-      </Button>
-    </div>
+    <Button onclick={() => onAction(exp.id, 'approve')} disabled={submittingId !== null} class="w-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1">
+      {#if submittingId === exp.id}
+        <span class="animate-pulse">Validation...</span>
+      {:else}
+        <Check class="w-4 h-4" /> Rembourser
+      {/if}
+    </Button>
   </Card.Footer>
 {/if}
