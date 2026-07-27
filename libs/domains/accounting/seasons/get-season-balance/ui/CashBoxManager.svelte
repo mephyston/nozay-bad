@@ -1,3 +1,5 @@
+
+
 <script lang="ts">
   import type { CashTransaction, Season } from './cashbox-types';
   import { categoryLabels } from './cashbox-types';
@@ -5,10 +7,7 @@
   import CashBoxStatsCards from './CashBoxStatsCards.svelte';
   import CashBoxFormCard from './CashBoxFormCard.svelte';
   import CashBoxHistoryTable from './CashBoxHistoryTable.svelte';
-  import { toast } from '@nba/ui';
-
-  export * from './cashbox-types';
-  export * from './cashbox-actions';
+  import { toast, Sheet } from '@nba/ui';
 
   let {
     initialBalance = 0,
@@ -31,6 +30,7 @@
   let errorMsg = $state('');
   let successMsg = $state('');
   let searchTerm = $state('');
+  let showForm = $state(false);
 
   const isClosed = $derived(seasons.find(s => s.id === seasonId)?.closed || false);
 
@@ -79,6 +79,7 @@
       toast.success(successMsg);
       amount = '';
       description = '';
+      showForm = false;
     } else {
       errorMsg = res.error || 'Une erreur est survenue.';
       toast.error(errorMsg);
@@ -98,25 +99,36 @@
 <div class="space-y-6">
   <CashBoxStatsCards {initialBalance} {totalIn} {totalOut} {currentBalance} />
 
-  <div class="grid gap-6 md:grid-cols-5">
-    <CashBoxFormCard
-      bind:type
-      bind:amount
-      bind:date
-      bind:category
-      bind:description
-      {isClosed}
-      {isSubmitting}
-      {errorMsg}
-      {successMsg}
-      onSubmit={handleSubmit}
-    />
-
+  <div class="grid gap-6 grid-cols-1">
     <CashBoxHistoryTable
       {filteredTransactions}
       bind:searchTerm
       {isClosed}
       onDelete={handleDelete}
+      onNewMovement={() => showForm = true}
     />
   </div>
+
+  <Sheet.Root bind:open={showForm}>
+    <Sheet.Content class="w-full sm:max-w-md p-0 flex flex-col h-full bg-card border-border overflow-hidden">
+      <Sheet.Header class="p-6 border-b border-border">
+        <Sheet.Title>Nouveau Mouvement de Caisse</Sheet.Title>
+        <Sheet.Description class="hidden">Enregistrement d'une recette ou dépense en espèces.</Sheet.Description>
+      </Sheet.Header>
+      <div class="p-6 overflow-y-auto flex-grow">
+        <CashBoxFormCard
+          bind:type
+          bind:amount
+          bind:date
+          bind:category
+          bind:description
+          {isClosed}
+          {isSubmitting}
+          {errorMsg}
+          {successMsg}
+          onSubmit={handleSubmit}
+        />
+      </div>
+    </Sheet.Content>
+  </Sheet.Root>
 </div>

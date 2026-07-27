@@ -29,32 +29,32 @@
   </a>
 
   <!-- Profile Header Card -->
-  <div class="bg-card border border-border rounded-xl p-6 shadow-sm flex items-center justify-between">
-    <div class="flex items-center gap-4">
+  <div class="bg-card border border-border rounded-xl p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
+    <div class="flex items-center gap-4 w-full sm:w-auto">
       <div class="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
         <User class="w-8 h-8" />
       </div>
-      <div>
-        <h2 class="text-2xl font-bold text-foreground">{member.lastName} {member.firstName}</h2>
+      <div class="min-w-0 flex-1">
+        <h2 class="text-2xl font-bold text-foreground break-words">{member.lastName} {member.firstName}</h2>
         <p class="text-sm text-muted-foreground mt-1 font-medium">Licence : {member.licence}</p>
       </div>
     </div>
-    <div class="flex items-center gap-3">
+    <div class="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
       {#if member.paid}
         <Button
           href={`/admin/accounting/attestations/${member.id}`}
           target="_blank"
           size="sm"
-          class="no-underline"
+          class="no-underline shrink-0"
         >
           <FileText class="w-3.5 h-3.5" />
           Attestation CSE
         </Button>
-        <Badge variant="outline" class="bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold px-3 py-1.5 h-auto rounded-full">
+        <Badge variant="outline" class="bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold px-3 py-1.5 h-auto rounded-full shrink-0">
           Cotisation réglée
         </Badge>
       {:else}
-        <Badge variant="outline" class="bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold px-3 py-1.5 h-auto rounded-full">
+        <Badge variant="outline" class="bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold px-3 py-1.5 h-auto rounded-full shrink-0">
           Règlement en attente
         </Badge>
       {/if}

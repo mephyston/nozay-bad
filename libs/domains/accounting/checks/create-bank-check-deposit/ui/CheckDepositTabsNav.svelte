@@ -12,8 +12,8 @@
   let { depositState, checksCount, checkDepositsCount }: Props = $props();
 </script>
 
-<div class="flex items-center justify-between">
-  <Tabs.List class="flex gap-4 no-print">
+<div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+  <Tabs.List class="flex justify-center sm:justify-start gap-4 no-print">
     <Tabs.Trigger value="checks">
       Chèques reçus ({checksCount})
     </Tabs.Trigger>
@@ -23,7 +23,7 @@
   </Tabs.List>
 
   {#if depositState.activeTab === 'checks' && !depositState.isClosed}
-    <div class="flex gap-2 mb-2">
+    <div class="flex flex-wrap justify-center sm:justify-end gap-2 w-full sm:w-auto">
       <Button
         onclick={() => depositState.showAddCheckModal = true}
         class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold px-4 py-2 rounded-lg transition-all shadow-sm"

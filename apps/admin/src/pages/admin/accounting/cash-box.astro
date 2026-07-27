@@ -88,14 +88,14 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
         </div>
       )}
 
-      <div class="flex items-center justify-between print:hidden">
-        <div>
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
+        <div class="text-center sm:text-left w-full sm:w-auto">
           <h1 class="text-3xl font-bold tracking-tight">Gestion de la Caisse</h1>
           <p class="text-muted-foreground mt-2">
             Suivi des mouvements d'espèces et transactions physiques de la caisse de l'association.
           </p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
           {isClosed && (
             <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
               Saison clôturée (Lecture seule)

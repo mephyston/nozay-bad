@@ -105,14 +105,14 @@ const isClosed = !!seasonsList.find((s: any) => (s.code || String(s.id)) === sea
 <Layout title="Soldes initiaux - NBA 91">
   <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Soldes initiaux">
     <div class="space-y-6">
-      <div class="flex items-center justify-between">
-        <div>
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="text-center sm:text-left w-full sm:w-auto">
           <h1 class="text-3xl font-bold tracking-tight">Soldes initiaux</h1>
           <p class="text-muted-foreground mt-2">
             Définissez l'état des comptes au premier jour de l'exercice comptable.
           </p>
         </div>
-        <div class="flex items-center gap-3 print:hidden">
+        <div class="flex flex-wrap items-center justify-center sm:justify-end gap-3 print:hidden w-full sm:w-auto">
           {isClosed && (
             <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
               Saison clôturée (Lecture seule)

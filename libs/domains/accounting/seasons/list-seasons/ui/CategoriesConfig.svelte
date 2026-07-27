@@ -34,10 +34,18 @@
   } = $props();
 
   let showAddSheet = $state(false);
+  let editingCategory = $state<Category | null>(null);
 
   async function handleCreate(data: Parameters<typeof onCreateCategory>[0]) {
     await onCreateCategory(data);
     showAddSheet = false;
+  }
+
+  async function handleUpdate(data: Parameters<typeof onUpdateCategory>[1]) {
+    if (editingCategory) {
+      await onUpdateCategory(editingCategory.id, data);
+      editingCategory = null;
+    }
   }
 </script>
 
@@ -62,6 +70,7 @@
       {categories}
       {accountClasses}
       {isSubmitting}
+      onEditCategory={(cat) => editingCategory = cat}
       {onUpdateCategory}
       {onDeleteCategory}
     />
@@ -85,6 +94,30 @@
         {isSubmitting}
         onCreateCategory={handleCreate}
       />
+    </div>
+  </Sheet.Content>
+</Sheet.Root>
+
+<Sheet.Root open={!!editingCategory} onOpenChange={(o) => { if (!o) editingCategory = null; }}>
+  <Sheet.Content class="w-full sm:max-w-md p-6 bg-card border-border overflow-y-auto">
+    <Sheet.Header>
+      <Sheet.Title class="flex items-center gap-2">
+        <Settings class="w-5 h-5 text-primary" />
+        Modifier la Catégorie
+      </Sheet.Title>
+      <Sheet.Description>
+        Mettez à jour les libellés ou les classes comptables par défaut.
+      </Sheet.Description>
+    </Sheet.Header>
+    <div class="pt-4">
+      {#if editingCategory}
+        <CategoryAddForm
+          {accountClasses}
+          {isSubmitting}
+          initialData={editingCategory}
+          onSubmitCategory={handleUpdate}
+        />
+      {/if}
     </div>
   </Sheet.Content>
 </Sheet.Root>

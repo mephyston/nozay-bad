@@ -6,32 +6,18 @@
   let {
     accountClasses = [],
     isSubmitting = false,
+    onEditAccountClass,
     onUpdateAccountClass,
     onDeleteAccountClass
   }: {
     accountClasses?: AccountClass[];
     isSubmitting: boolean;
+    onEditAccountClass: (ac: AccountClass) => void;
     onUpdateAccountClass: (code: string, updates: { label: string; type: 'recette' | 'depense' | 'tresorerie' }) => Promise<void>;
     onDeleteAccountClass: (code: string) => Promise<void>;
   } = $props();
 
-  let editingClassCode = $state<string | null>(null);
-  let editClassLabel = $state('');
-  let editClassType = $state<'recette' | 'depense' | 'tresorerie'>('recette');
 
-  function startEditAccountClass(ac: AccountClass) {
-    editingClassCode = ac.code;
-    editClassLabel = ac.label;
-    editClassType = ac.type;
-  }
-
-  async function handleSave(code: string) {
-    await onUpdateAccountClass(code, {
-      label: editClassLabel.trim(),
-      type: editClassType
-    });
-    editingClassCode = null;
-  }
 
   let deletingAccountClass = $state<AccountClass | null>(null);
 
@@ -47,7 +33,49 @@
   }
 </script>
 
-<div class="overflow-x-auto border border-border rounded-lg bg-card min-h-[180px]">
+<div class="sm:hidden flex flex-col gap-4">
+  {#each (accountClasses || []) as ac}
+    <div class="p-4 rounded-xl border border-border bg-card flex flex-col gap-3 relative">
+      <div class="flex justify-between items-start gap-2">
+        <div class="flex flex-col gap-1">
+          <span class="font-bold text-lg text-foreground">{ac.code}</span>
+          <span class="font-semibold text-sm text-foreground">{ac.label}</span>
+        </div>
+        <div>
+          {#if ac.type === 'recette'}
+            <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[11px] font-semibold">
+              Produit (7)
+            </Badge>
+          {:else if ac.type === 'tresorerie'}
+            <Badge variant="outline" class="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[11px] font-semibold">
+              Trésorerie (5)
+            </Badge>
+          {:else}
+            <Badge variant="outline" class="bg-destructive/10 text-destructive border-destructive/20 text-[11px] font-semibold">
+              Charge (6)
+            </Badge>
+          {/if}
+        </div>
+      </div>
+      
+      <div class="flex justify-end gap-2 pt-2 border-t border-border mt-1">
+        <Button variant="outline" size="sm" class="h-8 text-xs flex-1 border-destructive/20 text-destructive hover:bg-destructive/10" onclick={() => deletingAccountClass = ac} disabled={isSubmitting}>
+          Supprimer
+        </Button>
+        <Button variant="outline" size="sm" class="h-8 text-xs flex-1" onclick={() => onEditAccountClass(ac)}>
+          Modifier
+        </Button>
+      </div>
+    </div>
+  {/each}
+  {#if (accountClasses || []).length === 0}
+    <div class="p-8 text-center text-muted-foreground border border-border rounded-xl bg-card">
+      Aucune classe de compte définie.
+    </div>
+  {/if}
+</div>
+
+<div class="hidden sm:block overflow-x-auto border border-border rounded-lg bg-card min-h-[180px]">
   <Table.Root>
     <Table.Header class="bg-muted border-b border-border">
       <Table.Row>
@@ -64,85 +92,44 @@
             {ac.code}
           </Table.Cell>
           <Table.Cell class="p-4">
-            {#if editingClassCode === ac.code}
-              <Input
-                type="text"
-                bind:value={editClassLabel}
-                class="h-7 text-xs font-medium"
-              />
-            {:else}
-              <span class="font-semibold text-foreground">{ac.label}</span>
-            {/if}
+            <span class="font-semibold text-foreground">{ac.label}</span>
           </Table.Cell>
           <Table.Cell class="p-4">
-            {#if editingClassCode === ac.code}
-              <select
-                value={editClassType}
-                onchange={(e) => editClassType = e.currentTarget.value as any}
-                class="px-2 py-1 border border-border bg-background rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-              >
-                <option value="recette">Produit (Recette)</option>
-                <option value="depense">Charge (Dépense)</option>
-                <option value="tresorerie">Trésorerie (5)</option>
-              </select>
+            {#if ac.type === 'recette'}
+              <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[11px] font-semibold">
+                Produit (7)
+              </Badge>
+            {:else if ac.type === 'tresorerie'}
+              <Badge variant="outline" class="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[11px] font-semibold">
+                Trésorerie (5)
+              </Badge>
             {:else}
-              {#if ac.type === 'recette'}
-                <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[11px] font-semibold">
-                  Produit (7)
-                </Badge>
-              {:else if ac.type === 'tresorerie'}
-                <Badge variant="outline" class="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[11px] font-semibold">
-                  Trésorerie (5)
-                </Badge>
-              {:else}
-                <Badge variant="outline" class="bg-destructive/10 text-destructive border-destructive/20 text-[11px] font-semibold">
-                  Charge (6)
-                </Badge>
-              {/if}
+              <Badge variant="outline" class="bg-destructive/10 text-destructive border-destructive/20 text-[11px] font-semibold">
+                Charge (6)
+              </Badge>
             {/if}
           </Table.Cell>
           <Table.Cell class="p-4 text-right relative">
-            {#if editingClassCode === ac.code}
-              <div class="flex justify-end gap-1.5">
-                <Button
-                  variant="outline"
-                  size="icon-xs"
-                  onclick={() => editingClassCode = null}
-                  title="Annuler"
-                >
-                  <X class="w-3.5 h-3.5" />
-                </Button>
-                <Button
-                  size="icon-xs"
-                  onclick={() => handleSave(ac.code)}
-                  disabled={isSubmitting}
-                  title="Enregistrer"
-                >
-                  <Check class="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            {:else}
-              <div class="flex justify-end gap-1.5">
-                <Button
-                  variant="outline"
-                  size="icon-xs"
-                  onclick={() => startEditAccountClass(ac)}
-                  title="Modifier"
-                >
-                  <Edit2 class="w-3.5 h-3.5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon-xs"
-                  class="border-destructive/20 hover:bg-destructive/10 text-destructive"
-                  onclick={() => deletingAccountClass = ac}
-                  disabled={isSubmitting}
-                  title="Supprimer"
-                >
-                  <Trash2 class="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            {/if}
+            <div class="flex justify-end gap-1.5">
+              <Button
+                variant="outline"
+                size="icon-xs"
+                onclick={() => onEditAccountClass(ac)}
+                title="Modifier"
+              >
+                <Edit2 class="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon-xs"
+                class="border-destructive/20 hover:bg-destructive/10 text-destructive"
+                onclick={() => deletingAccountClass = ac}
+                disabled={isSubmitting}
+                title="Supprimer"
+              >
+                <Trash2 class="w-3.5 h-3.5" />
+              </Button>
+            </div>
           </Table.Cell>
         </Table.Row>
       {/each}

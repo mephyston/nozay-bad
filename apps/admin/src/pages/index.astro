@@ -1,64 +1,56 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import AdminLayout from '../components/AdminLayout.svelte';
+import DashboardOverview from '../components/DashboardOverview.svelte';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
-import {
-  resolveActiveSeason,
-  fetchTreasuryBalance,
-  formatTreasuryBalance,
-  fetchMembersCount,
-  calculatePaidPercentage,
-  formatPaidPercentage
-} from '../utils/dashboard';
 
 const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
 const apiService = createApiClient(env);
 
-// Fetch data in SSR
-const activeSeasonId = await resolveActiveSeason(apiService);
+// Fetch the aggregated dashboard data
+let dashboardData = null;
+try {
+  const res = await apiService.fetch('http://localhost/dashboard/overview');
+  if (res.ok) {
+    const json = await res.json() as any;
+    if (json.success) {
+      dashboardData = json.data;
+    }
+  }
+} catch (e) {
+  console.error("Dashboard fetch error:", e);
+}
 
-const [balanceCents, paidCount, totalCount] = await Promise.all([
-  fetchTreasuryBalance(apiService, activeSeasonId),
-  fetchMembersCount(apiService, activeSeasonId, true),
-  fetchMembersCount(apiService, activeSeasonId)
-]);
-
-const formattedBalance = formatTreasuryBalance(balanceCents);
-const paidPercentage = calculatePaidPercentage(paidCount, totalCount);
-const formattedPaidPercentage = formatPaidPercentage(paidPercentage);
-
-const formattedMembersCount = (paidCount !== null && totalCount !== null)
-  ? `${paidCount} / ${totalCount}`
-  : '--';
+// Fallback empty data if fetch fails
+if (!dashboardData) {
+  dashboardData = {
+    season: '25-26',
+    members: { currentTotal: 0, previousTotal: 0, partiallyPaid: 0 },
+    accounting: { pendingChecks: 0, pendingDeposits: 0, pendingInvoices: 0 },
+    expenses: { pendingReports: 0 },
+    shop: { pendingOrders: 0 },
+    poles: {
+      events: { recettes: 0, depenses: 0, solde: 0 },
+      youth: { recettes: 0, depenses: 0, solde: 0 },
+      material: { recettes: 0, depenses: 0, solde: 0 }
+    }
+  };
+}
 ---
 
 <Layout title="NBA 91 - Console Admin">
   <AdminLayout client:idle email={userEmail} breadcrumb="Tableau de Bord">
     <div class="space-y-6">
-      <div>
-        <h2 class="text-2xl font-bold tracking-tight">Bonjour, Trésorier NBA 91</h2>
-        <p class="text-muted-foreground">Voici l'état récapitulatif de vos outils d'administration pour la saison {activeSeasonId}.</p>
-      </div>
-      <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <!-- Carte 1 -->
-        <div class="rounded-xl border border-border bg-card text-card-foreground p-6 shadow-sm">
-          <div class="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 class="text-sm font-medium tracking-tight">Trésorerie</h3>
-          </div>
-          <div class="text-2xl font-bold">{formattedBalance}</div>
-          <p class="text-xs text-muted-foreground">Solde comptable actif</p>
-        </div>
-        <!-- Carte 2 -->
-        <div class="rounded-xl border border-border bg-card text-card-foreground p-6 shadow-sm">
-          <div class="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 class="text-sm font-medium tracking-tight">Adhérents Poona</h3>
-          </div>
-          <div class="text-2xl font-bold">{formattedMembersCount}</div>
-          <p class="text-xs text-muted-foreground">{formattedPaidPercentage}</p>
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="text-center sm:text-left w-full sm:w-auto">
+          <h2 class="text-3xl font-bold tracking-tight text-foreground">Vue d'ensemble</h2>
+          <p class="text-muted-foreground mt-1 text-lg">Voici le récapitulatif de votre activité pour la saison {dashboardData.season}.</p>
         </div>
       </div>
+      
+      <DashboardOverview client:idle data={dashboardData} />
+      
     </div>
   </AdminLayout>
 </Layout>
-

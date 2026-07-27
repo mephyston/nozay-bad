@@ -11,8 +11,11 @@ export async function handleAnalyzeScan(file: File, seasonId: string, state: any
   formData.append('seasonId', seasonId);
 
   try {
-    const res = await fetch('/api/accounting/checks/analyze', {
+    const res = await fetch(`?season=${seasonId}`, {
       method: 'POST',
+      headers: {
+        'x-action': 'analyze'
+      },
       body: formData
     });
 

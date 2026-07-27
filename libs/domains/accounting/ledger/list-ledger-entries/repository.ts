@@ -129,7 +129,7 @@ export class ListTransactionsRepository {
       type: ledgerEntriesTable.type,
       accountId: ledgerEntriesTable.accountId,
       destinationAccountId: ledgerEntriesTable.destinationAccountId,
-      category: ledgerEntriesTable.categoryId,
+      category: categoriesTable.adminLabel,
       amount: ledgerEntriesTable.amountCents,
       date: ledgerEntriesTable.date,
       paymentMethod: paymentMethodsTable.code,
@@ -156,6 +156,7 @@ export class ListTransactionsRepository {
       .from(ledgerEntriesTable)
       .leftJoin(bankStatementLinesTable, eq(ledgerEntriesTable.bankStatementLineId, bankStatementLinesTable.id))
       .leftJoin(paymentMethodsTable, eq(ledgerEntriesTable.paymentMethodId, paymentMethodsTable.id))
+      .leftJoin(categoriesTable, eq(ledgerEntriesTable.categoryId, categoriesTable.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(ledgerEntriesTable.date), desc(ledgerEntriesTable.id))
       .limit(pagination.limit)

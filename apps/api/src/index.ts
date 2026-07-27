@@ -3,6 +3,7 @@ import { membersRouter } from '@nba/members-api';
 import { accountingRouter } from '@nba/accounting-api';
 import { expensesRouter } from '@nba/expenses-api';
 import { shopRouter } from '@nba/shop-api';
+import { dashboardRouter } from './dashboard';
 import { AppError } from '@nba/db';
 
 type Bindings = {
@@ -59,5 +60,6 @@ app.route('/members', membersRouter);
 app.route('/accounting', accountingRouter);
 app.route('/expenses', expensesRouter);
 app.route('/shop', shopRouter);
+app.route('/dashboard', dashboardRouter);
 
 export default app;

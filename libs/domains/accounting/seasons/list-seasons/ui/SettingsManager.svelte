@@ -130,7 +130,7 @@
   {/if}
 
   <Tabs.Root value={activeView} onValueChange={handleViewChange} class="w-full">
-    <Tabs.List class="grid grid-cols-4 max-w-2xl mb-6">
+    <Tabs.List class="mb-6 w-full max-w-4xl mx-auto">
       <Tabs.Trigger value="seasons">Exercices & Saisons</Tabs.Trigger>
       <Tabs.Trigger value="compta">Catégories Compta</Tabs.Trigger>
       <Tabs.Trigger value="classes">Plan Comptable</Tabs.Trigger>

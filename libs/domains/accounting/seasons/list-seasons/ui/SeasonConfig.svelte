@@ -69,7 +69,6 @@
       <div class="p-3.5 flex justify-between items-center bg-card">
         <div>
           <span class="font-bold text-sm text-foreground">{s.name}</span>
-          <span class="ml-2 text-xs font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">ID: {s.id}</span>
         </div>
         <div class="flex items-center gap-3">
           {#if s.closed}

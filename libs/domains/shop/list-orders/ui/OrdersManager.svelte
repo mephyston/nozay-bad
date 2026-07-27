@@ -4,6 +4,7 @@
 </script>
 <script lang="ts">
   import { Check, AlertCircle } from "@lucide/svelte";
+  import { Tabs } from "@nba/ui";
   import type { OrderItem, Season } from './orders-manager-types';
   import { paymentMethodLabels } from './orders-manager-types';
   import { approveOrder, rejectOrder } from './orders-manager-actions';
@@ -116,23 +117,29 @@
     </div>
   {/if}
 
-  <OrdersManagerHeader
-    bind:activeTab
-    bind:searchTerm
-    pendingCount={pendingOrders.length}
-    historyCount={historyOrders.length}
-    onTabChange={(tab) => { activeTab = tab; errorMsg = null; successMsg = null; }}
-  />
-
-  {#if activeTab === 'pending'}
-    <OrdersPendingTable
-      {pendingOrders}
-      {processingId}
-      {isClosed}
-      onApprove={handleApprove}
-      onReject={handleReject}
+  <Tabs.Root value={activeTab} onValueChange={(v) => { activeTab = v as any; errorMsg = null; successMsg = null; }}>
+    <OrdersManagerHeader
+      bind:searchTerm
+      pendingCount={pendingOrders.length}
+      historyCount={historyOrders.length}
     />
-  {:else}
-    <OrdersHistoryTable {historyOrders} />
-  {/if}
+
+    <Tabs.Content value="pending">
+      {#if activeTab === 'pending'}
+        <OrdersPendingTable
+          {pendingOrders}
+          {processingId}
+          {isClosed}
+          onApprove={handleApprove}
+          onReject={handleReject}
+        />
+      {/if}
+    </Tabs.Content>
+
+    <Tabs.Content value="history">
+      {#if activeTab === 'history'}
+        <OrdersHistoryTable {historyOrders} />
+      {/if}
+    </Tabs.Content>
+  </Tabs.Root>
 </div>

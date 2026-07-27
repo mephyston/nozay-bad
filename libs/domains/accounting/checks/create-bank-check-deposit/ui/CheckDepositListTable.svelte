@@ -19,18 +19,18 @@
       <Table.Root class="w-full text-left border-collapse text-sm">
         <Table.Header>
           <Table.Row>
-            <Table.Head class="p-4">Date de dépôt</Table.Head>
+            <Table.Head class="hidden md:table-cell p-4">Date de dépôt</Table.Head>
             <Table.Head class="p-4">Référence</Table.Head>
             <Table.Head class="p-4">Statut</Table.Head>
             <Table.Head class="p-4 text-right">Montant Total</Table.Head>
-            <Table.Head class="p-4">Rapprochement Bancaire</Table.Head>
+            <Table.Head class="hidden md:table-cell p-4">Rapprochement Bancaire</Table.Head>
             <Table.Head class="p-4 text-right">Actions</Table.Head>
           </Table.Row>
         </Table.Header>
         <Table.Body class="divide-y divide-border">
           {#each checkDeposits as dep}
             <Table.Row class="hover:bg-muted/50 transition-colors">
-              <Table.Cell class="p-4 text-muted-foreground">
+              <Table.Cell class="hidden md:table-cell p-4 text-muted-foreground">
                 {new Date(dep.date).toLocaleDateString('fr-FR')}
               </Table.Cell>
               <Table.Cell class="p-4 font-medium">{dep.reference}</Table.Cell>
@@ -48,7 +48,7 @@
               <Table.Cell class="p-4 text-right font-bold text-foreground">
                 <Amount cents={(dep as any).amountCents ?? dep.amount} />
               </Table.Cell>
-              <Table.Cell class="p-4">
+              <Table.Cell class="hidden md:table-cell p-4">
                 {#if dep.status === 'cleared'}
                   <span class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
                     <CheckCircle class="w-3.5 h-3.5" />

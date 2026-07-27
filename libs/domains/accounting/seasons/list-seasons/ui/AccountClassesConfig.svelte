@@ -20,10 +20,18 @@
   } = $props();
 
   let showAddSheet = $state(false);
+  let editingAccountClass = $state<AccountClass | null>(null);
 
   async function handleCreate(data: Parameters<typeof onCreateAccountClass>[0]) {
     await onCreateAccountClass(data);
     showAddSheet = false;
+  }
+
+  async function handleUpdate(data: Parameters<typeof onUpdateAccountClass>[1]) {
+    if (editingAccountClass) {
+      await onUpdateAccountClass(editingAccountClass.code, data);
+      editingAccountClass = null;
+    }
   }
 </script>
 
@@ -47,6 +55,7 @@
     <AccountClassListTable
       {accountClasses}
       {isSubmitting}
+      onEditAccountClass={(ac) => editingAccountClass = ac}
       {onUpdateAccountClass}
       {onDeleteAccountClass}
     />
@@ -69,6 +78,29 @@
         {isSubmitting}
         onCreateAccountClass={handleCreate}
       />
+    </div>
+  </Sheet.Content>
+</Sheet.Root>
+
+<Sheet.Root open={!!editingAccountClass} onOpenChange={(o) => { if (!o) editingAccountClass = null; }}>
+  <Sheet.Content class="w-full sm:max-w-md p-6 bg-card border-border overflow-y-auto">
+    <Sheet.Header>
+      <Sheet.Title class="flex items-center gap-2">
+        <Settings class="w-5 h-5 text-primary" />
+        Modifier la Classe
+      </Sheet.Title>
+      <Sheet.Description>
+        Modifiez le libellé ou le type de cette classe de compte.
+      </Sheet.Description>
+    </Sheet.Header>
+    <div class="pt-4">
+      {#if editingAccountClass}
+        <AccountClassAddForm
+          {isSubmitting}
+          initialData={editingAccountClass}
+          onSubmitAccountClass={handleUpdate}
+        />
+      {/if}
     </div>
   </Sheet.Content>
 </Sheet.Root>

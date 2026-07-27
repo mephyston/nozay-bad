@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FileText, Check, AlertCircle } from '@lucide/svelte';
-  import { Alert, Card } from '@nba/ui';
+  import { Alert, Card, Tabs } from '@nba/ui';
   import type { Expense, Season, Category } from './expenses-types';
   import { getCategoryOptions, getCategoryLabels } from './expenses-types';
   import { ExpensesState } from './expenses-state.svelte';
@@ -115,30 +115,31 @@
 </script>
 
 <div class="space-y-6">
-  <ExpensesHeader
-    bind:searchTerm={state.searchTerm}
-    bind:activeTab={state.activeTab}
-    {expenses}
-  />
+  <Tabs.Root value={state.activeTab} onValueChange={(v) => state.activeTab = v as any} class="space-y-6">
+    <ExpensesHeader
+      bind:searchTerm={state.searchTerm}
+      bind:activeTab={state.activeTab}
+      {expenses}
+    />
 
-  {#if state.successMsg}
-    <Alert.Root class="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-      <Check class="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
-      <Alert.Title class="text-emerald-600 dark:text-emerald-400">Succès</Alert.Title>
-      <Alert.Description class="text-emerald-600 dark:text-emerald-400">{state.successMsg}</Alert.Description>
-    </Alert.Root>
-  {/if}
+    {#if state.successMsg}
+      <Alert.Root class="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+        <Check class="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
+        <Alert.Title class="text-emerald-600 dark:text-emerald-400">Succès</Alert.Title>
+        <Alert.Description class="text-emerald-600 dark:text-emerald-400">{state.successMsg}</Alert.Description>
+      </Alert.Root>
+    {/if}
 
-  {#if state.errorMsg}
-    <Alert.Root variant="destructive">
-      <AlertCircle class="w-4.5 h-4.5" />
-      <Alert.Title>Erreur</Alert.Title>
-      <Alert.Description>{state.errorMsg}</Alert.Description>
-    </Alert.Root>
-  {/if}
+    {#if state.errorMsg}
+      <Alert.Root variant="destructive">
+        <AlertCircle class="w-4.5 h-4.5" />
+        <Alert.Title>Erreur</Alert.Title>
+        <Alert.Description>{state.errorMsg}</Alert.Description>
+      </Alert.Root>
+    {/if}
 
-  {#if state.activeTab === 'pending'}
-    {#if pendingExpenses.length === 0}
+    <Tabs.Content value="pending">
+      {#if pendingExpenses.length === 0}
       <Card.Root class="text-center py-16">
         <Card.Content>
           <FileText class="w-12 h-12 text-muted-foreground/60 mx-auto mb-3" />
@@ -170,15 +171,17 @@
         {/each}
       </div>
     {/if}
-  {:else}
-    <ExpenseHistoryTable
-      {historyExpenses}
-      {isClosed}
-      {categoryLabels}
-      onSelectPhoto={(url) => state.selectedPhoto = url}
-      onCancelValidation={handleCancelValidation}
-    />
-  {/if}
+    </Tabs.Content>
+    <Tabs.Content value="history">
+      <ExpenseHistoryTable
+        {historyExpenses}
+        {isClosed}
+        {categoryLabels}
+        onSelectPhoto={(url) => state.selectedPhoto = url}
+        onCancelValidation={handleCancelValidation}
+      />
+    </Tabs.Content>
+  </Tabs.Root>
 </div>
 
 <ExpensePhotoModal bind:selectedPhoto={state.selectedPhoto} />

@@ -175,6 +175,12 @@ export async function verifyTurnstileToken(
 
   await rateLimiter.markTokenUsed(token, 300, kv);
 
+  // Bypass the network request entirely if using the official Cloudflare test secret key
+  // This allows local offline development without ENOTFOUND DNS errors
+  if (secretKey === '1x0000000000000000000000000000000AA') {
+    return { success: true };
+  }
+
   try {
     const url = getTurnstileSiteverifyUrl();
     const verifyRes = await fetch(url, {

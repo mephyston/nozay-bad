@@ -31,7 +31,7 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <div class="space-y-1">
       <label for="dep-ref" class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Référence remise</label>
       <Input id="dep-ref" bind:value={depositReference} class="w-full" />

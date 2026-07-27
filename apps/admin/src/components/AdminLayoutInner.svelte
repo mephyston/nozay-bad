@@ -39,7 +39,7 @@
     {
       label: "",
       items: [
-        { name: "Vue d'ensemble", icon: LayoutDashboard, href: "/admin" },
+        { name: "Vue d'ensemble", icon: LayoutDashboard, href: "/" },
         { name: "Note de frais", icon: Coins, href: "/admin/expenses" }
       ]
     },
@@ -82,7 +82,7 @@
     const primary = parts[0];
     const sub = parts[1];
 
-    if (item.href === "/admin") {
+    if (item.href === "/") {
       return breadcrumb === "Tableau de Bord" || primary === "tableau de bord" || primary === "vue d'ensemble";
     }
 
@@ -171,7 +171,7 @@
             {#snippet child({ props })}
               <a
                 {...props}
-                href="/admin"
+                href="/"
                 class="flex items-center gap-3 px-3 py-2 w-full h-full font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center"
               >
                 <!-- Badminton Shuttlecock Icon (aligned h-4 w-4) -->
@@ -317,11 +317,11 @@
       <!-- Breadcrumb -->
       <Breadcrumb.Root>
         <Breadcrumb.List>
-          <Breadcrumb.Item>
-            <Breadcrumb.Link href="/admin">Admin</Breadcrumb.Link>
+          <Breadcrumb.Item class="hidden sm:inline-flex">
+            <Breadcrumb.Link href="/">Admin</Breadcrumb.Link>
           </Breadcrumb.Item>
           {#each breadcrumbParts as part, i}
-            <Breadcrumb.Separator />
+            <Breadcrumb.Separator class={i === 0 ? "hidden sm:block" : ""} />
             <Breadcrumb.Item>
               {#if i === breadcrumbParts.length - 1}
                 <Breadcrumb.Page>{part}</Breadcrumb.Page>

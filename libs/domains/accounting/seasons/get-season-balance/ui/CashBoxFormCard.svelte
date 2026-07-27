@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus, Check, AlertCircle } from '@lucide/svelte';
-  import { Button, Input, Card, Alert } from '@nba/ui';
+  import { Button, Input, Alert } from '@nba/ui';
 
   let {
     type = $bindable<'recette' | 'depense'>('recette'),
@@ -27,14 +27,7 @@
   } = $props();
 </script>
 
-<Card.Root class="md:col-span-2 h-fit">
-  <Card.Header class="pb-2 border-b border-border">
-    <Card.Title class="text-lg font-semibold flex items-center gap-2">
-      <Plus class="w-5 h-5 text-primary" />
-      Enregistrer un mouvement
-    </Card.Title>
-  </Card.Header>
-  <Card.Content class="pt-4 space-y-4">
+<div class="space-y-4">
     {#if errorMsg}
       <Alert.Root variant="destructive">
         <AlertCircle class="w-4 h-4 shrink-0" />
@@ -133,5 +126,4 @@
         {isSubmitting ? 'Enregistrement...' : 'Enregistrer le mouvement'}
       </Button>
     </form>
-  </Card.Content>
-</Card.Root>
+</div>

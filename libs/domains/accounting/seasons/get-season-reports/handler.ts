@@ -122,10 +122,22 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     }
   }
 
-  const netAvailableCashCents = totalGrossCashCents - totalDeferredRevenueCents + totalDeferredExpensesCents;
+  let inVaultCents = 0;
+  let pendingDebitCents = 0;
+  for (const tx of periodTxs) {
+    if (tx.status === 'in_vault' && tx.type === 'recette') {
+      inVaultCents += (tx.amountCents ?? 0);
+    } else if (tx.status === 'pending_debit' && tx.type === 'depense') {
+      pendingDebitCents += (tx.amountCents ?? 0);
+    }
+  }
+
+  const netAvailableCashCents = totalGrossCashCents - inVaultCents + pendingDebitCents;
 
   const tresorerieDisponible = {
     totalGrossCashCents,
+    inVaultCents,
+    pendingDebitCents,
     totalDeferredRevenueCents,
     totalDeferredExpensesCents,
     netAvailableCashCents,

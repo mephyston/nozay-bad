@@ -37,13 +37,18 @@ export async function createOrder(db: Db, body: CreateOrderInput): Promise<Creat
     throw new ProductNotFoundError();
   }
 
+  const paymentMethod = await repo.getPaymentMethodByCode(db, body.paymentMethod);
+  if (!paymentMethod) {
+    throw new AppError(`Le moyen de paiement '${body.paymentMethod}' n'existe pas.`, 400);
+  }
+
   return repo.create(db, {
     seasonId: body.seasonId,
     memberId: body.memberId,
     productId: body.productId,
     quantity: body.quantity,
     totalAmountCents: product.priceCents * body.quantity,
-    paymentMethodId: body.paymentMethodId,
+    paymentMethodId: paymentMethod.id,
     status: 'pending',
     paidAt: body.paidAt || null,
     createdAt: new Date()

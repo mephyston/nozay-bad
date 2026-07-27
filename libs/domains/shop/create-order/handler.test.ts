@@ -11,7 +11,7 @@ describe('createOrder handler (Eligibility & Validation)', () => {
   let seasonId: number;
   let memberId: number;
   let productId: number;
-  let paymentMethodId: number;
+  let paymentMethodCode: string;
 
   beforeEach(async () => {
     const mock = await setupMockDb();
@@ -39,12 +39,12 @@ describe('createOrder handler (Eligibility & Validation)', () => {
     productId = product.id;
 
     const pm = await db.select().from(paymentMethodsTable).all();
-    paymentMethodId = pm[0].id;
+    paymentMethodCode = pm[0].code;
   });
 
   it('1. Allows order creation for valid member even if installment payment is pending (paid = false)', async () => {
     const order = await createOrder(db, {
-      seasonId, memberId, productId, quantity: 1, paymentMethodId
+      seasonId, memberId, productId, quantity: 1, paymentMethod: paymentMethodCode
     });
 
     expect(order).toBeDefined();
@@ -58,7 +58,7 @@ describe('createOrder handler (Eligibility & Validation)', () => {
     }).returning().get();
 
     await expect(createOrder(db, {
-      seasonId: otherSeason.id, memberId, productId, quantity: 1, paymentMethodId
+      seasonId: otherSeason.id, memberId, productId, quantity: 1, paymentMethod: paymentMethodCode
     })).rejects.toThrowError(MemberNotEligibleError);
   });
 
@@ -69,13 +69,13 @@ describe('createOrder handler (Eligibility & Validation)', () => {
     }).returning().get();
 
     await expect(createOrder(db, {
-      seasonId, memberId: suspendedMember.id, productId, quantity: 1, paymentMethodId
+      seasonId, memberId: suspendedMember.id, productId, quantity: 1, paymentMethod: paymentMethodCode
     })).rejects.toThrowError(MemberNotEligibleError);
   });
 
   it('4. Rejects order creation if paidAt is in the future', async () => {
     await expect(createOrder(db, {
-      seasonId, memberId, productId, quantity: 1, paymentMethodId, paidAt: '2099-12-31'
+      seasonId, memberId, productId, quantity: 1, paymentMethod: paymentMethodCode, paidAt: '2099-12-31'
     })).rejects.toThrowError("La date de paiement ne peut pas être postérieure à la date du jour.");
   });
 });

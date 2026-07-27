@@ -4,25 +4,29 @@
 
   let {
     isSubmitting = false,
-    onCreateAccountClass
+    initialData = null,
+    onSubmitAccountClass
   }: {
     isSubmitting: boolean;
-    onCreateAccountClass: (data: { code: string; label: string; type: 'recette' | 'depense' | 'tresorerie' }) => Promise<void>;
+    initialData?: { code: string; label: string; type: 'recette' | 'depense' | 'tresorerie' } | null;
+    onSubmitAccountClass: (data: { code: string; label: string; type: 'recette' | 'depense' | 'tresorerie' }) => Promise<void>;
   } = $props();
 
-  let newClassCode = $state('');
-  let newClassLabel = $state('');
-  let newClassType = $state<'recette' | 'depense' | 'tresorerie'>('recette');
+  let newClassCode = $state(initialData?.code || '');
+  let newClassLabel = $state(initialData?.label || '');
+  let newClassType = $state<'recette' | 'depense' | 'tresorerie'>(initialData?.type || 'recette');
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
-    await onCreateAccountClass({
+    await onSubmitAccountClass({
       code: newClassCode.trim(),
       label: newClassLabel.trim(),
       type: newClassType
     });
-    newClassCode = '';
-    newClassLabel = '';
+    if (!initialData) {
+      newClassCode = '';
+      newClassLabel = '';
+    }
   }
 </script>
 
@@ -35,6 +39,7 @@
       bind:value={newClassCode}
       placeholder="63"
       class="font-mono"
+      disabled={!!initialData}
       required
     />
   </div>
@@ -68,7 +73,11 @@
     disabled={isSubmitting}
     class="w-full font-bold flex items-center justify-center gap-1.5"
   >
-    <Plus class="w-4 h-4" />
-    Créer la classe
+    {#if initialData}
+      Enregistrer les modifications
+    {:else}
+      <Plus class="w-4 h-4" />
+      Créer la classe
+    {/if}
   </Button>
 </form>

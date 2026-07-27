@@ -38,8 +38,8 @@
     </div>
   </div>
 
-  <!-- Turnstile Widget (Invisible) -->
-  <div class="cf-turnstile" style={!selectedMember ? 'display: none;' : ''} data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1" data-size="invisible"></div>
+  <!-- Turnstile Widget -->
+  <div class="cf-turnstile mt-2 flex justify-center" style={!selectedMember ? 'display: none;' : ''} data-sitekey={import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'} data-action="turnstile-spin-v1"></div>
 
   <!-- Submit Button -->
   <Button

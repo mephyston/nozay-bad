@@ -43,6 +43,8 @@ export type GetSeasonReportsOutput = {
   }[];
   tresorerieDisponible?: {
     totalGrossCashCents: number;
+    inVaultCents: number;
+    pendingDebitCents: number;
     totalDeferredRevenueCents: number;
     totalDeferredExpensesCents: number;
     netAvailableCashCents: number;

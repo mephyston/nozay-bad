@@ -122,7 +122,7 @@
     {/if}
 
     <form onsubmit={handleSaveBalances} class="space-y-4">
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="space-y-1">
           <label for="current-initial" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Compte Courant</label>
           <div class="relative">

@@ -49,11 +49,11 @@
                 disabled={depositState.isClosed}
               />
             </Table.Head>
-            <Table.Head>Date de réception</Table.Head>
+            <Table.Head class="hidden md:table-cell">Date</Table.Head>
             <Table.Head>N° Chèque</Table.Head>
-            <Table.Head>Banque</Table.Head>
+            <Table.Head class="hidden md:table-cell">Banque</Table.Head>
             <Table.Head>Émetteur</Table.Head>
-            <Table.Head>Adhérent associé</Table.Head>
+            <Table.Head class="hidden lg:table-cell">Adhérent</Table.Head>
             <Table.Head class="text-right">Montant</Table.Head>
             <Table.Head class="text-right">Actions</Table.Head>
           </Table.Row>
@@ -70,13 +70,13 @@
                   disabled={depositState.isClosed}
                 />
               </Table.Cell>
-              <Table.Cell class="text-muted-foreground">
+              <Table.Cell class="hidden md:table-cell text-muted-foreground">
                 {new Date(check.createdAt).toLocaleDateString('fr-FR')}
               </Table.Cell>
               <Table.Cell class="font-medium">{check.number}</Table.Cell>
-              <Table.Cell>{check.bank || '—'}</Table.Cell>
+              <Table.Cell class="hidden md:table-cell">{check.bank || '—'}</Table.Cell>
               <Table.Cell class="font-medium">{check.emitter}</Table.Cell>
-              <Table.Cell>
+              <Table.Cell class="hidden lg:table-cell">
                 {#if check.memberId && check.memberName}
                   <a
                     href={`/admin/members/${check.memberLicence}?season=${seasonId}`}

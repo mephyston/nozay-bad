@@ -5,7 +5,7 @@ export interface CreateOrderInput {
   memberId: number;
   productId: number;
   quantity: number;
-  paymentMethodId: number;
+  paymentMethod: string;
   paidAt?: string;
 }
 

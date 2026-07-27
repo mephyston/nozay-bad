@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FileText, Search, Trash2 } from '@lucide/svelte';
+  import { FileText, Search, Trash2, Plus } from '@lucide/svelte';
   import { Button, Input, Badge, Card, Table, Amount } from '@nba/ui';
   import type { CashTransaction } from './cashbox-types';
   import { categoryLabels } from './cashbox-types';
@@ -8,12 +8,14 @@
     filteredTransactions = [],
     searchTerm = $bindable(''),
     isClosed,
-    onDelete
+    onDelete,
+    onNewMovement
   }: {
     filteredTransactions: CashTransaction[];
     searchTerm: string;
     isClosed: boolean;
     onDelete: (id: number) => void;
+    onNewMovement?: () => void;
   } = $props();
 </script>
 
@@ -24,14 +26,26 @@
         <FileText class="w-5 h-5 text-primary" />
         Derniers mouvements
       </Card.Title>
-      <div class="relative shrink-0">
-        <Search class="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground z-10" />
-        <Input
-          type="text"
-          placeholder="Rechercher..."
-          bind:value={searchTerm}
-          class="pl-8 pr-3 w-full sm:w-48 h-8 text-xs"
-        />
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <div class="relative flex-1 sm:flex-none">
+          <Search class="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground z-10" />
+          <Input
+            type="text"
+            placeholder="Rechercher..."
+            bind:value={searchTerm}
+            class="pl-8 pr-3 w-full sm:w-48 h-8 text-xs"
+          />
+        </div>
+        {#if onNewMovement}
+          <Button
+            onclick={onNewMovement}
+            disabled={isClosed}
+            size="sm"
+            class="h-8 shrink-0 text-xs font-semibold"
+          >
+            Nouveau
+          </Button>
+        {/if}
       </div>
     </div>
   </Card.Header>
@@ -39,9 +53,9 @@
     <Table.Root>
       <Table.Header>
         <Table.Row class="border-b border-border text-xs text-muted-foreground font-bold uppercase tracking-wider">
-          <Table.Head class="py-3 px-2">Date</Table.Head>
+          <Table.Head class="hidden md:table-cell py-3 px-2">Date</Table.Head>
           <Table.Head class="py-3 px-2">Description</Table.Head>
-          <Table.Head class="py-3 px-2">Catégorie</Table.Head>
+          <Table.Head class="hidden sm:table-cell py-3 px-2">Catégorie</Table.Head>
           <Table.Head class="py-3 px-2 text-right">Montant</Table.Head>
           <Table.Head class="py-3 px-2 text-right">Action</Table.Head>
         </Table.Row>
@@ -49,7 +63,7 @@
       <Table.Body class="divide-y divide-border">
         {#each filteredTransactions as tx}
           <Table.Row class="hover:bg-muted/40 transition-colors">
-            <Table.Cell class="py-3 px-2 text-xs whitespace-nowrap">{tx.date}</Table.Cell>
+            <Table.Cell class="hidden md:table-cell py-3 px-2 text-xs whitespace-nowrap">{tx.date}</Table.Cell>
             <Table.Cell class="py-3 px-2 font-medium">
               <div>{tx.description}</div>
               {#if tx.type === 'transfert'}
@@ -58,7 +72,7 @@
                 </Badge>
               {/if}
             </Table.Cell>
-            <Table.Cell class="py-3 px-2 text-xs text-muted-foreground">
+            <Table.Cell class="hidden sm:table-cell py-3 px-2 text-xs text-muted-foreground">
               {tx.category ? (categoryLabels[tx.category] || tx.category) : 'Transfert'}
             </Table.Cell>
             <Table.Cell class="py-3 px-2 text-right font-bold">

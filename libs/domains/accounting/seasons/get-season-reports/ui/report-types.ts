@@ -18,6 +18,8 @@ export interface ReportData {
   }[];
   tresorerieDisponible?: {
     totalGrossCashCents: number;
+    inVaultCents: number;
+    pendingDebitCents: number;
     deferredRevenues: { categoryName: string; amountCents: number }[];
     deferredExpenses: { categoryName: string; amountCents: number }[];
     netAvailableCashCents: number;

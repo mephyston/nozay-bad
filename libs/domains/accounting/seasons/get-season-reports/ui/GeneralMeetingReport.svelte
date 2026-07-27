@@ -121,7 +121,7 @@
 
 <div class="space-y-6">
   <Tabs.Root value={activeTab} onValueChange={handleTabChange} class="space-y-6">
-    <Tabs.List class="grid w-full max-w-3xl mx-auto grid-cols-4 mb-6 no-print">
+    <Tabs.List class="w-full max-w-3xl mx-auto mb-6 no-print">
       <Tabs.Trigger value="resultat">Compte de résultat</Tabs.Trigger>
       <Tabs.Trigger value="analytique">Suivi Analytique</Tabs.Trigger>
       <Tabs.Trigger value="tresorerie">Bilan de trésorerie</Tabs.Trigger>
