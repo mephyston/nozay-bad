@@ -1,3 +1,5 @@
+import { uiConfirm } from '@nba/ui';
+
 export async function submitCashMovement(params: {
   seasonId: string;
   type: 'recette' | 'depense';
@@ -44,7 +46,7 @@ export async function submitCashMovement(params: {
 }
 
 export async function deleteCashMovement(id: number): Promise<boolean> {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer ce mouvement de caisse ?')) return false;
+  if (!(await uiConfirm('Êtes-vous sûr de vouloir supprimer ce mouvement de caisse ?'))) return false;
 
   const res = await fetch('/admin/accounting/cash-box', {
     method: 'POST',

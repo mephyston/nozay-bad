@@ -32,3 +32,5 @@ export { Amount } from './components/ui/amount';
 export { Toaster, toast } from './components/ui/sonner';
 export { Combobox, type ComboboxItem } from './components/ui/combobox';
 export * as DropdownMenu from './components/ui/dropdown-menu';
+export { uiConfirm } from './components/ui/alert-dialog/confirm';
+export { default as GlobalConfirm } from './components/ui/alert-dialog/GlobalConfirm.svelte';

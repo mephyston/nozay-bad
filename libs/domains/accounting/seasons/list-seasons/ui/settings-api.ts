@@ -1,3 +1,4 @@
+import { uiConfirm } from '@nba/ui';
 import { showMessage, type SettingsState } from './settings-api-classes';
 
 export * from './settings-api-classes';
@@ -184,7 +185,7 @@ export async function updateCategory(state: SettingsState, id: number, updates: 
 }
 
 export async function deleteCategory(state: SettingsState, id: number) {
-  if (!confirm('Voulez-vous vraiment supprimer cette catégorie ?')) return;
+  if (!(await uiConfirm('Voulez-vous vraiment supprimer cette catégorie ?'))) return;
   state.isSubmitting = true;
   state.errorMsg = '';
   state.successMsg = '';

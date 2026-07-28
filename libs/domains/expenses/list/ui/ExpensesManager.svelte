@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FileText, Check, AlertCircle } from '@lucide/svelte';
-  import { Alert, Card, Tabs } from '@nba/ui';
+  import { Alert, Card, Tabs, uiConfirm } from '@nba/ui';
   import type { Expense, Season, Category } from './expenses-types';
   import { getCategoryOptions, getCategoryLabels } from './expenses-types';
   import { ExpensesState } from './expenses-state.svelte';
@@ -93,7 +93,7 @@
   }
 
   async function handleCancelValidation(id: number) {
-    if (!confirm("Êtes-vous sûr de vouloir remettre cette note de frais en attente ? Cela annulera son remboursement en comptabilité.")) {
+    if (!(await uiConfirm("Êtes-vous sûr de vouloir remettre cette note de frais en attente ? Cela annulera son remboursement en comptabilité."))) {
       return;
     }
 

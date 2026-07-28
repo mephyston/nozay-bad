@@ -1,4 +1,4 @@
-import { toast } from '@nba/ui';
+import { toast, uiConfirm } from '@nba/ui';
 
 export async function handleAnalyzeScan(file: File, seasonId: string, state: any) {
   if (!file) return;
@@ -97,7 +97,7 @@ export async function handleAddCheck(e: SubmitEvent, seasonId: string, state: an
 }
 
 export async function handleDeleteCheck(id: number, seasonId: string) {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer ce chèque ?')) return;
+  if (!(await uiConfirm('Êtes-vous sûr de vouloir supprimer ce chèque ?'))) return;
 
   try {
     const res = await fetch(`?season=${seasonId}`, {
@@ -153,7 +153,7 @@ export async function handleCreateDeposit(seasonId: string, state: any) {
 }
 
 export async function handleDeleteDeposit(id: number, seasonId: string) {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer ce bordereau ? Les chèques associés repasseront au statut "Reçus" et le rapprochement bancaire sera annulé.')) return;
+  if (!(await uiConfirm('Êtes-vous sûr de vouloir supprimer ce bordereau ? Les chèques associés repasseront au statut "Reçus" et le rapprochement bancaire sera annulé.'))) return;
 
   try {
     const res = await fetch(`?season=${seasonId}`, {

@@ -25,7 +25,7 @@
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
   import ThemeToggle from "./ThemeToggle.svelte";
-  import { Sidebar, Breadcrumb, Separator, Avatar } from "@nba/ui";
+  import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm } from "@nba/ui";
 
   let { children, email, breadcrumb } = $props<{
     children?: import('svelte').Snippet;
@@ -224,9 +224,9 @@
                     <a
                       {...props}
                       href={item.href}
-                      class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-normal transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground w-full"
+                      class="flex items-center gap-4 px-3 py-3 md:gap-3 md:py-2 rounded-md text-base md:text-sm font-medium md:font-normal transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground w-full"
                     >
-                      <item.icon class="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+                      <item.icon class="h-5 w-5 md:h-4 md:w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
                       <span class="group-data-[collapsible=icon]:hidden">{item.name}</span>
                     </a>
                   {/snippet}
@@ -352,3 +352,5 @@
     </main>
   </div>
 </Sidebar.Inset>
+
+<GlobalConfirm />

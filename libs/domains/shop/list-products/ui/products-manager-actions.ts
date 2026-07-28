@@ -1,3 +1,4 @@
+import { uiConfirm } from '@nba/ui';
 import type { Product } from './products-manager-types';
 
 export async function submitProduct(params: {
@@ -72,7 +73,7 @@ export async function toggleProductActive(product: Product): Promise<boolean> {
 }
 
 export async function archiveProduct(product: Product): Promise<boolean> {
-  if (!confirm(`Êtes-vous sûr de vouloir désactiver le produit "${product.name}" ?`)) return false;
+  if (!(await uiConfirm(`Êtes-vous sûr de vouloir désactiver le produit "${product.name}" ?`))) return false;
 
   const res = await fetch('', {
     method: 'POST',

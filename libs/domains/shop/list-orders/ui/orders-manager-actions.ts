@@ -1,3 +1,5 @@
+import { uiConfirm } from '@nba/ui';
+
 export async function getErrorMessage(res: Response, defaultMsg: string): Promise<string> {
   try {
     const text = await res.text();
@@ -36,7 +38,7 @@ export async function approveOrder(orderId: number): Promise<{ success: boolean;
 }
 
 export async function rejectOrder(orderId: number): Promise<{ success: boolean; error?: string }> {
-  if (!confirm('Êtes-vous sûr de vouloir refuser cette commande ?')) {
+  if (!(await uiConfirm('Êtes-vous sûr de vouloir refuser cette commande ?'))) {
     return { success: false };
   }
 

@@ -1,4 +1,4 @@
-import { toast } from '@nba/ui';
+import { toast, uiConfirm } from '@nba/ui';
 import { apiBulkReconcile, apiBulkIgnore, apiImportOfx, apiAnalyzeAi } from './reconciliation-api';
 
 export function createBulkActions(s: any) {
@@ -25,7 +25,7 @@ export function createBulkActions(s: any) {
   async function handleBulkIgnore() {
     const ids = Object.keys(s.selectedTxIds).map(Number).filter(id => s.selectedTxIds[id]);
     if (ids.length === 0) return;
-    if (typeof confirm !== 'undefined' && !confirm(`Ignorer ces ${ids.length} transactions ?`)) return;
+    if (!(await uiConfirm(`Ignorer ces ${ids.length} transactions ?`))) return;
     s.isSubmitting = true; s.errorMsg = '';
     try {
       await apiBulkIgnore(ids);

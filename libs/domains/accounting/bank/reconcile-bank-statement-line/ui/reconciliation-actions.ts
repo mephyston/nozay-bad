@@ -1,5 +1,5 @@
 import type { BankStatementLine } from './reconciliation-types';
-import { toast } from '@nba/ui';
+import { toast, uiConfirm } from '@nba/ui';
 import {
   apiLoadUnpaidInvoices,
   apiReconcileInvoice,
@@ -187,7 +187,7 @@ export function createReconciliationActions(s: any) {
   }
 
   async function handleIgnore(btId: number) {
-    if (typeof confirm !== 'undefined' && !confirm('Voulez-vous ignorer cette transaction bancaire ?')) return;
+    if (!(await uiConfirm('Voulez-vous ignorer cette transaction bancaire ?'))) return;
     s.isSubmitting = true;
     try {
       prepareNextFocus(btId, true);
