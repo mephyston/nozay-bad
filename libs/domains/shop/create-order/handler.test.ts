@@ -2,8 +2,10 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { createOrder } from './handler';
 import { productsTable, productCategoriesTable } from '../shared/schema';
-import { categoriesTable, paymentMethodsTable } from '@nba/accounting/schema';
-import { seasonsTable, membersTable } from '@nba/members/schema';
+// eslint-disable-next-line no-restricted-imports
+import { membersTable } from '@nba/members/schema';
+// eslint-disable-next-line no-restricted-imports
+import { seasonsTable } from '@nba/accounting/schema';
 import { MemberNotEligibleError } from '../shared/errors';
 
 describe('createOrder handler (Eligibility & Validation)', () => {
@@ -28,7 +30,8 @@ describe('createOrder handler (Eligibility & Validation)', () => {
     }).returning().get();
     memberId = member.id;
 
-    const cat = await db.select().from(categoriesTable).all();
+    const catRes = await mock.mockD1.prepare('SELECT id FROM categories').all();
+    const cat = catRes.results;
     const pCat = await db.insert(productCategoriesTable).values({
       label: 'Volants', accountingCategoryId: cat[0].id, createdAt: new Date()
     }).returning().get();
@@ -38,8 +41,8 @@ describe('createOrder handler (Eligibility & Validation)', () => {
     }).returning().get();
     productId = product.id;
 
-    const pm = await db.select().from(paymentMethodsTable).all();
-    paymentMethodCode = pm[0].code;
+    const pmRes = await mock.mockD1.prepare('SELECT code FROM payment_methods').all();
+    paymentMethodCode = pmRes.results[0].code as string;
   });
 
   it('1. Allows order creation for valid member even if installment payment is pending (paid = false)', async () => {

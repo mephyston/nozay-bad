@@ -1,6 +1,7 @@
+import { categoriesTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq } from 'drizzle-orm';
-import { categoriesTable, accountClassesTable } from '../../shared/schema';
+import { accountClassesTable } from '../../shared/schema';
 
 export class CreateCategoryRepository {
   async createCategory(db: DbOrTx, values: {

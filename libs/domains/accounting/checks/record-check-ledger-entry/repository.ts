@@ -1,6 +1,8 @@
+import { seasonsTable } from '@nba/accounting/schema';
+import { ledgerEntriesTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq, sql } from 'drizzle-orm';
-import { ledgerEntriesTable, checksTable, seasonsTable } from '../../shared/schema';
+import { checksTable } from '../../shared/schema';
 import { getAllMembers } from '@nba/members-api';
 
 export class RecordCheckTransactionRepository {

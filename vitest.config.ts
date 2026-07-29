@@ -73,6 +73,7 @@ export default defineConfig({
           name: 'features-members-ui',
           globals: true,
           environment: 'jsdom',
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
           root: path.resolve(__dirname, 'libs/domains/members'),
           include: ['get-member-by-licence/ui/**/*.test.ts', 'import-members-csv/ui/**/*.test.ts', 'list-members/ui/**/*.test.ts'],
         }
@@ -108,6 +109,7 @@ export default defineConfig({
           name: 'features-accounting-ui',
           globals: true,
           environment: 'jsdom',
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
           root: path.resolve(__dirname, 'libs/domains/accounting'),
           include: ['*/**/ui/**/*.test.ts'],
         }
@@ -143,6 +145,7 @@ export default defineConfig({
           name: 'features-expenses-ui',
           globals: true,
           environment: 'jsdom',
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
           root: path.resolve(__dirname, 'libs/domains/expenses'),
           include: ['create/ui/**/*.test.ts', 'list/ui/**/*.test.ts', 'update/ui/**/*.test.ts'],
         }
@@ -178,6 +181,7 @@ export default defineConfig({
           name: 'features-shop-ui',
           globals: true,
           environment: 'jsdom',
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
           root: path.resolve(__dirname, 'libs/domains/shop'),
           include: ['list-orders/ui/**/*.test.ts', 'list-products/ui/**/*.test.ts'],
         }

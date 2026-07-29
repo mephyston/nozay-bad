@@ -1,17 +1,11 @@
+import { seasonsTable } from '@nba/accounting/schema';
+import { ledgerEntriesTable, categoriesTable } from '@nba/accounting/schema';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { eq } from 'drizzle-orm';
 
 import { setupMockDb } from '@nba/db/test-utils';
 import { closeSeason, getCloseSeasonChecks, reopenSeason } from './handler';
-import {
-  seasonsTable,
-  ledgerEntriesTable,
-  bankStatementLinesTable,
-  checkDepositsTable,
-  checksTable,
-  seasonBalancesTable,
-  categoriesTable
-} from '../../shared/schema';
+import { bankStatementLinesTable, checkDepositsTable, checksTable, seasonBalancesTable } from '../../shared/schema';
 import { AppError } from '@nba/db';
 
 describe('closeSeason (Pre-closure Checks, Rollover & Reopen - PROMPT 13)', () => {
@@ -234,7 +228,8 @@ describe('closeSeason (Pre-closure Checks, Rollover & Reopen - PROMPT 13)', () =
 
   it('blocks closure if unvalidated paid shop orders exist', async () => {
     // Insert an order with paidAt set but status pending on season 1
-    const { ordersTable, productsTable, productCategoriesTable, paymentMethodsTable } = await import('@nba/shop/schema');
+    const { ordersTable, productsTable, productCategoriesTable } = await import('@nba/shop/schema');
+    const { paymentMethodsTable } = await import('@nba/accounting/schema');
     const { sql } = await import('drizzle-orm');
 
     const member = await db.get(sql`

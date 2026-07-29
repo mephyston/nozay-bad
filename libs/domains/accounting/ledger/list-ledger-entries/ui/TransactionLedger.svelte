@@ -237,7 +237,7 @@
   <!-- Barre d'onglets des comptes du Grand Livre centrée -->
 
   <Tabs.Root value={selectedAccount || 'current'} onValueChange={handleAccountTabChange} class="w-full no-print">
-    <Tabs.List class="grid w-full grid-cols-3 max-w-2xl mx-auto mb-6">
+    <Tabs.List class="flex w-full sm:w-fit justify-start sm:justify-center overflow-x-auto no-scrollbar mx-auto mb-6">
       <Tabs.Trigger value="current">Compte Courant</Tabs.Trigger>
       <Tabs.Trigger value="savings">Compte Livret</Tabs.Trigger>
       <Tabs.Trigger value="cash">Caisse Physique</Tabs.Trigger>

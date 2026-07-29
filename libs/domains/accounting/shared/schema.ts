@@ -1,8 +1,17 @@
 import { sqliteTable, text, integer, uniqueIndex, check } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
-import { seasonsTable, membersTable } from '@nba/members/schema';
+export const seasonsTable = sqliteTable('seasons', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  code: text('code').notNull().unique(),
+  name: text('name').notNull(),
+  startDate: text('start_date').notNull(),
+  endDate: text('end_date').notNull(),
+  active: integer('active', { mode: 'boolean' }).notNull().default(false),
+  closedAt: integer('closed_at', { mode: 'timestamp' }),
+  approvedAt: integer('approved_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
 
-export { seasonsTable, membersTable };
 
 export const accountClassesTable = sqliteTable('account_classes', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -42,7 +51,7 @@ export const categoriesTable = sqliteTable('categories', {
 
 export const seasonBalancesTable = sqliteTable('season_balances', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  seasonId: integer('season_id').notNull().references(() => seasonsTable.id),
+  seasonId: integer('season_id').notNull(),
   accountId: integer('account_id').notNull().references(() => accountsTable.id),
   initialBalanceCents: integer('initial_balance_cents').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
@@ -65,7 +74,7 @@ export const bankStatementLinesTable = sqliteTable('bank_statement_lines', {
 
 export const checkDepositsTable = sqliteTable('check_deposits', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  seasonId: integer('season_id').notNull().references(() => seasonsTable.id),
+  seasonId: integer('season_id').notNull(),
   reference: text('reference').notNull().unique(),
   date: text('date').notNull(),
   amountCents: integer('amount_cents').notNull(),
@@ -77,7 +86,7 @@ export const checkDepositsTable = sqliteTable('check_deposits', {
 export const invoicesTable = sqliteTable('invoices', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   invoiceNumber: text('invoice_number').notNull().unique(),
-  seasonId: integer('season_id').notNull().references(() => seasonsTable.id),
+  seasonId: integer('season_id').notNull(),
   date: text('date').notNull(),
   dueDate: text('due_date').notNull(),
   clientName: text('client_name').notNull(),
@@ -105,7 +114,7 @@ export const invoiceItemsTable = sqliteTable('invoice_items', {
 
 export const ledgerEntriesTable = sqliteTable('ledger_entries', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  seasonId: integer('season_id').notNull().references(() => seasonsTable.id),
+  seasonId: integer('season_id').notNull(),
   type: text('type', { enum: ['recette', 'depense', 'transfert'] }).notNull(),
   accountId: integer('account_id').notNull().references(() => accountsTable.id),
   destinationAccountId: integer('destination_account_id').references(() => accountsTable.id),
@@ -119,7 +128,7 @@ export const ledgerEntriesTable = sqliteTable('ledger_entries', {
     enum: ['normal', 'produit_constate_avance', 'charge_constatee_avance', 'charge_a_payer', 'produit_a_recevoir']
   }).notNull().default('normal'),
   accrualNote: text('accrual_note'),
-  memberId: integer('member_id').references(() => membersTable.id),
+  memberId: integer('member_id'),
   bankStatementLineId: integer('bank_statement_line_id').references(() => bankStatementLinesTable.id),
   invoiceId: integer('invoice_id').references(() => invoicesTable.id),
   status: text('status', { enum: ['pending_debit', 'in_vault', 'cleared'] }).notNull().default('cleared'),
@@ -135,12 +144,12 @@ export const ledgerEntriesTable = sqliteTable('ledger_entries', {
 export const checksTable = sqliteTable('checks', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   checkDepositId: integer('check_deposit_id').references(() => checkDepositsTable.id),
-  seasonId: integer('season_id').notNull().references(() => seasonsTable.id),
+  seasonId: integer('season_id').notNull(),
   number: text('number').notNull(),
   amountCents: integer('amount_cents').notNull(),
   emitter: text('emitter').notNull(),
   bank: text('bank'),
-  memberId: integer('member_id').references(() => membersTable.id),
+  memberId: integer('member_id'),
   ledgerEntryId: integer('ledger_entry_id').references(() => ledgerEntriesTable.id),
   status: text('status', { enum: ['received', 'deposited'] }).notNull().default('received'),
   photoUrl: text('photo_url'),
@@ -149,7 +158,7 @@ export const checksTable = sqliteTable('checks', {
 
 export const seasonCategoryBudgetsTable = sqliteTable('season_category_budgets', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  seasonId: integer('season_id').notNull().references(() => seasonsTable.id),
+  seasonId: integer('season_id').notNull(),
   categoryId: integer('category_id').notNull().references(() => categoriesTable.id),
   type: text('type', { enum: ['recette', 'depense'] }).notNull(),
   amountCents: integer('amount_cents').notNull().default(0),

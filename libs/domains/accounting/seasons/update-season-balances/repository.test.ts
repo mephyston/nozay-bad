@@ -1,7 +1,8 @@
+import { seasonsTable } from '@nba/accounting/schema';
 import { describe, it, expect } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { UpdateSeasonBalancesRepository } from './repository';
-import { seasonsTable, accountClassesTable, accountsTable, seasonBalancesTable } from '../../shared/schema';
+import { accountClassesTable, accountsTable, seasonBalancesTable } from '../../shared/schema';
 import { eq, and } from 'drizzle-orm';
 
 describe('UpdateSeasonBalancesRepository (Integration)', () => {

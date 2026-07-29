@@ -1,10 +1,12 @@
+import { membersTable } from '@nba/members/schema';
+import { getSeasonId } from '@nba/accounting-api';
 import { eq, and, or, like, sql, inArray } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { membersTable, seasonsTable } from '../shared/schema';
+
 import { ListMembersFilters } from './dto';
 
 export class ListMembersRepository {
-  private buildConditions(db: DbOrTx, filters: ListMembersFilters) {
+  async buildConditions(db: DbOrTx, filters: ListMembersFilters) {
     const conditions = [];
     if (filters.search) {
       conditions.push(
@@ -25,12 +27,11 @@ export class ListMembersRepository {
       conditions.push(eq(membersTable.status, filters.status as any));
     }
     if (filters.season) {
-      const num = Number(filters.season);
-      if (!isNaN(num) && Number.isInteger(num)) {
-        conditions.push(eq(membersTable.seasonId, num));
+      const sId = await getSeasonId(db, filters.season);
+      if (sId !== undefined) {
+        conditions.push(eq(membersTable.seasonId, sId));
       } else {
-        const seasonSubquery = db.select({ id: seasonsTable.id }).from(seasonsTable).where(eq(seasonsTable.code, filters.season));
-        conditions.push(inArray(membersTable.seasonId, seasonSubquery));
+        conditions.push(eq(membersTable.seasonId, -1)); // Not found
       }
     }
     if (filters.paid !== undefined) {
@@ -40,7 +41,7 @@ export class ListMembersRepository {
   }
 
   async count(db: DbOrTx, filters: ListMembersFilters): Promise<number> {
-    const conditions = this.buildConditions(db, filters);
+    const conditions = await this.buildConditions(db, filters);
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     const countRes = await db.select({ count: sql<number>`count(*)` })
       .from(membersTable)
@@ -50,7 +51,7 @@ export class ListMembersRepository {
   }
 
   async list(db: DbOrTx, filters: ListMembersFilters, pagination: { limit: number; offset: number }): Promise<(typeof membersTable.$inferSelect)[]> {
-    const conditions = this.buildConditions(db, filters);
+    const conditions = await this.buildConditions(db, filters);
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     return db.select()
       .from(membersTable)

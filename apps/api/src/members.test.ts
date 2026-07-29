@@ -1,8 +1,10 @@
+import { membersTable } from '@nba/members/schema';
+import { seasonsTable } from '@nba/accounting/schema';
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { membersRouter } from '@nba/members-api';
 import { setupMockDb } from '@nba/db/test-utils';
-import { membersTable, seasonsTable } from '../../../libs/domains/members/shared/schema';
+
 import { sql, eq } from 'drizzle-orm';
 import { AppError } from '@nba/db';
 

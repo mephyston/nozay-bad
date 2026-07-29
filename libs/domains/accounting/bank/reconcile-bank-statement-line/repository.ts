@@ -1,11 +1,8 @@
+import { seasonsTable } from '@nba/accounting/schema';
+import { ledgerEntriesTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq, and, lte, gte } from 'drizzle-orm';
-import {
-  ledgerEntriesTable,
-  bankStatementLinesTable,
-  invoicesTable,
-  seasonsTable
-} from '../../shared/schema';
+import { bankStatementLinesTable, invoicesTable } from '../../shared/schema';
 
 export class ReconcileBankStatementLineRepository {
   async getSeasonIdByDate(db: DbOrTx, date: string): Promise<number | undefined> {

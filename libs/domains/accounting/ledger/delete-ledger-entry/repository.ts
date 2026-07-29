@@ -1,6 +1,7 @@
+import { ledgerEntriesTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq, and, ne, sql } from 'drizzle-orm';
-import { ledgerEntriesTable, bankStatementLinesTable } from '../../shared/schema';
+import { bankStatementLinesTable } from '../../shared/schema';
 
 export class DeleteTransactionRepository {
   async getById(db: DbOrTx, id: number): Promise<any | undefined> {

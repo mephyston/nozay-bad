@@ -17,7 +17,7 @@
 </script>
 
 <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-  <Tabs.List class="w-fit mx-auto sm:mx-0 no-print">
+  <Tabs.List class="w-full sm:w-fit justify-start sm:justify-center overflow-x-auto no-scrollbar mx-auto sm:mx-0 no-print">
     <Tabs.Trigger value="pending">
       En attente
       {#if pendingCount > 0}

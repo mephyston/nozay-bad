@@ -1,6 +1,7 @@
+import { ledgerEntriesTable, categoriesTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq, and, gte, lte, or, inArray } from 'drizzle-orm';
-import { seasonBalancesTable, ledgerEntriesTable, categoriesTable, seasonCategoryBudgetsTable, accountsTable } from '../../shared/schema';
+import { seasonBalancesTable, seasonCategoryBudgetsTable, accountsTable } from '../../shared/schema';
 
 
 export class GetSeasonReportsRepository {

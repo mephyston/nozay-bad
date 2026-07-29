@@ -8,14 +8,34 @@ import { createApiClient } from '@nba/api-client';
 const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
 const apiService = createApiClient(env);
 
+const requestedSeason = Astro.url.searchParams.get('season');
+
 // Fetch the aggregated dashboard data
 let dashboardData = null;
+let seasonsList: any[] = [];
+let currentSeason = requestedSeason || '25-26';
+
 try {
-  const res = await apiService.fetch('http://localhost/dashboard/overview');
+  const queryParams = new URLSearchParams();
+  if (requestedSeason) queryParams.set('seasonId', requestedSeason);
+
+  const [res, seasonsRes] = await Promise.all([
+    apiService.fetch(`http://localhost/dashboard/overview?${queryParams.toString()}`),
+    apiService.fetch('http://localhost/accounting/seasons')
+  ]);
+
   if (res.ok) {
     const json = await res.json() as any;
     if (json.success) {
       dashboardData = json.data;
+      if (!requestedSeason) currentSeason = dashboardData.season;
+    }
+  }
+
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    if (json.data) {
+      seasonsList = json.data;
     }
   }
 } catch (e) {
@@ -44,8 +64,25 @@ if (!dashboardData) {
     <div class="space-y-6">
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div class="text-center sm:text-left w-full sm:w-auto">
-          <h2 class="text-3xl font-bold tracking-tight text-foreground">Vue d'ensemble</h2>
+          <h2 class="text-3xl font-bold tracking-tight text-foreground">Tableau de bord</h2>
           <p class="text-muted-foreground mt-1 text-lg">Voici le récapitulatif de votre activité pour la saison {dashboardData.season}.</p>
+        </div>
+        <div class="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
+          <select
+            id="season-selector"
+            class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9"
+          >
+            {seasonsList.map((s: any) => {
+              const val = s.code || String(s.id);
+              const isSelected = val === currentSeason || String(s.id) === currentSeason;
+              return (
+                <option value={val} selected={isSelected}>{s.name}</option>
+              );
+            })}
+            {seasonsList.length === 0 && (
+              <option value="25-26" selected>Saison 2025-2026</option>
+            )}
+          </select>
         </div>
       </div>
       
@@ -54,3 +91,15 @@ if (!dashboardData) {
     </div>
   </AdminLayout>
 </Layout>
+
+<script>
+  const selector = document.getElementById('season-selector');
+  if (selector) {
+    selector.addEventListener('change', (e) => {
+      const newSeason = (e.target as HTMLSelectElement).value;
+      const params = new URLSearchParams(window.location.search);
+      params.set('season', newSeason);
+      window.location.href = `/?${params.toString()}`;
+    });
+  }
+</script>

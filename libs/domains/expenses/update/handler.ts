@@ -1,7 +1,15 @@
 import { type Db, type Tx } from '@nba/db';
 import { UpdateExpenseRepository } from './repository';
 import { isSeasonClosed } from '@nba/members-api';
-import { normalizeCategory } from '@nba/accounting-api';
+import {
+  normalizeCategory,
+  buildInsertExpenseTransactionStatement,
+  getTransactionDetails,
+  getBankTransactionDetails,
+  getRemainingTransactionsForBankTx,
+  buildResetBankStatementLineStatement,
+  buildDeleteLedgerEntryStatement
+} from '@nba/accounting-api';
 import { Expense } from '../shared/expense';
 import {
   SeasonClosedError,
@@ -28,7 +36,7 @@ export async function approveExpense(db: Db, id: ApproveExpenseInput): Promise<A
   }
 
   // Phase 2 : Décision (en mémoire)
-  const stmt1 = repo.buildInsertTransactionStatement(db, {
+  const stmt1 = buildInsertExpenseTransactionStatement(db, {
     seasonId: expenseData.seasonId,
     categoryId: expenseData.categoryId,
     amountCents: expenseData.amountCents,
@@ -83,12 +91,12 @@ export async function cancelExpenseApproval(db: Db, id: number) {
   let bankTxId: number | null = null;
 
   if (expenseData.status === 'approved' && txId) {
-    const tx = await repo.getTransactionDetails(db, txId);
+    const tx = await getTransactionDetails(db, txId);
     if (tx && tx.bankStatementLineId) {
       bankTxId = tx.bankStatementLineId;
-      const bankTx = await repo.getBankTransactionDetails(db, tx.bankStatementLineId);
+      const bankTx = await getBankTransactionDetails(db, tx.bankStatementLineId);
       if (bankTx) {
-        const remainingTxs = await repo.getRemainingTransactionsForBankTx(db, tx.bankStatementLineId, tx.id);
+        const remainingTxs = await getRemainingTransactionsForBankTx(db, tx.bankStatementLineId, tx.id);
         const totalRemaining = remainingTxs.reduce((sum, t) => sum + Math.abs(t.amountCents), 0);
         if (totalRemaining < Math.abs(bankTx.amountCents)) {
           resetBankTxNeeded = true;
@@ -102,9 +110,9 @@ export async function cancelExpenseApproval(db: Db, id: number) {
 
   if (expenseData.status === 'approved' && txId) {
     if (resetBankTxNeeded && bankTxId) {
-      statements.push(repo.buildResetBankStatementLineStatement(db, bankTxId));
+      statements.push(buildResetBankStatementLineStatement(db, bankTxId));
     }
-    statements.push(repo.buildDeleteLedgerEntryStatement(db, txId));
+    statements.push(buildDeleteLedgerEntryStatement(db, txId));
   }
 
   // Phase 3 : Écriture (db.batch)

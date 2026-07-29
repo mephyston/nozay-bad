@@ -1,19 +1,12 @@
+import { membersTable } from '@nba/members/schema';
+import { seasonsTable } from '@nba/accounting/schema';
+import { ledgerEntriesTable, categoriesTable } from '@nba/accounting/schema';
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { accountingRouter } from '@nba/accounting-api';
 import { setupMockDb } from '@nba/db/test-utils';
-import { seasonsTable, membersTable } from '../../../libs/domains/accounting/shared/schema';
-import {
-  seasonBalancesTable,
-  ledgerEntriesTable,
-  bankStatementLinesTable,
-  checksTable,
-  checkDepositsTable,
-  invoicesTable,
-  accountClassesTable,
-  seasonCategoryBudgetsTable,
-  categoriesTable,
-} from '../../../libs/domains/accounting/shared/schema';
+
+import { seasonBalancesTable, bankStatementLinesTable, checksTable, checkDepositsTable, invoicesTable, accountClassesTable, seasonCategoryBudgetsTable } from '../../../libs/domains/accounting/shared/schema';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq, sql } from 'drizzle-orm';
 import { AppError } from '@nba/db';

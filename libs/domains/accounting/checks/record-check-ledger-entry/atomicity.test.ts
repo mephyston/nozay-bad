@@ -1,7 +1,8 @@
+import { ledgerEntriesTable } from '@nba/accounting/schema';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { createCheck } from './handler';
-import { checksTable, ledgerEntriesTable } from '../../shared/schema';
+import { checksTable } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
 
 describe('createCheck Real D1 Atomicity (PROMPT B3)', () => {

@@ -10,7 +10,7 @@
   <div class="p-3 border-b border-border bg-muted/40 space-y-3">
     <!-- Onglets de statut -->
     <Tabs.Root value={state.activeTab} onValueChange={(v) => state.activeTab = v as any} class="w-full">
-      <Tabs.List class="grid grid-cols-3 w-full">
+      <Tabs.List class="flex w-full justify-start sm:justify-center overflow-x-auto no-scrollbar">
         <Tabs.Trigger value="pending" class="text-xs gap-1.5 cursor-pointer">
           À rapprocher ({state.pendingCount})
         </Tabs.Trigger>

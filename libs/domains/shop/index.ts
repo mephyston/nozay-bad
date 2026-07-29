@@ -8,6 +8,8 @@ import { approveOrderRoute } from './approve-order/route';
 import { rejectOrderRoute } from './reject-order/route';
 import { manageProductCategoriesRoute } from './manage-product-categories/route';
 
+export { getUnvalidatedPaidOrders } from './queries';
+
 export type Bindings = {
   DB: D1Database;
   AI: unknown;

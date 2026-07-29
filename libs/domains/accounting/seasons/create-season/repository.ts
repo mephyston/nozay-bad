@@ -1,6 +1,7 @@
+import { seasonsTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { ne } from 'drizzle-orm';
-import { seasonsTable } from '../../shared/schema';
+
 
 export class CreateSeasonRepository {
   async createSeason(db: DbOrTx, values: {

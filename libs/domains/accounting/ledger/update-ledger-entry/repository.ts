@@ -1,6 +1,7 @@
+import { ledgerEntriesTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq } from 'drizzle-orm';
-import { ledgerEntriesTable } from '../../shared/schema';
+
 
 export class UpdateLedgerEntryRepository {
   async getById(db: DbOrTx, id: number): Promise<any | undefined> {

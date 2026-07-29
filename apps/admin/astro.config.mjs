@@ -14,6 +14,7 @@ export default defineConfig({
     plugins: [tailwindcss()],
     optimizeDeps: {
       exclude: [
+        'astro:transitions',
         '@astrojs/cloudflare',
         '@nba/ui',
         '@nba/members-ui',

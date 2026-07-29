@@ -1,9 +1,10 @@
+import { ledgerEntriesTable } from '@nba/accounting/schema';
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { shopRouter } from '@nba/shop-api';
 import { setupMockDb } from '@nba/db/test-utils';
 import { productsTable } from '../../../libs/domains/shop/shared/schema';
-import { ledgerEntriesTable } from '../../../libs/domains/accounting/shared/schema';
+
 import { eq, sql } from 'drizzle-orm';
 import { AppError } from '@nba/db';
 
@@ -140,11 +141,14 @@ describe('Orders API Endpoints', () => {
     // Insert product
     await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', productCategoryId: productCat.id, priceCents: 1200, stock: 5, active: true, createdAt: new Date() }).run();
 
+    const pmRes = await mockD1.prepare('SELECT code FROM payment_methods').all();
+    const paymentMethodCode = pmRes.results[0].code as string;
+
     // 1. Create order
     const createRes = await app.request('http://localhost/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seasonId: 1, memberId: 1, productId: 1, quantity: 2, paymentMethodId: 1 })
+      body: JSON.stringify({ seasonId: 1, memberId: 1, productId: 1, quantity: 2, paymentMethod: paymentMethodCode })
     }, { DB: mockD1 as any });
 
     expect(createRes.status).toBe(200);
@@ -203,11 +207,14 @@ describe('Orders API Endpoints', () => {
     `) as { id: number };
     await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', productCategoryId: productCat.id, priceCents: 1200, stock: 5, active: true, createdAt: new Date() }).run();
 
+    const pmRes = await mockD1.prepare('SELECT code FROM payment_methods').all();
+    const paymentMethodCode = pmRes.results[0].code as string;
+
     // 1. Create order
     const res = await app.request('http://localhost/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seasonId: 1, memberId: 1, productId: 1, quantity: 2, paymentMethodId: 1 })
+      body: JSON.stringify({ seasonId: 1, memberId: 1, productId: 1, quantity: 2, paymentMethod: paymentMethodCode })
     }, { DB: mockD1 as any });
     const order = (await res.json() as any).data;
 
@@ -260,10 +267,13 @@ describe('Orders API Endpoints', () => {
     `) as { id: number };
     await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', productCategoryId: productCat.id, priceCents: 1200, stock: 1, active: true, createdAt: new Date() }).run();
 
+    const pmRes = await mockD1.prepare('SELECT code FROM payment_methods').all();
+    const paymentMethodCode = pmRes.results[0].code as string;
+
     const res = await app.request('http://localhost/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seasonId: 1, memberId: 1, productId: 1, quantity: 2, paymentMethodId: 1 })
+      body: JSON.stringify({ seasonId: 1, memberId: 1, productId: 1, quantity: 2, paymentMethod: paymentMethodCode })
     }, { DB: mockD1 as any });
     expect(res.status).toBe(200);
     const json = await res.json() as any;
@@ -296,11 +306,14 @@ describe('Orders API Endpoints', () => {
     `) as { id: number };
     await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', productCategoryId: productCat.id, priceCents: 1200, stock: 5, active: true, createdAt: new Date() }).run();
 
+    const pmRes = await mockD1.prepare('SELECT code FROM payment_methods').all();
+    const paymentMethodCode = pmRes.results[0].code as string;
+
     // Try creating an order on a closed season -> expect 400
     const createRes = await app.request('http://localhost/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seasonId: 1, memberId: 1, productId: 1, quantity: 2, paymentMethodId: 1 })
+      body: JSON.stringify({ seasonId: 1, memberId: 1, productId: 1, quantity: 2, paymentMethod: paymentMethodCode })
     }, { DB: mockD1 as any });
     expect(createRes.status).toBe(400);
     const createJson = await createRes.json() as any;

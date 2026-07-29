@@ -1,17 +1,5 @@
 import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
-export const seasonsTable = sqliteTable('seasons', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  code: text('code').notNull().unique(),
-  name: text('name').notNull(),
-  startDate: text('start_date').notNull(),
-  endDate: text('end_date').notNull(),
-  active: integer('active', { mode: 'boolean' }).notNull().default(false),
-  closedAt: integer('closed_at', { mode: 'timestamp' }),
-  approvedAt: integer('approved_at', { mode: 'timestamp' }),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
-});
-
 export const usersTable = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   email: text('email').notNull().unique(),
@@ -23,7 +11,7 @@ export const usersTable = sqliteTable('users', {
 export const membersTable = sqliteTable('members', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   licence: text('licence').notNull(),
-  seasonId: integer('season_id').notNull().references(() => seasonsTable.id),
+  seasonId: integer('season_id').notNull(),
   lastName: text('last_name').notNull(),
   firstName: text('first_name').notNull(),
   gender: text('gender', { enum: ['M', 'F'] }).notNull(),

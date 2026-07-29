@@ -1,6 +1,7 @@
+import { seasonsTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq } from 'drizzle-orm';
-import { invoicesTable, seasonsTable } from '../../shared/schema';
+import { invoicesTable } from '../../shared/schema';
 
 export class ListInvoicesRepository {
   async resolveSeasonId(db: DbOrTx, seasonIdOrCode: string | number): Promise<number> {

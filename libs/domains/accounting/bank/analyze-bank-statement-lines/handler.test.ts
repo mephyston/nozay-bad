@@ -1,7 +1,11 @@
+// eslint-disable-next-line no-restricted-imports
+import { membersTable } from '@nba/members/schema';
+import { seasonsTable } from '@nba/accounting/schema';
+import { categoriesTable } from '@nba/accounting/schema';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { analyzeBankStatementLines } from './handler';
-import { bankStatementLinesTable, categoriesTable, seasonsTable, membersTable } from '../../shared/schema';
+import { bankStatementLinesTable } from '../../shared/schema';
 import { eq, sql } from 'drizzle-orm';
 
 describe('analyzeBankStatementLines', () => {

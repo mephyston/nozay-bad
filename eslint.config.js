@@ -142,6 +142,62 @@ export default tseslint.config(
         }
       ]
     }
+  },
+  {
+    files: ['libs/domains/accounting/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [{
+            group: ['@nba/*/schema', '!@nba/accounting/schema'],
+            message: 'Violation VSA : Impossible d\'importer directement le schéma de base de données d\'un autre domaine. Utilisez l\'API publique du domaine ciblé (ex: @nba/nom-domaine-api).'
+          }]
+        }
+      ]
+    }
+  },
+  {
+    files: ['libs/domains/expenses/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [{
+            group: ['@nba/*/schema', '!@nba/expenses/schema'],
+            message: 'Violation VSA : Impossible d\'importer directement le schéma de base de données d\'un autre domaine. Utilisez l\'API publique du domaine ciblé (ex: @nba/nom-domaine-api).'
+          }]
+        }
+      ]
+    }
+  },
+  {
+    files: ['libs/domains/shop/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [{
+            group: ['@nba/*/schema', '!@nba/shop/schema'],
+            message: 'Violation VSA : Impossible d\'importer directement le schéma de base de données d\'un autre domaine. Utilisez l\'API publique du domaine ciblé (ex: @nba/nom-domaine-api).'
+          }]
+        }
+      ]
+    }
+  },
+  {
+    files: ['libs/domains/members/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [{
+            group: ['@nba/*/schema', '!@nba/members/schema'],
+            message: 'Violation VSA : Impossible d\'importer directement le schéma de base de données d\'un autre domaine. Utilisez l\'API publique du domaine ciblé (ex: @nba/nom-domaine-api).'
+          }]
+        }
+      ]
+    }
   }
 );
 

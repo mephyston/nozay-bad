@@ -39,7 +39,7 @@
     {
       label: "",
       items: [
-        { name: "Vue d'ensemble", icon: LayoutDashboard, href: "/" },
+        { name: "Tableau de bord", icon: LayoutDashboard, href: "/" },
         { name: "Note de frais", icon: Coins, href: "/admin/expenses" }
       ]
     },

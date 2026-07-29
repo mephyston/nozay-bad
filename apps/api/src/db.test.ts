@@ -1,16 +1,9 @@
+import { membersTable } from '@nba/members/schema';
+import { seasonsTable } from '@nba/accounting/schema';
+import { ledgerEntriesTable, categoriesTable } from '@nba/accounting/schema';
 import { describe, it, expect } from 'vitest';
-import { membersTable, usersTable, seasonsTable } from '../../../libs/domains/members/shared/schema';
-import {
-  seasonBalancesTable,
-  ledgerEntriesTable,
-  bankStatementLinesTable,
-  checkDepositsTable,
-  checksTable,
-  categoriesTable,
-  invoicesTable,
-  invoiceItemsTable,
-  accountClassesTable
-} from '../../../libs/domains/accounting/shared/schema';
+import { usersTable } from '../../../libs/domains/members/shared/schema';
+import { seasonBalancesTable, bankStatementLinesTable, checkDepositsTable, checksTable, invoicesTable, invoiceItemsTable, accountClassesTable } from '../../../libs/domains/accounting/shared/schema';
 import { productsTable, productCategoriesTable, ordersTable } from '../../../libs/domains/shop/shared/schema';
 import { setupMockDb } from '@nba/db/test-utils';
 import { eq } from 'drizzle-orm';

@@ -1,6 +1,8 @@
+import { seasonsTable } from '@nba/accounting/schema';
+import { categoriesTable, ledgerEntriesTable } from '@nba/accounting/schema';
 import { and, eq, desc, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { bankStatementLinesTable, categoriesTable, ledgerEntriesTable, seasonsTable } from '../../shared/schema';
+import { bankStatementLinesTable } from '../../shared/schema';
 import { getMembersBySeason, getMembersByIds } from '@nba/members-api';
 
 export class AnalyzeBankStatementLinesRepository {

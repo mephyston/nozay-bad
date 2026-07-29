@@ -1,6 +1,7 @@
+import { seasonsTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq, ne } from 'drizzle-orm';
-import { seasonsTable } from '../../shared/schema';
+
 
 export class UpdateSeasonRepository {
   async updateSeason(db: DbOrTx, id: string | number, values: {

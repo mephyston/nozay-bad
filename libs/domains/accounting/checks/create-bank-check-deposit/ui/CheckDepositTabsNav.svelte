@@ -13,7 +13,7 @@
 </script>
 
 <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-  <Tabs.List class="flex justify-center sm:justify-start gap-4 no-print">
+  <Tabs.List class="flex w-full sm:w-fit justify-start sm:justify-center overflow-x-auto no-scrollbar gap-4 no-print">
     <Tabs.Trigger value="checks">
       Chèques reçus ({checksCount})
     </Tabs.Trigger>

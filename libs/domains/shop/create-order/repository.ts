@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { ordersTable, productsTable, paymentMethodsTable } from '../shared/schema';
+import { ordersTable, productsTable } from '../shared/schema';
 import { getMemberById } from '@nba/members-api';
+import { getPaymentMethodByCode as getAccountingPaymentMethodByCode } from '@nba/accounting-api';
 
 export class CreateOrderRepository {
   async getProductById(db: DbOrTx, id: number): Promise<typeof productsTable.$inferSelect | undefined> {
@@ -12,8 +13,8 @@ export class CreateOrderRepository {
     return getMemberById(db, id);
   }
 
-  async getPaymentMethodByCode(db: DbOrTx, code: string): Promise<typeof paymentMethodsTable.$inferSelect | undefined> {
-    return db.select().from(paymentMethodsTable).where(eq(paymentMethodsTable.code, code)).get();
+  async getPaymentMethodByCode(db: DbOrTx, code: string) {
+    return getAccountingPaymentMethodByCode(db, code);
   }
 
   async create(db: DbOrTx, values: typeof ordersTable.$inferInsert): Promise<typeof ordersTable.$inferSelect> {

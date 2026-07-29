@@ -1,24 +1,17 @@
+import { getSeasonId } from '@nba/accounting-api';
 import { eq, and } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { expensesTable, seasonsTable } from '../shared/schema';
+import { expensesTable } from '../shared/schema';
 
 export class ListExpensesRepository {
   async list(db: DbOrTx, filters: { season?: string; status?: string }): Promise<(typeof expensesTable.$inferSelect)[]> {
     const conditions = [];
     if (filters.season) {
-      const num = Number(filters.season);
-      if (!isNaN(num) && Number.isInteger(num)) {
-        conditions.push(eq(expensesTable.seasonId, num));
+      const sId = await getSeasonId(db, filters.season);
+      if (sId !== undefined) {
+        conditions.push(eq(expensesTable.seasonId, sId));
       } else {
-        const season = await db.select({ id: seasonsTable.id })
-          .from(seasonsTable)
-          .where(eq(seasonsTable.code, filters.season))
-          .get();
-        if (season) {
-          conditions.push(eq(expensesTable.seasonId, season.id));
-        } else {
-          return [];
-        }
+        return [];
       }
     }
     if (filters.status) conditions.push(eq(expensesTable.status, filters.status as 'pending' | 'approved' | 'rejected'));

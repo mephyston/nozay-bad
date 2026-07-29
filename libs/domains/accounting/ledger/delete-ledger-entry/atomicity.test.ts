@@ -1,7 +1,9 @@
+import { seasonsTable } from '@nba/accounting/schema';
+import { ledgerEntriesTable, paymentMethodsTable } from '@nba/accounting/schema';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { deleteLedgerEntry } from './handler';
-import { ledgerEntriesTable, seasonsTable, accountsTable, paymentMethodsTable } from '../../shared/schema';
+import { accountsTable } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
 
 describe('deleteLedgerEntry Real D1 Atomicity (PROMPT B3)', () => {

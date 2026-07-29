@@ -1,6 +1,7 @@
+import { seasonsTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq, inArray } from 'drizzle-orm';
-import { checksTable, checkDepositsTable, bankStatementLinesTable, seasonsTable } from '../../shared/schema';
+import { checksTable, checkDepositsTable, bankStatementLinesTable } from '../../shared/schema';
 
 export class CreateBankCheckDepositRepository {
   async resolveSeasonId(db: DbOrTx, seasonIdOrCode: string | number): Promise<number> {

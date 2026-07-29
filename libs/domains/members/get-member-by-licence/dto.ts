@@ -1,4 +1,5 @@
-import { membersTable } from '../shared/schema';
+import { membersTable } from '@nba/members/schema';
+
 
 export type GetMemberByLicenceLicence = string;
 export type GetMemberByLicenceSeason = string;

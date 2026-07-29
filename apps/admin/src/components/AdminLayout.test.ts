@@ -41,7 +41,7 @@ describe('AdminLayout Component', () => {
 
     // Verify desktop title and navigation items are rendered
     expect(target.textContent).toContain('Nozay Bad Association');
-    expect(target.textContent).toContain("Vue d'ensemble");
+    expect(target.textContent).toContain("Tableau de bord");
     expect(target.textContent).toContain("Adhérents");
     expect(target.textContent).toContain("Comptabilité");
     expect(target.textContent).toContain("Caisse");
@@ -95,7 +95,7 @@ describe('AdminLayout Component', () => {
     });
     flushSync();
 
-    const settingsLink2 = target.querySelector('a[href="/admin/accounting/settings"]');
+    const settingsLink2 = target.querySelector('a[href="/admin/settings"]');
     expect(settingsLink2?.getAttribute('data-active')).toBe('true');
 
     unmount(component2);

@@ -1,6 +1,7 @@
+import { categoriesTable, ledgerEntriesTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq } from 'drizzle-orm';
-import { categoriesTable, ledgerEntriesTable } from '../../shared/schema';
+
 
 export class DeleteCategoryRepository {
   async isCategoryUsed(db: DbOrTx, id: number): Promise<boolean> {

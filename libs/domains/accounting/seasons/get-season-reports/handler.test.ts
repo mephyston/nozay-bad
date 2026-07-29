@@ -1,7 +1,9 @@
+import { seasonsTable } from '@nba/accounting/schema';
+import { ledgerEntriesTable, categoriesTable } from '@nba/accounting/schema';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { getSeasonReports } from './handler';
-import { seasonsTable, ledgerEntriesTable, seasonCategoryBudgetsTable, categoriesTable } from '../../shared/schema';
+import { seasonCategoryBudgetsTable } from '../../shared/schema';
 import { AppError } from '@nba/db';
 
 describe('getSeasonReports (As-of Cut-off Date & Projections - PROMPT 12)', () => {

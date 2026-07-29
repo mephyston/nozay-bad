@@ -1,7 +1,8 @@
+import { seasonsTable } from '@nba/accounting/schema';
 import { describe, it, expect } from 'vitest';
 import app from './index';
 import { setupMockDb } from '@nba/db/test-utils';
-import { seasonsTable } from '../../../libs/domains/members/shared/schema';
+
 import { expensesTable } from '../../../libs/domains/expenses/shared/schema';
 import { eq, sql } from 'drizzle-orm';
 import { AppError } from '@nba/db';

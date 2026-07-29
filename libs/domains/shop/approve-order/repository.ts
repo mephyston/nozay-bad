@@ -1,10 +1,14 @@
+import { getAllSeasons } from '@nba/accounting-api';
 import { and, eq, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { ordersTable, productsTable, productCategoriesTable, seasonsTable } from '../shared/schema';
-import { paymentMethodsTable } from '@nba/accounting/schema';
-import { accountsTable } from '@nba/accounting/schema';
+import { ordersTable, productsTable, productCategoriesTable } from '../shared/schema';
 import { getMemberById } from '@nba/members-api';
-import { createRevenueLedgerEntry, buildCreateRevenueLedgerEntryStatement } from '@nba/accounting-api';
+import { 
+  createRevenueLedgerEntry, 
+  buildCreateRevenueLedgerEntryStatement,
+  getPaymentMethodById as getAccountingPaymentMethodById,
+  getAccountByCode as getAccountingAccountByCode
+} from '@nba/accounting-api';
 
 export class ApproveOrderRepository {
   async getOrderById(db: DbOrTx, id: number): Promise<typeof ordersTable.$inferSelect | undefined> {
@@ -29,16 +33,16 @@ export class ApproveOrderRepository {
     return db.select().from(productCategoriesTable).where(eq(productCategoriesTable.id, id)).get();
   }
 
-  async getPaymentMethodById(db: DbOrTx, id: number): Promise<typeof paymentMethodsTable.$inferSelect | undefined> {
-    return db.select().from(paymentMethodsTable).where(eq(paymentMethodsTable.id, id)).get();
+  async getPaymentMethodById(db: DbOrTx, id: number) {
+    return getAccountingPaymentMethodById(db, id);
   }
 
-  async getAccountByCode(db: DbOrTx, code: string): Promise<typeof accountsTable.$inferSelect | undefined> {
-    return db.select().from(accountsTable).where(eq(accountsTable.code, code)).get();
+  async getAccountByCode(db: DbOrTx, code: string) {
+    return getAccountingAccountByCode(db, code);
   }
 
   async getAllSeasons(db: DbOrTx): Promise<any[]> {
-    return db.select().from(seasonsTable).all();
+    return getAllSeasons(db);
   }
 
   buildRecetteTransactionStatement(db: DbOrTx, values: {

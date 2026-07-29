@@ -1,16 +1,9 @@
+import { seasonsTable } from '@nba/accounting/schema';
+import { ledgerEntriesTable } from '@nba/accounting/schema';
 import { type DbOrTx, type Db } from '@nba/db';
 import { eq, and, gte, lte, or, inArray, isNotNull } from 'drizzle-orm';
-import { ordersTable } from '@nba/shop/schema';
-import {
-  seasonsTable,
-  ledgerEntriesTable,
-  bankStatementLinesTable,
-  checkDepositsTable,
-  checksTable,
-  seasonBalancesTable,
-  accountsTable,
-  seasonCategoryBudgetsTable
-} from '../../shared/schema';
+import { getUnvalidatedPaidOrders as getShopUnvalidatedPaidOrders } from '@nba/shop-api';
+import { bankStatementLinesTable, checkDepositsTable, checksTable, seasonBalancesTable, accountsTable, seasonCategoryBudgetsTable } from '../../shared/schema';
 
 export interface CloseSeasonRepositoryInterface {
   getSeasonById(db: DbOrTx, id: string | number): Promise<any | undefined>;
@@ -105,14 +98,7 @@ export class CloseSeasonRepository implements CloseSeasonRepositoryInterface {
   async getUnvalidatedPaidOrders(db: DbOrTx, seasonId: number | string): Promise<any[]> {
     const season = await this.getSeasonById(db, seasonId);
     if (!season) return [];
-    return db.select()
-      .from(ordersTable)
-      .where(and(
-        eq(ordersTable.seasonId, season.id),
-        eq(ordersTable.status, 'pending'),
-        isNotNull(ordersTable.paidAt)
-      ))
-      .all();
+    return getShopUnvalidatedPaidOrders(db, season.id);
   }
 
   async getSeasonBalances(db: DbOrTx, seasonId: number | string): Promise<any[]> {

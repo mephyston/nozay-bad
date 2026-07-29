@@ -62,7 +62,7 @@
   </div>
 
   <Tabs.Root value={activeTab} onValueChange={handleTabChange} class="w-full">
-    <Tabs.List class="grid w-full grid-cols-3 mb-6">
+    <Tabs.List class="flex w-full justify-start sm:justify-center overflow-x-auto no-scrollbar mb-6">
       <Tabs.Trigger value="profil">Profil & Contacts</Tabs.Trigger>
       <Tabs.Trigger value="cotisation">Cotisation Poona</Tabs.Trigger>
       <Tabs.Trigger value="transactions">Historique Financier</Tabs.Trigger>

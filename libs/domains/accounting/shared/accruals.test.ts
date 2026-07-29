@@ -1,7 +1,8 @@
+import { seasonsTable } from '@nba/accounting/schema';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { validateAccrualAndFiscalPhase } from './accruals';
-import { seasonsTable } from './schema';
+
 import { AppError } from '@nba/db';
 
 describe('validateAccrualAndFiscalPhase', () => {

@@ -1,7 +1,8 @@
+import { seasonsTable } from '@nba/accounting/schema';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { CreateInvoiceRepository } from './repository';
-import { invoicesTable, invoiceItemsTable, seasonsTable } from '../../shared/schema';
+import { invoicesTable, invoiceItemsTable } from '../../shared/schema';
 
 describe('CreateInvoiceRepository', () => {
   let db: any;

@@ -4,13 +4,16 @@ import { setupMockDb } from '@nba/db/test-utils';
 import { approveOrder } from './handler';
 import { ApproveOrderRepository } from './repository';
 import { ordersTable, productsTable, productCategoriesTable } from '../shared/schema';
-import { categoriesTable, ledgerEntriesTable, paymentMethodsTable, accountsTable } from '@nba/accounting/schema';
-import { seasonsTable, membersTable } from '@nba/members/schema';
+// eslint-disable-next-line no-restricted-imports
+import { membersTable } from '@nba/members/schema';
+// eslint-disable-next-line no-restricted-imports
+import { seasonsTable } from '@nba/accounting/schema';
 import { ShopCategoryNotConfiguredError } from '../shared/errors';
 import { getSeasonReports } from '@nba/accounting-api';
 
 describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)', () => {
   let db: any;
+  let mockD1: any;
 
   // Primary keys created during seed
   let seasonId: number;
@@ -33,6 +36,7 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
   beforeEach(async () => {
     const mock = await setupMockDb();
     db = mock.db;
+    mockD1 = mock.mockD1;
 
     // 1. Seed season 25-26 (2025-09-01 to 2026-08-31)
     const seasonRes = await db.insert(seasonsTable).values({
@@ -63,7 +67,8 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
     memberId = memberRes.id;
 
     // 3. Retrieve or seed accounting categories
-    const cats = await db.select().from(categoriesTable).all();
+    const catRes = await mockD1.prepare('SELECT id, admin_label as adminLabel FROM categories').all();
+    const cats = catRes.results;
     const volantsCat = cats.find((c: any) => c.adminLabel === 'Volants (vente ou achat)') || cats[0];
     const cordagesCat = cats.find((c: any) => c.adminLabel === 'Cordage (vente aux adhérents)') || cats[1];
     const materielCat = cats.find((c: any) => c.adminLabel === 'Matériel (hors cordages)') || cats[2];
@@ -73,13 +78,15 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
     materielAccountingCatId = materielCat.id;
 
     // 4. Retrieve or seed payment methods and accounts
-    const pms = await db.select().from(paymentMethodsTable).all();
+    const pmRes = await mockD1.prepare('SELECT id, code FROM payment_methods').all();
+    const pms = pmRes.results;
     const virPm = pms.find((p: any) => p.code === 'virement') || pms[0];
     const espPm = pms.find((p: any) => p.code === 'especes') || pms[1];
     virementPaymentMethodId = virPm.id;
     especesPaymentMethodId = espPm.id;
 
-    const accs = await db.select().from(accountsTable).all();
+    const accRes = await mockD1.prepare('SELECT id, code FROM accounts').all();
+    const accs = accRes.results;
     const currAcc = accs.find((a: any) => a.code === 'current') || accs[0];
     const cashAcc = accs.find((a: any) => a.code === 'cash') || accs[1];
     currentAccountId = currAcc.id;
@@ -152,13 +159,14 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
     expect(result.ledgerEntryId).toBeDefined();
 
     // Verify ledger entry created in accounting
-    const entry = await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, result.ledgerEntryId!)).get();
+    const entryRes = await mockD1.prepare('SELECT * FROM ledger_entries WHERE id = ?').bind(result.ledgerEntryId!).all();
+    const entry = entryRes.results[0] as any;
     expect(entry).toBeDefined();
     expect(entry.type).toBe('recette');
-    expect(entry.amountCents).toBe(3000);
-    expect(entry.categoryId).toBe(volantsAccountingCatId);
-    expect(entry.accountId).toBe(currentAccountId);
-    expect(entry.paymentMethodId).toBe(virementPaymentMethodId);
+    expect(entry.amount_cents).toBe(3000);
+    expect(entry.category_id).toBe(volantsAccountingCatId);
+    expect(entry.account_id).toBe(currentAccountId);
+    expect(entry.payment_method_id).toBe(virementPaymentMethodId);
     expect(entry.description).toContain('Boîte Volants RSL Grade 1 x2');
   });
 
@@ -308,11 +316,12 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
     expect(result.status).toBe('approved');
     expect(result.paidAt).toBe('2025-08-28');
 
-    const entry = await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, result.ledgerEntryId!)).get();
+    const entryRes = await mockD1.prepare('SELECT * FROM ledger_entries WHERE id = ?').bind(result.ledgerEntryId!).all();
+    const entry = entryRes.results[0] as any;
     expect(entry).toBeDefined();
-    expect(entry.seasonId).toBe(seasonId); // Routed to current active season 25-26
+    expect(entry.season_id).toBe(seasonId); // Routed to current active season 25-26
     expect(entry.date).toBe('2025-08-28'); // Dated on paidAt
-    expect(entry.accrualType).toBe('recette_exercice_anterieur');
-    expect(entry.accrualNote).toContain("Régularisation recette commande boutique");
+    expect(entry.accrual_type).toBe('recette_exercice_anterieur');
+    expect(entry.accrual_note).toContain("Régularisation recette commande boutique");
   });
 });

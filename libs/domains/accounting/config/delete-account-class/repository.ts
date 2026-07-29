@@ -1,6 +1,7 @@
+import { categoriesTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq, sql, or } from 'drizzle-orm';
-import { accountClassesTable, categoriesTable } from '../../shared/schema';
+import { accountClassesTable } from '../../shared/schema';
 
 export class DeleteAccountClassRepository {
   async isAccountClassUsed(db: DbOrTx, code: string): Promise<boolean> {

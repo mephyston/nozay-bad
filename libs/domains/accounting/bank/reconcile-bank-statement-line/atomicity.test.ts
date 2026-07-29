@@ -1,7 +1,9 @@
+import { seasonsTable } from '@nba/accounting/schema';
+import { ledgerEntriesTable, paymentMethodsTable } from '@nba/accounting/schema';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { reconcileBankStatementLine } from './handler';
-import { bankStatementLinesTable, ledgerEntriesTable, seasonsTable, accountsTable, paymentMethodsTable } from '../../shared/schema';
+import { bankStatementLinesTable, accountsTable } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
 
 describe('reconcileBankStatementLine Real D1 Atomicity (PROMPT B3)', () => {

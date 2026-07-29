@@ -1,6 +1,8 @@
+import { membersTable } from '@nba/members/schema';
+import { getSeasonId, isSeasonClosed } from '@nba/accounting-api';
 import { eq, inArray, or } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { membersTable, seasonsTable } from './schema';
+
 
 export interface MemberSummary {
   id: number;
@@ -32,12 +34,8 @@ export async function getMembersByIds(db: DbOrTx, ids: number[]): Promise<Member
 }
 
 export async function getMembersBySeason(db: DbOrTx, seasonId: string | number): Promise<MemberSummary[]> {
-  let numericId = Number(seasonId);
-  if (isNaN(numericId) && typeof seasonId === 'string') {
-    const s = await db.select({ id: seasonsTable.id }).from(seasonsTable).where(eq(seasonsTable.code, seasonId)).get();
-    if (s) numericId = s.id;
-  }
-  const condition = !isNaN(numericId)
+  const numericId = await getSeasonId(db, seasonId);
+  const condition = numericId !== undefined
     ? eq(membersTable.seasonId, numericId)
     : eq(membersTable.seasonId, seasonId as any);
   const result = await db.select().from(membersTable).where(condition).all();
@@ -49,17 +47,5 @@ export async function getAllMembers(db: DbOrTx): Promise<MemberSummary[]> {
   return result as unknown as MemberSummary[];
 }
 
-export async function isSeasonClosed(db: DbOrTx, seasonId: string | number): Promise<boolean> {
-  const numericId = Number(seasonId);
-  const condition = !isNaN(numericId)
-    ? or(eq(seasonsTable.id, numericId), eq(seasonsTable.code, String(seasonId)))
-    : eq(seasonsTable.code, String(seasonId));
-
-  const season = await db
-    .select({ closedAt: seasonsTable.closedAt })
-    .from(seasonsTable)
-    .where(condition)
-    .get();
-  return Boolean(season?.closedAt);
-}
+export { isSeasonClosed };
 

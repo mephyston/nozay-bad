@@ -151,7 +151,7 @@
 
       <!-- Onglets de rapprochement -->
       <Tabs.Root value={state.activeRightTab} onValueChange={(v) => state.activeRightTab = v as any} class="w-full">
-        <Tabs.List class="grid grid-cols-3 w-full mb-4">
+        <Tabs.List class="flex w-full justify-start sm:justify-center overflow-x-auto no-scrollbar mb-4">
           <Tabs.Trigger value="manual" class="text-xs cursor-pointer">Saisir écriture</Tabs.Trigger>
           <Tabs.Trigger value="ledger" class="text-xs cursor-pointer">
             Écritures existantes ({state.glTransactions.filter(gt => !gt.bankStatementLineId).length})

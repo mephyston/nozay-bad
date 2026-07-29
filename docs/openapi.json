@@ -803,7 +803,7 @@
           "memberId",
           "productId",
           "quantity",
-          "paymentMethodId"
+          "paymentMethod"
         ],
         "properties": {
           "seasonId": {
@@ -822,9 +822,9 @@
             "minimum": 1,
             "type": "integer"
           },
-          "paymentMethodId": {
-            "minimum": 1,
-            "type": "integer"
+          "paymentMethod": {
+            "minLength": 1,
+            "type": "string"
           },
           "paidAt": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",

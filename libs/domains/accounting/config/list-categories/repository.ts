@@ -1,7 +1,8 @@
+import { categoriesTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/sqlite-core';
-import { categoriesTable, accountClassesTable } from '../../shared/schema';
+import { accountClassesTable } from '../../shared/schema';
 
 export class ListCategoriesRepository {
   async listCategories(db: DbOrTx): Promise<any[]> {

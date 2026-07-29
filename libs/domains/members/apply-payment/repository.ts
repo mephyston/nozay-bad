@@ -1,6 +1,7 @@
+import { membersTable } from '@nba/members/schema';
 import { eq } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { membersTable } from '../shared/schema';
+
 
 export class ApplyPaymentRepository {
   async getById(db: DbOrTx, id: number): Promise<typeof membersTable.$inferSelect | undefined> {

@@ -1,6 +1,7 @@
+import { seasonsTable } from '@nba/accounting/schema';
 import { type DbOrTx, AppError } from '@nba/db';
 import { eq, or } from 'drizzle-orm';
-import { seasonsTable } from './schema';
+
 
 export interface AccrualValidationParams {
   seasonId: number | string;

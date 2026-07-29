@@ -1,25 +1,19 @@
+import { membersTable } from '@nba/members/schema';
 import { inArray, eq } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { membersTable, seasonsTable } from '../shared/schema';
+import { insertSeasons, getSeasonsByCodes } from '@nba/accounting-api';
+
 
 export class ImportMembersRepository {
-  async insertSeasons(db: DbOrTx, seasons: (typeof seasonsTable.$inferInsert)[]): Promise<void> {
-    for (const season of seasons) {
-      await db.insert(seasonsTable)
-        .values(season)
-        .onConflictDoNothing()
-        .run();
-    }
+  async insertSeasons(db: DbOrTx, seasons: any[]): Promise<void> {
+    await insertSeasons(db, seasons);
   }
 
   async getSeasonIdMap(db: DbOrTx, seasonCodes: string[]): Promise<Map<string, number>> {
     const map = new Map<string, number>();
     if (seasonCodes.length === 0) return map;
 
-    const seasons = await db.select({ id: seasonsTable.id, code: seasonsTable.code })
-      .from(seasonsTable)
-      .where(inArray(seasonsTable.code, seasonCodes))
-      .all();
+    const seasons = await getSeasonsByCodes(db, seasonCodes);
 
     for (const s of seasons) {
       map.set(s.code, s.id);

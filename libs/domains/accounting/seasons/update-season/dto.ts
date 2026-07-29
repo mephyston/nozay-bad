@@ -1,4 +1,5 @@
-import { seasonsTable } from '../../shared/schema';
+import { seasonsTable } from '@nba/accounting/schema';
+
 export type UpdateSeasonId = string;
 export interface UpdateSeasonInput { name?: string; active?: boolean }
 export type UpdateSeasonOutput = typeof seasonsTable.$inferSelect;

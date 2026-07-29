@@ -2,6 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount, flushSync } from 'svelte';
 import OrdersManager from './OrdersManager.svelte';
 
+vi.mock('@nba/ui', async (importOriginal) => {
+  const actual = await importOriginal<any>();
+  return {
+    ...actual,
+    uiConfirm: vi.fn().mockResolvedValue(true)
+  };
+});
+
 describe('OrdersManager Component', () => {
   const seasons = [
     { id: '25-26', name: 'Saison 2025-2026', active: true },
@@ -98,6 +106,11 @@ describe('OrdersManager Component', () => {
   let originalFetch: typeof globalThis.fetch;
 
   beforeEach(() => {
+    globalThis.ResizeObserver = class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as any;
     originalFetch = globalThis.fetch;
     globalThis.fetch = vi.fn().mockImplementation(() =>
       Promise.resolve({
@@ -144,7 +157,7 @@ describe('OrdersManager Component', () => {
     expect(target.innerHTML).toContain('Virement');
 
     // Open dropdown to render actions
-    const actionBtn = target.querySelector('button[aria-label="Actions"]') as HTMLButtonElement;
+    const actionBtn = target.querySelector('button[aria-haspopup="true"]') as HTMLButtonElement;
     expect(actionBtn).not.toBeNull();
     actionBtn.click();
     flushSync();
@@ -209,7 +222,7 @@ describe('OrdersManager Component', () => {
     });
 
     // Open dropdown to render actions
-    const actionBtn = target.querySelector('button[aria-label="Actions"]') as HTMLButtonElement;
+    const actionBtn = target.querySelector('button[aria-haspopup="true"]') as HTMLButtonElement;
     expect(actionBtn).not.toBeNull();
     actionBtn.click();
     flushSync();
@@ -243,7 +256,7 @@ describe('OrdersManager Component', () => {
     });
 
     // Open dropdown to render actions
-    const actionBtn = target.querySelector('button[aria-label="Actions"]') as HTMLButtonElement;
+    const actionBtn = target.querySelector('button[aria-haspopup="true"]') as HTMLButtonElement;
     expect(actionBtn).not.toBeNull();
     actionBtn.click();
     flushSync();
@@ -256,7 +269,9 @@ describe('OrdersManager Component', () => {
     rejectBtn.click();
     flushSync();
 
-    expect(window.confirm).toHaveBeenCalledWith('Êtes-vous sûr de vouloir refuser cette commande ?');
+    const { uiConfirm } = await import('@nba/ui');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(uiConfirm).toHaveBeenCalledWith('Êtes-vous sûr de vouloir refuser cette commande ?');
     expect(globalThis.fetch).toHaveBeenCalledWith('', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -281,7 +296,7 @@ describe('OrdersManager Component', () => {
     });
 
     // Open dropdown to render actions
-    const actionBtn = target.querySelector('button[aria-label="Actions"]') as HTMLButtonElement;
+    const actionBtn = target.querySelector('button[aria-haspopup="true"]') as HTMLButtonElement;
     expect(actionBtn).not.toBeNull();
     actionBtn.click();
     flushSync();

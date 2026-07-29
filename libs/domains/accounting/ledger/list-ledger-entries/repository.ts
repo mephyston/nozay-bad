@@ -1,6 +1,8 @@
+import { seasonsTable } from '@nba/accounting/schema';
+import { ledgerEntriesTable, categoriesTable, paymentMethodsTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { and, or, eq, sql, inArray, isNull, desc, like } from 'drizzle-orm';
-import { ledgerEntriesTable, categoriesTable, seasonsTable, bankStatementLinesTable, paymentMethodsTable, seasonBalancesTable } from '../../shared/schema';
+import { bankStatementLinesTable, seasonBalancesTable } from '../../shared/schema';
 import { getMembersByIds } from '@nba/members-api';
 import type { ListTransactionsFilters } from './dto';
 
