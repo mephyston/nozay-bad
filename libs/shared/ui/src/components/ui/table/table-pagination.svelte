@@ -5,12 +5,23 @@
   let {
     pagination,
     onChangePage,
-    itemName = 'élément(s)'
+    itemName = 'élément(s)',
+    limitOptions = [10, 20, 50, 100]
   }: {
-    pagination: { page: number; total: number; totalPages: number };
+    pagination: { page: number; total: number; totalPages: number; limit?: number };
     onChangePage: (page: number) => void;
     itemName?: string;
+    limitOptions?: number[];
   } = $props();
+
+  function handleLimitChange(newLimit: number) {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      params.set('limit', String(newLimit));
+      params.set('page', '1');
+      window.location.href = `${window.location.pathname}?${params.toString()}`;
+    }
+  }
 
   let pageRange = $derived.by(() => {
     const { page, totalPages } = pagination;
@@ -22,8 +33,24 @@
 </script>
 
 <div class="flex flex-col sm:flex-row items-center justify-between gap-3 w-full">
-  <div class="text-xs text-muted-foreground">
-    Total : {pagination.total} {itemName}
+  <div class="flex items-center gap-4">
+    <div class="text-xs text-muted-foreground">
+      Total : {pagination.total} {itemName}
+    </div>
+    {#if pagination.limit}
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-muted-foreground">Lignes :</span>
+        <select
+          class="h-7 w-[70px] rounded-md border border-input bg-transparent px-2 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
+          value={pagination.limit}
+          onchange={(e) => handleLimitChange(Number((e.target as HTMLSelectElement).value))}
+        >
+          {#each limitOptions as opt}
+            <option value={opt}>{opt}</option>
+          {/each}
+        </select>
+      </div>
+    {/if}
   </div>
   <div class="flex items-center gap-2 sm:gap-4">
     <span class="text-xs">

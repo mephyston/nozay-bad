@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Edit, Trash2, Printer, Send, Ban, MoreHorizontal } from '@lucide/svelte';
-  import { Button, Table, Badge, Amount, DropdownMenu } from '@nba/ui';
+  import { Edit, Trash2, Printer, Send, Ban } from '@lucide/svelte';
+  import { Button, Table, Badge, Amount, DropdownMenu, DataTableRowActions } from '@nba/ui';
   import type { Invoice } from './invoices-types';
 
   let {
@@ -58,61 +58,50 @@
         <Printer class="w-4 h-4" />
       </Button>
       {#if !isClosed}
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            {#snippet child({ props })}
-              <Button {...props} aria-haspopup="true" variant="ghost" size="icon">
-                <MoreHorizontal class="w-4 h-4" />
-                <span class="sr-only">Toggle menu</span>
-              </Button>
-            {/snippet}
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="end">
-            <DropdownMenu.Label>Actions</DropdownMenu.Label>
-            {#if inv.status === 'draft'}
-              <DropdownMenu.Item
-                onclick={() => { onEdit(inv); }}
-                class="cursor-pointer"
-              >
-                <Edit class="w-3.5 h-3.5 mr-2" /> Modifier
-              </DropdownMenu.Item>
-              <DropdownMenu.Item
-                onclick={() => { onStatusChange(inv.id, 'sent'); }}
-                class="text-blue-600 focus:text-blue-600 cursor-pointer"
-              >
-                <Send class="w-3.5 h-3.5 mr-2" /> Marquer envoyée
-              </DropdownMenu.Item>
-              <DropdownMenu.Item
-                onclick={() => { onStatusChange(inv.id, 'cancelled'); }}
-                class="text-rose-600 focus:text-rose-600 cursor-pointer"
-              >
-                <Ban class="w-3.5 h-3.5 mr-2" /> Annuler la facture
-              </DropdownMenu.Item>
-              <DropdownMenu.Item
-                onclick={() => { onDelete(inv.id, inv.invoiceNumber); }}
-                class="text-rose-600 focus:text-rose-600 cursor-pointer"
-              >
-                <Trash2 class="w-3.5 h-3.5 mr-2" /> Supprimer
-              </DropdownMenu.Item>
-            {/if}
-            {#if inv.status === 'sent'}
-              <DropdownMenu.Item
-                onclick={() => { onStatusChange(inv.id, 'cancelled'); }}
-                class="text-rose-600 focus:text-rose-600 cursor-pointer"
-              >
-                <Ban class="w-3.5 h-3.5 mr-2" /> Annuler la facture
-              </DropdownMenu.Item>
-            {/if}
-            {#if inv.status === 'cancelled'}
-              <DropdownMenu.Item
-                onclick={() => { onDelete(inv.id, inv.invoiceNumber); }}
-                class="text-rose-600 focus:text-rose-600 cursor-pointer"
-              >
-                <Trash2 class="w-3.5 h-3.5 mr-2" /> Supprimer
-              </DropdownMenu.Item>
-            {/if}
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
+        <DataTableRowActions>
+          {#if inv.status === 'draft'}
+            <DropdownMenu.Item
+              onclick={() => { onEdit(inv); }}
+              class="cursor-pointer"
+            >
+              <Edit class="w-3.5 h-3.5 mr-2" /> Modifier
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              onclick={() => { onStatusChange(inv.id, 'sent'); }}
+              class="text-blue-600 focus:text-blue-600 cursor-pointer"
+            >
+              <Send class="w-3.5 h-3.5 mr-2" /> Marquer envoyée
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              onclick={() => { onStatusChange(inv.id, 'cancelled'); }}
+              class="text-rose-600 focus:text-rose-600 cursor-pointer"
+            >
+              <Ban class="w-3.5 h-3.5 mr-2" /> Annuler la facture
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              onclick={() => { onDelete(inv.id, inv.invoiceNumber); }}
+              class="text-rose-600 focus:text-rose-600 cursor-pointer"
+            >
+              <Trash2 class="w-3.5 h-3.5 mr-2" /> Supprimer
+            </DropdownMenu.Item>
+          {/if}
+          {#if inv.status === 'sent'}
+            <DropdownMenu.Item
+              onclick={() => { onStatusChange(inv.id, 'cancelled'); }}
+              class="text-rose-600 focus:text-rose-600 cursor-pointer"
+            >
+              <Ban class="w-3.5 h-3.5 mr-2" /> Annuler la facture
+            </DropdownMenu.Item>
+          {/if}
+          {#if inv.status === 'cancelled'}
+            <DropdownMenu.Item
+              onclick={() => { onDelete(inv.id, inv.invoiceNumber); }}
+              class="text-rose-600 focus:text-rose-600 cursor-pointer"
+            >
+              <Trash2 class="w-3.5 h-3.5 mr-2" /> Supprimer
+            </DropdownMenu.Item>
+          {/if}
+        </DataTableRowActions>
       {/if}
     </div>
   </Table.Cell>

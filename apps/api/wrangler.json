@@ -32,6 +32,9 @@
     "staging": {
       "name": "nba-api-staging",
       "workers_dev": false,
+      "ai": {
+        "binding": "AI"
+      },
       "d1_databases": [
         {
           "binding": "DB",

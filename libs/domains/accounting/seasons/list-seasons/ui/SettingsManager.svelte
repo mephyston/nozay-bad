@@ -24,18 +24,18 @@
     view?: 'seasons' | 'compta' | 'classes' | 'shop';
   } = $props();
 
-  let state = $state<api.SettingsState>({
+  let viewState = $state<api.SettingsState>({
     successMsg: '',
     errorMsg: '',
     isSubmitting: false
   });
 
   $effect(() => {
-    if (state.successMsg) toast.success(state.successMsg);
+    if (viewState.successMsg) toast.success(viewState.successMsg);
   });
 
   $effect(() => {
-    if (state.errorMsg) toast.error(state.errorMsg);
+    if (viewState.errorMsg) toast.error(viewState.errorMsg);
   });
 
   // --- SEASONS STATE ---
@@ -46,15 +46,15 @@
 
   function handleCreateSeason(e: Event) {
     e.preventDefault();
-    api.createSeason(state, newSeasonId, newSeasonName, newSeasonActive);
+    api.createSeason(viewState, newSeasonId, newSeasonName, newSeasonActive);
   }
 
   function handleToggleSeasonActive(id: string) {
-    api.toggleSeasonActive(state, id);
+    api.toggleSeasonActive(viewState, id);
   }
 
   function handleCloseSeason(id: string, confirmOverwrite: boolean) {
-    api.closeSeason(state, id, confirmOverwrite);
+    api.closeSeason(viewState, id, confirmOverwrite);
   }
 
   function handleCheckCloseSeason(id: string) {
@@ -62,39 +62,39 @@
   }
 
   function handleCreateCategory(data: Parameters<typeof api.createCategory>[1]) {
-    return api.createCategory(state, data);
+    return api.createCategory(viewState, data);
   }
 
   function handleUpdateCategory(id: number, updates: Parameters<typeof api.updateCategory>[2]) {
-    return api.updateCategory(state, id, updates);
+    return api.updateCategory(viewState, id, updates);
   }
 
   function handleDeleteCategory(id: number) {
-    return api.deleteCategory(state, id);
+    return api.deleteCategory(viewState, id);
   }
 
   function handleCreateAccountClass(data: Parameters<typeof api.createAccountClass>[1]) {
-    return api.createAccountClass(state, data);
+    return api.createAccountClass(viewState, data);
   }
 
   function handleUpdateAccountClass(code: string, updates: Parameters<typeof api.updateAccountClass>[2]) {
-    return api.updateAccountClass(state, code, updates);
+    return api.updateAccountClass(viewState, code, updates);
   }
 
   function handleDeleteAccountClass(code: string) {
-    return api.deleteAccountClass(state, code);
+    return api.deleteAccountClass(viewState, code);
   }
 
   function handleCreateProductCategory(data: Parameters<typeof api.createProductCategory>[1]) {
-    return api.createProductCategory(state, data);
+    return api.createProductCategory(viewState, data);
   }
 
   function handleUpdateProductCategory(id: number, updates: Parameters<typeof api.updateProductCategory>[2]) {
-    return api.updateProductCategory(state, id, updates);
+    return api.updateProductCategory(viewState, id, updates);
   }
 
   function handleDeleteProductCategory(id: number) {
-    return api.deleteProductCategory(state, id);
+    return api.deleteProductCategory(viewState, id);
   }
 
   // svelte-ignore state_referenced_locally
@@ -115,17 +115,17 @@
 </script>
 
 <div class="space-y-6">
-  {#if state.successMsg}
+  {#if viewState.successMsg}
     <Alert.Root class="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
       <Check class="w-4 h-4" />
-      <Alert.Description>{state.successMsg}</Alert.Description>
+      <Alert.Description>{viewState.successMsg}</Alert.Description>
     </Alert.Root>
   {/if}
 
-  {#if state.errorMsg}
+  {#if viewState.errorMsg}
     <Alert.Root variant="destructive">
       <AlertCircle class="w-4 h-4" />
-      <Alert.Description>{state.errorMsg}</Alert.Description>
+      <Alert.Description>{viewState.errorMsg}</Alert.Description>
     </Alert.Root>
   {/if}
 
@@ -140,37 +140,18 @@
     <!-- VIEW: SEASONS -->
     <Tabs.Content value="seasons">
       {#if activeView === 'seasons'}
-        <Card.Root class="w-full">
-          <Card.Header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border">
-            <div>
-              <Card.Title class="text-lg font-bold flex items-center gap-2">
-                <Calendar class="w-5 h-5 text-primary" />
-                Exercices Comptables / Saisons
-              </Card.Title>
-              <Card.Description class="mt-1">
-                Gérez les saisons comptables et définissez la saison active de l'association.
-              </Card.Description>
-            </div>
-            <Button onclick={() => showAddSeasonSheet = true} size="sm" class="font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
-              <Plus class="w-4 h-4" />
-              Nouvelle Saison
-            </Button>
-          </Card.Header>
-          <Card.Content class="pt-6 space-y-6">
-            <SeasonConfig
-              {seasons}
-              isSubmitting={state.isSubmitting}
-              bind:showAddSheet={showAddSeasonSheet}
-              bind:newSeasonId
-              bind:newSeasonName
-              bind:newSeasonActive
-              onCreateSeason={handleCreateSeason}
-              onToggleSeasonActive={handleToggleSeasonActive}
-              onCloseSeason={handleCloseSeason}
-              onCheckCloseSeason={handleCheckCloseSeason}
-            />
-          </Card.Content>
-        </Card.Root>
+        <SeasonConfig
+          {seasons}
+          isSubmitting={viewState.isSubmitting}
+          bind:showAddSheet={showAddSeasonSheet}
+          bind:newSeasonId
+          bind:newSeasonName
+          bind:newSeasonActive
+          onCreateSeason={handleCreateSeason}
+          onToggleSeasonActive={handleToggleSeasonActive}
+          onCloseSeason={handleCloseSeason}
+          onCheckCloseSeason={handleCheckCloseSeason}
+        />
       {/if}
     </Tabs.Content>
 
@@ -180,7 +161,7 @@
         <CategoriesConfig
           {categories}
           {accountClasses}
-          isSubmitting={state.isSubmitting}
+          isSubmitting={viewState.isSubmitting}
           onUpdateCategory={handleUpdateCategory}
           onDeleteCategory={handleDeleteCategory}
           onCreateCategory={handleCreateCategory}
@@ -193,7 +174,7 @@
       {#if activeView === 'classes'}
         <AccountClassesConfig
           {accountClasses}
-          isSubmitting={state.isSubmitting}
+          isSubmitting={viewState.isSubmitting}
           onUpdateAccountClass={handleUpdateAccountClass}
           onDeleteAccountClass={handleDeleteAccountClass}
           onCreateAccountClass={handleCreateAccountClass}
@@ -207,7 +188,7 @@
         <ProductCategoriesConfig
           {productCategories}
           {categories}
-          isSubmitting={state.isSubmitting}
+          isSubmitting={viewState.isSubmitting}
           onUpdateProductCategory={handleUpdateProductCategory}
           onDeleteProductCategory={handleDeleteProductCategory}
           onCreateProductCategory={handleCreateProductCategory}

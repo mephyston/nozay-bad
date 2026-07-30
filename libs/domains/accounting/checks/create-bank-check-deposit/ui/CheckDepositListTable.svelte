@@ -1,128 +1,166 @@
 <script lang="ts">
   import { CheckCircle, MoreVertical, FileText, Trash2 } from '@lucide/svelte';
-  import { Button, Table, Badge, Card, Amount, DropdownMenu } from '@nba/ui';
+  import { Button, Badge, Amount, DropdownMenu, DataTable, Table, DataTableToolbar } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
   import type { CheckDeposit } from './check-deposit-types';
 
+  import type { Snippet } from 'svelte';
+
   interface Props {
     depositState: CheckDepositState;
+    seasonId: string;
+    seasons: any[];
     checkDeposits: CheckDeposit[];
     onDeleteDeposit: (id: number) => Promise<void>;
+    tabsNav?: Snippet;
   }
 
-  let { depositState, checkDeposits, onDeleteDeposit }: Props = $props();
+  let { depositState, seasonId, seasons, checkDeposits, onDeleteDeposit, tabsNav }: Props = $props();
+
+  let depositSearchQuery = $state('');
+
+  const filteredDeposits = $derived.by(() => {
+    if (!depositSearchQuery) return checkDeposits;
+    const q = depositSearchQuery.toLowerCase();
+    return checkDeposits.filter(d => d.reference.toLowerCase().includes(q));
+  });
 </script>
 
-<Card.Root class="overflow-hidden shadow-sm">
-  <Card.Content class="p-0">
-    <div class="overflow-x-auto min-h-[220px]">
-      <Table.Root class="w-full text-left border-collapse text-sm">
-        <Table.Header>
-          <Table.Row>
-            <Table.Head class="hidden md:table-cell p-4">Date de dépôt</Table.Head>
-            <Table.Head class="p-4">Référence</Table.Head>
-            <Table.Head class="p-4">Statut</Table.Head>
-            <Table.Head class="p-4 text-right">Montant Total</Table.Head>
-            <Table.Head class="hidden md:table-cell p-4">Rapprochement Bancaire</Table.Head>
-            <Table.Head class="p-4 text-right">Actions</Table.Head>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body class="divide-y divide-border">
-          {#each checkDeposits as dep}
-            <Table.Row class="hover:bg-muted/50 transition-colors">
-              <Table.Cell class="hidden md:table-cell p-4 text-muted-foreground">
-                {new Date(dep.date).toLocaleDateString('fr-FR')}
-              </Table.Cell>
-              <Table.Cell class="p-4 font-medium">{dep.reference}</Table.Cell>
-              <Table.Cell class="p-4">
-                {#if dep.status === 'cleared'}
-                  <Badge variant="outline" class="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 text-xs font-semibold">
-                    <CheckCircle class="h-3 w-3" /> Rapproché
-                  </Badge>
-                {:else}
-                  <Badge variant="outline" class="inline-flex items-center gap-1 bg-primary/10 text-primary border-primary/20 text-xs font-semibold">
-                    Déposé
-                  </Badge>
-                {/if}
-              </Table.Cell>
-              <Table.Cell class="p-4 text-right font-bold text-foreground">
-                <Amount cents={(dep as any).amountCents ?? dep.amount} />
-              </Table.Cell>
-              <Table.Cell class="hidden md:table-cell p-4">
-                {#if dep.status === 'cleared'}
-                  <span class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                    <CheckCircle class="w-3.5 h-3.5" />
-                    Rapproché (SG #{dep.bankStatementLineId})
-                  </span>
-                {:else}
-                  <span class="text-xs text-muted-foreground italic font-medium">Non rapproché</span>
-                {/if}
-              </Table.Cell>
-              <Table.Cell class="p-4 text-right">
-                <DropdownMenu.Root>
-                  <DropdownMenu.Trigger asChild>
-                    {#snippet child({ props })}
-                      <Button 
-                        {...props}
-                        variant="ghost"
-                        size="icon"
-                        class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
-                        aria-label="Actions"
-                      >
-                        <MoreVertical class="w-4 h-4" />
-                        <span class="sr-only">Toggle menu</span>
-                      </Button>
-                    {/snippet}
-                  </DropdownMenu.Trigger>
+<DataTable
+  data={filteredDeposits}
+  emptyTitle="Aucun bordereau"
+  emptyDescription="Aucun bordereau de remise enregistré."
+>
+  {#snippet toolbarStart()}
+    {#if tabsNav}
+      {@render tabsNav()}
+    {/if}
+  {/snippet}
+  {#snippet toolbar()}
+    <DataTableToolbar
+      bind:searchValue={depositSearchQuery}
+      searchPlaceholder="Rechercher par référence..."
+      hasFilters={true}
+      filtersActive={!!seasonId && seasons.length > 0}
+    >
+      {#snippet filters()}
+        <div class="space-y-1.5">
+          <label for="filter-season" class="text-xs font-semibold text-muted-foreground">Saison</label>
+          <select
+            id="filter-season"
+            class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+            value={seasonId}
+            onchange={(e) => {
+              const val = (e.target as HTMLSelectElement).value;
+              const params = new URLSearchParams(window.location.search);
+              params.set('season', val);
+              window.location.href = `/admin/accounting/cheques?${params.toString()}`;
+            }}
+          >
+            {#each seasons as season}
+              <option value={season.code || season.id}>{season.name}</option>
+            {/each}
+            {#if seasons.length === 0}
+              <option value="25-26">Saison 2025-2026</option>
+            {/if}
+          </select>
+        </div>
+      {/snippet}
+    </DataTableToolbar>
+  {/snippet}
+  {#snippet header()}
+    <Table.Head class="hidden md:table-cell">Date de dépôt</Table.Head>
+    <Table.Head>Référence</Table.Head>
+    <Table.Head>Statut</Table.Head>
+    <Table.Head class="text-right">Montant Total</Table.Head>
+    <Table.Head class="hidden md:table-cell">Rapprochement Bancaire</Table.Head>
+    <Table.Head class="text-right">Actions</Table.Head>
+  {/snippet}
 
-                  <DropdownMenu.Content class="w-48" align="end">
-                    <DropdownMenu.Item
-                      onclick={() => {
-                        depositState.selectedDepositToView = dep;
-                        depositState.showViewDepositModal = true;
-                      }}
-                      class="cursor-pointer"
-                    >
-                      <FileText class="w-3.5 h-3.5 mr-2" />
-                      Consulter / Imprimer
-                    </DropdownMenu.Item>
-                    
-                    {#if dep.status !== 'cleared' && !depositState.isClosed}
-                      <DropdownMenu.Item
-                        onclick={() => {
-                          depositState.selectedDepositToClear = dep;
-                          depositState.showClearModal = true;
-                        }}
-                        class="text-primary focus:text-primary cursor-pointer"
-                      >
-                        <CheckCircle class="w-3.5 h-3.5 mr-2" />
-                        Rapprocher (SG)
-                      </DropdownMenu.Item>
-                    {/if}
+  {#snippet row(dep)}
+    <Table.Row class="hover:bg-muted/50 transition-colors">
+      <Table.Cell class="hidden md:table-cell text-muted-foreground">
+      {new Date(dep.date).toLocaleDateString('fr-FR')}
+    </Table.Cell>
+    <Table.Cell class="font-medium">{dep.reference}</Table.Cell>
+    <Table.Cell>
+      {#if dep.status === 'cleared'}
+        <Badge variant="outline" class="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 text-xs font-semibold">
+          <CheckCircle class="h-3 w-3" /> Rapproché
+        </Badge>
+      {:else}
+        <Badge variant="outline" class="inline-flex items-center gap-1 bg-primary/10 text-primary border-primary/20 text-xs font-semibold">
+          Déposé
+        </Badge>
+      {/if}
+    </Table.Cell>
+    <Table.Cell class="text-right font-bold text-foreground">
+      <Amount cents={(dep as any).amountCents ?? dep.amount} />
+    </Table.Cell>
+    <Table.Cell class="hidden md:table-cell">
+      {#if dep.status === 'cleared'}
+        <span class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+          <CheckCircle class="w-3.5 h-3.5" />
+          Rapproché (SG #{dep.bankStatementLineId})
+        </span>
+      {:else}
+        <span class="text-xs text-muted-foreground italic font-medium">Non rapproché</span>
+      {/if}
+    </Table.Cell>
+    <Table.Cell class="text-right">
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger asChild>
+          {#snippet child({ props })}
+            <Button 
+              {...props}
+              variant="ghost"
+              size="icon"
+              class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
+              aria-label="Actions"
+            >
+              <MoreVertical class="w-4 h-4" />
+              <span class="sr-only">Toggle menu</span>
+            </Button>
+          {/snippet}
+        </DropdownMenu.Trigger>
 
-                    {#if !depositState.isClosed}
-                      <DropdownMenu.Item
-                        onclick={() => onDeleteDeposit(dep.id)}
-                        class="text-destructive focus:text-destructive cursor-pointer"
-                      >
-                        <Trash2 class="w-3.5 h-3.5 mr-2" />
-                        Supprimer la remise
-                      </DropdownMenu.Item>
-                    {/if}
-                  </DropdownMenu.Content>
-                </DropdownMenu.Root>
-              </Table.Cell>
-            </Table.Row>
-          {:else}
-            <Table.Row>
-              <Table.Cell colspan={6} class="text-center py-12 text-muted-foreground">
-                <FileText class="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
-                Aucun bordereau de remise enregistré.
-              </Table.Cell>
-            </Table.Row>
-          {/each}
-        </Table.Body>
-      </Table.Root>
-    </div>
-  </Card.Content>
-</Card.Root>
+        <DropdownMenu.Content class="w-48" align="end">
+          <DropdownMenu.Item
+            onclick={() => {
+              depositState.selectedDepositToView = dep;
+              depositState.showViewDepositModal = true;
+            }}
+            class="cursor-pointer"
+          >
+            <FileText class="w-3.5 h-3.5 mr-2" />
+            Consulter / Imprimer
+          </DropdownMenu.Item>
+          
+          {#if dep.status !== 'cleared' && !depositState.isClosed}
+            <DropdownMenu.Item
+              onclick={() => {
+                depositState.selectedDepositToClear = dep;
+                depositState.showClearModal = true;
+              }}
+              class="text-primary focus:text-primary cursor-pointer"
+            >
+              <CheckCircle class="w-3.5 h-3.5 mr-2" />
+              Rapprocher (SG)
+            </DropdownMenu.Item>
+          {/if}
+
+          {#if !depositState.isClosed}
+            <DropdownMenu.Item
+              onclick={() => onDeleteDeposit(dep.id)}
+              class="text-destructive focus:text-destructive cursor-pointer"
+            >
+              <Trash2 class="w-3.5 h-3.5 mr-2" />
+              Supprimer la remise
+            </DropdownMenu.Item>
+          {/if}
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    </Table.Cell>
+    </Table.Row>
+  {/snippet}
+</DataTable>

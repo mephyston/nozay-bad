@@ -46,8 +46,7 @@
     {
       label: "Adhérents",
       items: [
-        { name: "Liste des adhérents", icon: Users, href: "/admin/members" },
-        { name: "Import Poona", icon: UploadCloud, href: "/admin/members/import" }
+        { name: "Liste des adhérents", icon: Users, href: "/admin/members" }
       ]
     },
     {
@@ -92,10 +91,7 @@
 
     // Adhérents
     if (item.href === "/admin/members") {
-      return primary === "adhérents" && (!sub || sub === "liste");
-    }
-    if (item.href === "/admin/members/import") {
-      return primary === "adhérents" && sub === "import";
+      return primary === "adhérents";
     }
 
     // Comptabilité

@@ -1,12 +1,11 @@
 <script lang="ts">
   import { FileText, Check, AlertCircle } from '@lucide/svelte';
-  import { Alert, Card, Tabs, uiConfirm } from '@nba/ui';
+  import { Alert, Card, Tabs, uiConfirm, Badge, PageHeader } from '@nba/ui';
   import type { Expense, Season, Category } from './expenses-types';
   import { getCategoryOptions, getCategoryLabels } from './expenses-types';
   import { ExpensesState } from './expenses-state.svelte';
   import * as api from './expenses-api';
-  import ExpensesHeader from './ExpensesHeader.svelte';
-  import ExpensePendingCard from './ExpensePendingCard.svelte';
+  import ExpensePendingTable from './ExpensePendingTable.svelte';
   import ExpenseHistoryTable from './ExpenseHistoryTable.svelte';
   import ExpensePhotoModal from './ExpensePhotoModal.svelte';
 
@@ -22,7 +21,7 @@
     categories?: Category[];
   } = $props();
 
-  const state = new ExpensesState();
+  const viewState = new ExpensesState();
   const isClosed = $derived(seasons.find(s => s.id === seasonId)?.closed || false);
 
   const categoriesList = $derived(getCategoryOptions(categories));
@@ -32,8 +31,8 @@
     expenses
       .filter(e => e.status === 'pending')
       .filter(e => 
-        e.emitterName.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
-        e.description.toLowerCase().includes(state.searchTerm.toLowerCase())
+        e.emitterName.toLowerCase().includes(viewState.searchTerm.toLowerCase()) ||
+        e.description.toLowerCase().includes(viewState.searchTerm.toLowerCase())
       )
   );
 
@@ -41,54 +40,54 @@
     expenses
       .filter(e => e.status !== 'pending')
       .filter(e => 
-        e.emitterName.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
-        e.description.toLowerCase().includes(state.searchTerm.toLowerCase())
+        e.emitterName.toLowerCase().includes(viewState.searchTerm.toLowerCase()) ||
+        e.description.toLowerCase().includes(viewState.searchTerm.toLowerCase())
       )
   );
 
   async function saveEdit(id: number) {
-    const parsedAmount = parseFloat(state.editAmountStr);
+    const parsedAmount = parseFloat(viewState.editAmountStr);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      state.errorMsg = "Veuillez saisir un montant supérieur à 0 €.";
+      viewState.errorMsg = "Veuillez saisir un montant supérieur à 0 €.";
       return;
     }
 
-    state.isSaving = true;
-    state.errorMsg = '';
-    state.successMsg = '';
+    viewState.isSaving = true;
+    viewState.errorMsg = '';
+    viewState.successMsg = '';
 
     try {
-      state.successMsg = await api.saveExpenseEdit(id, {
-        description: state.editDescription,
-        category: state.editCategory,
-        seasonId: state.editSeasonId,
+      viewState.successMsg = await api.saveExpenseEdit(id, {
+        description: viewState.editDescription,
+        category: viewState.editCategory,
+        seasonId: viewState.editSeasonId,
         amount: Math.round(parsedAmount * 100)
       });
-      state.editingId = null;
+      viewState.editingId = null;
       setTimeout(() => {
         window.location.reload();
       }, 1000);
     } catch (err: unknown) {
-      state.errorMsg = (err as Error).message || "Une erreur est survenue.";
+      viewState.errorMsg = (err as Error).message || "Une erreur est survenue.";
     } finally {
-      state.isSaving = false;
+      viewState.isSaving = false;
     }
   }
 
   async function handleAction(id: number, action: 'approve' | 'reject') {
-    state.submittingId = id;
-    state.errorMsg = '';
-    state.successMsg = '';
+    viewState.submittingId = id;
+    viewState.errorMsg = '';
+    viewState.successMsg = '';
 
     try {
-      state.successMsg = await api.handleExpenseAction(id, action);
+      viewState.successMsg = await api.handleExpenseAction(id, action);
       setTimeout(() => {
         window.location.reload();
       }, 1000);
     } catch (err: unknown) {
-      state.errorMsg = (err as Error).message || "Une erreur est survenue.";
+      viewState.errorMsg = (err as Error).message || "Une erreur est survenue.";
     } finally {
-      state.submittingId = null;
+      viewState.submittingId = null;
     }
   }
 
@@ -97,91 +96,133 @@
       return;
     }
 
-    state.submittingId = id;
-    state.errorMsg = '';
-    state.successMsg = '';
+    viewState.submittingId = id;
+    viewState.errorMsg = '';
+    viewState.successMsg = '';
 
     try {
-      state.successMsg = await api.cancelExpenseValidation(id);
+      viewState.successMsg = await api.cancelExpenseValidation(id);
       setTimeout(() => {
         window.location.reload();
       }, 1000);
     } catch (err: unknown) {
-      state.errorMsg = (err as Error).message || "Une erreur est survenue.";
+      viewState.errorMsg = (err as Error).message || "Une erreur est survenue.";
     } finally {
-      state.submittingId = null;
+      viewState.submittingId = null;
     }
   }
+
+  const pendingCount = $derived(expenses.filter(e => e.status === 'pending').length);
+  // svelte-ignore state_referenced_locally
+  let selectedSeason = $state(seasonId);
+
+  $effect(() => {
+    if (selectedSeason !== seasonId) {
+      const params = new URLSearchParams(window.location.search);
+      params.set('season', selectedSeason);
+      window.location.href = `/admin/expenses?${params.toString()}`;
+    }
+  });
 </script>
 
 <div class="space-y-6">
-  <Tabs.Root value={state.activeTab} onValueChange={(v) => state.activeTab = v as any} class="space-y-6">
-    <ExpensesHeader
-      bind:searchTerm={state.searchTerm}
-      bind:activeTab={state.activeTab}
-      {expenses}
-    />
+  <PageHeader 
+    title="Notes de frais" 
+    description="Validation, modification et remboursement des notes de frais des membres du club."
+  >
+    {#snippet actions()}
+      {#if isClosed}
+        <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
+          Saison clôturée (Lecture seule)
+        </span>
+      {/if}
+    {/snippet}
+  </PageHeader>
 
-    {#if state.successMsg}
+  <Tabs.Root value={viewState.activeTab} onValueChange={(v) => viewState.activeTab = v as any} class="space-y-6">
+    {#snippet tabsNav()}
+      <Tabs.List class="w-full sm:w-fit justify-start sm:justify-center overflow-x-auto no-scrollbar mx-auto sm:mx-0 no-print">
+        <Tabs.Trigger value="pending">
+          En attente
+          {#if pendingCount > 0}
+            <Badge class="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold bg-primary text-primary-foreground rounded-full h-auto">
+              {pendingCount}
+            </Badge>
+          {/if}
+        </Tabs.Trigger>
+        <Tabs.Trigger value="history">
+          Historique / Traités
+        </Tabs.Trigger>
+      </Tabs.List>
+    {/snippet}
+
+    {#snippet toolbarFilters()}
+      <div class="space-y-1.5">
+        <label for="filter-season" class="text-xs font-semibold text-muted-foreground">Saison</label>
+        <select
+          id="filter-season"
+          class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+          bind:value={selectedSeason}
+        >
+          {#each seasons as season}
+            <option value={season.id}>{season.name}</option>
+          {/each}
+        </select>
+      </div>
+    {/snippet}
+
+    {#if viewState.successMsg}
       <Alert.Root class="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
         <Check class="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
         <Alert.Title class="text-emerald-600 dark:text-emerald-400">Succès</Alert.Title>
-        <Alert.Description class="text-emerald-600 dark:text-emerald-400">{state.successMsg}</Alert.Description>
+        <Alert.Description class="text-emerald-600 dark:text-emerald-400">{viewState.successMsg}</Alert.Description>
       </Alert.Root>
     {/if}
 
-    {#if state.errorMsg}
+    {#if viewState.errorMsg}
       <Alert.Root variant="destructive">
         <AlertCircle class="w-4.5 h-4.5" />
         <Alert.Title>Erreur</Alert.Title>
-        <Alert.Description>{state.errorMsg}</Alert.Description>
+        <Alert.Description>{viewState.errorMsg}</Alert.Description>
       </Alert.Root>
     {/if}
 
     <Tabs.Content value="pending">
-      {#if pendingExpenses.length === 0}
-      <Card.Root class="text-center py-16">
-        <Card.Content>
-          <FileText class="w-12 h-12 text-muted-foreground/60 mx-auto mb-3" />
-          <Card.Title class="text-lg font-bold text-foreground">Aucune note de frais en attente</Card.Title>
-          <Card.Description class="text-sm text-muted-foreground mt-1">Toutes les dépenses soumises ont été validées ou rejetées.</Card.Description>
-        </Card.Content>
-      </Card.Root>
-    {:else}
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {#each pendingExpenses as exp (exp.id)}
-          <ExpensePendingCard
-            {exp}
-            {isClosed}
-            submittingId={state.submittingId}
-            bind:editingId={state.editingId}
-            bind:editDescription={state.editDescription}
-            bind:editCategory={state.editCategory}
-            bind:editSeasonId={state.editSeasonId}
-            bind:editAmountStr={state.editAmountStr}
-            isSaving={state.isSaving}
-            {categoriesList}
-            {categoryLabels}
-            {seasons}
-            onSelectPhoto={(url) => state.selectedPhoto = url}
-            onStartEdit={(e) => state.startEdit(e)}
-            onSaveEdit={saveEdit}
-            onAction={handleAction}
-          />
-        {/each}
-      </div>
-    {/if}
+      <ExpensePendingTable
+        {pendingExpenses}
+        {isClosed}
+        submittingId={viewState.submittingId}
+        bind:editingId={viewState.editingId}
+        bind:editDescription={viewState.editDescription}
+        bind:editCategory={viewState.editCategory}
+        bind:editSeasonId={viewState.editSeasonId}
+        bind:editAmountStr={viewState.editAmountStr}
+        isSaving={viewState.isSaving}
+        {categoriesList}
+        {categoryLabels}
+        {seasons}
+        bind:searchTerm={viewState.searchTerm}
+        {tabsNav}
+        {toolbarFilters}
+        onSelectPhoto={(url) => viewState.selectedPhoto = url}
+        onStartEdit={(e) => viewState.startEdit(e)}
+        onSaveEdit={saveEdit}
+        onAction={handleAction}
+      />
     </Tabs.Content>
     <Tabs.Content value="history">
       <ExpenseHistoryTable
         {historyExpenses}
         {isClosed}
         {categoryLabels}
-        onSelectPhoto={(url) => state.selectedPhoto = url}
+        bind:searchTerm={viewState.searchTerm}
+        {tabsNav}
+        {toolbarFilters}
+        onSelectPhoto={(url) => viewState.selectedPhoto = url}
         onCancelValidation={handleCancelValidation}
       />
     </Tabs.Content>
   </Tabs.Root>
 </div>
 
-<ExpensePhotoModal bind:selectedPhoto={state.selectedPhoto} />
+<ExpensePhotoModal bind:selectedPhoto={viewState.selectedPhoto} />

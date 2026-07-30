@@ -133,6 +133,14 @@ try {
   errorMsg = 'Erreur lors de la récupération des données de remise de chèques.';
 }
 
+let displaySeasonName = season;
+if (seasonsList.length > 0) {
+  const currentSeason = seasonsList.find((s: any) => s.code === season || String(s.id) === season);
+  if (currentSeason && currentSeason.name) {
+    displaySeasonName = currentSeason.name.replace('Saison ', '');
+  }
+}
+
 const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id) === season)?.closed;
 ---
 
@@ -149,7 +157,7 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
         <div class="text-center sm:text-left w-full sm:w-auto">
           <h1 class="text-3xl font-bold tracking-tight">Remise de chèques</h1>
           <p class="text-muted-foreground mt-2">
-            Gestion et suivi des chèques physiques, génération de bordereaux de remise et rapprochement bancaire.
+            Gestion et suivi des chèques physiques, génération de bordereaux de remise et rapprochement bancaire pour la saison {displaySeasonName}.
           </p>
         </div>
         <div class="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
@@ -158,21 +166,6 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
               Saison clôturée (Lecture seule)
             </span>
           )}
-          <select
-            id="season-selector"
-            class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9"
-          >
-            {seasonsList.map((s: any) => {
-              const val = s.code || String(s.id);
-              const isSelected = val === season || String(s.id) === season;
-              return (
-                <option value={val} selected={isSelected}>{s.name}</option>
-              );
-            })}
-            {seasonsList.length === 0 && (
-              <option value="25-26" selected>Saison 2025-2026</option>
-            )}
-          </select>
         </div>
       </div>
 
@@ -187,15 +180,4 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
       />
     </div>
   </AdminLayout>
-  <script>
-    const selector = document.getElementById('season-selector');
-    if (selector) {
-      selector.addEventListener('change', (e) => {
-        const newSeason = (e.target as HTMLSelectElement).value;
-        const params = new URLSearchParams(window.location.search);
-        params.set('season', newSeason);
-        window.location.href = `/admin/accounting/cheques?${params.toString()}`;
-      });
-    }
-  </script>
 </Layout>

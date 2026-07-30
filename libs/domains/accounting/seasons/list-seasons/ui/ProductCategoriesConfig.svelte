@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Settings, Plus, Save, Trash2, Edit } from "@lucide/svelte";
-  import { Card, Button, Sheet, Table, Checkbox, Input, Label, Badge, AlertDialog } from "@nba/ui";
+  import { Card, Button, Sheet, Table, Checkbox, Input, Label, Badge, AlertDialog, DataTable, DataTableToolbar, DataTableColumnHeader } from "@nba/ui";
   import type { Category, ProductCategory } from "./settings-types";
 
   let {
@@ -9,7 +9,8 @@
     isSubmitting = false,
     onUpdateProductCategory,
     onDeleteProductCategory,
-    onCreateProductCategory
+    onCreateProductCategory,
+    tabsNav
   }: {
     productCategories: ProductCategory[];
     categories: Category[];
@@ -25,6 +26,7 @@
       accountingCategoryId: number;
       active: boolean;
     }) => Promise<void>;
+    tabsNav?: any;
   } = $props();
 
   let showAddSheet = $state(false);
@@ -92,116 +94,106 @@
   }
 </script>
 
-<div class="w-full space-y-6">
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <div>
-      <h2 class="text-lg font-bold flex items-center gap-2">
-        <Settings class="w-5 h-5 text-primary" />
-        Catégories de Produits
-      </h2>
-      <p class="text-sm text-muted-foreground mt-1">
-        Associez des catégories de produits à des catégories comptables pour générer la comptabilité des commandes.
-      </p>
-    </div>
-    <Button onclick={() => showAddSheet = true} size="sm" class="font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
-      <Plus class="w-4 h-4" />
-      Nouvelle Catégorie
-    </Button>
-  </div>
-  <div>
-    <div class="hidden sm:block rounded-md border border-border overflow-hidden">
-      <Table.Root>
-        <Table.Header>
-          <Table.Row class="bg-muted/50 hover:bg-muted/50">
-            <Table.Head class="font-semibold h-10 w-full sm:w-[300px]">Libellé</Table.Head>
-            <Table.Head class="font-semibold h-10 hidden sm:table-cell">Catégorie Comptable</Table.Head>
-            <Table.Head class="font-semibold h-10 w-[100px] text-center hidden md:table-cell">Actif</Table.Head>
-            <Table.Head class="font-semibold h-10 w-[120px] text-right">Actions</Table.Head>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>
-          {#each productCategories as cat}
-            <Table.Row class="hover:bg-muted/30">
-                <Table.Cell class="font-medium">
-                  {cat.label}
-                </Table.Cell>
-                <Table.Cell class="hidden sm:table-cell">
+  <DataTable
+    data={productCategories}
+    emptyTitle="Aucune catégorie"
+    emptyDescription="Aucune catégorie de produit n'a encore été créée."
+  >
+    {#snippet toolbarStart()}
+      {#if tabsNav}
+        {@render tabsNav()}
+      {/if}
+    {/snippet}
+
+    {#snippet toolbar()}
+      <DataTableToolbar hasSearch={false}>
+        {#snippet actions()}
+          <Button onclick={() => showAddSheet = true} size="sm" class="font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+            <Plus class="w-4 h-4" />
+            Nouvelle catégorie
+          </Button>
+        {/snippet}
+      </DataTableToolbar>
+    {/snippet}
+
+    {#snippet mobileView()}
+      <div class="flex flex-col gap-4">
+        {#each productCategories as cat}
+          <div class="p-4 rounded-xl border border-border bg-card flex flex-col gap-3 relative">
+            <div class="flex justify-between items-start gap-2">
+              <div>
+                <div class="font-bold text-base text-foreground">{cat.label}</div>
+                <div class="text-sm text-muted-foreground mt-0.5">
                   <Badge variant="outline" class="font-normal bg-card">
                     {getCategoryLabel(cat.accountingCategoryId)}
                   </Badge>
-                </Table.Cell>
-                <Table.Cell class="text-center hidden md:table-cell">
-                  {#if cat.active}
-                    <Badge class="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20">Oui</Badge>
-                  {:else}
-                    <Badge variant="secondary" class="text-muted-foreground">Non</Badge>
-                  {/if}
-                </Table.Cell>
-                <Table.Cell class="text-right space-x-1">
-                  <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-primary" onclick={() => startEdit(cat)}>
-                    <Edit class="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-destructive" onclick={() => confirmDelete(cat.id)} disabled={isSubmitting}>
-                    <Trash2 class="w-4 h-4" />
-                  </Button>
-                </Table.Cell>
-            </Table.Row>
-          {/each}
-          {#if productCategories.length === 0}
-            <Table.Row>
-              <Table.Cell colspan={4} class="h-24 text-center text-muted-foreground">
-                Aucune catégorie de produit trouvée.
-              </Table.Cell>
-            </Table.Row>
-          {/if}
-        </Table.Body>
-      </Table.Root>
-    </div>
-    <div class="sm:hidden flex flex-col gap-4 mt-4">
-      {#each productCategories as cat}
-        <div class="p-4 rounded-xl border border-border bg-card flex flex-col gap-3 relative">
-          <div class="flex justify-between items-start gap-2">
-            <div>
-              <div class="font-bold text-base text-foreground">{cat.label}</div>
-              <div class="text-sm text-muted-foreground mt-0.5">
-                <Badge variant="outline" class="font-normal bg-card">
-                  {getCategoryLabel(cat.accountingCategoryId)}
-                </Badge>
+                </div>
+              </div>
+              <div>
+                {#if cat.active}
+                  <Badge class="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] py-0 px-1 font-semibold">Actif</Badge>
+                {:else}
+                  <Badge variant="secondary" class="text-[10px] py-0 px-1 font-semibold">Inactif</Badge>
+                {/if}
               </div>
             </div>
-            <div>
-              {#if cat.active}
-                <Badge class="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] py-0 px-1 font-semibold">Actif</Badge>
-              {:else}
-                <Badge variant="secondary" class="text-[10px] py-0 px-1 font-semibold">Inactif</Badge>
-              {/if}
+            <div class="flex justify-end gap-2 pt-2 border-t border-border mt-1">
+              <Button variant="outline" size="sm" class="h-8 text-xs flex-1 border-destructive/20 text-destructive hover:bg-destructive/10" onclick={() => confirmDelete(cat.id)} disabled={isSubmitting}>
+                Supprimer
+              </Button>
+              <Button variant="outline" size="sm" class="h-8 text-xs flex-1" onclick={() => startEdit(cat)}>
+                Modifier
+              </Button>
             </div>
           </div>
-          <div class="flex justify-end gap-2 pt-2 border-t border-border mt-1">
-            <Button variant="outline" size="sm" class="h-8 text-xs flex-1 border-destructive/20 text-destructive hover:bg-destructive/10" onclick={() => confirmDelete(cat.id)} disabled={isSubmitting}>
-              Supprimer
+        {/each}
+      </div>
+    {/snippet}
+
+    {#snippet header()}
+      <DataTableColumnHeader title="Libellé" class="w-full sm:w-[300px]" />
+      <DataTableColumnHeader title="Catégorie Comptable" class="hidden sm:table-cell" />
+      <DataTableColumnHeader title="Actif" class="w-[100px] text-center hidden md:table-cell" />
+      <DataTableColumnHeader title="Actions" class="w-[120px] text-right" />
+    {/snippet}
+
+    {#snippet row(cat)}
+      <Table.Row>
+        <Table.Cell class="font-medium">
+          {cat.label}
+        </Table.Cell>
+        <Table.Cell class="hidden sm:table-cell">
+          <Badge variant="outline" class="font-normal bg-card">
+            {getCategoryLabel(cat.accountingCategoryId)}
+          </Badge>
+        </Table.Cell>
+        <Table.Cell class="text-center hidden md:table-cell">
+          {#if cat.active}
+            <Badge class="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20">Oui</Badge>
+          {:else}
+            <Badge variant="secondary" class="text-muted-foreground">Non</Badge>
+          {/if}
+        </Table.Cell>
+        <Table.Cell class="text-right space-x-1">
+          <div class="flex justify-end items-center gap-2">
+            <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-primary" onclick={() => startEdit(cat)}>
+              <Edit class="w-4 h-4" />
             </Button>
-            <Button variant="outline" size="sm" class="h-8 text-xs flex-1" onclick={() => startEdit(cat)}>
-              Modifier
+            <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-destructive" onclick={() => confirmDelete(cat.id)} disabled={isSubmitting}>
+              <Trash2 class="w-4 h-4" />
             </Button>
           </div>
-        </div>
-      {/each}
-      {#if productCategories.length === 0}
-        <div class="p-8 text-center text-muted-foreground border border-border rounded-xl bg-card">
-          Aucune catégorie de produit définie.
-        </div>
-      {/if}
-    </div>
-  </div>
-</div>
+        </Table.Cell>
+      </Table.Row>
+    {/snippet}
+  </DataTable>
 
 <Sheet.Root bind:open={showAddSheet}>
   <Sheet.Content class="w-full sm:max-w-md p-6 bg-card border-border">
     <Sheet.Header>
       <Sheet.Title class="flex items-center gap-2">
         <Plus class="w-5 h-5 text-primary" />
-        Nouvelle Catégorie
+        Nouvelle catégorie
       </Sheet.Title>
       <Sheet.Description>
         Ajoutez une catégorie pour classer les produits dans la boutique.
@@ -244,7 +236,7 @@
     <Sheet.Header>
       <Sheet.Title class="flex items-center gap-2">
         <Edit class="w-5 h-5 text-primary" />
-        Modifier la Catégorie
+        Modifier la catégorie
       </Sheet.Title>
       <Sheet.Description>
         Modifiez le libellé ou la catégorie comptable associée.

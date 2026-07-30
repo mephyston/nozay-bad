@@ -1,6 +1,6 @@
 <script lang="ts">
   import { X, Search, Filter } from '@lucide/svelte';
-  import { Button, Badge, Input, DropdownMenu, Checkbox } from '@nba/ui';
+  import { Button, Badge, Input, DropdownMenu, Checkbox, PageHeader } from '@nba/ui';
   import type { Season, Category, AccountClass } from './ledger-types';
 
   let {
@@ -32,51 +32,18 @@
   } = $props();
 </script>
 
-<div class="flex flex-wrap items-center justify-between gap-4">
-  <div class="flex items-center gap-3">
-    <h2 class="text-xl font-bold tracking-tight">Journal des écritures</h2>
-    <select
-      class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
-      bind:value={selectedSeason}
-      onchange={onApplySeasonChange}
-    >
-      {#each seasons as season}
-        <option value={season.code || season.id}>{season.name}</option>
-      {/each}
-      {#if seasons.length === 0}
-        <option value="25-26">Saison 2025-2026</option>
+<PageHeader title="Journal des écritures">
+  {#snippet actions()}
+    <div class="flex items-center gap-3">
+
+      {#if isClosed}
+        <Badge variant="outline" class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
+          Saison clôturée (Lecture seule)
+        </Badge>
       {/if}
-    </select>
-    {#if isClosed}
-      <Badge variant="outline" class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
-        Saison clôturée (Lecture seule)
-      </Badge>
-    {/if}
-  </div>
-  <div class="flex items-center gap-3">
-    {#if !isClosed}
-      <Button
-        onclick={() => onOpenPanel('recette')}
-        class="bg-emerald-600 text-white text-sm font-medium rounded-md hover:bg-emerald-700 shadow transition-colors cursor-pointer"
-      >
-        Saisir Recette
-      </Button>
-      <Button
-        onclick={() => onOpenPanel('depense')}
-        variant="destructive"
-        class="text-sm font-medium rounded-md shadow transition-colors cursor-pointer"
-      >
-        Saisir Dépense
-      </Button>
-      <Button
-        onclick={() => onOpenPanel('transfert')}
-        class="text-sm font-medium rounded-md shadow transition-colors cursor-pointer"
-      >
-        Virement Interne
-      </Button>
-    {/if}
-  </div>
-</div>
+    </div>
+  {/snippet}
+</PageHeader>
 
 {#if filteredCategory || filteredClassCode}
   <div class="flex items-center gap-2 bg-muted/60 px-3 py-1.5 rounded-lg text-xs font-medium border border-border/80 w-fit no-print">

@@ -104,6 +104,8 @@
       {filteredTransactions}
       bind:searchTerm
       {isClosed}
+      {seasonId}
+      {seasons}
       onDelete={handleDelete}
       onNewMovement={() => showForm = true}
     />

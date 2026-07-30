@@ -12,35 +12,11 @@
   let { depositState, checksCount, checkDepositsCount }: Props = $props();
 </script>
 
-<div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-  <Tabs.List class="flex w-full sm:w-fit justify-start sm:justify-center overflow-x-auto no-scrollbar gap-4 no-print">
-    <Tabs.Trigger value="checks">
-      Chèques reçus ({checksCount})
-    </Tabs.Trigger>
-    <Tabs.Trigger value="deposits">
-      Bordereaux de Remise ({checkDepositsCount})
-    </Tabs.Trigger>
-  </Tabs.List>
-
-  {#if depositState.activeTab === 'checks' && !depositState.isClosed}
-    <div class="flex flex-wrap justify-center sm:justify-end gap-2 w-full sm:w-auto">
-      <Button
-        onclick={() => depositState.showAddCheckModal = true}
-        class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold px-4 py-2 rounded-lg transition-all shadow-sm"
-      >
-        <Camera class="h-4 w-4" />
-        Enregistrer un Chèque
-      </Button>
-
-      {#if depositState.selectedChecksList.length > 0}
-        <Button
-          onclick={() => depositState.showCreateDepositModal = true}
-          class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all shadow-sm animate-pulse"
-        >
-          <FileText class="h-4 w-4" />
-          Remise de {depositState.selectedChecksList.length} chèque(s) ({(depositState.totalSelectedAmount / 100).toFixed(2)} €)
-        </Button>
-      {/if}
-    </div>
-  {/if}
-</div>
+<Tabs.List class="flex w-full sm:w-fit justify-start sm:justify-center overflow-x-auto no-scrollbar gap-2 sm:gap-4 no-print h-9 bg-transparent p-0">
+  <Tabs.Trigger value="checks" class="data-[state=active]:bg-muted data-[state=active]:shadow-sm rounded-md px-3">
+    Chèques reçus ({checksCount})
+  </Tabs.Trigger>
+  <Tabs.Trigger value="deposits" class="data-[state=active]:bg-muted data-[state=active]:shadow-sm rounded-md px-3">
+    Bordereaux de remise ({checkDepositsCount})
+  </Tabs.Trigger>
+</Tabs.List>

@@ -11,7 +11,8 @@
     isSubmitting = false,
     onUpdateCategory,
     onDeleteCategory,
-    onCreateCategory
+    onCreateCategory,
+    tabsNav
   }: {
     categories: Category[];
     accountClasses?: AccountClass[];
@@ -31,6 +32,7 @@
       receiptCode: string | null;
       expenseCode: string | null;
     }) => Promise<void>;
+    tabsNav?: any;
   } = $props();
 
   let showAddSheet = $state(false);
@@ -49,40 +51,31 @@
   }
 </script>
 
-<Card.Root class="w-full">
-  <Card.Header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border">
-    <div>
-      <Card.Title class="text-lg font-bold flex items-center gap-2">
-        <Settings class="w-5 h-5 text-primary" />
-        Gestion des Catégories de Trésorerie
-      </Card.Title>
-      <Card.Description class="mt-1">
-        Configurez les libellés de comptabilité (Admin) et les libellés plus simples pour les notes de frais (Adhérent).
-      </Card.Description>
-    </div>
-    <Button onclick={() => showAddSheet = true} size="sm" class="font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
-      <Plus class="w-4 h-4" />
-      Nouvelle Catégorie
-    </Button>
-  </Card.Header>
-  <Card.Content class="pt-6 space-y-6">
-    <CategoryListTable
-      {categories}
-      {accountClasses}
-      {isSubmitting}
-      onEditCategory={(cat) => editingCategory = cat}
-      {onUpdateCategory}
-      {onDeleteCategory}
-    />
-  </Card.Content>
-</Card.Root>
+<div class="space-y-6">
+  <CategoryListTable
+    {categories}
+    {accountClasses}
+    {isSubmitting}
+    onEditCategory={(cat) => editingCategory = cat}
+    {onUpdateCategory}
+    {onDeleteCategory}
+    {tabsNav}
+  >
+    {#snippet actions()}
+      <Button onclick={() => showAddSheet = true} size="sm" class="font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+        <Plus class="w-4 h-4" />
+        Nouvelle catégorie
+      </Button>
+    {/snippet}
+  </CategoryListTable>
+</div>
 
 <Sheet.Root bind:open={showAddSheet}>
   <Sheet.Content class="w-full sm:max-w-md p-6 bg-card border-border overflow-y-auto">
     <Sheet.Header>
       <Sheet.Title class="flex items-center gap-2">
         <Plus class="w-5 h-5 text-primary" />
-        Nouvelle Catégorie
+        Nouvelle catégorie
       </Sheet.Title>
       <Sheet.Description>
         Créez une nouvelle imputation pour les dépenses et recettes de l'asso.
@@ -103,7 +96,7 @@
     <Sheet.Header>
       <Sheet.Title class="flex items-center gap-2">
         <Settings class="w-5 h-5 text-primary" />
-        Modifier la Catégorie
+        Modifier la catégorie
       </Sheet.Title>
       <Sheet.Description>
         Mettez à jour les libellés ou les classes comptables par défaut.

@@ -1,10 +1,10 @@
 <script lang="ts">
   import { Check, AlertCircle } from '@lucide/svelte';
-  import { Alert, AlertDialog } from '@nba/ui';
+  import { Plus } from '@lucide/svelte';
+  import { Alert, AlertDialog, Button, DataTableToolbar } from '@nba/ui';
   import type { Invoice, Season } from './invoices-types';
   import { InvoiceFormState } from './invoices-form-state.svelte';
   import * as api from './invoices-api';
-  import InvoiceFilters from './InvoiceFilters.svelte';
   import InvoiceListTable from './InvoiceListTable.svelte';
   import InvoiceFormModal from './InvoiceFormModal.svelte';
 
@@ -155,12 +155,7 @@
 </script>
 
 <div class="space-y-6">
-  <InvoiceFilters
-    bind:searchTerm
-    bind:statusFilter
-    {isClosed}
-    onOpenCreateModal={openCreateModal}
-  />
+
 
   {#if successMsg}
     <Alert.Root class="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
@@ -183,7 +178,66 @@
     onEdit={openEditModal}
     onStatusChange={handleStatusChange}
     onDelete={handleDelete}
-  />
+  >
+    {#snippet toolbar()}
+      <DataTableToolbar
+        bind:searchValue={searchTerm}
+        searchPlaceholder="Rechercher une facture..."
+        hasFilters={true}
+        filtersActive={statusFilter !== 'all' || (seasonId && seasons.length > 0)}
+      >
+        {#snippet filters()}
+          <div class="space-y-1.5">
+            <label for="filter-season" class="text-xs font-semibold text-muted-foreground">Saison</label>
+            <select
+              id="filter-season"
+              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+              value={seasonId}
+              onchange={(e) => {
+                const val = (e.target as HTMLSelectElement).value;
+                const params = new URLSearchParams(window.location.search);
+                params.set('season', val);
+                window.location.href = `/admin/accounting/invoices?${params.toString()}`;
+              }}
+            >
+              {#each seasons as season}
+                <option value={season.code || season.id}>{season.name}</option>
+              {/each}
+              {#if seasons.length === 0}
+                <option value="25-26">Saison 2025-2026</option>
+              {/if}
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label for="filter-status" class="text-xs font-semibold text-muted-foreground">Statut</label>
+            <select
+              id="filter-status"
+              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+              bind:value={statusFilter}
+            >
+              <option value="all">Tous les statuts</option>
+              <option value="draft">Brouillon</option>
+              <option value="sent">Envoyée</option>
+              <option value="paid">Payée</option>
+              <option value="cancelled">Annulée</option>
+            </select>
+          </div>
+        {/snippet}
+
+        {#snippet actions()}
+          {#if !isClosed}
+            <Button 
+              onclick={openCreateModal}
+              class="inline-flex items-center justify-center gap-2 h-9 w-full sm:w-auto"
+            >
+              <Plus class="w-4 h-4" /> Nouvelle facture
+            </Button>
+          {/if}
+        {/snippet}
+      </DataTableToolbar>
+    {/snippet}
+  </InvoiceListTable>
 </div>
 
 <InvoiceFormModal

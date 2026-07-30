@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AlertDialog } from '@nba/ui';
+  import * as AlertDialog from './index';
   import { confirmStore } from './confirm';
 
   let currentReq = $state<{message: string, resolve: (v: boolean) => void} | null>(null);

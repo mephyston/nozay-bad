@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Calendar, Plus } from "@lucide/svelte";
-  import { Button, Input, Badge, Sheet, AlertDialog } from "@nba/ui";
+  import { Button, Input, Badge, Sheet, AlertDialog, DataTable, DataTableToolbar, Table, DataTableColumnHeader } from "@nba/ui";
 
   let {
     seasons = [],
@@ -12,7 +12,8 @@
     onCreateSeason,
     onToggleSeasonActive,
     onCloseSeason,
-    onCheckCloseSeason
+    onCheckCloseSeason,
+    tabsNav
   }: {
     seasons: any[];
     isSubmitting: boolean;
@@ -24,6 +25,7 @@
     onToggleSeasonActive: (id: string) => void;
     onCloseSeason: (id: string, confirmOverwrite: boolean) => void;
     onCheckCloseSeason: (id: string) => Promise<any>;
+    tabsNav?: any;
   } = $props();
 
   function handleSubmit(e: Event) {
@@ -32,7 +34,7 @@
   }
 
   let closingSeasonId = $state<string | null>(null);
-  let closingSeasonName = $derived(seasons.find(s => s.id === closingSeasonId)?.name || closingSeasonId);
+  let closingSeasonName = $derived(seasons.find(s => String(s.id) === String(closingSeasonId))?.name || closingSeasonId);
   let confirmOverwrite = $state(false);
   let checkData = $state<any>(null);
   let isChecking = $state(false);
@@ -58,19 +60,83 @@
     if (closingSeasonId) {
       onCloseSeason(closingSeasonId, confirmOverwrite);
       closingSeasonId = null;
-      confirmOverwrite = false;
     }
   }
+
+  const sortedSeasons = $derived([...seasons].sort((a, b) => String(b.id).localeCompare(String(a.id))));
 </script>
 
-<div class="space-y-6">
-  <div class="divide-y divide-border border border-border rounded-lg overflow-hidden bg-muted/10">
-    {#each seasons as s}
-      <div class="p-3.5 flex justify-between items-center bg-card">
-        <div>
-          <span class="font-bold text-sm text-foreground">{s.name}</span>
-        </div>
-        <div class="flex items-center gap-3">
+  <DataTable
+    data={sortedSeasons}
+    emptyTitle="Aucune saison"
+    emptyDescription="Aucun exercice comptable n'a encore été créé."
+  >
+    {#snippet toolbarStart()}
+      {#if tabsNav}
+        {@render tabsNav()}
+      {/if}
+    {/snippet}
+
+    {#snippet toolbar()}
+      <DataTableToolbar hasSearch={false}>
+        {#snippet actions()}
+          <Button onclick={() => showAddSheet = true} size="sm" class="font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+            <Plus class="w-4 h-4" />
+            Nouvelle saison
+          </Button>
+        {/snippet}
+      </DataTableToolbar>
+    {/snippet}
+
+    {#snippet mobileView()}
+      <div class="flex flex-col gap-4">
+        {#each sortedSeasons as s}
+          <div class="p-4 rounded-xl border border-border bg-card flex flex-col gap-3 relative">
+            <div class="flex justify-between items-start gap-2">
+              <span class="font-bold text-sm text-foreground">{s.name}</span>
+              <div class="flex items-center gap-3">
+                {#if s.closed}
+                  <Badge variant="outline" class="bg-muted text-muted-foreground border-border font-bold">
+                    Clôturée
+                  </Badge>
+                {:else}
+                  {#if s.active}
+                    <Badge variant="outline" class="bg-primary/10 hover:bg-primary/10 text-primary border-primary/20 font-bold">
+                      Active
+                    </Badge>
+                  {/if}
+                {/if}
+              </div>
+            </div>
+            {#if !s.closed}
+              <div class="flex justify-end gap-2 pt-2 border-t border-border mt-1">
+                {#if !s.active}
+                  <Button variant="outline" size="sm" class="h-8 text-xs flex-1" onclick={() => onToggleSeasonActive(s.id)} disabled={isSubmitting}>
+                    Activer
+                  </Button>
+                {/if}
+                <Button variant="outline" size="sm" class="h-8 text-xs flex-1 border-destructive/20 text-destructive hover:bg-destructive/10" onclick={() => handleStartClose(s.id)} disabled={isSubmitting}>
+                  Clôturer
+                </Button>
+              </div>
+            {/if}
+          </div>
+        {/each}
+      </div>
+    {/snippet}
+
+    {#snippet header()}
+      <DataTableColumnHeader title="Saison" />
+      <DataTableColumnHeader title="Statut" />
+      <DataTableColumnHeader title="Actions" class="text-right" />
+    {/snippet}
+
+    {#snippet row(s)}
+      <Table.Row>
+        <Table.Cell class="font-medium">
+          {s.name}
+        </Table.Cell>
+        <Table.Cell>
           {#if s.closed}
             <Badge variant="outline" class="bg-muted text-muted-foreground border-border font-bold">
               Clôturée
@@ -80,36 +146,43 @@
               <Badge variant="outline" class="bg-primary/10 hover:bg-primary/10 text-primary border-primary/20 font-bold">
                 Active
               </Badge>
-            {:else}
+            {/if}
+          {/if}
+        </Table.Cell>
+        <Table.Cell class="text-right">
+          {#if !s.closed}
+            <div class="flex justify-end items-center gap-2">
+              {#if !s.active}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onclick={() => onToggleSeasonActive(s.id)}
+                  disabled={isSubmitting}
+                >
+                  Activer
+                </Button>
+              {/if}
               <Button
-                variant="outline"
-                size="xs"
-                onclick={() => onToggleSeasonActive(s.id)}
+                variant="destructive"
+                size="sm"
+                onclick={() => handleStartClose(s.id)}
                 disabled={isSubmitting}
               >
-                Activer
+                Clôturer
               </Button>
-            {/if}
-            <Button
-              variant="destructive"
-              size="xs"
-              onclick={() => handleStartClose(s.id)}
-              disabled={isSubmitting}
-            >
-              Clôturer
-            </Button>
+            </div>
           {/if}
-        </div>
-      </div>
-    {/each}
-  </div>
+        </Table.Cell>
+      </Table.Row>
+    {/snippet}
+  </DataTable>
 
-  <Sheet.Root bind:open={showAddSheet}>
+<Sheet.Root bind:open={showAddSheet}>
     <Sheet.Content class="w-full sm:max-w-md p-6 bg-card border-border overflow-y-auto">
       <Sheet.Header>
         <Sheet.Title class="flex items-center gap-2">
           <Calendar class="w-5 h-5 text-primary" />
-          Nouvelle Saison
+          Nouvelle saison
         </Sheet.Title>
         <Sheet.Description>Ajoutez un nouvel exercice comptable pour l'association.</Sheet.Description>
       </Sheet.Header>
@@ -158,7 +231,6 @@
       </form>
     </Sheet.Content>
   </Sheet.Root>
-</div>
 
 <AlertDialog.Root open={!!closingSeasonId} onOpenChange={(o) => { if(!o) closingSeasonId = null; }}>
   <AlertDialog.Content>

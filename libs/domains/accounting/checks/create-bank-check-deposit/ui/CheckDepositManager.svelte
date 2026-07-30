@@ -49,25 +49,32 @@
 
 <div class="space-y-6">
   <Tabs.Root value={depositState.activeTab} onValueChange={(v) => depositState.activeTab = v as any} class="space-y-6">
-    <CheckDepositTabsNav
-      {depositState}
-      checksCount={props.checks.filter(c => c.status === 'received').length}
-      checkDepositsCount={props.checkDeposits.length}
-    />
+    {#snippet tabsNav()}
+      <CheckDepositTabsNav
+        {depositState}
+        checksCount={props.checks.filter(c => c.status === 'received').length}
+        checkDepositsCount={props.checkDeposits.length}
+      />
+    {/snippet}
 
     <Tabs.Content value="checks">
       <CheckDepositTable
         {depositState}
         seasonId={props.seasonId}
+        seasons={props.seasons}
         {onDeleteCheck}
+        {tabsNav}
       />
     </Tabs.Content>
 
     <Tabs.Content value="deposits">
       <CheckDepositListTable
         {depositState}
+        seasonId={props.seasonId}
+        seasons={props.seasons}
         checkDeposits={props.checkDeposits}
         {onDeleteDeposit}
+        {tabsNav}
       />
     </Tabs.Content>
   </Tabs.Root>

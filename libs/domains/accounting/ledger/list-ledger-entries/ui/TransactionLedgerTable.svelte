@@ -1,7 +1,7 @@
 
 <script lang="ts">
-  import { Check, MoreHorizontal, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, SplitSquareVertical } from '@lucide/svelte';
-  import { Button, Table, Badge, Popover, Amount, Card, DropdownMenu } from '@nba/ui';
+  import { Check, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, SplitSquareVertical } from '@lucide/svelte';
+  import { Button, Badge, Popover, Amount, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions } from '@nba/ui';
   import type { Transaction, Pagination } from './ledger-types';
   import { accountLabels } from './ledger-types';
 
@@ -14,7 +14,8 @@
     pageRange,
     onStartEdit,
     onDelete,
-    onChangePage
+    onChangePage,
+    toolbar
   }: {
     transactions: Transaction[];
     pagination: Pagination;
@@ -23,7 +24,8 @@
     selectedSeasonId?: number | string;
     onStartEdit: (tx: Transaction, e: MouseEvent) => void;
     onDelete: (id: number) => void;
-    onChangePage: (page: number) => void;
+    onChangePage?: (page: number) => void;
+    toolbar?: import('svelte').Snippet;
   } = $props();
 
   type GroupedTransaction = {
@@ -161,30 +163,14 @@
     </Table.Cell>
     <Table.Cell class="text-right relative">
       {#if !isClosed}
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            {#snippet child({ props })}
-              <Button 
-                {...props}
-                aria-haspopup="true"
-                size="icon"
-                variant="ghost"
-              >
-                <MoreHorizontal class="h-4 w-4" />
-                <span class="sr-only">Toggle menu</span>
-              </Button>
-            {/snippet}
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="end">
-            <DropdownMenu.Label>Actions</DropdownMenu.Label>
-            <DropdownMenu.Item onclick={(e) => onStartEdit(tx, e)} class="cursor-pointer">
-              <Edit2 class="w-3.5 h-3.5 mr-2" /> Éditer
-            </DropdownMenu.Item>
-            <DropdownMenu.Item onclick={() => onDelete(tx.id)} class="text-destructive focus:text-destructive cursor-pointer">
-              <Trash2 class="w-3.5 h-3.5 mr-2" /> Supprimer
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
+        <DataTableRowActions>
+          <DropdownMenu.Item onclick={(e) => onStartEdit(tx, e)} class="cursor-pointer">
+            <Edit2 class="w-3.5 h-3.5 mr-2" /> Éditer
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onclick={() => onDelete(tx.id)} class="text-destructive focus:text-destructive cursor-pointer">
+            <Trash2 class="w-3.5 h-3.5 mr-2" /> Supprimer
+          </DropdownMenu.Item>
+        </DataTableRowActions>
       {/if}
     </Table.Cell>
   </Table.Row>
@@ -266,9 +252,16 @@
   </div>
 {/snippet}
 
-<Card.Root>
-  <!-- Vue Cartes pour Mobile -->
-  <Card.Content class="p-0 block sm:hidden divide-y divide-border">
+<DataTable
+  data={groupedTransactions}
+  {pagination}
+  onPageChange={onChangePage}
+  {toolbar}
+  itemName="transaction(s)"
+  emptyTitle="Aucune écriture"
+  emptyDescription="Aucune écriture comptable pour cette saison."
+>
+  {#snippet mobileView()}
     {#each groupedTransactions as item, i}
       {#if i > 0 && item.date.substring(0, 7) !== groupedTransactions[i - 1].date.substring(0, 7) && item.runningBalanceCents !== undefined}
         {@const parts = item.date.substring(0, 7).split('-')}
@@ -338,117 +331,96 @@
       {:else}
         {@render mobileTxRow(item as Transaction, false)}
       {/if}
-    {:else}
-      <div class="p-8 text-center text-muted-foreground text-sm">
-        Aucune écriture comptable pour cette saison.
-      </div>
     {/each}
-  </Card.Content>
+  {/snippet}
 
-  <!-- Vue Tableau pour Tablette / Desktop -->
-  <Card.Content class="p-0 hidden sm:block overflow-x-auto min-h-[180px]">
-    <Table.Root class="w-full border-collapse text-left text-sm">
-      <Table.Header>
-        <Table.Row>
-          <Table.Head>Date</Table.Head>
-          <Table.Head>Type</Table.Head>
-          <Table.Head>Catégorie</Table.Head>
-          <Table.Head>Libellé</Table.Head>
-          <Table.Head class="text-right">Montant</Table.Head>
-          <Table.Head class="text-right">Solde</Table.Head>
-          <Table.Head class="text-right">Actions</Table.Head>
-        </Table.Row>
-      </Table.Header>
-      <Table.Body>
-        {#each groupedTransactions as item, i}
-          {#if i > 0 && item.date.substring(0, 7) !== groupedTransactions[i - 1].date.substring(0, 7) && item.runningBalanceCents !== undefined}
-            {@const parts = item.date.substring(0, 7).split('-')}
-            {@const monthName = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][parseInt(parts[1]) - 1]}
-            <Table.Row class="bg-muted/20 hover:bg-muted/20">
-              <Table.Cell colspan={5} class="text-right font-bold text-muted-foreground uppercase text-xs tracking-wider py-3">
-                Solde fin {monthName} {parts[0]}
-              </Table.Cell>
-              <Table.Cell class="text-right font-bold py-3 text-muted-foreground">
-                <Amount cents={item.runningBalanceCents} />
-              </Table.Cell>
-              <Table.Cell class="py-3"></Table.Cell>
-            </Table.Row>
-          {/if}
+  {#snippet header()}
+    <DataTableColumnHeader title="Date" />
+    <DataTableColumnHeader title="Type" />
+    <DataTableColumnHeader title="Catégorie" />
+    <DataTableColumnHeader title="Libellé" />
+    <DataTableColumnHeader title="Montant" class="text-right" />
+    <DataTableColumnHeader title="Solde" class="text-right" />
+    <DataTableColumnHeader title="Actions" class="text-right" />
+  {/snippet}
 
-          {#if 'isGroup' in item && item.isGroup}
-            <Table.Row class="bg-muted/10 hover:bg-muted/20 cursor-pointer group" onclick={() => toggleGroup(item.bankStatementLineId)}>
-              <Table.Cell>{item.date}</Table.Cell>
-              <Table.Cell>
-                {#if item.type === 'recette'}
-                  <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-transparent">Recette</Badge>
-                {:else if item.type === 'depense'}
-                  <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-destructive/15 text-destructive border-transparent">Dépense</Badge>
-                {:else}
-                  <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-primary/15 text-primary border-transparent">Transfert</Badge>
-                {/if}
-              </Table.Cell>
-              <Table.Cell class="font-medium text-foreground">
-                <div class="flex items-center gap-2">
-                  <div class="bg-background rounded p-1 shadow-sm border border-border">
-                    {#if expandedGroups[item.bankStatementLineId]}
-                      <ChevronDown class="w-3 h-3 text-primary" />
-                    {:else}
-                      <ChevronRight class="w-3 h-3 text-primary" />
-                    {/if}
-                  </div>
-                  Ventilation ({item.children.length})
-                </div>
-              </Table.Cell>
-              <Table.Cell class="text-muted-foreground">
-                <div class="line-clamp-2" title={item.description}>{item.description}</div>
-                {#if item.reference}
-                  <div class="text-xs italic truncate mt-0.5">Réf: {item.reference}</div>
-                {/if}
-                <div class="flex flex-wrap gap-1.5 mt-1">
-                  <Badge variant="outline" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold border-transparent">
-                    <Check class="w-2.5 h-2.5" />
-                    Rapprochée (SG)
-                  </Badge>
-                </div>
-              </Table.Cell>
-              <Table.Cell class="text-right font-bold">
-                {#if item.type === 'recette'}
-                  <Amount cents={item.amountCents} showSign colored />
-                {:else if item.type === 'depense'}
-                  <Amount cents={-item.amountCents} showSign colored />
-                {:else}
-                  <Amount cents={item.amountCents} class="text-muted-foreground" />
-                {/if}
-              </Table.Cell>
-              <Table.Cell class="text-right">
-                <Amount cents={item.runningBalanceCents} class="font-bold text-foreground" />
-              </Table.Cell>
-              <Table.Cell class="text-right text-xs text-muted-foreground whitespace-nowrap">
-                {#if !expandedGroups[item.bankStatementLineId]}
-                  Cliquez pour détailler
-                {/if}
-              </Table.Cell>
-            </Table.Row>
-            
-            {#if expandedGroups[item.bankStatementLineId]}
-              {#each item.children as tx}
-                {@render desktopTxRow(tx, true)}
-              {/each}
-            {/if}
+  {#snippet row(item, i)}
+    {#if i > 0 && item.date.substring(0, 7) !== groupedTransactions[i - 1].date.substring(0, 7) && item.runningBalanceCents !== undefined}
+      {@const parts = item.date.substring(0, 7).split('-')}
+      {@const monthName = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][parseInt(parts[1]) - 1]}
+      <Table.Row class="bg-muted/20 hover:bg-muted/20">
+        <Table.Cell colspan={5} class="text-right font-bold text-muted-foreground uppercase text-xs tracking-wider py-3">
+          Solde fin {monthName} {parts[0]}
+        </Table.Cell>
+        <Table.Cell class="text-right font-bold py-3 text-muted-foreground">
+          <Amount cents={item.runningBalanceCents} />
+        </Table.Cell>
+        <Table.Cell class="py-3"></Table.Cell>
+      </Table.Row>
+    {/if}
+
+    {#if 'isGroup' in item && item.isGroup}
+      <Table.Row class="bg-muted/10 hover:bg-muted/20 cursor-pointer group" onclick={() => toggleGroup(item.bankStatementLineId)}>
+        <Table.Cell>{item.date}</Table.Cell>
+        <Table.Cell>
+          {#if item.type === 'recette'}
+            <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-transparent">Recette</Badge>
+          {:else if item.type === 'depense'}
+            <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-destructive/15 text-destructive border-transparent">Dépense</Badge>
           {:else}
-            {@render desktopTxRow(item as Transaction, false)}
+            <Badge variant="outline" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-primary/15 text-primary border-transparent">Transfert</Badge>
           {/if}
-        {:else}
-          <Table.Row>
-            <Table.Cell colspan={7} class="h-24 text-center text-muted-foreground">Aucune écriture comptable pour cette saison.</Table.Cell>
-          </Table.Row>
+        </Table.Cell>
+        <Table.Cell class="font-medium text-foreground">
+          <div class="flex items-center gap-2">
+            <div class="bg-background rounded p-1 shadow-sm border border-border">
+              {#if expandedGroups[item.bankStatementLineId]}
+                <ChevronDown class="w-3 h-3 text-primary" />
+              {:else}
+                <ChevronRight class="w-3 h-3 text-primary" />
+              {/if}
+            </div>
+            Ventilation ({item.children.length})
+          </div>
+        </Table.Cell>
+        <Table.Cell class="text-muted-foreground">
+          <div class="line-clamp-2" title={item.description}>{item.description}</div>
+          {#if item.reference}
+            <div class="text-xs italic truncate mt-0.5">Réf: {item.reference}</div>
+          {/if}
+          <div class="flex flex-wrap gap-1.5 mt-1">
+            <Badge variant="outline" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold border-transparent">
+              <Check class="w-2.5 h-2.5" />
+              Rapprochée (SG)
+            </Badge>
+          </div>
+        </Table.Cell>
+        <Table.Cell class="text-right font-bold">
+          {#if item.type === 'recette'}
+            <Amount cents={item.amountCents} showSign colored />
+          {:else if item.type === 'depense'}
+            <Amount cents={-item.amountCents} showSign colored />
+          {:else}
+            <Amount cents={item.amountCents} class="text-muted-foreground" />
+          {/if}
+        </Table.Cell>
+        <Table.Cell class="text-right">
+          <Amount cents={item.runningBalanceCents} class="font-bold text-foreground" />
+        </Table.Cell>
+        <Table.Cell class="text-right text-xs text-muted-foreground whitespace-nowrap">
+          {#if !expandedGroups[item.bankStatementLineId]}
+            Cliquez pour détailler
+          {/if}
+        </Table.Cell>
+      </Table.Row>
+      
+      {#if expandedGroups[item.bankStatementLineId]}
+        {#each item.children as tx}
+          {@render desktopTxRow(tx, true)}
         {/each}
-      </Table.Body>
-    </Table.Root>
-  </Card.Content>
-
-  <!-- Pagination Footer -->
-  <Card.Footer class="p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-    <Table.Pagination {pagination} {onChangePage} itemName="transaction(s)" />
-  </Card.Footer>
-</Card.Root>
+      {/if}
+    {:else}
+      {@render desktopTxRow(item as Transaction, false)}
+    {/if}
+  {/snippet}
+</DataTable>

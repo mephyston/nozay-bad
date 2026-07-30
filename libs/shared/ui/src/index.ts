@@ -34,3 +34,12 @@ export { Combobox, type ComboboxItem } from './components/ui/combobox';
 export * as DropdownMenu from './components/ui/dropdown-menu';
 export { uiConfirm } from './components/ui/alert-dialog/confirm';
 export { default as GlobalConfirm } from './components/ui/alert-dialog/GlobalConfirm.svelte';
+
+// Pattern Components
+export { default as EmptyState } from './components/patterns/EmptyState.svelte';
+export { default as DataTable } from './components/patterns/DataTable.svelte';
+export { default as DataTableToolbar } from './components/patterns/DataTableToolbar.svelte';
+export { default as DataTableColumnHeader } from './components/patterns/DataTableColumnHeader.svelte';
+export { default as DataTableRowActions } from './components/patterns/DataTableRowActions.svelte';
+export { default as PageHeader } from './components/patterns/PageHeader.svelte';
+export { default as SearchableCombobox } from './components/patterns/SearchableCombobox.svelte';

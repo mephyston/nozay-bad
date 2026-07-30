@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ChevronDown } from "@lucide/svelte";
-  import { Button, Input, Label, Badge } from '@nba/ui';
+  import { Button, Input, Label, Badge, SearchableCombobox } from '@nba/ui';
   import type { Product } from './catalog-types';
   import { paymentMethodsList, categoriesList } from './catalog-types';
 
@@ -25,22 +25,43 @@
     onIncrementQty: () => void;
     onDecrementQty: () => void;
   } = $props();
+
+  let strCategory = $state(selectedCategory.toString());
+  $effect(() => {
+    if (strCategory !== selectedCategory.toString()) {
+      selectedCategory = Number(strCategory);
+    }
+  });
+  $effect(() => {
+    if (selectedCategory.toString() !== strCategory) {
+      strCategory = selectedCategory.toString();
+    }
+  });
+
+  let strProductId = $state(selectedProductId ? selectedProductId.toString() : '');
+  $effect(() => {
+    const val = strProductId ? Number(strProductId) : null;
+    if (val !== selectedProductId) {
+      selectedProductId = val;
+    }
+  });
+  $effect(() => {
+    const expected = selectedProductId ? selectedProductId.toString() : '';
+    if (strProductId !== expected) {
+      strProductId = expected;
+    }
+  });
 </script>
 
 <!-- Section 2: Mode de Paiement -->
 <div class="space-y-2 pb-4 border-b border-border">
   <Label for="payment-method-select" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Mode de paiement</Label>
   <div class="relative">
-    <select
-      id="payment-method-select"
+    <SearchableCombobox
+      items={paymentMethodsList.map(pm => ({ label: pm.label, value: pm.value }))}
+      placeholder="Sélectionner..."
       bind:value={selectedPaymentMethod}
-      class="w-full px-3 h-10 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground pr-8 appearance-none font-semibold"
-    >
-      {#each paymentMethodsList as pm}
-        <option value={pm.value}>{pm.label}</option>
-      {/each}
-    </select>
-    <ChevronDown class="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+    />
   </div>
 </div>
 
@@ -53,16 +74,11 @@
     <div class="space-y-1.5">
       <Label for="category-select" class="block text-xs font-semibold text-foreground">Type de produit</Label>
       <div class="relative">
-        <select
-          id="category-select"
-          bind:value={selectedCategory}
-          class="w-full px-3 h-10 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground pr-8 appearance-none font-semibold"
-        >
-          {#each categoriesList as cat}
-            <option value={cat.value}>{cat.label}</option>
-          {/each}
-        </select>
-        <ChevronDown class="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <SearchableCombobox
+          items={categoriesList.map(c => ({ label: c.label, value: c.value.toString() }))}
+          placeholder="Sélectionner un type..."
+          bind:value={strCategory}
+        />
       </div>
     </div>
 
@@ -70,23 +86,14 @@
     <div class="space-y-1.5">
       <Label for="product-select" class="block text-xs font-semibold text-foreground">Produit</Label>
       <div class="relative">
-        <select
-          id="product-select"
-          bind:value={selectedProductId}
-          class="w-full px-3 h-10 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground pr-8 appearance-none font-semibold"
-          disabled={filteredProducts.length === 0}
-        >
-          {#if filteredProducts.length === 0}
-            <option value={null}>Aucun article disponible</option>
-          {:else}
-            {#each filteredProducts as product (product.id)}
-              <option value={product.id}>
-                {product.name} — {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((product.priceCents ?? (product as any).price ?? 0)) / 100).replace(/\s/g, '\u00a0')} € ({product.stock > 0 ? `Stock: ${product.stock}` : 'Rupture'})
-              </option>
-            {/each}
-          {/if}
-        </select>
-        <ChevronDown class="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <SearchableCombobox
+          items={filteredProducts.map(p => ({
+            label: `${p.name} — ${new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((p.priceCents ?? (p as any).price ?? 0)) / 100).replace(/\s/g, '\u00a0')} € (${p.stock > 0 ? `Stock: ${p.stock}` : 'Rupture'})`,
+            value: p.id.toString()
+          }))}
+          placeholder={filteredProducts.length === 0 ? "Aucun article disponible" : "Sélectionner un produit..."}
+          bind:value={strProductId}
+        />
       </div>
     </div>
   </div>

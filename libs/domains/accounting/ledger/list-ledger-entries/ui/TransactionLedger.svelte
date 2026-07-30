@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Search, X, Filter } from '@lucide/svelte';
-  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog } from '@nba/ui';
+  import { Search, X, Filter, ChevronDown } from '@lucide/svelte';
+  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog, DataTableToolbar } from '@nba/ui';
   import type { Transaction, Pagination, BalanceReport, Season, Category, AccountClass } from './ledger-types';
   import { submitTransaction, deleteTransaction, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange } from './ledger-actions';
   import TransactionLedgerBalances from './TransactionLedgerBalances.svelte';
@@ -234,111 +234,104 @@
     onClearFilters={clearFilters}
   />
 
-  <!-- Barre d'onglets des comptes du Grand Livre centrée -->
 
-  <Tabs.Root value={selectedAccount || 'current'} onValueChange={handleAccountTabChange} class="w-full no-print">
-    <Tabs.List class="flex w-full sm:w-fit justify-start sm:justify-center overflow-x-auto no-scrollbar mx-auto mb-6">
-      <Tabs.Trigger value="current">Compte Courant</Tabs.Trigger>
-      <Tabs.Trigger value="savings">Compte Livret</Tabs.Trigger>
-      <Tabs.Trigger value="cash">Caisse Physique</Tabs.Trigger>
-    </Tabs.List>
-  </Tabs.Root>
 
-  <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-end w-full no-print mb-4">
-    <div class="relative w-full sm:w-80">
-      <Input
-        type="text"
-        placeholder="Rechercher par libellé ou référence..."
-        value={searchQuery}
-        onkeydown={(e) => {
-          if (e.key === 'Enter') {
-            const val = (e.target as HTMLInputElement).value;
-            const params = new URLSearchParams(window.location.search);
-            if (val) params.set('search', val);
-            else params.delete('search');
-            params.set('page', '1');
-            window.location.href = `/admin/accounting?${params.toString()}`;
-          }
+  <TransactionLedgerTable
+    {transactions}
+    {pagination}
+    {activeCategories}
+    {isClosed}
+    selectedSeasonId={currentSeasonNumericId}
+    onStartEdit={startEdit}
+    onDelete={handleDelete}
+    onChangePage={(p) => actionChangePage(p, pagination.totalPages)}
+  >
+    {#snippet toolbar()}
+      <DataTableToolbar
+        bind:searchValue={searchQuery}
+        searchPlaceholder="Rechercher par libellé..."
+        hasFilters={true}
+        filtersActive={unreconciledChequesOnly || !!month || (!!selectedAccount && selectedAccount !== 'current')}
+        onSearchSubmit={(val) => {
+          const params = new URLSearchParams(window.location.search);
+          if (val) params.set('search', val);
+          else params.delete('search');
+          params.set('page', '1');
+          window.location.href = `/admin/accounting?${params.toString()}`;
         }}
-        class="pl-9 pr-8 bg-background border-border h-9"
-      />
-      <Search class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-      {#if searchQuery}
-        <button
-          type="button"
-          class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1 cursor-pointer"
-          onclick={() => {
-            const params = new URLSearchParams(window.location.search);
-            params.delete('search');
-            params.set('page', '1');
-            window.location.href = `/admin/accounting?${params.toString()}`;
-          }}
-        >
-          <X class="h-3 w-3" />
-        </button>
-      {/if}
-    </div>
+        onSearchClear={() => {
+          const params = new URLSearchParams(window.location.search);
+          params.delete('search');
+          params.set('page', '1');
+          window.location.href = `/admin/accounting?${params.toString()}`;
+        }}
+      >
+        {#snippet filters()}
+          <div class="space-y-1.5">
+            <label for="filter-season" class="text-xs font-semibold text-muted-foreground">Saison</label>
+            <select
+              id="filter-season"
+              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+              bind:value={selectedSeason}
+              onchange={() => actionApplySeasonChange(selectedSeason)}
+            >
+              {#each seasons as season}
+                <option value={season.code || season.id}>{season.name}</option>
+              {/each}
+              {#if seasons.length === 0}
+                <option value="25-26">Saison 2025-2026</option>
+              {/if}
+            </select>
+          </div>
 
-    <select
-      class="px-3 py-1.5 border border-border bg-background rounded-md text-sm font-medium focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9 w-full sm:w-auto"
-      value={month}
-      onchange={(e) => {
-        const val = (e.target as HTMLSelectElement).value;
-        const params = new URLSearchParams(window.location.search);
-        if (val) params.set('month', val);
-        else params.delete('month');
-        params.set('page', '1');
-        window.location.href = `/admin/accounting?${params.toString()}`;
-      }}
-    >
-      <option value="">Tous les mois</option>
-      <option value="01">Janvier</option>
-      <option value="02">Février</option>
-      <option value="03">Mars</option>
-      <option value="04">Avril</option>
-      <option value="05">Mai</option>
-      <option value="06">Juin</option>
-      <option value="07">Juillet</option>
-      <option value="08">Août</option>
-      <option value="09">Septembre</option>
-      <option value="10">Octobre</option>
-      <option value="11">Novembre</option>
-      <option value="12">Décembre</option>
-    </select>
+          <div class="space-y-1.5">
+            <label for="filter-account" class="text-xs font-semibold text-muted-foreground">Compte</label>
+            <select
+              id="filter-account"
+              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+              value={selectedAccount || 'current'}
+              onchange={(e) => handleAccountTabChange((e.target as HTMLSelectElement).value)}
+            >
+              <option value="current">Compte Courant</option>
+              <option value="savings">Compte Livret</option>
+              <option value="cash">Caisse Physique</option>
+            </select>
+          </div>
 
-    <select
-      class="px-3 py-1.5 border border-border bg-background rounded-md text-sm font-medium focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9 w-full sm:w-auto"
-      value={limit}
-      onchange={(e) => {
-        const val = (e.target as HTMLSelectElement).value;
-        const params = new URLSearchParams(window.location.search);
-        if (val && val !== '20') params.set('limit', val);
-        else params.delete('limit');
-        params.set('page', '1');
-        window.location.href = `/admin/accounting?${params.toString()}`;
-      }}
-    >
-      <option value="20">20 par page</option>
-      <option value="50">50 par page</option>
-      <option value="100">100 par page</option>
-    </select>
+          <div class="space-y-1.5">
+            <label for="filter-month" class="text-xs font-semibold text-muted-foreground">Mois</label>
+            <select
+              id="filter-month"
+              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+              value={month}
+              onchange={(e) => {
+                const val = (e.target as HTMLSelectElement).value;
+                const params = new URLSearchParams(window.location.search);
+                if (val) params.set('month', val);
+                else params.delete('month');
+                params.set('page', '1');
+                window.location.href = `/admin/accounting?${params.toString()}`;
+              }}
+            >
+              <option value="">Tous les mois</option>
+              <option value="01">Janvier</option>
+              <option value="02">Février</option>
+              <option value="03">Mars</option>
+              <option value="04">Avril</option>
+              <option value="05">Mai</option>
+              <option value="06">Juin</option>
+              <option value="07">Juillet</option>
+              <option value="08">Août</option>
+              <option value="09">Septembre</option>
+              <option value="10">Octobre</option>
+              <option value="11">Novembre</option>
+              <option value="12">Décembre</option>
+            </select>
+          </div>
 
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        {#snippet child({ props })}
-          <Button {...props} variant="outline" class="flex items-center gap-2 h-9 relative">
-            <Filter class="w-4 h-4" /> Filtres
-            {#if unreconciledChequesOnly}
-              <span class="flex h-2 w-2 rounded-full bg-primary absolute -top-1 -right-1"></span>
-            {/if}
-          </Button>
-        {/snippet}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content class="w-72 p-4" align="end">
-        <div class="space-y-4">
-          <h4 class="font-medium text-sm leading-none">Filtres rapides</h4>
-          <div class="space-y-2">
-            <label class="flex items-center gap-2 text-sm cursor-pointer">
+          <div class="space-y-1.5">
+            <span class="text-xs font-semibold text-muted-foreground">Options</span>
+            <label class="flex items-center gap-2 text-sm cursor-pointer mt-1">
               <Checkbox
                 checked={unreconciledChequesOnly}
                 onCheckedChange={(v) => {
@@ -352,21 +345,29 @@
               Chèques en circulation
             </label>
           </div>
-        </div>
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
-  </div>
+        {/snippet}
 
-  <TransactionLedgerTable
-    {transactions}
-    {pagination}
-    {activeCategories}
-    {isClosed}
-    selectedSeasonId={currentSeasonNumericId}
-    onStartEdit={startEdit}
-    onDelete={handleDelete}
-    onChangePage={(p) => actionChangePage(p, pagination.totalPages)}
-  />
+        {#snippet actions()}
+          {#if !isClosed}
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                {#snippet child({ props })}
+                  <Button {...props} class="h-9 gap-2 w-full sm:w-auto">
+                    Nouvelle écriture <ChevronDown class="w-4 h-4" />
+                  </Button>
+                {/snippet}
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="end">
+                <DropdownMenu.Item onclick={() => openPanel('recette')} class="text-emerald-600 font-medium cursor-pointer">Saisir Recette</DropdownMenu.Item>
+                <DropdownMenu.Item onclick={() => openPanel('depense')} class="text-destructive font-medium cursor-pointer">Saisir Dépense</DropdownMenu.Item>
+                <DropdownMenu.Item onclick={() => openPanel('transfert')} class="font-medium cursor-pointer">Virement Interne</DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          {/if}
+        {/snippet}
+      </DataTableToolbar>
+    {/snippet}
+  </TransactionLedgerTable>
 
   <TransactionFormSheet
     bind:open

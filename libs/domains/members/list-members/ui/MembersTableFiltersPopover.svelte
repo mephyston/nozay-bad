@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { Search, Filter } from '@lucide/svelte';
-  import { Button, Input, DropdownMenu } from '@nba/ui';
+  import { DataTableToolbar, Button } from '@nba/ui';
   import type { Season } from './members-table-types';
 
   let {
@@ -28,39 +27,26 @@
       onApply();
     }
   }
+  
+  const isFilterActive = $derived(!!selectedGender || !!selectedType || !!selectedStatus || (selectedSeason && seasons.length > 0));
 </script>
 
-<div class="flex items-center gap-3 bg-card p-4 rounded-xl border border-border shadow-sm">
-  <div class="relative flex-1">
-    <span class="absolute inset-y-0 left-3 flex items-center text-muted-foreground z-10">
-      <Search class="w-4 h-4" />
-    </span>
-    <Input
-      type="text"
-      placeholder="Rechercher un adhérent (Nom, Licence...)"
-      aria-label="Rechercher un adhérent par nom ou licence"
-      class="pl-9 w-full bg-background"
-      bind:value={searchInput}
-      onkeydown={handleKeydown}
-    />
-  </div>
-
-  <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild>
-      {#snippet child({ props })}
-        <Button {...props} variant="outline" class="flex items-center gap-2">
-          <Filter class="w-4 h-4" /> Filtres
-        </Button>
-      {/snippet}
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content class="w-80 p-4 space-y-4" align="end">
-      <h4 class="font-semibold text-sm border-b border-border pb-2">Options de filtrage</h4>
-      <div class="space-y-3">
+<DataTableToolbar
+  bind:searchValue={searchInput}
+  searchPlaceholder="Rechercher un adhérent (Nom, Licence...)"
+  hasFilters={true}
+  filtersActive={isFilterActive}
+  onSearchSubmit={onApply}
+  onSearchClear={onApply}
+>
+  {#snippet filters()}
+    <h4 class="font-semibold text-sm border-b border-border pb-2">Options de filtrage</h4>
+    <div class="space-y-3 pt-2">
         <div class="space-y-1.5">
           <label for="filter-season" class="text-xs font-semibold text-muted-foreground">Saison</label>
           <select id="filter-season" class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium" bind:value={selectedSeason} onchange={onApply}>
             {#each seasons as season}
-              <option value={season.id}>{season.name}</option>
+              <option value={season.code || season.id}>{season.name}</option>
             {/each}
             {#if seasons.length === 0}
               <option value="25-26">Saison 2025-2026</option>
@@ -91,10 +77,19 @@
             <option value="suspendu">Suspendu</option>
           </select>
         </div>
-      </div>
-      <div class="pt-2 flex justify-end">
-        <Button variant="ghost" size="sm" onclick={onReset} class="text-xs">Réinitialiser</Button>
-      </div>
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
-</div>
+    </div>
+    <div class="pt-2 flex justify-end">
+      <Button variant="ghost" size="sm" onclick={onReset} class="text-xs">Réinitialiser</Button>
+    </div>
+  {/snippet}
+
+  {#snippet actions()}
+    <a
+      href="/admin/members/import"
+      class="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow hover:bg-primary/90 cursor-pointer inline-flex items-center justify-center gap-2 border-0 no-underline h-9 w-full sm:w-auto"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+      Import Poona
+    </a>
+  {/snippet}
+</DataTableToolbar>
