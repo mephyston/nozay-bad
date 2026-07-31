@@ -6,6 +6,10 @@ name: Update Visual Baselines
 # pipeline de déploiement.
 on:
   workflow_dispatch:
+  # TEMPORAIRE : régénère les références après le merge de staging. À retirer.
+  push:
+    branches: [feat/storybook]
+    paths: ['.github/workflows/visual-baselines.yml']
 
 permissions:
   contents: write
