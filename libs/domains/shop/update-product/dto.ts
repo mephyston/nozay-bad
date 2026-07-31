@@ -6,6 +6,7 @@ export interface UpdateProductInput {
   productCategoryId?: number;
   priceCents?: number;
   stock?: number;
+  trackStock?: boolean;
   active?: boolean;
 }
 

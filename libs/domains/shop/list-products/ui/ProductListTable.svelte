@@ -77,6 +77,11 @@
                 <span class="font-bold text-base text-foreground block">
                   <Amount cents={(product as any).priceCents ?? product.price} />
                 </span>
+                {#if product.trackStock}
+                  <span class="text-xs {product.stock > 0 ? 'text-muted-foreground' : 'text-destructive font-semibold'} block mt-0.5">
+                    Stock: {product.stock}
+                  </span>
+                {/if}
                 <Button
                   variant="ghost"
                   onclick={() => onToggleActive(product)}
@@ -125,6 +130,7 @@
             <Table.Head>Catégorie</Table.Head>
           {/if}
           <Table.Head>Prix</Table.Head>
+          <Table.Head>Stock</Table.Head>
           <Table.Head>Statut</Table.Head>
           <Table.Head class="text-right">Actions</Table.Head>
         {/snippet}
@@ -143,6 +149,15 @@
             {/if}
             <Table.Cell class="font-bold text-foreground">
               <Amount cents={(product as any).priceCents ?? product.price} />
+            </Table.Cell>
+            <Table.Cell>
+              {#if product.trackStock}
+                <Badge variant={product.stock > 0 ? "outline" : "destructive"}>
+                  {product.stock}
+                </Badge>
+              {:else}
+                <span class="text-muted-foreground text-xs italic">-</span>
+              {/if}
             </Table.Cell>
             <Table.Cell>
               <Button 

@@ -15,6 +15,7 @@ export const productsTable = sqliteTable('products', {
   productCategoryId: integer('product_category_id').notNull().references(() => productCategoriesTable.id),
   priceCents: integer('price_cents').notNull(),
   stock: integer('stock').notNull().default(0),
+  trackStock: integer('track_stock', { mode: 'boolean' }).notNull().default(false),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });

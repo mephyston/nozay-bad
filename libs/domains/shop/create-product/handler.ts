@@ -9,6 +9,7 @@ export async function createProduct(db: Db, body: CreateProductInput): Promise<C
     productCategoryId: body.productCategoryId,
     priceCents: body.priceCents,
     stock: body.stock ?? 0,
+    trackStock: body.trackStock ?? false,
     active: body.active !== false,
     createdAt: new Date()
   });

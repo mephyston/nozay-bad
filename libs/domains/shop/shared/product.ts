@@ -6,6 +6,7 @@ export interface ProductData {
   category: ProductCategory;
   price: number;
   stock: number;
+  trackStock: boolean;
   active: boolean;
   createdAt: Date;
 }

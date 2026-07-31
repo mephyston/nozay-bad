@@ -14,14 +14,19 @@ if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
     if (data.action === 'create') {
+      let catId = typeof data.category === 'number' ? data.category : 3;
+      if (data.category === 'shuttlecock') catId = 1;
+      if (data.category === 'string') catId = 2;
+      
       const apiRes = await apiService.fetch('http://localhost/shop/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: data.name,
-          category: data.category,
+          productCategoryId: catId,
           price: data.price,
           stock: data.stock,
+          trackStock: data.trackStock,
           active: data.active
         })
       });
@@ -35,8 +40,9 @@ if (Astro.request.method === 'POST') {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: data.name,
-          price: data.price,
+          priceCents: data.price,
           stock: data.stock,
+          trackStock: data.trackStock,
           active: data.active
         })
       });
