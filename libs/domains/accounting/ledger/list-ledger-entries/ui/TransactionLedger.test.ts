@@ -53,7 +53,7 @@ describe('TransactionLedger Component', () => {
     document.body.removeChild(target);
   });
 
-  it('renders outstanding checks toggle and intermediate pages in pagination', () => {
+  it('renders outstanding checks toggle and intermediate pages in pagination', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
@@ -76,20 +76,22 @@ describe('TransactionLedger Component', () => {
       }
     });
 
-    expect(target.innerHTML).toContain('Chèques en circulation');
-    expect(target.innerHTML).toContain('1');
-    expect(target.innerHTML).toContain('2'); // Page 2 is displayed directly instead of rendering an ellipsis
-    expect(target.innerHTML).toContain('3');
-    expect(target.innerHTML).toContain('4');
-    expect(target.innerHTML).toContain('5');
-    expect(target.innerHTML).toContain('6');
-    expect(target.innerHTML).toContain('7');
-    expect(target.innerHTML).toContain('10');
-    
-    // Check for aria-current on the active page
+    // Pagination compacte : page courante active + bornes ; les pages
+    // intermédiaires (2,3,7) sont remplacées par des ellipses.
+    expect(target.innerHTML).toContain('Page 5 sur 10');
     const activeBtn = target.querySelector('[aria-current="page"]');
     expect(activeBtn).not.toBeNull();
     expect(activeBtn?.textContent?.trim()).toBe('5');
+    const pageLabels = Array.from(target.querySelectorAll('button')).map(b => b.textContent?.trim());
+    expect(pageLabels).toContain('1');
+    expect(pageLabels).toContain('10');
+
+    // Le filtre "Chèques en circulation" est dans le menu "Filtres" ; comme
+    // unreconciledChequesOnly=true, le bouton Filtres affiche son indicateur
+    // de filtre actif (pastille).
+    const filtresBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Filtres')) as HTMLButtonElement;
+    expect(filtresBtn).toBeDefined();
+    expect(filtresBtn.querySelector('span.rounded-full')).not.toBeNull();
 
     unmount(component);
     document.body.removeChild(target);
@@ -127,8 +129,11 @@ describe('TransactionLedger Component', () => {
     });
     flushSync();
 
-    // Trouver le bouton d'actions (MoreVertical)
-    const triggerBtn = target.querySelector('button[aria-label="Actions"]') as HTMLButtonElement;
+    // Le menu d'actions de ligne (DataTableRowActions) : bouton icône avec
+    // libellé accessible "Ouvrir le menu".
+    const triggerBtn = Array.from(target.querySelectorAll('button')).find(
+      b => b.textContent?.includes('Ouvrir le menu')
+    ) as HTMLButtonElement;
     expect(triggerBtn).toBeDefined();
 
     // Cliquer sur le déclencheur pour ouvrir le Popover
@@ -147,7 +152,7 @@ describe('TransactionLedger Component', () => {
     document.body.removeChild(target);
   });
 
-  it('renders account filtering tabs and indicates active tab', () => {
+  it('renders the account balance overview cards', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
@@ -162,13 +167,11 @@ describe('TransactionLedger Component', () => {
       }
     });
 
-    expect(target.innerHTML).toContain('Tous les comptes');
+    // Le filtrage par compte est désormais dans le menu "Filtres" ; les trois
+    // comptes restent affichés en permanence via les cartes de solde en tête.
     expect(target.innerHTML).toContain('Compte Courant');
-    
-    // Vérifier que l'onglet Compte Courant est actif
-    const activeTab = target.querySelector('[data-state="active"]');
-    expect(activeTab).not.toBeNull();
-    expect(activeTab?.textContent?.trim()).toBe('Compte Courant');
+    expect(target.innerHTML).toContain('Compte Livret');
+    expect(target.innerHTML).toContain('Caisse Physique');
 
     unmount(component);
     document.body.removeChild(target);
