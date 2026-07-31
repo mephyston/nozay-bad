@@ -35,7 +35,7 @@
     breadcrumb: string;
   }>();
 
-  import { hasPermission } from '@nba/iam';
+  import { hasPermission } from '@nba/iam-ui';
 
   const sidebar = Sidebar.useSidebar();
 
