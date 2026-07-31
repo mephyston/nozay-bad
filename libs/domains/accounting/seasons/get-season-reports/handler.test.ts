@@ -18,7 +18,7 @@ describe('getSeasonReports (As-of Cut-off Date & Projections - PROMPT 12)', () =
     // Retrieve categories seeded by reference data seed (0001)
     const cats = await db.select().from(categoriesTable).all();
     const adhCat = cats.find((c: any) => c.adminLabel === 'Adhésions & Inscriptions') || cats[0];
-    const tourCat = cats.find((c: any) => c.adminLabel === 'Tournois Senior') || cats[1];
+    const tourCat = cats.find((c: any) => c.adminLabel === 'Tournois Hivers') || cats[1];
     adhCatId = adhCat.id;
     tourCatId = tourCat.id;
 
@@ -139,7 +139,7 @@ describe('getSeasonReports (As-of Cut-off Date & Projections - PROMPT 12)', () =
     expect(adhProj!.projectedCents).toBe(2900000);    // 29 000 €
 
     // Tournois (Realised: 4200, Budget: 6000, Remaining: 1800, Projection: 6000)
-    const tourProj = projList.find(p => p.categoryName === 'Tournois Senior');
+    const tourProj = projList.find(p => p.categoryName === 'Tournois Hivers');
     expect(tourProj).toBeDefined();
     expect(tourProj!.realisedCents).toBe(420000);
     expect(tourProj!.budgetCents).toBe(600000);

@@ -19,6 +19,7 @@ describe('deleteCategory', () => {
     
     
     const mockRepoInstance = {
+      isCategoryUsed: vi.fn().mockResolvedValue(false),
       deleteCategory: vi.fn().mockResolvedValue(true)
     };
     (vi.mocked(DeleteCategoryRepository) as any).mockImplementation(function() { return mockRepoInstance; });
@@ -28,22 +29,23 @@ describe('deleteCategory', () => {
     await (deleteCategory as any)(...args);
 
     // Assert
-    
+    expect(mockRepoInstance.isCategoryUsed).toHaveBeenCalled();
     expect(mockRepoInstance.deleteCategory).toHaveBeenCalled();
   });
 
-  it('should throw a business error', async () => {
+  it('should throw a business error when the category is used in ledger entries', async () => {
     // Arrange
     const payload = { seasonId: '23-24', items: [] } as any;
-    
 
     const mockRepoInstance = {
-      deleteCategory: vi.fn().mockRejectedValue(new Error('Business error'))
+      isCategoryUsed: vi.fn().mockResolvedValue(true),
+      deleteCategory: vi.fn().mockResolvedValue(true)
     };
     (vi.mocked(DeleteCategoryRepository) as any).mockImplementation(function() { return mockRepoInstance; });
 
-    // Act & Assert
+    // Act & Assert : la garde métier doit empêcher la suppression
     const args = [db, '1', payload];
     await expect((deleteCategory as any)(...args)).rejects.toThrow();
+    expect(mockRepoInstance.deleteCategory).not.toHaveBeenCalled();
   });
 });

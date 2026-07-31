@@ -132,7 +132,10 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     }
   }
 
-  const netAvailableCashCents = totalGrossCashCents - inVaultCents + pendingDebitCents;
+  // Trésorerie réellement disponible : on retire les produits constatés d'avance
+  // (encaissés mais appartenant à la saison suivante) en plus des ajustements
+  // in_vault / pending_debit.
+  const netAvailableCashCents = totalGrossCashCents - inVaultCents + pendingDebitCents - totalDeferredRevenueCents;
 
   const tresorerieDisponible = {
     totalGrossCashCents,

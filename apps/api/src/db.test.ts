@@ -302,7 +302,7 @@ describe('Database Tests', () => {
 
     const volantCat = list.find(c => c.adherentLabel === 'Volants');
     expect(volantCat).toBeDefined();
-    expect(volantCat?.adminLabel).toBe('Volants (vente ou achat)');
+    expect(volantCat?.adminLabel).toBe('Volants');
     expect(volantCat?.adherentLabel).toBe('Volants');
     expect(volantCat?.hideInExpenses).toBe(false);
 
