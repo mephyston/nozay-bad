@@ -16,7 +16,7 @@
   <Card.Content class="p-6 space-y-6">
     <div class="text-center space-y-1 mb-2">
       <h3 class="text-lg font-bold tracking-tight">
-        {mode === 'realise' ? '2. Répartition Graphique du Réalisé' : '4. Répartition Graphique des Budgets'}
+        {mode === 'realise' ? 'Répartition Graphique du Réalisé' : 'Répartition Graphique des Budgets'}
       </h3>
       <p class="text-xs text-muted-foreground">Représentation par classes de comptes (Mode : {mode === 'realise' ? 'Réalisé' : 'Prévisionnel'})</p>
     </div>

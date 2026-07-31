@@ -132,10 +132,9 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     }
   }
 
-  // Trésorerie réellement disponible : on retire les produits constatés d'avance
-  // (encaissés mais appartenant à la saison suivante) en plus des ajustements
-  // in_vault / pending_debit.
-  const netAvailableCashCents = totalGrossCashCents - inVaultCents + pendingDebitCents - totalDeferredRevenueCents;
+  // Trésorerie réellement disponible sur les relevés bancaires : 
+  // on ajuste les chèques en coffre (non déposés) et les débits différés (CB).
+  const netAvailableCashCents = totalGrossCashCents - inVaultCents + pendingDebitCents;
 
   const tresorerieDisponible = {
     totalGrossCashCents,

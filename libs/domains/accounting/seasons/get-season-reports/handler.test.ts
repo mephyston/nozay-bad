@@ -152,10 +152,39 @@ describe('getSeasonReports (As-of Cut-off Date & Projections - PROMPT 12)', () =
     expect(res.tresorerieDisponible!.totalGrossCashCents).toBe(3650000);
     // Deferred revenue = 3 900 €
     expect(res.tresorerieDisponible!.totalDeferredRevenueCents).toBe(390000);
-    // Available cash = 36500 - 3900 = 32600 €
-    expect(res.tresorerieDisponible!.netAvailableCashCents).toBe(3260000);
+    // Available cash = 36500 € (Les encaissements d'avance sont bien sur le compte en banque, on ne les soustrait pas)
+    expect(res.tresorerieDisponible!.netAvailableCashCents).toBe(3650000);
     expect(res.tresorerieDisponible!.deferredRevenues.length).toBe(1);
     expect(res.tresorerieDisponible!.deferredRevenues[0].amountCents).toBe(390000);
+  });
+
+  it('calculates available bank cash accurately with in_vault and pending_debit', async () => {
+    // Add transactions for this test
+    await db.insert(ledgerEntriesTable).values([
+      {
+        id: 10, seasonId: 1, type: 'recette', accountId: 1, categoryId: adhCatId,
+        amountCents: 15000, // 150 €
+        date: '2026-05-10', paymentMethodId: 2, status: 'in_vault',
+        description: 'Chèque en attente de dépôt', accrualType: 'normal', createdAt: new Date()
+      },
+      {
+        id: 11, seasonId: 1, type: 'depense', accountId: 1, categoryId: tourCatId,
+        amountCents: 5000, // 50 €
+        date: '2026-05-11', paymentMethodId: 3, status: 'pending_debit',
+        description: 'Achat en attente débit', accrualType: 'normal', createdAt: new Date()
+      }
+    ]);
+
+    const res = await getSeasonReports(db, { seasonId: '25-26', arretedAu: '2026-06-30' });
+    
+    // Previous gross cash was 36500€. With +150€ (recette) and -50€ (dépense), it becomes 36600€.
+    expect(res.tresorerieDisponible!.totalGrossCashCents).toBe(3660000);
+    expect(res.tresorerieDisponible!.inVaultCents).toBe(15000);
+    expect(res.tresorerieDisponible!.pendingDebitCents).toBe(5000);
+    
+    // Net available bank cash = Gross (36600) - Vault (150) + PendingDebit (50) = 36500
+    // L'encaissement d'avance (3900) n'est plus déduit.
+    expect(res.tresorerieDisponible!.netAvailableCashCents).toBe(3650000);
   });
 
   it('rejects arretedAu outside season bounds', async () => {

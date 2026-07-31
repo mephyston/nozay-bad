@@ -14,7 +14,7 @@
       <p class="text-xs text-muted-foreground">Saison {seasons.find(s => s.id === selectedSeason)?.name || selectedSeason}</p>
     </div>
 
-    <h3 class="text-lg font-semibold no-print">2. Bilan de Trésorerie</h3>
+    <h3 class="text-lg font-semibold no-print">Bilan de Trésorerie</h3>
     <div class="overflow-x-auto">
       <Table.Root class="w-full border-collapse text-left text-sm">
         <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
