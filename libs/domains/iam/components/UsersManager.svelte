@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Input, Button, Label, Badge, Table, Card, EmptyState, uiConfirm, toast } from '@nba/ui';
+  import { Input, Button, Badge, Table, Card, EmptyState, uiConfirm, toast, Sheet, FormField } from '@nba/ui';
   import { Plus, Trash2, Shield } from '@lucide/svelte';
   
   let { users = [] } = $props<{ users: any[] }>();
@@ -7,6 +7,7 @@
   let newEmail = $state('');
   let newName = $state('');
   let newPermissions = $state<string>('');
+  let isSheetOpen = $state(false);
 
   async function createUser() {
     if (!newEmail) return;
@@ -18,6 +19,7 @@
     });
     if (res.ok) {
       toast.success('Utilisateur créé avec succès');
+      isSheetOpen = false;
       window.location.reload();
     } else {
       toast.error(await res.text());
@@ -42,9 +44,41 @@
 
 <div class="space-y-6">
   <Card.Root>
-    <Card.Header>
-      <Card.Title>Administrateurs</Card.Title>
-      <Card.Description>Gérez les droits d'accès à la plateforme.</Card.Description>
+    <Card.Header class="flex flex-row items-center justify-between space-y-0">
+      <div>
+        <Card.Title>Administrateurs</Card.Title>
+        <Card.Description>Gérez les droits d'accès à la plateforme.</Card.Description>
+      </div>
+      <Sheet.Root bind:open={isSheetOpen}>
+        <Sheet.Trigger asChild>
+          {#snippet child({ props })}
+            <Button {...props} size="sm">
+              <Plus class="w-4 h-4 mr-2" />
+              Ajouter
+            </Button>
+          {/snippet}
+        </Sheet.Trigger>
+        <Sheet.Content side="right" class="w-full sm:max-w-md">
+          <Sheet.Header>
+            <Sheet.Title>Ajouter un accès</Sheet.Title>
+            <Sheet.Description>Donnez l'accès à un nouveau collaborateur.</Sheet.Description>
+          </Sheet.Header>
+          <div class="space-y-4 py-6">
+            <FormField id="name" label="Nom">
+              <Input id="name" bind:value={newName} placeholder="Jean Dupont" />
+            </FormField>
+            <FormField id="email" label="Email">
+              <Input id="email" type="email" bind:value={newEmail} placeholder="jean@example.com" />
+            </FormField>
+            <FormField id="perms" label="Permissions (séparées par virgule)" hint="Astuce: * donne tous les droits. accounting:* donne tous les droits à la compta.">
+              <Input id="perms" bind:value={newPermissions} placeholder="accounting:*, shop:read" />
+            </FormField>
+          </div>
+          <Sheet.Footer>
+            <Button onclick={createUser} class="w-full">Enregistrer</Button>
+          </Sheet.Footer>
+        </Sheet.Content>
+      </Sheet.Root>
     </Card.Header>
     <Card.Content>
       <Table.Root>
@@ -89,36 +123,6 @@
           {/if}
         </Table.Body>
       </Table.Root>
-    </Card.Content>
-  </Card.Root>
-
-  <Card.Root>
-    <Card.Header>
-      <Card.Title>Ajouter un accès</Card.Title>
-      <Card.Description>Donnez l'accès à un nouveau collaborateur.</Card.Description>
-    </Card.Header>
-    <Card.Content>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-        <div class="space-y-2">
-          <Label for="name">Nom</Label>
-          <Input id="name" bind:value={newName} placeholder="Jean Dupont" />
-        </div>
-        <div class="space-y-2">
-          <Label for="email">Email</Label>
-          <Input id="email" type="email" bind:value={newEmail} placeholder="jean@example.com" />
-        </div>
-        <div class="space-y-2">
-          <Label for="perms">Permissions (séparées par virgule)</Label>
-          <Input id="perms" bind:value={newPermissions} placeholder="accounting:*, shop:read" />
-        </div>
-        <Button onclick={createUser} class="w-full">
-          <Plus class="w-4 h-4 mr-2" />
-          Ajouter
-        </Button>
-      </div>
-      <div class="mt-4 text-xs text-muted-foreground">
-        Astuce: <Badge variant="secondary" class="font-mono px-1 py-0 h-4 text-[10px]">*</Badge> donne tous les droits. <Badge variant="secondary" class="font-mono px-1 py-0 h-4 text-[10px]">accounting:*</Badge> donne tous les droits à la compta.
-      </div>
     </Card.Content>
   </Card.Root>
 </div>
