@@ -1,22 +1,39 @@
 <script lang="ts">
-  import { Input, Button, Badge, Table, Card, EmptyState, uiConfirm, toast, Sheet, FormField, DataTable, DataTableToolbar } from '@nba/ui';
-  import { Plus, Trash2, Shield } from '@lucide/svelte';
+  import { Input, Button, Badge, Table, Card, EmptyState, uiConfirm, toast, Sheet, FormField, DataTable, DataTableToolbar, Popover, Checkbox } from '@nba/ui';
+  import { Plus, Trash2, Shield, ChevronDown } from '@lucide/svelte';
   
   let { users = [] } = $props<{ users: any[] }>();
 
   let newEmail = $state('');
   let newName = $state('');
-  let newPermissions = $state<string>('');
+  let selectedPermissions = $state<string[]>([]);
   let isSheetOpen = $state(false);
   let searchTerm = $state('');
 
+  const PERMISSIONS_LIST = [
+    { value: '*', label: 'Super Admin', desc: 'Accès total à toute la plateforme' },
+    { value: 'accounting:*', label: 'Comptabilité', desc: 'Accès complet à la comptabilité (Trésorier)' },
+    { value: 'shop:*', label: 'Boutique', desc: 'Gestion de la boutique, produits et commandes' },
+    { value: 'members:*', label: 'Adhérents', desc: 'Gestion des adhérents et inscriptions' },
+    { value: 'expenses:*', label: 'Notes de frais', desc: 'Accès aux notes de frais' },
+    { value: 'settings:*', label: 'Configuration', desc: 'Accès aux réglages généraux (saisons, etc.)' },
+    { value: 'iam:*', label: 'Accès & Permissions', desc: 'Gestion des administrateurs' }
+  ];
+
+  function togglePermission(val: string) {
+    if (selectedPermissions.includes(val)) {
+      selectedPermissions = selectedPermissions.filter(p => p !== val);
+    } else {
+      selectedPermissions = [...selectedPermissions, val];
+    }
+  }
+
   async function createUser() {
     if (!newEmail) return;
-    const perms = newPermissions.split(',').map(s => s.trim()).filter(Boolean);
     const res = await fetch('/admin/iam', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'create_user', email: newEmail, name: newName, permissions: perms })
+      body: JSON.stringify({ action: 'create_user', email: newEmail, name: newName, permissions: selectedPermissions })
     });
     if (res.ok) {
       toast.success('Utilisateur créé avec succès');
@@ -77,8 +94,49 @@
                 <FormField id="email" label="Email">
                   <Input id="email" type="email" bind:value={newEmail} placeholder="jean@example.com" />
                 </FormField>
-                <FormField id="perms" label="Permissions (séparées par virgule)" hint="Astuce: * donne tous les droits. accounting:* donne tous les droits à la compta.">
-                  <Input id="perms" bind:value={newPermissions} placeholder="accounting:*, shop:read" />
+                <FormField id="perms" label="Droits d'accès">
+                  <Popover.Root>
+                    <Popover.Trigger asChild>
+                      {#snippet child({ props })}
+                        <Button 
+                          {...props} 
+                          variant="outline" 
+                          role="combobox" 
+                          class="w-full justify-between font-normal h-auto min-h-10 py-2 px-3"
+                        >
+                          <div class="flex flex-wrap gap-1 items-center">
+                            {#if selectedPermissions.length === 0}
+                              <span class="text-muted-foreground">Sélectionner des droits...</span>
+                            {:else}
+                              {#each selectedPermissions as p}
+                                <Badge variant={p === '*' ? 'destructive' : 'secondary'} size="xs">{PERMISSIONS_LIST.find(x => x.value === p)?.label || p}</Badge>
+                              {/each}
+                            {/if}
+                          </div>
+                          <ChevronDown class="h-4 w-4 opacity-50 shrink-0 ml-2" />
+                        </Button>
+                      {/snippet}
+                    </Popover.Trigger>
+                    <Popover.Content class="w-[--bits-popover-anchor-width] p-1 max-h-[300px] overflow-y-auto">
+                      <div class="flex flex-col gap-1">
+                        {#each PERMISSIONS_LIST as perm}
+                          <label class="flex items-start gap-3 p-2 rounded-md hover:bg-muted cursor-pointer transition-colors">
+                            <div class="mt-0.5">
+                              <Checkbox 
+                                checked={selectedPermissions.includes(perm.value)} 
+                                onCheckedChange={() => togglePermission(perm.value)}
+                                aria-label={perm.label}
+                              />
+                            </div>
+                            <div class="flex flex-col flex-1 leading-tight">
+                              <span class="text-sm font-bold text-foreground">{perm.label}</span>
+                              <span class="text-xs text-muted-foreground">{perm.desc}</span>
+                            </div>
+                          </label>
+                        {/each}
+                      </div>
+                    </Popover.Content>
+                  </Popover.Root>
                 </FormField>
               </div>
               <Sheet.Footer>
@@ -109,7 +167,7 @@
                   <div class="text-muted-foreground text-xs">{user.email}</div>
                   <div class="mt-2 flex flex-wrap gap-1">
                     {#each user.permissions as perm}
-                      <Badge variant={perm === '*' ? 'destructive' : 'secondary'} size="xs">{perm}</Badge>
+                      <Badge variant={perm === '*' ? 'destructive' : 'secondary'} size="xs">{PERMISSIONS_LIST.find(x => x.value === perm)?.label || perm}</Badge>
                     {/each}
                   </div>
                 </div>
@@ -145,7 +203,7 @@
         <Table.Cell>
           <div class="flex flex-wrap gap-1">
             {#each user.permissions as perm}
-              <Badge variant={perm === '*' ? 'destructive' : 'secondary'}>{perm}</Badge>
+              <Badge variant={perm === '*' ? 'destructive' : 'secondary'}>{PERMISSIONS_LIST.find(x => x.value === perm)?.label || perm}</Badge>
             {/each}
           </div>
         </Table.Cell>
