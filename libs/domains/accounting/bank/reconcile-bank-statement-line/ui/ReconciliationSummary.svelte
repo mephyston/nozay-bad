@@ -67,7 +67,7 @@
         {#each linkedGlTxs as gt}
           <div class="flex justify-between items-center p-2 rounded bg-success/10 border border-success/20 text-xs">
             <div class="flex items-center gap-1.5 min-w-0">
-              <Badge variant="outline" class="bg-success/10 text-success border-success/20">{gt.type}</Badge>
+              <Badge variant="success">{gt.type}</Badge>
               <span class="truncate text-foreground font-medium">{gt.description}</span>
             </div>
             <div class="flex items-center gap-2">

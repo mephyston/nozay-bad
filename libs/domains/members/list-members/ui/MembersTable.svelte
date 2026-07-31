@@ -110,11 +110,11 @@
         </Table.Cell>
         <Table.Cell>
           {#if member.status === 'valide'}
-            <Badge variant="success" class="font-semibold">
+            <Badge variant="success">
               Valide
             </Badge>
           {:else}
-            <Badge variant="destructive" class="font-semibold">
+            <Badge variant="destructive">
               Suspendu
             </Badge>
           {/if}

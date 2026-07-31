@@ -37,7 +37,7 @@
     <div class="flex items-center gap-3">
 
       {#if isClosed}
-        <Badge variant="outline" class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
+        <Badge variant="secondary" size="lg" shape="square">
           Saison clôturée (Lecture seule)
         </Badge>
       {/if}
@@ -49,12 +49,12 @@
   <div class="flex items-center gap-2 bg-muted/60 px-3 py-1.5 rounded-lg text-xs font-medium border border-border/80 w-fit no-print">
     <span class="text-muted-foreground">Filtre actif&nbsp;:</span>
     {#if filteredCategory}
-      <Badge variant="outline" class="bg-primary/10 text-primary px-2 py-0.5 rounded font-semibold border-transparent">
+      <Badge variant="primary-soft" shape="square">
         Catégorie : {categories.find(c => c.id.toString() === filteredCategory)?.adminLabel || filteredCategory}
       </Badge>
     {/if}
     {#if filteredClassCode}
-      <Badge variant="outline" class="bg-primary/10 text-primary px-2 py-0.5 rounded font-semibold border-transparent">
+      <Badge variant="primary-soft" shape="square">
         Classe : {accountClasses.find(ac => ac.code === filteredClassCode)?.label || filteredClassCode} ({filteredClassCode})
       </Badge>
     {/if}

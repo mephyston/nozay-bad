@@ -82,7 +82,7 @@
   <Table.Cell>
     <span class="font-semibold text-foreground">{cat.adminLabel}</span>
     {#if cat.active === false}
-      <Badge variant="destructive" class="ml-2 text-[10px] py-0 px-1 font-semibold">Inactif</Badge>
+      <Badge variant="destructive" size="xs" class="ml-2">Inactif</Badge>
     {/if}
   </Table.Cell>
   <Table.Cell>
@@ -100,9 +100,9 @@
   </Table.Cell>
   <Table.Cell>
     {#if cat.hideInExpenses}
-      <Badge variant="destructive" class="text-[11px] font-semibold">Masquée</Badge>
+      <Badge variant="destructive" size="sm">Masquée</Badge>
     {:else}
-      <Badge variant="success" class="text-[11px] font-semibold">Visible</Badge>
+      <Badge variant="success" size="sm">Visible</Badge>
     {/if}
   </Table.Cell>
   <Table.Cell class="text-right relative">

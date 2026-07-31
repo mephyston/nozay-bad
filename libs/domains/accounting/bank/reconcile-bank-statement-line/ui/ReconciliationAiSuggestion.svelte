@@ -25,7 +25,7 @@
         <span>Suggestion d'analyse automatique IA</span>
       </Alert.Title>
       {#if sug.confidence}
-        <Badge variant="ai" class="text-[10px]">
+        <Badge variant="ai" size="xs">
           Confiance : {Math.round(sug.confidence * 100)}%
         </Badge>
       {/if}

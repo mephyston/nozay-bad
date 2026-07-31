@@ -86,7 +86,7 @@
               {/if}
             </Table.Cell>
             <Table.Cell class="text-right align-top sm:align-middle">
-              <Badge variant={row.net > 0 ? "outline" : (row.net < 0 ? "destructive" : "secondary")} class="font-outfit tabular-nums ml-auto {row.net > 0 ? 'bg-success/10 text-success border-success/20' : ''}">
+              <Badge variant={row.net > 0 ? "success" : (row.net < 0 ? "destructive" : "secondary")} class="font-outfit tabular-nums ml-auto">
                 {#if row.net > 0}+{/if}<Amount cents={row.net} />
               </Badge>
             </Table.Cell>
@@ -119,7 +119,7 @@
             <Table.Cell class="hidden sm:table-cell text-right text-success">+ <Amount cents={totalRecettes} /></Table.Cell>
             <Table.Cell class="hidden sm:table-cell text-right text-destructive">- <Amount cents={totalDepenses} /></Table.Cell>
             <Table.Cell class="text-right align-top sm:align-middle">
-              <Badge variant={totalNet > 0 ? "outline" : (totalNet < 0 ? "destructive" : "secondary")} class="font-outfit tabular-nums ml-auto text-sm px-2 py-0.5 {totalNet > 0 ? 'bg-success/10 text-success border-success/20' : ''}">
+              <Badge variant={totalNet > 0 ? "success" : (totalNet < 0 ? "destructive" : "secondary")} size="lg" class="font-outfit tabular-nums ml-auto">
                 {#if totalNet > 0}+{/if}<Amount cents={totalNet} />
               </Badge>
             </Table.Cell>

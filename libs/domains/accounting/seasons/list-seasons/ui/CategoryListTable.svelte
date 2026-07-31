@@ -64,12 +64,12 @@
             </div>
             <div class="flex flex-col gap-1 items-end">
               {#if cat.active === false}
-                <Badge variant="destructive" class="text-[10px] py-0 px-1 font-semibold">Inactif</Badge>
+                <Badge variant="destructive" size="xs">Inactif</Badge>
               {:else}
-                <Badge variant="success" class="text-[10px] py-0 px-1 font-semibold">Actif</Badge>
+                <Badge variant="success" size="xs">Actif</Badge>
               {/if}
               {#if cat.hideInExpenses}
-                <Badge variant="warning" class="text-[10px] py-0 px-1 font-semibold">Masquée NF</Badge>
+                <Badge variant="warning" size="xs">Masquée NF</Badge>
               {/if}
             </div>
           </div>

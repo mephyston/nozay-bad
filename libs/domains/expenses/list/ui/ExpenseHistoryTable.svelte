@@ -154,11 +154,11 @@
             <div class="flex flex-col items-end gap-1">
               <span class="font-outfit font-black text-primary text-lg">{(exp.amount / 100).toFixed(2)} €</span>
               {#if exp.status === 'approved'}
-                <Badge variant="success" class="text-[10px] px-1.5 py-0">
+                <Badge variant="success" size="xs">
                   Remboursé
                 </Badge>
               {:else}
-                <Badge variant="destructive" class="text-[10px] px-1.5 py-0">
+                <Badge variant="destructive" size="xs">
                   Rejeté
                 </Badge>
               {/if}

@@ -109,7 +109,7 @@
                 </Table.Cell>
                 <Table.Cell class="text-center">
                   {#if item.order.status === 'approved'}
-                    <Badge variant="success" class="font-semibold gap-1">
+                    <Badge variant="success">
                       <Check class="w-3 h-3" />
                       Validée
                     </Badge>
@@ -119,7 +119,7 @@
                       </div>
                     {/if}
                   {:else if item.order.status === 'rejected'}
-                    <Badge variant="destructive" class="font-semibold gap-1">
+                    <Badge variant="destructive">
                       <X class="w-3 h-3" />
                       Refusée
                     </Badge>
@@ -144,7 +144,7 @@
             </div>
             <div class="flex flex-col items-end shrink-0">
               <Amount cents={(item.order as any).totalAmountCents ?? item.order.totalAmount} class="font-bold text-lg text-foreground" />
-              <Badge variant="outline" class="mt-1 font-normal text-[10px] py-0 px-1.5 h-4">
+              <Badge variant="outline" size="xs" class="mt-1">
                 {paymentMethodLabels[item.order.paymentMethod] || item.order.paymentMethod}
               </Badge>
             </div>
@@ -161,7 +161,7 @@
             </div>
             <div class="flex flex-col items-end shrink-0">
               {#if item.order.status === 'approved'}
-                <Badge variant="success" class="font-semibold gap-1 text-[11px] py-0.5 px-2">
+                <Badge variant="success" size="sm">
                   <Check class="w-3 h-3" />
                   Validée
                 </Badge>
@@ -171,7 +171,7 @@
                   </div>
                 {/if}
               {:else if item.order.status === 'rejected'}
-                <Badge variant="destructive" class="font-semibold gap-1 text-[11px] py-0.5 px-2">
+                <Badge variant="destructive" size="sm">
                   <X class="w-3 h-3" />
                   Refusée
                 </Badge>

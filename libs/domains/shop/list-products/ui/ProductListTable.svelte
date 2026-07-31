@@ -67,7 +67,7 @@
                 <h4 class="font-bold text-sm text-foreground">{product.name}</h4>
                 {#if !category || category === 'all'}
                   <div class="mt-1">
-                    <Badge variant="secondary" class="bg-primary/10 text-primary font-semibold text-[10px]">
+                    <Badge variant="primary-soft" size="xs">
                       {getCategoryLabel(product)}
                     </Badge>
                   </div>
@@ -136,7 +136,7 @@
             </Table.Cell>
             {#if !category || category === 'all'}
               <Table.Cell>
-                <Badge variant="secondary" class="bg-primary/10 text-primary hover:bg-primary/10 font-semibold">
+                <Badge variant="primary-soft">
                   {getCategoryLabel(product)}
                 </Badge>
               </Table.Cell>

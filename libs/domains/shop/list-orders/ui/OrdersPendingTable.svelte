@@ -105,7 +105,7 @@
               <span class="font-medium text-foreground">{item.product?.name || 'Produit supprimé'}</span>
               <span class="font-bold text-muted-foreground ml-1">(x{item.order.quantity})</span>
             </div>
-            <Badge variant="outline" class="text-[10px]">
+            <Badge variant="outline" size="xs">
               {paymentMethodLabels[item.order.paymentMethod] || item.order.paymentMethod}
             </Badge>
           </div>

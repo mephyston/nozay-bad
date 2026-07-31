@@ -117,11 +117,11 @@
         <div class="flex items-center gap-2 flex-wrap">
           <h3 class="font-bold text-base sm:text-lg text-foreground break-words">{state.selectedTx.name}</h3>
           {#if state.selectedTx.status === 'reconciled'}
-            <Badge variant="success" class="text-xs shrink-0">
+            <Badge variant="success" class="shrink-0">
               Rapprochée
             </Badge>
           {:else if state.selectedTx.status === 'ignored'}
-            <Badge variant="outline" class="bg-muted text-muted-foreground text-xs shrink-0">
+            <Badge variant="secondary" class="shrink-0">
               Ignorée
             </Badge>
           {/if}

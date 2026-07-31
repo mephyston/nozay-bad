@@ -145,7 +145,7 @@
         <Tabs.Trigger value="pending">
           En attente
           {#if pendingCount > 0}
-            <Badge class="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold bg-primary text-primary-foreground rounded-full h-auto">
+            <Badge size="xs" shape="pill" class="ml-1.5">
               {pendingCount}
             </Badge>
           {/if}

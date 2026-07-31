@@ -14,6 +14,7 @@
 				success: "bg-success/10 text-success border border-success/20",
 				warning: "bg-warning/10 text-warning border border-warning/20",
 				info: "bg-info/10 text-info border border-info/20",
+				"primary-soft": "bg-primary/10 text-primary border border-primary/20",
 				ai: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20",
 			},
 			size: {

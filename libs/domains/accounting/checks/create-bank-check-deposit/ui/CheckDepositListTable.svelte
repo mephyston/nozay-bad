@@ -84,11 +84,11 @@
     <Table.Cell class="font-medium">{dep.reference}</Table.Cell>
     <Table.Cell>
       {#if dep.status === 'cleared'}
-        <Badge variant="success" class="inline-flex items-center gap-1 text-xs font-semibold">
+        <Badge variant="success">
           <CheckCircle class="h-3 w-3" /> Rapproché
         </Badge>
       {:else}
-        <Badge variant="info" class="inline-flex items-center gap-1 text-xs font-semibold">
+        <Badge variant="info">
           Déposé
         </Badge>
       {/if}

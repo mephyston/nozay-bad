@@ -65,15 +65,15 @@
             </div>
             <div>
               {#if ac.type === 'recette'}
-                <Badge variant="success" class="text-[11px] font-semibold">
+                <Badge variant="success" size="sm">
                   Produit (7)
                 </Badge>
               {:else if ac.type === 'tresorerie'}
-                <Badge variant="info" class="text-[11px] font-semibold">
+                <Badge variant="info" size="sm">
                   Trésorerie (5)
                 </Badge>
               {:else}
-                <Badge variant="destructive" class="text-[11px] font-semibold">
+                <Badge variant="destructive" size="sm">
                   Charge (6)
                 </Badge>
               {/if}
@@ -111,15 +111,15 @@
       </Table.Cell>
       <Table.Cell class="p-4">
         {#if ac.type === 'recette'}
-          <Badge variant="success" class="text-[11px] font-semibold">
+          <Badge variant="success" size="sm">
             Produit (7)
           </Badge>
         {:else if ac.type === 'tresorerie'}
-          <Badge variant="info" class="text-[11px] font-semibold">
+          <Badge variant="info" size="sm">
             Trésorerie (5)
           </Badge>
         {:else}
-          <Badge variant="destructive" class="text-[11px] font-semibold">
+          <Badge variant="destructive" size="sm">
             Charge (6)
           </Badge>
         {/if}

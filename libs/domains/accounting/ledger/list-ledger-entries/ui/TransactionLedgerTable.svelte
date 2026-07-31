@@ -113,14 +113,14 @@
     <Table.Cell class={isChild ? "pl-6 text-muted-foreground" : ""}>{tx.date}</Table.Cell>
     <Table.Cell>
       {#if tx.type === 'recette'}
-        <Badge variant="success" class="px-2.5 py-1 text-xs font-semibold rounded-full">Recette</Badge>
+        <Badge variant="success" size="lg" shape="pill">Recette</Badge>
       {:else if tx.type === 'depense'}
-        <Badge variant="destructive" class="px-2.5 py-1 text-xs font-semibold rounded-full">Dépense</Badge>
+        <Badge variant="destructive" size="lg" shape="pill">Dépense</Badge>
       {:else}
-        <Badge variant="info" class="px-2.5 py-1 text-xs font-semibold rounded-full">Transfert</Badge>
+        <Badge variant="info" size="lg" shape="pill">Transfert</Badge>
       {/if}
       {#if isOtherSeason}
-        <Badge variant="outline" class="ml-1 px-1.5 py-0.5 text-[10px] bg-muted text-muted-foreground border-transparent" title="Écriture rattachée à une autre saison">Cut-off</Badge>
+        <Badge variant="secondary" size="xs" class="ml-1" title="Écriture rattachée à une autre saison">Cut-off</Badge>
       {/if}
     </Table.Cell>
     <Table.Cell>{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</Table.Cell>
@@ -136,7 +136,7 @@
           </a>
         {/if}
         {#if tx.bankStatementLineId && !isChild}
-          <Badge variant="success" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold">
+          <Badge variant="success" size="xs" shape="square">
             <Check class="w-2.5 h-2.5" />
             Rapprochée (SG)
           </Badge>
@@ -183,11 +183,11 @@
       <div>
         <div class="flex items-center gap-2 mb-1">
           {#if item.type === 'recette'}
-            <Badge variant="success" class="px-2 py-0.5 text-[10px] font-semibold rounded-full">Recette</Badge>
+            <Badge variant="success" size="xs" shape="pill">Recette</Badge>
           {:else if item.type === 'depense'}
-            <Badge variant="destructive" class="px-2 py-0.5 text-[10px] font-semibold rounded-full">Dépense</Badge>
+            <Badge variant="destructive" size="xs" shape="pill">Dépense</Badge>
           {:else}
-            <Badge variant="info" class="px-2 py-0.5 text-[10px] font-semibold rounded-full">Transfert</Badge>
+            <Badge variant="info" size="xs" shape="pill">Transfert</Badge>
           {/if}
           <span class="text-xs text-muted-foreground">{item.date}</span>
         </div>
@@ -221,7 +221,7 @@
         <div class="text-muted-foreground ml-auto italic opacity-50">inclus</div>
       {/if}
       {#if item.bankStatementLineId && !isChild}
-        <Badge variant="success" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold">
+        <Badge variant="success" size="xs" shape="square">
           <Check class="w-2.5 h-2.5" /> Rapprochée
         </Badge>
       {/if}
@@ -278,11 +278,11 @@
             <div>
               <div class="flex items-center gap-2 mb-1">
                 {#if item.type === 'recette'}
-                  <Badge variant="success" class="px-2 py-0.5 text-[10px] font-semibold rounded-full">Recette</Badge>
+                  <Badge variant="success" size="xs" shape="pill">Recette</Badge>
                 {:else if item.type === 'depense'}
-                  <Badge variant="destructive" class="px-2 py-0.5 text-[10px] font-semibold rounded-full">Dépense</Badge>
+                  <Badge variant="destructive" size="xs" shape="pill">Dépense</Badge>
                 {:else}
-                  <Badge variant="info" class="px-2 py-0.5 text-[10px] font-semibold rounded-full">Transfert</Badge>
+                  <Badge variant="info" size="xs" shape="pill">Transfert</Badge>
                 {/if}
                 <span class="text-xs text-muted-foreground">{item.date}</span>
               </div>
@@ -315,7 +315,7 @@
             <div class="text-muted-foreground ml-auto">
               Solde: <Amount cents={item.runningBalanceCents} class="font-bold text-foreground" />
             </div>
-            <Badge variant="success" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold">
+            <Badge variant="success" size="xs" shape="square">
               <Check class="w-2.5 h-2.5" /> Rapprochée
             </Badge>
           </div>
@@ -364,11 +364,11 @@
         <Table.Cell>{item.date}</Table.Cell>
         <Table.Cell>
           {#if item.type === 'recette'}
-            <Badge variant="success" class="px-2.5 py-1 text-xs font-semibold rounded-full">Recette</Badge>
+            <Badge variant="success" size="lg" shape="pill">Recette</Badge>
           {:else if item.type === 'depense'}
-            <Badge variant="destructive" class="px-2.5 py-1 text-xs font-semibold rounded-full">Dépense</Badge>
+            <Badge variant="destructive" size="lg" shape="pill">Dépense</Badge>
           {:else}
-            <Badge variant="info" class="px-2.5 py-1 text-xs font-semibold rounded-full">Transfert</Badge>
+            <Badge variant="info" size="lg" shape="pill">Transfert</Badge>
           {/if}
         </Table.Cell>
         <Table.Cell class="font-medium text-foreground">
@@ -389,7 +389,7 @@
             <div class="text-xs italic truncate mt-0.5">Réf: {item.reference}</div>
           {/if}
           <div class="flex flex-wrap gap-1.5 mt-1">
-            <Badge variant="success" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold">
+            <Badge variant="success" size="xs" shape="square">
               <Check class="w-2.5 h-2.5" />
               Rapprochée (SG)
             </Badge>

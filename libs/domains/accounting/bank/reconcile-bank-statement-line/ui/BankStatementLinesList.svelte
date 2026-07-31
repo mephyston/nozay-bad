@@ -169,7 +169,7 @@
               </div>
 
               {#if bt.aiSuggestions && bt.status === 'pending'}
-                <Badge variant="ai" class="text-[10px] gap-1 shrink-0">
+                <Badge variant="ai" size="xs" class="shrink-0">
                   <Sparkles class="h-3 w-3" />
                   <span>IA</span>
                 </Badge>

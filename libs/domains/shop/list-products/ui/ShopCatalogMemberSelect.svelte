@@ -56,12 +56,12 @@
 
   <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
     {#if selectedMember}
-      <Badge variant="outline" class="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg text-xs font-semibold self-start sm:self-auto">
+      <Badge variant="primary-soft" size="lg" shape="square" class="self-start sm:self-auto">
         <Check class="w-4 h-4" />
         Adhérent sélectionné : <span class="font-bold">{formatMemberName(selectedMember)}</span>
       </Badge>
     {:else}
-      <Badge variant="destructive" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold self-start sm:self-auto">
+      <Badge variant="destructive" size="lg" shape="square" class="self-start sm:self-auto">
         <AlertCircle class="w-4 h-4" />
         Sélectionnez votre nom d'adhérent pour débloquer la commande.
       </Badge>

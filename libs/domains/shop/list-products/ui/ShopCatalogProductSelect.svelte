@@ -132,7 +132,7 @@
       {#if selectedProduct}
         <div class="text-xs text-muted-foreground ml-2">
           {#if selectedProduct.stock <= 0}
-            <Badge variant="destructive" class="text-[10px]">Rupture de stock</Badge>
+            <Badge variant="destructive" size="xs">Rupture de stock</Badge>
           {:else}
             <span>Stock disponible : <strong class="text-foreground">{selectedProduct.stock}</strong></span>
           {/if}

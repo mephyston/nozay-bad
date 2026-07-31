@@ -98,12 +98,12 @@
               <span class="font-bold text-sm text-foreground">{s.name}</span>
               <div class="flex items-center gap-3">
                 {#if s.closed}
-                  <Badge variant="outline" class="bg-muted text-muted-foreground border-border font-bold">
+                  <Badge variant="secondary">
                     Clôturée
                   </Badge>
                 {:else}
                   {#if s.active}
-                    <Badge variant="outline" class="bg-primary/10 hover:bg-primary/10 text-primary border-primary/20 font-bold">
+                    <Badge variant="primary-soft">
                       Active
                     </Badge>
                   {/if}
@@ -141,12 +141,12 @@
         </Table.Cell>
         <Table.Cell>
           {#if s.closed}
-            <Badge variant="outline" class="bg-muted text-muted-foreground border-border font-bold">
+            <Badge variant="secondary">
               Clôturée
             </Badge>
           {:else}
             {#if s.active}
-              <Badge variant="outline" class="bg-primary/10 hover:bg-primary/10 text-primary border-primary/20 font-bold">
+              <Badge variant="primary-soft">
                 Active
               </Badge>
             {/if}

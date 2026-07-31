@@ -125,16 +125,16 @@
               <div>
                 <div class="font-bold text-base text-foreground">{cat.label}</div>
                 <div class="text-sm text-muted-foreground mt-0.5">
-                  <Badge variant="outline" class="font-normal bg-card">
+                  <Badge variant="outline">
                     {getCategoryLabel(cat.accountingCategoryId)}
                   </Badge>
                 </div>
               </div>
               <div>
                 {#if cat.active}
-                  <Badge variant="success" class="text-[10px] py-0 px-1 font-semibold">Actif</Badge>
+                  <Badge variant="success" size="xs">Actif</Badge>
                 {:else}
-                  <Badge variant="secondary" class="text-[10px] py-0 px-1 font-semibold">Inactif</Badge>
+                  <Badge variant="secondary" size="xs">Inactif</Badge>
                 {/if}
               </div>
             </div>
@@ -165,7 +165,7 @@
           {cat.label}
         </Table.Cell>
         <Table.Cell class="hidden sm:table-cell">
-          <Badge variant="outline" class="font-normal bg-card">
+          <Badge variant="outline">
             {getCategoryLabel(cat.accountingCategoryId)}
           </Badge>
         </Table.Cell>
@@ -173,7 +173,7 @@
           {#if cat.active}
             <Badge variant="success">Oui</Badge>
           {:else}
-            <Badge variant="secondary" class="text-muted-foreground">Non</Badge>
+            <Badge variant="secondary">Non</Badge>
           {/if}
         </Table.Cell>
         <Table.Cell class="text-right space-x-1">

@@ -85,7 +85,7 @@
           <Table.Cell class="py-3 px-2 font-medium">
             <div>{tx.description}</div>
             {#if tx.type === 'transfert'}
-              <Badge variant="outline" class="text-[10px] font-semibold uppercase px-1.5 py-0.5 bg-primary/10 text-primary border-transparent">
+              <Badge variant="primary-soft" size="xs" class="uppercase">
                 Virement interne
               </Badge>
             {/if}

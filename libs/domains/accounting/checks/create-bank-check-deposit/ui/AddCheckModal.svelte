@@ -43,7 +43,7 @@
           <Alert.Root class="bg-primary/10 border-primary/20 text-primary">
             <Alert.Description class="flex justify-between items-center text-xs w-full">
               <span>Adhérent détecté : <strong>{depositState.matchedMemberName}</strong></span>
-              <Badge variant="secondary" class="bg-primary/20 hover:bg-primary/20 text-primary border-transparent">Automatiquement sélectionné</Badge>
+              <Badge variant="primary-soft">Automatiquement sélectionné</Badge>
             </Alert.Description>
           </Alert.Root>
         {/if}

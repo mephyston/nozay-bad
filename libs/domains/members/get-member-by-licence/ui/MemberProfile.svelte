@@ -51,11 +51,11 @@
           <FileText class="w-3.5 h-3.5" />
           Attestation CSE
         </Button>
-        <Badge variant="success" class="font-bold px-3 py-1.5 h-auto rounded-full shrink-0">
+        <Badge variant="success" size="lg" shape="pill" class="shrink-0">
           Cotisation réglée
         </Badge>
       {:else}
-        <Badge variant="warning" class="font-bold px-3 py-1.5 h-auto rounded-full shrink-0">
+        <Badge variant="warning" size="lg" shape="pill" class="shrink-0">
           Règlement en attente
         </Badge>
       {/if}

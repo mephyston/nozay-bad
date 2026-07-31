@@ -29,7 +29,7 @@
     </div>
     <div class="text-xs font-medium flex items-center gap-2">
       <span class="text-muted-foreground">Total ventilé :</span>
-      <Badge variant={isComplete ? "default" : "destructive"} class="font-outfit tabular-nums text-xs flex items-center gap-1">
+      <Badge variant={isComplete ? "default" : "destructive"} class="font-outfit tabular-nums">
         <Amount cents={splitSum} /> / <Amount cents={remainingAmount} />
       </Badge>
     </div>
