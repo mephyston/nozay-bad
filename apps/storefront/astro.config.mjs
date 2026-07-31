@@ -19,7 +19,8 @@ export default defineConfig({
         '@nba/members-ui',
         '@nba/accounting-ui',
         '@nba/expenses-ui',
-        '@nba/shop-ui'
+        '@nba/shop-ui',
+        '@nba/iam-ui'
       ]
     },
     ssr: {
