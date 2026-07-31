@@ -9,11 +9,13 @@ export async function listOrders(db: Db, filters: ListOrdersInput): Promise<List
   const memberIds = Array.from(new Set(orders.map(o => o.memberId)));
   const productIds = Array.from(new Set(orders.map(o => o.productId)));
 
-  const [membersList, productsList] = await Promise.all([
+  const [membersList, productsList, paymentMethodsList] = await Promise.all([
     repo.getMembersByIds(db, memberIds),
     repo.getProductsByIds(db, productIds),
+    repo.getPaymentMethods(db)
   ]);
 
+  const paymentMethodsMap = new Map(paymentMethodsList.map(pm => [pm.id, pm.code]));
   const membersMap = new Map(membersList.map(m => [m.id, m]));
   const productsMap = new Map(productsList.map(p => [
     p.id,
@@ -29,6 +31,7 @@ export async function listOrders(db: Db, filters: ListOrdersInput): Promise<List
     return {
       order: {
         ...order,
+        paymentMethod: paymentMethodsMap.get(order.paymentMethodId) || 'inconnu',
         totalAmount: totCents,
         totalAmountCents: totCents
       },
