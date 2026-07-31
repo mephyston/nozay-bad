@@ -5,6 +5,7 @@ export interface CreateProductInput {
   productCategoryId: number;
   priceCents: number;
   stock?: number;
+  trackStock?: boolean;
   active?: boolean;
 }
 

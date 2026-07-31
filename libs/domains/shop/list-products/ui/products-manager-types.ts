@@ -5,6 +5,7 @@ export interface Product {
   priceCents: number;
   price?: number;
   stock: number;
+  trackStock?: boolean;
   active: boolean;
   category?: string;
   createdAt?: string;

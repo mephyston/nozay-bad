@@ -31,6 +31,8 @@
   let name = $state('');
   let price = $state('');
   let active = $state(true);
+  let trackStock = $state(false);
+  let stock = $state('');
 
   $effect(() => {
     productsList = products;
@@ -53,6 +55,8 @@
     name = '';
     price = '';
     active = true;
+    trackStock = false;
+    stock = '';
     errorMsg = '';
   }
 
@@ -67,6 +71,8 @@
     const priceVal = product.priceCents ?? product.price ?? 0;
     price = (priceVal / 100).toString();
     active = product.active;
+    trackStock = !!product.trackStock;
+    stock = product.stock ? product.stock.toString() : '';
     errorMsg = '';
     successMsg = '';
     showFormSheet = true;
@@ -78,7 +84,7 @@
     successMsg = '';
     isSubmitting = true;
 
-    const res = await submitProduct({ editingId, name, price, category, formCategory, active });
+    const res = await submitProduct({ editingId, name, price, category, formCategory, active, trackStock, stock });
     isSubmitting = false;
 
     if (res.success) {
@@ -159,6 +165,8 @@
       bind:name
       bind:price
       bind:active
+      bind:trackStock
+      bind:stock
       bind:formCategory
       {category}
       {isSubmitting}

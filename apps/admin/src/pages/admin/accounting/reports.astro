@@ -6,7 +6,7 @@ import { GeneralMeetingReport } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 
-const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
+const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
 const apiService = createApiClient(env);
 
 const requestedSeason = Astro.url.searchParams.get('season');
@@ -129,7 +129,7 @@ try {
 ---
 
 <Layout title="Rapports financiers - NBA 91">
-  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Rapports financiers">
+  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Rapports financiers" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       <PageHeader
         title="Rapports financiers"

@@ -39,7 +39,7 @@ try {
 ---
 
 <Layout title={member ? `Profil ${member.lastName} ${member.firstName} - NBA 91` : "Profil Adhérent - NBA 91"}>
-  <AdminLayout client:idle breadcrumb="Adhérents / Fiche Adhérent">
+  <AdminLayout name={Astro.locals.user?.name} client:idle breadcrumb="Adhérents / Fiche Adhérent" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       {errorMsg && (
         <div class="max-w-3xl mx-auto space-y-4">

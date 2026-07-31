@@ -5,5 +5,6 @@ export const createProductSchema = Type.Object({
   productCategoryId: Type.Integer({ minimum: 1 }),
   priceCents: Type.Integer({ minimum: 0 }),
   stock: Type.Integer({ minimum: 0 }),
+  trackStock: Type.Optional(Type.Boolean()),
   active: Type.Optional(Type.Boolean()),
 });

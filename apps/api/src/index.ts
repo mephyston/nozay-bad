@@ -3,6 +3,7 @@ import { membersRouter } from '@nba/members-api';
 import { accountingRouter } from '@nba/accounting-api';
 import { expensesRouter } from '@nba/expenses-api';
 import { shopRouter } from '@nba/shop-api';
+import { iamRouter } from '@nba/iam';
 import { dashboardRouter } from './dashboard';
 import { AppError } from '@nba/db';
 
@@ -60,6 +61,7 @@ app.route('/members', membersRouter);
 app.route('/accounting', accountingRouter);
 app.route('/expenses', expensesRouter);
 app.route('/shop', shopRouter);
+app.route('/iam', iamRouter);
 app.route('/dashboard', dashboardRouter);
 
 export default app;

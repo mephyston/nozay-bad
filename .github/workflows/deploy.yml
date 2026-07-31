@@ -21,17 +21,47 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
   actions: read
 
 env:
   NODE_VERSION: "22"
 
 jobs:
+  release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'staging')
+    outputs:
+      version: ${{ steps.semantic.outputs.new_release_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Semantic Release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # ──────────────────────────────────────────────────────────────
   # 1. Détecte les apps affectées avec nx affected
   # ──────────────────────────────────────────────────────────────
   detect-changes:
+    needs: [release]
+    if: always()
     name: Detect affected apps
     runs-on: ubuntu-latest
     outputs:
@@ -258,7 +288,7 @@ jobs:
   deploy-admin:
     name: Deploy Admin Worker
     runs-on: ubuntu-latest
-    needs: [detect-changes, test, visual, deploy-api]
+    needs: [detect-changes, test, visual, deploy-api, release]
     if: always() && github.event_name == 'push' && needs.detect-changes.outputs.admin == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && needs.visual.result == 'success' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
@@ -275,6 +305,8 @@ jobs:
 
       - name: Build Admin (Astro SSR)
         working-directory: apps/admin
+        env:
+          VITE_APP_VERSION: ${{ needs.release.outputs.version }}
         run: npx astro build
 
       - name: Deploy Admin Worker

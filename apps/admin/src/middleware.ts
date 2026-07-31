@@ -1,7 +1,6 @@
 import { defineMiddleware } from 'astro:middleware';
 import type { APIContext, MiddlewareNext } from 'astro';
 import { jwtVerify, createRemoteJWKSet } from 'jose';
-
 import { env as cfEnv } from 'cloudflare:workers';
 
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
@@ -18,10 +17,33 @@ function getJWKS(teamDomain: string) {
 export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
   const request = context.request;
 
-  // Only trust Vite/Astro's DEV flag — never hostname-based checks which can be
-  // spoofed or triggered on internal network in production.
   if (import.meta.env.DEV) {
-    context.locals.user = { email: 'admin@nozay-bad.fr' };
+    const impersonateCookie = request.headers.get('cookie')?.match(/impersonate_email=([^;]+)/)?.[1];
+    const devEmail = impersonateCookie ? decodeURIComponent(impersonateCookie) : 'admin@nozaybad.fr';
+
+    try {
+      let runtimeEnv: Record<string, string> = {};
+      try { runtimeEnv = (context.locals as any).runtime?.env || {}; } catch (err) {}
+      const resolvedEnv = { ...cfEnv, ...runtimeEnv } as Record<string, string>;
+      
+      const { createApiClient } = await import('@nba/api-client');
+      const apiService = createApiClient(resolvedEnv);
+      const res = await apiService.fetch('http://localhost/iam/users');
+      
+      if (res.ok) {
+        const json = await res.json() as any;
+        const users = json.data || [];
+        const user = users.find((u: any) => u.email === devEmail);
+        if (user) {
+          context.locals.user = { email: user.email, name: user.name, permissions: user.permissions };
+          return next();
+        }
+      }
+      // Default fallback
+      context.locals.user = { email: devEmail, name: devEmail.split('@')[0], permissions: ['*'] };
+    } catch (e) {
+      context.locals.user = { email: devEmail, name: devEmail.split('@')[0], permissions: ['*'] };
+    }
     return next();
   }
 
@@ -56,9 +78,68 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
       issuer: CF_TEAM_DOMAIN,
     });
 
-    context.locals.user = { email: payload.email as string };
+    const email = payload.email as string;
+    
+    const { createApiClient } = await import('@nba/api-client');
+    const apiService = createApiClient(resolvedEnv);
+    const res = await apiService.fetch('http://localhost/iam/users');
+    
+    if (!res.ok) {
+      throw new Error("Erreur lors de la communication avec l'API IAM");
+    }
+
+    const json = await res.json() as any;
+    const users = json.data || [];
+    let user = users.find((u: any) => u.email === email);
+
+    if (!user) {
+      // Est-ce le tout premier administrateur du système ?
+      if (users.length === 0) {
+        // Bootstrap: on donne tous les droits
+        const createRes = await apiService.fetch('http://localhost/iam/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, permissions: ['*'] })
+        });
+        if (createRes.ok) {
+          const created = await createRes.json() as any;
+          user = created.data;
+        } else {
+          return new Response('Erreur lors de la création du compte administrateur initial.', { status: 500 });
+        }
+      } else {
+        return new Response('Accès refusé. Compte non configuré.', { status: 403 });
+      }
+    }
+
+    let finalEmail = user.email;
+    let finalPermissions = user.permissions;
+    let finalName = user.name || user.email.split('@')[0];
+
+    // Impersonation logic (only for super-admins)
+    if (finalPermissions.includes('*')) {
+      const impersonateCookie = request.headers.get('cookie')?.match(/impersonate_email=([^;]+)/)?.[1];
+      if (impersonateCookie) {
+        try {
+          const impEmail = decodeURIComponent(impersonateCookie);
+          const impUser = users.find((u: any) => u.email === impEmail);
+          if (impUser) {
+            finalEmail = impUser.email;
+            finalPermissions = impUser.permissions;
+            finalName = impUser.name || impUser.email.split('@')[0];
+          }
+        } catch (e) {}
+      }
+    }
+
+    context.locals.user = { 
+      email: finalEmail,
+      name: finalName,
+      permissions: finalPermissions
+    };
     return next();
-  } catch {
+  } catch (err) {
+    console.error("[auth] Error:", err);
     return new Response('Authentification invalide ou expirée.', { status: 403 });
   }
 };

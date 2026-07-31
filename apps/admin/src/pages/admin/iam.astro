@@ -1,0 +1,70 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import AdminLayout from '../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { UsersManager } from '@nba/iam-ui';
+import { env } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
+
+// Security: Must be super-admin to view this page.
+const user = Astro.locals.user;
+if (!user || (!user.permissions.includes('*') && !user.permissions.includes('iam:*'))) {
+  return new Response('Accès refusé', { status: 403 });
+}
+
+const apiService = createApiClient(env);
+
+let usersList: any[] = [];
+let errorMsg = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const data = await Astro.request.json() as any;
+    
+    if (data.action === 'create_user') {
+      const apiRes = await apiService.fetch('http://localhost/iam/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: data.email, name: data.name, permissions: data.permissions })
+      });
+      if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+      await apiRes.text(); // Consume body to release connection
+    } else if (data.action === 'delete_user') {
+      const apiRes = await apiService.fetch(`http://localhost/iam/users/${data.id}`, {
+        method: 'DELETE'
+      });
+      if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+      await apiRes.text(); // Consume body to release connection
+    }
+    
+    return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+  } catch (err: any) {
+    return new Response(err.message, { status: 500 });
+  }
+}
+
+try {
+  const usersRes = await apiService.fetch('http://localhost/iam/users');
+  if (usersRes.ok) {
+    const json = await usersRes.json() as any;
+    usersList = json.data || [];
+  }
+} catch (err: any) {
+  errorMsg = 'Erreur lors de la récupération des utilisateurs.';
+}
+---
+
+<Layout title="Accès et Permissions - NBA 91">
+  <AdminLayout name={Astro.locals.user?.name} client:idle email={user?.email || ''} permissions={user?.permissions || []} breadcrumb="Accès & Permissions">
+    <div class="space-y-6">
+      <PageHeader
+        title="Accès et Permissions"
+        description="Gérez qui peut accéder à l'administration de Nozay Bad Association."
+      />
+
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <UsersManager client:load users={usersList} />
+    </div>
+  </AdminLayout>
+</Layout>

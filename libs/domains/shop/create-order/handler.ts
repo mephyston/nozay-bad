@@ -37,6 +37,10 @@ export async function createOrder(db: Db, body: CreateOrderInput): Promise<Creat
     throw new ProductNotFoundError();
   }
 
+  if (product.trackStock && product.stock < body.quantity) {
+    throw new AppError("Désolé, il n'y a plus assez de stock disponible pour cet article.", 400);
+  }
+
   const paymentMethod = await repo.getPaymentMethodByCode(db, body.paymentMethod);
   if (!paymentMethod) {
     throw new AppError(`Le moyen de paiement '${body.paymentMethod}' n'existe pas.`, 400);

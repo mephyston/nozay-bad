@@ -6,7 +6,7 @@ import { BankStatementReconciliation } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 
-const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
+const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
 const apiService = createApiClient(env);
 
 const requestedSeason = Astro.url.searchParams.get('season');
@@ -157,7 +157,7 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
 ---
 
 <Layout title="Rapprochement Bancaire - NBA 91">
-  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Rapprochement bancaire">
+  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Rapprochement bancaire" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       {errorMsg && <ErrorAlert message={errorMsg} />}
 

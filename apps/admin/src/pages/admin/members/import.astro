@@ -7,6 +7,12 @@ import { PoonaImporter } from '@nba/members-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 
+import { hasPermission } from '@nba/iam';
+const userPerms = Astro.locals.user?.permissions || [];
+if (!hasPermission(userPerms, '*') && !hasPermission(userPerms, 'members:*') && !hasPermission(userPerms, 'members:import')) {
+  return Astro.redirect('/');
+}
+
 let result = null;
 let error = null;
 
@@ -41,7 +47,7 @@ if (Astro.request.method === 'POST') {
 ---
 
 <Layout title="Import Adhérents Poona - NBA 91">
-  <AdminLayout client:idle breadcrumb="Adhérents / Import Poona">
+  <AdminLayout name={Astro.locals.user?.name} client:idle breadcrumb="Adhérents / Import Poona" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       <PageHeader
         title="Import Adhérents"

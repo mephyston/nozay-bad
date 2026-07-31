@@ -7,21 +7,32 @@ import { ProductsManager } from '@nba/shop-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 
-const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
+import { hasPermission } from '@nba/iam';
+const userPerms = Astro.locals.user?.permissions || [];
+if (!hasPermission(userPerms, '*') && !hasPermission(userPerms, 'shop:*') && !hasPermission(userPerms, 'shop:products')) {
+  return Astro.redirect('/');
+}
+
+const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
 const apiService = createApiClient(env);
 
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
     if (data.action === 'create') {
+      let catId = typeof data.category === 'number' ? data.category : 3;
+      if (data.category === 'shuttlecock') catId = 1;
+      if (data.category === 'string') catId = 2;
+      
       const apiRes = await apiService.fetch('http://localhost/shop/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: data.name,
-          category: data.category,
+          productCategoryId: catId,
           price: data.price,
           stock: data.stock,
+          trackStock: data.trackStock,
           active: data.active
         })
       });
@@ -35,8 +46,9 @@ if (Astro.request.method === 'POST') {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: data.name,
-          price: data.price,
+          priceCents: data.price,
           stock: data.stock,
+          trackStock: data.trackStock,
           active: data.active
         })
       });
@@ -68,7 +80,7 @@ try {
 ---
 
 <Layout title="Gestion des Produits - NBA 91">
-  <AdminLayout client:idle email={userEmail} breadcrumb="Boutique / Produits">
+  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Boutique / Produits" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       {errorMsg && <ErrorAlert message={errorMsg} />}
 

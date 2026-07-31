@@ -67,7 +67,7 @@
 
     <div class="flex items-center justify-between border-b border-border pb-4 no-print">
       <h3 class="text-lg font-semibold">
-        {mode === 'realise' ? '1. Compte de Résultat' : '3. Budget Prévisionnel'}
+        {mode === 'realise' ? 'Compte de Résultat' : 'Budget Prévisionnel'}
       </h3>
     </div>
 

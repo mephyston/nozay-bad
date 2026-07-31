@@ -8,6 +8,8 @@ export async function submitProduct(params: {
   category?: number | 'all';
   formCategory: string;
   active: boolean;
+  trackStock: boolean;
+  stock: string;
 }): Promise<{ success: boolean; error?: string }> {
   const numPrice = parseFloat(params.price);
 
@@ -25,7 +27,8 @@ export async function submitProduct(params: {
         id: params.editingId,
         name: params.name.trim(),
         price: priceCents,
-        stock: 9999,
+        stock: params.trackStock ? (parseInt(params.stock as string) || 0) : 0,
+        trackStock: params.trackStock,
         active: params.active
       }
     : {
@@ -33,7 +36,8 @@ export async function submitProduct(params: {
         name: params.name.trim(),
         category: params.category && params.category !== 'all' ? params.category : params.formCategory,
         price: priceCents,
-        stock: 9999,
+        stock: params.trackStock ? (parseInt(params.stock as string) || 0) : 0,
+        trackStock: params.trackStock,
         active: params.active
       };
 
@@ -63,8 +67,9 @@ export async function toggleProductActive(product: Product): Promise<boolean> {
       action: 'update',
       id: product.id,
       name: product.name,
-      price: product.price ?? product.priceCents,
+      priceCents: product.price ?? product.priceCents,
       stock: product.stock,
+      trackStock: product.trackStock,
       active: !product.active
     })
   });
@@ -82,8 +87,9 @@ export async function archiveProduct(product: Product): Promise<boolean> {
       action: 'update',
       id: product.id,
       name: product.name,
-      price: product.price ?? product.priceCents,
+      priceCents: product.price ?? product.priceCents,
       stock: product.stock,
+      trackStock: product.trackStock,
       active: false
     })
   });
