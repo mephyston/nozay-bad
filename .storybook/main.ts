@@ -19,9 +19,11 @@ const config: StorybookConfig = {
     const { svelte } = await import('@sveltejs/vite-plugin-svelte');
     cfg.plugins = cfg.plugins ?? [];
 
-    // Storybook ne charge pas automatiquement le plugin Svelte : sans lui, le
-    // moteur rolldown de Vite 8 parse le .svelte brut comme du JSX et échoue.
-    cfg.plugins.push(svelte());
+    // Storybook ne charge pas automatiquement le plugin Svelte. On le place EN
+    // TÊTE pour qu'il compile les .svelte (y compris les .stories.svelte) AVANT
+    // le post-transform de addon-svelte-csf, qui attend du JS déjà compilé
+    // (sinon rolldown parse le Svelte brut comme du JSX et échoue).
+    cfg.plugins.unshift(...svelte());
 
     // Tailwind v4 (mêmes tokens/variants que les apps) pour un rendu fidèle.
     cfg.plugins.push(tailwindcss());

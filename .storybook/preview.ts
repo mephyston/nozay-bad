@@ -1,4 +1,5 @@
 import type { Preview } from '@storybook/svelte';
+// Toggle clair/sombre via la classe .dark (variant Tailwind du DS).
 import { withThemeByClassName } from '@storybook/addon-themes';
 import './storybook.css';
 
