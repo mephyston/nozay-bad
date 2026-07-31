@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import AdminLayout from '../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
 import { SettingsManager } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
@@ -237,18 +238,13 @@ try {
 <Layout title="Réglages - NBA 91">
   <AdminLayout client:idle email={userEmail} breadcrumb="Réglages">
     <div class="space-y-6">
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight">Réglages Association</h1>
-        <p class="text-muted-foreground mt-2">
-          Gérez l'exercice comptable et configurez les catégories de trésorerie.
-        </p>
-      </div>
+      <PageHeader
+        title="Réglages Association"
+        description="Gérez l'exercice comptable et configurez les catégories de trésorerie."
+        class="mb-0"
+      />
 
-      {errorMsg && (
-        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
-          {errorMsg}
-        </div>
-      )}
+      {errorMsg && <ErrorAlert message={errorMsg} />}
 
       <SettingsManager
         client:load

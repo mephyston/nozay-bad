@@ -1,6 +1,7 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
 import { ProductsManager } from '@nba/shop-ui';
 
 import { env } from 'cloudflare:workers';
@@ -69,20 +70,13 @@ try {
 <Layout title="Gestion des Produits - NBA 91">
   <AdminLayout client:idle email={userEmail} breadcrumb="Boutique / Produits">
     <div class="space-y-6">
-      {errorMsg && (
-        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
-          {errorMsg}
-        </div>
-      )}
+      {errorMsg && <ErrorAlert message={errorMsg} />}
 
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border pb-4">
-        <div class="text-center sm:text-left w-full sm:w-auto">
-          <h1 class="text-3xl font-bold tracking-tight">Gestion des Produits</h1>
-          <p class="text-muted-foreground mt-1">
-            Consultez et modifiez les tarifs, stocks et statuts de la boutique.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Gestion des Produits"
+        description="Consultez et modifiez les tarifs, stocks et statuts de la boutique."
+        class="mb-0 border-b border-border pb-4"
+      />
 
       <ProductsManager
         client:load

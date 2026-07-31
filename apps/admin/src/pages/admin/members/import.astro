@@ -1,6 +1,7 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader } from '@nba/ui';
 import { PoonaImporter } from '@nba/members-ui';
 
 import { env } from 'cloudflare:workers';
@@ -42,12 +43,11 @@ if (Astro.request.method === 'POST') {
 <Layout title="Import Adhérents Poona - NBA 91">
   <AdminLayout client:idle breadcrumb="Adhérents / Import Poona">
     <div class="space-y-6">
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight">Import Adhérents</h1>
-        <p class="text-muted-foreground mt-2">
-          Importez le fichier d'extraction CSV depuis Poona pour synchroniser les informations des adhérents.
-        </p>
-      </div>
+      <PageHeader
+        title="Import Adhérents"
+        description="Importez le fichier d'extraction CSV depuis Poona pour synchroniser les informations des adhérents."
+        class="mb-0"
+      />
 
       <PoonaImporter client:load {result} {error} />
     </div>

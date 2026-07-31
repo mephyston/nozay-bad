@@ -1,6 +1,7 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
+import { ErrorAlert } from '@nba/ui';
 import { MemberProfile } from '@nba/members-ui';
 
 import { env } from 'cloudflare:workers';
@@ -42,9 +43,7 @@ try {
     <div class="space-y-6">
       {errorMsg && (
         <div class="max-w-3xl mx-auto space-y-4">
-          <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
-            {errorMsg}
-          </div>
+          <ErrorAlert message={errorMsg} />
           <a href="/admin/members" class="text-sm text-primary hover:underline">
             &larr; Retour à la liste des adhérents
           </a>

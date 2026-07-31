@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
+import { ErrorAlert } from '@nba/ui';
 import { ExpenseReportForm } from '@nba/expenses-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
@@ -97,8 +98,8 @@ const activeSeasonId = activeSeason.id;
 
   <main class="flex-1 p-6 w-full">
     {errorMsg && (
-      <div class="mb-6 p-4 bg-destructive/15 border border-destructive/20 text-destructive text-sm rounded-xl font-medium flex items-center gap-2">
-        <span>⚠️ {errorMsg}</span>
+      <div class="mb-6">
+        <ErrorAlert message={errorMsg} />
       </div>
     )}
 
