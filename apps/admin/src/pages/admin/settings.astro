@@ -235,12 +235,12 @@ try {
 }
 ---
 
-<Layout title="Réglages - NBA 91">
-  <AdminLayout client:idle email={userEmail} breadcrumb="Réglages">
+<Layout title="Configuration - NBA 91">
+  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Configuration" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       <PageHeader
-        title="Réglages Association"
-        description="Gérez l'exercice comptable et configurez les catégories de trésorerie."
+        title="Configuration"
+        description="Gérez l'exercice comptable et configurez les catégories de l'association."
       />
 
       {errorMsg && <ErrorAlert message={errorMsg} />}

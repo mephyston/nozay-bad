@@ -1,8 +1,10 @@
 import { defineMiddleware } from 'astro:middleware';
 import type { APIContext, MiddlewareNext } from 'astro';
 import { jwtVerify, createRemoteJWKSet } from 'jose';
-
 import { env as cfEnv } from 'cloudflare:workers';
+import { drizzle } from 'drizzle-orm/d1';
+import { eq } from 'drizzle-orm';
+import { adminUsersTable } from '@nba/iam/schema';
 
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
@@ -18,10 +20,33 @@ function getJWKS(teamDomain: string) {
 export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
   const request = context.request;
 
-  // Only trust Vite/Astro's DEV flag — never hostname-based checks which can be
-  // spoofed or triggered on internal network in production.
   if (import.meta.env.DEV) {
-    context.locals.user = { email: 'admin@nozaybad.fr' };
+    const impersonateCookie = request.headers.get('cookie')?.match(/impersonate_email=([^;]+)/)?.[1];
+    const devEmail = impersonateCookie ? decodeURIComponent(impersonateCookie) : 'admin@nozaybad.fr';
+
+    try {
+      let runtimeEnv: Record<string, string> = {};
+      try { runtimeEnv = (context.locals as any).runtime?.env || {}; } catch (err) {}
+      const resolvedEnv = { ...cfEnv, ...runtimeEnv } as Record<string, string>;
+      
+      const { createApiClient } = await import('@nba/api-client');
+      const apiService = createApiClient(resolvedEnv);
+      const res = await apiService.fetch('http://localhost/iam/users');
+      
+      if (res.ok) {
+        const json = await res.json() as any;
+        const users = json.data || [];
+        const user = users.find((u: any) => u.email === devEmail);
+        if (user) {
+          context.locals.user = { email: user.email, name: user.name, permissions: user.permissions };
+          return next();
+        }
+      }
+      // Default fallback
+      context.locals.user = { email: devEmail, name: devEmail.split('@')[0], permissions: ['*'] };
+    } catch (e) {
+      context.locals.user = { email: devEmail, name: devEmail.split('@')[0], permissions: ['*'] };
+    }
     return next();
   }
 
@@ -56,7 +81,54 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
       issuer: CF_TEAM_DOMAIN,
     });
 
-    context.locals.user = { email: payload.email as string };
+    const email = payload.email as string;
+    const db = drizzle(resolvedEnv.DB as any);
+
+    // Bootstrap ou chargement de l'utilisateur
+    let user = await db.select().from(adminUsersTable).where(eq(adminUsersTable.email, email)).get();
+
+    if (!user) {
+      // Est-ce le tout premier administrateur du système ?
+      const allUsersCount = await db.select({ id: adminUsersTable.id }).from(adminUsersTable).limit(1).all();
+      if (allUsersCount.length === 0) {
+        // Bootstrap: on donne tous les droits
+        const result = await db.insert(adminUsersTable).values({
+          email,
+          name: email.split('@')[0] || 'Admin',
+          permissions: ['*'],
+          createdAt: new Date()
+        }).returning().get();
+        user = result;
+      } else {
+        return new Response('Accès refusé. Compte non configuré.', { status: 403 });
+      }
+    }
+
+    let finalEmail = user.email;
+    let finalPermissions = user.permissions;
+    let finalName = user.name || user.email.split('@')[0];
+
+    // Impersonation logic (only for super-admins)
+    if (finalPermissions.includes('*')) {
+      const impersonateCookie = request.headers.get('cookie')?.match(/impersonate_email=([^;]+)/)?.[1];
+      if (impersonateCookie) {
+        try {
+          const impEmail = decodeURIComponent(impersonateCookie);
+          const impUser = await db.select().from(adminUsersTable).where(eq(adminUsersTable.email, impEmail)).get();
+          if (impUser) {
+            finalEmail = impUser.email;
+            finalPermissions = impUser.permissions;
+            finalName = impUser.name || impUser.email.split('@')[0];
+          }
+        } catch (e) {}
+      }
+    }
+
+    context.locals.user = { 
+      email: finalEmail,
+      name: finalName,
+      permissions: finalPermissions
+    };
     return next();
   } catch {
     return new Response('Authentification invalide ou expirée.', { status: 403 });
