@@ -1,3 +1,10 @@
+# [1.0.0-beta.3](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2026-07-31)
+
+
+### Features
+
+* **pwa:** implémentation PWA et menu de navigation mobile ([3d9f528](https://github.com/mephyston/nozay-bad/commit/3d9f528df803ce68b92661e2ea1ab2cf1cb5c63f))
+
 # [1.0.0-beta.2](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2026-07-31)
 
 
