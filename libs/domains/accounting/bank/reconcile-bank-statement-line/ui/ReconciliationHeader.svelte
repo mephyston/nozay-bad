@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Upload, Sparkles, ShieldAlert } from '@lucide/svelte';
-  import { Button, PageHeader, FormField, Alert } from '@nba/ui';
+  import { Button, PageHeader, FormField, Alert, Select } from '@nba/ui';
   import type { ReconciliationState } from './reconciliation.svelte';
 
   let { state = $bindable() }: { state: ReconciliationState } = $props();
@@ -24,7 +24,7 @@
       {#if state.seasons && state.seasons.length > 0}
         <div class="flex items-center gap-2 shrink-0">
           <FormField id="select-season" label="Saison : ">
-          <select
+          <Select
             id="select-season"
             bind:value={state.selectedSeason}
             onchange={() => {
@@ -37,7 +37,7 @@
             {#each state.seasons as s}
               <option value={s.code || String(s.id)}>{s.name || s.code} {s.active ? '(Active)' : ''}</option>
             {/each}
-          </select>
+          </Select>
           </FormField>
         </div>
       {/if}

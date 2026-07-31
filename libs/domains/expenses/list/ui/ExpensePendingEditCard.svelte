@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Eye, Image as ImageIcon } from '@lucide/svelte';
-  import { Button, Input, Card, Textarea, FormField } from '@nba/ui';
+  import { Button, Input, Card, Textarea, FormField, Select } from '@nba/ui';
   import type { Expense, Season, CategoryOption } from './expenses-types';
 
   let {
@@ -42,19 +42,19 @@
 
   <div class="grid grid-cols-3 gap-4">
       <FormField id="edit-cat-{exp.id}" label="Catégorie compta">
-      <select id="edit-cat-{exp.id}" bind:value={editCategory} class="w-full px-2.5 py-2 border border-border bg-background rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground">
+      <Select id="edit-cat-{exp.id}" bind:value={editCategory}>
         {#each categoriesList as cat}
           <option value={cat.value}>{cat.label}</option>
         {/each}
-      </select>
+      </Select>
     </FormField>
 
       <FormField id="edit-season-{exp.id}" label="Saison d'affectation">
-      <select id="edit-season-{exp.id}" bind:value={editSeasonId} class="w-full px-2.5 py-2 border border-border bg-background rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground">
+      <Select id="edit-season-{exp.id}" bind:value={editSeasonId}>
         {#each seasons as s}
           <option value={s.id}>{s.name}</option>
         {/each}
-      </select>
+      </Select>
     </FormField>
 
       <FormField id="edit-amount-{exp.id}" label="Montant (€)">

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Settings, Plus, Save, Trash2, Edit } from "@lucide/svelte";
-  import { Badge, Button, Input, DataTable, DataTableColumnHeader, Checkbox, Sheet, AlertDialog, FormField, Card } from '@nba/ui';
+  import { Badge, Button, Input, DataTable, DataTableToolbar, DataTableColumnHeader, Checkbox, Sheet, AlertDialog, FormField, Card, Select, Table } from '@nba/ui';
   import type { Category, ProductCategory } from "./settings-types";
 
   let {
@@ -207,12 +207,12 @@
       </FormField>
 
         <FormField id="new-category" label="Catégorie Comptable associée">
-        <select id="new-category" bind:value={newAccountingCategoryId} required class="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+        <Select id="new-category" bind:value={newAccountingCategoryId} required>
           <option value={null} disabled>Sélectionner une catégorie...</option>
           {#each categories as c}
             <option value={c.id}>{c.adminLabel}</option>
           {/each}
-        </select>
+        </Select>
       <p class="text-xs text-muted-foreground mt-1.5">Les ventes de ces produits seront affectées à ce compte.</p>
       </FormField>
 
@@ -249,12 +249,12 @@
       </FormField>
 
         <FormField id="edit-category" label="Catégorie Comptable associée">
-        <select id="edit-category" bind:value={editAccountingCategoryId} required class="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+        <Select id="edit-category" bind:value={editAccountingCategoryId} required>
           <option value={null} disabled>Sélectionner une catégorie...</option>
           {#each categories as c}
             <option value={c.id}>{c.adminLabel}</option>
           {/each}
-        </select>
+        </Select>
       <p class="text-xs text-muted-foreground mt-1.5">Les ventes de ces produits seront affectées à ce compte.</p>
       </FormField>
 

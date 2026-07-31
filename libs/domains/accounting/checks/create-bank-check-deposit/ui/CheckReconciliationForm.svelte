@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, FormField } from '@nba/ui';
+  import { Button, FormField, Select } from '@nba/ui';
 
   let {
     selectedDepositToClear,
@@ -35,10 +35,9 @@
   </div>
 
     <FormField id="bank-tx-select" label="Sélectionner la ligne bancaire correspondante">
-    <select
+    <Select
       id="bank-tx-select"
       bind:value={selectedBankTransactionId}
-      class="w-full bg-white border rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
     >
       <option value="">-- Choisir une ligne de relevé bancaire --</option>
       {#each matchingBankTxs as bt}
@@ -51,7 +50,7 @@
           {bt.date} • {bt.name} • {(bt.amount / 100).toFixed(2)} € (Montant différent)
         </option>
       {/each}
-    </select>
+    </Select>
   </FormField>
 
   <Button

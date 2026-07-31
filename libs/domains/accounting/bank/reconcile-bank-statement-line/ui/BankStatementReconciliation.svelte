@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Upload } from '@lucide/svelte';
-  import { Button, Card, FormField, Alert } from '@nba/ui';
+  import { Button, Card, FormField, Alert, Select } from '@nba/ui';
   import { createReconciliationState, type ReconciliationStateProps } from './reconciliation.svelte';
   import ImportStatementDialog from './ImportStatementDialog.svelte';
   import ReconciliationHeader from './ReconciliationHeader.svelte';
@@ -54,16 +54,15 @@
         </FormField>
 
           <FormField id="bank-account-empty" label="Compte bancaire">
-          <select
+          <Select
             id="bank-account-empty"
             bind:value={state.selectedAccount}
-            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value="auto">Détection automatique depuis le fichier</option>
             <option value="current">Compte Courant</option>
             <option value="savings">Compte Livret</option>
             <option value="cash">Caisse Physique</option>
-          </select>
+          </Select>
         </FormField>
 
         {#if state.errorMsg}

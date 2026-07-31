@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, Sparkles, Trash2 } from '@lucide/svelte';
-  import { Button, Input, Badge, Card, Checkbox, Tabs } from '@nba/ui';
+  import { Button, Input, Badge, Card, Checkbox, Tabs, Select } from '@nba/ui';
   import type { ReconciliationState } from './reconciliation.svelte';
 
   let { state = $bindable() }: { state: ReconciliationState } = $props();
@@ -42,8 +42,7 @@
           </button>
         {/if}
       </div>
-      <select
-        class="h-8 px-2 border border-border bg-background rounded-md text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary w-28 shrink-0 cursor-pointer"
+      <Select
         bind:value={state.monthFilter}
       >
         <option value="">Tous</option>
@@ -59,7 +58,7 @@
         <option value="10">Octobre</option>
         <option value="11">Novembre</option>
         <option value="12">Décembre</option>
-      </select>
+      </Select>
     </div>
 
     <!-- Barre d'action en masse -->

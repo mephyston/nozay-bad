@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FileText, Check, AlertCircle } from '@lucide/svelte';
-  import { Alert, Card, Tabs, uiConfirm, Badge, PageHeader, FormField } from '@nba/ui';
+  import { Alert, Card, Tabs, uiConfirm, Badge, PageHeader, FormField, Select } from '@nba/ui';
   import type { Expense, Season, Category } from './expenses-types';
   import { getCategoryOptions, getCategoryLabels } from './expenses-types';
   import { ExpensesState } from './expenses-state.svelte';
@@ -158,15 +158,14 @@
 
     {#snippet toolbarFilters()}
         <FormField id="filter-season" label="Saison">
-        <select
+        <Select
           id="filter-season"
-          class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
           bind:value={selectedSeason}
         >
           {#each seasons as season}
             <option value={season.id}>{season.name}</option>
           {/each}
-        </select>
+        </Select>
       </FormField>
     {/snippet}
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FileText, Search, Trash2, Plus } from '@lucide/svelte';
-  import { Button, Badge, Amount, DataTable, DataTableToolbar, FormField } from '@nba/ui';
+  import { Button, Badge, Amount, DataTable, DataTableToolbar, FormField, Select } from '@nba/ui';
   import { Table } from '@nba/ui';
   import type { CashTransaction, Season } from './cashbox-types';
   import { categoryLabels } from './cashbox-types';
@@ -38,9 +38,8 @@
         >
           {#snippet filters()}
               <FormField id="filter-season" label="Saison">
-              <select
+              <Select
                 id="filter-season"
-                class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
                 value={seasonId}
                 onchange={(e) => {
                   const val = (e.target as HTMLSelectElement).value;
@@ -55,7 +54,7 @@
                 {#if seasons.length === 0}
                   <option value="25-26">Saison 2025-2026</option>
                 {/if}
-              </select>
+              </Select>
             </FormField>
           {/snippet}
           {#snippet actions()}

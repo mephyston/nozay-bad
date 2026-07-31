@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Amount, Combobox, type ComboboxItem, FormField } from '@nba/ui';
+  import { Button, Amount, Combobox, type ComboboxItem, FormField, Select } from '@nba/ui';
   import CreateLedgerEntrySplitRows from './CreateLedgerEntrySplitRows.svelte';
 
   let {
@@ -140,7 +140,7 @@
 
   <div class="grid grid-cols-1 gap-4 mt-4">
       <FormField label="Régularisation (Cut-off)">
-      <select class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={accrualType}>
+      <Select bind:value={accrualType}>
         <option value="normal">Normal</option>
         {#if selectedTx && selectedTx.amount > 0}
           <option value="produit_constate_avance">Produit constaté d'avance (Ex: Cotisation en avance)</option>
@@ -149,7 +149,7 @@
           <option value="charge_constatee_avance">Charge constatée d'avance (Ex: Assurance en avance)</option>
           <option value="charge_a_payer">Charge à payer (Ex: Facture non parvenue)</option>
         {/if}
-      </select>
+      </Select>
     </FormField>
     {#if accrualType !== 'normal'}
         <FormField label="Note justificative *">

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { AlertCircle } from '@lucide/svelte';
-  import { Button, Input, Sheet, Label, Alert } from '@nba/ui';
+  import { Button, Input, Sheet, Label, Alert, Select, FormField } from '@nba/ui';
   import type { Season, Category } from './ledger-types';
   import { accountLabels, methodLabels, formAccountOptions } from './ledger-types';
 
@@ -80,51 +80,51 @@
 
       <!-- Ligne 2 : Saison -->
         <FormField id="season-select-panel" label="Saison d'affectation">
-        <select id="season-select-panel" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary font-medium" bind:value={targetSeasonId}>
+        <Select id="season-select-panel" bind:value={targetSeasonId}>
           {#each seasons as s}
             <option value={s.id}>{s.name}</option>
           {/each}
           {#if seasons.length === 0}
             <option value="25-26">Saison 2025-2026</option>
           {/if}
-        </select>
+        </Select>
       </FormField>
 
       <!-- Ligne 3 : Catégorie / Comptes en Grille -->
       {#if showPanel !== 'transfert'}
         <div class="grid grid-cols-2 gap-4">
             <FormField id="category-select" label="Catégorie">
-            <select id="category-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={category}>
+            <Select id="category-select" bind:value={category}>
               {#each activeCategories as cat}
                 <option value={cat.id}>{cat.name}</option>
               {/each}
-            </select>
+            </Select>
             </FormField>
             <FormField id="account-select" label="Compte financier">
-            <select id="account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={formAccountId}>
+            <Select id="account-select" bind:value={formAccountId}>
               {#each formAccountOptions as {value: key, label}}
                 <option value={key}>{label}</option>
               {/each}
-            </select>
+            </Select>
           </FormField>
         </div>
       {:else}
         <div class="grid grid-cols-2 gap-4">
             <FormField id="account-select" label="Compte Source">
-            <select id="account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={formAccountId}>
+            <Select id="account-select" bind:value={formAccountId}>
               {#each formAccountOptions as {value: key, label}}
                 <option value={key}>{label}</option>
               {/each}
-            </select>
+            </Select>
             </FormField>
             <FormField id="dest-account-select" label="Compte Destinataire">
-            <select id="dest-account-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={destinationAccountId}>
+            <Select id="dest-account-select" bind:value={destinationAccountId}>
               {#each formAccountOptions as {value: key, label}}
                 {#if key !== formAccountId}
                   <option value={key}>{label}</option>
                 {/if}
               {/each}
-            </select>
+            </Select>
           </FormField>
         </div>
       {/if}
@@ -132,11 +132,11 @@
       <!-- Ligne 4 : Moyen de paiement -->
       {#if showPanel !== 'transfert'}
           <FormField id="payment-method-select" label="Moyen de paiement">
-          <select id="payment-method-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={paymentMethod}>
+          <Select id="payment-method-select" bind:value={paymentMethod}>
             {#each Object.entries(methodLabels) as [key, label]}
               <option value={key}>{label}</option>
             {/each}
-          </select>
+          </Select>
         </FormField>
       {/if}
 
@@ -144,7 +144,7 @@
       {#if showPanel !== 'transfert'}
         <div class="grid grid-cols-1 gap-4">
             <FormField id="accrual-select" label="Régularisation (Cut-off)">
-            <select id="accrual-select" class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={accrualType}>
+            <Select id="accrual-select" bind:value={accrualType}>
               <option value="normal">Normal (Même exercice comptable)</option>
               {#if showPanel === 'recette'}
                 <option value="produit_constate_avance">Produit constaté d'avance (Recette pour la saison prochaine)</option>
@@ -154,7 +154,7 @@
                 <option value="charge_constatee_avance">Charge constatée d'avance (Payé pour la saison prochaine)</option>
                 <option value="charge_a_payer">Charge à payer (Facture non parvenue / attendue)</option>
               {/if}
-            </select>
+            </Select>
           </FormField>
           {#if accrualType !== 'normal'}
               <FormField id="accrual-note-input" label="Note justificative *">

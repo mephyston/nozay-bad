@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Select } from '@nba/ui';
   import { Plus } from "@lucide/svelte";
   import { Button, Input, FormField } from"@nba/ui";
 
@@ -54,15 +55,14 @@
   </FormField>
 
     <FormField id="new-class-type" label="Type">
-    <select
+    <Select
       id="new-class-type"
       bind:value={newClassType}
-      class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-medium"
     >
       <option value="recette">Produit (7 - Recette)</option>
       <option value="depense">Charge (6 - Dépense)</option>
       <option value="tresorerie">Trésorerie (5)</option>
-    </select>
+    </Select>
   </FormField>
 
   <Button

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Check, AlertCircle } from '@lucide/svelte';
   import { Plus } from '@lucide/svelte';
-  import { Alert, AlertDialog, Button, DataTableToolbar, FormField } from '@nba/ui';
+  import { Alert, AlertDialog, Button, DataTableToolbar, FormField, Select } from '@nba/ui';
   import type { Invoice, Season } from './invoices-types';
   import { InvoiceFormState } from './invoices-form-state.svelte';
   import * as api from './invoices-api';
@@ -188,9 +188,8 @@
       >
         {#snippet filters()}
             <FormField id="filter-season" label="Saison">
-            <select
+            <Select
               id="filter-season"
-              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
               value={seasonId}
               onchange={(e) => {
                 const val = (e.target as HTMLSelectElement).value;
@@ -205,13 +204,12 @@
               {#if seasons.length === 0}
                 <option value="25-26">Saison 2025-2026</option>
               {/if}
-            </select>
+            </Select>
           </FormField>
 
             <FormField id="filter-status" label="Statut">
-            <select
+            <Select
               id="filter-status"
-              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
               bind:value={statusFilter}
             >
               <option value="all">Tous les statuts</option>
@@ -219,7 +217,7 @@
               <option value="sent">Envoyée</option>
               <option value="paid">Payée</option>
               <option value="cancelled">Annulée</option>
-            </select>
+            </Select>
           </FormField>
         {/snippet}
 

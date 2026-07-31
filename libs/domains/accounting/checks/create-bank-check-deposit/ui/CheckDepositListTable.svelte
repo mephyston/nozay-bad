@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CheckCircle, MoreVertical, FileText, Trash2 } from '@lucide/svelte';
-  import { Button, Badge, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField } from '@nba/ui';
+  import { Button, Badge, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField, Select } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
   import type { CheckDeposit } from './check-deposit-types';
 
@@ -45,9 +45,8 @@
     >
       {#snippet filters()}
           <FormField id="filter-season" label="Saison">
-          <select
+          <Select
             id="filter-season"
-            class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
             value={seasonId}
             onchange={(e) => {
               const val = (e.target as HTMLSelectElement).value;
@@ -62,7 +61,7 @@
             {#if seasons.length === 0}
               <option value="25-26">Saison 2025-2026</option>
             {/if}
-          </select>
+          </Select>
         </FormField>
       {/snippet}
     </DataTableToolbar>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Select } from '@nba/ui';
   import { Plus } from "@lucide/svelte";
   import { Button, Input, FormField } from"@nba/ui";
   import type { AccountClass } from "./settings-types";
@@ -77,29 +78,27 @@
 
   <div class="grid grid-cols-2 gap-4">
       <FormField id="new-cat-recette" label="Classe Recette (CR)">
-      <select
+      <Select
         id="new-cat-recette"
         bind:value={newCatReceiptCode}
-        class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-medium"
       >
         <option value="">Aucune (N/A)</option>
         {#each (accountClasses || []).filter(ac => ac.type === 'recette') as ac}
           <option value={ac.code}>{ac.code} - {ac.label}</option>
         {/each}
-      </select>
+      </Select>
     </FormField>
 
       <FormField id="new-cat-depense" label="Classe Dépense (CD)">
-      <select
+      <Select
         id="new-cat-depense"
         bind:value={newCatExpenseCode}
-        class="w-full px-3 py-1.5 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-medium"
       >
         <option value="">Aucune (N/A)</option>
         {#each (accountClasses || []).filter(ac => ac.type === 'depense') as ac}
           <option value={ac.code}>{ac.code} - {ac.label}</option>
         {/each}
-      </select>
+      </Select>
     </FormField>
   </div>
 

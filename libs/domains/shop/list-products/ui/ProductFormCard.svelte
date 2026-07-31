@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Select } from '@nba/ui';
   import { Plus, Edit, Check, AlertCircle, X } from "@lucide/svelte";
   import { Button, Input, FormField, Alert } from"@nba/ui";
 
@@ -57,17 +58,16 @@
 
     {#if !category || category === 'all'}
         <FormField id="category" label="Catégorie">
-        <select
+        <Select
           id="category"
           bind:value={formCategory}
           disabled={!!editingId}
-          class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
           required
         >
           <option value="shuttlecock">Volants</option>
           <option value="string">Cordages</option>
           <option value="other">Autre</option>
-        </select>
+        </Select>
       </FormField>
     {/if}
 

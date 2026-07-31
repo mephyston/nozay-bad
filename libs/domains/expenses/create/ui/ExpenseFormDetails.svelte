@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Input, Label, FormField } from '@nba/ui';
+  import { Input, Label, FormField, Select } from '@nba/ui';
 
   let {
     category = $bindable(''),
@@ -16,15 +16,14 @@
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <FormField id="category" label="Catégorie de dépense">
-    <select
+    <Select
       id="category"
       bind:value={category}
-      class="w-full px-3 h-10 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
     >
       {#each visibleCategories as cat}
         <option value={cat.value}>{cat.label}</option>
       {/each}
-    </select>
+    </Select>
   </FormField>
 
     <FormField id="amount" label="Montant (€)">

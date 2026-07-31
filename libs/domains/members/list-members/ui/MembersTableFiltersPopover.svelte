@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DataTableToolbar, Button } from '@nba/ui';
+  import { DataTableToolbar, Button, Select } from '@nba/ui';
   import type { Season } from './members-table-types';
 
   let {
@@ -44,38 +44,38 @@
     <div class="space-y-3 pt-2">
         <div class="space-y-1.5">
           <label for="filter-season" class="text-xs font-semibold text-muted-foreground">Saison</label>
-          <select id="filter-season" class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium" bind:value={selectedSeason} onchange={onApply}>
+          <Select id="filter-season" bind:value={selectedSeason} onchange={onApply}>
             {#each seasons as season}
               <option value={season.code || season.id}>{season.name}</option>
             {/each}
             {#if seasons.length === 0}
               <option value="25-26">Saison 2025-2026</option>
             {/if}
-          </select>
+          </Select>
         </div>
         <div class="space-y-1.5">
           <label for="filter-gender" class="text-xs font-semibold text-muted-foreground">Genre</label>
-          <select id="filter-gender" class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary" bind:value={selectedGender} onchange={onApply}>
+          <Select id="filter-gender" bind:value={selectedGender} onchange={onApply}>
             <option value="">Tous les genres</option>
             <option value="M">Homme (M)</option>
             <option value="F">Femme (F)</option>
-          </select>
+          </Select>
         </div>
         <div class="space-y-1.5">
           <label for="filter-type" class="text-xs font-semibold text-muted-foreground">Type d'adhérent</label>
-          <select id="filter-type" class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary" bind:value={selectedType} onchange={onApply}>
+          <Select id="filter-type" bind:value={selectedType} onchange={onApply}>
             <option value="">Tous les types</option>
             <option value="Competiteur">Compétiteur</option>
             <option value="Loisir">Loisir</option>
-          </select>
+          </Select>
         </div>
         <div class="space-y-1.5">
           <label for="filter-status" class="text-xs font-semibold text-muted-foreground">Statut</label>
-          <select id="filter-status" class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary" bind:value={selectedStatus} onchange={onApply}>
+          <Select id="filter-status" bind:value={selectedStatus} onchange={onApply}>
             <option value="">Tous les statuts</option>
             <option value="valide">Valide</option>
             <option value="suspendu">Suspendu</option>
-          </select>
+          </Select>
         </div>
     </div>
     <div class="pt-2 flex justify-end">

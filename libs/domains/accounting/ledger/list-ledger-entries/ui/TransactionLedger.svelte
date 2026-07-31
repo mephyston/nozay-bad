@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Search, X, Filter, ChevronDown } from '@lucide/svelte';
-  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog, DataTableToolbar, FormField } from '@nba/ui';
+  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog, DataTableToolbar, FormField, Select } from '@nba/ui';
   import type { Transaction, Pagination, BalanceReport, Season, Category, AccountClass } from './ledger-types';
   import { submitTransaction, deleteTransaction, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange } from './ledger-actions';
   import TransactionLedgerBalances from './TransactionLedgerBalances.svelte';
@@ -268,9 +268,8 @@
       >
         {#snippet filters()}
             <FormField id="filter-season" label="Saison">
-            <select
+            <Select
               id="filter-season"
-              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
               bind:value={selectedSeason}
               onchange={() => actionApplySeasonChange(selectedSeason)}
             >
@@ -280,26 +279,24 @@
               {#if seasons.length === 0}
                 <option value="25-26">Saison 2025-2026</option>
               {/if}
-            </select>
+            </Select>
           </FormField>
 
             <FormField id="filter-account" label="Compte">
-            <select
+            <Select
               id="filter-account"
-              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
               value={selectedAccount || 'current'}
               onchange={(e) => handleAccountTabChange((e.target as HTMLSelectElement).value)}
             >
               <option value="current">Compte Courant</option>
               <option value="savings">Compte Livret</option>
               <option value="cash">Caisse Physique</option>
-            </select>
+            </Select>
           </FormField>
 
             <FormField id="filter-month" label="Mois">
-            <select
+            <Select
               id="filter-month"
-              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
               value={month}
               onchange={(e) => {
                 const val = (e.target as HTMLSelectElement).value;
@@ -323,7 +320,7 @@
               <option value="10">Octobre</option>
               <option value="11">Novembre</option>
               <option value="12">Décembre</option>
-            </select>
+            </Select>
           </FormField>
 
           <div class="space-y-1.5">
