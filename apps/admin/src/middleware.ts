@@ -20,10 +20,27 @@ function getJWKS(teamDomain: string) {
 export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
   const request = context.request;
 
-  // Only trust Vite/Astro's DEV flag — never hostname-based checks which can be
-  // spoofed or triggered on internal network in production.
   if (import.meta.env.DEV) {
-    context.locals.user = { email: 'admin@nozaybad.fr', permissions: ['*'] };
+    // 💡 Astuce : Changez cet email pour tester vos autres comptes locaux !
+    // Si l'email existe dans la base de données locale, le middleware récupérera ses vrais droits.
+    const devEmail = 'admin@nozaybad.fr'; // ex: 'coach@nozaybad.fr'
+
+    try {
+      let runtimeEnv: Record<string, string> = {};
+      try { runtimeEnv = (context.locals as any).runtime?.env || {}; } catch (err) {}
+      const resolvedEnv = { ...cfEnv, ...runtimeEnv } as Record<string, string>;
+      
+      const db = drizzle(resolvedEnv.DB as any);
+      const user = await db.select().from(adminUsersTable).where(eq(adminUsersTable.email, devEmail)).get();
+      
+      if (user) {
+        context.locals.user = { email: user.email, permissions: user.permissions };
+      } else {
+        context.locals.user = { email: devEmail, permissions: ['*'] };
+      }
+    } catch (e) {
+      context.locals.user = { email: devEmail, permissions: ['*'] };
+    }
     return next();
   }
 
