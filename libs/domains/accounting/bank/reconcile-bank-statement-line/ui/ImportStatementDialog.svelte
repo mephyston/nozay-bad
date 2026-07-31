@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Dialog, FormField, Alert, Select, Input } from '@nba/ui';
+  import { Button, Dialog, FormField, Alert, Input, SearchableCombobox } from '@nba/ui';
   import type { ReconciliationState } from './reconciliation.svelte';
 
   let { state = $bindable() }: { state: ReconciliationState } = $props();
@@ -20,15 +20,7 @@
       </FormField>
 
         <FormField id="bank-account" label="Compte bancaire cible">
-        <Select
-          id="bank-account"
-          bind:value={state.selectedAccount}
-        >
-          <option value="auto">Détection automatique depuis le fichier</option>
-          <option value="current">Compte Courant</option>
-          <option value="savings">Compte Livret</option>
-          <option value="cash">Caisse Physique</option>
-        </Select>
+        <SearchableCombobox id="bank-account" items={[{ label: 'Détection automatique depuis le fichier', value: 'auto' }, { label: 'Compte Courant', value: 'current' }, { label: 'Compte Livret', value: 'savings' }, { label: 'Caisse Physique', value: 'cash' }]} bind:value={state.selectedAccount} />
       </FormField>
 
       {#if state.errorMsg}

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Upload } from '@lucide/svelte';
-  import { Button, Card, FormField, Alert, Select, Input } from '@nba/ui';
+  import { Button, Card, FormField, Alert, Input, SearchableCombobox } from '@nba/ui';
   import { createReconciliationState, type ReconciliationStateProps } from './reconciliation.svelte';
   import ImportStatementDialog from './ImportStatementDialog.svelte';
   import ReconciliationHeader from './ReconciliationHeader.svelte';
@@ -48,15 +48,7 @@
         </FormField>
 
           <FormField id="bank-account-empty" label="Compte bancaire">
-          <Select
-            id="bank-account-empty"
-            bind:value={state.selectedAccount}
-          >
-            <option value="auto">Détection automatique depuis le fichier</option>
-            <option value="current">Compte Courant</option>
-            <option value="savings">Compte Livret</option>
-            <option value="cash">Caisse Physique</option>
-          </Select>
+          <SearchableCombobox id="bank-account-empty" items={[{ label: 'Détection automatique depuis le fichier', value: 'auto' }, { label: 'Compte Courant', value: 'current' }, { label: 'Compte Livret', value: 'savings' }, { label: 'Caisse Physique', value: 'cash' }]} bind:value={state.selectedAccount} />
         </FormField>
 
         {#if state.errorMsg}

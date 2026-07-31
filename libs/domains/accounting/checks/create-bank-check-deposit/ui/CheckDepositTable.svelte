@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Search, Link, MoreHorizontal, Trash2, FileText, Camera } from '@lucide/svelte';
-  import { Button, Input, Checkbox, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField, Select } from '@nba/ui';
+  import { Button, Input, Checkbox, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField, SearchableCombobox } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
 
   import type { Snippet } from 'svelte';
@@ -35,23 +35,12 @@
     >
       {#snippet filters()}
           <FormField id="filter-season" label="Saison">
-          <Select
+          <SearchableCombobox
             id="filter-season"
+            items={seasons.length > 0 ? seasons.map((s) => ({ label: s.name, value: String(s.code || s.id) })) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
             value={seasonId}
-            onchange={(e) => {
-              const val = (e.target as HTMLSelectElement).value;
-              const params = new URLSearchParams(window.location.search);
-              params.set('season', val);
-              window.location.href = `/admin/accounting/cheques?${params.toString()}`;
-            }}
-          >
-            {#each seasons as season}
-              <option value={season.code || season.id}>{season.name}</option>
-            {/each}
-            {#if seasons.length === 0}
-              <option value="25-26">Saison 2025-2026</option>
-            {/if}
-          </Select>
+            onValueChange={(v) => { const val = String(v); const params = new URLSearchParams(window.location.search); params.set('season', val); window.location.href = `/admin/accounting/cheques?${params.toString()}`; }}
+          />
         </FormField>
       {/snippet}
       {#snippet actions()}

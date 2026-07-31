@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Badge, Amount, FormField, Select } from '@nba/ui';
+  import { Button, Badge, Amount, FormField, SearchableCombobox } from '@nba/ui';
   import { Trash2, Plus, Split } from '@lucide/svelte';
 
   let {
@@ -40,14 +40,7 @@
       <div class="flex items-center gap-3 bg-background p-2.5 rounded-lg border border-border/70 shadow-sm">
         <div class="flex-1">
           <FormField id="split-cat-{idx}" label="Catégorie">
-          <Select 
-            id="split-cat-{idx}"
-            bind:value={sp.category}
-          >
-            {#each categories as cat}
-              <option value={cat.id}>{cat.name || cat.adminLabel || `Catégorie ${cat.id}`}</option>
-            {/each}
-          </Select>
+          <SearchableCombobox id="split-cat-{idx}" items={categories.map((cat) => ({ label: cat.name || cat.adminLabel || `Catégorie ${cat.id}`, value: String(cat.id) }))} bind:value={sp.category} />
           </FormField>
         </div>
 

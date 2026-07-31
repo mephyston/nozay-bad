@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Upload, Sparkles, ShieldAlert } from '@lucide/svelte';
-  import { Button, PageHeader, FormField, Alert, Select } from '@nba/ui';
+  import { Button, PageHeader, FormField, Alert, SearchableCombobox } from '@nba/ui';
   import type { ReconciliationState } from './reconciliation.svelte';
 
   let { state = $bindable() }: { state: ReconciliationState } = $props();
@@ -24,20 +24,12 @@
       {#if state.seasons && state.seasons.length > 0}
         <div class="flex items-center gap-2 shrink-0">
           <FormField id="select-season" label="Saison : ">
-          <Select
+          <SearchableCombobox
             id="select-season"
+            items={state.seasons.map((s) => ({ label: `${s.name || s.code} ${s.active ? '(Active)' : ''}`.trim(), value: String(s.code || s.id) }))}
             bind:value={state.selectedSeason}
-            onchange={() => {
-              const url = new URL(window.location.href);
-              url.searchParams.set('season', state.selectedSeason);
-              window.location.href = url.toString();
-            }}
-            class="h-9 rounded-md border border-input bg-background px-3 text-xs focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
-          >
-            {#each state.seasons as s}
-              <option value={s.code || String(s.id)}>{s.name || s.code} {s.active ? '(Active)' : ''}</option>
-            {/each}
-          </Select>
+            onValueChange={() => { const url = new URL(window.location.href); url.searchParams.set('season', String(state.selectedSeason)); window.location.href = url.toString(); }}
+          />
           </FormField>
         </div>
       {/if}

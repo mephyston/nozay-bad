@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, Sparkles, Trash2 } from '@lucide/svelte';
-  import { Button, Input, Badge, Card, Checkbox, Tabs, Select } from '@nba/ui';
+  import { Button, Input, Badge, Card, Checkbox, Tabs, SearchableCombobox } from '@nba/ui';
   import type { ReconciliationState } from './reconciliation.svelte';
 
   let { state = $bindable() }: { state: ReconciliationState } = $props();
@@ -42,23 +42,11 @@
           </button>
         {/if}
       </div>
-      <Select
+      <SearchableCombobox
+        class="h-8 text-xs"
+        items={[{ label: 'Tous', value: '' }, { label: 'Janvier', value: '01' }, { label: 'Février', value: '02' }, { label: 'Mars', value: '03' }, { label: 'Avril', value: '04' }, { label: 'Mai', value: '05' }, { label: 'Juin', value: '06' }, { label: 'Juillet', value: '07' }, { label: 'Août', value: '08' }, { label: 'Septembre', value: '09' }, { label: 'Octobre', value: '10' }, { label: 'Novembre', value: '11' }, { label: 'Décembre', value: '12' }]}
         bind:value={state.monthFilter}
-      >
-        <option value="">Tous</option>
-        <option value="01">Janvier</option>
-        <option value="02">Février</option>
-        <option value="03">Mars</option>
-        <option value="04">Avril</option>
-        <option value="05">Mai</option>
-        <option value="06">Juin</option>
-        <option value="07">Juillet</option>
-        <option value="08">Août</option>
-        <option value="09">Septembre</option>
-        <option value="10">Octobre</option>
-        <option value="11">Novembre</option>
-        <option value="12">Décembre</option>
-      </Select>
+      />
     </div>
 
     <!-- Barre d'action en masse -->
