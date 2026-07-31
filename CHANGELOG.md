@@ -1,3 +1,10 @@
+# [1.0.0-beta.2](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2026-07-31)
+
+
+### Bug Fixes
+
+* **iam:** use API_SERVICE in production middleware instead of direct DB ([78615f5](https://github.com/mephyston/nozay-bad/commit/78615f5627a609ac25939469746fdfbef56bc206))
+
 # 1.0.0-beta.1 (2026-07-31)
 
 
