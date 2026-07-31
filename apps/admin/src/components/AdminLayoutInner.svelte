@@ -72,9 +72,9 @@
       ]
     },
     {
-      label: "",
+      label: "Réglages",
       items: [
-        { name: "Réglages", icon: Settings, href: "/admin/settings" },
+        { name: "Configuration", icon: Settings, href: "/admin/settings" },
         ...(hasPermission(permissions, 'iam:*') || hasPermission(permissions, '*') ? [{ name: "Accès & Permissions", icon: User, href: "/admin/iam" }] : [])
       ]
     }
@@ -131,7 +131,7 @@
 
     // Réglages & IAM
     if (item.href.includes("settings")) {
-      return primary === "réglages" || primary === "settings";
+      return primary === "réglages" || primary === "settings" || primary === "configuration";
     }
     if (item.href === "/admin/iam") {
       return primary === "accès et permissions" || primary === "accès & permissions";
