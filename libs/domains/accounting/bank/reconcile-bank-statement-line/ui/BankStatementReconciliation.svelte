@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Upload } from '@lucide/svelte';
-  import { Button, Card, FormField, Alert, Select } from '@nba/ui';
+  import { Button, Card, FormField, Alert, Select, Input } from '@nba/ui';
   import { createReconciliationState, type ReconciliationStateProps } from './reconciliation.svelte';
   import ImportStatementDialog from './ImportStatementDialog.svelte';
   import ReconciliationHeader from './ReconciliationHeader.svelte';
@@ -44,13 +44,7 @@
 
       <form onsubmit={state.handleImport} class="w-full max-w-md space-y-4">
           <FormField id="bank-file-empty" label="Sélectionner un fichier (OFX / CSV)">
-          <input
-            id="bank-file-empty"
-            type="file"
-            accept=".ofx,.csv"
-            required
-            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          />
+          <Input id="bank-file-empty" type="file" accept=".ofx,.csv" required />
         </FormField>
 
           <FormField id="bank-account-empty" label="Compte bancaire">

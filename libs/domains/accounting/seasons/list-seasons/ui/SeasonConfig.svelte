@@ -113,11 +113,11 @@
             {#if !s.closed}
               <div class="flex justify-end gap-2 pt-2 border-t border-border mt-1">
                 {#if !s.active}
-                  <Button variant="outline" size="sm" class="h-8 text-xs flex-1" onclick={() => onToggleSeasonActive(s.id)} disabled={isSubmitting}>
+                  <Button variant="outline" size="sm" class="flex-1" onclick={() => onToggleSeasonActive(s.id)} disabled={isSubmitting}>
                     Activer
                   </Button>
                 {/if}
-                <Button variant="outline" size="sm" class="h-8 text-xs flex-1 border-destructive/20 text-destructive hover:bg-destructive/10" onclick={() => handleStartClose(s.id)} disabled={isSubmitting}>
+                <Button variant="destructive-outline" size="sm" class="flex-1" onclick={() => handleStartClose(s.id)} disabled={isSubmitting}>
                   Clôturer
                 </Button>
               </div>

@@ -81,10 +81,10 @@
           </div>
           
           <div class="flex justify-end gap-2 pt-2 border-t border-border mt-1">
-            <Button variant="outline" size="sm" class="h-8 text-xs flex-1 border-destructive/20 text-destructive hover:bg-destructive/10" onclick={() => deletingAccountClass = ac} disabled={isSubmitting}>
+            <Button variant="destructive-outline" size="sm" class="flex-1" onclick={() => deletingAccountClass = ac} disabled={isSubmitting}>
               Supprimer
             </Button>
-            <Button variant="outline" size="sm" class="h-8 text-xs flex-1" onclick={() => onEditAccountClass(ac)}>
+            <Button variant="outline" size="sm" class="flex-1" onclick={() => onEditAccountClass(ac)}>
               Modifier
             </Button>
           </div>

@@ -139,10 +139,10 @@
               </div>
             </div>
             <div class="flex justify-end gap-2 pt-2 border-t border-border mt-1">
-              <Button variant="outline" size="sm" class="h-8 text-xs flex-1 border-destructive/20 text-destructive hover:bg-destructive/10" onclick={() => confirmDelete(cat.id)} disabled={isSubmitting}>
+              <Button variant="destructive-outline" size="sm" class="flex-1" onclick={() => confirmDelete(cat.id)} disabled={isSubmitting}>
                 Supprimer
               </Button>
-              <Button variant="outline" size="sm" class="h-8 text-xs flex-1" onclick={() => startEdit(cat)}>
+              <Button variant="outline" size="sm" class="flex-1" onclick={() => startEdit(cat)}>
                 Modifier
               </Button>
             </div>
