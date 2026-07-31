@@ -51,3 +51,5 @@ export { default as StatMetric } from './components/patterns/StatMetric.svelte';
 export { default as ErrorAlert } from './components/patterns/ErrorAlert.svelte';
 export { default as SeasonSelector } from './components/patterns/SeasonSelector.svelte';
 export { default as AppVersion } from './components/patterns/AppVersion.svelte';
+export { default as MobileBottomNav } from './components/patterns/MobileBottomNav.svelte';
+export { default as PwaInstallBanner } from './components/patterns/PwaInstallBanner.svelte';
