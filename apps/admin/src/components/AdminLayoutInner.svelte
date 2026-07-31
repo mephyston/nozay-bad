@@ -349,6 +349,9 @@
         </DropdownMenu.Root>
       </Sidebar.MenuItem>
     </Sidebar.Menu>
+    <div class="text-[10px] text-muted-foreground/60 text-center pb-1 group-data-[collapsible=icon]:hidden">
+      v{import.meta.env.PUBLIC_APP_VERSION || "0.0.0"}
+    </div>
   </Sidebar.Footer>
 </Sidebar.Root>
 

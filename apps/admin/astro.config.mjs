@@ -3,6 +3,11 @@ import cloudflare from '@astrojs/cloudflare';
 import svelte from '@astrojs/svelte';
 import tailwindcss from '@tailwindcss/vite';
 
+import fs from 'fs';
+import path from 'path';
+
+const pkg = JSON.parse(fs.readFileSync(path.resolve('../../package.json'), 'utf-8'));
+
 export default defineConfig({
   output: 'server',
   adapter: cloudflare({
@@ -11,6 +16,9 @@ export default defineConfig({
   }),
   integrations: [svelte()],
   vite: {
+    define: {
+      'import.meta.env.PUBLIC_APP_VERSION': JSON.stringify(pkg.version)
+    },
     plugins: [tailwindcss()],
     optimizeDeps: {
       exclude: [
