@@ -112,7 +112,7 @@ const isClosed = !!seasonsList.find((s: any) => (s.code || String(s.id)) === sea
         class="mb-0"
       >
         <Fragment slot="actions">
-          {isClosed && <Badge variant="outline" size="lg" class="font-bold">Saison clôturée (Lecture seule)</Badge>}
+          {isClosed && <Badge variant="outline" size="lg">Saison clôturée (Lecture seule)</Badge>}
           <SeasonSelector client:load seasons={seasonsList} current={season} />
         </Fragment>
       </PageHeader>

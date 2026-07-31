@@ -87,7 +87,7 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
         class="mb-0 print:hidden"
       >
         <Fragment slot="actions">
-          {isClosed && <Badge variant="outline" size="lg" class="font-bold">Saison clôturée (Lecture seule)</Badge>}
+          {isClosed && <Badge variant="outline" size="lg">Saison clôturée (Lecture seule)</Badge>}
         </Fragment>
       </PageHeader>
 
