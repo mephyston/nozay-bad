@@ -26,31 +26,17 @@
     onDecrementQty: () => void;
   } = $props();
 
-  let strCategory = $state(selectedCategory.toString());
-  $effect(() => {
-    if (strCategory !== selectedCategory.toString()) {
-      selectedCategory = Number(strCategory);
-    }
-  });
-  $effect(() => {
-    if (selectedCategory.toString() !== strCategory) {
-      strCategory = selectedCategory.toString();
-    }
-  });
-
-  let strProductId = $state(selectedProductId ? selectedProductId.toString() : '');
-  $effect(() => {
-    const val = strProductId ? Number(strProductId) : null;
-    if (val !== selectedProductId) {
-      selectedProductId = val;
-    }
-  });
-  $effect(() => {
-    const expected = selectedProductId ? selectedProductId.toString() : '';
-    if (strProductId !== expected) {
-      strProductId = expected;
-    }
-  });
+  // Le SearchableCombobox préserve le type de valeur : on binde directement les
+  // props numériques, sans variables-pont ni effets de synchronisation (qui
+  // provoquaient une boucle effect_update_depth_exceeded avec l'auto-sélection
+  // du produit dans ShopCatalog).
+  const categoryItems = $derived(categoriesList.map((c) => ({ label: c.label, value: c.value })));
+  const productItems = $derived(
+    filteredProducts.map((p) => ({
+      label: `${p.name} — ${new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((p.priceCents ?? (p as any).price ?? 0)) / 100).replace(/\s/g, ' ')} € (${p.stock > 0 ? `Stock: ${p.stock}` : 'Rupture'})`,
+      value: p.id
+    }))
+  );
 </script>
 
 <!-- Section 2: Mode de Paiement -->
@@ -75,9 +61,9 @@
       <FormField id="category-select" label="Type de produit">
       <div class="relative">
         <SearchableCombobox
-          items={categoriesList.map(c => ({ label: c.label, value: c.value.toString() }))}
+          items={categoryItems}
           placeholder="Sélectionner un type..."
-          bind:value={strCategory}
+          bind:value={selectedCategory}
         />
       </div>
     </FormField>
@@ -86,12 +72,9 @@
       <FormField id="product-select" label="Produit">
       <div class="relative">
         <SearchableCombobox
-          items={filteredProducts.map(p => ({
-            label: `${p.name} — ${new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((p.priceCents ?? (p as any).price ?? 0)) / 100).replace(/\s/g, '\u00a0')} € (${p.stock > 0 ? `Stock: ${p.stock}` : 'Rupture'})`,
-            value: p.id.toString()
-          }))}
+          items={productItems}
           placeholder={filteredProducts.length === 0 ? "Aucun article disponible" : "Sélectionner un produit..."}
-          bind:value={strProductId}
+          bind:value={selectedProductId}
         />
       </div>
     </FormField>
