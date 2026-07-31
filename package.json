@@ -1,6 +1,6 @@
 {
   "name": "nozay-bad",
-  "version": "0.0.0",
+  "version": "1.0.0-beta.1",
   "license": "MIT",
   "scripts": {
     "test": "vitest",
@@ -59,18 +59,33 @@
     "vaul-svelte": "^0.3.2"
   },
   "release": {
-    "branches": ["main", {"name": "staging", "prerelease": "beta"}],
+    "branches": [
+      "main",
+      {
+        "name": "staging",
+        "prerelease": "beta"
+      }
+    ],
     "plugins": [
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
       "@semantic-release/changelog",
-      ["@semantic-release/npm", {
-        "npmPublish": false
-      }],
-      ["@semantic-release/git", {
-        "assets": ["package.json", "CHANGELOG.md"],
-        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
-      }]
+      [
+        "@semantic-release/npm",
+        {
+          "npmPublish": false
+        }
+      ],
+      [
+        "@semantic-release/git",
+        {
+          "assets": [
+            "package.json",
+            "CHANGELOG.md"
+          ],
+          "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+        }
+      ]
     ]
   }
 }
