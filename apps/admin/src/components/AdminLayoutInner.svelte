@@ -145,6 +145,21 @@
     return false;
   }
 
+  let impersonateUsers = $state<any[]>([]);
+
+  onMount(async () => {
+    // Check if user is super-admin or can manage IAM
+    if (hasPermission(permissions, '*') || hasPermission(permissions, 'iam:*')) {
+      try {
+        const res = await fetch('/admin/api/users');
+        if (res.ok) {
+          const json = await res.json();
+          impersonateUsers = json.data || [];
+        }
+      } catch (err) {}
+    }
+  });
+
   // Parse breadcrumbs
   const breadcrumbParts = $derived(breadcrumb.split(" / "));
   const primaryGroup = $derived(breadcrumbParts[0]?.trim());
@@ -288,6 +303,38 @@
                 <p class="text-sm font-semibold truncate text-foreground">{email}</p>
               </div>
               <div class="p-1 space-y-0.5">
+                {#if impersonateUsers.length > 0}
+                  <div class="px-2 py-1.5 mt-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Se connecter en tant que
+                  </div>
+                  {#each impersonateUsers as u}
+                    {#if u.email !== email}
+                      <DropdownMenu.Item
+                        class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer focus:bg-accent focus:text-accent-foreground focus:outline-none"
+                        onclick={() => {
+                          document.cookie = `impersonate_email=${encodeURIComponent(u.email)}; path=/`;
+                          window.location.reload();
+                        }}
+                      >
+                        {u.name || u.email}
+                      </DropdownMenu.Item>
+                    {/if}
+                  {/each}
+                  {#if document.cookie.includes('impersonate_email')}
+                    <DropdownMenu.Separator />
+                    <DropdownMenu.Item
+                      class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md text-primary hover:bg-primary/10 cursor-pointer focus:bg-primary/10 focus:outline-none"
+                      onclick={() => {
+                        document.cookie = `impersonate_email=; path=/; max-age=0`;
+                        window.location.reload();
+                      }}
+                    >
+                      Revenir à mon compte
+                    </DropdownMenu.Item>
+                  {/if}
+                  <DropdownMenu.Separator />
+                {/if}
+
                 <DropdownMenu.Item
                   class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer focus:bg-destructive/10 focus:text-destructive focus:outline-none"
                   onclick={() => window.location.href = "/cdn-cgi/access/logout"}

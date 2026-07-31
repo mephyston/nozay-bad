@@ -21,9 +21,8 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
   const request = context.request;
 
   if (import.meta.env.DEV) {
-    // 💡 Astuce : Changez cet email pour tester vos autres comptes locaux !
-    // Si l'email existe dans la base de données locale, le middleware récupérera ses vrais droits.
-    const devEmail = 'admin@nozaybad.fr'; // ex: 'coach@nozaybad.fr'
+    const impersonateCookie = request.headers.get('cookie')?.match(/impersonate_email=([^;]+)/)?.[1];
+    const devEmail = impersonateCookie ? decodeURIComponent(impersonateCookie) : 'admin@nozaybad.fr';
 
     try {
       let runtimeEnv: Record<string, string> = {};
@@ -98,9 +97,27 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
       }
     }
 
+    let finalEmail = user.email;
+    let finalPermissions = user.permissions;
+
+    // Impersonation logic (only for super-admins)
+    if (finalPermissions.includes('*')) {
+      const impersonateCookie = request.headers.get('cookie')?.match(/impersonate_email=([^;]+)/)?.[1];
+      if (impersonateCookie) {
+        try {
+          const impEmail = decodeURIComponent(impersonateCookie);
+          const impUser = await db.select().from(adminUsersTable).where(eq(adminUsersTable.email, impEmail)).get();
+          if (impUser) {
+            finalEmail = impUser.email;
+            finalPermissions = impUser.permissions;
+          }
+        } catch (e) {}
+      }
+    }
+
     context.locals.user = { 
-      email: user.email,
-      permissions: user.permissions
+      email: finalEmail,
+      permissions: finalPermissions
     };
     return next();
   } catch {
