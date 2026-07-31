@@ -21,7 +21,7 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
   // Only trust Vite/Astro's DEV flag — never hostname-based checks which can be
   // spoofed or triggered on internal network in production.
   if (import.meta.env.DEV) {
-    context.locals.user = { email: 'admin@nozay-bad.fr' };
+    context.locals.user = { email: 'admin@nozaybad.fr' };
     return next();
   }
 

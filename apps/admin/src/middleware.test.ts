@@ -52,7 +52,7 @@ describe('Astro Auth Middleware', () => {
 
     const response = await handleAuth(context, next);
     expect(response.status).toBe(200);
-    expect(context.locals.user).toEqual({ email: 'admin@nozay-bad.fr' });
+    expect(context.locals.user).toEqual({ email: 'admin@nozaybad.fr' });
     expect(next).toHaveBeenCalled();
   });
 

@@ -3,7 +3,7 @@
   import AdminLayoutInner from "./AdminLayoutInner.svelte";
   import { onMount } from "svelte";
 
-  let { children, email = "admin@nozay-bad.fr", breadcrumb = "Tableau de Bord" } = $props<{
+  let { children, email = "admin@nozaybad.fr", breadcrumb = "Tableau de Bord" } = $props<{
     children?: import('svelte').Snippet;
     email?: string;
     breadcrumb?: string;

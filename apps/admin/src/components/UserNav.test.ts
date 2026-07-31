@@ -10,12 +10,12 @@ describe('UserNav Component', () => {
     mount(UserNav, {
       target,
       props: {
-        email: 'admin@nozay-bad.fr'
+        email: 'admin@nozaybad.fr'
       }
     });
     flushSync();
 
-    // Check if the user initials 'AD' (first two letters of admin@nozay-bad.fr in uppercase) are rendered
+    // Check if the user initials 'AD' (first two letters of admin@nozaybad.fr in uppercase) are rendered
     expect(target.textContent).toContain('AD');
 
     // Initially, the dropdown content should not be in the DOM
