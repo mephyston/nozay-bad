@@ -62,7 +62,7 @@ if (!dashboardData) {
 ---
 
 <Layout title="NBA 91 - Console Admin">
-  <AdminLayout client:idle email={userEmail} breadcrumb="Tableau de Bord">
+  <AdminLayout client:idle email={userEmail} breadcrumb="Tableau de Bord" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       <PageHeader
         title="Tableau de bord"

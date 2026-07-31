@@ -157,7 +157,7 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
 ---
 
 <Layout title="Rapprochement Bancaire - NBA 91">
-  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Rapprochement bancaire">
+  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Rapprochement bancaire" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       {errorMsg && <ErrorAlert message={errorMsg} />}
 
