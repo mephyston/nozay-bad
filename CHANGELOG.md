@@ -1,3 +1,10 @@
+# [1.0.0-beta.5](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.4...v1.0.0-beta.5) (2026-07-31)
+
+
+### Bug Fixes
+
+* **storefront:** resolve @nba/iam-ui alias (MobileBottomNav dependency) ([a3391b2](https://github.com/mephyston/nozay-bad/commit/a3391b2ea6f5440781961b83d75309414bc3b431))
+
 # [1.0.0-beta.4](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2026-07-31)
 
 
