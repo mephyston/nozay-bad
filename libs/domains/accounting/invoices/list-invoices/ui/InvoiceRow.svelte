@@ -23,9 +23,9 @@
 
   const statusColors: Record<string, string> = {
     draft: 'bg-muted text-muted-foreground border-transparent',
-    sent: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-transparent',
-    paid: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-transparent',
-    cancelled: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-transparent'
+    sent:'bg-info/10 text-info border-transparent',
+    paid:'bg-success/10 text-success border-transparent',
+    cancelled:'bg-destructive/10 text-destructive border-transparent'
   };
 
   const statusLabels: Record<string, string> = {
@@ -68,19 +68,19 @@
             </DropdownMenu.Item>
             <DropdownMenu.Item
               onclick={() => { onStatusChange(inv.id, 'sent'); }}
-              class="text-blue-600 focus:text-blue-600 cursor-pointer"
+              class="text-info focus:text-info cursor-pointer"
             >
               <Send class="w-3.5 h-3.5 mr-2" /> Marquer envoyée
             </DropdownMenu.Item>
             <DropdownMenu.Item
               onclick={() => { onStatusChange(inv.id, 'cancelled'); }}
-              class="text-rose-600 focus:text-rose-600 cursor-pointer"
+              class="text-destructive focus:text-destructive cursor-pointer"
             >
               <Ban class="w-3.5 h-3.5 mr-2" /> Annuler la facture
             </DropdownMenu.Item>
             <DropdownMenu.Item
               onclick={() => { onDelete(inv.id, inv.invoiceNumber); }}
-              class="text-rose-600 focus:text-rose-600 cursor-pointer"
+              class="text-destructive focus:text-destructive cursor-pointer"
             >
               <Trash2 class="w-3.5 h-3.5 mr-2" /> Supprimer
             </DropdownMenu.Item>
@@ -88,7 +88,7 @@
           {#if inv.status === 'sent'}
             <DropdownMenu.Item
               onclick={() => { onStatusChange(inv.id, 'cancelled'); }}
-              class="text-rose-600 focus:text-rose-600 cursor-pointer"
+              class="text-destructive focus:text-destructive cursor-pointer"
             >
               <Ban class="w-3.5 h-3.5 mr-2" /> Annuler la facture
             </DropdownMenu.Item>
@@ -96,7 +96,7 @@
           {#if inv.status === 'cancelled'}
             <DropdownMenu.Item
               onclick={() => { onDelete(inv.id, inv.invoiceNumber); }}
-              class="text-rose-600 focus:text-rose-600 cursor-pointer"
+              class="text-destructive focus:text-destructive cursor-pointer"
             >
               <Trash2 class="w-3.5 h-3.5 mr-2" /> Supprimer
             </DropdownMenu.Item>

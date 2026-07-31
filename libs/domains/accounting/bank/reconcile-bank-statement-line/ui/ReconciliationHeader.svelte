@@ -1,18 +1,18 @@
 <script lang="ts">
   import { Upload, Sparkles, ShieldAlert } from '@lucide/svelte';
-  import { Button, PageHeader } from '@nba/ui';
+  import { Button, PageHeader, FormField, Alert } from '@nba/ui';
   import type { ReconciliationState } from './reconciliation.svelte';
 
   let { state = $bindable() }: { state: ReconciliationState } = $props();
 </script>
 
 {#if state.isClosed}
-  <div class="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-4 text-amber-800 dark:text-amber-200 flex items-center gap-3">
+  <Alert.Root variant="warning" class="flex items-center gap-3">
     <ShieldAlert class="h-5 w-5 shrink-0" />
-    <div class="text-sm">
+    <Alert.Description class="text-sm">
       <span class="font-semibold">Saison clôturée.</span> Les opérations de rapprochement bancaire et de création d'écritures sont désactivées pour cette saison.
-    </div>
-  </div>
+  </Alert.Description>
+  </Alert.Root>
 {/if}
 
 <PageHeader
@@ -23,7 +23,7 @@
     <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
       {#if state.seasons && state.seasons.length > 0}
         <div class="flex items-center gap-2 shrink-0">
-          <label for="select-season" class="text-xs font-medium text-muted-foreground whitespace-nowrap">Saison :</label>
+          <FormField id="select-season" label="Saison : ">
           <select
             id="select-season"
             bind:value={state.selectedSeason}
@@ -38,6 +38,7 @@
               <option value={s.code || String(s.id)}>{s.name || s.code} {s.active ? '(Active)' : ''}</option>
             {/each}
           </select>
+          </FormField>
         </div>
       {/if}
 
@@ -56,7 +57,8 @@
 
         <Button
           size="sm"
-          class="gap-1.5 text-xs flex-1 sm:flex-initial cursor-pointer whitespace-nowrap bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+          variant="ai"
+          class="gap-1.5 text-xs flex-1 sm:flex-initial cursor-pointer whitespace-nowrap"
           disabled={state.isClosed || state.isAnalyzing || state.pendingCount === 0}
           onclick={state.handleAnalyze}
         >

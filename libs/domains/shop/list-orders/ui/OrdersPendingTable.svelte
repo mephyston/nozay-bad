@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, X, Clock, MoreHorizontal } from "@lucide/svelte";
-  import { Button, Badge, Amount, DropdownMenu, DataTable, DataTableToolbar, Table } from "@nba/ui";
+  import { Button, Badge, Amount, DropdownMenu, DataTable, DataTableToolbar, Table, FormField, Card } from"@nba/ui";
   import type { OrderItem, Season } from './orders-manager-types';
   import type { Snippet } from 'svelte';
   import { paymentMethodLabels } from './orders-manager-types';
@@ -47,8 +47,7 @@
       filtersActive={!!seasonId && seasons.length > 0}
     >
       {#snippet filters()}
-        <div class="space-y-1.5">
-          <label for="filter-season" class="text-xs font-semibold text-muted-foreground">Saison</label>
+          <FormField id="filter-season" label="Saison">
           <select
             id="filter-season"
             class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
@@ -67,7 +66,7 @@
               <option value="25-26">Saison 2025-2026</option>
             {/if}
           </select>
-        </div>
+        </FormField>
       {/snippet}
     </DataTableToolbar>
   {/snippet}
@@ -75,7 +74,8 @@
   {#snippet mobileView()}
     <div class="block md:hidden divide-y divide-border">
       {#each pendingOrders as item (item.order.id)}
-        <div class="p-4 space-y-3 bg-card">
+        <Card.Root>
+        <Card.Content class="p-4 space-y-3">
           <div class="flex items-start justify-between gap-2">
             <div>
               {#if item.member}
@@ -116,7 +116,7 @@
               size="sm"
               onclick={() => onApprove(item.order.id)}
               disabled={processingId !== null || isClosed}
-              class="h-9 text-xs font-bold gap-1.5 flex-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/30"
+              class="h-9 text-xs font-bold gap-1.5 flex-1 bg-success/10 text-success hover:bg-success/10 border-success/20"
             >
               <Check class="w-4 h-4" />
               <span>Valider</span>
@@ -132,7 +132,8 @@
               <span>Refuser</span>
             </Button>
           </div>
-        </div>
+        </Card.Content>
+        </Card.Root>
       {/each}
     </div>
   {/snippet}
@@ -202,7 +203,7 @@
                     <DropdownMenu.Item
                       onclick={() => onApprove(item.order.id)}
                       disabled={processingId !== null || isClosed}
-                      class="text-emerald-600 focus:text-emerald-600 font-semibold cursor-pointer"
+                      class="text-success focus:text-success font-semibold cursor-pointer"
                     >
                       <Check class="w-3.5 h-3.5 mr-2" />
                       Valider

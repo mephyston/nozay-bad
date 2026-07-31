@@ -39,7 +39,11 @@ export { default as GlobalConfirm } from './components/ui/alert-dialog/GlobalCon
 export { default as EmptyState } from './components/patterns/EmptyState.svelte';
 export { default as DataTable } from './components/patterns/DataTable.svelte';
 export { default as DataTableToolbar } from './components/patterns/DataTableToolbar.svelte';
-export { default as DataTableColumnHeader } from './components/patterns/DataTableColumnHeader.svelte';
-export { default as DataTableRowActions } from './components/patterns/DataTableRowActions.svelte';
+export { default as DataTableColumnHeader } from "./components/patterns/DataTableColumnHeader.svelte";
+export { default as DataTableRowActions } from "./components/patterns/DataTableRowActions.svelte";
+export { default as FormField } from "./components/patterns/FormField.svelte";
 export { default as PageHeader } from './components/patterns/PageHeader.svelte';
 export { default as SearchableCombobox } from './components/patterns/SearchableCombobox.svelte';
+export { default as StatusIcon } from './components/patterns/StatusIcon.svelte';
+export { default as DashboardCard } from './components/patterns/DashboardCard.svelte';
+export { default as StatMetric } from './components/patterns/StatMetric.svelte';

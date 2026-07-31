@@ -73,7 +73,7 @@
     <Button variant="outline" onclick={() => onAction(exp.id, 'reject')} disabled={submittingId !== null} class="w-full hover:bg-destructive/10 hover:text-destructive hover:border-destructive">
       Rejeter
     </Button>
-    <Button onclick={() => onAction(exp.id, 'approve')} disabled={submittingId !== null} class="w-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1">
+    <Button onclick={() => onAction(exp.id,'approve')} disabled={submittingId !== null} class="w-full bg-success/10 hover:bg-success/10 text-white flex items-center gap-1">
       {#if submittingId === exp.id}
         <span class="animate-pulse">Validation...</span>
       {:else}

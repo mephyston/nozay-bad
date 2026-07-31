@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus, Check, AlertCircle } from '@lucide/svelte';
-  import { Button, Input, Alert } from '@nba/ui';
+  import { Button, Input, Alert, FormField } from '@nba/ui';
 
   let {
     type = $bindable<'recette' | 'depense'>('recette'),
@@ -36,15 +36,14 @@
     {/if}
 
     {#if successMsg}
-      <Alert.Root class="bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+      <Alert.Root variant="success">
         <Check class="w-4 h-4 shrink-0" />
         <Alert.Description>{successMsg}</Alert.Description>
       </Alert.Root>
     {/if}
 
     <form onsubmit={onSubmit} class="space-y-4">
-      <div>
-        <label for="type" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Type de transaction</label>
+        <FormField id="type" label="Type de transaction">
         <select
           id="type"
           bind:value={type}
@@ -57,11 +56,10 @@
           <option value="recette">Entrée (Recette - ex: Vente buvette)</option>
           <option value="depense">Sortie (Dépense - ex: Achat boissons)</option>
         </select>
-      </div>
+      </FormField>
 
       <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label for="amount" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Montant (€)</label>
+          <FormField id="amount" label="Montant (€)">
           <Input
             type="number"
             id="amount"
@@ -72,9 +70,8 @@
             required
             disabled={isClosed}
           />
-        </div>
-        <div>
-          <label for="date" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Date</label>
+          </FormField>
+          <FormField id="date" label="Date">
           <Input
             type="date"
             id="date"
@@ -82,11 +79,10 @@
             required
             disabled={isClosed}
           />
-        </div>
+        </FormField>
       </div>
 
-      <div>
-        <label for="category" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Catégorie</label>
+        <FormField id="category" label="Catégorie">
         <select
           id="category"
           bind:value={category}
@@ -104,10 +100,9 @@
             <option value="divers_depense">Divers Dépense</option>
           {/if}
         </select>
-      </div>
+      </FormField>
 
-      <div>
-        <label for="description" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Description / Motif</label>
+        <FormField id="description" label="Description / Motif">
         <Input
           type="text"
           id="description"
@@ -116,7 +111,7 @@
           required
           disabled={isClosed}
         />
-      </div>
+      </FormField>
 
       <Button
         type="submit"

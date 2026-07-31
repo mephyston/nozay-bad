@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Card } from '@nba/ui';
+  import { Button, Card, Alert } from '@nba/ui';
   import type { ReportData, Season, DbCategory, AccountClass } from './report-types';
   import ReportChargesColumn from './ReportChargesColumn.svelte';
   import ReportProduitsColumn from './ReportProduitsColumn.svelte';
@@ -112,9 +112,9 @@
     {#if mode === 'previsionnel' && !isClosed}
       <div class="flex flex-col gap-3 pt-4 border-t border-border mt-6 no-print">
         {#if saveStatus}
-          <div class="p-3 text-xs rounded-lg {saveStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-destructive/10 text-destructive border border-destructive/20'}">
-            {saveStatus.message}
-          </div>
+          <Alert.Root variant={saveStatus.type === 'success' ? 'success' : 'destructive'} class="p-3 text-xs rounded-lg">
+          <Alert.Description>{saveStatus.message}</Alert.Description>
+          </Alert.Root>
         {/if}
         
         <div class="flex justify-end">

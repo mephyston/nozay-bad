@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus, Edit, Check, AlertCircle, X } from "@lucide/svelte";
-  import { Button, Input } from "@nba/ui";
+  import { Button, Input, FormField, Alert } from"@nba/ui";
 
   let {
     editingId,
@@ -31,22 +31,21 @@
 
 <div class="space-y-4 pt-2">
   {#if errorMsg}
-    <div class="p-3 bg-destructive/15 border border-destructive/30 text-destructive text-xs rounded-md flex items-center gap-2">
+    <Alert.Root variant="destructive">
       <AlertCircle class="w-4 h-4 shrink-0" />
-      <span>{errorMsg}</span>
-    </div>
+    <Alert.Description>{errorMsg}</Alert.Description>
+    </Alert.Root>
   {/if}
 
   {#if successMsg}
-    <div class="p-3 bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs rounded-md flex items-center gap-2">
+    <Alert.Root variant="success">
       <Check class="w-4 h-4 shrink-0" />
-      <span>{successMsg}</span>
-    </div>
+    <Alert.Description>{successMsg}</Alert.Description>
+    </Alert.Root>
   {/if}
 
   <form onsubmit={onSubmit} class="space-y-4">
-    <div>
-      <label for="name" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Nom du produit</label>
+      <FormField id="name" label="Nom du produit">
       <Input
         type="text"
         id="name"
@@ -54,11 +53,10 @@
         bind:value={name}
         required
       />
-    </div>
+    </FormField>
 
     {#if !category || category === 'all'}
-      <div>
-        <label for="category" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Catégorie</label>
+        <FormField id="category" label="Catégorie">
         <select
           id="category"
           bind:value={formCategory}
@@ -70,11 +68,10 @@
           <option value="string">Cordages</option>
           <option value="other">Autre</option>
         </select>
-      </div>
+      </FormField>
     {/if}
 
-    <div>
-      <label for="price" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Prix (€)</label>
+      <FormField id="price" label="Prix (€)">
       <Input
         type="number"
         id="price"
@@ -85,7 +82,7 @@
         required
         class="font-outfit tabular-nums"
       />
-    </div>
+    </FormField>
 
     <div class="flex items-center gap-2 py-2">
       <input

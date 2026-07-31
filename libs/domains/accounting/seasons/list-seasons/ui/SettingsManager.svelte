@@ -116,7 +116,7 @@
 
 <div class="space-y-6">
   {#if viewState.successMsg}
-    <Alert.Root class="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+    <Alert.Root variant="success">
       <Check class="w-4 h-4" />
       <Alert.Description>{viewState.successMsg}</Alert.Description>
     </Alert.Root>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CheckCircle, MoreVertical, FileText, Trash2 } from '@lucide/svelte';
-  import { Button, Badge, Amount, DropdownMenu, DataTable, Table, DataTableToolbar } from '@nba/ui';
+  import { Button, Badge, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
   import type { CheckDeposit } from './check-deposit-types';
 
@@ -44,8 +44,7 @@
       filtersActive={!!seasonId && seasons.length > 0}
     >
       {#snippet filters()}
-        <div class="space-y-1.5">
-          <label for="filter-season" class="text-xs font-semibold text-muted-foreground">Saison</label>
+          <FormField id="filter-season" label="Saison">
           <select
             id="filter-season"
             class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
@@ -64,7 +63,7 @@
               <option value="25-26">Saison 2025-2026</option>
             {/if}
           </select>
-        </div>
+        </FormField>
       {/snippet}
     </DataTableToolbar>
   {/snippet}
@@ -85,11 +84,11 @@
     <Table.Cell class="font-medium">{dep.reference}</Table.Cell>
     <Table.Cell>
       {#if dep.status === 'cleared'}
-        <Badge variant="outline" class="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 text-xs font-semibold">
+        <Badge variant="success" class="inline-flex items-center gap-1 text-xs font-semibold">
           <CheckCircle class="h-3 w-3" /> Rapproché
         </Badge>
       {:else}
-        <Badge variant="outline" class="inline-flex items-center gap-1 bg-primary/10 text-primary border-primary/20 text-xs font-semibold">
+        <Badge variant="info" class="inline-flex items-center gap-1 text-xs font-semibold">
           Déposé
         </Badge>
       {/if}
@@ -99,7 +98,7 @@
     </Table.Cell>
     <Table.Cell class="hidden md:table-cell">
       {#if dep.status === 'cleared'}
-        <span class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+        <span class="text-xs text-success font-semibold flex items-center gap-1">
           <CheckCircle class="w-3.5 h-3.5" />
           Rapproché (SG #{dep.bankStatementLineId})
         </span>

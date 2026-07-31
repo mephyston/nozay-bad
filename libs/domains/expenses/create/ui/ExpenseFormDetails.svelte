@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Input, Label } from '@nba/ui';
+  import { Input, Label, FormField } from '@nba/ui';
 
   let {
     category = $bindable(''),
@@ -15,8 +15,7 @@
 </script>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-  <div class="space-y-1.5">
-    <Label for="category" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Catégorie de dépense</Label>
+    <FormField id="category" label="Catégorie de dépense">
     <select
       id="category"
       bind:value={category}
@@ -26,10 +25,9 @@
         <option value={cat.value}>{cat.label}</option>
       {/each}
     </select>
-  </div>
+  </FormField>
 
-  <div class="space-y-1.5">
-    <Label for="amount" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Montant (€)</Label>
+    <FormField id="amount" label="Montant (€)">
     <Input
       type="number"
       id="amount"
@@ -40,11 +38,10 @@
       class="w-full h-10 rounded-xl font-semibold"
       required
     />
-  </div>
+  </FormField>
 </div>
 
-<div class="space-y-1.5">
-  <Label for="description" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Description / Motif des frais</Label>
+  <FormField id="description" label="Description / Motif des frais">
   <textarea
     id="description"
     bind:value={description}
@@ -53,4 +50,4 @@
     class="w-full px-3 py-2.5 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
     required
   ></textarea>
-</div>
+</FormField>

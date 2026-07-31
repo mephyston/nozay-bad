@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Edit, Trash2, ShoppingBag, Search, MoreHorizontal, Plus } from "@lucide/svelte";
-  import { Button, Input, Badge, Amount, DropdownMenu, DataTable, DataTableToolbar, Table } from "@nba/ui";
+  import { Button, Input, Badge, Amount, DropdownMenu, DataTable, DataTableToolbar, Table, Card } from"@nba/ui";
   import type { Product } from './products-manager-types';
 
   let {
@@ -60,7 +60,8 @@
         </div>
       {:else}
         {#each filteredProducts as product (product.id)}
-          <div class="p-4 space-y-3 bg-card">
+          <Card.Root>
+          <Card.Content class="p-4 space-y-3">
             <div class="flex items-start justify-between gap-2">
               <div>
                 <h4 class="font-bold text-sm text-foreground">{product.name}</h4>
@@ -82,8 +83,8 @@
                   class="p-0 h-auto text-xs font-semibold mt-0.5 inline-flex items-center gap-1"
                 >
                   {#if product.active}
-                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-                    <span class="text-emerald-600 dark:text-emerald-400">Actif</span>
+                    <span class="h-2 w-2 rounded-full bg-success/10"></span>
+                    <span class="text-success">Actif</span>
                   {:else}
                     <span class="h-2 w-2 rounded-full bg-muted-foreground"></span>
                     <span class="text-muted-foreground">Inactif</span>
@@ -112,7 +113,8 @@
                 <span>Désactiver</span>
               </Button>
             </div>
-          </div>
+          </Card.Content>
+          </Card.Root>
         {/each}
       {/if}
   {/snippet}
@@ -150,8 +152,8 @@
                 title="Cliquer pour changer le statut"
               >
                 {#if product.active}
-                  <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-                  <span class="text-emerald-600 dark:text-emerald-400">Actif</span>
+                  <span class="h-2 w-2 rounded-full bg-success/10"></span>
+                  <span class="text-success">Actif</span>
                 {:else}
                   <span class="h-2 w-2 rounded-full bg-muted-foreground"></span>
                   <span class="text-muted-foreground">Inactif</span>

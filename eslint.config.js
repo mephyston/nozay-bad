@@ -1,7 +1,38 @@
 import nxPlugin from '@nx/eslint-plugin';
 import tseslint from 'typescript-eslint';
+import svelte from 'eslint-plugin-svelte';
+import svelteParser from 'svelte-eslint-parser';
 
 export default tseslint.config(
+  ...svelte.configs['flat/recommended'],
+  {
+    files: ['**/*.svelte'],
+    languageOptions: {
+      parser: svelteParser,
+      parserOptions: {
+        parser: tseslint.parser,
+        extraFileExtensions: ['.svelte']
+      }
+    }
+  },
+  {
+    files: ['libs/domains/**/*.svelte'],
+    rules: {
+      // TODO(design-system): passer en 'error' une fois les phases 2-3 du nettoyage DS terminées
+      // (élimination des surcharges class= sur Badge/Button et des div simulant Alert/Card).
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: 'SvelteComponent[name.name=/^(Badge|Button|Alert|Amount|Label|Card|Input)$/] > SvelteAttribute[key.name="class"]',
+          message: 'Violation du Design System : Il est interdit de surcharger le style d\'un composant de base via l\'attribut "class". Utilisez les variants définis dans @nba/ui (ex: variant="success"). Si c\'est pour du Layout (margin/width), enveloppez le composant dans une div.'
+        },
+        {
+          selector: 'SvelteElement[name.name="div"] > SvelteAttribute[key.name="class"][value.value=/(bg-emerald|bg-red|bg-amber|bg-rose|bg-purple|bg-card|border-border)/]',
+          message: 'Violation du Design System : HTML brut interdit pour simuler des composants. Utilisez <Alert variant="..."> pour les messages et <Card> pour les conteneurs.'
+        }
+      ]
+    }
+  },
   {
     ignores: [
       '**/.wrangler/**',

@@ -82,7 +82,7 @@
   <Table.Cell>
     <span class="font-semibold text-foreground">{cat.adminLabel}</span>
     {#if cat.active === false}
-      <Badge variant="outline" class="ml-2 bg-destructive/10 text-destructive border-destructive/20 text-[10px] py-0 px-1 font-semibold">Inactif</Badge>
+      <Badge variant="destructive" class="ml-2 text-[10px] py-0 px-1 font-semibold">Inactif</Badge>
     {/if}
   </Table.Cell>
   <Table.Cell>
@@ -100,9 +100,9 @@
   </Table.Cell>
   <Table.Cell>
     {#if cat.hideInExpenses}
-      <Badge variant="outline" class="bg-destructive/10 text-destructive border-destructive/20 text-[11px] font-semibold">Masquée</Badge>
+      <Badge variant="destructive" class="text-[11px] font-semibold">Masquée</Badge>
     {:else}
-      <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[11px] font-semibold">Visible</Badge>
+      <Badge variant="success" class="text-[11px] font-semibold">Visible</Badge>
     {/if}
   </Table.Cell>
   <Table.Cell class="text-right relative">
@@ -125,7 +125,7 @@
             {#if cat.active ?? true}
               <PowerOff class="w-3.5 h-3.5 text-muted-foreground mr-2" /> Désactiver
             {:else}
-              <Power class="w-3.5 h-3.5 text-emerald-500 mr-2" /> Activer
+              <Power class="w-3.5 h-3.5 text-success mr-2" /> Activer
             {/if}
           </DropdownMenu.Item>
           <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); initiateDelete(); }} disabled={isSubmitting} class="text-destructive focus:text-destructive cursor-pointer font-semibold">

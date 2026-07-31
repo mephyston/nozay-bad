@@ -27,13 +27,13 @@
       </div>
       <div class="p-3 bg-muted/40 rounded-lg">
         <div class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Montant reçu</div>
-        <div class="text-lg font-bold mt-1 text-emerald-600 dark:text-emerald-400">
+        <div class="text-lg font-bold mt-1 text-success">
           <Amount cents={receivedCents} />
         </div>
       </div>
       <div class="p-3 bg-muted/40 rounded-lg">
         <div class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Solde restant</div>
-        <div class="text-lg font-bold mt-1 {remainingCents > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'}">
+        <div class="text-lg font-bold mt-1 {remainingCents > 0 ? 'text-warning' : 'text-foreground'}">
           <Amount cents={remainingCents} />
         </div>
       </div>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Eye, Image as ImageIcon } from '@lucide/svelte';
-  import { Button, Input, Card, Textarea } from '@nba/ui';
+  import { Button, Input, Card, Textarea, FormField } from '@nba/ui';
   import type { Expense, Season, CategoryOption } from './expenses-types';
 
   let {
@@ -36,34 +36,30 @@
 </Card.Header>
 
 <Card.Content class="space-y-4 pt-4">
-  <div class="space-y-1.5">
-    <label for="edit-desc-{exp.id}" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Motif / Description</label>
+    <FormField id="edit-desc-{exp.id}" label="Motif / Description">
     <Textarea id="edit-desc-{exp.id}" bind:value={editDescription} rows={3} required />
-  </div>
+  </FormField>
 
   <div class="grid grid-cols-3 gap-4">
-    <div class="space-y-1.5">
-      <label for="edit-cat-{exp.id}" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Catégorie compta</label>
+      <FormField id="edit-cat-{exp.id}" label="Catégorie compta">
       <select id="edit-cat-{exp.id}" bind:value={editCategory} class="w-full px-2.5 py-2 border border-border bg-background rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground">
         {#each categoriesList as cat}
           <option value={cat.value}>{cat.label}</option>
         {/each}
       </select>
-    </div>
+    </FormField>
 
-    <div class="space-y-1.5">
-      <label for="edit-season-{exp.id}" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Saison d'affectation</label>
+      <FormField id="edit-season-{exp.id}" label="Saison d'affectation">
       <select id="edit-season-{exp.id}" bind:value={editSeasonId} class="w-full px-2.5 py-2 border border-border bg-background rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground">
         {#each seasons as s}
           <option value={s.id}>{s.name}</option>
         {/each}
       </select>
-    </div>
+    </FormField>
 
-    <div class="space-y-1.5">
-      <label for="edit-amount-{exp.id}" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Montant (€)</label>
+      <FormField id="edit-amount-{exp.id}" label="Montant (€)">
       <Input type="number" id="edit-amount-{exp.id}" step="0.01" min="0.01" bind:value={editAmountStr} class="font-semibold h-9" required />
-    </div>
+    </FormField>
   </div>
 
   {#if exp.photoUrl}

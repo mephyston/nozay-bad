@@ -1,5 +1,6 @@
 <script lang="ts">
   import { DataTable, Badge, Button, Table, DataTableToolbar, DataTableColumnHeader } from "@nba/ui";
+  import * as Card from"@nba/ui";
   import type { Category, AccountClass } from "./settings-types";
   import CategoryRow from "./CategoryRow.svelte";
 
@@ -54,7 +55,8 @@
       {#each sortedCategories as cat}
         {@const receiptClass = accountClasses?.find(ac => ac.id === cat.receiptAccountClassId || (cat.receiptCode && ac.code === cat.receiptCode))}
         {@const expenseClass = accountClasses?.find(ac => ac.id === cat.expenseAccountClassId || (cat.expenseCode && ac.code === cat.expenseCode))}
-        <div class="p-4 rounded-xl border border-border bg-card flex flex-col gap-3 relative">
+        <Card.Root class="flex flex-col gap-3 relative">
+        <Card.Content class="p-4 flex flex-col gap-3">
           <div class="flex justify-between items-start gap-2">
             <div>
               <div class="font-bold text-base text-foreground">{cat.adminLabel}</div>
@@ -62,12 +64,12 @@
             </div>
             <div class="flex flex-col gap-1 items-end">
               {#if cat.active === false}
-                <Badge variant="outline" class="bg-destructive/10 text-destructive border-destructive/20 text-[10px] py-0 px-1 font-semibold">Inactif</Badge>
+                <Badge variant="destructive" class="text-[10px] py-0 px-1 font-semibold">Inactif</Badge>
               {:else}
-                <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] py-0 px-1 font-semibold">Actif</Badge>
+                <Badge variant="success" class="text-[10px] py-0 px-1 font-semibold">Actif</Badge>
               {/if}
               {#if cat.hideInExpenses}
-                <Badge variant="outline" class="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px] py-0 px-1 font-semibold">Masquée NF</Badge>
+                <Badge variant="warning" class="text-[10px] py-0 px-1 font-semibold">Masquée NF</Badge>
               {/if}
             </div>
           </div>
@@ -88,7 +90,8 @@
               Modifier
             </Button>
           </div>
-        </div>
+        </Card.Content>
+        </Card.Root>
       {/each}
     </div>
   {/snippet}

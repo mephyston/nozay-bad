@@ -25,7 +25,7 @@
 </script>
 
 {#if !state.selectedTx}
-  <Card.Root class="min-h-[400px] lg:h-[750px] bg-card border-border flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
+  <Card.Root class="min-h-[400px] lg:h-[750px] flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
     <div class="rounded-full bg-muted p-4 mb-4">
       <Sparkles class="h-8 w-8 text-muted-foreground" />
     </div>
@@ -33,7 +33,7 @@
     <p class="text-sm max-w-md">Sélectionnez une transaction bancaire dans la liste de gauche pour afficher ses détails, consulter les suggestions IA ou la rapprocher.</p>
   </Card.Root>
 {:else}
-  <Card.Root class="min-h-[500px] h-auto lg:h-[750px] bg-card border-border flex flex-col overflow-hidden">
+  <Card.Root class="min-h-[500px] h-auto lg:h-[750px] flex flex-col overflow-hidden">
     <!-- En-tête de la transaction sélectionnée -->
     <div class="p-3 sm:p-4 border-b border-border bg-muted/20 space-y-3">
       <!-- Barre supérieure d'actions & retour -->
@@ -88,8 +88,8 @@
 
           <Button
             size="sm"
-            variant="ghost"
-            class="h-7 text-xs gap-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 cursor-pointer"
+            variant="ai-ghost"
+            class="h-7 text-xs gap-1.5 cursor-pointer"
             title="Re-analyser avec l'IA"
             disabled={state.isClosed || state.isAnalyzingSingle}
             onclick={() => state.handleAnalyzeSingle(state.selectedTx!.id)}
@@ -117,7 +117,7 @@
         <div class="flex items-center gap-2 flex-wrap">
           <h3 class="font-bold text-base sm:text-lg text-foreground break-words">{state.selectedTx.name}</h3>
           {#if state.selectedTx.status === 'reconciled'}
-            <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-xs shrink-0">
+            <Badge variant="success" class="text-xs shrink-0">
               Rapprochée
             </Badge>
           {:else if state.selectedTx.status === 'ignored'}
@@ -128,7 +128,7 @@
         </div>
 
         <div class="flex items-center gap-2.5 text-xs text-muted-foreground flex-wrap">
-          <span class="font-outfit font-bold text-base sm:text-lg tabular-nums whitespace-nowrap {((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}">
+          <span class="font-outfit font-bold text-base sm:text-lg tabular-nums whitespace-nowrap {((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) < 0 ? 'text-destructive' : 'text-success'}">
             {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((state.selectedTx as any).amountCents ?? state.selectedTx.amount ?? 0) / 100).replace(/\s/g, '\u00a0')} €
           </span>
           <span class="shrink-0">•</span>

@@ -99,7 +99,7 @@
 
   <div class="mt-8 pt-4 border-t border-border space-y-2 font-bold text-sm">
     {#if netResReal >= 0 || netResPrev >= 0}
-      <div class="flex justify-between font-semibold text-xs text-emerald-600 dark:text-emerald-400">
+      <div class="flex justify-between font-semibold text-xs text-success">
         <span>Excédent de l'exercice (Bénéfice)</span>
         <div class="flex gap-8 font-outfit tabular-nums">
           <span class="w-20 text-right">{netResReal >= 0 ? formatAmount(netResReal) : formatAmount(0)}</span>

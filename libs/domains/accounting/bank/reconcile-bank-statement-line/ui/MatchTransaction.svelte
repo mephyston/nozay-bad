@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, Sparkles } from '@lucide/svelte';
-  import { Button, Input, Table, Amount } from '@nba/ui';
+  import { Button, Input, Table, Amount, Alert } from '@nba/ui';
 
   let {
     glTransactions = [],
@@ -47,8 +47,9 @@
 
 <div class="space-y-4">
   {#if suggestions && suggestions.length > 0}
-    <div class="bg-primary/10 border border-primary/20 p-3 rounded-lg text-xs space-y-2">
-      <div class="flex items-center gap-1 text-primary font-semibold">
+      <Alert.Root variant="ai" class="text-xs space-y-2">
+      <Alert.Description>
+      <div class="flex items-center gap-1 font-semibold mb-2">
         <Sparkles class="w-3.5 h-3.5" />
         <span>Suggestion de rapprochement IA</span>
       </div>
@@ -69,7 +70,8 @@
           </Button>
         </div>
       {/each}
-    </div>
+    </Alert.Description>
+    </Alert.Root>
   {/if}
 
   <h4 class="text-sm font-semibold text-foreground">Associer à une écriture comptable existante</h4>

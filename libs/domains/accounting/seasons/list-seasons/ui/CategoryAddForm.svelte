@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus } from "@lucide/svelte";
-  import { Button, Input } from "@nba/ui";
+  import { Button, Input, FormField } from"@nba/ui";
   import type { AccountClass } from "./settings-types";
 
   let {
@@ -55,8 +55,7 @@
 </script>
 
 <form onsubmit={handleSubmit} class="space-y-4">
-  <div class="space-y-1.5">
-    <label for="new-cat-admin" class="block text-xs font-bold text-muted-foreground uppercase">Libellé Admin (Compta)</label>
+    <FormField id="new-cat-admin" label="Libellé Admin (Compta)">
     <Input
       type="text"
       id="new-cat-admin"
@@ -64,10 +63,9 @@
       placeholder="Achat de grips et accessoires"
       required
     />
-  </div>
+  </FormField>
 
-  <div class="space-y-1.5">
-    <label for="new-cat-adherent" class="block text-xs font-bold text-muted-foreground uppercase">Libellé Adhérent (Notes de frais)</label>
+    <FormField id="new-cat-adherent" label="Libellé Adhérent (Notes de frais)">
     <Input
       type="text"
       id="new-cat-adherent"
@@ -75,11 +73,10 @@
       placeholder="Grips & Accessoires"
       required
     />
-  </div>
+  </FormField>
 
   <div class="grid grid-cols-2 gap-4">
-    <div class="space-y-1.5">
-      <label for="new-cat-recette" class="block text-xs font-bold text-muted-foreground uppercase">Classe Recette (CR)</label>
+      <FormField id="new-cat-recette" label="Classe Recette (CR)">
       <select
         id="new-cat-recette"
         bind:value={newCatReceiptCode}
@@ -90,10 +87,9 @@
           <option value={ac.code}>{ac.code} - {ac.label}</option>
         {/each}
       </select>
-    </div>
+    </FormField>
 
-    <div class="space-y-1.5">
-      <label for="new-cat-depense" class="block text-xs font-bold text-muted-foreground uppercase">Classe Dépense (CD)</label>
+      <FormField id="new-cat-depense" label="Classe Dépense (CD)">
       <select
         id="new-cat-depense"
         bind:value={newCatExpenseCode}
@@ -104,29 +100,27 @@
           <option value={ac.code}>{ac.code} - {ac.label}</option>
         {/each}
       </select>
-    </div>
+    </FormField>
   </div>
 
-  <div class="flex items-center gap-2 pt-2">
+  <FormField id="new-cat-hide" label="Masquer pour les notes de frais">
     <input
       type="checkbox"
       id="new-cat-hide"
       bind:checked={newCatHideInExpenses}
       class="rounded border-border focus:ring-primary h-4 w-4"
     />
-    <label for="new-cat-hide" class="text-xs font-medium text-foreground">Masquer pour les notes de frais</label>
-  </div>
+  </FormField>
   
   {#if initialData}
-    <div class="flex items-center gap-2 pt-1 pb-2">
+    <FormField id="new-cat-active" label="Catégorie active (visible en saisie)">
       <input
         type="checkbox"
         id="new-cat-active"
         bind:checked={newCatActive}
         class="rounded border-border focus:ring-primary h-4 w-4"
       />
-      <label for="new-cat-active" class="text-xs font-medium text-foreground">Catégorie active (visible en saisie)</label>
-    </div>
+    </FormField>
   {/if}
 
   <Button

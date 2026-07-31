@@ -98,11 +98,11 @@
       </Table.Cell>
       <Table.Cell class="p-4 text-center">
         {#if exp.status === 'approved'}
-          <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+          <Badge variant="success">
             Remboursé
           </Badge>
         {:else}
-          <Badge variant="outline" class="bg-destructive/10 text-destructive border border-destructive/20">
+          <Badge variant="destructive">
             Rejeté
           </Badge>
         {/if}
@@ -144,7 +144,8 @@
   {#snippet mobileView()}
     <div class="flex flex-col gap-4">
       {#each historyExpenses as exp (exp.id)}
-        <div class="p-4 rounded-xl border border-border bg-card flex flex-col gap-3 relative shadow-sm">
+        <Card.Root class="relative">
+        <Card.Content class="p-4 flex flex-col gap-3">
           <div class="flex justify-between items-start">
             <div>
               <div class="font-bold text-base text-foreground">{exp.emitterName}</div>
@@ -153,11 +154,11 @@
             <div class="flex flex-col items-end gap-1">
               <span class="font-outfit font-black text-primary text-lg">{(exp.amount / 100).toFixed(2)} €</span>
               {#if exp.status === 'approved'}
-                <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] px-1.5 py-0">
+                <Badge variant="success" class="text-[10px] px-1.5 py-0">
                   Remboursé
                 </Badge>
               {:else}
-                <Badge variant="outline" class="bg-destructive/10 text-destructive border-destructive/20 text-[10px] px-1.5 py-0">
+                <Badge variant="destructive" class="text-[10px] px-1.5 py-0">
                   Rejeté
                 </Badge>
               {/if}
@@ -206,7 +207,8 @@
               {/if}
             </div>
           </div>
-        </div>
+        </Card.Content>
+        </Card.Root>
       {/each}
     </div>
   {/snippet}

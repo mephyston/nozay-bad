@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, X, History } from "@lucide/svelte";
-  import { Badge, Amount, DataTable, DataTableToolbar, Table } from "@nba/ui";
+  import { Badge, Amount, DataTable, DataTableToolbar, Table, FormField, Card } from"@nba/ui";
   import type { OrderItem, Season } from './orders-manager-types';
   import type { Snippet } from 'svelte';
   import { paymentMethodLabels } from './orders-manager-types';
@@ -39,8 +39,7 @@
       filtersActive={!!seasonId && seasons.length > 0}
     >
       {#snippet filters()}
-        <div class="space-y-1.5">
-          <label for="filter-season-history" class="text-xs font-semibold text-muted-foreground">Saison</label>
+          <FormField id="filter-season-history" label="Saison">
           <select
             id="filter-season-history"
             class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
@@ -59,7 +58,7 @@
               <option value="25-26">Saison 2025-2026</option>
             {/if}
           </select>
-        </div>
+        </FormField>
       {/snippet}
     </DataTableToolbar>
   {/snippet}
@@ -110,7 +109,7 @@
                 </Table.Cell>
                 <Table.Cell class="text-center">
                   {#if item.order.status === 'approved'}
-                    <Badge variant="secondary" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-semibold gap-1">
+                    <Badge variant="success" class="font-semibold gap-1">
                       <Check class="w-3 h-3" />
                       Validée
                     </Badge>
@@ -120,7 +119,7 @@
                       </div>
                     {/if}
                   {:else if item.order.status === 'rejected'}
-                    <Badge variant="destructive" class="bg-destructive/10 text-destructive hover:bg-destructive/10 font-semibold gap-1">
+                    <Badge variant="destructive" class="font-semibold gap-1">
                       <X class="w-3 h-3" />
                       Refusée
                     </Badge>
@@ -131,7 +130,8 @@
   {#snippet mobileView()}
     <div class="md:hidden flex flex-col gap-4">
       {#each historyOrders as item (item.order.id)}
-        <div class="p-4 rounded-xl border border-border bg-card flex flex-col gap-3 relative shadow-sm">
+        <Card.Root class="relative">
+        <Card.Content class="p-4 flex flex-col gap-3">
           <div class="flex justify-between items-start gap-4">
             <div class="flex flex-col">
               <span class="text-xs text-muted-foreground">{new Date(item.order.createdAt).toLocaleDateString('fr-FR')}</span>
@@ -161,7 +161,7 @@
             </div>
             <div class="flex flex-col items-end shrink-0">
               {#if item.order.status === 'approved'}
-                <Badge variant="secondary" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-semibold gap-1 text-[11px] py-0.5 px-2">
+                <Badge variant="success" class="font-semibold gap-1 text-[11px] py-0.5 px-2">
                   <Check class="w-3 h-3" />
                   Validée
                 </Badge>
@@ -171,14 +171,15 @@
                   </div>
                 {/if}
               {:else if item.order.status === 'rejected'}
-                <Badge variant="destructive" class="bg-destructive/10 text-destructive hover:bg-destructive/10 font-semibold gap-1 text-[11px] py-0.5 px-2">
+                <Badge variant="destructive" class="font-semibold gap-1 text-[11px] py-0.5 px-2">
                   <X class="w-3 h-3" />
                   Refusée
                 </Badge>
               {/if}
             </div>
           </div>
-        </div>
+        </Card.Content>
+        </Card.Root>
       {/each}
     </div>
   {/snippet}

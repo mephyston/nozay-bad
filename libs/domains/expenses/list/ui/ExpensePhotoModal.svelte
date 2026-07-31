@@ -11,8 +11,8 @@
 
 {#if selectedPhoto}
   <div class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-    <Card.Root class="max-w-3xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[85vh] bg-card border border-border rounded-2xl p-0">
-      <Card.Header class="border-b border-border px-5 py-4 flex flex-row justify-between items-center bg-muted/20 space-y-0">
+      <Card.Root class="max-w-3xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border rounded-2xl p-0">
+      <Card.Header class="border-b px-5 py-4 flex flex-row justify-between items-center bg-muted/20 space-y-0">
         <Card.Title class="font-bold text-foreground flex items-center gap-2 text-base">
           <ImageIcon class="w-5 h-5 text-primary" />
           Justificatif de la dépense

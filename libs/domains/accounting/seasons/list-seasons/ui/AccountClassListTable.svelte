@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Check, Edit2, Trash2, X } from "@lucide/svelte";
   import { Button, Input, Badge, AlertDialog, toast, DataTable, DataTableToolbar, Table, DataTableColumnHeader } from "@nba/ui";
+  import * as Card from"@nba/ui";
   import type { AccountClass } from "./settings-types";
 
   let {
@@ -55,7 +56,8 @@
   {#snippet mobileView()}
     <div class="flex flex-col gap-4">
       {#each (accountClasses || []) as ac}
-        <div class="p-4 rounded-xl border border-border bg-card flex flex-col gap-3 relative">
+        <Card.Root class="flex flex-col gap-3 relative">
+        <Card.Content class="p-4 flex flex-col gap-3">
           <div class="flex justify-between items-start gap-2">
             <div class="flex flex-col gap-1">
               <span class="font-bold text-lg text-foreground">{ac.code}</span>
@@ -63,15 +65,15 @@
             </div>
             <div>
               {#if ac.type === 'recette'}
-                <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[11px] font-semibold">
+                <Badge variant="success" class="text-[11px] font-semibold">
                   Produit (7)
                 </Badge>
               {:else if ac.type === 'tresorerie'}
-                <Badge variant="outline" class="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[11px] font-semibold">
+                <Badge variant="info" class="text-[11px] font-semibold">
                   Trésorerie (5)
                 </Badge>
               {:else}
-                <Badge variant="outline" class="bg-destructive/10 text-destructive border-destructive/20 text-[11px] font-semibold">
+                <Badge variant="destructive" class="text-[11px] font-semibold">
                   Charge (6)
                 </Badge>
               {/if}
@@ -86,7 +88,8 @@
               Modifier
             </Button>
           </div>
-        </div>
+        </Card.Content>
+        </Card.Root>
       {/each}
     </div>
   {/snippet}
@@ -108,15 +111,15 @@
       </Table.Cell>
       <Table.Cell class="p-4">
         {#if ac.type === 'recette'}
-          <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[11px] font-semibold">
+          <Badge variant="success" class="text-[11px] font-semibold">
             Produit (7)
           </Badge>
         {:else if ac.type === 'tresorerie'}
-          <Badge variant="outline" class="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[11px] font-semibold">
+          <Badge variant="info" class="text-[11px] font-semibold">
             Trésorerie (5)
           </Badge>
         {:else}
-          <Badge variant="outline" class="bg-destructive/10 text-destructive border-destructive/20 text-[11px] font-semibold">
+          <Badge variant="destructive" class="text-[11px] font-semibold">
             Charge (6)
           </Badge>
         {/if}

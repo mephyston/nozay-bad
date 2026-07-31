@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Check, AlertCircle } from '@lucide/svelte';
   import { Plus } from '@lucide/svelte';
-  import { Alert, AlertDialog, Button, DataTableToolbar } from '@nba/ui';
+  import { Alert, AlertDialog, Button, DataTableToolbar, FormField } from '@nba/ui';
   import type { Invoice, Season } from './invoices-types';
   import { InvoiceFormState } from './invoices-form-state.svelte';
   import * as api from './invoices-api';
@@ -158,7 +158,7 @@
 
 
   {#if successMsg}
-    <Alert.Root class="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+    <Alert.Root variant="success">
       <Check class="w-4 h-4" />
       <Alert.Description>{successMsg}</Alert.Description>
     </Alert.Root>
@@ -187,8 +187,7 @@
         filtersActive={statusFilter !== 'all' || (seasonId && seasons.length > 0)}
       >
         {#snippet filters()}
-          <div class="space-y-1.5">
-            <label for="filter-season" class="text-xs font-semibold text-muted-foreground">Saison</label>
+            <FormField id="filter-season" label="Saison">
             <select
               id="filter-season"
               class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
@@ -207,10 +206,9 @@
                 <option value="25-26">Saison 2025-2026</option>
               {/if}
             </select>
-          </div>
+          </FormField>
 
-          <div class="space-y-1.5">
-            <label for="filter-status" class="text-xs font-semibold text-muted-foreground">Statut</label>
+            <FormField id="filter-status" label="Statut">
             <select
               id="filter-status"
               class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
@@ -222,7 +220,7 @@
               <option value="paid">Payée</option>
               <option value="cancelled">Annulée</option>
             </select>
-          </div>
+          </FormField>
         {/snippet}
 
         {#snippet actions()}

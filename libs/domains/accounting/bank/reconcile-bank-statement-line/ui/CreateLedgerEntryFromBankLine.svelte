@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Amount, Combobox, type ComboboxItem } from '@nba/ui';
+  import { Button, Amount, Combobox, type ComboboxItem, FormField } from '@nba/ui';
   import CreateLedgerEntrySplitRows from './CreateLedgerEntrySplitRows.svelte';
 
   let {
@@ -139,9 +139,7 @@
   </div>
 
   <div class="grid grid-cols-1 gap-4 mt-4">
-    <div>
-      <!-- svelte-ignore a11y_label_has_associated_control -->
-      <label class="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Régularisation (Cut-off)</label>
+      <FormField label="Régularisation (Cut-off)">
       <select class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:ring-1 focus:ring-primary" bind:value={accrualType}>
         <option value="normal">Normal</option>
         {#if selectedTx && selectedTx.amount > 0}
@@ -152,13 +150,11 @@
           <option value="charge_a_payer">Charge à payer (Ex: Facture non parvenue)</option>
         {/if}
       </select>
-    </div>
+    </FormField>
     {#if accrualType !== 'normal'}
-      <div>
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label class="block text-xs font-bold text-destructive uppercase mb-1.5">Note justificative *</label>
+        <FormField label="Note justificative *">
         <input type="text" class="w-full px-3 py-2 border border-destructive/50 bg-background rounded-md text-sm focus:ring-1 focus:ring-destructive" placeholder="Détail de la régularisation..." bind:value={accrualNote} required />
-      </div>
+      </FormField>
     {/if}
   </div>
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Card } from '@nba/ui';
+  import { Card, DashboardCard } from '@nba/ui';
 
   interface ChartSlice {
     label: string;
@@ -23,10 +23,12 @@
     
     <div class="grid md:grid-cols-2 gap-8">
       <!-- Charges Chart -->
-      <div class="border border-border/80 rounded-xl p-6 flex flex-col items-center justify-between bg-muted/20">
-        <h4 class="font-bold text-sm text-destructive mb-6 text-center">Charges (Dépenses)</h4>
+        <DashboardCard class="flex flex-col items-center justify-between">
+        {#snippet header()}
+        <h4 class="font-bold text-sm text-destructive text-center">Charges (Dépenses)</h4>
+        {/snippet}
         {#if chargesData.length > 0}
-          <div class="flex flex-col items-center gap-6 w-full">
+          <div class="flex flex-col items-center gap-6 w-full mt-2">
             <svg width="180" height="180" viewBox="0 0 200 200" class="drop-shadow-sm rotate-[-90deg]">
               {#each chargesData as slice}
                 <path d={slice.pathData} fill={slice.color} class="hover:opacity-90 transition-opacity" />
@@ -43,15 +45,17 @@
             </div>
           </div>
         {:else}
-          <p class="text-xs text-muted-foreground italic my-8">Aucune charge à afficher.</p>
+          <p class="text-xs text-muted-foreground italic my-8 text-center">Aucune charge à afficher.</p>
         {/if}
-      </div>
+      </DashboardCard>
 
       <!-- Recettes Chart -->
-      <div class="border border-border/80 rounded-xl p-6 flex flex-col items-center justify-between bg-muted/20">
-        <h4 class="font-bold text-sm text-emerald-600 dark:text-emerald-400 mb-6 text-center">Produits (Recettes)</h4>
+        <DashboardCard class="flex flex-col items-center justify-between">
+        {#snippet header()}
+        <h4 class="font-bold text-sm text-success text-center">Produits (Recettes)</h4>
+        {/snippet}
         {#if recettesData.length > 0}
-          <div class="flex flex-col items-center gap-6 w-full">
+          <div class="flex flex-col items-center gap-6 w-full mt-2">
             <svg width="180" height="180" viewBox="0 0 200 200" class="drop-shadow-sm rotate-[-90deg]">
               {#each recettesData as slice}
                 <path d={slice.pathData} fill={slice.color} class="hover:opacity-90 transition-opacity" />
@@ -68,9 +72,9 @@
             </div>
           </div>
         {:else}
-          <p class="text-xs text-muted-foreground italic my-8">Aucune recette à afficher.</p>
+          <p class="text-xs text-muted-foreground italic my-8 text-center">Aucune recette à afficher.</p>
         {/if}
-      </div>
+      </DashboardCard>
     </div>
   </Card.Content>
 </Card.Root>

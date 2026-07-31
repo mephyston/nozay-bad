@@ -110,11 +110,11 @@
         </Table.Cell>
         <Table.Cell>
           {#if member.status === 'valide'}
-            <Badge variant="outline" class="bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-semibold">
+            <Badge variant="success" class="font-semibold">
               Valide
             </Badge>
           {:else}
-            <Badge variant="outline" class="bg-destructive/15 border-destructive/30 text-destructive font-semibold">
+            <Badge variant="destructive" class="font-semibold">
               Suspendu
             </Badge>
           {/if}
@@ -172,7 +172,7 @@
               <div class="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                 <span>Licence: {member.licence}</span>
                 {#if member.status === 'valide'}
-                  <span class="inline-flex items-center text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  <span class="inline-flex items-center text-[10px] font-semibold text-success">
                     • Valide
                   </span>
                 {:else}

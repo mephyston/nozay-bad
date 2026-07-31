@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Search, X, Filter, ChevronDown } from '@lucide/svelte';
-  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog, DataTableToolbar } from '@nba/ui';
+  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog, DataTableToolbar, FormField } from '@nba/ui';
   import type { Transaction, Pagination, BalanceReport, Season, Category, AccountClass } from './ledger-types';
   import { submitTransaction, deleteTransaction, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange } from './ledger-actions';
   import TransactionLedgerBalances from './TransactionLedgerBalances.svelte';
@@ -267,8 +267,7 @@
         }}
       >
         {#snippet filters()}
-          <div class="space-y-1.5">
-            <label for="filter-season" class="text-xs font-semibold text-muted-foreground">Saison</label>
+            <FormField id="filter-season" label="Saison">
             <select
               id="filter-season"
               class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
@@ -282,10 +281,9 @@
                 <option value="25-26">Saison 2025-2026</option>
               {/if}
             </select>
-          </div>
+          </FormField>
 
-          <div class="space-y-1.5">
-            <label for="filter-account" class="text-xs font-semibold text-muted-foreground">Compte</label>
+            <FormField id="filter-account" label="Compte">
             <select
               id="filter-account"
               class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
@@ -296,10 +294,9 @@
               <option value="savings">Compte Livret</option>
               <option value="cash">Caisse Physique</option>
             </select>
-          </div>
+          </FormField>
 
-          <div class="space-y-1.5">
-            <label for="filter-month" class="text-xs font-semibold text-muted-foreground">Mois</label>
+            <FormField id="filter-month" label="Mois">
             <select
               id="filter-month"
               class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
@@ -327,7 +324,7 @@
               <option value="11">Novembre</option>
               <option value="12">Décembre</option>
             </select>
-          </div>
+          </FormField>
 
           <div class="space-y-1.5">
             <span class="text-xs font-semibold text-muted-foreground">Options</span>
@@ -358,7 +355,7 @@
                 {/snippet}
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="end">
-                <DropdownMenu.Item onclick={() => openPanel('recette')} class="text-emerald-600 font-medium cursor-pointer">Saisir Recette</DropdownMenu.Item>
+                <DropdownMenu.Item onclick={() => openPanel('recette')} class="text-success font-medium cursor-pointer">Saisir Recette</DropdownMenu.Item>
                 <DropdownMenu.Item onclick={() => openPanel('depense')} class="text-destructive font-medium cursor-pointer">Saisir Dépense</DropdownMenu.Item>
                 <DropdownMenu.Item onclick={() => openPanel('transfert')} class="font-medium cursor-pointer">Virement Interne</DropdownMenu.Item>
               </DropdownMenu.Content>

@@ -22,10 +22,10 @@
     </div>
     <div class="flex items-center justify-between space-y-0 pb-2">
       <h3 class="font-semibold text-sm tracking-tight text-muted-foreground">Solde de la Caisse</h3>
-      <div class="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg shrink-0"><Wallet size={18} /></div>
+      <div class="p-2 bg-success/10 text-success rounded-lg shrink-0"><Wallet size={18} /></div>
     </div>
     <div class="text-3xl font-bold mt-1">
-      <Amount cents={currentBalance} class="text-emerald-600 dark:text-emerald-400" />
+      <Amount cents={currentBalance} class="" colorize={true} />
     </div>
     <div class="text-xs text-muted-foreground mt-2 flex items-center gap-1 z-10">
       <span>Solde initial :</span>
@@ -56,7 +56,7 @@
       <div class="p-2 bg-destructive/10 text-destructive rounded-lg shrink-0"><TrendingDown size={18} /></div>
     </div>
     <div class="text-3xl font-bold mt-1">
-      <Amount cents={-totalOut} showSign class="text-destructive" />
+      <Amount cents={-totalOut} showSign colorize={true} />
     </div>
     <div class="text-xs text-muted-foreground mt-2 z-10">Saison en cours</div>
   </Card.Root>

@@ -53,7 +53,7 @@
       </div>
       <div class="flex items-center gap-1">
         <span class="text-muted-foreground font-medium">Reste à rapprocher :</span>
-        <span class="font-bold" class:text-emerald-500={remainingAmount === 0} class:text-amber-500={remainingAmount > 0}>
+        <span class="font-bold" class:text-success={remainingAmount === 0} class:text-warning={remainingAmount > 0}>
           <Amount cents={remainingAmount} />
         </span>
       </div>
@@ -65,9 +65,9 @@
       <h5 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Écritures déjà rapprochées</h5>
       <div class="space-y-1">
         {#each linkedGlTxs as gt}
-          <div class="flex justify-between items-center p-2 rounded bg-emerald-500/10 border border-emerald-500/20 text-xs">
+          <div class="flex justify-between items-center p-2 rounded bg-success/10 border border-success/20 text-xs">
             <div class="flex items-center gap-1.5 min-w-0">
-              <Badge variant="outline" class="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">{gt.type}</Badge>
+              <Badge variant="outline" class="bg-success/10 text-success border-success/20">{gt.type}</Badge>
               <span class="truncate text-foreground font-medium">{gt.description}</span>
             </div>
             <div class="flex items-center gap-2">

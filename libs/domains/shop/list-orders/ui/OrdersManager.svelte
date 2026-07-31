@@ -4,7 +4,7 @@
 </script>
 <script lang="ts">
   import { Check, AlertCircle } from "@lucide/svelte";
-  import { Tabs } from "@nba/ui";
+  import { Tabs, Alert } from"@nba/ui";
   import type { OrderItem, Season } from './orders-manager-types';
   import { paymentMethodLabels } from './orders-manager-types';
   import { approveOrder, rejectOrder } from './orders-manager-actions';
@@ -104,17 +104,17 @@
 
 <div class="space-y-6">
   {#if errorMsg}
-    <div class="p-4 bg-destructive/15 border border-destructive/30 text-destructive text-sm rounded-lg flex items-center gap-2">
+    <Alert.Root variant="destructive">
       <AlertCircle class="w-5 h-5 shrink-0" />
-      <span>{errorMsg}</span>
-    </div>
+    <Alert.Description>{errorMsg}</Alert.Description>
+    </Alert.Root>
   {/if}
 
   {#if successMsg}
-    <div class="p-4 bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-sm rounded-lg flex items-center gap-2">
+    <Alert.Root variant="success">
       <Check class="w-5 h-5 shrink-0" />
-      <span>{successMsg}</span>
-    </div>
+    <Alert.Description>{successMsg}</Alert.Description>
+    </Alert.Root>
   {/if}
 
   <Tabs.Root value={activeTab} onValueChange={(v) => { activeTab = v as any; errorMsg = null; successMsg = null; }}>

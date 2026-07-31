@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FileText, Check, AlertCircle } from '@lucide/svelte';
-  import { Alert, Card, Tabs, uiConfirm, Badge, PageHeader } from '@nba/ui';
+  import { Alert, Card, Tabs, uiConfirm, Badge, PageHeader, FormField } from '@nba/ui';
   import type { Expense, Season, Category } from './expenses-types';
   import { getCategoryOptions, getCategoryLabels } from './expenses-types';
   import { ExpensesState } from './expenses-state.svelte';
@@ -157,8 +157,7 @@
     {/snippet}
 
     {#snippet toolbarFilters()}
-      <div class="space-y-1.5">
-        <label for="filter-season" class="text-xs font-semibold text-muted-foreground">Saison</label>
+        <FormField id="filter-season" label="Saison">
         <select
           id="filter-season"
           class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
@@ -168,14 +167,14 @@
             <option value={season.id}>{season.name}</option>
           {/each}
         </select>
-      </div>
+      </FormField>
     {/snippet}
 
     {#if viewState.successMsg}
-      <Alert.Root class="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-        <Check class="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
-        <Alert.Title class="text-emerald-600 dark:text-emerald-400">Succès</Alert.Title>
-        <Alert.Description class="text-emerald-600 dark:text-emerald-400">{viewState.successMsg}</Alert.Description>
+        <Alert.Root variant="success">
+        <Check class="w-4.5 h-4.5" />
+        <Alert.Title>Succès</Alert.Title>
+        <Alert.Description>{viewState.successMsg}</Alert.Description>
       </Alert.Root>
     {/if}
 

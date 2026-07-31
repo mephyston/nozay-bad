@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus, Check, FileText, Mail, MapPin, Calendar, Users, Info } from '@lucide/svelte';
-  import { Button, Input, Sheet, Alert, Textarea, Amount } from '@nba/ui';
+  import { Button, Input, Sheet, Alert, Textarea, Amount, FormField } from '@nba/ui';
   import type { InvoiceFormItem } from './invoices-types';
   import InvoiceItemRow from './InvoiceItemRow.svelte';
 
@@ -68,70 +68,49 @@
         <div class="space-y-4">
           <h4 class="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-1">Informations Client</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label for="clientName" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Nom du Client *</label>
+              <FormField id="clientName" label="Nom du Client *">
               <Input type="text" id="clientName" bind:value={clientName} placeholder="Ex: Mairie de Nozay ou Nom d'entreprise" required disabled={isClosed} />
-            </div>
-            <div class="space-y-1.5">
-              <label for="clientEmail" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Email du Client</label>
-              <div class="relative">
-                <Input type="email" id="clientEmail" bind:value={clientEmail} placeholder="client@domaine.com" class="pl-9" disabled={isClosed} />
-                <Mail class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-              </div>
-            </div>
+            </FormField>
+            <FormField id="clientEmail" label="Email du Client">
+            <Input type="email" id="clientEmail" bind:value={clientEmail} placeholder="client@domaine.com" disabled={isClosed} icon={Mail} />
+            </FormField>
           </div>
-          <div class="space-y-1.5">
-            <label for="clientAddress" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Adresse du Client</label>
+            <FormField id="clientAddress" label="Adresse du Client">
             <div class="relative">
               <Textarea id="clientAddress" bind:value={clientAddress} placeholder="Adresse complète..." rows={2} class="pl-9" disabled={isClosed} />
               <MapPin class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
             </div>
-          </div>
+          </FormField>
         </div>
 
         <!-- Details / Period -->
         <div class="space-y-4 pt-4">
           <h4 class="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-1">Objet & Période</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label for="subject" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Objet de la facture *</label>
+              <FormField id="subject" label="Objet de la facture *">
               <Input type="text" id="subject" bind:value={subject} placeholder="Ex: Subvention 2026, Location..." required disabled={isClosed} />
-            </div>
-            <div class="space-y-1.5">
-              <label for="period" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Période concernée</label>
-              <div class="relative">
-                <Input type="text" id="period" bind:value={period} placeholder="Ex: Année 2026, Septembre..." class="pl-9" disabled={isClosed} />
-                <Calendar class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-              </div>
-            </div>
+            </FormField>
+            <FormField id="period" label="Période concernée">
+            <Input type="text" id="period" bind:value={period} placeholder="Ex: Année 2026, Septembre..." disabled={isClosed} icon={Calendar} />
+            </FormField>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label for="location" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Lieu</label>
-              <div class="relative">
-                <Input type="text" id="location" bind:value={location} placeholder="Ex: Nozay" class="pl-9" disabled={isClosed} />
-                <MapPin class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-              </div>
-            </div>
-            <div class="space-y-1.5">
-              <label for="attendees" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Participants / Destinataires</label>
-              <div class="relative">
-                <Input type="text" id="attendees" bind:value={attendees} placeholder="Ex: Jeunes, Licenciés..." class="pl-9" disabled={isClosed} />
-                <Users class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-              </div>
-            </div>
+            <FormField id="location" label="Lieu">
+            <Input type="text" id="location" bind:value={location} placeholder="Ex: Nozay" disabled={isClosed} icon={MapPin} />
+            </FormField>
+            <FormField id="attendees" label="Participants / Destinataires">
+            <Input type="text" id="attendees" bind:value={attendees} placeholder="Ex: Jeunes, Licenciés..." disabled={isClosed} icon={Users} />
+            </FormField>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label for="date" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Date d'émission *</label>
+              <FormField id="date" label="Date d'émission *">
               <Input type="date" id="date" bind:value={date} required disabled={isClosed} />
-            </div>
-            <div class="space-y-1.5">
-              <label for="dueDate" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Date d'échéance *</label>
+              </FormField>
+              <FormField id="dueDate" label="Date d'échéance *">
               <Input type="date" id="dueDate" bind:value={dueDate} required disabled={isClosed} />
-            </div>
+            </FormField>
           </div>
         </div>
 

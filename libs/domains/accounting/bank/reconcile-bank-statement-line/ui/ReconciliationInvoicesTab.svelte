@@ -9,7 +9,7 @@
 <div class="space-y-4">
   {#if state.matchingInvoices.length > 0}
     <div class="space-y-2">
-      <div class="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+      <div class="flex items-center gap-1.5 text-xs font-semibold text-success">
         <Sparkles class="h-3.5 w-3.5" />
         <span class="flex items-center gap-1">
           <span>Suggestion de Facture (Montant exact :</span>
@@ -17,7 +17,7 @@
           <span>)</span>
         </span>
       </div>
-      <div class="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/20 p-3 space-y-2">
+      <div class="rounded-lg border border-success/20 bg-success/10 p-3 space-y-2">
         {#each state.matchingInvoices as inv}
           <div class="flex items-center justify-between text-xs">
             <div>
@@ -28,10 +28,10 @@
               {/if}
             </div>
             <div class="flex items-center gap-3">
-              <Amount cents={inv.totalAmount} class="font-semibold text-emerald-600 dark:text-emerald-400" />
+              <Amount cents={inv.totalAmount} class="font-semibold" colorize={true} />
               <Button
                 size="sm"
-                class="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                class="h-7 text-xs bg-success/10 hover:bg-success/10 text-white"
                 disabled={state.isClosed || state.isSubmitting}
                 onclick={() => state.handleReconcile('create', selectedTx, inv.id)}
               >

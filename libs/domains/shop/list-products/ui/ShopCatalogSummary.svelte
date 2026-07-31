@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ShoppingBag, Check, AlertCircle } from "@lucide/svelte";
-  import { Button, Amount } from '@nba/ui';
+  import { Button, Amount, Alert } from '@nba/ui';
   import type { Product, Member } from './catalog-types';
 
   let {
@@ -57,16 +57,16 @@
 
   <!-- Feedback Messages -->
   {#if successMessage}
-    <div class="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm rounded-xl flex items-start gap-2">
+    <Alert.Root variant="success">
       <Check class="w-4 h-4 shrink-0 mt-0.5" />
-      <span>{successMessage}</span>
-    </div>
+    <Alert.Description>{successMessage}</Alert.Description>
+    </Alert.Root>
   {/if}
 
   {#if errorMessage}
-    <div class="p-3.5 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-xl flex items-start gap-2">
+    <Alert.Root variant="destructive">
       <AlertCircle class="w-4 h-4 shrink-0 mt-0.5" />
-      <span>{errorMessage}</span>
-    </div>
+    <Alert.Description>{errorMessage}</Alert.Description>
+    </Alert.Root>
   {/if}
 </div>

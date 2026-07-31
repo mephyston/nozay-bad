@@ -71,7 +71,7 @@
       </div>
       <div class="flex items-center justify-between space-y-0 pb-4">
         <h3 class="font-semibold text-sm tracking-tight">Tâches Administratives</h3>
-        <div class="p-2 bg-purple-500/10 text-purple-500 rounded-lg"><Activity size={18} /></div>
+        <div class="p-2 bg-blue-500/10 text-blue-500 rounded-lg"><Activity size={18} /></div>
       </div>
       <div class="space-y-3 mt-1">
         <div class="flex justify-between items-center">

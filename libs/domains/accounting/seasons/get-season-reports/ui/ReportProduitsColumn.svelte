@@ -41,7 +41,7 @@
 <div class="space-y-4 pl-0 md:pl-6 pt-6 md:pt-0 flex flex-col justify-between">
   <div>
     <div class="flex justify-between items-center font-bold text-xs text-muted-foreground border-b border-border pb-2">
-      <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400">PRODUITS (Recettes)</span>
+      <span class="text-sm font-bold text-success">PRODUITS (Recettes)</span>
       <div class="flex gap-8 text-[11px]">
         <span class="w-20 text-right font-semibold">Réalisé</span>
         <span class="w-20 text-right font-semibold">Prévisionnel</span>

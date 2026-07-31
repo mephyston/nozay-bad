@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Search, ChevronDown, Check, AlertCircle } from "@lucide/svelte";
-  import { Input, Label, Badge, SearchableCombobox } from '@nba/ui';
+  import { Input, Label, Badge, SearchableCombobox, FormField } from '@nba/ui';
   import type { Member } from './catalog-types';
   import { formatMemberName, formatLicence } from './catalog-utils';
 
@@ -44,8 +44,7 @@
 </script>
 
 <div class="space-y-3 pb-4 border-b border-border">
-  <Label for="member-input" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Acheteur (Adhérent)</Label>
-
+<FormField id="member-input" label="Acheteur (Adhérent)">
   <div class="relative">
     <SearchableCombobox
       items={memberItems}
@@ -53,6 +52,7 @@
       bind:value={selectedMemberId}
     />
   </div>
+  </FormField>
 
   <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
     {#if selectedMember}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Badge, Amount } from '@nba/ui';
+  import { Button, Badge, Amount, FormField } from '@nba/ui';
   import { Trash2, Plus, Split } from '@lucide/svelte';
 
   let {
@@ -39,7 +39,7 @@
     {#each splits as sp, idx}
       <div class="flex items-center gap-3 bg-background p-2.5 rounded-lg border border-border/70 shadow-sm">
         <div class="flex-1">
-          <label for="split-cat-{idx}" class="sr-only">Catégorie</label>
+          <FormField id="split-cat-{idx}" label="Catégorie">
           <select 
             id="split-cat-{idx}"
             bind:value={sp.category}
@@ -49,10 +49,11 @@
               <option value={cat.id}>{cat.name || cat.adminLabel || `Catégorie ${cat.id}`}</option>
             {/each}
           </select>
+          </FormField>
         </div>
 
         <div class="w-32 relative flex items-center">
-          <label for="split-amount-{idx}" class="sr-only">Montant en €</label>
+          <FormField id="split-amount-{idx}" label="Montant en €">
           <input 
             type="number" 
             step="0.01"
@@ -61,6 +62,7 @@
             bind:value={sp.amount}
             class="w-full bg-background border border-border rounded-md px-3 py-1.5 text-xs text-foreground font-outfit tabular-nums text-right focus:ring-1 focus:ring-primary focus:outline-none"
           />
+          </FormField>
           <span class="absolute right-2 text-xs text-muted-foreground pointer-events-none">€</span>
         </div>
 

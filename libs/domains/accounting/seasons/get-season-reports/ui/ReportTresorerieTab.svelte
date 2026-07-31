@@ -32,13 +32,13 @@
                 <div>{accountLabels[item.accountId] || item.accountId}</div>
                 <div class="sm:hidden flex flex-col gap-0.5 mt-1 text-xs font-normal text-muted-foreground">
                   <span>Initial: {formatAmount(item.initialBalance)}</span>
-                  <span class="{item.finalBalance - item.initialBalance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}">
+                  <span class="{item.finalBalance - item.initialBalance >= 0 ? 'text-success' : 'text-destructive'}">
                     Mvmt: {formatDelta(item.finalBalance - item.initialBalance)}
                   </span>
                 </div>
               </Table.Cell>
               <Table.Cell class="hidden sm:table-cell px-2 py-3 sm:p-4 text-right">{formatAmount(item.initialBalance)}</Table.Cell>
-              <Table.Cell class="hidden sm:table-cell px-2 py-3 sm:p-4 text-right font-medium {item.finalBalance - item.initialBalance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}">
+              <Table.Cell class="hidden sm:table-cell px-2 py-3 sm:p-4 text-right font-medium {item.finalBalance - item.initialBalance >= 0 ? 'text-success' : 'text-destructive'}">
                 {formatDelta(item.finalBalance - item.initialBalance)}
               </Table.Cell>
               <Table.Cell class="px-2 py-3 sm:p-4 text-right font-bold align-top sm:align-middle">{formatAmount(item.finalBalance)}</Table.Cell>
@@ -83,7 +83,7 @@
             <div class="bg-muted/30 rounded-xl p-4 space-y-2 border border-border text-sm">
               {#if report.tresorerieDisponible.deferredRevenues.length > 0}
                 <div class="space-y-1 text-xs text-muted-foreground">
-                  <span class="font-medium text-amber-600 dark:text-amber-400 block">• Produits encaissés d'avance (à déduire du résultat) :</span>
+                  <span class="font-medium text-warning block">• Produits encaissés d'avance (à déduire du résultat) :</span>
                   {#each report.tresorerieDisponible.deferredRevenues as defRev}
                     <div class="flex justify-between pl-4">
                       <span>{defRev.categoryName}</span>

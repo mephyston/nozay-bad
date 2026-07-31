@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Search, Link, MoreHorizontal, Trash2, FileText, Camera } from '@lucide/svelte';
-  import { Button, Input, Checkbox, Amount, DropdownMenu, DataTable, Table, DataTableToolbar } from '@nba/ui';
+  import { Button, Input, Checkbox, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
 
   import type { Snippet } from 'svelte';
@@ -34,8 +34,7 @@
       filtersActive={!!seasonId && seasons.length > 0}
     >
       {#snippet filters()}
-        <div class="space-y-1.5">
-          <label for="filter-season" class="text-xs font-semibold text-muted-foreground">Saison</label>
+          <FormField id="filter-season" label="Saison">
           <select
             id="filter-season"
             class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
@@ -54,7 +53,7 @@
               <option value="25-26">Saison 2025-2026</option>
             {/if}
           </select>
-        </div>
+        </FormField>
       {/snippet}
       {#snippet actions()}
         {#if !depositState.isClosed}
@@ -70,7 +69,7 @@
             {#if depositState.selectedChecksList.length > 0}
               <Button
                 onclick={() => depositState.showCreateDepositModal = true}
-                class="flex items-center justify-center gap-2 h-9 w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white animate-pulse"
+                class="flex items-center justify-center gap-2 h-9 w-full sm:w-auto bg-success/10 hover:bg-success/10 text-white animate-pulse"
               >
                 <FileText class="h-4 w-4" />
                 Remise de {depositState.selectedChecksList.length} chèque(s) ({(depositState.totalSelectedAmount / 100).toFixed(2)} €)

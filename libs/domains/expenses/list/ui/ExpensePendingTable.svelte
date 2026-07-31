@@ -169,7 +169,7 @@
                 </DropdownMenu.Item>
                 <DropdownMenu.Item 
                   onclick={() => onAction(exp.id, 'approve')} 
-                  class="text-emerald-600 focus:text-emerald-600 cursor-pointer"
+                  class="text-success focus:text-success cursor-pointer"
                 >
                   <Check class="w-4 h-4 mr-2" />
                   Valider

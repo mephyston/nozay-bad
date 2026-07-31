@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Wallet2, Check, Loader2, Save, AlertCircle } from "@lucide/svelte";
-  import { Button, Input, Card, Alert } from "@nba/ui";
+  import { Button, Input, Card, Alert, FormField } from"@nba/ui";
 
   interface Season {
     id: string;
@@ -94,7 +94,7 @@
   </Card.Header>
   <Card.Content class="space-y-6">
     {#if successMsg}
-      <Alert.Root class="bg-emerald-500/10 border-emerald-500/20 text-emerald-500">
+      <Alert.Root variant="success">
         <Check class="w-4 h-4" />
         <Alert.Description>{successMsg}</Alert.Description>
       </Alert.Root>
@@ -115,7 +115,7 @@
     {/if}
 
     {#if !isClosed && isAutoFilled}
-      <Alert.Root class="bg-blue-500/10 border-blue-500/25 text-blue-600 dark:text-blue-400">
+      <Alert.Root variant="info">
         <span class="text-sm shrink-0">💡</span>
         <Alert.Description>Les soldes ci-dessous ont été pré-remplis automatiquement à partir des soldes de fin de la saison précédente. Pensez à les valider en cliquant sur <strong>Enregistrer</strong>.</Alert.Description>
       </Alert.Root>
@@ -123,8 +123,7 @@
 
     <form onsubmit={handleSaveBalances} class="space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="space-y-1">
-          <label for="current-initial" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Compte Courant</label>
+          <FormField id="current-initial" label="Compte Courant">
           <div class="relative">
             <Input 
               id="current-initial" 
@@ -137,10 +136,9 @@
             />
             <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">€</span>
           </div>
-        </div>
+        </FormField>
 
-        <div class="space-y-1">
-          <label for="savings-initial" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Compte Livret</label>
+          <FormField id="savings-initial" label="Compte Livret">
           <div class="relative">
             <Input 
               id="savings-initial" 
@@ -153,10 +151,9 @@
             />
             <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">€</span>
           </div>
-        </div>
+        </FormField>
 
-        <div class="space-y-1">
-          <label for="cash-initial" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Caisse physique</label>
+          <FormField id="cash-initial" label="Caisse physique">
           <div class="relative">
             <Input 
               id="cash-initial" 
@@ -169,7 +166,7 @@
             />
             <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">€</span>
           </div>
-        </div>
+        </FormField>
       </div>
 
       {#if !isClosed}

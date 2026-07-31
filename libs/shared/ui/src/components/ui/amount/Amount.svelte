@@ -6,6 +6,7 @@
     euros,
     showSign = false,
     colored = false,
+    colorize = false,
     currency = '€',
     class: className = ''
   }: {
@@ -13,6 +14,7 @@
     euros?: number;
     showSign?: boolean;
     colored?: boolean;
+    colorize?: boolean;
     currency?: string;
     class?: string;
   } = $props();
@@ -40,9 +42,10 @@
   });
 
   const colorClass = $derived.by(() => {
-    if (!colored) return '';
+    if (!colored && !colorize) return '';
     if (valueInCents < 0) return 'text-destructive';
-    if (valueInCents > 0) return 'text-emerald-600 dark:text-emerald-400';
+    if (valueInCents >= 0 && colorize) return 'text-success';
+    if (valueInCents > 0) return 'text-success';
     return 'text-muted-foreground';
   });
 </script>

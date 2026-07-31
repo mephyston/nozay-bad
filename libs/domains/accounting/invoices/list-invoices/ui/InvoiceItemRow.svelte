@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Trash2 } from '@lucide/svelte';
-  import { Button, Input } from '@nba/ui';
+  import { Button, Input, FormField } from '@nba/ui';
   import type { InvoiceFormItem } from './invoices-types';
 
   let {
@@ -17,8 +17,8 @@
 </script>
 
 <div class="flex items-start gap-3 bg-muted/20 p-3 rounded-lg border border-border/50">
-  <div class="flex-1 space-y-1.5">
-    <label for={`desc-${index}`} class="sr-only">Description</label>
+    <div class="flex-1">
+    <FormField id={`desc-${index}`} label="Description" class="sr-only">
     <Input
       type="text"
       id={`desc-${index}`}
@@ -27,9 +27,10 @@
       required
       disabled={isClosed}
     />
+    </FormField>
   </div>
-  <div class="w-20 space-y-1.5">
-    <label for={`qty-${index}`} class="sr-only">Quantité</label>
+    <div class="w-20">
+    <FormField id={`qty-${index}`} label="Quantité" class="sr-only">
     <Input
       type="number"
       id={`qty-${index}`}
@@ -38,9 +39,10 @@
       required
       disabled={isClosed}
     />
+    </FormField>
   </div>
-  <div class="w-32 space-y-1.5">
-    <label for={`price-${index}`} class="sr-only">Prix unitaire (€)</label>
+    <div class="w-32">
+    <FormField id={`price-${index}`} label="Prix unitaire (€)" class="sr-only">
     <Input
       type="text"
       id={`price-${index}`}
@@ -50,6 +52,7 @@
       disabled={isClosed}
       class="font-outfit tabular-nums"
     />
+    </FormField>
   </div>
   {#if !isClosed}
     <Button type="button" variant="ghost" size="icon" onclick={() => onRemove(index)} class="text-destructive hover:bg-destructive/10 shrink-0">

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CheckCircle, AlertCircle, Coins } from '@lucide/svelte';
-  import { Button, Card } from '@nba/ui';
+  import { Button, Card, Alert } from '@nba/ui';
   import type { Member, Props } from './expense-form-types';
   import { formatMemberName, scrollOptionIntoView } from './expense-form-utils';
   import { submitExpenseReport } from './expense-form-submit';
@@ -132,17 +132,17 @@
   <Card.Content class="p-6">
     <form onsubmit={handleSubmit} class="space-y-5">
       {#if successMsg}
-        <div class="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm rounded-xl flex items-start gap-2.5">
+        <Alert.Root variant="success" class="p-4 text-sm rounded-xl flex items-start gap-2.5">
           <CheckCircle class="w-5 h-5 shrink-0 mt-0.5" />
-          <span>{successMsg}</span>
-        </div>
+        <Alert.Description><span>{successMsg}</span></Alert.Description>
+        </Alert.Root>
       {/if}
 
       {#if errorMsg}
-        <div class="p-4 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-xl flex items-start gap-2.5">
+        <Alert.Root variant="destructive" class="p-4 text-sm rounded-xl flex items-start gap-2.5">
           <AlertCircle class="w-5 h-5 shrink-0 mt-0.5" />
-          <span>{errorMsg}</span>
-        </div>
+        <Alert.Description><span>{errorMsg}</span></Alert.Description>
+        </Alert.Root>
       {/if}
 
       <ExpenseFormMemberSelect

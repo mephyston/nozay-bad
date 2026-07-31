@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Trash2 } from '@lucide/svelte';
-  import { Amount, AlertDialog, Button } from '@nba/ui';
+  import { Amount, AlertDialog, Button, Alert } from '@nba/ui';
   import type { ReconciliationState, BankStatementLine } from './reconciliation.svelte';
 
   let { state: reconState = $bindable(), selectedTx }: { state: ReconciliationState; selectedTx: BankStatementLine } = $props();
@@ -60,10 +60,12 @@
     </div>
 
     {#if reconState.remainingAmount > 10}
-      <div class="p-2 text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-md font-medium flex items-center gap-1">
+      <Alert.Root variant="warning" class="p-2 text-xs font-medium flex items-center gap-1">
+      <Alert.Description class="flex items-center gap-1">
         <span>Reste à rapprocher :</span>
         <Amount cents={reconState.remainingAmount} />
-      </div>
+      </Alert.Description>
+      </Alert.Root>
     {/if}
   </div>
 {/if}

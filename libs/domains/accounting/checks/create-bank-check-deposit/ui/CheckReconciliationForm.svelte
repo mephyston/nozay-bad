@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button } from '@nba/ui';
+  import { Button, FormField } from '@nba/ui';
 
   let {
     selectedDepositToClear,
@@ -34,10 +34,7 @@
     </div>
   </div>
 
-  <div class="space-y-1">
-    <label for="bank-tx-select" class="block text-xs font-bold text-gray-500 uppercase tracking-wider">
-      Sélectionner la ligne bancaire correspondante
-    </label>
+    <FormField id="bank-tx-select" label="Sélectionner la ligne bancaire correspondante">
     <select
       id="bank-tx-select"
       bind:value={selectedBankTransactionId}
@@ -55,7 +52,7 @@
         </option>
       {/each}
     </select>
-  </div>
+  </FormField>
 
   <Button
     onclick={onClearDeposit}

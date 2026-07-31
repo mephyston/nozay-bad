@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus } from "@lucide/svelte";
-  import { Button, Input } from "@nba/ui";
+  import { Button, Input, FormField } from"@nba/ui";
 
   let {
     isSubmitting = false,
@@ -31,8 +31,7 @@
 </script>
 
 <form onsubmit={handleSubmit} class="space-y-4">
-  <div class="space-y-1.5">
-    <label for="new-class-code" class="block text-xs font-bold text-muted-foreground uppercase">Code (ex: 63)</label>
+    <FormField id="new-class-code" label="Code (ex: 63)">
     <Input
       type="text"
       id="new-class-code"
@@ -42,10 +41,9 @@
       disabled={!!initialData}
       required
     />
-  </div>
+  </FormField>
 
-  <div class="space-y-1.5">
-    <label for="new-class-label" class="block text-xs font-bold text-muted-foreground uppercase">Libellé (ex: 63 - Impôts)</label>
+    <FormField id="new-class-label" label="Libellé (ex: 63 - Impôts)">
     <Input
       type="text"
       id="new-class-label"
@@ -53,10 +51,9 @@
       placeholder="63 - Impôts et taxes"
       required
     />
-  </div>
+  </FormField>
 
-  <div class="space-y-1.5">
-    <label for="new-class-type" class="block text-xs font-bold text-muted-foreground uppercase">Type</label>
+    <FormField id="new-class-type" label="Type">
     <select
       id="new-class-type"
       bind:value={newClassType}
@@ -66,7 +63,7 @@
       <option value="depense">Charge (6 - Dépense)</option>
       <option value="tresorerie">Trésorerie (5)</option>
     </select>
-  </div>
+  </FormField>
 
   <Button
     type="submit"

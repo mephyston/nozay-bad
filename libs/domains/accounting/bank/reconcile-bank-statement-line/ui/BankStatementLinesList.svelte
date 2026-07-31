@@ -6,7 +6,7 @@
   let { state = $bindable() }: { state: ReconciliationState } = $props();
 </script>
 
-<Card.Root class="flex flex-col min-h-[500px] h-auto lg:h-[750px] bg-card border-border overflow-hidden">
+<Card.Root class="flex flex-col min-h-[500px] h-auto lg:h-[750px] overflow-hidden">
   <div class="p-3 border-b border-border bg-muted/40 space-y-3">
     <!-- Onglets de statut -->
     <Tabs.Root value={state.activeTab} onValueChange={(v) => state.activeTab = v as any} class="w-full">
@@ -88,8 +88,8 @@
       <div class="flex items-center gap-2 pt-2 border-t border-border">
         <Button
           size="sm"
-          variant="default"
-          class="flex-1 text-xs h-8 gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+          variant="ai"
+          class="flex-1 text-xs h-8 gap-1.5"
           disabled={state.isClosed || state.isSubmitting}
           onclick={state.handleBulkReconcile}
         >
@@ -155,7 +155,7 @@
           >
             <div class="flex items-start justify-between gap-2">
               <div class="font-medium text-sm truncate">{bt.name}</div>
-              <div class="font-outfit text-sm font-semibold tabular-nums shrink-0 whitespace-nowrap {((bt as any).amountCents ?? bt.amount ?? 0) < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}">
+              <div class="font-outfit text-sm font-semibold tabular-nums shrink-0 whitespace-nowrap {((bt as any).amountCents ?? bt.amount ?? 0) < 0 ? 'text-destructive' : 'text-success'}">
                 {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((bt as any).amountCents ?? bt.amount ?? 0) / 100).replace(/\s/g, '\u00a0')} €
               </div>
             </div>
@@ -169,7 +169,7 @@
               </div>
 
               {#if bt.aiSuggestions && bt.status === 'pending'}
-                <Badge variant="outline" class="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800 text-[10px] gap-1 shrink-0">
+                <Badge variant="ai" class="text-[10px] gap-1 shrink-0">
                   <Sparkles class="h-3 w-3" />
                   <span>IA</span>
                 </Badge>

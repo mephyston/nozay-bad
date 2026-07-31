@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Dialog } from '@nba/ui';
+  import { Button, Dialog, FormField, Alert } from '@nba/ui';
   import type { ReconciliationState } from './reconciliation.svelte';
 
   let { state = $bindable() }: { state: ReconciliationState } = $props();
@@ -15,8 +15,7 @@
     </Dialog.Header>
 
     <form onsubmit={state.handleImport} class="space-y-4 mt-4">
-      <div>
-        <label for="bank-file" class="block text-sm font-medium mb-1">Fichier de relevé bancaire</label>
+        <FormField id="bank-file" label="Fichier de relevé bancaire">
         <input
           id="bank-file"
           type="file"
@@ -24,10 +23,9 @@
           required
           class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         />
-      </div>
+      </FormField>
 
-      <div>
-        <label for="bank-account" class="block text-sm font-medium mb-1">Compte bancaire cible</label>
+        <FormField id="bank-account" label="Compte bancaire cible">
         <select
           id="bank-account"
           bind:value={state.selectedAccount}
@@ -38,12 +36,12 @@
           <option value="savings">Compte Livret</option>
           <option value="cash">Caisse Physique</option>
         </select>
-      </div>
+      </FormField>
 
       {#if state.errorMsg}
-        <div class="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-          {state.errorMsg}
-        </div>
+        <Alert.Root variant="destructive">
+        <Alert.Description>{state.errorMsg}</Alert.Description>
+        </Alert.Root>
       {/if}
 
       <div class="flex justify-end gap-2 pt-2">

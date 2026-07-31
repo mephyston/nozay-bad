@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Calendar, Plus } from "@lucide/svelte";
-  import { Button, Input, Badge, Sheet, AlertDialog, DataTable, DataTableToolbar, Table, DataTableColumnHeader } from "@nba/ui";
+  import { Button, Input, Badge, Sheet, AlertDialog, DataTable, DataTableToolbar, Table, DataTableColumnHeader, FormField, Alert } from"@nba/ui";
+  import * as Card from"@nba/ui";
 
   let {
     seasons = [],
@@ -91,7 +92,8 @@
     {#snippet mobileView()}
       <div class="flex flex-col gap-4">
         {#each sortedSeasons as s}
-          <div class="p-4 rounded-xl border border-border bg-card flex flex-col gap-3 relative">
+          <Card.Root class="flex flex-col gap-3 relative">
+          <Card.Content class="p-4 flex flex-col gap-3">
             <div class="flex justify-between items-start gap-2">
               <span class="font-bold text-sm text-foreground">{s.name}</span>
               <div class="flex items-center gap-3">
@@ -120,7 +122,8 @@
                 </Button>
               </div>
             {/if}
-          </div>
+          </Card.Content>
+          </Card.Root>
         {/each}
       </div>
     {/snippet}
@@ -187,8 +190,7 @@
         <Sheet.Description>Ajoutez un nouvel exercice comptable pour l'association.</Sheet.Description>
       </Sheet.Header>
       <form onsubmit={handleSubmit} class="space-y-4 pt-4">
-        <div class="space-y-1.5">
-          <label for="new-season-id" class="block text-xs font-bold text-muted-foreground uppercase">ID (ex: 26-27)</label>
+          <FormField id="new-season-id" label="ID (ex: 26-27)">
           <Input
             type="text"
             id="new-season-id"
@@ -196,9 +198,8 @@
             placeholder="26-27"
             required
           />
-        </div>
-        <div class="space-y-1.5">
-          <label for="new-season-name" class="block text-xs font-bold text-muted-foreground uppercase">Libellé (ex: Saison 2026-2027)</label>
+          </FormField>
+          <FormField id="new-season-name" label="Libellé (ex: Saison 2026-2027)">
           <Input
             type="text"
             id="new-season-name"
@@ -206,17 +207,16 @@
             placeholder="Saison 2026-2027"
             required
           />
-        </div>
+        </FormField>
 
-        <div class="flex items-center gap-2 pt-2">
+        <FormField id="new-season-active" label="Définir comme active immédiatement">
           <input
             type="checkbox"
             id="new-season-active"
             bind:checked={newSeasonActive}
             class="rounded border-border focus:ring-primary h-4 w-4"
           />
-          <label for="new-season-active" class="text-xs font-medium text-foreground">Définir comme active immédiatement</label>
-        </div>
+        </FormField>
 
         <Sheet.Footer class="pt-6">
           <Button
@@ -243,20 +243,24 @@
             Vérification comptable en cours...
           </div>
         {:else if checkError}
-          <div class="mt-4 p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded text-sm">
+          <Alert.Root variant="destructive" class="mt-4 p-3 rounded text-sm">
+          <Alert.Description>
             <strong class="block mb-2">Erreur lors de la vérification :</strong>
             {checkError}
-          </div>
+          </Alert.Description>
+          </Alert.Root>
         {:else if checkData}
           {#if checkData.canClose === false || (checkData.blockingItems && checkData.blockingItems.length > 0)}
-            <div class="mt-4 p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded text-sm">
+            <Alert.Root variant="destructive" class="mt-4 p-3 rounded text-sm">
+            <Alert.Description>
               <strong class="block mb-2">Clôture impossible :</strong>
               <ul class="list-disc pl-4 space-y-1">
                 {#each checkData.blockingItems as item}
                   <li>{item.message}</li>
                 {/each}
               </ul>
-            </div>
+            </Alert.Description>
+            </Alert.Root>
           {:else}
             <div class="space-y-4">
               <p>
@@ -265,7 +269,8 @@
               </p>
 
               {#if checkData.existingInitialBalancesOnNextSeason && checkData.existingInitialBalancesOnNextSeason.some(b => b.discrepancy)}
-                <div class="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded text-sm space-y-2">
+                <Alert.Root variant="warning" class="p-3 rounded text-sm space-y-2">
+                <Alert.Description>
                   <strong>⚠️ Attention : écarts détectés sur la saison suivante ({checkData.nextSeasonCode}) !</strong>
                   <p>Les soldes de départ actuels de la saison suivante vont être modifiés :</p>
                   <ul class="list-disc pl-4 space-y-1">
@@ -277,19 +282,17 @@
                       </li>
                     {/each}
                   </ul>
-                </div>
+                </Alert.Description>
+                </Alert.Root>
 
-                <div class="flex items-start space-x-2 pt-2">
+                <FormField id="confirm-overwrite" label={`Je confirme vouloir écraser les soldes initiaux de la saison ${checkData.nextSeasonCode}.`}>
                   <input
                     type="checkbox"
                     id="confirm-overwrite"
                     bind:checked={confirmOverwrite}
                     class="mt-1 rounded border-border text-destructive focus:ring-destructive"
                   />
-                  <label for="confirm-overwrite" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    Je confirme vouloir écraser les soldes initiaux de la saison {checkData.nextSeasonCode}.
-                  </label>
-                </div>
+                </FormField>
               {/if}
             </div>
           {/if}

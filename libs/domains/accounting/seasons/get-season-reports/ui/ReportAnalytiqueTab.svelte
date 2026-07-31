@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Table, Amount, Badge } from '@nba/ui';
+  import { Table, Amount, Badge, Card } from '@nba/ui';
   import type { ReportData, DbCategory } from './report-types';
   import { getCatTotal as calcGetCatTotal } from './report-calculations';
 
@@ -35,13 +35,13 @@
   let totalNet = $derived(totalRecettes - totalDepenses);
 </script>
 
-<div class="bg-card border border-border rounded-xl shadow-sm overflow-hidden print-container">
+<Card.Root class="overflow-hidden print-container">
   <div class="p-4 sm:p-6 border-b border-border bg-muted/20">
     <h3 class="text-lg font-semibold text-foreground">Bilan Analytique par Catégorie</h3>
     <p class="text-sm text-muted-foreground mt-1">Comparaison des recettes et dépenses pour évaluer la rentabilité nette de chaque activité.</p>
   </div>
   
-  <div class="p-0 sm:p-6 overflow-x-auto">
+  <Card.Content class="p-0 sm:p-6 overflow-x-auto">
     <Table.Root class="w-full">
       <Table.Header>
         <Table.Row class="bg-muted/50 hover:bg-muted/50">
@@ -58,7 +58,7 @@
               <div class="text-sm font-semibold">{row.adminLabel || row.name}</div>
               <div class="sm:hidden flex items-center gap-3 mt-1.5 text-xs font-normal">
                 {#if row.recettes > 0}
-                  <span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <span class="text-success flex items-center gap-1">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
                     <Amount cents={row.recettes} />
                   </span>
@@ -71,7 +71,7 @@
                 {/if}
               </div>
             </Table.Cell>
-            <Table.Cell class="hidden sm:table-cell text-right text-emerald-600 dark:text-emerald-400 font-medium">
+            <Table.Cell class="hidden sm:table-cell text-right text-success font-medium">
               {#if row.recettes > 0}
                 + <Amount cents={row.recettes} />
               {:else}
@@ -86,7 +86,7 @@
               {/if}
             </Table.Cell>
             <Table.Cell class="text-right align-top sm:align-middle">
-              <Badge variant={row.net > 0 ? "outline" : (row.net < 0 ? "destructive" : "secondary")} class="font-outfit tabular-nums ml-auto {row.net > 0 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' : ''}">
+              <Badge variant={row.net > 0 ? "outline" : (row.net < 0 ? "destructive" : "secondary")} class="font-outfit tabular-nums ml-auto {row.net > 0 ? 'bg-success/10 text-success border-success/20' : ''}">
                 {#if row.net > 0}+{/if}<Amount cents={row.net} />
               </Badge>
             </Table.Cell>
@@ -106,7 +106,7 @@
             <Table.Cell class="text-foreground uppercase align-top sm:align-middle">
               Total Global
               <div class="sm:hidden flex items-center gap-3 mt-1.5 text-xs font-normal normal-case">
-                <span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                <span class="text-success flex items-center gap-1">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
                   <Amount cents={totalRecettes} />
                 </span>
@@ -116,10 +116,10 @@
                 </span>
               </div>
             </Table.Cell>
-            <Table.Cell class="hidden sm:table-cell text-right text-emerald-600 dark:text-emerald-400">+ <Amount cents={totalRecettes} /></Table.Cell>
+            <Table.Cell class="hidden sm:table-cell text-right text-success">+ <Amount cents={totalRecettes} /></Table.Cell>
             <Table.Cell class="hidden sm:table-cell text-right text-destructive">- <Amount cents={totalDepenses} /></Table.Cell>
             <Table.Cell class="text-right align-top sm:align-middle">
-              <Badge variant={totalNet > 0 ? "outline" : (totalNet < 0 ? "destructive" : "secondary")} class="font-outfit tabular-nums ml-auto text-sm px-2 py-0.5 {totalNet > 0 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' : ''}">
+              <Badge variant={totalNet > 0 ? "outline" : (totalNet < 0 ? "destructive" : "secondary")} class="font-outfit tabular-nums ml-auto text-sm px-2 py-0.5 {totalNet > 0 ? 'bg-success/10 text-success border-success/20' : ''}">
                 {#if totalNet > 0}+{/if}<Amount cents={totalNet} />
               </Badge>
             </Table.Cell>
@@ -127,5 +127,5 @@
         </Table.Footer>
       {/if}
     </Table.Root>
-  </div>
-</div>
+</Card.Content>
+</Card.Root>

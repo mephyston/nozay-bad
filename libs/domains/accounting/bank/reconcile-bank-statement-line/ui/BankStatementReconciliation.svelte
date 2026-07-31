@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Upload } from '@lucide/svelte';
-  import { Button, Card } from '@nba/ui';
+  import { Button, Card, FormField, Alert } from '@nba/ui';
   import { createReconciliationState, type ReconciliationStateProps } from './reconciliation.svelte';
   import ImportStatementDialog from './ImportStatementDialog.svelte';
   import ReconciliationHeader from './ReconciliationHeader.svelte';
@@ -33,7 +33,7 @@
   <ReconciliationHeader bind:state />
 
   {#if state.bankStatementLines.length === 0}
-    <Card.Root class="p-12 text-center bg-card border-border shadow-sm flex flex-col items-center justify-center min-h-[400px]">
+    <Card.Root class="p-12 text-center shadow-sm flex flex-col items-center justify-center min-h-[400px]">
       <div class="rounded-full bg-primary/10 p-4 mb-4 text-primary">
         <Upload class="h-8 w-8" />
       </div>
@@ -43,8 +43,7 @@
       </p>
 
       <form onsubmit={state.handleImport} class="w-full max-w-md space-y-4">
-        <div class="flex flex-col gap-2 text-left">
-          <label for="bank-file-empty" class="text-sm font-medium">Sélectionner un fichier (OFX / CSV)</label>
+          <FormField id="bank-file-empty" label="Sélectionner un fichier (OFX / CSV)">
           <input
             id="bank-file-empty"
             type="file"
@@ -52,10 +51,9 @@
             required
             class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           />
-        </div>
+        </FormField>
 
-        <div class="flex flex-col gap-2 text-left">
-          <label for="bank-account-empty" class="text-sm font-medium">Compte bancaire</label>
+          <FormField id="bank-account-empty" label="Compte bancaire">
           <select
             id="bank-account-empty"
             bind:value={state.selectedAccount}
@@ -66,12 +64,12 @@
             <option value="savings">Compte Livret</option>
             <option value="cash">Caisse Physique</option>
           </select>
-        </div>
+        </FormField>
 
         {#if state.errorMsg}
-          <div class="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-            {state.errorMsg}
-          </div>
+          <Alert.Root variant="destructive">
+          <Alert.Description>{state.errorMsg}</Alert.Description>
+          </Alert.Root>
         {/if}
 
         <Button type="submit" class="w-full gap-2" disabled={state.isClosed || state.isSubmitting}>

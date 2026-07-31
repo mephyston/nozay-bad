@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ChevronDown } from "@lucide/svelte";
-  import { Button, Input, Label, Badge, SearchableCombobox } from '@nba/ui';
+  import { Button, Input, Label, Badge, SearchableCombobox, FormField } from '@nba/ui';
   import type { Product } from './catalog-types';
   import { paymentMethodsList, categoriesList } from './catalog-types';
 
@@ -54,8 +54,8 @@
 </script>
 
 <!-- Section 2: Mode de Paiement -->
-<div class="space-y-2 pb-4 border-b border-border">
-  <Label for="payment-method-select" class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Mode de paiement</Label>
+  <div class="pb-4 border-b border-border">
+  <FormField id="payment-method-select" label="Mode de paiement">
   <div class="relative">
     <SearchableCombobox
       items={paymentMethodsList.map(pm => ({ label: pm.label, value: pm.value }))}
@@ -63,16 +63,16 @@
       bind:value={selectedPaymentMethod}
     />
   </div>
+  </FormField>
 </div>
 
 <!-- Section 3: Article & Quantité -->
 <div class="space-y-4 pb-4 border-b border-border">
-  <Label class="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Article & Quantité</Label>
+  <h3 class="text-xs font-bold text-muted-foreground uppercase">Article & Quantité</h3>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <!-- Select 1: Type de produit -->
-    <div class="space-y-1.5">
-      <Label for="category-select" class="block text-xs font-semibold text-foreground">Type de produit</Label>
+      <FormField id="category-select" label="Type de produit">
       <div class="relative">
         <SearchableCombobox
           items={categoriesList.map(c => ({ label: c.label, value: c.value.toString() }))}
@@ -80,11 +80,10 @@
           bind:value={strCategory}
         />
       </div>
-    </div>
+    </FormField>
 
     <!-- Select 2: Produit -->
-    <div class="space-y-1.5">
-      <Label for="product-select" class="block text-xs font-semibold text-foreground">Produit</Label>
+      <FormField id="product-select" label="Produit">
       <div class="relative">
         <SearchableCombobox
           items={filteredProducts.map(p => ({
@@ -95,12 +94,12 @@
           bind:value={strProductId}
         />
       </div>
-    </div>
+    </FormField>
   </div>
 
   <!-- Quantity Selector -->
-  <div class="space-y-1.5 pt-1">
-    <Label for="quantity-input" class="block text-xs font-semibold text-foreground">Quantité</Label>
+    <div class="pt-1">
+    <FormField id="quantity-input" label="Quantité">
     <div class="flex items-center gap-2">
       <div class="flex items-center border border-border bg-background rounded-xl overflow-hidden shrink-0">
         <Button
@@ -140,5 +139,6 @@
         </div>
       {/if}
     </div>
+    </FormField>
   </div>
 </div>
