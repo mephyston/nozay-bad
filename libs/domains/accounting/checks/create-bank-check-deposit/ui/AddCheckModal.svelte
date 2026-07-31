@@ -18,7 +18,7 @@
 </script>
 
 <Sheet.Root bind:open={depositState.showAddCheckModal}>
-  <Sheet.Content class="w-full sm:max-w-md p-0 flex flex-col h-full bg-card border-border overflow-hidden">
+  <Sheet.Content size="md" class="p-0 flex flex-col h-full overflow-hidden">
     <Sheet.Header class="p-6 border-b border-border">
       <Sheet.Title>Enregistrer un Chèque</Sheet.Title>
       <Sheet.Description class="hidden">Enregistrement d'un chèque physique avec assistance IA optionnelle par photo.</Sheet.Description>

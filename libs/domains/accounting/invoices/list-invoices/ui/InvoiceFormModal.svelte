@@ -53,7 +53,7 @@
 </script>
 
 <Sheet.Root bind:open={showModal}>
-  <Sheet.Content class="w-full data-[side=right]:sm:max-w-2xl flex flex-col h-full bg-card border-border overflow-hidden">
+  <Sheet.Content size="xl" class="flex flex-col h-full overflow-hidden">
     <Sheet.Header class="p-6 border-b border-border">
       <Sheet.Title class="flex items-center gap-2">
         <FileText class="w-5 h-5 text-primary" />

@@ -126,10 +126,10 @@
       </Table.Cell>
       <Table.Cell class="p-4 text-right">
         <div class="flex justify-end items-center gap-2">
-          <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground" onclick={() => onEditAccountClass(ac)}>
+          <Button variant="ghost-muted" size="icon" onclick={() => onEditAccountClass(ac)}>
             <Edit2 class="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onclick={() => deletingAccountClass = ac} disabled={isSubmitting}>
+          <Button variant="ghost-danger" size="icon" onclick={() => deletingAccountClass = ac} disabled={isSubmitting}>
             <Trash2 class="w-4 h-4" />
           </Button>
         </div>

@@ -33,4 +33,9 @@ declare module "*.svelte" {
   export const selectVariants: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   export type SelectSize = any;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  export type Side = any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  export type SheetSize = any;
 }

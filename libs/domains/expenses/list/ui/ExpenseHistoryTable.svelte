@@ -186,9 +186,8 @@
                     {#snippet child({ props })}
                       <Button 
                         {...props}
-                        variant="ghost"
-                        size="icon-sm"
-                        class="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer" 
+                        variant="ghost-muted"
+                        size="icon-sm" 
                       >
                         <MoreVertical class="w-4 h-4" />
                       </Button>

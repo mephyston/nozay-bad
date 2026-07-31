@@ -48,7 +48,7 @@
 </script>
 
 <Sheet.Root bind:open>
-  <Sheet.Content class="sm:max-w-md p-6 bg-card border-border overflow-y-auto h-full">
+  <Sheet.Content size="md" class="overflow-y-auto h-full">
     <Sheet.Header>
       <Sheet.Title>
         {#if editingId}

@@ -112,7 +112,7 @@
   </div>
 
   <Sheet.Root bind:open={showForm}>
-    <Sheet.Content class="w-full sm:max-w-md p-0 flex flex-col h-full bg-card border-border overflow-hidden">
+    <Sheet.Content size="md" class="p-0 flex flex-col h-full overflow-hidden">
       <Sheet.Header class="p-6 border-b border-border">
         <Sheet.Title>Nouveau Mouvement de Caisse</Sheet.Title>
         <Sheet.Description class="hidden">Enregistrement d'une recette ou dépense en espèces.</Sheet.Description>

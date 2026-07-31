@@ -134,7 +134,7 @@
 </div>
 
 <Sheet.Root bind:open={showFormSheet}>
-  <Sheet.Content class="w-full sm:max-w-md p-6 bg-card border-border overflow-y-auto">
+  <Sheet.Content size="md" class="overflow-y-auto">
     <Sheet.Header>
       <Sheet.Title class="flex items-center gap-2">
         {#if editingId}

@@ -1,5 +1,13 @@
 <script lang="ts" module>
 	export type Side = "top" | "right" | "bottom" | "left";
+	export type SheetSize = "sm" | "md" | "lg" | "xl";
+	// Largeur max des sheets latéraux (left/right). Le défaut sm reproduit l'ancien comportement.
+	const SHEET_SIZE: Record<SheetSize, string> = {
+		sm: "data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm",
+		md: "data-[side=left]:sm:max-w-md data-[side=right]:sm:max-w-md",
+		lg: "data-[side=left]:sm:max-w-lg data-[side=right]:sm:max-w-lg",
+		xl: "data-[side=left]:sm:max-w-2xl data-[side=right]:sm:max-w-2xl",
+	};
 </script>
 
 <script lang="ts">
@@ -16,6 +24,7 @@
 		ref = $bindable(null),
 		class: className,
 		side = "right",
+		size = "sm",
 		showCloseButton = true,
 		portalProps,
 		children,
@@ -23,6 +32,7 @@
 	}: WithoutChildrenOrChild<SheetPrimitive.ContentProps> & {
 		portalProps?: WithoutChildrenOrChild<ComponentProps<typeof SheetPortal>>;
 		side?: Side;
+		size?: SheetSize;
 		showCloseButton?: boolean;
 		children: Snippet;
 	} = $props();
@@ -35,7 +45,8 @@
 		data-slot="sheet-content"
 		data-side={side}
 		class={cn(
-			"bg-popover text-popover-foreground fixed z-50 flex flex-col gap-4 p-6 bg-clip-padding text-sm shadow-lg transition duration-200 ease-in-out data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:border-t data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-full data-[side=left]:border-r data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-full data-[side=right]:border-l data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:border-b data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-[side=bottom]:data-open:slide-in-from-bottom-10 data-[side=left]:data-open:slide-in-from-left-10 data-[side=right]:data-open:slide-in-from-right-10 data-[side=top]:data-open:slide-in-from-top-10 data-closed:animate-out data-closed:fade-out-0 data-[side=bottom]:data-closed:slide-out-to-bottom-10 data-[side=left]:data-closed:slide-out-to-left-10 data-[side=right]:data-closed:slide-out-to-right-10 data-[side=top]:data-closed:slide-out-to-top-10",
+			"bg-card text-card-foreground border-border fixed z-50 flex flex-col gap-4 p-6 bg-clip-padding text-sm shadow-lg transition duration-200 ease-in-out data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:border-t data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-full data-[side=left]:border-r data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-full data-[side=right]:border-l data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:border-b data-open:animate-in data-open:fade-in-0 data-[side=bottom]:data-open:slide-in-from-bottom-10 data-[side=left]:data-open:slide-in-from-left-10 data-[side=right]:data-open:slide-in-from-right-10 data-[side=top]:data-open:slide-in-from-top-10 data-closed:animate-out data-closed:fade-out-0 data-[side=bottom]:data-closed:slide-out-to-bottom-10 data-[side=left]:data-closed:slide-out-to-left-10 data-[side=right]:data-closed:slide-out-to-right-10 data-[side=top]:data-closed:slide-out-to-top-10",
+			SHEET_SIZE[size],
 			className
 		)}
 		{...restProps}

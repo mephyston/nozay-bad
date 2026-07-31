@@ -9,6 +9,8 @@ import Footer from "./sheet-footer.svelte";
 import Title from "./sheet-title.svelte";
 import Description from "./sheet-description.svelte";
 
+export type { Side, SheetSize } from "./sheet-content.svelte";
+
 export {
 	Root,
 	Close,

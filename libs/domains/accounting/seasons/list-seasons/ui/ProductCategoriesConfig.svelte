@@ -178,10 +178,10 @@
         </Table.Cell>
         <Table.Cell class="text-right space-x-1">
           <div class="flex justify-end items-center gap-2">
-            <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-primary" onclick={() => startEdit(cat)}>
+            <Button variant="ghost-muted" size="icon" onclick={() => startEdit(cat)}>
               <Edit class="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-destructive" onclick={() => confirmDelete(cat.id)} disabled={isSubmitting}>
+            <Button variant="ghost-danger" size="icon" onclick={() => confirmDelete(cat.id)} disabled={isSubmitting}>
               <Trash2 class="w-4 h-4" />
             </Button>
           </div>
@@ -191,7 +191,7 @@
   </DataTable>
 
 <Sheet.Root bind:open={showAddSheet}>
-  <Sheet.Content class="w-full sm:max-w-md p-6 bg-card border-border">
+  <Sheet.Content size="md">
     <Sheet.Header>
       <Sheet.Title class="flex items-center gap-2">
         <Plus class="w-5 h-5 text-primary" />
@@ -233,7 +233,7 @@
 </Sheet.Root>
 
 <Sheet.Root open={!!editingId} onOpenChange={(o) => { if (!o) editingId = null; }}>
-  <Sheet.Content class="w-full sm:max-w-md p-6 bg-card border-border">
+  <Sheet.Content size="md">
     <Sheet.Header>
       <Sheet.Title class="flex items-center gap-2">
         <Edit class="w-5 h-5 text-primary" />
