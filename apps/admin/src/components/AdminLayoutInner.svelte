@@ -321,18 +321,19 @@
                       </DropdownMenu.Item>
                     {/if}
                   {/each}
-                  {#if document.cookie.includes('impersonate_email')}
-                    <DropdownMenu.Separator />
-                    <DropdownMenu.Item
-                      class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md text-primary hover:bg-primary/10 cursor-pointer focus:bg-primary/10 focus:outline-none"
-                      onclick={() => {
-                        document.cookie = `impersonate_email=; path=/; max-age=0`;
-                        window.location.reload();
-                      }}
-                    >
-                      Revenir à mon compte
-                    </DropdownMenu.Item>
-                  {/if}
+                  <DropdownMenu.Separator />
+                {/if}
+
+                {#if typeof document !== 'undefined' && document.cookie.includes('impersonate_email')}
+                  <DropdownMenu.Item
+                    class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md text-primary hover:bg-primary/10 cursor-pointer focus:bg-primary/10 focus:outline-none"
+                    onclick={() => {
+                      document.cookie = `impersonate_email=; path=/; max-age=0`;
+                      window.location.reload();
+                    }}
+                  >
+                    Revenir à mon compte
+                  </DropdownMenu.Item>
                   <DropdownMenu.Separator />
                 {/if}
 
