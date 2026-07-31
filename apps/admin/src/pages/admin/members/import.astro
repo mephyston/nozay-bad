@@ -46,7 +46,6 @@ if (Astro.request.method === 'POST') {
       <PageHeader
         title="Import Adhérents"
         description="Importez le fichier d'extraction CSV depuis Poona pour synchroniser les informations des adhérents."
-        class="mb-0"
       />
 
       <PoonaImporter client:load {result} {error} />

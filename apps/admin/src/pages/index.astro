@@ -67,7 +67,6 @@ if (!dashboardData) {
       <PageHeader
         title="Tableau de bord"
         description={`Voici le récapitulatif de votre activité pour la saison ${dashboardData.season}.`}
-        class="mb-0"
       >
         <Fragment slot="actions">
           <SeasonSelector client:load seasons={seasonsList} current={currentSeason} />

@@ -128,7 +128,7 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
       <PageHeader
         title="Factures"
         description={`Création, suivi, validation et rapprochement comptable des factures émises par l'association pour la saison ${displaySeasonName}.`}
-        class="mb-0 print:hidden"
+        class="print:hidden"
       >
         <Fragment slot="actions">
           {isClosed && <Badge variant="outline" size="lg">Saison clôturée (Lecture seule)</Badge>}

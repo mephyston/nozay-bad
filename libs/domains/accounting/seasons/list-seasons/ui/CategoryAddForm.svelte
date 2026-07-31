@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Select } from '@nba/ui';
+  import { Select, Checkbox } from '@nba/ui';
   import { Plus } from "@lucide/svelte";
   import { Button, Input, FormField } from"@nba/ui";
   import type { AccountClass } from "./settings-types";
@@ -103,22 +103,12 @@
   </div>
 
   <FormField id="new-cat-hide" label="Masquer pour les notes de frais">
-    <input
-      type="checkbox"
-      id="new-cat-hide"
-      bind:checked={newCatHideInExpenses}
-      class="rounded border-border focus:ring-primary h-4 w-4"
-    />
+    <Checkbox id="new-cat-hide" bind:checked={newCatHideInExpenses} />
   </FormField>
   
   {#if initialData}
     <FormField id="new-cat-active" label="Catégorie active (visible en saisie)">
-      <input
-        type="checkbox"
-        id="new-cat-active"
-        bind:checked={newCatActive}
-        class="rounded border-border focus:ring-primary h-4 w-4"
-      />
+      <Checkbox id="new-cat-active" bind:checked={newCatActive} />
     </FormField>
   {/if}
 

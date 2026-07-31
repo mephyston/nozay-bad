@@ -210,12 +210,7 @@
         </FormField>
 
         <FormField id="new-season-active" label="Définir comme active immédiatement">
-          <input
-            type="checkbox"
-            id="new-season-active"
-            bind:checked={newSeasonActive}
-            class="rounded border-border focus:ring-primary h-4 w-4"
-          />
+          <Checkbox id="new-season-active" bind:checked={newSeasonActive} />
         </FormField>
 
         <Sheet.Footer class="pt-6">
@@ -286,12 +281,7 @@
                 </Alert.Root>
 
                 <FormField id="confirm-overwrite" label={`Je confirme vouloir écraser les soldes initiaux de la saison ${checkData.nextSeasonCode}.`}>
-                  <input
-                    type="checkbox"
-                    id="confirm-overwrite"
-                    bind:checked={confirmOverwrite}
-                    class="mt-1 rounded border-border text-destructive focus:ring-destructive"
-                  />
+                  <Checkbox id="confirm-overwrite" bind:checked={confirmOverwrite} class="mt-1" />
                 </FormField>
               {/if}
             </div>

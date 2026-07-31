@@ -109,7 +109,6 @@ const isClosed = !!seasonsList.find((s: any) => (s.code || String(s.id)) === sea
       <PageHeader
         title="Soldes initiaux"
         description="Définissez l'état des comptes au premier jour de l'exercice comptable."
-        class="mb-0"
       >
         <Fragment slot="actions">
           {isClosed && <Badge variant="outline" size="lg">Saison clôturée (Lecture seule)</Badge>}

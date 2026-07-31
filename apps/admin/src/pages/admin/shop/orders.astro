@@ -84,7 +84,7 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
       <PageHeader
         title="Commandes Boutique"
         description={`Validez ou refusez les demandes d'achats boutique des adhérents et consultez l'historique pour la saison ${displaySeasonName}.`}
-        class="mb-0 print:hidden"
+        class="print:hidden"
       >
         <Fragment slot="actions">
           {isClosed && <Badge variant="outline" size="lg">Saison clôturée (Lecture seule)</Badge>}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Select } from '@nba/ui';
+  import { Select, Checkbox } from '@nba/ui';
   import { Plus, Edit, Check, AlertCircle, X } from "@lucide/svelte";
   import { Button, Input, FormField, Alert } from"@nba/ui";
 
@@ -85,12 +85,7 @@
     </FormField>
 
     <div class="flex items-center gap-2 py-2">
-      <input
-        type="checkbox"
-        id="active"
-        bind:checked={active}
-        class="h-4 w-4 rounded border-border bg-background text-primary focus:ring-primary"
-      />
+      <Checkbox id="active" bind:checked={active} />
       <label for="active" class="text-sm font-medium text-foreground cursor-pointer select-none">
         Produit actif (visible par les adhérents)
       </label>
