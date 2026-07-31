@@ -39,8 +39,7 @@
     {
       label: "",
       items: [
-        { name: "Tableau de bord", icon: LayoutDashboard, href: "/" },
-        { name: "Note de frais", icon: Coins, href: "/admin/expenses" }
+        { name: "Tableau de bord", icon: LayoutDashboard, href: "/" }
       ]
     },
     {
@@ -55,6 +54,7 @@
         { name: "Rapports financiers", icon: BarChart3, href: "/admin/accounting/reports" },
         { name: "Grand Livre", icon: BookOpen, href: "/admin/accounting" },
         { name: "Factures", icon: FileCheck, href: "/admin/accounting/invoices" },
+        { name: "Notes de frais", icon: Coins, href: "/admin/expenses" },
         { name: "Rapprochement bancaire", icon: Scale, href: "/admin/accounting/import" },
         { name: "Remises de chèques", icon: Landmark, href: "/admin/accounting/cheques" },
         { name: "Caisse", icon: Wallet, href: "/admin/accounting/cash-box" },
