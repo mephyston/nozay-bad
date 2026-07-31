@@ -3,17 +3,11 @@ import { mount, flushSync } from 'svelte';
 import ShopCatalog from './ShopCatalog.svelte';
 
 // NOTE (migration Design System) : la sélection d'acheteur, de mode de paiement,
-// de catégorie et de produit passe désormais par le composant SearchableCombobox
-// (menu déroulant en portail). Le rendu des options n'est présent dans le DOM
-// qu'à l'ouverture du menu, et l'ouverture d'un Popover bits-ui n'est pas
-// fiable sous jsdom. Ces tests couvrent donc le comportement observable du
-// catalogue sans piloter l'intérieur des combobox ; l'interaction fine des
-// combobox relève des tests du composant @nba/ui lui-même.
-//
-// Régression connue à traiter séparément : la recherche d'adhérents par API
-// (fetch dynamique quand la prop `members` est vide) est devenue du code mort
-// après la migration vers SearchableCombobox — le combobox filtre la liste
-// fournie côté client et ne met plus à jour `memberSearchQuery`.
+// de catégorie et de produit passe désormais par le composant SearchableCombobox.
+// La plupart des tests couvrent le comportement observable du catalogue sans
+// piloter l'intérieur des combobox ; le dernier test vérifie la recherche
+// dynamique d'adhérents par API (restaurée via SearchableCombobox en mode
+// recherche externe : filter=false + onSearch).
 
 describe('ShopCatalog Component', () => {
   const members = [
@@ -93,5 +87,37 @@ describe('ShopCatalog Component', () => {
     // Aucun adhérent sélectionné → soumission désactivée
     expect(submitBtn!.disabled).toBe(true);
     expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it('performs dynamic adherent search via the API when the members list is empty', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([{ id: 7, firstName: 'Zoé', lastName: 'Testeur', licence: '999999' }])
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    // Cas storefront : aucun adhérent préchargé — la recherche passe par l'API.
+    mount(ShopCatalog, { target, props: { members: [], products, activeSeasonId: '25-26' } });
+    flushSync();
+
+    // Ouvrir le combobox acheteur (premier combobox) et saisir une requête.
+    const combo = target.querySelector('[role="combobox"]') as HTMLButtonElement;
+    combo.click();
+    flushSync();
+    await new Promise((r) => setTimeout(r, 60));
+    flushSync();
+
+    const searchInput = document.querySelector('[data-slot="command-input"]') as HTMLInputElement;
+    expect(searchInput).not.toBeNull();
+    searchInput.value = 'dup';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    flushSync();
+    await new Promise((r) => setTimeout(r, 400)); // debounce de la recherche
+    flushSync();
+
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/api/members-search'))).toBe(true);
   });
 });

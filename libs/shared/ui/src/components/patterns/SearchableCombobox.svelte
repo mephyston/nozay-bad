@@ -16,6 +16,9 @@
     emptyText = 'Aucun résultat.',
     value = $bindable(),
     onValueChange,
+    onSearch,
+    onOpenChange,
+    filter = true,
     disabled = false,
     id,
     class: className
@@ -26,12 +29,21 @@
     emptyText?: string;
     value?: string | number;
     onValueChange?: (value: string | number) => void;
+    // Recherche externe/asynchrone : appelé à chaque frappe. Fournir aussi
+    // filter={false} pour que le parent contrôle entièrement `items`.
+    onSearch?: (query: string) => void;
+    onOpenChange?: (open: boolean) => void;
+    filter?: boolean;
     disabled?: boolean;
     id?: string;
     class?: string;
   } = $props();
 
   let open = $state(false);
+  let searchText = $state('');
+
+  $effect(() => { onOpenChange?.(open); });
+  $effect(() => { onSearch?.(searchText); });
 
   const selectedLabel = $derived(
     items.find((item) => String(item.value) === String(value))?.label ?? placeholder
@@ -56,8 +68,8 @@
     {/snippet}
   </PopoverTrigger>
   <PopoverContent class="w-[--bits-popover-anchor-width] p-0">
-    <Command>
-      <CommandInput placeholder={searchPlaceholder} />
+    <Command shouldFilter={filter}>
+      <CommandInput placeholder={searchPlaceholder} bind:value={searchText} />
       <CommandEmpty>{emptyText}</CommandEmpty>
       <CommandGroup>
         <CommandList>

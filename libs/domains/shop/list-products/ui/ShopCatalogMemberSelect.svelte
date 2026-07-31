@@ -48,8 +48,13 @@
   <div class="relative">
     <SearchableCombobox
       items={memberItems}
-      placeholder="Rechercher par Nom, Prénom, ou N° Licence..."
+      filter={false}
+      placeholder="Sélectionner votre nom d'adhérent"
+      searchPlaceholder="Rechercher par Nom, Prénom, ou N° Licence..."
+      emptyText="Aucun adhérent trouvé. Tapez au moins 3 caractères."
       bind:value={selectedMemberId}
+      onSearch={(q) => { memberSearchQuery = q; }}
+      onOpenChange={(o) => { isMemberDropdownOpen = o; }}
     />
   </div>
   </FormField>
