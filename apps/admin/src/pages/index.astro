@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import AdminLayout from '../components/AdminLayout.svelte';
 import DashboardOverview from '../components/DashboardOverview.svelte';
+import { PageHeader, SeasonSelector } from '@nba/ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 
@@ -62,44 +63,18 @@ if (!dashboardData) {
 <Layout title="NBA 91 - Console Admin">
   <AdminLayout client:idle email={userEmail} breadcrumb="Tableau de Bord">
     <div class="space-y-6">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div class="text-center sm:text-left w-full sm:w-auto">
-          <h2 class="text-3xl font-bold tracking-tight text-foreground">Tableau de bord</h2>
-          <p class="text-muted-foreground mt-1 text-lg">Voici le récapitulatif de votre activité pour la saison {dashboardData.season}.</p>
-        </div>
-        <div class="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
-          <select
-            id="season-selector"
-            class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9"
-          >
-            {seasonsList.map((s: any) => {
-              const val = s.code || String(s.id);
-              const isSelected = val === currentSeason || String(s.id) === currentSeason;
-              return (
-                <option value={val} selected={isSelected}>{s.name}</option>
-              );
-            })}
-            {seasonsList.length === 0 && (
-              <option value="25-26" selected>Saison 2025-2026</option>
-            )}
-          </select>
-        </div>
-      </div>
+      <PageHeader
+        title="Tableau de bord"
+        description={`Voici le récapitulatif de votre activité pour la saison ${dashboardData.season}.`}
+        class="mb-0"
+      >
+        <Fragment slot="actions">
+          <SeasonSelector client:load seasons={seasonsList} current={currentSeason} />
+        </Fragment>
+      </PageHeader>
       
       <DashboardOverview client:idle data={dashboardData} />
       
     </div>
   </AdminLayout>
 </Layout>
-
-<script>
-  const selector = document.getElementById('season-selector');
-  if (selector) {
-    selector.addEventListener('change', (e) => {
-      const newSeason = (e.target as HTMLSelectElement).value;
-      const params = new URLSearchParams(window.location.search);
-      params.set('season', newSeason);
-      window.location.href = `/?${params.toString()}`;
-    });
-  }
-</script>

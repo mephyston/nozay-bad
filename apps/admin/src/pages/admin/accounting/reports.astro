@@ -1,6 +1,7 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert, SeasonSelector, Button } from '@nba/ui';
 import { GeneralMeetingReport } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
@@ -130,45 +131,21 @@ try {
 <Layout title="Rapports financiers - NBA 91">
   <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Rapports financiers">
     <div class="space-y-6">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div class="text-center sm:text-left w-full sm:w-auto">
-          <h1 class="text-3xl font-bold tracking-tight">Rapports financiers</h1>
-          <p class="text-muted-foreground mt-2">
-            Consultez les comptes de résultat, le bilan de trésorerie et gérez les budgets prévisionnels.
-          </p>
-        </div>
-        <div class="flex flex-wrap items-center justify-center sm:justify-end gap-3 print:hidden w-full sm:w-auto">
-          <select
-            id="season-selector"
-            class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9"
-          >
-            {seasonsList.map((s: any) => {
-              const val = s.code || String(s.id);
-              const isSelected = val === season || String(s.id) === season;
-              return (
-                <option value={val} selected={isSelected}>{s.name}</option>
-              );
-            })}
-            {seasonsList.length === 0 && (
-              <option value="25-26" selected>Saison 2025-2026</option>
-            )}
-          </select>
-
-          <button
-            id="print-btn"
-            class="px-3 py-1.5 bg-primary text-primary-foreground text-xs font-medium rounded-md shadow hover:bg-primary/90 cursor-pointer inline-flex items-center gap-1.5 border-0 h-9"
-          >
+      <PageHeader
+        title="Rapports financiers"
+        description="Consultez les comptes de résultat, le bilan de trésorerie et gérez les budgets prévisionnels."
+        class="mb-0"
+      >
+        <Fragment slot="actions">
+          <SeasonSelector client:load seasons={seasonsList} current={season} />
+          <Button id="print-btn">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
             Imprimer
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Fragment>
+      </PageHeader>
 
-      {errorMsg && (
-        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
-          {errorMsg}
-        </div>
-      )}
+      {errorMsg && <ErrorAlert message={errorMsg} />}
 
       <GeneralMeetingReport client:load report={reportData} prevReport={prevReportData} seasonId={season} seasons={seasonsList} categories={categoriesList} accountClasses={accountClassesList} budget={budgetList} />
     </div>
@@ -176,16 +153,6 @@ try {
 </Layout>
 
 <script>
-  const selector = document.getElementById('season-selector');
-  if (selector) {
-    selector.addEventListener('change', (e) => {
-      const newSeason = (e.target as HTMLSelectElement).value;
-      const params = new URLSearchParams(window.location.search);
-      params.set('season', newSeason);
-      window.location.href = `/admin/accounting/reports?${params.toString()}`;
-    });
-  }
-
   const printBtn = document.getElementById('print-btn');
   if (printBtn) {
     printBtn.addEventListener('click', () => window.print());

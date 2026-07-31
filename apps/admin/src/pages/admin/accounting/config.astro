@@ -1,6 +1,7 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert, Badge, SeasonSelector } from '@nba/ui';
 import { InitialBalancesConfig } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
@@ -105,56 +106,20 @@ const isClosed = !!seasonsList.find((s: any) => (s.code || String(s.id)) === sea
 <Layout title="Soldes initiaux - NBA 91">
   <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Soldes initiaux">
     <div class="space-y-6">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div class="text-center sm:text-left w-full sm:w-auto">
-          <h1 class="text-3xl font-bold tracking-tight">Soldes initiaux</h1>
-          <p class="text-muted-foreground mt-2">
-            Définissez l'état des comptes au premier jour de l'exercice comptable.
-          </p>
-        </div>
-        <div class="flex flex-wrap items-center justify-center sm:justify-end gap-3 print:hidden w-full sm:w-auto">
-          {isClosed && (
-            <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
-              Saison clôturée (Lecture seule)
-            </span>
-          )}
-          <select
-            id="season-selector"
-            class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9"
-          >
-            {seasonsList.map((s: any) => {
-              const val = s.code || String(s.id);
-              const isSelected = val === season || String(s.id) === season;
-              return (
-                <option value={val} selected={isSelected}>{s.name}</option>
-              );
-            })}
-            {seasonsList.length === 0 && (
-              <option value="25-26" selected>Saison 2025-2026</option>
-            )}
-          </select>
-        </div>
-      </div>
+      <PageHeader
+        title="Soldes initiaux"
+        description="Définissez l'état des comptes au premier jour de l'exercice comptable."
+        class="mb-0"
+      >
+        <Fragment slot="actions">
+          {isClosed && <Badge variant="outline" size="lg" class="font-bold">Saison clôturée (Lecture seule)</Badge>}
+          <SeasonSelector client:load seasons={seasonsList} current={season} />
+        </Fragment>
+      </PageHeader>
 
-      {errorMsg && (
-        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
-          {errorMsg}
-        </div>
-      )}
+      {errorMsg && <ErrorAlert message={errorMsg} />}
 
       <InitialBalancesConfig client:load seasons={seasonsList} seasonId={season} />
     </div>
   </AdminLayout>
 </Layout>
-
-<script>
-  const selector = document.getElementById('season-selector');
-  if (selector) {
-    selector.addEventListener('change', (e) => {
-      const newSeason = (e.target as HTMLSelectElement).value;
-      const params = new URLSearchParams(window.location.search);
-      params.set('season', newSeason);
-      window.location.href = `/admin/accounting/config?${params.toString()}`;
-    });
-  }
-</script>

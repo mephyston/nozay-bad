@@ -1,6 +1,7 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert, Badge } from '@nba/ui';
 import { CashBoxManager } from '@nba/accounting-ui';
 
 import { env } from 'cloudflare:workers';
@@ -91,27 +92,17 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
 <Layout title="Gestion de la Caisse - NBA 91">
   <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Caisse">
     <div class="space-y-6">
-      {errorMsg && (
-        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
-          {errorMsg}
-        </div>
-      )}
+      {errorMsg && <ErrorAlert message={errorMsg} />}
 
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
-        <div class="text-center sm:text-left w-full sm:w-auto">
-          <h1 class="text-3xl font-bold tracking-tight">Gestion de la Caisse</h1>
-          <p class="text-muted-foreground mt-2">
-            Suivi des mouvements d'espèces et transactions physiques de la caisse de l'association pour la saison {displaySeasonName}.
-          </p>
-        </div>
-        <div class="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
-          {isClosed && (
-            <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
-              Saison clôturée (Lecture seule)
-            </span>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Gestion de la Caisse"
+        description={`Suivi des mouvements d'espèces et transactions physiques de la caisse de l'association pour la saison ${displaySeasonName}.`}
+        class="mb-0 print:hidden"
+      >
+        <Fragment slot="actions">
+          {isClosed && <Badge variant="outline" size="lg" class="font-bold">Saison clôturée (Lecture seule)</Badge>}
+        </Fragment>
+      </PageHeader>
 
       <CashBoxManager
         client:load
