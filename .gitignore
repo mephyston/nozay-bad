@@ -67,3 +67,13 @@ db.sqlite
 # Environment Variables
 .env
 .env.*
+
+# Storybook & régression visuelle Playwright
+storybook-static/
+playwright-report/
+test-results/
+tests/visual/**/*-actual.png
+tests/visual/**/*-diff.png
+
+# Références visuelles macOS locales (la CI Linux fait foi)
+tests/visual/**/*-darwin.png

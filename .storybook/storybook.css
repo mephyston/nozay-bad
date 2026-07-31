@@ -1,0 +1,11 @@
+/* Feuille de style du catalogue : Tailwind v4 + les tokens/variants du design
+   system, importés depuis la source de vérité partagée des apps. */
+@import "../apps/admin/src/styles/global.css";
+
+/* Le fond du canevas suit le thème (comme le <body> des apps). Le toggle
+   clair/sombre ajoute la classe `.dark` sur <html>, ce qui bascule les tokens. */
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
