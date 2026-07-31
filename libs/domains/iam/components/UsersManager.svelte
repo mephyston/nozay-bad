@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Input, Button, Label, Badge, Table, Card, EmptyState, uiConfirm, toast } from '@nba/ui';
-  import { Plus, Trash2, Shield } from 'lucide-svelte';
+  import { Plus, Trash2, Shield } from '@lucide/svelte';
   
   let { users = [] } = $props<{ users: any[] }>();
 
