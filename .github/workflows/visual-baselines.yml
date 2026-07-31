@@ -46,10 +46,11 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- tests/visual; then
+          git add tests/visual
+          # --cached voit aussi les fichiers nouvellement ajoutés (non suivis).
+          if git diff --cached --quiet -- tests/visual; then
             echo "Aucune référence à mettre à jour."
             exit 0
           fi
-          git add tests/visual
           git commit -m "test(visual): update Linux baselines [skip ci]"
           git push
