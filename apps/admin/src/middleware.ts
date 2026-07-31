@@ -29,16 +29,23 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
       try { runtimeEnv = (context.locals as any).runtime?.env || {}; } catch (err) {}
       const resolvedEnv = { ...cfEnv, ...runtimeEnv } as Record<string, string>;
       
-      const db = drizzle(resolvedEnv.DB as any);
-      const user = await db.select().from(adminUsersTable).where(eq(adminUsersTable.email, devEmail)).get();
+      const { createApiClient } = await import('@nba/api-client');
+      const apiService = createApiClient(resolvedEnv);
+      const res = await apiService.fetch('http://localhost/iam/users');
       
-      if (user) {
-        context.locals.user = { email: user.email, permissions: user.permissions };
-      } else {
-        context.locals.user = { email: devEmail, permissions: ['*'] };
+      if (res.ok) {
+        const json = await res.json() as any;
+        const users = json.data || [];
+        const user = users.find((u: any) => u.email === devEmail);
+        if (user) {
+          context.locals.user = { email: user.email, name: user.name, permissions: user.permissions };
+          return next();
+        }
       }
+      // Default fallback
+      context.locals.user = { email: devEmail, name: devEmail.split('@')[0], permissions: ['*'] };
     } catch (e) {
-      context.locals.user = { email: devEmail, permissions: ['*'] };
+      context.locals.user = { email: devEmail, name: devEmail.split('@')[0], permissions: ['*'] };
     }
     return next();
   }
@@ -99,6 +106,7 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
 
     let finalEmail = user.email;
     let finalPermissions = user.permissions;
+    let finalName = user.name || user.email.split('@')[0];
 
     // Impersonation logic (only for super-admins)
     if (finalPermissions.includes('*')) {
@@ -110,6 +118,7 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
           if (impUser) {
             finalEmail = impUser.email;
             finalPermissions = impUser.permissions;
+            finalName = impUser.name || impUser.email.split('@')[0];
           }
         } catch (e) {}
       }
@@ -117,6 +126,7 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
 
     context.locals.user = { 
       email: finalEmail,
+      name: finalName,
       permissions: finalPermissions
     };
     return next();

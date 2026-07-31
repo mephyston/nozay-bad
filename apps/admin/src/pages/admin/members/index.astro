@@ -56,7 +56,7 @@ if (seasonsList.length > 0) {
 ---
 
 <Layout title="Gestion des Adhérents - NBA 91">
-  <AdminLayout client:idle breadcrumb="Adhérents / Liste" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout name={Astro.locals.user?.name} client:idle breadcrumb="Adhérents / Liste" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       <PageHeader
         title="Adhérents"

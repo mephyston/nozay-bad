@@ -129,7 +129,7 @@ try {
 ---
 
 <Layout title="Rapports financiers - NBA 91">
-  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Rapports financiers" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Rapports financiers" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       <PageHeader
         title="Rapports financiers"

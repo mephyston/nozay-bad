@@ -55,7 +55,7 @@ try {
 ---
 
 <Layout title="Accès et Permissions - NBA 91">
-  <AdminLayout client:idle email={user?.email || ''} permissions={user?.permissions || []} breadcrumb="Accès & Permissions">
+  <AdminLayout name={Astro.locals.user?.name} client:idle email={user?.email || ''} permissions={user?.permissions || []} breadcrumb="Accès & Permissions">
     <div class="space-y-6">
       <PageHeader
         title="Accès et Permissions"

@@ -3,9 +3,10 @@
   import AdminLayoutInner from "./AdminLayoutInner.svelte";
   import { onMount } from "svelte";
 
-  let { children, email = "admin@nozaybad.fr", permissions = [], breadcrumb = "Tableau de Bord" } = $props<{
+  let { children, email = "admin@nozaybad.fr", name, permissions = [], breadcrumb = "Tableau de Bord" } = $props<{
     children?: import('svelte').Snippet;
     email?: string;
+    name?: string;
     permissions?: string[];
     breadcrumb?: string;
   }>();
@@ -31,7 +32,7 @@
 </script>
 
 <Sidebar.Provider bind:open={sidebarOpen} onOpenChange={handleOpenChange}>
-  <AdminLayoutInner {email} {permissions} {breadcrumb}>
+  <AdminLayoutInner {email} {name} {permissions} {breadcrumb}>
     {@render children?.()}
   </AdminLayoutInner>
   <Toaster position="top-right" richColors />

@@ -146,7 +146,7 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
 ---
 
 <Layout title="Remises de Chèques - NBA 91">
-  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Remises de chèques" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Remises de chèques" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       {errorMsg && <ErrorAlert message={errorMsg} />}
 

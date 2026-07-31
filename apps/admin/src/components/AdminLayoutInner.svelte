@@ -27,9 +27,10 @@
   import ThemeToggle from "./ThemeToggle.svelte";
   import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm } from "@nba/ui";
 
-  let { children, email, permissions = [], breadcrumb } = $props<{
+  let { children, email, name, permissions = [], breadcrumb } = $props<{
     children?: import('svelte').Snippet;
     email: string;
+    name?: string;
     permissions?: string[];
     breadcrumb: string;
   }>();
@@ -166,7 +167,7 @@
   const subGroup = $derived(breadcrumbParts[1]?.trim());
 
   const displayName = $derived(
-    (email.split('@')[0] || "Admin").charAt(0).toUpperCase() + (email.split('@')[0] || "Admin").slice(1).toLowerCase()
+    name ? name : ((email.split('@')[0] || "Admin").charAt(0).toUpperCase() + (email.split('@')[0] || "Admin").slice(1).toLowerCase())
   );
 
   function getBreadcrumbHref(part: string): string | undefined {
