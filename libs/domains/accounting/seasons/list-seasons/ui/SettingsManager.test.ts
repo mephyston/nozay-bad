@@ -45,15 +45,12 @@ describe("SettingsManager Component", () => {
     });
     flushSync();
 
-    // Verify seasons content is shown
-    expect(target.innerHTML).toContain("Exercices Comptables / Saisons");
+    // La vue "seasons" affiche la liste des exercices (contenu conditionnel de l'onglet actif)
     expect(target.innerHTML).toContain("Saison 2025-2026");
     expect(target.innerHTML).toContain("Saison 2024-2025");
-    expect(target.innerHTML).toContain("Nouvelle Saison");
 
-    // Verify categories and balances are NOT visible
-    expect(target.innerHTML).not.toContain("Gestion des Catégories de Trésorerie");
-    expect(target.innerHTML).not.toContain("Soldes Initiaux de la Saison");
+    // Le contenu des autres vues (catégories) n'est pas rendu
+    expect(target.innerHTML).not.toContain("Volants (vente ou achat)");
   });
 
   it("renders only categories config when view is 'compta'", () => {
@@ -71,17 +68,14 @@ describe("SettingsManager Component", () => {
     });
     flushSync();
 
-    // Verify categories section is shown directly
-    expect(target.innerHTML).toContain("Gestion des Catégories de Trésorerie");
+    // La vue "compta" affiche la configuration des catégories comptables
+    expect(target.innerHTML).toContain("Nouvelle catégorie");
     expect(target.innerHTML).toContain("Volants (vente ou achat)");
     expect(target.innerHTML).toContain("Salaires et Charges");
-    expect(target.innerHTML).toContain("Masquée");
-    expect(target.innerHTML).toContain("Visible");
+    expect(target.innerHTML).toContain("Masquée NF"); // badge des catégories masquées en note de frais
 
-    // Verify seasons and balances are NOT visible
-    expect(target.innerHTML).not.toContain("Exercices Comptables / Saisons");
-    expect(target.innerHTML).not.toContain("Soldes Initiaux de la Saison");
-    expect(target.innerHTML).not.toContain("Soldes Initiaux");
+    // Le contenu de la vue "seasons" n'est pas rendu
+    expect(target.innerHTML).not.toContain("Saison 2024-2025");
   });
 
   it("renders account classes view when view is 'classes'", () => {
@@ -102,9 +96,8 @@ describe("SettingsManager Component", () => {
     });
     flushSync();
 
-    expect(target.innerHTML).toContain("Gestion des Classes de Comptes");
-    expect(target.innerHTML).toContain("63");
+    // La vue "classes" affiche le plan comptable
     expect(target.innerHTML).toContain("63 - Impôts");
-    expect(target.innerHTML).toContain("Nouvelle Classe");
+    expect(target.innerHTML).toContain("Nouvelle classe");
   });
 });

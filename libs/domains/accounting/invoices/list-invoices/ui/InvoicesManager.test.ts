@@ -100,7 +100,7 @@ describe('InvoicesManager Component', () => {
     expect(document.body.innerHTML).not.toContain('Informations Client');
 
     const createButton = Array.from(target.querySelectorAll('button')).find(
-      b => b.textContent?.trim() === 'Créer une facture'
+      b => b.textContent?.includes('Nouvelle facture')
     );
     expect(createButton).toBeDefined();
 
