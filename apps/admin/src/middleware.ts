@@ -2,9 +2,6 @@ import { defineMiddleware } from 'astro:middleware';
 import type { APIContext, MiddlewareNext } from 'astro';
 import { jwtVerify, createRemoteJWKSet } from 'jose';
 import { env as cfEnv } from 'cloudflare:workers';
-import { drizzle } from 'drizzle-orm/d1';
-import { eq } from 'drizzle-orm';
-import { adminUsersTable } from '@nba/iam/schema';
 
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
@@ -82,23 +79,34 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
     });
 
     const email = payload.email as string;
-    const db = drizzle(resolvedEnv.DB as any);
+    
+    const { createApiClient } = await import('@nba/api-client');
+    const apiService = createApiClient(resolvedEnv);
+    const res = await apiService.fetch('http://localhost/iam/users');
+    
+    if (!res.ok) {
+      throw new Error("Erreur lors de la communication avec l'API IAM");
+    }
 
-    // Bootstrap ou chargement de l'utilisateur
-    let user = await db.select().from(adminUsersTable).where(eq(adminUsersTable.email, email)).get();
+    const json = await res.json() as any;
+    const users = json.data || [];
+    let user = users.find((u: any) => u.email === email);
 
     if (!user) {
       // Est-ce le tout premier administrateur du système ?
-      const allUsersCount = await db.select({ id: adminUsersTable.id }).from(adminUsersTable).limit(1).all();
-      if (allUsersCount.length === 0) {
+      if (users.length === 0) {
         // Bootstrap: on donne tous les droits
-        const result = await db.insert(adminUsersTable).values({
-          email,
-          name: email.split('@')[0] || 'Admin',
-          permissions: ['*'],
-          createdAt: new Date()
-        }).returning().get();
-        user = result;
+        const createRes = await apiService.fetch('http://localhost/iam/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, permissions: ['*'] })
+        });
+        if (createRes.ok) {
+          const created = await createRes.json() as any;
+          user = created.data;
+        } else {
+          return new Response('Erreur lors de la création du compte administrateur initial.', { status: 500 });
+        }
       } else {
         return new Response('Accès refusé. Compte non configuré.', { status: 403 });
       }
@@ -114,7 +122,7 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
       if (impersonateCookie) {
         try {
           const impEmail = decodeURIComponent(impersonateCookie);
-          const impUser = await db.select().from(adminUsersTable).where(eq(adminUsersTable.email, impEmail)).get();
+          const impUser = users.find((u: any) => u.email === impEmail);
           if (impUser) {
             finalEmail = impUser.email;
             finalPermissions = impUser.permissions;
@@ -130,7 +138,8 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
       permissions: finalPermissions
     };
     return next();
-  } catch {
+  } catch (err) {
+    console.error("[auth] Error:", err);
     return new Response('Authentification invalide ou expirée.', { status: 403 });
   }
 };
