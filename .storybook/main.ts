@@ -1,6 +1,20 @@
 import type { StorybookConfig } from '@storybook/svelte-vite';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
+
+// Reprend TOUS les alias @nba/* de tsconfig.base.json pour que les imports
+// transitifs des patterns (ex. MobileBottomNav → @nba/iam-ui) se résolvent.
+function nbaAliases(): Record<string, string> {
+  const tsconfig = readFileSync(new URL('../tsconfig.base.json', import.meta.url), 'utf8');
+  const { paths } = JSON.parse(tsconfig).compilerOptions as { paths: Record<string, string[]> };
+  return Object.fromEntries(
+    Object.entries(paths).map(([name, [target]]) => [
+      name,
+      fileURLToPath(new URL(`../${target}`, import.meta.url)),
+    ]),
+  );
+}
 
 const config: StorybookConfig = {
   stories: ['../libs/shared/ui/**/*.stories.@(svelte|ts)'],
@@ -31,7 +45,7 @@ const config: StorybookConfig = {
     cfg.resolve = cfg.resolve ?? {};
     cfg.resolve.alias = {
       ...(cfg.resolve.alias ?? {}),
-      '@nba/ui': fileURLToPath(new URL('../libs/shared/ui/src/index.ts', import.meta.url)),
+      ...nbaAliases(),
     };
     return cfg;
   },
