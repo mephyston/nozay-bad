@@ -11,31 +11,32 @@ une image de référence commitée. Toute dérive visuelle non intentionnelle fa
   `#storybook-root`.
 - Le serveur statique (`scripts/serve-storybook.mjs`, sans dépendance) sert le
   build Storybook ; Playwright le démarre automatiquement (`webServer`).
-- Les références vivent dans `stories.spec.ts-snapshots/` et sont **suffixées
-  par plateforme** (`-darwin`, `-linux`). Chaque plateforme a ses propres PNG
-  car le rendu des polices diffère entre macOS et Linux.
+- Les références vivent dans `stories.spec.ts-snapshots/`, suffixées par
+  plateforme (`-darwin` ici). Le rendu des polices différant d'un OS à l'autre,
+  la CI tourne sur un runner **macOS** pour matcher ces références.
 
-## Commandes
+## Commandes (local, macOS)
 
 ```bash
 npm run build-storybook     # prérequis : régénère index.json + assets
 npm run test:visual         # compare aux références (échoue sur dérive)
-npm run test:visual:update  # régénère les références de LA plateforme courante
+npm run test:visual:update  # régénère les références après un changement assumé
 ```
 
-## Références Linux (CI)
+## Dans le pipeline
 
-La CI (`.github/workflows/visual.yml`) tourne dans le conteneur Playwright
-officiel : elle a besoin des références `-linux`. Sur un poste macOS,
-`test:visual:update` ne produit que les `-darwin`. Pour (re)générer les Linux :
+Le job `visual` de `.github/workflows/deploy.yml` s'exécute sur `macos-latest` à
+chaque PR et push (main/staging) : il build Storybook et lance `test:visual`.
+Les trois jobs de déploiement en dépendent — **un déploiement est bloqué si une
+dérive visuelle est détectée**. En cas d'échec, l'artefact
+`playwright-visual-report` (rapport HTML + PNG générés) est téléchargeable.
 
-```bash
-./scripts/update-visual-linux.sh   # nécessite Docker
-```
+### Flux d'un changement visuel intentionnel
 
-Alternative sans Docker : lancer le workflow, télécharger l'artefact
-`playwright-visual-report` du premier run (qui échoue faute de baselines),
-récupérer les `*-linux.png` générés et les committer.
+1. Modifier le composant.
+2. `npm run test:visual:update` en local → régénère les PNG `-darwin`.
+3. Committer le changement **et** les PNG mis à jour dans la même PR.
+   La CI compare aux nouvelles références → vert.
 
 ## Ajouter un composant au harnais
 

@@ -121,13 +121,54 @@ jobs:
           npx nx affected -t test --base=$NX_BASE --head=$NX_HEAD --parallel=3
 
   # ──────────────────────────────────────────────────────────────
+  # 2b. Régression visuelle du design system (Storybook + Playwright)
+  #     Sur macOS pour matcher les références PNG commitées (suffixe -darwin).
+  # ──────────────────────────────────────────────────────────────
+  visual:
+    name: Visual regression
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install chromium
+
+      - name: Build Storybook
+        run: npm run build-storybook
+        env:
+          STORYBOOK_DISABLE_TELEMETRY: "1"
+
+      - name: Run visual regression
+        run: npm run test:visual
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-visual-report
+          path: |
+            playwright-report/
+            tests/visual/**/*.png
+          retention-days: 14
+
+  # ──────────────────────────────────────────────────────────────
   # 3. Deploy API (en premier — les autres apps en dépendent via Service Binding)
   # ──────────────────────────────────────────────────────────────
   deploy-api:
     name: Deploy API Worker
     runs-on: ubuntu-latest
-    needs: [detect-changes, test]
-    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.api == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped')
+    needs: [detect-changes, test, visual]
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.api == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && needs.visual.result == 'success'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -171,8 +212,8 @@ jobs:
   deploy-storefront:
     name: Deploy Storefront Worker
     runs-on: ubuntu-latest
-    needs: [detect-changes, test, deploy-api]
-    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.storefront == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    needs: [detect-changes, test, visual, deploy-api]
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.storefront == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && needs.visual.result == 'success' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -216,8 +257,8 @@ jobs:
   deploy-admin:
     name: Deploy Admin Worker
     runs-on: ubuntu-latest
-    needs: [detect-changes, test, deploy-api]
-    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.admin == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    needs: [detect-changes, test, visual, deploy-api]
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.admin == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && needs.visual.result == 'success' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
