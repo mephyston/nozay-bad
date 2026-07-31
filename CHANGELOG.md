@@ -1,3 +1,12 @@
+# [1.0.0-beta.4](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2026-07-31)
+
+
+### Bug Fixes
+
+* **ci:** detect untracked baselines in commit step [no-deploy] ([a6eb0d2](https://github.com/mephyston/nozay-bad/commit/a6eb0d2f37d123d1ad83aa6c3584987643522c28))
+* **storybook:** make build work on Astro's Vite 8 (rolldown) toolchain ([ce6f7a4](https://github.com/mephyston/nozay-bad/commit/ce6f7a45fc9974ce115e9e9d73e5ec903a129c43))
+* **storybook:** resolve all @nba/* aliases from tsconfig (MobileBottomNav→iam-ui) ([3694503](https://github.com/mephyston/nozay-bad/commit/3694503014da3f6616cfd88dabc02ac141a4a367))
+
 # [1.0.0-beta.3](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2026-07-31)
 
 
