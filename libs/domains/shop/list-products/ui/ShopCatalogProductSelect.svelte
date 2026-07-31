@@ -33,7 +33,7 @@
   const categoryItems = $derived(categoriesList.map((c) => ({ label: c.label, value: c.value })));
   const productItems = $derived(
     filteredProducts.map((p) => ({
-      label: `${p.name} — ${new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((p.priceCents ?? (p as any).price ?? 0)) / 100).replace(/\s/g, ' ')} € (${p.stock > 0 ? `Stock: ${p.stock}` : 'Rupture'})`,
+      label: `${p.name} — ${new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(((p.priceCents ?? (p as any).price ?? 0)) / 100).replace(/\s/g, ' ')} €${p.trackStock ? ` (${p.stock > 0 ? `Stock: ${p.stock}` : 'Rupture'})` : ''}`,
       value: p.id
     }))
   );
@@ -88,7 +88,7 @@
         <Button
           variant="ghost"
           onclick={onDecrementQty}
-          disabled={selectedQuantity <= 1 || !selectedProduct || selectedProduct.stock <= 0}
+          disabled={selectedQuantity <= 1 || !selectedProduct || (selectedProduct.trackStock && selectedProduct.stock <= 0)}
           class="px-3 py-1 h-10 text-sm hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0"
         >
           -
@@ -99,20 +99,20 @@
           min="1"
           max={maxQuantity}
           bind:value={selectedQuantity}
-          disabled={!selectedProduct || selectedProduct.stock <= 0}
+          disabled={!selectedProduct || (selectedProduct.trackStock && selectedProduct.stock <= 0)}
           class="w-12 h-10 text-center text-sm font-semibold border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0"
         />
         <Button
           variant="ghost"
           onclick={onIncrementQty}
-          disabled={!selectedProduct || selectedQuantity >= maxQuantity || selectedProduct.stock <= 0}
+          disabled={!selectedProduct || selectedQuantity >= maxQuantity || (selectedProduct.trackStock && selectedProduct.stock <= 0)}
           class="px-3 py-1 h-10 text-sm hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0"
         >
           +
         </Button>
       </div>
 
-      {#if selectedProduct}
+      {#if selectedProduct && selectedProduct.trackStock}
         <div class="text-xs text-muted-foreground ml-2">
           {#if selectedProduct.stock <= 0}
             <Badge variant="destructive" size="xs">Rupture de stock</Badge>

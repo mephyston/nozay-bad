@@ -35,7 +35,7 @@
   let filteredProducts = $derived(selectedCategory === 0 ? productsList : productsList.filter(p => p.productCategoryId === selectedCategory));
   let selectedProduct = $derived(selectedProductId !== null ? productsList.find(p => p.id === Number(selectedProductId)) || null : null);
   let totalPriceCents = $derived(selectedProduct ? (selectedProduct.priceCents ?? (selectedProduct as any).price ?? 0) * selectedQuantity : 0);
-  let maxQuantity = $derived(selectedProduct ? Math.min(selectedProduct.stock, 99) : 1);
+  let maxQuantity = $derived(selectedProduct ? (selectedProduct.trackStock ? Math.min(selectedProduct.stock, 99) : 99) : 1);
 
   $effect(() => {
     if (filteredProducts.length > 0) {
@@ -46,7 +46,7 @@
 
   $effect(() => {
     if (selectedProduct) {
-      const max = Math.min(selectedProduct.stock, 99);
+      const max = selectedProduct.trackStock ? Math.min(selectedProduct.stock, 99) : 99;
       if (max > 0 && selectedQuantity > max) selectedQuantity = max;
       else if (selectedQuantity < 1) selectedQuantity = 1;
     }
