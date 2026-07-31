@@ -25,7 +25,7 @@
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
   import ThemeToggle from "./ThemeToggle.svelte";
-  import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion } from "@nba/ui";
+  import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, MobileBottomNav, PwaInstallBanner } from "@nba/ui";
 
   let { children, email, name, permissions = [], breadcrumb } = $props<{
     children?: import('svelte').Snippet;
@@ -186,6 +186,8 @@
   }
 </script>
 
+<PwaInstallBanner />
+
 <Sidebar.Root collapsible="icon" variant="inset">
   <!-- Header -->
   <Sidebar.Header class="p-2 border-0 bg-transparent">
@@ -294,8 +296,8 @@
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
             <DropdownMenu.Content
-              class="w-56 rounded-lg bg-card text-card-foreground border border-border p-1 shadow-md z-50"
-              side="right"
+              class="w-56 rounded-lg bg-card text-card-foreground border border-border p-1 shadow-md z-[100]"
+              side={sidebar.isMobile ? "bottom" : "right"}
               align="end"
               sideOffset={4}
             >
@@ -359,9 +361,9 @@
   <header class="flex h-14 shrink-0 items-center justify-between px-6 border-b border-border bg-background">
     <div class="flex items-center gap-4">
       <!-- Sidebar Trigger handles mobile/desktop collapse/expand -->
-      <Sidebar.Trigger aria-label="Menu" class="cursor-pointer" />
+      <Sidebar.Trigger aria-label="Menu" class="cursor-pointer hidden md:flex" />
       
-      <Separator orientation="vertical" class="h-4" />
+      <Separator orientation="vertical" class="h-4 hidden md:block" />
       
       <!-- Breadcrumb -->
       <Breadcrumb.Root>
@@ -393,8 +395,8 @@
   </header>
 
   <!-- Main Content Area -->
-  <div class="flex-1 overflow-y-auto">
-    <main class="p-6">
+  <div class="flex-1 overflow-y-auto pb-20 md:pb-0">
+    <main class="p-4 md:p-6">
       {#if children}
         {@render children()}
       {/if}
@@ -402,4 +404,5 @@
   </div>
 </Sidebar.Inset>
 
+<MobileBottomNav permissions={permissions} onMenuClick={() => sidebar.setOpenMobile(true)} />
 <GlobalConfirm />

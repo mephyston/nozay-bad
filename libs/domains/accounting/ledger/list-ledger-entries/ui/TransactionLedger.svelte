@@ -59,6 +59,16 @@
     const params = new URLSearchParams(window.location.search);
     filteredCategory = params.get('category');
     filteredClassCode = params.get('classCode');
+
+    // Handle PWA shortcuts
+    const action = params.get('action');
+    if (action === 'new-recette') {
+      openPanel('recette');
+    } else if (action === 'new-depense') {
+      openPanel('depense');
+    } else if (action === 'new-transfert') {
+      openPanel('transfert');
+    }
   });
 
   $effect(() => {

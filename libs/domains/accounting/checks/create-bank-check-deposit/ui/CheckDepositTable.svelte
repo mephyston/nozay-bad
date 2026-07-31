@@ -4,6 +4,7 @@
   import type { CheckDepositState } from './check-deposit-state.svelte';
 
   import type { Snippet } from 'svelte';
+  import { onMount } from 'svelte';
 
   interface Props {
     depositState: CheckDepositState;
@@ -14,6 +15,13 @@
   }
 
   let { depositState, seasonId, seasons, onDeleteCheck, tabsNav }: Props = $props();
+
+  onMount(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'new-cheque' && !depositState.isClosed) {
+      depositState.showAddCheckModal = true;
+    }
+  });
 </script>
 
 <DataTable
