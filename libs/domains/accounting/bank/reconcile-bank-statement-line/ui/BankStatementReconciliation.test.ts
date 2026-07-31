@@ -208,9 +208,10 @@ describe('BankStatementReconciliation Component', () => {
     btn.click();
     flushSync();
 
-    // Cliquer sur l'onglet Suggestions pour afficher la liste des suggestions
-    const sugTabBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Suggestions')) as HTMLButtonElement;
-    expect(sugTabBtn).not.toBeNull();
+    // Cliquer sur l'onglet "Écritures existantes" pour afficher les écritures
+    // du grand livre susceptibles de correspondre (les déjà rapprochées sont exclues)
+    const sugTabBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Écritures existantes')) as HTMLButtonElement;
+    expect(sugTabBtn).toBeDefined();
     sugTabBtn.click();
     flushSync();
 

@@ -52,6 +52,9 @@ describe('MemberProfile Component', () => {
     expect(target.innerHTML).toContain('jean.dupont@example.com');
     expect(target.innerHTML).toContain('0612345678');
     expect(target.innerHTML).toContain('Dupont Marc');
-    expect(target.innerHTML).toContain('Virement Acompte Jean');
+    // L'onglet "Historique Financier" affiche les écritures sous forme compacte
+    // (Date / Catégorie / Montant) — on vérifie que la transaction est rendue via
+    // son montant (100,00 €) plutôt que sa description, qui n'est plus affichée.
+    expect(target.innerHTML).toContain('100,00');
   });
 });

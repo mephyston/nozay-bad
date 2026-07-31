@@ -86,29 +86,13 @@ describe('CashBoxManager Component', () => {
       }
     });
 
-    const submitBtn = target.querySelector('button[type="submit"]');
-    expect(submitBtn).toBeDefined();
-    expect(submitBtn?.hasAttribute('disabled')).toBe(true);
-
-    const typeSelect = target.querySelector('select[id="type"]');
-    expect(typeSelect).toBeDefined();
-    expect(typeSelect?.hasAttribute('disabled')).toBe(true);
-
-    const amountInput = target.querySelector('input[id="amount"]');
-    expect(amountInput).toBeDefined();
-    expect(amountInput?.hasAttribute('disabled')).toBe(true);
-
-    const dateInput = target.querySelector('input[id="date"]');
-    expect(dateInput).toBeDefined();
-    expect(dateInput?.hasAttribute('disabled')).toBe(true);
-
-    const categorySelect = target.querySelector('select[id="category"]');
-    expect(categorySelect).toBeDefined();
-    expect(categorySelect?.hasAttribute('disabled')).toBe(true);
-
-    const descInput = target.querySelector('input[id="description"]');
-    expect(descInput).toBeDefined();
-    expect(descInput?.hasAttribute('disabled')).toBe(true);
+    // Le formulaire de saisie est désormais dans un Sheet (modal) ouvert à la
+    // demande ; en saison clôturée, on vérifie le comportement observable au
+    // niveau du gestionnaire : le bouton "Nouveau" (ouverture du formulaire) et
+    // les actions de suppression sont désactivés.
+    const newBtn = Array.from(target.querySelectorAll('button')).find(b => /Nouveau/.test(b.textContent || ''));
+    expect(newBtn).toBeDefined();
+    expect(newBtn?.hasAttribute('disabled')).toBe(true);
 
     const deleteBtn = target.querySelector('button[aria-label="Supprimer"]');
     expect(deleteBtn).toBeDefined();

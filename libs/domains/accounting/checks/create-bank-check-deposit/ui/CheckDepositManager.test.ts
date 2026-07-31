@@ -182,7 +182,7 @@ describe('CheckDepositManager Component', () => {
     });
 
     const buttons = target.querySelectorAll('button');
-    const openButton = Array.from(buttons).find(btn => btn.textContent?.includes('Enregistrer un Chèque'));
+    const openButton = Array.from(buttons).find(btn => btn.textContent?.includes('Enregistrer un chèque'));
     expect(openButton).toBeDefined();
   });
 });
