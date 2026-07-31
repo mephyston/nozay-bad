@@ -23,4 +23,14 @@ declare module "*.svelte" {
   export const alertVariants: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   export type AlertVariant = any;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  export type BadgeSize = any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  export type BadgeShape = any;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  export const selectVariants: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  export type SelectSize = any;
 }

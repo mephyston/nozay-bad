@@ -3,6 +3,7 @@ export { Button } from './components/ui/button';
 export * as Table from './components/ui/table';
 export { Input } from './components/ui/input';
 export { Badge } from './components/ui/badge';
+export { Select, type SelectSize } from './components/ui/select';
 export * as Alert from './components/ui/alert';
 export * as Card from './components/ui/card';
 export * as Dialog from './components/ui/dialog';
@@ -47,3 +48,5 @@ export { default as SearchableCombobox } from './components/patterns/SearchableC
 export { default as StatusIcon } from './components/patterns/StatusIcon.svelte';
 export { default as DashboardCard } from './components/patterns/DashboardCard.svelte';
 export { default as StatMetric } from './components/patterns/StatMetric.svelte';
+export { default as ErrorAlert } from './components/patterns/ErrorAlert.svelte';
+export { default as SeasonSelector } from './components/patterns/SeasonSelector.svelte';
