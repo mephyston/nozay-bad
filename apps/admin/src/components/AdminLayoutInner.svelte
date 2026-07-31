@@ -138,6 +138,10 @@
   const primaryGroup = $derived(breadcrumbParts[0]?.trim());
   const subGroup = $derived(breadcrumbParts[1]?.trim());
 
+  const displayName = $derived(
+    (email.split('@')[0] || "Admin").charAt(0).toUpperCase() + (email.split('@')[0] || "Admin").slice(1).toLowerCase()
+  );
+
   function getBreadcrumbHref(part: string): string | undefined {
     switch (part.toLowerCase().trim()) {
       case "adhérents":
@@ -253,7 +257,7 @@
                   </Avatar.Fallback>
                 </Avatar.Root>
                 <div class="grid flex-1 text-left text-xs leading-tight group-data-[collapsible=icon]:hidden overflow-hidden">
-                  <span class="truncate font-semibold text-foreground">Trésorier</span>
+                  <span class="truncate font-semibold text-foreground">{displayName}</span>
                   <span class="truncate text-[10px] text-muted-foreground">{email}</span>
                 </div>
                 <ChevronsUpDown class="ml-auto size-3.5 text-muted-foreground shrink-0 group-data-[collapsible=icon]:hidden" />
@@ -268,26 +272,13 @@
               sideOffset={4}
             >
               <div class="p-2 border-b border-border">
-                <p class="text-xs text-muted-foreground font-bold">CA NBA 91</p>
+                <p class="text-xs text-muted-foreground font-bold">{displayName}</p>
                 <p class="text-sm font-semibold truncate text-foreground">{email}</p>
               </div>
               <div class="p-1 space-y-0.5">
                 <DropdownMenu.Item
-                  class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer focus:bg-accent focus:text-accent-foreground focus:outline-none"
-                  onclick={() => window.location.href = "/admin/settings"}
-                >
-                  <User class="mr-2 h-3.5 w-3.5 text-muted-foreground" /> Mon profil
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer focus:bg-accent focus:text-accent-foreground focus:outline-none"
-                  onclick={() => window.location.href = "/admin/settings"}
-                >
-                  <Settings class="mr-2 h-3.5 w-3.5 text-muted-foreground" /> Paramètres
-                </DropdownMenu.Item>
-                <DropdownMenu.Separator class="my-1 border-t border-border" />
-                <DropdownMenu.Item
                   class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer focus:bg-destructive/10 focus:text-destructive focus:outline-none"
-                  onclick={() => window.location.href = "/"}
+                  onclick={() => window.location.href = "/cdn-cgi/access/logout"}
                 >
                   <LogOut class="mr-2 h-3.5 w-3.5" /> Déconnexion
                 </DropdownMenu.Item>
