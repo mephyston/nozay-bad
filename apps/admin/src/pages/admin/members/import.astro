@@ -7,6 +7,12 @@ import { PoonaImporter } from '@nba/members-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 
+import { hasPermission } from '@nba/iam';
+const userPerms = Astro.locals.user?.permissions || [];
+if (!hasPermission(userPerms, '*') && !hasPermission(userPerms, 'members:*') && !hasPermission(userPerms, 'members:import')) {
+  return Astro.redirect('/');
+}
+
 let result = null;
 let error = null;
 

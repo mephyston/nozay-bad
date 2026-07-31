@@ -10,15 +10,46 @@
   let isSheetOpen = $state(false);
   let searchTerm = $state('');
 
-  const PERMISSIONS_LIST = [
-    { value: '*', label: 'Super Admin', desc: 'Accès total à toute la plateforme' },
-    { value: 'accounting:*', label: 'Comptabilité', desc: 'Accès complet à la comptabilité (Trésorier)' },
-    { value: 'shop:*', label: 'Boutique', desc: 'Gestion de la boutique, produits et commandes' },
-    { value: 'members:*', label: 'Adhérents', desc: 'Gestion des adhérents et inscriptions' },
-    { value: 'expenses:*', label: 'Notes de frais', desc: 'Accès aux notes de frais' },
-    { value: 'settings:*', label: 'Configuration', desc: 'Accès aux réglages généraux (saisons, etc.)' },
-    { value: 'iam:*', label: 'Accès & Permissions', desc: 'Gestion des administrateurs' }
+  const PERMISSIONS_GROUPS = [
+    {
+      name: 'Général',
+      permissions: [
+        { value: '*', label: 'Super Admin', desc: 'Accès total à toute la plateforme' },
+        { value: 'settings:*', label: 'Configuration', desc: 'Gestion des réglages généraux' },
+        { value: 'iam:*', label: 'Accès & Permissions', desc: 'Gestion des administrateurs' }
+      ]
+    },
+    {
+      name: 'Comptabilité',
+      permissions: [
+        { value: 'accounting:*', label: 'Accès complet', desc: 'Trésorier' },
+        { value: 'accounting:reports', label: 'Rapports uniquement', desc: 'Lecture du tableau de bord et rapports' },
+        { value: 'expenses:*', label: 'Notes de frais', desc: 'Validation des notes de frais' }
+      ]
+    },
+    {
+      name: 'Boutique',
+      permissions: [
+        { value: 'shop:*', label: 'Accès complet', desc: 'Gestion produits et commandes' },
+      ]
+    },
+    {
+      name: 'Adhérents',
+      permissions: [
+        { value: 'members:*', label: 'Accès complet', desc: 'Secrétaire' },
+        { value: 'members:read', label: 'Lecture seule', desc: 'Voir la liste des adhérents' },
+        { value: 'members:import', label: 'Import Poona', desc: 'Importer de nouveaux adhérents' }
+      ]
+    }
   ];
+
+  function getLabelForPerm(val: string) {
+    for (const g of PERMISSIONS_GROUPS) {
+      const p = g.permissions.find(x => x.value === val);
+      if (p) return p.label;
+    }
+    return val;
+  }
 
   function togglePermission(val: string) {
     if (selectedPermissions.includes(val)) {
@@ -109,7 +140,7 @@
                               <span class="text-muted-foreground">Sélectionner des droits...</span>
                             {:else}
                               {#each selectedPermissions as p}
-                                <Badge variant={p === '*' ? 'destructive' : 'secondary'} size="xs">{PERMISSIONS_LIST.find(x => x.value === p)?.label || p}</Badge>
+                                <Badge variant={p === '*' ? 'destructive' : 'secondary'} size="xs">{getLabelForPerm(p)}</Badge>
                               {/each}
                             {/if}
                           </div>
@@ -117,22 +148,29 @@
                         </Button>
                       {/snippet}
                     </Popover.Trigger>
-                    <Popover.Content class="w-[--bits-popover-anchor-width] p-1 max-h-[300px] overflow-y-auto">
-                      <div class="flex flex-col gap-1">
-                        {#each PERMISSIONS_LIST as perm}
-                          <label class="flex items-start gap-3 p-2 rounded-md hover:bg-muted cursor-pointer transition-colors">
-                            <div class="mt-0.5">
-                              <Checkbox 
-                                checked={selectedPermissions.includes(perm.value)} 
-                                onCheckedChange={() => togglePermission(perm.value)}
-                                aria-label={perm.label}
-                              />
-                            </div>
-                            <div class="flex flex-col flex-1 leading-tight">
-                              <span class="text-sm font-bold text-foreground">{perm.label}</span>
-                              <span class="text-xs text-muted-foreground">{perm.desc}</span>
-                            </div>
-                          </label>
+                    <Popover.Content class="w-[--bits-popover-anchor-width] p-0 max-h-[350px] overflow-y-auto">
+                      <div class="flex flex-col">
+                        {#each PERMISSIONS_GROUPS as group}
+                          <div class="px-2 pt-2 pb-1 bg-muted/50 text-xs font-bold text-muted-foreground uppercase sticky top-0 backdrop-blur z-10 border-b border-border/50">
+                            {group.name}
+                          </div>
+                          <div class="p-1">
+                            {#each group.permissions as perm}
+                              <label class="flex items-start gap-3 p-2 rounded-md hover:bg-muted cursor-pointer transition-colors">
+                                <div class="mt-0.5">
+                                  <Checkbox 
+                                    checked={selectedPermissions.includes(perm.value)} 
+                                    onCheckedChange={() => togglePermission(perm.value)}
+                                    aria-label={perm.label}
+                                  />
+                                </div>
+                                <div class="flex flex-col flex-1 leading-tight">
+                                  <span class="text-sm font-bold text-foreground">{perm.label}</span>
+                                  <span class="text-xs text-muted-foreground">{perm.desc}</span>
+                                </div>
+                              </label>
+                            {/each}
+                          </div>
                         {/each}
                       </div>
                     </Popover.Content>
@@ -167,7 +205,7 @@
                   <div class="text-muted-foreground text-xs">{user.email}</div>
                   <div class="mt-2 flex flex-wrap gap-1">
                     {#each user.permissions as perm}
-                      <Badge variant={perm === '*' ? 'destructive' : 'secondary'} size="xs">{PERMISSIONS_LIST.find(x => x.value === perm)?.label || perm}</Badge>
+                      <Badge variant={perm === '*' ? 'destructive' : 'secondary'} size="xs">{getLabelForPerm(perm)}</Badge>
                     {/each}
                   </div>
                 </div>
@@ -203,7 +241,7 @@
         <Table.Cell>
           <div class="flex flex-wrap gap-1">
             {#each user.permissions as perm}
-              <Badge variant={perm === '*' ? 'destructive' : 'secondary'}>{PERMISSIONS_LIST.find(x => x.value === perm)?.label || perm}</Badge>
+              <Badge variant={perm === '*' ? 'destructive' : 'secondary'}>{getLabelForPerm(perm)}</Badge>
             {/each}
           </div>
         </Table.Cell>

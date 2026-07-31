@@ -48,37 +48,44 @@
     {
       label: "Adhérents",
       items: [
-        { name: "Liste des adhérents", icon: Users, href: "/admin/members" }
+        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'members:*') || hasPermission(permissions, 'members:read') ? [{ name: "Liste des adhérents", icon: Users, href: "/admin/members" }] : [])
       ]
     },
     {
       label: "Comptabilité",
       items: [
-        { name: "Rapports financiers", icon: BarChart3, href: "/admin/accounting/reports" },
-        { name: "Grand Livre", icon: BookOpen, href: "/admin/accounting" },
-        { name: "Factures", icon: FileCheck, href: "/admin/accounting/invoices" },
-        { name: "Notes de frais", icon: Coins, href: "/admin/expenses" },
-        { name: "Rapprochement bancaire", icon: Scale, href: "/admin/accounting/import" },
-        { name: "Remises de chèques", icon: Landmark, href: "/admin/accounting/cheques" },
-        { name: "Caisse", icon: Wallet, href: "/admin/accounting/cash-box" },
-        { name: "Soldes initiaux", icon: Play, href: "/admin/accounting/config" }
+        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') || hasPermission(permissions, 'accounting:reports') ? [{ name: "Rapports financiers", icon: BarChart3, href: "/admin/accounting/reports" }] : []),
+        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') ? [
+          { name: "Grand Livre", icon: BookOpen, href: "/admin/accounting" },
+          { name: "Factures", icon: FileCheck, href: "/admin/accounting/invoices" },
+          { name: "Rapprochement bancaire", icon: Scale, href: "/admin/accounting/import" },
+          { name: "Remises de chèques", icon: Landmark, href: "/admin/accounting/cheques" },
+          { name: "Caisse", icon: Wallet, href: "/admin/accounting/cash-box" },
+          { name: "Soldes initiaux", icon: Play, href: "/admin/accounting/config" }
+        ] : []),
+        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'expenses:*') ? [{ name: "Notes de frais", icon: Coins, href: "/admin/expenses" }] : [])
       ]
     },
     {
       label: "Boutique",
       items: [
-        { name: "Produits", icon: Package, href: "/admin/shop/products" },
-        { name: "Commandes", icon: ShoppingCart, href: "/admin/shop/orders" }
+        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'shop:*') ? [
+          { name: "Produits", icon: Package, href: "/admin/shop/products" },
+          { name: "Commandes", icon: ShoppingCart, href: "/admin/shop/orders" }
+        ] : [])
       ]
     },
     {
       label: "Réglages",
       items: [
-        { name: "Configuration", icon: Settings, href: "/admin/settings" },
-        ...(hasPermission(permissions, 'iam:*') || hasPermission(permissions, '*') ? [{ name: "Accès & Permissions", icon: User, href: "/admin/iam" }] : [])
+        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'settings:*') ? [{ name: "Configuration", icon: Settings, href: "/admin/settings" }] : []),
+        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'iam:*') ? [{ name: "Accès & Permissions", icon: User, href: "/admin/iam" }] : [])
       ]
     }
   ];
+
+  // Remove empty groups
+  const filteredNavGroups = $derived(navGroups.filter(g => g.items.length > 0));
 
   function isItemActive(item: { name: string, href: string }): boolean {
     const parts = breadcrumb.split(" / ").map(p => p.trim().toLowerCase());
@@ -213,7 +220,7 @@
 
   <!-- Navigation items -->
   <Sidebar.Content class="p-2 space-y-4">
-    {#each navGroups as group}
+    {#each filteredNavGroups as group}
       <Sidebar.Group class="p-0">
         {#if group.label}
           <Sidebar.GroupLabel class="px-3 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden">
