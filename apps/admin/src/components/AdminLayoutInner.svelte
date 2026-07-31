@@ -55,9 +55,9 @@
       label: "Comptabilité",
       items: [
         ...(hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') || hasPermission(permissions, 'accounting:reports') ? [{ name: "Rapports financiers", icon: BarChart3, href: "/admin/accounting/reports" }] : []),
+        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') ? [{ name: "Grand Livre", icon: BookOpen, href: "/admin/accounting" }] : []),
+        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') || hasPermission(permissions, 'accounting:invoices') ? [{ name: "Factures", icon: FileCheck, href: "/admin/accounting/invoices" }] : []),
         ...(hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') ? [
-          { name: "Grand Livre", icon: BookOpen, href: "/admin/accounting" },
-          { name: "Factures", icon: FileCheck, href: "/admin/accounting/invoices" },
           { name: "Rapprochement bancaire", icon: Scale, href: "/admin/accounting/import" },
           { name: "Remises de chèques", icon: Landmark, href: "/admin/accounting/cheques" },
           { name: "Caisse", icon: Wallet, href: "/admin/accounting/cash-box" },
@@ -69,10 +69,8 @@
     {
       label: "Boutique",
       items: [
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'shop:*') ? [
-          { name: "Produits", icon: Package, href: "/admin/shop/products" },
-          { name: "Commandes", icon: ShoppingCart, href: "/admin/shop/orders" }
-        ] : [])
+        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'shop:*') || hasPermission(permissions, 'shop:products') ? [{ name: "Produits", icon: Package, href: "/admin/shop/products" }] : []),
+        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'shop:*') || hasPermission(permissions, 'shop:orders') ? [{ name: "Commandes", icon: ShoppingCart, href: "/admin/shop/orders" }] : [])
       ]
     },
     {

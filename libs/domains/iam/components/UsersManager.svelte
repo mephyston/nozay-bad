@@ -24,13 +24,16 @@
       permissions: [
         { value: 'accounting:*', label: 'Accès complet', desc: 'Trésorier' },
         { value: 'accounting:reports', label: 'Rapports uniquement', desc: 'Lecture du tableau de bord et rapports' },
+        { value: 'accounting:invoices', label: 'Gestion des factures', desc: 'Consulter et ajouter des factures' },
         { value: 'expenses:*', label: 'Notes de frais', desc: 'Validation des notes de frais' }
       ]
     },
     {
       name: 'Boutique',
       permissions: [
-        { value: 'shop:*', label: 'Accès complet', desc: 'Gestion produits et commandes' },
+        { value: 'shop:*', label: 'Accès complet', desc: 'Gestion complète de la boutique' },
+        { value: 'shop:products', label: 'Gestion des produits', desc: 'Ajouter/Modifier des articles (Coach)' },
+        { value: 'shop:orders', label: 'Gestion des commandes', desc: 'Suivre et encaisser les commandes' }
       ]
     },
     {

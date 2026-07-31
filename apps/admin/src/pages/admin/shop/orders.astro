@@ -7,6 +7,12 @@ import { OrdersManager } from '@nba/shop-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 
+import { hasPermission } from '@nba/iam';
+const userPerms = Astro.locals.user?.permissions || [];
+if (!hasPermission(userPerms, '*') && !hasPermission(userPerms, 'shop:*') && !hasPermission(userPerms, 'shop:orders')) {
+  return Astro.redirect('/');
+}
+
 const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
 const apiService = createApiClient(env);
 
