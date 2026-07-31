@@ -95,7 +95,7 @@
 
               {#if report.tresorerieDisponible.deferredExpenses.length > 0}
                 <div class="space-y-1 text-xs text-muted-foreground mt-3">
-                  <span class="font-medium text-indigo-600 dark:text-indigo-400 block">• Charges décaissées d'avance (à réintégrer au résultat) :</span>
+                  <span class="font-medium text-info block">• Charges décaissées d'avance (à réintégrer au résultat) :</span>
                   {#each report.tresorerieDisponible.deferredExpenses as defExp}
                     <div class="flex justify-between pl-4">
                       <span>{defExp.categoryName}</span>
