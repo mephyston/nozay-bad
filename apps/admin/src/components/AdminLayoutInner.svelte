@@ -27,11 +27,14 @@
   import ThemeToggle from "./ThemeToggle.svelte";
   import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm } from "@nba/ui";
 
-  let { children, email, breadcrumb } = $props<{
+  let { children, email, permissions = [], breadcrumb } = $props<{
     children?: import('svelte').Snippet;
     email: string;
+    permissions?: string[];
     breadcrumb: string;
   }>();
+
+  import { hasPermission } from '@nba/iam';
 
   const sidebar = Sidebar.useSidebar();
 
@@ -71,7 +74,8 @@
     {
       label: "",
       items: [
-        { name: "Réglages", icon: Settings, href: "/admin/settings" }
+        { name: "Réglages", icon: Settings, href: "/admin/settings" },
+        ...(hasPermission(permissions, 'iam:*') || hasPermission(permissions, '*') ? [{ name: "Accès & Permissions", icon: User, href: "/admin/iam" }] : [])
       ]
     }
   ];
@@ -125,9 +129,12 @@
       return primary === "boutique" && sub === "commandes";
     }
 
-    // Réglages
+    // Réglages & IAM
     if (item.href.includes("settings")) {
       return primary === "réglages" || primary === "settings";
+    }
+    if (item.href === "/admin/iam") {
+      return primary === "accès et permissions" || primary === "accès & permissions";
     }
 
     return false;

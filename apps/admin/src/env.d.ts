@@ -4,6 +4,7 @@ declare namespace App {
   interface Locals {
     user?: {
       email: string;
+      permissions: string[];
     };
     runtime: import('@astrojs/cloudflare').Runtime<Env>;
   }

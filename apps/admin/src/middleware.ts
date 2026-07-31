@@ -1,8 +1,10 @@
 import { defineMiddleware } from 'astro:middleware';
 import type { APIContext, MiddlewareNext } from 'astro';
 import { jwtVerify, createRemoteJWKSet } from 'jose';
-
 import { env as cfEnv } from 'cloudflare:workers';
+import { drizzle } from 'drizzle-orm/d1';
+import { eq } from 'drizzle-orm';
+import { adminUsersTable } from '@nba/iam/schema';
 
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
@@ -21,7 +23,7 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
   // Only trust Vite/Astro's DEV flag — never hostname-based checks which can be
   // spoofed or triggered on internal network in production.
   if (import.meta.env.DEV) {
-    context.locals.user = { email: 'admin@nozaybad.fr' };
+    context.locals.user = { email: 'admin@nozaybad.fr', permissions: ['*'] };
     return next();
   }
 
@@ -56,7 +58,33 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
       issuer: CF_TEAM_DOMAIN,
     });
 
-    context.locals.user = { email: payload.email as string };
+    const email = payload.email as string;
+    const db = drizzle(resolvedEnv.DB as any);
+
+    // Bootstrap ou chargement de l'utilisateur
+    let user = await db.select().from(adminUsersTable).where(eq(adminUsersTable.email, email)).get();
+
+    if (!user) {
+      // Est-ce le tout premier administrateur du système ?
+      const allUsersCount = await db.select({ id: adminUsersTable.id }).from(adminUsersTable).limit(1).all();
+      if (allUsersCount.length === 0) {
+        // Bootstrap: on donne tous les droits
+        const result = await db.insert(adminUsersTable).values({
+          email,
+          name: email.split('@')[0] || 'Admin',
+          permissions: ['*'],
+          createdAt: new Date()
+        }).returning().get();
+        user = result;
+      } else {
+        return new Response('Accès refusé. Compte non configuré.', { status: 403 });
+      }
+    }
+
+    context.locals.user = { 
+      email: user.email,
+      permissions: user.permissions
+    };
     return next();
   } catch {
     return new Response('Authentification invalide ou expirée.', { status: 403 });
