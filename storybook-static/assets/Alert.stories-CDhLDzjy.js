@@ -1,8 +1,0 @@
-import{i as e}from"./preload-helper-CT_b8DTk.js";import{Gt as t,J as n,K as r,Kt as i,M as a,X as o,bt as s,et as c,j as l,mt as u,nn as d,rn as f,s as p,t as m,un as h,vt as g}from"./iframe-C-u6e7Wy.js";import{A as _,H as v,M as y,P as b,U as x,W as S,n as C,r as w,t as T}from"./create-runtime-stories-h9Ve_w6h.js";function E(e,o){i(o,!1),p(),O(e,{name:`Variants`,template:e=>{var t=A();l(t,4,()=>[`default`,`destructive`,`success`,`warning`,`info`,`ai`],a,(e,t)=>{b(e,{get variant(){return t},children:(e,i)=>{var a=k(),o=g(a);_(o,{children:(e,i)=>{d();var a=c();u(()=>r(a,`Alerte ${t??``}`)),n(e,a)},$$slots:{default:!0}}),y(s(o,2),{children:(e,i)=>{d();var a=c();u(()=>r(a,`Message d'exemple pour le variant « ${t??``} ».`)),n(e,a)},$$slots:{default:!0}}),n(e,a)},$$slots:{default:!0}})}),f(t),n(e,t)},$$slots:{template:!0},parameters:{__svelteCsf:{rawCode:`<div class="flex flex-col gap-3 w-[420px] max-w-full">
-  {#each ['default', 'destructive', 'success', 'warning', 'info', 'ai'] as v}
-    <Alert.Root variant={v as any}>
-      <Alert.Title>Alerte {v}</Alert.Title>
-      <Alert.Description>Message d'exemple pour le variant « {v} ».</Alert.Description>
-    </Alert.Root>
-  {/each}
-</div>`}}}),t()}var D,O,k,A,j,M,N;e((()=>{h(),S(),x(),w(),m(),C(),D={title:`UI/Alert`,component:b,tags:[`autodocs`]},{Story:O}=v(D),k=o(`<!> <!>`,1),A=o(`<div class="flex flex-col gap-3 w-[420px] max-w-full"></div>`),j=T(E,D),M=[`Variants`],N={...j.Variants,tags:[`svelte-csf-v5`]}}))();export{N as Variants,M as __namedExportsOrder,D as default};
