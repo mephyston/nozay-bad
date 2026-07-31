@@ -21,12 +21,15 @@
     "@nx/eslint-plugin": "^23.0.1",
     "@nx/js": "23.0.1",
     "@nx/workspace": "23.0.1",
+    "@semantic-release/changelog": "^7.0.0",
+    "@semantic-release/git": "^11.0.1",
     "@types/node": "^26.1.1",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.10.0",
     "eslint-plugin-svelte": "^3.22.0",
     "jsdom": "^26.0.0",
     "nx": "23.0.1",
+    "semantic-release": "^25.0.8",
     "svelte-eslint-parser": "^1.8.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.63.0",
@@ -54,5 +57,20 @@
     "tailwindcss": "^4.3.2",
     "tailwindcss-animate": "^1.0.7",
     "vaul-svelte": "^0.3.2"
+  },
+  "release": {
+    "branches": ["main", {"name": "staging", "prerelease": "beta"}],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/changelog",
+      ["@semantic-release/npm", {
+        "npmPublish": false
+      }],
+      ["@semantic-release/git", {
+        "assets": ["package.json", "CHANGELOG.md"],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }]
+    ]
   }
 }

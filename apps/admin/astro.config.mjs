@@ -17,7 +17,7 @@ export default defineConfig({
   integrations: [svelte()],
   vite: {
     define: {
-      'import.meta.env.PUBLIC_APP_VERSION': JSON.stringify(pkg.version)
+      'import.meta.env.PUBLIC_APP_VERSION': JSON.stringify(process.env.VITE_APP_VERSION || pkg.version)
     },
     plugins: [tailwindcss()],
     optimizeDeps: {
