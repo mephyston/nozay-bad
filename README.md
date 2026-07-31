@@ -18,14 +18,29 @@ Plateforme de gestion complète pour le club de badminton de Nozay (NBA 91). Ce 
 ## 🚀 Commandes Essentielles
 
 ### Développement
-```bash
-# Lancer l'API en local (Wrangler / Cloudflare Workers)
-npx wrangler dev --config apps/api/wrangler.json
 
-# Lancer l'administration ou le site public en dev
-npx astro dev --root apps/admin
-npx astro dev --root apps/storefront
+Les apps (`admin`, `storefront`) appellent le worker API via le **binding de
+service** `API_SERVICE → nba-api`. Pour que ce binding se connecte, le worker API
+doit tourner **avant** de démarrer une app. Utilisez des ports fixes et **deux
+terminaux** :
+
+```bash
+# Terminal 1 — API (à lancer EN PREMIER), port fixe 8787
+npm run dev:api
+
+# Terminal 2 — une fois l'API prête, l'app admin (4321) ou le storefront (4322)
+npm run dev:admin        # → http://localhost:4321
+npm run dev:storefront   # → http://localhost:4322
 ```
+
+> Sans API démarrée d'abord, le binding `API_SERVICE` ne se résout pas et les
+> pages s'affichent avec des données vides (fallback).
+>
+> Astro 7 gère un serveur de dev en arrière-plan (`astro dev status` / `astro dev
+> stop` / `astro dev logs`). Au **tout premier** démarrage, la compilation Vite
+> des libs `@nba/ui` (exclues d'`optimizeDeps` pour le HMR) peut dépasser le
+> délai de 30 s et afficher « Dev server failed to start within 30s » : relancer
+> la commande une fois le cache `.vite` réchauffé démarre alors rapidement.
 
 ### Tests & Qualité
 ```bash
