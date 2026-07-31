@@ -25,7 +25,7 @@
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
   import ThemeToggle from "./ThemeToggle.svelte";
-  import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm } from "@nba/ui";
+  import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion } from "@nba/ui";
 
   let { children, email, name, permissions = [], breadcrumb } = $props<{
     children?: import('svelte').Snippet;
@@ -349,9 +349,7 @@
         </DropdownMenu.Root>
       </Sidebar.MenuItem>
     </Sidebar.Menu>
-    <div class="text-[10px] text-muted-foreground/60 text-center pb-1 group-data-[collapsible=icon]:hidden">
-      v{import.meta.env.PUBLIC_APP_VERSION || "0.0.0"}
-    </div>
+    <AppVersion class="group-data-[collapsible=icon]:hidden pb-1" />
   </Sidebar.Footer>
 </Sidebar.Root>
 

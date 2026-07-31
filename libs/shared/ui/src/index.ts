@@ -50,3 +50,4 @@ export { default as DashboardCard } from './components/patterns/DashboardCard.sv
 export { default as StatMetric } from './components/patterns/StatMetric.svelte';
 export { default as ErrorAlert } from './components/patterns/ErrorAlert.svelte';
 export { default as SeasonSelector } from './components/patterns/SeasonSelector.svelte';
+export { default as AppVersion } from './components/patterns/AppVersion.svelte';
