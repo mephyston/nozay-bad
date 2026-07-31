@@ -122,11 +122,12 @@ jobs:
 
   # ──────────────────────────────────────────────────────────────
   # 2b. Régression visuelle du design system (Storybook + Playwright)
-  #     Sur macOS pour matcher les références PNG commitées (suffixe -darwin).
+  #     Sur Linux (×1 en facturation Actions). Les références -linux sont
+  #     générées/commitées par le workflow visual-baselines.yml.
   # ──────────────────────────────────────────────────────────────
   visual:
     name: Visual regression
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -141,7 +142,7 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browser
-        run: npx playwright install chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Build Storybook
         run: npm run build-storybook

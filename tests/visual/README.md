@@ -1,45 +1,50 @@
 # Régression visuelle du design system
 
 Capture chaque story de `@nba/ui` (thèmes clair **et** sombre) et la compare à
-une image de référence commitée. Toute dérive visuelle non intentionnelle fait
-échouer le test.
+une image de référence. Toute dérive visuelle non intentionnelle fait échouer le
+test et **bloque le déploiement**.
 
-## Fonctionnement
+## Source de vérité : la CI Linux
 
-- Le test (`stories.spec.ts`) lit `storybook-static/index.json`, ouvre chaque
-  story dans son iframe isolée, force le thème via `.dark`, et screenshote
-  `#storybook-root`.
-- Le serveur statique (`scripts/serve-storybook.mjs`, sans dépendance) sert le
-  build Storybook ; Playwright le démarre automatiquement (`webServer`).
-- Les références vivent dans `stories.spec.ts-snapshots/`, suffixées par
-  plateforme (`-darwin` ici). Le rendu des polices différant d'un OS à l'autre,
-  la CI tourne sur un runner **macOS** pour matcher ces références.
+Playwright compare les captures au pixel près, or le rendu des polices diffère
+entre macOS et Linux. Le dépôt étant privé sur plan gratuit (runners macOS
+facturés ×10), tout tourne sur **Linux** :
 
-## Commandes (local, macOS)
+- Les références commitées sont les `*-linux.png` de
+  `stories.spec.ts-snapshots/`, **générées par la CI** (pas sur ton Mac).
+- Le job `visual` de `.github/workflows/deploy.yml` (ubuntu, ×1) rejoue
+  `test:visual` à chaque PR et push ; les trois jobs de déploiement en
+  dépendent.
+
+## Changer un visuel : régénérer les références
+
+Quand tu modifies volontairement un composant (donc son apparence), déclenche le
+workflow **« Update Visual Baselines »** :
+
+1. GitHub → onglet **Actions** → *Update Visual Baselines* → **Run workflow**,
+   sur ta branche.
+2. Il rebuild Storybook, régénère les `*-linux.png` et les **commite
+   automatiquement** sur la branche (`[skip ci]`).
+3. `git pull` en local pour récupérer les références à jour.
+
+> ⚠️ Amorçage : les références n'existent pas tant que ce workflow n'a pas tourné
+> au moins une fois. Lance-le sur la branche **avant** de compter sur le gate.
+
+## Localement (macOS, optionnel)
+
+Pour prévisualiser sans attendre la CI :
 
 ```bash
-npm run build-storybook     # prérequis : régénère index.json + assets
-npm run test:visual         # compare aux références (échoue sur dérive)
-npm run test:visual:update  # régénère les références après un changement assumé
+npm run build-storybook
+npm run test:visual         # crée/compare des références -darwin locales
+npm run test:visual:update  # les régénère
 ```
 
-## Dans le pipeline
-
-Le job `visual` de `.github/workflows/deploy.yml` s'exécute sur `macos-latest` à
-chaque PR et push (main/staging) : il build Storybook et lance `test:visual`.
-Les trois jobs de déploiement en dépendent — **un déploiement est bloqué si une
-dérive visuelle est détectée**. En cas d'échec, l'artefact
-`playwright-visual-report` (rapport HTML + PNG générés) est téléchargeable.
-
-### Flux d'un changement visuel intentionnel
-
-1. Modifier le composant.
-2. `npm run test:visual:update` en local → régénère les PNG `-darwin`.
-3. Committer le changement **et** les PNG mis à jour dans la même PR.
-   La CI compare aux nouvelles références → vert.
+Ces `*-darwin.png` sont **gitignorés** (rendu Mac ≠ Linux) : ils servent au
+smoke local, jamais de référence CI.
 
 ## Ajouter un composant au harnais
 
 Crée un `NomDuComposant.stories.svelte` à côté du composant (voir les stories
-existantes), rebuild Storybook, puis `test:visual:update` — la nouvelle story
-est screenshotée automatiquement.
+existantes). Rebuild Storybook, puis déclenche *Update Visual Baselines* pour
+capturer la nouvelle story dans les références Linux.
