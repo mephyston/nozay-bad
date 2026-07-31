@@ -1,6 +1,6 @@
 <script lang="ts">
   import { AlertCircle } from '@lucide/svelte';
-  import { Button, Input, Sheet, Label, Alert, Select, FormField } from '@nba/ui';
+  import { Button, Input, Sheet, Label, Alert, SearchableCombobox, FormField } from '@nba/ui';
   import type { Season, Category } from './ledger-types';
   import { accountLabels, methodLabels, formAccountOptions } from './ledger-types';
 
@@ -45,6 +45,33 @@
     errorMsg: string;
     onSubmit: (e: Event) => void;
   } = $props();
+
+  const seasonItems = $derived(
+    seasons.length > 0
+      ? seasons.map((s) => ({ label: s.name, value: String(s.id) }))
+      : [{ label: 'Saison 2025-2026', value: '25-26' }]
+  );
+  const categoryItems = $derived(activeCategories.map((cat) => ({ label: cat.name, value: String(cat.id) })));
+  const accountItems = $derived(formAccountOptions.map(({ value, label }) => ({ label, value: String(value) })));
+  const destinationItems = $derived(
+    formAccountOptions.filter(({ value }) => value !== formAccountId).map(({ value, label }) => ({ label, value: String(value) }))
+  );
+  const paymentItems = $derived(Object.entries(methodLabels).map(([key, label]) => ({ label: label as string, value: key })));
+  const accrualItems = $derived([
+    { label: 'Normal (Même exercice comptable)', value: 'normal' },
+    ...(showPanel === 'recette'
+      ? [
+          { label: "Produit constaté d'avance (Recette pour la saison prochaine)", value: 'produit_constate_avance' },
+          { label: 'Produit à recevoir (Subvention attendue, etc.)', value: 'produit_a_recevoir' }
+        ]
+      : []),
+    ...(showPanel === 'depense'
+      ? [
+          { label: "Charge constatée d'avance (Payé pour la saison prochaine)", value: 'charge_constatee_avance' },
+          { label: 'Charge à payer (Facture non parvenue / attendue)', value: 'charge_a_payer' }
+        ]
+      : [])
+  ]);
 </script>
 
 <Sheet.Root bind:open>
@@ -80,51 +107,26 @@
 
       <!-- Ligne 2 : Saison -->
         <FormField id="season-select-panel" label="Saison d'affectation">
-        <Select id="season-select-panel" bind:value={targetSeasonId}>
-          {#each seasons as s}
-            <option value={s.id}>{s.name}</option>
-          {/each}
-          {#if seasons.length === 0}
-            <option value="25-26">Saison 2025-2026</option>
-          {/if}
-        </Select>
+        <SearchableCombobox id="season-select-panel" items={seasonItems} bind:value={targetSeasonId} />
       </FormField>
 
       <!-- Ligne 3 : Catégorie / Comptes en Grille -->
       {#if showPanel !== 'transfert'}
         <div class="grid grid-cols-2 gap-4">
             <FormField id="category-select" label="Catégorie">
-            <Select id="category-select" bind:value={category}>
-              {#each activeCategories as cat}
-                <option value={cat.id}>{cat.name}</option>
-              {/each}
-            </Select>
+            <SearchableCombobox id="category-select" items={categoryItems} bind:value={category} searchPlaceholder="Rechercher une catégorie..." />
             </FormField>
             <FormField id="account-select" label="Compte financier">
-            <Select id="account-select" bind:value={formAccountId}>
-              {#each formAccountOptions as {value: key, label}}
-                <option value={key}>{label}</option>
-              {/each}
-            </Select>
+            <SearchableCombobox id="account-select" items={accountItems} bind:value={formAccountId} />
           </FormField>
         </div>
       {:else}
         <div class="grid grid-cols-2 gap-4">
             <FormField id="account-select" label="Compte Source">
-            <Select id="account-select" bind:value={formAccountId}>
-              {#each formAccountOptions as {value: key, label}}
-                <option value={key}>{label}</option>
-              {/each}
-            </Select>
+            <SearchableCombobox id="account-select" items={accountItems} bind:value={formAccountId} />
             </FormField>
             <FormField id="dest-account-select" label="Compte Destinataire">
-            <Select id="dest-account-select" bind:value={destinationAccountId}>
-              {#each formAccountOptions as {value: key, label}}
-                {#if key !== formAccountId}
-                  <option value={key}>{label}</option>
-                {/if}
-              {/each}
-            </Select>
+            <SearchableCombobox id="dest-account-select" items={destinationItems} bind:value={destinationAccountId} />
           </FormField>
         </div>
       {/if}
@@ -132,11 +134,7 @@
       <!-- Ligne 4 : Moyen de paiement -->
       {#if showPanel !== 'transfert'}
           <FormField id="payment-method-select" label="Moyen de paiement">
-          <Select id="payment-method-select" bind:value={paymentMethod}>
-            {#each Object.entries(methodLabels) as [key, label]}
-              <option value={key}>{label}</option>
-            {/each}
-          </Select>
+          <SearchableCombobox id="payment-method-select" items={paymentItems} bind:value={paymentMethod} />
         </FormField>
       {/if}
 
@@ -144,17 +142,7 @@
       {#if showPanel !== 'transfert'}
         <div class="grid grid-cols-1 gap-4">
             <FormField id="accrual-select" label="Régularisation (Cut-off)">
-            <Select id="accrual-select" bind:value={accrualType}>
-              <option value="normal">Normal (Même exercice comptable)</option>
-              {#if showPanel === 'recette'}
-                <option value="produit_constate_avance">Produit constaté d'avance (Recette pour la saison prochaine)</option>
-                <option value="produit_a_recevoir">Produit à recevoir (Subvention attendue, etc.)</option>
-              {/if}
-              {#if showPanel === 'depense'}
-                <option value="charge_constatee_avance">Charge constatée d'avance (Payé pour la saison prochaine)</option>
-                <option value="charge_a_payer">Charge à payer (Facture non parvenue / attendue)</option>
-              {/if}
-            </Select>
+            <SearchableCombobox id="accrual-select" items={accrualItems} bind:value={accrualType} />
           </FormField>
           {#if accrualType !== 'normal'}
               <FormField id="accrual-note-input" label="Note justificative *">
