@@ -1,6 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import AdminLayoutInner from '../../components/AdminLayoutInner.svelte';
+import AdminLayout from '../../components/AdminLayout.svelte';
 import { PageHeader, ErrorAlert } from '@nba/ui';
 import { UsersManager } from '@nba/iam-ui';
 import { env } from 'cloudflare:workers';
@@ -53,25 +53,16 @@ try {
 ---
 
 <Layout title="Accès et Permissions - NBA 91">
-  <!-- Use AdminLayoutInner with manual wrapper to match layout structure -->
-  <div class="flex h-screen bg-background">
-    <AdminLayoutInner client:idle email={user?.email || ''} userName={(user?.email || '').split('@')[0]} currentPath="/admin/iam" />
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <header class="h-14 border-b border-border bg-card flex items-center px-6 sticky top-0 z-10 shadow-sm">
-        <h1 class="font-medium">Gestion des accès</h1>
-      </header>
-      <main class="flex-1 overflow-auto p-6 md:p-8">
-        <div class="max-w-7xl mx-auto space-y-6">
-          <PageHeader
-            title="Accès et Permissions"
-            description="Gérez qui peut accéder à l'administration de Nozay Bad Association."
-          />
+  <AdminLayout client:idle email={user?.email || ''} permissions={user?.permissions || []} breadcrumb="Accès & Permissions">
+    <div class="space-y-6">
+      <PageHeader
+        title="Accès et Permissions"
+        description="Gérez qui peut accéder à l'administration de Nozay Bad Association."
+      />
 
-          {errorMsg && <ErrorAlert message={errorMsg} />}
+      {errorMsg && <ErrorAlert message={errorMsg} />}
 
-          <UsersManager client:load users={usersList} />
-        </div>
-      </main>
+      <UsersManager client:load users={usersList} />
     </div>
-  </div>
+  </AdminLayout>
 </Layout>
