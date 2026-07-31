@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Select, Checkbox } from '@nba/ui';
+  import { Checkbox, SearchableCombobox, Button, Input, FormField, Alert } from '@nba/ui';
   import { Plus, Edit, Check, AlertCircle, X } from "@lucide/svelte";
-  import { Button, Input, FormField, Alert } from"@nba/ui";
+  
 
   let {
     editingId,
@@ -58,16 +58,12 @@
 
     {#if !category || category === 'all'}
         <FormField id="category" label="Catégorie">
-        <Select
+        <SearchableCombobox
           id="category"
+          items={[{ label: 'Volants', value: 'shuttlecock' }, { label: 'Cordages', value: 'string' }, { label: 'Autre', value: 'other' }]}
           bind:value={formCategory}
           disabled={!!editingId}
-          required
-        >
-          <option value="shuttlecock">Volants</option>
-          <option value="string">Cordages</option>
-          <option value="other">Autre</option>
-        </Select>
+        />
       </FormField>
     {/if}
 

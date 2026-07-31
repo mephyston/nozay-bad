@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Search, X, Filter, ChevronDown } from '@lucide/svelte';
-  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog, DataTableToolbar, FormField, Select } from '@nba/ui';
+  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog, DataTableToolbar, FormField, SearchableCombobox } from '@nba/ui';
   import type { Transaction, Pagination, BalanceReport, Season, Category, AccountClass } from './ledger-types';
   import { submitTransaction, deleteTransaction, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange } from './ledger-actions';
   import TransactionLedgerBalances from './TransactionLedgerBalances.svelte';
@@ -214,6 +214,32 @@
       window.location.href = `/admin/accounting?${params.toString()}`;
     }
   }
+
+  const seasonItems = $derived(
+    seasons.length > 0
+      ? seasons.map((s) => ({ label: s.name, value: String(s.code || s.id) }))
+      : [{ label: 'Saison 2025-2026', value: '25-26' }]
+  );
+  const accountItems = [
+    { label: 'Compte Courant', value: 'current' },
+    { label: 'Compte Livret', value: 'savings' },
+    { label: 'Caisse Physique', value: 'cash' }
+  ];
+  const monthItems = [
+    { label: 'Tous les mois', value: '' },
+    { label: 'Janvier', value: '01' }, { label: 'Février', value: '02' }, { label: 'Mars', value: '03' },
+    { label: 'Avril', value: '04' }, { label: 'Mai', value: '05' }, { label: 'Juin', value: '06' },
+    { label: 'Juillet', value: '07' }, { label: 'Août', value: '08' }, { label: 'Septembre', value: '09' },
+    { label: 'Octobre', value: '10' }, { label: 'Novembre', value: '11' }, { label: 'Décembre', value: '12' }
+  ];
+
+  function applyMonthFilter(val: string) {
+    const params = new URLSearchParams(window.location.search);
+    if (val) params.set('month', val);
+    else params.delete('month');
+    params.set('page', '1');
+    window.location.href = `/admin/accounting?${params.toString()}`;
+  }
 </script>
 
 <div class="space-y-6">
@@ -268,59 +294,15 @@
       >
         {#snippet filters()}
             <FormField id="filter-season" label="Saison">
-            <Select
-              id="filter-season"
-              bind:value={selectedSeason}
-              onchange={() => actionApplySeasonChange(selectedSeason)}
-            >
-              {#each seasons as season}
-                <option value={season.code || season.id}>{season.name}</option>
-              {/each}
-              {#if seasons.length === 0}
-                <option value="25-26">Saison 2025-2026</option>
-              {/if}
-            </Select>
+            <SearchableCombobox id="filter-season" items={seasonItems} bind:value={selectedSeason} onValueChange={() => actionApplySeasonChange(selectedSeason)} />
           </FormField>
 
             <FormField id="filter-account" label="Compte">
-            <Select
-              id="filter-account"
-              value={selectedAccount || 'current'}
-              onchange={(e) => handleAccountTabChange((e.target as HTMLSelectElement).value)}
-            >
-              <option value="current">Compte Courant</option>
-              <option value="savings">Compte Livret</option>
-              <option value="cash">Caisse Physique</option>
-            </Select>
+            <SearchableCombobox id="filter-account" items={accountItems} value={selectedAccount || 'current'} onValueChange={(v) => handleAccountTabChange(String(v))} />
           </FormField>
 
             <FormField id="filter-month" label="Mois">
-            <Select
-              id="filter-month"
-              value={month}
-              onchange={(e) => {
-                const val = (e.target as HTMLSelectElement).value;
-                const params = new URLSearchParams(window.location.search);
-                if (val) params.set('month', val);
-                else params.delete('month');
-                params.set('page', '1');
-                window.location.href = `/admin/accounting?${params.toString()}`;
-              }}
-            >
-              <option value="">Tous les mois</option>
-              <option value="01">Janvier</option>
-              <option value="02">Février</option>
-              <option value="03">Mars</option>
-              <option value="04">Avril</option>
-              <option value="05">Mai</option>
-              <option value="06">Juin</option>
-              <option value="07">Juillet</option>
-              <option value="08">Août</option>
-              <option value="09">Septembre</option>
-              <option value="10">Octobre</option>
-              <option value="11">Novembre</option>
-              <option value="12">Décembre</option>
-            </Select>
+            <SearchableCombobox id="filter-month" items={monthItems} value={month} onValueChange={(v) => applyMonthFilter(String(v))} />
           </FormField>
 
           <div class="space-y-1.5">

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DataTableToolbar, Button, Select } from '@nba/ui';
+  import { DataTableToolbar, Button, SearchableCombobox } from '@nba/ui';
   import type { Season } from './members-table-types';
 
   let {
@@ -29,6 +29,27 @@
   }
   
   const isFilterActive = $derived(!!selectedGender || !!selectedType || !!selectedStatus || (selectedSeason && seasons.length > 0));
+
+  const seasonItems = $derived(
+    seasons.length > 0
+      ? seasons.map((s) => ({ label: s.name, value: String(s.code || s.id) }))
+      : [{ label: 'Saison 2025-2026', value: '25-26' }]
+  );
+  const genderItems = [
+    { label: 'Tous les genres', value: '' },
+    { label: 'Homme (M)', value: 'M' },
+    { label: 'Femme (F)', value: 'F' }
+  ];
+  const typeItems = [
+    { label: 'Tous les types', value: '' },
+    { label: 'Compétiteur', value: 'Competiteur' },
+    { label: 'Loisir', value: 'Loisir' }
+  ];
+  const statusItems = [
+    { label: 'Tous les statuts', value: '' },
+    { label: 'Valide', value: 'valide' },
+    { label: 'Suspendu', value: 'suspendu' }
+  ];
 </script>
 
 <DataTableToolbar
@@ -44,38 +65,19 @@
     <div class="space-y-3 pt-2">
         <div class="space-y-1.5">
           <label for="filter-season" class="text-xs font-semibold text-muted-foreground">Saison</label>
-          <Select id="filter-season" bind:value={selectedSeason} onchange={onApply}>
-            {#each seasons as season}
-              <option value={season.code || season.id}>{season.name}</option>
-            {/each}
-            {#if seasons.length === 0}
-              <option value="25-26">Saison 2025-2026</option>
-            {/if}
-          </Select>
+          <SearchableCombobox id="filter-season" items={seasonItems} bind:value={selectedSeason} onValueChange={onApply} />
         </div>
         <div class="space-y-1.5">
           <label for="filter-gender" class="text-xs font-semibold text-muted-foreground">Genre</label>
-          <Select id="filter-gender" bind:value={selectedGender} onchange={onApply}>
-            <option value="">Tous les genres</option>
-            <option value="M">Homme (M)</option>
-            <option value="F">Femme (F)</option>
-          </Select>
+          <SearchableCombobox id="filter-gender" items={genderItems} bind:value={selectedGender} onValueChange={onApply} />
         </div>
         <div class="space-y-1.5">
           <label for="filter-type" class="text-xs font-semibold text-muted-foreground">Type d'adhérent</label>
-          <Select id="filter-type" bind:value={selectedType} onchange={onApply}>
-            <option value="">Tous les types</option>
-            <option value="Competiteur">Compétiteur</option>
-            <option value="Loisir">Loisir</option>
-          </Select>
+          <SearchableCombobox id="filter-type" items={typeItems} bind:value={selectedType} onValueChange={onApply} />
         </div>
         <div class="space-y-1.5">
           <label for="filter-status" class="text-xs font-semibold text-muted-foreground">Statut</label>
-          <Select id="filter-status" bind:value={selectedStatus} onchange={onApply}>
-            <option value="">Tous les statuts</option>
-            <option value="valide">Valide</option>
-            <option value="suspendu">Suspendu</option>
-          </Select>
+          <SearchableCombobox id="filter-status" items={statusItems} bind:value={selectedStatus} onValueChange={onApply} />
         </div>
     </div>
     <div class="pt-2 flex justify-end">

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Select, Checkbox } from '@nba/ui';
+  import { Checkbox, SearchableCombobox, Button, Input, FormField } from '@nba/ui';
   import { Plus } from "@lucide/svelte";
-  import { Button, Input, FormField } from"@nba/ui";
+  
   import type { AccountClass } from "./settings-types";
 
   let {
@@ -78,27 +78,19 @@
 
   <div class="grid grid-cols-2 gap-4">
       <FormField id="new-cat-recette" label="Classe Recette (CR)">
-      <Select
+      <SearchableCombobox
         id="new-cat-recette"
+        items={[{ label: 'Aucune (N/A)', value: '' }, ...(accountClasses || []).filter((ac) => ac.type === 'recette').map((ac) => ({ label: `${ac.code} - ${ac.label}`, value: ac.code }))]}
         bind:value={newCatReceiptCode}
-      >
-        <option value="">Aucune (N/A)</option>
-        {#each (accountClasses || []).filter(ac => ac.type === 'recette') as ac}
-          <option value={ac.code}>{ac.code} - {ac.label}</option>
-        {/each}
-      </Select>
+      />
     </FormField>
 
       <FormField id="new-cat-depense" label="Classe Dépense (CD)">
-      <Select
+      <SearchableCombobox
         id="new-cat-depense"
+        items={[{ label: 'Aucune (N/A)', value: '' }, ...(accountClasses || []).filter((ac) => ac.type === 'depense').map((ac) => ({ label: `${ac.code} - ${ac.label}`, value: ac.code }))]}
         bind:value={newCatExpenseCode}
-      >
-        <option value="">Aucune (N/A)</option>
-        {#each (accountClasses || []).filter(ac => ac.type === 'depense') as ac}
-          <option value={ac.code}>{ac.code} - {ac.label}</option>
-        {/each}
-      </Select>
+      />
     </FormField>
   </div>
 

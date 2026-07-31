@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Input, Label, FormField, Select } from '@nba/ui';
+  import { Input, Label, FormField, SearchableCombobox } from '@nba/ui';
 
   let {
     category = $bindable(''),
@@ -16,14 +16,7 @@
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <FormField id="category" label="Catégorie de dépense">
-    <Select
-      id="category"
-      bind:value={category}
-    >
-      {#each visibleCategories as cat}
-        <option value={cat.value}>{cat.label}</option>
-      {/each}
-    </Select>
+    <SearchableCombobox id="category" items={visibleCategories.map((cat) => ({ label: cat.label, value: String(cat.value) }))} bind:value={category} />
   </FormField>
 
     <FormField id="amount" label="Montant (€)">

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Check, AlertCircle } from '@lucide/svelte';
   import { Plus } from '@lucide/svelte';
-  import { Alert, AlertDialog, Button, DataTableToolbar, FormField, Select } from '@nba/ui';
+  import { Alert, AlertDialog, Button, DataTableToolbar, FormField, SearchableCombobox } from '@nba/ui';
   import type { Invoice, Season } from './invoices-types';
   import { InvoiceFormState } from './invoices-form-state.svelte';
   import * as api from './invoices-api';
@@ -188,36 +188,20 @@
       >
         {#snippet filters()}
             <FormField id="filter-season" label="Saison">
-            <Select
+            <SearchableCombobox
               id="filter-season"
+              items={seasons.length > 0 ? seasons.map((s) => ({ label: s.name, value: String(s.code || s.id) })) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
               value={seasonId}
-              onchange={(e) => {
-                const val = (e.target as HTMLSelectElement).value;
-                const params = new URLSearchParams(window.location.search);
-                params.set('season', val);
-                window.location.href = `/admin/accounting/invoices?${params.toString()}`;
-              }}
-            >
-              {#each seasons as season}
-                <option value={season.code || season.id}>{season.name}</option>
-              {/each}
-              {#if seasons.length === 0}
-                <option value="25-26">Saison 2025-2026</option>
-              {/if}
-            </Select>
+              onValueChange={(v) => { const val = String(v); const params = new URLSearchParams(window.location.search); params.set('season', val); window.location.href = `/admin/accounting/invoices?${params.toString()}`; }}
+            />
           </FormField>
 
             <FormField id="filter-status" label="Statut">
-            <Select
+            <SearchableCombobox
               id="filter-status"
+              items={[{ label: 'Tous les statuts', value: 'all' }, { label: 'Brouillon', value: 'draft' }, { label: 'Envoyée', value: 'sent' }, { label: 'Payée', value: 'paid' }, { label: 'Annulée', value: 'cancelled' }]}
               bind:value={statusFilter}
-            >
-              <option value="all">Tous les statuts</option>
-              <option value="draft">Brouillon</option>
-              <option value="sent">Envoyée</option>
-              <option value="paid">Payée</option>
-              <option value="cancelled">Annulée</option>
-            </Select>
+            />
           </FormField>
         {/snippet}
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Settings, Plus, Save, Trash2, Edit } from "@lucide/svelte";
-  import { Badge, Button, Input, DataTable, DataTableToolbar, DataTableColumnHeader, Checkbox, Sheet, AlertDialog, FormField, Card, Select, Table } from '@nba/ui';
+  import { Badge, Button, Input, DataTable, DataTableToolbar, DataTableColumnHeader, Checkbox, Sheet, AlertDialog, FormField, Card, Table, SearchableCombobox } from '@nba/ui';
   import type { Category, ProductCategory } from "./settings-types";
 
   let {
@@ -207,12 +207,7 @@
       </FormField>
 
         <FormField id="new-category" label="Catégorie Comptable associée">
-        <Select id="new-category" bind:value={newAccountingCategoryId} required>
-          <option value={null} disabled>Sélectionner une catégorie...</option>
-          {#each categories as c}
-            <option value={c.id}>{c.adminLabel}</option>
-          {/each}
-        </Select>
+        <SearchableCombobox id="new-category" items={categories.map((c) => ({ label: c.adminLabel, value: c.id }))} bind:value={newAccountingCategoryId} placeholder="Sélectionner une catégorie..." />
       <p class="text-xs text-muted-foreground mt-1.5">Les ventes de ces produits seront affectées à ce compte.</p>
       </FormField>
 
@@ -249,12 +244,7 @@
       </FormField>
 
         <FormField id="edit-category" label="Catégorie Comptable associée">
-        <Select id="edit-category" bind:value={editAccountingCategoryId} required>
-          <option value={null} disabled>Sélectionner une catégorie...</option>
-          {#each categories as c}
-            <option value={c.id}>{c.adminLabel}</option>
-          {/each}
-        </Select>
+        <SearchableCombobox id="edit-category" items={categories.map((c) => ({ label: c.adminLabel, value: c.id }))} bind:value={editAccountingCategoryId} placeholder="Sélectionner une catégorie..." />
       <p class="text-xs text-muted-foreground mt-1.5">Les ventes de ces produits seront affectées à ce compte.</p>
       </FormField>
 

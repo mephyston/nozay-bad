@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Check, Edit2, Trash2, X } from "@lucide/svelte";
-  import { Button, Input, Badge, AlertDialog, toast, DataTable, DataTableToolbar, Table, DataTableColumnHeader } from "@nba/ui";
-  import * as Card from"@nba/ui";
+  import { Button, Input, Badge, AlertDialog, toast, DataTable, DataTableToolbar, Table, DataTableColumnHeader, Card } from '@nba/ui';
   import type { AccountClass } from "./settings-types";
 
   let {

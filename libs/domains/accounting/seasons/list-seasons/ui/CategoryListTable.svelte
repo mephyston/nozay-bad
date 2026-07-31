@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { DataTable, Badge, Button, Table, DataTableToolbar, DataTableColumnHeader } from "@nba/ui";
-  import * as Card from"@nba/ui";
+  import { DataTable, Badge, Button, Table, DataTableToolbar, DataTableColumnHeader, Card } from '@nba/ui';
   import type { Category, AccountClass } from "./settings-types";
   import CategoryRow from "./CategoryRow.svelte";
 

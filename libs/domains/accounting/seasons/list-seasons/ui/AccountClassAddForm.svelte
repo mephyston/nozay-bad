@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Select } from '@nba/ui';
+  import { SearchableCombobox, Button, Input, FormField } from '@nba/ui';
   import { Plus } from "@lucide/svelte";
-  import { Button, Input, FormField } from"@nba/ui";
+  
 
   let {
     isSubmitting = false,
@@ -55,14 +55,11 @@
   </FormField>
 
     <FormField id="new-class-type" label="Type">
-    <Select
+    <SearchableCombobox
       id="new-class-type"
+      items={[{ label: 'Produit (7 - Recette)', value: 'recette' }, { label: 'Charge (6 - Dépense)', value: 'depense' }, { label: 'Trésorerie (5)', value: 'tresorerie' }]}
       bind:value={newClassType}
-    >
-      <option value="recette">Produit (7 - Recette)</option>
-      <option value="depense">Charge (6 - Dépense)</option>
-      <option value="tresorerie">Trésorerie (5)</option>
-    </Select>
+    />
   </FormField>
 
   <Button

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus, Check, AlertCircle } from '@lucide/svelte';
-  import { Button, Input, Alert, FormField, Select } from '@nba/ui';
+  import { Button, Input, Alert, FormField, SearchableCombobox } from '@nba/ui';
 
   let {
     type = $bindable<'recette' | 'depense'>('recette'),
@@ -44,18 +44,13 @@
 
     <form onsubmit={onSubmit} class="space-y-4">
         <FormField id="type" label="Type de transaction">
-        <Select
+        <SearchableCombobox
           id="type"
+          items={[{ label: 'Entrée (Recette - ex: Vente buvette)', value: 'recette' }, { label: 'Sortie (Dépense - ex: Achat boissons)', value: 'depense' }]}
           bind:value={type}
           disabled={isClosed}
-          onchange={() => {
-            category = type === 'recette' ? 'evenements_buvettes' : 'evenements_club';
-          }}
-          class="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-        >
-          <option value="recette">Entrée (Recette - ex: Vente buvette)</option>
-          <option value="depense">Sortie (Dépense - ex: Achat boissons)</option>
-        </Select>
+          onValueChange={() => { category = type === 'recette' ? 'evenements_buvettes' : 'evenements_club'; }}
+        />
       </FormField>
 
       <div class="grid grid-cols-2 gap-4">
@@ -83,22 +78,12 @@
       </div>
 
         <FormField id="category" label="Catégorie">
-        <Select
+        <SearchableCombobox
           id="category"
+          items={type === 'recette' ? [{ label: 'Événements & Buvette', value: 'evenements_buvettes' }, { label: 'Boutique & Cordages', value: 'boutique' }, { label: 'Adhésion & Cotisation', value: 'adhesions_inscriptions' }, { label: 'Divers Recette', value: 'divers_recette' }] : [{ label: 'Événements & Buvette (achats)', value: 'evenements_club' }, { label: 'Matériel club', value: 'materiel_club' }, { label: 'Divers Dépense', value: 'divers_depense' }]}
           bind:value={category}
           disabled={isClosed}
-        >
-          {#if type === 'recette'}
-            <option value="evenements_buvettes">Événements & Buvette</option>
-            <option value="boutique">Boutique & Cordages</option>
-            <option value="adhesions_inscriptions">Adhésion & Cotisation</option>
-            <option value="divers_recette">Divers Recette</option>
-          {:else}
-            <option value="evenements_club">Événements & Buvette (achats)</option>
-            <option value="materiel_club">Matériel club</option>
-            <option value="divers_depense">Divers Dépense</option>
-          {/if}
-        </Select>
+        />
       </FormField>
 
         <FormField id="description" label="Description / Motif">

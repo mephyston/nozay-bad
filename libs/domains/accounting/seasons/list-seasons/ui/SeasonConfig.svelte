@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Calendar, Plus } from "@lucide/svelte";
-  import { Button, Input, Badge, Sheet, AlertDialog, DataTable, DataTableToolbar, Table, DataTableColumnHeader, FormField, Alert } from"@nba/ui";
-  import * as Card from"@nba/ui";
+  import { Button, Input, Badge, Sheet, AlertDialog, DataTable, DataTableToolbar, Table, DataTableColumnHeader, FormField, Alert, Card , Checkbox } from '@nba/ui';
 
   let {
     seasons = [],

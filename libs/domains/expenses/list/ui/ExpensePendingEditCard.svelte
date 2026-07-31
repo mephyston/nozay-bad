@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Eye, Image as ImageIcon } from '@lucide/svelte';
-  import { Button, Input, Card, Textarea, FormField, Select } from '@nba/ui';
+  import { Button, Input, Card, Textarea, FormField, SearchableCombobox } from '@nba/ui';
   import type { Expense, Season, CategoryOption } from './expenses-types';
 
   let {
@@ -42,19 +42,11 @@
 
   <div class="grid grid-cols-3 gap-4">
       <FormField id="edit-cat-{exp.id}" label="Catégorie compta">
-      <Select id="edit-cat-{exp.id}" bind:value={editCategory}>
-        {#each categoriesList as cat}
-          <option value={cat.value}>{cat.label}</option>
-        {/each}
-      </Select>
+      <SearchableCombobox id="edit-cat-{exp.id}" items={categoriesList.map((cat) => ({ label: cat.label, value: String(cat.value) }))} bind:value={editCategory} />
     </FormField>
 
       <FormField id="edit-season-{exp.id}" label="Saison d'affectation">
-      <Select id="edit-season-{exp.id}" bind:value={editSeasonId}>
-        {#each seasons as s}
-          <option value={s.id}>{s.name}</option>
-        {/each}
-      </Select>
+      <SearchableCombobox id="edit-season-{exp.id}" items={seasons.map((s) => ({ label: s.name, value: String(s.id) }))} bind:value={editSeasonId} />
     </FormField>
 
       <FormField id="edit-amount-{exp.id}" label="Montant (€)">
