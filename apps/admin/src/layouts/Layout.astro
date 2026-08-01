@@ -125,20 +125,26 @@ const { title } = Astro.props;
 
     <script is:inline>
       (function() {
-        // Détection du mode PWA
         const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
         const splash = document.getElementById('pwa-splash');
         
         if (!isPWA) {
-          splash.style.display = 'none';
-          return;
+          if (splash) splash.style.display = 'none';
+        } else {
+          window.addEventListener('load', () => {
+            setTimeout(() => {
+              if (splash) splash.style.opacity = '0';
+              setTimeout(() => { if (splash) splash.remove(); }, 500);
+            }, 1200);
+          });
         }
 
-        window.addEventListener('load', () => {
-          setTimeout(() => {
-            splash.style.opacity = '0';
-            setTimeout(() => splash.remove(), 500);
-          }, 1200);
+        // Cache instantanément le splash screen lors d'une navigation interne (Astro ViewTransitions)
+        document.addEventListener('astro:after-swap', () => {
+          const newSplash = document.getElementById('pwa-splash');
+          if (newSplash) {
+            newSplash.style.display = 'none';
+          }
         });
       })();
     </script>
