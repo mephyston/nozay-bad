@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Wallet2, Check, Loader2, Save, AlertCircle } from "@lucide/svelte";
-  import { Button, Input, Card, Alert, FormField } from"@nba/ui";
+  import { Button, AmountInput, Alert, FormField } from"@nba/ui";
 
   interface Season {
     id: string;
@@ -18,9 +18,9 @@
     seasonId: string;
   }>();
 
-  let currentInitial = $state('0.00');
-  let savingsInitial = $state('0.00');
-  let cashInitial = $state('0.00');
+  let currentInitial = $state(0);
+  let savingsInitial = $state(0);
+  let cashInitial = $state(0);
   
   let isSaving = $state(false);
   let successMsg = $state('');
@@ -30,17 +30,19 @@
   const isClosed = $derived(currentSeason?.closed || false);
   const isAutoFilled = $derived(currentSeason?.isAutoFilled || false);
 
+
+
   // Update initial inputs when seasonId changes
   $effect(() => {
     const season = seasons.find((s: Season) => s.id === seasonId || s.code === seasonId || String(s.id) === seasonId);
     if (season) {
-      currentInitial = season.initialCurrentBalance !== undefined ? (season.initialCurrentBalance / 100).toFixed(2) : '0.00';
-      savingsInitial = season.initialSavingsBalance !== undefined ? (season.initialSavingsBalance / 100).toFixed(2) : '0.00';
-      cashInitial = season.initialCashBalance !== undefined ? (season.initialCashBalance / 100).toFixed(2) : '0.00';
+      currentInitial = season.initialCurrentBalance !== undefined ? season.initialCurrentBalance / 100 : 0;
+      savingsInitial = season.initialSavingsBalance !== undefined ? season.initialSavingsBalance / 100 : 0;
+      cashInitial = season.initialCashBalance !== undefined ? season.initialCashBalance / 100 : 0;
     } else {
-      currentInitial = '0.00';
-      savingsInitial = '0.00';
-      cashInitial = '0.00';
+      currentInitial = 0;
+      savingsInitial = 0;
+      cashInitial = 0;
     }
   });
 
@@ -51,16 +53,17 @@
     successMsg = '';
 
     const payload = {
+      action: 'update_balances',
       seasonId,
       balances: {
-        current: Math.round(parseFloat(currentInitial) * 100),
-        savings: Math.round(parseFloat(savingsInitial) * 100),
-        cash: Math.round(parseFloat(cashInitial) * 100)
+        current: Math.round(currentInitial * 100),
+        savings: Math.round(savingsInitial * 100),
+        cash: Math.round(cashInitial * 100)
       }
     };
 
     try {
-      const res = await fetch('/admin/accounting/config', {
+      const res = await fetch('', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -82,17 +85,7 @@
   }
 </script>
 
-<Card.Root class="max-w-xl">
-  <Card.Header>
-    <Card.Title class="flex items-center gap-2">
-      <Wallet2 class="w-5 h-5 text-primary" />
-      Soldes Initiaux de la Saison
-    </Card.Title>
-    <Card.Description>
-      Définissez l'état des comptes de l'association au premier jour de la saison comptable (1er septembre).
-    </Card.Description>
-  </Card.Header>
-  <Card.Content class="space-y-6">
+<div class="space-y-6">
     {#if successMsg}
       <Alert.Root variant="success">
         <Check class="w-4 h-4" />
@@ -124,48 +117,30 @@
     <form onsubmit={handleSaveBalances} class="space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <FormField id="current-initial" label="Compte Courant">
-          <div class="relative">
-            <Input 
-              id="current-initial" 
-              type="number" 
-              step="0.01" 
-              class="pl-3 pr-6 text-foreground font-semibold font-outfit tabular-nums" 
-              bind:value={currentInitial} 
-              required
-              disabled={isClosed}
-            />
-            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">€</span>
-          </div>
+          <AmountInput 
+            id="current-initial" 
+            bind:value={currentInitial} 
+            required
+            disabled={isClosed}
+          />
         </FormField>
 
           <FormField id="savings-initial" label="Compte Livret">
-          <div class="relative">
-            <Input 
-              id="savings-initial" 
-              type="number" 
-              step="0.01" 
-              class="pl-3 pr-6 text-foreground font-semibold font-outfit tabular-nums" 
-              bind:value={savingsInitial} 
-              required
-              disabled={isClosed}
-            />
-            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">€</span>
-          </div>
+          <AmountInput 
+            id="savings-initial" 
+            bind:value={savingsInitial} 
+            required
+            disabled={isClosed}
+          />
         </FormField>
 
           <FormField id="cash-initial" label="Caisse physique">
-          <div class="relative">
-            <Input 
-              id="cash-initial" 
-              type="number" 
-              step="0.01" 
-              class="pl-3 pr-6 text-foreground font-semibold font-outfit tabular-nums" 
-              bind:value={cashInitial} 
-              required
-              disabled={isClosed}
-            />
-            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">€</span>
-          </div>
+          <AmountInput 
+            id="cash-initial" 
+            bind:value={cashInitial} 
+            required
+            disabled={isClosed}
+          />
         </FormField>
       </div>
 
@@ -187,5 +162,4 @@
         </div>
       {/if}
     </form>
-  </Card.Content>
-</Card.Root>
+</div>

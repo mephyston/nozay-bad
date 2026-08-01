@@ -5,6 +5,7 @@ export interface Transaction {
   accountId: 'current' | 'savings' | 'cash';
   destinationAccountId: 'current' | 'savings' | 'cash' | null;
   category: string | null;
+  categoryId?: number | null;
   amount: number;
   date: string;
   paymentMethod: string;

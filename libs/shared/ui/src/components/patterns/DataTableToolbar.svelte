@@ -48,7 +48,7 @@
       placeholder={searchPlaceholder}
       bind:value={searchValue}
       onkeydown={handleKeydown}
-      class="pl-9 pr-8 bg-background border-border h-9"
+      class="!pl-9 !pr-8 bg-background border-border h-9"
     />
     <Search class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
     {#if searchValue}

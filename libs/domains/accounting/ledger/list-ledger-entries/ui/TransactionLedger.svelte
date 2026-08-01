@@ -187,7 +187,7 @@
 
     amount = (tx.amount / 100).toFixed(2);
     date = tx.date;
-    category = tx.category ? String(tx.category) : '1';
+    category = tx.categoryId ? String(tx.categoryId) : '1';
     formAccountId = reverseAccountMap[tx.accountId as any] || 'current';
     destinationAccountId = reverseAccountMap[tx.destinationAccountId as any] || 'cash';
     paymentMethod = tx.paymentMethod;

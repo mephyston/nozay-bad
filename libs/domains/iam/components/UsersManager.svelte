@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Input, Button, Badge, Table, Card, EmptyState, uiConfirm, toast, Sheet, FormField, DataTable, DataTableToolbar, Popover, Checkbox } from '@nba/ui';
-  import { Plus, Trash2, Shield, ChevronDown } from '@lucide/svelte';
+  import { Plus, Trash2, Shield, ChevronDown, Pencil } from '@lucide/svelte';
   
   let { users = [] } = $props<{ users: any[] }>();
 
@@ -9,6 +9,7 @@
   let selectedPermissions = $state<string[]>([]);
   let isSheetOpen = $state(false);
   let searchTerm = $state('');
+  let editUserId = $state<number | null>(null);
 
   const PERMISSIONS_GROUPS = [
     {
@@ -43,13 +44,20 @@
         { value: 'members:read', label: 'Lecture seule', desc: 'Voir la liste des adhérents' },
         { value: 'members:import', label: 'Import Poona', desc: 'Importer de nouveaux adhérents' }
       ]
+    },
+    {
+      name: 'Assistant IA',
+      permissions: [
+        { value: 'ai:*', label: 'Accès complet', desc: 'Accès complet à l\'assistant' },
+        { value: 'ai:chat', label: 'Discussion', desc: 'Utiliser l\'assistant IA' }
+      ]
     }
   ];
 
   function getLabelForPerm(val: string) {
     for (const g of PERMISSIONS_GROUPS) {
       const p = g.permissions.find(x => x.value === val);
-      if (p) return p.label;
+      if (p) return `${g.name} : ${p.label}`;
     }
     return val;
   }
@@ -62,15 +70,35 @@
     }
   }
 
-  async function createUser() {
+  function openAddSheet() {
+    editUserId = null;
+    newEmail = '';
+    newName = '';
+    selectedPermissions = [];
+  }
+
+  function openEditSheet(user: any) {
+    editUserId = user.id;
+    newEmail = user.email;
+    newName = user.name;
+    selectedPermissions = [...user.permissions];
+    isSheetOpen = true;
+  }
+
+  async function saveUser() {
     if (!newEmail) return;
+    const action = editUserId ? 'update_user' : 'create_user';
+    const payload = editUserId 
+      ? { action, id: editUserId, name: newName, permissions: selectedPermissions }
+      : { action, email: newEmail, name: newName, permissions: selectedPermissions };
+
     const res = await fetch('/admin/iam', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'create_user', email: newEmail, name: newName, permissions: selectedPermissions })
+      body: JSON.stringify(payload)
     });
     if (res.ok) {
-      toast.success('Utilisateur créé avec succès');
+      toast.success(editUserId ? 'Utilisateur mis à jour' : 'Utilisateur créé avec succès');
       isSheetOpen = false;
       window.location.reload();
     } else {
@@ -110,7 +138,7 @@
           <Sheet.Root bind:open={isSheetOpen}>
             <Sheet.Trigger asChild>
               {#snippet child({ props })}
-                <Button {...props} class="font-bold flex items-center justify-center gap-1.5 shrink-0 h-9">
+                <Button {...props} class="font-bold flex items-center justify-center gap-1.5 shrink-0 h-9" onclick={openAddSheet}>
                   <Plus class="w-4 h-4" />
                   <span>Ajouter</span>
                 </Button>
@@ -118,15 +146,15 @@
             </Sheet.Trigger>
             <Sheet.Content side="right" class="w-full sm:max-w-md">
               <Sheet.Header>
-                <Sheet.Title>Ajouter un accès</Sheet.Title>
-                <Sheet.Description>Donnez l'accès à un nouveau collaborateur.</Sheet.Description>
+                <Sheet.Title>{editUserId ? 'Modifier l\'accès' : 'Ajouter un accès'}</Sheet.Title>
+                <Sheet.Description>{editUserId ? 'Modifiez les droits du collaborateur.' : 'Donnez l\'accès à un nouveau collaborateur.'}</Sheet.Description>
               </Sheet.Header>
               <div class="space-y-4 py-6">
                 <FormField id="name" label="Nom">
                   <Input id="name" bind:value={newName} placeholder="Jean Dupont" />
                 </FormField>
                 <FormField id="email" label="Email">
-                  <Input id="email" type="email" bind:value={newEmail} placeholder="jean@example.com" />
+                  <Input id="email" type="email" bind:value={newEmail} placeholder="jean@example.com" disabled={!!editUserId} />
                 </FormField>
                 <FormField id="perms" label="Droits d'accès">
                   <Popover.Root>
@@ -181,7 +209,7 @@
                 </FormField>
               </div>
               <Sheet.Footer>
-                <Button onclick={createUser} class="w-full">Enregistrer</Button>
+                <Button onclick={saveUser} class="w-full">Enregistrer</Button>
               </Sheet.Footer>
             </Sheet.Content>
           </Sheet.Root>
@@ -217,6 +245,15 @@
                 <Button
                   variant="outline"
                   size="sm"
+                  onclick={() => openEditSheet(user)}
+                  class="h-8 text-xs font-semibold gap-1.5"
+                >
+                  <Pencil class="w-3.5 h-3.5" />
+                  <span>Éditer</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onclick={() => deleteUser(user.id)}
                   class="h-8 text-xs font-semibold gap-1.5 text-destructive hover:bg-destructive/10 border-destructive/30"
                 >
@@ -249,6 +286,9 @@
           </div>
         </Table.Cell>
         <Table.Cell class="text-right">
+          <Button variant="ghost" size="icon" class="text-muted-foreground hover:text-foreground" onclick={() => openEditSheet(user)}>
+            <Pencil class="w-4 h-4" />
+          </Button>
           <Button variant="ghost" size="icon" class="text-destructive hover:text-destructive" onclick={() => deleteUser(user.id)}>
             <Trash2 class="w-4 h-4" />
           </Button>

@@ -2,237 +2,9 @@
 import Layout from '../../layouts/Layout.astro';
 import AdminLayout from '../../components/AdminLayout.svelte';
 import { PageHeader, ErrorAlert } from '@nba/ui';
-import { SettingsManager } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
 
 const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
-const apiService = createApiClient(env);
-
-const requestedSeason = Astro.url.searchParams.get('season');
-const view = (Astro.url.searchParams.get('view') || 'seasons') as 'seasons' | 'compta' | 'classes';
-
-async function handleApiError(res: Response) {
-  let errMsg = await res.text();
-  try {
-    const j = JSON.parse(errMsg);
-    if (j.error) errMsg = j.error;
-  } catch(e){}
-  return new Response(errMsg, { status: res.status });
-}
-
-if (Astro.request.method === 'POST') {
-  try {
-    const data = await Astro.request.json() as any;
-    
-    if (data.action === 'create_season') {
-      const apiRes = await apiService.fetch('http://localhost/accounting/seasons', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: data.id,
-          name: data.name,
-          active: data.active
-        })
-      });
-      if (!apiRes.ok) {
-        return handleApiError(apiRes);
-      }
-    } else if (data.action === 'close_season') {
-      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.id}/close`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ confirmOverwriteInitialBalances: !!data.confirmOverwrite })
-      });
-      if (!apiRes.ok) {
-        return handleApiError(apiRes);
-      }
-    } else if (data.action === 'check_close_season') {
-      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.id}/close-checks`);
-      if (!apiRes.ok) {
-        return handleApiError(apiRes);
-      }
-      return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
-    } else if (data.action === 'activate_season') {
-      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active: true })
-      });
-      if (!apiRes.ok) {
-        return handleApiError(apiRes);
-      }
-    } else if (data.action === 'update_balances') {
-      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.seasonId}/balances`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data.balances)
-      });
-      if (!apiRes.ok) {
-        return handleApiError(apiRes);
-      }
-    } else if (data.action === 'create_category') {
-      const apiRes = await apiService.fetch('http://localhost/accounting/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          adminLabel: data.adminLabel,
-          adherentLabel: data.adherentLabel,
-          hideInExpenses: data.hideInExpenses,
-          receiptCode: data.receiptCode,
-          expenseCode: data.expenseCode
-        })
-      });
-      if (!apiRes.ok) {
-        return handleApiError(apiRes);
-      }
-    } else if (data.action === 'update_category') {
-      const apiRes = await apiService.fetch(`http://localhost/accounting/categories/${data.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data.updates)
-      });
-      if (!apiRes.ok) {
-        return handleApiError(apiRes);
-      }
-    } else if (data.action === 'delete_category') {
-      const apiRes = await apiService.fetch(`http://localhost/accounting/categories/${data.id}`, {
-        method: 'DELETE'
-      });
-      if (!apiRes.ok) {
-        return handleApiError(apiRes);
-      }
-    } else if (data.action === 'create_account_class') {
-      const apiRes = await apiService.fetch('http://localhost/accounting/account-classes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: data.code,
-          label: data.label,
-          type: data.type
-        })
-      });
-      if (!apiRes.ok) {
-        return handleApiError(apiRes);
-      }
-    } else if (data.action === 'update_account_class') {
-      const apiRes = await apiService.fetch(`http://localhost/accounting/account-classes/${data.code}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          label: data.label,
-          type: data.type
-        })
-      });
-      if (!apiRes.ok) {
-        return handleApiError(apiRes);
-      }
-    } else if (data.action === 'delete_account_class') {
-      const apiRes = await apiService.fetch(`http://localhost/accounting/account-classes/${data.code}`, {
-        method: 'DELETE'
-      });
-      if (!apiRes.ok) {
-        return handleApiError(apiRes);
-      }
-    } else if (data.action === 'create_product_category') {
-      const apiRes = await apiService.fetch('http://localhost/shop/product-categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          label: data.label,
-          accountingCategoryId: data.accountingCategoryId,
-          active: data.active
-        })
-      });
-      if (!apiRes.ok) return handleApiError(apiRes);
-    } else if (data.action === 'update_product_category') {
-      const apiRes = await apiService.fetch(`http://localhost/shop/product-categories/${data.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data.updates)
-      });
-      if (!apiRes.ok) return handleApiError(apiRes);
-    } else if (data.action === 'delete_product_category') {
-      const apiRes = await apiService.fetch(`http://localhost/shop/product-categories/${data.id}`, {
-        method: 'DELETE'
-      });
-      if (!apiRes.ok) return handleApiError(apiRes);
-    }
-
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-  } catch (err: any) {
-    return new Response(err.message, { status: 500 });
-  }
-}
-
-let seasonsList: any[] = [];
-let categoriesList: any[] = [];
-let accountClassesList: any[] = [];
-let productCategoriesList: any[] = [];
-let errorMsg = '';
-let season = requestedSeason || '25-26';
-
-try {
-  const [seasonsRes, categoriesRes, classesRes, productCategoriesRes] = await Promise.all([
-    apiService.fetch('http://localhost/accounting/seasons'),
-    apiService.fetch('http://localhost/accounting/categories'),
-    apiService.fetch('http://localhost/accounting/account-classes'),
-    apiService.fetch('http://localhost/shop/product-categories')
-  ]);
-
-  if (seasonsRes.ok) {
-    const json = await seasonsRes.json() as any;
-    const rawSeasons: any[] = json.data || [];
-    rawSeasons.sort((a: any, b: any) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
-
-    if (!requestedSeason && rawSeasons.length > 0) {
-      const activeSeasonObj = rawSeasons.find((s: any) => s.active || s.active === 1) || rawSeasons[rawSeasons.length - 1];
-      season = activeSeasonObj.code || String(activeSeasonObj.id);
-    }
-
-    seasonsList = await Promise.all(rawSeasons.map(async (s) => {
-      const balRes = await apiService.fetch(`http://localhost/accounting/seasons/${s.code || s.id}/balances`);
-      let initialCurrentBalance = 0;
-      let initialSavingsBalance = 0;
-      let initialCashBalance = 0;
-      if (balRes.ok) {
-        const balJson = await balRes.json() as any;
-        const balList: any[] = balJson.data || [];
-        const curr = balList.find(b => b.accountId === 'current' || b.accountId === 1);
-        const sav = balList.find(b => b.accountId === 'savings' || b.accountId === 2);
-        const csh = balList.find(b => b.accountId === 'cash' || b.accountId === 3);
-        if (curr) initialCurrentBalance = curr.initialBalanceCents ?? curr.initialBalance ?? 0;
-        if (sav) initialSavingsBalance = sav.initialBalanceCents ?? sav.initialBalance ?? 0;
-        if (csh) initialCashBalance = csh.initialBalanceCents ?? csh.initialBalance ?? 0;
-      }
-      return {
-        ...s,
-        initialCurrentBalance,
-        initialSavingsBalance,
-        initialCashBalance
-      };
-    }));
-  }
-
-  if (categoriesRes.ok) {
-    const json = await categoriesRes.json() as any;
-    categoriesList = json.data || [];
-  }
-
-  if (classesRes.ok) {
-    const json = await classesRes.json() as any;
-    accountClassesList = json.data || [];
-  }
-
-  if (productCategoriesRes.ok) {
-    const json = await productCategoriesRes.json() as any;
-    productCategoriesList = json.data || [];
-  }
-} catch (err: any) {
-  errorMsg = 'Erreur lors de la récupération de la configuration.';
-}
 ---
 
 <Layout title="Configuration - NBA 91">
@@ -240,31 +12,54 @@ try {
     <div class="space-y-6">
       <PageHeader
         title="Configuration"
-        description="Gérez l'exercice comptable et configurez les catégories de l'association."
+        description="Gérez les paramètres globaux de l'application : attestations, saisons, catégories comptables et boutique."
       />
 
-      <a
-        href="/admin/settings/attestation"
-        class="flex items-center justify-between gap-4 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline"
-      >
-        <div>
-          <p class="text-sm font-semibold text-foreground">Attestation CSE</p>
-          <p class="text-xs text-muted-foreground">Signataire, mail, site web et signature du modèle d'attestation.</p>
-        </div>
-        <span class="text-primary text-sm font-semibold">Configurer →</span>
-      </a>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <a
+          href="/admin/settings/attestation"
+          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline relative overflow-hidden group"
+        >
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold text-foreground">Attestation CSE</p>
+            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Configurer &rarr;</span>
+          </div>
+          <p class="text-xs text-muted-foreground pr-8">Signataire, mail, site web et signature du modèle d'attestation.</p>
+        </a>
 
-      {errorMsg && <ErrorAlert message={errorMsg} />}
+        <a
+          href="/admin/settings/seasons"
+          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline relative overflow-hidden group"
+        >
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold text-foreground">Saisons Comptables</p>
+            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Configurer &rarr;</span>
+          </div>
+          <p class="text-xs text-muted-foreground pr-8">Exercices comptables, clôture, soldes initiaux et saison active.</p>
+        </a>
 
-      <SettingsManager
-        client:load
-        seasons={seasonsList}
-        categories={categoriesList}
-        accountClasses={accountClassesList}
-        productCategories={productCategoriesList}
-        seasonId={season}
-        view={view as any}
-      />
+        <a
+          href="/admin/settings/accounting"
+          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline relative overflow-hidden group"
+        >
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold text-foreground">Catégories et Classes</p>
+            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Configurer &rarr;</span>
+          </div>
+          <p class="text-xs text-muted-foreground pr-8">Catégories comptables, plan comptable associatif (classes de comptes).</p>
+        </a>
+
+        <a
+          href="/admin/settings/products"
+          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline relative overflow-hidden group"
+        >
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold text-foreground">Catégories Produits</p>
+            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Configurer &rarr;</span>
+          </div>
+          <p class="text-xs text-muted-foreground pr-8">Catégories de la boutique et leurs correspondances comptables.</p>
+        </a>
+      </div>
     </div>
   </AdminLayout>
 </Layout>

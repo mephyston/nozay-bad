@@ -29,6 +29,14 @@ if (Astro.request.method === 'POST') {
       });
       if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
       await apiRes.text(); // Consume body to release connection
+    } else if (data.action === 'update_user') {
+      const apiRes = await apiService.fetch(`http://localhost/iam/users/${data.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: data.name, permissions: data.permissions })
+      });
+      if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+      await apiRes.text(); // Consume body to release connection
     } else if (data.action === 'delete_user') {
       const apiRes = await apiService.fetch(`http://localhost/iam/users/${data.id}`, {
         method: 'DELETE'

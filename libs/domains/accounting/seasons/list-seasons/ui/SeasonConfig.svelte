@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { Calendar, Plus } from "@lucide/svelte";
+  import { Calendar, Plus, Wallet2 } from "@lucide/svelte";
   import { Button, Input, Badge, Sheet, AlertDialog, DataTable, DataTableToolbar, Table, DataTableColumnHeader, FormField, Alert, Card , Checkbox } from '@nba/ui';
+  import InitialBalancesConfig from "./InitialBalancesConfig.svelte";
 
   let {
     seasons = [],
@@ -34,6 +35,14 @@
   }
 
   let closingSeasonId = $state<string | null>(null);
+  let showBalancesSheet = $state(false);
+  let balancesSeasonId = $state<string | null>(null);
+
+  function openBalances(id: string) {
+    balancesSeasonId = id;
+    showBalancesSheet = true;
+  }
+
   let closingSeasonName = $derived(seasons.find(s => String(s.id) === String(closingSeasonId))?.name || closingSeasonId);
   let confirmOverwrite = $state(false);
   let checkData = $state<any>(null);
@@ -110,14 +119,23 @@
               </div>
             </div>
             {#if !s.closed}
-              <div class="flex justify-end gap-2 pt-2 border-t border-border mt-1">
+              <div class="flex justify-end gap-2 pt-2 border-t border-border mt-1 flex-wrap">
                 {#if !s.active}
                   <Button variant="outline" size="sm" class="flex-1" onclick={() => onToggleSeasonActive(s.id)} disabled={isSubmitting}>
                     Activer
                   </Button>
                 {/if}
+                <Button variant="outline" size="sm" class="flex-1" onclick={() => openBalances(s.id)} disabled={isSubmitting}>
+                  Soldes
+                </Button>
                 <Button variant="destructive-outline" size="sm" class="flex-1" onclick={() => handleStartClose(s.id)} disabled={isSubmitting}>
                   Clôturer
+                </Button>
+              </div>
+            {:else}
+              <div class="flex justify-end gap-2 pt-2 border-t border-border mt-1 flex-wrap">
+                <Button variant="outline" size="sm" class="flex-1" onclick={() => openBalances(s.id)}>
+                  Voir soldes
                 </Button>
               </div>
             {/if}
@@ -152,8 +170,8 @@
           {/if}
         </Table.Cell>
         <Table.Cell class="text-right">
-          {#if !s.closed}
-            <div class="flex justify-end items-center gap-2">
+          <div class="flex justify-end items-center gap-2">
+            {#if !s.closed}
               {#if !s.active}
                 <Button
                   variant="outline"
@@ -164,6 +182,15 @@
                   Activer
                 </Button>
               {/if}
+            {/if}
+            <Button
+              variant="outline"
+              size="sm"
+              onclick={() => openBalances(s.id)}
+            >
+              {s.closed ? 'Voir soldes' : 'Soldes'}
+            </Button>
+            {#if !s.closed}
               <Button
                 variant="destructive"
                 size="sm"
@@ -172,8 +199,8 @@
               >
                 Clôturer
               </Button>
-            </div>
-          {/if}
+            {/if}
+          </div>
         </Table.Cell>
       </Table.Row>
     {/snippet}
@@ -300,4 +327,23 @@
     </AlertDialog.Footer>
   </AlertDialog.Content>
 </AlertDialog.Root>
+
+<Sheet.Root bind:open={showBalancesSheet}>
+  <Sheet.Content size="md" class="overflow-y-auto">
+    <Sheet.Header>
+      <Sheet.Title class="flex items-center gap-2">
+        <Wallet2 class="w-5 h-5 text-primary" />
+        Soldes Initiaux de la Saison
+      </Sheet.Title>
+      <Sheet.Description>
+        Définissez l'état des comptes de l'association au premier jour de la saison comptable (1er septembre).
+      </Sheet.Description>
+    </Sheet.Header>
+    <div class="pt-6">
+      {#if balancesSeasonId}
+        <InitialBalancesConfig {seasons} seasonId={balancesSeasonId} />
+      {/if}
+    </div>
+  </Sheet.Content>
+</Sheet.Root>
 

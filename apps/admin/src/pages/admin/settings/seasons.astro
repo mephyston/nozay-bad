@@ -1,8 +1,8 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { PageHeader, ErrorAlert, Badge, SeasonSelector } from '@nba/ui';
-import { InitialBalancesConfig } from '@nba/accounting-ui';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { SettingsManager } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 
@@ -11,24 +11,64 @@ const apiService = createApiClient(env);
 
 const requestedSeason = Astro.url.searchParams.get('season');
 
-// Proxying POST requests to configure initial balances for a season
+async function handleApiError(res: Response) {
+  let errMsg = await res.text();
+  try {
+    const j = JSON.parse(errMsg);
+    if (j.error) errMsg = j.error;
+  } catch(e){}
+  return new Response(errMsg, { status: res.status });
+}
+
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
-    const balancesArray = [
-      { accountId: 'current', initialBalanceCents: data.balances.current },
-      { accountId: 'savings', initialBalanceCents: data.balances.savings },
-      { accountId: 'cash', initialBalanceCents: data.balances.cash }
-    ];
-    const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.seasonId}/balances`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(balancesArray)
-    });
-    if (!apiRes.ok) {
-      return new Response('Erreur configuration soldes', { status: apiRes.status });
+    
+    if (data.action === 'create_season') {
+      const apiRes = await apiService.fetch('http://localhost/accounting/seasons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: data.id,
+          name: data.name,
+          active: data.active
+        })
+      });
+      if (!apiRes.ok) return handleApiError(apiRes);
+    } else if (data.action === 'close_season') {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.id}/close`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmOverwriteInitialBalances: !!data.confirmOverwrite })
+      });
+      if (!apiRes.ok) return handleApiError(apiRes);
+    } else if (data.action === 'check_close_season') {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.id}/close-checks`);
+      if (!apiRes.ok) return handleApiError(apiRes);
+      return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
+    } else if (data.action === 'activate_season') {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: true })
+      });
+      if (!apiRes.ok) return handleApiError(apiRes);
+    } else if (data.action === 'update_balances') {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.seasonId}/balances`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify([
+          { accountId: 'current', initialBalanceCents: data.balances.current },
+          { accountId: 'savings', initialBalanceCents: data.balances.savings },
+          { accountId: 'cash', initialBalanceCents: data.balances.cash }
+        ])
+      });
+      if (!apiRes.ok) return handleApiError(apiRes);
     }
-    return new Response(JSON.stringify({ success: true }));
+
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
   } catch (err: any) {
     return new Response(err.message, { status: 500 });
   }
@@ -40,6 +80,7 @@ let season = requestedSeason || '25-26';
 
 try {
   const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
+
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
     const rawSeasons: any[] = json.data || [];
@@ -98,27 +139,28 @@ try {
     }));
   }
 } catch (err: any) {
-  errorMsg = 'Impossible de charger la liste des saisons comptables.';
+  errorMsg = 'Erreur lors de la récupération des saisons.';
 }
-const isClosed = !!seasonsList.find((s: any) => (s.code || String(s.id)) === season || String(s.id) === season)?.closed;
 ---
 
-<Layout title="Soldes initiaux - NBA 91">
-  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Soldes initiaux" permissions={Astro.locals.user?.permissions || []}>
+<Layout title="Configuration des saisons - NBA 91">
+  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Configuration / Saisons" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       <PageHeader
-        title="Soldes initiaux"
-        description="Définissez l'état des comptes au premier jour de l'exercice comptable."
-      >
-        <Fragment slot="actions">
-          {isClosed && <Badge variant="outline" size="lg">Saison clôturée (Lecture seule)</Badge>}
-          <SeasonSelector client:load seasons={seasonsList} current={season} />
-        </Fragment>
-      </PageHeader>
+        title="Saisons comptables"
+        description="Gérez les exercices comptables et configurez les soldes initiaux."
+      />
 
       {errorMsg && <ErrorAlert message={errorMsg} />}
 
-      <InitialBalancesConfig client:load seasons={seasonsList} seasonId={season} />
+      <SettingsManager
+        client:load
+        seasons={seasonsList}
+        categories={[]}
+        seasonId={season}
+        view="seasons"
+        allowedViews={['seasons']}
+      />
     </div>
   </AdminLayout>
 </Layout>

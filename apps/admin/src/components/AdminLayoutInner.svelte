@@ -64,8 +64,7 @@
         ...(hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') ? [
           { name: "Rapprochement bancaire", icon: Scale, href: "/admin/accounting/import" },
           { name: "Remises de chèques", icon: Landmark, href: "/admin/accounting/cheques" },
-          { name: "Caisse", icon: Wallet, href: "/admin/accounting/cash-box" },
-          { name: "Soldes initiaux", icon: Play, href: "/admin/accounting/config" }
+          { name: "Caisse", icon: Wallet, href: "/admin/accounting/cash-box" }
         ] : []),
         ...(hasPermission(permissions, '*') || hasPermission(permissions, 'expenses:*') ? [{ name: "Notes de frais", icon: Coins, href: "/admin/expenses" }] : [])
       ]
@@ -198,6 +197,8 @@
         return "/admin/shop/products";
       case "note de frais":
         return "/admin/expenses";
+      case "configuration":
+        return "/admin/settings";
       default:
         return undefined;
     }

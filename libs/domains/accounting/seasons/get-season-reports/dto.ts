@@ -34,7 +34,7 @@ export type GetSeasonReportsOutput = {
     totalRecettes: number;
     totalDepenses: number;
     netResult: number;
-    categories: Record<string, { type: 'recette' | 'depense'; total: number }>;
+    categories: Record<string, { type: 'recette' | 'depense'; total: number; categoryName?: string }>;
   };
   bilanTrésorerie: {
     accountId: 'current' | 'savings' | 'cash';

@@ -28,7 +28,7 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
   const dbCategories = await repo.getAllCategories(db);
 
   // 1. Compte de Résultat (Income Statement)
-  const categoryTotals: Record<string, { type: 'recette' | 'depense', total: number }> = {};
+  const categoryTotals: Record<string, { type: 'recette' | 'depense', total: number, categoryName?: string }> = {};
   let totalRecettes = 0;
   let totalDepenses = 0;
 
@@ -42,8 +42,16 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     const cat = catId !== null ? catId.toString() : 'divers';
     const key = `${cat}_${tx.type}`;
 
+    let categoryName = 'Non catégorisé';
+    if (catId !== null) {
+      const catObj = dbCategories.find(c => c.id === catId);
+      if (catObj) {
+        categoryName = catObj.adminLabel;
+      }
+    }
+
     if (!categoryTotals[key]) {
-      categoryTotals[key] = { type: tx.type, total: 0 };
+      categoryTotals[key] = { type: tx.type, total: 0, categoryName };
     }
     categoryTotals[key].total += amount;
 

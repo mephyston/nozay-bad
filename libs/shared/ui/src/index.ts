@@ -30,6 +30,7 @@ export * as Sidebar from './components/ui/sidebar';
 export * as Tooltip from './components/ui/tooltip';
 export { Separator } from './components/ui/separator';
 export { Amount } from './components/ui/amount';
+export { AmountInput } from './components/ui/amount-input';
 export { Toaster, toast } from './components/ui/sonner';
 export { Combobox, type ComboboxItem } from './components/ui/combobox';
 export * as DropdownMenu from './components/ui/dropdown-menu';

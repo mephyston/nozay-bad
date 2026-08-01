@@ -14,7 +14,8 @@
     accountClasses = [],
     productCategories = [],
     seasonId,
-    view = 'seasons'
+    view = 'seasons',
+    allowedViews = ['seasons', 'compta', 'classes', 'shop']
   }: {
     seasons: Season[];
     categories: Category[];
@@ -22,6 +23,7 @@
     productCategories?: ProductCategory[];
     seasonId: string;
     view?: 'seasons' | 'compta' | 'classes' | 'shop';
+    allowedViews?: ('seasons' | 'compta' | 'classes' | 'shop')[];
   } = $props();
 
   let viewState = $state<api.SettingsState>({
@@ -130,12 +132,22 @@
   {/if}
 
   <Tabs.Root value={activeView} onValueChange={handleViewChange} class="w-full">
-    <Tabs.List class="mb-6 w-full sm:w-fit justify-start sm:justify-center overflow-x-auto no-scrollbar">
-      <Tabs.Trigger value="seasons">Saisons</Tabs.Trigger>
-      <Tabs.Trigger value="compta">Catégories comptables</Tabs.Trigger>
-      <Tabs.Trigger value="classes">Plan comptable</Tabs.Trigger>
-      <Tabs.Trigger value="shop">Catégories produits</Tabs.Trigger>
-    </Tabs.List>
+    {#if allowedViews.length > 1}
+      <Tabs.List class="mb-6 w-full sm:w-fit justify-start sm:justify-center overflow-x-auto no-scrollbar">
+        {#if allowedViews.includes('seasons')}
+          <Tabs.Trigger value="seasons">Saisons</Tabs.Trigger>
+        {/if}
+        {#if allowedViews.includes('compta')}
+          <Tabs.Trigger value="compta">Catégories comptables</Tabs.Trigger>
+        {/if}
+        {#if allowedViews.includes('classes')}
+          <Tabs.Trigger value="classes">Plan comptable</Tabs.Trigger>
+        {/if}
+        {#if allowedViews.includes('shop')}
+          <Tabs.Trigger value="shop">Catégories produits</Tabs.Trigger>
+        {/if}
+      </Tabs.List>
+    {/if}
 
     <!-- VIEW: SEASONS -->
     <Tabs.Content value="seasons">

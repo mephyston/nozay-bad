@@ -21,18 +21,18 @@
   <!-- Bouton Menu -->
   <button 
     type="button"
-    class="flex flex-col items-center justify-center w-full py-2 gap-1 hover:bg-accent transition-colors cursor-pointer border-0 bg-transparent"
+    class="flex flex-col items-center justify-center w-full py-3 gap-1 hover:bg-accent transition-colors cursor-pointer border-0 bg-transparent min-h-[56px]"
     onclick={onMenuClick}
   >
-    <Menu class="w-5 h-5 text-muted-foreground" />
-    <span class="text-[10px] font-medium text-muted-foreground">Menu</span>
+    <Menu class="w-6 h-6 text-muted-foreground" />
+    <span class="text-[11px] font-medium text-muted-foreground">Menu</span>
   </button>
 
   {#if canWriteAccounting}
     <!-- Enregistrer un chèque -->
     <a 
       href="/admin/accounting/cheques?action=new-cheque"
-      class="flex flex-col items-center justify-center w-full py-2 gap-1 hover:bg-accent transition-colors decoration-transparent"
+      class="flex flex-col items-center justify-center w-full py-3 gap-1 hover:bg-accent transition-colors decoration-transparent min-h-[56px]"
       onclick={(e) => {
         if (window.location.pathname.includes('/accounting/cheques')) {
           e.preventDefault();
@@ -40,14 +40,14 @@
         }
       }}
     >
-      <Landmark class="w-5 h-5 text-muted-foreground" />
-      <span class="text-[10px] font-medium text-muted-foreground">Chèques</span>
+      <Landmark class="w-6 h-6 text-muted-foreground" />
+      <span class="text-[11px] font-medium text-muted-foreground">Chèques</span>
     </a>
 
     <!-- Saisir une dépense -->
     <a 
       href="/admin/accounting?action=new-depense"
-      class="flex flex-col items-center justify-center w-full py-2 gap-1 hover:bg-accent transition-colors decoration-transparent"
+      class="flex flex-col items-center justify-center w-full py-3 gap-1 hover:bg-accent transition-colors decoration-transparent min-h-[56px]"
       onclick={(e) => {
         if (window.location.pathname.endsWith('/accounting') || window.location.pathname.endsWith('/accounting/')) {
           e.preventDefault();
@@ -55,14 +55,14 @@
         }
       }}
     >
-      <Coins class="w-5 h-5 text-destructive" />
-      <span class="text-[10px] font-medium text-destructive">Dépense</span>
+      <Coins class="w-6 h-6 text-destructive" />
+      <span class="text-[11px] font-medium text-destructive">Dépense</span>
     </a>
 
     <!-- Saisir une recette -->
     <a 
       href="/admin/accounting?action=new-recette"
-      class="flex flex-col items-center justify-center w-full py-2 gap-1 hover:bg-accent transition-colors decoration-transparent"
+      class="flex flex-col items-center justify-center w-full py-3 gap-1 hover:bg-accent transition-colors decoration-transparent min-h-[56px]"
       onclick={(e) => {
         if (window.location.pathname.endsWith('/accounting') || window.location.pathname.endsWith('/accounting/')) {
           e.preventDefault();
@@ -70,8 +70,8 @@
         }
       }}
     >
-      <FileCheck class="w-5 h-5 text-success" />
-      <span class="text-[10px] font-medium text-success">Recette</span>
+      <FileCheck class="w-6 h-6 text-success" />
+      <span class="text-[11px] font-medium text-success">Recette</span>
     </a>
   {/if}
 </div>

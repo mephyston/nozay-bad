@@ -1,0 +1,103 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { SettingsManager } from '@nba/accounting-ui';
+import { env } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
+
+const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
+const apiService = createApiClient(env);
+
+async function handleApiError(res: Response) {
+  let errMsg = await res.text();
+  try {
+    const j = JSON.parse(errMsg);
+    if (j.error) errMsg = j.error;
+  } catch(e){}
+  return new Response(errMsg, { status: res.status });
+}
+
+if (Astro.request.method === 'POST') {
+  try {
+    const data = await Astro.request.json() as any;
+    
+    if (data.action === 'create_product_category') {
+      const apiRes = await apiService.fetch('http://localhost/shop/product-categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          label: data.label,
+          accountingCategoryId: data.accountingCategoryId,
+          active: data.active
+        })
+      });
+      if (!apiRes.ok) return handleApiError(apiRes);
+    } else if (data.action === 'update_product_category') {
+      const apiRes = await apiService.fetch(`http://localhost/shop/product-categories/${data.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data.updates)
+      });
+      if (!apiRes.ok) return handleApiError(apiRes);
+    } else if (data.action === 'delete_product_category') {
+      const apiRes = await apiService.fetch(`http://localhost/shop/product-categories/${data.id}`, {
+        method: 'DELETE'
+      });
+      if (!apiRes.ok) return handleApiError(apiRes);
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (err: any) {
+    return new Response(err.message, { status: 500 });
+  }
+}
+
+let categoriesList: any[] = [];
+let productCategoriesList: any[] = [];
+let errorMsg = '';
+
+try {
+  const [categoriesRes, productCategoriesRes] = await Promise.all([
+    apiService.fetch('http://localhost/accounting/categories'),
+    apiService.fetch('http://localhost/shop/product-categories')
+  ]);
+
+  if (categoriesRes.ok) {
+    const json = await categoriesRes.json() as any;
+    categoriesList = json.data || [];
+  }
+
+  if (productCategoriesRes.ok) {
+    const json = await productCategoriesRes.json() as any;
+    productCategoriesList = json.data || [];
+  }
+} catch (err: any) {
+  errorMsg = 'Erreur lors de la récupération de la configuration.';
+}
+---
+
+<Layout title="Catégories Produits - NBA 91">
+  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Configuration / Catégories Produits" permissions={Astro.locals.user?.permissions || []}>
+    <div class="space-y-6">
+      <PageHeader
+        title="Catégories de Produits"
+        description="Gérez les catégories de la boutique et leurs correspondances avec la comptabilité."
+      />
+
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <SettingsManager
+        client:load
+        seasons={[]}
+        categories={categoriesList}
+        productCategories={productCategoriesList}
+        seasonId=""
+        view="shop"
+        allowedViews={['shop']}
+      />
+    </div>
+  </AdminLayout>
+</Layout>

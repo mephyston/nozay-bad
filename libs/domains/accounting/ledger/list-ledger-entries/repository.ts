@@ -132,6 +132,7 @@ export class ListTransactionsRepository {
       accountId: ledgerEntriesTable.accountId,
       destinationAccountId: ledgerEntriesTable.destinationAccountId,
       category: categoriesTable.adminLabel,
+      categoryId: ledgerEntriesTable.categoryId,
       amount: ledgerEntriesTable.amountCents,
       date: ledgerEntriesTable.date,
       paymentMethod: paymentMethodsTable.code,
