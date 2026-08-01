@@ -1,6 +1,6 @@
 import { type Db } from '@nba/db';
 import { getEffectiveConfig } from '../shared/attestation/repository';
-import { defaultSignature } from '../shared/attestation/assets';
+import { assets } from '@nba/pdf';
 
 export type GetAttestationConfigOutput = {
   signatoryName: string;
@@ -16,7 +16,7 @@ export type GetAttestationConfigOutput = {
 
 export async function getAttestationConfig(db: Db): Promise<GetAttestationConfigOutput> {
   const config = await getEffectiveConfig(db);
-  const base64 = config.signatureBase64 ?? defaultSignature.base64;
+  const base64 = config.signatureBase64 ?? assets.defaultSignature.base64;
   return {
     signatoryName: config.signatoryName,
     signatoryEmail: config.signatoryEmail,

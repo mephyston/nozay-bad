@@ -14,6 +14,7 @@ export default defineConfig({
     alias: {
       '@nba/db/test-utils': path.resolve(__dirname, '../../libs/shared/db/src/test-utils.ts'),
       '@nba/db': path.resolve(__dirname, '../../libs/shared/db/src/index.ts'),
+      '@nba/pdf': path.resolve(__dirname, '../../libs/shared/pdf/src/index.ts'),
       '@nba/members-api': path.resolve(__dirname, '../../libs/domains/members/index.ts'),
       '@nba/members/schema': path.resolve(__dirname, '../../libs/domains/members/shared/schema.ts'),
       '@nba/accounting-api': path.resolve(__dirname, '../../libs/domains/accounting/index.ts'),
