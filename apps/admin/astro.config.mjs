@@ -27,8 +27,8 @@ export default defineConfig({
         name: 'Nozay Bad Admin',
         short_name: 'NBA Admin',
         description: 'Administration du club Nozay Badminton',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
+        theme_color: '#262624',
+        background_color: '#262624',
         display: 'standalone',
         icons: [
           {
