@@ -68,6 +68,7 @@ jobs:
       api: ${{ steps.affected.outputs.api }}
       storefront: ${{ steps.affected.outputs.storefront }}
       admin: ${{ steps.affected.outputs.admin }}
+      frontend: ${{ steps.affected.outputs.frontend }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -98,6 +99,7 @@ jobs:
             API_AFFECTED="true"
             STOREFRONT_AFFECTED="true"
             ADMIN_AFFECTED="true"
+            FRONTEND_AFFECTED="true"
           else
             AFFECTED=$(npx nx show projects --affected --base=$NX_BASE --head=$NX_HEAD 2>/dev/null || echo "")
             echo "Affected projects: [$AFFECTED]"
@@ -105,13 +107,15 @@ jobs:
             if echo "$AFFECTED" | grep -qx 'api'; then API_AFFECTED="true"; else API_AFFECTED="false"; fi
             if echo "$AFFECTED" | grep -qx 'storefront'; then STOREFRONT_AFFECTED="true"; else STOREFRONT_AFFECTED="false"; fi
             if echo "$AFFECTED" | grep -qx 'admin'; then ADMIN_AFFECTED="true"; else ADMIN_AFFECTED="false"; fi
+            if echo "$AFFECTED" | grep -qE 'admin|storefront|@nba/ui'; then FRONTEND_AFFECTED="true"; else FRONTEND_AFFECTED="false"; fi
           fi
 
           echo "api=$API_AFFECTED" >> $GITHUB_OUTPUT
           echo "storefront=$STOREFRONT_AFFECTED" >> $GITHUB_OUTPUT
           echo "admin=$ADMIN_AFFECTED" >> $GITHUB_OUTPUT
+          echo "frontend=$FRONTEND_AFFECTED" >> $GITHUB_OUTPUT
 
-          echo "Debug outputs → api=$API_AFFECTED storefront=$STOREFRONT_AFFECTED admin=$ADMIN_AFFECTED"
+          echo "Debug outputs → api=$API_AFFECTED storefront=$STOREFRONT_AFFECTED admin=$ADMIN_AFFECTED frontend=$FRONTEND_AFFECTED"
 
   # ──────────────────────────────────────────────────────────────
   # 2. Tests affectés (exécutés sur PR et sur Push)
@@ -158,6 +162,8 @@ jobs:
   visual:
     name: Visual regression
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
