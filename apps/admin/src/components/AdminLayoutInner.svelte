@@ -191,7 +191,7 @@
 <Sidebar.Root collapsible="icon" variant="inset">
   <!-- Header -->
   <Sidebar.Header class="p-2 border-0 bg-transparent">
-    <div class="flex items-center w-full justify-between gap-1">
+    <div class="pt-safe flex items-center w-full justify-between gap-1">
       <Sidebar.Menu class="flex-1">
         <Sidebar.MenuItem>
           <Sidebar.MenuButton
