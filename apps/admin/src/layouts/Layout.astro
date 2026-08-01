@@ -100,9 +100,6 @@ const { title } = Astro.props;
         --accent: rgb(233, 230, 220);
         --border: rgb(218, 217, 212);
       }
-      html.splash-hidden #pwa-splash {
-        display: none !important;
-      }
     </style>
   </head>
   <body class="bg-background text-foreground min-h-screen antialiased font-sans relative">
@@ -132,23 +129,15 @@ const { title } = Astro.props;
         const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
         const splash = document.getElementById('pwa-splash');
         
-        // On le cache si ce n'est pas une PWA ou s'il a déjà été affiché
-        if (!isPWA || sessionStorage.getItem('splashShown')) {
-          document.documentElement.classList.add('splash-hidden');
+        if (!isPWA) {
           splash.style.display = 'none';
           return;
         }
 
-        // On marque qu'il a été affiché pour cette session
-        sessionStorage.setItem('splashShown', 'true');
-
         window.addEventListener('load', () => {
           setTimeout(() => {
             splash.style.opacity = '0';
-            setTimeout(() => {
-              splash.remove();
-              document.documentElement.classList.add('splash-hidden');
-            }, 500);
+            setTimeout(() => splash.remove(), 500);
           }, 1200);
         });
       })();
