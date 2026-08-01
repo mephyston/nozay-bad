@@ -1,3 +1,10 @@
+# [1.0.0-beta.8](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.7...v1.0.0-beta.8) (2026-08-01)
+
+
+### Bug Fixes
+
+* **ui:** apply safe area inset to sidebar header for iOS PWA ([c96ce6c](https://github.com/mephyston/nozay-bad/commit/c96ce6c91cb5abbc4c912fc349162f050a81d592))
+
 # [1.0.0-beta.7](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.6...v1.0.0-beta.7) (2026-08-01)
 
 
