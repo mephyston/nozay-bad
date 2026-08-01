@@ -2,6 +2,7 @@
 import { ClientRouter } from 'astro:transitions';
 import { pwaInfo } from 'virtual:pwa-info';
 import { ModeWatcher } from 'mode-watcher';
+import pkg from '../../../../package.json';
 import '../styles/global.css';
 
 interface Props {
@@ -101,8 +102,47 @@ const { title } = Astro.props;
       }
     </style>
   </head>
-  <body class="bg-background text-foreground min-h-screen antialiased font-sans">
+  <body class="bg-background text-foreground min-h-screen antialiased font-sans relative">
     <ModeWatcher client:load />
+    
+    <!-- PWA Splash Screen -->
+    <div id="pwa-splash" class="fixed inset-0 z-[9999] bg-background flex flex-col items-center justify-center transition-opacity duration-500">
+      <div class="relative">
+        <!-- Image Light Mode -->
+        <img src="/images/splash-light.jpeg" alt="Logo Nozay Bad" class="w-80 h-80 animate-pulse object-contain block dark:hidden" />
+        <!-- Image Dark Mode -->
+        <img src="/images/splash-dark.jpeg" alt="Logo Nozay Bad" class="w-80 h-80 animate-pulse object-contain hidden dark:block" />
+        
+        <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 flex gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: -0.3s"></span>
+          <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: -0.15s"></span>
+          <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0s"></span>
+        </div>
+      </div>
+      <p class="mt-12 text-muted-foreground font-medium tracking-widest text-sm uppercase">Chargement</p>
+      <p class="mt-2 text-xs text-muted-foreground/60">v{pkg.version}</p>
+    </div>
+
+    <script is:inline>
+      (function() {
+        // Détection du mode PWA
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        const splash = document.getElementById('pwa-splash');
+        
+        if (!isPWA) {
+          splash.style.display = 'none';
+          return;
+        }
+
+        window.addEventListener('load', () => {
+          setTimeout(() => {
+            splash.style.opacity = '0';
+            setTimeout(() => splash.remove(), 500);
+          }, 1200);
+        });
+      })();
+    </script>
+
     <slot />
   </body>
 </html>
