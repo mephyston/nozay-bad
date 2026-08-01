@@ -31,7 +31,7 @@ aiRouter.post('/chat', async (c) => {
       { role: 'user', content: prompt }
     ];
 
-    let response = await c.env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+    let response = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
       messages,
       tools: AI_TOOLS
     });
@@ -121,7 +121,7 @@ aiRouter.post('/chat', async (c) => {
         content: JSON.stringify(toolResult) 
       });
 
-      const finalResponse = await c.env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+      const finalResponse = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
         messages,
         tools: AI_TOOLS
       });
