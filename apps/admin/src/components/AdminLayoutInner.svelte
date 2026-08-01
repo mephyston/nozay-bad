@@ -14,13 +14,15 @@
     Package,
     ShoppingCart,
     Settings,
+    Sparkles,
     ChevronDown,
     ChevronUp,
     ChevronsUpDown,
     X,
     Trophy,
     User,
-    LogOut
+    LogOut,
+    HelpCircle
   } from "@lucide/svelte";
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
@@ -39,11 +41,12 @@
 
   const sidebar = Sidebar.useSidebar();
 
-  const navGroups = [
+  const navGroups = $derived([
     {
       label: "",
       items: [
-        { name: "Tableau de bord", icon: LayoutDashboard, href: "/" }
+        { name: "Tableau de bord", icon: LayoutDashboard, href: "/" },
+        { name: "Assistant IA", icon: Sparkles, href: "/admin/ai" }
       ]
     },
     {
@@ -80,8 +83,14 @@
         ...(hasPermission(permissions, '*') || hasPermission(permissions, 'settings:*') ? [{ name: "Configuration", icon: Settings, href: "/admin/settings" }] : []),
         ...(hasPermission(permissions, '*') || hasPermission(permissions, 'iam:*') ? [{ name: "Accès & Permissions", icon: User, href: "/admin/iam" }] : [])
       ]
+    },
+    {
+      label: "Assistance",
+      items: [
+        { name: "Centre d'aide", icon: HelpCircle, href: "/admin/help" }
+      ]
     }
-  ];
+  ]);
 
   // Remove empty groups
   const filteredNavGroups = $derived(navGroups.filter(g => g.items.length > 0));
@@ -93,6 +102,10 @@
 
     if (item.href === "/") {
       return breadcrumb === "Tableau de Bord" || primary === "tableau de bord" || primary === "vue d'ensemble";
+    }
+
+    if (item.href === "/admin/ai") {
+      return primary === "assistant ia" || primary === "ia";
     }
 
     if (item.href === "/admin/expenses") {
@@ -141,6 +154,11 @@
     }
     if (item.href === "/admin/iam") {
       return primary === "accès et permissions" || primary === "accès & permissions";
+    }
+    
+    // Aide
+    if (item.href === "/admin/help") {
+      return primary === "aide" || primary === "assistance" || primary === "centre d'aide";
     }
 
     return false;

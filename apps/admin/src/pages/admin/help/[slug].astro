@@ -1,0 +1,44 @@
+---
+import AdminLayout from "../../../components/AdminLayout.svelte";
+import Layout from "../../../layouts/Layout.astro";
+import { getEntry, render } from 'astro:content';
+import { ArrowLeft } from "@lucide/svelte";
+
+const { slug } = Astro.params;
+if (!slug) {
+  return Astro.redirect('/404');
+}
+
+const entry = await getEntry('help', slug);
+if (!entry) {
+  return Astro.redirect('/404');
+}
+
+const { Content } = await render(entry);
+const { user } = Astro.locals as any;
+const permissions = user?.permissions || [];
+---
+
+<Layout title={`${entry.data.title} - Aide NBA`}>
+  <AdminLayout 
+    client:load 
+    email={user?.email || ""} 
+    name={user?.name || ""} 
+    permissions={permissions} 
+    breadcrumb={`Aide / ${entry.data.title}`}
+  >
+    <div class="max-w-3xl mx-auto space-y-6 pb-12">
+      <div class="flex items-center gap-4">
+        <a href="/admin/help" class="inline-flex items-center justify-center rounded-md text-sm font-medium hover:bg-accent hover:text-accent-foreground h-9 w-9">
+          <ArrowLeft class="h-4 w-4" />
+          <span class="sr-only">Retour</span>
+        </a>
+        <h1 class="text-2xl font-bold tracking-tight">{entry.data.title}</h1>
+      </div>
+      
+      <div class="prose prose-sm md:prose-base dark:prose-invert prose-primary max-w-none">
+        <Content />
+      </div>
+    </div>
+  </AdminLayout>
+</Layout>

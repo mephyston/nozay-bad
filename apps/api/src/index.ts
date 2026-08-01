@@ -4,6 +4,7 @@ import { accountingRouter } from '@nba/accounting-api';
 import { expensesRouter } from '@nba/expenses-api';
 import { shopRouter } from '@nba/shop-api';
 import { iamRouter } from '@nba/iam';
+import { aiRouter } from './ai';
 import { dashboardRouter } from './dashboard';
 import { AppError } from '@nba/db';
 
@@ -63,5 +64,6 @@ app.route('/expenses', expensesRouter);
 app.route('/shop', shopRouter);
 app.route('/iam', iamRouter);
 app.route('/dashboard', dashboardRouter);
+app.route('/ai', aiRouter);
 
 export default app;

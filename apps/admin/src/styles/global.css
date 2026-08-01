@@ -3,6 +3,7 @@
 @source "../../../../libs/**/*.ts";
 
 @plugin "tailwindcss-animate";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:where(.dark, .dark *));
 @custom-variant data-open (&[data-state=open]);

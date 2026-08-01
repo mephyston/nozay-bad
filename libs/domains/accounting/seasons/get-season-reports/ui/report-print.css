@@ -1,89 +1,102 @@
+/*
+ * Ce fichier est importé en JS dans GeneralMeetingReport.svelte : il est émis
+ * tel quel en CSS GLOBAL (Svelte ne le transforme pas). Il ne faut donc PAS
+ * utiliser `:global(...)` ici — ce n'est pas un sélecteur CSS valide et le
+ * navigateur ignore la règle. On utilise des sélecteurs simples (déjà globaux).
+ */
+
+/* Zone d'impression : montée en permanence mais cachée à l'écran. */
+.print-area {
+  display: none;
+}
+
 @media print {
   @page {
     size: landscape;
     margin: 0.8cm;
   }
-  :global(body) {
+
+  body {
     background: white !important;
     color: black !important;
     font-size: 10px !important;
   }
-  :global(aside), :global(nav), :global(header) {
+
+  /* Chrome de l'app + vue écran (onglets) masqués ; zone d'impression affichée. */
+  aside, nav, header {
     display: none !important;
   }
-  :global(main), :global(.px-6), :global(.py-8), :global(.container), :global(.mx-auto), :global(.max-w-7xl) {
+  .no-print {
+    display: none !important;
+  }
+  .report-screen {
+    display: none !important;
+  }
+  .print-area {
+    display: block !important;
+  }
+
+  /* Neutraliser les conteneurs de layout pour occuper toute la page. */
+  main, .px-6, .py-8, .container, .mx-auto, .max-w-7xl {
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
     width: 100% !important;
   }
-  :global(.h-screen) {
+  .h-screen {
     height: auto !important;
     min-height: 0 !important;
   }
-  :global(.overflow-hidden), :global(.overflow-y-auto), :global(.overflow-auto) {
+  .overflow-hidden, .overflow-y-auto, .overflow-auto {
     overflow: visible !important;
   }
-  :global(.flex-1) {
+  .flex-1 {
     flex: none !important;
   }
-  .no-print {
+
+  /*
+   * Dans la zone d'impression : masquer toutes les sections, puis n'afficher
+   * que celle correspondant à la classe cible posée sur la racine.
+   */
+  .print-area [data-print-section] {
     display: none !important;
   }
-  :global(.page-break) {
-    page-break-before: always;
-    break-before: page;
-    margin-top: 0 !important;
-    padding-top: 1.5rem !important;
-    border: none !important;
-    box-shadow: none !important;
+  .printing.print-resultat .print-area [data-print-section="resultat"],
+  .printing.print-graph-realise .print-area [data-print-section="graph-realise"],
+  .printing.print-graph-prev .print-area [data-print-section="graph-prev"] {
+    display: block !important;
   }
-  :global(.bg-card) {
+
+  /* Alléger le chrome des cartes. */
+  .bg-card {
     border: none !important;
     box-shadow: none !important;
     background: transparent !important;
     padding: 0 !important;
   }
-  :global(.print-container) {
+
+  /* Compaction des tableaux du compte de résultat. */
+  .print-container {
     width: 100% !important;
     max-width: 100% !important;
   }
-  :global(.print-container) :global(.grid) {
+  .print-container .grid {
     gap: 1rem !important;
   }
-  :global(.print-container) :global(.space-y-4) {
-    margin-top: 0.3rem !important;
-  }
-  :global(.print-container) :global(.py-1) {
-    padding-top: 0.1rem !important;
-    padding-bottom: 0.1rem !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-  }
-  :global(.print-container) :global(h4) {
+  .print-container h4 {
     font-size: 12px !important;
     padding-bottom: 0.25rem !important;
   }
-  :global(.print-container) :global(.text-sm) {
+  .print-container .text-sm {
     font-size: 11px !important;
   }
-  :global(.print-container) :global(.text-xs), :global(.print-container) :global(.text-\[11px\]) {
+  .print-container .text-xs, .print-container .text-\[11px\] {
     font-size: 9.5px !important;
   }
-  :global(.print-container) :global(.mt-8) {
-    margin-top: 1rem !important;
-  }
-  :global(.print-container) :global(.pt-4) {
-    padding-top: 0.5rem !important;
-  }
 
-  :global([data-slot="tabs-content"]) {
-    display: block !important;
-    page-break-before: always;
-    break-before: page;
-  }
-  :global([data-slot="tabs-content"]:first-of-type) {
-    page-break-before: avoid;
-    break-before: avoid;
+  /* Les graphiques SVG ne doivent pas être coupés entre deux pages. */
+  svg {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }
