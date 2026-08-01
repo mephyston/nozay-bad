@@ -1,3 +1,10 @@
+# [1.0.0-beta.13](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.12...v1.0.0-beta.13) (2026-08-01)
+
+
+### Bug Fixes
+
+* **pwa:** create standard 180x180 apple touch icon ([46acd05](https://github.com/mephyston/nozay-bad/commit/46acd05a52bb94ac743c24a0cf4d039b400b8aef))
+
 # [1.0.0-beta.12](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.11...v1.0.0-beta.12) (2026-08-01)
 
 
