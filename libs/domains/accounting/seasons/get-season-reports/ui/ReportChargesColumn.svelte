@@ -38,9 +38,9 @@
   } = $props();
 </script>
 
-<div class="space-y-4 pr-0 md:pr-6 flex flex-col justify-between">
+<div data-report-col="charges" class="space-y-4 pr-0 md:pr-6 flex flex-col justify-between">
   <div>
-    <div class="flex justify-between items-center font-bold text-xs text-muted-foreground border-b border-border pb-2">
+    <div class="rpt-col-head flex justify-between items-center font-bold text-xs text-muted-foreground border-b border-border pb-2">
       <span class="text-sm font-bold text-destructive">CHARGES (Dépenses)</span>
       <div class="flex gap-8 text-[11px]">
         <span class="w-20 text-right font-semibold">Réalisé</span>
@@ -52,7 +52,7 @@
       {#each chargeClasses as cc}
         {#if mode === 'previsionnel' || getClassSumRealise(cc.code, 'depense', mode) > 0 || getClassSumPrevisionnel(cc.code, 'depense') > 0}
           <div class="space-y-1.5 py-1 {getClassSumRealise(cc.code, 'depense', mode) === 0 && getClassSumPrevisionnel(cc.code, 'depense') === 0 ? 'print:hidden' : ''}">
-            <div class="flex justify-between items-center text-sm border-b border-border/40 pb-1 font-bold text-foreground">
+            <div class="rpt-sec-head flex justify-between items-center text-sm border-b border-border/40 pb-1 font-bold text-foreground">
               <a href="/admin/accounting?season={selectedSeason}&classCode={cc.code}" class="hover:underline hover:text-primary transition-colors cursor-pointer text-foreground/90 print:no-underline" title="Voir les écritures dans le grand livre">{cc.label}</a>
               <div class="flex gap-8 font-outfit tabular-nums">
                 <span class="w-20 text-right">{formatAmount(getClassSumRealise(cc.code, 'depense', mode))}</span>
@@ -107,7 +107,7 @@
         </div>
       </div>
     {/if}
-    <div class="flex justify-between text-foreground">
+    <div class="rpt-total flex justify-between text-foreground">
       <span>TOTAL GÉNÉRAL</span>
       <div class="flex gap-8 font-outfit tabular-nums">
         <span class="w-20 text-right">{formatAmount(netResReal >= 0 ? totalDepReal + netResReal : totalDepReal)}</span>

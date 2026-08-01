@@ -12,8 +12,8 @@
 
 @media print {
   @page {
-    size: landscape;
-    margin: 0.8cm;
+    size: portrait;
+    margin: 1cm;
   }
 
   body {
@@ -24,6 +24,11 @@
 
   /* Chrome de l'app + vue écran (onglets) masqués ; zone d'impression affichée. */
   aside, nav, header {
+    display: none !important;
+  }
+  /* La sidebar admin (div data-slot="sidebar") réserve de l'espace à gauche
+     via son « gap » relatif → la masquer libère toute la largeur. */
+  [data-slot="sidebar"] {
     display: none !important;
   }
   .no-print {
@@ -67,6 +72,17 @@
     display: block !important;
   }
 
+  /*
+   * Un autre composant (ViewDepositSlipModal) déclare GLOBALEMENT
+   * `@media print { body * { visibility: hidden !important } }`, ce qui masque
+   * toute la page à l'impression sur l'admin. On rétablit explicitement la
+   * visibilité de notre zone d'impression pour la contrer.
+   */
+  .print-area,
+  .print-area * {
+    visibility: visible !important;
+  }
+
   /* Alléger le chrome des cartes. */
   .bg-card {
     border: none !important;
@@ -99,4 +115,85 @@
     break-inside: avoid;
     page-break-inside: avoid;
   }
+
+  /* =========================================================================
+   * Style « rapport » coloré (Charges = rouge, Produits = vert), inspiré des
+   * modèles Qonto/Axonaut. print-color-adjust: exact → les fonds s'impriment
+   * sans que l'utilisateur ait à cocher « graphismes d'arrière-plan ».
+   * ========================================================================= */
+  .print-area,
+  .print-area * {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* Deux colonnes en cartes teintées, séparées (on neutralise les séparateurs). */
+  .print-container .grid {
+    gap: 0.6rem !important;
+  }
+  .print-container [class*="divide-"] > * {
+    border-color: transparent !important;
+  }
+  [data-report-col] {
+    border-radius: 8px !important;
+    padding: 0 0 8px 0 !important;
+  }
+  [data-report-col="charges"] { background: #fdf0f0 !important; }
+  [data-report-col="produits"] { background: #eefaf1 !important; }
+  [data-report-col] > div {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  /* En-tête de colonne : barre pleine couleur, texte blanc. */
+  .rpt-col-head {
+    border: 0 !important;
+    padding: 9px 12px !important;
+    margin: 0 -10px 8px -10px !important;
+  }
+  [data-report-col="charges"] .rpt-col-head { background: #b91c1c !important; }
+  [data-report-col="produits"] .rpt-col-head { background: #15803d !important; }
+  .rpt-col-head, .rpt-col-head * { color: #ffffff !important; }
+
+  /* Bandes de sous-sections (titres de classes). */
+  .rpt-sec-head {
+    border: 0 !important;
+    border-radius: 4px !important;
+    padding: 4px 8px !important;
+    margin-top: 8px !important;
+  }
+  [data-report-col="charges"] .rpt-sec-head { background: #fbdcdc !important; }
+  [data-report-col="produits"] .rpt-sec-head { background: #d6f2df !important; }
+
+  /* Ligne TOTAL GÉNÉRAL : barre pleine couleur, texte blanc. */
+  .rpt-total {
+    padding: 9px 12px !important;
+    border-radius: 6px !important;
+    margin: 10px -10px 0 -10px !important;
+  }
+  [data-report-col="charges"] .rpt-total { background: #7f1d1d !important; }
+  [data-report-col="produits"] .rpt-total { background: #14532d !important; }
+  .rpt-total, .rpt-total * { color: #ffffff !important; }
+
+  /* Lisibilité : texte foncé partout (sauf barres colorées), titre foncé. */
+  .print-container { color: #1f2937 !important; line-height: 1.3 !important; }
+  .print-container h3 { color: #111827 !important; }
+  [data-report-col] * { color: #1f2937 !important; }
+  [data-report-col] .rpt-col-head, [data-report-col] .rpt-col-head *,
+  [data-report-col] .rpt-total, [data-report-col] .rpt-total * { color: #ffffff !important; }
+
+  /* Compaction : polices lisibles (10/9px), espacement resserré pour 1 page portrait. */
+  .print-container { line-height: 1.2 !important; }
+  .print-container .space-y-4 > * + * { margin-top: 0.22rem !important; }
+  .print-container .space-y-1\.5 > * + * { margin-top: 0.08rem !important; }
+  .print-container .space-y-1 > * + * { margin-top: 0.04rem !important; }
+  .print-container .mt-4 { margin-top: 0.28rem !important; }
+  .print-container .mt-8 { margin-top: 0.35rem !important; }
+  .print-container .pt-4 { padding-top: 0.2rem !important; }
+  .print-container .py-1 { padding-top: 0.05rem !important; padding-bottom: 0.05rem !important; }
+  .print-container .text-sm { font-size: 9.5px !important; }
+  .print-container .text-\[11px\], .print-container .text-xs { font-size: 8.5px !important; }
+  .rpt-col-head { padding: 6px 11px !important; }
+  .rpt-sec-head { padding: 3px 9px !important; margin-top: 5px !important; }
+  .rpt-total { padding: 7px 11px !important; }
 }
