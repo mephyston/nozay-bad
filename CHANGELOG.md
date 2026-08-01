@@ -1,3 +1,10 @@
+# [1.0.0-beta.6](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.5...v1.0.0-beta.6) (2026-08-01)
+
+
+### Bug Fixes
+
+* **ui:** improve iOS PWA safe areas and update app logos ([707d805](https://github.com/mephyston/nozay-bad/commit/707d805f43e05b8f1ed3a7ced61830625805a767))
+
 # [1.0.0-beta.5](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.4...v1.0.0-beta.5) (2026-07-31)
 
 
