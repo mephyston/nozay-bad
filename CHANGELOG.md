@@ -1,3 +1,10 @@
+# [1.0.0-beta.14](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.13...v1.0.0-beta.14) (2026-08-01)
+
+
+### Features
+
+* **admin:** update accounting config, member stats and UI components ([42d1d1d](https://github.com/mephyston/nozay-bad/commit/42d1d1d71bac3838843b69940a2c871519de5671))
+
 # [1.0.0-beta.13](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.12...v1.0.0-beta.13) (2026-08-01)
 
 
