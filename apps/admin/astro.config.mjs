@@ -23,6 +23,7 @@ export default defineConfig({
     svelte(),
     AstroPWA({
       registerType: 'autoUpdate',
+      includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Nozay Bad Admin',
         short_name: 'NBA Admin',
