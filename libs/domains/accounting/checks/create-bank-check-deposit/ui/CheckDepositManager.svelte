@@ -31,12 +31,30 @@
   const depositState = createCheckDepositState(() => props);
 
 
+  import { onMount } from 'svelte';
+
   $effect(() => {
     if (depositState.showCreateDepositModal) {
       const count = props.checkDeposits.length + 1;
       const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
       depositState.depositReference = `REMISE-${today}-${count}`;
     }
+  });
+
+  onMount(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'new-cheque' && !depositState.isClosed) {
+      depositState.showAddCheckModal = true;
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('action');
+      window.history.replaceState({}, '', newUrl);
+    }
+
+    const handleCustomEvent = () => {
+      if (!depositState.isClosed) depositState.showAddCheckModal = true;
+    };
+    window.addEventListener('open-new-cheque', handleCustomEvent);
+    return () => window.removeEventListener('open-new-cheque', handleCustomEvent);
   });
 
   const onPhotoSelected = (e: Event) => handlePhotoSelected(e, props.seasonId, depositState);

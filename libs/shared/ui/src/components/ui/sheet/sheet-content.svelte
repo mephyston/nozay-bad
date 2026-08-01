@@ -49,13 +49,20 @@
 			SHEET_SIZE[size],
 			className
 		)}
+		style="padding-top: {side === 'bottom' ? '0px' : 'env(safe-area-inset-top, 0px)'}; padding-bottom: {side === 'top' ? '0px' : 'env(safe-area-inset-bottom, 0px)'};"
 		{...restProps}
 	>
 		{@render children?.()}
 		{#if showCloseButton}
 			<SheetPrimitive.Close data-slot="sheet-close">
 				{#snippet child({ props })}
-					<Button variant="ghost" class="absolute top-3 right-3" size="icon-sm" {...props}>
+					<Button 
+						variant="ghost" 
+						class="absolute right-3" 
+						style="top: {side === 'bottom' || side === 'top' ? '0.75rem' : 'max(0.75rem, env(safe-area-inset-top, 0px))'};"
+						size="icon-sm" 
+						{...props}
+					>
 						<XIcon  />
 						<span class="sr-only">Close</span>
 					</Button>

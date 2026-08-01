@@ -33,6 +33,12 @@
     <a 
       href="/admin/accounting/cheques?action=new-cheque"
       class="flex flex-col items-center justify-center w-full py-2 gap-1 hover:bg-accent transition-colors decoration-transparent"
+      onclick={(e) => {
+        if (window.location.pathname.includes('/accounting/cheques')) {
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent('open-new-cheque'));
+        }
+      }}
     >
       <Landmark class="w-5 h-5 text-muted-foreground" />
       <span class="text-[10px] font-medium text-muted-foreground">Chèques</span>
@@ -42,6 +48,12 @@
     <a 
       href="/admin/accounting?action=new-depense"
       class="flex flex-col items-center justify-center w-full py-2 gap-1 hover:bg-accent transition-colors decoration-transparent"
+      onclick={(e) => {
+        if (window.location.pathname.endsWith('/accounting') || window.location.pathname.endsWith('/accounting/')) {
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent('open-new-depense'));
+        }
+      }}
     >
       <Coins class="w-5 h-5 text-destructive" />
       <span class="text-[10px] font-medium text-destructive">Dépense</span>
@@ -51,6 +63,12 @@
     <a 
       href="/admin/accounting?action=new-recette"
       class="flex flex-col items-center justify-center w-full py-2 gap-1 hover:bg-accent transition-colors decoration-transparent"
+      onclick={(e) => {
+        if (window.location.pathname.endsWith('/accounting') || window.location.pathname.endsWith('/accounting/')) {
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent('open-new-recette'));
+        }
+      }}
     >
       <FileCheck class="w-5 h-5 text-success" />
       <span class="text-[10px] font-medium text-success">Recette</span>

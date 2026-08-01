@@ -64,11 +64,29 @@
     const action = params.get('action');
     if (action === 'new-recette') {
       openPanel('recette');
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('action');
+      window.history.replaceState({}, '', newUrl);
     } else if (action === 'new-depense') {
       openPanel('depense');
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('action');
+      window.history.replaceState({}, '', newUrl);
     } else if (action === 'new-transfert') {
       openPanel('transfert');
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('action');
+      window.history.replaceState({}, '', newUrl);
     }
+
+    const onRecette = () => openPanel('recette');
+    const onDepense = () => openPanel('depense');
+    window.addEventListener('open-new-recette', onRecette);
+    window.addEventListener('open-new-depense', onDepense);
+    return () => {
+      window.removeEventListener('open-new-recette', onRecette);
+      window.removeEventListener('open-new-depense', onDepense);
+    };
   });
 
   $effect(() => {

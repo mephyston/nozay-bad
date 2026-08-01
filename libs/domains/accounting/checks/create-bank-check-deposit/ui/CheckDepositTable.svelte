@@ -15,13 +15,6 @@
   }
 
   let { depositState, seasonId, seasons, onDeleteCheck, tabsNav }: Props = $props();
-
-  onMount(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('action') === 'new-cheque' && !depositState.isClosed) {
-      depositState.showAddCheckModal = true;
-    }
-  });
 </script>
 
 <DataTable

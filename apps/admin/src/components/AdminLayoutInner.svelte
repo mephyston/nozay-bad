@@ -204,17 +204,8 @@
                 href="/"
                 class="flex items-center gap-3 px-3 py-2 w-full h-full font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center"
               >
-                <!-- Badminton Shuttlecock Icon (aligned h-4 w-4) -->
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 shrink-0 text-primary">
-                  <path d="M9 16c0-1.5 1-2 3-2s3 .5 3 2v2a3 3 0 0 1-6 0v-2z" />
-                  <path d="M12 14V3" />
-                  <path d="m8 14 2-10" />
-                  <path d="m16 14-2-10" />
-                  <path d="m6 14 3-10" />
-                  <path d="m18 14-3-10" />
-                  <path d="M8 8h8" />
-                  <path d="M6 11h12" />
-                </svg>
+                <!-- Logo NBA -->
+                <img src="/images/logo-menu.png" alt="Logo" class="h-5 w-5 shrink-0 rounded-sm object-contain" />
                 <span class="group-data-[collapsible=icon]:hidden font-semibold text-sm text-foreground truncate">Nozay Bad Association</span>
               </a>
             {/snippet}
@@ -358,8 +349,8 @@
 <!-- Inset / Main panel -->
 <Sidebar.Inset class="flex flex-col h-screen overflow-hidden">
   <!-- Header -->
-  <header class="flex h-14 shrink-0 items-center justify-between px-6 border-b border-border bg-background">
-    <div class="flex items-center gap-4">
+  <header class="flex min-h-14 shrink-0 items-center justify-between px-6 border-b border-border bg-background pt-safe pb-2 md:pb-0 md:h-14">
+    <div class="flex items-center gap-4 h-full pt-2 md:pt-0">
       <!-- Sidebar Trigger handles mobile/desktop collapse/expand -->
       <Sidebar.Trigger aria-label="Menu" class="cursor-pointer hidden md:flex" />
       
@@ -389,7 +380,7 @@
       </Breadcrumb.Root>
     </div>
 
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-4 pt-2 md:pt-0">
       <ThemeToggle />
     </div>
   </header>
@@ -406,3 +397,9 @@
 
 <MobileBottomNav permissions={permissions} onMenuClick={() => sidebar.setOpenMobile(true)} />
 <GlobalConfirm />
+
+<style>
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+</style>
