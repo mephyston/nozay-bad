@@ -1,3 +1,18 @@
+# [1.0.0-beta.11](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.10...v1.0.0-beta.11) (2026-08-01)
+
+
+### Bug Fixes
+
+* **pwa:** hide splash screen smoothly during astro view transitions ([ccca39b](https://github.com/mephyston/nozay-bad/commit/ccca39b3a7ccc22e5c5e09445aef39569f13211f))
+* **pwa:** prevent splash screen from reappearing on navigation ([8638c63](https://github.com/mephyston/nozay-bad/commit/8638c63211dcfa7eb81a7bc9db808e513b13923f))
+* **pwa:** revert splash screen logic to original working state ([2ad0712](https://github.com/mephyston/nozay-bad/commit/2ad0712b49e425940b3389ed1155c1afef29e4ec))
+
+
+### Features
+
+* **ui:** update pwa icons, colors, and menu logo ([44566ef](https://github.com/mephyston/nozay-bad/commit/44566ef8a0698d55c8070d76a5edc45f96f0c2f1))
+* **ui:** use theme-aware logos in sidebar menu ([f0388b4](https://github.com/mephyston/nozay-bad/commit/f0388b4ee83972e464ff221405e73d537bdb61b1))
+
 # [1.0.0-beta.10](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.9...v1.0.0-beta.10) (2026-08-01)
 
 
