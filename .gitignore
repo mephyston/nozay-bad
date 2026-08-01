@@ -77,3 +77,8 @@ tests/visual/**/*-diff.png
 
 # Références visuelles macOS locales (la CI Linux fait foi)
 tests/visual/**/*-darwin.png
+
+# Logs des serveurs de dev + dossier de travail temporaire
+dev.log
+**/dev.log
+scratch/
