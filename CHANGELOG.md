@@ -1,3 +1,10 @@
+# [1.0.0-beta.9](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.8...v1.0.0-beta.9) (2026-08-01)
+
+
+### Features
+
+* **ai:** integrate Cloudflare Llama 3.3 assistant with Text-to-SQL ([5910c39](https://github.com/mephyston/nozay-bad/commit/5910c394c1ed0fd1e372763466f764c5bb13ef2b))
+
 # [1.0.0-beta.8](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.7...v1.0.0-beta.8) (2026-08-01)
 
 
