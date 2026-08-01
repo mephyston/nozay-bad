@@ -223,8 +223,9 @@
                 class="flex items-center gap-3 px-3 py-2 w-full h-full font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center"
               >
                 <!-- Logo NBA -->
-                <img src="/images/logo-menu.png" alt="Logo" class="h-5 w-5 shrink-0 rounded-sm object-contain" />
-                <span class="group-data-[collapsible=icon]:hidden font-semibold text-sm text-foreground truncate">Nozay Bad Association</span>
+                <img src="/images/splash-light.jpeg" alt="Logo" class="h-6 w-6 shrink-0 rounded-md object-cover block dark:hidden" />
+                <img src="/images/splash-dark.jpeg" alt="Logo" class="h-6 w-6 shrink-0 rounded-md object-cover hidden dark:block" />
+                <span class="group-data-[collapsible=icon]:hidden font-semibold text-sm text-foreground truncate ml-1">Nozay Bad</span>
               </a>
             {/snippet}
           </Sidebar.MenuButton>
