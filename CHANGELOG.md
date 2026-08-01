@@ -1,3 +1,10 @@
+# [1.0.0-beta.10](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.9...v1.0.0-beta.10) (2026-08-01)
+
+
+### Features
+
+* **pwa:** add animated splash screen with theme-aware logos ([b073188](https://github.com/mephyston/nozay-bad/commit/b073188463d25c92d19dd38689d60cfd798fab8f))
+
 # [1.0.0-beta.9](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.8...v1.0.0-beta.9) (2026-08-01)
 
 
