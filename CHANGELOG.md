@@ -1,3 +1,10 @@
+# [1.0.0-beta.7](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.6...v1.0.0-beta.7) (2026-08-01)
+
+
+### Features
+
+* **members:** attestations CSE en PDF (pdf-lib) + configuration du modèle ([3ee0a84](https://github.com/mephyston/nozay-bad/commit/3ee0a8434240616ae38eef337c72e9dd3763bda4))
+
 # [1.0.0-beta.6](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.5...v1.0.0-beta.6) (2026-08-01)
 
 
