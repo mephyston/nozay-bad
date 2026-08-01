@@ -1,3 +1,11 @@
+# [1.0.0-beta.15](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.14...v1.0.0-beta.15) (2026-08-01)
+
+
+### Bug Fixes
+
+* **api:** use llama-3.1-8b-instruct-fp8 as alternative to deprecated model ([1938426](https://github.com/mephyston/nozay-bad/commit/193842616c3f6726619da42f79269718560906de))
+* **api:** use smaller llama model to save neurons ([06857be](https://github.com/mephyston/nozay-bad/commit/06857be6c3f088fb59d0cd224e1fa090e519fb23))
+
 # [1.0.0-beta.14](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.13...v1.0.0-beta.14) (2026-08-01)
 
 
