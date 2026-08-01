@@ -243,6 +243,17 @@ try {
         description="Gérez l'exercice comptable et configurez les catégories de l'association."
       />
 
+      <a
+        href="/admin/settings/attestation"
+        class="flex items-center justify-between gap-4 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline"
+      >
+        <div>
+          <p class="text-sm font-semibold text-foreground">Attestation CSE</p>
+          <p class="text-xs text-muted-foreground">Signataire, mail, site web et signature du modèle d'attestation.</p>
+        </div>
+        <span class="text-primary text-sm font-semibold">Configurer →</span>
+      </a>
+
       {errorMsg && <ErrorAlert message={errorMsg} />}
 
       <SettingsManager

@@ -17,6 +17,8 @@ export async function getMemberCseData(db: Db, id: GetMemberCseDataInput): Promi
   }
 
   const tx = await repo.getLastPaymentTransaction(db, id);
+  // `seasonId` (FK entier) résolu en code de saison via le domaine accounting.
+  const seasonCode = await repo.getSeasonCode(db, memberData.seasonId);
 
   return {
     lastName: member.lastName,
@@ -25,6 +27,6 @@ export async function getMemberCseData(db: Db, id: GetMemberCseDataInput): Promi
     amount: member.amountDue,
     paymentMethod: tx ? tx.paymentMethod : 'virement',
     paymentDate: tx ? tx.date : 'date de validation',
-    season: member.season
+    season: seasonCode ?? ''
   };
 }

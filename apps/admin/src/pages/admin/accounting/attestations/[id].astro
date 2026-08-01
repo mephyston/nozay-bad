@@ -3,279 +3,44 @@ import Layout from '../../../../layouts/Layout.astro';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 
+// Proxy vers le PDF généré par l'API (pdf-lib). L'onglet ouvert affiche
+// directement le PDF ; en cas d'erreur métier (adhérent non soldé, introuvable)
+// on rend une page HTML lisible plutôt qu'un PDF cassé.
 const { id } = Astro.params;
 const apiService = createApiClient(env);
 
-let cseData = null;
 let errorMsg = '';
 
 try {
-  const res = await apiService.fetch(`http://localhost/members/${id}/cse-data`);
-  if (!res.ok) {
-    const errorJson = await res.json().catch(() => ({ error: 'Erreur lors du chargement des données.' })) as any;
-    throw new Error(errorJson.error || 'Impossible de récupérer l\'attestation pour cet adhérent.');
+  const res = await apiService.fetch(`http://localhost/members/${id}/cse-attestation.pdf`);
+  if (res.ok) {
+    return new Response(res.body, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': res.headers.get('Content-Disposition') ?? 'inline',
+        'Cache-Control': 'no-store'
+      }
+    });
   }
-  const body = await res.json() as any;
-  cseData = body.data;
+  const errorJson = (await res.json().catch(() => ({ error: 'Erreur lors de la génération.' }))) as any;
+  errorMsg = errorJson.error || "Impossible de générer l'attestation pour cet adhérent.";
 } catch (err: any) {
-  errorMsg = err.message || 'Une erreur inattendue est survenue.';
+  errorMsg = err?.message || 'Une erreur inattendue est survenue.';
 }
-
-function numberToFrenchWords(num: number): string {
-  if (num === 0) return 'zéro';
-
-  const units = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf'];
-  const teens = ['dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize', 'dix-sept', 'dix-huit', 'dix-neuf'];
-  const tens = ['', 'dix', 'vingt', 'trente', 'quarante', 'cinquante', 'soixante', 'soixante-dix', 'quatre-vingt', 'quatre-vingt-dix'];
-
-  let words = '';
-
-  const hundreds = Math.floor(num / 100);
-  const remainder100 = num % 100;
-
-  if (hundreds > 0) {
-    if (hundreds === 1) {
-      words += 'cent ';
-    } else {
-      words += units[hundreds] + ' cent';
-      if (remainder100 === 0) {
-        words += 's';
-      }
-      words += ' ';
-    }
-  }
-
-  if (remainder100 > 0) {
-    if (remainder100 < 10) {
-      words += units[remainder100];
-    } else if (remainder100 < 20) {
-      words += teens[remainder100 - 10];
-    } else if (remainder100 === 80) {
-      words += 'quatre-vingts';
-    } else {
-      const tenVal = Math.floor(remainder100 / 10);
-      const unitVal = remainder100 % 10;
-
-      if (tenVal === 7) {
-        if (unitVal === 1) {
-          words += 'soixante et onze';
-        } else {
-          words += 'soixante-' + teens[unitVal];
-        }
-      } else if (tenVal === 8) {
-        if (unitVal === 1) {
-          words += 'quatre-vingt-un';
-        } else {
-          words += 'quatre-vingt-' + units[unitVal];
-        }
-      } else if (tenVal === 9) {
-        words += 'quatre-vingt-' + teens[unitVal];
-      } else {
-        words += tens[tenVal];
-        if (unitVal > 0) {
-          if (unitVal === 1) {
-            words += ' et un';
-          } else {
-            words += '-' + units[unitVal];
-          }
-        }
-      }
-    }
-  }
-
-  return words.trim();
-}
-
-function formatFrenchDate(dateStr: string): string {
-  if (!dateStr || dateStr === 'date de validation') return '';
-  const parts = dateStr.split('-');
-  if (parts.length !== 3) return dateStr;
-  const year = parts[0];
-  const monthNum = parseInt(parts[1], 10);
-  const day = parseInt(parts[2], 10);
-  const months = [
-    'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-    'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
-  ];
-  const monthName = months[monthNum - 1] || parts[1];
-  return `${day} ${monthName} ${year}`;
-}
-
-function formatSeason(seasonId: string): string {
-  if (!seasonId) return '2025-2026';
-  const parts = seasonId.split('-');
-  if (parts.length === 2) {
-    return `20${parts[0]}-20${parts[1]}`;
-  }
-  return seasonId;
-}
-
-const paymentMethodLabels: Record<string, string> = {
-  virement: 'virement bancaire',
-  cheque: 'chèque',
-  especes: 'espèces',
-  labaz: 'Labaz',
-  ancv: 'ANCV',
-  pass_sport: "Pass'Sport",
-  ticket_loisir: 'Ticket Loisir',
-  up_loisir: 'Up Loisir'
-};
-
-const amountInEuros = cseData ? Math.floor(cseData.amount / 100) : 0;
-const amountInWords = cseData ? numberToFrenchWords(amountInEuros) : '';
-const formattedPaymentMethod = cseData ? (paymentMethodLabels[cseData.paymentMethod] || cseData.paymentMethod) : '';
-const formattedSeason = cseData ? formatSeason(cseData.season) : '';
 ---
 
-<Layout title={cseData ? `Attestation CSE - ${cseData.firstName} ${cseData.lastName}` : "Attestation CSE"}>
-  <div class="min-h-screen bg-white text-slate-900 p-8 sm:p-12 md:p-16 max-w-[210mm] mx-auto print:p-0 print:m-0 print:max-w-full print:bg-transparent font-sans flex flex-col justify-between">
-    
-    <!-- Float Print Button -->
-    <button 
-      id="print-btn"
-      class="no-print fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-200 flex items-center gap-2 cursor-pointer z-50 hover:scale-105"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
-      </svg>
-      Imprimer cette attestation
-    </button>
-
-    {errorMsg && (
-      <div class="p-6 bg-red-50 border border-red-200 text-red-700 rounded-lg max-w-lg mx-auto mt-12 no-print">
-        <h2 class="text-lg font-bold mb-2">Erreur</h2>
-        <p>{errorMsg}</p>
-        <button onclick="window.close()" class="mt-4 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded font-semibold text-xs cursor-pointer border-0">
-          Fermer l'onglet
-        </button>
-      </div>
-    )}
-
-    {cseData && (
-      <div class="flex-1 flex flex-col justify-between min-h-[260mm]">
-        <div class="space-y-12">
-          <!-- Header -->
-          <div class="flex justify-between items-start gap-8 border-b-2 border-slate-100 pb-8">
-            <div class="space-y-4">
-              <div class="flex items-center gap-4">
-                <img src="/images/logo-nba.jpg" alt="Nozay Badminton Logo" class="w-16 h-16 object-contain shrink-0" />
-                <div>
-                  <h1 class="text-xl font-bold tracking-tight text-blue-950 font-serif leading-none">Nozay Badminton</h1>
-                  <p class="text-[10px] text-slate-500 font-semibold tracking-wider uppercase mt-1">Nozay Badminton Association</p>
-                </div>
-              </div>
-              <div class="text-xs text-slate-600 leading-relaxed font-mono">
-                <p>Adresse : Mairie de Nozay, 91620 NOZAY</p>
-                <p>Site web : <a href="https://sites.google.com/site/nozaybad/" target="_blank" class="text-blue-600 hover:underline">https://sites.google.com/site/nozaybad/</a></p>
-                <p>Association N° 0913011863</p>
-                <p>Agrément DDJS : 91 S 744</p>
-                <p>Affiliation FFBaD : LIFB.91.96.018</p>
-              </div>
-            </div>
-
-            <!-- Top Right logos -->
-            <div class="flex flex-wrap items-center justify-end gap-3 max-w-sm pt-2">
-              <img src="/images/logo-nozay.png" alt="Nozay" class="h-10 object-contain" />
-              <img src="/images/logo-essonne.jpg" alt="Essonne" class="h-10 object-contain" />
-              <img src="/images/logo-idf.png" alt="Île-de-France" class="h-6 object-contain" />
-              <img src="/images/logo-efb.png" alt="EFB" class="h-12 object-contain" />
-            </div>
-          </div>
-
-          <!-- Document Titles -->
-          <div class="text-center space-y-2 py-6">
-            <h2 class="text-3xl font-extrabold text-blue-950 font-serif uppercase tracking-wide">Attestation d'adhésion</h2>
-            <h3 class="text-xl font-semibold text-slate-700 font-serif tracking-normal">Facture acquittée</h3>
-          </div>
-
-          <!-- Certificate Core Content -->
-          <div class="space-y-8 text-base text-slate-800 leading-loose max-w-2xl mx-auto font-serif">
-            <p>
-              Je soussigné, <strong class="text-slate-900">Robert THAI</strong>, représentant <strong class="text-slate-900">NOZAY BADMINTON ASSOCIATION</strong>, association sportive affiliée à la FFBaD (Fédération Française de Badminton), certifie que :
-            </p>
-
-            <div class="bg-slate-50 border border-slate-100 rounded-xl p-6 my-6 font-sans text-sm space-y-4">
-              <div class="flex flex-col sm:flex-row sm:gap-16">
-                <p><span class="text-slate-500 uppercase tracking-wider font-bold text-xs">Nom :</span> <strong class="text-slate-900 text-base ml-2">{cseData.lastName.toUpperCase()}</strong></p>
-                <p><span class="text-slate-500 uppercase tracking-wider font-bold text-xs">Prénom :</span> <strong class="text-slate-900 text-base ml-2">{cseData.firstName}</strong></p>
-              </div>
-              <p>
-                <span class="text-slate-500 uppercase tracking-wider font-bold text-xs">Né(e) le :</span> 
-                <strong class="text-slate-900 ml-2 font-mono">{formatFrenchDate(cseData.birthDate)}</strong>
-              </p>
-            </div>
-
-            <p>
-              est adhérent(e) à notre association pour la pratique du badminton. Sa cotisation pour la saison sportive {formattedSeason} s’élève à <strong class="text-slate-900">{amountInEuros} € ({amountInWords} euros)</strong> et a été réglée par <strong class="text-slate-900">{formattedPaymentMethod}</strong>.
-            </p>
-
-            <p>
-              Fait à la demande de l'intéressé(e) pour faire valoir ce que de droit.
-            </p>
-
-            <p class="text-right font-sans text-sm font-semibold text-slate-700 pt-4">
-              Nozay, le: <span class="font-mono text-slate-900 underline underline-offset-4 decoration-slate-300 decoration-2 ml-1">{cseData.paymentDate === 'date de validation' ? formatFrenchDate(new Date().toISOString().split('T')[0]) : formatFrenchDate(cseData.paymentDate)}</span>
-            </p>
-          </div>
-        </div>
-
-        <!-- Signature Block & Footer -->
-        <div class="space-y-12">
-          <!-- Signature & Stamp Box -->
-          <div class="grid grid-cols-2 gap-8 items-end max-w-2xl mx-auto font-sans">
-            <!-- Stamp Box -->
-            <div class="border border-slate-300 rounded bg-slate-50/50 p-4 text-center font-mono text-[10px] text-slate-600 max-w-[220px] shadow-sm transform -rotate-1">
-              <p class="font-bold text-[11px] text-slate-800 border-b border-slate-200 pb-1 mb-2 uppercase">Nozay Badminton Association</p>
-              <p>Mairie de Nozay</p>
-              <p>91620 NOZAY</p>
-              <p class="mt-1 pt-1 border-t border-slate-200/50 font-bold">Siret : 433 218 716 00010</p>
-            </div>
-
-            <!-- Signature block -->
-            <div class="text-center space-y-1">
-              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Signature</span>
-              <div class="relative py-2 flex items-center justify-center min-h-[60px]">
-                <!-- Styled simulated blue cursive signature of Robert Thai -->
-                <svg class="w-36 h-16 text-blue-800 opacity-90" viewBox="0 0 100 50" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M15 35 C 20 20, 28 8, 32 15 C 38 25, 42 42, 48 32 C 54 20, 58 18, 64 24 C 70 30, 74 34, 78 24 C 82 14, 86 18, 92 28" />
-                  <path d="M30 22 Q 55 18 85 20" stroke-dasharray="1 1" stroke-width="1" />
-                </svg>
-              </div>
-              <div class="text-[11px] text-slate-500 space-y-0.5 mt-2 leading-tight">
-                <p class="font-semibold text-slate-700">Robert THAI</p>
-                <p>Mail : president @nozaybad.fr</p>
-                <p>Site web : www.nozaybad.fr</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Footer -->
-          <div class="border-t border-slate-100 pt-6 text-[10px] text-slate-400 text-center font-sans tracking-wide leading-relaxed">
-            <p>
-              Nos Partenaires : Ville de Nozay – Conseil Départemental de l'Essonne – ANS du Ministère des Sports, de la Jeunesse, de l'Education Populaire et de la Vie Associative – Lardesport
-            </p>
-          </div>
-        </div>
-      </div>
-    )}
+<Layout title="Attestation CSE">
+  <div class="min-h-screen bg-background flex items-center justify-center p-6">
+    <div class="p-6 bg-card border border-destructive/30 text-destructive rounded-lg max-w-lg shadow-sm">
+      <h2 class="text-lg font-bold mb-2">Attestation indisponible</h2>
+      <p class="text-sm text-muted-foreground">{errorMsg}</p>
+      <button
+        onclick="window.close()"
+        class="mt-4 px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded font-semibold text-xs cursor-pointer border-0"
+      >
+        Fermer l'onglet
+      </button>
+    </div>
   </div>
 </Layout>
-
-<style is:global>
-  @media print {
-    .no-print {
-      display: none !important;
-    }
-    body {
-      background-color: white !important;
-      color: black !important;
-    }
-  }
-</style>
-
-<script>
-  const printBtn = document.getElementById('print-btn');
-  if (printBtn) {
-    printBtn.addEventListener('click', () => window.print());
-  }
-</script>

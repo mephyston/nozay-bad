@@ -20,3 +20,17 @@ export class CsvHeadersInvalidError extends AppError {
     this.name = 'CsvHeadersInvalidError';
   }
 }
+
+export class InvalidSignatureError extends AppError {
+  constructor(message = 'Signature invalide : un fichier JPEG est attendu.') {
+    super(message, 400);
+    this.name = 'InvalidSignatureError';
+  }
+}
+
+export class SignatureTooLargeError extends AppError {
+  constructor(message = 'Signature trop volumineuse.') {
+    super(message, 413);
+    this.name = 'SignatureTooLargeError';
+  }
+}

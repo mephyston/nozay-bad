@@ -34,3 +34,16 @@ export const membersTable = sqliteTable('members', {
 }, (table) => ({
   licenceSeasonUnq: uniqueIndex('members_licence_season_idx').on(table.licence, table.seasonId),
 }));
+
+// Configuration (singleton, id = 1) du modèle d'attestation CSE : identité du
+// signataire et signature. La signature est stockée en base64 (TEXT) car le
+// worker n'a pas `nodejs_compat` (pas de Buffer) et `pdf-lib` accepte le base64
+// directement. Cap applicatif à l'upload pour rester sous la limite D1 (100 KB/SQL).
+export const attestationConfigTable = sqliteTable('attestation_config', {
+  id: integer('id').primaryKey(),
+  signatoryName: text('signatory_name').notNull().default('Robert THAI'),
+  signatoryEmail: text('signatory_email').notNull().default('president@nozaybad.fr'),
+  websiteUrl: text('website_url').notNull().default('www.nozaybad.fr'),
+  signatureBase64: text('signature_base64'),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
+});
