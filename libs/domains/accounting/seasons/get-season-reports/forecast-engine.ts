@@ -56,17 +56,17 @@ export function generateTreasuryForecast(
     let relMonth = getRelativeMonth(season.startDate, tx.date);
     const key = `${tx.categoryId}_${tx.type}`;
 
-    if (relMonth < 0) {
-      relMonth = 0; // Transactions before the season (like PCA) are lumped into the first month
-    }
-
     if (!categoryMonthlySums[key]) {
       categoryMonthlySums[key] = Array(12).fill(0);
       categoryTotals[key] = 0;
     }
 
     if (relMonth < 12) {
-      categoryMonthlySums[key][relMonth] += tx.amountCents;
+      if (relMonth >= 0) {
+        categoryMonthlySums[key][relMonth] += tx.amountCents;
+      }
+      // We always add to total even if relMonth < 0 (like PCAs) 
+      // so that weightSumForRemaining < 1.0, properly reflecting that some budget was realized before month 0
       categoryTotals[key] += tx.amountCents;
     }
   }

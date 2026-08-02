@@ -227,11 +227,9 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     const dbCategories = await repo.getAllCategories(db);
     const virementInterneCatId = dbCategories.find((c: any) => c.adminLabel && c.adminLabel.startsWith('Virements Internes'))?.id;
 
-    // Only use historical average if the ENTIRE season is unbudgeted
-    const isSeasonCompletelyUnbudgeted = categoryBudgets.length === 0 || categoryBudgets.every(b => (b.amountCents ?? 0) === 0);
-
+    // Always compute historical average so unbudgeted categories fallback to it
     const categoryHistoricalAverage: Record<string, number> = {};
-    if (isSeasonCompletelyUnbudgeted && pastSeasons.length > 0) {
+    if (pastSeasons.length > 0) {
       const validPastSeasons = pastSeasons.filter(ps => {
         const txCount = pastTransactions.filter(tx => tx.seasonId === ps.id || tx.seasonId === Number(ps.id) || tx.seasonId === String(ps.id)).length;
         return txCount > 10;
