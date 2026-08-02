@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Users, Banknote, CreditCard, ShoppingCart, Activity, AlertCircle, ArrowUpRight, ArrowDownRight, Package, Receipt, FolderKanban, Building, ChevronRight } from '@lucide/svelte';
   import { DashboardSummaryCard, DashboardPoleCard } from '@nba/ui';
+  import { hasPermission } from '@nba/iam-ui';
   
   export let data: any;
   export let permissions: string[] = [];
@@ -9,11 +10,10 @@
     return (cents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
   };
   
-  const hasPermission = (perm: string) => permissions.includes(perm);
-  const canReadMembers = hasPermission('members:read') || hasPermission('members:update');
-  const canReadAccounting = hasPermission('accounting:read') || hasPermission('accounting:update');
-  const canReadExpenses = hasPermission('expenses:read') || hasPermission('expenses:update');
-  const canReadShop = hasPermission('shop:read') || hasPermission('shop:update');
+  $: canReadMembers = hasPermission(permissions, '*') || hasPermission(permissions, 'members:*') || hasPermission(permissions, 'members:read') || hasPermission(permissions, 'members:update');
+  $: canReadAccounting = hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') || hasPermission(permissions, 'accounting:read') || hasPermission(permissions, 'accounting:update');
+  $: canReadExpenses = hasPermission(permissions, '*') || hasPermission(permissions, 'expenses:*') || hasPermission(permissions, 'expenses:read') || hasPermission(permissions, 'expenses:update');
+  $: canReadShop = hasPermission(permissions, '*') || hasPermission(permissions, 'shop:*') || hasPermission(permissions, 'orders:*') || hasPermission(permissions, 'shop:read') || hasPermission(permissions, 'shop:update');
 </script>
 
 <div class="space-y-8 pb-10">
