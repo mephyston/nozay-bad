@@ -3,7 +3,7 @@ import { invoicesTable } from '../../shared/schema';
 export interface CreateInvoiceInput {
   seasonId: string;
   date: string;
-  dueDate: string;
+  dueDate?: string;
   clientName: string;
   clientAddress?: string;
   clientEmail?: string;

@@ -43,12 +43,7 @@ export async function saveInvoice(data: {
   clientName: string;
   clientAddress: string;
   clientEmail: string;
-  subject: string;
-  location: string;
-  period: string;
-  attendees: string;
   date: string;
-  dueDate: string;
   itemsTotal: number;
   items: InvoiceFormItem[];
 }): Promise<string> {
@@ -60,12 +55,7 @@ export async function saveInvoice(data: {
       clientName: data.clientName.trim(),
       clientAddress: data.clientAddress.trim() || null,
       clientEmail: data.clientEmail.trim() || null,
-      subject: data.subject.trim() || null,
-      location: data.location.trim() || null,
-      period: data.period.trim() || null,
-      attendees: data.attendees.trim() || null,
       date: data.date,
-      dueDate: data.dueDate,
       totalAmount: data.itemsTotal,
       items: data.items.map(item => ({
         description: item.description.trim(),
@@ -89,7 +79,7 @@ export async function saveInvoice(data: {
   return data.editingId ? "Facture mise à jour avec succès !" : "Facture créée avec succès !";
 }
 
-export async function updateInvoiceStatus(id: number, newStatus: 'sent' | 'cancelled'): Promise<string> {
+export async function updateInvoiceStatus(id: number, newStatus: 'sent' | 'paid' | 'cancelled'): Promise<string> {
   const res = await fetch('', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

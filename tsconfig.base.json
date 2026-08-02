@@ -12,6 +12,7 @@
     "types": ["@cloudflare/workers-types", "node"],
     "paths": {
       "@nba/db": ["libs/shared/db/src/index.ts"],
+      "@nba/pdf": ["libs/shared/pdf/src/index.ts"],
       "@nba/db/test-utils": ["libs/shared/db/src/test-utils.ts"],
       "@nba/ui": ["libs/shared/ui/src/index.ts"],
       "@nba/api-client": ["libs/shared/api-client/src/index.ts"],

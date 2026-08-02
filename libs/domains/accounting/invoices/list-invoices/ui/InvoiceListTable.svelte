@@ -35,9 +35,7 @@
   {#snippet header()}
     <DataTableColumnHeader title="N° Facture" />
     <DataTableColumnHeader title="Client" />
-    <DataTableColumnHeader title="Objet" />
     <DataTableColumnHeader title="Date" />
-    <DataTableColumnHeader title="Échéance" />
     <DataTableColumnHeader title="Montant" class="text-right" />
     <DataTableColumnHeader title="Statut" class="text-center" />
     <DataTableColumnHeader title="Actions" class="text-right" />

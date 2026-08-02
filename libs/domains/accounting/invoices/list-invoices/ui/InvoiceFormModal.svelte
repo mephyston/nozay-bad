@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Plus, Check, FileText, Mail, MapPin, Calendar, Users, Info } from '@lucide/svelte';
+  import { Plus, Check, FileText, Mail, MapPin, Info } from '@lucide/svelte';
   import { Button, Input, Sheet, Alert, Textarea, Amount, FormField } from '@nba/ui';
   import type { InvoiceFormItem } from './invoices-types';
   import InvoiceItemRow from './InvoiceItemRow.svelte';
@@ -12,12 +12,7 @@
     clientName = $bindable(''),
     clientAddress = $bindable(''),
     clientEmail = $bindable(''),
-    subject = $bindable(''),
-    location = $bindable(''),
-    period = $bindable(''),
-    attendees = $bindable(''),
     date = $bindable(''),
-    dueDate = $bindable(''),
     items = $bindable([]),
     itemsTotal = 0,
     onSubmit
@@ -29,12 +24,7 @@
     clientName: string;
     clientAddress: string;
     clientEmail: string;
-    subject: string;
-    location: string;
-    period: string;
-    attendees: string;
     date: string;
-    dueDate: string;
     items: InvoiceFormItem[];
     itemsTotal: number;
     onSubmit: (e: Event) => void;
@@ -83,33 +73,12 @@
           </FormField>
         </div>
 
-        <!-- Details / Period -->
+        <!-- Date -->
         <div class="space-y-4 pt-4">
-          <h4 class="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-1">Objet & Période</h4>
+          <h4 class="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-1">Date</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField id="subject" label="Objet de la facture *">
-              <Input type="text" id="subject" bind:value={subject} placeholder="Ex: Subvention 2026, Location..." required disabled={isClosed} />
-            </FormField>
-            <FormField id="period" label="Période concernée">
-            <Input type="text" id="period" bind:value={period} placeholder="Ex: Année 2026, Septembre..." disabled={isClosed} icon={Calendar} />
-            </FormField>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField id="location" label="Lieu">
-            <Input type="text" id="location" bind:value={location} placeholder="Ex: Nozay" disabled={isClosed} icon={MapPin} />
-            </FormField>
-            <FormField id="attendees" label="Participants / Destinataires">
-            <Input type="text" id="attendees" bind:value={attendees} placeholder="Ex: Jeunes, Licenciés..." disabled={isClosed} icon={Users} />
-            </FormField>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField id="date" label="Date d'émission *">
+            <FormField id="date" label="Date d'émission *">
               <Input type="date" id="date" bind:value={date} required disabled={isClosed} />
-              </FormField>
-              <FormField id="dueDate" label="Date d'échéance *">
-              <Input type="date" id="dueDate" bind:value={dueDate} required disabled={isClosed} />
             </FormField>
           </div>
         </div>
