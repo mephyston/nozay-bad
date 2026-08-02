@@ -9,7 +9,7 @@
   import ExpensePendingTable from './ExpensePendingTable.svelte';
   import ExpenseHistoryTable from './ExpenseHistoryTable.svelte';
   import ExpensePhotoModal from './ExpensePhotoModal.svelte';
-  import ExpenseReportForm from '../../create/ui/ExpenseReportForm.svelte';
+  import AdminExpenseForm from './AdminExpenseForm.svelte';
   import { Sheet } from '@nba/ui';
 
   let {
@@ -242,11 +242,13 @@
 <ExpensePhotoModal bind:selectedPhoto={viewState.selectedPhoto} />
 
 <Sheet.Root bind:open={isCreateSheetOpen}>
-  <Sheet.Content side="right" class="w-full sm:max-w-2xl overflow-y-auto pt-6 px-4 pb-12">
-    <ExpenseReportForm
+  <Sheet.Content side="right" class="w-full sm:max-w-2xl overflow-y-auto p-0 flex flex-col h-full">
+    <AdminExpenseForm
       activeSeasonId={seasonId}
       members={[]}
       categories={categories}
+      onClose={() => isCreateSheetOpen = false}
+      onSuccess={(msg) => { viewState.successMsg = msg; isCreateSheetOpen = false; }}
     />
   </Sheet.Content>
 </Sheet.Root>

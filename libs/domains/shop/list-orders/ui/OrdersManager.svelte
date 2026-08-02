@@ -11,7 +11,7 @@
   import { approveOrder, rejectOrder } from './orders-manager-actions';
   import OrdersPendingTable from './OrdersPendingTable.svelte';
   import OrdersHistoryTable from './OrdersHistoryTable.svelte';
-  import ShopCatalog from '../../list-products/ui/ShopCatalog.svelte';
+  import AdminOrderForm from './AdminOrderForm.svelte';
   import { SearchableCombobox, FormField } from "@nba/ui";
 
   let {
@@ -199,11 +199,13 @@
 </div>
 
 <Sheet.Root bind:open={isCreateSheetOpen}>
-  <Sheet.Content side="right" class="w-full sm:max-w-2xl overflow-y-auto pt-6 px-4 pb-12">
-    <ShopCatalog
+  <Sheet.Content side="right" class="w-full sm:max-w-2xl overflow-y-auto p-0 flex flex-col h-full">
+    <AdminOrderForm
       products={products}
       members={[]}
       activeSeasonId={seasonId}
+      onClose={() => isCreateSheetOpen = false}
+      onSuccess={(msg) => { successMsg = msg; isCreateSheetOpen = false; }}
     />
   </Sheet.Content>
 </Sheet.Root>
