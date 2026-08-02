@@ -9,5 +9,5 @@ export function buildMembersDashboardStatsStmt(db: D1Database, seasonId: number,
       SUM(CASE WHEN season_id = ? AND amount_remaining_cents > 0 THEN 1 ELSE 0 END) as unpaidCount
     FROM members
     WHERE season_id IN (?, ?)
-  `).bind(seasonId, prevSeasonId, seasonId, seasonId, prevSeasonId);
+  `).bind(seasonId, prevSeasonId, seasonId, seasonId, seasonId, prevSeasonId);
 }
