@@ -1,3 +1,10 @@
+# [1.0.0-beta.32](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.31...v1.0.0-beta.32) (2026-08-02)
+
+
+### Features
+
+* **accounting:** add AI assistant for treasury analysis and budget suggestion, protected by ai:* or ai:chat permissions ([6ebd22c](https://github.com/mephyston/nozay-bad/commit/6ebd22ce243eb8e322209b19b752fbb45206ca92))
+
 # [1.0.0-beta.31](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.30...v1.0.0-beta.31) (2026-08-02)
 
 
