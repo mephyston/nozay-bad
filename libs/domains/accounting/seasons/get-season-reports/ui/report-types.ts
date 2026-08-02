@@ -24,6 +24,20 @@ export interface ReportData {
     deferredExpenses: { categoryName: string; amountCents: number }[];
     netAvailableCashCents: number;
   };
+  projections?: {
+    categories: any[];
+    totalProjectedRecettes: number;
+    totalProjectedDepenses: number;
+    projectedNetResult: number;
+    treasuryForecast?: {
+      month: string;
+      label: string;
+      real: number | null;
+      projected: number | null;
+      projectedRecettes: number;
+      projectedDepenses: number;
+    }[];
+  };
 }
 
 export interface Season {

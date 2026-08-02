@@ -131,8 +131,13 @@ try {
   }
 
   const prevSeason = getPreviousSeasonId(season);
+  const todayDate = new Date().toISOString().split('T')[0];
+  const arretedAuParam = (season === seasonsList.find((s: any) => s.active || s.active === 1)?.code || season === seasonsList[seasonsList.length - 1]?.code) 
+    ? `?arretedAu=${todayDate}` 
+    : '';
+
   const [res, prevResResult, categoriesRes, classesRes, budgetRes] = await Promise.all([
-    apiService.fetch(`http://localhost/accounting/seasons/${season}/reports`),
+    apiService.fetch(`http://localhost/accounting/seasons/${season}/reports${arretedAuParam}`),
     prevSeason ? apiService.fetch(`http://localhost/accounting/seasons/${prevSeason}/reports`).catch((e) => {
       console.error('Failed to fetch previous season reports', e);
       return null;

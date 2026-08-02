@@ -2,6 +2,7 @@
   import { Table, Card } from '@nba/ui';
   import type { ReportData, Season } from './report-types';
   import { formatAmount, formatDelta, accountLabels } from './report-utils';
+  import ReportTreasuryForecast from './ReportTreasuryForecast.svelte';
 
   let { report, selectedSeason, seasons = [] }: { report: ReportData; selectedSeason: string; seasons?: Season[] } = $props();
 </script>
@@ -111,3 +112,7 @@
     {/if}
   </Card.Content>
 </Card.Root>
+
+{#if report.projections?.treasuryForecast}
+  <ReportTreasuryForecast forecast={report.projections.treasuryForecast} />
+{/if}

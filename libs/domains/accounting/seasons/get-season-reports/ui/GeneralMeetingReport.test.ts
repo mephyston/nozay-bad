@@ -20,6 +20,7 @@ describe('GeneralMeetingReport Component', () => {
     component = mount(GeneralMeetingReport, {
       target,
       props: {
+        view: 'resultat',
         report: {
           compteResultat: {
             totalRecettes: 50000,
@@ -51,7 +52,7 @@ describe('GeneralMeetingReport Component', () => {
       }
     });
 
-    expect(target.innerHTML).toContain("Compte de résultat");
+    expect(target.innerHTML).toContain("Compte de Résultat");
     expect(target.innerHTML).toContain("Cotisations membres"); // mapped from category ID 1
     expect(target.innerHTML).toMatch(/500[,.]00/);
     expect(target.innerHTML).toMatch(/300[,.]00/);
@@ -65,6 +66,7 @@ describe('GeneralMeetingReport Component', () => {
     component = mount(GeneralMeetingReport, {
       target,
       props: {
+        view: 'budget',
         report: {
           compteResultat: {
             totalRecettes: 0,
@@ -102,6 +104,7 @@ describe('GeneralMeetingReport Component', () => {
     component = mount(GeneralMeetingReport, {
       target,
       props: {
+        view: 'budget',
         report: {
           compteResultat: {
             totalRecettes: 10000,
@@ -147,10 +150,54 @@ describe('GeneralMeetingReport Component', () => {
     expect(target.innerHTML).toContain("100,00");
     expect(target.innerHTML).toContain("50,00");
 
-    // Find and click the "Budget prévisionnel" tab button
-    const prevTab = Array.from(target.querySelectorAll('button')).find(btn => btn.textContent?.includes('Budget prévisionnel'));
-    expect(prevTab).toBeDefined();
-    prevTab?.click();
+    // Now we must re-mount or update props. In Svelte 5, component.$set is not always straightforward, let's just unmount and mount with 'budget'
+    unmount(component);
+    
+    component = mount(GeneralMeetingReport, {
+      target,
+      props: {
+        view: 'budget',
+        report: {
+          compteResultat: {
+            totalRecettes: 10000,
+            totalDepenses: 5000,
+            netResult: 5000,
+            categories: {
+              '1_recette': { type: 'recette', total: 10000 },
+              '9_depense': { type: 'depense', total: 5000 }
+            }
+          },
+          bilanTrésorerie: []
+        },
+        prevReport: {
+          compteResultat: {
+            totalRecettes: 8000,
+            totalDepenses: 4000,
+            netResult: 4000,
+            categories: {
+              '1_recette': { type: 'recette', total: 8000 },
+              '9_depense': { type: 'depense', total: 4000 }
+            }
+          },
+          bilanTrésorerie: []
+        },
+        seasonId: '25-26',
+        seasons: [
+          { id: '25-26', name: 'Saison 2025-2026', active: true, closed: false },
+          { id: '24-25', name: 'Saison 2024-2025', active: false, closed: true }
+        ],
+        categories: [
+          { id: 1, adminLabel: 'Cotisations membres', adherentLabel: 'Cotis', hideInExpenses: false, receiptCode: '75', expenseCode: '67' },
+          { id: 9, adminLabel: 'Salaires et Charges', adherentLabel: 'Salaires', hideInExpenses: true, receiptCode: null, expenseCode: '64' }
+        ],
+        accountClasses: [
+          { code: '75', label: '75 - Cotisations', type: 'recette' },
+          { code: '64', label: '64 - Charges de personnel', type: 'depense' }
+        ],
+        budget: []
+      }
+    });
+
     flushSync();
 
     // Now in previsionnel mode: should show current season realized column header "Réalisé"

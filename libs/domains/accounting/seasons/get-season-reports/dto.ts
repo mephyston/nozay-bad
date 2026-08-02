@@ -9,6 +9,19 @@ export interface DeferredCashBreakdown {
   amountCents: number;
 }
 
+export interface ForecastDataPoint {
+  month: string; // YYYY-MM
+  label: string;
+  realTotal: number | null;
+  realCurrent: number | null;
+  realSavings: number | null;
+  projectedTotal: number | null;
+  projectedCurrent: number | null;
+  projectedSavings: number | null;
+  projectedRecettes: number;
+  projectedDepenses: number;
+}
+
 export interface CategoryProjection {
   categoryId: number;
   categoryName: string;
@@ -56,5 +69,6 @@ export type GetSeasonReportsOutput = {
     totalProjectedRecettes: number;
     totalProjectedDepenses: number;
     projectedNetResult: number;
+    treasuryForecast?: ForecastDataPoint[];
   };
 };
