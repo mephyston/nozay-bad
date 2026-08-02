@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Users, Banknote, CreditCard, ShoppingCart, Activity, AlertCircle, ArrowUpRight, ArrowDownRight, Package, Receipt, FolderKanban, Building } from '@lucide/svelte';
+  import { DashboardSummaryCard, DashboardPoleCard } from '@nba/ui';
   
   export let data: any;
   
@@ -11,14 +12,13 @@
 <div class="space-y-8 pb-10">
   <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
     <!-- Adhérents -->
-    <div class="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-b from-card/80 to-card p-6 shadow-sm transition-all hover:shadow-md hover:border-primary/30 group">
-      <div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
-        <Users size={120} />
-      </div>
-      <div class="flex items-center justify-between space-y-0 pb-4">
-        <h3 class="font-semibold text-sm tracking-tight">Adhérents (Saison {data.season})</h3>
-        <div class="p-2 bg-info/10 text-info rounded-lg"><Users size={18} /></div>
-      </div>
+    <DashboardSummaryCard 
+      title="Adhérents (Saison {data.season})"
+      icon={Users}
+      iconClass="text-info bg-info/10"
+      bgIconClass="text-foreground"
+      containerClass="border-border/50 hover:border-primary/30 from-card/80 to-card"
+    >
       <div class="text-3xl font-bold tracking-tight">{data.members.currentTotal}</div>
       <p class="text-xs text-muted-foreground mt-1 flex items-center gap-1">
         {#if data.members.previousTotal > 0}
@@ -41,32 +41,30 @@
           {data.members.partiallyPaid} adhésion(s) partiellement payée(s)
         </div>
       {/if}
-    </div>
+    </DashboardSummaryCard>
 
     <!-- 4ème Carte : Cotisations Impayées -->
-    <div class="relative overflow-hidden rounded-2xl border border-destructive/20 bg-gradient-to-b from-destructive/5 to-card p-6 shadow-sm transition-all hover:shadow-md hover:border-destructive/40 group">
-      <div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300 text-destructive">
-        <AlertCircle size={120} />
-      </div>
-      <div class="flex items-center justify-between space-y-0 pb-4">
-        <h3 class="font-semibold text-sm tracking-tight">Cotisations Incomplètes</h3>
-        <div class="p-2 bg-destructive/10 text-destructive rounded-lg"><Users size={18} /></div>
-      </div>
+    <DashboardSummaryCard 
+      title="Cotisations Incomplètes"
+      icon={Users}
+      iconClass="text-destructive bg-destructive/10"
+      bgIconClass="text-destructive"
+      containerClass="border-destructive/20 hover:border-destructive/40 from-destructive/5 to-card"
+    >
       <div class="text-3xl font-bold tracking-tight text-destructive">{data.members.unpaidCount}</div>
       <p class="text-xs text-muted-foreground mt-1">
         Adhérent(s) n'ayant pas réglé la totalité
       </p>
-    </div>
+    </DashboardSummaryCard>
 
     <!-- Banque & Compta -->
-    <div class="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-b from-card/80 to-card p-6 shadow-sm transition-all hover:shadow-md hover:border-primary/30 group">
-      <div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
-        <Banknote size={120} />
-      </div>
-      <div class="flex items-center justify-between space-y-0 pb-4">
-        <h3 class="font-semibold text-sm tracking-tight">Trésorerie & Banque</h3>
-        <div class="p-2 bg-success/10 text-success rounded-lg"><Banknote size={18} /></div>
-      </div>
+    <DashboardSummaryCard 
+      title="Trésorerie & Banque"
+      icon={Banknote}
+      iconClass="text-success bg-success/10"
+      bgIconClass="text-foreground"
+      containerClass="border-border/50 hover:border-primary/30 from-card/80 to-card"
+    >
       <div class="space-y-3 mt-1">
         <div class="flex justify-between items-center group/item cursor-default">
           <span class="text-sm text-muted-foreground flex items-center gap-2"><CreditCard size={14} class="text-success/70"/> Chèques à remettre</span>
@@ -77,17 +75,16 @@
           <span class="font-bold text-lg {data.accounting.pendingDeposits > 0 ? 'text-warning' : 'text-success'}">{data.accounting.pendingDeposits}</span>
         </div>
       </div>
-    </div>
+    </DashboardSummaryCard>
 
     <!-- Tâches Administratives -->
-    <div class="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-b from-card/80 to-card p-6 shadow-sm transition-all hover:shadow-md hover:border-primary/30 group">
-      <div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
-        <Receipt size={120} />
-      </div>
-      <div class="flex items-center justify-between space-y-0 pb-4">
-        <h3 class="font-semibold text-sm tracking-tight">Tâches Administratives</h3>
-        <div class="p-2 bg-info/10 text-info rounded-lg"><Activity size={18} /></div>
-      </div>
+    <DashboardSummaryCard 
+      title="Tâches Administratives"
+      icon={Receipt}
+      iconClass="text-info bg-info/10"
+      bgIconClass="text-foreground"
+      containerClass="border-border/50 hover:border-primary/30 from-card/80 to-card"
+    >
       <div class="space-y-3 mt-1">
         <div class="flex justify-between items-center">
           <span class="text-sm text-muted-foreground">Notes de frais en attente</span>
@@ -102,18 +99,18 @@
           <span class="font-bold text-lg {data.shop.pendingOrders > 0 ? 'text-warning' : 'text-success'}">{data.shop.pendingOrders}</span>
         </div>
       </div>
-    </div>
+    </DashboardSummaryCard>
   </div>
 
   <div class="mt-10">
     <h2 class="text-xl font-bold tracking-tight mb-4 flex items-center gap-2"><Activity class="text-primary"/> Bilan des Pôles d'Activité</h2>
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       <!-- Pôle Compétition -->
-      <div class="rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="p-2.5 bg-destructive/10 text-destructive rounded-xl"><Activity size={20} /></div>
-          <h3 class="font-semibold">Pôle Compétition</h3>
-        </div>
+      <DashboardPoleCard 
+        title="Pôle Compétition" 
+        icon={Activity} 
+        iconClass="text-destructive bg-destructive/10"
+      >
         <div class="space-y-4">
           <div class="flex justify-between text-sm">
             <span class="text-muted-foreground">Recettes (inscriptions, buvette)</span>
@@ -152,14 +149,14 @@
             </div>
           {/if}
         </div>
-      </div>
+      </DashboardPoleCard>
 
       <!-- Pôle Jeunes -->
-      <div class="rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="p-2.5 bg-warning/10 text-warning rounded-xl"><Users size={20} /></div>
-          <h3 class="font-semibold">Pôle Jeunes</h3>
-        </div>
+      <DashboardPoleCard 
+        title="Pôle Jeunes" 
+        icon={Users} 
+        iconClass="text-warning bg-warning/10"
+      >
         <div class="space-y-4">
           <div class="flex justify-between text-sm">
             <span class="text-muted-foreground">Recettes générées</span>
@@ -198,15 +195,14 @@
             </div>
           {/if}
         </div>
-      </div>
+      </DashboardPoleCard>
 
       <!-- Pôle Matériel -->
-      <div class="rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md">
-        <div class="flex items-center gap-3 mb-4">
-          <!-- ds-allow-palette: 4e teinte catégorielle des pôles (aucun token sémantique distinct disponible) -->
-          <div class="p-2.5 bg-indigo-500/10 text-indigo-500 rounded-xl"><Package size={20} /></div>
-          <h3 class="font-semibold">Pôle Matériel</h3>
-        </div>
+      <DashboardPoleCard 
+        title="Pôle Matériel" 
+        icon={Package} 
+        iconClass="text-indigo-500 bg-indigo-500/10"
+      >
         <div class="space-y-4">
           <div class="flex justify-between text-sm">
             <span class="text-muted-foreground">Ventes (Boutique, etc.)</span>
@@ -245,14 +241,14 @@
             </div>
           {/if}
         </div>
-      </div>
+      </DashboardPoleCard>
       
       <!-- Pôle Fonctionnement -->
-      <div class="rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="p-2.5 bg-info/10 text-info rounded-xl"><Building size={20} /></div>
-          <h3 class="font-semibold">Pôle Fonctionnement</h3>
-        </div>
+      <DashboardPoleCard 
+        title="Pôle Fonctionnement" 
+        icon={Building} 
+        iconClass="text-info bg-info/10"
+      >
         <div class="space-y-4">
           <div class="flex justify-between text-sm">
             <span class="text-muted-foreground">Recettes (adhésions, subventions)</span>
@@ -291,7 +287,7 @@
             </div>
           {/if}
         </div>
-      </div>
+      </DashboardPoleCard>
     </div>
   </div>
 </div>
