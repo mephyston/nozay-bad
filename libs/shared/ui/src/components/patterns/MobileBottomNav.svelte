@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Menu, Landmark, ShoppingCart, Receipt } from '@lucide/svelte';
+  import { Menu, FileCheck, Landmark, Coins } from '@lucide/svelte';
   import { hasPermission } from '@nba/iam-ui';
   
   let {
@@ -16,18 +16,7 @@
     hasPermission(permissions, 'accounting:write')
   );
 
-  const canManageShop = $derived(
-    hasPermission(permissions, '*') || 
-    hasPermission(permissions, 'shop:*') || 
-    hasPermission(permissions, 'orders:*') || 
-    hasPermission(permissions, 'orders:create')
-  );
 
-  const canManageExpenses = $derived(
-    hasPermission(permissions, '*') || 
-    hasPermission(permissions, 'expenses:*') ||
-    hasPermission(permissions, 'expenses:create')
-  );
 </script>
 
 <div class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border flex items-center justify-around pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_10px_rgba(0,0,0,0.2)]">
@@ -57,39 +46,34 @@
       <span class="text-[11px] font-medium text-muted-foreground">Chèques</span>
     </a>
 
-  {/if}
-
-  {#if canManageShop}
-    <!-- Nouvelle Commande -->
+    <!-- Saisir une dépense -->
     <a 
-      href="/admin/shop/orders?action=new-order"
+      href="/admin/accounting?action=new-depense"
       class="flex flex-col items-center justify-center w-full py-3 gap-1 hover:bg-accent transition-colors decoration-transparent min-h-[56px]"
       onclick={(e) => {
-        if (window.location.pathname === '/admin/shop/orders') {
+        if (window.location.pathname.endsWith('/accounting') || window.location.pathname.endsWith('/accounting/')) {
           e.preventDefault();
-          window.dispatchEvent(new CustomEvent('open-new-order'));
+          window.dispatchEvent(new CustomEvent('open-new-depense'));
         }
       }}
     >
-      <ShoppingCart class="w-6 h-6 text-foreground" />
-      <span class="text-[11px] font-medium text-foreground">Commande</span>
+      <Coins class="w-6 h-6 text-destructive" />
+      <span class="text-[11px] font-medium text-destructive">Dépense</span>
     </a>
-  {/if}
 
-  {#if canManageExpenses}
-    <!-- Nouvelle Note de Frais -->
+    <!-- Saisir une recette -->
     <a 
-      href="/admin/expenses?action=new-expense"
+      href="/admin/accounting?action=new-recette"
       class="flex flex-col items-center justify-center w-full py-3 gap-1 hover:bg-accent transition-colors decoration-transparent min-h-[56px]"
       onclick={(e) => {
-        if (window.location.pathname === '/admin/expenses') {
+        if (window.location.pathname.endsWith('/accounting') || window.location.pathname.endsWith('/accounting/')) {
           e.preventDefault();
-          window.dispatchEvent(new CustomEvent('open-new-expense'));
+          window.dispatchEvent(new CustomEvent('open-new-recette'));
         }
       }}
     >
-      <Receipt class="w-6 h-6 text-foreground" />
-      <span class="text-[11px] font-medium text-foreground">Frais</span>
+      <FileCheck class="w-6 h-6 text-success" />
+      <span class="text-[11px] font-medium text-success">Recette</span>
     </a>
   {/if}
 </div>
