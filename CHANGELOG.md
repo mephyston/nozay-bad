@@ -1,3 +1,12 @@
+# [1.0.0-beta.25](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.24...v1.0.0-beta.25) (2026-08-02)
+
+
+### Bug Fixes
+
+* **accounting:** always compute historical average for unbudgeted categories, remove PCA month clamping ([522eea0](https://github.com/mephyston/nozay-bad/commit/522eea0f2ec77eddf4e8850c0f6457280be7c1af))
+* **accounting:** normalize category ID when checking for PCAs ([409e1be](https://github.com/mephyston/nozay-bad/commit/409e1be3137ca2b93116aebf5f59402ce21365e8))
+* **accounting:** use normalizeCategory and Number cast for PCA category matching ([579c4ae](https://github.com/mephyston/nozay-bad/commit/579c4aeee5696ec4313ccd010acf5d697ad3cc5e))
+
 # [1.0.0-beta.24](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.23...v1.0.0-beta.24) (2026-08-02)
 
 
