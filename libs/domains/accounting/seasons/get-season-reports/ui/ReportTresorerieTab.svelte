@@ -46,40 +46,22 @@
             </Table.Row>
           {/each}
         </Table.Body>
+        <Table.Footer class="bg-muted/50 font-bold">
+          <Table.Row>
+            <Table.Cell class="px-2 py-3 sm:p-4 text-foreground">Total Général</Table.Cell>
+            <Table.Cell class="hidden sm:table-cell px-2 py-3 sm:p-4 text-right">
+              {formatAmount(report.bilanTrésorerie.reduce((sum, item) => sum + item.initialBalance, 0))}
+            </Table.Cell>
+            <Table.Cell class="hidden sm:table-cell px-2 py-3 sm:p-4 text-right {report.bilanTrésorerie.reduce((sum, item) => sum + item.finalBalance - item.initialBalance, 0) >= 0 ? 'text-success' : 'text-destructive'}">
+              {formatDelta(report.bilanTrésorerie.reduce((sum, item) => sum + item.finalBalance - item.initialBalance, 0))}
+            </Table.Cell>
+            <Table.Cell class="px-2 py-3 sm:p-4 text-right text-foreground">
+              {formatAmount(report.bilanTrésorerie.reduce((sum, item) => sum + item.finalBalance, 0))}
+            </Table.Cell>
+          </Table.Row>
+        </Table.Footer>
       </Table.Root>
     </div>
-
-    {#if report.tresorerieDisponible}
-      <div class="mt-6 pt-6 border-t border-border space-y-3">
-        <h4 class="text-md font-bold text-foreground">Trésorerie Disponible & Régularisations</h4>
-        <div class="bg-muted/30 rounded-xl p-4 space-y-2 border border-border text-sm">
-          <div class="flex justify-between font-semibold">
-            <span>Trésorerie comptable (soldes totaux)</span>
-            <span>{formatAmount(report.tresorerieDisponible.totalGrossCashCents)}</span>
-          </div>
-
-          {#if report.tresorerieDisponible.inVaultCents > 0}
-            <div class="flex justify-between pl-4 text-muted-foreground">
-              <span>- dont chèques en coffre (non déposés)</span>
-              <span>- {formatAmount(report.tresorerieDisponible.inVaultCents)}</span>
-            </div>
-          {/if}
-
-          {#if report.tresorerieDisponible.pendingDebitCents > 0}
-            <div class="flex justify-between pl-4 text-muted-foreground">
-              <span>- dont paiements en attente de débit (CB)</span>
-              <span>+ {formatAmount(report.tresorerieDisponible.pendingDebitCents)}</span>
-            </div>
-          {/if}
-
-          <div class="flex justify-between font-bold text-base pt-2 border-t border-border/60 text-primary">
-            <span>Trésorerie disponible en banque (Relevés)</span>
-            <span>{formatAmount(report.tresorerieDisponible.netAvailableCashCents)}</span>
-          </div>
-        </div>
-
-      </div>
-    {/if}
   </Card.Content>
 </Card.Root>
 

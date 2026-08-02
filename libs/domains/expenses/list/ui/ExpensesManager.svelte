@@ -17,13 +17,15 @@
     seasonId,
     seasons = [],
     categories = [],
-    members = []
+    members = [],
+    initialAction = null
   }: {
     expenses: Expense[];
     seasonId: string;
     seasons?: Season[];
     categories?: Category[];
     members?: any[];
+    initialAction?: string | null;
   } = $props();
 
   const viewState = new ExpensesState();
@@ -129,7 +131,7 @@
     }
   });
 
-  let isCreateSheetOpen = $state(false);
+  let isCreateSheetOpen = $state(initialAction === 'new-expense');
 
   onMount(() => {
     const handleOpenNewExpense = () => isCreateSheetOpen = true;
@@ -141,7 +143,6 @@
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('action') === 'new-expense') {
-        isCreateSheetOpen = true;
         params.delete('action');
         const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
         window.history.replaceState({}, '', newUrl);

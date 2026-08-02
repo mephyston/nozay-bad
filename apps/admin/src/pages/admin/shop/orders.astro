@@ -145,6 +145,7 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
         products={productsList}
         members={membersList}
         seasonId={season}
+        initialAction={Astro.url.searchParams.get('action')}
       />
     </div>
   </AdminLayout>

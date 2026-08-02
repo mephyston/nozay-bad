@@ -19,13 +19,15 @@
     orders = [],
     products = [],
     members = [],
-    seasonId
+    seasonId,
+    initialAction = null
   }: {
     seasons: Season[];
     orders: OrderItem[];
     products?: any[];
     members?: any[];
     seasonId: string;
+    initialAction?: string | null;
   } = $props();
 
   const isClosed = $derived(seasons.find(s => s.id === seasonId)?.closed || false);
@@ -37,7 +39,7 @@
   let processingId = $state<number | null>(null);
   let errorMsg = $state<string | null>(null);
   let successMsg = $state<string | null>(null);
-  let isCreateSheetOpen = $state(false);
+  let isCreateSheetOpen = $state(initialAction === 'new-order');
 
   onMount(() => {
     const handleOpenNewOrder = () => isCreateSheetOpen = true;
@@ -53,7 +55,6 @@
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('action') === 'new-order') {
-        isCreateSheetOpen = true;
         params.delete('action');
         const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
         window.history.replaceState({}, '', newUrl);
