@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ShoppingBag, Check } from "@lucide/svelte";
+  import { ShoppingBag, Check, CheckCircle, AlertCircle } from "@lucide/svelte";
   import { Button, Alert, Sheet } from '@nba/ui';
   import type { Member, Product } from '../../list-products/ui/catalog-types';
   import { formatMemberName } from '../../list-products/ui/catalog-utils';
@@ -7,7 +7,6 @@
   import ShopCatalogMemberSelect from '../../list-products/ui/ShopCatalogMemberSelect.svelte';
   import ShopCatalogProductSelect from '../../list-products/ui/ShopCatalogProductSelect.svelte';
   import ShopCatalogSummary from '../../list-products/ui/ShopCatalogSummary.svelte';
-  import { CheckCircle, AlertCircle } from 'lucide-svelte';
 
   let { products = [], members = [], activeSeasonId = '', onClose, onSuccess }: { products: Product[]; members: Member[]; activeSeasonId: string; onClose: () => void; onSuccess: (msg: string) => void; } = $props();
 

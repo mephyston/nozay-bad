@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { Check, Receipt } from '@lucide/svelte';
+  import { Check, Receipt, CheckCircle, AlertCircle } from '@lucide/svelte';
   import { Button, Alert, Sheet } from '@nba/ui';
-  import { CheckCircle, AlertCircle } from 'lucide-svelte';
   import type { Member, Props } from '../../create/ui/expense-form-types';
   import { formatMemberName, scrollOptionIntoView } from '../../create/ui/expense-form-utils';
   import { submitExpenseReport } from '../../create/ui/expense-form-submit';
