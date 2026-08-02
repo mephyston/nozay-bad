@@ -224,7 +224,7 @@
                 class="flex items-center gap-3 px-3 py-2 w-full h-full font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center"
               >
                 <!-- Logo NBA -->
-                <img src="/logo.png" alt="Logo" class="h-6 w-6 shrink-0 object-contain" />
+                <img src="/logo.png" alt="Logo" class="h-6 w-6 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 shrink-0 object-contain transition-all duration-200" />
                 <span class="group-data-[collapsible=icon]:hidden font-semibold text-sm text-foreground truncate ml-1">Nozay Bad Admin</span>
               </a>
             {/snippet}
