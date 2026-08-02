@@ -1,3 +1,10 @@
+# [1.0.0-beta.30](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.29...v1.0.0-beta.30) (2026-08-02)
+
+
+### Features
+
+* **accounting:** decouple treasury forecast from accounting, use pure cash flow logic ([0c2af48](https://github.com/mephyston/nozay-bad/commit/0c2af4804dfe1251c6dde1015d8488e3036d4bc9))
+
 # [1.0.0-beta.29](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.28...v1.0.0-beta.29) (2026-08-02)
 
 
