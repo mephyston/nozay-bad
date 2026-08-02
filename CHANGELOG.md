@@ -1,3 +1,11 @@
+# [1.0.0-beta.16](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.15...v1.0.0-beta.16) (2026-08-02)
+
+
+### Features
+
+* **invoices:** génération PDF des factures + refonte formulaire/liste + statut payé ([2ba741d](https://github.com/mephyston/nozay-bad/commit/2ba741d66375c884066b90f5e9596e352b3aba63))
+* **pdf:** wip invoice and attestation pdf generator ([1d90475](https://github.com/mephyston/nozay-bad/commit/1d9047570d5a5a12487f1d4999cb913dad6470fe))
+
 # [1.0.0-beta.15](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.14...v1.0.0-beta.15) (2026-08-01)
 
 
