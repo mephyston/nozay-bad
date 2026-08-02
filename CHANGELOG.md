@@ -1,3 +1,10 @@
+# [1.0.0-beta.21](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.20...v1.0.0-beta.21) (2026-08-02)
+
+
+### Bug Fixes
+
+* **admin:** resolve wildcard permissions for dashboard links ([2583c81](https://github.com/mephyston/nozay-bad/commit/2583c819f9e53301ab9a3697ccec26dd4609fc17))
+
 # [1.0.0-beta.20](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.19...v1.0.0-beta.20) (2026-08-02)
 
 
