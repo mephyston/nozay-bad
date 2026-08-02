@@ -1,3 +1,10 @@
+# [1.0.0-beta.17](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.16...v1.0.0-beta.17) (2026-08-02)
+
+
+### Bug Fixes
+
+* **db:** add missing track_stock column migration on products ([133a52d](https://github.com/mephyston/nozay-bad/commit/133a52d5f0ed7cba3fe4c7a2ed60891767bbb981))
+
 # [1.0.0-beta.16](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.15...v1.0.0-beta.16) (2026-08-02)
 
 
