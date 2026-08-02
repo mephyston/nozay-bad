@@ -215,13 +215,12 @@
         <Sidebar.MenuItem>
           <Sidebar.MenuButton
             size="default"
-            class="w-full bg-transparent border-0 group-data-[collapsible=icon]:!p-0"
+            class="w-full bg-transparent border-0 group-data-[collapsible=icon]:!p-0 flex items-center justify-center font-semibold text-sidebar-foreground h-auto py-2"
           >
             {#snippet child({ props })}
               <a
                 {...props}
                 href="/"
-                class="flex items-center gap-3 w-full h-full font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center"
               >
                 <img src="/logo.png" alt="Logo" class="h-6 w-6 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 shrink-0 object-contain transition-all duration-200" />
                 <span class="group-data-[collapsible=icon]:hidden font-semibold text-sm text-foreground truncate ml-1">Nozay Bad Admin</span>
@@ -258,14 +257,14 @@
               <Sidebar.MenuItem>
                 <Sidebar.MenuButton
                   isActive={isItemActive(item)}
+                  class="font-medium md:font-normal md:py-2 transition-colors w-full"
                 >
                   {#snippet child({ props })}
                     <a
                       {...props}
                       href={item.href}
-                      class="flex items-center gap-4 px-3 py-3 md:gap-3 md:py-2 rounded-md text-base md:text-sm font-medium md:font-normal transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground w-full"
                     >
-                      <item.icon class="h-5 w-5 md:h-4 md:w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+                      <item.icon class="h-5 w-5 md:h-4 md:w-4 shrink-0 transition-colors group-hover:text-foreground" />
                       <span class="group-data-[collapsible=icon]:hidden">{item.name}</span>
                     </a>
                   {/snippet}
