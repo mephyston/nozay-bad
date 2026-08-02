@@ -1,3 +1,15 @@
+# [1.0.0-beta.31](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.30...v1.0.0-beta.31) (2026-08-02)
+
+
+### Bug Fixes
+
+* **accounting:** only use valid past seasons with enough data for treasury forecast ([4ece6e9](https://github.com/mephyston/nozay-bad/commit/4ece6e9bcb30145d5ff9b8cd4f2f638297c999cb))
+
+
+### Features
+
+* **accounting:** remove treasury available block and add total row to treasury table ([7c01e66](https://github.com/mephyston/nozay-bad/commit/7c01e669b75c4f32ad835da02b7598e92e7a9d63))
+
 # [1.0.0-beta.30](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.29...v1.0.0-beta.30) (2026-08-02)
 
 
