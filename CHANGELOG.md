@@ -1,3 +1,10 @@
+# [1.0.0-beta.18](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.17...v1.0.0-beta.18) (2026-08-02)
+
+
+### Features
+
+* **iam:** add granular permissions for expenses and orders including update rights ([c079e86](https://github.com/mephyston/nozay-bad/commit/c079e86e916dd4c65ab6bbaa2cd31c26ea9913fc))
+
 # [1.0.0-beta.17](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.16...v1.0.0-beta.17) (2026-08-02)
 
 
