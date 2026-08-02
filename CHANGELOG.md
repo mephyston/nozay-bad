@@ -1,3 +1,10 @@
+# [1.0.0-beta.20](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.19...v1.0.0-beta.20) (2026-08-02)
+
+
+### Features
+
+* **admin:** add permission-based links to dashboard cards ([a75de4d](https://github.com/mephyston/nozay-bad/commit/a75de4dddf5e198df456d09f3355e2cf3250f755))
+
 # [1.0.0-beta.19](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.18...v1.0.0-beta.19) (2026-08-02)
 
 
