@@ -281,14 +281,12 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
         // We look in pastTransactions (recorded before this season starts) for PCAs of this category
         if (type === 'recette') {
           const deferred = pastTransactions.filter(tx => {
-            const txCatId = typeof tx.categoryId === 'object' ? (tx.categoryId as any)?.id : tx.categoryId;
-            return tx.accrualType === 'produit_constate_avance' && txCatId === cat.id && tx.type === 'recette';
+            return tx.accrualType === 'produit_constate_avance' && normalizeCategory(tx.categoryId) === Number(cat.id) && tx.type === 'recette';
           }).reduce((sum, tx) => sum + (tx.amountCents || 0), 0);
           realisedCents += deferred;
         } else if (type === 'depense') {
           const deferred = pastTransactions.filter(tx => {
-            const txCatId = typeof tx.categoryId === 'object' ? (tx.categoryId as any)?.id : tx.categoryId;
-            return tx.accrualType === 'charge_constatee_avance' && txCatId === cat.id && tx.type === 'depense';
+            return tx.accrualType === 'charge_constatee_avance' && normalizeCategory(tx.categoryId) === Number(cat.id) && tx.type === 'depense';
           }).reduce((sum, tx) => sum + (tx.amountCents || 0), 0);
           realisedCents += deferred;
         }
