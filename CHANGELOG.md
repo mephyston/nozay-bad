@@ -1,3 +1,10 @@
+# [1.0.0-beta.27](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.26...v1.0.0-beta.27) (2026-08-02)
+
+
+### Bug Fixes
+
+* **ui:** revert MobileBottomNav to use Commande and Frais shortcuts as requested by user ([0f72510](https://github.com/mephyston/nozay-bad/commit/0f725100e29cec76edaa56848d4a0190a6f889e5))
+
 # [1.0.0-beta.26](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.25...v1.0.0-beta.26) (2026-08-02)
 
 
