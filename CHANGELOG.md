@@ -1,3 +1,23 @@
+# [1.0.0-beta.23](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.22...v1.0.0-beta.23) (2026-08-02)
+
+
+### Bug Fixes
+
+* **ui:** center logo and match sidebar hover box size ([bbb6b3f](https://github.com/mephyston/nozay-bad/commit/bbb6b3f0deff4aa5cf08d47d176bc563dd6cd66d))
+* **ui:** correctly merge MenuButton props with custom anchor classes ([1d287a3](https://github.com/mephyston/nozay-bad/commit/1d287a3ad8805be188003da5c9199321b24e74bd))
+* **ui:** remove manual class overrides on menu items to fix collapsed centering ([0fcd7a8](https://github.com/mephyston/nozay-bad/commit/0fcd7a8b8551869d65c1a7d4ce345eb9197c53f4))
+* **ui:** remove MenuButton constraint to allow logo to grow when collapsed ([415a422](https://github.com/mephyston/nozay-bad/commit/415a42230f901654a7a844f1c7c7923925236ac5))
+* **ui:** remove MenuButton from logo to prevent sticky hover state ([60b7f1c](https://github.com/mephyston/nozay-bad/commit/60b7f1c323df81496ee374addebd4106cce77c93))
+* **ui:** restore original link classes and fix icon centering when collapsed ([771b16c](https://github.com/mephyston/nozay-bad/commit/771b16ca7c1114c163420b4c5d854a56a96df4ad))
+
+
+### Features
+
+* **ui:** enlarge logo when sidebar is collapsed ([1ec2936](https://github.com/mephyston/nozay-bad/commit/1ec29362cc4cac89a2d09ef569fa5d22a1d3efff))
+* **ui:** further enlarge logo when menu is collapsed ([c764fb9](https://github.com/mephyston/nozay-bad/commit/c764fb904e0f959758a2f58f23690beed347f92c))
+* **ui:** update menu title to Nozay Bad Admin ([3962a39](https://github.com/mephyston/nozay-bad/commit/3962a39bbdeba872636d99e6b12b2f4b963bad35))
+* **ui:** use transparent logo for favicon and navigation ([954a957](https://github.com/mephyston/nozay-bad/commit/954a957726bbc70bcc3a50bb96e12c19feb2fbd7))
+
 # [1.0.0-beta.22](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.21...v1.0.0-beta.22) (2026-08-02)
 
 
