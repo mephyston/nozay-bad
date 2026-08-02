@@ -83,6 +83,7 @@
     newEmail = '';
     newName = '';
     selectedPermissions = [];
+    isSheetOpen = true;
   }
 
   function openEditSheet(user: any) {
