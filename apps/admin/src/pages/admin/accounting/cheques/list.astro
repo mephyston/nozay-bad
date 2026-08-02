@@ -1,6 +1,6 @@
 ---
-import Layout from '../../../layouts/Layout.astro';
-import AdminLayout from '../../../components/AdminLayout.svelte';
+import Layout from '../../../../layouts/Layout.astro';
+import AdminLayout from '../../../../components/AdminLayout.svelte';
 import { PageHeader, ErrorAlert, Badge } from '@nba/ui';
 import { CheckDepositManager } from '@nba/accounting-ui';
 
@@ -146,12 +146,22 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
 ---
 
 <Layout title="Remises de Chèques - NBA 91">
-  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Remises de chèques" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Remises de chèques / Gestion des chèques" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       {errorMsg && <ErrorAlert message={errorMsg} />}
 
+      <div class="no-print">
+        <a
+          href="/admin/accounting/cheques"
+          class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+          Retour aux remises de chèques
+        </a>
+      </div>
+
       <PageHeader
-        title="Remise de chèques"
+        title="Gestion des chèques"
         description={`Gestion et suivi des chèques physiques, génération de bordereaux de remise et rapprochement bancaire pour la saison ${displaySeasonName}.`}
         class="print:hidden"
       >
@@ -168,6 +178,8 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
         checkDeposits={depositsList}
         members={membersList}
         pendingBankTransactions={pendingBankTx}
+        initialTab="checks"
+        hideTabs={true}
       />
     </div>
   </AdminLayout>

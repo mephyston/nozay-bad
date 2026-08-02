@@ -44,10 +44,10 @@
   {#if canManageAccounting}
     <!-- Enregistrer un chèque -->
     <a 
-      href="/admin/accounting/cheques?action=new-cheque"
+      href="/admin/accounting/cheques/list?action=new-cheque"
       class="flex flex-col items-center justify-center w-full py-3 gap-1 hover:bg-accent transition-colors decoration-transparent min-h-[56px]"
       onclick={(e) => {
-        if (window.location.pathname.includes('/accounting/cheques')) {
+        if (window.location.pathname === '/admin/accounting/cheques/list') {
           e.preventDefault();
           window.dispatchEvent(new CustomEvent('open-new-cheque'));
         }
@@ -65,7 +65,7 @@
       href="/admin/shop/orders?action=new-order"
       class="flex flex-col items-center justify-center w-full py-3 gap-1 hover:bg-accent transition-colors decoration-transparent min-h-[56px]"
       onclick={(e) => {
-        if (window.location.pathname.includes('/shop/orders')) {
+        if (window.location.pathname === '/admin/shop/orders') {
           e.preventDefault();
           window.dispatchEvent(new CustomEvent('open-new-order'));
         }
@@ -82,7 +82,7 @@
       href="/admin/expenses?action=new-expense"
       class="flex flex-col items-center justify-center w-full py-3 gap-1 hover:bg-accent transition-colors decoration-transparent min-h-[56px]"
       onclick={(e) => {
-        if (window.location.pathname.includes('/expenses')) {
+        if (window.location.pathname === '/admin/expenses') {
           e.preventDefault();
           window.dispatchEvent(new CustomEvent('open-new-expense'));
         }

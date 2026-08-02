@@ -224,8 +224,7 @@
                 class="flex items-center gap-3 px-3 py-2 w-full h-full font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center"
               >
                 <!-- Logo NBA -->
-                <img src="/images/splash-light.jpeg" alt="Logo" class="h-6 w-6 shrink-0 rounded-md object-cover block dark:hidden" />
-                <img src="/images/splash-dark.jpeg" alt="Logo" class="h-6 w-6 shrink-0 rounded-md object-cover hidden dark:block" />
+                <img src="/logo.png" alt="Logo" class="h-6 w-6 shrink-0 object-contain" />
                 <span class="group-data-[collapsible=icon]:hidden font-semibold text-sm text-foreground truncate ml-1">Nozay Bad</span>
               </a>
             {/snippet}

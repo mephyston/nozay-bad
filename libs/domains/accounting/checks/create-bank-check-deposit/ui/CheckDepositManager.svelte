@@ -25,6 +25,8 @@
     checkDeposits: CheckDeposit[];
     members: Member[];
     pendingBankTransactions: BankStatementLine[];
+    initialTab?: 'checks' | 'deposits';
+    hideTabs?: boolean;
   }
 
   let props: Props = $props();
@@ -68,11 +70,13 @@
 <div class="space-y-6">
   <Tabs.Root value={depositState.activeTab} onValueChange={(v) => depositState.activeTab = v as any} class="space-y-6">
     {#snippet tabsNav()}
-      <CheckDepositTabsNav
-        {depositState}
-        checksCount={props.checks.filter(c => c.status === 'received').length}
-        checkDepositsCount={props.checkDeposits.length}
-      />
+      {#if !props.hideTabs}
+        <CheckDepositTabsNav
+          {depositState}
+          checksCount={props.checks.filter(c => c.status === 'received').length}
+          checkDepositsCount={props.checkDeposits.length}
+        />
+      {/if}
     {/snippet}
 
     <Tabs.Content value="checks">

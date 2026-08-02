@@ -7,10 +7,12 @@ export function createCheckDepositState(props: () => {
   checkDeposits: CheckDeposit[];
   members: Member[];
   pendingBankTransactions: BankStatementLine[];
+  initialTab?: 'checks' | 'deposits';
+  hideTabs?: boolean;
 }) {
   const p = $derived(props());
 
-  let activeTab = $state<'checks' | 'deposits'>('checks');
+  let activeTab = $state<'checks' | 'deposits'>(p.initialTab || 'checks');
   const isClosed = $derived(p.seasons.find(s => s.id === p.seasonId)?.closed || false);
 
   // View / Print deposit slip states

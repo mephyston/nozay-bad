@@ -120,19 +120,15 @@ try {
     
     <!-- PWA Splash Screen -->
     <div id="pwa-splash" class="fixed inset-0 z-[9999] bg-background flex flex-col items-center justify-center transition-opacity duration-500">
-      <div class="relative">
-        <!-- Image Light Mode -->
-        <img src="/images/splash-light.jpeg" alt="Logo Nozay Bad" class="w-80 h-80 animate-pulse object-contain block dark:hidden" />
-        <!-- Image Dark Mode -->
-        <img src="/images/splash-dark.jpeg" alt="Logo Nozay Bad" class="w-80 h-80 animate-pulse object-contain hidden dark:block" />
-        
+      <div class="relative z-10 flex flex-col items-center gap-6">
+        <img src="/logo.png" alt="Logo Nozay Bad" class="w-80 h-80 animate-pulse object-contain" />
+      </div>  
         <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 flex gap-1.5">
           <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: -0.3s"></span>
           <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: -0.15s"></span>
           <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0s"></span>
         </div>
-      </div>
-      <p class="mt-6 text-xs text-muted-foreground/60 font-medium tracking-widest uppercase">v{pkg.version}</p>
+      <p class="mt-12 text-xs text-muted-foreground/60 font-medium tracking-widest uppercase">v{pkg.version}</p>
       <div class="mt-8 flex flex-col items-center gap-4 relative z-10 w-full px-6">
         <button onclick="document.getElementById('pwa-splash').style.opacity = '0'; setTimeout(() => document.getElementById('pwa-splash').remove(), 500)" class="w-full max-w-[200px] px-6 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors shadow-md">
           Continuer
