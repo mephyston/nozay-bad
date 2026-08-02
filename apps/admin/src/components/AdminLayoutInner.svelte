@@ -213,20 +213,13 @@
     <div class="pt-safe flex items-center w-full justify-between gap-1">
       <Sidebar.Menu class="flex-1">
         <Sidebar.MenuItem>
-          <Sidebar.MenuButton
-            size="default"
-            class="w-full bg-transparent border-0 group-data-[collapsible=icon]:!p-0 flex items-center justify-center font-semibold text-sidebar-foreground h-auto py-2"
+          <a
+            href="/"
+            class="flex items-center gap-3 w-full h-8 font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center rounded-md transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground px-2 group-data-[collapsible=icon]:px-0"
           >
-            {#snippet child({ props })}
-              <a
-                {...props}
-                href="/"
-              >
-                <img src="/logo.png" alt="Logo" class="h-6 w-6 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 shrink-0 object-contain transition-all duration-200" />
-                <span class="group-data-[collapsible=icon]:hidden font-semibold text-sm text-foreground truncate ml-1">Nozay Bad Admin</span>
-              </a>
-            {/snippet}
-          </Sidebar.MenuButton>
+            <img src="/logo.png" alt="Logo" class="h-6 w-6 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 shrink-0 object-contain transition-all duration-200" />
+            <span class="group-data-[collapsible=icon]:hidden text-sm truncate">Nozay Bad Admin</span>
+          </a>
         </Sidebar.MenuItem>
       </Sidebar.Menu>
       {#if sidebar.isMobile}
