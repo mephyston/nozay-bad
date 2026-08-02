@@ -1,3 +1,10 @@
+# [1.0.0-beta.26](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.25...v1.0.0-beta.26) (2026-08-02)
+
+
+### Bug Fixes
+
+* **ui:** revert MobileBottomNav shortcuts to use admin accounting forms (Dépense/Recette) instead of storefront forms (Commande/Frais) ([e4271ce](https://github.com/mephyston/nozay-bad/commit/e4271ce0ff2225c0b152f9625337834185ff533d))
+
 # [1.0.0-beta.25](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.24...v1.0.0-beta.25) (2026-08-02)
 
 
