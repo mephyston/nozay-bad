@@ -257,14 +257,14 @@
               <Sidebar.MenuItem>
                 <Sidebar.MenuButton
                   isActive={isItemActive(item)}
-                  class="font-medium md:font-normal md:py-2 transition-colors w-full"
                 >
                   {#snippet child({ props })}
                     <a
                       {...props}
                       href={item.href}
+                      class={[props.class, "font-medium md:font-normal transition-colors w-full"]}
                     >
-                      <item.icon class="h-5 w-5 md:h-4 md:w-4 shrink-0 transition-colors group-hover:text-foreground" />
+                      <item.icon class="h-5 w-5 md:h-4 md:w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
                       <span class="group-data-[collapsible=icon]:hidden">{item.name}</span>
                     </a>
                   {/snippet}
