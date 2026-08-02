@@ -1,3 +1,10 @@
+# [1.0.0-beta.29](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.28...v1.0.0-beta.29) (2026-08-02)
+
+
+### Bug Fixes
+
+* use @lucide/svelte for all icon imports ([7d6e4b8](https://github.com/mephyston/nozay-bad/commit/7d6e4b891f05cd5a68ae7b781557d2181fe86765))
+
 # [1.0.0-beta.28](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.27...v1.0.0-beta.28) (2026-08-02)
 
 
