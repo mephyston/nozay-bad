@@ -213,22 +213,13 @@
     <div class="pt-safe flex items-center w-full justify-between gap-1">
       <Sidebar.Menu class="flex-1">
         <Sidebar.MenuItem>
-          <Sidebar.MenuButton
-            size="default"
-            class="w-full bg-transparent border-0 flex items-center justify-start"
+          <a
+            href="/"
+            class="flex items-center gap-3 px-2 py-2 w-full font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md transition-all"
           >
-            {#snippet child({ props })}
-              <a
-                {...props}
-                href="/"
-                class="flex items-center gap-3 px-3 py-2 w-full h-full font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center"
-              >
-                <!-- Logo NBA -->
-                <img src="/logo.png" alt="Logo" class="h-6 w-6 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 shrink-0 object-contain transition-all duration-200" />
-                <span class="group-data-[collapsible=icon]:hidden font-semibold text-sm text-foreground truncate ml-1">Nozay Bad Admin</span>
-              </a>
-            {/snippet}
-          </Sidebar.MenuButton>
+            <img src="/logo.png" alt="Logo" class="h-6 w-6 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 shrink-0 object-contain transition-all duration-300" />
+            <span class="group-data-[collapsible=icon]:hidden font-semibold text-sm text-foreground truncate ml-1">Nozay Bad Admin</span>
+          </a>
         </Sidebar.MenuItem>
       </Sidebar.Menu>
       {#if sidebar.isMobile}
