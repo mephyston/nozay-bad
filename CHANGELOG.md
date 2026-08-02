@@ -1,3 +1,10 @@
+# [1.0.0-beta.28](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.27...v1.0.0-beta.28) (2026-08-02)
+
+
+### Features
+
+* homogenize admin sheet forms for orders and expenses ([be99202](https://github.com/mephyston/nozay-bad/commit/be9920234da809cbf95aeda06dee6f4447ddc104))
+
 # [1.0.0-beta.27](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.26...v1.0.0-beta.27) (2026-08-02)
 
 
