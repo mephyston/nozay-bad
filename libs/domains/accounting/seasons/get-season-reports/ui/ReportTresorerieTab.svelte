@@ -78,36 +78,6 @@
           </div>
         </div>
 
-        {#if report.tresorerieDisponible.deferredRevenues.length > 0 || report.tresorerieDisponible.deferredExpenses.length > 0}
-          <div class="mt-4 pt-4 border-t border-border/40 space-y-2">
-            <h5 class="font-semibold text-xs uppercase text-muted-foreground">Impacts sur le résultat (Régularisations)</h5>
-            <div class="bg-muted/30 rounded-xl p-4 space-y-2 border border-border text-sm">
-              {#if report.tresorerieDisponible.deferredRevenues.length > 0}
-                <div class="space-y-1 text-xs text-muted-foreground">
-                  <span class="font-medium text-warning block">• Produits encaissés d'avance (à déduire du résultat) :</span>
-                  {#each report.tresorerieDisponible.deferredRevenues as defRev}
-                    <div class="flex justify-between pl-4">
-                      <span>{defRev.categoryName}</span>
-                      <span>- {formatAmount(defRev.amountCents)}</span>
-                    </div>
-                  {/each}
-                </div>
-              {/if}
-
-              {#if report.tresorerieDisponible.deferredExpenses.length > 0}
-                <div class="space-y-1 text-xs text-muted-foreground mt-3">
-                  <span class="font-medium text-info block">• Charges décaissées d'avance (à réintégrer au résultat) :</span>
-                  {#each report.tresorerieDisponible.deferredExpenses as defExp}
-                    <div class="flex justify-between pl-4">
-                      <span>{defExp.categoryName}</span>
-                      <span>+ {formatAmount(defExp.amountCents)}</span>
-                    </div>
-                  {/each}
-                </div>
-              {/if}
-            </div>
-          </div>
-        {/if}
       </div>
     {/if}
   </Card.Content>

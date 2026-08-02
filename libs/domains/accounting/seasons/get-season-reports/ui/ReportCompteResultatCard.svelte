@@ -3,6 +3,7 @@
   import type { ReportData, Season, DbCategory, AccountClass } from './report-types';
   import ReportChargesColumn from './ReportChargesColumn.svelte';
   import ReportProduitsColumn from './ReportProduitsColumn.svelte';
+  import { formatAmount } from './report-utils';
 
   // Sur écran étroit (< xl) : la 2e colonne montre soit le prévisionnel, soit
   // l'écart (les deux sont visibles simultanément à partir de xl).
@@ -133,6 +134,37 @@
         {totalRecettesPrevisionnel}
       />
     </div>
+
+    {#if report?.tresorerieDisponible && (report.tresorerieDisponible.deferredRevenues.length > 0 || report.tresorerieDisponible.deferredExpenses.length > 0)}
+      <div class="mt-4 pt-4 border-t border-border/40 space-y-2 no-print">
+        <h5 class="font-semibold text-xs uppercase text-muted-foreground">Régularisations Comptables</h5>
+        <div class="bg-muted/30 rounded-xl p-4 space-y-2 border border-border text-sm">
+          {#if report.tresorerieDisponible.deferredRevenues.length > 0}
+            <div class="space-y-1 text-xs text-muted-foreground">
+              <span class="font-medium text-warning block">• Produits encaissés d'avance (à déduire du résultat) :</span>
+              {#each report.tresorerieDisponible.deferredRevenues as defRev}
+                <div class="flex justify-between pl-4">
+                  <span>{defRev.categoryName}</span>
+                  <span>- {formatAmount(defRev.amountCents)}</span>
+                </div>
+              {/each}
+            </div>
+          {/if}
+
+          {#if report.tresorerieDisponible.deferredExpenses.length > 0}
+            <div class="space-y-1 text-xs text-muted-foreground mt-3">
+              <span class="font-medium text-info block">• Charges décaissées d'avance (à réintégrer au résultat) :</span>
+              {#each report.tresorerieDisponible.deferredExpenses as defExp}
+                <div class="flex justify-between pl-4">
+                  <span>{defExp.categoryName}</span>
+                  <span>+ {formatAmount(defExp.amountCents)}</span>
+                </div>
+              {/each}
+            </div>
+          {/if}
+        </div>
+      </div>
+    {/if}
 
     {#if mode === 'previsionnel' && !isClosed}
       <div class="flex flex-col gap-3 pt-4 border-t border-border mt-6 no-print">
