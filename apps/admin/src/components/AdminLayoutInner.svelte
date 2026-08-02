@@ -225,7 +225,7 @@
               >
                 <!-- Logo NBA -->
                 <img src="/logo.png" alt="Logo" class="h-6 w-6 shrink-0 object-contain" />
-                <span class="group-data-[collapsible=icon]:hidden font-semibold text-sm text-foreground truncate ml-1">Nozay Bad</span>
+                <span class="group-data-[collapsible=icon]:hidden font-semibold text-sm text-foreground truncate ml-1">Nozay Bad Admin</span>
               </a>
             {/snippet}
           </Sidebar.MenuButton>
