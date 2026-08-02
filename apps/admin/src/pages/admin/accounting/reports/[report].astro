@@ -215,7 +215,7 @@ const currentReport = validReports[reportType];
 
       {errorMsg && <ErrorAlert message={errorMsg} />}
 
-      <GeneralMeetingReport client:load view={currentReport.view} report={reportData} prevReport={prevReportData} seasonId={season} seasons={seasonsList} categories={categoriesList} accountClasses={accountClassesList} budget={budgetList} />
+      <GeneralMeetingReport client:load view={currentReport.view} report={reportData} prevReport={prevReportData} seasonId={season} seasons={seasonsList} categories={categoriesList} accountClasses={accountClassesList} budget={budgetList} userPermissions={Astro.locals.user?.permissions || []} />
     </div>
   </AdminLayout>
 </Layout>

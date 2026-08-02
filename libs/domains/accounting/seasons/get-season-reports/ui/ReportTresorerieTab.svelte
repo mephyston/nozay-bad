@@ -3,8 +3,9 @@
   import type { ReportData, Season } from './report-types';
   import { formatAmount, formatDelta, accountLabels } from './report-utils';
   import ReportTreasuryForecast from './ReportTreasuryForecast.svelte';
+import ReportAIAnalysis from './ReportAIAnalysis.svelte';
 
-  let { report, selectedSeason, seasons = [] }: { report: ReportData; selectedSeason: string; seasons?: Season[] } = $props();
+  let { report, selectedSeason, seasons = [], userPermissions = [] }: { report: ReportData; selectedSeason: string; seasons?: Season[]; userPermissions?: string[] } = $props();
 </script>
 
 <Card.Root>
@@ -68,3 +69,5 @@
 {#if report.projections?.treasuryForecast}
   <ReportTreasuryForecast forecast={report.projections.treasuryForecast} />
 {/if}
+
+<ReportAIAnalysis {report} section="tresorerie" seasonId={selectedSeason} {userPermissions} />

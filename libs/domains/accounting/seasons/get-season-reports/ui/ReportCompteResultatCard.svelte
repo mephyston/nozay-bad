@@ -1,13 +1,46 @@
 <script lang="ts">
   import { Button, Card, Alert } from '@nba/ui';
+  import { Sparkles } from '@lucide/svelte';
+  import { hasPermission } from '../../../../iam/shared/permissions';
   import type { ReportData, Season, DbCategory, AccountClass } from './report-types';
   import ReportChargesColumn from './ReportChargesColumn.svelte';
   import ReportProduitsColumn from './ReportProduitsColumn.svelte';
+  import ReportAIAnalysis from './ReportAIAnalysis.svelte';
   import { formatAmount } from './report-utils';
 
   // Sur écran étroit (< xl) : la 2e colonne montre soit le prévisionnel, soit
   // l'écart (les deux sont visibles simultanément à partir de xl).
   let secondaryView = $state<'previsionnel' | 'ecart'>('previsionnel');
+  
+  let isSuggesting = $state(false);
+  
+  async function suggestBudget() {
+    isSuggesting = true;
+    try {
+      const response = await fetch(`/api/accounting/seasons/${selectedSeason}/ai/budget-suggestion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ report, categories, currentBudget: editableBudget })
+      });
+      const data = await response.json();
+      if (data.success && data.data?.suggestions) {
+        for (const sug of data.data.suggestions) {
+          const cat = categories.find(c => c.adminLabel === sug.categoryName);
+          if (cat) {
+            const key = `${cat.id}_${sug.type}`;
+            // Mettre à jour si vide ou 0 (ne pas écraser les valeurs déjà saisies)
+            if (!editableBudget[key] || editableBudget[key] === 0) {
+              editableBudget[key] = Math.round(sug.suggestedAmount * 100);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      isSuggesting = false;
+    }
+  }
 
   let {
     mode,
@@ -30,7 +63,8 @@
     getTotalRecettesRealise,
     totalDepensesPrevisionnel,
     totalRecettesPrevisionnel,
-    onSaveBudget
+    onSaveBudget,
+    userPermissions = []
   }: {
     mode: 'realise' | 'previsionnel';
     report: ReportData;
@@ -53,6 +87,7 @@
     totalDepensesPrevisionnel: number;
     totalRecettesPrevisionnel: number;
     onSaveBudget: () => void;
+    userPermissions?: string[];
   } = $props();
 
   const totalDepReal = $derived(getTotalDepensesRealise(mode));
@@ -174,7 +209,22 @@
           </Alert.Root>
         {/if}
         
-        <div class="flex justify-end">
+        <div class="flex justify-end gap-3">
+          {#if hasPermission(userPermissions, 'ai:*') || hasPermission(userPermissions, 'ai:chat')}
+            <Button
+              variant="outline"
+              onclick={suggestBudget}
+              disabled={isSuggesting}
+              class="flex items-center gap-1.5 border-primary/20 text-primary hover:bg-primary/5"
+            >
+              <Sparkles class="w-4 h-4" />
+              {#if isSuggesting}
+                Génération...
+              {:else}
+                Aide à la saisie IA
+              {/if}
+            </Button>
+          {/if}
           <Button
             onclick={onSaveBudget}
             disabled={isSaving}
@@ -191,3 +241,5 @@
     {/if}
   </Card.Content>
 </Card.Root>
+
+<ReportAIAnalysis {report} section="resultat" seasonId={selectedSeason} {userPermissions} />

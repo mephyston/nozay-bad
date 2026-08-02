@@ -24,10 +24,10 @@
   export * from './report-constants';
 
   let {
-    view, report, prevReport = null, seasonId, seasons = [], categories = [], accountClasses = [], budget = []
+    view, report, prevReport = null, seasonId, seasons = [], categories = [], accountClasses = [], budget = [], userPermissions = []
   }: {
     view: 'resultat' | 'analytique' | 'tresorerie' | 'budget';
-    report: ReportData; prevReport?: ReportData | null; seasonId: string; seasons?: Season[]; categories?: DbCategory[]; accountClasses?: AccountClass[]; budget?: BudgetRecord[];
+    report: ReportData; prevReport?: ReportData | null; seasonId: string; seasons?: Season[]; categories?: DbCategory[]; accountClasses?: AccountClass[]; budget?: BudgetRecord[]; userPermissions?: string[];
   } = $props();
 
   // svelte-ignore state_referenced_locally
@@ -139,7 +139,7 @@
     report, prevReport, selectedSeason, seasons, categories, chargeClasses, produitClasses,
     isClosed, isSaving, saveStatus, getClassCategories, getClassSumRealise, getClassSumPrevisionnel,
     getCatTotal, getTotalDepensesRealise, getTotalRecettesRealise, totalDepensesPrevisionnel,
-    totalRecettesPrevisionnel, onSaveBudget: handleSaveBudget
+    totalRecettesPrevisionnel, onSaveBudget: handleSaveBudget, userPermissions
   });
 </script>
 
@@ -182,7 +182,7 @@
       {/if}
 
       {#if view === 'tresorerie'}
-        <ReportTresorerieTab {report} {selectedSeason} {seasons} />
+        <ReportTresorerieTab {report} {selectedSeason} {seasons} {userPermissions} />
       {/if}
 
       {#if view === 'budget'}

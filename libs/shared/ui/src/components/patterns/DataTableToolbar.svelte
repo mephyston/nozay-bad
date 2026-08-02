@@ -40,7 +40,7 @@
   }
 </script>
 
-<div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center w-full sm:w-auto">
+<div class="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center w-full">
   {#if hasSearch}
     <div class="relative flex-1 sm:w-64">
       <Input
