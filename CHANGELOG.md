@@ -1,3 +1,10 @@
+# [1.0.0-beta.22](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.21...v1.0.0-beta.22) (2026-08-02)
+
+
+### Features
+
+* **admin:** redirect check metrics to check remittent functionality ([c81bf8d](https://github.com/mephyston/nozay-bad/commit/c81bf8de082e836a7bfbbe264ca8cda54125520a))
+
 # [1.0.0-beta.21](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.20...v1.0.0-beta.21) (2026-08-02)
 
 
