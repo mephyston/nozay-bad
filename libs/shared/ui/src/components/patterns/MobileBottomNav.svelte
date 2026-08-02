@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Menu, FileCheck, Landmark, Coins } from '@lucide/svelte';
+  import { Menu, Landmark, ShoppingCart, Receipt } from '@lucide/svelte';
   import { hasPermission } from '@nba/iam-ui';
   
   let {
@@ -16,7 +16,18 @@
     hasPermission(permissions, 'accounting:write')
   );
 
+  const canManageShop = $derived(
+    hasPermission(permissions, '*') || 
+    hasPermission(permissions, 'shop:*') || 
+    hasPermission(permissions, 'orders:*') || 
+    hasPermission(permissions, 'orders:create')
+  );
 
+  const canManageExpenses = $derived(
+    hasPermission(permissions, '*') || 
+    hasPermission(permissions, 'expenses:*') ||
+    hasPermission(permissions, 'expenses:create')
+  );
 </script>
 
 <div class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border flex items-center justify-around pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_10px_rgba(0,0,0,0.2)]">
@@ -46,34 +57,39 @@
       <span class="text-[11px] font-medium text-muted-foreground">Chèques</span>
     </a>
 
-    <!-- Saisir une dépense -->
-    <a 
-      href="/admin/accounting?action=new-depense"
-      class="flex flex-col items-center justify-center w-full py-3 gap-1 hover:bg-accent transition-colors decoration-transparent min-h-[56px]"
-      onclick={(e) => {
-        if (window.location.pathname.endsWith('/accounting') || window.location.pathname.endsWith('/accounting/')) {
-          e.preventDefault();
-          window.dispatchEvent(new CustomEvent('open-new-depense'));
-        }
-      }}
-    >
-      <Coins class="w-6 h-6 text-destructive" />
-      <span class="text-[11px] font-medium text-destructive">Dépense</span>
-    </a>
+  {/if}
 
-    <!-- Saisir une recette -->
+  {#if canManageShop}
+    <!-- Nouvelle Commande -->
     <a 
-      href="/admin/accounting?action=new-recette"
+      href="/admin/shop/orders?action=new-order"
       class="flex flex-col items-center justify-center w-full py-3 gap-1 hover:bg-accent transition-colors decoration-transparent min-h-[56px]"
       onclick={(e) => {
-        if (window.location.pathname.endsWith('/accounting') || window.location.pathname.endsWith('/accounting/')) {
+        if (window.location.pathname.includes('/shop/orders')) {
           e.preventDefault();
-          window.dispatchEvent(new CustomEvent('open-new-recette'));
+          window.dispatchEvent(new CustomEvent('open-new-order'));
         }
       }}
     >
-      <FileCheck class="w-6 h-6 text-success" />
-      <span class="text-[11px] font-medium text-success">Recette</span>
+      <ShoppingCart class="w-6 h-6 text-foreground" />
+      <span class="text-[11px] font-medium text-foreground">Commande</span>
+    </a>
+  {/if}
+
+  {#if canManageExpenses}
+    <!-- Nouvelle Note de Frais -->
+    <a 
+      href="/admin/expenses?action=new-expense"
+      class="flex flex-col items-center justify-center w-full py-3 gap-1 hover:bg-accent transition-colors decoration-transparent min-h-[56px]"
+      onclick={(e) => {
+        if (window.location.pathname.includes('/expenses')) {
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent('open-new-expense'));
+        }
+      }}
+    >
+      <Receipt class="w-6 h-6 text-foreground" />
+      <span class="text-[11px] font-medium text-foreground">Frais</span>
     </a>
   {/if}
 </div>
