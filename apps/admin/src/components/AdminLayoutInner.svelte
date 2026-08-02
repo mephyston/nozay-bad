@@ -262,7 +262,7 @@
                     <a
                       {...props}
                       href={item.href}
-                      class={[props.class, "font-medium md:font-normal transition-colors w-full"]}
+                      class="flex items-center gap-4 px-3 py-3 md:gap-3 md:py-2 group-data-[collapsible=icon]:!px-0 group-data-[collapsible=icon]:justify-center rounded-md text-base md:text-sm font-medium md:font-normal transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground w-full"
                     >
                       <item.icon class="h-5 w-5 md:h-4 md:w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
                       <span class="group-data-[collapsible=icon]:hidden">{item.name}</span>
