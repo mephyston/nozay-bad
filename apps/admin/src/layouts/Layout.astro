@@ -10,6 +10,10 @@ interface Props {
 }
 
 const { title } = Astro.props;
+let isStaging = false;
+try {
+  isStaging = (Astro.locals as any).runtime?.env?.APP_ENV === 'staging';
+} catch (e) {}
 ---
 
 <!doctype html>
@@ -105,6 +109,13 @@ const { title } = Astro.props;
     </style>
   </head>
   <body class="bg-background text-foreground min-h-screen antialiased font-sans relative">
+    {isStaging && (
+      <div class="fixed top-0 inset-x-0 z-[10000] pointer-events-none overflow-hidden h-32">
+        <div class="absolute top-6 -right-12 w-64 bg-destructive text-destructive-foreground text-center text-xs font-bold py-1 rotate-45 shadow-md border-y border-destructive-foreground/20 tracking-wider">
+          TEST / STAGING
+        </div>
+      </div>
+    )}
     <ModeWatcher client:load />
     
     <!-- PWA Splash Screen -->
@@ -121,8 +132,15 @@ const { title } = Astro.props;
           <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0s"></span>
         </div>
       </div>
-      <p class="mt-12 text-muted-foreground font-medium tracking-widest text-sm uppercase">Chargement</p>
-      <p class="mt-2 text-xs text-muted-foreground/60">v{pkg.version}</p>
+      <p class="mt-6 text-xs text-muted-foreground/60 font-medium tracking-widest uppercase">v{pkg.version}</p>
+      <div class="mt-8 flex flex-col items-center gap-4 relative z-10 w-full px-6">
+        <button onclick="document.getElementById('pwa-splash').style.opacity = '0'; setTimeout(() => document.getElementById('pwa-splash').remove(), 500)" class="w-full max-w-[200px] px-6 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors shadow-md">
+          Continuer
+        </button>
+        <a href="/changelog" class="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors">
+          Voir les nouveautés
+        </a>
+      </div>
     </div>
 
     <script is:inline>
@@ -132,14 +150,9 @@ const { title } = Astro.props;
         
         if (!isPWA) {
           if (splash) splash.style.display = 'none';
-        } else {
-          window.addEventListener('load', () => {
-            setTimeout(() => {
-              if (splash) splash.style.opacity = '0';
-              setTimeout(() => { if (splash) splash.remove(); }, 500);
-            }, 1200);
-          });
         }
+        // Pour les PWA, le splash screen reste visible jusqu'au clic sur Continuer
+
 
         // Cache instantanément le splash screen lors d'une navigation interne (Astro ViewTransitions)
         document.addEventListener('astro:after-swap', () => {

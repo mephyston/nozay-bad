@@ -17,6 +17,7 @@ interface Env {
   CF_TEAM_DOMAIN?: string;
   CF_AUDIENCE?: string;
   DB: import('@cloudflare/workers-types').D1Database;
+  APP_ENV?: string;
 }
 declare module 'cloudflare:workers' {
   export const env: Env;

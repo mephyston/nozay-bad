@@ -368,6 +368,9 @@
               </DropdownMenu.Content>
             </DropdownMenu.Root>
           {/if}
+          <Button href={`/admin/accounting/reports?season=${selectedSeason}&export=ledger`} class="h-9 gap-2 w-full sm:w-auto" variant="secondary" target="_blank" download>
+            Exporter (CSV)
+          </Button>
         {/snippet}
       </DataTableToolbar>
     {/snippet}

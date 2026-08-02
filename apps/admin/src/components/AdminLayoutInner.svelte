@@ -66,14 +66,14 @@
           { name: "Remises de chèques", icon: Landmark, href: "/admin/accounting/cheques" },
           { name: "Caisse", icon: Wallet, href: "/admin/accounting/cash-box" }
         ] : []),
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'expenses:*') ? [{ name: "Notes de frais", icon: Coins, href: "/admin/expenses" }] : [])
+        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'expenses:*') || hasPermission(permissions, 'expenses:read') || hasPermission(permissions, 'expenses:create') || hasPermission(permissions, 'expenses:update') || hasPermission(permissions, 'expenses:validate') ? [{ name: "Notes de frais", icon: Coins, href: "/admin/expenses" }] : [])
       ]
     },
     {
       label: "Boutique",
       items: [
         ...(hasPermission(permissions, '*') || hasPermission(permissions, 'shop:*') || hasPermission(permissions, 'shop:products') ? [{ name: "Produits", icon: Package, href: "/admin/shop/products" }] : []),
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'shop:*') || hasPermission(permissions, 'shop:orders') ? [{ name: "Commandes", icon: ShoppingCart, href: "/admin/shop/orders" }] : [])
+        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'shop:*') || hasPermission(permissions, 'orders:*') || hasPermission(permissions, 'orders:read') || hasPermission(permissions, 'orders:create') || hasPermission(permissions, 'orders:update') || hasPermission(permissions, 'orders:validate') ? [{ name: "Commandes", icon: ShoppingCart, href: "/admin/shop/orders" }] : [])
       ]
     },
     {

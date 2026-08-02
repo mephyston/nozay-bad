@@ -212,6 +212,9 @@
               <Plus class="w-4 h-4" /> Nouvelle facture
             </Button>
           {/if}
+          <Button href={`/admin/accounting/reports?season=${seasonId}&export=invoices`} class="h-9 gap-2 w-full sm:w-auto" variant="secondary" target="_blank" download>
+            Exporter (ZIP)
+          </Button>
         {/snippet}
       </DataTableToolbar>
     {/snippet}

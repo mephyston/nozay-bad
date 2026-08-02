@@ -9,8 +9,8 @@
     isClosed = false,
     categoryLabels = {},
     searchTerm = $bindable(''),
-    tabsNav,
     toolbarFilters,
+    toolbarActions,
     onSelectPhoto,
     onCancelValidation
   }: {
@@ -18,8 +18,8 @@
     isClosed?: boolean;
     categoryLabels: Record<string, string>;
     searchTerm: string;
-    tabsNav?: any;
     toolbarFilters?: any;
+    toolbarActions?: any;
     onSelectPhoto: (url: string) => void;
     onCancelValidation: (id: number) => void;
   } = $props();
@@ -28,14 +28,9 @@
 
 <DataTable
   data={historyExpenses}
-  emptyTitle="Aucun historique"
-  emptyDescription="Les dépenses approuvées ou rejetées apparaîtront ici."
+  emptyTitle="Aucun historique de notes de frais"
+  emptyDescription="Les dépenses validées ou rejetées apparaîtront ici."
 >
-  {#snippet toolbarStart()}
-    {#if tabsNav}
-      {@render tabsNav()}
-    {/if}
-  {/snippet}
 
   {#snippet toolbar()}
     <DataTableToolbar 
@@ -46,6 +41,11 @@
       {#snippet filters()}
         {#if toolbarFilters}
           {@render toolbarFilters()}
+        {/if}
+      {/snippet}
+      {#snippet actions()}
+        {#if toolbarActions}
+          {@render toolbarActions()}
         {/if}
       {/snippet}
     </DataTableToolbar>

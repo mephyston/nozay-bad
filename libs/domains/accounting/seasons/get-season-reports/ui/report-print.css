@@ -34,7 +34,7 @@
   .no-print {
     display: none !important;
   }
-  .report-screen {
+  .printing .report-screen {
     display: none !important;
   }
   .print-area {

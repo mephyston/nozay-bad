@@ -8,15 +8,13 @@
 
   let { 
     historyOrders = [],
-    seasonId,
-    seasons = [],
-    tabsNav,
+    toolbarFilters,
+    toolbarActions,
     searchTerm = $bindable('')
   }: { 
     historyOrders?: OrderItem[];
-    seasonId?: string;
-    seasons?: Season[];
-    tabsNav?: Snippet;
+    toolbarFilters?: Snippet;
+    toolbarActions?: Snippet;
     searchTerm?: string;
   } = $props();
 </script>
@@ -26,28 +24,23 @@
   emptyTitle="Aucun historique"
   emptyDescription="Aucun historique de commande disponible."
 >
-  {#snippet toolbarStart()}
-    {#if tabsNav}
-      {@render tabsNav()}
-    {/if}
-  {/snippet}
 
   {#snippet toolbar()}
     <DataTableToolbar
       bind:searchValue={searchTerm}
       searchPlaceholder="Rechercher une commande..."
-      hasFilters={true}
-      filtersActive={!!seasonId && seasons.length > 0}
+      hasFilters={!!toolbarFilters}
+      filtersActive={true}
     >
       {#snippet filters()}
-          <FormField id="filter-season-history" label="Saison">
-          <SearchableCombobox
-            id="filter-season-history"
-            items={seasons.length > 0 ? seasons.map((s) => ({ label: s.name, value: String(s.id) })) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
-            value={seasonId}
-            onValueChange={(v) => { const val = String(v); const params = new URLSearchParams(window.location.search); params.set('season', val); window.location.href = `/admin/shop/orders?${params.toString()}`; }}
-          />
-        </FormField>
+        {#if toolbarFilters}
+          {@render toolbarFilters()}
+        {/if}
+      {/snippet}
+      {#snippet actions()}
+        {#if toolbarActions}
+          {@render toolbarActions()}
+        {/if}
       {/snippet}
     </DataTableToolbar>
   {/snippet}

@@ -1,6 +1,6 @@
 ---
-import Layout from '../../../layouts/Layout.astro';
-import AdminLayout from '../../../components/AdminLayout.svelte';
+import Layout from '../../../../layouts/Layout.astro';
+import AdminLayout from '../../../../components/AdminLayout.svelte';
 import { PageHeader, ErrorAlert, SeasonSelector } from '@nba/ui';
 import { GeneralMeetingReport } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
@@ -10,6 +10,51 @@ const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
 const apiService = createApiClient(env);
 
 const requestedSeason = Astro.url.searchParams.get('season');
+const isExport = Astro.url.searchParams.get('export');
+const isPdf = Astro.url.searchParams.get('pdf');
+
+// Téléchargement PDF d'un rapport financier (compte de résultat, suivi
+// analytique, bilan de trésorerie). Le type découle du segment d'URL.
+if (isPdf && requestedSeason) {
+  const pdfTypeMap: Record<string, string> = {
+    'income-statement': 'income-statement',
+    'analytics': 'analytics',
+    'cash-flow': 'cash-flow'
+  };
+  const pdfType = pdfTypeMap[Astro.params.report || ''];
+  if (pdfType) {
+    try {
+      const pdfRes = await apiService.fetch(`http://localhost/accounting/seasons/${requestedSeason}/reports/pdf?type=${pdfType}`);
+      if (pdfRes.ok) {
+        return new Response(pdfRes.body, {
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': pdfRes.headers.get('Content-Disposition') || `inline; filename="rapport-${pdfType}-${requestedSeason}.pdf"`
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Report PDF failed', err);
+    }
+  }
+}
+
+if (isExport && requestedSeason) {
+  try {
+    const exportType = isExport === 'true' ? 'all' : isExport;
+    const exportRes = await apiService.fetch(`http://localhost/accounting/seasons/${requestedSeason}/export?type=${exportType}`);
+    if (exportRes.ok) {
+      return new Response(exportRes.body, {
+        headers: {
+          'Content-Type': exportRes.headers.get('Content-Type') || 'application/zip',
+          'Content-Disposition': exportRes.headers.get('Content-Disposition') || `attachment; filename="export-compta-${requestedSeason}.zip"`
+        }
+      });
+    }
+  } catch (err) {
+    console.error('Export failed', err);
+  }
+}
 
 // Si requête POST, intercepter pour modifier les soldes initiaux ou le budget (proxying)
 if (Astro.request.method === 'POST') {
@@ -126,14 +171,37 @@ try {
 } catch (err: any) {
   errorMsg = 'Impossible de charger les données du bilan AG.';
 }
+const { report: reportType } = Astro.params;
+const validReports: Record<string, { title: string, desc: string, view: 'resultat' | 'tresorerie' | 'budget' | 'analytique' }> = {
+  'income-statement': { title: 'Compte de Résultat', desc: 'Consultez les produits et charges pour la saison.', view: 'resultat' },
+  'analytics': { title: 'Suivi Analytique', desc: 'Détail des recettes et dépenses par catégorie analytique.', view: 'analytique' },
+  'cash-flow': { title: 'Bilan de Trésorerie', desc: 'Consultez les soldes initiaux et finaux des comptes financiers.', view: 'tresorerie' },
+  'forecast': { title: 'Budget Prévisionnel', desc: 'Préparez et consultez le budget de la saison.', view: 'budget' }
+};
+
+if (!reportType || !validReports[reportType]) {
+  return Astro.redirect('/admin/accounting/reports');
+}
+
+const currentReport = validReports[reportType];
 ---
 
-<Layout title="Rapports financiers - NBA 91">
-  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Rapports financiers" permissions={Astro.locals.user?.permissions || []}>
+<Layout title={`${currentReport.title} - NBA 91`}>
+  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb={`Comptabilité / Rapports / ${currentReport.title}`} permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
+      <div class="no-print">
+        <a
+          href="/admin/accounting/reports"
+          class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+          Retour aux rapports financiers
+        </a>
+      </div>
+
       <PageHeader
-        title="Rapports financiers"
-        description="Consultez les comptes de résultat, le bilan de trésorerie et gérez les budgets prévisionnels."
+        title={currentReport.title}
+        description={currentReport.desc}
       >
         <Fragment slot="actions">
           <SeasonSelector client:load seasons={seasonsList} current={season} />
@@ -142,7 +210,7 @@ try {
 
       {errorMsg && <ErrorAlert message={errorMsg} />}
 
-      <GeneralMeetingReport client:load report={reportData} prevReport={prevReportData} seasonId={season} seasons={seasonsList} categories={categoriesList} accountClasses={accountClassesList} budget={budgetList} />
+      <GeneralMeetingReport client:load view={currentReport.view} report={reportData} prevReport={prevReportData} seasonId={season} seasons={seasonsList} categories={categoriesList} accountClasses={accountClassesList} budget={budgetList} />
     </div>
   </AdminLayout>
 </Layout>

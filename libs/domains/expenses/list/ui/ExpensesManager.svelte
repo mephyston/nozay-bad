@@ -1,13 +1,16 @@
 <script lang="ts">
   import { FileText, Check, AlertCircle } from '@lucide/svelte';
-  import { Alert, Card, Tabs, uiConfirm, Badge, PageHeader, FormField, SearchableCombobox } from '@nba/ui';
+  import { Alert, Card, uiConfirm, Badge, PageHeader, FormField, SearchableCombobox, Button } from '@nba/ui';
   import type { Expense, Season, Category } from './expenses-types';
   import { getCategoryOptions, getCategoryLabels } from './expenses-types';
   import { ExpensesState } from './expenses-state.svelte';
   import * as api from './expenses-api';
+  import { onMount } from 'svelte';
   import ExpensePendingTable from './ExpensePendingTable.svelte';
   import ExpenseHistoryTable from './ExpenseHistoryTable.svelte';
   import ExpensePhotoModal from './ExpensePhotoModal.svelte';
+  import ExpenseReportForm from '../../create/ui/ExpenseReportForm.svelte';
+  import { Sheet } from '@nba/ui';
 
   let {
     expenses = [],
@@ -123,6 +126,26 @@
       window.location.href = `/admin/expenses?${params.toString()}`;
     }
   });
+
+  let isCreateSheetOpen = $state(false);
+
+  onMount(() => {
+    const handleOpenNewExpense = () => isCreateSheetOpen = true;
+    window.addEventListener('open-new-expense', handleOpenNewExpense);
+    return () => window.removeEventListener('open-new-expense', handleOpenNewExpense);
+  });
+
+  $effect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('action') === 'new-expense') {
+        isCreateSheetOpen = true;
+        params.delete('action');
+        const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
+  });
 </script>
 
 <div class="space-y-6">
@@ -139,27 +162,29 @@
     {/snippet}
   </PageHeader>
 
-  <Tabs.Root value={viewState.activeTab} onValueChange={(v) => viewState.activeTab = v as any} class="space-y-6">
-    {#snippet tabsNav()}
-      <Tabs.List class="w-full sm:w-fit justify-start sm:justify-center overflow-x-auto no-scrollbar mx-auto sm:mx-0 no-print">
-        <Tabs.Trigger value="pending">
-          En attente
-          {#if pendingCount > 0}
-            <Badge size="xs" shape="pill" class="ml-1.5">
-              {pendingCount}
-            </Badge>
-          {/if}
-        </Tabs.Trigger>
-        <Tabs.Trigger value="history">
-          Historique / Traités
-        </Tabs.Trigger>
-      </Tabs.List>
+    {#snippet toolbarFilters()}
+      <FormField id="filter-season" label="Saison">
+        <SearchableCombobox id="filter-season" items={seasons.map((s) => ({ label: s.name, value: String(s.code || s.id) }))} bind:value={selectedSeason} />
+      </FormField>
+      <FormField id="filter-status" label="Statut">
+        <SearchableCombobox 
+          id="filter-status" 
+          items={[
+            { label: `En attente (${pendingCount})`, value: 'pending' }, 
+            { label: 'Historique', value: 'history' }
+          ]} 
+          bind:value={viewState.activeTab} 
+        />
+      </FormField>
     {/snippet}
 
-    {#snippet toolbarFilters()}
-        <FormField id="filter-season" label="Saison">
-        <SearchableCombobox id="filter-season" items={seasons.map((s) => ({ label: s.name, value: String(s.id) }))} bind:value={selectedSeason} />
-      </FormField>
+    {#snippet toolbarActions()}
+      <Button variant="default" class="h-9 gap-2 w-full sm:w-auto" onclick={() => isCreateSheetOpen = true}>
+        Créer une note de frais
+      </Button>
+      <Button href={`/admin/accounting/reports?season=${seasonId}&export=expenses`} class="h-9 gap-2 w-full sm:w-auto" variant="secondary" target="_blank" download>
+        Exporter (ZIP)
+      </Button>
     {/snippet}
 
     {#if viewState.successMsg}
@@ -178,7 +203,7 @@
       </Alert.Root>
     {/if}
 
-    <Tabs.Content value="pending">
+    {#if viewState.activeTab === 'pending'}
       <ExpensePendingTable
         {pendingExpenses}
         {isClosed}
@@ -193,27 +218,35 @@
         {categoryLabels}
         {seasons}
         bind:searchTerm={viewState.searchTerm}
-        {tabsNav}
         {toolbarFilters}
+        {toolbarActions}
         onSelectPhoto={(url) => viewState.selectedPhoto = url}
         onStartEdit={(e) => viewState.startEdit(e)}
         onSaveEdit={saveEdit}
         onAction={handleAction}
       />
-    </Tabs.Content>
-    <Tabs.Content value="history">
+    {:else}
       <ExpenseHistoryTable
         {historyExpenses}
         {isClosed}
         {categoryLabels}
         bind:searchTerm={viewState.searchTerm}
-        {tabsNav}
         {toolbarFilters}
+        {toolbarActions}
         onSelectPhoto={(url) => viewState.selectedPhoto = url}
         onCancelValidation={handleCancelValidation}
       />
-    </Tabs.Content>
-  </Tabs.Root>
+    {/if}
 </div>
 
 <ExpensePhotoModal bind:selectedPhoto={viewState.selectedPhoto} />
+
+<Sheet.Root bind:open={isCreateSheetOpen}>
+  <Sheet.Content side="right" class="w-full sm:max-w-2xl overflow-y-auto pt-6 px-4 pb-12">
+    <ExpenseReportForm
+      activeSeasonId={seasonId}
+      members={[]}
+      categories={categories}
+    />
+  </Sheet.Content>
+</Sheet.Root>

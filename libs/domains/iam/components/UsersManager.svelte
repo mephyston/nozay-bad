@@ -26,15 +26,23 @@
         { value: 'accounting:*', label: 'Accès complet', desc: 'Trésorier' },
         { value: 'accounting:reports', label: 'Rapports uniquement', desc: 'Lecture du tableau de bord et rapports' },
         { value: 'accounting:invoices', label: 'Gestion des factures', desc: 'Consulter et ajouter des factures' },
-        { value: 'expenses:*', label: 'Notes de frais', desc: 'Validation des notes de frais' }
+        { value: 'expenses:*', label: 'Notes de frais (Complet)', desc: 'Gestion complète des notes de frais' },
+        { value: 'expenses:read', label: 'Notes de frais (Lecture)', desc: 'Consulter les notes de frais existantes' },
+        { value: 'expenses:create', label: 'Notes de frais (Création)', desc: 'Soumettre de nouvelles notes de frais' },
+        { value: 'expenses:update', label: 'Notes de frais (Modification)', desc: 'Modifier les notes de frais' },
+        { value: 'expenses:validate', label: 'Notes de frais (Validation)', desc: 'Approuver et rembourser les notes de frais' }
       ]
     },
     {
-      name: 'Boutique',
+      name: 'Boutique & Commandes',
       permissions: [
         { value: 'shop:*', label: 'Accès complet', desc: 'Gestion complète de la boutique' },
         { value: 'shop:products', label: 'Gestion des produits', desc: 'Ajouter/Modifier des articles (Coach)' },
-        { value: 'shop:orders', label: 'Gestion des commandes', desc: 'Suivre et encaisser les commandes' }
+        { value: 'orders:*', label: 'Commandes (Complet)', desc: 'Gestion complète des commandes' },
+        { value: 'orders:read', label: 'Commandes (Lecture)', desc: 'Consulter l\'historique des commandes' },
+        { value: 'orders:create', label: 'Commandes (Création)', desc: 'Créer de nouvelles commandes' },
+        { value: 'orders:update', label: 'Commandes (Modification)', desc: 'Modifier des commandes existantes' },
+        { value: 'orders:validate', label: 'Commandes (Validation)', desc: 'Valider et encaisser les commandes' }
       ]
     },
     {
@@ -170,9 +178,12 @@
                             {#if selectedPermissions.length === 0}
                               <span class="text-muted-foreground">Sélectionner des droits...</span>
                             {:else}
-                              {#each selectedPermissions as p}
+                              {#each selectedPermissions.slice(0, 2) as p}
                                 <Badge variant={p === '*' ? 'destructive' : 'secondary'} size="xs">{getLabelForPerm(p)}</Badge>
                               {/each}
+                              {#if selectedPermissions.length > 2}
+                                <Badge variant="outline" size="xs">+{selectedPermissions.length - 2}</Badge>
+                              {/if}
                             {/if}
                           </div>
                           <ChevronDown class="h-4 w-4 opacity-50 shrink-0 ml-2" />

@@ -24,23 +24,18 @@
   export * from './report-constants';
 
   let {
-    report, prevReport = null, seasonId, seasons = [], categories = [], accountClasses = [], budget = []
+    view, report, prevReport = null, seasonId, seasons = [], categories = [], accountClasses = [], budget = []
   }: {
+    view: 'resultat' | 'analytique' | 'tresorerie' | 'budget';
     report: ReportData; prevReport?: ReportData | null; seasonId: string; seasons?: Season[]; categories?: DbCategory[]; accountClasses?: AccountClass[]; budget?: BudgetRecord[];
   } = $props();
 
   // svelte-ignore state_referenced_locally
   let selectedSeason = $state(seasonId);
-  let activeTab = $state<'resultat' | 'analytique' | 'tresorerie' | 'budget'>('resultat');
   let editableBudget = $state<Record<string, number>>({});
   let isSaving = $state(false);
   let saveStatus = $state<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  function handleTabChange(newTab: string) {
-    activeTab = newTab as 'resultat' | 'analytique' | 'tresorerie' | 'budget';
-  }
-
-  // Impression ciblée : on n'imprime qu'une seule section à la fois.
   type PrintTarget = 'resultat' | 'graph-realise' | 'graph-prev';
   let printTarget = $state<PrintTarget | null>(null);
 
@@ -52,6 +47,13 @@
     requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
   }
 
+  // Rapports financiers en PDF (en-tête/pied de page club) : le type découle
+  // du segment d'URL courant, on ne fait qu'ajouter la saison + le drapeau pdf.
+  // Servi en « inline » → s'ouvre dans un nouvel onglet plutôt que téléchargé.
+  function openPdf() {
+    window.open(`${window.location.pathname}?pdf=1&season=${encodeURIComponent(selectedSeason)}`, '_blank');
+  }
+
   // La classe cible est retirée une fois la boîte d'impression fermée.
   $effect(() => {
     const clear = () => { printTarget = null; };
@@ -61,7 +63,8 @@
 
   $effect(() => {
     const newMap: Record<string, number> = {};
-    for (const item of budget as any[]) newMap[`${item.categoryId}_${item.type}`] = item.amountCents !== undefined ? item.amountCents / 100 : (item.amount || 0);
+    // editableBudget est en CENTIMES (les inputs affichent /100, cf. colonnes).
+    for (const item of budget as any[]) newMap[`${item.categoryId}_${item.type}`] = item.amountCents ?? item.amount ?? 0;
     for (const cat of categories) {
       if (cat.receiptCode) { const key = `${cat.id}_recette`; if (newMap[key] === undefined) newMap[key] = 0; }
       if (cat.expenseCode) { const key = `${cat.id}_depense`; if (newMap[key] === undefined) newMap[key] = 0; }
@@ -107,7 +110,7 @@
     saveStatus = null;
     try {
       const payload: BudgetRecord[] = Object.entries(editableBudget)
-        .map(([key, amount]) => { const [catIdStr, type] = key.split('_'); return { categoryId: parseInt(catIdStr), type: type as 'recette' | 'depense', amount: Math.round((Number(amount) || 0) * 100) }; })
+        .map(([key, amount]) => { const [catIdStr, type] = key.split('_'); return { categoryId: parseInt(catIdStr), type: type as 'recette' | 'depense', amount: Math.round(Number(amount) || 0) }; })
         .filter(item => !isNaN(item.categoryId));
 
       const res = await fetch(window.location.pathname, {
@@ -141,54 +144,52 @@
 </script>
 
 <div class="space-y-6 {printTarget ? `printing print-${printTarget}` : ''}">
-  <!-- ÉCRAN : navigation par onglets (masquée à l'impression). -->
-  <div class="report-screen">
-    <Tabs.Root value={activeTab} onValueChange={handleTabChange} class="space-y-6">
-      <!-- Onglets centrés + bouton d'impression aligné sur la même ligne, à droite. -->
-      <div class="flex items-center gap-3 mb-6">
-        <div class="hidden sm:block flex-1"></div>
-        <Tabs.List class="w-full sm:w-fit justify-start sm:justify-center overflow-x-auto no-scrollbar">
-          <Tabs.Trigger value="resultat">Compte de résultat</Tabs.Trigger>
-          <Tabs.Trigger value="analytique">Suivi Analytique</Tabs.Trigger>
-          <Tabs.Trigger value="tresorerie">Bilan de trésorerie</Tabs.Trigger>
-          <Tabs.Trigger value="budget">Budget prévisionnel</Tabs.Trigger>
-        </Tabs.List>
-        <div class="flex-1 flex justify-end no-print">
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger>
-              {#snippet child({ props })}
-                <Button {...props} class="h-9 gap-2">
-                  Imprimer <ChevronDown class="w-4 h-4" />
-                </Button>
-              {/snippet}
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="end">
-              <DropdownMenu.Item onclick={() => printSection('resultat')} class="font-medium cursor-pointer">Compte de résultat</DropdownMenu.Item>
-              <DropdownMenu.Item onclick={() => printSection('graph-realise')} class="font-medium cursor-pointer">Graphiques réalisés</DropdownMenu.Item>
-              <DropdownMenu.Item onclick={() => printSection('graph-prev')} class="font-medium cursor-pointer">Graphique prévisionnel</DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
-        </div>
-      </div>
+  {#if view !== 'budget'}
+    <div class="flex justify-end mb-6 no-print">
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <Button {...props} class="h-9 gap-2">
+              Imprimer <ChevronDown class="w-4 h-4" />
+            </Button>
+          {/snippet}
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content align="end">
+          {#if view === 'resultat'}
+            <DropdownMenu.Item onclick={openPdf} class="font-medium cursor-pointer">Compte de résultat (PDF)</DropdownMenu.Item>
+            <DropdownMenu.Item onclick={() => printSection('graph-realise')} class="font-medium cursor-pointer">Graphiques réalisés</DropdownMenu.Item>
+          {/if}
+          {#if view === 'analytique'}
+            <DropdownMenu.Item onclick={openPdf} class="font-medium cursor-pointer">Suivi analytique (PDF)</DropdownMenu.Item>
+          {/if}
+          {#if view === 'tresorerie'}
+            <DropdownMenu.Item onclick={openPdf} class="font-medium cursor-pointer">Bilan de trésorerie (PDF)</DropdownMenu.Item>
+          {/if}
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    </div>
+  {/if}
 
-      <Tabs.Content value="resultat" class="space-y-6">
+  <div class="report-screen">
+    <div class="space-y-6">
+      {#if view === 'resultat'}
         <ReportCompteResultatCard mode="realise" bind:editableBudget {...compResultatProps} />
         <ReportGraphiquesCard mode="realise" chargesData={chargesChartDataRealise} recettesData={recettesChartDataRealise} />
-      </Tabs.Content>
+      {/if}
 
-      <Tabs.Content value="analytique" class="space-y-6">
+      {#if view === 'analytique'}
         <ReportAnalytiqueTab report={report} categories={categories} />
-      </Tabs.Content>
+      {/if}
 
-      <Tabs.Content value="tresorerie" class="space-y-6">
+      {#if view === 'tresorerie'}
         <ReportTresorerieTab {report} {selectedSeason} {seasons} />
-      </Tabs.Content>
+      {/if}
 
-      <Tabs.Content value="budget" class="space-y-6">
+      {#if view === 'budget'}
         <ReportCompteResultatCard mode="previsionnel" bind:editableBudget {...compResultatProps} />
         <ReportGraphiquesCard mode="previsionnel" chargesData={chargesChartDataPrevisionnel} recettesData={recettesChartDataPrevisionnel} />
-      </Tabs.Content>
-    </Tabs.Root>
+      {/if}
+    </div>
   </div>
 
   <!--

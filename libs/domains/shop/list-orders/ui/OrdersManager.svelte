@@ -4,21 +4,25 @@
 </script>
 <script lang="ts">
   import { Check, AlertCircle } from "@lucide/svelte";
-  import { Tabs, Alert } from"@nba/ui";
+  import { onMount } from "svelte";
+  import { Alert, Button, Sheet } from"@nba/ui";
   import type { OrderItem, Season } from './orders-manager-types';
   import { paymentMethodLabels } from './orders-manager-types';
   import { approveOrder, rejectOrder } from './orders-manager-actions';
-  import OrdersTabsNav from './OrdersTabsNav.svelte';
   import OrdersPendingTable from './OrdersPendingTable.svelte';
   import OrdersHistoryTable from './OrdersHistoryTable.svelte';
+  import ShopCatalog from '../../list-products/ui/ShopCatalog.svelte';
+  import { SearchableCombobox, FormField } from "@nba/ui";
 
   let {
     seasons = [],
     orders = [],
+    products = [],
     seasonId
   }: {
     seasons: Season[];
     orders: OrderItem[];
+    products?: any[];
     seasonId: string;
   } = $props();
 
@@ -31,9 +35,39 @@
   let processingId = $state<number | null>(null);
   let errorMsg = $state<string | null>(null);
   let successMsg = $state<string | null>(null);
+  let isCreateSheetOpen = $state(false);
+
+  onMount(() => {
+    const handleOpenNewOrder = () => isCreateSheetOpen = true;
+    window.addEventListener('open-new-order', handleOpenNewOrder);
+    return () => window.removeEventListener('open-new-order', handleOpenNewOrder);
+  });
 
   $effect(() => {
     ordersList = orders;
+  });
+
+  $effect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('action') === 'new-order') {
+        isCreateSheetOpen = true;
+        params.delete('action');
+        const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
+  });
+
+  // svelte-ignore state_referenced_locally
+  let selectedSeason = $state(seasonId);
+
+  $effect(() => {
+    if (selectedSeason !== seasonId) {
+      const params = new URLSearchParams(window.location.search);
+      params.set('season', selectedSeason);
+      window.location.href = `/admin/shop/orders?${params.toString()}`;
+    }
   });
 
   let filteredOrders = $derived(
@@ -117,40 +151,59 @@
     </Alert.Root>
   {/if}
 
-  <Tabs.Root value={activeTab} onValueChange={(v) => { activeTab = v as any; errorMsg = null; successMsg = null; }}>
-    {#snippet tabsNav()}
-      <OrdersTabsNav
-        pendingCount={pendingOrders.length}
-        historyCount={historyOrders.length}
+  {#snippet toolbarFilters()}
+    <FormField id="filter-season" label="Saison">
+      <SearchableCombobox 
+        id="filter-season" 
+        items={seasons.length > 0 ? seasons.map((s) => ({ label: s.name, value: String(s.id) })) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
+        bind:value={selectedSeason} 
       />
-    {/snippet}
+    </FormField>
+    <FormField id="filter-status" label="Statut">
+      <SearchableCombobox 
+        id="filter-status" 
+        items={[
+          { label: `En attente (${pendingOrders.length})`, value: 'pending' }, 
+          { label: 'Historique', value: 'history' }
+        ]} 
+        bind:value={activeTab} 
+      />
+    </FormField>
+  {/snippet}
 
-    <Tabs.Content value="pending">
-      {#if activeTab === 'pending'}
-        <OrdersPendingTable
-          {pendingOrders}
-          {processingId}
-          {isClosed}
-          {seasonId}
-          {seasons}
-          {tabsNav}
-          bind:searchTerm
-          onApprove={handleApprove}
-          onReject={handleReject}
-        />
-      {/if}
-    </Tabs.Content>
+  {#snippet toolbarActions()}
+    <Button variant="default" class="h-9 gap-2 w-full sm:w-auto" onclick={() => isCreateSheetOpen = true}>
+      Créer une commande
+    </Button>
+  {/snippet}
 
-    <Tabs.Content value="history">
-      {#if activeTab === 'history'}
-        <OrdersHistoryTable 
-          {historyOrders}
-          {seasonId}
-          {seasons}
-          {tabsNav}
-          bind:searchTerm
-        />
-      {/if}
-    </Tabs.Content>
-  </Tabs.Root>
+  {#if activeTab === 'pending'}
+    <OrdersPendingTable
+      {pendingOrders}
+      {processingId}
+      {isClosed}
+      {toolbarFilters}
+      {toolbarActions}
+      bind:searchTerm
+      onApprove={handleApprove}
+      onReject={handleReject}
+    />
+  {:else}
+    <OrdersHistoryTable 
+      {historyOrders}
+      {toolbarFilters}
+      {toolbarActions}
+      bind:searchTerm
+    />
+  {/if}
 </div>
+
+<Sheet.Root bind:open={isCreateSheetOpen}>
+  <Sheet.Content side="right" class="w-full sm:max-w-2xl overflow-y-auto pt-6 px-4 pb-12">
+    <ShopCatalog
+      products={products}
+      members={[]}
+      activeSeasonId={seasonId}
+    />
+  </Sheet.Content>
+</Sheet.Root>

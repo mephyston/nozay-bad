@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Input } from '@nba/ui';
   import type { ReportData, Season, DbCategory, AccountClass } from './report-types';
-  import { formatAmount, getPreviousSeasonId } from './report-utils';
+  import { formatAmount, formatDelta, getPreviousSeasonId } from './report-utils';
 
   let {
     mode,
@@ -11,6 +11,7 @@
     produitClasses,
     editableBudget = $bindable({}),
     isClosed,
+    secondaryView = 'previsionnel',
     getClassCategories,
     getClassSumRealise,
     getClassSumPrevisionnel,
@@ -27,6 +28,8 @@
     produitClasses: AccountClass[];
     editableBudget: Record<string, number>;
     isClosed: boolean;
+    // Sur écran étroit (< lg) : quelle 2e colonne afficher (compte de résultat).
+    secondaryView?: 'previsionnel' | 'ecart';
     getClassCategories: (classCode: string, type: 'recette' | 'depense') => DbCategory[];
     getClassSumRealise: (classCode: string, type: 'recette' | 'depense', mode: 'realise' | 'previsionnel') => number;
     getClassSumPrevisionnel: (classCode: string, type: 'recette' | 'depense') => number;
@@ -36,6 +39,13 @@
     totalRecReal: number;
     totalRecettesPrevisionnel: number;
   } = $props();
+
+  // Colonnes Prévisionnel / Écart : les deux visibles dès xl ; sous xl, une seule
+  // selon le switch (l'Écart n'existe que pour le compte de résultat réalisé).
+  const prevCls = $derived(mode === 'realise' && secondaryView === 'ecart' ? 'hidden xl:block' : '');
+  const ecartCls = $derived(secondaryView === 'ecart' ? '' : 'hidden xl:block');
+  // Recette : réalisé > prévu = favorable (vert), en-dessous = défavorable (rouge).
+  const ecartColor = (diff: number) => (diff === 0 ? 'text-muted-foreground' : diff > 0 ? 'text-success' : 'text-destructive');
 </script>
 
 <div data-report-col="produits" class="space-y-4 pl-0 md:pl-6 pt-6 md:pt-0 flex flex-col justify-between">
@@ -44,10 +54,13 @@
       <span class="text-sm font-bold text-success">PRODUITS (Recettes)</span>
       <div class="flex gap-8 text-[11px]">
         <span class="w-20 text-right font-semibold">Réalisé</span>
-        <span class="w-20 text-right font-semibold">Prévisionnel</span>
+        <span class="w-20 text-right font-semibold {prevCls}">Prévisionnel</span>
+        {#if mode === 'realise'}
+          <span class="w-20 text-right font-semibold {ecartCls}">Écart</span>
+        {/if}
       </div>
     </div>
-    
+
     <div class="space-y-4 mt-4">
       {#each produitClasses as pc}
         {#if mode === 'previsionnel' || getClassSumRealise(pc.code, 'recette', mode) > 0 || getClassSumPrevisionnel(pc.code, 'recette') > 0}
@@ -56,10 +69,14 @@
               <a href="/admin/accounting?season={selectedSeason}&classCode={pc.code}" class="hover:underline hover:text-primary transition-colors cursor-pointer text-foreground/90 print:no-underline" title="Voir les écritures dans le grand livre">{pc.label}</a>
               <div class="flex gap-8 font-outfit tabular-nums">
                 <span class="w-20 text-right">{formatAmount(getClassSumRealise(pc.code, 'recette', mode))}</span>
-                <span class="w-20 text-right">{formatAmount(getClassSumPrevisionnel(pc.code, 'recette'))}</span>
+                <span class="w-20 text-right {prevCls}">{formatAmount(getClassSumPrevisionnel(pc.code, 'recette'))}</span>
+                {#if mode === 'realise'}
+                  {@const diff = getClassSumRealise(pc.code, 'recette', mode) - getClassSumPrevisionnel(pc.code, 'recette')}
+                  <span class="w-20 text-right {ecartCls} {ecartColor(diff)}">{formatDelta(diff)}</span>
+                {/if}
               </div>
             </div>
-            
+
             <div class="pl-4 space-y-1 text-xs text-muted-foreground">
               {#each getClassCategories(pc.code, 'recette') as cat}
                 {#if mode === 'previsionnel' || getCatTotal(cat.id.toString(), 'recette', mode) > 0 || (editableBudget[`${cat.id}_recette`] || 0) > 0}
@@ -84,7 +101,11 @@
                           <span class="hidden print:inline text-right w-full">{formatAmount(editableBudget[`${cat.id}_recette`] || 0)}</span>
                         </div>
                       {:else}
-                        <span class="w-20 text-right">{formatAmount(editableBudget[`${cat.id}_recette`] || 0)}</span>
+                        <span class="w-20 text-right {prevCls}">{formatAmount(editableBudget[`${cat.id}_recette`] || 0)}</span>
+                      {/if}
+                      {#if mode === 'realise'}
+                        {@const diff = getCatTotal(cat.id.toString(), 'recette', mode) - (editableBudget[`${cat.id}_recette`] || 0)}
+                        <span class="w-20 text-right {ecartCls} {ecartColor(diff)}">{formatDelta(diff)}</span>
                       {/if}
                     </div>
                   </div>
@@ -103,7 +124,8 @@
         <span>Déficit de l'exercice (Perte)</span>
         <div class="flex gap-8 font-outfit tabular-nums">
           <span class="w-20 text-right">{netResReal < 0 ? formatAmount(-netResReal) : formatAmount(0)}</span>
-          <span class="w-20 text-right">{netResPrev < 0 ? formatAmount(-netResPrev) : formatAmount(0)}</span>
+          <span class="w-20 text-right {prevCls}">{netResPrev < 0 ? formatAmount(-netResPrev) : formatAmount(0)}</span>
+          {#if mode === 'realise'}<span class="w-20 {ecartCls}"></span>{/if}
         </div>
       </div>
     {/if}
@@ -111,7 +133,8 @@
       <span>TOTAL GÉNÉRAL</span>
       <div class="flex gap-8 font-outfit tabular-nums">
         <span class="w-20 text-right">{formatAmount(netResReal < 0 ? totalRecReal + (-netResReal) : totalRecReal)}</span>
-        <span class="w-20 text-right">{formatAmount(netResPrev < 0 ? totalRecettesPrevisionnel + (-netResPrev) : totalRecettesPrevisionnel)}</span>
+        <span class="w-20 text-right {prevCls}">{formatAmount(netResPrev < 0 ? totalRecettesPrevisionnel + (-netResPrev) : totalRecettesPrevisionnel)}</span>
+        {#if mode === 'realise'}<span class="w-20 {ecartCls}"></span>{/if}
       </div>
     </div>
   </div>

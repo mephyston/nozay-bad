@@ -10,11 +10,35 @@ import { createApiClient } from '@nba/api-client';
 const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
 const apiService = createApiClient(env);
 
-const season = Astro.url.searchParams.get('season') || '25-26';
+let season = Astro.url.searchParams.get('season') || '';
+
+const userPerms = Astro.locals.user?.permissions || [];
+import { hasPermission } from '@nba/iam-ui';
+
+if (!hasPermission(userPerms, '*') && !hasPermission(userPerms, 'expenses:*') && !hasPermission(userPerms, 'expenses:read') && !hasPermission(userPerms, 'expenses:create') && !hasPermission(userPerms, 'expenses:validate')) {
+  return Astro.redirect('/?error=forbidden');
+}
 
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
+    
+    const canValidate = hasPermission(userPerms, '*') || hasPermission(userPerms, 'expenses:*') || hasPermission(userPerms, 'expenses:validate');
+    const canCreate = hasPermission(userPerms, '*') || hasPermission(userPerms, 'expenses:*') || hasPermission(userPerms, 'expenses:create');
+    const canUpdate = hasPermission(userPerms, '*') || hasPermission(userPerms, 'expenses:*') || hasPermission(userPerms, 'expenses:update');
+    
+    if (['approve', 'reject', 'cancel'].includes(data.action) && !canValidate) {
+      return new Response("Accès refusé. Droits de validation requis.", { status: 403 });
+    }
+    
+    if (['expense'].includes(data.action) && !canCreate) {
+      return new Response("Accès refusé. Droits de création requis.", { status: 403 });
+    }
+
+    if (['update'].includes(data.action) && !canUpdate) {
+      return new Response("Accès refusé. Droits de modification requis.", { status: 403 });
+    }
+
     if (data.action === 'approve') {
       const apiRes = await apiService.fetch(`http://localhost/expenses/${data.id}/approve`, {
         method: 'POST'
@@ -45,6 +69,16 @@ if (Astro.request.method === 'POST') {
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
+    } else if (data.action === 'expense') {
+      const apiRes = await apiService.fetch('http://localhost/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data.data)
+      });
+      if (!apiRes.ok) {
+        return new Response(JSON.stringify({ success: false, error: await apiRes.text() }), { status: 400 });
+      }
+      return new Response(JSON.stringify({ success: true }));
     }
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' }
@@ -60,9 +94,22 @@ let categoriesList = [];
 let errorMsg = '';
 
 try {
-  const [expensesRes, seasonsRes, categoriesRes] = await Promise.all([
+  // 1. Fetch seasons first
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasonsList = json.data || [];
+    seasonsList.sort((a: any, b: any) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
+  }
+
+  if (!season) {
+    const activeSeason = seasonsList.find((s: any) => s.active === true || s.active === 1) || seasonsList[seasonsList.length - 1];
+    season = activeSeason ? (activeSeason.code || String(activeSeason.id)) : '25-26';
+  }
+
+  // 2. Fetch expenses for that season
+  const [expensesRes, categoriesRes] = await Promise.all([
     apiService.fetch(`http://localhost/expenses?season=${season}`),
-    apiService.fetch('http://localhost/accounting/seasons'),
     apiService.fetch('http://localhost/accounting/categories')
   ]);
 
@@ -73,11 +120,6 @@ try {
       amount: exp.amountCents,
       category: exp.categoryId
     }));
-  }
-
-  if (seasonsRes.ok) {
-    const json = await seasonsRes.json() as any;
-    seasonsList = json.data || [];
   }
 
   if (categoriesRes.ok) {

@@ -20,8 +20,8 @@
     categoryLabels = {},
     seasons = [],
     searchTerm = $bindable(''),
-    tabsNav,
     toolbarFilters,
+    toolbarActions,
     onSelectPhoto,
     onStartEdit,
     onSaveEdit,
@@ -40,8 +40,8 @@
     categoryLabels: Record<string, string>;
     seasons: Season[];
     searchTerm: string;
-    tabsNav?: any;
     toolbarFilters?: any;
+    toolbarActions?: any;
     onSelectPhoto: (url: string) => void;
     onStartEdit: (exp: Expense) => void;
     onSaveEdit: (id: number) => void;
@@ -54,11 +54,6 @@
   emptyTitle="Aucune note de frais en attente"
   emptyDescription="Toutes les dépenses soumises ont été validées ou rejetées."
 >
-  {#snippet toolbarStart()}
-    {#if tabsNav}
-      {@render tabsNav()}
-    {/if}
-  {/snippet}
 
   {#snippet toolbar()}
     <DataTableToolbar 
@@ -69,6 +64,11 @@
       {#snippet filters()}
         {#if toolbarFilters}
           {@render toolbarFilters()}
+        {/if}
+      {/snippet}
+      {#snippet actions()}
+        {#if toolbarActions}
+          {@render toolbarActions()}
         {/if}
       {/snippet}
     </DataTableToolbar>

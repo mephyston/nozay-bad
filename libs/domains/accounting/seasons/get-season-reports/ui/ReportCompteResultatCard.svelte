@@ -4,6 +4,10 @@
   import ReportChargesColumn from './ReportChargesColumn.svelte';
   import ReportProduitsColumn from './ReportProduitsColumn.svelte';
 
+  // Sur écran étroit (< xl) : la 2e colonne montre soit le prévisionnel, soit
+  // l'écart (les deux sont visibles simultanément à partir de xl).
+  let secondaryView = $state<'previsionnel' | 'ecart'>('previsionnel');
+
   let {
     mode,
     report,
@@ -65,10 +69,29 @@
       <p class="text-xs text-muted-foreground">Saison {seasons.find(s => s.id === selectedSeason)?.name || selectedSeason}</p>
     </div>
 
-    <div class="flex items-center justify-between border-b border-border pb-4 no-print">
+    <div class="flex items-center justify-between gap-3 border-b border-border pb-4 no-print">
       <h3 class="text-lg font-semibold">
         {mode === 'realise' ? 'Compte de Résultat' : 'Budget Prévisionnel'}
       </h3>
+      {#if mode === 'realise'}
+        <!-- Segmented control mobile/tablette : bascule la 2e colonne (masqué dès xl
+             où les 3 colonnes tiennent). Boutons collés, arrondis extérieurs,
+             vue active en couleur primaire. -->
+        <div class="inline-flex shrink-0 overflow-hidden rounded-lg border border-input xl:hidden" role="group" aria-label="Colonne à afficher">
+          <button
+            type="button"
+            aria-pressed={secondaryView === 'previsionnel'}
+            onclick={() => secondaryView = 'previsionnel'}
+            class="h-7 px-3 text-xs font-medium transition-colors {secondaryView === 'previsionnel' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}"
+          >Prévu</button>
+          <button
+            type="button"
+            aria-pressed={secondaryView === 'ecart'}
+            onclick={() => secondaryView = 'ecart'}
+            class="h-7 border-l border-input px-3 text-xs font-medium transition-colors {secondaryView === 'ecart' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}"
+          >Écart</button>
+        </div>
+      {/if}
     </div>
 
     <div class="grid gap-6 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
@@ -80,6 +103,7 @@
         {chargeClasses}
         bind:editableBudget
         {isClosed}
+        {secondaryView}
         {getClassCategories}
         {getClassSumRealise}
         {getClassSumPrevisionnel}
@@ -98,6 +122,7 @@
         {produitClasses}
         bind:editableBudget
         {isClosed}
+        {secondaryView}
         {getClassCategories}
         {getClassSumRealise}
         {getClassSumPrevisionnel}

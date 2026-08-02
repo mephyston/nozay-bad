@@ -10,9 +10,8 @@
     pendingOrders = [],
     processingId = null,
     isClosed = false,
-    seasonId,
-    seasons = [],
-    tabsNav,
+    toolbarFilters,
+    toolbarActions,
     searchTerm = $bindable(''),
     onApprove,
     onReject
@@ -20,9 +19,8 @@
     pendingOrders?: OrderItem[];
     processingId?: number | null;
     isClosed?: boolean;
-    seasonId?: string;
-    seasons?: Season[];
-    tabsNav?: Snippet;
+    toolbarFilters?: Snippet;
+    toolbarActions?: Snippet;
     searchTerm?: string;
     onApprove: (id: number) => void;
     onReject: (id: number) => void;
@@ -34,28 +32,23 @@
   emptyTitle="Aucune commande en attente"
   emptyDescription="Aucune commande en attente de validation."
 >
-  {#snippet toolbarStart()}
-    {#if tabsNav}
-      {@render tabsNav()}
-    {/if}
-  {/snippet}
 
   {#snippet toolbar()}
     <DataTableToolbar
       bind:searchValue={searchTerm}
       searchPlaceholder="Rechercher une commande..."
-      hasFilters={true}
-      filtersActive={!!seasonId && seasons.length > 0}
+      hasFilters={!!toolbarFilters}
+      filtersActive={true}
     >
       {#snippet filters()}
-          <FormField id="filter-season" label="Saison">
-          <SearchableCombobox
-            id="filter-season"
-            items={seasons.length > 0 ? seasons.map((s) => ({ label: s.name, value: String(s.id) })) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
-            value={seasonId}
-            onValueChange={(v) => { const val = String(v); const params = new URLSearchParams(window.location.search); params.set('season', val); window.location.href = `/admin/shop/orders?${params.toString()}`; }}
-          />
-        </FormField>
+        {#if toolbarFilters}
+          {@render toolbarFilters()}
+        {/if}
+      {/snippet}
+      {#snippet actions()}
+        {#if toolbarActions}
+          {@render toolbarActions()}
+        {/if}
       {/snippet}
     </DataTableToolbar>
   {/snippet}

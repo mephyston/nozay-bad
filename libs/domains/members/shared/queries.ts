@@ -29,8 +29,17 @@ export async function getMemberById(db: DbOrTx, id: number): Promise<MemberSumma
 
 export async function getMembersByIds(db: DbOrTx, ids: number[]): Promise<MemberSummary[]> {
   if (ids.length === 0) return [];
-  const result = await db.select().from(membersTable).where(inArray(membersTable.id, ids)).all();
-  return result as unknown as MemberSummary[];
+  
+  const chunkSize = 90;
+  const results: any[] = [];
+  
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    const chunk = ids.slice(i, i + chunkSize);
+    const chunkResults = await db.select().from(membersTable).where(inArray(membersTable.id, chunk)).all();
+    results.push(...chunkResults);
+  }
+  
+  return results as unknown as MemberSummary[];
 }
 
 export async function getMembersBySeason(db: DbOrTx, seasonId: string | number): Promise<MemberSummary[]> {

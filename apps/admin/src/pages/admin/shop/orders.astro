@@ -9,7 +9,7 @@ import { createApiClient } from '@nba/api-client';
 
 import { hasPermission } from '@nba/iam';
 const userPerms = Astro.locals.user?.permissions || [];
-if (!hasPermission(userPerms, '*') && !hasPermission(userPerms, 'shop:*') && !hasPermission(userPerms, 'shop:orders')) {
+if (!hasPermission(userPerms, '*') && !hasPermission(userPerms, 'shop:*') && !hasPermission(userPerms, 'orders:*') && !hasPermission(userPerms, 'orders:read') && !hasPermission(userPerms, 'orders:create') && !hasPermission(userPerms, 'orders:validate')) {
   return Astro.redirect('/');
 }
 
@@ -21,6 +21,23 @@ const season = Astro.url.searchParams.get('season') || '25-26';
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
+    
+    const canValidate = hasPermission(userPerms, '*') || hasPermission(userPerms, 'shop:*') || hasPermission(userPerms, 'orders:*') || hasPermission(userPerms, 'orders:validate');
+    const canCreate = hasPermission(userPerms, '*') || hasPermission(userPerms, 'shop:*') || hasPermission(userPerms, 'orders:*') || hasPermission(userPerms, 'orders:create');
+    const canUpdate = hasPermission(userPerms, '*') || hasPermission(userPerms, 'shop:*') || hasPermission(userPerms, 'orders:*') || hasPermission(userPerms, 'orders:update');
+
+    if (['approve', 'reject'].includes(data.action) && !canValidate) {
+      return new Response("Accès refusé. Droits de validation requis.", { status: 403 });
+    }
+    
+    if (data.action === 'update' && !canUpdate) {
+      return new Response("Accès refusé. Droits de modification requis.", { status: 403 });
+    }
+
+    if (data.productId && data.quantity && !canCreate) {
+      return new Response("Accès refusé. Droits de création requis.", { status: 403 });
+    }
+
     if (data.action === 'approve') {
       const apiRes = await apiService.fetch(`http://localhost/shop/orders/${data.id}/approve`, {
         method: 'POST'
@@ -37,6 +54,16 @@ if (Astro.request.method === 'POST') {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
       return new Response(JSON.stringify(await apiRes.json()));
+    } else if (data.productId && data.quantity) {
+      const apiRes = await apiService.fetch('http://localhost/shop/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!apiRes.ok) {
+        return new Response(JSON.stringify({ success: false, error: await apiRes.text() }), { status: 400 });
+      }
+      return new Response(JSON.stringify({ success: true }));
     }
     return new Response('Action inconnue', { status: 400 });
   } catch (err: any) {
@@ -46,12 +73,14 @@ if (Astro.request.method === 'POST') {
 
 let ordersList = [];
 let seasonsList = [];
+let productsList = [];
 let errorMsg = '';
 
 try {
-  const [seasonsRes, ordersRes] = await Promise.all([
+  const [seasonsRes, ordersRes, productsRes] = await Promise.all([
     apiService.fetch('http://localhost/accounting/seasons'),
-    apiService.fetch(`http://localhost/shop/orders?season=${season}`)
+    apiService.fetch(`http://localhost/shop/orders?season=${season}`),
+    apiService.fetch('http://localhost/shop/products?active=true')
   ]);
 
   if (seasonsRes.ok) {
@@ -66,6 +95,11 @@ try {
     ordersList = json.data || [];
   } else {
     errorMsg = 'Impossible de charger la liste des commandes.';
+  }
+
+  if (productsRes.ok) {
+    const json = await productsRes.json() as any;
+    productsList = json.data || [];
   }
 } catch (err: any) {
   errorMsg = 'Une erreur est survenue lors de la récupération des données de la boutique.';
@@ -101,6 +135,7 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
         client:load
         seasons={seasonsList}
         orders={ordersList}
+        products={productsList}
         seasonId={season}
       />
     </div>

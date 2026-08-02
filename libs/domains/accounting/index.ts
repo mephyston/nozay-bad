@@ -12,6 +12,7 @@ import { updateSeasonRoute } from './seasons/update-season/route';
 import { closeSeasonRoute } from './seasons/close-season/route';
 import { updateSeasonBudgetRoute } from './seasons/update-season-budget/route';
 import { updateSeasonBalancesRoute } from './seasons/update-season-balances/route';
+import { exportSeasonRoute } from './seasons/export-season/route';
 
 // Config Routes
 import { listCategoriesRoute } from './config/list-categories/route';
@@ -68,6 +69,7 @@ accountingRouter.route('/seasons', updateSeasonRoute);
 accountingRouter.route('/seasons', closeSeasonRoute);
 accountingRouter.route('/seasons', updateSeasonBudgetRoute);
 accountingRouter.route('/seasons', updateSeasonBalancesRoute);
+accountingRouter.route('/', exportSeasonRoute);
 
 // 2. CONFIG ROUTES
 accountingRouter.route('/', listCategoriesRoute);
