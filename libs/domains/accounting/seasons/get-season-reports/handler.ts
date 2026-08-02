@@ -278,11 +278,18 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
         let realisedCents = categoryTotals[catKey]?.total || 0;
         
         // Add deferred revenues/expenses (from previous season) to realisedCents
+        // We look in pastTransactions (recorded before this season starts) for PCAs of this category
         if (type === 'recette') {
-          const deferred = deferredRevenues.filter(d => d.categoryId === cat.id).reduce((sum, d) => sum + d.amountCents, 0);
+          const deferred = pastTransactions.filter(tx => {
+            const txCatId = typeof tx.categoryId === 'object' ? (tx.categoryId as any)?.id : tx.categoryId;
+            return tx.accrualType === 'produit_constate_avance' && txCatId === cat.id && tx.type === 'recette';
+          }).reduce((sum, tx) => sum + (tx.amountCents || 0), 0);
           realisedCents += deferred;
         } else if (type === 'depense') {
-          const deferred = deferredExpenses.filter(d => d.categoryId === cat.id).reduce((sum, d) => sum + d.amountCents, 0);
+          const deferred = pastTransactions.filter(tx => {
+            const txCatId = typeof tx.categoryId === 'object' ? (tx.categoryId as any)?.id : tx.categoryId;
+            return tx.accrualType === 'charge_constatee_avance' && txCatId === cat.id && tx.type === 'depense';
+          }).reduce((sum, tx) => sum + (tx.amountCents || 0), 0);
           realisedCents += deferred;
         }
 
