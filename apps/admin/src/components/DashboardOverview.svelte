@@ -70,20 +70,30 @@
     <DashboardSummaryCard 
       title="Trésorerie & Banque"
       icon={Banknote}
-      href={canReadAccounting ? '/admin/accounting/ledger' : undefined}
       iconClass="text-success bg-success/10"
       bgIconClass="text-foreground"
       containerClass="border-border/50 hover:border-primary/30 from-card/80 to-card"
     >
       <div class="space-y-3 mt-1">
-        <div class="flex justify-between items-center group/item cursor-default">
-          <span class="text-sm text-muted-foreground flex items-center gap-2"><CreditCard size={14} class="text-success/70"/> Chèques à remettre</span>
-          <span class="font-bold text-lg {data.accounting.pendingChecks > 0 ? 'text-warning' : 'text-success'}">{data.accounting.pendingChecks}</span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="text-sm text-muted-foreground flex items-center gap-2"><FolderKanban size={14} class="text-success/70"/> Remises à déposer</span>
-          <span class="font-bold text-lg {data.accounting.pendingDeposits > 0 ? 'text-warning' : 'text-success'}">{data.accounting.pendingDeposits}</span>
-        </div>
+        {#if canReadAccounting}
+          <a href="/admin/accounting/cheques" class="flex justify-between items-center hover:bg-muted/50 p-1 -mx-1 rounded transition-colors group/item">
+            <span class="text-sm text-muted-foreground flex items-center gap-2"><CreditCard size={14} class="text-success/70"/> Chèques à remettre <ChevronRight size={14} class="opacity-50 ml-auto"/></span>
+            <span class="font-bold text-lg {data.accounting.pendingChecks > 0 ? 'text-warning' : 'text-success'}">{data.accounting.pendingChecks}</span>
+          </a>
+          <a href="/admin/accounting/cheques" class="flex justify-between items-center hover:bg-muted/50 p-1 -mx-1 rounded transition-colors group/item">
+            <span class="text-sm text-muted-foreground flex items-center gap-2"><FolderKanban size={14} class="text-success/70"/> Remises à déposer <ChevronRight size={14} class="opacity-50 ml-auto"/></span>
+            <span class="font-bold text-lg {data.accounting.pendingDeposits > 0 ? 'text-warning' : 'text-success'}">{data.accounting.pendingDeposits}</span>
+          </a>
+        {:else}
+          <div class="flex justify-between items-center p-1 -mx-1 group/item cursor-default">
+            <span class="text-sm text-muted-foreground flex items-center gap-2"><CreditCard size={14} class="text-success/70"/> Chèques à remettre</span>
+            <span class="font-bold text-lg {data.accounting.pendingChecks > 0 ? 'text-warning' : 'text-success'}">{data.accounting.pendingChecks}</span>
+          </div>
+          <div class="flex justify-between items-center p-1 -mx-1">
+            <span class="text-sm text-muted-foreground flex items-center gap-2"><FolderKanban size={14} class="text-success/70"/> Remises à déposer</span>
+            <span class="font-bold text-lg {data.accounting.pendingDeposits > 0 ? 'text-warning' : 'text-success'}">{data.accounting.pendingDeposits}</span>
+          </div>
+        {/if}
       </div>
     </DashboardSummaryCard>
 
