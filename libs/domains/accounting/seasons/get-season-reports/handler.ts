@@ -229,8 +229,9 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
 
     // Always compute historical average so unbudgeted categories fallback to it
     const categoryHistoricalAverage: Record<string, number> = {};
+    let validPastSeasons: any[] = [];
     if (pastSeasons.length > 0) {
-      const validPastSeasons = pastSeasons.filter(ps => {
+      validPastSeasons = pastSeasons.filter(ps => {
         const txCount = pastTransactions.filter(tx => tx.seasonId === ps.id || tx.seasonId === Number(ps.id) || tx.seasonId === String(ps.id)).length;
         return txCount > 10;
       });
@@ -399,7 +400,7 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
 
     const treasuryForecast = generateTreasuryForecast(
       season,
-      pastSeasons,
+      validPastSeasons.length > 0 ? validPastSeasons : pastSeasons,
       pastTransactions,
       periodTxs, // Pass current cash transactions
       projList,

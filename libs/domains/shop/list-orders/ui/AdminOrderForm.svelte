@@ -214,19 +214,26 @@
 
   </div>
 
-  <Sheet.Footer class="p-6 border-t border-border bg-muted/20 flex flex-col sm:flex-row justify-end items-center gap-4 shrink-0">
-    <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-      <Button type="button" variant="outline" onclick={onClose} disabled={submitting}>
-        Annuler
-      </Button>
-      <Button type="submit" disabled={submitting || !selectedMemberId || !selectedProduct} class="gap-1.5 min-w-[120px]">
-        {#if submitting}
-          <div class="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin"></div>
-          Validation...
-        {:else}
-          <Check class="w-4 h-4" /> Valider
-        {/if}
-      </Button>
-    </div>
+  <Sheet.Footer class="p-6 border-t border-border bg-muted/30 flex justify-end gap-2 shrink-0">
+    <Button
+      type="button"
+      variant="outline"
+      onclick={onClose}
+      disabled={submitting}
+    >
+      Annuler
+    </Button>
+    <Button
+      type="submit"
+      disabled={submitting || !selectedMemberId || !selectedProduct}
+      class="flex items-center gap-2"
+    >
+      {#if submitting}
+        <div class="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin"></div>
+      {:else}
+        <Check class="w-4 h-4" />
+      {/if}
+      Valider
+    </Button>
   </Sheet.Footer>
 </form>
