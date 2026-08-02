@@ -34,5 +34,6 @@ export {
   isSeasonClosed,
   type MemberSummary
 } from './shared/queries';
+export * from './shared/dashboard';
 export { listMembers } from './list-members/handler';
 export { getMemberStats } from './get-member-stats/handler';

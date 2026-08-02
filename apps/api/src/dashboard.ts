@@ -1,4 +1,8 @@
 import { Hono } from 'hono';
+import { buildMembersDashboardStatsStmt } from '@nba/members-api';
+import { buildAccountingDashboardStatsStmts } from '@nba/accounting-api';
+import { buildExpensesDashboardStatsStmt } from '@nba/expenses-api';
+import { buildShopDashboardStatsStmt } from '@nba/shop-api';
 
 export const dashboardRouter = new Hono<{ Bindings: { DB: D1Database } }>();
 
@@ -34,34 +38,18 @@ dashboardRouter.get('/overview', async (c) => {
     }
 
     const batch = await db.batch([
-      db.prepare(`
-        SELECT
-          SUM(CASE WHEN season_id = ? THEN 1 ELSE 0 END) as currentTotal,
-          SUM(CASE WHEN season_id = ? THEN 1 ELSE 0 END) as previousTotal,
-          SUM(CASE WHEN season_id = ? AND amount_received_cents > 0 AND amount_remaining_cents > 0 THEN 1 ELSE 0 END) as partiallyPaid
-        FROM members
-        WHERE season_id IN (?, ?)
-      `).bind(seasonId, prevSeasonId, seasonId, seasonId, prevSeasonId),
-      db.prepare("SELECT COUNT(*) as count FROM checks WHERE status = 'received' AND season_id = ?").bind(seasonId),
-      db.prepare("SELECT COUNT(*) as count FROM check_deposits WHERE status = 'pending' AND season_id = ?").bind(seasonId),
-      db.prepare("SELECT COUNT(*) as count FROM expenses WHERE status = 'pending' AND season_id = ?").bind(seasonId),
-      db.prepare("SELECT COUNT(*) as count FROM invoices WHERE status IN ('draft', 'sent') AND season_id = ?").bind(seasonId),
-      db.prepare("SELECT COUNT(*) as count FROM orders WHERE status = 'pending' AND season_id = ?").bind(seasonId),
-      db.prepare(`
-        SELECT c.admin_label as label, le.type, SUM(le.amount_cents) as total
-        FROM ledger_entries le
-        JOIN categories c ON le.category_id = c.id
-        WHERE le.season_id = ?
-        GROUP BY c.admin_label, le.type
-      `).bind(seasonId)
+      buildMembersDashboardStatsStmt(db, seasonId, prevSeasonId),
+      buildExpensesDashboardStatsStmt(db, seasonId),
+      buildShopDashboardStatsStmt(db, seasonId),
+      ...buildAccountingDashboardStatsStmts(db, seasonId)
     ]);
 
     const membersRes = batch[0].results[0] as any;
-    const checksRes = batch[1].results[0] as any;
-    const depositsRes = batch[2].results[0] as any;
-    const expensesRes = batch[3].results[0] as any;
-    const invoicesRes = batch[4].results[0] as any;
-    const ordersRes = batch[5].results[0] as any;
+    const expensesRes = batch[1].results[0] as any;
+    const ordersRes = batch[2].results[0] as any;
+    const checksRes = batch[3].results[0] as any;
+    const depositsRes = batch[4].results[0] as any;
+    const invoicesRes = batch[5].results[0] as any;
     const polesRes = batch[6].results as any[];
 
     const poles = {
@@ -123,7 +111,8 @@ dashboardRouter.get('/overview', async (c) => {
         members: {
           currentTotal: membersRes?.currentTotal || 0,
           previousTotal: membersRes?.previousTotal || 0,
-          partiallyPaid: membersRes?.partiallyPaid || 0
+          partiallyPaid: membersRes?.partiallyPaid || 0,
+          unpaidCount: membersRes?.unpaidCount || 0
         },
         accounting: {
           pendingChecks: checksRes?.count || 0,

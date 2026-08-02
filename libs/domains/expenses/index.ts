@@ -15,3 +15,4 @@ expensesRouter.route('/', createExpenseRoute);
 expensesRouter.route('/', updateExpenseRoute);
 
 export { listExpenses } from './list/handler';
+export * from './shared/dashboard';

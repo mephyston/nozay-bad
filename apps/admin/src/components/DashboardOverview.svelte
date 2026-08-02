@@ -43,6 +43,21 @@
       {/if}
     </div>
 
+    <!-- 4ème Carte : Cotisations Impayées -->
+    <div class="relative overflow-hidden rounded-2xl border border-destructive/20 bg-gradient-to-b from-destructive/5 to-card p-6 shadow-sm transition-all hover:shadow-md hover:border-destructive/40 group">
+      <div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300 text-destructive">
+        <AlertCircle size={120} />
+      </div>
+      <div class="flex items-center justify-between space-y-0 pb-4">
+        <h3 class="font-semibold text-sm tracking-tight">Cotisations Incomplètes</h3>
+        <div class="p-2 bg-destructive/10 text-destructive rounded-lg"><Users size={18} /></div>
+      </div>
+      <div class="text-3xl font-bold tracking-tight text-destructive">{data.members.unpaidCount}</div>
+      <p class="text-xs text-muted-foreground mt-1">
+        Adhérent(s) n'ayant pas réglé la totalité
+      </p>
+    </div>
+
     <!-- Banque & Compta -->
     <div class="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-b from-card/80 to-card p-6 shadow-sm transition-all hover:shadow-md hover:border-primary/30 group">
       <div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300">

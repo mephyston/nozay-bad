@@ -25,3 +25,5 @@ shopRouter.route('/', createOrderRoute);
 shopRouter.route('/', approveOrderRoute);
 shopRouter.route('/', rejectOrderRoute);
 shopRouter.route('/', manageProductCategoriesRoute);
+
+export * from './shared/dashboard';
