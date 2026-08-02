@@ -1,3 +1,11 @@
+# [1.0.0-beta.19](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.18...v1.0.0-beta.19) (2026-08-02)
+
+
+### Bug Fixes
+
+* **accounting:** install fflate dependency for exports ([2b24f52](https://github.com/mephyston/nozay-bad/commit/2b24f5290635d686d94cc7e4c4fd3466e960069d))
+* **dashboard:** correct D1 bind parameter count for members stats ([db13004](https://github.com/mephyston/nozay-bad/commit/db130042e77c3c614143a63a71e3264d37e6923b))
+
 # [1.0.0-beta.18](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.17...v1.0.0-beta.18) (2026-08-02)
 
 
