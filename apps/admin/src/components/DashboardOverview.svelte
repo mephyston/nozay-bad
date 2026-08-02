@@ -1,12 +1,19 @@
 <script lang="ts">
-  import { Users, Banknote, CreditCard, ShoppingCart, Activity, AlertCircle, ArrowUpRight, ArrowDownRight, Package, Receipt, FolderKanban, Building } from '@lucide/svelte';
+  import { Users, Banknote, CreditCard, ShoppingCart, Activity, AlertCircle, ArrowUpRight, ArrowDownRight, Package, Receipt, FolderKanban, Building, ChevronRight } from '@lucide/svelte';
   import { DashboardSummaryCard, DashboardPoleCard } from '@nba/ui';
   
   export let data: any;
+  export let permissions: string[] = [];
   
   const formatAmount = (cents: number) => {
     return (cents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
   };
+  
+  const hasPermission = (perm: string) => permissions.includes(perm);
+  const canReadMembers = hasPermission('members:read') || hasPermission('members:update');
+  const canReadAccounting = hasPermission('accounting:read') || hasPermission('accounting:update');
+  const canReadExpenses = hasPermission('expenses:read') || hasPermission('expenses:update');
+  const canReadShop = hasPermission('shop:read') || hasPermission('shop:update');
 </script>
 
 <div class="space-y-8 pb-10">
@@ -15,6 +22,7 @@
     <DashboardSummaryCard 
       title="Adhérents (Saison {data.season})"
       icon={Users}
+      href={canReadMembers ? '/admin/members' : undefined}
       iconClass="text-info bg-info/10"
       bgIconClass="text-foreground"
       containerClass="border-border/50 hover:border-primary/30 from-card/80 to-card"
@@ -47,6 +55,7 @@
     <DashboardSummaryCard 
       title="Cotisations Incomplètes"
       icon={Users}
+      href={canReadMembers ? '/admin/members' : undefined}
       iconClass="text-destructive bg-destructive/10"
       bgIconClass="text-destructive"
       containerClass="border-destructive/20 hover:border-destructive/40 from-destructive/5 to-card"
@@ -61,6 +70,7 @@
     <DashboardSummaryCard 
       title="Trésorerie & Banque"
       icon={Banknote}
+      href={canReadAccounting ? '/admin/accounting/ledger' : undefined}
       iconClass="text-success bg-success/10"
       bgIconClass="text-foreground"
       containerClass="border-border/50 hover:border-primary/30 from-card/80 to-card"
@@ -86,18 +96,41 @@
       containerClass="border-border/50 hover:border-primary/30 from-card/80 to-card"
     >
       <div class="space-y-3 mt-1">
-        <div class="flex justify-between items-center">
-          <span class="text-sm text-muted-foreground">Notes de frais en attente</span>
-          <span class="font-bold text-lg {data.expenses.pendingReports > 0 ? 'text-warning' : 'text-success'}">{data.expenses.pendingReports}</span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="text-sm text-muted-foreground">Factures à traiter</span>
-          <span class="font-bold text-lg {data.accounting.pendingInvoices > 0 ? 'text-warning' : 'text-success'}">{data.accounting.pendingInvoices}</span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="text-sm text-muted-foreground">Commandes boutique</span>
-          <span class="font-bold text-lg {data.shop.pendingOrders > 0 ? 'text-warning' : 'text-success'}">{data.shop.pendingOrders}</span>
-        </div>
+        {#if canReadExpenses}
+          <a href="/admin/expenses" class="flex justify-between items-center hover:bg-muted/50 p-1 -mx-1 rounded transition-colors">
+            <span class="text-sm text-muted-foreground flex items-center gap-1">Notes de frais en attente <ChevronRight size={14} class="opacity-50"/></span>
+            <span class="font-bold text-lg {data.expenses.pendingReports > 0 ? 'text-warning' : 'text-success'}">{data.expenses.pendingReports}</span>
+          </a>
+        {:else}
+          <div class="flex justify-between items-center p-1 -mx-1">
+            <span class="text-sm text-muted-foreground">Notes de frais en attente</span>
+            <span class="font-bold text-lg {data.expenses.pendingReports > 0 ? 'text-warning' : 'text-success'}">{data.expenses.pendingReports}</span>
+          </div>
+        {/if}
+
+        {#if canReadAccounting}
+          <a href="/admin/accounting/invoices" class="flex justify-between items-center hover:bg-muted/50 p-1 -mx-1 rounded transition-colors">
+            <span class="text-sm text-muted-foreground flex items-center gap-1">Factures à traiter <ChevronRight size={14} class="opacity-50"/></span>
+            <span class="font-bold text-lg {data.accounting.pendingInvoices > 0 ? 'text-warning' : 'text-success'}">{data.accounting.pendingInvoices}</span>
+          </a>
+        {:else}
+          <div class="flex justify-between items-center p-1 -mx-1">
+            <span class="text-sm text-muted-foreground">Factures à traiter</span>
+            <span class="font-bold text-lg {data.accounting.pendingInvoices > 0 ? 'text-warning' : 'text-success'}">{data.accounting.pendingInvoices}</span>
+          </div>
+        {/if}
+
+        {#if canReadShop}
+          <a href="/admin/shop/orders" class="flex justify-between items-center hover:bg-muted/50 p-1 -mx-1 rounded transition-colors">
+            <span class="text-sm text-muted-foreground flex items-center gap-1">Commandes boutique <ChevronRight size={14} class="opacity-50"/></span>
+            <span class="font-bold text-lg {data.shop.pendingOrders > 0 ? 'text-warning' : 'text-success'}">{data.shop.pendingOrders}</span>
+          </a>
+        {:else}
+          <div class="flex justify-between items-center p-1 -mx-1">
+            <span class="text-sm text-muted-foreground">Commandes boutique</span>
+            <span class="font-bold text-lg {data.shop.pendingOrders > 0 ? 'text-warning' : 'text-success'}">{data.shop.pendingOrders}</span>
+          </div>
+        {/if}
       </div>
     </DashboardSummaryCard>
   </div>
@@ -109,6 +142,7 @@
       <DashboardPoleCard 
         title="Pôle Compétition" 
         icon={Activity} 
+        href={canReadAccounting ? '/admin/accounting/ledger' : undefined}
         iconClass="text-destructive bg-destructive/10"
       >
         <div class="space-y-4">
@@ -155,6 +189,7 @@
       <DashboardPoleCard 
         title="Pôle Jeunes" 
         icon={Users} 
+        href={canReadAccounting ? '/admin/accounting/ledger' : undefined}
         iconClass="text-warning bg-warning/10"
       >
         <div class="space-y-4">
@@ -201,6 +236,7 @@
       <DashboardPoleCard 
         title="Pôle Matériel" 
         icon={Package} 
+        href={canReadAccounting ? '/admin/accounting/ledger' : undefined}
         iconClass="text-indigo-500 bg-indigo-500/10"
       >
         <div class="space-y-4">
@@ -247,6 +283,7 @@
       <DashboardPoleCard 
         title="Pôle Fonctionnement" 
         icon={Building} 
+        href={canReadAccounting ? '/admin/accounting/ledger' : undefined}
         iconClass="text-info bg-info/10"
       >
         <div class="space-y-4">

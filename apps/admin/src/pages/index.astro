@@ -73,7 +73,7 @@ if (!dashboardData) {
         </Fragment>
       </PageHeader>
       
-      <DashboardOverview client:idle data={dashboardData} />
+      <DashboardOverview client:idle data={dashboardData} permissions={Astro.locals.user?.permissions || []} />
       
     </div>
   </AdminLayout>

@@ -5,6 +5,7 @@
   let {
     title,
     icon: Icon,
+    href,
     iconClass = "text-primary bg-primary/10",
     bgIconClass = "",
     containerClass = "border-border/50 hover:border-primary/30 from-card/80 to-card",
@@ -13,6 +14,7 @@
   }: {
     title: string;
     icon: any;
+    href?: string;
     iconClass?: string;
     bgIconClass?: string;
     containerClass?: string;
@@ -21,7 +23,7 @@
   } = $props();
 </script>
 
-<div class={cn("relative overflow-hidden rounded-2xl border bg-gradient-to-b p-6 shadow-sm transition-all hover:shadow-md group", containerClass, className)}>
+<svelte:element this={href ? 'a' : 'div'} href={href} class={cn("relative overflow-hidden block rounded-2xl border bg-gradient-to-b p-6 shadow-sm transition-all hover:shadow-md group", containerClass, className)}>
   <div class={cn("absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300", bgIconClass)}>
     {#if Icon}<Icon size={120} />{/if}
   </div>
@@ -32,4 +34,4 @@
     </div>
   </div>
   {@render children()}
-</div>
+</svelte:element>
