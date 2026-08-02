@@ -1,3 +1,10 @@
+# [1.0.0-beta.24](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.23...v1.0.0-beta.24) (2026-08-02)
+
+
+### Bug Fixes
+
+* **accounting:** subtract PCA from remaining budget & project Livret A ([dcc8342](https://github.com/mephyston/nozay-bad/commit/dcc8342bb369b6a7f535b333815325471d73e34f))
+
 # [1.0.0-beta.23](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.22...v1.0.0-beta.23) (2026-08-02)
 
 
