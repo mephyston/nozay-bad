@@ -215,9 +215,9 @@
         <Sidebar.MenuItem>
           <a
             href="/"
-            class="flex items-center gap-3 px-2 py-2 w-full font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md transition-all"
+            class="flex items-center gap-3 px-2 group-data-[collapsible=icon]:px-0 py-2 w-full font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md transition-all"
           >
-            <img src="/logo.png" alt="Logo" class="h-6 w-6 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 shrink-0 object-contain transition-all duration-300" />
+            <img src="/logo.png" alt="Logo" class="h-6 w-6 group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:w-12 shrink-0 object-contain transition-all duration-300" />
             <span class="group-data-[collapsible=icon]:hidden font-semibold text-sm text-foreground truncate ml-1">Nozay Bad Admin</span>
           </a>
         </Sidebar.MenuItem>
