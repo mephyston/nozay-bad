@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Edit, Trash2, Printer, Send, Ban } from '@lucide/svelte';
+  import { Edit, Trash2, Printer, Send, Ban, CheckCircle2 } from '@lucide/svelte';
   import { Button, Table, Badge, Amount, DropdownMenu, DataTableRowActions } from '@nba/ui';
   import type { Invoice } from './invoices-types';
 
@@ -17,7 +17,7 @@
 
     onPrint: (id: number) => void;
     onEdit: (inv: Invoice) => void;
-    onStatusChange: (id: number, status: 'sent' | 'cancelled') => void;
+    onStatusChange: (id: number, status: 'sent' | 'paid' | 'cancelled') => void;
     onDelete: (id: number, invoiceNumber: string) => void;
   } = $props();
 
@@ -30,7 +30,7 @@
 
   const statusLabels: Record<string, string> = {
     draft: 'Brouillon',
-    sent: 'Envoyée',
+    sent: 'En attente de règlement',
     paid: 'Payée',
     cancelled: 'Annulée'
   };
@@ -41,9 +41,7 @@
 <Table.Row>
   <Table.Cell class="font-semibold text-foreground">{inv.invoiceNumber}</Table.Cell>
   <Table.Cell class="font-medium text-foreground">{inv.clientName}</Table.Cell>
-  <Table.Cell class="text-muted-foreground max-w-xs truncate">{inv.subject || '—'}</Table.Cell>
   <Table.Cell class="text-muted-foreground">{inv.date}</Table.Cell>
-  <Table.Cell class="text-muted-foreground">{inv.dueDate}</Table.Cell>
   <Table.Cell class="text-right font-bold text-foreground">
     <Amount cents={(inv as any).totalAmountCents ?? inv.totalAmount} />
   </Table.Cell>
@@ -70,7 +68,7 @@
               onclick={() => { onStatusChange(inv.id, 'sent'); }}
               class="text-info focus:text-info cursor-pointer"
             >
-              <Send class="w-3.5 h-3.5 mr-2" /> Marquer envoyée
+              <Send class="w-3.5 h-3.5 mr-2" /> Marquer en attente de règlement
             </DropdownMenu.Item>
             <DropdownMenu.Item
               onclick={() => { onStatusChange(inv.id, 'cancelled'); }}
@@ -86,6 +84,12 @@
             </DropdownMenu.Item>
           {/if}
           {#if inv.status === 'sent'}
+            <DropdownMenu.Item
+              onclick={() => { onStatusChange(inv.id, 'paid'); }}
+              class="text-success focus:text-success cursor-pointer"
+            >
+              <CheckCircle2 class="w-3.5 h-3.5 mr-2" /> Marquer comme payée
+            </DropdownMenu.Item>
             <DropdownMenu.Item
               onclick={() => { onStatusChange(inv.id, 'cancelled'); }}
               class="text-destructive focus:text-destructive cursor-pointer"

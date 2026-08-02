@@ -30,6 +30,7 @@ import { createInvoiceRoute } from './invoices/create-invoice/route';
 import { updateInvoiceRoute } from './invoices/update-invoice/route';
 import { deleteInvoiceRoute } from './invoices/delete-invoice/route';
 import { changeInvoiceStatusRoute } from './invoices/change-invoice-status/route';
+import { generateInvoiceRoute } from './invoices/generate-invoice/route';
 
 // Bank Transactions Routes
 import { listBankStatementLinesRoute } from './bank/list-bank-statement-lines/route';
@@ -85,6 +86,7 @@ accountingRouter.route('/', createInvoiceRoute);
 accountingRouter.route('/', updateInvoiceRoute);
 accountingRouter.route('/', deleteInvoiceRoute);
 accountingRouter.route('/', changeInvoiceStatusRoute);
+accountingRouter.route('/', generateInvoiceRoute);
 
 // 4. BANK TRANSACTIONS ROUTES
 accountingRouter.route('/', listBankStatementLinesRoute);

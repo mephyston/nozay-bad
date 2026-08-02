@@ -87,12 +87,7 @@
         clientName: form.clientName,
         clientAddress: form.clientAddress,
         clientEmail: form.clientEmail,
-        subject: form.subject,
-        location: form.location,
-        period: form.period,
-        attendees: form.attendees,
         date: form.date,
-        dueDate: form.dueDate,
         itemsTotal,
         items: form.items
       });
@@ -107,13 +102,16 @@
     }
   }
 
-  let statusDialogData = $state<{ id: number; newStatus: 'sent' | 'cancelled'; msg: string } | null>(null);
+  let statusDialogData = $state<{ id: number; newStatus: 'sent' | 'paid' | 'cancelled'; msg: string } | null>(null);
   let deleteDialogData = $state<{ id: number; msg: string } | null>(null);
 
-  function handleStatusChange(id: number, newStatus: 'sent' | 'cancelled') {
-    const confirmMsg = newStatus === 'cancelled' 
-      ? "Êtes-vous sûr de vouloir annuler cette facture ?" 
-      : "Êtes-vous sûr de vouloir marquer cette facture comme envoyée ?";
+  function handleStatusChange(id: number, newStatus: 'sent' | 'paid' | 'cancelled') {
+    const confirmMsg =
+      newStatus === 'cancelled'
+        ? "Êtes-vous sûr de vouloir annuler cette facture ?"
+        : newStatus === 'paid'
+          ? "Êtes-vous sûr de vouloir marquer cette facture comme payée ?"
+          : "Êtes-vous sûr de vouloir marquer cette facture comme en attente de règlement ?";
     statusDialogData = { id, newStatus, msg: confirmMsg };
   }
 
@@ -199,7 +197,7 @@
             <FormField id="filter-status" label="Statut">
             <SearchableCombobox
               id="filter-status"
-              items={[{ label: 'Tous les statuts', value: 'all' }, { label: 'Brouillon', value: 'draft' }, { label: 'Envoyée', value: 'sent' }, { label: 'Payée', value: 'paid' }, { label: 'Annulée', value: 'cancelled' }]}
+              items={[{ label: 'Tous les statuts', value: 'all' }, { label: 'Brouillon', value: 'draft' }, { label: 'En attente de règlement', value: 'sent' }, { label: 'Payée', value: 'paid' }, { label: 'Annulée', value: 'cancelled' }]}
               bind:value={statusFilter}
             />
           </FormField>
@@ -228,12 +226,7 @@
   bind:clientName={form.clientName}
   bind:clientAddress={form.clientAddress}
   bind:clientEmail={form.clientEmail}
-  bind:subject={form.subject}
-  bind:location={form.location}
-  bind:period={form.period}
-  bind:attendees={form.attendees}
   bind:date={form.date}
-  bind:dueDate={form.dueDate}
   bind:items={form.items}
   {itemsTotal}
   onSubmit={handleSubmit}

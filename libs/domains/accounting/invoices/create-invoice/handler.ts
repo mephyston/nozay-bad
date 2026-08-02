@@ -20,7 +20,7 @@ export async function createInvoice(db: Db, body: CreateInvoiceInput): Promise<C
       invoiceNumber,
       seasonId: seasonIdInt,
       date: body.date,
-      dueDate: body.dueDate,
+      dueDate: body.dueDate || body.date,
       clientName: body.clientName,
       clientAddress: body.clientAddress || null,
       clientEmail: body.clientEmail || null,

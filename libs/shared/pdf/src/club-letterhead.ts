@@ -42,6 +42,7 @@ export async function drawClubHeader(doc: PDFDocument, page: PDFPage, fonts: Clu
     'Adresse : Mairie de Nozay, 91620 NOZAY',
     'Site web : www.nozaybad.fr',
     'Association N° 0913011863',
+    'Siret : 433 218 716 00010',
     'Agrément DDJS : 91 S 744',
     'Affiliation FFBaD : LIFB.91.96.018'
   ];

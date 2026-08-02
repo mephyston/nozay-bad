@@ -7,6 +7,7 @@ export async function setupMockDb() {
 
   // Topological sorting of tables (child tables dropped/deleted before parent tables to avoid foreign key errors)
   const tables = [
+    'admin_users',
     'attestation_config',
     'expenses',
     'ledger_entries',
