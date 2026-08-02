@@ -91,6 +91,7 @@ if (Astro.request.method === 'POST') {
 let expensesList = [];
 let seasonsList = [];
 let categoriesList = [];
+let membersList = [];
 let errorMsg = '';
 
 try {
@@ -108,9 +109,10 @@ try {
   }
 
   // 2. Fetch expenses for that season
-  const [expensesRes, categoriesRes] = await Promise.all([
+  const [expensesRes, categoriesRes, membersRes] = await Promise.all([
     apiService.fetch(`http://localhost/expenses?season=${season}`),
-    apiService.fetch('http://localhost/accounting/categories')
+    apiService.fetch('http://localhost/accounting/categories'),
+    apiService.fetch(`http://localhost/members?limit=1000&season=${season}`)
   ]);
 
   if (expensesRes.ok) {
@@ -125,6 +127,11 @@ try {
   if (categoriesRes.ok) {
     const json = await categoriesRes.json() as any;
     categoriesList = json.data || [];
+  }
+
+  if (membersRes.ok) {
+    const json = await membersRes.json() as any;
+    membersList = json.data || [];
   }
 } catch (err: any) {
   errorMsg = 'Une erreur est survenue lors du chargement des notes de frais.';
@@ -145,6 +152,7 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
         seasonId={season}
         seasons={seasonsList}
         categories={categoriesList}
+        members={membersList}
       />
     </div>
   </AdminLayout>

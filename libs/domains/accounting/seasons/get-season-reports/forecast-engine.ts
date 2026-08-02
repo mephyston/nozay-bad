@@ -35,6 +35,7 @@ export function generateTreasuryForecast(
   currentSeason: SeasonInfo,
   pastSeasons: SeasonInfo[],
   pastTransactions: HistoricalTransaction[],
+  currentTransactions: HistoricalTransaction[], // newly added
   categoryProjections: CategoryProjection[],
   history: MonthlyHistory[],
   effectiveEndDate: string, // The date up to which we have real data
@@ -50,23 +51,22 @@ export function generateTreasuryForecast(
 
   for (const tx of pastTransactions) {
     if (tx.type === 'transfert' || tx.categoryId === null) continue;
-    const season = seasonMap.get(tx.seasonId);
+    
+    // Pure cash flow: find the past season based on the transaction date, NOT its accounting seasonId
+    const season = pastSeasons.find(s => tx.date >= s.startDate && tx.date <= s.endDate);
     if (!season) continue;
 
-    let relMonth = getRelativeMonth(season.startDate, tx.date);
-    const key = `${tx.categoryId}_${tx.type}`;
+    const relMonth = getRelativeMonth(season.startDate, tx.date);
+    const catId = typeof tx.categoryId === 'object' ? (tx.categoryId as any).id : tx.categoryId;
+    const key = `${catId}_${tx.type}`;
 
     if (!categoryMonthlySums[key]) {
       categoryMonthlySums[key] = Array(12).fill(0);
       categoryTotals[key] = 0;
     }
 
-    if (relMonth < 12) {
-      if (relMonth >= 0) {
-        categoryMonthlySums[key][relMonth] += tx.amountCents;
-      }
-      // We always add to total even if relMonth < 0 (like PCAs) 
-      // so that weightSumForRemaining < 1.0, properly reflecting that some budget was realized before month 0
+    if (relMonth >= 0 && relMonth < 12) {
+      categoryMonthlySums[key][relMonth] += tx.amountCents;
       categoryTotals[key] += tx.amountCents;
     }
   }
@@ -157,12 +157,28 @@ export function generateTreasuryForecast(
     }
   }
 
-  // Distribute remaining budget for FUTURE months
-  for (const proj of categoryProjections) {
-    if (proj.remainingBudgetCents <= 0) continue;
+  // Pre-calculate cash realized this season per category
+  const currentCashRealized: Record<string, number> = {};
+  for (const tx of currentTransactions) {
+    if (tx.type === 'transfert' || tx.categoryId === null) continue;
+    const catId = typeof tx.categoryId === 'object' ? (tx.categoryId as any).id : tx.categoryId;
+    const key = `${catId}_${tx.type}`;
+    currentCashRealized[key] = (currentCashRealized[key] || 0) + tx.amountCents;
+  }
 
+  // Distribute remaining CASH budget for FUTURE months
+  for (const proj of categoryProjections) {
     const key = `${proj.categoryId}_${proj.type}`;
     const weights = categoryWeights[key];
+
+    // Compute Cash Budget: either user provided, or historical pure cash flow average
+    const pastSeasonsCount = Math.max(1, pastSeasons.length);
+    const historicalCashAvg = Math.round((categoryTotals[key] || 0) / pastSeasonsCount);
+    const cashBudget = proj.budgetCents > 0 ? proj.budgetCents : historicalCashAvg;
+    const cashAlreadyCollected = currentCashRealized[key] || 0;
+    const cashRemaining = Math.max(0, cashBudget - cashAlreadyCollected);
+
+    if (cashRemaining <= 0) continue;
 
     const remainingMonthsCount = 11 - effectiveMonthIndex;
     
@@ -177,9 +193,9 @@ export function generateTreasuryForecast(
       for (let m = effectiveMonthIndex + 1; m < 12; m++) {
         let amount = 0;
         if (weights && weightSumForRemaining > 0) {
-          amount = Math.round(proj.remainingBudgetCents * (weights[m] / weightSumForRemaining));
+          amount = Math.round(cashRemaining * (weights[m] / weightSumForRemaining));
         } else {
-          amount = Math.round(proj.remainingBudgetCents / remainingMonthsCount);
+          amount = Math.round(cashRemaining / remainingMonthsCount);
         }
 
         const isSavings = proj.categoryName && proj.categoryName.includes('Livret A');

@@ -16,12 +16,14 @@
     expenses = [],
     seasonId,
     seasons = [],
-    categories = []
+    categories = [],
+    members = []
   }: {
     expenses: Expense[];
     seasonId: string;
     seasons?: Season[];
     categories?: Category[];
+    members?: any[];
   } = $props();
 
   const viewState = new ExpensesState();
@@ -245,7 +247,7 @@
   <Sheet.Content side="right" class="w-full sm:max-w-2xl overflow-y-auto p-0 flex flex-col h-full">
     <AdminExpenseForm
       activeSeasonId={seasonId}
-      members={[]}
+      members={members}
       categories={categories}
       onClose={() => isCreateSheetOpen = false}
       onSuccess={(msg) => { viewState.successMsg = msg; isCreateSheetOpen = false; }}

@@ -1,10 +1,8 @@
 <script lang="ts">
-  import { Check, Receipt, CheckCircle, AlertCircle } from '@lucide/svelte';
-  import { Button, Alert, Sheet } from '@nba/ui';
+  import { Receipt, Check, AlertCircle } from '@lucide/svelte';
+  import { Button, Alert, Sheet, Input, FormField } from '@nba/ui';
   import type { Member, Props } from '../../create/ui/expense-form-types';
   import { formatMemberName, scrollOptionIntoView } from '../../create/ui/expense-form-utils';
-  import { submitExpenseReport } from '../../create/ui/expense-form-submit';
-  import ExpenseFormMemberSelect from '../../create/ui/ExpenseFormMemberSelect.svelte';
   import ExpenseFormDetails from '../../create/ui/ExpenseFormDetails.svelte';
   import ExpenseFormFileInput from '../../create/ui/ExpenseFormFileInput.svelte';
 
@@ -22,8 +20,6 @@
   let isMemberDropdownOpen = $state(false);
   let highlightedIndex = $state(-1);
   let lastSelectedMember = $state<Member | null>(null);
-  let fetchedMembers = $state<Member[]>([]);
-  let debounceTimeout: any;
 
   let submitting = $state(false);
   let errorMsg = $state<string | null>(null);
@@ -37,35 +33,15 @@
   $effect(() => { if (!isMemberDropdownOpen) highlightedIndex = -1; });
   $effect(() => { if (highlightedIndex >= filteredMembers.length) highlightedIndex = filteredMembers.length - 1; });
 
-  $effect(() => {
-    if (!isMemberDropdownOpen) return;
-    const query = memberSearchQuery.trim();
-    if (lastSelectedMember && memberSearchQuery === formatMemberName(lastSelectedMember)) return;
-    if (query.length > 0 && query.length < 3) return;
-
-    if (debounceTimeout) clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(async () => {
-      try {
-        const response = await fetch(`/api/members-search?q=${encodeURIComponent(query)}`);
-        if (response.ok) fetchedMembers = await response.json() as Member[];
-      } catch (err) { console.error('Error fetching members from API:', err); }
-    }, query === '' ? 0 : 300);
-
-    return () => { if (debounceTimeout) clearTimeout(debounceTimeout); };
-  });
-
   let sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
   let selectedMember = $derived(members.length > 0 ? (members.find(m => m.id.toString() === selectedMemberId) || null) : lastSelectedMember);
   let memberDisplayVal = $derived(selectedMember ? formatMemberName(selectedMember) : '');
   let filteredMembers = $derived(
     memberSearchQuery.trim() === ''
-      ? (fetchedMembers.length > 0 ? fetchedMembers : sortedMembers)
-      : (fetchedMembers.length > 0
-          ? fetchedMembers
-          : sortedMembers.filter(m =>
-              `${m.lastName} ${m.firstName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
-              `${m.firstName} ${m.lastName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase())
-            )
+      ? sortedMembers
+      : sortedMembers.filter(m =>
+          `${m.lastName} ${m.firstName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
+          `${m.firstName} ${m.lastName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase())
         )
   );
 
@@ -97,15 +73,39 @@
 
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
+    if (!selectedMemberId) { errorMsg = "Veuillez sélectionner un demandeur."; return; }
+    const parsedAmount = parseFloat(amountStr);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) { errorMsg = "Montant invalide."; return; }
+    if (!photoUrl) { errorMsg = "Justificatif obligatoire."; return; }
+    
     errorMsg = null; submitting = true;
-    const res = await submitExpenseReport({ activeSeasonId, description, category, amountStr, photoUrl, emitterName, selectedMemberId });
-    submitting = false;
-
-    if (res.success) {
-      onSuccess(res.message || "Note de frais créée avec succès.");
-    } else {
-      errorMsg = res.error || null;
+    try {
+      const res = await fetch('', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'expense',
+          data: {
+            seasonId: activeSeasonId,
+            description,
+            category,
+            amountCents: Math.round(parsedAmount * 100),
+            photoUrl,
+            memberId: parseInt(selectedMemberId),
+            emitterName
+          }
+        })
+      });
+      const resData = await res.json() as any;
+      if (!res.ok || !resData.success) {
+        errorMsg = resData.error || "Erreur lors de la création de la note de frais.";
+      } else {
+        onSuccess(resData.message || "Note de frais créée avec succès.");
+      }
+    } catch (err: any) {
+      errorMsg = err.message || "Erreur réseau.";
     }
+    submitting = false;
   }
 </script>
 
@@ -126,25 +126,66 @@
       </Alert.Root>
     {/if}
 
-    <ExpenseFormMemberSelect
-      bind:selectedMemberId
-      bind:memberSearchQuery
-      bind:isMemberDropdownOpen
-      bind:highlightedIndex
-      {selectedMember}
-      {memberDisplayVal}
-      {filteredMembers}
-      onSelectMember={selectMember}
-      onKeyDown={handleKeyDown}
-    />
+    <FormField id="expense-member-input" label="Demandeur (Adhérent)">
+      <div class="relative">
+        <Input
+          id="expense-member-input"
+          type="text"
+          placeholder="🔍 Rechercher un demandeur par nom ou licence..."
+          class="pr-8 font-medium"
+          value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
+          oninput={(e) => {
+            isMemberDropdownOpen = true;
+            memberSearchQuery = (e.target as HTMLInputElement).value;
+          }}
+          onfocus={() => {
+            isMemberDropdownOpen = true;
+            memberSearchQuery = '';
+          }}
+          onblur={() => {
+            setTimeout(() => { isMemberDropdownOpen = false; }, 200);
+          }}
+          onkeydown={handleKeyDown}
+        />
+        {#if selectedMemberId}
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onclick={() => {
+              selectedMemberId = '';
+              memberSearchQuery = '';
+              lastSelectedMember = null;
+            }}
+            class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+            title="Effacer la sélection"
+          >
+            ✕
+          </Button>
+        {/if}
+
+        {#if isMemberDropdownOpen}
+          <div class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-popover border border-border rounded-lg shadow-lg divide-y divide-border">
+            {#each filteredMembers as member, idx}
+              <Button
+                variant="ghost"
+                class="w-full text-left justify-start rounded-none px-3 py-2 text-sm text-foreground transition-colors font-medium border-0 cursor-pointer {idx === highlightedIndex ? 'bg-muted' : 'bg-popover'} hover:bg-muted"
+                onmousedown={() => selectMember(member)}
+              >
+                {member.lastName} {member.firstName} ({member.licence})
+              </Button>
+            {:else}
+              <div class="px-3 py-2 text-xs text-muted-foreground italic bg-popover">Aucun adhérent trouvé</div>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </FormField>
 
     <ExpenseFormDetails bind:category bind:amountStr bind:description {visibleCategories} />
 
     <ExpenseFormFileInput bind:photoUrl bind:fileInput onError={(msg) => { errorMsg = msg; }} />
 
-    <div class="flex justify-center my-4">
-      <div class="cf-turnstile" data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1" data-size="invisible"></div>
-    </div>
+
   </div>
 
   <Sheet.Footer class="p-6 border-t border-border bg-muted/20 flex flex-col sm:flex-row justify-end items-center gap-4 shrink-0">

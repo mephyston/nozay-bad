@@ -74,13 +74,15 @@ if (Astro.request.method === 'POST') {
 let ordersList = [];
 let seasonsList = [];
 let productsList = [];
+let membersList = [];
 let errorMsg = '';
 
 try {
-  const [seasonsRes, ordersRes, productsRes] = await Promise.all([
+  const [seasonsRes, ordersRes, productsRes, membersRes] = await Promise.all([
     apiService.fetch('http://localhost/accounting/seasons'),
     apiService.fetch(`http://localhost/shop/orders?season=${season}`),
-    apiService.fetch('http://localhost/shop/products?active=true')
+    apiService.fetch('http://localhost/shop/products?active=true'),
+    apiService.fetch(`http://localhost/members?limit=1000&season=${season}`)
   ]);
 
   if (seasonsRes.ok) {
@@ -100,6 +102,11 @@ try {
   if (productsRes.ok) {
     const json = await productsRes.json() as any;
     productsList = json.data || [];
+  }
+
+  if (membersRes.ok) {
+    const json = await membersRes.json() as any;
+    membersList = json.data || [];
   }
 } catch (err: any) {
   errorMsg = 'Une erreur est survenue lors de la récupération des données de la boutique.';
@@ -136,6 +143,7 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
         seasons={seasonsList}
         orders={ordersList}
         products={productsList}
+        members={membersList}
         seasonId={season}
       />
     </div>

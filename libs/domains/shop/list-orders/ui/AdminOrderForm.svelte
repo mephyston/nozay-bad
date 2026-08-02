@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { ShoppingBag, Check, CheckCircle, AlertCircle } from "@lucide/svelte";
-  import { Button, Alert, Sheet } from '@nba/ui';
+  import { ShoppingBag, AlertCircle, Check } from '@lucide/svelte';
+  import { Button, Alert, Sheet, Input, FormField } from '@nba/ui';
   import type { Member, Product } from '../../list-products/ui/catalog-types';
   import { formatMemberName } from '../../list-products/ui/catalog-utils';
-  import { handleMemberKeyDown, submitOrder } from '../../list-products/ui/catalog-order-action';
-  import ShopCatalogMemberSelect from '../../list-products/ui/ShopCatalogMemberSelect.svelte';
+  import { handleMemberKeyDown } from '../../list-products/ui/catalog-order-action';
   import ShopCatalogProductSelect from '../../list-products/ui/ShopCatalogProductSelect.svelte';
   import ShopCatalogSummary from '../../list-products/ui/ShopCatalogSummary.svelte';
 
@@ -16,8 +15,6 @@
   let isMemberDropdownOpen = $state<boolean>(false);
   let highlightedIndex = $state<number>(-1);
   let lastSelectedMember = $state<Member | null>(null);
-  let fetchedMembers = $state<Member[]>([]);
-  let debounceTimeout: any;
 
   let selectedCategory = $state<number>(0);
   let selectedProductId = $state<number | null>(null);
@@ -49,23 +46,6 @@
   $effect(() => { if (!isMemberDropdownOpen) highlightedIndex = -1; });
   $effect(() => { if (highlightedIndex >= filteredMembers.length) highlightedIndex = filteredMembers.length - 1; });
 
-  $effect(() => {
-    if (!isMemberDropdownOpen) return;
-    const query = memberSearchQuery.trim();
-    if (lastSelectedMember && memberSearchQuery === formatMemberName(lastSelectedMember)) return;
-    if (query.length > 0 && query.length < 3) return;
-
-    if (debounceTimeout) clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(async () => {
-      try {
-        const response = await fetch(`/api/members-search?q=${encodeURIComponent(query)}`);
-        if (response.ok) fetchedMembers = await response.json() as Member[];
-      } catch (err) { console.error('Error fetching members from API:', err); }
-    }, query === '' ? 0 : 300);
-
-    return () => { if (debounceTimeout) clearTimeout(debounceTimeout); };
-  });
-
   function selectMember(m: Member) {
     selectedMemberId = m.id.toString();
     lastSelectedMember = m;
@@ -93,13 +73,10 @@
   let memberDisplayVal = $derived(selectedMember ? formatMemberName(selectedMember) : '');
   let filteredMembers = $derived(
     memberSearchQuery.trim() === ''
-      ? (fetchedMembers.length > 0 ? fetchedMembers : sortedMembers)
-      : (fetchedMembers.length > 0
-          ? fetchedMembers
-          : sortedMembers.filter(m =>
-              `${m.lastName} ${m.firstName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
-              `${m.firstName} ${m.lastName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase())
-            )
+      ? sortedMembers
+      : sortedMembers.filter(m =>
+          `${m.lastName} ${m.firstName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
+          `${m.firstName} ${m.lastName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase())
         )
   );
 
@@ -112,14 +89,33 @@
 
   async function handleOrder(e: Event) {
     e.preventDefault();
+    if (!selectedMemberId) { errorMessage = "Veuillez sélectionner un adhérent."; return; }
+    if (!selectedProduct) { errorMessage = "Veuillez sélectionner un produit."; return; }
+
     errorMessage = null; submitting = true;
-    const res = await submitOrder({ selectedMemberId, selectedProduct, selectedQuantity, selectedPaymentMethod, activeSeasonId });
-    submitting = false;
-    if (res.success) { 
-      onSuccess(res.message || "Commande créée avec succès.");
-      selectedQuantity = 1; 
+    try {
+      const res = await fetch('', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          seasonId: activeSeasonId,
+          memberId: parseInt(selectedMemberId),
+          productId: selectedProduct.id,
+          quantity: selectedQuantity,
+          paymentMethod: selectedPaymentMethod
+        })
+      });
+      const data = await res.json() as any;
+      if (!res.ok || !data.success) {
+        errorMessage = data.error || "Une erreur est survenue lors de l'enregistrement de la commande.";
+      } else {
+        onSuccess(data.message || "Commande créée avec succès.");
+        selectedQuantity = 1;
+      }
+    } catch (err: any) {
+      errorMessage = err.message || "Erreur réseau.";
     }
-    else errorMessage = res.error || null;
+    submitting = false;
   }
 </script>
 
@@ -140,17 +136,60 @@
       </Alert.Root>
     {/if}
 
-    <ShopCatalogMemberSelect
-      bind:selectedMemberId
-      bind:memberSearchQuery
-      bind:isMemberDropdownOpen
-      bind:highlightedIndex
-      {selectedMember}
-      {memberDisplayVal}
-      {filteredMembers}
-      onSelectMember={selectMember}
-      onKeyDown={handleKeyDown}
-    />
+    <FormField id="order-member-input" label="Adhérent acheteur">
+      <div class="relative">
+        <Input
+          id="order-member-input"
+          type="text"
+          placeholder="🔍 Rechercher un adhérent par nom ou licence..."
+          class="pr-8 font-medium"
+          value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
+          oninput={(e) => {
+            isMemberDropdownOpen = true;
+            memberSearchQuery = (e.target as HTMLInputElement).value;
+          }}
+          onfocus={() => {
+            isMemberDropdownOpen = true;
+            memberSearchQuery = '';
+          }}
+          onblur={() => {
+            setTimeout(() => { isMemberDropdownOpen = false; }, 200);
+          }}
+          onkeydown={handleKeyDown}
+        />
+        {#if selectedMemberId}
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onclick={() => {
+              selectedMemberId = '';
+              memberSearchQuery = '';
+              lastSelectedMember = null;
+            }}
+            class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+            title="Effacer la sélection"
+          >
+            ✕
+          </Button>
+        {/if}
+
+        {#if isMemberDropdownOpen}
+          <div class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-popover border border-border rounded-lg shadow-lg divide-y divide-border">
+            {#each filteredMembers as member, idx}
+              <Button
+                variant="ghost"
+                class="w-full text-left justify-start rounded-none px-3 py-2 text-sm text-foreground transition-colors font-medium border-0 cursor-pointer {idx === highlightedIndex ? 'bg-muted' : 'bg-popover'} hover:bg-muted"
+                onmousedown={() => selectMember(member)}
+              >
+                {member.lastName} {member.firstName} ({member.licence})
+              </Button>
+            {:else}
+              <div class="px-3 py-2 text-xs text-muted-foreground italic bg-popover">Aucun adhérent trouvé</div>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </FormField>
 
     <ShopCatalogProductSelect
       bind:selectedPaymentMethod
@@ -172,9 +211,7 @@
       {selectedMember}
     />
 
-    <div class="flex justify-center my-4">
-      <div class="cf-turnstile" data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1" data-size="invisible"></div>
-    </div>
+
   </div>
 
   <Sheet.Footer class="p-6 border-t border-border bg-muted/20 flex flex-col sm:flex-row justify-end items-center gap-4 shrink-0">

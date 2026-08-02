@@ -401,6 +401,7 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
       season,
       pastSeasons,
       pastTransactions,
+      periodTxs, // Pass current cash transactions
       projList,
       history,
       effectiveEndDate,

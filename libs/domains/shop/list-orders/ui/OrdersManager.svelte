@@ -18,11 +18,13 @@
     seasons = [],
     orders = [],
     products = [],
+    members = [],
     seasonId
   }: {
     seasons: Season[];
     orders: OrderItem[];
     products?: any[];
+    members?: any[];
     seasonId: string;
   } = $props();
 
@@ -202,7 +204,7 @@
   <Sheet.Content side="right" class="w-full sm:max-w-2xl overflow-y-auto p-0 flex flex-col h-full">
     <AdminOrderForm
       products={products}
-      members={[]}
+      members={members}
       activeSeasonId={seasonId}
       onClose={() => isCreateSheetOpen = false}
       onSuccess={(msg) => { successMsg = msg; isCreateSheetOpen = false; }}
