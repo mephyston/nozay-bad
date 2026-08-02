@@ -1,3 +1,10 @@
+# [1.0.0-beta.33](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.32...v1.0.0-beta.33) (2026-08-02)
+
+
+### Bug Fixes
+
+* **iam:** properly open user sheet on add ([3be9696](https://github.com/mephyston/nozay-bad/commit/3be969602ec4deb6c66405d04d539a26d5c0e44a))
+
 # [1.0.0-beta.32](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.31...v1.0.0-beta.32) (2026-08-02)
 
 
