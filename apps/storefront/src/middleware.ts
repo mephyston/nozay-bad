@@ -3,7 +3,7 @@ import { verifySession, readSessionCookie, resolveSessionSecret } from './lib/au
 import { resolveEnv, IS_DEV } from './lib/request-context';
 
 // Chemins accessibles sans session : page de login, endpoints d'auth, et assets Astro (_astro/_image).
-const PUBLIC_PREFIXES = ['/login', '/api/auth/', '/confidentialite'];
+const PUBLIC_PREFIXES = ['/login', '/api/auth/', '/confidentialite', '/mentions-legales'];
 // Fichiers statiques servis depuis public/ (favicon, logo, robots, manifest, polices...).
 // Volontairement SANS .pdf : /api/attestation.pdf doit rester protégé (voir exclusion /api/).
 const STATIC_FILE = /\.(ico|png|jpe?g|svg|webp|gif|avif|txt|xml|webmanifest|json|woff2?|ttf|otf|eot|css|js|map|mp4|webm)$/i;
