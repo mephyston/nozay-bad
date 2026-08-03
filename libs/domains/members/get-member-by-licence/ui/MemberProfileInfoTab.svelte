@@ -17,8 +17,15 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: member.id, authorized: !authorized })
       });
-      if (res.ok) authorized = !authorized;
-    } catch {}
+      if (res.ok) {
+        authorized = !authorized;
+      } else {
+        const txt = await res.text().catch(() => '');
+        alert(`Échec de la mise à jour (HTTP ${res.status}). ${txt}`);
+      }
+    } catch (e: any) {
+      alert('Erreur réseau : ' + (e?.message ?? String(e)));
+    }
     toggling = false;
   }
 </script>
