@@ -15,9 +15,14 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     throw new AppError("Saison introuvable.", 404);
   }
 
-  // Validate cutoff date if provided
+  // Date d'arrêté : ne peut pas précéder le début de saison. Elle PEUT être postérieure
+  // au 31/08 (clôture ~mi-octobre) pour capter les prélèvements/chèques tardifs rattachés
+  // à l'exercice (compta de trésorerie).
   let effectiveEndDate = season.endDate;
   if (arretedAu) {
+    if (arretedAu < season.startDate) {
+      throw new AppError("La date d'arrêté est antérieure au début de la saison.", 400);
+    }
     effectiveEndDate = arretedAu;
   }
 
@@ -157,7 +162,7 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
   const totalGrossCashCents = reportBalances.reduce((sum, b) => sum + b.finalBalance, 0);
 
   // 3. Trésorerie Disponible & Repartition des Accruals (Deferred Revenues / Expenses)
-  const deferredTxs = await repo.getDeferredTransactions(db, effectiveEndDate, season.id);
+  const deferredTxs = await repo.getDeferredTransactions(db, season.startDate, effectiveEndDate);
 
   const deferredRevenues: DeferredCashBreakdown[] = [];
   const deferredExpenses: DeferredCashBreakdown[] = [];
@@ -212,10 +217,12 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     deferredExpenses
   };
 
-  // 4. Projections de Fin d'Exercice (Volet B - Only if arretedAu is provided)
+  // 4. Projections de Fin d'Exercice (Volet B) — uniquement pour un arrêté EN COURS
+  // d'exercice (≤ fin de saison). Après la fin (clôture), l'exercice est terminé : pas
+  // de projection de fin d'exercice.
   let projections: GetSeasonReportsOutput['projections'] = undefined;
 
-  if (arretedAu) {
+  if (arretedAu && arretedAu <= season.endDate) {
     const categoryBudgets = await repo.getCategoryBudgets(db, season.id);
     const projList: CategoryProjection[] = [];
 
@@ -257,7 +264,13 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     }
 
     const categoryTotals: Record<string, { total: number }> = {};
-    const transactions = await repo.getTransactionsForSeason(db, season.id);
+    // Réalisé = transactions de CETTE saison encaissées jusqu'à la date d'arrêté :
+    //  - filtre par saison → exclut les produits/charges constatés d'avance d'une AUTRE saison
+    //    (ceux-ci sont réintégrés séparément plus bas via les PCA/CCA des saisons passées) ;
+    //  - filtre par date → applique le cut-off d'arrêté (une recette encaissée après n'est
+    //    pas « réalisée » à date, elle relève du reste-à-réaliser).
+    const seasonTxs = await repo.getTransactionsForSeason(db, season.id);
+    const transactions = seasonTxs.filter((tx: any) => tx.date <= effectiveEndDate);
     for (const tx of transactions) {
       if (tx.categoryId !== null) {
         const catId = typeof tx.categoryId === 'object' ? (tx.categoryId as any).id : tx.categoryId;

@@ -36,18 +36,16 @@ export class GetSeasonReportsRepository {
   }
 
 
-  async getDeferredTransactions(db: DbOrTx, cutoffDate: string, seasonId: number | string): Promise<any[]> {
-    const numericId = Number(seasonId);
-    const seasonCond = !isNaN(numericId)
-      ? or(eq(ledgerEntriesTable.seasonId, numericId), eq(ledgerEntriesTable.seasonId, seasonId as any))
-      : eq(ledgerEntriesTable.seasonId, seasonId as any);
-
+  // Trésorerie = filtre par DATE (relevé bancaire), PAS par saison : les produits/charges
+  // constatés d'avance encaissés/décaissés pendant la période de l'exercice sont physiquement
+  // sur le compte, même si leur `seasonId` pointe l'exercice de rattachement (souvent futur).
+  async getDeferredTransactions(db: DbOrTx, startDate: string, cutoffDate: string): Promise<any[]> {
     return db.select()
       .from(ledgerEntriesTable)
       .where(and(
+        gte(ledgerEntriesTable.date, startDate),
         lte(ledgerEntriesTable.date, cutoffDate),
-        inArray(ledgerEntriesTable.accrualType, ['produit_constate_avance', 'charge_constatee_avance']),
-        seasonCond
+        inArray(ledgerEntriesTable.accrualType, ['produit_constate_avance', 'charge_constatee_avance'])
       ))
       .all();
   }
