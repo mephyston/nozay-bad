@@ -1,3 +1,10 @@
+# [1.0.0-beta.36](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.35...v1.0.0-beta.36) (2026-08-03)
+
+
+### Bug Fixes
+
+* **storefront:** laisser passer les fichiers statiques dans le middleware auth ([3aedfe8](https://github.com/mephyston/nozay-bad/commit/3aedfe8cc5c046182ce585dd7fbe4d916d42249a))
+
 # [1.0.0-beta.35](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.34...v1.0.0-beta.35) (2026-08-03)
 
 
