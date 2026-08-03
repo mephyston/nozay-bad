@@ -150,7 +150,7 @@
                   Voir profil
                 </a>
               </DropdownMenu.Item>
-              <DropdownMenu.Item onSelect={() => toggleExpense(member)} class="cursor-pointer flex items-center w-full">
+              <DropdownMenu.Item onclick={() => toggleExpense(member)} class="cursor-pointer flex items-center w-full">
                 <Receipt class="w-3.5 h-3.5 mr-2" />
                 {member.expenseAuthorized ? 'Retirer note de frais' : 'Autoriser note de frais'}
               </DropdownMenu.Item>
@@ -218,7 +218,7 @@
                   Voir la fiche
                 </a>
               </DropdownMenu.Item>
-              <DropdownMenu.Item onSelect={() => toggleExpense(member)} class="cursor-pointer flex items-center w-full">
+              <DropdownMenu.Item onclick={() => toggleExpense(member)} class="cursor-pointer flex items-center w-full">
                 <Receipt class="w-3.5 h-3.5 mr-2" />
                 {member.expenseAuthorized ? 'Retirer note de frais' : 'Autoriser note de frais'}
               </DropdownMenu.Item>

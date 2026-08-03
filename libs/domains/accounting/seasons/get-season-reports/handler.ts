@@ -15,14 +15,12 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     throw new AppError("Saison introuvable.", 404);
   }
 
-  // Date d'arrêté : ne peut pas précéder le début de saison. Elle PEUT être postérieure
-  // au 31/08 (clôture ~mi-octobre) pour capter les prélèvements/chèques tardifs rattachés
-  // à l'exercice (compta de trésorerie).
+  // Date d'arrêté = simple date « as-of ». Aucune borne : avant le début de saison →
+  // rien de réalisé (période vide) ; après le 31/08 (clôture ~mi-octobre) → capte les
+  // prélèvements/chèques tardifs rattachés à l'exercice (compta de trésorerie). C'est ce
+  // qui permet aussi d'afficher le bilan d'une saison future (arrêté = aujourd'hui).
   let effectiveEndDate = season.endDate;
   if (arretedAu) {
-    if (arretedAu < season.startDate) {
-      throw new AppError("La date d'arrêté est antérieure au début de la saison.", 400);
-    }
     effectiveEndDate = arretedAu;
   }
 

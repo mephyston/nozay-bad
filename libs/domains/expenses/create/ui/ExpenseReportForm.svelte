@@ -135,14 +135,12 @@
   }
 </script>
 
-<Card.Root class="max-w-2xl mx-auto shadow-xl">
-  <Card.Header class="bg-gradient-to-r from-primary to-primary/80 p-6 text-primary-foreground hidden md:flex flex-row items-center gap-4 rounded-t-xl">
-    <div class="bg-primary-foreground/10 p-3 rounded-xl backdrop-blur-md">
-      <Coins class="w-7 h-7 text-primary-foreground" />
-    </div>
+<Card.Root class="max-w-2xl mx-auto shadow-sm">
+  <Card.Header class="px-5 py-4 border-b border-border flex flex-row items-center gap-3">
+    <Coins class="w-5 h-5 text-primary shrink-0" />
     <div>
-      <Card.Title class="text-xl font-bold tracking-tight text-primary-foreground">Saisir une note de frais</Card.Title>
-      <p class="text-xs text-primary-foreground/80 mt-1">Soumettez vos dépenses engagées pour le compte de l'association.</p>
+      <Card.Title class="text-base font-semibold text-foreground">Saisir une note de frais</Card.Title>
+      <p class="text-xs text-muted-foreground mt-0.5">Soumettez vos dépenses engagées pour le compte de l'association.</p>
     </div>
   </Card.Header>
 

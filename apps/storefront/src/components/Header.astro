@@ -10,6 +10,7 @@ interface Props {
 
 const { currentPath, activeSeasonName = 'Saison 2025-2026', pageTitle } = Astro.props;
 
+const isCompte = currentPath === '/mon-compte';
 const isBoutique = currentPath === '/boutique';
 const isExpenses = currentPath === '/note-de-frais';
 const isAttestation = currentPath === '/attestation';
@@ -34,6 +35,16 @@ const canExpense = activeMember?.expenseAuthorized ?? false;
     )}
 
     <nav class="hidden md:flex items-center gap-1 border-l border-border pl-2 sm:pl-6 h-6">
+      <a
+        href="/mon-compte"
+        class={`px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-colors min-h-[36px] flex items-center ${
+          isCompte
+            ? 'bg-accent text-accent-foreground font-semibold'
+            : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+        }`}
+      >
+        Mon compte
+      </a>
       <a
         href="/boutique"
         class={`px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-colors min-h-[36px] flex items-center ${

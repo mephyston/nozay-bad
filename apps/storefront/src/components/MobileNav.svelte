@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { Receipt, ShoppingCart, FileText } from '@lucide/svelte';
+  import { Receipt, ShoppingCart, FileText, Wallet } from '@lucide/svelte';
 
   let { currentPath = '', canExpense = true }: { currentPath?: string; canExpense?: boolean } = $props();
 
   const items = $derived([
+    { href: '/mon-compte', label: 'Compte', icon: Wallet },
     ...(canExpense ? [{ href: '/note-de-frais', label: 'Frais', icon: Receipt }] : []),
     { href: '/boutique', label: 'Commande', icon: ShoppingCart },
     { href: '/attestation', label: 'Attestation', icon: FileText }

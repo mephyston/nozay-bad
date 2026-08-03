@@ -4,7 +4,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { getSeasonReports } from './handler';
 import { seasonCategoryBudgetsTable } from '../../shared/schema';
-import { AppError } from '@nba/db';
 
 describe('getSeasonReports (As-of Cut-off Date & Projections - PROMPT 12)', () => {
   let db: any;
@@ -187,8 +186,11 @@ describe('getSeasonReports (As-of Cut-off Date & Projections - PROMPT 12)', () =
     expect(res.tresorerieDisponible!.netAvailableCashCents).toBe(3650000);
   });
 
-  it('rejects arretedAu outside season bounds', async () => {
-    await expect(getSeasonReports(db, { seasonId: '25-26', arretedAu: '2025-08-15' }))
-      .rejects.toThrow(AppError);
+  it('accepte une date d’arrêté antérieure au début de saison (réalisé nul, pas d’erreur)', async () => {
+    // Cas réel : afficher le bilan d'une saison future avec arrêté = aujourd'hui
+    // (antérieur au début de la saison) → aucune donnée réalisée, mais pas d'erreur.
+    const res = await getSeasonReports(db, { seasonId: '25-26', arretedAu: '2025-08-15' });
+    expect(res.compteResultat.totalRecettes).toBe(0);
+    expect(res.arretedAu).toBe('2025-08-15');
   });
 });

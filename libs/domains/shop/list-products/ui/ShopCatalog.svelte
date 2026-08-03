@@ -136,14 +136,12 @@
   }
 </script>
 
-<Card.Root class="max-w-2xl mx-auto shadow-xl">
-  <Card.Header class="bg-gradient-to-r from-primary to-primary/80 p-6 text-primary-foreground hidden md:flex flex-row items-center gap-4 rounded-t-xl">
-    <div class="bg-primary-foreground/10 p-3 rounded-xl backdrop-blur-md">
-      <ShoppingBag class="w-7 h-7 text-primary-foreground" />
-    </div>
+<Card.Root class="max-w-2xl mx-auto shadow-sm">
+  <Card.Header class="px-5 py-4 border-b border-border flex flex-row items-center gap-3">
+    <ShoppingBag class="w-5 h-5 text-primary shrink-0" />
     <div>
-      <Card.Title class="text-xl font-bold tracking-tight text-primary-foreground">Boutique Club</Card.Title>
-      <p class="text-xs text-primary-foreground/80 mt-1">Commandez vos volants, cordages et équipements du club en quelques clics.</p>
+      <Card.Title class="text-base font-semibold text-foreground">Boutique du club</Card.Title>
+      <p class="text-xs text-muted-foreground mt-0.5">Commandez vos volants, cordages et équipements du club.</p>
     </div>
   </Card.Header>
 
