@@ -1,3 +1,10 @@
+# [1.0.0-beta.38](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.37...v1.0.0-beta.38) (2026-08-03)
+
+
+### Bug Fixes
+
+* **ci:** forcer EMAIL_MODE=dry-run sur le déploiement storefront staging ([fb401d4](https://github.com/mephyston/nozay-bad/commit/fb401d4c513bee02bad302fb74690d622a37f704))
+
 # [1.0.0-beta.37](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.36...v1.0.0-beta.37) (2026-08-03)
 
 
