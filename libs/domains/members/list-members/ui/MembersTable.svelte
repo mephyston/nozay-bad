@@ -3,7 +3,7 @@
 </script>
 <script lang="ts">
   import { User, Eye, ChevronRight, Receipt } from '@lucide/svelte';
-  import { Button, Badge, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions } from '@nba/ui';
+  import { Button, Badge, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions, uiConfirm } from '@nba/ui';
   import type { Member, Pagination, Filters, Season } from './members-table-types';
   import MembersTableFiltersPopover from './MembersTableFiltersPopover.svelte';
 
@@ -13,6 +13,14 @@
   let togglingId = $state<number | null>(null);
   async function toggleExpense(member: Member) {
     if (togglingId !== null) return;
+    const authorize = !member.expenseAuthorized;
+    const name = `${member.firstName} ${member.lastName}`;
+    const ok = await uiConfirm(
+      authorize
+        ? `Autoriser ${name} à soumettre des notes de frais ?`
+        : `Retirer à ${name} l'autorisation de soumettre des notes de frais ?`
+    );
+    if (!ok) return;
     togglingId = member.id;
     try {
       const res = await fetch('/admin/api/members', {

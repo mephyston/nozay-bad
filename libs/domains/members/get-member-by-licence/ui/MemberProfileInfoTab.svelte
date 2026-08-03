@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Shield, Calendar, Tag, Mail, Phone, Receipt } from '@lucide/svelte';
-  import { Card, Button } from '@nba/ui';
+  import { Card, Button, uiConfirm } from '@nba/ui';
   import type { Member } from './member-profile-types';
 
   let { member }: { member: Member } = $props();
@@ -10,6 +10,13 @@
   let toggling = $state(false);
   async function toggleExpense() {
     if (toggling) return;
+    const name = `${member.firstName} ${member.lastName}`;
+    const ok = await uiConfirm(
+      !authorized
+        ? `Autoriser ${name} à soumettre des notes de frais ?`
+        : `Retirer à ${name} l'autorisation de soumettre des notes de frais ?`
+    );
+    if (!ok) return;
     toggling = true;
     try {
       const res = await fetch('/admin/api/members', {
