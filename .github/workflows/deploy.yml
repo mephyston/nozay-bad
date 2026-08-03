@@ -280,6 +280,7 @@ jobs:
             const cfg = JSON.parse(fs.readFileSync('dist/server/wrangler.json', 'utf8'));
             cfg.kv_namespaces = (cfg.kv_namespaces || []).filter(kv => kv.id);
             delete cfg.images;
+            cfg.workers_dev = false; // désactive l'URL *.workers.dev : seul le domaine custom reste
             if (process.env.REF_NAME !== 'main') {
               cfg.name = 'nba-storefront-staging';
               cfg.services = [{ binding: 'API_SERVICE', service: 'nba-api-staging' }];
@@ -330,6 +331,7 @@ jobs:
             const cfg = JSON.parse(fs.readFileSync('dist/server/wrangler.json', 'utf8'));
             cfg.kv_namespaces = (cfg.kv_namespaces || []).filter(kv => kv.id);
             delete cfg.images;
+            cfg.workers_dev = false; // désactive l'URL *.workers.dev : seul le domaine custom reste
             if (process.env.REF_NAME !== 'main') {
               cfg.name = 'nba-admin-staging';
               cfg.services = [{ binding: 'API_SERVICE', service: 'nba-api-staging' }];
