@@ -4,6 +4,9 @@ import { resolveEnv, IS_DEV } from './lib/request-context';
 
 // Chemins accessibles sans session : page de login, endpoints d'auth, et assets Astro (_astro/_image).
 const PUBLIC_PREFIXES = ['/login', '/api/auth/'];
+// Fichiers statiques servis depuis public/ (favicon, logo, robots, manifest, polices...).
+// Volontairement SANS .pdf : /api/attestation.pdf doit rester protégé (voir exclusion /api/).
+const STATIC_FILE = /\.(ico|png|jpe?g|svg|webp|gif|avif|txt|xml|webmanifest|json|woff2?|ttf|otf|eot|css|js|map|mp4|webm)$/i;
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { request, locals } = context;
@@ -12,6 +15,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (
     path.startsWith('/_') ||
+    (!path.startsWith('/api/') && STATIC_FILE.test(path)) ||
     PUBLIC_PREFIXES.some((p) => path === p || path.startsWith(p))
   ) {
     return next();
