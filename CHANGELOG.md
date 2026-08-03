@@ -1,3 +1,10 @@
+# [1.0.0-beta.35](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.34...v1.0.0-beta.35) (2026-08-03)
+
+
+### Features
+
+* **members:** autorisation de note de frais par adhérent ([e327224](https://github.com/mephyston/nozay-bad/commit/e32722402dc0af901f4f80fe9bf6dce72e11036f))
+
 # [1.0.0-beta.34](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.33...v1.0.0-beta.34) (2026-08-03)
 
 
