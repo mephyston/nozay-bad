@@ -1,3 +1,10 @@
+# [1.0.0-beta.42](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.41...v1.0.0-beta.42) (2026-08-03)
+
+
+### Features
+
+* **storefront:** section Cookies, polices auto-hébergées, lien confidentialité au login ([13f92f8](https://github.com/mephyston/nozay-bad/commit/13f92f854f037517d971b49acba44e2c52b6baea))
+
 # [1.0.0-beta.41](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.40...v1.0.0-beta.41) (2026-08-03)
 
 
