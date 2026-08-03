@@ -1,3 +1,15 @@
+# [1.0.0-beta.41](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.40...v1.0.0-beta.41) (2026-08-03)
+
+
+### Bug Fixes
+
+* **storefront:** rediriger vers l'accueil après connexion ([0fac1b2](https://github.com/mephyston/nozay-bad/commit/0fac1b2da66eb9b9f91ef83d4c89fccf3b41d769))
+
+
+### Features
+
+* **storefront:** page d'accueil de l'espace adhérent ([b90002e](https://github.com/mephyston/nozay-bad/commit/b90002e66e99cbef95d0adb6b7a3fb5f0fdc21b3))
+
 # [1.0.0-beta.40](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.39...v1.0.0-beta.40) (2026-08-03)
 
 
