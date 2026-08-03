@@ -1,3 +1,10 @@
+# [1.0.0-beta.46](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.45...v1.0.0-beta.46) (2026-08-03)
+
+
+### Features
+
+* **admin:** dialog de confirmation avant de (dé)autoriser les notes de frais ([2cc91cc](https://github.com/mephyston/nozay-bad/commit/2cc91cc4fa7118267e32671dfb1a67ee0fc0177b))
+
 # [1.0.0-beta.45](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.44...v1.0.0-beta.45) (2026-08-03)
 
 
