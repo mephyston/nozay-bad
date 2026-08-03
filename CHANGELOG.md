@@ -1,3 +1,10 @@
+# [1.0.0-beta.40](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.39...v1.0.0-beta.40) (2026-08-03)
+
+
+### Features
+
+* **storefront:** page politique de confidentialité + corrections de nom ([c9af11e](https://github.com/mephyston/nozay-bad/commit/c9af11e3a8a958abc39e6949c467c7f4fbf4e338))
+
 # [1.0.0-beta.39](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.38...v1.0.0-beta.39) (2026-08-03)
 
 
