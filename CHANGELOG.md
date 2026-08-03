@@ -1,3 +1,10 @@
+# [1.0.0-beta.45](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.44...v1.0.0-beta.45) (2026-08-03)
+
+
+### Bug Fixes
+
+* **admin:** route autorisation note de frais robuste + remontée d'erreur ([3867382](https://github.com/mephyston/nozay-bad/commit/3867382ecf7963d5b0177e50f630924889063b9b))
+
 # [1.0.0-beta.44](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.43...v1.0.0-beta.44) (2026-08-03)
 
 
