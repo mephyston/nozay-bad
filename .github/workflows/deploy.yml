@@ -266,6 +266,10 @@ jobs:
 
       - name: Build Storefront (Astro SSR)
         working-directory: apps/storefront
+        env:
+          # Site key Turnstile (publique) — inline par Astro au build. Widget avec les
+          # hostnames my.nozaybad.fr + staging-my.nozaybad.fr (staging et prod partagés).
+          PUBLIC_TURNSTILE_SITE_KEY: 0x4AAAAAAD1TY7I_ql47XOjI
         run: npx astro build
 
       - name: Deploy Storefront Worker
