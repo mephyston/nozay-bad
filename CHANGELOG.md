@@ -1,3 +1,10 @@
+# [1.0.0-beta.43](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.42...v1.0.0-beta.43) (2026-08-03)
+
+
+### Features
+
+* **storefront:** page mentions légales (publique) ([778067f](https://github.com/mephyston/nozay-bad/commit/778067f7ca62a197ba75f3c2931f523e4e7ceaa8))
+
 # [1.0.0-beta.42](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.41...v1.0.0-beta.42) (2026-08-03)
 
 
