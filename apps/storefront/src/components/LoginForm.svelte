@@ -19,11 +19,11 @@
   let info = $state('');
 
   function redirectTarget(): string {
-    if (typeof window === 'undefined') return '/note-de-frais';
+    if (typeof window === 'undefined') return '/';
     const param = new URLSearchParams(window.location.search).get('redirect');
     // On n'accepte que des chemins internes (anti open-redirect).
     if (param && param.startsWith('/') && !param.startsWith('//')) return param;
-    return '/note-de-frais';
+    return '/';
   }
 
   function resetTurnstile() {

@@ -12,7 +12,7 @@ const session = secret && token ? await verifySession(token, secret) : null;
 if (session) {
   const redirectParam = Astro.url.searchParams.get('redirect');
   const isInternal = Boolean(redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//'));
-  return Astro.redirect(isInternal ? (redirectParam as string) : '/note-de-frais', 302);
+  return Astro.redirect(isInternal ? (redirectParam as string) : '/', 302);
 }
 ---
 
