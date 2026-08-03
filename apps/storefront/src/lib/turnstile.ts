@@ -5,7 +5,7 @@ import { env as cfEnv } from 'cloudflare:workers';
  * Compatible with Cloudflare Workers Free Tier (using Workers KV or process-global store).
  */
 
-export const DEFAULT_TURNSTILE_SITEVERIFY_URL = 'https://turnstile.cloudflare.com/turnstile/v0/siteverify';
+export const DEFAULT_TURNSTILE_SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
 export function getTurnstileSiteverifyUrl(): string {
   return (
