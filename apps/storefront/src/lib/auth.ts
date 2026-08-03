@@ -200,7 +200,7 @@ async function readOtp(kv: any, key: string): Promise<OtpRecord | null> {
       const stored = await kv.get(key, { type: 'json' });
       return (stored as OtpRecord) || null;
     } catch (err) {
-      console.error('[auth] KV OTP read failed, degrading to memory:', err);
+      console.warn('[auth] KV OTP read failed, degrading to memory:', err);
     }
   }
   const mem = memoryOtpStore().get(key);
@@ -214,7 +214,7 @@ async function writeOtp(kv: any, key: string, record: OtpRecord): Promise<void> 
       await kv.put(key, JSON.stringify(record), { expirationTtl: OTP_TTL_SECONDS });
       return;
     } catch (err) {
-      console.error('[auth] KV OTP write failed, degrading to memory:', err);
+      console.warn('[auth] KV OTP write failed, degrading to memory:', err);
     }
   }
   memoryOtpStore().set(key, { record, expiresAt: Date.now() + OTP_TTL_SECONDS * 1000 });
@@ -225,7 +225,7 @@ async function deleteOtp(kv: any, key: string): Promise<void> {
     try {
       await kv.delete(key);
     } catch (err) {
-      console.error('[auth] KV OTP delete failed:', err);
+      console.warn('[auth] KV OTP delete failed:', err);
     }
   }
   memoryOtpStore().delete(key);
