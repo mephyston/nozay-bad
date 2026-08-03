@@ -1,3 +1,10 @@
+# [1.0.0-beta.37](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.36...v1.0.0-beta.37) (2026-08-03)
+
+
+### Bug Fixes
+
+* **accounting:** arrêté après fin d'exercice + réalisé/PCA cohérents (compta tréso) ([4ef5189](https://github.com/mephyston/nozay-bad/commit/4ef51897a50d874695b0704b6b5ce295639ce2bb))
+
 # [1.0.0-beta.36](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.35...v1.0.0-beta.36) (2026-08-03)
 
 
