@@ -4,7 +4,7 @@ declare namespace App {
   interface Locals {
     session?: {
       email: string;
-      members: Array<{ id: number; firstName: string; lastName: string; licence: string; paid: boolean }>;
+      members: Array<{ id: number; firstName: string; lastName: string; licence: string; paid: boolean; expenseAuthorized: boolean }>;
       activeMemberId: number;
     };
     runtime: import('@astrojs/cloudflare').Runtime<Env>;

@@ -2,12 +2,31 @@
   export * from './members-table-types';
 </script>
 <script lang="ts">
-  import { User, Eye, ChevronRight } from '@lucide/svelte';
+  import { User, Eye, ChevronRight, Receipt } from '@lucide/svelte';
   import { Button, Badge, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions } from '@nba/ui';
   import type { Member, Pagination, Filters, Season } from './members-table-types';
   import MembersTableFiltersPopover from './MembersTableFiltersPopover.svelte';
 
   let { data = [], pagination, filters, seasons = [] }: { data: Member[]; pagination: Pagination; filters: Filters; seasons?: Season[] } = $props();
+
+  // Bascule l'autorisation de note de frais d'un adhérent (raccourci depuis la liste).
+  let togglingId = $state<number | null>(null);
+  async function toggleExpense(member: Member) {
+    if (togglingId !== null) return;
+    togglingId = member.id;
+    try {
+      const res = await fetch('/admin/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: member.id, authorized: !member.expenseAuthorized })
+      });
+      if (res.ok) {
+        window.location.reload();
+        return;
+      }
+    } catch {}
+    togglingId = null;
+  }
 
   // svelte-ignore state_referenced_locally
   const initialSearch = filters?.search ?? '';
@@ -131,6 +150,10 @@
                   Voir profil
                 </a>
               </DropdownMenu.Item>
+              <DropdownMenu.Item onSelect={() => toggleExpense(member)} class="cursor-pointer flex items-center w-full">
+                <Receipt class="w-3.5 h-3.5 mr-2" />
+                {member.expenseAuthorized ? 'Retirer note de frais' : 'Autoriser note de frais'}
+              </DropdownMenu.Item>
               {#if member.paid}
                 <DropdownMenu.Item asChild>
                   <a
@@ -194,6 +217,10 @@
                   <Eye class="w-4 h-4 text-primary mr-2" />
                   Voir la fiche
                 </a>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item onSelect={() => toggleExpense(member)} class="cursor-pointer flex items-center w-full">
+                <Receipt class="w-3.5 h-3.5 mr-2" />
+                {member.expenseAuthorized ? 'Retirer note de frais' : 'Autoriser note de frais'}
               </DropdownMenu.Item>
               {#if member.paid}
                 <DropdownMenu.Item asChild>

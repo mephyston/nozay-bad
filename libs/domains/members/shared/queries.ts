@@ -20,6 +20,7 @@ export interface MemberSummary {
   amountReceived: number;
   amountRemaining: number;
   paid: boolean;
+  expenseAuthorized: boolean;
 }
 
 export async function getMemberById(db: DbOrTx, id: number): Promise<MemberSummary | undefined> {

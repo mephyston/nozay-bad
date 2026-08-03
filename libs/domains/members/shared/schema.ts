@@ -25,6 +25,8 @@ export const membersTable = sqliteTable('members', {
   amountReceivedCents: integer('amount_received_cents').notNull().default(0),
   amountRemainingCents: integer('amount_remaining_cents').notNull().default(0),
   paid: integer('paid', { mode: 'boolean' }).notNull().default(false),
+  // Autorise l'adhérent à saisir des notes de frais (défaut : non). Piloté depuis l'admin.
+  expenseAuthorized: integer('expense_authorized', { mode: 'boolean' }).notNull().default(false),
   parent1Name: text('parent1_name'),
   parent1Email: text('parent1_email'),
   parent1Phone: text('parent1_phone'),

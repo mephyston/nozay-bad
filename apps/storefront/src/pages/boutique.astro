@@ -64,6 +64,8 @@ if (Astro.request.method === 'POST') {
 const session = Astro.locals.session;
 const members: Member[] = session?.members ?? [];
 const initialMemberId = session?.activeMemberId ? String(session.activeMemberId) : '';
+const activeMember = session?.members.find((m) => m.id === session.activeMemberId);
+const canExpense = activeMember?.expenseAuthorized ?? false;
 
 let products: Product[] = [];
 let seasons: Season[] = [];
@@ -113,7 +115,7 @@ const activeSeasonId = activeSeason.id;
     />
   </main>
 
-  <MobileNav currentPath="/boutique" />
+  <MobileNav currentPath="/boutique" canExpense={canExpense} />
 
   <footer class="border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground pb-24 md:pb-8">
     <p>© {new Date().getFullYear()} Nozay Badminton Associatif. Tous droits réservés.</p>

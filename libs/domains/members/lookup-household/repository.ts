@@ -9,6 +9,7 @@ export interface HouseholdMember {
   lastName: string;
   licence: string;
   paid: boolean;
+  expenseAuthorized: boolean;
 }
 
 export interface HouseholdLookupResult {
@@ -37,7 +38,8 @@ export class LookupHouseholdRepository {
         firstName: membersTable.firstName,
         lastName: membersTable.lastName,
         licence: membersTable.licence,
-        paid: membersTable.paid
+        paid: membersTable.paid,
+        expenseAuthorized: membersTable.expenseAuthorized
       })
       .from(membersTable)
       .where(where)

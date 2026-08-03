@@ -15,8 +15,8 @@ import {
 
 const SECRET = 'test-secret-key-abcdefghijklmnop';
 const members: SessionMember[] = [
-  { id: 1, firstName: 'Léa', lastName: 'Martin', licence: '1000001', paid: true },
-  { id: 2, firstName: 'Tom', lastName: 'Martin', licence: '1000002', paid: false }
+  { id: 1, firstName: 'Léa', lastName: 'Martin', licence: '1000001', paid: true, expenseAuthorized: false },
+  { id: 2, firstName: 'Tom', lastName: 'Martin', licence: '1000002', paid: false, expenseAuthorized: true }
 ];
 
 describe('session', () => {

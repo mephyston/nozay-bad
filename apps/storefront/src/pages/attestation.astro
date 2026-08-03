@@ -6,6 +6,7 @@ import MobileNav from '../components/MobileNav.svelte';
 const session = Astro.locals.session;
 const active = session?.members.find((m) => m.id === session.activeMemberId);
 const paid = active?.paid ?? false;
+const canExpense = active?.expenseAuthorized ?? false;
 const fullName = active ? `${active.firstName} ${active.lastName}` : '';
 ---
 
@@ -57,7 +58,7 @@ const fullName = active ? `${active.firstName} ${active.lastName}` : '';
     </div>
   </main>
 
-  <MobileNav currentPath="/attestation" />
+  <MobileNav currentPath="/attestation" canExpense={canExpense} />
 
   <footer class="border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground pb-24 md:pb-8">
     <p>© {new Date().getFullYear()} Nozay Badminton Associatif. Tous droits réservés.</p>

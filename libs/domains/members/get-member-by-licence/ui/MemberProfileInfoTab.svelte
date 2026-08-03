@@ -1,9 +1,26 @@
 <script lang="ts">
-  import { Shield, Calendar, Tag, Mail, Phone } from '@lucide/svelte';
-  import { Card } from '@nba/ui';
+  import { Shield, Calendar, Tag, Mail, Phone, Receipt } from '@lucide/svelte';
+  import { Card, Button } from '@nba/ui';
   import type { Member } from './member-profile-types';
 
   let { member }: { member: Member } = $props();
+
+  // Autorisation de note de frais : bascule persistée via l'API admin.
+  let authorized = $state(Boolean(member.expenseAuthorized));
+  let toggling = $state(false);
+  async function toggleExpense() {
+    if (toggling) return;
+    toggling = true;
+    try {
+      const res = await fetch('/admin/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: member.id, authorized: !authorized })
+      });
+      if (res.ok) authorized = !authorized;
+    } catch {}
+    toggling = false;
+  }
 </script>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -35,6 +52,18 @@
             <div class="text-xs text-muted-foreground">Formule d'adhésion</div>
             <div class="text-sm font-medium">{member.type}</div>
           </div>
+        </div>
+        <div class="flex items-center justify-between gap-3 border-t border-border pt-3">
+          <div class="flex items-center gap-3">
+            <Receipt class="w-4 h-4 text-muted-foreground shrink-0" />
+            <div>
+              <div class="text-xs text-muted-foreground">Notes de frais</div>
+              <div class="text-sm font-medium">{authorized ? 'Autorisées' : 'Non autorisées'}</div>
+            </div>
+          </div>
+          <Button variant={authorized ? 'outline' : 'default'} size="sm" disabled={toggling} onclick={toggleExpense}>
+            {authorized ? 'Retirer' : 'Autoriser'}
+          </Button>
         </div>
       </div>
     </Card.Content>

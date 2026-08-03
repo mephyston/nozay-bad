@@ -8,6 +8,7 @@ export interface Member {
   status: string;
   type: string;
   paid: boolean;
+  expenseAuthorized?: boolean;
 }
 
 export interface Pagination {

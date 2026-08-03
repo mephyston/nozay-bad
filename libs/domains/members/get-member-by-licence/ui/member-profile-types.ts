@@ -18,6 +18,7 @@ export interface Member {
   amountReceivedCents?: number;
   amountRemainingCents?: number;
   paid: boolean;
+  expenseAuthorized?: boolean;
 
   parent1Name?: string | null;
   parent1Email?: string | null;

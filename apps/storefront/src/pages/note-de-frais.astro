@@ -57,6 +57,8 @@ if (Astro.request.method === 'POST') {
 const session = Astro.locals.session;
 const members: Member[] = session?.members ?? [];
 const initialMemberId = session?.activeMemberId ? String(session.activeMemberId) : '';
+const activeMember = session?.members.find((m) => m.id === session.activeMemberId);
+const canExpense = activeMember?.expenseAuthorized ?? false;
 
 let seasons: Season[] = [];
 let categories: any[] = [];
@@ -94,17 +96,27 @@ const activeSeasonId = activeSeason.id;
       </div>
     )}
 
-    <ExpenseReportForm
-      client:load
-      activeSeasonId={activeSeasonId}
-      members={members}
-      categories={categories}
-      lockToMembers={true}
-      initialMemberId={initialMemberId}
-    />
+    {canExpense ? (
+      <ExpenseReportForm
+        client:load
+        activeSeasonId={activeSeasonId}
+        members={members}
+        categories={categories}
+        lockToMembers={true}
+        initialMemberId={initialMemberId}
+      />
+    ) : (
+      <div class="max-w-2xl mx-auto rounded-xl border border-border bg-muted/30 p-6 text-center">
+        <p class="text-sm font-semibold text-foreground">Saisie des notes de frais non autorisée</p>
+        <p class="text-sm text-muted-foreground mt-2">
+          Votre compte n'est pas autorisé à soumettre des notes de frais. Rapprochez-vous du
+          trésorier si vous pensez que c'est une erreur.
+        </p>
+      </div>
+    )}
   </main>
 
-  <MobileNav currentPath="/note-de-frais" />
+  <MobileNav currentPath="/note-de-frais" canExpense={canExpense} />
 
   <footer class="border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground pb-24 md:pb-8">
     <p>© {new Date().getFullYear()} Nozay Badminton Associatif. Tous droits réservés.</p>

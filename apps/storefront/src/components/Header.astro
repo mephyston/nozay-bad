@@ -15,6 +15,8 @@ const isExpenses = currentPath === '/note-de-frais';
 const isAttestation = currentPath === '/attestation';
 
 const session = Astro.locals.session;
+const activeMember = session?.members.find((m) => m.id === session.activeMemberId);
+const canExpense = activeMember?.expenseAuthorized ?? false;
 ---
 
 <header class="flex h-14 shrink-0 items-center justify-between px-3 sm:px-6 border-b border-border bg-background sticky top-0 z-40">
@@ -42,16 +44,18 @@ const session = Astro.locals.session;
       >
         Boutique
       </a>
-      <a
-        href="/note-de-frais"
-        class={`px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-colors min-h-[36px] flex items-center ${
-          isExpenses
-            ? 'bg-accent text-accent-foreground font-semibold'
-            : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-        }`}
-      >
-        Note de frais
-      </a>
+      {canExpense && (
+        <a
+          href="/note-de-frais"
+          class={`px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-colors min-h-[36px] flex items-center ${
+            isExpenses
+              ? 'bg-accent text-accent-foreground font-semibold'
+              : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+          }`}
+        >
+          Note de frais
+        </a>
+      )}
       <a
         href="/attestation"
         class={`px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-colors min-h-[36px] flex items-center ${

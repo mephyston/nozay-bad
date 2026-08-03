@@ -27,6 +27,7 @@ export interface SessionMember {
   lastName: string;
   licence: string;
   paid: boolean;
+  expenseAuthorized: boolean;
 }
 
 export interface SessionPayload {
