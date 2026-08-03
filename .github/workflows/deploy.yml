@@ -286,6 +286,9 @@ jobs:
               cfg.kv_namespaces = [{ binding: 'RATE_LIMIT_KV', id: 'e1f0b19b7ea44399ba66d10fe7907ce9' }];
               cfg.vars = cfg.vars || {};
               cfg.vars.INTERNAL_API_KEY = 'nba_stg_sec_7f9c8d2a1e4b3c5d6e8f9a0b1c2d3e4f';
+              // Fail-closed anti-envoi sur staging : le build reprend les vars top-level
+              // (EMAIL_MODE=live, prod) ; on force explicitement dry-run pour staging.
+              cfg.vars.EMAIL_MODE = 'dry-run';
             }
             fs.writeFileSync('dist/server/wrangler.json', JSON.stringify(cfg, null, 2));
           "
