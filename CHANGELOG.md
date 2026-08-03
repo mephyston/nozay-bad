@@ -1,3 +1,10 @@
+# [1.0.0-beta.47](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.46...v1.0.0-beta.47) (2026-08-03)
+
+
+### Features
+
+* **storefront:** statut frais/cotisation lu en direct (effet immédiat sans reconnexion) ([8949cb4](https://github.com/mephyston/nozay-bad/commit/8949cb41eb5f8295a48d91735f6fbabbb1e35c31))
+
 # [1.0.0-beta.46](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.45...v1.0.0-beta.46) (2026-08-03)
 
 
