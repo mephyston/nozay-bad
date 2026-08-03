@@ -26,7 +26,7 @@
   ],
   "vars": {
     "INTERNAL_API_KEY": "dev-secret-key-12345",
-    "EMAIL_FROM": "Nozay Badminton <contact@nozaybad.fr>",
+    "EMAIL_FROM": "Nozay Badminton Association <contact@nozaybad.fr>",
     "EMAIL_MODE": "live"
   },
   "services": [
@@ -37,7 +37,7 @@
       "name": "nba-storefront-staging",
       "vars": {
         "INTERNAL_API_KEY": "nba_stg_sec_7f9c8d2a1e4b3c5d6e8f9a0b1c2d3e4f",
-        "EMAIL_FROM": "Nozay Badminton <contact@nozaybad.fr>",
+        "EMAIL_FROM": "Nozay Badminton Association <contact@nozaybad.fr>",
         "EMAIL_MODE": "dry-run"
       },
       "kv_namespaces": [

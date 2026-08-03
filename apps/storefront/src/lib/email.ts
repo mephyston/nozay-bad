@@ -18,7 +18,7 @@ export interface EmailEnv {
   EMAIL_TEST_INBOX?: string; // boîte de test (mode redirect)
 }
 
-const DEFAULT_FROM = 'Nozay Badminton <contact@nozaybad.fr>';
+const DEFAULT_FROM = 'Nozay Badminton Association <contact@nozaybad.fr>';
 
 export async function sendOtpEmail(env: EmailEnv, to: string, code: string): Promise<{ ok: boolean; error?: string }> {
   const mode = (env.EMAIL_MODE || 'dry-run').toLowerCase();
@@ -103,6 +103,6 @@ function otpHtml(code: string, originalRecipient?: string): string {
     <p style="font-size: 32px; font-weight: 700; letter-spacing: 6px; color: #111; margin: 16px 0;">${code}</p>
     <p style="color: #666; font-size: 14px;">Ce code expire dans 10 minutes. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
     <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-    <p style="color: #999; font-size: 12px;">Nozay Badminton Associatif</p>
+    <p style="color: #999; font-size: 12px;">Nozay Badminton Association</p>
   </div>`;
 }
