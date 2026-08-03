@@ -1,3 +1,10 @@
+# [1.0.0-beta.34](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.33...v1.0.0-beta.34) (2026-08-03)
+
+
+### Features
+
+* **storefront:** auth OTP passwordless, nav mobile & attestation CSE ([9c43dc3](https://github.com/mephyston/nozay-bad/commit/9c43dc33f170f958126482a0a550dd16fa814e5f))
+
 # [1.0.0-beta.33](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.32...v1.0.0-beta.33) (2026-08-02)
 
 
