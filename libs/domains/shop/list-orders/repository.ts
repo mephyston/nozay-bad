@@ -8,10 +8,11 @@ export class ListOrdersRepository {
   async getPaymentMethods(db: DbOrTx) {
     return db.select().from(paymentMethodsTable).all();
   }
-  async list(db: DbOrTx, filters: { seasonId?: number; status?: string }): Promise<(typeof ordersTable.$inferSelect)[]> {
+  async list(db: DbOrTx, filters: { seasonId?: number; status?: string; memberId?: number }): Promise<(typeof ordersTable.$inferSelect)[]> {
     const conditions = [];
     if (filters.seasonId) conditions.push(eq(ordersTable.seasonId, filters.seasonId));
     if (filters.status) conditions.push(eq(ordersTable.status, filters.status as 'pending' | 'approved' | 'rejected'));
+    if (filters.memberId) conditions.push(eq(ordersTable.memberId, filters.memberId));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     return db.select().from(ordersTable).where(whereClause).all();

@@ -21,10 +21,10 @@ listExpensesRoute.get(
     if (!c.env || !c.env.DB) {
       return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
     }
-    const { season, status } = c.req.valid('query');
+    const { season, status, memberId } = c.req.valid('query');
     const db = createDb(c.env.DB);
 
-    const expenses = await listExpenses(db, { season, status });
+    const expenses = await listExpenses(db, { season, status, memberId: memberId ? parseInt(memberId, 10) : undefined });
     return c.json({ success: true, data: expenses });
   }
 );

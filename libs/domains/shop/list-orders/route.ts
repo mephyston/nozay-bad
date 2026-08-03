@@ -21,10 +21,10 @@ listOrdersRoute.get(
     if (!c.env || !c.env.DB) {
       return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
     }
-    const { seasonId, status } = c.req.valid('query');
+    const { seasonId, status, memberId } = c.req.valid('query');
     const db = createDb(c.env.DB);
 
-    const mappedOrders = await listOrders(db, { seasonId, status });
+    const mappedOrders = await listOrders(db, { seasonId, status, memberId: memberId ? parseInt(memberId, 10) : undefined });
     return c.json({ success: true, data: mappedOrders });
   }
 );

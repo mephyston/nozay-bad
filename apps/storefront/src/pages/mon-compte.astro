@@ -1,0 +1,148 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import MobileNav from '../components/MobileNav.svelte';
+import { env } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
+
+const session = Astro.locals.session;
+const active = session?.members.find((m) => m.id === session.activeMemberId);
+const canExpense = active?.expenseAuthorized ?? false;
+
+const eur = (cents: number) =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format((cents ?? 0) / 100);
+const dateFr = (v: any) => {
+  const d = v ? new Date(v) : null;
+  return d && !isNaN(d.getTime()) ? d.toLocaleDateString('fr-FR') : '';
+};
+const statusLabel: Record<string, string> = { pending: 'En attente', approved: 'Validée', rejected: 'Refusée' };
+const statusClass: Record<string, string> = {
+  pending: 'bg-muted text-muted-foreground border-border',
+  approved: 'bg-success/10 text-success border-success/20',
+  rejected: 'bg-destructive/10 text-destructive border-destructive/20'
+};
+
+const apiService = createApiClient(env);
+
+let cotisation: any = null;
+let seasonName = '';
+let orders: any[] = [];
+let expenses: any[] = [];
+
+if (active) {
+  try {
+    const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
+    const seasons = seasonsRes.ok ? ((await seasonsRes.json()) as any).data || [] : [];
+    const activeSeason = seasons.find((s: any) => s.active) || seasons[0];
+    const seasonCode = activeSeason?.id;
+    seasonName = activeSeason?.name || '';
+
+    const [memberRes, ordersRes, expensesRes] = await Promise.all([
+      apiService.fetch(`http://localhost/members/${encodeURIComponent(active.licence)}${seasonCode ? `?season=${encodeURIComponent(seasonCode)}` : ''}`),
+      apiService.fetch(`http://localhost/shop/orders?memberId=${active.id}`),
+      canExpense ? apiService.fetch(`http://localhost/expenses?memberId=${active.id}`) : Promise.resolve(null)
+    ]);
+
+    if (memberRes.ok) cotisation = ((await memberRes.json()) as any).data;
+    if (ordersRes.ok) orders = ((await ordersRes.json()) as any).data || [];
+    if (expensesRes && expensesRes.ok) expenses = ((await expensesRes.json()) as any).data || [];
+  } catch {}
+}
+
+const due = cotisation?.amountDueCents ?? 0;
+const received = cotisation?.amountReceivedCents ?? 0;
+const remaining = cotisation?.amountRemainingCents ?? Math.max(0, due - received);
+const isPaid = Boolean(cotisation?.paid);
+---
+
+<Layout title="Mon compte - Nozay Bad">
+  <Header currentPath="/mon-compte" activeSeasonName={seasonName || undefined} pageTitle="Mon compte" />
+
+  <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
+    <div class="max-w-3xl mx-auto space-y-8">
+      <!-- Ma cotisation -->
+      <section>
+        <h2 class="text-base font-bold text-foreground mb-3">Ma cotisation{seasonName ? ` — ${seasonName}` : ''}</h2>
+        <div class="rounded-xl border border-border bg-card p-5">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-sm font-semibold text-foreground">Statut</span>
+            {isPaid ? (
+              <span class="inline-flex items-center rounded-md border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">À jour</span>
+            ) : (
+              <span class="inline-flex items-center rounded-md border border-destructive/20 bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">Solde restant</span>
+            )}
+          </div>
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div>
+              <div class="text-xs text-muted-foreground">Montant dû</div>
+              <div class="text-sm font-semibold text-foreground mt-0.5">{eur(due)}</div>
+            </div>
+            <div>
+              <div class="text-xs text-muted-foreground">Réglé</div>
+              <div class="text-sm font-semibold text-foreground mt-0.5">{eur(received)}</div>
+            </div>
+            <div>
+              <div class="text-xs text-muted-foreground">Restant</div>
+              <div class={`text-sm font-semibold mt-0.5 ${remaining > 0 ? 'text-destructive' : 'text-success'}`}>{eur(remaining)}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Mes commandes -->
+      <section>
+        <h2 class="text-base font-bold text-foreground mb-3">Mes commandes ({orders.length})</h2>
+        {orders.length === 0 ? (
+          <p class="text-sm text-muted-foreground">Aucune commande pour le moment.</p>
+        ) : (
+          <div class="rounded-xl border border-border bg-card divide-y divide-border">
+            {orders.map((o: any) => (
+              <div class="flex items-center justify-between gap-3 p-4">
+                <div class="min-w-0">
+                  <div class="text-sm font-medium text-foreground truncate">{o.product?.name ?? 'Article'} <span class="text-muted-foreground">×{o.order?.quantity ?? 1}</span></div>
+                  <div class="text-xs text-muted-foreground">{dateFr(o.order?.createdAt)}</div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                  <span class="text-sm font-semibold text-foreground">{eur(o.order?.totalAmountCents ?? o.order?.totalAmount ?? 0)}</span>
+                  <span class={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${statusClass[o.order?.status] ?? statusClass.pending}`}>{statusLabel[o.order?.status] ?? o.order?.status}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <!-- Mes notes de frais -->
+      {canExpense && (
+        <section>
+          <h2 class="text-base font-bold text-foreground mb-3">Mes notes de frais ({expenses.length})</h2>
+          {expenses.length === 0 ? (
+            <p class="text-sm text-muted-foreground">Aucune note de frais soumise.</p>
+          ) : (
+            <div class="rounded-xl border border-border bg-card divide-y divide-border">
+              {expenses.map((e: any) => (
+                <div class="flex items-center justify-between gap-3 p-4">
+                  <div class="min-w-0">
+                    <div class="text-sm font-medium text-foreground truncate">{e.description}</div>
+                    <div class="text-xs text-muted-foreground">{dateFr(e.createdAt)}</div>
+                  </div>
+                  <div class="flex items-center gap-3 shrink-0">
+                    <span class="text-sm font-semibold text-foreground">{eur(e.amountCents ?? 0)}</span>
+                    <span class={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${statusClass[e.status] ?? statusClass.pending}`}>{statusLabel[e.status] ?? e.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+    </div>
+  </main>
+
+  <MobileNav currentPath="/mon-compte" canExpense={canExpense} />
+
+  <footer class="border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground pb-24 md:pb-8">
+    <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+    <p class="mt-2"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a> · <a href="/mentions-legales" class="hover:underline">Mentions légales</a></p>
+  </footer>
+</Layout>

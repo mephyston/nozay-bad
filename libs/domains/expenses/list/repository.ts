@@ -4,8 +4,9 @@ import { type DbOrTx } from '@nba/db';
 import { expensesTable } from '../shared/schema';
 
 export class ListExpensesRepository {
-  async list(db: DbOrTx, filters: { season?: string; status?: string }): Promise<(typeof expensesTable.$inferSelect)[]> {
+  async list(db: DbOrTx, filters: { season?: string; status?: string; memberId?: number }): Promise<(typeof expensesTable.$inferSelect)[]> {
     const conditions = [];
+    if (filters.memberId) conditions.push(eq(expensesTable.memberId, filters.memberId));
     if (filters.season) {
       const sId = await getSeasonId(db, filters.season);
       if (sId !== undefined) {
