@@ -1,0 +1,65 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import MobileNav from '../components/MobileNav.svelte';
+
+const session = Astro.locals.session;
+const active = session?.members.find((m) => m.id === session.activeMemberId);
+const paid = active?.paid ?? false;
+const fullName = active ? `${active.firstName} ${active.lastName}` : '';
+---
+
+<Layout title="Attestation CSE - Nozay Bad">
+  <Header currentPath="/attestation" />
+
+  <main class="flex-1 p-6 w-full pb-24 md:pb-6">
+    <div class="max-w-2xl mx-auto">
+      <div class="mb-6">
+        <h1 class="text-xl font-bold text-foreground">Attestation CSE</h1>
+        <p class="text-sm text-muted-foreground mt-1">
+          Attestation de paiement à présenter à votre comité d'entreprise{fullName ? ` — ${fullName}` : ''}.
+        </p>
+      </div>
+
+      {paid ? (
+        <div class="space-y-4">
+          <div class="flex flex-col sm:flex-row gap-3">
+            <a
+              href="/api/attestation.pdf"
+              target="_blank"
+              rel="noopener"
+              class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 min-h-[44px]"
+            >
+              Ouvrir mon attestation (PDF)
+            </a>
+            <a
+              href="/api/attestation.pdf"
+              download
+              class="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-accent min-h-[44px]"
+            >
+              Télécharger
+            </a>
+          </div>
+
+          <div class="hidden md:block rounded-xl border border-border overflow-hidden bg-card">
+            <iframe src="/api/attestation.pdf" title="Attestation CSE" class="w-full h-[75vh]"></iframe>
+          </div>
+        </div>
+      ) : (
+        <div class="rounded-xl border border-border bg-muted/30 p-6 text-center">
+          <p class="text-sm font-semibold text-foreground">Attestation pas encore disponible</p>
+          <p class="text-sm text-muted-foreground mt-2">
+            Votre attestation CSE sera consultable ici dès que votre cotisation aura été
+            entièrement réglée et validée par le trésorier.
+          </p>
+        </div>
+      )}
+    </div>
+  </main>
+
+  <MobileNav currentPath="/attestation" />
+
+  <footer class="border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground pb-24 md:pb-8">
+    <p>© {new Date().getFullYear()} Nozay Badminton Associatif. Tous droits réservés.</p>
+  </footer>
+</Layout>

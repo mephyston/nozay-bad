@@ -200,5 +200,5 @@ export {
 } from './ledger/expenses';
 export { getMemberLastPaymentTransaction, getMemberTotalPayments } from './ledger/members-queries';
 export { getAccountByCode, getPaymentMethodById, getPaymentMethodByCode } from './config/queries';
-export { getSeasonId, isSeasonClosed, insertSeasons, getSeasonsByCodes, getSeasonByCode, getAllSeasons, getSeasonById } from './seasons/queries';
+export { getSeasonId, isSeasonClosed, insertSeasons, getSeasonsByCodes, getSeasonByCode, getAllSeasons, getSeasonById, getActiveSeasonId } from './seasons/queries';
 export * from './shared/dashboard';

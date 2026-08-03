@@ -2,8 +2,10 @@
 /// <reference types="astro/client" />
 declare namespace App {
   interface Locals {
-    user?: {
+    session?: {
       email: string;
+      members: Array<{ id: number; firstName: string; lastName: string; licence: string; paid: boolean }>;
+      activeMemberId: number;
     };
     runtime: import('@astrojs/cloudflare').Runtime<Env>;
   }
@@ -11,9 +13,14 @@ declare namespace App {
 interface Env {
   API_SERVICE: import('@cloudflare/workers-types').Fetcher;
   INTERNAL_API_KEY?: string;
-  CF_TEAM_DOMAIN?: string;
-  CF_AUDIENCE?: string;
-  DB: import('@cloudflare/workers-types').D1Database;
+  RATE_LIMIT_KV: import('@cloudflare/workers-types').KVNamespace;
+  RESEND_API_KEY?: string;
+  SESSION_SECRET?: string;
+  EMAIL_FROM?: string;
+  EMAIL_MODE?: string;
+  EMAIL_ALLOWLIST?: string;
+  EMAIL_TEST_INBOX?: string;
+  TURNSTILE_SECRET_KEY?: string;
 }
 declare module 'cloudflare:workers' {
   export const env: Env;

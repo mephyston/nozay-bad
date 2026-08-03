@@ -1,11 +1,11 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
+import MobileNav from '../components/MobileNav.svelte';
 import { ErrorAlert } from '@nba/ui';
 import { ShopCatalog } from '@nba/shop-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
-import { verifyTurnstileToken } from '../lib/turnstile';
 
 const apiService = createApiClient(env);
 
@@ -33,29 +33,24 @@ interface Member {
 
 if (Astro.request.method === 'POST') {
   try {
-    const body = await Astro.request.json();
-    const turnstileToken = body.turnstileToken;
-    const ip = Astro.request.headers.get('CF-Connecting-IP') || Astro.request.headers.get('x-real-ip') || '127.0.0.1';
-    let runtimeEnv: any = {};
-    try {
-      runtimeEnv = (Astro.locals as any).runtime?.env || {};
-    } catch {}
-    const kv = (env as any)?.RATE_LIMIT_KV || runtimeEnv.RATE_LIMIT_KV;
-
-    const verifyResult = await verifyTurnstileToken(turnstileToken, ip, { kv, runtimeEnv });
-    if (!verifyResult.success) {
-      return new Response(JSON.stringify({ success: false, error: verifyResult.error || 'Validation anti-bot échouée.' }), {
-        status: 400,
+    const postSession = Astro.locals.session;
+    if (!postSession) {
+      return new Response(JSON.stringify({ success: false, error: 'Non authentifié.' }), {
+        status: 401,
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    const body = await Astro.request.json();
+    // L'adhérent de la commande est TOUJOURS le profil actif de la session.
+    const order = { ...body, memberId: postSession.activeMemberId };
 
     return apiService.fetch('http://localhost/shop/orders', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(order)
     });
   } catch (err: any) {
     return new Response(JSON.stringify({ success: false, error: err.message }), {
@@ -65,8 +60,12 @@ if (Astro.request.method === 'POST') {
   }
 }
 
+// Membres = uniquement le foyer de la session.
+const session = Astro.locals.session;
+const members: Member[] = session?.members ?? [];
+const initialMemberId = session?.activeMemberId ? String(session.activeMemberId) : '';
+
 let products: Product[] = [];
-let members: Member[] = [];
 let seasons: Season[] = [];
 let errorMsg = '';
 
@@ -95,9 +94,9 @@ const activeSeasonId = activeSeason.id;
 ---
 
 <Layout title="Boutique Adhérents - NBA 91">
-  <Header currentPath="/boutique" activeSeasonName={activeSeason.name || activeSeasonId} />
+  <Header currentPath="/boutique" activeSeasonName={activeSeason.name || activeSeasonId} pageTitle="Boutique" />
 
-  <main class="flex-1 p-6 w-full">
+  <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     {errorMsg && (
       <div class="mb-6">
         <ErrorAlert message={errorMsg} />
@@ -109,10 +108,14 @@ const activeSeasonId = activeSeason.id;
       products={products}
       members={members}
       activeSeasonId={activeSeasonId}
+      lockToMembers={true}
+      initialMemberId={initialMemberId}
     />
   </main>
 
-  <footer class="border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground">
+  <MobileNav currentPath="/boutique" />
+
+  <footer class="border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground pb-24 md:pb-8">
     <p>© {new Date().getFullYear()} Nozay Badminton Associatif. Tous droits réservés.</p>
     <p class="mt-1">Les commandes passées via la boutique sont soumises à la validation du trésorier.</p>
   </footer>

@@ -38,9 +38,6 @@
     </div>
   </div>
 
-  <!-- Turnstile Widget -->
-  <div class="cf-turnstile mt-2 flex justify-center" style={!selectedMember ? 'display: none;' : ''} data-sitekey={import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'} data-action="turnstile-spin-v1"></div>
-
   <!-- Submit Button -->
   <Button
     onclick={onOrder}

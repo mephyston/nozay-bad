@@ -78,14 +78,6 @@ export async function submitOrder(params: {
     return { success: false, error: "Stock insuffisant pour ce produit." };
   }
 
-  const isTest = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
-  const turnstileResponse = isTest
-    ? 'mock-test-token'
-    : (document.getElementsByName('cf-turnstile-response')[0] as HTMLInputElement)?.value;
-  if (!turnstileResponse) {
-    return { success: false, error: "Veuillez valider le test de sécurité anti-bot." };
-  }
-
   try {
     const res = await fetch('', {
       method: 'POST',
@@ -95,8 +87,7 @@ export async function submitOrder(params: {
         memberId: parseInt(params.selectedMemberId),
         productId: params.selectedProduct.id,
         quantity: params.selectedQuantity,
-        paymentMethod: params.selectedPaymentMethod,
-        turnstileToken: turnstileResponse
+        paymentMethod: params.selectedPaymentMethod
       })
     });
 
@@ -105,18 +96,11 @@ export async function submitOrder(params: {
       return { success: false, error: data.error || "Une erreur est survenue lors de l'enregistrement de la commande." };
     }
 
-    if (typeof window !== 'undefined' && (window as any).turnstile) {
-      (window as any).turnstile.reset();
-    }
-
     return {
       success: true,
       message: `Votre souhait d'achat de ${params.selectedQuantity} ${params.selectedProduct.name} a bien été enregistré. Il sera comptabilisé dès validation par le trésorier.`
     };
   } catch (err: any) {
-    if (typeof window !== 'undefined' && (window as any).turnstile) {
-      (window as any).turnstile.reset();
-    }
     return { success: false, error: err.message || "Une erreur est survenue." };
   }
 }

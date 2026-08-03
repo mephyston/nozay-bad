@@ -1,39 +1,37 @@
 ---
 import ThemeToggle from './ThemeToggle.svelte';
+import UserMenu from './UserMenu.svelte';
 
 interface Props {
   currentPath: string;
   activeSeasonName?: string;
+  pageTitle?: string;
 }
 
-const { currentPath, activeSeasonName = 'Saison 2025-2026' } = Astro.props;
+const { currentPath, activeSeasonName = 'Saison 2025-2026', pageTitle } = Astro.props;
 
 const isBoutique = currentPath === '/boutique';
 const isExpenses = currentPath === '/note-de-frais';
+const isAttestation = currentPath === '/attestation';
+
+const session = Astro.locals.session;
 ---
 
 <header class="flex h-14 shrink-0 items-center justify-between px-3 sm:px-6 border-b border-border bg-background sticky top-0 z-40">
   <div class="flex items-center gap-3 sm:gap-6">
     <a href="/boutique" class="flex items-center gap-2 group min-h-[44px]">
-      <div class="p-1.5 rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/20 shrink-0">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 shrink-0">
-          <path d="M9 16c0-1.5 1-2 3-2s3 .5 3 2v2a3 3 0 0 1-6 0v-2z" />
-          <path d="M12 14V3" />
-          <path d="m8 14 2-10" />
-          <path d="m16 14-2-10" />
-          <path d="m6 14 3-10" />
-          <path d="m18 14-3-10" />
-          <path d="M8 8h8" />
-          <path d="M6 11h12" />
-        </svg>
-      </div>
+      <img src="/logo.png" alt="Logo" class="h-7 w-7 shrink-0 object-contain transition-all duration-200" />
       <div>
         <span class="font-bold text-xs sm:text-sm text-foreground tracking-tight block">Nozay Bad</span>
         <span class="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-wider font-semibold block -mt-0.5">Adhérents</span>
       </div>
     </a>
 
-    <nav class="flex items-center gap-1 border-l border-border pl-2 sm:pl-6 h-6">
+    {pageTitle && (
+      <span class="md:hidden border-l border-border pl-3 text-sm font-semibold text-foreground truncate max-w-[40vw]">{pageTitle}</span>
+    )}
+
+    <nav class="hidden md:flex items-center gap-1 border-l border-border pl-2 sm:pl-6 h-6">
       <a
         href="/boutique"
         class={`px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-colors min-h-[36px] flex items-center ${
@@ -54,6 +52,16 @@ const isExpenses = currentPath === '/note-de-frais';
       >
         Note de frais
       </a>
+      <a
+        href="/attestation"
+        class={`px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-colors min-h-[36px] flex items-center ${
+          isAttestation
+            ? 'bg-accent text-accent-foreground font-semibold'
+            : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+        }`}
+      >
+        Attestation
+      </a>
     </nav>
   </div>
 
@@ -63,5 +71,8 @@ const isExpenses = currentPath === '/note-de-frais';
       <span class="text-foreground font-semibold">{activeSeasonName.replace('Saison ', '')}</span>
     </div>
     <ThemeToggle client:load />
+    {session && (
+      <UserMenu client:load members={session.members} activeMemberId={session.activeMemberId} />
+    )}
   </div>
 </header>

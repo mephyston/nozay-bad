@@ -34,19 +34,20 @@ describe('AdminLayout Component', () => {
     const component = mount(AdminLayout, {
       target,
       props: {
-        email: 'test@nozay-bad.fr'
+        email: 'test@nozay-bad.fr',
+        permissions: ['*']
       }
     });
     flushSync();
 
     // Verify desktop title and navigation items are rendered
-    expect(target.textContent).toContain('Nozay Bad Association');
+    expect(target.textContent).toContain('Nozay Bad Admin');
     expect(target.textContent).toContain("Tableau de bord");
     expect(target.textContent).toContain("Adhérents");
     expect(target.textContent).toContain("Comptabilité");
     expect(target.textContent).toContain("Caisse");
     expect(target.textContent).toContain("Boutique");
-    expect(target.textContent).toContain("Note de frais");
+    expect(target.textContent).toContain("Notes de frais");
 
     // Clean up
     unmount(component);
@@ -63,6 +64,7 @@ describe('AdminLayout Component', () => {
       target,
       props: {
         email: 'test@nozay-bad.fr',
+        permissions: ['*'],
         breadcrumb: 'Réglages / Saisons'
       }
     });
@@ -90,6 +92,7 @@ describe('AdminLayout Component', () => {
       target,
       props: {
         email: 'test@nozay-bad.fr',
+        permissions: ['*'],
         breadcrumb: 'settings'
       }
     });

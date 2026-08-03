@@ -857,6 +857,9 @@
             "minimum": 0,
             "type": "integer"
           },
+          "trackStock": {
+            "type": "boolean"
+          },
           "active": {
             "type": "boolean"
           }
@@ -869,13 +872,16 @@
             "minLength": 1,
             "type": "string"
           },
-          "price": {
+          "priceCents": {
             "minimum": 0,
             "type": "integer"
           },
           "stock": {
             "minimum": 0,
             "type": "integer"
+          },
+          "trackStock": {
+            "type": "boolean"
           },
           "active": {
             "type": "boolean"

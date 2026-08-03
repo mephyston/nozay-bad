@@ -20,15 +20,6 @@ export async function submitExpenseReport(params: {
     return { success: false, error: "Une photo du justificatif est obligatoire pour le remboursement." };
   }
 
-  const isTest = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
-  const turnstileResponse = isTest
-    ? 'mock-test-token'
-    : (document.getElementsByName('cf-turnstile-response')[0] as HTMLInputElement)?.value;
-
-  if (!turnstileResponse) {
-    return { success: false, error: "Veuillez valider le test de sécurité anti-bot." };
-  }
-
   try {
     const res = await fetch('', {
       method: 'POST',
@@ -43,8 +34,7 @@ export async function submitExpenseReport(params: {
           photoUrl: params.photoUrl,
           emitterName: params.emitterName,
           memberId: parseInt(params.selectedMemberId)
-        },
-        turnstileToken: turnstileResponse
+        }
       })
     });
 

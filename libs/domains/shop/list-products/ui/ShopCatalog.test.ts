@@ -44,10 +44,10 @@ describe('ShopCatalog Component', () => {
     flushSync();
 
     expect(target.innerHTML).toContain('Boutique');
-    expect(target.innerHTML).toContain('Article &amp; Quantité');
+    expect(target.innerHTML).toContain('Mode de paiement');
 
-    // Acheteur, mode de paiement, catégorie, produit : quatre combobox de sélection
-    expect(target.querySelectorAll('[role="combobox"]').length).toBe(4);
+    // Acheteur, produit (unique, groupé par type), mode de paiement : trois combobox
+    expect(target.querySelectorAll('[role="combobox"]').length).toBe(3);
 
     // Sans acheteur sélectionné, l'invite de sélection est affichée
     expect(target.innerHTML).toContain("Sélectionnez votre nom d'adhérent");

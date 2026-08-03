@@ -99,7 +99,7 @@ describe('Products API Endpoints', () => {
     const updateRes = await app.request('http://localhost/shop/products/1', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ price: -10 })
+      body: JSON.stringify({ priceCents: -10 })
     }, { DB: mockD1 as any });
     expect(updateRes.status).toBe(400);
     const updateJson = await updateRes.json() as any;
@@ -138,8 +138,8 @@ describe('Orders API Endpoints', () => {
       RETURNING id
     `) as { id: number };
 
-    // Insert product
-    await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', productCategoryId: productCat.id, priceCents: 1200, stock: 5, active: true, createdAt: new Date() }).run();
+    // Insert product (trackStock activé : l'approbation doit décrémenter le stock)
+    await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', productCategoryId: productCat.id, priceCents: 1200, stock: 5, trackStock: true, active: true, createdAt: new Date() }).run();
 
     const pmRes = await mockD1.prepare('SELECT code FROM payment_methods').all();
     const paymentMethodCode = pmRes.results[0].code as string;

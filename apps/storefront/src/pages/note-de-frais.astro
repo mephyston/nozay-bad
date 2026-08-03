@@ -1,11 +1,11 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
+import MobileNav from '../components/MobileNav.svelte';
 import { ErrorAlert } from '@nba/ui';
 import { ExpenseReportForm } from '@nba/expenses-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
-import { verifyTurnstileToken } from '../lib/turnstile';
 
 const apiService = createApiClient(env);
 
@@ -24,30 +24,25 @@ interface Member {
 
 if (Astro.request.method === 'POST') {
   try {
-    const body = await Astro.request.json();
-    const turnstileToken = body.turnstileToken;
-    const ip = Astro.request.headers.get('CF-Connecting-IP') || Astro.request.headers.get('x-real-ip') || '127.0.0.1';
-    let runtimeEnv: any = {};
-    try {
-      runtimeEnv = (Astro.locals as any).runtime?.env || {};
-    } catch {}
-    const kv = (env as any)?.RATE_LIMIT_KV || runtimeEnv.RATE_LIMIT_KV;
-
-    const verifyResult = await verifyTurnstileToken(turnstileToken, ip, { kv, runtimeEnv });
-    if (!verifyResult.success) {
-      return new Response(JSON.stringify({ success: false, error: verifyResult.error || 'Validation anti-bot échouée.' }), {
-        status: 400,
+    const postSession = Astro.locals.session;
+    if (!postSession) {
+      return new Response(JSON.stringify({ success: false, error: 'Non authentifié.' }), {
+        status: 401,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
+    const body = await Astro.request.json();
+
     if (body.action === 'expense') {
+      // Le demandeur est TOUJOURS le profil actif de la session (jamais une valeur cliente).
+      const data = { ...body.data, memberId: postSession.activeMemberId };
       return apiService.fetch('http://localhost/expenses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(body.data)
+        body: JSON.stringify(data)
       });
     }
   } catch (err: any) {
@@ -58,20 +53,16 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-let members: Member[] = [];
+// Membres = uniquement le foyer de la session (plus de fetch global des adhérents).
+const session = Astro.locals.session;
+const members: Member[] = session?.members ?? [];
+const initialMemberId = session?.activeMemberId ? String(session.activeMemberId) : '';
+
 let seasons: Season[] = [];
 let categories: any[] = [];
 let errorMsg = '';
 
 try {
-  const membersRes = await apiService.fetch('http://localhost/members?limit=1000');
-  if (membersRes.ok) {
-    const json = await membersRes.json() as any;
-    members = json.data || [];
-  } else {
-    errorMsg = 'Impossible de charger les adhérents.';
-  }
-
   const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
   if (seasonsRes.ok) {
     const json = await seasonsRes.json() as any;
@@ -94,9 +85,9 @@ const activeSeasonId = activeSeason.id;
 ---
 
 <Layout title="Notes de frais - NBA 91">
-  <Header currentPath="/note-de-frais" activeSeasonName={activeSeason.name || activeSeasonId} />
+  <Header currentPath="/note-de-frais" activeSeasonName={activeSeason.name || activeSeasonId} pageTitle="Note de frais" />
 
-  <main class="flex-1 p-6 w-full">
+  <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     {errorMsg && (
       <div class="mb-6">
         <ErrorAlert message={errorMsg} />
@@ -108,10 +99,14 @@ const activeSeasonId = activeSeason.id;
       activeSeasonId={activeSeasonId}
       members={members}
       categories={categories}
+      lockToMembers={true}
+      initialMemberId={initialMemberId}
     />
   </main>
 
-  <footer class="border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground">
+  <MobileNav currentPath="/note-de-frais" />
+
+  <footer class="border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground pb-24 md:pb-8">
     <p>© {new Date().getFullYear()} Nozay Badminton Associatif. Tous droits réservés.</p>
     <p class="mt-1">Les notes de frais sont soumises à la validation du trésorier.</p>
   </footer>

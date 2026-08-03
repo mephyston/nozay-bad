@@ -13,7 +13,7 @@ export async function createSeason(state: SettingsState, id: string, name: strin
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/settings', {
+    const res = await fetch(window.location.pathname, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -41,7 +41,7 @@ export async function toggleSeasonActive(state: SettingsState, id: string) {
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/settings', {
+    const res = await fetch(window.location.pathname, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -67,7 +67,7 @@ export async function closeSeason(state: SettingsState, id: string, confirmOverw
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/settings', {
+    const res = await fetch(window.location.pathname, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -89,7 +89,7 @@ export async function closeSeason(state: SettingsState, id: string, confirmOverw
 }
 
 export async function checkCloseSeason(id: string) {
-  const res = await fetch('/admin/settings', {
+  const res = await fetch(window.location.pathname, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -123,7 +123,7 @@ export async function createCategory(state: SettingsState, data: {
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/settings', {
+    const res = await fetch(window.location.pathname, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -163,7 +163,7 @@ export async function updateCategory(state: SettingsState, id: number, updates: 
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/settings', {
+    const res = await fetch(window.location.pathname, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -191,7 +191,7 @@ export async function deleteCategory(state: SettingsState, id: number) {
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/settings', {
+    const res = await fetch(window.location.pathname, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -225,7 +225,7 @@ export async function createProductCategory(state: SettingsState, data: {
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/settings', {
+    const res = await fetch(window.location.pathname, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -259,7 +259,7 @@ export async function updateProductCategory(state: SettingsState, id: number, up
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/settings', {
+    const res = await fetch(window.location.pathname, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -286,7 +286,7 @@ export async function deleteProductCategory(state: SettingsState, id: number) {
   state.successMsg = '';
 
   try {
-    const res = await fetch('/admin/settings', {
+    const res = await fetch(window.location.pathname, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

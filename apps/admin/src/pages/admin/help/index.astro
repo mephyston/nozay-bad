@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "../../../components/AdminLayout.svelte";
 import Layout from "../../../layouts/Layout.astro";
+import { PageHeader } from '@nba/ui';
 import { getCollection } from 'astro:content';
 
 const { user } = Astro.locals as any;
@@ -36,10 +37,10 @@ const categoryNames: Record<string, string> = {
     breadcrumb="Aide / Centre d'aide"
   >
     <div class="max-w-4xl mx-auto space-y-6">
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight">Centre d'aide</h1>
-        <p class="text-muted-foreground mt-2">Trouvez des réponses à vos questions et apprenez à utiliser l'application.</p>
-      </div>
+      <PageHeader
+        title="Centre d'aide"
+        description="Trouvez des réponses à vos questions et apprenez à utiliser l'application."
+      />
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         {Object.keys(groupedHelp).length === 0 ? (

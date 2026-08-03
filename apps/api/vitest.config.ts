@@ -17,6 +17,8 @@ export default defineConfig({
       '@nba/pdf': path.resolve(__dirname, '../../libs/shared/pdf/src/index.ts'),
       '@nba/members-api': path.resolve(__dirname, '../../libs/domains/members/index.ts'),
       '@nba/members/schema': path.resolve(__dirname, '../../libs/domains/members/shared/schema.ts'),
+      '@nba/iam': path.resolve(__dirname, '../../libs/domains/iam/index.ts'),
+      '@nba/iam/schema': path.resolve(__dirname, '../../libs/domains/iam/shared/schema.ts'),
       '@nba/accounting-api': path.resolve(__dirname, '../../libs/domains/accounting/index.ts'),
       '@nba/accounting/schema': path.resolve(__dirname, '../../libs/domains/accounting/shared/schema.ts'),
       '@nba/expenses-api': path.resolve(__dirname, '../../libs/domains/expenses/index.ts'),

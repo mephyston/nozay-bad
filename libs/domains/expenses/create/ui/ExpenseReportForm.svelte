@@ -12,7 +12,7 @@
   export * from './expense-form-utils';
   export * from './expense-form-submit';
 
-  const { activeSeasonId, members = [], categories = [] }: Props = $props();
+  const { activeSeasonId, members = [], categories = [], lockToMembers = false, initialMemberId = '' }: Props = $props();
 
   let emitterName = $state('');
   let category = $state('');
@@ -42,7 +42,22 @@
   $effect(() => { if (!isMemberDropdownOpen) highlightedIndex = -1; });
   $effect(() => { if (highlightedIndex >= filteredMembers.length) highlightedIndex = filteredMembers.length - 1; });
 
+  // Présélection (foyer connecté) : renseigne le demandeur au montage.
   $effect(() => {
+    if (initialMemberId && !selectedMemberId && !emitterName) {
+      const m = members.find((mm) => mm.id.toString() === initialMemberId);
+      if (m) {
+        const name = formatMemberName(m);
+        selectedMemberId = m.id.toString();
+        memberSearchQuery = name;
+        emitterName = name;
+        lastSelectedMember = m;
+      }
+    }
+  });
+
+  $effect(() => {
+    if (lockToMembers) return; // Foyer verrouillé : pas de recherche globale.
     if (!isMemberDropdownOpen) return;
     const query = memberSearchQuery.trim();
     if (lastSelectedMember && memberSearchQuery === formatMemberName(lastSelectedMember)) return;
@@ -63,7 +78,9 @@
   let selectedMember = $derived(members.length > 0 ? (members.find(m => m.id.toString() === selectedMemberId) || null) : lastSelectedMember);
   let memberDisplayVal = $derived(selectedMember ? formatMemberName(selectedMember) : '');
   let filteredMembers = $derived(
-    memberSearchQuery.trim() === ''
+    lockToMembers
+      ? sortedMembers
+      : memberSearchQuery.trim() === ''
       ? (fetchedMembers.length > 0 ? fetchedMembers : sortedMembers)
       : (fetchedMembers.length > 0
           ? fetchedMembers
@@ -119,7 +136,7 @@
 </script>
 
 <Card.Root class="max-w-2xl mx-auto shadow-xl">
-  <Card.Header class="bg-gradient-to-r from-primary to-primary/80 p-6 text-primary-foreground flex flex-row items-center gap-4 rounded-t-xl">
+  <Card.Header class="bg-gradient-to-r from-primary to-primary/80 p-6 text-primary-foreground hidden md:flex flex-row items-center gap-4 rounded-t-xl">
     <div class="bg-primary-foreground/10 p-3 rounded-xl backdrop-blur-md">
       <Coins class="w-7 h-7 text-primary-foreground" />
     </div>
@@ -129,8 +146,8 @@
     </div>
   </Card.Header>
 
-  <Card.Content class="p-6">
-    <form onsubmit={handleSubmit} class="space-y-5">
+  <Card.Content class="p-4 sm:p-6">
+    <form onsubmit={handleSubmit} class="space-y-3 sm:space-y-5">
       {#if successMsg}
         <Alert.Root variant="success" class="p-4 text-sm rounded-xl flex items-start gap-2.5">
           <CheckCircle class="w-5 h-5 shrink-0 mt-0.5" />
@@ -145,25 +162,28 @@
         </Alert.Root>
       {/if}
 
-      <ExpenseFormMemberSelect
-        bind:selectedMemberId
-        bind:memberSearchQuery
-        bind:isMemberDropdownOpen
-        bind:highlightedIndex
-        {selectedMember}
-        {memberDisplayVal}
-        {filteredMembers}
-        onSelectMember={selectMember}
-        onKeyDown={handleKeyDown}
-      />
+      {#if lockToMembers}
+        <div class="rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm">
+          <span class="text-muted-foreground">Demandeur : </span>
+          <span class="font-semibold text-foreground">{selectedMember ? formatMemberName(selectedMember) : '—'}</span>
+        </div>
+      {:else}
+        <ExpenseFormMemberSelect
+          bind:selectedMemberId
+          bind:memberSearchQuery
+          bind:isMemberDropdownOpen
+          bind:highlightedIndex
+          {selectedMember}
+          {memberDisplayVal}
+          {filteredMembers}
+          onSelectMember={selectMember}
+          onKeyDown={handleKeyDown}
+        />
+      {/if}
 
       <ExpenseFormDetails bind:category bind:amountStr bind:description {visibleCategories} />
 
       <ExpenseFormFileInput bind:photoUrl bind:fileInput onError={(msg) => { errorMsg = msg; }} />
-
-      <div class="flex justify-center my-4">
-        <div class="cf-turnstile" data-sitekey="0x4AAAAAAD1TY7I_ql47XOjI" data-action="turnstile-spin-v1" data-size="invisible"></div>
-      </div>
 
       <Button
         type="submit"

@@ -20,7 +20,8 @@
     products = [],
     members = [],
     seasonId,
-    initialAction = null
+    initialAction = null,
+    activeTab = $bindable('pending')
   }: {
     seasons: Season[];
     orders: OrderItem[];
@@ -28,13 +29,13 @@
     members?: any[];
     seasonId: string;
     initialAction?: string | null;
+    activeTab?: 'pending' | 'history';
   } = $props();
 
   const isClosed = $derived(seasons.find(s => s.id === seasonId)?.closed || false);
 
   // svelte-ignore state_referenced_locally
   let ordersList = $state<OrderItem[]>(orders);
-  let activeTab = $state<'pending' | 'history'>('pending');
   let searchTerm = $state('');
   let processingId = $state<number | null>(null);
   let errorMsg = $state<string | null>(null);

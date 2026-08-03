@@ -13,6 +13,27 @@ vi.mock('jose', async (importOriginal) => {
   };
 });
 
+// L'API IAM est appelée pour résoudre les permissions ; on la mocke pour renvoyer
+// les comptes attendus (sinon l'appel réseau échoue et le middleware répond 403).
+vi.mock('@nba/api-client', () => ({
+  createApiClient: () => ({
+    fetch: async (url: any) => {
+      if (typeof url === 'string' && url.includes('/iam/users')) {
+        return new Response(
+          JSON.stringify({
+            data: [
+              { email: 'admin@nozaybad.fr', name: 'Admin', permissions: ['*'] },
+              { email: 'prod-user@nozay-bad.fr', name: 'Prod', permissions: ['*'] },
+            ],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      return new Response('{}', { status: 200 });
+    },
+  }),
+}));
+
 import { handleAuth } from './middleware';
 
 describe('Astro Auth Middleware', () => {
@@ -52,7 +73,7 @@ describe('Astro Auth Middleware', () => {
 
     const response = await handleAuth(context, next);
     expect(response.status).toBe(200);
-    expect(context.locals.user).toEqual({ email: 'admin@nozaybad.fr' });
+    expect(context.locals.user).toMatchObject({ email: 'admin@nozaybad.fr' });
     expect(next).toHaveBeenCalled();
   });
 
@@ -72,7 +93,7 @@ describe('Astro Auth Middleware', () => {
 
     const response = await handleAuth(context, next);
     expect(response.status).toBe(200);
-    expect(context.locals.user).toEqual({ email: 'prod-user@nozay-bad.fr' });
+    expect(context.locals.user).toMatchObject({ email: 'prod-user@nozay-bad.fr' });
     expect(next).toHaveBeenCalled();
     expect(mockJwtVerify).toHaveBeenCalledWith(
       'real-valid-token',
@@ -124,7 +145,7 @@ describe('Astro Auth Middleware', () => {
 
     const response = await handleAuth(context, next);
     expect(response.status).toBe(200);
-    expect(context.locals.user).toEqual({ email: 'prod-user@nozay-bad.fr' });
+    expect(context.locals.user).toMatchObject({ email: 'prod-user@nozay-bad.fr' });
     expect(next).toHaveBeenCalled();
     expect(mockJwtVerify).toHaveBeenCalledWith(
       'real-valid-token',

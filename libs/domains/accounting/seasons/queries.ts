@@ -46,3 +46,11 @@ export async function getSeasonByCode(db: DbOrTx, code: string): Promise<{ id: n
 export async function getSeasonById(db: DbOrTx, id: number) {
   return db.select().from(seasonsTable).where(eq(seasonsTable.id, id)).get();
 }
+
+// Retourne l'id de la saison marquée active (flag `active`), ou undefined si aucune.
+// Utilisé pour restreindre certaines recherches (ex. authentification adhérent) à la
+// saison courante et lever l'ambiguïté des dossiers dupliqués d'une saison à l'autre.
+export async function getActiveSeasonId(db: DbOrTx): Promise<number | undefined> {
+  const s = await db.select({ id: seasonsTable.id }).from(seasonsTable).where(eq(seasonsTable.active, true)).get();
+  return s?.id;
+}

@@ -13,7 +13,7 @@
   import ShopCatalogProductSelect from './ShopCatalogProductSelect.svelte';
   import ShopCatalogSummary from './ShopCatalogSummary.svelte';
 
-  let { products = [], members = [], activeSeasonId = '' }: { products: Product[]; members: Member[]; activeSeasonId: string } = $props();
+  let { products = [], members = [], activeSeasonId = '', lockToMembers = false, initialMemberId = '' }: { products: Product[]; members: Member[]; activeSeasonId: string; lockToMembers?: boolean; initialMemberId?: string } = $props();
 
   let productsList = $derived(products);
   let selectedMemberId = $state<string>('');
@@ -55,7 +55,20 @@
   $effect(() => { if (!isMemberDropdownOpen) highlightedIndex = -1; });
   $effect(() => { if (highlightedIndex >= filteredMembers.length) highlightedIndex = filteredMembers.length - 1; });
 
+  // Présélection (foyer connecté) au montage.
   $effect(() => {
+    if (initialMemberId && !selectedMemberId && !lastSelectedMember) {
+      const m = members.find((mm) => mm.id.toString() === initialMemberId);
+      if (m) {
+        selectedMemberId = m.id.toString();
+        lastSelectedMember = m;
+        memberSearchQuery = formatMemberName(m);
+      }
+    }
+  });
+
+  $effect(() => {
+    if (lockToMembers) return; // Foyer verrouillé : pas de recherche globale.
     if (!isMemberDropdownOpen) return;
     const query = memberSearchQuery.trim();
     if (lastSelectedMember && memberSearchQuery === formatMemberName(lastSelectedMember)) return;
@@ -98,7 +111,9 @@
   let selectedMember = $derived(members.length > 0 ? (members.find(m => m.id.toString() === selectedMemberId) || null) : lastSelectedMember);
   let memberDisplayVal = $derived(selectedMember ? formatMemberName(selectedMember) : '');
   let filteredMembers = $derived(
-    memberSearchQuery.trim() === ''
+    lockToMembers
+      ? sortedMembers
+      : memberSearchQuery.trim() === ''
       ? (fetchedMembers.length > 0 ? fetchedMembers : sortedMembers)
       : (fetchedMembers.length > 0
           ? fetchedMembers
@@ -122,7 +137,7 @@
 </script>
 
 <Card.Root class="max-w-2xl mx-auto shadow-xl">
-  <Card.Header class="bg-gradient-to-r from-primary to-primary/80 p-6 text-primary-foreground flex flex-row items-center gap-4 rounded-t-xl">
+  <Card.Header class="bg-gradient-to-r from-primary to-primary/80 p-6 text-primary-foreground hidden md:flex flex-row items-center gap-4 rounded-t-xl">
     <div class="bg-primary-foreground/10 p-3 rounded-xl backdrop-blur-md">
       <ShoppingBag class="w-7 h-7 text-primary-foreground" />
     </div>
@@ -132,18 +147,25 @@
     </div>
   </Card.Header>
 
-  <Card.Content class="p-6 space-y-6">
-    <ShopCatalogMemberSelect
-      bind:selectedMemberId
-      bind:memberSearchQuery
-      bind:isMemberDropdownOpen
-      bind:highlightedIndex
-      {selectedMember}
-      {memberDisplayVal}
-      {filteredMembers}
-      onSelectMember={selectMember}
-      onKeyDown={handleKeyDown}
-    />
+  <Card.Content class="p-3 sm:p-6 space-y-3 sm:space-y-6">
+    {#if lockToMembers}
+      <div class="rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm">
+        <span class="text-muted-foreground">Adhérent : </span>
+        <span class="font-semibold text-foreground">{selectedMember ? formatMemberName(selectedMember) : '—'}</span>
+      </div>
+    {:else}
+      <ShopCatalogMemberSelect
+        bind:selectedMemberId
+        bind:memberSearchQuery
+        bind:isMemberDropdownOpen
+        bind:highlightedIndex
+        {selectedMember}
+        {memberDisplayVal}
+        {filteredMembers}
+        onSelectMember={selectMember}
+        onKeyDown={handleKeyDown}
+      />
+    {/if}
 
     <ShopCatalogProductSelect
       bind:selectedPaymentMethod
