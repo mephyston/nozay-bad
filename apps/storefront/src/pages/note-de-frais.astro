@@ -6,6 +6,7 @@ import { ErrorAlert } from '@nba/ui';
 import { ExpenseReportForm } from '@nba/expenses-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
+import { getActiveMemberStatus } from '../lib/member-status';
 
 const apiService = createApiClient(env);
 
@@ -57,8 +58,8 @@ if (Astro.request.method === 'POST') {
 const session = Astro.locals.session;
 const members: Member[] = session?.members ?? [];
 const initialMemberId = session?.activeMemberId ? String(session.activeMemberId) : '';
-const activeMember = session?.members.find((m) => m.id === session.activeMemberId);
-const canExpense = activeMember?.expenseAuthorized ?? false;
+// Statut frais lu en direct (effet immédiat après (dé)autorisation, sans reconnexion).
+const canExpense = (await getActiveMemberStatus(env, session)).canExpense;
 
 let seasons: Season[] = [];
 let categories: any[] = [];
@@ -87,7 +88,7 @@ const activeSeasonId = activeSeason.id;
 ---
 
 <Layout title="Notes de frais - NBA 91">
-  <Header currentPath="/note-de-frais" activeSeasonName={activeSeason.name || activeSeasonId} pageTitle="Note de frais" />
+  <Header currentPath="/note-de-frais" activeSeasonName={activeSeason.name || activeSeasonId} pageTitle="Note de frais" canExpense={canExpense} />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     {errorMsg && (

@@ -2,16 +2,20 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import MobileNav from '../components/MobileNav.svelte';
+import { env } from 'cloudflare:workers';
+import { getActiveMemberStatus } from '../lib/member-status';
 
 const session = Astro.locals.session;
 const active = session?.members.find((m) => m.id === session.activeMemberId);
-const paid = active?.paid ?? false;
-const canExpense = active?.expenseAuthorized ?? false;
+// Statut lu en direct : paiement / autorisation à jour sans reconnexion.
+const status = await getActiveMemberStatus(env, session);
+const paid = status.paid;
+const canExpense = status.canExpense;
 const fullName = active ? `${active.firstName} ${active.lastName}` : '';
 ---
 
 <Layout title="Attestation CSE - Nozay Bad">
-  <Header currentPath="/attestation" />
+  <Header currentPath="/attestation" canExpense={canExpense} />
 
   <main class="flex-1 p-6 w-full pb-24 md:pb-6">
     <div class="max-w-2xl mx-auto">

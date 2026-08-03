@@ -7,7 +7,8 @@ import { createApiClient } from '@nba/api-client';
 
 const session = Astro.locals.session;
 const active = session?.members.find((m) => m.id === session.activeMemberId);
-const canExpense = active?.expenseAuthorized ?? false;
+// Recalculé plus bas depuis la donnée fraîche (effet immédiat sans reconnexion).
+let canExpense = active?.expenseAuthorized ?? false;
 
 const eur = (cents: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format((cents ?? 0) / 100);
@@ -37,13 +38,15 @@ if (active) {
     const seasonCode = activeSeason?.id;
     seasonName = activeSeason?.name || '';
 
-    const [memberRes, ordersRes, expensesRes] = await Promise.all([
-      apiService.fetch(`http://localhost/members/${encodeURIComponent(active.licence)}${seasonCode ? `?season=${encodeURIComponent(seasonCode)}` : ''}`),
+    // Adhérent d'abord → autorisation frais à jour avant de décider de charger les notes de frais.
+    const memberRes = await apiService.fetch(`http://localhost/members/${encodeURIComponent(active.licence)}${seasonCode ? `?season=${encodeURIComponent(seasonCode)}` : ''}`);
+    if (memberRes.ok) cotisation = ((await memberRes.json()) as any).data;
+    canExpense = Boolean(cotisation?.expenseAuthorized ?? canExpense);
+
+    const [ordersRes, expensesRes] = await Promise.all([
       apiService.fetch(`http://localhost/shop/orders?memberId=${active.id}`),
       canExpense ? apiService.fetch(`http://localhost/expenses?memberId=${active.id}`) : Promise.resolve(null)
     ]);
-
-    if (memberRes.ok) cotisation = ((await memberRes.json()) as any).data;
     if (ordersRes.ok) orders = ((await ordersRes.json()) as any).data || [];
     if (expensesRes && expensesRes.ok) expenses = ((await expensesRes.json()) as any).data || [];
   } catch {}
@@ -56,7 +59,7 @@ const isPaid = Boolean(cotisation?.paid);
 ---
 
 <Layout title="Mon compte - Nozay Bad">
-  <Header currentPath="/mon-compte" activeSeasonName={seasonName || undefined} pageTitle="Mon compte" />
+  <Header currentPath="/mon-compte" activeSeasonName={seasonName || undefined} pageTitle="Mon compte" canExpense={canExpense} />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     <div class="max-w-3xl mx-auto space-y-8">

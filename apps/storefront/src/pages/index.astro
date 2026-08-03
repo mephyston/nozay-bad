@@ -3,29 +3,20 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import MobileNav from '../components/MobileNav.svelte';
 import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
+import { getActiveMemberStatus } from '../lib/member-status';
 
 const session = Astro.locals.session;
 const active = session?.members.find((m) => m.id === session.activeMemberId);
 const firstName = active?.firstName ?? '';
-const canExpense = active?.expenseAuthorized ?? false;
 
-// Saison active pour le badge du header (comme les autres pages).
-let activeSeasonName = '';
-try {
-  const apiService = createApiClient(env);
-  const res = await apiService.fetch('http://localhost/accounting/seasons');
-  if (res.ok) {
-    const json = (await res.json()) as any;
-    const seasons = json.data || [];
-    const s = seasons.find((x: any) => x.active) || seasons[0];
-    activeSeasonName = s?.name || '';
-  }
-} catch {}
+// Statut lu en direct (autorisation frais effective sans reconnexion) + saison pour le badge.
+const status = await getActiveMemberStatus(env, session);
+const canExpense = status.canExpense;
+const activeSeasonName = status.seasonName;
 ---
 
 <Layout title="Espace adhérent - Nozay Bad">
-  <Header currentPath="/" activeSeasonName={activeSeasonName || undefined} pageTitle="Accueil" />
+  <Header currentPath="/" activeSeasonName={activeSeasonName || undefined} pageTitle="Accueil" canExpense={canExpense} />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     <div class="max-w-3xl mx-auto">

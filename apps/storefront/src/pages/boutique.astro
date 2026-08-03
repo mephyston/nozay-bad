@@ -6,6 +6,7 @@ import { ErrorAlert } from '@nba/ui';
 import { ShopCatalog } from '@nba/shop-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
+import { getActiveMemberStatus } from '../lib/member-status';
 
 const apiService = createApiClient(env);
 
@@ -64,8 +65,7 @@ if (Astro.request.method === 'POST') {
 const session = Astro.locals.session;
 const members: Member[] = session?.members ?? [];
 const initialMemberId = session?.activeMemberId ? String(session.activeMemberId) : '';
-const activeMember = session?.members.find((m) => m.id === session.activeMemberId);
-const canExpense = activeMember?.expenseAuthorized ?? false;
+const canExpense = (await getActiveMemberStatus(env, session)).canExpense;
 
 let products: Product[] = [];
 let seasons: Season[] = [];
@@ -96,7 +96,7 @@ const activeSeasonId = activeSeason.id;
 ---
 
 <Layout title="Boutique Adhérents - NBA 91">
-  <Header currentPath="/boutique" activeSeasonName={activeSeason.name || activeSeasonId} pageTitle="Boutique" />
+  <Header currentPath="/boutique" activeSeasonName={activeSeason.name || activeSeasonId} pageTitle="Boutique" canExpense={canExpense} />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     {errorMsg && (

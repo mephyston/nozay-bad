@@ -6,9 +6,10 @@ interface Props {
   currentPath: string;
   activeSeasonName?: string;
   pageTitle?: string;
+  canExpense?: boolean;
 }
 
-const { currentPath, activeSeasonName = 'Saison 2025-2026', pageTitle } = Astro.props;
+const { currentPath, activeSeasonName = 'Saison 2025-2026', pageTitle, canExpense: canExpenseProp } = Astro.props;
 
 const isCompte = currentPath === '/mon-compte';
 const isBoutique = currentPath === '/boutique';
@@ -17,7 +18,9 @@ const isAttestation = currentPath === '/attestation';
 
 const session = Astro.locals.session;
 const activeMember = session?.members.find((m) => m.id === session.activeMemberId);
-const canExpense = activeMember?.expenseAuthorized ?? false;
+// Le statut frais peut être fourni "en direct" par la page (canExpenseProp) ; sinon
+// on retombe sur le snapshot de session.
+const canExpense = canExpenseProp ?? (activeMember?.expenseAuthorized ?? false);
 ---
 
 <header class="flex h-14 shrink-0 items-center justify-between px-3 sm:px-6 border-b border-border bg-background sticky top-0 z-40">
