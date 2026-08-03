@@ -1,3 +1,10 @@
+# [1.0.0-beta.39](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.38...v1.0.0-beta.39) (2026-08-03)
+
+
+### Bug Fixes
+
+* **storefront:** corriger l'URL siteverify Turnstile (challenges.cloudflare.com) ([310c459](https://github.com/mephyston/nozay-bad/commit/310c45989c3aa0887a4cef05f6ae5f8d562c0fe2))
+
 # [1.0.0-beta.38](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.37...v1.0.0-beta.38) (2026-08-03)
 
 
