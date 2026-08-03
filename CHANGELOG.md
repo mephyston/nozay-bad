@@ -1,3 +1,10 @@
+# [1.0.0-beta.44](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.43...v1.0.0-beta.44) (2026-08-03)
+
+
+### Features
+
+* **storefront:** page "Mon compte" (cotisation, commandes, notes de frais) ([672c7f3](https://github.com/mephyston/nozay-bad/commit/672c7f3fcedb5778f5809707fbe752140b6b6279))
+
 # [1.0.0-beta.43](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.42...v1.0.0-beta.43) (2026-08-03)
 
 
