@@ -1,3 +1,10 @@
+# [1.0.0-beta.50](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.49...v1.0.0-beta.50) (2026-08-04)
+
+
+### Bug Fixes
+
+* **storefront:** typage JWT_VERIFY_OPTS (retrait as const) pour jwtVerify ([5a92676](https://github.com/mephyston/nozay-bad/commit/5a926764e63b3aea2bef8c61cfbfc7017d300aa5))
+
 # [1.0.0-beta.49](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.48...v1.0.0-beta.49) (2026-08-04)
 
 
