@@ -1,3 +1,10 @@
+# [1.0.0-beta.51](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.50...v1.0.0-beta.51) (2026-08-04)
+
+
+### Bug Fixes
+
+* **pwa:** storefront SW ne recharge plus la page ni ne sert de coquille cache ([8ad2d3a](https://github.com/mephyston/nozay-bad/commit/8ad2d3ad6ed7df44771a61ac7008f8b5cda4513f))
+
 # [1.0.0-beta.50](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.49...v1.0.0-beta.50) (2026-08-04)
 
 
