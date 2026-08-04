@@ -203,7 +203,7 @@
 </div>
 
 <Sheet.Root bind:open={isCreateSheetOpen}>
-  <Sheet.Content side="right" class="w-full sm:max-w-2xl overflow-y-auto p-0 flex flex-col h-full">
+  <Sheet.Content side="right" class="w-full sm:max-w-2xl overflow-y-auto p-0 flex flex-col h-full" onOpenAutoFocus={(e) => e.preventDefault()}>
     <AdminOrderForm
       products={products}
       members={members}
