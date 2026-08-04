@@ -1,9 +1,20 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
+import { authorizeAccountingProxy } from '../../../lib/authz';
 
 export const ALL: APIRoute = async ({ request, locals, params }) => {
   try {
+    // H-01 : autorisation au niveau du proxy (unique surface d'écriture atteignable
+    // par le client). Deny-by-default selon la permission requise par méthode + chemin.
+    const path = params.path || '';
+    const perms = locals.user?.permissions || [];
+    if (!authorizeAccountingProxy(request.method, path, perms)) {
+      return new Response(JSON.stringify({ success: false, error: 'Accès refusé' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     let apiService: any = undefined;
     try {
       let runtimeEnv: Record<string, string> = {};
@@ -14,9 +25,8 @@ export const ALL: APIRoute = async ({ request, locals, params }) => {
       }
     } catch {}
 
-    const path = params.path || '';
     const searchParams = new URL(request.url).search;
-    
+
     // Si c'est l'API_SERVICE on passe par localhost
     const targetUrl = `http://localhost/accounting/${path}${searchParams}`;
 
@@ -24,9 +34,12 @@ export const ALL: APIRoute = async ({ request, locals, params }) => {
     let body = null;
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       body = await request.clone().arrayBuffer();
-      console.log(`[PROXY] method=${request.method} target=${targetUrl} body length: ${body.byteLength}`);
-      if (body.byteLength > 0) {
-        console.log(`[PROXY] body preview: ${new TextDecoder().decode(body.slice(0, 100))}`);
+      // F-04 : ne journaliser un aperçu de corps (montants, libellés, PII) qu'en dev.
+      if (import.meta.env.DEV) {
+        console.log(`[PROXY] method=${request.method} target=${targetUrl} body length: ${body.byteLength}`);
+        if (body.byteLength > 0) {
+          console.log(`[PROXY] body preview: ${new TextDecoder().decode(body.slice(0, 100))}`);
+        }
       }
     }
 

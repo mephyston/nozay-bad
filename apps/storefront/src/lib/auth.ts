@@ -48,6 +48,17 @@ function secretKey(secret: string): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
+// F-02 : algorithme épinglé explicitement (durcissement anti-confusion d'algo).
+const JWT_VERIFY_OPTS = { algorithms: ['HS256'] } as const;
+
+// F-01 : comparaison à temps constant du haché OTP (évite un canal temporel).
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let r = 0;
+  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return r === 0;
+}
+
 export async function signSession(payload: SessionPayload, secret: string): Promise<string> {
   return new SignJWT({
     email: payload.email,
@@ -62,7 +73,7 @@ export async function signSession(payload: SessionPayload, secret: string): Prom
 
 export async function verifySession(token: string, secret: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, secretKey(secret));
+    const { payload } = await jwtVerify(token, secretKey(secret), JWT_VERIFY_OPTS);
     const members = Array.isArray(payload.members) ? (payload.members as SessionMember[]) : [];
     const email = typeof payload.email === 'string' ? payload.email : '';
     const activeMemberId = typeof payload.activeMemberId === 'number' ? payload.activeMemberId : members[0]?.id;
@@ -84,7 +95,7 @@ export async function signPending(email: string, secret: string): Promise<string
 
 export async function verifyPending(token: string, secret: string): Promise<string | null> {
   try {
-    const { payload } = await jwtVerify(token, secretKey(secret));
+    const { payload } = await jwtVerify(token, secretKey(secret), JWT_VERIFY_OPTS);
     return typeof payload.email === 'string' ? payload.email : null;
   } catch {
     return null;
@@ -172,7 +183,7 @@ export async function verifyOtp(kv: any, email: string, code: string): Promise<O
   }
 
   const candidate = await hashOtp(code, email);
-  if (candidate === record.hash) {
+  if (timingSafeEqual(candidate, record.hash)) {
     await deleteOtp(kv, key);
     return { ok: true, members: record.members };
   }

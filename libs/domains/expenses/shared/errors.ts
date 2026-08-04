@@ -14,6 +14,14 @@ export class ExpenseNotFoundError extends AppError {
   }
 }
 
+// M-01 : l'adhérent n'est pas autorisé aux notes de frais (revalidation serveur).
+export class MemberNotEligibleError extends AppError {
+  constructor(message = 'Adhérent non autorisé aux notes de frais.') {
+    super(message, 403);
+    this.name = 'MemberNotEligibleError';
+  }
+}
+
 export class ExpenseAlreadyProcessedError extends AppError {
   constructor(message = 'Dépense déjà traitée') {
     super(message, 400);

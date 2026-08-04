@@ -292,7 +292,8 @@ jobs:
               cfg.services = [{ binding: 'API_SERVICE', service: 'nba-api-staging' }];
               cfg.kv_namespaces = [{ binding: 'RATE_LIMIT_KV', id: 'e1f0b19b7ea44399ba66d10fe7907ce9' }];
               cfg.vars = cfg.vars || {};
-              cfg.vars.INTERNAL_API_KEY = 'nba_stg_sec_7f9c8d2a1e4b3c5d6e8f9a0b1c2d3e4f';
+              // INTERNAL_API_KEY : jamais en clair ici. Posée via `wrangler secret put`
+              // sur nba-storefront-staging (voir C-01 de l'audit sécurité).
               // Anti-envoi aux adhérents sur staging : mode allowlist restreint à l'admin.
               // (Le build reprend EMAIL_MODE=live destiné à la prod → on override ici.)
               cfg.vars.EMAIL_MODE = 'allowlist';
@@ -345,7 +346,8 @@ jobs:
               cfg.name = 'nba-admin-staging';
               cfg.services = [{ binding: 'API_SERVICE', service: 'nba-api-staging' }];
               cfg.vars = cfg.vars || {};
-              cfg.vars.INTERNAL_API_KEY = 'nba_stg_sec_7f9c8d2a1e4b3c5d6e8f9a0b1c2d3e4f';
+              // INTERNAL_API_KEY : jamais en clair ici. Posée via `wrangler secret put`
+              // sur nba-admin-staging (voir C-01 de l'audit sécurité).
             }
             fs.writeFileSync('dist/server/wrangler.json', JSON.stringify(cfg, null, 2));
           "

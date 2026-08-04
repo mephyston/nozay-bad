@@ -8,15 +8,13 @@ export interface ApiClientEnv {
 }
 
 export function createApiClient(env?: ApiClientEnv) {
-  const isProd =
-    env?.ENVIRONMENT === 'production' ||
-    env?.ENVIRONMENT === 'staging' ||
-    (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production');
-
+  // C-01 : aucune clé en dur. La valeur vient du binding env (secret Worker) ou, en
+  // local, de .dev.vars via `process.env`. Si absente, l'appel partira sans clé et
+  // l'API répondra 401 (fail-closed) — plutôt qu'un secret devinable embarqué.
   const apiKey =
     env?.INTERNAL_API_KEY ||
     (typeof process !== 'undefined' && process.env?.INTERNAL_API_KEY) ||
-    (!isProd ? 'dev-secret-key-12345' : '');
+    '';
 
   return {
     fetch: (input: RequestInfo | URL, init?: RequestInit) => {

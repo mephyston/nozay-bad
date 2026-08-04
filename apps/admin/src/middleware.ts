@@ -2,6 +2,7 @@ import { defineMiddleware } from 'astro:middleware';
 import type { APIContext, MiddlewareNext } from 'astro';
 import { jwtVerify, createRemoteJWKSet } from 'jose';
 import { env as cfEnv } from 'cloudflare:workers';
+import { applySecurityHeaders } from './lib/security-headers';
 
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
@@ -144,5 +145,8 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
   }
 };
 
-export const onRequest = defineMiddleware(handleAuth);
+// M-03 : toutes les réponses reçoivent les en-têtes de sécurité.
+export const onRequest = defineMiddleware(async (context, next) => {
+  return applySecurityHeaders(await handleAuth(context, next));
+});
 

@@ -1,6 +1,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import { verifySession, readSessionCookie, resolveSessionSecret } from './lib/auth';
 import { resolveEnv, IS_DEV } from './lib/request-context';
+import { applySecurityHeaders } from './lib/security-headers';
 
 // Chemins accessibles sans session : page de login, endpoints d'auth, et assets Astro (_astro/_image).
 const PUBLIC_PREFIXES = ['/login', '/api/auth/', '/confidentialite', '/mentions-legales'];
@@ -8,7 +9,10 @@ const PUBLIC_PREFIXES = ['/login', '/api/auth/', '/confidentialite', '/mentions-
 // Volontairement SANS .pdf : /api/attestation.pdf doit rester protégé (voir exclusion /api/).
 const STATIC_FILE = /\.(ico|png|jpe?g|svg|webp|gif|avif|txt|xml|webmanifest|json|woff2?|ttf|otf|eot|css|js|map|mp4|webm)$/i;
 
-export const onRequest = defineMiddleware(async (context, next) => {
+const handleRequest = async (
+  context: Parameters<Parameters<typeof defineMiddleware>[0]>[0],
+  next: Parameters<Parameters<typeof defineMiddleware>[0]>[1]
+): Promise<Response> => {
   const { request, locals } = context;
   const url = new URL(request.url);
   const path = url.pathname;
@@ -46,4 +50,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   (locals as any).session = session;
   return next();
+};
+
+// M-03 : toutes les réponses (pages, API, redirections, 401) reçoivent les en-têtes
+// de sécurité.
+export const onRequest = defineMiddleware(async (context, next) => {
+  return applySecurityHeaders(await handleRequest(context, next));
 });

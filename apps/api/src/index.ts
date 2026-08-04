@@ -16,6 +16,14 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
+// Comparaison à temps constant (F-01) : évite un canal temporel sur la clé d'API.
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let r = 0;
+  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return r === 0;
+}
+
 app.onError((err, c) => {
   if (err instanceof AppError || (err && (err as any).name === 'AppError')) {
     return c.json({ success: false, error: err.message }, (err as any).status || 400);
@@ -30,9 +38,9 @@ app.use('*', async (c, next) => {
     return next();
   }
 
-  const apiKey =
-    c.env?.INTERNAL_API_KEY ||
-    (process.env.NODE_ENV === 'development' ? 'dev-secret-key-12345' : '');
+  // C-01 : aucune valeur en dur. La clé provient exclusivement du secret du Worker
+  // (wrangler secret put) ou, en local, de .dev.vars (gitignoré). Fail-closed sinon.
+  const apiKey = c.env?.INTERNAL_API_KEY || '';
 
   // Échec en fermeture : clé non configurée sur le Worker
   if (!apiKey) {
@@ -43,13 +51,15 @@ app.use('*', async (c, next) => {
   const reqKey =
     c.req.header('x-api-key') ||
     c.req.header('x-internal-secret') ||
-    c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
+    c.req.header('authorization')?.replace(/^Bearer\s+/i, '') ||
+    '';
 
-  if (reqKey === apiKey) {
+  if (timingSafeEqual(reqKey, apiKey)) {
     return next();
   }
 
-  console.error(`401 Unauthorized. reqKey: '${reqKey}', expected: '${apiKey}', path: ${c.req.path}`);
+  // M-02 : ne jamais journaliser la clé (reçue ou attendue). Statut + présence seulement.
+  console.error(`401 Unauthorized path=${c.req.path} keyProvided=${Boolean(reqKey)}`);
   return c.json({ success: false, error: 'Accès non autorisé' }, 401);
 });
 

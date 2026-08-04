@@ -18,9 +18,6 @@
       "head_sampling_rate": 1
     }
   },
-  "vars": {
-    "INTERNAL_API_KEY": "dev-secret-key-12345"
-  },
   "services": [
     { "binding": "API_SERVICE", "service": "nba-api" }
   ],
@@ -28,7 +25,6 @@
     "staging": {
       "name": "nba-admin-staging",
       "vars": {
-        "INTERNAL_API_KEY": "nba_stg_sec_7f9c8d2a1e4b3c5d6e8f9a0b1c2d3e4f",
         "APP_ENV": "staging"
       },
       "services": [
