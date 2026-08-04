@@ -3,6 +3,7 @@ import { ClientRouter } from 'astro:transitions';
 import { pwaInfo } from 'virtual:pwa-info';
 import { ModeWatcher } from 'mode-watcher';
 import pkg from '../../../../package.json';
+import EnvBanner from '../components/EnvBanner.astro';
 import '../styles/global.css';
 
 interface Props {
@@ -10,10 +11,9 @@ interface Props {
 }
 
 const { title } = Astro.props;
-let isStaging = false;
-try {
-  isStaging = (Astro.locals as any).runtime?.env?.APP_ENV === 'staging';
-} catch (e) {}
+// Suffixe d'icône selon l'environnement (inliné au build) : bandeau DEV / TEST.
+const APP_ENV = import.meta.env.PUBLIC_APP_ENV || 'production';
+const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ? '-test' : '';
 ---
 
 <!doctype html>
@@ -27,7 +27,7 @@ try {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href={`/apple-touch-icon${ICON_SUFFIX}.png`} />
     <meta name="apple-mobile-web-app-title" content="Nozay Bad" />
     { pwaInfo && <Fragment set:html={pwaInfo.webManifest.linkTag} /> }
     <title>{title}</title>
@@ -109,13 +109,7 @@ try {
     </style>
   </head>
   <body class="bg-background text-foreground min-h-screen antialiased font-sans relative">
-    {isStaging && (
-      <div class="fixed top-0 inset-x-0 z-[10000] pointer-events-none overflow-hidden h-32">
-        <div class="absolute top-6 -right-12 w-64 bg-destructive text-destructive-foreground text-center text-xs font-bold py-1 rotate-45 shadow-md border-y border-destructive-foreground/20 tracking-wider">
-          TEST / STAGING
-        </div>
-      </div>
-    )}
+    <EnvBanner />
     <ModeWatcher client:load />
     
     <!-- PWA Splash Screen -->
@@ -143,12 +137,20 @@ try {
       (function() {
         const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
         const splash = document.getElementById('pwa-splash');
-        
-        if (!isPWA) {
-          if (splash) splash.style.display = 'none';
-        }
-        // Pour les PWA, le splash screen reste visible jusqu'au clic sur Continuer
 
+        // Le splash ne doit apparaître qu'au démarrage à froid de la PWA (nouvelle
+        // session). Les rechargements plein-écran internes (ex: changement de saison
+        // via window.location dans SeasonSelector) ne doivent PAS le réafficher.
+        // sessionStorage persiste tant que la PWA tourne et se vide à sa fermeture.
+        let alreadyShown = false;
+        try { alreadyShown = sessionStorage.getItem('pwa-splash-shown') === '1'; } catch (e) {}
+
+        if (!isPWA || alreadyShown) {
+          if (splash) splash.style.display = 'none';
+        } else {
+          // Premier affichage de la session : il reste visible jusqu'au clic sur Continuer.
+          try { sessionStorage.setItem('pwa-splash-shown', '1'); } catch (e) {}
+        }
 
         // Cache instantanément le splash screen lors d'une navigation interne (Astro ViewTransitions)
         document.addEventListener('astro:after-swap', () => {
