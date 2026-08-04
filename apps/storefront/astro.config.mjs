@@ -22,7 +22,10 @@ export default defineConfig({
   integrations: [
     svelte(),
     AstroPWA({
-      registerType: 'autoUpdate',
+      // App SSR authentifiée : le SW ne doit ni recharger la page tout seul
+      // (le rechargement effaçait le widget Turnstile en mode PWA), ni servir de
+      // coquille HTML en cache pour les navigations (auth + Turnstile = toujours réseau).
+      registerType: 'prompt',
       includeAssets: ['favicon.png', `apple-touch-icon${ICON_SUFFIX}.png`],
       manifest: {
         name: 'Nozay Bad' + ENV_LABEL,
@@ -45,7 +48,11 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{css,js,svg,png,ico,txt}']
+        globPatterns: ['**/*.{css,js,svg,png,ico,txt}'],
+        // Pas de navigateFallback : les navigations vont toujours au réseau (SSR),
+        // jamais vers un index.html en cache (inexistant ici) → évite le rechargement
+        // et la coquille périmée qui cassaient le login/Turnstile en mode PWA.
+        navigateFallback: null
       }
     })
   ],
