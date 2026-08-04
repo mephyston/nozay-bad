@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Shield, Calendar, Tag, Mail, Phone, Receipt } from '@lucide/svelte';
+  import { Shield, Calendar, Tag, Mail, Phone, Receipt, Copy, Check } from '@lucide/svelte';
   import { Card, Button, uiConfirm } from '@nba/ui';
   import type { Member } from './member-profile-types';
 
@@ -34,6 +34,20 @@
       alert('Erreur réseau : ' + (e?.message ?? String(e)));
     }
     toggling = false;
+  }
+
+  let copiedEmail = $state<string | null>(null);
+
+  async function copyToClipboard(email: string) {
+    try {
+      await navigator.clipboard.writeText(email);
+      copiedEmail = email;
+      setTimeout(() => {
+        if (copiedEmail === email) copiedEmail = null;
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
   }
 </script>
 
@@ -93,9 +107,22 @@
         {#if member.email}
           <div class="flex items-center gap-3">
             <Mail class="w-4 h-4 text-muted-foreground shrink-0" />
-            <div>
+            <div class="flex-1">
               <div class="text-xs text-muted-foreground">E-mail</div>
-              <a href="mailto:{member.email}" class="text-sm font-medium hover:underline text-primary">{member.email}</a>
+              <div class="flex items-center gap-2">
+                <a href="mailto:{member.email}" class="text-sm font-medium hover:underline text-primary">{member.email}</a>
+                <button 
+                  class="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
+                  onclick={() => copyToClipboard(member.email!)}
+                  title="Copier l'email"
+                >
+                  {#if copiedEmail === member.email}
+                    <Check class="w-3.5 h-3.5 text-success" />
+                  {:else}
+                    <Copy class="w-3.5 h-3.5" />
+                  {/if}
+                </button>
+              </div>
             </div>
           </div>
         {/if}
@@ -114,7 +141,20 @@
             <div class="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Représentant Légal 1</div>
             <div class="text-sm font-semibold">{member.parent1Name}</div>
             {#if member.parent1Email}
-              <div class="text-xs text-muted-foreground mt-0.5"><a href="mailto:{member.parent1Email}" class="hover:underline">{member.parent1Email}</a></div>
+              <div class="flex items-center gap-2 mt-0.5">
+                <div class="text-xs text-muted-foreground"><a href="mailto:{member.parent1Email}" class="hover:underline">{member.parent1Email}</a></div>
+                <button 
+                  class="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
+                  onclick={() => copyToClipboard(member.parent1Email!)}
+                  title="Copier l'email"
+                >
+                  {#if copiedEmail === member.parent1Email}
+                    <Check class="w-3 h-3 text-success" />
+                  {:else}
+                    <Copy class="w-3 h-3" />
+                  {/if}
+                </button>
+              </div>
             {/if}
             {#if member.parent1Phone}
               <div class="text-xs text-muted-foreground mt-0.5"><a href="tel:{member.parent1Phone}" class="hover:underline">{member.parent1Phone}</a></div>
@@ -126,7 +166,20 @@
             <div class="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Représentant Légal 2</div>
             <div class="text-sm font-semibold">{member.parent2Name}</div>
             {#if member.parent2Email}
-              <div class="text-xs text-muted-foreground mt-0.5"><a href="mailto:{member.parent2Email}" class="hover:underline">{member.parent2Email}</a></div>
+              <div class="flex items-center gap-2 mt-0.5">
+                <div class="text-xs text-muted-foreground"><a href="mailto:{member.parent2Email}" class="hover:underline">{member.parent2Email}</a></div>
+                <button 
+                  class="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
+                  onclick={() => copyToClipboard(member.parent2Email!)}
+                  title="Copier l'email"
+                >
+                  {#if copiedEmail === member.parent2Email}
+                    <Check class="w-3 h-3 text-success" />
+                  {:else}
+                    <Copy class="w-3 h-3" />
+                  {/if}
+                </button>
+              </div>
             {/if}
             {#if member.parent2Phone}
               <div class="text-xs text-muted-foreground mt-0.5"><a href="tel:{member.parent2Phone}" class="hover:underline">{member.parent2Phone}</a></div>

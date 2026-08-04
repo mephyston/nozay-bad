@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
-import { Type } from '@sinclair/typebox';
 import { tbValidator } from '@hono/typebox-validator';
 import { streamText } from 'hono/streaming';
 import { hasPermission } from '../../../iam/shared/permissions';
+import { generateAnalysisSchema } from './validator';
 
 export type Bindings = {
   AI: any;
@@ -10,14 +10,9 @@ export type Bindings = {
 
 export const generateAiAnalysisRoute = new Hono<{ Bindings: Bindings }>();
 
-const requestSchema = Type.Object({
-  report: Type.Any(),
-  section: Type.Union([Type.Literal('tresorerie'), Type.Literal('resultat')]),
-});
-
 generateAiAnalysisRoute.post(
   '/:seasonId/ai/analysis',
-  tbValidator('json', requestSchema, (result, c) => {
+  tbValidator('json', generateAnalysisSchema, (result, c) => {
     if (!result.success) {
       const errs = [...result.errors].map(e => `${e.path}: ${e.message}`).join(', ');
       console.error("Validation failed:", errs);

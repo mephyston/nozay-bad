@@ -1,10 +1,9 @@
-// eslint-disable-next-line no-restricted-imports
-import { membersTable } from '@nba/members/schema';
 import { seasonsTable } from '@nba/accounting/schema';
 import { categoriesTable } from '@nba/accounting/schema';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { analyzeBankStatementLines } from './handler';
+import { AnalyzeBankStatementLinesRepository } from './repository';
 import { bankStatementLinesTable } from '../../shared/schema';
 import { eq, sql } from 'drizzle-orm';
 
@@ -63,20 +62,27 @@ describe('analyzeBankStatementLines', () => {
       createdAt: new Date()
     }).run();
 
-    await db.insert(membersTable).values({
-      id: 1,
-      licence: '123456',
-      seasonId: 1,
-      lastName: 'Dupont',
-      firstName: 'Marc',
-      gender: 'M',
-      birthDate: '1990-01-01',
-      type: 'Adulte',
-      importedAt: new Date(),
-      amountDueCents: 15000,
-      amountReceivedCents: 0,
-      amountRemainingCents: 15000
-    }).run();
+    vi.spyOn(AnalyzeBankStatementLinesRepository.prototype, 'getMembersBySeason').mockResolvedValue([
+      {
+        id: 1,
+        licence: '123456',
+        seasonId: 1,
+        lastName: 'Dupont',
+        firstName: 'Marc',
+        gender: 'M',
+        birthDate: '1990-01-01',
+        type: 'Adulte',
+        importedAt: new Date(),
+        amountDue: 15000,
+        amountReceived: 0,
+        amountRemaining: 15000,
+        amountDueCents: 15000,
+        amountReceivedCents: 0,
+        amountRemainingCents: 15000,
+        parent1Name: null,
+        parent2Name: null
+      }
+    ]);
 
     let capturedPrompt = '';
     const aiMock = {

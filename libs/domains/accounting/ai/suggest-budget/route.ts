@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
-import { Type } from '@sinclair/typebox';
 import { tbValidator } from '@hono/typebox-validator';
 import { hasPermission } from '../../../iam/shared/permissions';
+import { suggestBudgetSchema } from './validator';
 
 export type Bindings = {
   AI: any;
@@ -9,15 +9,9 @@ export type Bindings = {
 
 export const suggestBudgetRoute = new Hono<{ Bindings: Bindings }>();
 
-const requestSchema = Type.Object({
-  report: Type.Any(),
-  categories: Type.Array(Type.Any()),
-  currentBudget: Type.Record(Type.String(), Type.Number()),
-});
-
 suggestBudgetRoute.post(
   '/:seasonId/ai/budget-suggestion',
-  tbValidator('json', requestSchema, (result, c) => {
+  tbValidator('json', suggestBudgetSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: 'Invalid request' }, 400);
     }
