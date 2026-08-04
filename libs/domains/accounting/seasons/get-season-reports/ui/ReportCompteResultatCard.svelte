@@ -210,7 +210,7 @@
         {/if}
         
         <div class="flex justify-end gap-3">
-          {#if hasPermission(userPermissions, 'ai:*') || hasPermission(userPermissions, 'ai:chat')}
+          {#if hasPermission(userPermissions, 'ai:*')}
             <Button
               variant="outline"
               onclick={suggestBudget}

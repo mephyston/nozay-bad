@@ -56,8 +56,7 @@
     {
       name: 'Assistant IA',
       permissions: [
-        { value: 'ai:*', label: 'Accès complet', desc: 'Accès complet à l\'assistant' },
-        { value: 'ai:chat', label: 'Discussion', desc: 'Utiliser l\'assistant IA' }
+        { value: 'ai:*', label: 'Assistant IA', desc: 'Utiliser l\'assistant (chat) et générer/consulter les commentaires IA des rapports financiers' }
       ]
     }
   ];

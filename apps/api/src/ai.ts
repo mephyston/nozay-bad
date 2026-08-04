@@ -4,6 +4,7 @@ import { AI_TOOLS } from './ai-tools';
 import { createDb } from '@nba/db';
 import { getSeasonReports } from '@nba/accounting-api';
 import { listMembers, getMemberStats } from '@nba/members-api';
+import { hasPermission } from '@nba/iam';
 
 export const aiRouter = new Hono<{ Bindings: { DB: D1Database, AI: any } }>();
 
@@ -19,6 +20,13 @@ Ton but est d'aider le bénévole.
 3. Si tu ne sais pas, dis simplement que tu ne peux pas répondre avec les informations disponibles.`;
 
 aiRouter.post('/chat', async (c) => {
+  // Droit unique « Assistant IA » (ai:*) requis (transmis par le proxy admin).
+  const permsHeader = c.req.header('x-user-permissions') || '';
+  const perms = permsHeader ? permsHeader.split(',') : [];
+  if (!hasPermission(perms, 'ai:*')) {
+    return c.json({ success: false, error: 'Accès refusé : droit Assistant IA (ai:*) requis' }, 403);
+  }
+
   const { prompt } = await c.req.json();
 
   if (!prompt) {

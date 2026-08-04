@@ -2,9 +2,13 @@
 import AdminLayout from "../../../components/AdminLayout.svelte";
 import Layout from "../../../layouts/Layout.astro";
 import AIChat from "../../../components/AIChat.svelte";
+import { hasPermission } from '@nba/iam';
 
 const { user } = Astro.locals as any;
 const permissions = user?.permissions || [];
+if (!hasPermission(permissions, 'ai:*')) {
+  return Astro.redirect('/');
+}
 ---
 
 <Layout title="Assistant IA - Nozay Bad Admin">

@@ -29,8 +29,8 @@ suggestBudgetRoute.post(
 
     const permissionsHeader = c.req.header('x-user-permissions') || '';
     const permissions = permissionsHeader ? permissionsHeader.split(',') : [];
-    if (!hasPermission(permissions, 'ai:*') && !hasPermission(permissions, 'ai:chat')) {
-      return c.json({ success: false, error: 'Unauthorized: missing ai:chat permission' }, 403);
+    if (!hasPermission(permissions, 'ai:*')) {
+      return c.json({ success: false, error: 'Accès refusé : droit Assistant IA (ai:*) requis' }, 403);
     }
 
     const { report, categories, currentBudget } = c.req.valid('json');

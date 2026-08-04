@@ -46,7 +46,7 @@
       label: "",
       items: [
         { name: "Tableau de bord", icon: LayoutDashboard, href: "/" },
-        { name: "Assistant IA", icon: Sparkles, href: "/admin/ai" }
+        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'ai:*') ? [{ name: "Assistant IA", icon: Sparkles, href: "/admin/ai" }] : [])
       ]
     },
     {

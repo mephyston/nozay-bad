@@ -5,7 +5,7 @@
 
   let { report, section, seasonId, userPermissions = [] }: { report: any; section: 'tresorerie' | 'resultat', seasonId: string, userPermissions?: string[] } = $props();
 
-  let canUseAI = $derived(hasPermission(userPermissions, 'ai:*') || hasPermission(userPermissions, 'ai:chat'));
+  let canUseAI = $derived(hasPermission(userPermissions, 'ai:*'));
 
   let loading = $state(false);
   let analysis = $state<string>('');
