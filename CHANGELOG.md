@@ -1,3 +1,10 @@
+# [1.0.0-beta.48](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.47...v1.0.0-beta.48) (2026-08-04)
+
+
+### Features
+
+* **storefront:** PWA installable avec icône partagée et bandeau d'environnement ([9051297](https://github.com/mephyston/nozay-bad/commit/90512974fa3b74013548e15748c288a4b9679ffe))
+
 # [1.0.0-beta.47](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.46...v1.0.0-beta.47) (2026-08-03)
 
 
