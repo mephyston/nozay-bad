@@ -49,7 +49,7 @@ function secretKey(secret: string): Uint8Array {
 }
 
 // F-02 : algorithme épinglé explicitement (durcissement anti-confusion d'algo).
-const JWT_VERIFY_OPTS = { algorithms: ['HS256'] } as const;
+const JWT_VERIFY_OPTS = { algorithms: ['HS256'] };
 
 // F-01 : comparaison à temps constant du haché OTP (évite un canal temporel).
 function timingSafeEqual(a: string, b: string): boolean {
