@@ -26,11 +26,12 @@ const SOURCE = path.join(root, 'apps/admin/public/logo.png');
 // sur les écrans d'accueil iOS (qui n'aiment pas la transparence).
 const BG = { r: 0x26, g: 0x26, b: 0x24, alpha: 1 };
 
-// Variantes d'environnement : suffixe de fichier + bandeau optionnel.
+// Variantes d'environnement : suffixe de fichier + couleur + mot d'env.
+// Le libellé final du bandeau est « <label app> <mot env> » (ex: « Adhérent Test »).
 const VARIANTS = [
-  { suffix: '', ribbon: null },
-  { suffix: '-dev', ribbon: { text: 'DEV', color: '#d97706' } },
-  { suffix: '-test', ribbon: { text: 'TEST', color: '#dc2626' } }
+  { suffix: '', word: null },
+  { suffix: '-dev', word: 'Dev', color: '#d97706' },
+  { suffix: '-test', word: 'Test', color: '#dc2626' }
 ];
 
 // Icônes à produire : nom de base + taille (px).
@@ -40,21 +41,26 @@ const ICONS = [
   { dir: '.', base: 'apple-touch-icon', size: 180 }
 ];
 
-const APPS = ['apps/admin/public', 'apps/storefront/public'];
+// Chaque app a un libellé propre affiché dans le bandeau de l'icône.
+const APPS = [
+  { dir: 'apps/admin/public', label: 'Admin' },
+  { dir: 'apps/storefront/public', label: 'Adhérent' }
+];
 
-/** SVG d'un bandeau plein-largeur en bas de l'icône. */
-function ribbonSvg(size, ribbon) {
+/** SVG d'un bandeau plein-largeur en bas de l'icône, texte ajusté pour tenir. */
+function ribbonSvg(size, text, color) {
   const bandH = Math.round(size * 0.26);
   const y = size - bandH;
-  const fontSize = Math.round(bandH * 0.58);
+  // Taille de police bornée par la hauteur du bandeau ET par la largeur dispo
+  // (pour que « Adhérent Test » tienne sans déborder).
+  const fontSize = Math.round(Math.min(bandH * 0.5, (size * 0.9) / (text.length * 0.58)));
   return Buffer.from(
     `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-      <rect x="0" y="${y}" width="${size}" height="${bandH}" fill="${ribbon.color}"/>
+      <rect x="0" y="${y}" width="${size}" height="${bandH}" fill="${color}"/>
       <rect x="0" y="${y}" width="${size}" height="${Math.max(2, Math.round(size * 0.008))}" fill="#ffffff" fill-opacity="0.35"/>
       <text x="50%" y="${y + bandH / 2}" dy="0.36em" text-anchor="middle"
         font-family="Helvetica, Arial, sans-serif" font-weight="800"
-        font-size="${fontSize}" letter-spacing="${Math.round(fontSize * 0.08)}"
-        fill="#ffffff">${ribbon.text}</text>
+        font-size="${fontSize}" fill="#ffffff">${text}</text>
     </svg>`
   );
 }
@@ -67,7 +73,7 @@ async function buildIcon(size, ribbon) {
     .toBuffer();
 
   const layers = [{ input: logo, top: pad, left: pad }];
-  if (ribbon) layers.push({ input: ribbonSvg(size, ribbon), top: 0, left: 0 });
+  if (ribbon) layers.push({ input: ribbonSvg(size, ribbon.text, ribbon.color), top: 0, left: 0 });
 
   return sharp({ create: { width: size, height: size, channels: 4, background: BG } })
     .composite(layers)
@@ -79,8 +85,11 @@ let count = 0;
 for (const app of APPS) {
   for (const icon of ICONS) {
     for (const variant of VARIANTS) {
-      const buf = await buildIcon(icon.size, variant.ribbon);
-      const out = path.join(root, app, icon.dir, `${icon.base}${variant.suffix}.png`);
+      const ribbon = variant.word
+        ? { text: `${app.label} ${variant.word}`, color: variant.color }
+        : null;
+      const buf = await buildIcon(icon.size, ribbon);
+      const out = path.join(root, app.dir, icon.dir, `${icon.base}${variant.suffix}.png`);
       await sharp(buf).toFile(out);
       count++;
     }
