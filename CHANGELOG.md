@@ -1,3 +1,10 @@
+# [1.0.0-beta.53](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.52...v1.0.0-beta.53) (2026-08-04)
+
+
+### Features
+
+* add copy-to-clipboard for member emails and fix VSA violations ([98d0b31](https://github.com/mephyston/nozay-bad/commit/98d0b3163b6641fe10c4098685261bfc771e9ae9))
+
 # [1.0.0-beta.52](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.51...v1.0.0-beta.52) (2026-08-04)
 
 
