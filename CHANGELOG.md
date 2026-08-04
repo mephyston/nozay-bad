@@ -1,3 +1,10 @@
+# [1.0.0-beta.52](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.51...v1.0.0-beta.52) (2026-08-04)
+
+
+### Bug Fixes
+
+* **admin:** ne pas ouvrir le dropdown adhérent/demandeur à l'ouverture du formulaire ([b7bd015](https://github.com/mephyston/nozay-bad/commit/b7bd0158bbe87c589fb24d772860c38d2bb44b40))
+
 # [1.0.0-beta.51](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.50...v1.0.0-beta.51) (2026-08-04)
 
 
