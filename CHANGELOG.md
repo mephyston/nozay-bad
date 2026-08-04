@@ -1,3 +1,17 @@
+# [1.0.0-beta.49](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.48...v1.0.0-beta.49) (2026-08-04)
+
+
+### Bug Fixes
+
+* **pwa:** safe-area en-tête storefront + bandeau d'icône par app ([6a4c841](https://github.com/mephyston/nozay-bad/commit/6a4c841284a02f78c56cb714d6466743fd1628a8))
+* **security:** correctifs de l'audit de sécurité (C-01, H-01, M-01/02/03, F-01/02/04) ([32c94cc](https://github.com/mephyston/nozay-bad/commit/32c94cc71665e028af698e90dcceba9a167ae639))
+* **storefront:** n'afficher « notes de frais » dans la carte Mon compte que si autorisé ([e645911](https://github.com/mephyston/nozay-bad/commit/e645911cb8d9f52a6698d8e54186aa2f4ab3a989))
+
+
+### Features
+
+* **iam:** droit IA unique `ai:*` (chat + commentaires de rapports) ([6ee12f1](https://github.com/mephyston/nozay-bad/commit/6ee12f10096161fd2dbb9c1a8ec799e285ad5f26))
+
 # [1.0.0-beta.48](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.47...v1.0.0-beta.48) (2026-08-04)
 
 
