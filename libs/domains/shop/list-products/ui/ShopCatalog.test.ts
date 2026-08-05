@@ -89,6 +89,63 @@ describe('ShopCatalog Component', () => {
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
+  it('explains why submission is blocked instead of only greying the button', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mountCatalog(target);
+    flushSync();
+
+    expect(target.innerHTML).toContain("Sélectionnez l'adhérent pour lequel commander.");
+  });
+
+  it('keeps products orderable when their stock is not tracked (stock = 0 par convention)', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    // Cas staging « Babolat 2 » : trackStock = false, stock = 0 → commandable.
+    mount(ShopCatalog, {
+      target,
+      props: {
+        members,
+        products: [{ id: 20, name: 'Babolat 2', productCategoryId: 1, priceCents: 3150, stock: 0, trackStock: false, active: true }],
+        activeSeasonId: '25-26',
+        lockToMembers: true,
+        initialMemberId: '1'
+      }
+    });
+    flushSync();
+
+    const submitBtn = Array.from(target.querySelectorAll('button')).find(
+      b => b.textContent?.includes('Valider la commande')
+    ) as HTMLButtonElement;
+    expect(submitBtn.disabled).toBe(false);
+    expect(target.innerHTML).not.toContain('rupture de stock');
+  });
+
+  it('hides tracked products that are out of stock and says how many', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(ShopCatalog, {
+      target,
+      props: {
+        members,
+        products: [
+          { id: 30, name: 'Volant RSL Grade 1', productCategoryId: 1, priceCents: 1500, stock: 10, trackStock: true, active: true },
+          { id: 31, name: 'Volant épuisé', productCategoryId: 1, priceCents: 1500, stock: 0, trackStock: true, active: true }
+        ],
+        activeSeasonId: '25-26',
+        lockToMembers: true,
+        initialMemberId: '1'
+      }
+    });
+    flushSync();
+
+    expect(target.innerHTML).not.toContain('Volant épuisé');
+    expect(target.innerHTML).toContain("1 article en rupture de stock n'est pas proposé à la commande.");
+  });
+
   it('performs dynamic adherent search via the API when the members list is empty', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

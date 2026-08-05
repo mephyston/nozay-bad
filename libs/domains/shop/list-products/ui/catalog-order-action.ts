@@ -1,4 +1,5 @@
 import type { Product } from './catalog-types';
+import { isOutOfStock } from './catalog-types';
 
 export function handleMemberKeyDown(
   e: KeyboardEvent,
@@ -74,8 +75,16 @@ export async function submitOrder(params: {
   if (!params.selectedProduct) {
     return { success: false, error: "Veuillez sélectionner un produit." };
   }
-  if (params.selectedProduct.stock < params.selectedQuantity || params.selectedProduct.stock <= 0) {
-    return { success: false, error: "Stock insuffisant pour ce produit." };
+  // Le stock ne fait obstacle que s'il est réellement suivi (trackStock) : sinon
+  // `stock` vaut 0 par convention et bloquerait tous les articles non suivis.
+  if (isOutOfStock(params.selectedProduct)) {
+    return { success: false, error: `« ${params.selectedProduct.name} » est en rupture de stock.` };
+  }
+  if (params.selectedProduct.trackStock && params.selectedProduct.stock < params.selectedQuantity) {
+    return {
+      success: false,
+      error: `Stock insuffisant : il ne reste que ${params.selectedProduct.stock} « ${params.selectedProduct.name} ».`
+    };
   }
 
   try {

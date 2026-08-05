@@ -7,6 +7,7 @@
   import { ShoppingBag } from "@lucide/svelte";
   import { Card } from '@nba/ui';
   import type { Member, Product } from './catalog-types';
+  import { isOutOfStock, maxOrderableQuantity } from './catalog-types';
   import { formatMemberName } from './catalog-utils';
   import { handleMemberKeyDown, submitOrder } from './catalog-order-action';
   import ShopCatalogMemberSelect from './ShopCatalogMemberSelect.svelte';
@@ -15,7 +16,11 @@
 
   let { products = [], members = [], activeSeasonId = '', lockToMembers = false, initialMemberId = '' }: { products: Product[]; members: Member[]; activeSeasonId: string; lockToMembers?: boolean; initialMemberId?: string } = $props();
 
-  let productsList = $derived(products);
+  // Les articles en rupture ne sont pas proposés à la commande : inutile de les
+  // laisser sélectionner pour bloquer ensuite le bouton. Les articles dont le stock
+  // n'est pas suivi (trackStock = false) restent toujours disponibles.
+  let productsList = $derived(products.filter((p) => !isOutOfStock(p)));
+  let outOfStockCount = $derived(products.length - productsList.length);
   let selectedMemberId = $state<string>('');
   let memberSearchQuery = $state<string>('');
   let isMemberDropdownOpen = $state<boolean>(false);
@@ -35,7 +40,7 @@
   let filteredProducts = $derived(selectedCategory === 0 ? productsList : productsList.filter(p => p.productCategoryId === selectedCategory));
   let selectedProduct = $derived(selectedProductId !== null ? productsList.find(p => p.id === Number(selectedProductId)) || null : null);
   let totalPriceCents = $derived(selectedProduct ? (selectedProduct.priceCents ?? (selectedProduct as any).price ?? 0) * selectedQuantity : 0);
-  let maxQuantity = $derived(selectedProduct ? (selectedProduct.trackStock ? Math.min(selectedProduct.stock, 99) : 99) : 1);
+  let maxQuantity = $derived(maxOrderableQuantity(selectedProduct));
 
   $effect(() => {
     if (filteredProducts.length > 0) {
@@ -46,7 +51,7 @@
 
   $effect(() => {
     if (selectedProduct) {
-      const max = selectedProduct.trackStock ? Math.min(selectedProduct.stock, 99) : 99;
+      const max = maxOrderableQuantity(selectedProduct);
       if (max > 0 && selectedQuantity > max) selectedQuantity = max;
       else if (selectedQuantity < 1) selectedQuantity = 1;
     }
@@ -173,6 +178,7 @@
       {filteredProducts}
       {selectedProduct}
       {maxQuantity}
+      {outOfStockCount}
       onIncrementQty={incrementQty}
       onDecrementQty={decrementQty}
     />

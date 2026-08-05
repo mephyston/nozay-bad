@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { ShoppingBag, Check, AlertCircle } from "@lucide/svelte";
+  import { ShoppingBag, Check, AlertCircle, Info } from "@lucide/svelte";
   import { Button, Amount, Alert } from '@nba/ui';
   import type { Product, Member } from './catalog-types';
+  import { isOutOfStock } from './catalog-types';
 
   let {
     selectedProduct,
@@ -24,6 +25,18 @@
     errorMessage: string | null;
     onOrder: () => void;
   } = $props();
+
+  // Le bouton n'est jamais grisé « sans raison » : on calcule ce qui manque et on
+  // l'affiche. Le stock ne bloque que s'il est réellement suivi (trackStock).
+  let blockingReason = $derived.by(() => {
+    if (!selectedMemberId) return "Sélectionnez l'adhérent pour lequel commander.";
+    if (!selectedProduct) return 'Sélectionnez un article pour continuer.';
+    if (isOutOfStock(selectedProduct)) return `« ${selectedProduct.name} » est en rupture de stock.`;
+    if (selectedProduct.trackStock && selectedQuantity > selectedProduct.stock) {
+      return `Stock insuffisant : il ne reste que ${selectedProduct.stock} « ${selectedProduct.name} ».`;
+    }
+    return null;
+  });
 </script>
 
 <div class="space-y-4">
@@ -41,7 +54,7 @@
   <!-- Submit Button -->
   <Button
     onclick={onOrder}
-    disabled={!selectedMemberId || !selectedProduct || selectedProduct.stock <= 0 || selectedQuantity > selectedProduct.stock || submitting}
+    disabled={blockingReason !== null || submitting}
     class="w-full flex justify-center items-center gap-2 font-bold h-11 text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
   >
     {#if submitting}
@@ -51,6 +64,13 @@
       Valider la commande
     {/if}
   </Button>
+
+  {#if blockingReason && !submitting}
+    <p class="flex items-start gap-1.5 text-xs text-muted-foreground">
+      <Info class="w-3.5 h-3.5 shrink-0 mt-px" />
+      <span>{blockingReason}</span>
+    </p>
+  {/if}
 
   <!-- Feedback Messages -->
   {#if successMessage}

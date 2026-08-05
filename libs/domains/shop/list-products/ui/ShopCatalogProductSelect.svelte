@@ -11,6 +11,7 @@
     filteredProducts,
     selectedProduct,
     maxQuantity,
+    outOfStockCount = 0,
     onIncrementQty,
     onDecrementQty
   }: {
@@ -21,6 +22,8 @@
     filteredProducts: Product[];
     selectedProduct: Product | null;
     maxQuantity: number;
+    /** Articles masqués car en rupture — signalé pour éviter l'effet « article disparu ». */
+    outOfStockCount?: number;
     onIncrementQty: () => void;
     onDecrementQty: () => void;
   } = $props();
@@ -93,6 +96,14 @@
         <span>Stock disponible : <strong class="text-foreground">{selectedProduct.stock}</strong></span>
       {/if}
     </div>
+  {/if}
+
+  {#if outOfStockCount > 0}
+    <p class="text-xs text-muted-foreground">
+      {outOfStockCount === 1
+        ? "1 article en rupture de stock n'est pas proposé à la commande."
+        : `${outOfStockCount} articles en rupture de stock ne sont pas proposés à la commande.`}
+    </p>
   {/if}
 </div>
 
