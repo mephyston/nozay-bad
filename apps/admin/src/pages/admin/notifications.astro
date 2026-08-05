@@ -1,0 +1,60 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import AdminLayout from '../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { NotificationsManager } from '@nba/notifications-ui';
+import { env } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
+import { hasPermission } from '@nba/iam';
+
+const userPerms = Astro.locals.user?.permissions || [];
+const canRead =
+  hasPermission(userPerms, '*') ||
+  hasPermission(userPerms, 'notifications:*') ||
+  hasPermission(userPerms, 'notifications:read');
+if (!canRead) {
+  return Astro.redirect('/');
+}
+// L'envoi exige le droit complet : une annonce part sur tous les téléphones du club.
+const canSend = hasPermission(userPerms, '*') || hasPermission(userPerms, 'notifications:*');
+
+const apiService = createApiClient(env);
+
+let stats = { devices: 0, accounts: 0, pending: 0 };
+let messages: any[] = [];
+let errorMsg = '';
+
+try {
+  const res = await apiService.fetch('http://localhost/notifications/overview');
+  if (res.ok) {
+    const json = (await res.json()) as any;
+    stats = json.data?.stats ?? stats;
+    messages = json.data?.messages ?? [];
+  } else {
+    errorMsg = "Impossible de charger l'état des notifications.";
+  }
+} catch {
+  errorMsg = "Impossible de charger l'état des notifications.";
+}
+---
+
+<Layout title="Notifications - NBA 91">
+  <AdminLayout
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || 'admin@nozaybad.fr'}
+    breadcrumb="Notifications"
+    permissions={userPerms}
+  >
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader
+        title="Notifications"
+        description="Envoyez une annonce aux adhérents qui ont activé les notifications sur leur téléphone."
+      />
+
+      <NotificationsManager client:load stats={stats} messages={messages} canSend={canSend} />
+    </div>
+  </AdminLayout>
+</Layout>

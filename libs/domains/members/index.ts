@@ -36,6 +36,8 @@ export {
   getMembersByIds,
   getMembersBySeason,
   getAllMembers,
+  getHouseholdEmailsForActiveSeason,
+  getContactEmailsForMember,
   isSeasonClosed,
   type MemberSummary
 } from './shared/queries';

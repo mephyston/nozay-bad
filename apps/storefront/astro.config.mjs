@@ -13,6 +13,11 @@ const APP_ENV = process.env.PUBLIC_APP_ENV || 'production';
 const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ? '-test' : '';
 const ENV_LABEL = APP_ENV === 'development' ? ' (DEV)' : APP_ENV === 'staging' ? ' (TEST)' : '';
 
+// Clé publique VAPID, inlinée au build comme PUBLIC_APP_ENV : `pushManager.subscribe()`
+// en a besoin côté navigateur. Elle est publique par nature (la clé privée reste un
+// secret du Worker). Vide = bouton d'activation des notifications masqué.
+const VAPID_PUBLIC_KEY = process.env.PUBLIC_VAPID_PUBLIC_KEY || '';
+
 export default defineConfig({
   output: 'server',
   adapter: cloudflare({
@@ -26,6 +31,12 @@ export default defineConfig({
       // (le rechargement effaçait le widget Turnstile en mode PWA), ni servir de
       // coquille HTML en cache pour les navigations (auth + Turnstile = toujours réseau).
       registerType: 'prompt',
+      // `injectManifest` (et non le SW généré) : le service worker doit porter nos
+      // propres handlers `push` et `notificationclick`, impossibles à ajouter au SW
+      // produit par workbox.
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       includeAssets: ['favicon.png', `apple-touch-icon${ICON_SUFFIX}.png`],
       manifest: {
         name: 'Nozay Bad' + ENV_LABEL,
@@ -47,18 +58,19 @@ export default defineConfig({
           }
         ]
       },
-      workbox: {
-        globPatterns: ['**/*.{css,js,svg,png,ico,txt}'],
-        // Pas de navigateFallback : les navigations vont toujours au réseau (SSR),
-        // jamais vers un index.html en cache (inexistant ici) → évite le rechargement
-        // et la coquille périmée qui cassaient le login/Turnstile en mode PWA.
-        navigateFallback: null
+      injectManifest: {
+        globPatterns: ['**/*.{css,js,svg,png,ico,txt}']
       }
+      // Aucune route de navigation n'est déclarée dans src/sw.ts : les navigations
+      // vont toujours au réseau (SSR), jamais vers un index.html en cache
+      // (inexistant ici) → évite le rechargement et la coquille périmée qui
+      // cassaient le login/Turnstile en mode PWA.
     })
   ],
   vite: {
     define: {
-      'import.meta.env.PUBLIC_APP_ENV': JSON.stringify(APP_ENV)
+      'import.meta.env.PUBLIC_APP_ENV': JSON.stringify(APP_ENV),
+      'import.meta.env.PUBLIC_VAPID_PUBLIC_KEY': JSON.stringify(VAPID_PUBLIC_KEY)
     },
     plugins: [tailwindcss()],
     optimizeDeps: {

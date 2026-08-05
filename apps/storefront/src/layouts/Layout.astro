@@ -1,6 +1,7 @@
 ---
 import { pwaInfo } from 'virtual:pwa-info';
 import { ModeWatcher } from 'mode-watcher';
+import { PwaInstallBanner } from '@nba/ui';
 import EnvBanner from '../components/EnvBanner.astro';
 import PwaSplash from '../components/PwaSplash.astro';
 import '@fontsource-variable/outfit';
@@ -110,6 +111,8 @@ const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ?
   <body class="bg-background text-foreground min-h-screen flex flex-col antialiased font-sans">
     <EnvBanner />
     <ModeWatcher client:load />
+    <!-- L'installation sur l'écran d'accueil est un prérequis du push sur iOS. -->
+    <PwaInstallBanner client:idle />
     <PwaSplash />
     <slot />
   </body>

@@ -9,6 +9,7 @@ export default defineConfig({
       '@nba/db/test-utils': path.resolve(__dirname, './libs/shared/db/src/test-utils.ts'),
       '@nba/db': path.resolve(__dirname, './libs/shared/db/src/index.ts'),
       '@nba/pdf': path.resolve(__dirname, './libs/shared/pdf/src/index.ts'),
+      '@nba/push': path.resolve(__dirname, './libs/shared/push/src/index.ts'),
       '@nba/ui': path.resolve(__dirname, './libs/shared/ui/src/index.ts'),
       '@nba/api-client': path.resolve(__dirname, './libs/shared/api-client/src/index.ts'),
       '@nba/members-api': path.resolve(__dirname, './libs/domains/members/index.ts'),
@@ -17,6 +18,8 @@ export default defineConfig({
       '@nba/accounting-api': path.resolve(__dirname, './libs/domains/accounting/index.ts'),
       '@nba/accounting/schema': path.resolve(__dirname, './libs/domains/accounting/shared/schema.ts'),
       '@nba/accounting-ui': path.resolve(__dirname, './libs/domains/accounting/shared/ui.ts'),
+      '@nba/notifications-api': path.resolve(__dirname, './libs/domains/notifications/index.ts'),
+      '@nba/notifications/schema': path.resolve(__dirname, './libs/domains/notifications/shared/schema.ts'),
       '@nba/iam': path.resolve(__dirname, './libs/domains/iam/index.ts'),
       '@nba/iam/schema': path.resolve(__dirname, './libs/domains/iam/shared/schema.ts'),
       '@nba/iam-ui': path.resolve(__dirname, './libs/domains/iam/shared/ui.ts'),
@@ -26,6 +29,7 @@ export default defineConfig({
       '@nba/shop-api': path.resolve(__dirname, './libs/domains/shop/index.ts'),
       '@nba/shop/schema': path.resolve(__dirname, './libs/domains/shop/shared/schema.ts'),
       '@nba/shop-ui': path.resolve(__dirname, './libs/domains/shop/shared/ui.ts'),
+      '@nba/notifications-ui': path.resolve(__dirname, './libs/domains/notifications/shared/ui.ts'),
     },
 
   },
@@ -44,6 +48,7 @@ export default defineConfig({
       'apps/api/vitest.config.ts',
       'apps/admin/vitest.config.ts',
       'libs/shared/db/vitest.config.ts',
+      'libs/shared/push/vitest.config.ts',
       'apps/storefront/vitest.config.ts',
       'libs/shared/ui/vitest.config.ts',
       
@@ -190,6 +195,26 @@ export default defineConfig({
           include: ['list-orders/ui/**/*.test.ts', 'list-products/ui/**/*.test.ts'],
         }
       },
+      // Inline project config for notifications API
+      {
+        extends: true,
+        plugins: [
+          cloudflareTest({
+            wrangler: {
+              configPath: path.resolve(__dirname, 'apps/api/wrangler.json'),
+            },
+          }),
+        ],
+        cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-notifications-api'),
+        test: {
+          name: 'features-notifications-api',
+          globals: true,
+          root: path.resolve(__dirname, 'libs/domains/notifications'),
+          include: ['**/*.test.ts'],
+          exclude: ['**/ui/**', '**/node_modules/**'],
+        }
+      },
+
       // Architecture tests project
       {
         extends: true,

@@ -48,3 +48,21 @@ export function authorizeAccountingProxy(method: string, path: string, perms: st
   const required = p.startsWith('invoices') ? 'accounting:invoices' : 'accounting:*';
   return hasPermission(perms, required);
 }
+
+/**
+ * Autorisation du proxy de notifications, sur le même principe que le proxy
+ * comptable : le catch-all `/api/notifications/[...path]` est atteignable par le
+ * client, il ne peut donc pas se contenter de la session admin.
+ *
+ * `notifications:read` consulte l'historique ; émettre exige `notifications:*`.
+ * Une notification part vers tous les téléphones du club : le droit d'envoi n'est
+ * jamais accordé implicitement.
+ */
+export function authorizeNotificationsProxy(method: string, path: string, perms: string[]): boolean {
+  if (isReadLike(method)) {
+    return (
+      hasPermission(perms, 'notifications:read') || hasPermission(perms, 'notifications:*')
+    );
+  }
+  return hasPermission(perms, 'notifications:*');
+}

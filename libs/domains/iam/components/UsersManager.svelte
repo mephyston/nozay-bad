@@ -54,6 +54,13 @@
       ]
     },
     {
+      name: 'Notifications',
+      permissions: [
+        { value: 'notifications:*', label: 'Accès complet', desc: 'Envoyer des notifications et consulter l\'historique' },
+        { value: 'notifications:read', label: 'Lecture seule', desc: 'Consulter l\'historique des envois sans pouvoir en émettre' }
+      ]
+    },
+    {
       name: 'Assistant IA',
       permissions: [
         { value: 'ai:*', label: 'Assistant IA', desc: 'Utiliser l\'assistant (chat) et générer/consulter les commentaires IA des rapports financiers' }

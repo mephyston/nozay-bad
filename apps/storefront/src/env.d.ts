@@ -2,6 +2,14 @@
 /// <reference types="astro/client" />
 /// <reference types="vite-plugin-pwa/info" />
 /// <reference types="vite-plugin-pwa/client" />
+
+interface ImportMetaEnv {
+  /** Environnement inliné au build : 'development' | 'staging' | 'production'. */
+  readonly PUBLIC_APP_ENV: string;
+  /** Clé publique VAPID, inlinée au build. Vide = notifications push désactivées. */
+  readonly PUBLIC_VAPID_PUBLIC_KEY: string;
+}
+
 declare namespace App {
   interface Locals {
     session?: {

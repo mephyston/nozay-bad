@@ -7,7 +7,8 @@ import {
   SeasonClosedError,
   ConcurrentModificationError
 } from '../shared/errors';
-import { isSeasonClosed } from '@nba/members-api';
+import { getContactEmailsForMember, isSeasonClosed } from '@nba/members-api';
+import { notifyContacts } from '@nba/notifications-api';
 import { RejectOrderInput, RejectOrderOutput } from "./dto";
 
 export async function rejectOrder(db: Db, id: RejectOrderInput): Promise<RejectOrderOutput> {
@@ -31,6 +32,13 @@ export async function rejectOrder(db: Db, id: RejectOrderInput): Promise<RejectO
   if (!updated) {
     throw new ConcurrentModificationError();
   }
+
+  await notifyContacts(db, await getContactEmailsForMember(db, order.memberId), {
+    title: 'Commande refusée',
+    body: "Votre commande boutique n'a pas été retenue. Rapprochez-vous du bureau pour en savoir plus.",
+    url: '/mon-compte',
+    source: 'order:rejected'
+  });
 
   return updated;
 }

@@ -4,8 +4,11 @@ import { accountingRouter } from '@nba/accounting-api';
 import { expensesRouter } from '@nba/expenses-api';
 import { shopRouter } from '@nba/shop-api';
 import { iamRouter } from '@nba/iam';
+import { notificationsRouter } from '@nba/notifications-api';
 import { aiRouter } from './ai';
 import { dashboardRouter } from './dashboard';
+import { handleScheduled, type ScheduledBindings } from './scheduled';
+import { notificationsSendRouter } from './notifications';
 import { AppError } from '@nba/db';
 
 type Bindings = {
@@ -73,7 +76,17 @@ app.route('/accounting', accountingRouter);
 app.route('/expenses', expensesRouter);
 app.route('/shop', shopRouter);
 app.route('/iam', iamRouter);
+app.route('/notifications', notificationsRouter);
+app.route('/notifications', notificationsSendRouter);
 app.route('/dashboard', dashboardRouter);
 app.route('/ai', aiRouter);
 
-export default app;
+// Application Hono exposée pour les tests, qui appellent `app.request()`.
+export { app };
+
+// Le Worker expose deux points d'entrée : les requêtes HTTP (Hono) et les Cron
+// Triggers, qui drainent la file d'envoi des notifications push.
+export default {
+  fetch: app.fetch,
+  scheduled: (event: ScheduledController, env: ScheduledBindings) => handleScheduled(event, env)
+};

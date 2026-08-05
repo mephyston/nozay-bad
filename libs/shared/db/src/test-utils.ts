@@ -9,6 +9,9 @@ export async function setupMockDb() {
   const tables = [
     'admin_users',
     'attestation_config',
+    'push_deliveries',
+    'push_messages',
+    'push_subscriptions',
     'expenses',
     'ledger_entries',
     'orders',

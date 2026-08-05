@@ -52,12 +52,20 @@ export default tseslint.config(
             },
             {
               sourceTag: 'scope:expenses',
-              onlyDependOnLibsWithTags: ['scope:expenses', 'scope:members', 'scope:accounting', 'scope:shared']
+              // Notifications: outbound only (an approved expense report notifies its member).
+              onlyDependOnLibsWithTags: ['scope:expenses', 'scope:members', 'scope:accounting', 'scope:notifications', 'scope:shared']
             },
             {
               sourceTag: 'scope:shop',
               // Cross-domain access: read-only for member names and categories, except order approval which inserts a transaction.
-              onlyDependOnLibsWithTags: ['scope:shop', 'scope:shared', 'scope:members', 'scope:accounting']
+              onlyDependOnLibsWithTags: ['scope:shop', 'scope:shared', 'scope:members', 'scope:accounting', 'scope:notifications']
+            },
+            {
+              sourceTag: 'scope:notifications',
+              // Leaf context: depends on nothing but shared. Targets requiring member
+              // data are resolved by the caller (apps/api), which avoids the cycle
+              // members -> accounting -> expenses -> notifications.
+              onlyDependOnLibsWithTags: ['scope:notifications', 'scope:shared']
             },
             {
               sourceTag: 'scope:shared',

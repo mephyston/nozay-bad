@@ -15,7 +15,8 @@
     "storybook": "storybook dev -p 6006 --no-open",
     "build-storybook": "storybook build",
     "test:visual": "playwright test",
-    "test:visual:update": "playwright test --update-snapshots"
+    "test:visual:update": "playwright test --update-snapshots",
+    "gen:vapid-keys": "node scripts/generate-vapid-keys.mjs"
   },
   "private": true,
   "type": "module",
@@ -50,6 +51,7 @@
     "typescript-eslint": "^8.63.0",
     "vite-plugin-pwa": "^1.3.0",
     "vitest": "^4.1.10",
+    "workbox-precaching": "^7.4.1",
     "workbox-window": "^7.4.1",
     "wrangler": "^4.107.0"
   },

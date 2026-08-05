@@ -1,6 +1,6 @@
 import { seasonsTable } from '@nba/accounting/schema';
 import { describe, it, expect } from 'vitest';
-import app from './index';
+import { app } from './index';
 import { setupMockDb } from '@nba/db/test-utils';
 
 import { expensesTable } from '../../../libs/domains/expenses/shared/schema';

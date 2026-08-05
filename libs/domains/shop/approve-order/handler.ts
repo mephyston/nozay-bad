@@ -10,7 +10,8 @@ import {
   ConcurrentModificationError,
   ShopCategoryNotConfiguredError
 } from '../shared/errors';
-import { isSeasonClosed } from '@nba/members-api';
+import { getContactEmailsForMember, isSeasonClosed } from '@nba/members-api';
+import { notifyContacts } from '@nba/notifications-api';
 import { ApproveOrderInput, ApproveOrderOutput } from "./dto";
 
 export async function approveOrder(db: Db, input: ApproveOrderInput): Promise<ApproveOrderOutput> {
@@ -104,6 +105,13 @@ export async function approveOrder(db: Db, input: ApproveOrderInput): Promise<Ap
   if (!changes) {
     throw new ConcurrentModificationError();
   }
+
+  await notifyContacts(db, await getContactEmailsForMember(db, member.id), {
+    title: 'Commande validée',
+    body: `Votre commande ${product.name} ×${order.quantity} est validée.`,
+    url: '/mon-compte',
+    source: 'order:approved'
+  });
 
   const updated = await repo.getOrderById(db, id);
   return updated as any;

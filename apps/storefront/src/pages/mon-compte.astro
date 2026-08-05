@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import MobileNav from '../components/MobileNav.svelte';
+import PushOptIn from '../components/PushOptIn.svelte';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 
@@ -63,6 +64,9 @@ const isPaid = Boolean(cotisation?.paid);
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     <div class="max-w-3xl mx-auto space-y-8">
+      <!-- Notifications : ne s'affiche que si l'appareil peut en recevoir. -->
+      <PushOptIn client:idle />
+
       <!-- Ma cotisation -->
       <section>
         <h2 class="text-base font-bold text-foreground mb-3">Ma cotisation{seasonName ? ` — ${seasonName}` : ''}</h2>

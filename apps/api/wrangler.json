@@ -28,12 +28,26 @@
   "ai": {
     "binding": "AI"
   },
+  "triggers": {
+    "crons": ["* * * * *", "0 8 * * 1"]
+  },
+  "vars": {
+    "VAPID_SUBJECT": "mailto:contact@nozaybad.fr",
+    "PUSH_REMINDERS_ENABLED": "false"
+  },
   "env": {
     "staging": {
       "name": "nba-api-staging",
       "workers_dev": false,
       "ai": {
         "binding": "AI"
+      },
+      "triggers": {
+        "crons": ["* * * * *", "0 8 * * 1"]
+      },
+      "vars": {
+        "VAPID_SUBJECT": "mailto:contact@nozaybad.fr",
+        "PUSH_REMINDERS_ENABLED": "false"
       },
       "d1_databases": [
         {

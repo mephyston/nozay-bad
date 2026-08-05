@@ -22,7 +22,8 @@
     Trophy,
     User,
     LogOut,
-    HelpCircle
+    HelpCircle,
+    Bell
   } from "@lucide/svelte";
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
@@ -74,6 +75,12 @@
       items: [
         ...(hasPermission(permissions, '*') || hasPermission(permissions, 'shop:*') || hasPermission(permissions, 'shop:products') ? [{ name: "Produits", icon: Package, href: "/admin/shop/products" }] : []),
         ...(hasPermission(permissions, '*') || hasPermission(permissions, 'shop:*') || hasPermission(permissions, 'orders:*') || hasPermission(permissions, 'orders:read') || hasPermission(permissions, 'orders:create') || hasPermission(permissions, 'orders:update') || hasPermission(permissions, 'orders:validate') ? [{ name: "Commandes", icon: ShoppingCart, href: "/admin/shop/orders" }] : [])
+      ]
+    },
+    {
+      label: "Communication",
+      items: [
+        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'notifications:*') || hasPermission(permissions, 'notifications:read') ? [{ name: "Notifications", icon: Bell, href: "/admin/notifications" }] : [])
       ]
     },
     {

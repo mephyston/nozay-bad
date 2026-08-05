@@ -1,6 +1,7 @@
 import { type Db, type Tx } from '@nba/db';
 import { UpdateExpenseRepository } from './repository';
-import { isSeasonClosed } from '@nba/members-api';
+import { getContactEmailsForMember, isSeasonClosed } from '@nba/members-api';
+import { notifyContacts } from '@nba/notifications-api';
 import {
   normalizeCategory,
   buildInsertExpenseTransactionStatement,
@@ -50,6 +51,15 @@ export async function approveExpense(db: Db, id: ApproveExpenseInput): Promise<A
   // Phase 3 : Écriture (db.batch)
   await db.batch([stmt1, stmt2]);
 
+  if (expenseData.memberId) {
+    await notifyContacts(db, await getContactEmailsForMember(db, expenseData.memberId), {
+      title: 'Note de frais validée',
+      body: `Votre note de frais de ${(expenseData.amountCents / 100).toFixed(2)} € a été validée.`,
+      url: '/note-de-frais',
+      source: 'expense:approved'
+    });
+  }
+
   return (await repo.getById(db, id)) as any;
 }
 
@@ -67,7 +77,18 @@ export async function rejectExpense(db: Db, id: number) {
     throw new ExpenseAlreadyProcessedError();
   }
 
-  return repo.reject(db, id);
+  const rejected = await repo.reject(db, id);
+
+  if (expenseData.memberId) {
+    await notifyContacts(db, await getContactEmailsForMember(db, expenseData.memberId), {
+      title: 'Note de frais refusée',
+      body: 'Votre note de frais a été refusée. Rapprochez-vous du bureau pour en connaître le motif.',
+      url: '/note-de-frais',
+      source: 'expense:rejected'
+    });
+  }
+
+  return rejected;
 }
 
 export async function cancelExpenseApproval(db: Db, id: number) {
