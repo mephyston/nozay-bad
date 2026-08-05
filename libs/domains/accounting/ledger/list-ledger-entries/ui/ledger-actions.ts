@@ -1,3 +1,4 @@
+import { flashAndReload } from '@nba/ui';
 import type { Transaction } from './ledger-types';
 
 export async function submitTransaction(
@@ -78,7 +79,7 @@ export async function submitTransaction(
     sessionStorage.setItem('scrollToTx', params.editingId.toString());
   }
   
-  window.location.reload();
+  flashAndReload(params.editingId ? 'Écriture mise à jour.' : 'Écriture enregistrée.');
 }
 
 export async function deleteTransaction(id: number): Promise<void> {
@@ -95,7 +96,7 @@ export async function deleteTransaction(id: number): Promise<void> {
     } catch(e){}
     throw new Error(errStr || 'Impossible de supprimer.');
   }
-  window.location.reload();
+  flashAndReload('Écriture supprimée.');
 }
 
 export function changePage(newPage: number, totalPages: number) {

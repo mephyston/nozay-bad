@@ -1,4 +1,4 @@
-import { uiConfirm } from '@nba/ui';
+import { uiConfirm, flashAndReload } from '@nba/ui';
 import type { Product } from './products-manager-types';
 
 export async function submitProduct(params: {
@@ -52,9 +52,7 @@ export async function submitProduct(params: {
     return { success: false, error: errMsg || "Erreur lors de l'enregistrement." };
   }
 
-  setTimeout(() => {
-    window.location.reload();
-  }, 1000);
+  flashAndReload(params.editingId ? 'Produit mis à jour.' : 'Produit créé.');
 
   return { success: true };
 }

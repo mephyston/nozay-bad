@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Shield, Calendar, Tag, Mail, Phone, Receipt, Copy, Check, User, Users } from '@lucide/svelte';
-  import { Card, Button, Badge, uiConfirm } from '@nba/ui';
+  import { Card, Button, Badge, uiConfirm, toast } from '@nba/ui';
   import type { Member } from './member-profile-types';
 
   let { member }: { member: Member } = $props();
@@ -34,12 +34,15 @@
       });
       if (res.ok) {
         authorized = !authorized;
+        toast.success(authorized
+          ? `${name} peut désormais soumettre des notes de frais.`
+          : `${name} ne peut plus soumettre de notes de frais.`);
       } else {
         const txt = await res.text().catch(() => '');
-        alert(`Échec de la mise à jour (HTTP ${res.status}). ${txt}`);
+        toast.error(txt || `Échec de la mise à jour (HTTP ${res.status}).`);
       }
     } catch (e: any) {
-      alert('Erreur réseau : ' + (e?.message ?? String(e)));
+      toast.error('Erreur réseau : ' + (e?.message ?? String(e)));
     }
     toggling = false;
   }

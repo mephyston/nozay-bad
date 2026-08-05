@@ -1,3 +1,5 @@
+import { flashAndReload } from '@nba/ui';
+
 export interface SettingsState {
   successMsg: string;
   errorMsg: string;
@@ -7,11 +9,9 @@ export interface SettingsState {
 export function showMessage(state: SettingsState, success: string, error = '') {
   state.successMsg = success;
   state.errorMsg = error;
-  if (success) {
-    setTimeout(() => {
-      window.location.reload();
-    }, 2000);
-  }
+  // Le rechargement effaçait le message au bout de 2 s : on le fait porter par le
+  // flash, qui le rejoue une fois la page rechargée.
+  if (success) flashAndReload(success);
 }
 
 export async function createAccountClass(state: SettingsState, data: { code: string; label: string; type: 'recette' | 'depense' | 'tresorerie' }) {

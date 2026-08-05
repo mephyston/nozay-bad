@@ -1,4 +1,4 @@
-import { toast, uiConfirm } from '@nba/ui';
+import { toast, uiConfirm, flashAndReload } from '@nba/ui';
 import { apiBulkReconcile, apiBulkIgnore, apiImportOfx, apiAnalyzeAi } from './reconciliation-api';
 
 export function createBulkActions(s: any) {
@@ -17,8 +17,7 @@ export function createBulkActions(s: any) {
       if (requests.length === 0) throw new Error('Aucune suggestion valide.');
       await apiBulkReconcile(requests);
       s.selectedTxIds = {};
-      toast.success('Rapprochement par lot réussi !');
-      if (typeof window !== 'undefined') window.location.reload();
+      flashAndReload('Rapprochement par lot réussi !');
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
@@ -30,8 +29,7 @@ export function createBulkActions(s: any) {
     try {
       await apiBulkIgnore(ids);
       s.selectedTxIds = {};
-      toast.info(`${ids.length} transactions ignorées.`);
-      if (typeof window !== 'undefined') window.location.reload();
+      flashAndReload(`${ids.length} transactions ignorées.`, 'info');
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
@@ -42,8 +40,7 @@ export function createBulkActions(s: any) {
     s.isSubmitting = true; s.errorMsg = '';
     try {
       await apiImportOfx(fileInput.files[0], s.selectedAccount);
-      toast.success('Relevé bancaire importé avec succès !');
-      if (typeof window !== 'undefined') window.location.reload();
+      flashAndReload('Relevé bancaire importé avec succès !');
     } catch (err: any) { s.errorMsg = err.message || 'Erreur.'; toast.error(s.errorMsg); s.isSubmitting = false; }
   }
 
@@ -51,8 +48,7 @@ export function createBulkActions(s: any) {
     s.isAnalyzing = true; s.errorMsg = '';
     try {
       await apiAnalyzeAi(s.selectedSeason);
-      toast.success('Analyse IA terminée !');
-      if (typeof window !== 'undefined') window.location.reload();
+      flashAndReload('Analyse IA terminée !');
     } catch (err: any) { toast.error(err.message); s.isAnalyzing = false; }
   }
 
@@ -60,8 +56,7 @@ export function createBulkActions(s: any) {
     s.isAnalyzingSingle = true; s.errorMsg = '';
     try {
       await apiAnalyzeAi(s.selectedSeason, btId);
-      toast.success('Analyse IA de l\'opération effectuée !');
-      if (typeof window !== 'undefined') window.location.reload();
+      flashAndReload('Analyse IA de l\'opération effectuée !');
     } catch (err: any) { toast.error(err.message); s.isAnalyzingSingle = false; }
   }
 

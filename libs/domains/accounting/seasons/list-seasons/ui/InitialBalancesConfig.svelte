@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Wallet2, Check, Loader2, Save, AlertCircle } from "@lucide/svelte";
-  import { Button, AmountInput, Alert, FormField } from"@nba/ui";
+  import { Button, AmountInput, Alert, FormField, flashAndReload } from"@nba/ui";
 
   interface Season {
     id: string;
@@ -74,9 +74,7 @@
       }
 
       successMsg = 'Les soldes initiaux ont été enregistrés avec succès !';
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      flashAndReload(successMsg);
     } catch (err: unknown) {
       errorMsg = err.message || 'Une erreur est survenue.';
     } finally {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Input, Button, Badge, Table, Card, EmptyState, uiConfirm, toast, Sheet, FormField, DataTable, DataTableToolbar, Popover, Checkbox } from '@nba/ui';
+  import { Input, Button, Badge, Table, Card, EmptyState, uiConfirm, toast, flashAndReload, Sheet, FormField, DataTable, DataTableToolbar, Popover, Checkbox } from '@nba/ui';
   import { Plus, Trash2, Shield, ChevronDown, Pencil } from '@lucide/svelte';
   
   let { users = [] } = $props<{ users: any[] }>();
@@ -106,9 +106,8 @@
       body: JSON.stringify(payload)
     });
     if (res.ok) {
-      toast.success(editUserId ? 'Utilisateur mis à jour' : 'Utilisateur créé avec succès');
       isSheetOpen = false;
-      window.location.reload();
+      flashAndReload(editUserId ? 'Utilisateur mis à jour.' : 'Utilisateur créé avec succès.');
     } else {
       toast.error(await res.text());
     }
@@ -122,8 +121,7 @@
       body: JSON.stringify({ action: 'delete_user', id })
     });
     if (res.ok) {
-      toast.success('Utilisateur supprimé');
-      window.location.reload();
+      flashAndReload('Utilisateur supprimé');
     } else {
       toast.error(await res.text());
     }

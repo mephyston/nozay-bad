@@ -1,4 +1,4 @@
-import { uiConfirm } from '@nba/ui';
+import { uiConfirm, flashAndReload } from '@nba/ui';
 
 export async function submitCashMovement(params: {
   seasonId: string;
@@ -35,9 +35,7 @@ export async function submitCashMovement(params: {
       return { success: false, error: errBody || "Erreur lors de l'enregistrement." };
     }
 
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
+    flashAndReload('Mouvement de caisse enregistré.');
 
     return { success: true };
   } catch (err: any) {
@@ -55,6 +53,6 @@ export async function deleteCashMovement(id: number): Promise<boolean> {
   });
 
   if (!res.ok) throw new Error('Impossible de supprimer.');
-  window.location.reload();
+  flashAndReload('Mouvement de caisse supprimé.');
   return true;
 }

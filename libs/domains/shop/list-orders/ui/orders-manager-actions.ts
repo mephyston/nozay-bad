@@ -1,4 +1,4 @@
-import { uiConfirm } from '@nba/ui';
+import { uiConfirm, flashAndReload } from '@nba/ui';
 
 export async function getErrorMessage(res: Response, defaultMsg: string): Promise<string> {
   try {
@@ -27,9 +27,7 @@ export async function approveOrder(orderId: number): Promise<{ success: boolean;
       return { success: false, error: errText };
     }
 
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
+    flashAndReload('Commande validée.');
 
     return { success: true };
   } catch (err: any) {
@@ -54,9 +52,7 @@ export async function rejectOrder(orderId: number): Promise<{ success: boolean; 
       return { success: false, error: errText };
     }
 
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
+    flashAndReload('Commande rejetée.');
 
     return { success: true };
   } catch (err: any) {

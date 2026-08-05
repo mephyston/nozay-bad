@@ -3,7 +3,7 @@
 </script>
 <script lang="ts">
   import { User, Eye, ChevronRight, Receipt } from '@lucide/svelte';
-  import { Button, Badge, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions, uiConfirm } from '@nba/ui';
+  import { Button, Badge, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions, uiConfirm, toast, flashAndReload } from '@nba/ui';
   import type { Member, Pagination, Filters, Season } from './members-table-types';
   import MembersTableFiltersPopover from './MembersTableFiltersPopover.svelte';
 
@@ -29,13 +29,15 @@
         body: JSON.stringify({ id: member.id, authorized: !member.expenseAuthorized })
       });
       if (res.ok) {
-        window.location.reload();
+        flashAndReload(authorize
+          ? `${name} peut désormais soumettre des notes de frais.`
+          : `${name} ne peut plus soumettre de notes de frais.`);
         return;
       }
       const txt = await res.text().catch(() => '');
-      alert(`Échec de la mise à jour (HTTP ${res.status}). ${txt}`);
+      toast.error(txt || `Échec de la mise à jour (HTTP ${res.status}).`);
     } catch (e: any) {
-      alert('Erreur réseau : ' + (e?.message ?? String(e)));
+      toast.error('Erreur réseau : ' + (e?.message ?? String(e)));
     }
     togglingId = null;
   }

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Check, AlertCircle } from '@lucide/svelte';
   import { Plus } from '@lucide/svelte';
-  import { Alert, AlertDialog, Button, DataTableToolbar, FormField, SearchableCombobox } from '@nba/ui';
+  import { Alert, AlertDialog, Button, DataTableToolbar, FormField, SearchableCombobox, flashAndReload } from '@nba/ui';
   import type { Invoice, Season } from './invoices-types';
   import { InvoiceFormState } from './invoices-form-state.svelte';
   import * as api from './invoices-api';
@@ -91,10 +91,8 @@
         itemsTotal,
         items: form.items
       });
-      setTimeout(() => {
-        form.showModal = false;
-        window.location.reload();
-      }, 1000);
+      form.showModal = false;
+      flashAndReload(successMsg);
     } catch (err: unknown) {
       errorMsg = (err as Error).message || "Erreur de communication avec le serveur.";
     } finally {
@@ -121,9 +119,7 @@
     statusDialogData = null;
     try {
       successMsg = await api.updateInvoiceStatus(id, newStatus);
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      flashAndReload(successMsg);
     } catch (err: unknown) {
       errorMsg = (err as Error).message || "Erreur serveur.";
     }
@@ -139,9 +135,7 @@
     deleteDialogData = null;
     try {
       successMsg = await api.deleteInvoice(id);
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      flashAndReload(successMsg);
     } catch (err: unknown) {
       errorMsg = (err as Error).message || "Erreur serveur.";
     }

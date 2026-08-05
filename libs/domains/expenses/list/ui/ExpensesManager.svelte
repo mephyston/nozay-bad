@@ -71,9 +71,7 @@
         amount: Math.round(parsedAmount * 100)
       });
       viewState.editingId = null;
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      flashAndReload(viewState.successMsg);
     } catch (err: unknown) {
       viewState.errorMsg = (err as Error).message || "Une erreur est survenue.";
     } finally {
@@ -88,9 +86,7 @@
 
     try {
       viewState.successMsg = await api.handleExpenseAction(id, action);
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      flashAndReload(viewState.successMsg);
     } catch (err: unknown) {
       viewState.errorMsg = (err as Error).message || "Une erreur est survenue.";
     } finally {
@@ -109,9 +105,7 @@
 
     try {
       viewState.successMsg = await api.cancelExpenseValidation(id);
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      flashAndReload(viewState.successMsg);
     } catch (err: unknown) {
       viewState.errorMsg = (err as Error).message || "Une erreur est survenue.";
     } finally {
