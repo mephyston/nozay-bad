@@ -1,3 +1,21 @@
+# [1.0.0-beta.54](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.53...v1.0.0-beta.54) (2026-08-05)
+
+
+### Bug Fixes
+
+* **accounting:** corriger l'enregistrement des chèques ([ad4d97e](https://github.com/mephyston/nozay-bad/commit/ad4d97e3a6787f095decd9f64c3b22e78512fb19))
+* **admin:** envoyer priceCents à la création d'un produit ([018be38](https://github.com/mephyston/nozay-bad/commit/018be386a0aeedbd5d7d23300ba8598b30ffbeeb))
+* **db:** dédoublonner les données de référence et figer les migrations ([75d0515](https://github.com/mephyston/nozay-bad/commit/75d0515a2950bd80adcddcf6f81bcc337aa04f64))
+* **shop:** ne bloquer la commande que sur un stock réellement suivi ([4abe081](https://github.com/mephyston/nozay-bad/commit/4abe081caa2482e634b486c0a204609ddd316a67))
+* **storefront,admin:** conserver le corps des réponses relayées par l'API ([cd997d6](https://github.com/mephyston/nozay-bad/commit/cd997d694c432aea222901885a8da37426ad5374))
+* **storefront:** fiabiliser la page de connexion ([dc2d363](https://github.com/mephyston/nozay-bad/commit/dc2d363d44332dea8d84494547d6b1b1dca339ce))
+
+
+### Features
+
+* **members:** clarifier l'historique financier et les coordonnées ([a255e67](https://github.com/mephyston/nozay-bad/commit/a255e67412b8fc12b92799a4523b4e6fa0b162e4))
+* **storefront:** écran de démarrage PWA et icônes distinctes ([82378b9](https://github.com/mephyston/nozay-bad/commit/82378b931ce3c49f01fac8cd1c439fdee3201eb9))
+
 # [1.0.0-beta.53](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.52...v1.0.0-beta.53) (2026-08-04)
 
 
