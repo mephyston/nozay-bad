@@ -4,7 +4,6 @@ import { rateLimiter, verifyTurnstileToken } from '../../../lib/turnstile';
 import {
   generateOtpCode,
   storeOtp,
-  maskEmail,
   signPending,
   buildPendingCookie,
   resolveSessionSecret,
@@ -59,9 +58,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
     console.error('[auth] lookup-household a échoué:', e);
   }
 
-  // Réponse générique si aucun compte (limite l'énumération de comptes).
+  const secret = resolveSessionSecret(env, IS_DEV);
+
+  // Anti-énumération de comptes : la réponse doit être **indiscernable** qu'un
+  // adhérent existe ou non. Ni le corps JSON (pas de `found`, pas d'email masqué),
+  // ni la présence d'un Set-Cookie ne doivent trahir l'existence du compte — d'où
+  // ce cookie leurre, signé sur une identité qui n'aura jamais d'OTP en base.
   if (!accountEmail || members.length === 0) {
-    return json({ ok: true, found: false });
+    const decoy = await signPending(`unknown:${crypto.randomUUID()}`, secret);
+    return json({ ok: true }, 200, { 'Set-Cookie': buildPendingCookie(decoy, COOKIE_SECURE) });
   }
 
   // Rate-limit par email (5 codes / 15 min) pour éviter le harcèlement d'une boîte.
@@ -78,12 +83,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   // Cookie temporaire liant la vérification à l'email (jamais exposé au client).
-  const secret = resolveSessionSecret(env, IS_DEV);
   const pending = await signPending(accountEmail, secret);
 
-  return json(
-    { ok: true, found: true, maskedEmail: maskEmail(accountEmail) },
-    200,
-    { 'Set-Cookie': buildPendingCookie(pending, COOKIE_SECURE) }
-  );
+  return json({ ok: true }, 200, { 'Set-Cookie': buildPendingCookie(pending, COOKIE_SECURE) });
 };

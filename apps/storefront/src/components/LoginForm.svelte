@@ -12,11 +12,84 @@
   let step = $state<'identifier' | 'code' | 'profile'>('identifier');
   let identifier = $state('');
   let code = $state('');
-  let maskedEmail = $state('');
   let members = $state<Member[]>([]);
   let loading = $state(false);
   let error = $state('');
   let info = $state('');
+
+  // Turnstile en rendu **explicite**. En rendu implicite, api.js scanne le DOM à son
+  // chargement : sur cette île Svelte, la course entre ce scan et hydrate() laissait
+  // par moments un widget invisible — et donc aucun token, alors que le formulaire
+  // réclamait la validation anti-bot. Ici c'est nous qui déclenchons le rendu, après
+  // le montage, dans un conteneur que Svelte possède.
+  let widgetEl = $state<HTMLDivElement | null>(null);
+  let widgetId: string | undefined;
+  let token = $state('');
+  let widgetReady = $state(false);
+  let widgetError = $state('');
+
+  /** api.js est chargé par le layout en async defer : on attend qu'il soit là. */
+  function whenTurnstileLoaded(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const startedAt = Date.now();
+      const tick = () => {
+        const api = (window as any).turnstile;
+        if (api) return resolve(api);
+        if (Date.now() - startedAt > 15000) return reject(new Error('turnstile-timeout'));
+        setTimeout(tick, 50);
+      };
+      tick();
+    });
+  }
+
+  $effect(() => {
+    const el = widgetEl;
+    if (!el) return;
+
+    let cancelled = false;
+    whenTurnstileLoaded()
+      .then((api) => {
+        if (cancelled) return;
+        widgetReady = true;
+        widgetId = api.render(el, {
+          sitekey: siteKey,
+          action: 'login',
+          callback: (t: string) => {
+            token = t;
+            widgetError = '';
+          },
+          // Le token n'est valable que 5 minutes : sans ce rappel, un formulaire
+          // resté ouvert repartait avec un token vide et un widget d'apparence OK.
+          'expired-callback': () => {
+            token = '';
+            api.reset(widgetId);
+          },
+          'timeout-callback': () => {
+            token = '';
+            api.reset(widgetId);
+          },
+          'error-callback': () => {
+            token = '';
+            widgetError = "Le test anti-bot a échoué. Rechargez la page pour réessayer.";
+          }
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          widgetError = "Le test anti-bot n'a pas pu se charger (bloqueur de publicité ?). Rechargez la page.";
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      try {
+        if (widgetId) (window as any).turnstile?.remove(widgetId);
+      } catch {}
+      widgetId = undefined;
+      widgetReady = false;
+      token = '';
+    };
+  });
 
   function redirectTarget(): string {
     if (typeof window === 'undefined') return '/';
@@ -27,14 +100,10 @@
   }
 
   function resetTurnstile() {
+    token = '';
     try {
-      (window as any).turnstile?.reset();
+      (window as any).turnstile?.reset(widgetId);
     } catch {}
-  }
-
-  function turnstileToken(): string {
-    const el = document.getElementsByName('cf-turnstile-response')[0] as HTMLInputElement | undefined;
-    return el?.value || '';
   }
 
   async function requestCode(e: Event) {
@@ -45,7 +114,6 @@
       error = 'Saisissez votre email ou votre numéro de licence.';
       return;
     }
-    const token = turnstileToken();
     if (!token) {
       error = 'Veuillez valider le test de sécurité anti-bot.';
       return;
@@ -64,14 +132,10 @@
         resetTurnstile();
         return;
       }
-      if (!data.found) {
-        error = 'Aucun compte trouvé pour cet identifiant. Vérifiez votre email ou numéro de licence.';
-        resetTurnstile();
-        return;
-      }
-      maskedEmail = data.maskedEmail || '';
+      // On ne dit jamais si l'identifiant correspond à un adhérent : le message est
+      // le même dans les deux cas (anti-énumération de comptes).
       step = 'code';
-      info = `Un code à 6 chiffres a été envoyé à ${maskedEmail}.`;
+      info = "Si un compte existe pour cet identifiant, un code à 6 chiffres vient d'être envoyé par email.";
     } catch {
       error = 'Erreur réseau. Réessayez.';
       resetTurnstile();
@@ -185,11 +249,22 @@
           />
         </div>
 
-        <div class="cf-turnstile" data-sitekey={siteKey} data-action="login"></div>
+        <div>
+          <div bind:this={widgetEl}></div>
+          {#if widgetError}
+            <p class="mt-2 text-xs text-destructive">{widgetError}</p>
+          {:else if !token}
+            <p class="mt-2 text-xs text-muted-foreground">
+              {widgetReady
+                ? 'Terminez le test anti-bot ci-dessus pour continuer.'
+                : 'Chargement du test anti-bot…'}
+            </p>
+          {/if}
+        </div>
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !token}
           class="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 min-h-[44px]"
         >
           {loading ? 'Envoi…' : 'Recevoir un code'}
@@ -218,6 +293,12 @@
         >
           {loading ? 'Vérification…' : 'Se connecter'}
         </button>
+
+        <!-- Le message d'envoi ne confirmant plus l'existence du compte, on guide
+             l'adhérent qui se serait trompé d'identifiant sans rien révéler. -->
+        <p class="text-center text-[11px] text-muted-foreground">
+          Rien reçu ? Vérifiez vos courriers indésirables.
+        </p>
 
         <button
           type="button"
