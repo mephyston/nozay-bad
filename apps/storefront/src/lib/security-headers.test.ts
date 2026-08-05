@@ -1,0 +1,50 @@
+import { describe, it, expect } from 'vitest';
+import { applySecurityHeaders } from './security-headers';
+
+/**
+ * Simule la réponse d'un service binding : dans workerd, ses en-têtes sont
+ * immuables et toute mutation lève `TypeError: Can't modify immutable headers`.
+ */
+function withImmutableHeaders(response: Response): Response {
+  const headers = response.headers;
+  headers.set = () => {
+    throw new TypeError("Can't modify immutable headers.");
+  };
+  headers.delete = () => {
+    throw new TypeError("Can't modify immutable headers.");
+  };
+  return response;
+}
+
+describe('applySecurityHeaders', () => {
+  it('pose les en-têtes sur une réponse classique', async () => {
+    const res = applySecurityHeaders(
+      new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    );
+
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(res.headers.get('X-Frame-Options')).toBe('DENY');
+    expect(res.headers.get('Content-Security-Policy-Report-Only')).toContain("default-src 'self'");
+    expect(await res.json()).toEqual({ success: true });
+  });
+
+  it('préserve corps et statut quand les en-têtes sont immuables (réponse relayée par l’API)', async () => {
+    const relayed = withImmutableHeaders(
+      new Response(JSON.stringify({ success: true, data: { id: 42 } }), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    );
+
+    const res = applySecurityHeaders(relayed);
+
+    expect(res.status).toBe(201);
+    expect(res.headers.get('Content-Type')).toBe('application/json');
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    // La régression : le corps était perdu (500 vide) alors que l'écriture avait eu lieu.
+    expect(await res.json()).toEqual({ success: true, data: { id: 42 } });
+  });
+});
