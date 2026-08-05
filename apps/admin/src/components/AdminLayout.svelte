@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Sidebar, Toaster } from "@nba/ui";
+  import { Sidebar, Toaster, consumeFlash } from "@nba/ui";
   import AdminLayoutInner from "./AdminLayoutInner.svelte";
   import { onMount } from "svelte";
 
@@ -23,6 +23,8 @@
     if (saved !== null) {
       sidebarOpen = saved !== "true";
     }
+    // Rejoue le message de confirmation d'une action qui a rechargé la page.
+    consumeFlash();
   });
 
   function handleOpenChange(open: boolean) {

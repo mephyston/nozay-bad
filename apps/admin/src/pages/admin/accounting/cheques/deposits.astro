@@ -75,11 +75,22 @@ if (Astro.request.method === 'POST') {
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
+    } else {
+      // Une action mal nommée doit échouer bruyamment, pas repartir en 200.
+      return new Response(
+        JSON.stringify({ success: false, error: `Action inconnue : ${data.action}` }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    return new Response(JSON.stringify({ success: true }));
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
   } catch (err: any) {
-    return new Response(err.message, { status: 500 });
+    return new Response(
+      JSON.stringify({ success: false, error: err.message }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }
 

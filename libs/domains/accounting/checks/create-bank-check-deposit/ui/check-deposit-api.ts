@@ -1,4 +1,19 @@
-import { toast, uiConfirm } from '@nba/ui';
+import { toast, uiConfirm, flashAndReload } from '@nba/ui';
+
+/**
+ * Extrait le message d'erreur d'une réponse, qu'elle soit JSON ou texte brut : les
+ * pages admin relaient tantôt le corps JSON de l'API, tantôt un simple message.
+ */
+async function readError(res: Response): Promise<string> {
+  const raw = await res.text();
+  if (!raw) return '';
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed?.error || raw;
+  } catch {
+    return raw;
+  }
+}
 
 export async function handleAnalyzeScan(file: File, seasonId: string, state: any) {
   if (!file) return;
@@ -66,25 +81,26 @@ export async function handleAddCheck(e: SubmitEvent, seasonId: string, state: an
     const res = await fetch(`?season=${seasonId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      // `create-check` et les noms de champs doivent correspondre exactement au
+      // contrat de l'API (number / emitter) : un intitulé d'action inconnu passait
+      // à travers toutes les branches de la page et renvoyait un faux succès.
       body: JSON.stringify({
-        action: 'add-check',
+        action: 'create-check',
         seasonId,
-        checkNumber: state.checkNumber,
+        number: state.checkNumber,
         amount: Math.round(parseFloat(state.checkAmount) * 100),
         emitter: state.checkEmitter,
         bank: state.checkBank,
         date: state.checkDate,
-        memberId: state.checkMemberId ? parseInt(state.checkMemberId) : null
+        memberId: state.checkMemberId ? parseInt(state.checkMemberId) : undefined
       })
     });
 
     if (res.ok) {
-      toast.success('Chèque ajouté avec succès !');
       state.showAddCheckModal = false;
-      window.location.reload();
+      flashAndReload('Chèque enregistré avec succès.');
     } else {
-      const data = await res.json() as any;
-      state.formError = data.error || 'Erreur lors de la création.';
+      state.formError = (await readError(res)) || 'Erreur lors de la création du chèque.';
       toast.error(state.formError);
     }
   } catch (err) {
@@ -107,10 +123,9 @@ export async function handleDeleteCheck(id: number, seasonId: string) {
     });
 
     if (res.ok) {
-      toast.success('Chèque supprimé !');
-      window.location.reload();
+      flashAndReload('Chèque supprimé.');
     } else {
-      toast.error('Erreur lors de la suppression du chèque.');
+      toast.error((await readError(res)) || 'Erreur lors de la suppression du chèque.');
     }
   } catch (err) {
     console.error(err);
@@ -137,12 +152,11 @@ export async function handleCreateDeposit(seasonId: string, state: any) {
     });
 
     if (res.ok) {
-      toast.success('Bordereau de remise de chèques créé !');
       state.showCreateDepositModal = false;
       state.selectedCheckIds = {};
-      window.location.reload();
+      flashAndReload('Bordereau de remise de chèques créé.');
     } else {
-      toast.error('Erreur lors de la création du bordereau.');
+      toast.error((await readError(res)) || 'Erreur lors de la création du bordereau.');
     }
   } catch (err) {
     console.error(err);
@@ -163,10 +177,9 @@ export async function handleDeleteDeposit(id: number, seasonId: string) {
     });
 
     if (res.ok) {
-      toast.success('Bordereau supprimé !');
-      window.location.reload();
+      flashAndReload('Bordereau supprimé.');
     } else {
-      toast.error('Erreur lors de la suppression.');
+      toast.error((await readError(res)) || 'Erreur lors de la suppression du bordereau.');
     }
   } catch (err) {
     console.error(err);
@@ -191,13 +204,12 @@ export async function handleClearDeposit(e: SubmitEvent, seasonId: string, state
     });
 
     if (res.ok) {
-      toast.success('Bordereau encaissé !');
       state.showClearModal = false;
       state.selectedDepositToClear = null;
       state.selectedBankTransactionId = '';
-      window.location.reload();
+      flashAndReload('Bordereau encaissé.');
     } else {
-      toast.error('Erreur lors du rapprochement.');
+      toast.error((await readError(res)) || 'Erreur lors du rapprochement.');
     }
   } catch (err) {
     console.error(err);
