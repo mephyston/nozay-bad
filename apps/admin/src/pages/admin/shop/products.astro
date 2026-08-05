@@ -30,7 +30,7 @@ if (Astro.request.method === 'POST') {
         body: JSON.stringify({
           name: data.name,
           productCategoryId: catId,
-          price: data.price,
+          priceCents: data.priceCents ?? data.price,
           stock: data.stock,
           trackStock: data.trackStock,
           active: data.active
@@ -46,7 +46,7 @@ if (Astro.request.method === 'POST') {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: data.name,
-          priceCents: data.price,
+          priceCents: data.priceCents ?? data.price,
           stock: data.stock,
           trackStock: data.trackStock,
           active: data.active
