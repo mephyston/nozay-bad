@@ -1,7 +1,7 @@
 import { ordersTable } from '../shared/schema';
 
 export interface CreateOrderInput {
-  seasonId: number;
+  seasonId: number | string;
   memberId: number;
   productId: number;
   quantity: number;

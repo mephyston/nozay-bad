@@ -6,18 +6,19 @@ import { CreateOrderInput, CreateOrderOutput } from "./dto";
 import { AppError } from '@nba/db';
 
 export async function createOrder(db: Db, body: CreateOrderInput): Promise<CreateOrderOutput> {
-  if (await isSeasonClosed(db, body.seasonId)) {
+  const repo = new CreateOrderRepository();
+  const seasonId = await repo.resolveSeasonId(db, body.seasonId);
+
+  if (await isSeasonClosed(db, seasonId)) {
     throw new SeasonClosedError('La saison est clôturée. Impossible de soumettre une commande.');
   }
-
-  const repo = new CreateOrderRepository();
 
   const member = await repo.getMemberById(db, body.memberId);
   if (!member) {
     throw new MemberNotFoundError();
   }
 
-  if (member.seasonId !== body.seasonId) {
+  if (member.seasonId !== seasonId) {
     throw new MemberNotEligibleError("L'adhérent n'est pas inscrit sur la saison sélectionnée pour la commande.");
   }
 
@@ -47,7 +48,7 @@ export async function createOrder(db: Db, body: CreateOrderInput): Promise<Creat
   }
 
   return repo.create(db, {
-    seasonId: body.seasonId,
+    seasonId,
     memberId: body.memberId,
     productId: body.productId,
     quantity: body.quantity,

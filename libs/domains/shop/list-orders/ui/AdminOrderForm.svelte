@@ -94,7 +94,7 @@
 
     errorMessage = null; submitting = true;
     try {
-      const res = await fetch('', {
+      const res = await fetch(window.location.pathname + window.location.search, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -224,7 +224,8 @@
       Annuler
     </Button>
     <Button
-      type="submit"
+      type="button"
+      onclick={handleOrder}
       disabled={submitting || !selectedMemberId || !selectedProduct}
       class="flex items-center gap-2"
     >

@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox';
 
 export const createOrderSchema = Type.Object({
-  seasonId: Type.Integer({ minimum: 1 }),
+  seasonId: Type.Union([Type.String({ minLength: 1 }), Type.Integer({ minimum: 1 })]),
   memberId: Type.Integer({ minimum: 1 }),
   productId: Type.Integer({ minimum: 1 }),
   quantity: Type.Integer({ minimum: 1 }),

@@ -5,7 +5,7 @@
 <script lang="ts">
   import { Check, AlertCircle } from "@lucide/svelte";
   import { onMount } from "svelte";
-  import { Alert, Button, Sheet } from"@nba/ui";
+  import { Alert, Button, Sheet, flashAndReload } from"@nba/ui";
   import type { OrderItem, Season } from './orders-manager-types';
   import { paymentMethodLabels } from './orders-manager-types';
   import { approveOrder, rejectOrder } from './orders-manager-actions';
@@ -209,7 +209,10 @@
       members={members}
       activeSeasonId={seasonId}
       onClose={() => isCreateSheetOpen = false}
-      onSuccess={(msg) => { successMsg = msg; isCreateSheetOpen = false; }}
+      onSuccess={(msg) => {
+        isCreateSheetOpen = false;
+        flashAndReload(msg, 'success');
+      }}
     />
   </Sheet.Content>
 </Sheet.Root>
