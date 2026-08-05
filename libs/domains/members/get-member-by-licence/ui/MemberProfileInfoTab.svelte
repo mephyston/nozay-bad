@@ -1,9 +1,17 @@
 <script lang="ts">
-  import { Shield, Calendar, Tag, Mail, Phone, Receipt, Copy, Check } from '@lucide/svelte';
-  import { Card, Button, uiConfirm } from '@nba/ui';
+  import { Shield, Calendar, Tag, Mail, Phone, Receipt, Copy, Check, User, Users } from '@lucide/svelte';
+  import { Card, Button, Badge, uiConfirm } from '@nba/ui';
   import type { Member } from './member-profile-types';
 
   let { member }: { member: Member } = $props();
+
+  // Représentants légaux réellement renseignés, pour ne pas afficher une section vide.
+  const legalGuardians = $derived(
+    [
+      { name: member.parent1Name, email: member.parent1Email, phone: member.parent1Phone },
+      { name: member.parent2Name, email: member.parent2Email, phone: member.parent2Phone }
+    ].filter((g) => g.name)
+  );
 
   // Autorisation de note de frais : bascule persistée via l'API admin.
   let authorized = $state(Boolean(member.expenseAuthorized));
@@ -51,6 +59,41 @@
   }
 </script>
 
+<!-- Bloc de coordonnées réutilisé pour l'adhérent et pour chaque représentant : une
+     même présentation partout, seul l'en-tête change — c'est lui qui dit à qui
+     appartiennent l'e-mail et le téléphone affichés. -->
+{#snippet contactLines(email: string | null | undefined, phone: string | null | undefined)}
+  {#if email || phone}
+    <div class="space-y-1.5">
+      {#if email}
+        <div class="flex items-center gap-2">
+          <Mail class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <a href="mailto:{email}" class="text-sm hover:underline text-primary break-all">{email}</a>
+          <button
+            class="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            onclick={() => copyToClipboard(email)}
+            title="Copier l'email"
+          >
+            {#if copiedEmail === email}
+              <Check class="w-3.5 h-3.5 text-success" />
+            {:else}
+              <Copy class="w-3.5 h-3.5" />
+            {/if}
+          </button>
+        </div>
+      {/if}
+      {#if phone}
+        <div class="flex items-center gap-2">
+          <Phone class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <a href="tel:{phone}" class="text-sm hover:underline text-primary">{phone}</a>
+        </div>
+      {/if}
+    </div>
+  {:else}
+    <p class="text-sm text-muted-foreground italic">Aucune coordonnée renseignée.</p>
+  {/if}
+{/snippet}
+
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
   <!-- Informations personnelles -->
   <Card.Root>
@@ -97,96 +140,41 @@
     </Card.Content>
   </Card.Root>
 
-  <!-- Coordonnées & Contacts -->
+  <!-- Coordonnées : celles de l'adhérent et celles de ses représentants légaux sont
+       deux blocs distincts et nommés. Auparavant tout s'enchaînait dans une seule
+       liste, et l'e-mail affiché en premier pouvait être pris pour celui de
+       l'adhérent alors qu'il n'en avait pas. -->
   <Card.Root>
-    <Card.Content class="p-6 space-y-4">
+    <Card.Content class="p-6 space-y-5">
       <h3 class="font-bold text-lg border-b border-border pb-2 text-foreground">
-        Contacts & Urgence
+        Coordonnées
       </h3>
-      <div class="space-y-3">
-        {#if member.email}
-          <div class="flex items-center gap-3">
-            <Mail class="w-4 h-4 text-muted-foreground shrink-0" />
-            <div class="flex-1">
-              <div class="text-xs text-muted-foreground">E-mail</div>
-              <div class="flex items-center gap-2">
-                <a href="mailto:{member.email}" class="text-sm font-medium hover:underline text-primary">{member.email}</a>
-                <button 
-                  class="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
-                  onclick={() => copyToClipboard(member.email!)}
-                  title="Copier l'email"
-                >
-                  {#if copiedEmail === member.email}
-                    <Check class="w-3.5 h-3.5 text-success" />
-                  {:else}
-                    <Copy class="w-3.5 h-3.5" />
-                  {/if}
-                </button>
-              </div>
+
+      <section class="rounded-lg bg-muted/40 p-3 space-y-2">
+        <div class="flex items-center gap-2 flex-wrap">
+          <User class="w-4 h-4 text-primary shrink-0" />
+          <span class="text-sm font-semibold text-foreground">{member.firstName} {member.lastName}</span>
+          <Badge variant="secondary" size="xs">Adhérent</Badge>
+        </div>
+        {@render contactLines(member.email, member.phone)}
+      </section>
+
+      {#if legalGuardians.length > 0}
+        <section class="space-y-3">
+          <div class="flex items-center gap-2">
+            <Users class="w-4 h-4 text-muted-foreground shrink-0" />
+            <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              {legalGuardians.length > 1 ? 'Représentants légaux' : 'Représentant légal'}
+            </h4>
+          </div>
+          {#each legalGuardians as guardian (guardian.name)}
+            <div class="border-l-2 border-primary/30 pl-3 space-y-2">
+              <div class="text-sm font-semibold text-foreground">{guardian.name}</div>
+              {@render contactLines(guardian.email, guardian.phone)}
             </div>
-          </div>
-        {/if}
-        {#if member.phone}
-          <div class="flex items-center gap-3">
-            <Phone class="w-4 h-4 text-muted-foreground shrink-0" />
-            <div>
-              <div class="text-xs text-muted-foreground">Téléphone</div>
-              <a href="tel:{member.phone}" class="text-sm font-medium hover:underline text-primary">{member.phone}</a>
-            </div>
-          </div>
-        {/if}
-        
-        {#if member.parent1Name}
-          <div class="pt-2 border-t border-border/60">
-            <div class="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Représentant Légal 1</div>
-            <div class="text-sm font-semibold">{member.parent1Name}</div>
-            {#if member.parent1Email}
-              <div class="flex items-center gap-2 mt-0.5">
-                <div class="text-xs text-muted-foreground"><a href="mailto:{member.parent1Email}" class="hover:underline">{member.parent1Email}</a></div>
-                <button 
-                  class="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
-                  onclick={() => copyToClipboard(member.parent1Email!)}
-                  title="Copier l'email"
-                >
-                  {#if copiedEmail === member.parent1Email}
-                    <Check class="w-3 h-3 text-success" />
-                  {:else}
-                    <Copy class="w-3 h-3" />
-                  {/if}
-                </button>
-              </div>
-            {/if}
-            {#if member.parent1Phone}
-              <div class="text-xs text-muted-foreground mt-0.5"><a href="tel:{member.parent1Phone}" class="hover:underline">{member.parent1Phone}</a></div>
-            {/if}
-          </div>
-        {/if}
-        {#if member.parent2Name}
-          <div class="pt-2 border-t border-border/60">
-            <div class="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Représentant Légal 2</div>
-            <div class="text-sm font-semibold">{member.parent2Name}</div>
-            {#if member.parent2Email}
-              <div class="flex items-center gap-2 mt-0.5">
-                <div class="text-xs text-muted-foreground"><a href="mailto:{member.parent2Email}" class="hover:underline">{member.parent2Email}</a></div>
-                <button 
-                  class="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
-                  onclick={() => copyToClipboard(member.parent2Email!)}
-                  title="Copier l'email"
-                >
-                  {#if copiedEmail === member.parent2Email}
-                    <Check class="w-3 h-3 text-success" />
-                  {:else}
-                    <Copy class="w-3 h-3" />
-                  {/if}
-                </button>
-              </div>
-            {/if}
-            {#if member.parent2Phone}
-              <div class="text-xs text-muted-foreground mt-0.5"><a href="tel:{member.parent2Phone}" class="hover:underline">{member.parent2Phone}</a></div>
-            {/if}
-          </div>
-        {/if}
-      </div>
+          {/each}
+        </section>
+      {/if}
     </Card.Content>
   </Card.Root>
 </div>
