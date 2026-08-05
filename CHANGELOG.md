@@ -1,3 +1,10 @@
+# [1.0.0-beta.56](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.55...v1.0.0-beta.56) (2026-08-05)
+
+
+### Bug Fixes
+
+* **shop:** resolve season string code to db id for order creation ([c405ae6](https://github.com/mephyston/nozay-bad/commit/c405ae6973cbeabbf45c4bda473a55978084f96f))
+
 # [1.0.0-beta.55](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.54...v1.0.0-beta.55) (2026-08-05)
 
 
