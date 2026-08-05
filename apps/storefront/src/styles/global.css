@@ -115,4 +115,13 @@
   body {
     @apply bg-background text-foreground font-sans;
   }
+
+  /* En PWA installée, le pied de page (copyright + liens légaux) fait doublon avec
+     le chrome de l'application. Les liens légaux restent atteignables à tout moment
+     via l'onglet « Plus » de la navigation mobile. */
+  @media (display-mode: standalone) {
+    footer {
+      display: none;
+    }
+  }
 }

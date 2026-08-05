@@ -22,9 +22,14 @@ const root = path.resolve(__dirname, '..');
 // Source unique : le logo du menu. Identique dans les deux apps (même md5).
 const SOURCE = path.join(root, 'apps/admin/public/logo.png');
 
-// Fond de marque (= theme_color / background admin) pour un rendu opaque et net
-// sur les écrans d'accueil iOS (qui n'aiment pas la transparence).
-const BG = { r: 0x26, g: 0x26, b: 0x24, alpha: 1 };
+// Fond opaque (les écrans d'accueil iOS n'aiment pas la transparence). La couleur
+// diffère par app : en production les icônes ne portent pas de bandeau, et deux
+// icônes identiques étaient indistinguables sur un téléphone où les deux apps sont
+// installées. Admin = anthracite de marque, Adhérent = crème clair du design system
+// (le rose et le noir du logo y ressortent nettement, contrairement au terracotta
+// primaire qui se confond avec le blason).
+const BG_ADMIN = { r: 0x26, g: 0x26, b: 0x24, alpha: 1 };
+const BG_STOREFRONT = { r: 0xfa, g: 0xf9, b: 0xf5, alpha: 1 };
 
 // Variantes d'environnement : suffixe de fichier + couleur + mot d'env.
 // Le libellé final du bandeau est « <label app> <mot env> » (ex: « Adhérent Test »).
@@ -43,8 +48,8 @@ const ICONS = [
 
 // Chaque app a un libellé propre affiché dans le bandeau de l'icône.
 const APPS = [
-  { dir: 'apps/admin/public', label: 'Admin' },
-  { dir: 'apps/storefront/public', label: 'Adhérent' }
+  { dir: 'apps/admin/public', label: 'Admin', bg: BG_ADMIN },
+  { dir: 'apps/storefront/public', label: 'Adhérent', bg: BG_STOREFRONT }
 ];
 
 /** SVG d'un bandeau plein-largeur en bas de l'icône, texte ajusté pour tenir. */
@@ -65,7 +70,7 @@ function ribbonSvg(size, text, color) {
   );
 }
 
-async function buildIcon(size, ribbon) {
+async function buildIcon(size, ribbon, bg) {
   const pad = Math.round(size * 0.1); // marge autour du logo
   const logoSize = size - pad * 2;
   const logo = await sharp(SOURCE)
@@ -75,7 +80,7 @@ async function buildIcon(size, ribbon) {
   const layers = [{ input: logo, top: pad, left: pad }];
   if (ribbon) layers.push({ input: ribbonSvg(size, ribbon.text, ribbon.color), top: 0, left: 0 });
 
-  return sharp({ create: { width: size, height: size, channels: 4, background: BG } })
+  return sharp({ create: { width: size, height: size, channels: 4, background: bg } })
     .composite(layers)
     .png()
     .toBuffer();
@@ -88,7 +93,7 @@ for (const app of APPS) {
       const ribbon = variant.word
         ? { text: `${app.label} ${variant.word}`, color: variant.color }
         : null;
-      const buf = await buildIcon(icon.size, ribbon);
+      const buf = await buildIcon(icon.size, ribbon, app.bg);
       const out = path.join(root, app.dir, icon.dir, `${icon.base}${variant.suffix}.png`);
       await sharp(buf).toFile(out);
       count++;
