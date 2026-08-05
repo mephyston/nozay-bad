@@ -8,28 +8,17 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
 
 // Mandatory Reference Data Business Codes required by application domain logic
+//
+// N.B. : on ne liste QUE ce dont le code a réellement besoin, pas un miroir du seed.
+// La liste précédente recopiait toute la nomenclature comptable ; le jour où le seed
+// a été réécrit, ce contrôle est devenu rouge en permanence sans rien protéger.
 const REQUIRED_REFERENCE_CODES = {
-  categories: [
-    'Adhésions & Inscriptions',
-    'Sponsoring',
-    'Subventions (aides publiques)',
-    'Actions Jeunes (stages jeunes...)',
-    'Tournois Senior',
-    'Evénements & Buvettes',
-    'Cordage (vente aux adhérents)',
-    'Volants (vente ou achat)',
-    'Salaires et Charges',
-    'Matériel (hors cordages)',
-    'Licences (versements fédération)',
-    'Championnats (frais équipes)',
-    'Stages & Formations',
-    'Frais de fonctionnement & administratif',
-    'Virements Internes (Transit)',
-    'Intérêts Livret A'
-  ],
+  // `get-season-reports` isole les transferts via startsWith('Virements Internes').
+  categories: ['Virements Internes'],
   account_classes: ['60', '61', '62', '63', '64', '65', '70', '74', '75', '512', '517', '530'],
   accounts: ['current', 'savings', 'cash'],
-  payment_methods: ['virement', 'cheque', 'especes', 'cb', 'labaz', 'ancv', 'pass_sport', 'up_loisir']
+  // Doit couvrir `paymentMethodsList` (libs/domains/shop/.../catalog-types.ts).
+  payment_methods: ['virement', 'cheque', 'especes', 'cb', 'labaz', 'ancv', 'pass_sport', 'ticket_loisir', 'up_loisir']
 };
 
 
@@ -233,15 +222,15 @@ function checkConstraintLoss() {
  */
 function checkReferenceData() {
   if (process.argv.includes('--test-fail-5')) {
-    console.error('\n❌ [reference-data] ÉCHEC SIMULÉ : Code(s) métier de référence manquant(s) dans 0001_seed_reference_data.sql !');
+    console.error('\n❌ [reference-data] ÉCHEC SIMULÉ : Code(s) métier de référence manquant(s) dans 0002_seed_reference_data.sql !');
     console.error('  - Table "categories" : code "virements_internes" manquant');
     throw new Error('[reference-data] Tout code métier requis par l\'application doit figurer dans les données de référence.');
   }
 
-  const seedPath = path.join(ROOT_DIR, 'libs/shared/db/migrations/0001_seed_reference_data.sql');
+  const seedPath = path.join(ROOT_DIR, 'libs/shared/db/migrations/0002_seed_reference_data.sql');
 
   if (!fs.existsSync(seedPath)) {
-    throw new Error(`[reference-data] 0001_seed_reference_data.sql non trouvé à ${seedPath}`);
+    throw new Error(`[reference-data] 0002_seed_reference_data.sql non trouvé à ${seedPath}`);
   }
 
   const seedSql = fs.readFileSync(seedPath, 'utf8');
@@ -256,14 +245,14 @@ function checkReferenceData() {
   }
 
   if (missingCodes.length > 0) {
-    console.error('\n❌ [reference-data] ÉCHEC : Code(s) métier de référence manquant(s) dans 0001_seed_reference_data.sql !');
+    console.error('\n❌ [reference-data] ÉCHEC : Code(s) métier de référence manquant(s) dans 0002_seed_reference_data.sql !');
     missingCodes.forEach(item => {
       console.error(`  - Table "${item.table}" : code "${item.code}" manquant`);
     });
     throw new Error('[reference-data] Tout code métier requis par l\'application doit figurer dans les données de référence.');
   }
 
-  console.log(`  ✓ 5. Données de référence : Tous les codes métiers requis sont présents dans 0001_seed_reference_data.sql.`);
+  console.log(`  ✓ 5. Données de référence : Tous les codes métiers requis sont présents dans 0002_seed_reference_data.sql.`);
 }
 
 function main() {

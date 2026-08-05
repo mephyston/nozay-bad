@@ -27,6 +27,12 @@ describe('analyzeBankStatementLines', () => {
       }).run();
     }
 
+    // Le test vérifie la nomenclature exacte envoyée au prompt : on repart d'une base
+    // vide plutôt que de cohabiter avec le seed de référence (dont plusieurs libellés
+    // sont identiques, et `admin_label` est désormais unique).
+    await db.run(sql`DELETE FROM product_categories`);
+    await db.run(sql`DELETE FROM categories`);
+
     const existingCats = await db.select().from(categoriesTable).all();
     if (!existingCats.some((c: any) => c.id === 101)) {
       await db.insert(categoriesTable).values([

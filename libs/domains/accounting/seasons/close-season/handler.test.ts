@@ -239,7 +239,8 @@ describe('closeSeason (Pre-closure Checks, Rollover & Reopen - PROMPT 13)', () =
     `) as { id: number };
 
     const pCat = await db.insert(productCategoriesTable).values({
-      label: 'Cordages', accountingCategoryId: 1, createdAt: new Date()
+      // `product_categories.label` est unique : le seed a déjà une famille « Cordages ».
+      label: 'Cordages (test)', accountingCategoryId: 1, createdAt: new Date()
     }).returning().get();
 
     const product = await db.insert(productsTable).values({

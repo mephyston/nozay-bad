@@ -29,7 +29,7 @@ describe('Products API Endpoints', () => {
 
     const productCat = await db.get(sql`
       INSERT INTO product_categories (label, accounting_category_id, created_at)
-      VALUES ('Cordages', ${boutiqueCat.id}, strftime('%s', 'now'))
+      VALUES ('Cordages (test)', ${boutiqueCat.id}, strftime('%s', 'now'))
       RETURNING id
     `) as { id: number };
 
@@ -134,7 +134,7 @@ describe('Orders API Endpoints', () => {
     // Insert a product category
     const productCat = await db.get(sql`
       INSERT INTO product_categories (label, accounting_category_id, created_at)
-      VALUES ('Volants', ${boutiqueCat.id}, strftime('%s', 'now'))
+      VALUES ('Volants (test)', ${boutiqueCat.id}, strftime('%s', 'now'))
       RETURNING id
     `) as { id: number };
 
@@ -202,7 +202,7 @@ describe('Orders API Endpoints', () => {
     `) as { id: number };
     const productCat = await db.get(sql`
       INSERT INTO product_categories (label, accounting_category_id, created_at)
-      VALUES ('Cordages', ${boutiqueCat.id}, strftime('%s', 'now'))
+      VALUES ('Cordages (test)', ${boutiqueCat.id}, strftime('%s', 'now'))
       RETURNING id
     `) as { id: number };
     await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', productCategoryId: productCat.id, priceCents: 1200, stock: 5, active: true, createdAt: new Date() }).run();
@@ -262,7 +262,7 @@ describe('Orders API Endpoints', () => {
     `) as { id: number };
     const productCat = await db.get(sql`
       INSERT INTO product_categories (label, accounting_category_id, created_at)
-      VALUES ('Cordages', ${boutiqueCat.id}, strftime('%s', 'now'))
+      VALUES ('Cordages (test)', ${boutiqueCat.id}, strftime('%s', 'now'))
       RETURNING id
     `) as { id: number };
     await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', productCategoryId: productCat.id, priceCents: 1200, stock: 1, active: true, createdAt: new Date() }).run();
@@ -301,7 +301,7 @@ describe('Orders API Endpoints', () => {
     `) as { id: number };
     const productCat = await db.get(sql`
       INSERT INTO product_categories (label, accounting_category_id, created_at)
-      VALUES ('Cordages', ${boutiqueCat.id}, strftime('%s', 'now'))
+      VALUES ('Cordages (test)', ${boutiqueCat.id}, strftime('%s', 'now'))
       RETURNING id
     `) as { id: number };
     await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', productCategoryId: productCat.id, priceCents: 1200, stock: 5, active: true, createdAt: new Date() }).run();

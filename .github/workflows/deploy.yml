@@ -147,6 +147,14 @@ jobs:
       - name: Verify environment variable & binding declarations
         run: node scripts/check-env-declarations.js
 
+      # Les migrations D1 sont suivies par nom de fichier : un renommage rejoue la
+      # migration sur les bases existantes (cf. duplication des catégories du 29/07).
+      - name: Verify migrations are append-only
+        run: node scripts/check-migrations-append-only.js
+
+      - name: Verify schema integrity & reference data
+        run: node scripts/check-schema-integrity.js
+
       - name: Run TypeScript typecheck
         run: npm run typecheck
 

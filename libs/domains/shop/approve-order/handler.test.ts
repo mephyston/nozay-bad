@@ -94,8 +94,10 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
 
     // 5. Seed product categories
     // Family 1: Volants -> mapped to Volants (vente ou achat)
+    // Libellés suffixés « (test) » : `product_categories.label` est unique et le seed
+    // de référence fournit déjà les familles « Volants » et « Cordages ».
     const pCat1 = await db.insert(productCategoriesTable).values({
-      label: 'Volants',
+      label: 'Volants (test)',
       accountingCategoryId: volantsAccountingCatId,
       createdAt: new Date()
     }).returning().get();
@@ -103,7 +105,7 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
 
     // Family 2: Cordages -> mapped to Cordage (vente aux adhérents)
     const pCat2 = await db.insert(productCategoriesTable).values({
-      label: 'Cordages',
+      label: 'Cordages (test)',
       accountingCategoryId: cordagesAccountingCatId,
       createdAt: new Date()
     }).returning().get();

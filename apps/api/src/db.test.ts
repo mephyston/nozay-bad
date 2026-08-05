@@ -240,7 +240,9 @@ describe('Database Tests', () => {
 
     // Create product category first
     const pCat = await db.insert(productCategoriesTable).values({
-      label: 'Volants',
+      // Libellé propre au test : `product_categories.label` est unique et le seed
+      // de référence fournit déjà une famille « Volants ».
+      label: 'Volants (test)',
       accountingCategoryId: 1,
       createdAt: new Date()
     }).returning().get();

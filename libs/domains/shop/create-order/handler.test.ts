@@ -33,7 +33,8 @@ describe('createOrder handler (Eligibility & Validation)', () => {
     const catRes = await mock.mockD1.prepare('SELECT id FROM categories').all();
     const cat = catRes.results;
     const pCat = await db.insert(productCategoriesTable).values({
-      label: 'Volants', accountingCategoryId: cat[0].id, createdAt: new Date()
+      // `product_categories.label` est unique : le seed a déjà une famille « Volants ».
+      label: 'Volants (test)', accountingCategoryId: cat[0].id, createdAt: new Date()
     }).returning().get();
 
     const product = await db.insert(productsTable).values({

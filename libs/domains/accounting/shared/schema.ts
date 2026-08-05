@@ -40,7 +40,9 @@ export const paymentMethodsTable = sqliteTable('payment_methods', {
 
 export const categoriesTable = sqliteTable('categories', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  adminLabel: text('admin_label').notNull(),
+  // Unique : rend `INSERT OR IGNORE` du seed de référence réellement idempotent
+  // (un rejeu de migration avait dupliqué toutes les catégories, cf. 0008).
+  adminLabel: text('admin_label').notNull().unique(),
   adherentLabel: text('adherent_label').notNull(),
   hideInExpenses: integer('hide_in_expenses', { mode: 'boolean' }).notNull().default(false),
   receiptAccountClassId: integer('receipt_account_class_id').references(() => accountClassesTable.id),

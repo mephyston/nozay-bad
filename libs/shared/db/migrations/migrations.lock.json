@@ -1,0 +1,14 @@
+{
+  "comment": "Migrations D1 livrées : append-only. Voir scripts/check-migrations-append-only.js",
+  "migrations": {
+    "0000_baseline.sql": "f15267fa297b87b7",
+    "0001_add_active_to_categories.sql": "c9f8a9500547aea2",
+    "0002_seed_reference_data.sql": "7ebdff863b975dae",
+    "0003_iam_init.sql": "3fd455a5bdbcfd08",
+    "0004_add_attestation_config.sql": "982694c5243e9055",
+    "0005_add_track_stock_to_products.sql": "848403b67c49dc6a",
+    "0006_fix_budget_amount_cents_scale.sql": "6a8100f5239fcdbb",
+    "0007_add_expense_authorized_to_members.sql": "d0514ac8b7808ec4",
+    "0008_unique_reference_labels.sql": "957c0e6272794ea3"
+  }
+}

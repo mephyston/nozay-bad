@@ -7,6 +7,7 @@
     "typecheck": "tsc --noEmit",
     "check:env": "node scripts/check-env-declarations.js",
     "check:schema": "node scripts/check-schema-integrity.js",
+    "check:migrations": "node scripts/check-migrations-append-only.js",
     "dev:api": "wrangler dev --config apps/api/wrangler.json --port 8787",
     "dev:admin": "PUBLIC_APP_ENV=development astro dev --root apps/admin --port 4321",
     "dev:storefront": "PUBLIC_APP_ENV=development astro dev --root apps/storefront --port 4322",

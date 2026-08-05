@@ -3,7 +3,9 @@ import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
 export const productCategoriesTable = sqliteTable('product_categories', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  label: text('label').notNull(),
+  // Unique : rend `INSERT OR IGNORE` du seed de référence réellement idempotent
+  // (un rejeu de migration avait dupliqué toutes les catégories, cf. 0008).
+  label: text('label').notNull().unique(),
   accountingCategoryId: integer('accounting_category_id').notNull(),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
