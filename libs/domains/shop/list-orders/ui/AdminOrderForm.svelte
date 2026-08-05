@@ -3,6 +3,7 @@
   import { Button, Alert, Sheet, Input, FormField } from '@nba/ui';
   import type { Member, Product } from '../../list-products/ui/catalog-types';
   import { formatMemberName } from '../../list-products/ui/catalog-utils';
+  import { isOutOfStock } from '../../list-products/ui/catalog-types';
   import { handleMemberKeyDown } from '../../list-products/ui/catalog-order-action';
   import ShopCatalogProductSelect from '../../list-products/ui/ShopCatalogProductSelect.svelte';
   import ShopCatalogSummary from '../../list-products/ui/ShopCatalogSummary.svelte';
@@ -41,6 +42,16 @@
       if (max > 0 && selectedQuantity > max) selectedQuantity = max;
       else if (selectedQuantity < 1) selectedQuantity = 1;
     }
+  });
+
+  let blockingReason = $derived.by(() => {
+    if (!selectedMemberId) return "Sélectionnez l'adhérent pour lequel commander.";
+    if (!selectedProduct) return 'Sélectionnez un article pour continuer.';
+    if (isOutOfStock(selectedProduct)) return `« ${selectedProduct.name} » est en rupture de stock.`;
+    if (selectedProduct.trackStock && selectedQuantity > selectedProduct.stock) {
+      return `Stock insuffisant : il ne reste que ${selectedProduct.stock} « ${selectedProduct.name} ».`;
+    }
+    return null;
   });
 
   $effect(() => { if (!isMemberDropdownOpen) highlightedIndex = -1; });
@@ -205,10 +216,7 @@
 
     <ShopCatalogSummary
       {selectedProduct}
-      {selectedQuantity}
       {totalPriceCents}
-      {selectedMemberId}
-      {selectedMember}
     />
 
 
@@ -226,7 +234,7 @@
     <Button
       type="button"
       onclick={handleOrder}
-      disabled={submitting || !selectedMemberId || !selectedProduct}
+      disabled={submitting || blockingReason !== null}
       class="flex items-center gap-2"
     >
       {#if submitting}
