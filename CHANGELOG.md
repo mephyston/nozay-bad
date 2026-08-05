@@ -1,3 +1,10 @@
+# [1.0.0-beta.55](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.54...v1.0.0-beta.55) (2026-08-05)
+
+
+### Bug Fixes
+
+* **admin:** rendre visibles les confirmations de tous les formulaires ([61718c5](https://github.com/mephyston/nozay-bad/commit/61718c5e32f1a2fedd3036317fc07e7a1ecea000))
+
 # [1.0.0-beta.54](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.53...v1.0.0-beta.54) (2026-08-05)
 
 
