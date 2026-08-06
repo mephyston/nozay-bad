@@ -11,6 +11,9 @@ import { importMembersSchema } from './domains/members/import-members-csv/valida
 import { createOrderSchema } from './domains/shop/create-order/validator';
 import { createProductSchema } from './domains/shop/create-product/validator';
 import { updateProductSchema } from './domains/shop/update-product/validator';
+import { subscribeBodySchema } from './domains/notifications/subscribe/validator';
+import { unsubscribeBodySchema } from './domains/notifications/unsubscribe/validator';
+import { sendNotificationSchema } from './domains/notifications/shared/validators';
 
 // Define accounting schemas using TypeBox to ensure they are part of the OpenAPI spec
 const createSeasonSchema = Type.Object({
@@ -456,6 +459,134 @@ describe('OpenAPI Spec Generator', () => {
               }
             }
           }
+        },
+        '/notifications/subscriptions': {
+          post: {
+            summary: 'Register a device push subscription for a member account',
+            tags: ['Notifications'],
+            requestBody: {
+              required: true,
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SubscribePushInput'
+                  }
+                }
+              }
+            },
+            responses: {
+              200: {
+                description: 'Stored subscription id',
+                content: {
+                  'application/json': {
+                    schema: Type.Object({
+                      success: Type.Boolean(),
+                      data: Type.Object({ id: Type.Integer() })
+                    })
+                  }
+                }
+              }
+            }
+          },
+          delete: {
+            summary: 'Remove a device push subscription',
+            tags: ['Notifications'],
+            requestBody: {
+              required: true,
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/UnsubscribePushInput'
+                  }
+                }
+              }
+            },
+            responses: {
+              200: {
+                description: 'Number of removed subscriptions',
+                content: {
+                  'application/json': {
+                    schema: Type.Object({
+                      success: Type.Boolean(),
+                      data: Type.Object({ removed: Type.Integer() })
+                    })
+                  }
+                }
+              }
+            }
+          }
+        },
+        '/notifications/messages': {
+          post: {
+            summary: 'Queue a push notification for the selected audience',
+            tags: ['Notifications'],
+            requestBody: {
+              required: true,
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SendNotificationInput'
+                  }
+                }
+              }
+            },
+            responses: {
+              200: {
+                description: 'Queued message summary',
+                content: {
+                  'application/json': {
+                    schema: Type.Object({
+                      success: Type.Boolean(),
+                      data: Type.Object({ messageId: Type.Integer(), queued: Type.Integer() })
+                    })
+                  }
+                }
+              }
+            }
+          }
+        },
+        '/notifications/dispatch': {
+          post: {
+            summary: 'Drain the pending push delivery queue (also run by the cron trigger)',
+            tags: ['Notifications'],
+            responses: {
+              200: {
+                description: 'Dispatch report',
+                content: {
+                  'application/json': {
+                    schema: Type.Object({
+                      success: Type.Boolean(),
+                      data: Type.Object({
+                        sent: Type.Integer(),
+                        failed: Type.Integer(),
+                        pruned: Type.Integer(),
+                        remaining: Type.Integer()
+                      })
+                    })
+                  }
+                }
+              }
+            }
+          }
+        },
+        '/notifications/overview': {
+          get: {
+            summary: 'Subscription counters and recent message history',
+            tags: ['Notifications'],
+            responses: {
+              200: {
+                description: 'Notification overview',
+                content: {
+                  'application/json': {
+                    schema: Type.Object({
+                      success: Type.Boolean(),
+                      data: Type.Any()
+                    })
+                  }
+                }
+              }
+            }
+          }
         }
       },
       components: {
@@ -468,7 +599,10 @@ describe('OpenAPI Spec Generator', () => {
           UpdateProductInput: updateProductSchema,
           CreateSeasonInput: createSeasonSchema,
           CreateInvoiceInput: createInvoiceSchema,
-          ChangeInvoiceStatusInput: changeInvoiceStatusSchema
+          ChangeInvoiceStatusInput: changeInvoiceStatusSchema,
+          SubscribePushInput: subscribeBodySchema,
+          UnsubscribePushInput: unsubscribeBodySchema,
+          SendNotificationInput: sendNotificationSchema
         }
       }
     };

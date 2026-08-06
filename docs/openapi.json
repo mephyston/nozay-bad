@@ -674,6 +674,240 @@
           }
         }
       }
+    },
+    "/notifications/subscriptions": {
+      "post": {
+        "summary": "Register a device push subscription for a member account",
+        "tags": [
+          "Notifications"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscribePushInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored subscription id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "id"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove a device push subscription",
+        "tags": [
+          "Notifications"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnsubscribePushInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Number of removed subscriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "removed"
+                      ],
+                      "properties": {
+                        "removed": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/messages": {
+      "post": {
+        "summary": "Queue a push notification for the selected audience",
+        "tags": [
+          "Notifications"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendNotificationInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Queued message summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "messageId",
+                        "queued"
+                      ],
+                      "properties": {
+                        "messageId": {
+                          "type": "integer"
+                        },
+                        "queued": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/dispatch": {
+      "post": {
+        "summary": "Drain the pending push delivery queue (also run by the cron trigger)",
+        "tags": [
+          "Notifications"
+        ],
+        "responses": {
+          "200": {
+            "description": "Dispatch report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "sent",
+                        "failed",
+                        "pruned",
+                        "remaining"
+                      ],
+                      "properties": {
+                        "sent": {
+                          "type": "integer"
+                        },
+                        "failed": {
+                          "type": "integer"
+                        },
+                        "pruned": {
+                          "type": "integer"
+                        },
+                        "remaining": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/overview": {
+      "get": {
+        "summary": "Subscription counters and recent message history",
+        "tags": [
+          "Notifications"
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification overview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1009,6 +1243,108 @@
               },
               {
                 "const": "cancelled",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "SubscribePushInput": {
+        "type": "object",
+        "required": [
+          "email",
+          "endpoint",
+          "keys"
+        ],
+        "properties": {
+          "email": {
+            "minLength": 3,
+            "maxLength": 255,
+            "pattern": "^[^@\\s]+@[^@\\s]+$",
+            "type": "string"
+          },
+          "endpoint": {
+            "minLength": 12,
+            "maxLength": 1024,
+            "pattern": "^https://",
+            "type": "string"
+          },
+          "keys": {
+            "type": "object",
+            "required": [
+              "p256dh",
+              "auth"
+            ],
+            "properties": {
+              "p256dh": {
+                "minLength": 1,
+                "maxLength": 255,
+                "type": "string"
+              },
+              "auth": {
+                "minLength": 1,
+                "maxLength": 255,
+                "type": "string"
+              }
+            }
+          },
+          "userAgent": {
+            "maxLength": 255,
+            "type": "string"
+          }
+        }
+      },
+      "UnsubscribePushInput": {
+        "type": "object",
+        "required": [
+          "email",
+          "endpoint"
+        ],
+        "properties": {
+          "email": {
+            "minLength": 3,
+            "maxLength": 255,
+            "pattern": "^[^@\\s]+@[^@\\s]+$",
+            "type": "string"
+          },
+          "endpoint": {
+            "minLength": 12,
+            "maxLength": 1024,
+            "type": "string"
+          }
+        }
+      },
+      "SendNotificationInput": {
+        "type": "object",
+        "required": [
+          "title",
+          "body",
+          "target"
+        ],
+        "properties": {
+          "title": {
+            "minLength": 1,
+            "maxLength": 80,
+            "type": "string"
+          },
+          "body": {
+            "minLength": 1,
+            "maxLength": 300,
+            "type": "string"
+          },
+          "url": {
+            "maxLength": 300,
+            "pattern": "^/",
+            "type": "string"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "const": "all",
+                "type": "string"
+              },
+              {
+                "const": "unpaid",
                 "type": "string"
               }
             ]

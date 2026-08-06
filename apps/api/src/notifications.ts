@@ -1,9 +1,8 @@
 import { Hono } from 'hono';
 import { tbValidator } from '@hono/typebox-validator';
-import { Type } from '@sinclair/typebox';
 import { createDb } from '@nba/db';
 import { getHouseholdEmailsForActiveSeason } from '@nba/members-api';
-import { enqueueNotification, type NotificationTarget } from '@nba/notifications-api';
+import { enqueueNotification, sendNotificationSchema, type NotificationTarget } from '@nba/notifications-api';
 
 /**
  * Émission des notifications.
@@ -18,23 +17,11 @@ export type NotificationsBindings = {
   DB: D1Database;
 };
 
-/**
- * Longueurs bornées : la charge utile chiffrée doit tenir dans les 4 Ko garantis
- * par les services de push.
- */
-const sendMessageSchema = Type.Object({
-  title: Type.String({ minLength: 1, maxLength: 80 }),
-  body: Type.String({ minLength: 1, maxLength: 300 }),
-  // Chemin relatif uniquement : une notification ne doit pas ouvrir un site tiers.
-  url: Type.Optional(Type.String({ maxLength: 300, pattern: '^/' })),
-  target: Type.Union([Type.Literal('all'), Type.Literal('unpaid')])
-});
-
 export const notificationsSendRouter = new Hono<{ Bindings: NotificationsBindings }>();
 
 notificationsSendRouter.post(
   '/messages',
-  tbValidator('json', sendMessageSchema, (result, c) => {
+  tbValidator('json', sendNotificationSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: 'Notification invalide.' }, 400);
     }

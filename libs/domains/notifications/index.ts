@@ -28,3 +28,4 @@ export type {
 export { dispatchPendingNotifications, purgeNotificationHistory } from './dispatch/handler';
 export { getNotificationOverview } from './stats/handler';
 export { resolveVapid, type VapidEnv } from './shared/vapid';
+export { sendNotificationSchema } from './shared/validators';
