@@ -9,19 +9,38 @@
     },
     "build": {
       "executor": "nx:run-commands",
-      "outputs": ["{projectRoot}/dist"],
+      "outputs": [
+        "{projectRoot}/dist"
+      ],
       "inputs": [
         "production",
         "^production",
-        { "env": "PUBLIC_APP_ENV" },
-        { "env": "PUBLIC_VAPID_PUBLIC_KEY" },
-        { "env": "PUBLIC_TURNSTILE_SITE_KEY" }
+        {
+          "env": "PUBLIC_APP_ENV"
+        },
+        {
+          "env": "PUBLIC_VAPID_PUBLIC_KEY"
+        },
+        {
+          "env": "PUBLIC_TURNSTILE_SITE_KEY"
+        }
       ],
       "options": {
         "command": "astro build",
         "cwd": "apps/storefront"
       }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "astro dev --port 4322",
+        "cwd": "apps/storefront"
+      }
     }
   },
-  "tags": ["type:app", "scope:storefront"]
+  "tags": [
+    "type:app",
+    "scope:storefront"
+  ]
 }
