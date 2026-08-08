@@ -1,8 +1,15 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import MobileNav from '../components/MobileNav.svelte';
 
 // Page publique (accessible sans connexion — voir l'allow-list du middleware).
 const lastUpdate = 'août 2026';
+
+// La barre de navigation n'est posée que pour un visiteur connecté : elle pointe
+// vers des écrans authentifiés, qui renverraient un visiteur anonyme vers le login.
+const session = Astro.locals.session;
+const activeMember = session?.members.find((m) => m.id === session.activeMemberId);
+const canExpense = activeMember?.expenseAuthorized ?? false;
 ---
 
 <Layout
@@ -10,7 +17,7 @@ const lastUpdate = 'août 2026';
   description="Mentions légales de l'espace adhérent de l'association Nozay Badminton : éditeur, directeur de la publication et hébergeur."
 >
   <main class="flex-1 w-full">
-    <div class="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 py-10 pb-28 md:pb-10">
       <a href="/" class="inline-flex items-center gap-2 mb-6">
         <img src="/logo.png" alt="Logo" class="h-7 w-7 object-contain" />
         <span class="font-bold text-sm text-foreground tracking-tight">Nozay Badminton Association</span>
@@ -61,17 +68,22 @@ const lastUpdate = 'août 2026';
         <section class="space-y-2">
           <h2 class="text-lg font-semibold">5. Données personnelles</h2>
           <p class="text-muted-foreground">
-            Le traitement des données personnelles est décrit dans notre 
-            <a href="/confidentialite" class="text-primary hover:underline">politique de confidentialité</a>.
+            Le traitement des données personnelles est décrit dans notre
+            <a href="/confidentialite" class="text-primary hover:underline"> politique de confidentialité</a>.
           </p>
         </section>
       </div>
 
       <footer class="border-t border-border mt-12 pt-6 text-center text-xs text-muted-foreground">
+        {!session && (
+          <p class="mb-2"><a href="/" class="text-primary hover:underline">Retour à l'accueil</a></p>
+        )}
         <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
       </footer>
     </div>
   </main>
+
+  {session && <MobileNav currentPath="/mentions-legales" canExpense={canExpense} />}
 
   <script is:inline>
     // Assemble l'email côté client (anti-moissonnage bots).
