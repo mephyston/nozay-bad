@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FileText, Search, Trash2, Plus } from '@lucide/svelte';
-  import { Button, Badge, Amount, DataTable, DataTableToolbar, FormField, SearchableCombobox, Table } from '@nba/ui';
+  import { Button, Badge, Amount, DataTable, DataTableToolbar, FormField, SearchableCombobox, Table, softNavigate } from '@nba/ui';
   
   import type { CashTransaction, Season } from './cashbox-types';
   import { categoryLabels } from './cashbox-types';
@@ -42,7 +42,7 @@
                 id="filter-season"
                 items={seasons.length > 0 ? seasons.map((s) => ({ label: s.name, value: String(s.code || s.id) })) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
                 value={seasonId}
-                onValueChange={(v) => { const val = String(v); const params = new URLSearchParams(window.location.search); params.set('season', val); window.location.href = `/admin/accounting/cash-box?${params.toString()}`; }}
+                onValueChange={(v) => { const val = String(v); const params = new URLSearchParams(window.location.search); params.set('season', val); softNavigate(`/admin/accounting/cash-box?${params.toString()}`); }}
               />
             </FormField>
           {/snippet}

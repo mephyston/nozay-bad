@@ -11,6 +11,7 @@ export default defineConfig({
   resolve: {
     alias: {
       'astro:middleware': path.resolve(__dirname, './src/mocks/astro-middleware.ts'),
+      'astro:transitions/client': path.resolve(__dirname, '../../libs/shared/ui/src/mocks/astro-transitions.ts'),
       'cloudflare:workers': path.resolve(__dirname, './src/mocks/cloudflare-workers.ts'),
       '@nba/ui': path.resolve(__dirname, '../../libs/shared/ui/src/index.ts'),
       '@nba/api-client': path.resolve(__dirname, '../../libs/shared/api-client/src/index.ts'),

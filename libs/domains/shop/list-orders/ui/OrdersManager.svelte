@@ -12,7 +12,7 @@
   import OrdersPendingTable from './OrdersPendingTable.svelte';
   import OrdersHistoryTable from './OrdersHistoryTable.svelte';
   import AdminOrderForm from './AdminOrderForm.svelte';
-  import { SearchableCombobox, FormField } from "@nba/ui";
+  import { SearchableCombobox, FormField, softNavigate } from "@nba/ui";
 
   let {
     seasons = [],
@@ -70,7 +70,7 @@
     if (selectedSeason !== seasonId) {
       const params = new URLSearchParams(window.location.search);
       params.set('season', selectedSeason);
-      window.location.href = `/admin/shop/orders?${params.toString()}`;
+      softNavigate(`/admin/shop/orders?${params.toString()}`);
     }
   });
 

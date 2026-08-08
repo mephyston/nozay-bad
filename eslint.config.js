@@ -1,5 +1,8 @@
 import nxPlugin from '@nx/eslint-plugin';
 import tseslint from 'typescript-eslint';
+import sveltePlugin from 'eslint-plugin-svelte';
+import svelteParser from 'svelte-eslint-parser';
+import globals from 'globals';
 
 // Les règles du Design System (pas de <select> brut, pas de surcharge de style sur
 // <Badge>, pas d'alerte/en-tête artisanaux, tokens sémantiques au lieu de palette brute)
@@ -15,6 +18,25 @@ export default tseslint.config(
       '**/.astro/**',
       '**/*.d.ts'
     ]
+  },
+  // Les .svelte n'étaient couverts par aucun bloc `files` : un identifiant jamais
+  // importé (`flashAndReload`, `toast`) passait build, typecheck et tests, et
+  // n'échouait qu'à l'exécution, dans la main de l'utilisateur. `no-undef` ferme ce
+  // trou — c'est la seule règle activée ici, volontairement, pour rester sans bruit.
+  ...sveltePlugin.configs['flat/base'],
+  {
+    files: ['**/*.svelte'],
+    languageOptions: {
+      parser: svelteParser,
+      parserOptions: {
+        parser: tseslint.parser,
+        extraFileExtensions: ['.svelte'],
+      },
+      globals: { ...globals.browser, ...globals.es2021 },
+    },
+    rules: {
+      'no-undef': 'error',
+    },
   },
   {
     files: ['**/*.ts', '**/*.js'],

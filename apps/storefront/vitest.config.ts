@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       'cloudflare:workers': path.resolve(__dirname, '../admin/src/mocks/cloudflare-workers.ts'),
+      'astro:transitions/client': path.resolve(__dirname, '../../libs/shared/ui/src/mocks/astro-transitions.ts'),
       '@nba/ui': path.resolve(__dirname, '../../libs/shared/ui/src/index.ts'),
       '@nba/api-client': path.resolve(__dirname, '../../libs/shared/api-client/src/index.ts'),
     },

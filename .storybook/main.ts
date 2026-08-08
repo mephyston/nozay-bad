@@ -46,6 +46,12 @@ const config: StorybookConfig = {
     cfg.resolve.alias = {
       ...(cfg.resolve.alias ?? {}),
       ...nbaAliases(),
+      // `astro:transitions/client` est un module virtuel fourni par le build Astro.
+      // Storybook builde @nba/ui hors Astro : sans ce stub, tout composant qui navigue
+      // (SeasonSelector, table-pagination) casse la résolution.
+      'astro:transitions/client': fileURLToPath(
+        new URL('../libs/shared/ui/src/mocks/astro-transitions.ts', import.meta.url),
+      ),
     };
     return cfg;
   },

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Upload, Sparkles, ShieldAlert } from '@lucide/svelte';
-  import { Button, PageHeader, FormField, Alert, SearchableCombobox } from '@nba/ui';
+  import { Button, PageHeader, FormField, Alert, SearchableCombobox, softNavigate } from '@nba/ui';
   import type { ReconciliationState } from './reconciliation.svelte';
 
   let { state = $bindable() }: { state: ReconciliationState } = $props();
@@ -28,7 +28,7 @@
             id="select-season"
             items={state.seasons.map((s) => ({ label: `${s.name || s.code} ${s.active ? '(Active)' : ''}`.trim(), value: String(s.code || s.id) }))}
             bind:value={state.selectedSeason}
-            onValueChange={() => { const url = new URL(window.location.href); url.searchParams.set('season', String(state.selectedSeason)); window.location.href = url.toString(); }}
+            onValueChange={() => { const url = new URL(window.location.href); url.searchParams.set('season', String(state.selectedSeason)); softNavigate(url.toString()); }}
           />
           </FormField>
         </div>

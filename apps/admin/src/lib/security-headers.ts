@@ -27,6 +27,15 @@ const CSP_REPORT_ONLY = [
 export function applySecurityHeaders(response: Response): Response {
   const target = withMutableHeaders(response);
   const h = target.headers;
+  // Les navigations douces (`navigate()` du ClientRouter) refont un `fetch` du HTML.
+  // Sans directive de cache, le navigateur applique une heuristique et peut resservir
+  // la page depuis son cache : après une écriture, l'utilisateur reverrait les données
+  // d'avant. L'admin est authentifié et sert des données nominatives et financières,
+  // donc `no-store` — jamais de copie sur disque. On respecte une valeur déjà posée
+  // par une route (les PDF le font explicitement).
+  if (!h.has('Cache-Control')) {
+    h.set('Cache-Control', 'private, no-store');
+  }
   h.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   h.set('X-Frame-Options', 'DENY');
   h.set('Referrer-Policy', 'strict-origin-when-cross-origin');

@@ -1,15 +1,26 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const flashAndReload = vi.fn();
 const toastError = vi.fn();
 
-vi.mock('@nba/ui', () => ({
-  toast: { success: vi.fn(), error: toastError },
-  uiConfirm: vi.fn().mockResolvedValue(true),
-  flashAndReload
-}));
+// Seuls `toast` et `uiConfirm` sont doublés : le reste de `@nba/ui` — dont `submitForm`,
+// qui porte désormais l'enchaînement fermeture / confirmation / réaffichage — doit être
+// le vrai code, sans quoi ce test ne vérifierait plus que sa propre reformulation.
+vi.mock('@nba/ui', async (importOriginal) => {
+  const actual = await importOriginal<any>();
+  return {
+    ...actual,
+    toast: { success: vi.fn(), error: toastError },
+    uiConfirm: vi.fn().mockResolvedValue(true)
+  };
+});
 
 const { handleAddCheck } = await import('./check-deposit-api');
+
+/** Message que `flashAndReload` mémorise pour le rejouer après le réaffichage. */
+function pendingFlash(): { type: string; message: string } | null {
+  const raw = sessionStorage.getItem('nba:flash');
+  return raw ? JSON.parse(raw) : null;
+}
 
 describe('handleAddCheck', () => {
   const state = () => ({
@@ -26,6 +37,12 @@ describe('handleAddCheck', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
+    // jsdom ne sait pas naviguer : `reload()` devient simplement observable.
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, href: 'http://localhost:4321/admin/accounting/checks', reload: vi.fn() }
+    });
   });
 
   afterEach(() => {
@@ -50,11 +67,11 @@ describe('handleAddCheck', () => {
     // `memberId: null` était refusé par le validateur (Optional(Number)) : on l'omet.
     expect('memberId' in body).toBe(false);
 
-    expect(flashAndReload).toHaveBeenCalledWith('Chèque enregistré avec succès.');
     expect(s.showAddCheckModal).toBe(false);
+    expect(pendingFlash()).toMatchObject({ type: 'success', message: 'Chèque enregistré.' });
   });
 
-  it("remonte l'erreur de l'API sans recharger", async () => {
+  it("remonte l'erreur de l'API, laisse le sheet ouvert et ne recharge pas", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: false,
       text: async () => JSON.stringify({ success: false, error: 'Numéro de chèque déjà enregistré.' })
@@ -66,7 +83,9 @@ describe('handleAddCheck', () => {
 
     expect(s.formError).toBe('Numéro de chèque déjà enregistré.');
     expect(toastError).toHaveBeenCalledWith('Numéro de chèque déjà enregistré.');
-    expect(flashAndReload).not.toHaveBeenCalled();
+    expect(s.showAddCheckModal).toBe(true);
+    expect(pendingFlash()).toBeNull();
+    expect(window.location.reload).not.toHaveBeenCalled();
   });
 
   it('exige les champs obligatoires avant tout appel réseau', async () => {
@@ -78,5 +97,6 @@ describe('handleAddCheck', () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(s.formError).toContain('numéro');
+    expect(s.showAddCheckModal).toBe(true);
   });
 });

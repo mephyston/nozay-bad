@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Checkbox, SearchableCombobox, Button, Input, FormField, Alert } from '@nba/ui';
-  import { Plus, Edit, Check, AlertCircle, X } from "@lucide/svelte";
+  import { Plus, Edit, AlertCircle, X } from "@lucide/svelte";
   
 
   let {
@@ -14,7 +14,6 @@
     category,
     isSubmitting,
     errorMsg,
-    successMsg,
     onReset,
     onSubmit
   }: {
@@ -28,7 +27,6 @@
     category?: number | 'all';
     isSubmitting: boolean;
     errorMsg: string;
-    successMsg: string;
     onReset: () => void;
     onSubmit: (e: Event) => void;
   } = $props();
@@ -39,13 +37,6 @@
     <Alert.Root variant="destructive">
       <AlertCircle class="w-4 h-4 shrink-0" />
     <Alert.Description>{errorMsg}</Alert.Description>
-    </Alert.Root>
-  {/if}
-
-  {#if successMsg}
-    <Alert.Root variant="success">
-      <Check class="w-4 h-4 shrink-0" />
-    <Alert.Description>{successMsg}</Alert.Description>
     </Alert.Root>
   {/if}
 

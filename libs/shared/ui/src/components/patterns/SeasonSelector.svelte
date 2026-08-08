@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Select } from "../ui/select";
+  import { softNavigate } from "../../lib/navigation";
 
   interface SeasonOption {
     id?: number | string;
@@ -25,7 +26,7 @@
     const newSeason = (e.target as HTMLSelectElement).value;
     const url = new URL(window.location.href);
     url.searchParams.set(param, newSeason);
-    window.location.href = url.toString();
+    softNavigate(url.toString());
   }
 </script>
 

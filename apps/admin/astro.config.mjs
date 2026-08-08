@@ -34,6 +34,10 @@ const STOREFRONT_URL =
 
 export default defineConfig({
   output: 'server',
+  // Pas de `prefetch` : le HTML de l'admin est servi en `private, no-store`
+  // (cf. lib/security-headers.ts), donc une page préchargée ne serait pas stockée et
+  // la requête serait perdue — tout en déclenchant côté serveur les appels API et D1
+  // d'une page jamais visitée.
   adapter: cloudflare({
     mode: 'advanced',
     runtime: { mode: 'local' }

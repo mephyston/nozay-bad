@@ -11,6 +11,7 @@ const wranglerConfig = wranglerTestConfigPath();
 export default defineConfig({
   resolve: {
     alias: {
+      'astro:transitions/client': path.resolve(__dirname, './libs/shared/ui/src/mocks/astro-transitions.ts'),
       '@nba/db/test-utils': path.resolve(__dirname, './libs/shared/db/src/test-utils.ts'),
       '@nba/db': path.resolve(__dirname, './libs/shared/db/src/index.ts'),
       '@nba/pdf': path.resolve(__dirname, './libs/shared/pdf/src/index.ts'),

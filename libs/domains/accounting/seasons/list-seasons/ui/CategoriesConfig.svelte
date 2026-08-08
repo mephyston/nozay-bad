@@ -23,30 +23,29 @@
       hideInExpenses: boolean;
       receiptCode: string | null;
       expenseCode: string | null;
-    }) => Promise<void>;
-    onDeleteCategory: (id: number) => Promise<void>;
+    }) => Promise<boolean>;
+    onDeleteCategory: (id: number) => Promise<boolean>;
     onCreateCategory: (data: {
       adminLabel: string;
       adherentLabel: string;
       hideInExpenses: boolean;
       receiptCode: string | null;
       expenseCode: string | null;
-    }) => Promise<void>;
+    }) => Promise<boolean>;
     tabsNav?: any;
   } = $props();
 
   let showAddSheet = $state(false);
   let editingCategory = $state<Category | null>(null);
 
+  // Fermer sans attendre effaçait la saisie même quand le serveur refusait.
   async function handleCreate(data: Parameters<typeof onCreateCategory>[0]) {
-    await onCreateCategory(data);
-    showAddSheet = false;
+    if (await onCreateCategory(data)) showAddSheet = false;
   }
 
   async function handleUpdate(data: Parameters<typeof onUpdateCategory>[1]) {
     if (editingCategory) {
-      await onUpdateCategory(editingCategory.id, data);
-      editingCategory = null;
+      if (await onUpdateCategory(editingCategory.id, data)) editingCategory = null;
     }
   }
 </script>

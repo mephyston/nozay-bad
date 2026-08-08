@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Search, X, Filter, ChevronDown } from '@lucide/svelte';
-  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog, DataTableToolbar, FormField, SearchableCombobox } from '@nba/ui';
+  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog, DataTableToolbar, FormField, SearchableCombobox, softNavigate, submitForm, toast } from '@nba/ui';
   import type { Transaction, Pagination, BalanceReport, Season, Category, AccountClass } from './ledger-types';
-  import { submitTransaction, deleteTransaction, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange } from './ledger-actions';
+  import { submitTransaction, validateTransaction, deleteTransaction, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange } from './ledger-actions';
   import TransactionLedgerBalances from './TransactionLedgerBalances.svelte';
   import TransactionLedgerHeader from './TransactionLedgerHeader.svelte';
   import TransactionLedgerTable from './TransactionLedgerTable.svelte';
@@ -48,7 +48,7 @@
       const params = new URLSearchParams(window.location.search);
       params.set('accountId', selectedAccount);
       params.set('page', '1');
-      window.location.href = `/admin/accounting?${params.toString()}`;
+      softNavigate(`/admin/accounting?${params.toString()}`);
     }
   });
 
@@ -127,7 +127,7 @@
     params.delete('classCode');
     params.delete('month');
     params.set('page', '1');
-    window.location.href = `/admin/accounting?${params.toString()}`;
+    softNavigate(`/admin/accounting?${params.toString()}`);
   }
 
   let showPanel = $state<'recette' | 'depense' | 'transfert' | null>(null);
@@ -200,14 +200,21 @@
   }
 
   async function handleAddTransaction(e: Event) {
+    e.preventDefault();
     isSubmitting = true;
     errorMsg = '';
-    try {
-      await submitTransaction(e, { editingId, showPanel, amount, date, category, formAccountId, destinationAccountId, paymentMethod, description, reference, accrualType, accrualNote, targetSeasonId });
-    } catch (err: any) {
-      errorMsg = err.message || 'Une erreur est survenue.';
-      isSubmitting = false;
-    }
+
+    const values = { editingId, showPanel, amount, date, category, formAccountId, destinationAccountId, paymentMethod, description, reference, accrualType, accrualNote, targetSeasonId };
+    await submitForm({
+      validate: () => validateTransaction(values),
+      submit: () => submitTransaction(values),
+      success: editingId ? 'Écriture mise à jour.' : 'Écriture enregistrée.',
+      close: () => { showPanel = null; },
+      // Le sheet couvre la page : le refus s'affiche dans le formulaire lui-même.
+      onError: (message) => { errorMsg = message; }
+    });
+
+    isSubmitting = false;
   }
 
   let deleteDialogData = $state<{ id: number } | null>(null);
@@ -221,16 +228,14 @@
 
   async function confirmDelete() {
     if (!deleteDialogData) return;
-    try {
-      sessionStorage.setItem('ledger_scroll_y', window.scrollY.toString());
-      await deleteTransaction(deleteDialogData.id);
-      // @ts-ignore
-      if (typeof toast !== 'undefined') toast.success('Écriture supprimée avec succès !');
-    } catch (err: any) {
-      // @ts-ignore
-      if (typeof toast !== 'undefined') toast.error(err.message);
-      deleteDialogData = null;
-    }
+    const { id } = deleteDialogData;
+    sessionStorage.setItem('ledger_scroll_y', window.scrollY.toString());
+    await submitForm({
+      submit: () => deleteTransaction(id),
+      success: 'Écriture supprimée.',
+      close: () => { deleteDialogData = null; },
+      onError: (message) => { deleteDialogData = null; toast.error(message); }
+    });
   }
 
   function handleAccountTabChange(newAcc: string) {
@@ -239,7 +244,7 @@
       const params = new URLSearchParams(window.location.search);
       params.set('accountId', newAcc);
       params.set('page', '1');
-      window.location.href = `/admin/accounting?${params.toString()}`;
+      softNavigate(`/admin/accounting?${params.toString()}`);
     }
   }
 
@@ -266,7 +271,7 @@
     if (val) params.set('month', val);
     else params.delete('month');
     params.set('page', '1');
-    window.location.href = `/admin/accounting?${params.toString()}`;
+    softNavigate(`/admin/accounting?${params.toString()}`);
   }
 </script>
 
@@ -311,13 +316,13 @@
           if (val) params.set('search', val);
           else params.delete('search');
           params.set('page', '1');
-          window.location.href = `/admin/accounting?${params.toString()}`;
+          softNavigate(`/admin/accounting?${params.toString()}`);
         }}
         onSearchClear={() => {
           const params = new URLSearchParams(window.location.search);
           params.delete('search');
           params.set('page', '1');
-          window.location.href = `/admin/accounting?${params.toString()}`;
+          softNavigate(`/admin/accounting?${params.toString()}`);
         }}
       >
         {#snippet filters()}
@@ -343,7 +348,7 @@
                   if (v) params.set('unreconciledCheques', 'true');
                   else params.delete('unreconciledCheques');
                   params.set('page', '1');
-                  window.location.href = `/admin/accounting?${params.toString()}`;
+                  softNavigate(`/admin/accounting?${params.toString()}`);
                 }}
               />
               Chèques en circulation

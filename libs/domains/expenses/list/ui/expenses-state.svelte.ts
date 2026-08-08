@@ -7,7 +7,6 @@ export class ExpensesState {
 
   submittingId = $state<number | null>(null);
   errorMsg = $state('');
-  successMsg = $state('');
 
   editingId = $state<number | null>(null);
   editDescription = $state('');

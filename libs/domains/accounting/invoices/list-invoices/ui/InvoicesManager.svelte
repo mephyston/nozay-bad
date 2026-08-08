@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { Check, AlertCircle } from '@lucide/svelte';
   import { Plus } from '@lucide/svelte';
-  import { Alert, AlertDialog, Button, DataTableToolbar, FormField, SearchableCombobox, flashAndReload } from '@nba/ui';
+  import { AlertDialog, Button, DataTableToolbar, FormField, SearchableCombobox, softNavigate, submitForm, toast } from '@nba/ui';
   import type { Invoice, Season } from './invoices-types';
   import { InvoiceFormState } from './invoices-form-state.svelte';
   import * as api from './invoices-api';
@@ -24,9 +23,7 @@
   let statusFilter = $state<'all' | 'draft' | 'sent' | 'paid' | 'cancelled'>('all');
   
   let isSubmitting = $state(false);
-  let errorMsg = $state('');
-  let successMsg = $state('');
-  
+
   const form = new InvoiceFormState();
 
   const filteredInvoices = $derived(
@@ -52,36 +49,27 @@
   );
 
   function openCreateModal() {
-    errorMsg = '';
-    successMsg = '';
     form.openCreateModal();
   }
 
   async function openEditModal(invoice: Invoice) {
-    errorMsg = '';
-    successMsg = '';
     try {
       const fetchedItems = await api.fetchInvoiceDetails(invoice.id);
       form.openEditModal(invoice, fetchedItems);
     } catch (err: unknown) {
-      errorMsg = (err as Error).message || "Erreur de chargement des détails.";
+      toast.error((err as Error).message || "Erreur de chargement des détails.");
     }
   }
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
-    errorMsg = '';
-    
-    const err = form.validate();
-    if (err) {
-      errorMsg = err;
-      return;
-    }
-
     isSubmitting = true;
 
-    try {
-      successMsg = await api.saveInvoice({
+    // Erreurs en toast et non dans l'`<Alert>` de la page : celle-ci est rendue derrière
+    // le sheet, un refus du serveur y passerait inaperçu.
+    await submitForm({
+      validate: () => form.validate(),
+      submit: () => api.saveInvoice({
         editingId: form.editingId,
         seasonId,
         clientName: form.clientName,
@@ -90,14 +78,12 @@
         date: form.date,
         itemsTotal,
         items: form.items
-      });
-      form.showModal = false;
-      flashAndReload(successMsg);
-    } catch (err: unknown) {
-      errorMsg = (err as Error).message || "Erreur de communication avec le serveur.";
-    } finally {
-      isSubmitting = false;
-    }
+      }),
+      success: (message) => message,
+      close: () => { form.showModal = false; }
+    });
+
+    isSubmitting = false;
   }
 
   let statusDialogData = $state<{ id: number; newStatus: 'sent' | 'paid' | 'cancelled'; msg: string } | null>(null);
@@ -117,12 +103,10 @@
     if (!statusDialogData) return;
     const { id, newStatus } = statusDialogData;
     statusDialogData = null;
-    try {
-      successMsg = await api.updateInvoiceStatus(id, newStatus);
-      flashAndReload(successMsg);
-    } catch (err: unknown) {
-      errorMsg = (err as Error).message || "Erreur serveur.";
-    }
+    await submitForm({
+      submit: () => api.updateInvoiceStatus(id, newStatus),
+      success: (message) => message
+    });
   }
 
   function handleDelete(id: number, num: string) {
@@ -133,12 +117,10 @@
     if (!deleteDialogData) return;
     const { id } = deleteDialogData;
     deleteDialogData = null;
-    try {
-      successMsg = await api.deleteInvoice(id);
-      flashAndReload(successMsg);
-    } catch (err: unknown) {
-      errorMsg = (err as Error).message || "Erreur serveur.";
-    }
+    await submitForm({
+      submit: () => api.deleteInvoice(id),
+      success: (message) => message
+    });
   }
 
   function handlePrint(id: number) {
@@ -147,22 +129,6 @@
 </script>
 
 <div class="space-y-6">
-
-
-  {#if successMsg}
-    <Alert.Root variant="success">
-      <Check class="w-4 h-4" />
-      <Alert.Description>{successMsg}</Alert.Description>
-    </Alert.Root>
-  {/if}
-
-  {#if errorMsg}
-    <Alert.Root variant="destructive">
-      <AlertCircle class="w-4 h-4 font-bold shrink-0" />
-      <Alert.Description>{errorMsg}</Alert.Description>
-    </Alert.Root>
-  {/if}
-
   <InvoiceListTable
     {filteredInvoices}
     {isClosed}
@@ -184,7 +150,7 @@
               id="filter-season"
               items={seasons.length > 0 ? seasons.map((s) => ({ label: s.name, value: String(s.code || s.id) })) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
               value={seasonId}
-              onValueChange={(v) => { const val = String(v); const params = new URLSearchParams(window.location.search); params.set('season', val); window.location.href = `/admin/accounting/invoices?${params.toString()}`; }}
+              onValueChange={(v) => { const val = String(v); const params = new URLSearchParams(window.location.search); params.set('season', val); softNavigate(`/admin/accounting/invoices?${params.toString()}`); }}
             />
           </FormField>
 

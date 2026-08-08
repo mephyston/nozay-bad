@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Search, Link, MoreHorizontal, Trash2, FileText, Camera } from '@lucide/svelte';
-  import { Button, Input, Checkbox, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField, SearchableCombobox } from '@nba/ui';
+  import { Button, Input, Checkbox, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField, SearchableCombobox, softNavigate } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
 
   import type { Snippet } from 'svelte';
@@ -40,7 +40,7 @@
             id="filter-season"
             items={seasons.length > 0 ? seasons.map((s) => ({ label: s.name, value: String(s.code || s.id) })) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
             value={seasonId}
-            onValueChange={(v) => { const val = String(v); const params = new URLSearchParams(window.location.search); params.set('season', val); window.location.href = `/admin/accounting/cheques?${params.toString()}`; }}
+            onValueChange={(v) => { const val = String(v); const params = new URLSearchParams(window.location.search); params.set('season', val); softNavigate(`/admin/accounting/cheques?${params.toString()}`); }}
           />
         </FormField>
       {/snippet}

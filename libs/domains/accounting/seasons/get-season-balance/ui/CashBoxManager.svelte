@@ -3,11 +3,11 @@
 <script lang="ts">
   import type { CashTransaction, Season } from './cashbox-types';
   import { categoryLabels } from './cashbox-types';
-  import { submitCashMovement, deleteCashMovement } from './cashbox-actions';
+  import { submitCashMovement, validateCashMovement, deleteCashMovement } from './cashbox-actions';
   import CashBoxStatsCards from './CashBoxStatsCards.svelte';
   import CashBoxFormCard from './CashBoxFormCard.svelte';
   import CashBoxHistoryTable from './CashBoxHistoryTable.svelte';
-  import { toast, Sheet } from '@nba/ui';
+  import { toast, Sheet, submitForm } from '@nba/ui';
 
   let {
     initialBalance = 0,
@@ -28,7 +28,6 @@
   let description = $state('');
   let isSubmitting = $state(false);
   let errorMsg = $state('');
-  let successMsg = $state('');
   let searchTerm = $state('');
   let showForm = $state(false);
 
@@ -68,22 +67,19 @@
   async function handleSubmit(e: Event) {
     e.preventDefault();
     errorMsg = '';
-    successMsg = '';
     isSubmitting = true;
 
-    const res = await submitCashMovement({ seasonId, type, amount, date, category, description });
-    isSubmitting = false;
+    const values = { seasonId, type, amount, date, category, description };
+    await submitForm({
+      validate: () => validateCashMovement(values),
+      submit: () => submitCashMovement(values),
+      success: 'Mouvement de caisse enregistré.',
+      close: () => { amount = ''; description = ''; showForm = false; },
+      // Le sheet couvre la page : le refus s'affiche dans le formulaire lui-même.
+      onError: (message) => { errorMsg = message; }
+    });
 
-    if (res.success) {
-      successMsg = 'Mouvement de caisse enregistré avec succès !';
-      toast.success(successMsg);
-      amount = '';
-      description = '';
-      showForm = false;
-    } else {
-      errorMsg = res.error || 'Une erreur est survenue.';
-      toast.error(errorMsg);
-    }
+    isSubmitting = false;
   }
 
   async function handleDelete(id: number) {
@@ -127,7 +123,6 @@
           {isClosed}
           {isSubmitting}
           {errorMsg}
-          {successMsg}
           onSubmit={handleSubmit}
         />
       </div>

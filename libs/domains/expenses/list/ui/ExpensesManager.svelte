@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { FileText, Check, AlertCircle } from '@lucide/svelte';
-  import { Alert, Card, uiConfirm, Badge, PageHeader, FormField, SearchableCombobox, Button } from '@nba/ui';
+  import { FileText, AlertCircle } from '@lucide/svelte';
+  import { Alert, Card, uiConfirm, Badge, PageHeader, FormField, SearchableCombobox, Button, softNavigate, submitForm } from '@nba/ui';
   import type { Expense, Season, Category } from './expenses-types';
   import { getCategoryOptions, getCategoryLabels } from './expenses-types';
   import { ExpensesState } from './expenses-state.svelte';
@@ -53,45 +53,39 @@
   );
 
   async function saveEdit(id: number) {
-    const parsedAmount = parseFloat(viewState.editAmountStr);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      viewState.errorMsg = "Veuillez saisir un montant supérieur à 0 €.";
-      return;
-    }
-
     viewState.isSaving = true;
     viewState.errorMsg = '';
-    viewState.successMsg = '';
 
-    try {
-      viewState.successMsg = await api.saveExpenseEdit(id, {
+    await submitForm({
+      validate: () => {
+        const parsedAmount = parseFloat(viewState.editAmountStr);
+        return isNaN(parsedAmount) || parsedAmount <= 0 ? "Veuillez saisir un montant supérieur à 0 €." : null;
+      },
+      submit: () => api.saveExpenseEdit(id, {
         description: viewState.editDescription,
         category: viewState.editCategory,
         seasonId: viewState.editSeasonId,
-        amount: Math.round(parsedAmount * 100)
-      });
-      viewState.editingId = null;
-      flashAndReload(viewState.successMsg);
-    } catch (err: unknown) {
-      viewState.errorMsg = (err as Error).message || "Une erreur est survenue.";
-    } finally {
-      viewState.isSaving = false;
-    }
+        amount: Math.round(parseFloat(viewState.editAmountStr) * 100)
+      }),
+      success: (message) => message,
+      close: () => { viewState.editingId = null; },
+      onError: (message) => { viewState.errorMsg = message; }
+    });
+
+    viewState.isSaving = false;
   }
 
   async function handleAction(id: number, action: 'approve' | 'reject') {
     viewState.submittingId = id;
     viewState.errorMsg = '';
-    viewState.successMsg = '';
 
-    try {
-      viewState.successMsg = await api.handleExpenseAction(id, action);
-      flashAndReload(viewState.successMsg);
-    } catch (err: unknown) {
-      viewState.errorMsg = (err as Error).message || "Une erreur est survenue.";
-    } finally {
-      viewState.submittingId = null;
-    }
+    await submitForm({
+      submit: () => api.handleExpenseAction(id, action),
+      success: (message) => message,
+      onError: (message) => { viewState.errorMsg = message; }
+    });
+
+    viewState.submittingId = null;
   }
 
   async function handleCancelValidation(id: number) {
@@ -101,16 +95,14 @@
 
     viewState.submittingId = id;
     viewState.errorMsg = '';
-    viewState.successMsg = '';
 
-    try {
-      viewState.successMsg = await api.cancelExpenseValidation(id);
-      flashAndReload(viewState.successMsg);
-    } catch (err: unknown) {
-      viewState.errorMsg = (err as Error).message || "Une erreur est survenue.";
-    } finally {
-      viewState.submittingId = null;
-    }
+    await submitForm({
+      submit: () => api.cancelExpenseValidation(id),
+      success: (message) => message,
+      onError: (message) => { viewState.errorMsg = message; }
+    });
+
+    viewState.submittingId = null;
   }
 
   const pendingCount = $derived(expenses.filter(e => e.status === 'pending').length);
@@ -121,7 +113,7 @@
     if (selectedSeason !== seasonId) {
       const params = new URLSearchParams(window.location.search);
       params.set('season', selectedSeason);
-      window.location.href = `/admin/expenses?${params.toString()}`;
+      softNavigate(`/admin/expenses?${params.toString()}`);
     }
   });
 
@@ -184,14 +176,6 @@
       </Button>
     {/snippet}
 
-    {#if viewState.successMsg}
-        <Alert.Root variant="success">
-        <Check class="w-4.5 h-4.5" />
-        <Alert.Title>Succès</Alert.Title>
-        <Alert.Description>{viewState.successMsg}</Alert.Description>
-      </Alert.Root>
-    {/if}
-
     {#if viewState.errorMsg}
       <Alert.Root variant="destructive">
         <AlertCircle class="w-4.5 h-4.5" />
@@ -245,7 +229,7 @@
       members={members}
       categories={categories}
       onClose={() => isCreateSheetOpen = false}
-      onSuccess={(msg) => { viewState.successMsg = msg; isCreateSheetOpen = false; }}
+      onSuccess={() => { isCreateSheetOpen = false; }}
     />
   </Sheet.Content>
 </Sheet.Root>

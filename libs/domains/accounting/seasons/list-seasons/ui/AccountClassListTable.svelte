@@ -15,8 +15,8 @@
     accountClasses?: AccountClass[];
     isSubmitting: boolean;
     onEditAccountClass: (ac: AccountClass) => void;
-    onUpdateAccountClass: (code: string, updates: { label: string; type: 'recette' | 'depense' | 'tresorerie' }) => Promise<void>;
-    onDeleteAccountClass: (code: string) => Promise<void>;
+    onUpdateAccountClass: (code: string, updates: { label: string; type: 'recette' | 'depense' | 'tresorerie' }) => Promise<boolean>;
+    onDeleteAccountClass: (code: string) => Promise<boolean>;
     tabsNav?: any;
     actions?: any;
   } = $props();

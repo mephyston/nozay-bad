@@ -40,6 +40,7 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.10.0",
     "eslint-plugin-svelte": "^3.22.0",
+    "globals": "^17.7.0",
     "jsdom": "^26.0.0",
     "nx": "23.0.1",
     "react": "^19.2.8",

@@ -1,7 +1,7 @@
-import { uiConfirm, flashAndReload } from '@nba/ui';
+import { uiConfirm } from '@nba/ui';
 import type { Product } from './products-manager-types';
 
-export async function submitProduct(params: {
+export interface ProductFormValues {
   editingId: number | null;
   name: string;
   price: string;
@@ -10,17 +10,21 @@ export async function submitProduct(params: {
   active: boolean;
   trackStock: boolean;
   stock: string;
-}): Promise<{ success: boolean; error?: string }> {
-  const numPrice = parseFloat(params.price);
+}
 
+export function validateProduct(params: ProductFormValues): string | null {
   if (!params.name.trim()) {
-    return { success: false, error: 'Le nom du produit est requis.' };
+    return 'Le nom du produit est requis.';
   }
+  const numPrice = parseFloat(params.price);
   if (isNaN(numPrice) || numPrice < 0) {
-    return { success: false, error: 'Le prix doit être supérieur ou égal à 0.' };
+    return 'Le prix doit être supérieur ou égal à 0.';
   }
+  return null;
+}
 
-  const priceCents = Math.round(numPrice * 100);
+export async function submitProduct(params: ProductFormValues): Promise<void> {
+  const priceCents = Math.round(parseFloat(params.price) * 100);
   const payload = params.editingId
     ? {
         action: 'update',
@@ -48,13 +52,8 @@ export async function submitProduct(params: {
   });
 
   if (!res.ok) {
-    const errMsg = await res.text();
-    return { success: false, error: errMsg || "Erreur lors de l'enregistrement." };
+    throw new Error((await res.text()) || "Erreur lors de l'enregistrement.");
   }
-
-  flashAndReload(params.editingId ? 'Produit mis à jour.' : 'Produit créé.');
-
-  return { success: true };
 }
 
 export async function toggleProductActive(product: Product): Promise<boolean> {

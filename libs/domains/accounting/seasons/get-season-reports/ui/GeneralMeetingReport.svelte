@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { ChevronDown } from '@lucide/svelte';
-  import { Tabs, Button, DropdownMenu } from '@nba/ui';
+  import { Tabs, Button, DropdownMenu, submitForm } from '@nba/ui';
   import type { ReportData, Season, DbCategory, AccountClass, BudgetRecord } from './report-types';
   import { generatePieSlices } from './report-utils';
   import { defaultChargeClasses, defaultProduitClasses } from './report-constants';
@@ -108,28 +108,26 @@
   async function handleSaveBudget() {
     isSaving = true;
     saveStatus = null;
-    try {
-      const payload: BudgetRecord[] = Object.entries(editableBudget)
-        .map(([key, amount]) => { const [catIdStr, type] = key.split('_'); return { categoryId: parseInt(catIdStr), type: type as 'recette' | 'depense', amount: Math.round(Number(amount) || 0) }; })
-        .filter(item => !isNaN(item.categoryId));
 
-      const res = await fetch(window.location.pathname, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'save_budget', seasonId: selectedSeason, budget: payload })
-      });
+    const payload: BudgetRecord[] = Object.entries(editableBudget)
+      .map(([key, amount]) => { const [catIdStr, type] = key.split('_'); return { categoryId: parseInt(catIdStr), type: type as 'recette' | 'depense', amount: Math.round(Number(amount) || 0) }; })
+      .filter(item => !isNaN(item.categoryId));
 
-      if (res.ok) {
-        saveStatus = { type: 'success', message: 'Budget prévisionnel enregistré avec succès !' };
-        setTimeout(() => { saveStatus = null; }, 4000);
-      } else {
-        throw new Error(await res.text());
-      }
-    } catch (err: unknown) {
-      saveStatus = { type: 'error', message: (err as any).message || "Impossible d'enregistrer le budget." };
-    } finally {
-      isSaving = false;
-    }
+    await submitForm({
+      submit: async () => {
+        const res = await fetch(window.location.pathname, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'save_budget', seasonId: selectedSeason, budget: payload })
+        });
+        if (!res.ok) throw new Error((await res.text()) || "Impossible d'enregistrer le budget.");
+      },
+      // Le réaffichage recalcule la comparaison réalisé / prévisionnel.
+      success: 'Budget prévisionnel enregistré.',
+      onError: (message) => { saveStatus = { type: 'error', message }; }
+    });
+
+    isSaving = false;
   }
 
   const chargeClasses = $derived(accountClasses.length > 0 ? accountClasses.filter(ac => ac.type === 'depense') : defaultChargeClasses);

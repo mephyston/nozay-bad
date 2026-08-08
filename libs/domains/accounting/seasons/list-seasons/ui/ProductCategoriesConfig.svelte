@@ -19,13 +19,13 @@
       label: string;
       accountingCategoryId: number;
       active: boolean;
-    }) => Promise<void>;
-    onDeleteProductCategory: (id: number) => Promise<void>;
+    }) => Promise<boolean>;
+    onDeleteProductCategory: (id: number) => Promise<boolean>;
     onCreateProductCategory: (data: {
       label: string;
       accountingCategoryId: number;
       active: boolean;
-    }) => Promise<void>;
+    }) => Promise<boolean>;
     tabsNav?: any;
   } = $props();
 
@@ -57,14 +57,16 @@
     await onDeleteProductCategory(id);
   }
 
+  // Fermer sans attendre effaçait la saisie même quand le serveur refusait.
   async function handleCreate(e: Event) {
     e.preventDefault();
     if (!newAccountingCategoryId) return;
-    await onCreateProductCategory({
+    const created = await onCreateProductCategory({
       label: newLabel,
       accountingCategoryId: newAccountingCategoryId,
       active: newActive
     });
+    if (!created) return;
     newLabel = '';
     newAccountingCategoryId = null;
     newActive = true;
@@ -81,12 +83,12 @@
   async function handleSaveEdit(e: Event) {
     e.preventDefault();
     if (editingId === null || !editAccountingCategoryId) return;
-    await onUpdateProductCategory(editingId, {
+    const updated = await onUpdateProductCategory(editingId, {
       label: editLabel,
       accountingCategoryId: editAccountingCategoryId,
       active: editActive
     });
-    editingId = null;
+    if (updated) editingId = null;
   }
 
   function getCategoryLabel(id: number) {

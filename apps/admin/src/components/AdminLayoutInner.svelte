@@ -349,7 +349,11 @@
 
                 <DropdownMenu.Item
                   class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer focus:bg-destructive/10 focus:text-destructive focus:outline-none"
-                  onclick={() => window.location.href = "/cdn-cgi/access/logout"}
+                  onclick={() => {
+                    // Point de sortie Cloudflare Access, pas une page Astro : navigation
+                    // dure obligatoire, `softNavigate()` tenterait un échange de DOM.
+                    window.location.href = "/cdn-cgi/access/logout";
+                  }}
                 >
                   <LogOut class="mr-2 h-3.5 w-3.5" /> Déconnexion
                 </DropdownMenu.Item>

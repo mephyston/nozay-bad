@@ -22,8 +22,8 @@
       active: boolean;
       receiptCode: string | null;
       expenseCode: string | null;
-    }) => Promise<void>;
-    onDeleteCategory: (id: number) => Promise<void>;
+    }) => Promise<boolean>;
+    onDeleteCategory: (id: number) => Promise<boolean>;
   } = $props();
 
   let confirmDialogOpen = $state(false);

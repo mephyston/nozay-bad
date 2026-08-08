@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, Calendar, AlertCircle, Plus } from "@lucide/svelte";
+  import { Calendar, AlertCircle, Plus } from "@lucide/svelte";
   import { Card, Alert, Tabs, Button, toast } from "@nba/ui";
   import SeasonConfig from "./SeasonConfig.svelte";
   import CategoriesConfig from "./CategoriesConfig.svelte";
@@ -27,15 +27,12 @@
   } = $props();
 
   let viewState = $state<api.SettingsState>({
-    successMsg: '',
     errorMsg: '',
     isSubmitting: false
   });
 
-  $effect(() => {
-    if (viewState.successMsg) toast.success(viewState.successMsg);
-  });
-
+  // Les confirmations passent par le flash de `submitForm` : elles sont rejouées après
+  // le réaffichage de la liste. Seuls les échecs restent à afficher ici.
   $effect(() => {
     if (viewState.errorMsg) toast.error(viewState.errorMsg);
   });
@@ -48,7 +45,7 @@
 
   function handleCreateSeason(e: Event) {
     e.preventDefault();
-    api.createSeason(viewState, newSeasonId, newSeasonName, newSeasonActive);
+    return api.createSeason(viewState, newSeasonId, newSeasonName, newSeasonActive);
   }
 
   function handleToggleSeasonActive(id: string) {
@@ -117,13 +114,6 @@
 </script>
 
 <div class="space-y-6">
-  {#if viewState.successMsg}
-    <Alert.Root variant="success">
-      <Check class="w-4 h-4" />
-      <Alert.Description>{viewState.successMsg}</Alert.Description>
-    </Alert.Root>
-  {/if}
-
   {#if viewState.errorMsg}
     <Alert.Root variant="destructive">
       <AlertCircle class="w-4 h-4" />

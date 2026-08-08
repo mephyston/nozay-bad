@@ -3,7 +3,7 @@
 </script>
 <script lang="ts">
   import { User, Eye, ChevronRight, Receipt } from '@lucide/svelte';
-  import { Button, Badge, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions, uiConfirm, toast, flashAndReload } from '@nba/ui';
+  import { Button, Badge, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions, uiConfirm, toast, flashAndReload, softNavigate } from '@nba/ui';
   import type { Member, Pagination, Filters, Season } from './members-table-types';
   import MembersTableFiltersPopover from './MembersTableFiltersPopover.svelte';
 
@@ -67,7 +67,7 @@
     if (selectedType) params.set('type', selectedType);
     if (selectedSeason) params.set('season', selectedSeason);
     params.set('page', '1');
-    window.location.href = `/admin/members?${params.toString()}`;
+    softNavigate(`/admin/members?${params.toString()}`);
   }
 
   function resetFilters() {
@@ -83,7 +83,7 @@
     if (newPage < 1 || newPage > pagination.totalPages) return;
     const params = new URLSearchParams(window.location.search);
     params.set('page', newPage.toString());
-    window.location.href = `/admin/members?${params.toString()}`;
+    softNavigate(`/admin/members?${params.toString()}`);
   }
 </script>
 

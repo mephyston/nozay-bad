@@ -4,9 +4,9 @@
 </script>
 <script lang="ts">
   import { Plus, Edit } from "@lucide/svelte";
-  import { Sheet, toast } from "@nba/ui";
+  import { Sheet, submitForm, toast } from "@nba/ui";
   import type { Product } from './products-manager-types';
-  import { submitProduct, toggleProductActive, archiveProduct } from './products-manager-actions';
+  import { submitProduct, validateProduct, toggleProductActive, archiveProduct } from './products-manager-actions';
   import ProductFormCard from './ProductFormCard.svelte';
   import ProductListTable from './ProductListTable.svelte';
 
@@ -24,7 +24,6 @@
   let searchTerm = $state('');
   let isSubmitting = $state(false);
   let errorMsg = $state('');
-  let successMsg = $state('');
   let showFormSheet = $state(false);
 
   let editingId = $state<number | null>(null);
@@ -74,28 +73,25 @@
     trackStock = !!product.trackStock;
     stock = product.stock ? product.stock.toString() : '';
     errorMsg = '';
-    successMsg = '';
     showFormSheet = true;
   }
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
     errorMsg = '';
-    successMsg = '';
     isSubmitting = true;
 
-    const res = await submitProduct({ editingId, name, price, category, formCategory, active, trackStock, stock });
-    isSubmitting = false;
+    const values = { editingId, name, price, category, formCategory, active, trackStock, stock };
+    await submitForm({
+      validate: () => validateProduct(values),
+      submit: () => submitProduct(values),
+      success: editingId ? 'Produit mis à jour.' : 'Produit créé.',
+      close: () => { resetForm(); showFormSheet = false; },
+      // Le sheet couvre la page : le refus s'affiche dans le formulaire lui-même.
+      onError: (message) => { errorMsg = message; }
+    });
 
-    if (res.success) {
-      successMsg = editingId ? 'Produit mis à jour avec succès !' : 'Produit ajouté avec succès !';
-      toast.success(successMsg);
-      resetForm();
-      showFormSheet = false;
-    } else {
-      errorMsg = res.error || 'Une erreur est survenue.';
-      toast.error(errorMsg);
-    }
+    isSubmitting = false;
   }
 
   async function handleToggleActive(product: Product) {
@@ -171,7 +167,6 @@
       {category}
       {isSubmitting}
       {errorMsg}
-      {successMsg}
       onReset={resetForm}
       onSubmit={handleSubmit}
     />

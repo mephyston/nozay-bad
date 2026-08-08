@@ -33,6 +33,8 @@ export { Amount } from './components/ui/amount';
 export { AmountInput } from './components/ui/amount-input';
 export { Toaster, toast } from './components/ui/sonner';
 export { flash, flashAndReload, consumeFlash, type FlashType } from './lib/flash';
+export { softNavigate, hasClientRouter } from './lib/navigation';
+export { submitForm, type SubmitFormOptions } from './lib/form-submit';
 export { Combobox, type ComboboxItem } from './components/ui/combobox';
 export * as DropdownMenu from './components/ui/dropdown-menu';
 export { uiConfirm } from './components/ui/alert-dialog/confirm';

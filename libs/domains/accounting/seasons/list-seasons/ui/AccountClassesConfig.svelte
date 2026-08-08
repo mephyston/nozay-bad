@@ -15,24 +15,23 @@
   }: {
     accountClasses?: AccountClass[];
     isSubmitting: boolean;
-    onUpdateAccountClass: (code: string, updates: { label: string; type: 'recette' | 'depense' | 'tresorerie' }) => Promise<void>;
-    onDeleteAccountClass: (code: string) => Promise<void>;
-    onCreateAccountClass: (data: { code: string; label: string; type: 'recette' | 'depense' | 'tresorerie' }) => Promise<void>;
+    onUpdateAccountClass: (code: string, updates: { label: string; type: 'recette' | 'depense' | 'tresorerie' }) => Promise<boolean>;
+    onDeleteAccountClass: (code: string) => Promise<boolean>;
+    onCreateAccountClass: (data: { code: string; label: string; type: 'recette' | 'depense' | 'tresorerie' }) => Promise<boolean>;
     tabsNav?: any;
   } = $props();
 
   let showAddSheet = $state(false);
   let editingAccountClass = $state<AccountClass | null>(null);
 
+  // Fermer sans attendre effaçait la saisie même quand le serveur refusait.
   async function handleCreate(data: Parameters<typeof onCreateAccountClass>[0]) {
-    await onCreateAccountClass(data);
-    showAddSheet = false;
+    if (await onCreateAccountClass(data)) showAddSheet = false;
   }
 
   async function handleUpdate(data: Parameters<typeof onUpdateAccountClass>[1]) {
     if (editingAccountClass) {
-      await onUpdateAccountClass(editingAccountClass.code, data);
-      editingAccountClass = null;
+      if (await onUpdateAccountClass(editingAccountClass.code, data)) editingAccountClass = null;
     }
   }
 </script>

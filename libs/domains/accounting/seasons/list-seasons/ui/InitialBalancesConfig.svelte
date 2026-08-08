@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Wallet2, Check, Loader2, Save, AlertCircle } from "@lucide/svelte";
-  import { Button, AmountInput, Alert, FormField, flashAndReload } from"@nba/ui";
+  import { Wallet2, Loader2, Save, AlertCircle } from "@lucide/svelte";
+  import { Button, AmountInput, Alert, FormField, submitForm } from "@nba/ui";
 
   interface Season {
     id: string;
@@ -23,7 +23,6 @@
   let cashInitial = $state(0);
   
   let isSaving = $state(false);
-  let successMsg = $state('');
   let errorMsg = $state('');
 
   const currentSeason = $derived(seasons.find((s: Season) => s.id === seasonId || s.code === seasonId || String(s.id) === seasonId));
@@ -50,7 +49,6 @@
     e.preventDefault();
     isSaving = true;
     errorMsg = '';
-    successMsg = '';
 
     const payload = {
       action: 'update_balances',
@@ -62,35 +60,24 @@
       }
     };
 
-    try {
-      const res = await fetch('', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+    await submitForm({
+      submit: async () => {
+        const res = await fetch('', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text() || 'Erreur lors de l\'enregistrement.');
+      },
+      success: 'Soldes initiaux enregistrés.',
+      onError: (message) => { errorMsg = message; }
+    });
 
-      if (!res.ok) {
-        throw new Error(await res.text() || 'Erreur lors de l\'enregistrement.');
-      }
-
-      successMsg = 'Les soldes initiaux ont été enregistrés avec succès !';
-      flashAndReload(successMsg);
-    } catch (err: unknown) {
-      errorMsg = err.message || 'Une erreur est survenue.';
-    } finally {
-      isSaving = false;
-    }
+    isSaving = false;
   }
 </script>
 
 <div class="space-y-6">
-    {#if successMsg}
-      <Alert.Root variant="success">
-        <Check class="w-4 h-4" />
-        <Alert.Description>{successMsg}</Alert.Description>
-      </Alert.Root>
-    {/if}
-
     {#if errorMsg}
       <Alert.Root variant="destructive">
         <AlertCircle class="w-4 h-4" />

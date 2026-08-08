@@ -1,29 +1,32 @@
-import { flashAndReload } from '@nba/ui';
+import { softNavigate } from '@nba/ui';
 import type { Transaction } from './ledger-types';
 
-export async function submitTransaction(
-  e: Event,
-  params: {
-    editingId: number | null;
-    showPanel: 'recette' | 'depense' | 'transfert' | null;
-    amount: string;
-    date: string;
-    category: string;
-    formAccountId: string;
-    destinationAccountId: string;
-    paymentMethod: string;
-    description: string;
-    reference: string;
-    accrualType: string;
-    accrualNote: string;
-    targetSeasonId: string;
-  }
-): Promise<void> {
-  e.preventDefault();
+export interface TransactionFormValues {
+  editingId: number | null;
+  showPanel: 'recette' | 'depense' | 'transfert' | null;
+  amount: string;
+  date: string;
+  category: string;
+  formAccountId: string;
+  destinationAccountId: string;
+  paymentMethod: string;
+  description: string;
+  reference: string;
+  accrualType: string;
+  accrualNote: string;
+  targetSeasonId: string;
+}
+
+export function validateTransaction(params: TransactionFormValues): string | null {
   const floatAmount = parseFloat(params.amount);
   if (isNaN(floatAmount) || floatAmount <= 0) {
-    throw new Error('Le montant doit être un nombre positif.');
+    return 'Le montant doit être un nombre positif.';
   }
+  return null;
+}
+
+export async function submitTransaction(params: TransactionFormValues): Promise<void> {
+  const floatAmount = parseFloat(params.amount);
 
   const payload = params.editingId
     ? {
@@ -75,11 +78,10 @@ export async function submitTransaction(
     throw new Error(errStr || 'Impossible d\'enregistrer la transaction');
   }
   
+  // La liste réaffichée doit se recaler sur la ligne que l'on vient de modifier.
   if (params.editingId) {
     sessionStorage.setItem('scrollToTx', params.editingId.toString());
   }
-  
-  flashAndReload(params.editingId ? 'Écriture mise à jour.' : 'Écriture enregistrée.');
 }
 
 export async function deleteTransaction(id: number): Promise<void> {
@@ -96,19 +98,18 @@ export async function deleteTransaction(id: number): Promise<void> {
     } catch(e){}
     throw new Error(errStr || 'Impossible de supprimer.');
   }
-  flashAndReload('Écriture supprimée.');
 }
 
 export function changePage(newPage: number, totalPages: number) {
   if (newPage < 1 || newPage > totalPages) return;
   const params = new URLSearchParams(window.location.search);
   params.set('page', newPage.toString());
-  window.location.href = `/admin/accounting?${params.toString()}`;
+  softNavigate(`/admin/accounting?${params.toString()}`);
 }
 
 export function applySeasonChange(selectedSeason: string) {
   const params = new URLSearchParams(window.location.search);
   params.set('season', selectedSeason);
   params.set('page', '1');
-  window.location.href = `/admin/accounting?${params.toString()}`;
+  softNavigate(`/admin/accounting?${params.toString()}`);
 }

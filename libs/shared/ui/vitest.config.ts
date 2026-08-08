@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [svelte()],
   resolve: {
     alias: {
+      'astro:transitions/client': path.resolve(__dirname, './src/mocks/astro-transitions.ts'),
       '@nba/ui': path.resolve(__dirname, './src/index.ts'),
       'libs/shared/ui': path.resolve(__dirname, '../../shared/ui'),
     },

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Input, Button, Badge, Table, Card, EmptyState, uiConfirm, toast, flashAndReload, Sheet, FormField, DataTable, DataTableToolbar, Popover, Checkbox } from '@nba/ui';
+  import { Input, Button, Badge, Table, Card, EmptyState, uiConfirm, toast, flashAndReload, submitForm, Sheet, FormField, DataTable, DataTableToolbar, Popover, Checkbox } from '@nba/ui';
   import { Plus, Trash2, Shield, ChevronDown, Pencil } from '@lucide/svelte';
   
   let { users = [] } = $props<{ users: any[] }>();
@@ -101,23 +101,24 @@
   }
 
   async function saveUser() {
-    if (!newEmail) return;
     const action = editUserId ? 'update_user' : 'create_user';
-    const payload = editUserId 
+    const payload = editUserId
       ? { action, id: editUserId, name: newName, permissions: selectedPermissions }
       : { action, email: newEmail, name: newName, permissions: selectedPermissions };
 
-    const res = await fetch('/admin/iam', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    await submitForm({
+      validate: () => (newEmail ? null : "L'adresse e-mail est requise."),
+      submit: async () => {
+        const res = await fetch('/admin/iam', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
+      },
+      success: editUserId ? 'Utilisateur mis à jour.' : 'Utilisateur créé.',
+      close: () => { isSheetOpen = false; }
     });
-    if (res.ok) {
-      isSheetOpen = false;
-      flashAndReload(editUserId ? 'Utilisateur mis à jour.' : 'Utilisateur créé avec succès.');
-    } else {
-      toast.error(await res.text());
-    }
   }
 
   async function deleteUser(id: number) {

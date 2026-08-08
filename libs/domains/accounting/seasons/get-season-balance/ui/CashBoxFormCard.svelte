@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Plus, Check, AlertCircle } from '@lucide/svelte';
+  import { Plus, AlertCircle } from '@lucide/svelte';
   import { Button, Input, Alert, FormField, SearchableCombobox } from '@nba/ui';
 
   let {
@@ -11,7 +11,6 @@
     isClosed,
     isSubmitting,
     errorMsg,
-    successMsg,
     onSubmit
   }: {
     type: 'recette' | 'depense';
@@ -22,7 +21,6 @@
     isClosed: boolean;
     isSubmitting: boolean;
     errorMsg: string;
-    successMsg: string;
     onSubmit: (e: Event) => void;
   } = $props();
 </script>
@@ -32,13 +30,6 @@
       <Alert.Root variant="destructive">
         <AlertCircle class="w-4 h-4 shrink-0" />
         <Alert.Description>{errorMsg}</Alert.Description>
-      </Alert.Root>
-    {/if}
-
-    {#if successMsg}
-      <Alert.Root variant="success">
-        <Check class="w-4 h-4 shrink-0" />
-        <Alert.Description>{successMsg}</Alert.Description>
       </Alert.Root>
     {/if}
 

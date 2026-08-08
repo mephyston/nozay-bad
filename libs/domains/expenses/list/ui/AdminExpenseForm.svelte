@@ -1,12 +1,12 @@
 <script lang="ts">
   import { Receipt, Check, AlertCircle } from '@lucide/svelte';
-  import { Button, Alert, Sheet, Input, FormField } from '@nba/ui';
+  import { Button, Alert, Sheet, Input, FormField, submitForm } from '@nba/ui';
   import type { Member, Props } from '../../create/ui/expense-form-types';
   import { formatMemberName, scrollOptionIntoView } from '../../create/ui/expense-form-utils';
   import ExpenseFormDetails from '../../create/ui/ExpenseFormDetails.svelte';
   import ExpenseFormFileInput from '../../create/ui/ExpenseFormFileInput.svelte';
 
-  let { activeSeasonId, members = [], categories = [], onClose, onSuccess }: Props & { onClose: () => void; onSuccess: (msg: string) => void; } = $props();
+  let { activeSeasonId, members = [], categories = [], onClose, onSuccess }: Props & { onClose: () => void; onSuccess: () => void; } = $props();
 
   let emitterName = $state('');
   let category = $state('');
@@ -71,40 +71,50 @@
     } else if (e.key === 'Escape') { isMemberDropdownOpen = false; e.preventDefault(); }
   }
 
+  function validate(): string | null {
+    if (!selectedMemberId) return "Veuillez sélectionner un demandeur.";
+    const parsedAmount = parseFloat(amountStr);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return "Montant invalide.";
+    if (!photoUrl) return "Justificatif obligatoire.";
+    return null;
+  }
+
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
-    if (!selectedMemberId) { errorMsg = "Veuillez sélectionner un demandeur."; return; }
-    const parsedAmount = parseFloat(amountStr);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) { errorMsg = "Montant invalide."; return; }
-    if (!photoUrl) { errorMsg = "Justificatif obligatoire."; return; }
-    
-    errorMsg = null; submitting = true;
-    try {
-      const res = await fetch('', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'expense',
-          data: {
-            seasonId: activeSeasonId,
-            description,
-            category,
-            amountCents: Math.round(parsedAmount * 100),
-            photoUrl,
-            memberId: parseInt(selectedMemberId),
-            emitterName
-          }
-        })
-      });
-      const resData = await res.json() as any;
-      if (!res.ok || !resData.success) {
-        errorMsg = resData.error || "Erreur lors de la création de la note de frais.";
-      } else {
-        onSuccess(resData.message || "Note de frais créée avec succès.");
-      }
-    } catch (err: any) {
-      errorMsg = err.message || "Erreur réseau.";
-    }
+    errorMsg = null;
+    submitting = true;
+
+    await submitForm({
+      validate,
+      submit: async () => {
+        const res = await fetch('', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'expense',
+            data: {
+              seasonId: activeSeasonId,
+              description,
+              category,
+              amountCents: Math.round(parseFloat(amountStr) * 100),
+              photoUrl,
+              memberId: parseInt(selectedMemberId),
+              emitterName
+            }
+          })
+        });
+        const resData = await res.json() as any;
+        if (!res.ok || !resData.success) {
+          throw new Error(resData.error || "Erreur lors de la création de la note de frais.");
+        }
+        return resData.message as string | undefined;
+      },
+      success: (message) => message || "Note de frais créée.",
+      close: onSuccess,
+      // Le sheet couvre la page : le refus s'affiche dans le formulaire lui-même.
+      onError: (message) => { errorMsg = message; }
+    });
+
     submitting = false;
   }
 </script>

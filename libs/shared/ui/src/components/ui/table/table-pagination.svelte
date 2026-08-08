@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ChevronLeft, ChevronRight } from '@lucide/svelte';
   import { Button } from '../button';
+  import { softNavigate } from '../../../lib/navigation';
 
   let {
     pagination,
@@ -19,7 +20,7 @@
       const params = new URLSearchParams(window.location.search);
       params.set('limit', String(newLimit));
       params.set('page', '1');
-      window.location.href = `${window.location.pathname}?${params.toString()}`;
+      softNavigate(`${window.location.pathname}?${params.toString()}`);
     }
   }
 

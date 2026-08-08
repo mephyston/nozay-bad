@@ -22,16 +22,16 @@
     newSeasonId: string;
     newSeasonName: string;
     newSeasonActive: boolean;
-    onCreateSeason: (e: Event) => void;
+    onCreateSeason: (e: Event) => Promise<boolean>;
     onToggleSeasonActive: (id: string) => void;
     onCloseSeason: (id: string, confirmOverwrite: boolean) => void;
     onCheckCloseSeason: (id: string) => Promise<any>;
     tabsNav?: any;
   } = $props();
 
-  function handleSubmit(e: Event) {
-    onCreateSeason(e);
-    showAddSheet = false;
+  async function handleSubmit(e: Event) {
+    // Fermer sans attendre effaçait la saisie même quand le serveur refusait.
+    if (await onCreateSeason(e)) showAddSheet = false;
   }
 
   let closingSeasonId = $state<string | null>(null);

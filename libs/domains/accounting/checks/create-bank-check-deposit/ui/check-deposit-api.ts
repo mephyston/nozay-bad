@@ -1,4 +1,4 @@
-import { toast, uiConfirm, flashAndReload } from '@nba/ui';
+import { toast, uiConfirm, flashAndReload, submitForm } from '@nba/ui';
 
 /**
  * Extrait le message d'erreur d'une réponse, qu'elle soit JSON ou texte brut : les
@@ -68,48 +68,40 @@ export async function handlePhotoSelected(e: Event, seasonId: string, state: any
 
 export async function handleAddCheck(e: SubmitEvent, seasonId: string, state: any) {
   e.preventDefault();
-  if (!state.checkNumber || !state.checkAmount || !state.checkEmitter) {
-    state.formError = 'Veuillez renseigner le numéro, le montant et l\'émetteur.';
-    toast.error(state.formError);
-    return;
-  }
-
   state.isSubmittingCheck = true;
   state.formError = '';
 
-  try {
-    const res = await fetch(`?season=${seasonId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      // `create-check` et les noms de champs doivent correspondre exactement au
-      // contrat de l'API (number / emitter) : un intitulé d'action inconnu passait
-      // à travers toutes les branches de la page et renvoyait un faux succès.
-      body: JSON.stringify({
-        action: 'create-check',
-        seasonId,
-        number: state.checkNumber,
-        amount: Math.round(parseFloat(state.checkAmount) * 100),
-        emitter: state.checkEmitter,
-        bank: state.checkBank,
-        date: state.checkDate,
-        memberId: state.checkMemberId ? parseInt(state.checkMemberId) : undefined
-      })
-    });
+  await submitForm({
+    validate: () =>
+      !state.checkNumber || !state.checkAmount || !state.checkEmitter
+        ? 'Veuillez renseigner le numéro, le montant et l\'émetteur.'
+        : null,
+    submit: async () => {
+      const res = await fetch(`?season=${seasonId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // `create-check` et les noms de champs doivent correspondre exactement au
+        // contrat de l'API (number / emitter) : un intitulé d'action inconnu passait
+        // à travers toutes les branches de la page et renvoyait un faux succès.
+        body: JSON.stringify({
+          action: 'create-check',
+          seasonId,
+          number: state.checkNumber,
+          amount: Math.round(parseFloat(state.checkAmount) * 100),
+          emitter: state.checkEmitter,
+          bank: state.checkBank,
+          date: state.checkDate,
+          memberId: state.checkMemberId ? parseInt(state.checkMemberId) : undefined
+        })
+      });
+      if (!res.ok) throw new Error((await readError(res)) || 'Erreur lors de la création du chèque.');
+    },
+    success: 'Chèque enregistré.',
+    close: () => { state.showAddCheckModal = false; },
+    onError: (message) => { state.formError = message; toast.error(message); }
+  });
 
-    if (res.ok) {
-      state.showAddCheckModal = false;
-      flashAndReload('Chèque enregistré avec succès.');
-    } else {
-      state.formError = (await readError(res)) || 'Erreur lors de la création du chèque.';
-      toast.error(state.formError);
-    }
-  } catch (err) {
-    console.error(err);
-    state.formError = 'Une erreur est survenue.';
-    toast.error(state.formError);
-  } finally {
-    state.isSubmittingCheck = false;
-  }
+  state.isSubmittingCheck = false;
 }
 
 export async function handleDeleteCheck(id: number, seasonId: string) {
@@ -138,32 +130,27 @@ export async function handleCreateDeposit(seasonId: string, state: any) {
   if (checkIds.length === 0) return;
 
   state.isSubmittingDeposit = true;
-  try {
-    const res = await fetch(`?season=${seasonId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'create-deposit',
-        seasonId,
-        reference: state.depositReference,
-        date: state.depositDate,
-        checkIds
-      })
-    });
 
-    if (res.ok) {
-      state.showCreateDepositModal = false;
-      state.selectedCheckIds = {};
-      flashAndReload('Bordereau de remise de chèques créé.');
-    } else {
-      toast.error((await readError(res)) || 'Erreur lors de la création du bordereau.');
-    }
-  } catch (err) {
-    console.error(err);
-    toast.error('Erreur lors de la création du bordereau.');
-  } finally {
-    state.isSubmittingDeposit = false;
-  }
+  await submitForm({
+    submit: async () => {
+      const res = await fetch(`?season=${seasonId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create-deposit',
+          seasonId,
+          reference: state.depositReference,
+          date: state.depositDate,
+          checkIds
+        })
+      });
+      if (!res.ok) throw new Error((await readError(res)) || 'Erreur lors de la création du bordereau.');
+    },
+    success: 'Bordereau de remise de chèques créé.',
+    close: () => { state.showCreateDepositModal = false; state.selectedCheckIds = {}; }
+  });
+
+  state.isSubmittingDeposit = false;
 }
 
 export async function handleDeleteDeposit(id: number, seasonId: string) {
