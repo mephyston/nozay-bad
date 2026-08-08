@@ -16,6 +16,7 @@ export default defineConfig({
       '@nba/db': path.resolve(__dirname, './libs/shared/db/src/index.ts'),
       '@nba/pdf': path.resolve(__dirname, './libs/shared/pdf/src/index.ts'),
       '@nba/push': path.resolve(__dirname, './libs/shared/push/src/index.ts'),
+      '@nba/html': path.resolve(__dirname, './libs/shared/html/src/index.ts'),
       '@nba/ui': path.resolve(__dirname, './libs/shared/ui/src/index.ts'),
       '@nba/api-client': path.resolve(__dirname, './libs/shared/api-client/src/index.ts'),
       '@nba/members-api': path.resolve(__dirname, './libs/domains/members/index.ts'),
@@ -74,6 +75,7 @@ export default defineConfig({
       'apps/admin/vitest.config.ts',
       'libs/shared/db/vitest.config.ts',
       'libs/shared/push/vitest.config.ts',
+      'libs/shared/html/vitest.config.ts',
       'apps/storefront/vitest.config.ts',
       'libs/shared/ui/vitest.config.ts',
       

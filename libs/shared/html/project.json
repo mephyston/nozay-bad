@@ -1,0 +1,12 @@
+{
+  "name": "@nba/html",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/shared/html/src",
+  "targets": {
+    "lint": {
+      "command": "eslint {projectRoot}"
+    }
+  },
+  "tags": ["type:util", "scope:shared"]
+}

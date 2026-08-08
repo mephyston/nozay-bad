@@ -60,11 +60,11 @@ export function escapeAttribute(value: string): string {
 }
 
 /**
- * Schémas d'URL acceptés dans une annonce.
+ * Schémas d'URL acceptés dans un lien.
  *
  * Liste blanche, jamais liste noire : `javascript:`, `data:` et `vbscript:` sont les
  * cas connus, mais c'est l'inconnu qui blesse. Un chemin relatif `/…` est accepté pour
- * pointer vers une page de l'espace adhérent.
+ * pointer vers une page du site.
  */
 export function isSafeHref(rawHref: string): boolean {
   // Espaces et caractères de contrôle sont ignorés par les navigateurs au milieu d'un
@@ -81,4 +81,21 @@ export function isSafeHref(rawHref: string): boolean {
   // « // » ouvrirait une URL protocole-relative vers un domaine tiers.
   if (href.startsWith('/')) return !href.startsWith('//');
   return href.startsWith('https://') || href.startsWith('http://') || href.startsWith('mailto:');
+}
+
+/**
+ * Source d'image acceptée : uniquement un chemin servi par nos propres soins.
+ *
+ * Refuser une URL distante élimine d'un seul geste les pixels de suivi, le contenu
+ * mixte (une image en `http:` sur une page en `https:`) et le hotlinking d'un site
+ * tiers qui pourrait changer l'image sous nos pieds. Les médias importés sont de
+ * toute façon réécrits vers `/media/…` par le script d'import.
+ */
+export function isSameOriginPath(rawSrc: string, prefix: string): boolean {
+  let src = '';
+  for (const char of decodeEntities(rawSrc)) {
+    if (char.codePointAt(0)! > 0x20) src += char;
+  }
+  if (src.startsWith('//')) return false;
+  return src.startsWith(prefix);
 }

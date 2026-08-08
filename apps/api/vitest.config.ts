@@ -20,6 +20,7 @@ export default defineConfig({
       '@nba/db': path.resolve(__dirname, '../../libs/shared/db/src/index.ts'),
       '@nba/pdf': path.resolve(__dirname, '../../libs/shared/pdf/src/index.ts'),
       '@nba/push': path.resolve(__dirname, '../../libs/shared/push/src/index.ts'),
+      '@nba/html': path.resolve(__dirname, '../../libs/shared/html/src/index.ts'),
       '@nba/notifications-api': path.resolve(__dirname, '../../libs/domains/notifications/index.ts'),
       '@nba/notifications/schema': path.resolve(__dirname, '../../libs/domains/notifications/shared/schema.ts'),
       '@nba/announcements-api': path.resolve(__dirname, '../../libs/domains/announcements/index.ts'),
