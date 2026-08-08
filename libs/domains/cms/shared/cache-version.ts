@@ -17,10 +17,18 @@ import { cmsContentVersionTable } from './schema';
 export const CONTENT_VERSION_ID = 1;
 
 export async function bumpContentVersion(db: DbOrTx, now: Date = new Date()): Promise<void> {
+  // Insertion avec repli sur mise à jour, plutôt qu'un simple UPDATE : la ligne est
+  // semée par les migrations, mais une publication ne doit pas devenir silencieusement
+  // sans effet si elle manque — c'est exactement le genre de panne qu'on ne remarque
+  // qu'en constatant qu'une page « ne se met pas à jour ». La valeur 2 à l'insertion
+  // représente le premier renouvellement au-delà de la version initiale.
   await db
-    .update(cmsContentVersionTable)
-    .set({ version: sql`${cmsContentVersionTable.version} + 1`, updatedAt: now })
-    .where(eq(cmsContentVersionTable.id, CONTENT_VERSION_ID))
+    .insert(cmsContentVersionTable)
+    .values({ id: CONTENT_VERSION_ID, version: 2, updatedAt: now })
+    .onConflictDoUpdate({
+      target: cmsContentVersionTable.id,
+      set: { version: sql`${cmsContentVersionTable.version} + 1`, updatedAt: now }
+    })
     .run();
 }
 
