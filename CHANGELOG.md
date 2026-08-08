@@ -1,3 +1,25 @@
+# [1.0.0-beta.63](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.62...v1.0.0-beta.63) (2026-08-08)
+
+
+### Bug Fixes
+
+* **admin:** ne pas rendre l'application inutilisable quand l'API IAM est injoignable ([47d7ca2](https://github.com/mephyston/nozay-bad/commit/47d7ca27589849db54e4ae7e81766167ee053617))
+* **iam:** garantir qu'un super administrateur subsiste après la reprise ([9c35d9c](https://github.com/mephyston/nozay-bad/commit/9c35d9cb966c883d7431c0ea5e3409ac4bfb53be))
+* **iam:** rendre /iam/me atteignable pour une adresse sans compte ([2b4011c](https://github.com/mephyston/nozay-bad/commit/2b4011cc12849902fd8d7c239d870d3c1b95161d))
+* **storefront:** conserver la navigation sur les pages légales ([37efdf1](https://github.com/mephyston/nozay-bad/commit/37efdf1b40e998bd1ce6480332a3c1c791cc7473))
+
+
+### Features
+
+* **iam:** ajouter le rôle Entraîneur, et replier la matrice des droits ([74541fa](https://github.com/mephyston/nozay-bad/commit/74541fa50e1f1b90b37ef29ace413d4ee5090928))
+* **iam:** découper le domaine en slices VSA et résoudre l'identité par les rôles ([f9c5047](https://github.com/mephyston/nozay-bad/commit/f9c5047e94c6f8e288bc81b0a1dabca17ce86d17))
+* **iam:** écran de lecture des droits par rôle, et formulaire scrollable ([1a0a78c](https://github.com/mephyston/nozay-bad/commit/1a0a78cb237609a1acb661f5786f65a62ac037cc))
+* **iam:** garder chaque action d'écriture et gérer les accès par rôle ([c702bed](https://github.com/mephyston/nozay-bad/commit/c702bedfa0f723cd397e14a9f2282d1208ec19e1))
+* **iam:** noyau RBAC — catalogue de permissions et rôles métier ([5f27444](https://github.com/mephyston/nozay-bad/commit/5f2744435076c06f36e211417d45c42626790b15))
+* **iam:** rendre l'API autoritaire sur les droits et fermer l'admin par défaut ([fc716ac](https://github.com/mephyston/nozay-bad/commit/fc716ac0b3e006b6fb3b1bf342aaa08566c03db9))
+* **iam:** rendre les droits de chaque rôle modifiables depuis l'application ([e36b72c](https://github.com/mephyston/nozay-bad/commit/e36b72c0545b51ee789619dcccdcc31acf41da6e))
+* **iam:** table admin_user_roles et reprise des permissions vers des rôles ([b336468](https://github.com/mephyston/nozay-bad/commit/b336468f96a754df3c435cb7fd0b5711662782f0))
+
 # [1.0.0-beta.62](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.61...v1.0.0-beta.62) (2026-08-08)
 
 
