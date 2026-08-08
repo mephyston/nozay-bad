@@ -5,6 +5,7 @@ import { PageHeader, ErrorAlert } from '@nba/ui';
 import { SettingsManager } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
 import { createAdminApiClient } from '../../../lib/api';
+import { guardAction } from '../../../lib/guard';
 
 const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
 const apiService = createAdminApiClient(Astro.locals);
@@ -18,9 +19,19 @@ async function handleApiError(res: Response) {
   return new Response(errMsg, { status: res.status });
 }
 
+/** Permission exigée par action d'écriture de cette page. */
+const ACTIONS = {
+  create_product_category: 'shop:categories:write',
+  update_product_category: 'shop:categories:write',
+  delete_product_category: 'shop:categories:write'
+} as const;
+
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
+
+    const denied = guardAction(Astro.locals, data.action, ACTIONS);
+    if (denied) return denied;
     
     if (data.action === 'create_product_category') {
       const apiRes = await apiService.fetch('http://localhost/shop/product-categories', {
@@ -80,7 +91,7 @@ try {
 ---
 
 <Layout title="Catégories Produits - NBA 91">
-  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Configuration / Catégories Produits" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Configuration / Catégories Produits" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       <div class="no-print">
         <a

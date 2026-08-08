@@ -5,27 +5,34 @@ import { PageHeader, ErrorAlert } from '@nba/ui';
 import { UsersManager } from '@nba/iam-ui';
 import { env } from 'cloudflare:workers';
 import { createAdminApiClient } from '../../lib/api';
+import { guardAction } from '../../lib/guard';
 
-// Security: Must be super-admin to view this page.
-const user = Astro.locals.user;
-if (!user || (!user.permissions.includes('*') && !user.permissions.includes('iam:*'))) {
-  return new Response('Accès refusé', { status: 403 });
-}
-
+// La consultation est exigée par PAGE_PERMISSIONS (`iam:users:read`) ; chaque action
+// d'écriture a sa propre permission, ci-dessous.
 const apiService = createAdminApiClient(Astro.locals);
 
 let usersList: any[] = [];
 let errorMsg = '';
 
+/** Permission exigée par action d'écriture de cette page. */
+const ACTIONS = {
+  create_user: 'iam:users:write',
+  update_user: 'iam:users:write',
+  delete_user: 'iam:users:delete'
+} as const;
+
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
+
+    const denied = guardAction(Astro.locals, data.action, ACTIONS);
+    if (denied) return denied;
     
     if (data.action === 'create_user') {
       const apiRes = await apiService.fetch('http://localhost/iam/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: data.email, name: data.name, permissions: data.permissions })
+        body: JSON.stringify({ email: data.email, name: data.name, roles: data.roles })
       });
       if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
       await apiRes.text(); // Consume body to release connection
@@ -33,7 +40,7 @@ if (Astro.request.method === 'POST') {
       const apiRes = await apiService.fetch(`http://localhost/iam/users/${data.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: data.name, permissions: data.permissions })
+        body: JSON.stringify({ name: data.name, roles: data.roles })
       });
       if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
       await apiRes.text(); // Consume body to release connection
@@ -62,12 +69,12 @@ try {
 }
 ---
 
-<Layout title="Accès et Permissions - NBA 91">
-  <AdminLayout name={Astro.locals.user?.name} client:idle email={user?.email || ''} permissions={user?.permissions || []} breadcrumb="Accès & Permissions">
+<Layout title="Accès et rôles - NBA 91">
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={Astro.locals.user?.email || ''} permissions={Astro.locals.user?.permissions || []} breadcrumb="Accès & Rôles">
     <div class="space-y-6">
       <PageHeader
-        title="Accès et Permissions"
-        description="Gérez qui peut accéder à l'administration de Nozay Bad Association."
+        title="Accès et rôles"
+        description="Attribuez un rôle aux personnes qui administrent Nozay Bad Association."
       />
 
       {errorMsg && <ErrorAlert message={errorMsg} />}

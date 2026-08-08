@@ -29,7 +29,7 @@ const categoryNames: Record<string, string> = {
 ---
 
 <Layout title="Aide aux bénévoles - Nozay Bad Admin">
-  <AdminLayout 
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} 
     client:load 
     email={user?.email || ""} 
     name={user?.name || ""} 

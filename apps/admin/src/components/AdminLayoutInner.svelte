@@ -30,11 +30,13 @@
   import ThemeToggle from "./ThemeToggle.svelte";
   import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, MobileBottomNav, PwaInstallBanner } from "@nba/ui";
 
-  let { children, email, name, permissions = [], breadcrumb } = $props<{
+  let { children, email, name, permissions = [], realEmail = '', breadcrumb } = $props<{
     children?: import('svelte').Snippet;
     email: string;
     name?: string;
     permissions?: string[];
+    /** Compte réellement connecté ; diffère de `email` pendant une usurpation. */
+    realEmail?: string;
     breadcrumb: string;
   }>();
 
@@ -121,7 +123,7 @@
       return primary === "réglages" || primary === "settings" || primary === "configuration";
     }
     if (item.href === "/admin/iam") {
-      return primary === "accès et permissions" || primary === "accès & permissions";
+      return primary === "accès et rôles" || primary === "accès & rôles";
     }
     
     // Aide
@@ -133,6 +135,19 @@
   }
 
   let impersonateUsers = $state<any[]>([]);
+
+  // Le cookie d'usurpation est HttpOnly : il est posé et retiré par le serveur, et
+  // le navigateur ne peut plus le lire. L'état vient donc de `realEmail`.
+  const isImpersonating = $derived(Boolean(realEmail) && realEmail !== email);
+
+  async function setImpersonation(target: string | null) {
+    const res = await fetch('/admin/api/impersonate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: target })
+    });
+    if (res.ok) window.location.reload();
+  }
 
   onMount(async () => {
     if (can(permissions, 'iam:sessions:impersonate')) {
@@ -283,10 +298,7 @@
                     {#if u.email !== email}
                       <DropdownMenu.Item
                         class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer focus:bg-accent focus:text-accent-foreground focus:outline-none"
-                        onclick={() => {
-                          document.cookie = `impersonate_email=${encodeURIComponent(u.email)}; path=/`;
-                          window.location.reload();
-                        }}
+                        onclick={() => setImpersonation(u.email)}
                       >
                         {u.name || u.email}
                       </DropdownMenu.Item>
@@ -295,13 +307,10 @@
                   <DropdownMenu.Separator />
                 {/if}
 
-                {#if typeof document !== 'undefined' && document.cookie.includes('impersonate_email')}
+                {#if isImpersonating}
                   <DropdownMenu.Item
                     class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md text-primary hover:bg-primary/10 cursor-pointer focus:bg-primary/10 focus:outline-none"
-                    onclick={() => {
-                      document.cookie = `impersonate_email=; path=/; max-age=0`;
-                      window.location.reload();
-                    }}
+                    onclick={() => setImpersonation(null)}
                   >
                     Revenir à mon compte
                   </DropdownMenu.Item>
@@ -330,6 +339,19 @@
 
 <!-- Inset / Main panel -->
 <Sidebar.Inset class="flex flex-col h-screen overflow-hidden">
+  {#if isImpersonating}
+    <!-- Bandeau permanent : on n'agit pas sous une autre identité sans le savoir. -->
+    <div class="shrink-0 flex flex-wrap items-center justify-center gap-2 bg-amber-500/15 text-amber-900 dark:text-amber-200 border-b border-amber-500/40 px-4 py-1.5 text-xs font-semibold">
+      <span>Vous consultez l'application en tant que <strong>{email}</strong>.</span>
+      <button
+        type="button"
+        class="underline underline-offset-2 cursor-pointer bg-transparent border-0 font-semibold text-inherit"
+        onclick={() => setImpersonation(null)}
+      >
+        Revenir à {realEmail}
+      </button>
+    </div>
+  {/if}
   <!-- Header -->
   <header class="flex min-h-14 shrink-0 items-center justify-between px-6 border-b border-border bg-background pt-safe pb-2 md:pb-0 md:h-14">
     <div class="flex items-center gap-4 h-full pt-2 md:pt-0">

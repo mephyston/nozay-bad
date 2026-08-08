@@ -1,94 +1,46 @@
 <script lang="ts">
-  import { Input, Button, Badge, Table, Card, EmptyState, uiConfirm, toast, flashAndReload, submitForm, Sheet, FormField, DataTable, DataTableToolbar, Popover, Checkbox } from '@nba/ui';
-  import { Plus, Trash2, Shield, ChevronDown, Pencil } from '@lucide/svelte';
-  
+  import { Input, Button, Badge, Table, Card, EmptyState, uiConfirm, toast, flashAndReload, submitForm, Sheet, FormField, DataTable, DataTableToolbar, Checkbox } from '@nba/ui';
+  import { Plus, Trash2, Shield, Pencil } from '@lucide/svelte';
+  import { ROLES, ROLE_LABELS, ROLE_DESCRIPTIONS, ROLE_PERMISSIONS, type Role } from '../shared/roles';
+
   let { users = [] } = $props<{ users: any[] }>();
 
   let newEmail = $state('');
   let newName = $state('');
-  let selectedPermissions = $state<string[]>([]);
+  let selectedRoles = $state<Role[]>([]);
   let isSheetOpen = $state(false);
   let searchTerm = $state('');
   let editUserId = $state<number | null>(null);
 
-  const PERMISSIONS_GROUPS = [
-    {
-      name: 'Général',
-      permissions: [
-        { value: '*', label: 'Super Admin', desc: 'Accès total à toute la plateforme' },
-        { value: 'settings:*', label: 'Configuration', desc: 'Gestion des réglages généraux' },
-        { value: 'iam:*', label: 'Accès & Permissions', desc: 'Gestion des administrateurs' }
-      ]
-    },
-    {
-      name: 'Comptabilité',
-      permissions: [
-        { value: 'accounting:*', label: 'Accès complet', desc: 'Trésorier' },
-        { value: 'accounting:reports', label: 'Rapports uniquement', desc: 'Lecture du tableau de bord et rapports' },
-        { value: 'accounting:invoices', label: 'Gestion des factures', desc: 'Consulter et ajouter des factures' },
-        { value: 'expenses:*', label: 'Notes de frais (Complet)', desc: 'Gestion complète des notes de frais' },
-        { value: 'expenses:read', label: 'Notes de frais (Lecture)', desc: 'Consulter les notes de frais existantes' },
-        { value: 'expenses:create', label: 'Notes de frais (Création)', desc: 'Soumettre de nouvelles notes de frais' },
-        { value: 'expenses:update', label: 'Notes de frais (Modification)', desc: 'Modifier les notes de frais' },
-        { value: 'expenses:validate', label: 'Notes de frais (Validation)', desc: 'Approuver et rembourser les notes de frais' }
-      ]
-    },
-    {
-      name: 'Boutique & Commandes',
-      permissions: [
-        { value: 'shop:*', label: 'Accès complet', desc: 'Gestion complète de la boutique' },
-        { value: 'shop:products', label: 'Gestion des produits', desc: 'Ajouter/Modifier des articles (Coach)' },
-        { value: 'orders:*', label: 'Commandes (Complet)', desc: 'Gestion complète des commandes' },
-        { value: 'orders:read', label: 'Commandes (Lecture)', desc: 'Consulter l\'historique des commandes' },
-        { value: 'orders:create', label: 'Commandes (Création)', desc: 'Créer de nouvelles commandes' },
-        { value: 'orders:update', label: 'Commandes (Modification)', desc: 'Modifier des commandes existantes' },
-        { value: 'orders:validate', label: 'Commandes (Validation)', desc: 'Valider et encaisser les commandes' }
-      ]
-    },
-    {
-      name: 'Adhérents',
-      permissions: [
-        { value: 'members:*', label: 'Accès complet', desc: 'Secrétaire' },
-        { value: 'members:read', label: 'Lecture seule', desc: 'Voir la liste des adhérents' },
-        { value: 'members:import', label: 'Import Poona', desc: 'Importer de nouveaux adhérents' }
-      ]
-    },
-    {
-      name: 'Notifications',
-      permissions: [
-        { value: 'notifications:*', label: 'Accès complet', desc: 'Envoyer des notifications et consulter l\'historique' },
-        { value: 'notifications:read', label: 'Lecture seule', desc: 'Consulter l\'historique des envois sans pouvoir en émettre' }
-      ]
-    },
-    {
-      name: 'Assistant IA',
-      permissions: [
-        { value: 'ai:*', label: 'Assistant IA', desc: 'Utiliser l\'assistant (chat) et générer/consulter les commentaires IA des rapports financiers' }
-      ]
-    }
-  ];
+  /**
+   * Droits effectivement accordés par la sélection, affichés en lecture seule.
+   *
+   * Attribuer un rôle sans voir ce qu'il ouvre revient à signer à l'aveugle : la
+   * liste développée rend la décision vérifiable au moment où on la prend.
+   */
+  const grantedPermissions = $derived(
+    [...new Set(selectedRoles.flatMap((r) => [...ROLE_PERMISSIONS[r]]))].sort()
+  );
 
-  function getLabelForPerm(val: string) {
-    for (const g of PERMISSIONS_GROUPS) {
-      const p = g.permissions.find(x => x.value === val);
-      if (p) return `${g.name} : ${p.label}`;
-    }
-    return val;
+  function toggleRole(role: Role) {
+    selectedRoles = selectedRoles.includes(role)
+      ? selectedRoles.filter((r) => r !== role)
+      : [...selectedRoles, role];
   }
 
-  function togglePermission(val: string) {
-    if (selectedPermissions.includes(val)) {
-      selectedPermissions = selectedPermissions.filter(p => p !== val);
-    } else {
-      selectedPermissions = [...selectedPermissions, val];
-    }
+  function roleVariant(role: string) {
+    return role === 'super_admin' ? 'destructive' : role === 'membre' ? 'outline' : 'secondary';
+  }
+
+  function roleLabel(role: string) {
+    return ROLE_LABELS[role as Role] ?? role;
   }
 
   function openAddSheet() {
     editUserId = null;
     newEmail = '';
     newName = '';
-    selectedPermissions = [];
+    selectedRoles = [];
     isSheetOpen = true;
   }
 
@@ -96,15 +48,15 @@
     editUserId = user.id;
     newEmail = user.email;
     newName = user.name;
-    selectedPermissions = [...user.permissions];
+    selectedRoles = [...(user.roles ?? [])];
     isSheetOpen = true;
   }
 
   async function saveUser() {
     const action = editUserId ? 'update_user' : 'create_user';
     const payload = editUserId
-      ? { action, id: editUserId, name: newName, permissions: selectedPermissions }
-      : { action, email: newEmail, name: newName, permissions: selectedPermissions };
+      ? { action, id: editUserId, name: newName, roles: selectedRoles }
+      : { action, email: newEmail, name: newName, roles: selectedRoles };
 
     await submitForm({
       validate: () => (newEmail ? null : "L'adresse e-mail est requise."),
@@ -170,59 +122,39 @@
                 <FormField id="email" label="Email">
                   <Input id="email" type="email" bind:value={newEmail} placeholder="jean@example.com" disabled={!!editUserId} />
                 </FormField>
-                <FormField id="perms" label="Droits d'accès">
-                  <Popover.Root>
-                    <Popover.Trigger asChild>
-                      {#snippet child({ props })}
-                        <Button 
-                          {...props} 
-                          variant="outline" 
-                          role="combobox" 
-                          class="w-full justify-between font-normal h-auto min-h-10 py-2 px-3"
-                        >
-                          <div class="flex flex-wrap gap-1 items-center">
-                            {#if selectedPermissions.length === 0}
-                              <span class="text-muted-foreground">Sélectionner des droits...</span>
-                            {:else}
-                              {#each selectedPermissions.slice(0, 2) as p}
-                                <Badge variant={p === '*' ? 'destructive' : 'secondary'} size="xs">{getLabelForPerm(p)}</Badge>
-                              {/each}
-                              {#if selectedPermissions.length > 2}
-                                <Badge variant="outline" size="xs">+{selectedPermissions.length - 2}</Badge>
-                              {/if}
-                            {/if}
-                          </div>
-                          <ChevronDown class="h-4 w-4 opacity-50 shrink-0 ml-2" />
-                        </Button>
-                      {/snippet}
-                    </Popover.Trigger>
-                    <Popover.Content class="w-[--bits-popover-anchor-width] p-0 max-h-[350px] overflow-y-auto">
-                      <div class="flex flex-col">
-                        {#each PERMISSIONS_GROUPS as group}
-                          <div class="px-2 pt-2 pb-1 bg-muted/50 text-xs font-bold text-muted-foreground uppercase sticky top-0 backdrop-blur z-10 border-b border-border/50">
-                            {group.name}
-                          </div>
-                          <div class="p-1">
-                            {#each group.permissions as perm}
-                              <label class="flex items-start gap-3 p-2 rounded-md hover:bg-muted cursor-pointer transition-colors">
-                                <div class="mt-0.5">
-                                  <Checkbox 
-                                    checked={selectedPermissions.includes(perm.value)} 
-                                    onCheckedChange={() => togglePermission(perm.value)}
-                                    aria-label={perm.label}
-                                  />
-                                </div>
-                                <div class="flex flex-col flex-1 leading-tight">
-                                  <span class="text-sm font-bold text-foreground">{perm.label}</span>
-                                  <span class="text-xs text-muted-foreground">{perm.desc}</span>
-                                </div>
-                              </label>
-                            {/each}
-                          </div>
-                        {/each}
-                      </div>
-                    </Popover.Content>
-                  </Popover.Root>
+                <FormField id="roles" label="Rôles">
+                  <div class="space-y-1">
+                    {#each ROLES as role}
+                      <label class="flex items-start gap-3 p-2 rounded-md hover:bg-muted cursor-pointer transition-colors">
+                        <div class="mt-0.5">
+                          <Checkbox
+                            checked={selectedRoles.includes(role)}
+                            onCheckedChange={() => toggleRole(role)}
+                            aria-label={ROLE_LABELS[role]}
+                          />
+                        </div>
+                        <div class="flex flex-col flex-1 leading-tight">
+                          <span class="text-sm font-bold text-foreground">{ROLE_LABELS[role]}</span>
+                          <span class="text-xs text-muted-foreground">{ROLE_DESCRIPTIONS[role]}</span>
+                        </div>
+                      </label>
+                    {/each}
+                  </div>
+                </FormField>
+
+                <FormField id="granted" label="Droits accordés">
+                  {#if grantedPermissions.length === 0}
+                    <p class="text-xs text-muted-foreground">
+                      Aucun rôle sélectionné : le compte n'aura accès à rien. À défaut, le
+                      rôle « Membre » lui sera attribué.
+                    </p>
+                  {:else}
+                    <div class="flex flex-wrap gap-1 max-h-40 overflow-y-auto rounded-md border border-border p-2">
+                      {#each grantedPermissions as permission}
+                        <Badge variant="outline" size="xs">{permission}</Badge>
+                      {/each}
+                    </div>
+                  {/if}
                 </FormField>
               </div>
               <Sheet.Footer>
@@ -252,8 +184,8 @@
                   <h4 class="font-bold text-sm text-foreground">{user.name}</h4>
                   <div class="text-muted-foreground text-xs">{user.email}</div>
                   <div class="mt-2 flex flex-wrap gap-1">
-                    {#each user.permissions as perm}
-                      <Badge variant={perm === '*' ? 'destructive' : 'secondary'} size="xs">{getLabelForPerm(perm)}</Badge>
+                    {#each user.roles ?? [] as role}
+                      <Badge variant={roleVariant(role)} size="xs">{roleLabel(role)}</Badge>
                     {/each}
                   </div>
                 </div>
@@ -287,7 +219,7 @@
     {#snippet header()}
       <Table.Head>Nom</Table.Head>
       <Table.Head>Email</Table.Head>
-      <Table.Head>Permissions</Table.Head>
+      <Table.Head>Rôles</Table.Head>
       <Table.Head class="text-right">Actions</Table.Head>
     {/snippet}
 
@@ -297,8 +229,8 @@
         <Table.Cell class="text-muted-foreground">{user.email}</Table.Cell>
         <Table.Cell>
           <div class="flex flex-wrap gap-1">
-            {#each user.permissions as perm}
-              <Badge variant={perm === '*' ? 'destructive' : 'secondary'}>{getLabelForPerm(perm)}</Badge>
+            {#each user.roles ?? [] as role}
+              <Badge variant={roleVariant(role)}>{roleLabel(role)}</Badge>
             {/each}
           </div>
         </Table.Cell>

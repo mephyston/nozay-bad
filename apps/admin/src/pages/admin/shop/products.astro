@@ -6,14 +6,24 @@ import { ProductsManager } from '@nba/shop-ui';
 
 import { env } from 'cloudflare:workers';
 import { createAdminApiClient } from '../../../lib/api';
+import { guardAction } from '../../../lib/guard';
 
 
 const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
 const apiService = createAdminApiClient(Astro.locals);
 
+/** Permission exigée par action d'écriture de cette page. */
+const ACTIONS = {
+  create: 'shop:products:write',
+  update: 'shop:products:write'
+} as const;
+
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
+
+    const denied = guardAction(Astro.locals, data.action, ACTIONS);
+    if (denied) return denied;
     if (data.action === 'create') {
       let catId = typeof data.category === 'number' ? data.category : 3;
       if (data.category === 'shuttlecock') catId = 1;
@@ -75,7 +85,7 @@ try {
 ---
 
 <Layout title="Gestion des Produits - NBA 91">
-  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Boutique / Produits" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Boutique / Produits" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       {errorMsg && <ErrorAlert message={errorMsg} />}
 

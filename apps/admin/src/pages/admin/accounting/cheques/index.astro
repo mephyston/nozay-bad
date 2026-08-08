@@ -9,7 +9,7 @@ const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
 ---
 
 <Layout title="Remises de chèques - NBA 91">
-  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Remises de chèques" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Remises de chèques" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       <PageHeader
         title="Remises de chèques"

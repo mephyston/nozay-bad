@@ -4,6 +4,7 @@ import AdminLayout from '../../../components/AdminLayout.svelte';
 import { PageHeader, ErrorAlert } from '@nba/ui';
 import { env } from 'cloudflare:workers';
 import { createAdminApiClient } from '../../../lib/api';
+import { guardAction } from '../../../lib/guard';
 
 const userEmail = Astro.locals.user?.email || 'admin@nozaybad.fr';
 const apiService = createAdminApiClient(Astro.locals);
@@ -12,9 +13,18 @@ const apiService = createAdminApiClient(Astro.locals);
 const MAX_SIGNATURE_KB = 48;
 
 // --- POST : mise à jour des infos ou upload de la signature ---
+/** Permission exigée par action d'écriture de cette page. */
+const ACTIONS = {
+  update_info: 'members:attestations:write',
+  upload_signature: 'members:attestations:write'
+} as const;
+
 if (Astro.request.method === 'POST') {
   try {
     const data = (await Astro.request.json()) as any;
+
+    const denied = guardAction(Astro.locals, data.action, ACTIONS);
+    if (denied) return denied;
 
     if (data.action === 'update_info') {
       const apiRes = await apiService.fetch('http://localhost/members/attestation/config', {
@@ -62,7 +72,7 @@ try {
 ---
 
 <Layout title="Attestation CSE - Configuration">
-  <AdminLayout
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""}
     name={Astro.locals.user?.name}
     client:idle
     email={userEmail}

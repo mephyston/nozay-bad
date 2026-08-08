@@ -45,7 +45,7 @@ try {
 ---
 
 <Layout title="Notifications - NBA 91">
-  <AdminLayout
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""}
     name={Astro.locals.user?.name}
     client:idle
     email={Astro.locals.user?.email || 'admin@nozaybad.fr'}

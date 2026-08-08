@@ -28,7 +28,9 @@ export function guardAction(
   action: unknown,
   actions: Record<string, Permission>
 ): Response | null {
-  if (typeof action !== 'string' || !(action in actions)) {
+  // `Object.hasOwn` et non `in` : `'constructor' in actions` est vrai par héritage,
+  // et laisserait un nom d'action emprunté au prototype franchir cette vérification.
+  if (typeof action !== 'string' || !Object.hasOwn(actions, action)) {
     return forbidden('Action inconnue');
   }
   return can(locals, actions[action]) ? null : forbidden();
