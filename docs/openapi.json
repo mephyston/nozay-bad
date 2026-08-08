@@ -1041,8 +1041,16 @@
         ],
         "properties": {
           "seasonId": {
-            "minimum": 1,
-            "type": "integer"
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "minimum": 1,
+                "type": "integer"
+              }
+            ]
           },
           "memberId": {
             "minimum": 1,
