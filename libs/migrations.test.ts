@@ -44,6 +44,17 @@ describe('0012_iam_roles — reprise des permissions vers des rôles', () => {
     );
   }
 
+  /**
+   * Compte portant l'ancien joker global.
+   *
+   * Les tests qui vérifient une correspondance précise en ont besoin : sans lui, le
+   * filet de dernier recours promeut le plus ancien compte en super administrateur
+   * et brouille l'assertion. Ce filet a son propre test.
+   */
+  function seedExistingSuperAdmin(): void {
+    seed('boss@nozaybad.fr', ['*']);
+  }
+
   function rolesOf(email: string): string[] {
     const rows = db
       .prepare(
@@ -69,6 +80,7 @@ describe('0012_iam_roles — reprise des permissions vers des rôles', () => {
   });
 
   it("ne confond pas le joker global avec un joker de domaine", () => {
+    seedExistingSuperAdmin();
     // `accounting:*` ne doit pas être lu comme `*` : c'est tout l'enjeu du motif
     // `'%"*"%'`, dont le caractère précédant l'étoile est un guillemet.
     seed('compta@nozaybad.fr', ['accounting:*']);
@@ -77,18 +89,21 @@ describe('0012_iam_roles — reprise des permissions vers des rôles', () => {
   });
 
   it('donne tresorier sur une écriture comptable', () => {
+    seedExistingSuperAdmin();
     seed('tresor@nozaybad.fr', ['accounting:invoices', 'members:read']);
     runMigration();
     expect(rolesOf('tresor@nozaybad.fr')).toContain('tresorier');
   });
 
   it('donne tresorier sur la gestion des notes de frais', () => {
+    seedExistingSuperAdmin();
     seed('frais@nozaybad.fr', ['expenses:validate']);
     runMigration();
     expect(rolesOf('frais@nozaybad.fr')).toEqual(['tresorier']);
   });
 
   it("ne promeut pas en tresorier sur une simple lecture comptable", () => {
+    seedExistingSuperAdmin();
     // Le cas réel qui a motivé le resserrement : `accounting:reports` est une
     // lecture, et `tresorier` ouvrirait le grand livre en écriture.
     seed('coach@nozaybad.fr', ['accounting:reports', 'shop:products', 'members:read']);
@@ -97,24 +112,52 @@ describe('0012_iam_roles — reprise des permissions vers des rôles', () => {
   });
 
   it('donne secretaire sur les adhérents, la communication ou la boutique', () => {
+    seedExistingSuperAdmin();
     seed('secret@nozaybad.fr', ['members:*', 'notifications:read']);
     runMigration();
     expect(rolesOf('secret@nozaybad.fr')).toEqual(['secretaire']);
   });
 
   it('donne president sur la gestion des accès', () => {
+    seedExistingSuperAdmin();
     seed('presi@nozaybad.fr', ['iam:*']);
     runMigration();
     expect(rolesOf('presi@nozaybad.fr')).toContain('president');
   });
 
   it('cumule les rôles quand les anciens droits couvraient plusieurs métiers', () => {
+    seedExistingSuperAdmin();
     seed('cumul@nozaybad.fr', ['accounting:*', 'members:*', 'iam:*']);
     runMigration();
     expect(rolesOf('cumul@nozaybad.fr')).toEqual(['president', 'secretaire', 'tresorier']);
   });
 
+  it('désigne un super administrateur si la reprise n’en a produit aucun', () => {
+    // Sans ce filet, une base dont aucun compte ne portait le joker global se
+    // retrouverait sans personne pouvant attribuer de rôle : la gestion des accès
+    // serait close définitivement, sans recours depuis l'interface.
+    seed('ancien@nozaybad.fr', ['members:read']);
+    seed('recent@nozaybad.fr', ['shop:products']);
+    runMigration();
+
+    expect(rolesOf('ancien@nozaybad.fr')).toContain('super_admin');
+    expect(rolesOf('recent@nozaybad.fr')).not.toContain('super_admin');
+  });
+
+  it("n'en désigne qu'un seul, et seulement en dernier recours", () => {
+    seed('boss@nozaybad.fr', ['*']);
+    seed('autre@nozaybad.fr', ['members:read']);
+    runMigration();
+
+    const supers = (db.prepare(
+      "SELECT COUNT(*) AS n FROM admin_user_roles WHERE role = 'super_admin'"
+    ).get() as { n: number }).n;
+    expect(supers).toBe(1);
+    expect(rolesOf('boss@nozaybad.fr')).toEqual(['super_admin']);
+  });
+
   it('ne laisse aucun compte sans rôle', () => {
+    seedExistingSuperAdmin();
     // Sans ce filet, un compte aux droits vides perdrait tout accès — y compris le
     // tableau de bord — sans que personne ne l'ait décidé.
     seed('vide@nozaybad.fr', []);

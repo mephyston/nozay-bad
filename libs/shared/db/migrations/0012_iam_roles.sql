@@ -54,6 +54,18 @@ SELECT `id`, 'president', CAST(strftime('%s','now') AS INTEGER)
 FROM `admin_users`
 WHERE `permissions` NOT LIKE '%"*"%'
   AND `permissions` LIKE '%"iam:%';--> statement-breakpoint
+-- Filet de dernier recours : si la reprise n'a désigné aucun super administrateur —
+-- ce qui arrive dès qu'aucun compte ne portait l'ancien joker global — le plus
+-- ancien compte le devient. Sans cela, plus personne ne pourrait attribuer de rôle
+-- (`iam:users:write` n'appartient qu'à la présidence et au super administrateur) et
+-- la gestion des accès serait close définitivement, sans recours depuis l'interface.
+-- Le plus ancien compte est retenu parce que c'est celui du bootstrap initial.
+INSERT OR IGNORE INTO `admin_user_roles` (`user_id`, `role`, `created_at`)
+SELECT `id`, 'super_admin', CAST(strftime('%s','now') AS INTEGER)
+FROM `admin_users`
+WHERE NOT EXISTS (SELECT 1 FROM `admin_user_roles` WHERE `role` = 'super_admin')
+ORDER BY `id`
+LIMIT 1;--> statement-breakpoint
 -- Filet : aucun compte ne doit rester sans rôle, sinon il perd tout accès sans que
 -- personne ne l'ait décidé. `membre` donne le tableau de bord et l'aide.
 INSERT OR IGNORE INTO `admin_user_roles` (`user_id`, `role`, `created_at`)
