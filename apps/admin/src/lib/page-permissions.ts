@@ -50,7 +50,10 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
   '/admin/notifications': 'notifications:messages:read',
 
   '/admin/settings': 'settings:hub:read',
-  '/admin/settings/seasons': 'accounting:seasons:read',
+  // Écran de gestion, pas de consultation : lire les exercices est un besoin de
+  // données d'autres écrans (sélecteur de saison), pas une raison d'ouvrir
+  // celui-ci — d'où le droit d'écriture.
+  '/admin/settings/seasons': 'accounting:seasons:write',
   '/admin/settings/accounting': 'accounting:config:read',
   '/admin/settings/attestation': 'members:attestations:read',
   '/admin/settings/products': 'shop:products:read',

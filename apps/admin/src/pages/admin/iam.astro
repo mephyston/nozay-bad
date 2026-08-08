@@ -79,9 +79,15 @@ try {
 
       {errorMsg && <ErrorAlert message={errorMsg} />}
 
-      <UsersManager client:load users={usersList} />
+      <div>
+        <UsersManager client:load users={usersList} />
+      </div>
 
-      <RolesMatrix client:visible />
+      <!-- Les îlots Astro sont des éléments inline : sans ce bloc, `space-y-6` ne
+           pose pas de marge entre la liste des comptes et cette section. -->
+      <div>
+        <RolesMatrix client:visible />
+      </div>
     </div>
   </AdminLayout>
 </Layout>

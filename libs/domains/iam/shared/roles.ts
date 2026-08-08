@@ -8,7 +8,14 @@ import { ALL_PERMISSIONS, type Permission } from './permissions';
  * Deny-by-default : un compte sans rôle n'a aucune permission. `membre` est le rôle
  * par défaut et ne donne accès qu'au tableau de bord et au centre d'aide.
  */
-export const ROLES = ['super_admin', 'president', 'tresorier', 'secretaire', 'membre'] as const;
+export const ROLES = [
+  'super_admin',
+  'president',
+  'tresorier',
+  'secretaire',
+  'coach',
+  'membre'
+] as const;
 
 export type Role = (typeof ROLES)[number];
 
@@ -19,6 +26,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   president: 'Président·e',
   tresorier: 'Trésorier·ère',
   secretaire: 'Secrétaire',
+  coach: 'Entraîneur·e',
   membre: 'Membre'
 };
 
@@ -27,6 +35,7 @@ export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   president: "Consultation de l'ensemble du club, actes de gouvernance (exercices, budget, validations) et gestion des accès.",
   tresorier: 'Comptabilité complète, notes de frais et encaissement des commandes.',
   secretaire: 'Fichier des adhérents, attestations, communication et catalogue boutique.',
+  coach: 'Catalogue et commandes de la boutique, consultation des adhérents.',
   membre: "Tableau de bord et centre d'aide uniquement."
 };
 
@@ -143,6 +152,24 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'accounting:reports:read',
     'expenses:reports:read',
     'settings:hub:read'
+  ],
+
+  coach: [
+    ...BASE,
+    ...ACCOUNTING_CONTEXT,
+    // Suivre et équiper ses joueurs : consultation du fichier, sans modification.
+    'members:members:read',
+    // La boutique : catalogue, catégories, et passage de commandes pour un adhérent.
+    'shop:products:read',
+    'shop:products:write',
+    'shop:categories:write',
+    'shop:orders:read',
+    'shop:orders:write',
+    // Les catégories de produits vivent dans les réglages : sans cette entrée, l'écran
+    // existe mais aucun chemin du menu n'y mène.
+    'settings:hub:read'
+    // Pas de `shop:orders:approve` : valider une commande écrit une recette au grand
+    // livre, c'est un acte comptable qui reste à la trésorerie.
   ],
 
   // Rôle par défaut : aucun droit métier. C'est le socle du deny-by-default.

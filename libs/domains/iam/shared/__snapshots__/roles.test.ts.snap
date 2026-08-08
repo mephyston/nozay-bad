@@ -2,6 +2,19 @@
 
 exports[`matrice des droits > correspond à l’instantané validé 1`] = `
 {
+  "coach": [
+    "accounting:config:read",
+    "accounting:seasons:read",
+    "dashboard:overview:read",
+    "help:docs:read",
+    "members:members:read",
+    "settings:hub:read",
+    "shop:categories:write",
+    "shop:orders:read",
+    "shop:orders:write",
+    "shop:products:read",
+    "shop:products:write",
+  ],
   "membre": [
     "dashboard:overview:read",
     "help:docs:read",

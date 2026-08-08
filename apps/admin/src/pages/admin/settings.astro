@@ -3,8 +3,42 @@ import Layout from '../../layouts/Layout.astro';
 import AdminLayout from '../../components/AdminLayout.svelte';
 import { PageHeader, ErrorAlert } from '@nba/ui';
 import { env } from 'cloudflare:workers';
+import { can } from '../../lib/guard';
 
 const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
+
+/**
+ * Le hub proposait ses quatre destinations à tout le monde. Depuis que les rôles
+ * sont réellement appliqués, la plupart mènent à un refus pour qui n'a pas le droit
+ * correspondant : on ne montre que ce qui s'ouvre. Les permissions reprennent
+ * exactement celles déclarées dans PAGE_PERMISSIONS pour ces pages.
+ */
+const cards = [
+  {
+    href: '/admin/settings/attestation',
+    title: 'Attestation CSE',
+    description: "Signataire, mail, site web et signature du modèle d'attestation.",
+    allowed: can(Astro.locals, 'members:attestations:read')
+  },
+  {
+    href: '/admin/settings/seasons',
+    title: 'Saisons Comptables',
+    description: 'Exercices comptables, clôture, soldes initiaux et saison active.',
+    allowed: can(Astro.locals, 'accounting:seasons:write')
+  },
+  {
+    href: '/admin/settings/accounting',
+    title: 'Catégories et Classes',
+    description: 'Catégories comptables, plan comptable associatif (classes de comptes).',
+    allowed: can(Astro.locals, 'accounting:config:read')
+  },
+  {
+    href: '/admin/settings/products',
+    title: 'Catégories Produits',
+    description: 'Catégories de la boutique et leurs correspondances comptables.',
+    allowed: can(Astro.locals, 'shop:products:read')
+  }
+].filter((c) => c.allowed);
 ---
 
 <Layout title="Configuration - NBA 91">
@@ -16,49 +50,18 @@ const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
       />
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <a
-          href="/admin/settings/attestation"
-          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline relative overflow-hidden group"
-        >
-          <div class="flex items-center justify-between">
-            <p class="text-sm font-semibold text-foreground">Attestation CSE</p>
-            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Configurer &rarr;</span>
-          </div>
-          <p class="text-xs text-muted-foreground pr-8">Signataire, mail, site web et signature du modèle d'attestation.</p>
-        </a>
-
-        <a
-          href="/admin/settings/seasons"
-          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline relative overflow-hidden group"
-        >
-          <div class="flex items-center justify-between">
-            <p class="text-sm font-semibold text-foreground">Saisons Comptables</p>
-            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Configurer &rarr;</span>
-          </div>
-          <p class="text-xs text-muted-foreground pr-8">Exercices comptables, clôture, soldes initiaux et saison active.</p>
-        </a>
-
-        <a
-          href="/admin/settings/accounting"
-          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline relative overflow-hidden group"
-        >
-          <div class="flex items-center justify-between">
-            <p class="text-sm font-semibold text-foreground">Catégories et Classes</p>
-            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Configurer &rarr;</span>
-          </div>
-          <p class="text-xs text-muted-foreground pr-8">Catégories comptables, plan comptable associatif (classes de comptes).</p>
-        </a>
-
-        <a
-          href="/admin/settings/products"
-          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline relative overflow-hidden group"
-        >
-          <div class="flex items-center justify-between">
-            <p class="text-sm font-semibold text-foreground">Catégories Produits</p>
-            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Configurer &rarr;</span>
-          </div>
-          <p class="text-xs text-muted-foreground pr-8">Catégories de la boutique et leurs correspondances comptables.</p>
-        </a>
+        {cards.map((card) => (
+          <a
+            href={card.href}
+            class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline relative overflow-hidden group"
+          >
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-semibold text-foreground">{card.title}</p>
+              <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Configurer &rarr;</span>
+            </div>
+            <p class="text-xs text-muted-foreground pr-8">{card.description}</p>
+          </a>
+        ))}
       </div>
     </div>
   </AdminLayout>

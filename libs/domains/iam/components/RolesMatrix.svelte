@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Card, Table, Badge } from '@nba/ui';
+  import { CollapsibleSection, Table, Badge } from '@nba/ui';
   import { Check, Minus } from '@lucide/svelte';
   import { ROLES, ROLE_LABELS, ROLE_DESCRIPTIONS, ROLE_PERMISSIONS, type Role } from '../shared/roles';
   import { PERMISSION_LABELS, groupedPermissions } from '../shared/catalog';
@@ -7,8 +7,8 @@
 
   const groups = groupedPermissions();
 
-  // Un Set par rôle : la matrice fait ~45 lignes × 5 colonnes, autant ne pas
-  // parcourir un tableau à chaque cellule.
+  // Un Set par rôle : la matrice fait ~45 lignes par autant de colonnes que de
+  // rôles, autant ne pas parcourir un tableau à chaque cellule.
   const granted = new Map<Role, Set<string>>(
     ROLES.map((role) => [role, new Set<string>(ROLE_PERMISSIONS[role])])
   );
@@ -20,17 +20,12 @@
   const counts = new Map<Role, number>(ROLES.map((r) => [r, ROLE_PERMISSIONS[r].length]));
 </script>
 
-<Card.Root>
-  <Card.Header>
-    <Card.Title>Que permet chaque rôle ?</Card.Title>
-    <Card.Description>
-      Les rôles sont définis dans le code de l'application : ils ne se modifient pas depuis cet
-      écran, ce qui garantit qu'ils restent identiques d'un environnement à l'autre. Un compte
-      peut cumuler plusieurs rôles ; ses droits sont alors l'union des leurs.
-    </Card.Description>
-  </Card.Header>
-
-  <Card.Content class="space-y-6">
+<CollapsibleSection
+  title="Que permet chaque rôle ?"
+  description="Les rôles sont définis dans le code : ils restent identiques d'un environnement à l'autre. Un compte peut en cumuler plusieurs ; ses droits sont l'union des leurs."
+  badge={`${ROLES.length} rôles`}
+>
+  <div class="space-y-6">
     <!-- Rappel de ce que recouvre chaque rôle, avant le détail ligne à ligne. -->
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {#each ROLES as role (role)}
@@ -89,5 +84,5 @@
         </Table.Body>
       </Table.Root>
     </div>
-  </Card.Content>
-</Card.Root>
+  </div>
+</CollapsibleSection>

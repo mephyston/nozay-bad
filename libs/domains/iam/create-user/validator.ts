@@ -12,5 +12,5 @@ import { ROLES } from '../shared/roles';
 export const createUserBodySchema = Type.Object({
   email: Type.String({ minLength: 3, maxLength: 255, pattern: '^[^@\\s]+@[^@\\s]+$' }),
   name: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
-  roles: Type.Optional(Type.Array(Type.Union(ROLES.map((r) => Type.Literal(r))), { maxItems: 5 }))
+  roles: Type.Optional(Type.Array(Type.Union(ROLES.map((r) => Type.Literal(r))), { maxItems: ROLES.length }))
 });

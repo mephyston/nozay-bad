@@ -14,7 +14,7 @@ Le storefront est hors de ce périmètre. Un adhérent s'y authentifie par code 
 |---|---|---|
 | **Compte d'administration** | Une personne autorisée à ouvrir la console d'administration. Identifiée par son adresse e-mail, celle que Cloudflare Access authentifie. | `Entity` (`admin_users`) |
 | **Permission** | Le droit d'accomplir une opération précise, nommée `<domaine>:<ressource>:<action>`. Accordée ou non : il n'existe pas de joker. | `string` (`accounting:ledger:write`) |
-| **Rôle** | Un métier de l'association, auquel est attaché un ensemble de permissions. Un compte peut en cumuler plusieurs. | `Enum` (`super_admin`, `president`, `tresorier`, `secretaire`, `membre`) |
+| **Rôle** | Un métier de l'association, auquel est attaché un ensemble de permissions. Un compte peut en cumuler plusieurs. | `Enum` (`super_admin`, `president`, `tresorier`, `secretaire`, `coach`, `membre`) |
 | **Acteur** | Une identité résolue en droits effectifs : le compte, ses rôles, et l'union de leurs permissions. | `Actor` (`get-actor`) |
 | **Rôle par défaut** | `membre` : tableau de bord et centre d'aide, aucun droit métier. Attribué à tout compte créé sans rôle explicite. | `DEFAULT_ROLE` |
 | **Usurpation** | Emprunt temporaire de l'identité d'un autre compte, pour reproduire ce qu'il voit. Réservée au droit `iam:sessions:impersonate`. | Cookie `impersonate_email` (HttpOnly) |

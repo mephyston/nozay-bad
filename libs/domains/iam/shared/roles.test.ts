@@ -68,6 +68,28 @@ describe('définition des rôles', () => {
     }
   });
 
+  it("donne à l'entraîneur la boutique et la lecture des adhérents, rien de plus", () => {
+    const coach = new Set<string>(ROLE_PERMISSIONS.coach);
+    // Ce qu'on lui accorde.
+    for (const p of [
+      'members:members:read',
+      'shop:products:read', 'shop:products:write', 'shop:categories:write',
+      'shop:orders:read', 'shop:orders:write'
+    ]) {
+      expect(coach, p).toContain(p);
+    }
+    // Ce qu'on lui refuse : encaisser une commande écrit une recette au grand livre,
+    // et le fichier des adhérents reste en lecture seule.
+    for (const p of [
+      'shop:orders:approve',
+      'members:members:write', 'members:members:import',
+      'accounting:ledger:read', 'accounting:ledger:write',
+      'expenses:reports:read', 'notifications:messages:send'
+    ]) {
+      expect(coach, p).not.toContain(p);
+    }
+  });
+
   it("n'accorde aucune écriture comptable à la présidence (séparation des tâches)", () => {
     const writes: Permission[] = [
       'accounting:ledger:write',
