@@ -1,3 +1,10 @@
+# [1.0.0-beta.57](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.56...v1.0.0-beta.57) (2026-08-08)
+
+
+### Features
+
+* **notifications:** publier le contrat OpenAPI des routes push ([1fd9d2d](https://github.com/mephyston/nozay-bad/commit/1fd9d2d63f3662cf3cad6fa33947557fc472fbfe))
+
 # [1.0.0-beta.56](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.55...v1.0.0-beta.56) (2026-08-05)
 
 
