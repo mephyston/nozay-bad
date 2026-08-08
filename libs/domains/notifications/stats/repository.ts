@@ -15,11 +15,21 @@ export interface RecentMessage {
   title: string;
   body: string;
   target: string;
+  targetDetail: string | null;
+  category: string;
   source: string;
   createdAt: Date;
   sent: number;
   failed: number;
   pending: number;
+}
+
+export interface SubscriberRow {
+  id: number;
+  email: string;
+  userAgent: string | null;
+  createdAt: Date;
+  lastSuccessAt: Date | null;
 }
 
 export class StatsRepository {
@@ -48,6 +58,8 @@ export class StatsRepository {
         title: pushMessagesTable.title,
         body: pushMessagesTable.body,
         target: pushMessagesTable.target,
+        targetDetail: pushMessagesTable.targetDetail,
+        category: pushMessagesTable.category,
         source: pushMessagesTable.source,
         createdAt: pushMessagesTable.createdAt,
         sent: sql<number>`sum(case when ${pushDeliveriesTable.status} = 'sent' then 1 else 0 end)`,
@@ -67,5 +79,21 @@ export class StatsRepository {
       failed: Number(row.failed ?? 0),
       pending: Number(row.pending ?? 0)
     })) as RecentMessage[];
+  }
+
+  /** Abonnements, du plus récent au plus ancien. */
+  async listSubscribers(db: DbOrTx): Promise<SubscriberRow[]> {
+    const rows = await db
+      .select({
+        id: pushSubscriptionsTable.id,
+        email: pushSubscriptionsTable.email,
+        userAgent: pushSubscriptionsTable.userAgent,
+        createdAt: pushSubscriptionsTable.createdAt,
+        lastSuccessAt: pushSubscriptionsTable.lastSuccessAt
+      })
+      .from(pushSubscriptionsTable)
+      .orderBy(desc(pushSubscriptionsTable.id))
+      .all();
+    return rows as SubscriberRow[];
   }
 }

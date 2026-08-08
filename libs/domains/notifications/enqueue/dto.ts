@@ -1,3 +1,5 @@
+import type { NotificationCategory } from '../shared/categories';
+
 /**
  * Ciblage d'une diffusion.
  *
@@ -14,7 +16,7 @@ export type NotificationTarget =
   | { kind: 'emails'; emails: string[] };
 
 /** Étiquette conservée dans l'historique, indépendante de la résolution technique. */
-export type NotificationTargetLabel = 'all' | 'unpaid' | 'emails';
+export type NotificationTargetLabel = 'all' | 'unpaid' | 'groups' | 'emails';
 
 export interface EnqueueNotificationInput {
   title: string;
@@ -24,6 +26,14 @@ export interface EnqueueNotificationInput {
   target: NotificationTarget;
   /** Ce qui sera affiché dans l'historique. Par défaut, le `kind` de la cible. */
   targetLabel?: NotificationTargetLabel;
+  /** Précision lisible du ciblage pour l'historique (ex. la liste des groupes). */
+  targetDetail?: string;
+  /**
+   * Catégorie réglable par l'adhérent. Les comptes l'ayant coupée sont écartés.
+   * Par défaut `announcement` : une notification sans catégorie explicite est une
+   * communication du bureau.
+   */
+  category?: NotificationCategory;
   /** `admin` pour un envoi manuel, sinon l'événement à l'origine du message. */
   source?: string;
   /**

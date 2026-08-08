@@ -37,7 +37,8 @@ export async function rejectOrder(db: Db, id: RejectOrderInput): Promise<RejectO
     title: 'Commande refusée',
     body: "Votre commande boutique n'a pas été retenue. Rapprochez-vous du bureau pour en savoir plus.",
     url: '/mon-compte',
-    source: 'order:rejected'
+    source: 'order:rejected',
+    category: 'order'
   });
 
   return updated;

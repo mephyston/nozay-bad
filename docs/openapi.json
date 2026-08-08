@@ -1354,6 +1354,43 @@
               {
                 "const": "unpaid",
                 "type": "string"
+              },
+              {
+                "const": "groups",
+                "type": "string"
+              }
+            ]
+          },
+          "groups": {
+            "maxItems": 40,
+            "type": "array",
+            "items": {
+              "minLength": 1,
+              "maxLength": 120,
+              "type": "string"
+            }
+          },
+          "category": {
+            "anyOf": [
+              {
+                "const": "announcement",
+                "type": "string"
+              },
+              {
+                "const": "birthday",
+                "type": "string"
+              },
+              {
+                "const": "expense",
+                "type": "string"
+              },
+              {
+                "const": "order",
+                "type": "string"
+              },
+              {
+                "const": "reminder",
+                "type": "string"
               }
             ]
           }

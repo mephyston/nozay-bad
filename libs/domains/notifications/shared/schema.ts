@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 /**
  * Abonnement push d'un appareil.
@@ -36,13 +36,42 @@ export const pushMessagesTable = sqliteTable('push_messages', {
   body: text('body').notNull(),
   // Chemin ouvert au clic sur la notification (relatif au storefront).
   url: text('url'),
-  target: text('target', { enum: ['all', 'unpaid', 'emails'] })
+  target: text('target', { enum: ['all', 'unpaid', 'groups', 'emails'] })
     .notNull()
     .default('all'),
+  // Précision lisible du ciblage, telle qu'affichée dans l'historique : la liste des
+  // groupes visés par exemple. On ne stocke pas les emails résolus, qui n'ont pas
+  // d'intérêt rétrospectif et alourdiraient inutilement la table.
+  targetDetail: text('target_detail'),
   // Origine du message : 'admin' pour un envoi manuel, sinon l'événement métier.
   source: text('source').notNull().default('admin'),
+  // Catégorie réglable par l'adhérent (cf. shared/categories.ts). Stockée en texte
+  // libre plutôt qu'en enum figé : une catégorie retirée du code ne doit pas rendre
+  // illisible l'historique déjà écrit.
+  category: text('category').notNull().default('announcement'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
+
+/**
+ * Préférence d'un compte pour une catégorie.
+ *
+ * Seuls les écarts au défaut sont stockés : l'absence de ligne vaut « activé ».
+ * Une nouvelle catégorie ajoutée au code est donc active pour tout le monde sans
+ * migration de données.
+ */
+export const pushPreferencesTable = sqliteTable(
+  'push_preferences',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    email: text('email').notNull(),
+    category: text('category').notNull(),
+    enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    emailCategoryIdx: uniqueIndex('push_preferences_email_category_idx').on(table.email, table.category)
+  })
+);
 
 /**
  * File d'attente d'envoi (outbox), une ligne par appareil destinataire.
@@ -71,6 +100,7 @@ export const pushDeliveriesTable = sqliteTable(
   })
 );
 
+export type PushPreferenceRow = typeof pushPreferencesTable.$inferSelect;
 export type PushSubscriptionRow = typeof pushSubscriptionsTable.$inferSelect;
 export type PushMessageRow = typeof pushMessagesTable.$inferSelect;
 export type PushDeliveryRow = typeof pushDeliveriesTable.$inferSelect;

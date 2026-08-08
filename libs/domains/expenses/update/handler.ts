@@ -56,7 +56,8 @@ export async function approveExpense(db: Db, id: ApproveExpenseInput): Promise<A
       title: 'Note de frais validée',
       body: `Votre note de frais de ${(expenseData.amountCents / 100).toFixed(2)} € a été validée.`,
       url: '/note-de-frais',
-      source: 'expense:approved'
+      source: 'expense:approved',
+      category: 'expense'
     });
   }
 
@@ -84,7 +85,8 @@ export async function rejectExpense(db: Db, id: number) {
       title: 'Note de frais refusée',
       body: 'Votre note de frais a été refusée. Rapprochez-vous du bureau pour en connaître le motif.',
       url: '/note-de-frais',
-      source: 'expense:rejected'
+      source: 'expense:rejected',
+      category: 'expense'
     });
   }
 

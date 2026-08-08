@@ -26,30 +26,42 @@
     }
   ],
   "ai": {
-    "binding": "AI"
+    "binding": "AI",
+    "remote": true
   },
   "triggers": {
-    "crons": ["* * * * *", "0 8 * * 1"]
+    "crons": [
+      "* * * * *",
+      "0 7 * * *",
+      "0 8 * * 1"
+    ]
   },
   "vars": {
     "VAPID_SUBJECT": "mailto:contact@nozaybad.fr",
     "PUSH_REMINDERS_ENABLED": "false",
-    "VAPID_PUBLIC_KEY": "BGLR2qQYt7FsbrqkNjx2p9p--tZuvKCBwj7YBZ5Di7Un1uwkiVXY3SWHi33zuZWltVAOJTsBsAZNaz7bRolHXo4"
+    "VAPID_PUBLIC_KEY": "BGLR2qQYt7FsbrqkNjx2p9p--tZuvKCBwj7YBZ5Di7Un1uwkiVXY3SWHi33zuZWltVAOJTsBsAZNaz7bRolHXo4",
+    "PUSH_BIRTHDAYS_ENABLED": "false"
   },
   "env": {
     "staging": {
       "name": "nba-api-staging",
       "workers_dev": false,
       "ai": {
-        "binding": "AI"
+        "binding": "AI",
+        "remote": true
       },
       "triggers": {
-        "crons": ["* * * * *", "0 8 * * 1"]
+        "crons": [
+          "* * * * *",
+          "0 7 * * *",
+          "0 8 * * 1"
+        ]
       },
       "vars": {
         "VAPID_SUBJECT": "mailto:contact@nozaybad.fr",
         "PUSH_REMINDERS_ENABLED": "false",
-        "VAPID_PUBLIC_KEY": "BJiMPuOGVz144IXpSHoh_XthNFdB-uSV0qGEMc2D-FeheQqVaBmfCUIVa2notPKe3AI2Z4cpP3bgb6dlS5jyLUw"
+        "VAPID_PUBLIC_KEY": "BJiMPuOGVz144IXpSHoh_XthNFdB-uSV0qGEMc2D-FeheQqVaBmfCUIVa2notPKe3AI2Z4cpP3bgb6dlS5jyLUw",
+        "PUSH_BIRTHDAYS_ENABLED": "false"
       },
       "d1_databases": [
         {

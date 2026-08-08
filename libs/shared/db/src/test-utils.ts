@@ -11,6 +11,7 @@ export async function setupMockDb() {
     'attestation_config',
     'push_deliveries',
     'push_messages',
+    'push_preferences',
     'push_subscriptions',
     'expenses',
     'ledger_entries',

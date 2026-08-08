@@ -110,7 +110,8 @@ export async function approveOrder(db: Db, input: ApproveOrderInput): Promise<Ap
     title: 'Commande validée',
     body: `Votre commande ${product.name} ×${order.quantity} est validée.`,
     url: '/mon-compte',
-    source: 'order:approved'
+    source: 'order:approved',
+    category: 'order'
   });
 
   const updated = await repo.getOrderById(db, id);

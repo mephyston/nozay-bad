@@ -1,6 +1,6 @@
 import { membersTable } from '@nba/members/schema';
 import { getActiveSeasonId, getSeasonId, isSeasonClosed } from '@nba/accounting-api';
-import { and, eq, inArray, or } from 'drizzle-orm';
+import { and, eq, inArray, or, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 
 
@@ -91,7 +91,7 @@ export async function getContactEmailsForMember(db: DbOrTx, memberId: number): P
  */
 export async function getHouseholdEmailsForActiveSeason(
   db: DbOrTx,
-  options: { unpaidOnly?: boolean } = {}
+  options: { unpaidOnly?: boolean; types?: string[] } = {}
 ): Promise<string[]> {
   const seasonId = await getActiveSeasonId(db);
   if (seasonId === undefined) return [];
@@ -99,6 +99,11 @@ export async function getHouseholdEmailsForActiveSeason(
   const conditions = [eq(membersTable.seasonId, seasonId)];
   if (options.unpaidOnly) {
     conditions.push(eq(membersTable.paid, false));
+  }
+  if (options.types) {
+    // Une liste vide ne doit jamais dégénérer en « tout le club ».
+    if (options.types.length === 0) return [];
+    conditions.push(inArray(membersTable.type, options.types));
   }
 
   const rows = await db
@@ -119,6 +124,141 @@ export async function getHouseholdEmailsForActiveSeason(
     }
   }
   return [...emails];
+}
+
+export interface MemberGroup {
+  /** Libellé du type d'adhésion, tel qu'importé de Poona. */
+  type: string;
+  members: number;
+}
+
+/**
+ * Groupes d'adhésion de la saison active, avec leurs effectifs.
+ *
+ * Les libellés viennent de l'import Poona et ne sont pas normalisés : ils sont donc
+ * lus en base plutôt que figés dans le code, sans quoi un intitulé renommé d'une
+ * saison à l'autre deviendrait une cible vide et silencieuse.
+ */
+export async function getMemberGroupsForActiveSeason(db: DbOrTx): Promise<MemberGroup[]> {
+  const seasonId = await getActiveSeasonId(db);
+  if (seasonId === undefined) return [];
+
+  const rows = await db
+    .select({ type: membersTable.type, members: sql<number>`count(*)` })
+    .from(membersTable)
+    .where(eq(membersTable.seasonId, seasonId))
+    .groupBy(membersTable.type)
+    .orderBy(membersTable.type)
+    .all();
+
+  return rows.map((row) => ({ type: row.type, members: Number(row.members ?? 0) }));
+}
+
+export interface MemberBirthday {
+  firstName: string;
+  lastName: string;
+  /** Âge atteint ce jour-là. */
+  age: number;
+}
+
+/**
+ * Adhérents de la saison active dont c'est l'anniversaire à la date donnée.
+ *
+ * `birth_date` est stocké au format ISO `YYYY-MM-DD` : on compare le suffixe
+ * `MM-DD`. Un 29 février ne remonte donc que les années bissextiles — comportement
+ * assumé, plutôt que de fêter l'anniversaire un jour arbitraire.
+ */
+export async function getBirthdaysForActiveSeason(db: DbOrTx, date: Date): Promise<MemberBirthday[]> {
+  const seasonId = await getActiveSeasonId(db);
+  if (seasonId === undefined) return [];
+
+  const monthDay = `${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+  const rows = await db
+    .select({
+      firstName: membersTable.firstName,
+      lastName: membersTable.lastName,
+      birthDate: membersTable.birthDate
+    })
+    .from(membersTable)
+    .where(
+      and(eq(membersTable.seasonId, seasonId), sql`substr(${membersTable.birthDate}, 6) = ${monthDay}`)
+    )
+    .all();
+
+  return rows
+    .map((row) => ({
+      firstName: row.firstName,
+      lastName: row.lastName,
+      age: date.getUTCFullYear() - Number(row.birthDate.slice(0, 4))
+    }))
+    .filter((row) => Number.isFinite(row.age) && row.age > 0);
+}
+
+export interface MemberContact {
+  id: number;
+  firstName: string;
+  lastName: string;
+  type: string;
+  /** Adresse par laquelle ce dossier est joignable (la sienne ou celle d'un parent). */
+  matchedEmail: string;
+}
+
+/**
+ * Adhérents de la saison active joignables aux adresses fournies.
+ *
+ * Un même email peut couvrir plusieurs dossiers (fratrie) : la fonction renvoie une
+ * ligne par adhérent, pas par adresse.
+ */
+export async function getMemberContactsByEmails(
+  db: DbOrTx,
+  emails: string[]
+): Promise<MemberContact[]> {
+  if (emails.length === 0) return [];
+  const seasonId = await getActiveSeasonId(db);
+  if (seasonId === undefined) return [];
+
+  const contacts: MemberContact[] = [];
+  // 3 comparaisons par email : on reste sous le plafond de 100 paramètres liés de D1.
+  const chunkSize = 30;
+  for (let i = 0; i < emails.length; i += chunkSize) {
+    const chunk = emails.slice(i, i + chunkSize);
+    const matchesChunk = chunk.map((email) =>
+      or(
+        sql`lower(${membersTable.email}) = ${email}`,
+        sql`lower(${membersTable.parent1Email}) = ${email}`,
+        sql`lower(${membersTable.parent2Email}) = ${email}`
+      )
+    );
+    const rows = await db
+      .select({
+        id: membersTable.id,
+        firstName: membersTable.firstName,
+        lastName: membersTable.lastName,
+        type: membersTable.type,
+        email: membersTable.email,
+        parent1Email: membersTable.parent1Email,
+        parent2Email: membersTable.parent2Email
+      })
+      .from(membersTable)
+      .where(and(eq(membersTable.seasonId, seasonId), or(...matchesChunk)))
+      .all();
+
+    for (const row of rows) {
+      const matched = [row.email, row.parent1Email, row.parent2Email]
+        .map((value) => value?.trim().toLowerCase())
+        .find((value) => value && chunk.includes(value));
+      if (matched) {
+        contacts.push({
+          id: row.id,
+          firstName: row.firstName,
+          lastName: row.lastName,
+          type: row.type,
+          matchedEmail: matched
+        });
+      }
+    }
+  }
+  return contacts;
 }
 
 export { isSeasonClosed };

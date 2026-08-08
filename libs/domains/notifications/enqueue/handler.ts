@@ -2,6 +2,7 @@ import { type Db } from '@nba/db';
 import { normalizeEmail } from '../shared/vapid';
 import { EnqueueRepository } from './repository';
 import type { EnqueueNotificationInput, EnqueueNotificationOutput } from './dto';
+import type { NotificationCategory } from '../shared/categories';
 
 /**
  * Met une notification en file d'attente.
@@ -18,6 +19,7 @@ export async function enqueueNotification(
 ): Promise<EnqueueNotificationOutput> {
   const repo = new EnqueueRepository();
   const source = input.source ?? 'admin';
+  const category = input.category ?? 'announcement';
 
   if (input.skipIfSentSince && (await repo.hasRecentMessage(db, source, input.skipIfSentSince))) {
     return { messageId: 0, queued: 0, skipped: true };
@@ -25,11 +27,11 @@ export async function enqueueNotification(
 
   const subscriptionIds =
     input.target.kind === 'all'
-      ? await repo.findSubscriptionIds(db)
-      : await repo.findSubscriptionIds(
-          db,
-          [...new Set(input.target.emails.map(normalizeEmail).filter(Boolean))]
-        );
+      ? await repo.findSubscriptionIds(db, { category })
+      : await repo.findSubscriptionIds(db, {
+          category,
+          emails: [...new Set(input.target.emails.map(normalizeEmail).filter(Boolean))]
+        });
 
   const messageId = await repo.createMessage(
     db,
@@ -38,7 +40,9 @@ export async function enqueueNotification(
       body: input.body,
       url: input.url ?? null,
       target: input.targetLabel ?? input.target.kind,
-      source
+      targetDetail: input.targetDetail ?? null,
+      source,
+      category
     },
     now
   );
@@ -61,7 +65,7 @@ export async function enqueueNotification(
 export async function notifyContacts(
   db: Db,
   emails: string[],
-  message: { title: string; body: string; url?: string; source: string },
+  message: { title: string; body: string; url?: string; source: string; category: NotificationCategory },
   now: Date = new Date()
 ): Promise<void> {
   if (emails.length === 0) return;

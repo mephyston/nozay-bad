@@ -38,6 +38,12 @@ export {
   getAllMembers,
   getHouseholdEmailsForActiveSeason,
   getContactEmailsForMember,
+  getMemberGroupsForActiveSeason,
+  getMemberContactsByEmails,
+  getBirthdaysForActiveSeason,
+  type MemberBirthday,
+  type MemberGroup,
+  type MemberContact,
   isSeasonClosed,
   type MemberSummary
 } from './shared/queries';

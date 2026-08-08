@@ -58,9 +58,26 @@ async function seed(db: any) {
   await db
     .insert(membersTable)
     .values([
-      { ...base, id: 1, licence: 'L1', firstName: 'Alice', email: 'paye@example.com', paid: true },
+      {
+        ...base,
+        id: 1,
+        licence: 'L1',
+        firstName: 'Alice',
+        email: 'paye@example.com',
+        paid: true,
+        type: 'Compétiteurs adultes'
+      },
       // Mineur : pas d'email au dossier, c'est le parent qui détient le compte.
-      { ...base, id: 2, licence: 'L2', firstName: 'Bob', email: null, parent1Email: 'parent@example.com', paid: false }
+      {
+        ...base,
+        id: 2,
+        licence: 'L2',
+        firstName: 'Bob',
+        email: null,
+        parent1Email: 'parent@example.com',
+        paid: false,
+        type: 'Loisirs 1 (Lundi)'
+      }
     ])
     .run();
 }
@@ -131,6 +148,51 @@ describe('POST /notifications/messages', () => {
     expect(res.status).toBe(400);
   });
 
+  it("ne touche que les groupes sélectionnés", async () => {
+    const { mockD1, db } = await setupMockDb();
+    await seed(db);
+    await subscribe(mockD1, 'paye@example.com', 'https://push.example.com/a');
+    await subscribe(mockD1, 'parent@example.com', 'https://push.example.com/b');
+
+    const res = await app.request(
+      '/notifications/messages',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'Entraînement',
+          body: 'Annulé ce soir',
+          target: 'groups',
+          groups: ['Loisirs 1 (Lundi)']
+        })
+      },
+      { DB: mockD1 }
+    );
+
+    expect(((await res.json()) as any).data.queued).toBe(1);
+    const [message] = await db.select().from(pushMessagesTable).all();
+    expect(message.target).toBe('groups');
+    // L'historique doit rappeler quels groupes ont été visés.
+    expect(message.targetDetail).toBe('Loisirs 1 (Lundi)');
+  });
+
+  it('refuse un ciblage par groupes sans groupe', async () => {
+    const { mockD1, db } = await setupMockDb();
+    await seed(db);
+
+    const res = await app.request(
+      '/notifications/messages',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'x', body: 'y', target: 'groups', groups: [] })
+      },
+      { DB: mockD1 }
+    );
+
+    expect(res.status).toBe(400);
+  });
+
   it('refuse un titre vide', async () => {
     const { mockD1 } = await setupMockDb();
 
@@ -156,6 +218,40 @@ describe('POST /notifications/dispatch', () => {
 
     expect(res.status).toBe(500);
     expect(((await res.json()) as any).error).toMatch(/VAPID/);
+  });
+});
+
+describe('GET /notifications/audiences', () => {
+  it('expose les groupes de la saison active avec leurs effectifs', async () => {
+    const { mockD1, db } = await setupMockDb();
+    await seed(db);
+
+    const res = await app.request('/notifications/audiences', {}, { DB: mockD1 });
+
+    const json = (await res.json()) as any;
+    expect(json.data.groups).toEqual([
+      { type: 'Compétiteurs adultes', members: 1 },
+      { type: 'Loisirs 1 (Lundi)', members: 1 }
+    ]);
+  });
+});
+
+describe('GET /notifications/subscribers', () => {
+  it("rattache chaque abonnement aux adhérents joignables à cette adresse", async () => {
+    const { mockD1, db } = await setupMockDb();
+    await seed(db);
+    await subscribe(mockD1, 'parent@example.com', 'https://push.example.com/parent');
+    await subscribe(mockD1, 'inconnu@example.com', 'https://push.example.com/inconnu');
+
+    const res = await app.request('/notifications/subscribers', {}, { DB: mockD1 });
+
+    const json = (await res.json()) as any;
+    const parent = json.data.find((s: any) => s.email === 'parent@example.com');
+    expect(parent.members).toEqual([{ name: 'Bob Dupont', group: 'Loisirs 1 (Lundi)' }]);
+
+    // Une adresse sans dossier dans la saison reste listée, sans adhérent rattaché.
+    const orphan = json.data.find((s: any) => s.email === 'inconnu@example.com');
+    expect(orphan.members).toEqual([]);
   });
 });
 

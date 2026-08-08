@@ -1,28 +1,63 @@
-import { and, eq, gte, inArray } from 'drizzle-orm';
+import { and, eq, gte, inArray, notExists } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { pushDeliveriesTable, pushMessagesTable, pushSubscriptionsTable } from '../shared/schema';
+import {
+  pushDeliveriesTable,
+  pushMessagesTable,
+  pushPreferencesTable,
+  pushSubscriptionsTable
+} from '../shared/schema';
 
 export class EnqueueRepository {
-  /** Tous les abonnements, ou seulement ceux des emails fournis. */
-  async findSubscriptionIds(db: DbOrTx, emails?: string[]): Promise<number[]> {
+  /**
+   * Abonnements destinataires : tous, ou ceux des emails fournis.
+   *
+   * Les comptes ayant explicitement coupé la catégorie sont écartés. La condition
+   * est formulée en `NOT EXISTS` parce que le réglage fonctionne par désabonnement :
+   * l'immense majorité des comptes n'a aucune ligne de préférence et doit rester
+   * destinataire.
+   */
+  async findSubscriptionIds(
+    db: DbOrTx,
+    options: { category: string; emails?: string[] }
+  ): Promise<number[]> {
+    const { category, emails } = options;
     if (emails && emails.length === 0) return [];
+
+    const notOptedOut = notExists(
+      db
+        .select({ id: pushPreferencesTable.id })
+        .from(pushPreferencesTable)
+        .where(
+          and(
+            eq(pushPreferencesTable.email, pushSubscriptionsTable.email),
+            eq(pushPreferencesTable.category, category),
+            eq(pushPreferencesTable.enabled, false)
+          )
+        )
+    );
 
     // D1 plafonne le nombre de paramètres liés par requête : on découpe la liste.
     if (emails) {
       const ids: number[] = [];
-      const chunkSize = 90;
+      const chunkSize = 80;
       for (let i = 0; i < emails.length; i += chunkSize) {
         const rows = await db
           .select({ id: pushSubscriptionsTable.id })
           .from(pushSubscriptionsTable)
-          .where(inArray(pushSubscriptionsTable.email, emails.slice(i, i + chunkSize)))
+          .where(
+            and(inArray(pushSubscriptionsTable.email, emails.slice(i, i + chunkSize)), notOptedOut)
+          )
           .all();
         ids.push(...rows.map((row) => row.id));
       }
       return ids;
     }
 
-    const rows = await db.select({ id: pushSubscriptionsTable.id }).from(pushSubscriptionsTable).all();
+    const rows = await db
+      .select({ id: pushSubscriptionsTable.id })
+      .from(pushSubscriptionsTable)
+      .where(notOptedOut)
+      .all();
     return rows.map((row) => row.id);
   }
 
@@ -38,7 +73,15 @@ export class EnqueueRepository {
 
   async createMessage(
     db: DbOrTx,
-    message: { title: string; body: string; url: string | null; target: 'all' | 'unpaid' | 'emails'; source: string },
+    message: {
+      title: string;
+      body: string;
+      url: string | null;
+      target: 'all' | 'unpaid' | 'groups' | 'emails';
+      targetDetail: string | null;
+      source: string;
+      category: string;
+    },
     now: Date
   ): Promise<number> {
     const rows = await db
