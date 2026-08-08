@@ -189,6 +189,24 @@ describe('Astro Auth Middleware', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
+    it("ne se replie pas quand l'API répond « compte inconnu »", async () => {
+      // L'API est joignable et sa réponse fait autorité. Fabriquer une identité ici
+      // donnerait une application à moitié fonctionnelle : les pages s'afficheraient
+      // avec les droits inventés, mais l'API refuserait chacun de leurs appels.
+      vi.stubEnv('DEV', 'true' as any);
+      const next = vi.fn();
+
+      // En développement l'adresse vient de DEV_EMAIL, pas du jeton Access.
+      const context = contextFor('https://admin.nozay-bad.fr/', {
+        locals: { runtime: { env: { DEV_EMAIL: 'inconnu@nozay-bad.fr' } } }
+      });
+      const response = await handleAuth(context, next);
+
+      expect(response.status).toBe(403);
+      expect(next).not.toHaveBeenCalled();
+      expect(context.locals.user).toBeUndefined();
+    });
+
     it('se replie sur DEV_ROLE en développement, et sur rien de plus', async () => {
       apiUnavailable = true;
       vi.stubEnv('DEV', 'true' as any);

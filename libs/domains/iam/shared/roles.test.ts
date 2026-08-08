@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ALL_PERMISSIONS, type Permission } from './permissions';
+import { PERMISSION_LABELS, groupedPermissions } from './catalog';
 import {
   ROLES,
   ROLE_LABELS,
@@ -136,5 +137,26 @@ describe('matrice des droits', () => {
       ROLES.map((role: Role) => [role, [...ROLE_PERMISSIONS[role]].sort()])
     );
     expect(matrix).toMatchSnapshot();
+  });
+});
+
+describe('catalogue lisible', () => {
+  it('donne un libellé à chaque permission', () => {
+    // Sans ce test, une permission ajoutée apparaîtrait à l'écran sous sa forme
+    // technique — illisible pour qui attribue un rôle.
+    for (const permission of ALL_PERMISSIONS) {
+      expect(PERMISSION_LABELS[permission], `libellé manquant : ${permission}`).toBeTruthy();
+    }
+  });
+
+  it('ne déclare aucun libellé orphelin', () => {
+    const known = new Set<string>(ALL_PERMISSIONS);
+    const orphans = Object.keys(PERMISSION_LABELS).filter((p) => !known.has(p));
+    expect(orphans).toEqual([]);
+  });
+
+  it('classe chaque permission dans un groupe', () => {
+    const grouped = groupedPermissions().flatMap((g) => g.permissions);
+    expect([...grouped].sort()).toEqual([...ALL_PERMISSIONS].sort());
   });
 });

@@ -110,12 +110,17 @@
                 </Button>
               {/snippet}
             </Sheet.Trigger>
-            <Sheet.Content side="right" class="w-full sm:max-w-md">
+            <Sheet.Content side="right" size="md" class="w-full">
               <Sheet.Header>
                 <Sheet.Title>{editUserId ? 'Modifier l\'accès' : 'Ajouter un accès'}</Sheet.Title>
                 <Sheet.Description>{editUserId ? 'Modifiez les droits du collaborateur.' : 'Donnez l\'accès à un nouveau collaborateur.'}</Sheet.Description>
               </Sheet.Header>
-              <div class="space-y-4 py-6">
+              <!--
+                Le corps défile, l'en-tête et le pied restent en place : la liste des
+                rôles et l'aperçu des droits dépassent la hauteur de l'écran, et sans
+                cela le bouton d'enregistrement sortait du cadre.
+              -->
+              <div class="flex-1 min-h-0 overflow-y-auto space-y-4 py-6 pr-1">
                 <FormField id="name" label="Nom">
                   <Input id="name" bind:value={newName} placeholder="Jean Dupont" />
                 </FormField>
@@ -149,7 +154,9 @@
                       rôle « Membre » lui sera attribué.
                     </p>
                   {:else}
-                    <div class="flex flex-wrap gap-1 max-h-40 overflow-y-auto rounded-md border border-border p-2">
+                    <!-- Pas de défilement propre : il piégerait la molette à
+                         l'intérieur du panneau alors que le corps défile déjà. -->
+                    <div class="flex flex-wrap gap-1 rounded-md border border-border p-2">
                       {#each grantedPermissions as permission}
                         <Badge variant="outline" size="xs">{permission}</Badge>
                       {/each}

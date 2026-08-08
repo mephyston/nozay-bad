@@ -2,7 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import AdminLayout from '../../components/AdminLayout.svelte';
 import { PageHeader, ErrorAlert } from '@nba/ui';
-import { UsersManager } from '@nba/iam-ui';
+import { UsersManager, RolesMatrix } from '@nba/iam-ui';
 import { env } from 'cloudflare:workers';
 import { createAdminApiClient } from '../../lib/api';
 import { guardAction } from '../../lib/guard';
@@ -80,6 +80,8 @@ try {
       {errorMsg && <ErrorAlert message={errorMsg} />}
 
       <UsersManager client:load users={usersList} />
+
+      <RolesMatrix client:visible />
     </div>
   </AdminLayout>
 </Layout>

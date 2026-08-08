@@ -110,20 +110,30 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
       console.error('[auth] résolution du compte impossible :', err);
       return new Response("Erreur lors de la communication avec l'API IAM.", { status: 500 });
     }
-    // En développement, l'API peut être injoignable (Worker non démarré, clé
-    // absente de l'environnement) : on ne bloque pas le travail en cours, mais on
-    // se replie sur un rôle explicite plutôt que sur tous les droits, et le chemin
-    // d'autorisation reste rigoureusement le même qu'en production.
+    // En développement seulement, et uniquement si l'API est *injoignable* (Worker
+    // non démarré, clé absente) : on se replie sur un rôle explicite pour ne pas
+    // bloquer le travail en cours.
+    //
+    // Le repli ne couvre surtout pas le cas d'une API qui répond « compte inconnu » :
+    // ce serait une identité que l'admin s'accorde à lui-même et que l'API refuse
+    // ensuite sur chaque appel. Les pages s'afficheraient, mais tous leurs
+    // chargements de données échoueraient en 403 — un état à moitié fonctionnel,
+    // bien plus déroutant qu'un refus franc.
     console.warn('[auth] API IAM injoignable ; repli sur DEV_ROLE :', err);
-  }
-
-  if (!actor && import.meta.env.DEV) {
     const devRole = env.DEV_ROLE;
     actor = devActor(email, isRole(devRole || '') ? (devRole as Role) : 'super_admin');
   }
 
   if (!actor) {
-    return new Response('Accès refusé. Compte non configuré.', { status: 403 });
+    // L'API a répondu, et cette adresse n'a pas de compte : même message qu'en
+    // production, en développement comme ailleurs.
+    return new Response(
+      import.meta.env.DEV
+        ? `Accès refusé. Aucun compte pour ${email}.\n\n` +
+          `Utilisez une adresse déjà enregistrée (DEV_EMAIL=...), ou créez ce compte.`
+        : 'Accès refusé. Compte non configuré.',
+      { status: 403 }
+    );
   }
 
   const realActor = actor;
