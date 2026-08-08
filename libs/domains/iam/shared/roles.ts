@@ -5,8 +5,10 @@ import { ALL_PERMISSIONS, type Permission } from './permissions';
  * il est versionné, typé, et toute modification passe par une revue de code. La base
  * ne stocke que la liaison compte↔rôle (`admin_user_roles`).
  *
- * Deny-by-default : un compte sans rôle n'a aucune permission. `membre` est le rôle
- * par défaut et ne donne accès qu'au tableau de bord et au centre d'aide.
+ * Deny-by-default : un compte sans rôle n'a aucune permission. `membre` est le socle —
+ * le rôle attribué à tout compte créé sans rôle explicite — et ne donne accès qu'au
+ * tableau de bord et au centre d'aide. Il porte volontairement le libellé « Accès
+ * minimal » : c'est ce qu'il est, et non un rôle métier que l'on choisirait.
  */
 export const ROLES = [
   'super_admin',
@@ -14,6 +16,7 @@ export const ROLES = [
   'tresorier',
   'secretaire',
   'coach',
+  'communication',
   'membre'
 ] as const;
 
@@ -27,7 +30,8 @@ export const ROLE_LABELS: Record<Role, string> = {
   tresorier: 'Trésorier·ère',
   secretaire: 'Secrétaire',
   coach: 'Entraîneur·e',
-  membre: 'Membre'
+  communication: 'Communication',
+  membre: 'Accès minimal'
 };
 
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
@@ -36,7 +40,9 @@ export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   tresorier: 'Comptabilité complète, notes de frais et encaissement des commandes.',
   secretaire: 'Fichier des adhérents, attestations, communication et catalogue boutique.',
   coach: 'Catalogue et commandes de la boutique, consultation des adhérents.',
-  membre: "Tableau de bord et centre d'aide uniquement."
+  communication:
+    "Annonces du club et notifications aux adhérents. Aucun accès aux finances ni au fichier des adhérents.",
+  membre: "Socle attribué à un compte sans rôle : tableau de bord et centre d'aide uniquement."
 };
 
 /** Socle commun : tout compte admin voit son tableau de bord et l'aide en ligne. */
@@ -92,6 +98,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'shop:products:read',
     'shop:orders:read',
     'notifications:messages:read',
+    'announcements:posts:read',
     // Actes de gouvernance : ouverture et clôture d'exercice, vote du budget.
     'accounting:seasons:write',
     'accounting:seasons:close',
@@ -101,6 +108,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'shop:orders:approve',
     // Communication officielle du club.
     'notifications:messages:send',
+    'announcements:posts:write',
+    'announcements:posts:delete',
     // Représentation légale : accorde et révoque les accès.
     'iam:users:read',
     'iam:users:write',
@@ -130,6 +139,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'shop:orders:read',
     'shop:orders:approve',
     'notifications:messages:read',
+    // Consultation seule : la communication du club n'est pas du ressort de la trésorerie.
+    'announcements:posts:read',
     'settings:hub:read',
     'ai:assistant:use'
   ],
@@ -146,6 +157,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     // Communication du club.
     'notifications:messages:read',
     'notifications:messages:send',
+    'announcements:posts:read',
+    'announcements:posts:write',
+    'announcements:posts:delete',
     // Boutique : catalogue et suivi des commandes, sans encaissement.
     'shop:products:read',
     'shop:products:write',
@@ -168,6 +182,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'shop:categories:write',
     'shop:orders:read',
     'shop:orders:write',
+    // Consultation seule : l'entraîneur suit les annonces du club sans les rédiger.
+    'announcements:posts:read',
     // Les catégories de produits vivent dans les réglages : sans cette entrée, l'écran
     // existe mais aucun chemin du menu n'y mène.
     'settings:hub:read'
@@ -175,7 +191,26 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     // livre, c'est un acte comptable qui reste à la trésorerie.
   ],
 
-  // Rôle par défaut : aucun droit métier. C'est le socle du deny-by-default.
+  /**
+   * Communication du club : annonces et notifications, rien d'autre.
+   *
+   * Ce rôle existe pour confier la communication à un bénévole sans lui ouvrir les
+   * finances ni le fichier des adhérents — ce qu'imposait jusqu'ici le rôle
+   * `secretaire`, seul autre porteur de ces droits.
+   */
+  communication: [
+    ...BASE,
+    'announcements:posts:read',
+    'announcements:posts:write',
+    'announcements:posts:delete',
+    // Diffuser une annonce fait sonner tous les téléphones du club : c'est le cœur
+    // du rôle, pas un droit accessoire.
+    'notifications:messages:read',
+    'notifications:messages:send'
+  ],
+
+  // Socle du deny-by-default : aucun droit métier. Attribué à un compte créé sans
+  // rôle explicite, pour qu'il puisse au moins ouvrir son tableau de bord.
   membre: [...BASE]
 };
 

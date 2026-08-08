@@ -3,8 +3,10 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import MobileNav from '../components/MobileNav.svelte';
 import PushOptIn from '../components/PushOptIn.svelte';
+import { AnnouncementCard } from '@nba/announcements-ui';
 import { env } from 'cloudflare:workers';
 import { getActiveMemberStatus } from '../lib/member-status';
+import { fetchPublishedAnnouncements } from '../lib/announcements';
 
 const session = Astro.locals.session;
 const active = session?.members.find((m) => m.id === session.activeMemberId);
@@ -14,6 +16,10 @@ const firstName = active?.firstName ?? '';
 const status = await getActiveMemberStatus(env, session);
 const canExpense = status.canExpense;
 const activeSeasonName = status.seasonName;
+
+// Les 3 dernières annonces publiées. Le bloc disparaît s'il n'y en a aucune, ou si
+// l'API n'a pas répondu : l'accueil ne doit jamais montrer un cadre vide.
+const { announcements } = await fetchPublishedAnnouncements(env, 3);
 ---
 
 <Layout title="Espace adhérent - Nozay Bad">
@@ -32,6 +38,23 @@ const activeSeasonName = status.seasonName;
           Bonjour{firstName ? ` ${firstName}` : ''}
         </h1>
       </div>
+
+      {announcements.length > 0 && (
+        <section class="mb-6" aria-labelledby="annonces-title">
+          <h2 id="annonces-title" class="sr-only">Dernières annonces</h2>
+          <div class="space-y-3">
+            {announcements.map((announcement) => (
+              <AnnouncementCard announcement={announcement} />
+            ))}
+          </div>
+          <a
+            href="/annonces"
+            class="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline min-h-[44px]"
+          >
+            Voir toutes les annonces &rarr;
+          </a>
+        </section>
+      )}
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <a

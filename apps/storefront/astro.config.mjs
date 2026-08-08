@@ -82,7 +82,8 @@ export default defineConfig({
         '@nba/accounting-ui',
         '@nba/expenses-ui',
         '@nba/shop-ui',
-        '@nba/iam-ui'
+        '@nba/iam-ui',
+        '@nba/announcements-ui'
       ]
     },
     ssr: {

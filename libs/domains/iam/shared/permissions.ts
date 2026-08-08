@@ -61,6 +61,13 @@ export const ALL_PERMISSIONS = [
   'notifications:messages:read',
   'notifications:messages:send',
 
+  // — Annonces —
+  // Rédiger une annonce et la diffuser sur les téléphones du club sont deux actes
+  // distincts : la diffusion reste gouvernée par `notifications:messages:send`.
+  'announcements:posts:read',
+  'announcements:posts:write',
+  'announcements:posts:delete',
+
   // — Assistant IA —
   'ai:assistant:use',
 

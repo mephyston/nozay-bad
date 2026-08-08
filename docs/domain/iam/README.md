@@ -17,7 +17,7 @@ Le storefront est hors de ce périmètre. Un adhérent s'y authentifie par code 
 | **Rôle** | Un métier de l'association, auquel est attaché un ensemble de permissions. Un compte peut en cumuler plusieurs. | `Enum` (`super_admin`, `president`, `tresorier`, `secretaire`, `coach`, `membre`) |
 | **Acteur** | Une identité résolue en droits effectifs : le compte, ses rôles, et l'union de leurs permissions. | `Actor` (`get-actor`) |
 | **Définition d'origine** | Les droits qu'un rôle porte dans le code. L'écran signale les rôles qui s'en écartent, pour que la dérive reste visible. | `ROLE_PERMISSIONS` |
-| **Rôle par défaut** | `membre` : tableau de bord et centre d'aide, aucun droit métier. Attribué à tout compte créé sans rôle explicite. | `DEFAULT_ROLE` |
+| **Rôle par défaut** | `membre`, affiché « Accès minimal » : tableau de bord et centre d'aide, aucun droit métier. Attribué à tout compte créé sans rôle explicite. | `DEFAULT_ROLE` |
 | **Usurpation** | Emprunt temporaire de l'identité d'un autre compte, pour reproduire ce qu'il voit. Réservée au droit `iam:sessions:impersonate`. | Cookie `impersonate_email` (HttpOnly) |
 | **Appelant** | Le Worker qui s'adresse à l'API : `admin` (agit pour un compte d'administration) ou `storefront` (agit pour un adhérent). | En-tête `x-caller` |
 | **Route de service** | Route que le storefront peut appeler sans compte d'administration, parce qu'elle sert un adhérent connecté. | `service: true` |

@@ -15,9 +15,10 @@ Un compte n'a accès qu'à ce qu'on lui a explicitement accordé. Créer un comp
 
 Un rôle correspond à une fonction réelle dans l'association. Vous pouvez en attribuer plusieurs à la même personne — une secrétaire qui assure aussi la trésorerie reçoit les deux rôles.
 
-- **Membre** — Tableau de bord et centre d'aide uniquement. C'est le rôle par défaut.
+- **Accès minimal** — Tableau de bord et centre d'aide uniquement, aucun droit métier. C'est ce qu'on attribue à un compte créé sans rôle : il peut se connecter, rien de plus.
+- **Communication** — Les annonces du club et les notifications aux adhérents. Ni finances, ni fichier des adhérents : c'est le rôle à donner au bénévole qui anime la communication, sans lui ouvrir le secrétariat.
 - **Entraîneur·e** — Le catalogue de la boutique et les commandes passées pour les adhérents, dont il consulte le fichier. Il ne valide pas les commandes : l'encaissement relève de la trésorerie.
-- **Secrétaire** — Le fichier des adhérents (consultation, modification, import Poona), les attestations CSE, la communication (notifications) et le catalogue de la boutique. Consultation seule côté finances.
+- **Secrétaire** — Le fichier des adhérents (consultation, modification, import Poona), les attestations CSE, la communication (annonces et notifications) et le catalogue de la boutique. Consultation seule côté finances.
 - **Trésorier·ère** — La comptabilité complète : grand livre, factures, rapprochement bancaire, chèques, exercices, budget et rapports. Les notes de frais, de la saisie au remboursement. L'encaissement des commandes.
 - **Président·e** — La consultation de l'ensemble du club, les actes de gouvernance (ouverture et clôture d'exercice, vote du budget), la validation des notes de frais et des commandes, la communication, et la gestion des accès.
 - **Super administrateur** — Tous les droits, y compris la configuration technique.

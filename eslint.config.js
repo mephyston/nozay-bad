@@ -83,6 +83,14 @@ export default tseslint.config(
               onlyDependOnLibsWithTags: ['scope:shop', 'scope:shared', 'scope:members', 'scope:accounting', 'scope:notifications']
             },
             {
+              sourceTag: 'scope:announcements',
+              // Notifications: outbound only (publishing an announcement may push it to
+              // the club's phones). Announcements own the durable content; notifications
+              // own its delivery. No members dependency: the "all subscribers" target is
+              // resolved inside the notifications context.
+              onlyDependOnLibsWithTags: ['scope:announcements', 'scope:notifications', 'scope:shared']
+            },
+            {
               sourceTag: 'scope:notifications',
               // Leaf context: depends on nothing but shared. Targets requiring member
               // data are resolved by the caller (apps/api), which avoids the cycle
@@ -207,6 +215,20 @@ export default tseslint.config(
         {
           patterns: [{
             group: ['@nba/*/schema', '!@nba/expenses/schema'],
+            message: 'Violation VSA : Impossible d\'importer directement le schéma de base de données d\'un autre domaine. Utilisez l\'API publique du domaine ciblé (ex: @nba/nom-domaine-api).'
+          }]
+        }
+      ]
+    }
+  },
+  {
+    files: ['libs/domains/announcements/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [{
+            group: ['@nba/*/schema', '!@nba/announcements/schema'],
             message: 'Violation VSA : Impossible d\'importer directement le schéma de base de données d\'un autre domaine. Utilisez l\'API publique du domaine ciblé (ex: @nba/nom-domaine-api).'
           }]
         }

@@ -22,6 +22,8 @@ export default defineConfig({
       '@nba/push': path.resolve(__dirname, '../../libs/shared/push/src/index.ts'),
       '@nba/notifications-api': path.resolve(__dirname, '../../libs/domains/notifications/index.ts'),
       '@nba/notifications/schema': path.resolve(__dirname, '../../libs/domains/notifications/shared/schema.ts'),
+      '@nba/announcements-api': path.resolve(__dirname, '../../libs/domains/announcements/index.ts'),
+      '@nba/announcements/schema': path.resolve(__dirname, '../../libs/domains/announcements/shared/schema.ts'),
       '@nba/members-api': path.resolve(__dirname, '../../libs/domains/members/index.ts'),
       '@nba/members/schema': path.resolve(__dirname, '../../libs/domains/members/shared/schema.ts'),
       '@nba/iam': path.resolve(__dirname, '../../libs/domains/iam/index.ts'),

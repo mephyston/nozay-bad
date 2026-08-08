@@ -10,6 +10,7 @@
  */
 export const STOREFRONT_PAGES = [
   { path: '/', label: "Accueil de l'espace adhérent" },
+  { path: '/annonces', label: 'Annonces du club' },
   { path: '/mon-compte', label: 'Mon compte' },
   { path: '/boutique', label: 'Boutique' },
   { path: '/note-de-frais', label: 'Notes de frais' },

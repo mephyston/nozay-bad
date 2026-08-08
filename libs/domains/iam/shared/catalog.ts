@@ -51,6 +51,10 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'notifications:messages:read': "Consulter l'historique des notifications",
   'notifications:messages:send': 'Envoyer une notification au club',
 
+  'announcements:posts:read': 'Consulter les annonces',
+  'announcements:posts:write': 'Rédiger et publier une annonce',
+  'announcements:posts:delete': 'Supprimer une annonce',
+
   'ai:assistant:use': "Utiliser l'assistant IA",
 
   'settings:hub:read': 'Accéder aux réglages',
@@ -73,6 +77,7 @@ export const PERMISSION_GROUPS: { domain: string; label: string }[] = [
   { domain: 'expenses', label: 'Notes de frais' },
   { domain: 'shop', label: 'Boutique' },
   { domain: 'notifications', label: 'Communication' },
+  { domain: 'announcements', label: 'Annonces' },
   { domain: 'ai', label: 'Assistant IA' },
   { domain: 'settings', label: 'Réglages' },
   { domain: 'iam', label: 'Accès et rôles' },
