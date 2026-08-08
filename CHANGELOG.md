@@ -1,3 +1,10 @@
+# [1.0.0-beta.59](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.58...v1.0.0-beta.59) (2026-08-08)
+
+
+### Performance Improvements
+
+* **ci:** gate visual on DS, strip AI binding from test pool ([f9c5ba1](https://github.com/mephyston/nozay-bad/commit/f9c5ba1311fb498a2dec025424db83fbc810f2a0))
+
 # [1.0.0-beta.58](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.57...v1.0.0-beta.58) (2026-08-08)
 
 
