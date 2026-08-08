@@ -6,6 +6,9 @@
   "targets": {
     "lint": {
       "command": "eslint {projectRoot}"
+    },
+    "test": {
+      "command": "vitest run --project shared-db"
     }
   },
   "tags": ["type:data-access", "scope:shared"]

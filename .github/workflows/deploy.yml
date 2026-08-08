@@ -47,7 +47,15 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
           
+      - name: Cache node_modules
+        id: node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Semantic Release
@@ -60,8 +68,8 @@ jobs:
   # 1. Détecte les apps affectées avec nx affected
   # ──────────────────────────────────────────────────────────────
   detect-changes:
-    needs: [release]
-    if: always()
+    # Indépendant de `release` : tourne en parallèle du semantic-release au lieu
+    # d'attendre derrière lui. Seul `deploy-admin` a besoin de la version publiée.
     name: Detect affected apps
     runs-on: ubuntu-latest
     outputs:
@@ -81,7 +89,15 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
+      - name: Cache node_modules
+        id: node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Derive appropriate SHAs for affected commands
@@ -136,7 +152,15 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
+      - name: Cache node_modules
+        id: node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Derive appropriate SHAs for affected commands
@@ -158,9 +182,22 @@ jobs:
       - name: Run TypeScript typecheck
         run: npm run typecheck
 
+      - name: Cache Nx
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-${{ github.job }}-
+
       - name: Run affected tests
         run: |
           npx nx affected -t test --base=$NX_BASE --head=$NX_HEAD --parallel=3
+
+      # Tests d'architecture (frontières d'import entre libs) : transverses, donc
+      # joués systématiquement plutôt que rattachés à un projet Nx affecté.
+      - name: Run architecture tests
+        run: npx vitest run --project architecture-tests
 
   # ──────────────────────────────────────────────────────────────
   # 2b. Régression visuelle du design system (Storybook + Playwright)
@@ -182,14 +219,44 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
+      - name: Cache node_modules
+        id: node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      # Cache miss : téléchargement complet du navigateur + deps système.
       - name: Install Playwright browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
+      # Cache hit : le navigateur est restauré, seules les deps OS (apt) manquent.
+      - name: Install Playwright OS deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Cache Nx
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-${{ github.job }}-
+
       - name: Build Storybook
-        run: npm run build-storybook
+        run: npx nx build-storybook @nba/ui
         env:
           STORYBOOK_DISABLE_TELEMETRY: "1"
 
@@ -224,7 +291,15 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
+      - name: Cache node_modules
+        id: node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Run D1 migrations
@@ -269,11 +344,26 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
+      - name: Cache node_modules
+        id: node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
+      - name: Cache Nx
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-${{ github.job }}-
+
       - name: Build Storefront (Astro SSR)
-        working-directory: apps/storefront
         env:
           # Site key Turnstile (publique) — inline par Astro au build. Widget avec les
           # hostnames my.nozaybad.fr + staging-my.nozaybad.fr (staging et prod partagés).
@@ -285,7 +375,7 @@ jobs:
           # rester identique au VAPID_PUBLIC_KEY du Worker nba-api correspondant
           # (apps/api/wrangler.json), sinon les abonnements sont rejetés.
           PUBLIC_VAPID_PUBLIC_KEY: ${{ github.ref_name == 'main' && 'BGLR2qQYt7FsbrqkNjx2p9p--tZuvKCBwj7YBZ5Di7Un1uwkiVXY3SWHi33zuZWltVAOJTsBsAZNaz7bRolHXo4' || 'BJiMPuOGVz144IXpSHoh_XthNFdB-uSV0qGEMc2D-FeheQqVaBmfCUIVa2notPKe3AI2Z4cpP3bgb6dlS5jyLUw' }}
-        run: npx astro build
+        run: npx nx build storefront
 
       - name: Deploy Storefront Worker
         working-directory: apps/storefront
@@ -331,16 +421,31 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
+      - name: Cache node_modules
+        id: node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
+      - name: Cache Nx
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-${{ github.job }}-
+
       - name: Build Admin (Astro SSR)
-        working-directory: apps/admin
         env:
           VITE_APP_VERSION: ${{ needs.release.outputs.version }}
           # Environnement inliné au build : bandeau + icône PWA (TEST en staging).
           PUBLIC_APP_ENV: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
-        run: npx astro build
+        run: npx nx build admin
 
       - name: Deploy Admin Worker
         working-directory: apps/admin

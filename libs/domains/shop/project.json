@@ -6,6 +6,9 @@
   "targets": {
     "lint": {
       "command": "eslint {projectRoot}"
+    },
+    "test": {
+      "command": "vitest run --project features-shop-api --project features-shop-ui"
     }
   },
   "tags": ["type:api", "scope:shop"]

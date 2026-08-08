@@ -31,6 +31,7 @@ export default defineConfig({
     },
   },
   test: {
+    name: 'api',
     globals: true,
   },
 });

@@ -21,6 +21,7 @@ export default defineConfig({
     conditions: ['browser'],
   },
   test: {
+    name: 'admin',
     globals: true,
     environment: 'jsdom',
   },

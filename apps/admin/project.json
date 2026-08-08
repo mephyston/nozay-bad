@@ -6,6 +6,24 @@
   "targets": {
     "lint": {
       "command": "eslint {projectRoot}"
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
+      "inputs": [
+        "production",
+        "^production",
+        { "env": "PUBLIC_APP_ENV" },
+        { "env": "VITE_APP_VERSION" },
+        "{workspaceRoot}/package.json"
+      ],
+      "options": {
+        "command": "astro build",
+        "cwd": "apps/admin"
+      }
+    },
+    "test": {
+      "command": "vitest run --project admin"
     }
   },
   "tags": ["type:app", "scope:admin"]

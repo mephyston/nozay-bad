@@ -6,6 +6,24 @@
   "targets": {
     "lint": {
       "command": "eslint {projectRoot}"
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
+      "inputs": [
+        "production",
+        "^production",
+        { "env": "PUBLIC_APP_ENV" },
+        { "env": "PUBLIC_VAPID_PUBLIC_KEY" },
+        { "env": "PUBLIC_TURNSTILE_SITE_KEY" }
+      ],
+      "options": {
+        "command": "astro build",
+        "cwd": "apps/storefront"
+      }
+    },
+    "test": {
+      "command": "vitest run --project storefront"
     }
   },
   "tags": ["type:app", "scope:storefront"]

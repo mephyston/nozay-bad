@@ -6,6 +6,9 @@
   "targets": {
     "lint": {
       "command": "eslint {projectRoot}"
+    },
+    "test": {
+      "command": "vitest run --project shared-push"
     }
   },
   "tags": ["type:util", "scope:shared"]
