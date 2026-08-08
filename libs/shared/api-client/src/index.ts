@@ -15,7 +15,10 @@ export interface ApiClientEnv {
  * une *décision* — l'autorisation reste dans une seule base de code.
  */
 export type CallerIdentity = {
-  caller: 'admin' | 'storefront';
+  // `website` est le site public : aucune identité, aucune permission, et il ne doit
+  // jamais voir un brouillon. Il est distingué de `storefront` pour que les routes
+  // puissent décider au cas par cas — l'espace adhérent est authentifié, pas lui.
+  caller: 'admin' | 'storefront' | 'website';
   /** Adresse de l'utilisateur, exigée par l'API pour tout appel `admin`. */
   userEmail?: string;
 };

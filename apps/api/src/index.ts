@@ -6,6 +6,7 @@ import { shopRouter } from '@nba/shop-api';
 import { iamRouter } from '@nba/iam';
 import { notificationsRouter } from '@nba/notifications-api';
 import { announcementsRouter } from '@nba/announcements-api';
+import { cmsRouter } from '@nba/cms-api';
 import { aiRouter } from './ai';
 import { dashboardRouter } from './dashboard';
 import { handleScheduled, type ScheduledBindings } from './scheduled';
@@ -87,6 +88,7 @@ app.route('/iam', iamRouter);
 app.route('/notifications', notificationsRouter);
 app.route('/notifications', notificationsSendRouter);
 app.route('/announcements', announcementsRouter);
+app.route('/cms', cmsRouter);
 app.route('/dashboard', dashboardRouter);
 app.route('/ai', aiRouter);
 

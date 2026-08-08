@@ -37,6 +37,8 @@ export default defineConfig({
       '@nba/shop/schema': path.resolve(__dirname, './libs/domains/shop/shared/schema.ts'),
       '@nba/shop-ui': path.resolve(__dirname, './libs/domains/shop/shared/ui.ts'),
       '@nba/notifications-ui': path.resolve(__dirname, './libs/domains/notifications/shared/ui.ts'),
+      '@nba/cms-api': path.resolve(__dirname, './libs/domains/cms/index.ts'),
+      '@nba/cms/schema': path.resolve(__dirname, './libs/domains/cms/shared/schema.ts'),
       '@nba/announcements-api': path.resolve(__dirname, './libs/domains/announcements/index.ts'),
       '@nba/announcements/schema': path.resolve(__dirname, './libs/domains/announcements/shared/schema.ts'),
       '@nba/announcements-ui': path.resolve(__dirname, './libs/domains/announcements/shared/ui.ts'),
@@ -243,6 +245,24 @@ export default defineConfig({
       },
 
       // Inline project configs for announcements API and UI
+      {
+        extends: true,
+        plugins: [
+          cloudflareTest({
+            wrangler: {
+              configPath: wranglerConfig,
+            },
+          }),
+        ],
+        cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-cms-api'),
+        test: {
+          name: 'features-cms-api',
+          globals: true,
+          root: path.resolve(__dirname, 'libs/domains/cms'),
+          include: ['**/*.test.ts'],
+          exclude: ['**/ui/**', '**/node_modules/**'],
+        }
+      },
       {
         extends: true,
         plugins: [

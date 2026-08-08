@@ -83,6 +83,13 @@ export default tseslint.config(
               onlyDependOnLibsWithTags: ['scope:shop', 'scope:shared', 'scope:members', 'scope:accounting', 'scope:notifications']
             },
             {
+              sourceTag: 'scope:cms',
+              // Feuille : le CMS ne dépend d'aucun autre domaine. Les créneaux et
+              // l'agenda seront composés par apps/website, pas importés ici — un bloc
+              // `schedule` porte une requête, jamais des lignes.
+              onlyDependOnLibsWithTags: ['scope:cms', 'scope:shared']
+            },
+            {
               sourceTag: 'scope:announcements',
               // Notifications: outbound only (publishing an announcement may push it to
               // the club's phones). Announcements own the durable content; notifications

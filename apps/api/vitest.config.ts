@@ -23,6 +23,8 @@ export default defineConfig({
       '@nba/html': path.resolve(__dirname, '../../libs/shared/html/src/index.ts'),
       '@nba/notifications-api': path.resolve(__dirname, '../../libs/domains/notifications/index.ts'),
       '@nba/notifications/schema': path.resolve(__dirname, '../../libs/domains/notifications/shared/schema.ts'),
+      '@nba/cms-api': path.resolve(__dirname, '../../libs/domains/cms/index.ts'),
+      '@nba/cms/schema': path.resolve(__dirname, '../../libs/domains/cms/shared/schema.ts'),
       '@nba/announcements-api': path.resolve(__dirname, '../../libs/domains/announcements/index.ts'),
       '@nba/announcements/schema': path.resolve(__dirname, '../../libs/domains/announcements/shared/schema.ts'),
       '@nba/members-api': path.resolve(__dirname, '../../libs/domains/members/index.ts'),

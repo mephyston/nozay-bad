@@ -175,5 +175,21 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'DELETE', path: '/announcements/:id', permission: 'announcements:posts:delete' },
   // Diffuser une annonce, c'est faire sonner tous les téléphones du club : l'acte relève
   // du même droit que l'envoi d'une notification, et non de la rédaction.
-  { method: 'POST', path: '/announcements/:id/notify', permission: 'notifications:messages:send' }
+  { method: 'POST', path: '/announcements/:id/notify', permission: 'notifications:messages:send' },
+
+  // Site public. Les lectures sont ouvertes au Worker du site (`service`), qui n'a ni
+  // identité ni permission : chaque route s'y limite d'elle-même au contenu publié,
+  // en regardant `x-caller`. La garde vit dans la route et non chez l'appelant, pour
+  // qu'un paramètre oublié ne divulgue pas un brouillon.
+  { method: 'GET', path: '/cms/route', permission: 'cms:pages:read', service: true },
+  { method: 'GET', path: '/cms/content-version', permission: 'cms:pages:read', service: true },
+  { method: 'GET', path: '/cms/pages', permission: 'cms:pages:read', service: true },
+  { method: 'GET', path: '/cms/pages/:id', permission: 'cms:pages:read' },
+  { method: 'POST', path: '/cms/pages', permission: 'cms:pages:write' },
+  { method: 'PUT', path: '/cms/pages/:id', permission: 'cms:pages:write' },
+  { method: 'PUT', path: '/cms/pages/:id/blocks', permission: 'cms:pages:write' },
+  // Publier expose la page à tout le monde, Google compris — mais reste un acte de
+  // rédaction, pas un droit à part.
+  { method: 'POST', path: '/cms/pages/:id/publish', permission: 'cms:pages:write' },
+  { method: 'DELETE', path: '/cms/pages/:id', permission: 'cms:pages:delete' }
 ];
