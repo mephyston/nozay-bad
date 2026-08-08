@@ -229,6 +229,26 @@ export default defineConfig({
         }
       },
 
+      // Inline project config for the IAM domain (RBAC kernel + slices)
+      {
+        extends: true,
+        plugins: [
+          cloudflareTest({
+            wrangler: {
+              configPath: wranglerConfig,
+            },
+          }),
+        ],
+        cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-iam-api'),
+        test: {
+          name: 'features-iam-api',
+          globals: true,
+          root: path.resolve(__dirname, 'libs/domains/iam'),
+          include: ['**/*.test.ts'],
+          exclude: ['**/components/**', '**/node_modules/**'],
+        }
+      },
+
       // Architecture tests project
       {
         extends: true,
