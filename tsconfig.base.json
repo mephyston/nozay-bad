@@ -34,7 +34,10 @@
       "@nba/accounting-ui": ["libs/domains/accounting/shared/ui.ts"],
       "@nba/expenses-ui": ["libs/domains/expenses/shared/ui.ts"],
       "@nba/shop-ui": ["libs/domains/shop/shared/ui.ts"],
-      "@nba/notifications-ui": ["libs/domains/notifications/shared/ui.ts"]
+      "@nba/notifications-ui": ["libs/domains/notifications/shared/ui.ts"],
+      "@nba/announcements-api": ["libs/domains/announcements/index.ts"],
+      "@nba/announcements/schema": ["libs/domains/announcements/shared/schema.ts"],
+      "@nba/announcements-ui": ["libs/domains/announcements/shared/ui.ts"]
     }
 
   },

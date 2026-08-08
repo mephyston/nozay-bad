@@ -97,7 +97,8 @@ export default defineConfig({
         '@nba/shop-ui',
         '@nba/notifications-ui',
         '@nba/iam',
-        '@nba/iam-ui'
+        '@nba/iam-ui',
+        '@nba/announcements-ui'
       ]
     },
     ssr: {

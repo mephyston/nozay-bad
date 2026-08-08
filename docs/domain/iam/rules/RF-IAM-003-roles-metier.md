@@ -16,7 +16,7 @@ Les droits s'attribuent par fonction dans l'association, pas permission par perm
 
 ## 3. Définition de la Règle Métier
 
-**Six rôles, cumulables.** `super_admin`, `president`, `tresorier`, `secretaire`, `coach`, `membre`. Un compte peut en porter plusieurs ; ses droits sont l'union des leurs. Une même personne assurant deux fonctions reçoit deux rôles, plutôt qu'un rôle sur mesure.
+**Sept rôles, cumulables.** `super_admin`, `president`, `tresorier`, `secretaire`, `coach`, `communication`, `membre`. Un compte peut en porter plusieurs ; ses droits sont l'union des leurs. Une même personne assurant deux fonctions reçoit deux rôles, plutôt qu'un rôle sur mesure.
 
 **Pas de permission à l'unité.** Le modèle n'accorde des droits que par rôle. Une liste de permissions par compte, en plus des rôles, recréerait exactement le désordre que ce modèle remplace : des droits attribués au cas par cas, impossibles à auditer d'un coup d'œil. Si un besoin ne rentre dans aucun rôle, c'est le rôle qu'on ajuste — et la modification est alors relue.
 
@@ -26,7 +26,11 @@ Les droits s'attribuent par fonction dans l'association, pas permission par perm
 
 **L'entraîneur équipe ses joueurs.** Il tient le catalogue de la boutique et passe des commandes pour les adhérents, dont il consulte le fichier sans pouvoir le modifier. Il ne valide pas les commandes : l'encaissement écrit une recette au grand livre et reste à la trésorerie. C'était déjà l'usage sous l'ancien modèle, où la permission `shop:products` portait la mention « (Coach) » sans qu'aucun rôle ne l'incarne.
 
-**Le secrétariat communique.** Une notification part vers tous les téléphones du club ; le droit d'émission n'est jamais accordé implicitement. Il est attribué délibérément au secrétariat, qui assure la communication, et à la présidence.
+**La communication a son rôle.** Une notification part vers tous les téléphones du club ; le droit d'émission n'est jamais accordé implicitement. Il est attribué délibérément à la présidence, au secrétariat, et au rôle `communication`.
+
+**`communication` ne voit que la communication.** Annonces et notifications, rien d'autre : ni finances, ni fichier des adhérents. Il existe pour confier la communication du club à un bénévole sans lui ouvrir le secrétariat, qui était jusqu'ici le seul autre porteur de ces droits — et qui donne accès au fichier des adhérents et aux attestations.
+
+**`membre` est un socle, pas un métier.** Il ne correspond à aucune fonction : c'est le rôle attribué à un compte créé sans rôle explicite, pour qu'il puisse ouvrir son tableau de bord sans détenir le moindre droit métier. D'où son libellé « Accès minimal » à l'écran.
 
 **Seul `super_admin` peut usurper.** `iam:sessions:impersonate` est délibérément refusé à la présidence : l'usurpation est un outil de support technique, pas un attribut de gouvernance. Elle ne peut viser un autre super administrateur — c'est un outil de désescalade, jamais d'escalade — et le droit est revérifié à chaque requête sur l'identité réelle, si bien que retirer le rôle coupe une usurpation en cours.
 
@@ -36,22 +40,23 @@ Les droits s'attribuent par fonction dans l'association, pas permission par perm
 
 ## 4. Répartition
 
-| | Membre | Entraîneur | Secrétaire | Trésorier | Président | Super admin |
-|---|---|---|---|---|---|---|
-| Tableau de bord, aide | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Adhérents (lecture) | | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Adhérents (écriture, import) | | | ✓ | | | ✓ |
-| Attestations CSE | | | ✓ | ✓ | lecture | ✓ |
-| Comptabilité (lecture) | | | rapports | ✓ | ✓ | ✓ |
-| Comptabilité (écriture) | | | | ✓ | | ✓ |
-| Exercices, budget (écriture) | | | | ✓ | ✓ | ✓ |
-| Notes de frais | | | lecture | ✓ | lecture + validation | ✓ |
-| Boutique (catalogue) | | ✓ | ✓ | lecture | lecture | ✓ |
-| Commandes (création) | | ✓ | lecture | ✓ | lecture | ✓ |
-| Commandes (encaissement) | | | | ✓ | ✓ | ✓ |
-| Notifications (émission) | | | ✓ | lecture | ✓ | ✓ |
-| Assistant IA | | | | ✓ | ✓ | ✓ |
-| Gestion des accès | | | | | ✓ | ✓ |
-| Usurpation | | | | | | ✓ |
+| | Accès minimal | Communication | Entraîneur | Secrétaire | Trésorier | Président | Super admin |
+|---|---|---|---|---|---|---|---|
+| Tableau de bord, aide | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Adhérents (lecture) | | | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Adhérents (écriture, import) | | | | ✓ | | | ✓ |
+| Attestations CSE | | | | ✓ | ✓ | lecture | ✓ |
+| Comptabilité (lecture) | | | | rapports | ✓ | ✓ | ✓ |
+| Comptabilité (écriture) | | | | | ✓ | | ✓ |
+| Exercices, budget (écriture) | | | | | ✓ | ✓ | ✓ |
+| Notes de frais | | | | lecture | ✓ | lecture + validation | ✓ |
+| Boutique (catalogue) | | | ✓ | ✓ | lecture | lecture | ✓ |
+| Commandes (création) | | | ✓ | lecture | ✓ | lecture | ✓ |
+| Commandes (encaissement) | | | | | ✓ | ✓ | ✓ |
+| Notifications (émission) | | ✓ | | ✓ | lecture | ✓ | ✓ |
+| Annonces (rédaction, publication) | | ✓ | lecture | ✓ | lecture | ✓ | ✓ |
+| Assistant IA | | | | | ✓ | ✓ | ✓ |
+| Gestion des accès | | | | | | ✓ | ✓ |
+| Usurpation | | | | | | | ✓ |
 
 Cette répartition est la **définition d'origine**, figée par un instantané dans `libs/domains/iam/shared/roles.test.ts` : toute modification du code y apparaît comme un diff explicite. Les droits réellement appliqués sont modifiables depuis l'application (voir RF-IAM-004), et l'écran signale les rôles qui se sont écartés de cette définition.

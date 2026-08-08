@@ -47,6 +47,7 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
   '/admin/shop/products': 'shop:products:read',
   '/admin/shop/orders': 'shop:orders:read',
 
+  '/admin/announcements': 'announcements:posts:read',
   '/admin/notifications': 'notifications:messages:read',
 
   '/admin/settings': 'settings:hub:read',

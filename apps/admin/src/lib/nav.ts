@@ -62,6 +62,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Communication',
     items: [
+      { name: 'Annonces', icon: 'Megaphone', href: '/admin/announcements', permission: 'announcements:posts:read' },
       { name: 'Notifications', icon: 'Bell', href: '/admin/notifications', permission: 'notifications:messages:read' }
     ]
   },

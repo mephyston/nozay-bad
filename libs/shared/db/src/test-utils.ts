@@ -12,6 +12,7 @@ export async function setupMockDb() {
     'admin_user_roles',
     'admin_users',
     'attestation_config',
+    'announcements',
     'push_deliveries',
     'push_messages',
     'push_preferences',

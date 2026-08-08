@@ -18,6 +18,7 @@
   // une fois. Elles restent atteignables depuis le pied de page de chaque écran et
   // depuis la page de connexion.
   const secondaryLinks = $derived([
+    { href: '/annonces', label: 'Annonces du club' },
     ...(canExpense ? [{ href: '/note-de-frais', label: 'Notes de frais' }] : []),
     { href: '/attestation', label: 'Attestation CSE' },
     { href: '/notifications', label: 'Mes notifications' }

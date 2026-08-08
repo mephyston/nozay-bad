@@ -36,6 +36,9 @@ export default defineConfig({
       '@nba/shop/schema': path.resolve(__dirname, './libs/domains/shop/shared/schema.ts'),
       '@nba/shop-ui': path.resolve(__dirname, './libs/domains/shop/shared/ui.ts'),
       '@nba/notifications-ui': path.resolve(__dirname, './libs/domains/notifications/shared/ui.ts'),
+      '@nba/announcements-api': path.resolve(__dirname, './libs/domains/announcements/index.ts'),
+      '@nba/announcements/schema': path.resolve(__dirname, './libs/domains/announcements/shared/schema.ts'),
+      '@nba/announcements-ui': path.resolve(__dirname, './libs/domains/announcements/shared/ui.ts'),
     },
 
   },
@@ -234,6 +237,42 @@ export default defineConfig({
           root: path.resolve(__dirname, 'libs/domains/notifications'),
           include: ['**/*.test.ts'],
           exclude: ['**/ui/**', '**/node_modules/**'],
+        }
+      },
+
+      // Inline project configs for announcements API and UI
+      {
+        extends: true,
+        plugins: [
+          cloudflareTest({
+            wrangler: {
+              configPath: wranglerConfig,
+            },
+          }),
+        ],
+        cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-announcements-api'),
+        test: {
+          name: 'features-announcements-api',
+          globals: true,
+          root: path.resolve(__dirname, 'libs/domains/announcements'),
+          include: ['**/*.test.ts'],
+          exclude: ['**/ui/**', '**/node_modules/**'],
+        }
+      },
+      {
+        extends: true,
+        plugins: [svelte()],
+        cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-announcements-ui'),
+        resolve: {
+          conditions: ['browser'],
+        },
+        test: {
+          name: 'features-announcements-ui',
+          globals: true,
+          environment: 'jsdom',
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
+          root: path.resolve(__dirname, 'libs/domains/announcements'),
+          include: ['list-announcements/ui/**/*.test.ts'],
         }
       },
 

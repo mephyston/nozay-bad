@@ -196,18 +196,32 @@ describe('0012_iam_roles — reprise des permissions vers des rôles', () => {
 });
 
 /**
- * Reprise de la migration 0013 (droits par rôle en base).
+ * Reprise des droits par rôle en base.
  *
- * Le bloc de valeurs a été généré depuis `ROLE_PERMISSIONS`. Ce test vérifie qu'il
- * n'en a pas divergé depuis : sans lui, un rôle modifié en code laisserait la base
+ * Les blocs de valeurs ont été générés depuis `ROLE_PERMISSIONS`. Ce test vérifie qu'ils
+ * n'en ont pas divergé depuis : sans lui, un rôle modifié en code laisserait la base
  * semée avec l'ancienne définition, silencieusement.
+ *
+ * On rejoue 0013 **puis toute migration ultérieure** touchant `role_permissions` : les
+ * migrations livrées étant append-only, une fonctionnalité qui ajoute une permission ne
+ * peut pas modifier 0013, elle sème dans un nouveau fichier. Comparer à 0013 seul
+ * échouerait donc dès le premier ajout, alors que la base serait correcte.
  */
-describe('0013_role_permissions — valeurs de départ', () => {
+describe('reprise des droits par rôle — valeurs de départ', () => {
   let db: DatabaseSync;
+
+  /** Migrations semant `role_permissions`, dans l'ordre, à partir de celle qui crée la table. */
+  const SEEDING_MIGRATIONS = fs
+    .readdirSync(MIGRATIONS_DIR)
+    .filter((file) => file.endsWith('.sql') && file >= '0013')
+    .sort()
+    .filter((file) => fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf-8').includes('role_permissions'));
 
   beforeEach(() => {
     db = new DatabaseSync(':memory:');
-    for (const statement of readStatements('0013_role_permissions.sql')) db.exec(statement);
+    for (const file of SEEDING_MIGRATIONS) {
+      for (const statement of readStatements(file)) db.exec(statement);
+    }
   });
 
   function seeded(role: string): string[] {
