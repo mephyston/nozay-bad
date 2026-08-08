@@ -63,3 +63,44 @@ export interface PageSummary {
 export async function listPublishedPages(env: WebsiteEnv): Promise<PageSummary[]> {
   return (await getJson<PageSummary[]>(env, '/cms/pages')) ?? [];
 }
+
+export interface MediaWithVariants {
+  media: import('@nba/cms/public').CmsMediaRow;
+  variants: import('@nba/cms/public').CmsMediaVariantRow[];
+}
+
+/**
+ * Charge les médias référencés par une page, en une passe.
+ *
+ * Les blocs ne portent que des identifiants : sans cette résolution, chaque image
+ * déclencherait son propre aller-retour, et le rendu perdrait les dimensions dont
+ * dépend l'absence de décalage.
+ */
+export async function loadMedia(env: WebsiteEnv, ids: number[]): Promise<Map<number, MediaWithVariants>> {
+  const unique = [...new Set(ids)].filter((id) => Number.isSafeInteger(id) && id > 0);
+  const entries = await Promise.all(
+    unique.map(async (id) => {
+      const found = await getJson<MediaWithVariants>(env, `/cms/media/${id}`);
+      return found ? ([id, found] as const) : null;
+    })
+  );
+  return new Map(entries.filter((e): e is NonNullable<typeof e> => e !== null));
+}
+
+/** Identifiants de médias cités par une liste de blocs. */
+export function mediaIdsInBlocks(blocks: import('@nba/cms/public').BlockPayload[]): number[] {
+  const ids: number[] = [];
+  for (const block of blocks) {
+    if (block.type === 'hero' && block.mediaId) ids.push(block.mediaId);
+    if (block.type === 'gallery') ids.push(...block.mediaIds);
+    if (block.type === 'cta_grid') ids.push(...block.items.map((i) => i.mediaId).filter((v): v is number => !!v));
+    if (block.type === 'pdf_link') {
+      ids.push(block.mediaId);
+      if (block.thumbnailMediaId) ids.push(block.thumbnailMediaId);
+    }
+    if (block.type === 'person_cards') {
+      ids.push(...block.people.map((p) => p.mediaId).filter((v): v is number => !!v));
+    }
+  }
+  return ids;
+}

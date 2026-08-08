@@ -1,0 +1,31 @@
+---
+import type { GalleryBlock, CmsMediaRow, CmsMediaVariantRow } from '@nba/cms/public';
+import Picture from '../Picture.astro';
+
+interface Props {
+  block: GalleryBlock;
+  media?: Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
+}
+
+const { block, media = new Map() } = Astro.props;
+const items = block.mediaIds.map((id) => media.get(id)).filter((v): v is NonNullable<typeof v> => !!v);
+---
+<section class="mx-auto max-w-5xl px-4 py-8">
+  {block.heading && <h2 class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
+  {items.length > 0 && (
+    <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {items.map((entry, index) => (
+        <li class="overflow-hidden rounded-lg">
+          {/* La première image d'une galerie en tête de page est souvent le LCP. */}
+          <Picture
+            media={entry.media}
+            variants={entry.variants}
+            priority={index === 0}
+            sizes="(max-width: 640px) 50vw, 33vw"
+            class="h-full w-full object-cover"
+          />
+        </li>
+      ))}
+    </ul>
+  )}
+</section>

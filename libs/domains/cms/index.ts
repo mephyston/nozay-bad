@@ -9,6 +9,10 @@ import { getPageRoute } from './pages/get-page/route';
 import { updatePageRoute } from './pages/update-page/route';
 import { deletePageRoute } from './pages/delete-page/route';
 import { getContentVersionRoute } from './publishing/get-content-version/route';
+import { listMediaRoute } from './media/list-media/route';
+import { uploadMediaRoute } from './media/upload-media/route';
+import { getMediaRoute } from './media/get-media/route';
+import { deleteMediaRoute } from './media/delete-media/route';
 
 export type Bindings = {
   DB: D1Database;
@@ -28,6 +32,10 @@ cmsRouter.route('/', createPageRoute);
 cmsRouter.route('/', getPageRoute);
 cmsRouter.route('/', updatePageRoute);
 cmsRouter.route('/', deletePageRoute);
+cmsRouter.route('/', listMediaRoute);
+cmsRouter.route('/', uploadMediaRoute);
+cmsRouter.route('/', getMediaRoute);
+cmsRouter.route('/', deleteMediaRoute);
 
 // API publique du contexte.
 export { resolveRoute } from './routing/resolve-route/handler';
@@ -36,5 +44,7 @@ export { listPages } from './pages/list-pages/handler';
 export { getPage } from './pages/get-page/handler';
 export { getContentVersion, bumpContentVersion } from './shared/cache-version';
 export { normalisePath, slugify, buildPath, ROOT_PATH } from './shared/slug';
+export { listMedia } from './media/list-media/handler';
+export { getMedia } from './media/get-media/handler';
 export { BLOCK_TYPES } from './shared/blocks';
 export type { BlockType, BlockPayload } from './shared/blocks';

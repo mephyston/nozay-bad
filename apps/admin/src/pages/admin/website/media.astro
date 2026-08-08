@@ -1,0 +1,82 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { MediaLibrary } from '@nba/cms-ui';
+import { createAdminApiClient } from '../../../lib/api';
+import { can, guardAction } from '../../../lib/guard';
+
+// La consultation est déjà exigée par PAGE_PERMISSIONS. Déposer et supprimer sont
+// deux droits distincts : retirer un média peut vider l'illustration d'une page en
+// ligne, là où en ajouter un est sans conséquence.
+const canWrite = can(Astro.locals, 'cms:media:write');
+const canDelete = can(Astro.locals, 'cms:media:delete');
+
+const apiService = createAdminApiClient(Astro.locals);
+
+const ACTIONS = {
+  upload: 'cms:media:write',
+  delete: 'cms:media:delete'
+} as const;
+
+if (Astro.request.method === 'POST') {
+  // Le dépôt arrive en multipart : on lit l'action dans le formulaire, et non dans un
+  // corps JSON comme les autres écrans.
+  const contentType = Astro.request.headers.get('content-type') ?? '';
+
+  if (contentType.includes('multipart/form-data')) {
+    const denied = guardAction(Astro.locals, 'upload', ACTIONS);
+    if (denied) return denied;
+
+    const form = await Astro.request.formData();
+    const apiRes = await apiService.fetch('http://localhost/cms/media', { method: 'POST', body: form });
+    if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+    return new Response(JSON.stringify(await apiRes.json()), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  const data = (await Astro.request.json()) as { action: string; id?: number };
+  const denied = guardAction(Astro.locals, data.action, ACTIONS);
+  if (denied) return denied;
+
+  const apiRes = await apiService.fetch(`http://localhost/cms/media/${data.id}`, { method: 'DELETE' });
+  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+  return new Response(JSON.stringify(await apiRes.json()), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+let media: any[] = [];
+let errorMsg = '';
+
+try {
+  const res = await apiService.fetch('http://localhost/cms/media');
+  if (res.ok) {
+    const json = (await res.json()) as any;
+    media = json.data ?? [];
+  } else {
+    errorMsg = 'Impossible de charger la médiathèque.';
+  }
+} catch {
+  errorMsg = 'Impossible de charger la médiathèque.';
+}
+---
+
+<Layout title="Médiathèque - NBA 91">
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Médiathèque"
+  >
+    <PageHeader
+      title="Médiathèque"
+      description="Images et documents du site public. Les fichiers déposés ici sont réutilisables dans toutes les pages."
+    />
+    {errorMsg && <ErrorAlert message={errorMsg} />}
+    <MediaLibrary client:load media={media} canWrite={canWrite} canDelete={canDelete} />
+  </AdminLayout>
+</Layout>

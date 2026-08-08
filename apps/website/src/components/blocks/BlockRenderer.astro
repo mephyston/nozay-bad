@@ -1,12 +1,15 @@
 ---
-import type { BlockPayload } from '@nba/cms/public';
+import type { BlockPayload, CmsMediaRow, CmsMediaVariantRow } from '@nba/cms/public';
 import RichText from './RichText.astro';
 import Hero from './Hero.astro';
 import CtaGrid from './CtaGrid.astro';
 import PdfLink from './PdfLink.astro';
+import Gallery from './Gallery.astro';
 
-interface Props { block: BlockPayload }
-const { block } = Astro.props;
+type MediaMap = Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
+
+interface Props { block: BlockPayload; media?: MediaMap }
+const { block, media = new Map() as MediaMap } = Astro.props;
 ---
 {/*
   Un type sans rendu ne produit rien plutôt que de faire tomber la page : c'est le
@@ -14,6 +17,7 @@ const { block } = Astro.props;
   base. Le test de couverture des blocs empêche que ce cas devienne durable.
 */}
 {block.type === 'richtext' && <RichText block={block} />}
-{block.type === 'hero' && <Hero block={block} />}
+{block.type === 'hero' && <Hero block={block} media={media} />}
 {block.type === 'cta_grid' && <CtaGrid block={block} />}
-{block.type === 'pdf_link' && <PdfLink block={block} />}
+{block.type === 'pdf_link' && <PdfLink block={block} media={media} />}
+{block.type === 'gallery' && <Gallery block={block} media={media} />}

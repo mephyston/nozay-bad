@@ -191,5 +191,11 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // Publier expose la page à tout le monde, Google compris — mais reste un acte de
   // rédaction, pas un droit à part.
   { method: 'POST', path: '/cms/pages/:id/publish', permission: 'cms:pages:write' },
-  { method: 'DELETE', path: '/cms/pages/:id', permission: 'cms:pages:delete' }
+  { method: 'DELETE', path: '/cms/pages/:id', permission: 'cms:pages:delete' },
+  // Médiathèque. La lecture est ouverte au site public (`service`) : c'est elle qui
+  // fournit dimensions et variantes, sans lesquelles les images décaleraient la page.
+  { method: 'GET', path: '/cms/media', permission: 'cms:media:read', service: true },
+  { method: 'GET', path: '/cms/media/:id', permission: 'cms:media:read', service: true },
+  { method: 'POST', path: '/cms/media', permission: 'cms:media:write' },
+  { method: 'DELETE', path: '/cms/media/:id', permission: 'cms:media:delete' }
 ];

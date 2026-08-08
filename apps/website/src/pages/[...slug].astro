@@ -2,7 +2,7 @@
 import { normalisePath } from '@nba/cms/public';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BlockRenderer from '../components/blocks/BlockRenderer.astro';
-import { resolvePublicRoute, type WebsiteEnv } from '../lib/cms';
+import { resolvePublicRoute, loadMedia, mediaIdsInBlocks, type WebsiteEnv } from '../lib/cms';
 import { pageTitle, pageDescription, absoluteUrl } from '../lib/seo';
 import { sportsClub, webPage, breadcrumbList } from '../lib/jsonld';
 import { HTML_CACHE_CONTROL } from '../lib/cache';
@@ -37,6 +37,10 @@ if (resolved.kind === 'notfound' || resolved.kind === 'post') {
 
 const { page, blocks } = resolved;
 
+// Les blocs ne portent que des identifiants : on résout les médias en une passe,
+// pour disposer des dimensions et des variantes au moment du rendu.
+const media = await loadMedia(env, mediaIdsInBlocks(blocks));
+
 const title = pageTitle(page.seoTitle, page.title);
 const description = pageDescription(page.seoDescription, blocks);
 const canonical = absoluteUrl(siteUrl, page.path);
@@ -69,5 +73,5 @@ Astro.response.headers.set('Cache-Control', HTML_CACHE_CONTROL);
       <h1 class="text-3xl font-semibold tracking-tight">{page.title}</h1>
     </div>
   )}
-  {blocks.map((block) => <BlockRenderer block={block} />)}
+  {blocks.map((block) => <BlockRenderer block={block} media={media} />)}
 </BaseLayout>

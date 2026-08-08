@@ -27,5 +27,13 @@ export type {
 
 export { normalisePath, slugify, buildPath, ROOT_PATH } from './slug';
 
+export {
+  isSafeMediaKey,
+  MEDIA_KEY_PREFIX,
+  VARIANT_WIDTHS,
+  VARIANT_FORMATS,
+  variantKey
+} from './media';
+
 export type { ResolveRouteOutput, ResolveRouteInput } from '../routing/resolve-route/dto';
-export type { CmsPageRow, CmsPostRow } from './schema';
+export type { CmsPageRow, CmsPostRow, CmsMediaRow, CmsMediaVariantRow } from './schema';

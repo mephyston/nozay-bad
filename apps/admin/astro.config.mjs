@@ -98,7 +98,7 @@ export default defineConfig({
         '@nba/notifications-ui',
         '@nba/iam',
         '@nba/iam-ui',
-        '@nba/announcements-ui'
+        '@nba/announcements-ui', '@nba/cms-ui'
       ]
     },
     ssr: {

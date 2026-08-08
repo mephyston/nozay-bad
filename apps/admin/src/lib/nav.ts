@@ -67,6 +67,12 @@ export const NAV_GROUPS: NavGroup[] = [
     ]
   },
   {
+    label: 'Site public',
+    items: [
+      { name: 'Médiathèque', icon: 'Image', href: '/admin/website/media', permission: 'cms:media:read' }
+    ]
+  },
+  {
     label: 'Réglages',
     items: [
       { name: 'Configuration', icon: 'Settings', href: '/admin/settings', permission: 'settings:hub:read' },
