@@ -1,3 +1,10 @@
+# [1.0.0-beta.64](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.63...v1.0.0-beta.64) (2026-08-08)
+
+
+### Bug Fixes
+
+* **ci:** relever le testTimeout, les migrations RBAC ont fait déborder les 5 s ([c6bcac5](https://github.com/mephyston/nozay-bad/commit/c6bcac5a9877ed8a3ea275faa6cd7b27668d77dc))
+
 # [1.0.0-beta.63](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.62...v1.0.0-beta.63) (2026-08-08)
 
 
