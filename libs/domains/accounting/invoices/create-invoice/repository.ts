@@ -38,10 +38,17 @@ export class CreateInvoiceRepository {
     const insertInvoiceStmt = db.insert(invoicesTable).values(values);
     const statements: any[] = [insertInvoiceStmt];
 
+    // `last_insert_rowid()` désigne la *dernière* ligne insérée du lot : dès la
+    // deuxième ligne de facturation il renverrait l'id de la ligne précédente
+    // (invoice_items) et non celui de la facture — d'où un échec de clé étrangère.
+    // On relit donc la facture par son numéro, unique et connu avant l'insertion :
+    // la référence reste valable quel que soit le rang de la ligne dans le lot.
+    const parentId = sql`(SELECT ${invoicesTable.id} FROM ${invoicesTable} WHERE ${invoicesTable.invoiceNumber} = ${values.invoiceNumber})`;
+
     if (items && items.length > 0) {
       for (const item of items) {
         const itemStmt = db.insert(invoiceItemsTable).values({
-          invoiceId: sql`(SELECT last_insert_rowid())`,
+          invoiceId: parentId,
           description: item.description,
           quantity: item.quantity,
           unitPriceCents: item.unitPrice ?? item.unitPriceCents ?? 0,

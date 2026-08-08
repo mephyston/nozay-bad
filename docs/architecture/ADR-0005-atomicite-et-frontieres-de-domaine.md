@@ -59,24 +59,25 @@ Tous les handlers migrés doivent obligatoirement adopter un découpage strict e
 
 Pour les opérations de création parent-enfant comme `create-invoice` (insertion de la facture puis insertion des $N$ lignes de facture référençant `invoice_id`), nous avons évalué 4 stratégies :
 
-#### Option A : `(SELECT last_insert_rowid())` dans une sous-requête SQL *(RETENUE & VALIDÉE EMPIRIQUEMENT)*
-- **Vérification empirique** : Validée avec 100% de succès sur Cloudflare D1.
-- En SQLite / D1, SQLite conserve le `last_insert_rowid()` d'une instruction à l'autre au sein de la même transaction de lot.
-- La première instruction du batch insère la facture parente :
+#### Option A : `(SELECT last_insert_rowid())` dans une sous-requête SQL *(LIMITÉE À UN SEUL ENFANT)*
+- SQLite conserve bien le `last_insert_rowid()` d'une instruction à l'autre au sein de la même transaction de lot — mais il désigne la **dernière ligne insérée, toutes tables confondues**.
+- Le motif ne tient donc que si le parent est suivi d'**une seule** insertion. Il reste valable pour les lots du type `[INSERT ledger_entry, UPDATE …]` (`shop/approve-order`, `expenses/update`, `checks/record-check-ledger-entry`) : un `UPDATE` ne déplace pas `last_insert_rowid()`.
+- Il est **faux dès la deuxième ligne enfant** : celle-ci référence l'id de la ligne enfant précédente et non celui du parent, d'où un `FOREIGN KEY constraint failed` (dès que les id des deux tables ont divergé — sur une base neuve les deux séquences coïncident et masquent le défaut).
+
+#### Option A′ : sous-requête sur la clé naturelle du parent *(RETENUE pour les enfants multiples)*
+- Le parent porte une clé unique connue **avant** l'insertion (`invoices.invoice_number`, généré en phase de lecture). Chaque enfant la référence, quel que soit son rang dans le lot :
   ```ts
-  const insertInvoiceStmt = db.insert(invoicesTable).values({ ... });
-  ```
-- La seconde instruction insère les lignes enfants en référençant la sous-requête Drizzle :
-  ```ts
+  const parentId = sql`(SELECT ${invoicesTable.id} FROM ${invoicesTable} WHERE ${invoicesTable.invoiceNumber} = ${values.invoiceNumber})`;
   const insertItemStmt = db.insert(invoiceItemsTable).values({
-    invoiceId: sql`(SELECT last_insert_rowid())`,
+    invoiceId: parentId,
     description: item.description,
     unitPriceCents: item.unitPriceCents,
     totalPriceCents: item.totalPriceCents,
     createdAt: now
   });
   ```
-- **Avantage** : **Atomicité 100% garantie dans un seul `db.batch()`**, aucune modification de schéma nécessaire, zéro aller-retour réseau supplémentaire.
+- **Avantage** : **Atomicité 100% garantie dans un seul `db.batch()`**, aucune modification de schéma nécessaire, zéro aller-retour réseau supplémentaire — et le rattachement ne dépend plus de l'ordre des instructions.
+- Régression couverte par `create-invoice/repository.test.ts` (« item ids drifted ahead of invoice ids »), qui échoue avec l'option A.
 
 #### Option B : Multiple `db.batch()` avec `INSERT ... RETURNING` *(ÉCARTÉE)*
 - Exécuter un premier batch pour le parent, récupérer l'ID inséré, puis lancer un second batch pour les enfants.
@@ -84,7 +85,7 @@ Pour les opérations de création parent-enfant comme `create-invoice` (insertio
 
 #### Option C : UUIDs générés côté client / applicatif *(ÉCARTÉE)*
 - Utiliser des UUIDv4/v7 textuels comme clés primaires.
-- **Raison du rejet** : Nécessiterait de modifier les schémas Drizzle et les tables SQLite d'auto-incrément vers TEXT. Impact lourd non justifié alors que l'Option A fonctionne nativement.
+- **Raison du rejet** : Nécessiterait de modifier les schémas Drizzle et les tables SQLite d'auto-incrément vers TEXT. Impact lourd non justifié alors que l'Option A′ fonctionne nativement.
 
 #### Option D : Étapes idempotentes compensatoires *(ÉCARTÉE POUR LE SYNCHRONE)*
 - Réservée aux traitements asynchrones ou en arrière-plan.
@@ -160,7 +161,7 @@ La migration s'effectuera par vagues selon le niveau de risque et de complexité
 
 | Vague | Handlers | Domaine | Justification |
 | :--- | :--- | :--- | :--- |
-| **Vague 1** | `invoices/create-invoice`, `invoices/update-invoice` | Accounting | Domaine unique, validation du motif `(SELECT last_insert_rowid())` |
+| **Vague 1** | `invoices/create-invoice`, `invoices/update-invoice` | Accounting | Domaine unique, rattachement des lignes par sous-requête sur `invoice_number` |
 | **Vague 2** | `shop/approve-order` | Shop / Accounting | Premier cas inter-domaines avec `buildStatement` |
 | **Vague 3** | `checks/record-check-ledger-entry`, `checks/create-bank-check-deposit`, `checks/clear-check-deposit`, `checks/delete-check-deposit` | Accounting | Traitement des chèques et remises bancaires |
 | **Vague 4** | `expenses/update` (`approveExpense`, `cancelExpenseApproval`) | Expenses / Accounting | Notes de frais et écritures de régularisation |
@@ -171,6 +172,6 @@ La migration s'effectuera par vagues selon le niveau de risque et de complexité
 ## 5. Bilan & Décisions
 
 1. **Pattern unique** : Tous les handlers adoptent le motif `Read-Decide-Write` (3 phases).
-2. **Dépendance d'ID parent** : Résolue par sous-requête `(SELECT last_insert_rowid())` dans `db.batch()`.
+2. **Dépendance d'ID parent** : Résolue par sous-requête dans `db.batch()` — `(SELECT last_insert_rowid())` quand le parent n'est suivi que d'une insertion, sinon une sous-requête sur la clé naturelle du parent (cf. § 2.2).
 3. **Verrou optimiste** : Vérification du nombre de lignes modifiées (`meta.changes`) après exécution du batch.
 4. **Frontière inter-domaines** : Chaque domaine Bounded Context expose des fonctions `build*Statement(db, params)` retournant un `BatchItem` opaque pour permettre à l'orchestrateur d'assembler un lot atomique unique.

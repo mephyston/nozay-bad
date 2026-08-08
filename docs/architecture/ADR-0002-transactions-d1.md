@@ -193,6 +193,10 @@ Quand une dépendance sur un ID auto-incrémenté est incontournable (ex : `INSE
 INSERT INTO invoices (...) VALUES (...);
 INSERT INTO invoice_items (invoice_id, ...) VALUES (last_insert_rowid(), ...);
 ```
+⚠️ Valable pour **une seule** insertion enfant : `last_insert_rowid()` désigne la dernière
+ligne insérée toutes tables confondues, donc la deuxième ligne enfant référencerait la
+première. Pour $N$ enfants, référencer le parent par sa clé naturelle — cf.
+[ADR-0005 § 2.2](./ADR-0005-atomicite-et-frontieres-de-domaine.md).
 
 ## Impact sur les prompts 9 et 13
 
