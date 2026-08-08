@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import MobileNav from '../components/MobileNav.svelte';
+import PushOptIn from '../components/PushOptIn.svelte';
 import { env } from 'cloudflare:workers';
 import { getActiveMemberStatus } from '../lib/member-status';
 
@@ -20,6 +21,12 @@ const activeSeasonName = status.seasonName;
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     <div class="max-w-3xl mx-auto">
+      <!-- Proposition d'activation, masquée dès que les notifications sont en place :
+           un bandeau permanent finit par ne plus être lu. -->
+      <div class="mb-6 empty:mb-0">
+        <PushOptIn client:idle variant="banner" />
+      </div>
+
       <div class="mb-6">
         <h1 class="text-xl sm:text-2xl font-bold text-foreground">
           Bonjour {firstName}, bienvenue sur ton espace adhérent

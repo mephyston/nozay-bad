@@ -1,21 +1,25 @@
 <script lang="ts">
-  import { Receipt, ShoppingCart, FileText, Wallet, MoreHorizontal } from '@lucide/svelte';
+  import { Home, ShoppingCart, Wallet, MoreHorizontal } from '@lucide/svelte';
 
   let { currentPath = '', canExpense = true }: { currentPath?: string; canExpense?: boolean } = $props();
 
-  const items = $derived([
+  // Trois destinations quotidiennes seulement : au-delà, les onglets deviennent
+  // trop étroits sur un petit écran et aucun n'est plus atteignable au pouce.
+  const items = [
+    { href: '/', label: 'Accueil', icon: Home },
     { href: '/mon-compte', label: 'Compte', icon: Wallet },
-    ...(canExpense ? [{ href: '/note-de-frais', label: 'Frais', icon: Receipt }] : []),
-    { href: '/boutique', label: 'Commande', icon: ShoppingCart },
-    { href: '/attestation', label: 'Attestation', icon: FileText }
-  ]);
+    { href: '/boutique', label: 'Boutique', icon: ShoppingCart }
+  ];
 
-  // Écrans rarement consultés : ils n'ont pas leur propre onglet, mais restent
+  // Écrans plus rarement consultés : ils n'ont pas leur propre onglet, mais restent
   // accessibles à tout moment — y compris en PWA, où le pied de page est masqué.
-  const secondaryLinks = [
+  const secondaryLinks = $derived([
+    ...(canExpense ? [{ href: '/note-de-frais', label: 'Notes de frais' }] : []),
+    { href: '/attestation', label: 'Attestation CSE' },
+    { href: '/notifications', label: 'Mes notifications' },
     { href: '/confidentialite', label: 'Politique de confidentialité' },
     { href: '/mentions-legales', label: 'Mentions légales' }
-  ];
+  ]);
 
   const isSecondaryActive = $derived(secondaryLinks.some((l) => l.href === currentPath));
 </script>

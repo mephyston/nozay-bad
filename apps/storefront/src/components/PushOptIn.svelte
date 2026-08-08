@@ -13,6 +13,16 @@
 
   type State = 'loading' | 'unsupported' | 'needs-install' | 'denied' | 'off' | 'on';
 
+  let {
+    /**
+     * `banner` : format compact pour l'accueil, masqué dès que tout est en ordre —
+     * un bandeau permanent finit par ne plus être lu.
+     * `card` : encart détaillé des écrans de réglages, toujours visible.
+     */
+    variant = 'card',
+    showSettingsLink = true
+  }: { variant?: 'card' | 'banner'; showSettingsLink?: boolean } = $props();
+
   let state = $state<State>('loading');
   let busy = $state(false);
   let error = $state('');
@@ -121,8 +131,8 @@
   }
 </script>
 
-{#if state !== 'loading' && state !== 'unsupported'}
-  <div class="rounded-xl border border-border bg-card p-5">
+{#if state !== 'loading' && state !== 'unsupported' && !(variant === 'banner' && state === 'on')}
+  <div class="rounded-xl border border-border bg-card {variant === 'banner' ? 'p-4' : 'p-5'}">
     <div class="flex items-start justify-between gap-4">
       <div class="min-w-0">
         <div class="text-sm font-semibold text-foreground">Notifications</div>
@@ -141,6 +151,14 @@
         </p>
         {#if error}
           <p class="text-xs text-destructive mt-2">{error}</p>
+        {/if}
+        {#if showSettingsLink && state !== 'needs-install'}
+          <a
+            href="/notifications"
+            class="inline-block text-xs font-medium text-primary mt-2 underline underline-offset-2"
+          >
+            Choisir ce que je reçois
+          </a>
         {/if}
       </div>
 

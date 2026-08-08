@@ -33,6 +33,7 @@ export { getPreferences, updatePreferences } from './preferences/handler';
 export type { CategoryPreference } from './preferences/dto';
 export { resolveVapid, type VapidEnv } from './shared/vapid';
 export { sendNotificationSchema } from './shared/validators';
+export { STOREFRONT_PAGES, isStorefrontPage, type StorefrontPagePath } from './shared/storefront-pages';
 export {
   NOTIFICATION_CATEGORIES,
   NOTIFICATION_CATEGORY_IDS,

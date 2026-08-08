@@ -22,6 +22,16 @@ const APP_ENV = process.env.PUBLIC_APP_ENV || 'production';
 const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ? '-test' : '';
 const ENV_LABEL = APP_ENV === 'development' ? ' (DEV)' : APP_ENV === 'staging' ? ' (TEST)' : '';
 
+// Espace adhérent correspondant à cet environnement. Sert à prévisualiser la page
+// qu'ouvrira une notification : l'admin doit pointer vers SON storefront, sinon un
+// test depuis la staging enverrait vers la production.
+const STOREFRONT_URL =
+  APP_ENV === 'development'
+    ? 'http://localhost:4322'
+    : APP_ENV === 'staging'
+      ? 'https://staging-my.nozaybad.fr'
+      : 'https://my.nozaybad.fr';
+
 export default defineConfig({
   output: 'server',
   adapter: cloudflare({
@@ -61,7 +71,8 @@ export default defineConfig({
   vite: {
     define: {
       'import.meta.env.PUBLIC_APP_VERSION': JSON.stringify(process.env.VITE_APP_VERSION || pkg.version),
-      'import.meta.env.PUBLIC_APP_ENV': JSON.stringify(APP_ENV)
+      'import.meta.env.PUBLIC_APP_ENV': JSON.stringify(APP_ENV),
+      'import.meta.env.PUBLIC_STOREFRONT_URL': JSON.stringify(STOREFRONT_URL)
     },
     plugins: [tailwindcss()],
     optimizeDeps: {

@@ -16,8 +16,11 @@ Il ne dépend d'aucun autre domaine. Les ciblages qui reposent sur des données 
 | **Message** | Contenu diffusé : titre, corps, page à ouvrir, ciblage. Conservé 90 jours comme historique. | `Aggregate` (`title`, `body`, `url`, `target`, `source`) |
 | **Livraison** | Un message destiné à un appareil. Une ligne par couple (message, abonnement). | `Entity` (`status`, `attempts`, `lastError`) |
 | **File d'envoi (outbox)** | Ensemble des livraisons `pending`. Drainée par lots par un Cron Trigger. | `push_deliveries` |
-| **Ciblage** | `all` (tous les abonnés), `unpaid` (foyers dont la cotisation reste due), `emails` (liste explicite). | `Enum` |
-| **Origine (`source`)** | `admin` pour un envoi manuel, sinon l'événement déclencheur (`expense:approved`, `order:rejected`, `reminder:unpaid`). | `string` |
+| **Ciblage** | `all` (tous les abonnés), `unpaid` (foyers dont la cotisation reste due), `groups` (types d'adhésion), `emails` (liste explicite). | `Enum` |
+| **Groupe** | Type d'adhésion issu de l'import Poona (« Loisirs 1 (Lundi) », « Compétiteurs adultes »…). Lu en base, jamais figé dans le code. | `members.type` |
+| **Catégorie** | Sujet réglable par l'adhérent : `announcement`, `birthday`, `expense`, `order`, `reminder`. | `Enum` |
+| **Préférence** | Écart au défaut pour une catégorie. L'absence de ligne vaut « activé ». | `push_preferences` |
+| **Origine (`source`)** | `admin` pour un envoi manuel, sinon l'événement déclencheur (`expense:approved`, `order:rejected`, `reminder:unpaid`, `birthday:daily`). | `string` |
 | **VAPID** | Paire de clés identifiant le serveur auprès des services de push (RFC 8292). Une paire par environnement. | `publicKey` / `privateKey` |
 
 ---
@@ -26,6 +29,7 @@ Il ne dépend d'aucun autre domaine. Les ciblages qui reposent sur des données 
 
 - [RF-NOT-001 : Abonnement d'un appareil aux notifications](./rules/RF-NOT-001-abonnement-appareil.md)
 - [RF-NOT-002 : Diffusion différée et fiabilisée des notifications](./rules/RF-NOT-002-diffusion-differee.md)
+- [RF-NOT-003 : Catégories réglables par l'adhérent](./rules/RF-NOT-003-categories-reglables.md)
 
 ---
 
@@ -75,4 +79,11 @@ et reporter la clé publique dans les deux emplacements versionnés ci-dessus.
 
 Tant que la clé privée n'est pas posée, le bouton d'activation reste masqué côté adhérent et le drain journalise une erreur de configuration : rien n'est cassé, la fonctionnalité est simplement inactive.
 
-Les rappels de cotisation sont désactivés par défaut. Pour les activer, passer la var `PUSH_REMINDERS_ENABLED` à `"true"` dans `apps/api/wrangler.json`.
+Les envois automatiques sont désactivés par défaut, pour que rien ne parte du seul fait d'un déploiement. Pour les activer, passer à `"true"` dans `apps/api/wrangler.json` :
+
+| Var | Effet | Cron |
+|---|---|---|
+| `PUSH_REMINDERS_ENABLED` | Relance des cotisations non soldées | lundi 8h UTC |
+| `PUSH_BIRTHDAYS_ENABLED` | Annonce des anniversaires du jour | tous les jours 7h UTC |
+
+⚠️ Les expressions cron de `wrangler.json` doivent rester identiques aux constantes de `apps/api/src/scheduled.ts` (`DISPATCH_CRON`, `DAILY_CRON`, `WEEKLY_CRON`) : le handler distingue le déclencheur par `event.cron`. Une divergence rendrait les rappels et la purge silencieusement inopérants, pendant que le drain continuerait de tourner.

@@ -1,0 +1,39 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import MobileNav from '../components/MobileNav.svelte';
+import PushOptIn from '../components/PushOptIn.svelte';
+import PushPreferences from '../components/PushPreferences.svelte';
+import { env } from 'cloudflare:workers';
+import { getActiveMemberStatus } from '../lib/member-status';
+
+const session = Astro.locals.session;
+const status = await getActiveMemberStatus(env, session);
+const canExpense = status.canExpense;
+---
+
+<Layout title="Mes notifications - Nozay Bad">
+  <Header
+    currentPath="/notifications"
+    activeSeasonName={status.seasonName || undefined}
+    pageTitle="Notifications"
+    canExpense={canExpense}
+  />
+
+  <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
+    <div class="max-w-3xl mx-auto space-y-8">
+      <section>
+        <h2 class="text-base font-bold text-foreground mb-3">Cet appareil</h2>
+        <!-- Ne s'affiche pas si l'appareil ne peut pas recevoir de notifications. -->
+        <PushOptIn client:idle showSettingsLink={false} />
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-foreground mb-3">Ce que je souhaite recevoir</h2>
+        <PushPreferences client:load />
+      </section>
+    </div>
+  </main>
+
+  <MobileNav currentPath="/notifications" canExpense={canExpense} />
+</Layout>
