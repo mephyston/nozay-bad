@@ -20,6 +20,11 @@ const scanTargets = [
   ...walkDir(path.join(repoRoot, 'libs/domains')).filter(f => f.endsWith('.svelte')),
   ...walkDir(path.join(repoRoot, 'apps/admin/src/pages')).filter(f => f.endsWith('.astro')),
   ...walkDir(path.join(repoRoot, 'apps/storefront/src/pages')).filter(f => f.endsWith('.astro')),
+  // Le site public passe par les mêmes règles : sans cette entrée il y échapperait
+  // en silence, et c'est l'app la plus tentée d'écrire des couleurs en dur.
+  ...walkDir(path.join(repoRoot, 'apps/website/src/pages')).filter(f => f.endsWith('.astro')),
+  ...walkDir(path.join(repoRoot, 'apps/website/src/components')).filter(f => f.endsWith('.astro')),
+  ...walkDir(path.join(repoRoot, 'apps/website/src/layouts')).filter(f => f.endsWith('.astro')),
 ];
 
 // Documents imprimables autonomes : fond papier non theme-aware, palette littérale

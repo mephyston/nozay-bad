@@ -1,0 +1,16 @@
+{
+  "name": "website",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/website/src",
+  "targets": {
+    "lint": { "command": "eslint {projectRoot}" },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
+      "inputs": ["production", "^production", { "env": "PUBLIC_APP_ENV" }],
+      "options": { "command": "astro build", "cwd": "apps/website" }
+    }
+  },
+  "tags": ["type:app", "scope:website"]
+}

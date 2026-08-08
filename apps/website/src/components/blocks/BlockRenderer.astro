@@ -1,0 +1,19 @@
+---
+import type { BlockPayload } from '@nba/cms/public';
+import RichText from './RichText.astro';
+import Hero from './Hero.astro';
+import CtaGrid from './CtaGrid.astro';
+import PdfLink from './PdfLink.astro';
+
+interface Props { block: BlockPayload }
+const { block } = Astro.props;
+---
+{/*
+  Un type sans rendu ne produit rien plutôt que de faire tomber la page : c'est le
+  comportement voulu le jour où un bloc plus récent que le déploiement apparaît en
+  base. Le test de couverture des blocs empêche que ce cas devienne durable.
+*/}
+{block.type === 'richtext' && <RichText block={block} />}
+{block.type === 'hero' && <Hero block={block} />}
+{block.type === 'cta_grid' && <CtaGrid block={block} />}
+{block.type === 'pdf_link' && <PdfLink block={block} />}

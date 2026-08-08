@@ -1,0 +1,84 @@
+---
+import '../styles/global.css';
+import { ModeWatcher } from 'mode-watcher';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { serialiseJsonLd } from '../lib/jsonld';
+import { SITE_NAME } from '../lib/seo';
+
+interface Props {
+  title: string;
+  description: string;
+  canonical: string;
+  ogImage?: string;
+  ogType?: 'website' | 'article';
+  noindex?: boolean;
+  jsonLd?: unknown[];
+}
+
+const {
+  title,
+  description,
+  canonical,
+  ogImage,
+  ogType = 'website',
+  noindex = false,
+  jsonLd = []
+} = Astro.props;
+
+const image = ogImage ?? new URL('/og-default.jpg', Astro.site ?? canonical).toString();
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon.png" />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+    {/* Le partage se fait surtout par WhatsApp et Facebook, où l'ancien site
+        n'affichait ni vignette ni description faute de la moindre balise og:. */}
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={image} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="alternate" type="application/rss+xml" title={SITE_NAME} href="/rss.xml" />
+
+    {jsonLd.map((entry) => (
+      <script type="application/ld+json" set:html={serialiseJsonLd(entry)} />
+    ))}
+
+    {/* Anti-scintillement : le thème doit être posé avant le premier rendu, sinon
+        une page sombre s'affiche brièvement en clair. */}
+    <script is:inline>
+      (() => {
+        try {
+          const stored = localStorage.getItem('mode-watcher-mode');
+          const dark = stored
+            ? stored === 'dark'
+            : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (dark) document.documentElement.classList.add('dark');
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        } catch {}
+      })();
+    </script>
+  </head>
+  <body class="bg-background text-foreground min-h-dvh flex flex-col">
+    <ModeWatcher client:load />
+    <SiteHeader />
+    <main class="flex-1">
+      <slot />
+    </main>
+    <SiteFooter />
+  </body>
+</html>

@@ -1,0 +1,37 @@
+---
+/**
+ * En-tête du site.
+ *
+ * Le menu vient de la base à partir de la phase des menus administrables ; en
+ * attendant, l'arborescence reprise de WordPress est posée ici pour que la recette
+ * de parité puisse commencer.
+ */
+const NAV = [
+  { label: 'Accueil', href: '/' },
+  { label: 'Le club', href: '/notre-club/' },
+  { label: 'Jeunes', href: '/jeunes-2/' },
+  { label: 'Adultes compétition', href: '/adultes-2/' },
+  { label: 'Adultes loisirs', href: '/adultes-loisirs/' },
+  { label: 'Agenda', href: '/agenda/' }
+];
+const current = Astro.url.pathname;
+---
+<header class="border-border border-b">
+  <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-4">
+    <a href="/" class="flex items-center gap-2 font-semibold">
+      <img src="/logo.png" alt="" width="36" height="36" class="h-9 w-9" />
+      <span>Nozay Badminton</span>
+    </a>
+    <nav aria-label="Navigation principale" class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+      {NAV.map((item) => (
+        <a
+          href={item.href}
+          aria-current={current === item.href ? 'page' : undefined}
+          class="hover:text-primary aria-[current=page]:text-primary aria-[current=page]:font-medium"
+        >
+          {item.label}
+        </a>
+      ))}
+    </nav>
+  </div>
+</header>

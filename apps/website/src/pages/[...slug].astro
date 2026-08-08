@@ -1,0 +1,73 @@
+---
+import { normalisePath } from '@nba/cms/public';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import BlockRenderer from '../components/blocks/BlockRenderer.astro';
+import { resolvePublicRoute, type WebsiteEnv } from '../lib/cms';
+import { pageTitle, pageDescription, absoluteUrl } from '../lib/seo';
+import { sportsClub, webPage, breadcrumbList } from '../lib/jsonld';
+import { HTML_CACHE_CONTROL } from '../lib/cache';
+
+const runtime = (Astro.locals as { runtime?: { env?: WebsiteEnv } }).runtime;
+const env: WebsiteEnv = runtime?.env ?? {};
+const siteUrl = env.SITE_URL ?? import.meta.env.PUBLIC_SITE_URL ?? Astro.url.origin;
+
+const path = normalisePath(Astro.url.pathname);
+const resolved = await resolvePublicRoute(env, path);
+
+// Redirections et 410 sortent avant tout rendu : ce sont les ~70 URL héritées de
+// WordPress qui n'ont pas de contenu ici, et elles ne doivent rien coûter.
+if (resolved.kind === 'redirect') {
+  return Astro.redirect(resolved.toPath, resolved.statusCode as 301 | 302);
+}
+
+if (resolved.kind === 'gone') {
+  // 410 plutôt que 404 : la page a existé et n'a pas de successeur. Google la sort
+  // de son index bien plus vite ainsi.
+  return new Response('Cette page a été supprimée.', {
+    status: 410,
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+  });
+}
+
+if (resolved.kind === 'notfound' || resolved.kind === 'post') {
+  // Les articles arrivent avec la capacité « actualités » ; d'ici là ils tombent en
+  // 404 plutôt que d'être à demi rendus.
+  return new Response(null, { status: 404 });
+}
+
+const { page, blocks } = resolved;
+
+const title = pageTitle(page.seoTitle, page.title);
+const description = pageDescription(page.seoDescription, blocks);
+const canonical = absoluteUrl(siteUrl, page.path);
+
+const trail = [{ name: 'Accueil', path: '/' }];
+if (page.path !== '/') trail.push({ name: page.title, path: page.path });
+
+const jsonLd: unknown[] = [
+  webPage(siteUrl, { title: page.title, description, path: page.path }),
+  breadcrumbList(siteUrl, trail)
+];
+if (page.path === '/') jsonLd.unshift(sportsClub(siteUrl));
+
+// Le middleware ne pose pas cet en-tête : seules les pages réellement publiées sont
+// mises en cache, et c'est ici qu'on le sait.
+Astro.response.headers.set('Cache-Control', HTML_CACHE_CONTROL);
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonical={canonical}
+  noindex={page.noindex}
+  jsonLd={jsonLd}
+>
+  {/* Le bloc `hero` porte déjà le h1 ; sans lui, le titre de la page en tient lieu,
+      pour qu'il y ait toujours exactement un h1 — l'ancien site en avait deux. */}
+  {blocks[0]?.type !== 'hero' && (
+    <div class="mx-auto max-w-5xl px-4 pt-10">
+      <h1 class="text-3xl font-semibold tracking-tight">{page.title}</h1>
+    </div>
+  )}
+  {blocks.map((block) => <BlockRenderer block={block} />)}
+</BaseLayout>

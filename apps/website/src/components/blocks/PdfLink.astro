@@ -1,0 +1,17 @@
+---
+import type { PdfLinkBlock } from '@nba/cms/public';
+interface Props { block: PdfLinkBlock }
+const { block } = Astro.props;
+// La médiathèque arrive à la phase suivante : le chemin est déjà celui que servira
+// la route /media/, pour ne pas avoir à réécrire les contenus importés ensuite.
+const href = `/media/${block.mediaId}`;
+---
+<section class="mx-auto max-w-5xl px-4 py-6">
+  <a href={href} class="border-border hover:border-primary flex items-start gap-3 rounded-lg border p-4 transition-colors">
+    <span aria-hidden="true" class="text-2xl">📄</span>
+    <span>
+      <span class="font-medium">{block.label}</span>
+      {block.description && <span class="text-muted-foreground mt-1 block text-sm">{block.description}</span>}
+    </span>
+  </a>
+</section>
