@@ -14,6 +14,7 @@
       "@nba/db": ["libs/shared/db/src/index.ts"],
       "@nba/pdf": ["libs/shared/pdf/src/index.ts"],
       "@nba/push": ["libs/shared/push/src/index.ts"],
+      "@nba/html": ["libs/shared/html/src/index.ts"],
       "@nba/db/test-utils": ["libs/shared/db/src/test-utils.ts"],
       "@nba/ui": ["libs/shared/ui/src/index.ts"],
       "@nba/api-client": ["libs/shared/api-client/src/index.ts"],
@@ -35,6 +36,9 @@
       "@nba/expenses-ui": ["libs/domains/expenses/shared/ui.ts"],
       "@nba/shop-ui": ["libs/domains/shop/shared/ui.ts"],
       "@nba/notifications-ui": ["libs/domains/notifications/shared/ui.ts"],
+      "@nba/cms-api": ["libs/domains/cms/index.ts"],
+      "@nba/cms/public": ["libs/domains/cms/shared/public.ts"],
+      "@nba/cms/schema": ["libs/domains/cms/shared/schema.ts"],
       "@nba/announcements-api": ["libs/domains/announcements/index.ts"],
       "@nba/announcements/schema": ["libs/domains/announcements/shared/schema.ts"],
       "@nba/announcements-ui": ["libs/domains/announcements/shared/ui.ts"]

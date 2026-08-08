@@ -186,8 +186,12 @@ function checkConstraintLoss() {
   const uniqueMatches = (content.match(/UNIQUE/gi) || []).length;
   const checkMatches = (content.match(/CHECK\s*\(/gi) || []).length;
 
-  const MIN_FK_COUNT = 6;
-  const MIN_UNIQUE_COUNT = 8;
+  // Seuils relevés au niveau réellement atteint par le baseline, moins une marge.
+  // À 6, ce contrôle était décoratif : il aurait laissé passer la perte de trente
+  // clés étrangères. Les FK sont volontairement intra-domaine (VSA, pas de SQL
+  // inter-domaines), donc ce plancher ne doit monter qu'avec de vraies additions.
+  const MIN_FK_COUNT = 60;
+  const MIN_UNIQUE_COUNT = 40;
   const MIN_CHECK_COUNT = 2;
 
   // Check for override tag in recent git commit message
@@ -222,15 +226,15 @@ function checkConstraintLoss() {
  */
 function checkReferenceData() {
   if (process.argv.includes('--test-fail-5')) {
-    console.error('\n❌ [reference-data] ÉCHEC SIMULÉ : Code(s) métier de référence manquant(s) dans 0002_seed_reference_data.sql !');
+    console.error('\n❌ [reference-data] ÉCHEC SIMULÉ : Code(s) métier de référence manquant(s) dans 0001_seed_reference_data.sql !');
     console.error('  - Table "categories" : code "virements_internes" manquant');
     throw new Error('[reference-data] Tout code métier requis par l\'application doit figurer dans les données de référence.');
   }
 
-  const seedPath = path.join(ROOT_DIR, 'libs/shared/db/migrations/0002_seed_reference_data.sql');
+  const seedPath = path.join(ROOT_DIR, 'libs/shared/db/migrations/0001_seed_reference_data.sql');
 
   if (!fs.existsSync(seedPath)) {
-    throw new Error(`[reference-data] 0002_seed_reference_data.sql non trouvé à ${seedPath}`);
+    throw new Error(`[reference-data] 0001_seed_reference_data.sql non trouvé à ${seedPath}`);
   }
 
   const seedSql = fs.readFileSync(seedPath, 'utf8');
@@ -245,14 +249,14 @@ function checkReferenceData() {
   }
 
   if (missingCodes.length > 0) {
-    console.error('\n❌ [reference-data] ÉCHEC : Code(s) métier de référence manquant(s) dans 0002_seed_reference_data.sql !');
+    console.error('\n❌ [reference-data] ÉCHEC : Code(s) métier de référence manquant(s) dans 0001_seed_reference_data.sql !');
     missingCodes.forEach(item => {
       console.error(`  - Table "${item.table}" : code "${item.code}" manquant`);
     });
     throw new Error('[reference-data] Tout code métier requis par l\'application doit figurer dans les données de référence.');
   }
 
-  console.log(`  ✓ 5. Données de référence : Tous les codes métiers requis sont présents dans 0002_seed_reference_data.sql.`);
+  console.log(`  ✓ 5. Données de référence : Tous les codes métiers requis sont présents dans 0001_seed_reference_data.sql.`);
 }
 
 function main() {

@@ -1,0 +1,11 @@
+---
+import type { RichtextBlock } from '@nba/cms/public';
+interface Props { block: RichtextBlock }
+const { block } = Astro.props;
+---
+{/*
+  Seul endroit du site autorisé à poser du HTML brut. Le contenu a été réduit à
+  l'écriture par `sanitizeRichText` avec le profil du site public : c'est l'API qui
+  fait autorité, pas ce composant.
+*/}
+<div class="prose prose-neutral dark:prose-invert max-w-none" set:html={block.html} />

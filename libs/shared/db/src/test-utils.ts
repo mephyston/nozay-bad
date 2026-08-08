@@ -13,6 +13,20 @@ export async function setupMockDb() {
     'admin_users',
     'attestation_config',
     'announcements',
+    // CMS du site public. Enfants avant parents, comme le reste de la liste : une
+    // table oubliée ici ne casse rien tout de suite, elle laisse fuiter des lignes
+    // d'un test à l'autre — ce qui se lit comme de l'instabilité, pas comme un bug.
+    'cms_media_variants',
+    'cms_page_blocks',
+    'cms_page_revisions',
+    'cms_post_category_links',
+    'cms_nav_items',
+    'cms_posts',
+    'cms_pages',
+    'cms_post_categories',
+    'cms_media',
+    'cms_redirects',
+    'cms_content_version',
     'push_deliveries',
     'push_messages',
     'push_preferences',

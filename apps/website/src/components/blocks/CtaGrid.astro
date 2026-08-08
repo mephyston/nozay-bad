@@ -1,0 +1,26 @@
+---
+import type { CtaGridBlock } from '@nba/cms/public';
+interface Props { block: CtaGridBlock }
+const { block } = Astro.props;
+const columns = { 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3', 4: 'sm:grid-cols-2 lg:grid-cols-4' }[block.columns];
+// Un lien sortant s'ouvre dans un nouvel onglet ; `rel` est posé ici et jamais lu du contenu.
+const isExternal = (href: string) => /^https?:\/\//i.test(href);
+---
+<section class="mx-auto max-w-5xl px-4 py-8">
+  {block.heading && <h2 class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
+  <ul class:list={['grid gap-4', columns]}>
+    {block.items.map((item) => (
+      <li>
+        <a
+          href={item.href}
+          target={isExternal(item.href) ? '_blank' : undefined}
+          rel={isExternal(item.href) ? 'noopener noreferrer' : undefined}
+          class="border-border hover:border-primary block h-full rounded-lg border p-4 transition-colors"
+        >
+          <span class="font-medium">{item.label}</span>
+          {item.description && <span class="text-muted-foreground mt-1 block text-sm">{item.description}</span>}
+        </a>
+      </li>
+    ))}
+  </ul>
+</section>

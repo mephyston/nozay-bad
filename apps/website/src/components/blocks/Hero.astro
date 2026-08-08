@@ -1,0 +1,30 @@
+---
+import type { HeroBlock } from '@nba/cms/public';
+interface Props { block: HeroBlock }
+const { block } = Astro.props;
+---
+<section class="bg-muted/40 border-border border-b">
+  <div class="mx-auto max-w-5xl px-4 py-12 text-center">
+    <h1 class="text-4xl font-semibold tracking-tight">{block.title}</h1>
+    {block.subtitle && <p class="text-muted-foreground mx-auto mt-3 max-w-2xl">{block.subtitle}</p>}
+    {block.ctas.length > 0 && (
+      <div class="mt-6 flex flex-wrap justify-center gap-3">
+        {block.ctas.map((cta) => (
+          <a
+            href={cta.href}
+            class:list={[
+              'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+              cta.variant === 'secondary'
+                ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                : cta.variant === 'ghost'
+                  ? 'hover:bg-accent'
+                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
+            ]}
+          >
+            {cta.label}
+          </a>
+        ))}
+      </div>
+    )}
+  </div>
+</section>

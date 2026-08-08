@@ -16,6 +16,7 @@ export default defineConfig({
       '@nba/db': path.resolve(__dirname, './libs/shared/db/src/index.ts'),
       '@nba/pdf': path.resolve(__dirname, './libs/shared/pdf/src/index.ts'),
       '@nba/push': path.resolve(__dirname, './libs/shared/push/src/index.ts'),
+      '@nba/html': path.resolve(__dirname, './libs/shared/html/src/index.ts'),
       '@nba/ui': path.resolve(__dirname, './libs/shared/ui/src/index.ts'),
       '@nba/api-client': path.resolve(__dirname, './libs/shared/api-client/src/index.ts'),
       '@nba/members-api': path.resolve(__dirname, './libs/domains/members/index.ts'),
@@ -36,6 +37,9 @@ export default defineConfig({
       '@nba/shop/schema': path.resolve(__dirname, './libs/domains/shop/shared/schema.ts'),
       '@nba/shop-ui': path.resolve(__dirname, './libs/domains/shop/shared/ui.ts'),
       '@nba/notifications-ui': path.resolve(__dirname, './libs/domains/notifications/shared/ui.ts'),
+      '@nba/cms-api': path.resolve(__dirname, './libs/domains/cms/index.ts'),
+      '@nba/cms/public': path.resolve(__dirname, './libs/domains/cms/shared/public.ts'),
+      '@nba/cms/schema': path.resolve(__dirname, './libs/domains/cms/shared/schema.ts'),
       '@nba/announcements-api': path.resolve(__dirname, './libs/domains/announcements/index.ts'),
       '@nba/announcements/schema': path.resolve(__dirname, './libs/domains/announcements/shared/schema.ts'),
       '@nba/announcements-ui': path.resolve(__dirname, './libs/domains/announcements/shared/ui.ts'),
@@ -74,7 +78,9 @@ export default defineConfig({
       'apps/admin/vitest.config.ts',
       'libs/shared/db/vitest.config.ts',
       'libs/shared/push/vitest.config.ts',
+      'libs/shared/html/vitest.config.ts',
       'apps/storefront/vitest.config.ts',
+      'apps/website/vitest.config.ts',
       'libs/shared/ui/vitest.config.ts',
       
       // Inline project configs for members API and UI
@@ -241,6 +247,24 @@ export default defineConfig({
       },
 
       // Inline project configs for announcements API and UI
+      {
+        extends: true,
+        plugins: [
+          cloudflareTest({
+            wrangler: {
+              configPath: wranglerConfig,
+            },
+          }),
+        ],
+        cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-cms-api'),
+        test: {
+          name: 'features-cms-api',
+          globals: true,
+          root: path.resolve(__dirname, 'libs/domains/cms'),
+          include: ['**/*.test.ts'],
+          exclude: ['**/ui/**', '**/node_modules/**'],
+        }
+      },
       {
         extends: true,
         plugins: [

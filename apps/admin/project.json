@@ -9,19 +9,36 @@
     },
     "build": {
       "executor": "nx:run-commands",
-      "outputs": ["{projectRoot}/dist"],
+      "outputs": [
+        "{projectRoot}/dist"
+      ],
       "inputs": [
         "production",
         "^production",
-        { "env": "PUBLIC_APP_ENV" },
-        { "env": "VITE_APP_VERSION" },
+        {
+          "env": "PUBLIC_APP_ENV"
+        },
+        {
+          "env": "VITE_APP_VERSION"
+        },
         "{workspaceRoot}/package.json"
       ],
       "options": {
         "command": "astro build",
         "cwd": "apps/admin"
       }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "astro dev --port 4321",
+        "cwd": "apps/admin"
+      }
     }
   },
-  "tags": ["type:app", "scope:admin"]
+  "tags": [
+    "type:app",
+    "scope:admin"
+  ]
 }
