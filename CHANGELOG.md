@@ -1,3 +1,10 @@
+# [1.0.0-beta.60](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.59...v1.0.0-beta.60) (2026-08-08)
+
+
+### Performance Improvements
+
+* **ci:** run only tests affected by the diff (--changed + safety net) ([7584379](https://github.com/mephyston/nozay-bad/commit/7584379e64300443b5e8765220883a35ab8567f4))
+
 # [1.0.0-beta.59](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.58...v1.0.0-beta.59) (2026-08-08)
 
 
