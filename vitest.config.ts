@@ -2,6 +2,11 @@ import { defineConfig } from 'vitest/config';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { cloudflareTest } from '@cloudflare/vitest-pool-workers';
 import path from 'path';
+import { wranglerTestConfigPath } from './vitest.wrangler';
+
+// Config wrangler SANS binding AI (voir vitest.wrangler.ts) : évite la session proxy
+// distante du pool → tests locaux, rapides, sans token ni charges AI.
+const wranglerConfig = wranglerTestConfigPath();
 
 export default defineConfig({
   resolve: {
@@ -54,7 +59,7 @@ export default defineConfig({
         plugins: [
           cloudflareTest({
             wrangler: {
-              configPath: path.resolve(__dirname, 'apps/api/wrangler.json'),
+              configPath: wranglerConfig,
             },
           }),
         ],
@@ -90,7 +95,7 @@ export default defineConfig({
         plugins: [
           cloudflareTest({
             wrangler: {
-              configPath: path.resolve(__dirname, 'apps/api/wrangler.json'),
+              configPath: wranglerConfig,
             },
           }),
         ],
@@ -126,7 +131,7 @@ export default defineConfig({
         plugins: [
           cloudflareTest({
             wrangler: {
-              configPath: path.resolve(__dirname, 'apps/api/wrangler.json'),
+              configPath: wranglerConfig,
             },
           }),
         ],
@@ -162,7 +167,7 @@ export default defineConfig({
         plugins: [
           cloudflareTest({
             wrangler: {
-              configPath: path.resolve(__dirname, 'apps/api/wrangler.json'),
+              configPath: wranglerConfig,
             },
           }),
         ],
@@ -197,7 +202,7 @@ export default defineConfig({
         plugins: [
           cloudflareTest({
             wrangler: {
-              configPath: path.resolve(__dirname, 'apps/api/wrangler.json'),
+              configPath: wranglerConfig,
             },
           }),
         ],

@@ -76,7 +76,7 @@ jobs:
       api: ${{ steps.affected.outputs.api }}
       storefront: ${{ steps.affected.outputs.storefront }}
       admin: ${{ steps.affected.outputs.admin }}
-      frontend: ${{ steps.affected.outputs.frontend }}
+      ds: ${{ steps.affected.outputs.ds }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -115,7 +115,7 @@ jobs:
             API_AFFECTED="true"
             STOREFRONT_AFFECTED="true"
             ADMIN_AFFECTED="true"
-            FRONTEND_AFFECTED="true"
+            DS_AFFECTED="true"
           else
             AFFECTED=$(npx nx show projects --affected --base=$NX_BASE --head=$NX_HEAD 2>/dev/null || echo "")
             echo "Affected projects: [$AFFECTED]"
@@ -123,15 +123,17 @@ jobs:
             if echo "$AFFECTED" | grep -qx 'api'; then API_AFFECTED="true"; else API_AFFECTED="false"; fi
             if echo "$AFFECTED" | grep -qx 'storefront'; then STOREFRONT_AFFECTED="true"; else STOREFRONT_AFFECTED="false"; fi
             if echo "$AFFECTED" | grep -qx 'admin'; then ADMIN_AFFECTED="true"; else ADMIN_AFFECTED="false"; fi
-            if echo "$AFFECTED" | grep -qE 'admin|storefront|@nba/ui'; then FRONTEND_AFFECTED="true"; else FRONTEND_AFFECTED="false"; fi
+            # Le visual regression ne couvre que le design system (@nba/ui) : inutile
+            # de le jouer quand seuls admin/storefront changent sans toucher le DS.
+            if echo "$AFFECTED" | grep -qx '@nba/ui'; then DS_AFFECTED="true"; else DS_AFFECTED="false"; fi
           fi
 
           echo "api=$API_AFFECTED" >> $GITHUB_OUTPUT
           echo "storefront=$STOREFRONT_AFFECTED" >> $GITHUB_OUTPUT
           echo "admin=$ADMIN_AFFECTED" >> $GITHUB_OUTPUT
-          echo "frontend=$FRONTEND_AFFECTED" >> $GITHUB_OUTPUT
+          echo "ds=$DS_AFFECTED" >> $GITHUB_OUTPUT
 
-          echo "Debug outputs → api=$API_AFFECTED storefront=$STOREFRONT_AFFECTED admin=$ADMIN_AFFECTED frontend=$FRONTEND_AFFECTED"
+          echo "Debug outputs → api=$API_AFFECTED storefront=$STOREFRONT_AFFECTED admin=$ADMIN_AFFECTED ds=$DS_AFFECTED"
 
   # ──────────────────────────────────────────────────────────────
   # 2. Tests affectés (exécutés sur PR et sur Push)
@@ -196,7 +198,7 @@ jobs:
     name: Visual regression
     runs-on: ubuntu-latest
     needs: detect-changes
-    if: needs.detect-changes.outputs.frontend == 'true'
+    if: needs.detect-changes.outputs.ds == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -268,7 +270,7 @@ jobs:
     name: Deploy API Worker
     runs-on: ubuntu-latest
     needs: [detect-changes, test, visual]
-    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.api == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && needs.visual.result == 'success'
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.api == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -321,7 +323,7 @@ jobs:
     name: Deploy Storefront Worker
     runs-on: ubuntu-latest
     needs: [detect-changes, test, visual, deploy-api]
-    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.storefront == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && needs.visual.result == 'success' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.storefront == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -398,7 +400,7 @@ jobs:
     name: Deploy Admin Worker
     runs-on: ubuntu-latest
     needs: [detect-changes, test, visual, deploy-api, release]
-    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.admin == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && needs.visual.result == 'success' && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.admin == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v5

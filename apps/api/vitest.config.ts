@@ -1,12 +1,16 @@
 import { defineConfig } from 'vitest/config';
 import { cloudflareTest } from '@cloudflare/vitest-pool-workers';
 import path from 'path';
+import { wranglerTestConfigPath } from '../../vitest.wrangler';
+
+// Config wrangler sans binding AI (voir vitest.wrangler.ts) : pool local, pas de proxy distant.
+const wranglerConfig = wranglerTestConfigPath();
 
 export default defineConfig({
   plugins: [
     cloudflareTest({
       wrangler: {
-        configPath: path.resolve(__dirname, './wrangler.json'),
+        configPath: wranglerConfig,
       },
     }),
   ],

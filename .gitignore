@@ -78,6 +78,9 @@ tests/visual/**/*-diff.png
 # Références visuelles macOS locales (la CI Linux fait foi)
 tests/visual/**/*-darwin.png
 
+# Config wrangler de test générée (dérivée de apps/api/wrangler.json sans binding AI)
+apps/api/wrangler.test.json
+
 # Logs des serveurs de dev + dossier de travail temporaire
 dev.log
 **/dev.log
