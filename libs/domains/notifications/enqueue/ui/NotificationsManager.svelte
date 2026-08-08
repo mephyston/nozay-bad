@@ -48,27 +48,60 @@
 
   async function refresh() {
     const res = await fetch('/api/notifications/overview');
-    if (!res.ok) return;
+    if (!res.ok) {
+      throw new Error(`Actualisation impossible (HTTP ${res.status}).`);
+    }
     const json = (await res.json()) as any;
     stats = json.data.stats;
     messages = json.data.messages;
   }
 
-  async function send() {
-    if (!title.trim() || !body.trim()) {
-      toast.error('Le titre et le message sont obligatoires.');
-      return;
-    }
-
-    const audience =
-      target === 'all' ? `${stats.devices} appareil(s)` : 'les foyers dont la cotisation reste due';
-    const confirmed = await uiConfirm(
-      `Envoyer cette notification à ${audience} ? Une notification envoyée ne peut pas être rappelée.`
-    );
-    if (!confirmed) return;
-
-    sending = true;
+  /**
+   * Lit une réponse d'API en remontant un message exploitable.
+   *
+   * Une réponse non-JSON (page d'erreur HTML, redirection d'authentification) faisait
+   * échouer `res.json()` sur une exception illisible : on renvoie le statut HTTP.
+   */
+  async function readApiResponse(res: Response, fallback: string): Promise<any> {
+    const raw = await res.text();
+    let json: any = null;
     try {
+      json = raw ? JSON.parse(raw) : null;
+    } catch {
+      throw new Error(`${fallback} (HTTP ${res.status} — réponse inattendue du serveur).`);
+    }
+    if (!res.ok || !json?.success) {
+      throw new Error(json?.error || `${fallback} (HTTP ${res.status}).`);
+    }
+    return json;
+  }
+
+  async function send() {
+    // Toute la fonction est protégée : une exception dans le dialogue de
+    // confirmation ou dans la lecture d'une réponse laissait le bouton sans
+    // réaction et sans message, impossible à diagnostiquer côté utilisateur.
+    try {
+      if (!title.trim() || !body.trim()) {
+        toast.error('Le titre et le message sont obligatoires.');
+        return;
+      }
+
+      if (target === 'all' && stats.devices === 0) {
+        toast.warning(
+          "Aucun appareil n'est abonné pour l'instant : les adhérents doivent activer les notifications depuis « Mon compte »."
+        );
+        return;
+      }
+
+      const audience =
+        target === 'all' ? `${stats.devices} appareil(s)` : 'les foyers dont la cotisation reste due';
+      const confirmed = await uiConfirm(
+        `Envoyer cette notification à ${audience} ? Une notification envoyée ne peut pas être rappelée.`
+      );
+      if (!confirmed) return;
+
+      sending = true;
+
       const res = await fetch('/api/notifications/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -79,26 +112,32 @@
           target
         })
       });
-      const json = (await res.json()) as any;
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || "L'envoi a échoué.");
-      }
+      const json = await readApiResponse(res, "L'envoi a échoué");
 
       if (json.data.queued === 0) {
-        toast.warning('Aucun appareil abonné dans cette cible : rien n\'a été envoyé.');
+        toast.warning("Aucun appareil abonné dans cette cible : rien n'a été envoyé.");
       } else {
         toast.success(`${json.data.queued} notification(s) en file d'envoi.`);
       }
 
-      // Déclenche le drain immédiatement : sans cela l'envoi attendrait le prochain
-      // passage du cron, jusqu'à une minute plus tard.
-      await fetch('/api/notifications/dispatch', { method: 'POST' }).catch(() => {});
-
       title = '';
       body = '';
       url = '';
+
+      // Déclenche le drain immédiatement : sans cela l'envoi attendrait le prochain
+      // passage du cron, jusqu'à une minute plus tard. Un échec ici n'annule pas
+      // l'envoi (le cron reprendra la file) mais doit rester visible.
+      try {
+        const dispatchRes = await fetch('/api/notifications/dispatch', { method: 'POST' });
+        await readApiResponse(dispatchRes, 'Envoi immédiat impossible');
+      } catch (e) {
+        console.error('[notifications] drain immédiat en échec', e);
+        toast.info("Notifications en file : elles partiront d'ici une minute.");
+      }
+
       await refresh();
     } catch (e) {
+      console.error('[notifications] envoi en échec', e);
       toast.error(e instanceof Error ? e.message : "L'envoi a échoué.");
     } finally {
       sending = false;
@@ -143,7 +182,9 @@
           </FormField>
         </Card.Content>
         <Card.Footer>
-          <Button onclick={send} disabled={sending || stats.devices === 0}>
+          <!-- Jamais désactivé sur l'absence d'abonnés : un bouton inerte sans
+               explication est indiscernable d'une panne. `send` explique le refus. -->
+          <Button onclick={send} disabled={sending}>
             <Send class="w-4 h-4 mr-2" />
             {sending ? 'Envoi…' : 'Envoyer'}
           </Button>
