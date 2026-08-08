@@ -1,3 +1,10 @@
+# [1.0.0-beta.62](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.61...v1.0.0-beta.62) (2026-08-08)
+
+
+### Bug Fixes
+
+* **notifications:** compléter la catégorie dans les tests de notifyContacts ([00ef295](https://github.com/mephyston/nozay-bad/commit/00ef2956558a93c5d92f0dd589d01eb66597e738))
+
 # [1.0.0-beta.61](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.60...v1.0.0-beta.61) (2026-08-08)
 
 
