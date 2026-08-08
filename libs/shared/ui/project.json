@@ -7,9 +7,6 @@
     "lint": {
       "command": "eslint {projectRoot}"
     },
-    "test": {
-      "command": "vitest run --project shared-ui"
-    },
     "build-storybook": {
       "executor": "nx:run-commands",
       "cache": true,

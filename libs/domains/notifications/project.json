@@ -6,9 +6,6 @@
   "targets": {
     "lint": {
       "command": "eslint {projectRoot}"
-    },
-    "test": {
-      "command": "vitest run --project features-notifications-api"
     }
   },
   "tags": ["type:api", "scope:notifications"]

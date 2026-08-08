@@ -34,13 +34,9 @@ export default defineConfig({
 
   },
   test: {
+    // Vitest 4 : poolOptions supprimé, les options sont désormais au niveau racine.
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        singleThread: false,
-        isolate: true,
-      },
-    },
+    isolate: true,
     maxWorkers: '75%',
     fileParallelism: true,
     projects: [

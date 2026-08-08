@@ -21,9 +21,6 @@
         "command": "astro build",
         "cwd": "apps/storefront"
       }
-    },
-    "test": {
-      "command": "vitest run --project storefront"
     }
   },
   "tags": ["type:app", "scope:storefront"]

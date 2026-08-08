@@ -21,9 +21,6 @@
         "command": "astro build",
         "cwd": "apps/admin"
       }
-    },
-    "test": {
-      "command": "vitest run --project admin"
     }
   },
   "tags": ["type:app", "scope:admin"]

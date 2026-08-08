@@ -6,9 +6,6 @@
   "targets": {
     "lint": {
       "command": "eslint {projectRoot}"
-    },
-    "test": {
-      "command": "vitest run --project features-members-api --project features-members-ui"
     }
   },
   "tags": ["type:api", "scope:members"]
