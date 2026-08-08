@@ -49,25 +49,7 @@ export class UpdateUserRolesRepository {
     await db.update(adminUsersTable).set({ name, updatedAt: now }).where(eq(adminUsersTable.id, id)).run();
   }
 
-  /**
-   * Colonne héritée, encore lue par l'application admin jusqu'à son passage aux
-   * rôles (phase 3) : sans cette recopie, modifier un compte pendant la transition
-   * lui retirerait ses droits.
-   * @deprecated
-   */
-  async updateLegacyPermissions(
-    db: DbOrTx,
-    id: number,
-    permissions: string[],
-    now: Date
-  ): Promise<void> {
-    await db
-      .update(adminUsersTable)
-      .set({ permissions, updatedAt: now })
-      .where(eq(adminUsersTable.id, id))
-      .run();
-  }
-
+  /** Horodate une modification qui ne touche pas les colonnes de `admin_users`. */
   async touch(db: DbOrTx, id: number, now: Date): Promise<void> {
     await db.update(adminUsersTable).set({ updatedAt: now }).where(eq(adminUsersTable.id, id)).run();
   }

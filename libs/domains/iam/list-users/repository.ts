@@ -6,7 +6,6 @@ export interface AdminUserRow {
   id: number;
   email: string;
   name: string;
-  permissions: string[];
   createdAt: Date;
   updatedAt: Date | null;
   role: string | null;
@@ -20,7 +19,6 @@ export class ListUsersRepository {
         id: adminUsersTable.id,
         email: adminUsersTable.email,
         name: adminUsersTable.name,
-        permissions: adminUsersTable.permissions,
         createdAt: adminUsersTable.createdAt,
         updatedAt: adminUsersTable.updatedAt,
         role: adminUserRolesTable.role

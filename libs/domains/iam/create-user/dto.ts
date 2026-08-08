@@ -4,8 +4,6 @@ export interface CreateUserInput {
   email: string;
   name?: string;
   roles?: Role[];
-  /** Ancien format, recopié tel quel le temps de la transition. @deprecated */
-  permissions?: string[];
 }
 
 export interface CreateUserOutput {

@@ -132,3 +132,72 @@ describe('Domain Architecture Validation', () => {
     }
   });
 });
+
+/**
+ * Invariants du modèle d'autorisation.
+ *
+ * Ces règles ne se relisent pas : elles portent sur l'absence de quelque chose, et
+ * une réapparition passerait inaperçue en revue. Chacune correspond à un défaut
+ * réellement constaté avant la bascule RBAC.
+ */
+describe('Autorisation (RBAC)', () => {
+  const ROOT = path.resolve(__dirname, '..');
+  const SEARCH_DIRS = [path.join(ROOT, 'apps'), path.join(ROOT, 'libs')];
+
+  function sourceFiles(): { path: string; content: string }[] {
+    const out: { path: string; content: string }[] = [];
+    for (const dir of SEARCH_DIRS) {
+      for (const file of walkDir(dir)) {
+        if (!/\.(ts|svelte|astro)$/.test(file)) continue;
+        if (file.includes('node_modules') || file.includes('/.wrangler/') || file.includes('/dist/')) continue;
+        out.push({ path: path.relative(ROOT, file), content: fs.readFileSync(file, 'utf-8') });
+      }
+    }
+    return out;
+  }
+
+  const files = sourceFiles();
+  /** Code de production seul : un test a le droit de forger l'en-tête pour prouver
+   *  qu'il n'accorde rien (cf. apps/api/src/authz/middleware.test.ts). */
+  const productionFiles = files.filter((f) => !/\.test\.ts$/.test(f.path));
+
+  it("ne transporte plus de permissions dans un en-tête HTTP", () => {
+    // `x-user-permissions` portait une décision d'autorisation au lieu d'une
+    // identité : l'autorisation vivait alors dans deux bases de code, et un proxy
+    // qui oublie de nettoyer les en-têtes entrants suffisait à escalader. Les seules
+    // occurrences admises sont les suppressions défensives.
+    const offenders = productionFiles
+      .filter((f) => f.content.includes('x-user-permissions'))
+      .filter((f) => !/delete\(['"]x-user-permissions['"]\)/.test(f.content))
+      .map((f) => f.path);
+    expect(offenders, `x-user-permissions réapparu dans :\n${offenders.join('\n')}`).toEqual([]);
+  });
+
+  it('ne réintroduit pas le test de permission à jokers', () => {
+    // `hasPermission` acceptait `accounting:*` mais pas l'inverse : cette asymétrie
+    // imposait des chaînes `A || B || C` à chaque point de contrôle, dont chacune
+    // était un endroit où une permission pouvait être oubliée.
+    const offenders = files.filter((f) => /\bhasPermission\s*\(/.test(f.content)).map((f) => f.path);
+    expect(offenders, `hasPermission réapparu dans :\n${offenders.join('\n')}`).toEqual([]);
+  });
+
+  it("n'autorise aucun domaine métier à dépendre du domaine iam", () => {
+    // Un domaine qui a besoin de savoir qui agit est en train de décider d'une
+    // autorisation, ce qui appartient à la seule table de routes de l'API.
+    const offenders = files
+      .filter((f) => f.path.startsWith('libs/domains/') && !f.path.startsWith('libs/domains/iam/'))
+      .filter((f) => /from ['"][^'"]*iam(\/|-ui|['"])/.test(f.content))
+      .map((f) => f.path);
+    expect(offenders, `dépendance vers iam dans :\n${offenders.join('\n')}`).toEqual([]);
+  });
+
+  it("n'appelle jamais createApiClient directement depuis une page admin", () => {
+    // Un appel sans identité serait refusé par l'API, mais passerait sur les routes
+    // ouvertes à tout compte : les pages doivent passer par createAdminApiClient.
+    const offenders = files
+      .filter((f) => f.path.startsWith('apps/admin/src/pages/'))
+      .filter((f) => /\bcreateApiClient\s*\(/.test(f.content))
+      .map((f) => f.path);
+    expect(offenders, `createApiClient appelé directement dans :\n${offenders.join('\n')}`).toEqual([]);
+  });
+});

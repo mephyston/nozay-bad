@@ -12,22 +12,15 @@ export class CreateUserRepository {
     return row?.id ?? null;
   }
 
-  async insertUser(
-    db: DbOrTx,
-    email: string,
-    name: string,
-    legacyPermissions: string[],
-    now: Date
-  ): Promise<number> {
+  async insertUser(db: DbOrTx, email: string, name: string, now: Date): Promise<number> {
     const row = await db
       .insert(adminUsersTable)
       .values({
         email,
         name,
-        // Colonne héritée : encore lue par l'application admin tant qu'elle n'est
-        // pas passée aux rôles (phase 3). On y recopie donc ce que l'appelant envoie,
-        // sans quoi un compte créé pendant la transition n'aurait aucun droit.
-        permissions: legacyPermissions,
+        // Colonne héritée, NOT NULL, que plus rien ne lit. Elle est conservée une
+        // release comme unique copie des droits d'avant migration, puis supprimée.
+        permissions: [],
         createdAt: now,
         updatedAt: now
       })

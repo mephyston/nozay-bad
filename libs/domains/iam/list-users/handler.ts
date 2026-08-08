@@ -16,7 +16,6 @@ export async function listUsers(db: Db): Promise<AdminUserSummary[]> {
         email: row.email,
         name: row.name,
         roles: [],
-        permissions: row.permissions ?? [],
         createdAt: row.createdAt,
         updatedAt: row.updatedAt
       };

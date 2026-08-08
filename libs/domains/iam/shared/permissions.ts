@@ -113,24 +113,3 @@ export function canAll(
 ): boolean {
   return required.every((p) => can(granted, p));
 }
-
-/**
- * Ancien test d'autorisation à jokers, conservé le temps de la bascule RBAC.
- *
- * Il opère sur l'ancien vocabulaire (`'*'`, `'accounting:*'`, `'members:read'`) stocké
- * dans `admin_users.permissions`, incompatible avec `Permission`. Les appelants
- * migrent vers `can()` en phase 3 ; cette fonction est supprimée en phase 5.
- *
- * @deprecated Utiliser `can()` / `canAny()` avec le catalogue `ALL_PERMISSIONS`.
- */
-export function hasPermission(userPermissions: string[], requiredPermission: string): boolean {
-  if (userPermissions.includes('*')) return true;
-  return userPermissions.some((p) => {
-    if (p === requiredPermission) return true;
-    if (p.endsWith(':*')) {
-      const prefix = p.slice(0, -2);
-      return requiredPermission.startsWith(prefix);
-    }
-    return false;
-  });
-}

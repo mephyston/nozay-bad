@@ -12,11 +12,5 @@ import { ROLES } from '../shared/roles';
 export const createUserBodySchema = Type.Object({
   email: Type.String({ minLength: 3, maxLength: 255, pattern: '^[^@\\s]+@[^@\\s]+$' }),
   name: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
-  roles: Type.Optional(Type.Array(Type.Union(ROLES.map((r) => Type.Literal(r))), { maxItems: 5 })),
-  /**
-   * Ancien champ, accepté et ignoré le temps qu'un client resté sur la version
-   * précédente ne reçoive pas une erreur de validation sur un déploiement partiel.
-   * @deprecated
-   */
-  permissions: Type.Optional(Type.Array(Type.String({ maxLength: 100 }), { maxItems: 100 }))
+  roles: Type.Optional(Type.Array(Type.Union(ROLES.map((r) => Type.Literal(r))), { maxItems: 5 }))
 });

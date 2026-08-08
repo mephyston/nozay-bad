@@ -22,7 +22,7 @@ export async function createUser(
   const roles: Role[] = input.roles?.length ? [...new Set(input.roles)] : [DEFAULT_ROLE];
   const name = input.name?.trim() || email.split('@')[0];
 
-  const id = await repo.insertUser(db, email, name, input.permissions ?? [], now);
+  const id = await repo.insertUser(db, email, name, now);
   await repo.replaceRoles(db, id, roles, now);
 
   return { id, email, name, roles };

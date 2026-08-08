@@ -21,9 +21,9 @@ createUserRoute.post(
     if (!c.env?.DB) {
       return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
     }
-    const { email, name, roles, permissions } = c.req.valid('json');
+    const { email, name, roles } = c.req.valid('json');
     const db = createDb(c.env.DB);
-    const created = await createUser(db, { email, name, roles, permissions });
+    const created = await createUser(db, { email, name, roles });
     return c.json({ success: true, data: created }, 201);
   }
 );

@@ -25,9 +25,9 @@ updateUserRolesRoute.put(
     if (!Number.isInteger(id)) {
       return c.json({ success: false, error: 'Identifiant de compte invalide' }, 400);
     }
-    const { name, roles, permissions } = c.req.valid('json');
+    const { name, roles } = c.req.valid('json');
     const db = createDb(c.env.DB);
-    const updated = await updateUserRoles(db, id, { name, roles, permissions });
+    const updated = await updateUserRoles(db, id, { name, roles });
     return c.json({ success: true, data: updated });
   }
 );

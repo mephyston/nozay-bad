@@ -6,8 +6,6 @@ import { UpdateUserRolesRepository } from './repository';
 export interface UpdateUserInput {
   name?: string;
   roles?: Role[];
-  /** Ancien format, recopié tel quel le temps de la transition. @deprecated */
-  permissions?: string[];
 }
 
 export interface UpdateUserOutput {
@@ -31,10 +29,6 @@ export async function updateUserRoles(
   if (input.name !== undefined) {
     name = input.name.trim() || user.name;
     await repo.updateName(db, id, name, now);
-  }
-
-  if (input.permissions !== undefined) {
-    await repo.updateLegacyPermissions(db, id, input.permissions, now);
   }
 
   if (input.roles === undefined) {

@@ -90,6 +90,14 @@ export default tseslint.config(
               onlyDependOnLibsWithTags: ['scope:notifications', 'scope:shared']
             },
             {
+              sourceTag: 'scope:iam',
+              // Leaf context: identity and rights depend on nothing but shared. No
+              // business domain may depend on iam either — a domain that needed to
+              // know who is acting would be deciding authorization, which belongs to
+              // the API's route table alone.
+              onlyDependOnLibsWithTags: ['scope:iam', 'scope:shared']
+            },
+            {
               sourceTag: 'scope:shared',
               onlyDependOnLibsWithTags: ['scope:shared']
             }
