@@ -1,3 +1,17 @@
+# [1.0.0-beta.66](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.65...v1.0.0-beta.66) (2026-08-08)
+
+
+### Bug Fixes
+
+* **dev:** empêcher la création d'un apps/<app>/apps/<app> parasite ([65fdc7b](https://github.com/mephyston/nozay-bad/commit/65fdc7b9eb6ff36a81db7ced71274cc76f79f340))
+
+
+### Features
+
+* **cms:** poser le domaine du site public côté API ([5da80bd](https://github.com/mephyston/nozay-bad/commit/5da80bdda15152d9983dfa7a2db3c48bf1e03db3))
+* **iam:** ajouter les droits du site public au catalogue ([be383ca](https://github.com/mephyston/nozay-bad/commit/be383cac23b1b77da5efd7882a70ab1fa0469e30))
+* **website:** squelette du site public, servi depuis le CMS ([d01eff5](https://github.com/mephyston/nozay-bad/commit/d01eff5f8c4ab86f6a39b924a6d3e9d0303e17c2))
+
 # [1.0.0-beta.65](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.64...v1.0.0-beta.65) (2026-08-08)
 
 
