@@ -2,13 +2,13 @@
 import { normalisePath } from '@nba/cms/public';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BlockRenderer from '../components/blocks/BlockRenderer.astro';
-import { resolvePublicRoute, loadMedia, mediaIdsInBlocks, type WebsiteEnv } from '../lib/cms';
+import { resolvePublicRoute, loadMedia, mediaIdsInBlocks } from '../lib/cms';
+import { resolveEnv } from '../lib/request-context';
 import { pageTitle, pageDescription, absoluteUrl } from '../lib/seo';
 import { sportsClub, webPage, breadcrumbList } from '../lib/jsonld';
 import { HTML_CACHE_CONTROL } from '../lib/cache';
 
-const runtime = (Astro.locals as { runtime?: { env?: WebsiteEnv } }).runtime;
-const env: WebsiteEnv = runtime?.env ?? {};
+const env = resolveEnv(Astro.locals);
 const siteUrl = env.SITE_URL ?? import.meta.env.PUBLIC_SITE_URL ?? Astro.url.origin;
 
 const path = normalisePath(Astro.url.pathname);

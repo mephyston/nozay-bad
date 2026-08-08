@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
-import { listPublishedPages, type WebsiteEnv } from '../lib/cms';
+import { listPublishedPages } from '../lib/cms';
+import { resolveEnv } from '../lib/request-context';
 
 /**
  * Sitemap, construit depuis la base.
@@ -9,7 +10,7 @@ import { listPublishedPages, type WebsiteEnv } from '../lib/cms';
  * ~70 pages mortes de 2017-2019.
  */
 export const GET: APIRoute = async ({ locals, url }) => {
-  const env = ((locals as { runtime?: { env?: WebsiteEnv } }).runtime?.env ?? {}) as WebsiteEnv;
+  const env = resolveEnv(locals);
   const siteUrl = env.SITE_URL ?? import.meta.env.PUBLIC_SITE_URL ?? url.origin;
 
   const pages = (await listPublishedPages(env)).filter((page) => !page.noindex);

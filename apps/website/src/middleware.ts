@@ -1,5 +1,6 @@
 import { defineMiddleware } from 'astro:middleware';
 import { applySecurityHeaders } from './lib/security-headers';
+import { resolveEnv } from './lib/request-context';
 
 /**
  * Aucune authentification : tout ce que sert ce site est public.
@@ -21,7 +22,7 @@ function canonicalHostFor(siteUrl: string | undefined): string | null {
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
-  const runtimeEnv = (context.locals as { runtime?: { env?: Record<string, string> } }).runtime?.env ?? {};
+  const runtimeEnv = resolveEnv(context.locals);
   const appEnv = runtimeEnv.APP_ENV ?? import.meta.env.PUBLIC_APP_ENV;
   const canonical = canonicalHostFor(runtimeEnv.SITE_URL ?? import.meta.env.PUBLIC_SITE_URL);
 

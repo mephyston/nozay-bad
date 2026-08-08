@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { isSafeMediaKey, MEDIA_KEY_PREFIX } from '@nba/cms/public';
 import { IMMUTABLE_CACHE_CONTROL } from '../../lib/cache';
+import { resolveEnv } from '../../lib/request-context';
 
 /**
  * Sert un média depuis R2.
@@ -16,7 +17,7 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
   // d'objets hors de la médiathèque.
   if (!isSafeMediaKey(key)) return new Response('Not found', { status: 404 });
 
-  const env = (locals as { runtime?: { env?: { MEDIA?: R2Bucket } } }).runtime?.env;
+  const env = resolveEnv(locals) as { MEDIA?: R2Bucket };
   if (!env?.MEDIA) return new Response('Media store unavailable', { status: 503 });
 
   // Les lecteurs de PDF mobiles demandent des plages : sans cela, ils retéléchargent

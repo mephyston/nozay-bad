@@ -140,6 +140,40 @@ describe('Domain Architecture Validation', () => {
  * une réapparition passerait inaperçue en revue. Chacune correspond à un défaut
  * réellement constaté avant la bascule RBAC.
  */
+/**
+ * `Astro.locals.runtime.env` a été retiré en Astro v6 : l'accès se fait par un
+ * accesseur qui **lève**, y compris derrière un `?.`. Le storefront s'y est brûlé une
+ * première fois — d'où `request-context.ts` — et le site public une seconde, avec des
+ * 500 sur toutes les pages qui touchaient l'API.
+ *
+ * La lecture reste tolérée pour compatibilité, mais elle doit être protégée : tout
+ * fichier qui y touche doit porter un `catch` et se rabattre sur `cloudflare:workers`.
+ */
+describe("Environnement d'exécution (Astro v6)", () => {
+  it('ne lit jamais locals.runtime.env sans repli', () => {
+    const violations: string[] = [];
+
+    for (const dir of ['apps/admin/src', 'apps/storefront/src', 'apps/website/src']) {
+      const root = path.resolve(__dirname, '..', dir);
+      if (!fs.existsSync(root)) continue;
+
+      for (const file of walkDir(root)) {
+        if (!/\.(ts|astro|svelte)$/.test(file)) continue;
+        const raw = fs.readFileSync(file, 'utf-8');
+        // Les commentaires mentionnent le piège : ils ne doivent pas le déclencher.
+        const code = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*(\/\/|\*).*$/gm, '');
+        if (!/runtime\??\.env/.test(code)) continue;
+        if (!/\bcatch\b/.test(code)) violations.push(path.relative(path.resolve(__dirname, '..'), file));
+      }
+    }
+
+    expect(
+      violations,
+      `lecture non protégée de locals.runtime.env — passer par resolveEnv() :\n${violations.join('\n')}`
+    ).toEqual([]);
+  });
+});
+
 describe('Autorisation (RBAC)', () => {
   const ROOT = path.resolve(__dirname, '..');
   const SEARCH_DIRS = [path.join(ROOT, 'apps'), path.join(ROOT, 'libs')];

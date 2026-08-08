@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { resolveEnv } from '../lib/request-context';
 
 /**
  * `robots.txt`.
@@ -7,7 +8,7 @@ import type { APIRoute } from 'astro';
  * l'apex, le laisser indexable créerait un site concurrent du vrai.
  */
 export const GET: APIRoute = ({ locals, url }) => {
-  const env = (locals as { runtime?: { env?: Record<string, string> } }).runtime?.env ?? {};
+  const env = resolveEnv(locals);
   const appEnv = env.APP_ENV ?? import.meta.env.PUBLIC_APP_ENV;
   const siteUrl = env.SITE_URL ?? import.meta.env.PUBLIC_SITE_URL ?? url.origin;
 
