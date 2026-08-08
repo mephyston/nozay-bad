@@ -44,6 +44,18 @@ export default defineConfig({
     isolate: true,
     maxWorkers: '75%',
     fileParallelism: true,
+    // Filet de sécurité pour `vitest --changed` (CI) : ces fichiers ne sont PAS dans le
+    // graphe d'imports (migrations SQL, config wrangler du pool, configs racine). S'ils
+    // changent, Vitest ignore --changed et relance TOUTE la suite.
+    forceRerunTriggers: [
+      '**/package.json',
+      '**/{vitest,vite}.config.*',
+      '**/vitest.setup.ts',
+      '**/vitest.wrangler.ts',
+      '**/wrangler.json',
+      '**/db/migrations/**',
+      '**/drizzle.config.ts',
+    ],
     projects: [
       // Standard config files for apps and shared libs
       'apps/api/vitest.config.ts',

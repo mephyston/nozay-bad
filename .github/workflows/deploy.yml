@@ -165,6 +165,11 @@ jobs:
         if: steps.node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
+      - name: Derive appropriate SHAs for affected commands
+        uses: nrwl/nx-set-shas@v5
+        with:
+          main-branch-name: 'main'
+
       - name: Verify environment variable & binding declarations
         run: node scripts/check-env-declarations.js
 
@@ -179,15 +184,17 @@ jobs:
       - name: Run TypeScript typecheck
         run: npm run typecheck
 
-      # Suite complète en un seul run : le workspace Vitest boote un pool Cloudflare
-      # Workers (miniflare) ; le lancer par projet multiplierait les boots + teardowns.
-      - name: Run tests
-        env:
-          # Le pool démarre une session proxy distante (binding AI) → nécessite un
-          # token en environnement non-interactif (CI). Secret déjà utilisé par les deploys.
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx vitest run --passWithNoTests
+      # Ne teste que les fichiers liés aux changements depuis le dernier vert (NX_BASE).
+      # Filet de sécurité : forceRerunTriggers (vitest.config.ts) relance TOUTE la suite si
+      # une migration D1, wrangler.json ou une config racine change (deps hors graphe d'imports).
+      # Plus de CLOUDFLARE_API_TOKEN : le pool tourne 100 % local (config de test sans binding AI).
+      - name: Run affected tests
+        run: npx vitest run --changed "$NX_BASE" --passWithNoTests
+
+      # Tests d'architecture (frontières d'import inter-libs) : transverses, donc joués
+      # systématiquement — un --changed pourrait les rater.
+      - name: Run architecture tests
+        run: npx vitest run --project architecture-tests
 
   # ──────────────────────────────────────────────────────────────
   # 2b. Régression visuelle du design system (Storybook + Playwright)
