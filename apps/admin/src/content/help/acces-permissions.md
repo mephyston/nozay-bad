@@ -2,7 +2,7 @@
 title: "Accès & Rôles"
 description: "Gérer qui a le droit de se connecter et d'agir sur l'interface d'administration."
 category: "admin"
-order: 10
+order: 4
 ---
 
 Le module **Accès & Rôles** contrôle qui peut ouvrir l'administration et ce que chacun peut y faire.

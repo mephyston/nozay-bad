@@ -1,13 +1,26 @@
 ---
-title: "Catégories de Produits (Boutique)"
-description: "Organiser les articles de la boutique et les lier à la comptabilité."
+title: "Catégories de produits"
+description: "Regrouper les articles de la boutique et fixer leur imputation comptable."
 category: "boutique"
-order: 13
+order: 3
 ---
 
-La boutique permet de regrouper vos articles dans des **Catégories de Produits** (ex: Textiles, Raquettes, Volants).
+Une **catégorie de produits** est une famille d'articles de la boutique. Elle se règle dans **Réglages → Catégories produits**.
 
-## Lien direct avec la comptabilité
-L'avantage principal est que chaque catégorie de produit est **obligatoirement liée à une catégorie comptable**.
+## Les champs
 
-Ainsi, lorsqu'une commande est validée et payée dans la boutique (ex: achat d'une raquette), l'écriture comptable est générée automatiquement dans le Grand Livre, affectée au bon compte (ex: Recette > Vente matériel), sans aucune double saisie !
+| Champ | Rôle |
+|---|---|
+| **Libellé** | Le nom de la famille (Volants, Cordages…) |
+| **Catégorie comptable** | L'imputation utilisée pour les recettes de cette famille |
+| **Active** | Une famille inactive n'est plus proposée |
+
+## Pourquoi le rattachement comptable est obligatoire
+
+C'est ce lien qui rend automatique l'écriture comptable de la boutique : quand une commande est validée, la recette est imputée à la **catégorie comptable de la famille du produit**, sans aucune double saisie. Voir [Boutique : commandes](/admin/help/boutique-commandes).
+
+Une famille sans catégorie comptable fait **échouer la validation** des commandes portant sur ses produits, avec un message qui la nomme explicitement.
+
+## Supprimer une famille
+
+La suppression est **refusée tant que des produits y sont rattachés**. Réaffectez d'abord ces produits, ou contentez-vous de désactiver la famille.

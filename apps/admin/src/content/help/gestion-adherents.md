@@ -1,22 +1,43 @@
 ---
-title: "Gestion des Adhérents"
-description: "Comment rechercher, filtrer et gérer les membres de l'association."
+title: "Liste des adhérents"
+description: "Rechercher, filtrer et agir sur les adhérents d'une saison."
 category: "adherents"
-order: 2
+order: 1
 ---
 
-La rubrique **Adhérents** vous permet d'avoir une vision complète de tous les membres inscrits pour la saison.
+La rubrique **Adhérents** affiche les membres inscrits pour une saison. Les dossiers proviennent de l'import Poona : ils ne se créent pas à la main dans l'application.
 
-## Liste des adhérents
+## Ce qu'affiche la liste
 
-La liste principale affiche les informations clés de chaque membre :
-- Nom et Prénom
-- Catégorie (Adulte, Jeune, Compétiteur)
-- Statut du paiement (Payé, Partiel, En attente)
-- Numéro de licence FFBad
+Chaque ligne montre le nom, la date de naissance, le numéro de licence, le genre, la formule d'adhésion (le *type* importé de Poona) et le statut du dossier :
 
-### Rechercher et Filtrer
-Utilisez la barre de recherche en haut pour trouver rapidement un membre par son nom. Vous pouvez également filtrer la liste par statut de paiement ou par pôle d'activité.
+- **Valide** — dossier finalisé côté Poona ;
+- **Suspendu** — dossier annulé ou non validé.
 
-### Exporter les données
-Un bouton "Exporter" est généralement disponible pour télécharger la liste sous format Excel/CSV pour vos envois d'emails ou pointages en salle.
+La liste est paginée par 20.
+
+## Rechercher et filtrer
+
+La barre de recherche porte sur le nom et le numéro de licence. Le bouton de filtres ouvre quatre critères supplémentaires :
+
+- **Saison** — l'exercice consulté ;
+- **Genre** — Homme / Femme ;
+- **Type d'adhérent** — Compétiteur / Loisir ;
+- **Statut** — Valide / Suspendu.
+
+Un bouton *Réinitialiser* remet les critères à leur valeur par défaut.
+
+## Les actions sur une ligne
+
+Le menu d'actions de chaque ligne propose :
+
+- **Voir le profil** — ouvre la [fiche de l'adhérent](/admin/help/fiche-adherent) ;
+- **Autoriser / Retirer note de frais** — ouvre ou ferme à cet adhérent la possibilité de déposer une note de frais depuis son espace ; l'application demande confirmation ;
+- **Attestation CSE** — ouvre l'attestation en PDF dans un nouvel onglet. Cette entrée n'apparaît **que si la cotisation est intégralement réglée**.
+
+## Importer les adhérents
+
+Le bouton **Import Poona**, en haut de la liste, mène à l'écran d'import. Voir [Import Poona](/admin/help/import-poona).
+
+> [!NOTE]
+> Il n'existe pas d'export de la liste des adhérents depuis cet écran. Les exports disponibles sont ceux de la comptabilité (journal, factures, justificatifs) — voir [Exports comptables](/admin/help/exports-comptables).

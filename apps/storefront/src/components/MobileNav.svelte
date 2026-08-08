@@ -13,12 +13,14 @@
 
   // Écrans plus rarement consultés : ils n'ont pas leur propre onglet, mais restent
   // accessibles à tout moment — y compris en PWA, où le pied de page est masqué.
+  //
+  // Les pages légales n'y figurent pas : ce menu sert à agir, et elles se consultent
+  // une fois. Elles restent atteignables depuis le pied de page de chaque écran et
+  // depuis la page de connexion.
   const secondaryLinks = $derived([
     ...(canExpense ? [{ href: '/note-de-frais', label: 'Notes de frais' }] : []),
     { href: '/attestation', label: 'Attestation CSE' },
-    { href: '/notifications', label: 'Mes notifications' },
-    { href: '/confidentialite', label: 'Politique de confidentialité' },
-    { href: '/mentions-legales', label: 'Mentions légales' }
+    { href: '/notifications', label: 'Mes notifications' }
   ]);
 
   const isSecondaryActive = $derived(secondaryLinks.some((l) => l.href === currentPath));

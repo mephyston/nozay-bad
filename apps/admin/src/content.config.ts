@@ -6,7 +6,9 @@ const helpCollection = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string().optional(),
-    category: z.enum(['adherents', 'comptabilite', 'boutique', 'admin']),
+    // Une catégorie par domaine du menu d'administration : le centre d'aide se lit
+    // dans le même ordre que l'application.
+    category: z.enum(['adherents', 'comptabilite', 'boutique', 'communication', 'admin']),
     order: z.number().default(99),
   }),
 });
