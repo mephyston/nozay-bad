@@ -5,11 +5,10 @@ import UserMenu from './UserMenu.svelte';
 interface Props {
   currentPath: string;
   activeSeasonName?: string;
-  pageTitle?: string;
   canExpense?: boolean;
 }
 
-const { currentPath, activeSeasonName = 'Saison 2025-2026', pageTitle, canExpense: canExpenseProp } = Astro.props;
+const { currentPath, activeSeasonName = 'Saison 2025-2026', canExpense: canExpenseProp } = Astro.props;
 
 const isCompte = currentPath === '/mon-compte';
 const isBoutique = currentPath === '/boutique';
@@ -35,10 +34,6 @@ const canExpense = canExpenseProp ?? (activeMember?.expenseAuthorized ?? false);
         <span class="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-wider font-semibold block -mt-0.5">Adhérents</span>
       </div>
     </a>
-
-    {pageTitle && (
-      <span class="md:hidden border-l border-border pl-3 text-sm font-semibold text-foreground truncate max-w-[40vw]">{pageTitle}</span>
-    )}
 
     <nav class="hidden md:flex items-center gap-1 border-l border-border pl-2 sm:pl-6 h-6">
       <a

@@ -44,7 +44,10 @@
 
   <!-- <details> plutôt qu'un panneau piloté en JS : cette barre est rendue côté
        serveur sans hydratation, le repli natif fonctionne donc partout. -->
-  <details class="relative w-full" open={isSecondaryActive}>
+  <!-- Volontairement pas d'`open={isSecondaryActive}` : ouvrir le panneau parce que
+       la page courante s'y trouve masquait le contenu à chaque arrivée. L'onglet
+       reste mis en évidence, ce qui suffit à situer l'utilisateur. -->
+  <details class="relative w-full">
     <summary
       class={`flex flex-col items-center justify-center w-full py-2.5 gap-1 min-h-[56px] cursor-pointer transition-colors ${
         isSecondaryActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'

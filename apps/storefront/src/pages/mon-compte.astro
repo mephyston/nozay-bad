@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import MobileNav from '../components/MobileNav.svelte';
 import PushOptIn from '../components/PushOptIn.svelte';
+import CollapsibleHistory from '../components/CollapsibleHistory.astro';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 
@@ -60,17 +61,19 @@ const isPaid = Boolean(cotisation?.paid);
 ---
 
 <Layout title="Mon compte - Nozay Bad">
-  <Header currentPath="/mon-compte" activeSeasonName={seasonName || undefined} pageTitle="Mon compte" canExpense={canExpense} />
+  <Header currentPath="/mon-compte" activeSeasonName={seasonName || undefined} canExpense={canExpense} />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     <div class="max-w-3xl mx-auto space-y-8">
+      <h1 class="text-xl sm:text-2xl font-bold text-foreground">Mon compte</h1>
+
       <!-- Notifications : ne s'affiche que si l'appareil peut en recevoir. -->
       <PushOptIn client:idle />
 
-      <!-- Ma cotisation -->
-      <section>
-        <h2 class="text-base font-bold text-foreground mb-3">Ma cotisation{seasonName ? ` — ${seasonName}` : ''}</h2>
-        <div class="rounded-xl border border-border bg-card p-5">
+      <!-- Ma cotisation : repliable comme le reste, mais ouverte d'emblée — c'est
+           l'information qu'on vient chercher sur cette page. -->
+      <CollapsibleHistory title={`Ma cotisation${seasonName ? ` — ${seasonName}` : ''}`} open={true}>
+        <div class="p-5">
           <div class="flex items-center justify-between mb-4">
             <span class="text-sm font-semibold text-foreground">Statut</span>
             {isPaid ? (
@@ -94,15 +97,14 @@ const isPaid = Boolean(cotisation?.paid);
             </div>
           </div>
         </div>
-      </section>
+      </CollapsibleHistory>
 
       <!-- Mes commandes -->
-      <section>
-        <h2 class="text-base font-bold text-foreground mb-3">Mes commandes ({orders.length})</h2>
+      <CollapsibleHistory title="Mes commandes" count={orders.length}>
         {orders.length === 0 ? (
-          <p class="text-sm text-muted-foreground">Aucune commande pour le moment.</p>
+          <p class="text-sm text-muted-foreground p-4">Aucune commande pour le moment.</p>
         ) : (
-          <div class="rounded-xl border border-border bg-card divide-y divide-border">
+          <div class="divide-y divide-border">
             {orders.map((o: any) => (
               <div class="flex items-center justify-between gap-3 p-4">
                 <div class="min-w-0">
@@ -117,16 +119,15 @@ const isPaid = Boolean(cotisation?.paid);
             ))}
           </div>
         )}
-      </section>
+      </CollapsibleHistory>
 
       <!-- Mes notes de frais -->
       {canExpense && (
-        <section>
-          <h2 class="text-base font-bold text-foreground mb-3">Mes notes de frais ({expenses.length})</h2>
+        <CollapsibleHistory title="Mes notes de frais" count={expenses.length}>
           {expenses.length === 0 ? (
-            <p class="text-sm text-muted-foreground">Aucune note de frais soumise.</p>
+            <p class="text-sm text-muted-foreground p-4">Aucune note de frais soumise.</p>
           ) : (
-            <div class="rounded-xl border border-border bg-card divide-y divide-border">
+            <div class="divide-y divide-border">
               {expenses.map((e: any) => (
                 <div class="flex items-center justify-between gap-3 p-4">
                   <div class="min-w-0">
@@ -141,14 +142,14 @@ const isPaid = Boolean(cotisation?.paid);
               ))}
             </div>
           )}
-        </section>
+        </CollapsibleHistory>
       )}
     </div>
   </main>
 
   <MobileNav currentPath="/mon-compte" canExpense={canExpense} />
 
-  <footer class="border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground pb-24 md:pb-8">
+  <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
     <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
     <p class="mt-2"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a> · <a href="/mentions-legales" class="hover:underline">Mentions légales</a></p>
   </footer>

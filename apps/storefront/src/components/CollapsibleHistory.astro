@@ -1,0 +1,55 @@
+---
+interface Props {
+  title: string;
+  /** Effectif affiché à côté du titre. Omis pour une section qui n'est pas une liste. */
+  count?: number;
+  /** Ouvert d'emblée. Réservé à l'information qu'on vient consulter en priorité. */
+  open?: boolean;
+}
+
+const { title, count, open = false } = Astro.props;
+---
+
+<!-- `<details>` natif plutôt qu'une île hydratée : cette page est rendue côté
+     serveur, un simple repli n'a pas à embarquer de JavaScript pour fonctionner. -->
+<details class="rounded-xl border border-border bg-card overflow-hidden" open={open}>
+  <summary
+    class="flex items-center justify-between gap-3 p-4 cursor-pointer hover:bg-accent/50 transition-colors"
+  >
+    <h2 class="text-base font-bold text-foreground">
+      {title}
+      {count !== undefined && <span class="font-medium text-muted-foreground">({count})</span>}
+    </h2>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="chevron shrink-0 text-muted-foreground transition-transform duration-200"
+    >
+      <path d="m6 9 6 6 6-6"></path>
+    </svg>
+  </summary>
+
+  <div class="border-t border-border">
+    <slot />
+  </div>
+</details>
+
+<style>
+  /* Le marqueur natif casserait l'alignement de l'en-tête. */
+  summary {
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  details[open] .chevron {
+    transform: rotate(180deg);
+  }
+</style>

@@ -17,7 +17,7 @@ const activeSeasonName = status.seasonName;
 ---
 
 <Layout title="Espace adhérent - Nozay Bad">
-  <Header currentPath="/" activeSeasonName={activeSeasonName || undefined} pageTitle="Accueil" canExpense={canExpense} />
+  <Header currentPath="/" activeSeasonName={activeSeasonName || undefined} canExpense={canExpense} />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     <div class="max-w-3xl mx-auto">
@@ -29,9 +29,8 @@ const activeSeasonName = status.seasonName;
 
       <div class="mb-6">
         <h1 class="text-xl sm:text-2xl font-bold text-foreground">
-          Bonjour {firstName}, bienvenue sur ton espace adhérent
+          Bonjour{firstName ? ` ${firstName}` : ''}
         </h1>
-        <p class="text-sm text-muted-foreground mt-1">Nozay Badminton Association</p>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -77,6 +76,20 @@ const activeSeasonName = status.seasonName;
           <p class="text-xs text-muted-foreground">Consultez et téléchargez votre attestation de paiement.</p>
         </a>
 
+        <a
+          href="/notifications"
+          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline group min-h-[44px]"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
+              <p class="text-sm font-semibold text-foreground">Notifications</p>
+            </div>
+            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Ouvrir &rarr;</span>
+          </div>
+          <p class="text-xs text-muted-foreground">Choisissez les annonces du club que vous souhaitez recevoir.</p>
+        </a>
+
         {canExpense && (
           <a
             href="/note-de-frais"
@@ -98,7 +111,7 @@ const activeSeasonName = status.seasonName;
 
   <MobileNav currentPath="/" canExpense={canExpense} />
 
-  <footer class="border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground pb-24 md:pb-8">
+  <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
     <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
     <p class="mt-2"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a> · <a href="/mentions-legales" class="hover:underline">Mentions légales</a></p>
   </footer>

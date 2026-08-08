@@ -16,12 +16,13 @@ const canExpense = status.canExpense;
   <Header
     currentPath="/notifications"
     activeSeasonName={status.seasonName || undefined}
-    pageTitle="Notifications"
     canExpense={canExpense}
   />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     <div class="max-w-3xl mx-auto space-y-8">
+      <h1 class="text-xl sm:text-2xl font-bold text-foreground">Mes notifications</h1>
+
       <section>
         <h2 class="text-base font-bold text-foreground mb-3">Cet appareil</h2>
         <!-- Ne s'affiche pas si l'appareil ne peut pas recevoir de notifications. -->
