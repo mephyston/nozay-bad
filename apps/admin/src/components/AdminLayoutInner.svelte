@@ -38,68 +38,30 @@
     breadcrumb: string;
   }>();
 
-  import { hasPermission } from '@nba/iam-ui';
+  import { can } from '@nba/iam-ui';
+  import { NAV_GROUPS } from '../lib/nav';
 
   const sidebar = Sidebar.useSidebar();
 
-  const navGroups = $derived([
-    {
-      label: "",
-      items: [
-        { name: "Tableau de bord", icon: LayoutDashboard, href: "/" },
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'ai:*') ? [{ name: "Assistant IA", icon: Sparkles, href: "/admin/ai" }] : [])
-      ]
-    },
-    {
-      label: "Adhérents",
-      items: [
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'members:*') || hasPermission(permissions, 'members:read') ? [{ name: "Liste des adhérents", icon: Users, href: "/admin/members" }] : [])
-      ]
-    },
-    {
-      label: "Comptabilité",
-      items: [
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') || hasPermission(permissions, 'accounting:reports') ? [{ name: "Rapports financiers", icon: BarChart3, href: "/admin/accounting/reports" }] : []),
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') ? [{ name: "Grand Livre", icon: BookOpen, href: "/admin/accounting" }] : []),
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') || hasPermission(permissions, 'accounting:invoices') ? [{ name: "Factures", icon: FileCheck, href: "/admin/accounting/invoices" }] : []),
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') ? [
-          { name: "Rapprochement bancaire", icon: Scale, href: "/admin/accounting/import" },
-          { name: "Remises de chèques", icon: Landmark, href: "/admin/accounting/cheques" },
-          { name: "Caisse", icon: Wallet, href: "/admin/accounting/cash-box" }
-        ] : []),
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'expenses:*') || hasPermission(permissions, 'expenses:read') || hasPermission(permissions, 'expenses:create') || hasPermission(permissions, 'expenses:update') || hasPermission(permissions, 'expenses:validate') ? [{ name: "Notes de frais", icon: Coins, href: "/admin/expenses" }] : [])
-      ]
-    },
-    {
-      label: "Boutique",
-      items: [
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'shop:*') || hasPermission(permissions, 'shop:products') ? [{ name: "Produits", icon: Package, href: "/admin/shop/products" }] : []),
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'shop:*') || hasPermission(permissions, 'orders:*') || hasPermission(permissions, 'orders:read') || hasPermission(permissions, 'orders:create') || hasPermission(permissions, 'orders:update') || hasPermission(permissions, 'orders:validate') ? [{ name: "Commandes", icon: ShoppingCart, href: "/admin/shop/orders" }] : [])
-      ]
-    },
-    {
-      label: "Communication",
-      items: [
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'notifications:*') || hasPermission(permissions, 'notifications:read') ? [{ name: "Notifications", icon: Bell, href: "/admin/notifications" }] : [])
-      ]
-    },
-    {
-      label: "Réglages",
-      items: [
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'settings:*') ? [{ name: "Configuration", icon: Settings, href: "/admin/settings" }] : []),
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'iam:*') ? [{ name: "Accès & Permissions", icon: User, href: "/admin/iam" }] : [])
-      ]
-    },
-    {
-      label: "Assistance",
-      items: [
-        { name: "Centre d'aide", icon: HelpCircle, href: "/admin/help" }
-      ]
-    }
-  ]);
+  // Les icônes sont résolues ici : `nav.ts` est aussi importé côté serveur (middleware),
+  // où l'on ne veut pas charger de composants Svelte.
+  const ICONS: Record<string, any> = {
+    LayoutDashboard, Sparkles, Users, BarChart3, BookOpen, FileCheck, Scale,
+    Landmark, Wallet, Coins, Package, ShoppingCart, Bell, Settings, User, HelpCircle
+  };
 
-  // Remove empty groups
-  const filteredNavGroups = $derived(navGroups.filter(g => g.items.length > 0));
+  // Le menu dérive de la même table que le contrôle d'accès des pages : une entrée
+  // visible mène donc toujours à une page ouverte.
+  const filteredNavGroups = $derived(
+    NAV_GROUPS
+      .map(g => ({
+        label: g.label,
+        items: g.items
+          .filter(i => i.permission === null || can(permissions, i.permission))
+          .map(i => ({ name: i.name, href: i.href, icon: ICONS[i.icon] }))
+      }))
+      .filter(g => g.items.length > 0)
+  );
 
   function isItemActive(item: { name: string, href: string }): boolean {
     const parts = breadcrumb.split(" / ").map(p => p.trim().toLowerCase());
@@ -173,8 +135,7 @@
   let impersonateUsers = $state<any[]>([]);
 
   onMount(async () => {
-    // Check if user is super-admin or can manage IAM
-    if (hasPermission(permissions, '*') || hasPermission(permissions, 'iam:*')) {
+    if (can(permissions, 'iam:sessions:impersonate')) {
       try {
         const res = await fetch('/admin/api/users');
         if (res.ok) {
@@ -416,7 +377,12 @@
   </div>
 </Sidebar.Inset>
 
-<MobileBottomNav permissions={permissions} onMenuClick={() => sidebar.setOpenMobile(true)} />
+<MobileBottomNav
+  canManageAccounting={can(permissions, 'accounting:checks:write')}
+  canManageShop={can(permissions, 'shop:orders:write')}
+  canManageExpenses={can(permissions, 'expenses:reports:write')}
+  onMenuClick={() => sidebar.setOpenMobile(true)}
+/>
 <GlobalConfirm />
 
 <style>

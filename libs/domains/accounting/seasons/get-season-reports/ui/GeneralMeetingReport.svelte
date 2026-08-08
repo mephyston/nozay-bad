@@ -24,10 +24,10 @@
   export * from './report-constants';
 
   let {
-    view, report, prevReport = null, seasonId, seasons = [], categories = [], accountClasses = [], budget = [], userPermissions = []
+    view, report, prevReport = null, seasonId, seasons = [], categories = [], accountClasses = [], budget = [], canUseAi = false
   }: {
     view: 'resultat' | 'analytique' | 'tresorerie' | 'budget';
-    report: ReportData; prevReport?: ReportData | null; seasonId: string; seasons?: Season[]; categories?: DbCategory[]; accountClasses?: AccountClass[]; budget?: BudgetRecord[]; userPermissions?: string[];
+    report: ReportData; prevReport?: ReportData | null; seasonId: string; seasons?: Season[]; categories?: DbCategory[]; accountClasses?: AccountClass[]; budget?: BudgetRecord[]; canUseAi?: boolean;
   } = $props();
 
   // svelte-ignore state_referenced_locally
@@ -137,7 +137,7 @@
     report, prevReport, selectedSeason, seasons, categories, chargeClasses, produitClasses,
     isClosed, isSaving, saveStatus, getClassCategories, getClassSumRealise, getClassSumPrevisionnel,
     getCatTotal, getTotalDepensesRealise, getTotalRecettesRealise, totalDepensesPrevisionnel,
-    totalRecettesPrevisionnel, onSaveBudget: handleSaveBudget, userPermissions
+    totalRecettesPrevisionnel, onSaveBudget: handleSaveBudget, canUseAi
   });
 </script>
 
@@ -180,7 +180,7 @@
       {/if}
 
       {#if view === 'tresorerie'}
-        <ReportTresorerieTab {report} {selectedSeason} {seasons} {userPermissions} />
+        <ReportTresorerieTab {report} {selectedSeason} {seasons} {canUseAi} />
       {/if}
 
       {#if view === 'budget'}

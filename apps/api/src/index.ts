@@ -10,11 +10,13 @@ import { dashboardRouter } from './dashboard';
 import { handleScheduled, type ScheduledBindings } from './scheduled';
 import { notificationsSendRouter } from './notifications';
 import { AppError } from '@nba/db';
+import { authorize } from './authz/middleware';
 
 type Bindings = {
   DB: D1Database;
   AI: any;
   INTERNAL_API_KEY?: string;
+  RBAC_ENFORCE?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -65,6 +67,11 @@ app.use('*', async (c, next) => {
   console.error(`401 Unauthorized path=${c.req.path} keyProvided=${Boolean(reqKey)}`);
   return c.json({ success: false, error: 'Accès non autorisé' }, 401);
 });
+
+// Autorisation par route, fermée par défaut. Elle vient APRÈS le contrôle de clé :
+// la clé prouve que l'appelant est un Worker de confiance, ce qui est la condition
+// pour croire l'identité qu'il affirme.
+app.use('*', authorize());
 
 app.get('/health', (c) => {
   return c.json({ status: 'ok' });

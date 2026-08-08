@@ -5,7 +5,7 @@ import { PageHeader, ErrorAlert } from '@nba/ui';
 import { MembersTable } from '@nba/members-ui';
 
 import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
+import { createAdminApiClient } from '../../../lib/api';
 
 const page = Astro.url.searchParams.get('page') || '1';
 const search = Astro.url.searchParams.get('search') || '';
@@ -14,13 +14,8 @@ const type = Astro.url.searchParams.get('type') || '';
 const status = Astro.url.searchParams.get('status') || '';
 const season = Astro.url.searchParams.get('season') || '25-26';
 
-import { hasPermission } from '@nba/iam';
-const userPerms = Astro.locals.user?.permissions || [];
-if (!hasPermission(userPerms, '*') && !hasPermission(userPerms, 'members:*') && !hasPermission(userPerms, 'members:read')) {
-  return Astro.redirect('/');
-}
 
-const apiService = createApiClient(env);
+const apiService = createAdminApiClient(Astro.locals);
 const queryParams = new URLSearchParams({ page, limit: '20', search, gender, type, status, season });
 
 let membersData = { data: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 1 } };

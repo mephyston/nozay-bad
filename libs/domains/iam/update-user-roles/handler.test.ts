@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { setupMockDb } from '@nba/db/test-utils';
+import { setupIamDb } from '../test-support';
 import type { Db } from '@nba/db';
 import { createUser } from '../create-user/handler';
 import { updateUserRoles } from './handler';
@@ -11,7 +11,7 @@ import { AdminUserNotFoundError, DuplicateAdminUserError, LastSuperAdminError } 
 describe('createUser', () => {
   let db: Db;
   beforeEach(async () => {
-    ({ db } = await setupMockDb());
+    ({ db } = await setupIamDb());
   });
 
   it('attribue le rôle « membre » quand aucun rôle n’est fourni', async () => {
@@ -49,7 +49,7 @@ describe('createUser', () => {
 describe('updateUserRoles', () => {
   let db: Db;
   beforeEach(async () => {
-    ({ db } = await setupMockDb());
+    ({ db } = await setupIamDb());
   });
 
   it('remplace les rôles au lieu de les cumuler', async () => {
@@ -116,7 +116,7 @@ describe('updateUserRoles', () => {
 describe('deleteUser', () => {
   let db: Db;
   beforeEach(async () => {
-    ({ db } = await setupMockDb());
+    ({ db } = await setupIamDb());
   });
 
   it('supprime le compte et ses rôles', async () => {

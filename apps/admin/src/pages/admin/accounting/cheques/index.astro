@@ -3,7 +3,7 @@ import Layout from '../../../../layouts/Layout.astro';
 import AdminLayout from '../../../../components/AdminLayout.svelte';
 import { PageHeader } from '@nba/ui';
 import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
+import { createAdminApiClient } from '../../../../lib/api';
 
 const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
 ---

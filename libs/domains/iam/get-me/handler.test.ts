@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { setupMockDb } from '@nba/db/test-utils';
+import { setupIamDb } from '../test-support';
 import type { Db } from '@nba/db';
 import { getMe } from './handler';
 import { createUser } from '../create-user/handler';
@@ -9,7 +9,7 @@ describe('getMe', () => {
   let db: Db;
 
   beforeEach(async () => {
-    ({ db } = await setupMockDb());
+    ({ db } = await setupIamDb());
   });
 
   it('crée le tout premier administrateur avec le rôle super_admin', async () => {

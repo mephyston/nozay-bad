@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { tbValidator } from '@hono/typebox-validator';
-import { hasPermission } from '../../../iam/shared/permissions';
 import { suggestBudgetSchema } from './validator';
 
 export type Bindings = {
@@ -21,12 +20,7 @@ suggestBudgetRoute.post(
       return c.json({ success: false, error: 'AI binding is missing' }, 500);
     }
 
-    const permissionsHeader = c.req.header('x-user-permissions') || '';
-    const permissions = permissionsHeader ? permissionsHeader.split(',') : [];
-    if (!hasPermission(permissions, 'ai:*')) {
-      return c.json({ success: false, error: 'Accès refusé : droit Assistant IA (ai:*) requis' }, 403);
-    }
-
+    // `ai:assistant:use` est exigé par ROUTE_PERMISSIONS, en amont de ce gestionnaire.
     const { report, categories, currentBudget } = c.req.valid('json');
     
     // Extrait les prévisions de trésorerie pour avoir la moyenne historique de cash

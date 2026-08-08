@@ -1,8 +1,12 @@
 import type { APIRoute } from 'astro';
-import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
+import { createAdminApiClient } from '../../lib/api';
+import { can, forbidden } from '../../lib/guard';
 
 export const GET: APIRoute = async ({ request, locals }) => {
+  // Ce point d'entrée n'avait aucun contrôle : tout compte authentifié pouvait
+  // énumérer les adhérents par nom ou par licence.
+  if (!can(locals, 'members:members:read')) return forbidden();
+
   const url = new URL(request.url);
   const q = (url.searchParams.get('q') || '').trim();
 
@@ -14,23 +18,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 
   try {
-    let apiService: any = undefined;
-    try {
-      let runtimeEnv: Record<string, string> = {};
-      try { runtimeEnv = (locals as any).runtime?.env || {}; } catch (err) {}
-      const resolvedEnv = { ...env, ...runtimeEnv } as Record<string, string>;
-      if (resolvedEnv?.API_SERVICE) {
-        apiService = createApiClient(resolvedEnv as any);
-      }
-    } catch {}
-
-    const fetchApi = (path: string) => {
-      if (apiService && typeof apiService.fetch === 'function') {
-        return apiService.fetch(`http://localhost${path}`);
-      }
-      const devApiUrl = (typeof process !== 'undefined' && process.env?.API_URL) || 'http://localhost';
-      return fetch(`${devApiUrl}${path}`);
-    };
+    const apiService = createAdminApiClient(locals);
+    const fetchApi = (path: string) => apiService.fetch(`http://localhost${path}`);
 
     let membersData: any[] = [];
 

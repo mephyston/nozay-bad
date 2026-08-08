@@ -4,21 +4,15 @@ import AdminLayout from '../../components/AdminLayout.svelte';
 import { PageHeader, ErrorAlert } from '@nba/ui';
 import { NotificationsManager } from '@nba/notifications-ui';
 import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
-import { hasPermission } from '@nba/iam';
+import { createAdminApiClient } from '../../lib/api';
+import { can } from '../../lib/guard';
 
 const userPerms = Astro.locals.user?.permissions || [];
-const canRead =
-  hasPermission(userPerms, '*') ||
-  hasPermission(userPerms, 'notifications:*') ||
-  hasPermission(userPerms, 'notifications:read');
-if (!canRead) {
-  return Astro.redirect('/');
-}
-// L'envoi exige le droit complet : une annonce part sur tous les téléphones du club.
-const canSend = hasPermission(userPerms, '*') || hasPermission(userPerms, 'notifications:*');
+// La consultation est déjà exigée par PAGE_PERMISSIONS. L'émission est un droit
+// distinct : une annonce part sur tous les téléphones du club.
+const canSend = can(Astro.locals, 'notifications:messages:send');
 
-const apiService = createApiClient(env);
+const apiService = createAdminApiClient(Astro.locals);
 
 let stats = { devices: 0, accounts: 0, pending: 0 };
 let messages: any[] = [];

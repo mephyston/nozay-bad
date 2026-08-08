@@ -6,7 +6,20 @@ declare namespace App {
     user?: {
       email: string;
       name?: string;
-      permissions: string[];
+      roles: import('@nba/iam-ui').Role[];
+      /**
+       * Permissions effectives, en tableau et non en `Set` : elles sont passées en
+       * props aux îlots Svelte, où un `Set` ne survivrait pas à la sérialisation.
+       */
+      permissions: import('@nba/iam-ui').Permission[];
+    };
+    /**
+     * Compte réellement connecté. Diffère de `user` pendant une usurpation, ce qui
+     * permet d'afficher un bandeau et de savoir qui a agi.
+     */
+    realUser?: {
+      email: string;
+      name?: string;
     };
     runtime: import('@astrojs/cloudflare').Runtime<Env>;
   }
@@ -18,6 +31,10 @@ interface Env {
   CF_AUDIENCE?: string;
   DB: import('@cloudflare/workers-types').D1Database;
   APP_ENV?: string;
+  /** Développement : rôle appliqué quand l'adresse n'a pas de compte en base. */
+  DEV_ROLE?: string;
+  /** Développement : adresse utilisée à défaut de cookie d'usurpation. */
+  DEV_EMAIL?: string;
 }
 declare module 'cloudflare:workers' {
   export const env: Env;

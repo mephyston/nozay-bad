@@ -1,19 +1,12 @@
-import { env as cfEnv } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
-import { hasPermission } from '@nba/iam';
+import { createAdminApiClient } from '../../../lib/api';
+import { can } from '../../../lib/guard';
 
 const json = (data: any, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 
 // POST /admin/api/members  { id, authorized } → bascule l'autorisation de note de frais.
 export async function POST({ request, locals }: any) {
-  const user = locals.user;
-  if (
-    !user ||
-    (!hasPermission(user.permissions, '*') &&
-      !hasPermission(user.permissions, 'members:*') &&
-      !hasPermission(user.permissions, 'members:write'))
-  ) {
+  if (!can(locals, 'members:members:write')) {
     return json({ success: false, error: 'Accès refusé' }, 403);
   }
 
@@ -30,15 +23,8 @@ export async function POST({ request, locals }: any) {
     return json({ success: false, error: 'Paramètres invalides (id, authorized)' }, 400);
   }
 
-  // Résout l'env comme le middleware admin (cfEnv peut être partiel selon le contexte).
-  let runtimeEnv: any = {};
   try {
-    runtimeEnv = (locals as any).runtime?.env || {};
-  } catch {}
-  const resolvedEnv = { ...(cfEnv as any), ...runtimeEnv };
-
-  try {
-    const apiService = createApiClient(resolvedEnv);
+    const apiService = createAdminApiClient(locals);
     const res = await apiService.fetch(`http://localhost/members/${id}/expense-authorization`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

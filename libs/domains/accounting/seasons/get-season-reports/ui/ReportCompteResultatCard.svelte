@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Button, Card, Alert } from '@nba/ui';
   import { Sparkles } from '@lucide/svelte';
-  import { hasPermission } from '../../../../iam/shared/permissions';
   import type { ReportData, Season, DbCategory, AccountClass } from './report-types';
   import ReportChargesColumn from './ReportChargesColumn.svelte';
   import ReportProduitsColumn from './ReportProduitsColumn.svelte';
@@ -64,7 +63,7 @@
     totalDepensesPrevisionnel,
     totalRecettesPrevisionnel,
     onSaveBudget,
-    userPermissions = []
+    canUseAi = false
   }: {
     mode: 'realise' | 'previsionnel';
     report: ReportData;
@@ -87,7 +86,7 @@
     totalDepensesPrevisionnel: number;
     totalRecettesPrevisionnel: number;
     onSaveBudget: () => void;
-    userPermissions?: string[];
+    canUseAi?: boolean;
   } = $props();
 
   const totalDepReal = $derived(getTotalDepensesRealise(mode));
@@ -210,7 +209,7 @@
         {/if}
         
         <div class="flex justify-end gap-3">
-          {#if hasPermission(userPermissions, 'ai:*')}
+          {#if canUseAi}
             <Button
               variant="outline"
               onclick={suggestBudget}
@@ -242,4 +241,4 @@
   </Card.Content>
 </Card.Root>
 
-<ReportAIAnalysis {report} section="resultat" seasonId={selectedSeason} {userPermissions} />
+<ReportAIAnalysis {report} section="resultat" seasonId={selectedSeason} {canUseAi} />

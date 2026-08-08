@@ -1,6 +1,8 @@
 import { mount, unmount, flushSync } from 'svelte';
 import { describe, it, expect, beforeAll, vi } from 'vitest';
 import AdminLayout from './AdminLayout.svelte';
+// Le modèle n'a plus de joker : un compte à tous les droits porte le catalogue complet.
+import { ALL_PERMISSIONS } from '@nba/iam-ui';
 
 describe('AdminLayout Component', () => {
   let isMobileViewport = false;
@@ -35,7 +37,7 @@ describe('AdminLayout Component', () => {
       target,
       props: {
         email: 'test@nozay-bad.fr',
-        permissions: ['*']
+        permissions: ALL_PERMISSIONS
       }
     });
     flushSync();
@@ -64,7 +66,7 @@ describe('AdminLayout Component', () => {
       target,
       props: {
         email: 'test@nozay-bad.fr',
-        permissions: ['*'],
+        permissions: ALL_PERMISSIONS,
         breadcrumb: 'Réglages / Saisons'
       }
     });
@@ -92,7 +94,7 @@ describe('AdminLayout Component', () => {
       target,
       props: {
         email: 'test@nozay-bad.fr',
-        permissions: ['*'],
+        permissions: ALL_PERMISSIONS,
         breadcrumb: 'settings'
       }
     });

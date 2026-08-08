@@ -5,39 +5,34 @@ import { ErrorAlert } from '@nba/ui';
 import { ExpensesManager } from '@nba/expenses-ui';
 
 import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
+import { createAdminApiClient } from '../../../lib/api';
 
 const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
-const apiService = createApiClient(env);
+const apiService = createAdminApiClient(Astro.locals);
 
 let season = Astro.url.searchParams.get('season') || '';
 
 const userPerms = Astro.locals.user?.permissions || [];
-import { hasPermission } from '@nba/iam-ui';
+import { can, guardAction } from '../../../lib/guard';
 
-if (!hasPermission(userPerms, '*') && !hasPermission(userPerms, 'expenses:*') && !hasPermission(userPerms, 'expenses:read') && !hasPermission(userPerms, 'expenses:create') && !hasPermission(userPerms, 'expenses:validate')) {
-  return Astro.redirect('/?error=forbidden');
-}
+const canValidate = can(Astro.locals, 'expenses:reports:approve');
+const canCreate = can(Astro.locals, 'expenses:reports:write');
+const canUpdate = canCreate;
+
+const ACTIONS = {
+  expense: 'expenses:reports:write',
+  update: 'expenses:reports:write',
+  approve: 'expenses:reports:approve',
+  reject: 'expenses:reports:approve',
+  cancel: 'expenses:reports:approve'
+} as const;
 
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
-    
-    const canValidate = hasPermission(userPerms, '*') || hasPermission(userPerms, 'expenses:*') || hasPermission(userPerms, 'expenses:validate');
-    const canCreate = hasPermission(userPerms, '*') || hasPermission(userPerms, 'expenses:*') || hasPermission(userPerms, 'expenses:create');
-    const canUpdate = hasPermission(userPerms, '*') || hasPermission(userPerms, 'expenses:*') || hasPermission(userPerms, 'expenses:update');
-    
-    if (['approve', 'reject', 'cancel'].includes(data.action) && !canValidate) {
-      return new Response("Accès refusé. Droits de validation requis.", { status: 403 });
-    }
-    
-    if (['expense'].includes(data.action) && !canCreate) {
-      return new Response("Accès refusé. Droits de création requis.", { status: 403 });
-    }
 
-    if (['update'].includes(data.action) && !canUpdate) {
-      return new Response("Accès refusé. Droits de modification requis.", { status: 403 });
-    }
+    const denied = guardAction(Astro.locals, data.action, ACTIONS);
+    if (denied) return denied;
 
     if (data.action === 'approve') {
       const apiRes = await apiService.fetch(`http://localhost/expenses/${data.id}/approve`, {

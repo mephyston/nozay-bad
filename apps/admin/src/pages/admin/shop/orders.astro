@@ -5,37 +5,32 @@ import { PageHeader, ErrorAlert, Badge } from '@nba/ui';
 import { OrdersManager } from '@nba/shop-ui';
 
 import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
+import { createAdminApiClient } from '../../../lib/api';
+import { can, guardAction, forbidden } from '../../../lib/guard';
 
-import { hasPermission } from '@nba/iam';
-const userPerms = Astro.locals.user?.permissions || [];
-if (!hasPermission(userPerms, '*') && !hasPermission(userPerms, 'shop:*') && !hasPermission(userPerms, 'orders:*') && !hasPermission(userPerms, 'orders:read') && !hasPermission(userPerms, 'orders:create') && !hasPermission(userPerms, 'orders:validate')) {
-  return Astro.redirect('/');
-}
 
 const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
-const apiService = createApiClient(env);
+const apiService = createAdminApiClient(Astro.locals);
 
 const season = Astro.url.searchParams.get('season') || '25-26';
+
+const ACTIONS = {
+  approve: 'shop:orders:approve',
+  reject: 'shop:orders:approve',
+  update: 'shop:orders:write'
+} as const;
 
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
     
-    const canValidate = hasPermission(userPerms, '*') || hasPermission(userPerms, 'shop:*') || hasPermission(userPerms, 'orders:*') || hasPermission(userPerms, 'orders:validate');
-    const canCreate = hasPermission(userPerms, '*') || hasPermission(userPerms, 'shop:*') || hasPermission(userPerms, 'orders:*') || hasPermission(userPerms, 'orders:create');
-    const canUpdate = hasPermission(userPerms, '*') || hasPermission(userPerms, 'shop:*') || hasPermission(userPerms, 'orders:*') || hasPermission(userPerms, 'orders:update');
-
-    if (['approve', 'reject'].includes(data.action) && !canValidate) {
-      return new Response("Accès refusé. Droits de validation requis.", { status: 403 });
-    }
-    
-    if (data.action === 'update' && !canUpdate) {
-      return new Response("Accès refusé. Droits de modification requis.", { status: 403 });
-    }
-
-    if (data.productId && data.quantity && !canCreate) {
-      return new Response("Accès refusé. Droits de création requis.", { status: 403 });
+    // La création de commande ne porte pas de champ `action` : elle se reconnaît à
+    // sa charge utile, et se garde donc séparément.
+    if (data.productId && data.quantity) {
+      if (!can(Astro.locals, 'shop:orders:write')) return forbidden();
+    } else {
+      const denied = guardAction(Astro.locals, data.action, ACTIONS);
+      if (denied) return denied;
     }
 
     if (data.action === 'approve') {

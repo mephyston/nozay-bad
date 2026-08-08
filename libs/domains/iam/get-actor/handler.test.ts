@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { sql } from 'drizzle-orm';
-import { setupMockDb } from '@nba/db/test-utils';
+import { setupIamDb } from '../test-support';
 import type { Db } from '@nba/db';
 import { getActor } from './handler';
 import { createUser } from '../create-user/handler';
@@ -9,7 +9,7 @@ describe('getActor', () => {
   let db: Db;
 
   beforeEach(async () => {
-    ({ db } = await setupMockDb());
+    ({ db } = await setupIamDb());
   });
 
   it("retourne null pour une adresse sans compte", async () => {

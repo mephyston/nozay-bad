@@ -4,7 +4,7 @@ import AdminLayout from '../../components/AdminLayout.svelte';
 import { PageHeader, ErrorAlert } from '@nba/ui';
 import { UsersManager } from '@nba/iam-ui';
 import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
+import { createAdminApiClient } from '../../lib/api';
 
 // Security: Must be super-admin to view this page.
 const user = Astro.locals.user;
@@ -12,7 +12,7 @@ if (!user || (!user.permissions.includes('*') && !user.permissions.includes('iam
   return new Response('Accès refusé', { status: 403 });
 }
 
-const apiService = createApiClient(env);
+const apiService = createAdminApiClient(Astro.locals);
 
 let usersList: any[] = [];
 let errorMsg = '';

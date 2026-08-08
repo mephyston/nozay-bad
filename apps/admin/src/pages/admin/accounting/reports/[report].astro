@@ -4,10 +4,11 @@ import AdminLayout from '../../../../components/AdminLayout.svelte';
 import { PageHeader, ErrorAlert, SeasonSelector } from '@nba/ui';
 import { GeneralMeetingReport } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
+import { createAdminApiClient } from '../../../../lib/api';
+import { can } from '../../../../lib/guard';
 
 const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
-const apiService = createApiClient(env);
+const apiService = createAdminApiClient(Astro.locals);
 
 const requestedSeason = Astro.url.searchParams.get('season');
 const isExport = Astro.url.searchParams.get('export');
@@ -215,7 +216,7 @@ const currentReport = validReports[reportType];
 
       {errorMsg && <ErrorAlert message={errorMsg} />}
 
-      <GeneralMeetingReport client:load view={currentReport.view} report={reportData} prevReport={prevReportData} seasonId={season} seasons={seasonsList} categories={categoriesList} accountClasses={accountClassesList} budget={budgetList} userPermissions={Astro.locals.user?.permissions || []} />
+      <GeneralMeetingReport client:load view={currentReport.view} report={reportData} prevReport={prevReportData} seasonId={season} seasons={seasonsList} categories={categoriesList} accountClasses={accountClassesList} budget={budgetList} canUseAi={can(Astro.locals, 'ai:assistant:use')} />
     </div>
   </AdminLayout>
 </Layout>

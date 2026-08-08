@@ -11,17 +11,10 @@ describe('Suggest Budget Route', () => {
     expect(res.status).toBe(400);
   });
 
-  it('should return 403 if no ai:* permission', async () => {
-    const res = await suggestBudgetRoute.request('http://localhost/2026/ai/budget-suggestion', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-user-permissions': 'other:permission'
-      },
-      body: JSON.stringify({ report: {}, categories: [], currentBudget: {} })
-    }, { AI: {} });
-    expect(res.status).toBe(403);
-  });
+  // Le droit « ai:assistant:use » est désormais exigé par ROUTE_PERMISSIONS, en amont
+  // de ce gestionnaire : voir apps/api/src/authz/middleware.test.ts. Cette route ne
+  // lit plus d'en-tête de permissions, qui portait une décision d'autorisation au
+  // lieu d'une identité.
 
   it('should return 200 on valid body and mock AI', async () => {
     const mockAI = {
@@ -29,10 +22,7 @@ describe('Suggest Budget Route', () => {
     };
     const res = await suggestBudgetRoute.request('http://localhost/2026/ai/budget-suggestion', {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-user-permissions': 'ai:*'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ report: {}, categories: [], currentBudget: {} })
     }, { AI: mockAI });
     expect(res.status).toBe(200);

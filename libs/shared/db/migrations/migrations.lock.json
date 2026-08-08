@@ -13,6 +13,6 @@
     "0009_push_subscriptions.sql": "354ee804491ad893",
     "0010_add_push_message_target_detail.sql": "8ae6fc16c590c865",
     "0011_add_push_categories_and_preferences.sql": "84fa1def5899306f",
-    "0012_iam_roles.sql": "c388222734149aba"
+    "0012_iam_roles.sql": "13b2f1e41abbeced"
   }
 }

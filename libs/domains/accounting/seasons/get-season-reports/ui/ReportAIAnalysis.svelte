@@ -1,11 +1,9 @@
 <script lang="ts">
   import { Button } from '@nba/ui';
   import { Sparkles, Loader2 } from '@lucide/svelte';
-  import { hasPermission } from '../../../../iam/shared/permissions';
 
-  let { report, section, seasonId, userPermissions = [] }: { report: any; section: 'tresorerie' | 'resultat', seasonId: string, userPermissions?: string[] } = $props();
+  let { report, section, seasonId, canUseAi = false }: { report: any; section: 'tresorerie' | 'resultat', seasonId: string, canUseAi?: boolean } = $props();
 
-  let canUseAI = $derived(hasPermission(userPermissions, 'ai:*'));
 
   let loading = $state(false);
   let analysis = $state<string>('');
@@ -65,7 +63,7 @@
   }
 </script>
 
-{#if canUseAI}
+{#if canUseAi}
 <div class="mt-6 pt-6 border-t border-border no-print">
   {#if !analysis && !loading && !error}
     <Button variant="outline" class="w-full flex items-center justify-center gap-2 border-primary/20 text-primary hover:bg-primary/5" onclick={generateAnalysis}>

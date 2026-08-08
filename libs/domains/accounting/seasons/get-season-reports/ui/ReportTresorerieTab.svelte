@@ -5,7 +5,7 @@
   import ReportTreasuryForecast from './ReportTreasuryForecast.svelte';
 import ReportAIAnalysis from './ReportAIAnalysis.svelte';
 
-  let { report, selectedSeason, seasons = [], userPermissions = [] }: { report: ReportData; selectedSeason: string; seasons?: Season[]; userPermissions?: string[] } = $props();
+  let { report, selectedSeason, seasons = [], canUseAi = false }: { report: ReportData; selectedSeason: string; seasons?: Season[]; canUseAi?: boolean } = $props();
 </script>
 
 <Card.Root>
@@ -70,4 +70,4 @@ import ReportAIAnalysis from './ReportAIAnalysis.svelte';
   <ReportTreasuryForecast forecast={report.projections.treasuryForecast} />
 {/if}
 
-<ReportAIAnalysis {report} section="tresorerie" seasonId={selectedSeason} {userPermissions} />
+<ReportAIAnalysis {report} section="tresorerie" seasonId={selectedSeason} {canUseAi} />

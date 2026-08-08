@@ -5,16 +5,11 @@ import { PageHeader, ErrorAlert, Badge } from '@nba/ui';
 import { InvoicesManager } from '@nba/accounting-ui';
 
 import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
+import { createAdminApiClient } from '../../../lib/api';
 
-import { hasPermission } from '@nba/iam';
-const userPerms = Astro.locals.user?.permissions || [];
-if (!hasPermission(userPerms, '*') && !hasPermission(userPerms, 'accounting:*') && !hasPermission(userPerms, 'accounting:invoices')) {
-  return Astro.redirect('/');
-}
 
 const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
-const apiService = createApiClient(env);
+const apiService = createAdminApiClient(Astro.locals);
 
 let season = Astro.url.searchParams.get('season') || '';
 

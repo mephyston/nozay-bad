@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { setupMockDb } from '@nba/db/test-utils';
+import { setupIamDb } from './test-support';
 import { iamRouter } from './router';
 import { createUser } from './create-user/handler';
 import type { Db } from '@nba/db';
@@ -9,7 +9,7 @@ describe('iamRouter', () => {
   let env: { DB: D1Database };
 
   beforeEach(async () => {
-    const setup = await setupMockDb();
+    const setup = await setupIamDb();
     db = setup.db;
     env = { DB: setup.mockD1 as D1Database };
   });
