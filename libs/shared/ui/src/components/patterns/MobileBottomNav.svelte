@@ -1,33 +1,25 @@
 <script lang="ts">
   import { Menu, Landmark, ShoppingCart, Receipt } from '@lucide/svelte';
-  import { hasPermission } from '@nba/iam-ui';
-  
+
+  /**
+   * Les droits arrivent déjà évalués, sous forme de booléens.
+   *
+   * Ce composant vit dans la bibliothèque partagée : lui faire interpréter des
+   * permissions le rendrait dépendant du domaine iam, à contresens des frontières
+   * du monorepo. L'appelant sait quels droits il attend, ce composant sait dessiner
+   * une barre d'actions.
+   */
   let {
-    permissions = [],
+    canManageAccounting = false,
+    canManageShop = false,
+    canManageExpenses = false,
     onMenuClick = () => {}
   }: {
-    permissions?: string[];
+    canManageAccounting?: boolean;
+    canManageShop?: boolean;
+    canManageExpenses?: boolean;
     onMenuClick?: () => void;
   } = $props();
-
-  const canManageAccounting = $derived(
-    hasPermission(permissions, '*') || 
-    hasPermission(permissions, 'accounting:*') || 
-    hasPermission(permissions, 'accounting:write')
-  );
-
-  const canManageShop = $derived(
-    hasPermission(permissions, '*') || 
-    hasPermission(permissions, 'shop:*') || 
-    hasPermission(permissions, 'orders:*') || 
-    hasPermission(permissions, 'orders:create')
-  );
-
-  const canManageExpenses = $derived(
-    hasPermission(permissions, '*') || 
-    hasPermission(permissions, 'expenses:*') ||
-    hasPermission(permissions, 'expenses:create')
-  );
 </script>
 
 <div class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border flex items-center justify-around pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_10px_rgba(0,0,0,0.2)]">

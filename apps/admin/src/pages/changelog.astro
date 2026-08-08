@@ -6,7 +6,7 @@ import { Content } from '../../../../CHANGELOG.md';
 ---
 
 <Layout title="Nouveautés - NBA Admin">
-  <AdminLayout name={Astro.locals.user?.name} client:idle email={Astro.locals.user?.email} breadcrumb="Nouveautés" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={Astro.locals.user?.email} breadcrumb="Nouveautés" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6 pb-20">
       <PageHeader
         title="Nouveautés"

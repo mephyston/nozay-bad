@@ -4,10 +4,11 @@ import AdminLayout from '../../../components/AdminLayout.svelte';
 import { PageHeader, ErrorAlert } from '@nba/ui';
 import { TransactionLedger } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
+import { createAdminApiClient } from '../../../lib/api';
+import { guardAction } from '../../../lib/guard';
 
 const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
-const apiService = createApiClient(env);
+const apiService = createAdminApiClient(Astro.locals);
 
 const requestedSeason = Astro.url.searchParams.get('season');
 const page = Astro.url.searchParams.get('page') || '1';
@@ -20,9 +21,19 @@ const month = Astro.url.searchParams.get('month') || '';
 const limit = Astro.url.searchParams.get('limit') || '20';
 
 // Si requête POST, intercepter pour les actions d'écriture (proxying vers Hono)
+/** Permission exigée par action d'écriture de cette page. */
+const ACTIONS = {
+  create: 'accounting:ledger:write',
+  update: 'accounting:ledger:write',
+  delete: 'accounting:ledger:delete'
+} as const;
+
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
+
+    const denied = guardAction(Astro.locals, data.action, ACTIONS);
+    if (denied) return denied;
     if (data.action === 'create') {
       const apiRes = await apiService.fetch('http://localhost/accounting/transactions', {
         method: 'POST',
@@ -128,7 +139,7 @@ if (seasonsList.length > 0) {
 ---
 
 <Layout title="Comptabilité - NBA 91">
-  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Grand Livre" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Grand Livre" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       <PageHeader
         title="Comptabilité"

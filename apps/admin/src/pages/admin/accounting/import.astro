@@ -4,14 +4,30 @@ import AdminLayout from '../../../components/AdminLayout.svelte';
 import { ErrorAlert } from '@nba/ui';
 import { BankStatementReconciliation } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
+import { createAdminApiClient } from '../../../lib/api';
+import { guardAction } from '../../../lib/guard';
 
 const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
-const apiService = createApiClient(env);
+const apiService = createAdminApiClient(Astro.locals);
 
 const requestedSeason = Astro.url.searchParams.get('season');
 
 // Si requête POST, intercepter pour les actions d'écriture (import ou reconcile/ignore/unignore/analyze/delete-transaction)
+/** Permission exigée par action d'écriture de cette page. */
+const ACTIONS = {
+  analyze: 'accounting:bank:reconcile',
+  bulk: 'accounting:bank:reconcile',
+  reconcile: 'accounting:bank:reconcile',
+  'reconcile-bulk': 'accounting:bank:reconcile',
+  match: 'accounting:bank:reconcile',
+  ignore: 'accounting:bank:reconcile',
+  unignore: 'accounting:bank:reconcile',
+  create: 'accounting:ledger:write',
+  'delete-ledger-entry': 'accounting:ledger:delete',
+  'delete-transaction': 'accounting:ledger:delete',
+  'get-unpaid-invoices': 'accounting:invoices:read'
+} as const;
+
 if (Astro.request.method === 'POST') {
   try {
     const contentType = Astro.request.headers.get('content-type') || '';
@@ -27,6 +43,9 @@ if (Astro.request.method === 'POST') {
       return new Response(JSON.stringify({ success: true }));
     } else {
       const data = await Astro.request.json() as any;
+
+    const denied = guardAction(Astro.locals, data.action, ACTIONS);
+    if (denied) return denied;
       if (data.action === 'analyze') {
         const url = data.btId
           ? `http://localhost/accounting/bank-transactions/analyze?season=${data.season}&id=${data.btId}`
@@ -157,7 +176,7 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
 ---
 
 <Layout title="Rapprochement Bancaire - NBA 91">
-  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Rapprochement bancaire" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Rapprochement bancaire" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       {errorMsg && <ErrorAlert message={errorMsg} />}
 

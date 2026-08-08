@@ -1,25 +1,49 @@
 ---
-title: "Comment enregistrer et remettre des chèques ?"
-description: "Gérer la réception des chèques et générer un bordereau pour la banque."
+title: "Chèques et remises"
+description: "Enregistrer un chèque reçu, générer un bordereau de remise et l'encaisser."
 category: "comptabilite"
-order: 2
+order: 5
 ---
 
-La gestion des chèques se fait en deux étapes : l'enregistrement du chèque lors de sa réception, puis la création d'une "remise" (un groupe de chèques) pour les déposer physiquement à la banque.
+La rubrique **Comptabilité → Remises de chèques** se divise en deux écrans : la **gestion des chèques** reçus, et les **bordereaux de remise** déposés en banque.
 
-## 1. Enregistrer la réception d'un chèque
-Lorsqu'un adhérent ou un partenaire vous remet un chèque :
-1. Allez dans **Comptabilité > Remises de chèques**.
-2. Cliquez sur **Enregistrer un chèque**.
-3. Remplissez les informations (Nom de l'émetteur, Montant, Banque, Numéro de chèque si souhaité).
-4. Ce chèque est maintenant "En attente".
+Un chèque passe par trois états : *reçu* (en coffre) → *déposé* (inclus dans un bordereau) → *encaissé* (le bordereau est rapproché du relevé).
 
-## 2. Générer le bordereau de remise
-Quand vous avez accumulé plusieurs chèques et que vous souhaitez les déposer à la banque :
-1. Allez dans **Comptabilité > Remises de chèques**.
-2. Cliquez sur le bouton **Créer une remise de chèque**.
-3. Sélectionnez tous les chèques que vous allez mettre dans l'enveloppe.
-4. L'application va regrouper ces chèques et générer un bordereau PDF que vous pourrez imprimer, dater, signer et glisser dans l'enveloppe de dépôt.
+## 1. Enregistrer un chèque
 
-## 3. Encaisser
-Une fois que la remise apparaît sur votre relevé bancaire, vous n'aurez plus qu'à associer la ligne du relevé avec le bordereau de remise lors de votre prochain **Rapprochement bancaire**.
+Depuis **Gestion des chèques**, le bouton **Enregistrer un chèque** ouvre un formulaire en deux parties.
+
+**Scanner** — prenez le chèque en photo. L'analyse remplit le numéro, le montant, l'émetteur, la banque et la date d'émission, et propose l'adhérent dont le nom correspond à celui de l'émetteur ou d'un représentant légal. Relisez toujours les champs remplis ainsi.
+
+**Saisir manuellement** — les mêmes champs, à renseigner vous-même :
+
+- **N° de chèque** (7 chiffres), **montant**, **émetteur** — obligatoires ;
+- **Banque** et **date d'émission** — facultatives ;
+- **Adhérent concerné** — pour l'imputation de la cotisation ;
+- **Affectation / catégorie** — l'imputation comptable de la recette.
+
+À l'enregistrement, l'application crée **automatiquement une recette au Compte Courant**, portant la référence « Chèque n° … ». Si un adhérent est désigné et que la catégorie est celle de l'adhésion, le montant est en plus **reporté sur sa cotisation**.
+
+Supprimer un chèque supprime l'écriture correspondante et défait ce report.
+
+## 2. Générer un bordereau de remise
+
+Lorsque vous partez déposer plusieurs chèques :
+
+1. Cochez les chèques concernés dans la liste des chèques *reçus* ;
+2. Cliquez sur **Créer une remise** ;
+3. La **référence est proposée automatiquement** (du type `REMISE-20260315-3`) et reste modifiable ; renseignez la date ;
+4. Validez.
+
+Les chèques sélectionnés passent en *déposé* et la remise apparaît dans l'écran **Bordereaux de remise**, où elle peut être consultée et **imprimée** pour accompagner le dépôt.
+
+## 3. Encaisser la remise
+
+Quand la remise apparaît sur le relevé bancaire, ouvrez-la et choisissez la ligne du relevé correspondante parmi les opérations en attente. La remise passe en *encaissée* et la ligne bancaire est marquée rapprochée.
+
+## Défaire une remise
+
+Supprimer un bordereau **libère les chèques qu'il contenait** — ils redeviennent disponibles pour une nouvelle remise — et remet, le cas échéant, la ligne bancaire associée en attente.
+
+> [!NOTE]
+> Un chèque encore en coffre ou une remise non encaissée **empêche la clôture de l'exercice**. Voir [Saisons comptables](/admin/help/gestion-saisons).

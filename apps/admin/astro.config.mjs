@@ -3,6 +3,8 @@ import cloudflare from '@astrojs/cloudflare';
 import svelte from '@astrojs/svelte';
 import AstroPWA from '@vite-pwa/astro';
 import tailwindcss from '@tailwindcss/vite';
+import { satteri } from '@astrojs/markdown-satteri';
+import { satteriAlerts } from './plugins/markdown-alerts.mjs';
 
 import fs from 'fs';
 import path from 'path';
@@ -34,6 +36,11 @@ const STOREFRONT_URL =
 
 export default defineConfig({
   output: 'server',
+  markdown: {
+    // Processeur par défaut d'Astro, redéclaré pour lui greffer le rendu des
+    // encarts `> [!NOTE]` du centre d'aide et du CHANGELOG.
+    processor: satteri({ hastPlugins: [satteriAlerts] })
+  },
   // Pas de `prefetch` : le HTML de l'admin est servi en `private, no-store`
   // (cf. lib/security-headers.ts), donc une page préchargée ne serait pas stockée et
   // la requête serait perdue — tout en déclenchant côté serveur les appels API et D1

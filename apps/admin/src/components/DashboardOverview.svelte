@@ -1,19 +1,19 @@
 <script lang="ts">
   import { Users, Banknote, CreditCard, ShoppingCart, Activity, AlertCircle, ArrowUpRight, ArrowDownRight, Package, Receipt, FolderKanban, Building, ChevronRight } from '@lucide/svelte';
   import { DashboardSummaryCard, DashboardPoleCard } from '@nba/ui';
-  import { hasPermission } from '@nba/iam-ui';
-  
+  import { can } from '@nba/iam-ui';
+
   export let data: any;
   export let permissions: string[] = [];
-  
+
   const formatAmount = (cents: number) => {
     return (cents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
   };
-  
-  $: canReadMembers = hasPermission(permissions, '*') || hasPermission(permissions, 'members:*') || hasPermission(permissions, 'members:read') || hasPermission(permissions, 'members:update');
-  $: canReadAccounting = hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') || hasPermission(permissions, 'accounting:read') || hasPermission(permissions, 'accounting:update');
-  $: canReadExpenses = hasPermission(permissions, '*') || hasPermission(permissions, 'expenses:*') || hasPermission(permissions, 'expenses:read') || hasPermission(permissions, 'expenses:update');
-  $: canReadShop = hasPermission(permissions, '*') || hasPermission(permissions, 'shop:*') || hasPermission(permissions, 'orders:*') || hasPermission(permissions, 'shop:read') || hasPermission(permissions, 'shop:update');
+
+  $: canReadMembers = can(permissions, 'members:members:read');
+  $: canReadAccounting = can(permissions, 'accounting:ledger:read');
+  $: canReadExpenses = can(permissions, 'expenses:reports:read');
+  $: canReadShop = can(permissions, 'shop:orders:read');
 </script>
 
 <div class="space-y-8 pb-10">

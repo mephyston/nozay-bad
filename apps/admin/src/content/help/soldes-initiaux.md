@@ -1,16 +1,29 @@
 ---
-title: "Soldes Initiaux"
-description: "Initialiser les soldes des comptes au début d'une nouvelle saison."
+title: "Soldes initiaux"
+description: "Fixer l'état des comptes au premier jour de la saison."
 category: "comptabilite"
-order: 5
+order: 12
 ---
 
-La rubrique **Soldes Initiaux** vous permet de reporter l'argent restant de la saison précédente sur la nouvelle saison.
+Le **solde initial** est le montant présent sur chaque compte financier au premier jour de la saison comptable. Il sert de base à tous les calculs : solde progressif du grand livre, bilan de trésorerie, contrôle de clôture.
 
-## Pourquoi initialiser les soldes ?
-À l'ouverture d'une nouvelle saison comptable, il faut renseigner le solde de départ pour chaque compte (ex: Livret A, Compte Courant, Caisse). 
+## Où les saisir
 
-- Ce montant représente ce qui était présent sur le compte au dernier jour de la saison précédente.
-- Cela permet que les rapports financiers et le rapprochement bancaire démarrent avec les bons montants.
+Depuis **Réglages → Saisons comptables**, le bouton **Soldes** de la saison ouvre la saisie des trois montants :
 
-Une fois validés, ces soldes servent de base à tous les calculs de trésorerie de la nouvelle saison.
+- **Compte Courant**
+- **Compte Livret**
+- **Caisse physique**
+
+## Pré-remplissage automatique
+
+Lorsque les soldes n'ont jamais été saisis, l'application les **pré-remplit à partir des soldes de fin de la saison précédente** et l'indique par un message. Ce sont des valeurs proposées, pas enregistrées : **cliquez sur *Enregistrer* pour les valider**.
+
+La [clôture d'un exercice](/admin/help/gestion-saisons) écrit également ces soldes sur la saison suivante, à partir des soldes de clôture calculés.
+
+## Saison clôturée
+
+Sur une saison clôturée, les soldes initiaux sont affichés mais ne sont plus modifiables.
+
+> [!TIP]
+> Un écart entre le solde initial saisi et le solde de clôture calculé de la saison précédente est signalé au moment de clôturer. C'est le bon moment pour trancher : soit une écriture manque sur l'exercice qui s'achève, soit le solde de départ est à corriger.

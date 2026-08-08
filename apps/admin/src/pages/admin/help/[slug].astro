@@ -20,7 +20,7 @@ const permissions = user?.permissions || [];
 ---
 
 <Layout title={`${entry.data.title} - Aide NBA`}>
-  <AdminLayout 
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} 
     client:load 
     email={user?.email || ""} 
     name={user?.name || ""} 

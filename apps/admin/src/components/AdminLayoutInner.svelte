@@ -30,76 +30,40 @@
   import ThemeToggle from "./ThemeToggle.svelte";
   import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, MobileBottomNav, PwaInstallBanner } from "@nba/ui";
 
-  let { children, email, name, permissions = [], breadcrumb } = $props<{
+  let { children, email, name, permissions = [], realEmail = '', breadcrumb } = $props<{
     children?: import('svelte').Snippet;
     email: string;
     name?: string;
     permissions?: string[];
+    /** Compte réellement connecté ; diffère de `email` pendant une usurpation. */
+    realEmail?: string;
     breadcrumb: string;
   }>();
 
-  import { hasPermission } from '@nba/iam-ui';
+  import { can } from '@nba/iam-ui';
+  import { NAV_GROUPS } from '../lib/nav';
 
   const sidebar = Sidebar.useSidebar();
 
-  const navGroups = $derived([
-    {
-      label: "",
-      items: [
-        { name: "Tableau de bord", icon: LayoutDashboard, href: "/" },
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'ai:*') ? [{ name: "Assistant IA", icon: Sparkles, href: "/admin/ai" }] : [])
-      ]
-    },
-    {
-      label: "Adhérents",
-      items: [
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'members:*') || hasPermission(permissions, 'members:read') ? [{ name: "Liste des adhérents", icon: Users, href: "/admin/members" }] : [])
-      ]
-    },
-    {
-      label: "Comptabilité",
-      items: [
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') || hasPermission(permissions, 'accounting:reports') ? [{ name: "Rapports financiers", icon: BarChart3, href: "/admin/accounting/reports" }] : []),
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') ? [{ name: "Grand Livre", icon: BookOpen, href: "/admin/accounting" }] : []),
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') || hasPermission(permissions, 'accounting:invoices') ? [{ name: "Factures", icon: FileCheck, href: "/admin/accounting/invoices" }] : []),
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'accounting:*') ? [
-          { name: "Rapprochement bancaire", icon: Scale, href: "/admin/accounting/import" },
-          { name: "Remises de chèques", icon: Landmark, href: "/admin/accounting/cheques" },
-          { name: "Caisse", icon: Wallet, href: "/admin/accounting/cash-box" }
-        ] : []),
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'expenses:*') || hasPermission(permissions, 'expenses:read') || hasPermission(permissions, 'expenses:create') || hasPermission(permissions, 'expenses:update') || hasPermission(permissions, 'expenses:validate') ? [{ name: "Notes de frais", icon: Coins, href: "/admin/expenses" }] : [])
-      ]
-    },
-    {
-      label: "Boutique",
-      items: [
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'shop:*') || hasPermission(permissions, 'shop:products') ? [{ name: "Produits", icon: Package, href: "/admin/shop/products" }] : []),
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'shop:*') || hasPermission(permissions, 'orders:*') || hasPermission(permissions, 'orders:read') || hasPermission(permissions, 'orders:create') || hasPermission(permissions, 'orders:update') || hasPermission(permissions, 'orders:validate') ? [{ name: "Commandes", icon: ShoppingCart, href: "/admin/shop/orders" }] : [])
-      ]
-    },
-    {
-      label: "Communication",
-      items: [
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'notifications:*') || hasPermission(permissions, 'notifications:read') ? [{ name: "Notifications", icon: Bell, href: "/admin/notifications" }] : [])
-      ]
-    },
-    {
-      label: "Réglages",
-      items: [
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'settings:*') ? [{ name: "Configuration", icon: Settings, href: "/admin/settings" }] : []),
-        ...(hasPermission(permissions, '*') || hasPermission(permissions, 'iam:*') ? [{ name: "Accès & Permissions", icon: User, href: "/admin/iam" }] : [])
-      ]
-    },
-    {
-      label: "Assistance",
-      items: [
-        { name: "Centre d'aide", icon: HelpCircle, href: "/admin/help" }
-      ]
-    }
-  ]);
+  // Les icônes sont résolues ici : `nav.ts` est aussi importé côté serveur (middleware),
+  // où l'on ne veut pas charger de composants Svelte.
+  const ICONS: Record<string, any> = {
+    LayoutDashboard, Sparkles, Users, BarChart3, BookOpen, FileCheck, Scale,
+    Landmark, Wallet, Coins, Package, ShoppingCart, Bell, Settings, User, HelpCircle
+  };
 
-  // Remove empty groups
-  const filteredNavGroups = $derived(navGroups.filter(g => g.items.length > 0));
+  // Le menu dérive de la même table que le contrôle d'accès des pages : une entrée
+  // visible mène donc toujours à une page ouverte.
+  const filteredNavGroups = $derived(
+    NAV_GROUPS
+      .map(g => ({
+        label: g.label,
+        items: g.items
+          .filter(i => i.permission === null || can(permissions, i.permission))
+          .map(i => ({ name: i.name, href: i.href, icon: ICONS[i.icon] }))
+      }))
+      .filter(g => g.items.length > 0)
+  );
 
   function isItemActive(item: { name: string, href: string }): boolean {
     const parts = breadcrumb.split(" / ").map(p => p.trim().toLowerCase());
@@ -159,7 +123,7 @@
       return primary === "réglages" || primary === "settings" || primary === "configuration";
     }
     if (item.href === "/admin/iam") {
-      return primary === "accès et permissions" || primary === "accès & permissions";
+      return primary === "accès et rôles" || primary === "accès & rôles";
     }
     
     // Aide
@@ -172,9 +136,21 @@
 
   let impersonateUsers = $state<any[]>([]);
 
+  // Le cookie d'usurpation est HttpOnly : il est posé et retiré par le serveur, et
+  // le navigateur ne peut plus le lire. L'état vient donc de `realEmail`.
+  const isImpersonating = $derived(Boolean(realEmail) && realEmail !== email);
+
+  async function setImpersonation(target: string | null) {
+    const res = await fetch('/admin/api/impersonate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: target })
+    });
+    if (res.ok) window.location.reload();
+  }
+
   onMount(async () => {
-    // Check if user is super-admin or can manage IAM
-    if (hasPermission(permissions, '*') || hasPermission(permissions, 'iam:*')) {
+    if (can(permissions, 'iam:sessions:impersonate')) {
       try {
         const res = await fetch('/admin/api/users');
         if (res.ok) {
@@ -322,10 +298,7 @@
                     {#if u.email !== email}
                       <DropdownMenu.Item
                         class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer focus:bg-accent focus:text-accent-foreground focus:outline-none"
-                        onclick={() => {
-                          document.cookie = `impersonate_email=${encodeURIComponent(u.email)}; path=/`;
-                          window.location.reload();
-                        }}
+                        onclick={() => setImpersonation(u.email)}
                       >
                         {u.name || u.email}
                       </DropdownMenu.Item>
@@ -334,13 +307,10 @@
                   <DropdownMenu.Separator />
                 {/if}
 
-                {#if typeof document !== 'undefined' && document.cookie.includes('impersonate_email')}
+                {#if isImpersonating}
                   <DropdownMenu.Item
                     class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md text-primary hover:bg-primary/10 cursor-pointer focus:bg-primary/10 focus:outline-none"
-                    onclick={() => {
-                      document.cookie = `impersonate_email=; path=/; max-age=0`;
-                      window.location.reload();
-                    }}
+                    onclick={() => setImpersonation(null)}
                   >
                     Revenir à mon compte
                   </DropdownMenu.Item>
@@ -369,6 +339,19 @@
 
 <!-- Inset / Main panel -->
 <Sidebar.Inset class="flex flex-col h-screen overflow-hidden">
+  {#if isImpersonating}
+    <!-- Bandeau permanent : on n'agit pas sous une autre identité sans le savoir. -->
+    <div class="shrink-0 flex flex-wrap items-center justify-center gap-2 bg-amber-500/15 text-amber-900 dark:text-amber-200 border-b border-amber-500/40 px-4 py-1.5 text-xs font-semibold">
+      <span>Vous consultez l'application en tant que <strong>{email}</strong>.</span>
+      <button
+        type="button"
+        class="underline underline-offset-2 cursor-pointer bg-transparent border-0 font-semibold text-inherit"
+        onclick={() => setImpersonation(null)}
+      >
+        Revenir à {realEmail}
+      </button>
+    </div>
+  {/if}
   <!-- Header -->
   <header class="flex min-h-14 shrink-0 items-center justify-between px-6 border-b border-border bg-background pt-safe pb-2 md:pb-0 md:h-14">
     <div class="flex items-center gap-4 h-full pt-2 md:pt-0">
@@ -416,7 +399,12 @@
   </div>
 </Sidebar.Inset>
 
-<MobileBottomNav permissions={permissions} onMenuClick={() => sidebar.setOpenMobile(true)} />
+<MobileBottomNav
+  canManageAccounting={can(permissions, 'accounting:checks:write')}
+  canManageShop={can(permissions, 'shop:orders:write')}
+  canManageExpenses={can(permissions, 'expenses:reports:write')}
+  onMenuClick={() => sidebar.setOpenMobile(true)}
+/>
 <GlobalConfirm />
 
 <style>

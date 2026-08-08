@@ -1,13 +1,10 @@
 import type { APIRoute } from 'astro';
-import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
-import { hasPermission } from '@nba/iam';
+import { createAdminApiClient } from '../../../lib/api';
+import { can } from '../../../lib/guard';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    // Droit unique « Assistant IA » (ai:*) requis.
-    const perms = locals.user?.permissions || [];
-    if (!hasPermission(perms, 'ai:*')) {
+    if (!can(locals, 'ai:assistant:use')) {
       return new Response(JSON.stringify({ success: false, error: 'Accès refusé' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' }
@@ -15,15 +12,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const body = await request.json();
-    const apiService = createApiClient(env);
+    const apiService = createAdminApiClient(locals);
 
-    // Call the internal Hono API (on transmet les permissions pour le contrôle serveur).
+    // L'API revérifie « ai:assistant:use » à partir de l'identité transmise par le
+    // client : aucune permission ne circule ici.
     const res = await apiService.fetch('http://localhost/ai/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-permissions': perms.join(',')
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
 

@@ -1,13 +1,13 @@
 ---
 import Layout from '../../../../layouts/Layout.astro';
 import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
+import { createAdminApiClient } from '../../../../lib/api';
 
 // Proxy vers le PDF généré par l'API (pdf-lib). L'onglet ouvert affiche
 // directement le PDF ; en cas d'erreur (facture introuvable) on rend une page
 // HTML lisible plutôt qu'un PDF cassé.
 const { id } = Astro.params;
-const apiService = createApiClient(env);
+const apiService = createAdminApiClient(Astro.locals);
 
 let errorMsg = '';
 

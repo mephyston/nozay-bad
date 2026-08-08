@@ -1,0 +1,76 @@
+import { type Db, AppError } from '@nba/db';
+import { isPermission, type Permission } from '../shared/permissions';
+import { isRole, type Role } from '../shared/roles';
+import { isEditableRole } from '../shared/role-permissions';
+import { UpdateRolePermissionsRepository } from './repository';
+
+export class RoleNotFoundError extends AppError {
+  constructor(role: string) {
+    super(`Rôle inconnu : ${role}`, 404);
+    this.name = 'RoleNotFoundError';
+  }
+}
+
+export class ImmutableRoleError extends AppError {
+  constructor() {
+    super(
+      "Le rôle « super administrateur » n'est pas modifiable : il détient l'intégralité des droits par construction.",
+      400
+    );
+    this.name = 'ImmutableRoleError';
+  }
+}
+
+/**
+ * Socle réimposé à tout rôle.
+ *
+ * Un compte privé de son tableau de bord et du centre d'aide ne verrait plus rien
+ * après connexion, sans comprendre pourquoi. Ces deux droits n'ouvrent aucune donnée
+ * sensible : les retirer n'apporte rien et casse l'application.
+ */
+const ALWAYS_GRANTED: readonly Permission[] = ['dashboard:overview:read', 'help:docs:read'];
+
+export interface UpdateRolePermissionsResult {
+  role: Role;
+  permissions: Permission[];
+  granted: Permission[];
+  revoked: Permission[];
+}
+
+export async function updateRolePermissions(
+  db: Db,
+  role: string,
+  permissions: readonly string[],
+  actorEmail: string,
+  now: Date = new Date()
+): Promise<UpdateRolePermissionsResult> {
+  if (!isRole(role)) throw new RoleNotFoundError(role);
+  // `super_admin` vaut toujours tout le catalogue, calculé en code : le figer en base
+  // le priverait des permissions ajoutées par les fonctionnalités futures, et lui
+  // retirer son droit d'édition fermerait la gestion des rôles sans recours.
+  if (!isEditableRole(role)) throw new ImmutableRoleError();
+
+  const repo = new UpdateRolePermissionsRepository();
+  const before = new Set((await repo.listForRole(db, role)).filter(isPermission));
+
+  const after = new Set<Permission>(permissions.filter(isPermission));
+  for (const permission of ALWAYS_GRANTED) after.add(permission);
+
+  const granted = [...after].filter((p) => !before.has(p)).sort();
+  const revoked = [...before].filter((p) => !after.has(p)).sort();
+
+  if (granted.length > 0 || revoked.length > 0) {
+    await repo.replaceForRole(db, role, [...after], now);
+    await repo.log(
+      db,
+      [
+        ...granted.map((permission) => ({ role, permission, action: 'granted' as const })),
+        ...revoked.map((permission) => ({ role, permission, action: 'revoked' as const }))
+      ],
+      actorEmail,
+      now
+    );
+  }
+
+  return { role, permissions: [...after].sort(), granted, revoked };
+}

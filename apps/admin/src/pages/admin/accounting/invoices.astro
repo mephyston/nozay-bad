@@ -5,22 +5,30 @@ import { PageHeader, ErrorAlert, Badge } from '@nba/ui';
 import { InvoicesManager } from '@nba/accounting-ui';
 
 import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
+import { createAdminApiClient } from '../../../lib/api';
+import { guardAction } from '../../../lib/guard';
 
-import { hasPermission } from '@nba/iam';
-const userPerms = Astro.locals.user?.permissions || [];
-if (!hasPermission(userPerms, '*') && !hasPermission(userPerms, 'accounting:*') && !hasPermission(userPerms, 'accounting:invoices')) {
-  return Astro.redirect('/');
-}
 
 const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
-const apiService = createApiClient(env);
+const apiService = createAdminApiClient(Astro.locals);
 
 let season = Astro.url.searchParams.get('season') || '';
+
+/** Permission exigée par action d'écriture de cette page. */
+const ACTIONS = {
+  create: 'accounting:invoices:write',
+  update: 'accounting:invoices:write',
+  delete: 'accounting:invoices:delete',
+  status: 'accounting:invoices:write',
+  'get-details': 'accounting:invoices:read'
+} as const;
 
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
+
+    const denied = guardAction(Astro.locals, data.action, ACTIONS);
+    if (denied) return denied;
 
     if (data.action === 'create') {
       const apiRes = await apiService.fetch('http://localhost/accounting/invoices', {
@@ -127,7 +135,7 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
 ---
 
 <Layout title="Factures - NBA 91">
-  <AdminLayout name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Factures" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Factures" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       {errorMsg && <ErrorAlert message={errorMsg} />}
 

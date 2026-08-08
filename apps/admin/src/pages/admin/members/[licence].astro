@@ -5,11 +5,11 @@ import { ErrorAlert } from '@nba/ui';
 import { MemberProfile } from '@nba/members-ui';
 
 import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
+import { createAdminApiClient } from '../../../lib/api';
 
 const { licence } = Astro.params;
 const season = Astro.url.searchParams.get('season') || '25-26';
-const apiService = createApiClient(env);
+const apiService = createAdminApiClient(Astro.locals);
 
 let member = null;
 let memberTransactionsList = [];
@@ -39,7 +39,7 @@ try {
 ---
 
 <Layout title={member ? `Profil ${member.lastName} ${member.firstName} - NBA 91` : "Profil Adhérent - NBA 91"}>
-  <AdminLayout name={Astro.locals.user?.name} client:idle breadcrumb="Adhérents / Fiche Adhérent" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle breadcrumb="Adhérents / Fiche Adhérent" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       {errorMsg && (
         <div class="max-w-3xl mx-auto space-y-4">

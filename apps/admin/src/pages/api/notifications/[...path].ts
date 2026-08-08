@@ -1,34 +1,15 @@
 import type { APIRoute } from 'astro';
-import { env } from 'cloudflare:workers';
-import { createApiClient } from '@nba/api-client';
-import { authorizeNotificationsProxy } from '../../../lib/authz';
+import { createAdminApiClient } from '../../../lib/api';
 
 /**
  * Proxy des routes de notifications vers l'API interne.
  *
- * Même modèle que le proxy comptable : l'autorisation est appliquée ici, seule
- * surface atteignable par le navigateur (H-01).
+ * Même modèle que le proxy comptable : l'autorisation appartient à l'API, qui la
+ * décide à partir de l'identité transmise et de sa table `ROUTE_PERMISSIONS`.
  */
 export const ALL: APIRoute = async ({ request, locals, params }) => {
   try {
     const path = params.path || '';
-    const perms = locals.user?.permissions || [];
-    if (!authorizeNotificationsProxy(request.method, path, perms)) {
-      return new Response(JSON.stringify({ success: false, error: 'Accès refusé' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    let runtimeEnv: Record<string, string> = {};
-    try {
-      runtimeEnv = (locals as any).runtime?.env || {};
-    } catch {
-      /* Astro.locals.runtime.env peut throw en prod : on ignore. */
-    }
-    const resolvedEnv = { ...env, ...runtimeEnv } as Record<string, string>;
-    const api = createApiClient(resolvedEnv as any);
-
     const searchParams = new URL(request.url).search;
     const targetUrl = `http://localhost/notifications/${path}${searchParams}`;
 
@@ -40,8 +21,12 @@ export const ALL: APIRoute = async ({ request, locals, params }) => {
     const headers = new Headers(request.headers);
     headers.delete('origin');
     headers.delete('host');
+    // Ce proxy recopie les en-têtes du navigateur : voir le proxy comptable.
+    headers.delete('x-user-email');
+    headers.delete('x-user-permissions');
+    headers.delete('x-caller');
 
-    return await api.fetch(targetUrl, {
+    return await createAdminApiClient(locals).fetch(targetUrl, {
       method: request.method,
       headers,
       body,

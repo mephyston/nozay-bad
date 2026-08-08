@@ -1,16 +1,37 @@
 ---
-title: "Gestion de la Caisse"
-description: "Comment gérer les espèces (paiements, retraits, dépôts en banque)."
+title: "Caisse"
+description: "Suivre les espèces : entrées, sorties et dépôt en banque."
 category: "comptabilite"
-order: 4
+order: 3
 ---
 
-La rubrique **Caisse** permet de suivre les mouvements d'espèces de l'association (billets et pièces).
+La rubrique **Caisse** est une vue dédiée au compte **Caisse physique** : les billets et les pièces détenus par le club.
 
-## Enregistrer un mouvement de caisse
-Tout paiement en espèces (ex: paiement d'une commande boutique, buvette) est enregistré dans le compte de trésorerie "Caisse".
-Si vous déposez des espèces à la banque, vous devez effectuer une écriture de type **Transfert** :
-- **Compte source** : Caisse
-- **Compte de destination** : Compte Courant (Banque)
+## Ce que montre l'écran
 
-Le solde de la caisse virtuelle doit toujours refléter exactement l'argent liquide présent dans la caisse physique du club.
+Quatre indicateurs en haut de page : le **solde initial** de la saison, le total des **entrées**, le total des **sorties** et le **solde courant**. Les virements internes sont comptés dans ce calcul — de l'argent transféré vers la caisse est une entrée, de l'argent transféré depuis la caisse est une sortie.
+
+En dessous, l'historique des mouvements, filtrable par recherche libre sur le libellé, la catégorie, le montant ou la date.
+
+## Enregistrer un mouvement
+
+Le bouton **Nouveau mouvement** ouvre un formulaire simplifié :
+
+- **Type** — Entrée (recette, par exemple une vente à la buvette) ou Sortie (dépense, par exemple un achat de boissons) ;
+- **Montant** et **date** ;
+- **Catégorie** — la liste s'adapte au sens du mouvement : *Événements & buvette*, *Boutique & cordages*, *Adhésion & cotisation*, *Divers* en entrée ; *Événements & buvette (achats)*, *Matériel club*, *Divers* en sortie ;
+- **Description**.
+
+## Déposer les espèces en banque
+
+Un dépôt d'espèces n'est ni une recette ni une dépense : c'est un **virement interne**. Il se saisit depuis le [Grand livre](/admin/help/grand-livre) :
+
+- **Compte source** : Caisse physique
+- **Compte destinataire** : Compte Courant
+
+La ligne du relevé bancaire correspondante sera ensuite associée à ce virement lors du [rapprochement bancaire](/admin/help/rapprochement-bancaire).
+
+> [!TIP]
+> Le solde affiché doit toujours correspondre à l'argent réellement présent dans la caisse du club. Un écart signale un mouvement oublié : comptez la caisse avant chaque dépôt en banque.
+
+Lorsque la saison est clôturée, l'écran passe en lecture seule et le formulaire est désactivé.

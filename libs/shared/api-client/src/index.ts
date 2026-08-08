@@ -7,7 +7,20 @@ export interface ApiClientEnv {
   ENVIRONMENT?: string;
 }
 
-export function createApiClient(env?: ApiClientEnv) {
+/**
+ * Qui appelle l'API, et pour le compte de qui.
+ *
+ * L'API n'accepte plus de liste de permissions toute faite : elle résout elle-même
+ * l'adresse en rôles puis en droits. Ce qui transite ici est donc une *identité*, pas
+ * une *décision* — l'autorisation reste dans une seule base de code.
+ */
+export type CallerIdentity = {
+  caller: 'admin' | 'storefront';
+  /** Adresse de l'utilisateur, exigée par l'API pour tout appel `admin`. */
+  userEmail?: string;
+};
+
+export function createApiClient(env?: ApiClientEnv, identity?: CallerIdentity) {
   // C-01 : aucune clé en dur. La valeur vient du binding env (secret Worker) ou, en
   // local, de .dev.vars via `process.env`. Si absente, l'appel partira sans clé et
   // l'API répondra 401 (fail-closed) — plutôt qu'un secret devinable embarqué.
@@ -23,6 +36,20 @@ export function createApiClient(env?: ApiClientEnv) {
         headers.set('Authorization', `Bearer ${apiKey}`);
         headers.set('x-api-key', apiKey);
       }
+
+      // Les proxies catch-all de l'admin recopient les en-têtes de la requête
+      // entrante : sans cette réécriture systématique, un navigateur pourrait
+      // injecter `x-user-email` et se faire passer pour n'importe quel compte. On
+      // repose donc toujours ces deux en-têtes, et on efface l'identité quand
+      // l'appelant n'en fournit pas.
+      //
+      // À défaut d'identité déclarée, l'appelant est réputé `storefront`, le moins
+      // privilégié : un site d'appel oublié se voit refuser les routes réservées à
+      // l'administration plutôt que de les obtenir sans contrôle.
+      headers.set('x-caller', identity?.caller ?? 'storefront');
+      if (identity?.userEmail) headers.set('x-user-email', identity.userEmail);
+      else headers.delete('x-user-email');
+      headers.delete('x-user-permissions');
 
       if (env?.API_SERVICE && typeof env.API_SERVICE.fetch === 'function') {
         return env.API_SERVICE.fetch(input, { ...init, headers });
