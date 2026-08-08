@@ -105,6 +105,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'iam:users:read',
     'iam:users:write',
     'iam:users:delete',
+    // Lecture seule de la matrice : la présidence décide qui occupe quel poste,
+    // sans pouvoir déplacer les limites du poste lui-même.
+    'iam:roles:read',
     'settings:hub:read',
     'ai:assistant:use'
     // Pas d'écriture comptable : séparation des tâches. Le trésorier saisit, la

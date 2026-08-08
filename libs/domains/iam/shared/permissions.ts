@@ -69,6 +69,13 @@ export const ALL_PERMISSIONS = [
   'iam:users:read',
   'iam:users:write',
   'iam:users:delete',
+  'iam:roles:read',
+  // Modifier ce qu'un rôle accorde revient à pouvoir s'accorder n'importe quel droit :
+  // il suffit d'ajouter la permission voulue au rôle que l'on porte. Ce droit ne peut
+  // donc appartenir qu'à `super_admin`, qui les détient déjà tous — l'accorder à un
+  // autre rôle en ferait un super administrateur déguisé, et effacerait la séparation
+  // des tâches que le modèle établit.
+  'iam:roles:write',
   'iam:sessions:impersonate',
 
   // — Socle commun à tout compte —

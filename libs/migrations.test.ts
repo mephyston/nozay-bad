@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ROLES, ROLE_PERMISSIONS } from './domains/iam/shared/roles';
 
 const MIGRATIONS_DIR = path.resolve(__dirname, './shared/db/migrations');
 
@@ -191,5 +192,55 @@ describe('0012_iam_roles — reprise des permissions vers des rôles', () => {
     db.prepare('DELETE FROM admin_users WHERE email = ?').run('boss@nozaybad.fr');
     const remaining = db.prepare('SELECT COUNT(*) AS n FROM admin_user_roles').get() as { n: number };
     expect(remaining.n).toBe(0);
+  });
+});
+
+/**
+ * Reprise de la migration 0013 (droits par rôle en base).
+ *
+ * Le bloc de valeurs a été généré depuis `ROLE_PERMISSIONS`. Ce test vérifie qu'il
+ * n'en a pas divergé depuis : sans lui, un rôle modifié en code laisserait la base
+ * semée avec l'ancienne définition, silencieusement.
+ */
+describe('0013_role_permissions — valeurs de départ', () => {
+  let db: DatabaseSync;
+
+  beforeEach(() => {
+    db = new DatabaseSync(':memory:');
+    for (const statement of readStatements('0013_role_permissions.sql')) db.exec(statement);
+  });
+
+  function seeded(role: string): string[] {
+    return (
+      db.prepare('SELECT permission FROM role_permissions WHERE role = ? ORDER BY permission').all(role) as {
+        permission: string;
+      }[]
+    ).map((r) => r.permission);
+  }
+
+  it('correspond exactement au code pour chaque rôle éditable', () => {
+    for (const role of ROLES) {
+      if (role === 'super_admin') continue;
+      expect(seeded(role), `la reprise a divergé du code pour ${role}`).toEqual(
+        [...ROLE_PERMISSIONS[role]].sort()
+      );
+    }
+  });
+
+  it("ne sème pas super_admin, qui reste calculé", () => {
+    // Figé en base, il n'obtiendrait pas les permissions ajoutées par les
+    // fonctionnalités futures, et perdre son droit d'édition verrouillerait tout.
+    expect(seeded('super_admin')).toEqual([]);
+  });
+
+  it('refuse deux fois le même droit pour un rôle', () => {
+    expect(() =>
+      db.exec("INSERT INTO role_permissions (role, permission, created_at) VALUES ('membre','help:docs:read',0)")
+    ).toThrow();
+  });
+
+  it('ouvre un journal des modifications, vide au départ', () => {
+    const n = (db.prepare('SELECT COUNT(*) AS n FROM role_permission_log').get() as { n: number }).n;
+    expect(n).toBe(0);
   });
 });

@@ -1,10 +1,14 @@
 import { type Db } from '@nba/db';
-import { resolvePermissions, type Role, isRole } from '../shared/roles';
+import { type Role, isRole } from '../shared/roles';
+import { buildRolePermissionMap, permissionsForRoles } from '../shared/role-permissions';
 import { GetActorRepository } from './repository';
 import { normalizeEmail, type Actor } from './dto';
 
 /**
  * Résout une adresse en identité et droits effectifs.
+ *
+ * Les droits de chaque rôle viennent de la base, où ils sont modifiables ; seul
+ * `super_admin` reste calculé en code (voir `role-permissions.ts`).
  *
  * C'est le point d'entrée unique de l'autorisation : l'API comme l'application admin
  * passent par ici, donc les deux ne peuvent pas diverger sur ce qu'un compte a le
@@ -20,11 +24,13 @@ export async function getActor(db: Db, email: string): Promise<Actor | null> {
   const row = await repo.findByEmail(db, normalized);
   if (!row) return null;
 
+  const map = buildRolePermissionMap(await repo.listRolePermissions(db));
+
   return {
     id: row.id,
     email: row.email,
     name: row.name,
     roles: row.roles.filter((r): r is Role => isRole(r)),
-    permissions: resolvePermissions(row.roles)
+    permissions: permissionsForRoles(map, row.roles)
   };
 }

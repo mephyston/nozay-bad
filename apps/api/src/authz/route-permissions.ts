@@ -26,6 +26,10 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/iam/users', permission: 'iam:users:write' },
   { method: 'PUT', path: '/iam/users/:id', permission: 'iam:users:write' },
   { method: 'DELETE', path: '/iam/users/:id', permission: 'iam:users:delete' },
+  { method: 'GET', path: '/iam/roles', permission: 'iam:roles:read' },
+  // Modifier ce qu'un rôle accorde revient à pouvoir s'accorder n'importe quel droit :
+  // seul `super_admin` porte cette permission (voir permissions.ts).
+  { method: 'PUT', path: '/iam/roles/:role', permission: 'iam:roles:write' },
 
   // ── Tableau de bord et assistant IA ────────────────────────────────────────
   { method: 'GET', path: '/dashboard/overview', permission: 'dashboard:overview:read' },

@@ -57,6 +57,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'iam:users:read': 'Consulter les accès',
   'iam:users:write': 'Créer un accès et attribuer des rôles',
   'iam:users:delete': 'Supprimer un accès',
+  'iam:roles:read': "Consulter les droits accordés par chaque rôle",
+  'iam:roles:write': "Modifier les droits accordés par un rôle",
   'iam:sessions:impersonate': "Consulter l'application sous l'identité d'un autre compte",
 
   'dashboard:overview:read': 'Consulter le tableau de bord',

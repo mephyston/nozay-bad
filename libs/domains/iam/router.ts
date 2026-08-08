@@ -4,6 +4,8 @@ import { listUsersRoute } from './list-users/route';
 import { createUserRoute } from './create-user/route';
 import { updateUserRolesRoute } from './update-user-roles/route';
 import { deleteUserRoute } from './delete-user/route';
+import { listRolePermissionsRoute } from './list-role-permissions/route';
+import { updateRolePermissionsRoute } from './update-role-permissions/route';
 
 export type Bindings = {
   DB: D1Database;
@@ -18,3 +20,5 @@ iamRouter.route('/', listUsersRoute);
 iamRouter.route('/', createUserRoute);
 iamRouter.route('/', updateUserRolesRoute);
 iamRouter.route('/', deleteUserRoute);
+iamRouter.route('/', listRolePermissionsRoute);
+iamRouter.route('/', updateRolePermissionsRoute);

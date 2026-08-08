@@ -54,4 +54,4 @@ Les droits s'attribuent par fonction dans l'association, pas permission par perm
 | Gestion des accès | | | | | ✓ | ✓ |
 | Usurpation | | | | | | ✓ |
 
-La matrice complète, permission par permission, est figée par un instantané dans `libs/domains/iam/shared/roles.test.ts`. Toute modification d'un rôle y apparaît comme un diff explicite : c'est ce qui empêche une attribution accidentelle de passer inaperçue.
+Cette répartition est la **définition d'origine**, figée par un instantané dans `libs/domains/iam/shared/roles.test.ts` : toute modification du code y apparaît comme un diff explicite. Les droits réellement appliqués sont modifiables depuis l'application (voir RF-IAM-004), et l'écran signale les rôles qui se sont écartés de cette définition.

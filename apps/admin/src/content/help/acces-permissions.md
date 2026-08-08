@@ -32,6 +32,19 @@ Depuis **Réglages → Accès & Rôles**, ajoutez la personne avec l'adresse e-m
 > [!CAUTION]
 > Ne donnez le rôle **Super administrateur** qu'aux personnes qui en ont réellement besoin. Il ouvre la configuration technique et permet de consulter l'application sous l'identité d'un autre compte.
 
+## Ajuster ce qu'un rôle permet
+
+Depuis le panneau **Que permet chaque rôle ?**, un super administrateur peut cocher ou décocher les droits d'un rôle. La modification s'applique immédiatement à tous les comptes qui le portent — comptez quelques secondes de propagation.
+
+Trois points à connaître :
+
+- Le rôle **Super administrateur** n'est pas modifiable : il détient tous les droits par construction, y compris ceux des fonctionnalités à venir. C'est aussi ce qui garantit qu'on ne peut pas se verrouiller hors de cet écran.
+- Le tableau de bord et le centre d'aide restent toujours accordés, même si vous les décochez : sans eux, la personne ne verrait plus rien après s'être connectée.
+- Un rôle qui s'écarte de sa définition d'origine est signalé, avec le nombre d'ajouts et de retraits, et un bouton pour y revenir. Chaque modification est enregistrée avec son auteur et sa date.
+
+> [!CAUTION]
+> Modifier un rôle change les droits de **toutes** les personnes qui le portent, pas seulement les vôtres. Vérifiez la colonne concernée avant d'enregistrer.
+
 ## Retirer un accès
 
 Supprimer un compte lui retire immédiatement l'accès. Un garde-fou empêche de supprimer — ou de rétrograder — le dernier super administrateur : sans lui, plus personne ne pourrait attribuer de rôle, et il faudrait une intervention technique pour rouvrir l'application.

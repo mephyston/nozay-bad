@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { adminUsersTable, adminUserRolesTable } from '../shared/schema';
+import { adminUsersTable, adminUserRolesTable, rolePermissionsTable } from '../shared/schema';
 
 export interface AdminUserWithRoles {
   id: number;
@@ -38,5 +38,18 @@ export class GetActorRepository {
       name: rows[0].name,
       roles: rows.map((r) => r.role).filter((r): r is string => r !== null)
     };
+  }
+
+  /**
+   * Droits accordés par chaque rôle, tels que stockés.
+   *
+   * Une seule lecture non filtrée : la table fait au plus quelques centaines de
+   * lignes, et la filtrer par rôle imposerait une requête par rôle du compte.
+   */
+  async listRolePermissions(db: DbOrTx): Promise<{ role: string; permission: string }[]> {
+    return db
+      .select({ role: rolePermissionsTable.role, permission: rolePermissionsTable.permission })
+      .from(rolePermissionsTable)
+      .all();
   }
 }

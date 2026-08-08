@@ -16,6 +16,7 @@ Le storefront est hors de ce périmètre. Un adhérent s'y authentifie par code 
 | **Permission** | Le droit d'accomplir une opération précise, nommée `<domaine>:<ressource>:<action>`. Accordée ou non : il n'existe pas de joker. | `string` (`accounting:ledger:write`) |
 | **Rôle** | Un métier de l'association, auquel est attaché un ensemble de permissions. Un compte peut en cumuler plusieurs. | `Enum` (`super_admin`, `president`, `tresorier`, `secretaire`, `coach`, `membre`) |
 | **Acteur** | Une identité résolue en droits effectifs : le compte, ses rôles, et l'union de leurs permissions. | `Actor` (`get-actor`) |
+| **Définition d'origine** | Les droits qu'un rôle porte dans le code. L'écran signale les rôles qui s'en écartent, pour que la dérive reste visible. | `ROLE_PERMISSIONS` |
 | **Rôle par défaut** | `membre` : tableau de bord et centre d'aide, aucun droit métier. Attribué à tout compte créé sans rôle explicite. | `DEFAULT_ROLE` |
 | **Usurpation** | Emprunt temporaire de l'identité d'un autre compte, pour reproduire ce qu'il voit. Réservée au droit `iam:sessions:impersonate`. | Cookie `impersonate_email` (HttpOnly) |
 | **Appelant** | Le Worker qui s'adresse à l'API : `admin` (agit pour un compte d'administration) ou `storefront` (agit pour un adhérent). | En-tête `x-caller` |
@@ -28,6 +29,7 @@ Le storefront est hors de ce périmètre. Un adhérent s'y authentifie par code 
 - [RF-IAM-001 : Aucun droit par défaut](./rules/RF-IAM-001-aucun-droit-par-defaut.md)
 - [RF-IAM-002 : L'API est l'autorité en matière de droits](./rules/RF-IAM-002-api-autoritaire.md)
 - [RF-IAM-003 : Rôles métier et séparation des tâches](./rules/RF-IAM-003-roles-metier.md)
+- [RF-IAM-004 : Modification des droits d'un rôle](./rules/RF-IAM-004-modification-des-roles.md)
 
 ---
 
@@ -36,14 +38,18 @@ Le storefront est hors de ce périmètre. Un adhérent s'y authentifie par code 
 | Sujet | Emplacement |
 |---|---|
 | Catalogue des permissions | `libs/domains/iam/shared/permissions.ts` |
-| Rôles et leur mapping vers les permissions | `libs/domains/iam/shared/roles.ts` |
+| Rôles et leur définition d'origine | `libs/domains/iam/shared/roles.ts` |
+| Droits appliqués par rôle (modifiables) | Table `role_permissions` (migration `0013`) |
+| Journal des modifications de droits | Table `role_permission_log` |
 | Liaison compte ↔ rôle | Table `admin_user_roles` (migration `0012`) |
 | Résolution identité → droits | `libs/domains/iam/get-actor/` |
 | Table d'autorisation des routes de l'API | `apps/api/src/authz/route-permissions.ts` |
 | Autorisation des pages d'administration | `apps/admin/src/lib/page-permissions.ts` |
 | Garde des actions d'écriture | `apps/admin/src/lib/guard.ts` |
 
-Le mapping rôle → permissions vit **en TypeScript, pas en base**. Il est ainsi versionné, typé, et toute modification passe par une revue de code ; un instantané de la matrice complète (`roles.test.ts`) transforme chaque attribution en diff explicite. La base ne stocke que la liaison compte ↔ rôle.
+Le mapping rôle → permissions est **modifiable depuis l'application**, par le seul `super_admin`. Le code (`roles.ts`) en garde la **définition d'origine** : elle sert de valeurs de départ à la migration `0013`, de repli quand l'API est injoignable en développement, et de référence à laquelle l'écran compare les rôles pour signaler ceux qui s'en écartent.
+
+`super_admin` fait exception : il vaut toujours la totalité du catalogue, **calculée en code**. Figé en base, il n'obtiendrait pas les permissions ajoutées par les fonctionnalités futures — on livrerait un écran que le super administrateur ne peut pas ouvrir — et lui retirer par mégarde son droit d'édition fermerait la gestion des rôles sans recours.
 
 ---
 

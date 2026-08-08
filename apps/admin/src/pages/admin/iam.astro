@@ -5,6 +5,7 @@ import { PageHeader, ErrorAlert } from '@nba/ui';
 import { UsersManager, RolesMatrix } from '@nba/iam-ui';
 import { env } from 'cloudflare:workers';
 import { createAdminApiClient } from '../../lib/api';
+import { can } from '../../lib/guard';
 import { guardAction } from '../../lib/guard';
 
 // La consultation est exigée par PAGE_PERMISSIONS (`iam:users:read`) ; chaque action
@@ -12,6 +13,7 @@ import { guardAction } from '../../lib/guard';
 const apiService = createAdminApiClient(Astro.locals);
 
 let usersList: any[] = [];
+let rolesList: any[] = [];
 let errorMsg = '';
 
 /** Permission exigée par action d'écriture de cette page. */
@@ -64,6 +66,14 @@ try {
     const json = await usersRes.json() as any;
     usersList = json.data || [];
   }
+
+  // La matrice des droits vient de l'API : les rôles sont modifiables, le code n'en
+  // porte plus que la définition d'origine.
+  const rolesRes = await apiService.fetch('http://localhost/iam/roles');
+  if (rolesRes.ok) {
+    const json = (await rolesRes.json()) as any;
+    rolesList = json.data || [];
+  }
 } catch (err: any) {
   errorMsg = 'Erreur lors de la récupération des utilisateurs.';
 }
@@ -86,7 +96,7 @@ try {
       <!-- Les îlots Astro sont des éléments inline : sans ce bloc, `space-y-6` ne
            pose pas de marge entre la liste des comptes et cette section. -->
       <div>
-        <RolesMatrix client:visible />
+        <RolesMatrix client:visible roles={rolesList} canEdit={can(Astro.locals, 'iam:roles:write')} />
       </div>
     </div>
   </AdminLayout>
