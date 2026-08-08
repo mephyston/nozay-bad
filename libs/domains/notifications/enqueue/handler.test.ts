@@ -107,7 +107,8 @@ describe('notifyContacts', () => {
     await notifyContacts(db, ['jeune@example.com', 'parent@example.com'], {
       title: 'Note de frais validée',
       body: '12,00 €',
-      source: 'expense:approved'
+      source: 'expense:approved',
+      category: 'expense'
     });
 
     expect(await db.select().from(pushDeliveriesTable).all()).toHaveLength(2);
@@ -115,7 +116,12 @@ describe('notifyContacts', () => {
 
   it('ne fait rien sans contact connu', async () => {
     await expect(
-      notifyContacts(db, [], { title: 'x', body: 'y', source: 'expense:approved' })
+      notifyContacts(db, [], {
+        title: 'x',
+        body: 'y',
+        source: 'expense:approved',
+        category: 'expense'
+      })
     ).resolves.toBeUndefined();
     expect(await db.select().from(pushMessagesTable).all()).toHaveLength(0);
   });
