@@ -25,12 +25,14 @@ const ACCOUNTS: Record<string, { roles: string[]; permissions: string[] }> = {
 };
 
 let lastRequestedEmail: string | undefined;
+let apiUnavailable = false;
 
 vi.mock('@nba/api-client', () => ({
   createApiClient: (_env: unknown, identity?: { userEmail?: string }) => ({
     fetch: async (url: any) => {
       if (typeof url === 'string' && url.includes('/iam/me')) {
         lastRequestedEmail = identity?.userEmail;
+        if (apiUnavailable) return new Response('nope', { status: 502 });
         const account = ACCOUNTS[identity?.userEmail ?? ''];
         return new Response(
           JSON.stringify({
@@ -73,6 +75,7 @@ describe('Astro Auth Middleware', () => {
     vi.restoreAllMocks();
     mockJwtVerify.mockReset();
     lastRequestedEmail = undefined;
+    apiUnavailable = false;
     // Par défaut : flux de production.
     vi.stubEnv('DEV', '' as any);
     vi.stubEnv('NODE_ENV', 'test');
@@ -165,6 +168,42 @@ describe('Astro Auth Middleware', () => {
 
     expect(response.status).toBe(403);
     expect(next).not.toHaveBeenCalled();
+  });
+
+  describe('API IAM injoignable', () => {
+    // Le repli de développement ne doit jamais exister en production : sans réponse
+    // de l'API, on ne sait pas quels droits appliquer, et deviner serait la faute.
+    it('échoue en 500 en production', async () => {
+      apiUnavailable = true;
+      mockJwtVerify.mockResolvedValue({ payload: { email: 'prod-user@nozay-bad.fr' } });
+      const next = vi.fn();
+
+      const response = await handleAuth(
+        contextFor('https://admin.nozay-bad.fr/', {
+          headers: { 'Cf-Access-Jwt-Assertion': 'real-valid-token' }
+        }),
+        next
+      );
+
+      expect(response.status).toBe(500);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('se replie sur DEV_ROLE en développement, et sur rien de plus', async () => {
+      apiUnavailable = true;
+      vi.stubEnv('DEV', 'true' as any);
+      const next = vi.fn().mockImplementation(() => new Response('ok'));
+
+      const context = contextFor('https://admin.nozay-bad.fr/', {
+        locals: { runtime: { env: { DEV_ROLE: 'secretaire' } } }
+      });
+      const response = await handleAuth(context, next);
+
+      expect(response.status).toBe(200);
+      expect(context.locals.user.roles).toEqual(['secretaire']);
+      // Surtout pas tous les droits : le repli applique un rôle, pas un laissez-passer.
+      expect(context.locals.user.permissions).not.toContain('iam:users:write');
+    });
   });
 
   it("lit les variables d'environnement depuis le runtime", async () => {

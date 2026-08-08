@@ -100,12 +100,21 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
     }
   }
 
-  let actor: ActorDto | null;
+  let actor: ActorDto | null = null;
   try {
     actor = await fetchActor(env, email);
   } catch (err) {
-    console.error('[auth] résolution du compte impossible :', err);
-    return new Response("Erreur lors de la communication avec l'API IAM.", { status: 500 });
+    // En production, ne rien inventer : sans réponse de l'API, on ne sait pas quels
+    // droits appliquer, et deviner serait précisément la faute à éviter.
+    if (!import.meta.env.DEV) {
+      console.error('[auth] résolution du compte impossible :', err);
+      return new Response("Erreur lors de la communication avec l'API IAM.", { status: 500 });
+    }
+    // En développement, l'API peut être injoignable (Worker non démarré, clé
+    // absente de l'environnement) : on ne bloque pas le travail en cours, mais on
+    // se replie sur un rôle explicite plutôt que sur tous les droits, et le chemin
+    // d'autorisation reste rigoureusement le même qu'en production.
+    console.warn('[auth] API IAM injoignable ; repli sur DEV_ROLE :', err);
   }
 
   if (!actor && import.meta.env.DEV) {
