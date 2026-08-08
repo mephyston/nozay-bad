@@ -47,21 +47,32 @@ Un Worker du plan gratuit est plafonné à 50 sous-requêtes par invocation. Une
 
 ## Mise en service
 
-1. Générer les clés VAPID de l'environnement (une seule fois) :
+Une paire de clés VAPID par environnement. La clé **publique** est versionnée à deux endroits qui doivent rester cohérents ; la clé **privée** n'est jamais versionnée.
 
-   ```bash
-   npm run gen:vapid-keys
-   ```
+| Élément | Emplacement | Nature |
+|---|---|---|
+| Clé publique (Worker) | `vars.VAPID_PUBLIC_KEY` dans `apps/api/wrangler.json`, par environnement | versionnée |
+| Clé publique (client) | `PUBLIC_VAPID_PUBLIC_KEY` dans l'étape « Build Storefront » de `.github/workflows/deploy.yml` | versionnée |
+| Clé privée | secret du Worker `nba-api` / `nba-api-staging` | jamais versionnée |
 
-   Changer les clés d'un environnement déjà en service invalide tous les abonnements existants : chaque appareil devra être réabonné.
+**Si les deux clés publiques divergent, ou si la privée ne correspond pas, les envois sont rejetés par le service de push.**
 
-2. Poser les secrets sur le Worker `nba-api` (ajouter `--env staging` pour l'environnement de test) :
+Pour (re)générer une paire :
 
-   ```bash
-   npx wrangler secret put VAPID_PRIVATE_KEY --config apps/api/wrangler.json
-   npx wrangler secret put VAPID_PUBLIC_KEY  --config apps/api/wrangler.json
-   ```
+```bash
+npm run gen:vapid-keys
+```
 
-3. Déclarer `PUBLIC_VAPID_PUBLIC_KEY` dans l'environnement de build de la CI : la clé publique est inlinée dans le bundle client du storefront. Si elle est absente, le bouton d'activation reste masqué et rien n'est cassé.
+puis poser la clé privée sur le Worker (ajouter `--env staging` pour l'environnement de test) :
 
-4. Les rappels de cotisation sont désactivés par défaut. Pour les activer, passer la var `PUSH_REMINDERS_ENABLED` à `"true"` dans `apps/api/wrangler.json`.
+```bash
+npx wrangler secret put VAPID_PRIVATE_KEY --config apps/api/wrangler.json
+```
+
+et reporter la clé publique dans les deux emplacements versionnés ci-dessus.
+
+> Changer les clés d'un environnement déjà en service invalide tous les abonnements existants : chaque appareil devra être réabonné. Une rotation se fait donc en connaissance de cause.
+
+Tant que la clé privée n'est pas posée, le bouton d'activation reste masqué côté adhérent et le drain journalise une erreur de configuration : rien n'est cassé, la fonctionnalité est simplement inactive.
+
+Les rappels de cotisation sont désactivés par défaut. Pour les activer, passer la var `PUSH_REMINDERS_ENABLED` à `"true"` dans `apps/api/wrangler.json`.

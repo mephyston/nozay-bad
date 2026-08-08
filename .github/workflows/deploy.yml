@@ -280,6 +280,11 @@ jobs:
           PUBLIC_TURNSTILE_SITE_KEY: 0x4AAAAAAD1TY7I_ql47XOjI
           # Environnement inliné au build : bandeau + icône PWA (TEST en staging).
           PUBLIC_APP_ENV: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          # Clé publique VAPID (publique par nature) — inlinée au build pour
+          # pushManager.subscribe(). Une paire par environnement : cette valeur doit
+          # rester identique au VAPID_PUBLIC_KEY du Worker nba-api correspondant
+          # (apps/api/wrangler.json), sinon les abonnements sont rejetés.
+          PUBLIC_VAPID_PUBLIC_KEY: ${{ github.ref_name == 'main' && 'BGLR2qQYt7FsbrqkNjx2p9p--tZuvKCBwj7YBZ5Di7Un1uwkiVXY3SWHi33zuZWltVAOJTsBsAZNaz7bRolHXo4' || 'BJiMPuOGVz144IXpSHoh_XthNFdB-uSV0qGEMc2D-FeheQqVaBmfCUIVa2notPKe3AI2Z4cpP3bgb6dlS5jyLUw' }}
         run: npx astro build
 
       - name: Deploy Storefront Worker
