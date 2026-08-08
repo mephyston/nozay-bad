@@ -1,3 +1,18 @@
+# [1.0.0-beta.61](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.60...v1.0.0-beta.61) (2026-08-08)
+
+
+### Bug Fixes
+
+* **accounting:** corriger la référence parent des lignes de facture ([6ddebc8](https://github.com/mephyston/nozay-bad/commit/6ddebc818fcfb2ac4a71c6a2830822a4a409b234))
+* **storefront:** rétablir une sortie des pages légales en mobile ([8f3403e](https://github.com/mephyston/nozay-bad/commit/8f3403e83427b7a722a84086e9c3ec7d93318c58))
+
+
+### Features
+
+* **notifications:** catégories réglables, ciblage par groupe et anniversaires ([7790388](https://github.com/mephyston/nozay-bad/commit/7790388ee1ef17ddcbf5ef0906781ef38487e3f0))
+* **notifications:** réglages adhérent, ciblage par groupe et navigation ([67eefdf](https://github.com/mephyston/nozay-bad/commit/67eefdf4d281da6a64d07453b10f0bc930dcfaa6))
+* **storefront:** alléger l'affichage mobile et replier les historiques ([10ff4c9](https://github.com/mephyston/nozay-bad/commit/10ff4c915855bead562e409686b1ed01dbba33b5))
+
 # [1.0.0-beta.60](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.59...v1.0.0-beta.60) (2026-08-08)
 
 
