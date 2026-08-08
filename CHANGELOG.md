@@ -1,3 +1,11 @@
+# [1.0.0-beta.58](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.57...v1.0.0-beta.58) (2026-08-08)
+
+
+### Bug Fixes
+
+* **ci:** run vitest as a single suite with Cloudflare token ([859f5df](https://github.com/mephyston/nozay-bad/commit/859f5df0023edb4c9c2ad52062f4cb8f13171262))
+* **notifications:** ne plus échouer silencieusement à l'envoi d'une annonce ([1e533e0](https://github.com/mephyston/nozay-bad/commit/1e533e055dee4df1c2acc7ab70baf6db7f13020e))
+
 # [1.0.0-beta.57](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.56...v1.0.0-beta.57) (2026-08-08)
 
 
