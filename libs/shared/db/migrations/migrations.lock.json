@@ -16,6 +16,7 @@
     "0012_iam_roles.sql": "b41a840c05038bd1",
     "0013_role_permissions.sql": "94bd0b296a46ec0d",
     "0014_announcements.sql": "fa2fd264aaa1d9e3",
-    "0015_communication_role.sql": "96c1edd1f42147c6"
+    "0015_communication_role.sql": "96c1edd1f42147c6",
+    "0016_cms_permissions.sql": "f7289511d2a00189"
   }
 }

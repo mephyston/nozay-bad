@@ -68,6 +68,24 @@ export const ALL_PERMISSIONS = [
   'announcements:posts:write',
   'announcements:posts:delete',
 
+  // — Site public —
+  // Le CMS du site vitrine. Distinct des annonces : une annonce s'adresse aux
+  // adhérents connectés, une page du site s'adresse à tout le monde, y compris à
+  // Google. Publier engage donc l'image publique du club, pas seulement sa vie interne.
+  'cms:pages:read',
+  'cms:pages:write',
+  'cms:pages:delete',
+  'cms:posts:read',
+  'cms:posts:write',
+  'cms:posts:delete',
+  'cms:media:read',
+  'cms:media:write',
+  'cms:media:delete',
+  // Le menu et les redirections gouvernent l'arborescence des URL : une erreur ici se
+  // paie en référencement, pas en contenu. Droit séparé de la rédaction.
+  'cms:nav:read',
+  'cms:nav:write',
+
   // — Assistant IA —
   'ai:assistant:use',
 

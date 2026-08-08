@@ -41,7 +41,7 @@ export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   secretaire: 'Fichier des adhérents, attestations, communication et catalogue boutique.',
   coach: 'Catalogue et commandes de la boutique, consultation des adhérents.',
   communication:
-    "Annonces du club et notifications aux adhérents. Aucun accès aux finances ni au fichier des adhérents.",
+    "Annonces, notifications aux adhérents et site public. Aucun accès aux finances ni au fichier des adhérents.",
   membre: "Socle attribué à un compte sans rôle : tableau de bord et centre d'aide uniquement."
 };
 
@@ -110,6 +110,19 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'notifications:messages:send',
     'announcements:posts:write',
     'announcements:posts:delete',
+    // Le site public engage l'image du club vis-à-vis de l'extérieur : la présidence
+    // y a la main pleine, y compris sur l'arborescence des URL.
+    'cms:pages:read',
+    'cms:pages:write',
+    'cms:pages:delete',
+    'cms:posts:read',
+    'cms:posts:write',
+    'cms:posts:delete',
+    'cms:media:read',
+    'cms:media:write',
+    'cms:media:delete',
+    'cms:nav:read',
+    'cms:nav:write',
     // Représentation légale : accorde et révoque les accès.
     'iam:users:read',
     'iam:users:write',
@@ -141,6 +154,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'notifications:messages:read',
     // Consultation seule : la communication du club n'est pas du ressort de la trésorerie.
     'announcements:posts:read',
+    'cms:pages:read',
+    'cms:posts:read',
     'settings:hub:read',
     'ai:assistant:use'
   ],
@@ -160,6 +175,16 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'announcements:posts:read',
     'announcements:posts:write',
     'announcements:posts:delete',
+    // Site public : rédaction, sans la main sur l'arborescence des URL — modifier un
+    // menu ou une redirection se paie en référencement, cela reste à la présidence
+    // et à la commission Communication.
+    'cms:pages:read',
+    'cms:pages:write',
+    'cms:posts:read',
+    'cms:posts:write',
+    'cms:media:read',
+    'cms:media:write',
+    'cms:nav:read',
     // Boutique : catalogue et suivi des commandes, sans encaissement.
     'shop:products:read',
     'shop:products:write',
@@ -182,8 +207,10 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'shop:categories:write',
     'shop:orders:read',
     'shop:orders:write',
-    // Consultation seule : l'entraîneur suit les annonces du club sans les rédiger.
+    // Consultation seule : l'entraîneur suit les annonces et le site sans les rédiger.
     'announcements:posts:read',
+    'cms:pages:read',
+    'cms:posts:read',
     // Les catégories de produits vivent dans les réglages : sans cette entrée, l'écran
     // existe mais aucun chemin du menu n'y mène.
     'settings:hub:read'
@@ -192,11 +219,14 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   ],
 
   /**
-   * Communication du club : annonces et notifications, rien d'autre.
+   * Communication du club : annonces, notifications et site public.
    *
    * Ce rôle existe pour confier la communication à un bénévole sans lui ouvrir les
    * finances ni le fichier des adhérents — ce qu'imposait jusqu'ici le rôle
    * `secretaire`, seul autre porteur de ces droits.
+   *
+   * C'est le seul rôle non dirigeant à porter `cms:nav:write` : la commission
+   * Communication est celle qui tient le site, arborescence comprise.
    */
   communication: [
     ...BASE,
@@ -206,7 +236,19 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     // Diffuser une annonce fait sonner tous les téléphones du club : c'est le cœur
     // du rôle, pas un droit accessoire.
     'notifications:messages:read',
-    'notifications:messages:send'
+    'notifications:messages:send',
+    // Site public : le rôle en a la charge complète, rédaction comme arborescence.
+    'cms:pages:read',
+    'cms:pages:write',
+    'cms:pages:delete',
+    'cms:posts:read',
+    'cms:posts:write',
+    'cms:posts:delete',
+    'cms:media:read',
+    'cms:media:write',
+    'cms:media:delete',
+    'cms:nav:read',
+    'cms:nav:write'
   ],
 
   // Socle du deny-by-default : aucun droit métier. Attribué à un compte créé sans
