@@ -42,6 +42,14 @@ export default defineConfig({
   test: {
     // Vitest 4 : poolOptions supprimé, les options sont désormais au niveau racine.
     pool: 'threads',
+    // Les 5 s par défaut sont trop justes en CI : `setupMockDb()` rejoue toutes les
+    // migrations à chaque test (~140 allers-retours D1), ce qui coûte des secondes sur
+    // un runner GitHub là où la même chose prend 30 ms en local. Les migrations RBAC
+    // ont fait déborder les tests les plus lents. 20 s laissent de la marge sans rien
+    // masquer : un test réellement bloqué ne finit jamais, il ne met pas 20 s.
+    // Le vrai correctif est de ne plus rejouer les migrations à chaque test.
+    testTimeout: 20000,
+    hookTimeout: 20000,
     isolate: true,
     maxWorkers: '75%',
     fileParallelism: true,
