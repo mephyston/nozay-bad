@@ -19,7 +19,9 @@ import type { RouteRule } from './types';
 export const ROUTE_PERMISSIONS: RouteRule[] = [
   // ── Identité et gestion des accès ──────────────────────────────────────────
   // Jamais `service` : le storefront n'a pas de compte d'administration à résoudre.
-  { method: 'GET', path: '/iam/me', permission: null },
+  // Seule route exemptée de l'existence du compte : c'est elle qui crée le premier
+  // administrateur et qui répond « compte non configuré » aux autres.
+  { method: 'GET', path: '/iam/me', permission: null, allowUnknownActor: true },
   { method: 'GET', path: '/iam/users', permission: 'iam:users:read' },
   { method: 'POST', path: '/iam/users', permission: 'iam:users:write' },
   { method: 'PUT', path: '/iam/users/:id', permission: 'iam:users:write' },

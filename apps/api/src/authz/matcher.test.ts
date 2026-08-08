@@ -81,6 +81,13 @@ describe('ROUTE_PERMISSIONS', () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
+  it("n'exempte que /iam/me de l'existence du compte", () => {
+    // Cette exemption contourne le refus par défaut : elle doit rester unique et
+    // visible, pas se répandre au fil des ajouts de routes.
+    const exempted = ROUTE_PERMISSIONS.filter((r) => r.allowUnknownActor).map((r) => `${r.method} ${r.path}`);
+    expect(exempted).toEqual(['GET /iam/me']);
+  });
+
   it("n'expose jamais /iam/me au storefront", () => {
     const rule = ROUTE_PERMISSIONS.find((r) => r.path === '/iam/me');
     expect(rule?.service).toBeUndefined();

@@ -95,6 +95,9 @@ export function authorize(): MiddlewareHandler<{ Bindings: AuthzBindings }> {
 
     const actor = await resolveActor(createDb(c.env.DB), email);
     if (!actor) {
+      // `/iam/me` doit pouvoir répondre pour une adresse sans compte : c'est elle qui
+      // crée le premier administrateur, et elle seule porte cette exemption.
+      if (rule.allowUnknownActor) return next();
       // 403 et non 401 : le transport *est* authentifié, c'est le compte qui n'existe pas.
       const res = deny(c, 403, 'Accès refusé. Compte non configuré.', `compte inconnu : ${email}`, enforcing);
       return res ?? next();

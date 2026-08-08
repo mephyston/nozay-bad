@@ -18,4 +18,17 @@ export interface RouteRule {
    * rôle, borné par le fait que le storefront filtre lui-même sur la session.
    */
   service?: true;
+  /**
+   * Route dont c'est précisément le rôle de répondre pour une adresse sans compte.
+   *
+   * Le refus par défaut d'un acteur inconnu est la bonne règle partout ailleurs,
+   * mais il rendait `/iam/me` inatteignable : le gestionnaire qui crée le tout
+   * premier administrateur ne s'exécutait jamais, et sur une base vierge
+   * l'application se serait verrouillée définitivement. Le message « compte non
+   * configuré » l'était tout autant.
+   *
+   * L'exemption ne porte que sur l'*existence* du compte : la permission éventuelle
+   * de la route reste exigée, et le gestionnaire décide ensuite quoi répondre.
+   */
+  allowUnknownActor?: true;
 }

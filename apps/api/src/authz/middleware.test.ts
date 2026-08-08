@@ -135,6 +135,40 @@ describe("autorisation de l'API", () => {
     });
   });
 
+  describe('/iam/me et les comptes inconnus', () => {
+    // Le refus par défaut d'un acteur inconnu est juste partout ailleurs, mais il
+    // rendait cette route inatteignable — donc le bootstrap du premier
+    // administrateur impossible et l'application verrouillée sur une base vierge.
+    it('crée le premier administrateur sur une base vierge', async () => {
+      const res = await callAs(asAdmin('fondateur@nozaybad.fr'), '/iam/me');
+      const body = (await res.json()) as any;
+
+      expect(res.status).toBe(200);
+      expect(body.data.roles).toEqual(['super_admin']);
+    });
+
+    it("répond « compte non configuré » plutôt qu'un refus brut", async () => {
+      await seedTestUser(db, 'connu@nozaybad.fr', ['membre']);
+
+      const res = await callAs(asAdmin('intrus@nozaybad.fr'), '/iam/me');
+      const body = (await res.json()) as any;
+
+      expect(res.status).toBe(200);
+      expect(body.data).toBeNull();
+    });
+
+    it("n'exempte aucune autre route de l'existence du compte", async () => {
+      await seedTestUser(db, 'connu@nozaybad.fr', ['membre']);
+      expect((await callAs(asAdmin('intrus@nozaybad.fr'), '/members')).status).toBe(403);
+      expect((await callAs(asAdmin('intrus@nozaybad.fr'), '/iam/users')).status).toBe(403);
+      expect((await callAs(asAdmin('intrus@nozaybad.fr'), '/dashboard/overview')).status).toBe(403);
+    });
+
+    it("reste fermée au storefront malgré l'exemption", async () => {
+      expect((await callAs(asStorefront, '/iam/me')).status).toBe(403);
+    });
+  });
+
   describe('routes non déclarées', () => {
     it('répond 403 et non 404, ce qui prouve l’ordre du refus par défaut', async () => {
       await seedTestUser(db, 'boss@nozaybad.fr', ['super_admin']);
