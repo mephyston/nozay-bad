@@ -1,55 +1,20 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
-import { eq } from 'drizzle-orm';
-import { adminUsersTable } from './shared/schema';
+import { getMeRoute } from './get-me/route';
+import { listUsersRoute } from './list-users/route';
+import { createUserRoute } from './create-user/route';
+import { updateUserRolesRoute } from './update-user-roles/route';
+import { deleteUserRoute } from './delete-user/route';
 
-export const iamRouter = new Hono<{ Bindings: { DB: D1Database } }>();
+export type Bindings = {
+  DB: D1Database;
+};
 
-iamRouter.get('/users', async (c) => {
-  const db = drizzle(c.env.DB);
-  const users = await db.select().from(adminUsersTable).all();
-  return c.json({ data: users });
-});
+export const iamRouter = new Hono<{ Bindings: Bindings }>();
 
-iamRouter.post('/users', async (c) => {
-  const db = drizzle(c.env.DB);
-  const body = await c.req.json();
-  const { email, name, permissions } = body;
-  
-  const existing = await db.select().from(adminUsersTable).where(eq(adminUsersTable.email, email)).get();
-  if (existing) {
-    return c.json({ error: 'Cet email existe déjà' }, 400);
-  }
-
-  const result = await db.insert(adminUsersTable).values({
-    email,
-    name: name || email.split('@')[0],
-    permissions: permissions || [],
-    createdAt: new Date()
-  }).returning().get();
-
-  return c.json({ data: result }, 201);
-});
-
-iamRouter.put('/users/:id', async (c) => {
-  const db = drizzle(c.env.DB);
-  const id = parseInt(c.req.param('id'), 10);
-  const body = await c.req.json();
-  
-  const result = await db.update(adminUsersTable)
-    .set({
-      name: body.name,
-      permissions: body.permissions
-    })
-    .where(eq(adminUsersTable.id, id))
-    .returning().get();
-
-  return c.json({ data: result });
-});
-
-iamRouter.delete('/users/:id', async (c) => {
-  const db = drizzle(c.env.DB);
-  const id = parseInt(c.req.param('id'), 10);
-  await db.delete(adminUsersTable).where(eq(adminUsersTable.id, id)).run();
-  return c.json({ success: true });
-});
+// `/me` avant `/users` : sans conséquence ici (les chemins ne se recouvrent pas),
+// mais l'ordre reflète la lecture — l'identité d'abord, l'administration ensuite.
+iamRouter.route('/', getMeRoute);
+iamRouter.route('/', listUsersRoute);
+iamRouter.route('/', createUserRoute);
+iamRouter.route('/', updateUserRolesRoute);
+iamRouter.route('/', deleteUserRoute);

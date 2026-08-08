@@ -17,6 +17,9 @@ export default defineConfig({
       '@nba/api-client': path.resolve(__dirname, '../../libs/shared/api-client/src/index.ts'),
       '@nba/iam-ui': path.resolve(__dirname, '../../libs/domains/iam/shared/ui.ts'),
       '@nba/iam': path.resolve(__dirname, '../../libs/domains/iam/index.ts'),
+      // Le barrel @nba/iam expose désormais la résolution d'identité, qui touche la
+      // base : l'alias devient nécessaire ici comme il l'est déjà côté build.
+      '@nba/db': path.resolve(__dirname, '../../libs/shared/db/src/index.ts'),
       'libs/shared/ui': path.resolve(__dirname, '../../libs/shared/ui'),
     },
     conditions: ['browser'],
