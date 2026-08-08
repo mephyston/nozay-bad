@@ -1,3 +1,10 @@
+# [1.0.0-beta.65](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.64...v1.0.0-beta.65) (2026-08-08)
+
+
+### Features
+
+* **annonces:** publier des annonces du club dans l'espace adhérent ([61aa1e2](https://github.com/mephyston/nozay-bad/commit/61aa1e29dd5656d2fd416794ec69770a2a2b0029))
+
 # [1.0.0-beta.64](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.63...v1.0.0-beta.64) (2026-08-08)
 
 
