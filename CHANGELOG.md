@@ -1,3 +1,15 @@
+# [1.0.0-beta.67](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.66...v1.0.0-beta.67) (2026-08-08)
+
+
+### Bug Fixes
+
+* **website:** ne plus lire Astro.locals.runtime.env, retiré en v6 ([12b41e2](https://github.com/mephyston/nozay-bad/commit/12b41e2f3e5ec9715c433cfcaffdb463370447ee))
+
+
+### Features
+
+* **cms:** médiathèque R2, rendu sans décalage et écran d'administration ([fb9fb3a](https://github.com/mephyston/nozay-bad/commit/fb9fb3a6f01ffbac4501b530b1eb7cac9f105bce))
+
 # [1.0.0-beta.66](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.65...v1.0.0-beta.66) (2026-08-08)
 
 
