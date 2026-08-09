@@ -36,4 +36,4 @@ export {
 } from './media';
 
 export type { ResolveRouteOutput, ResolveRouteInput } from '../routing/resolve-route/dto';
-export type { CmsPageRow, CmsPostRow, CmsMediaRow, CmsMediaVariantRow } from './schema';
+export type { CmsPageRow, CmsPostRow, CmsPostCategoryRow, CmsMediaRow, CmsMediaVariantRow } from './schema';

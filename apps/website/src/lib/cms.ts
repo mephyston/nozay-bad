@@ -113,3 +113,40 @@ export function mediaIdsInBlocks(blocks: import('@nba/cms/public').BlockPayload[
   }
   return ids;
 }
+
+export interface PostRow {
+  id: number;
+  slug: string;
+  path: string;
+  title: string;
+  excerpt: string | null;
+  bodyHtml: string;
+  authorName: string;
+  publishedAt: string | number | null;
+  updatedAt: string | number;
+  seoTitle: string | null;
+  seoDescription: string | null;
+}
+
+export interface PostList {
+  posts: PostRow[];
+  total: number;
+}
+
+export async function listPublishedPosts(
+  env: WebsiteEnv,
+  options: { limit?: number; offset?: number; category?: string } = {}
+): Promise<PostList> {
+  const params = new URLSearchParams();
+  if (options.limit) params.set('limit', String(options.limit));
+  if (options.offset) params.set('offset', String(options.offset));
+  if (options.category) params.set('category', options.category);
+  const query = params.toString();
+  return (await getJson<PostList>(env, `/cms/posts${query ? `?${query}` : ''}`)) ?? { posts: [], total: 0 };
+}
+
+export async function listPostCategories(
+  env: WebsiteEnv
+): Promise<{ slug: string; name: string }[]> {
+  return (await getJson<{ slug: string; name: string }[]>(env, '/cms/post-categories')) ?? [];
+}

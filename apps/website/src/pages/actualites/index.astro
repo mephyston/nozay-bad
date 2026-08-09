@@ -1,0 +1,98 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { resolveEnv } from '../../lib/request-context';
+import { listPublishedPosts, listPostCategories } from '../../lib/cms';
+import { absoluteUrl } from '../../lib/seo';
+import { itemList, breadcrumbList } from '../../lib/jsonld';
+import { HTML_CACHE_CONTROL } from '../../lib/cache';
+
+const env = resolveEnv(Astro.locals);
+const siteUrl = env.SITE_URL ?? import.meta.env.PUBLIC_SITE_URL ?? Astro.url.origin;
+
+const PER_PAGE = 12;
+const requested = Number(Astro.url.searchParams.get('page') ?? '1');
+const currentPage = Number.isSafeInteger(requested) && requested > 0 ? requested : 1;
+const category = Astro.url.searchParams.get('categorie') ?? undefined;
+
+const [{ posts, total }, categories] = await Promise.all([
+  listPublishedPosts(env, { limit: PER_PAGE, offset: (currentPage - 1) * PER_PAGE, category }),
+  listPostCategories(env)
+]);
+
+const lastPage = Math.max(1, Math.ceil(total / PER_PAGE));
+const activeCategory = categories.find((c) => c.slug === category);
+const title = activeCategory ? `Actualités — ${activeCategory.name}` : 'Actualités';
+
+const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' });
+const linkTo = (page: number) => {
+  const params = new URLSearchParams();
+  if (category) params.set('categorie', category);
+  if (page > 1) params.set('page', String(page));
+  const query = params.toString();
+  return `/actualites/${query ? `?${query}` : ''}`;
+};
+
+Astro.response.headers.set('Cache-Control', HTML_CACHE_CONTROL);
+
+const jsonLd = [
+  itemList(siteUrl, posts.map((p) => ({ name: p.title, path: p.path }))),
+  breadcrumbList(siteUrl, [{ name: 'Accueil', path: '/' }, { name: 'Actualités', path: '/actualites/' }])
+];
+---
+
+<BaseLayout
+  title={title}
+  description="Les actualités du club : compétitions, animations, vie de l'association."
+  canonical={absoluteUrl(siteUrl, '/actualites/')}
+  jsonLd={jsonLd}
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <h1 class="text-3xl font-semibold tracking-tight">{title}</h1>
+
+    {categories.length > 0 && (
+      <nav aria-label="Catégories" class="mt-4 flex flex-wrap gap-2 text-sm">
+        <a href="/actualites/" class:list={['hover:text-primary', !category && 'text-primary font-medium']}>Toutes</a>
+        {categories.map((c) => (
+          <a
+            href={`/actualites/?categorie=${c.slug}`}
+            class:list={['hover:text-primary', category === c.slug && 'text-primary font-medium']}
+          >
+            {c.name}
+          </a>
+        ))}
+      </nav>
+    )}
+
+    {posts.length === 0 ? (
+      <p class="text-muted-foreground mt-8">Aucune actualité pour le moment.</p>
+    ) : (
+      <ul class="divide-border mt-8 divide-y">
+        {posts.map((post) => (
+          <li class="py-5">
+            <a href={post.path} class="text-xl font-medium hover:underline">{post.title}</a>
+            {post.publishedAt && (
+              <p class="text-muted-foreground mt-1 text-sm">
+                <time datetime={new Date(post.publishedAt).toISOString()}>
+                  {dateFormatter.format(new Date(post.publishedAt))}
+                </time>
+              </p>
+            )}
+            {post.excerpt && <p class="text-muted-foreground mt-2">{post.excerpt}</p>}
+          </li>
+        ))}
+      </ul>
+    )}
+
+    {lastPage > 1 && (
+      <nav aria-label="Pagination" class="mt-8 flex items-center justify-between text-sm">
+        {currentPage > 1
+          ? <a href={linkTo(currentPage - 1)} class="text-primary hover:underline">← Précédentes</a>
+          : <span></span>}
+        <span class="text-muted-foreground">Page {currentPage} sur {lastPage}</span>
+        {currentPage < lastPage
+          ? <a href={linkTo(currentPage + 1)} class="text-primary hover:underline">Suivantes →</a>
+          : <span></span>}
+      </nav>
+    )}
+  </div>
+</BaseLayout>

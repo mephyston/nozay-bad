@@ -1,12 +1,12 @@
 ---
 import { normalisePath } from '@nba/cms/public';
+import { verifyPreviewToken } from '@nba/preview';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BlockRenderer from '../components/blocks/BlockRenderer.astro';
 import { resolvePublicRoute, loadMedia, mediaIdsInBlocks } from '../lib/cms';
 import { resolveEnv } from '../lib/request-context';
-import { verifyPreviewToken } from '@nba/preview';
 import { pageTitle, pageDescription, absoluteUrl } from '../lib/seo';
-import { sportsClub, webPage, breadcrumbList } from '../lib/jsonld';
+import { sportsClub, webPage, breadcrumbList, article } from '../lib/jsonld';
 import { HTML_CACHE_CONTROL } from '../lib/cache';
 
 const env = resolveEnv(Astro.locals);
@@ -31,63 +31,114 @@ if (resolved.kind === 'redirect') {
 }
 
 if (resolved.kind === 'gone') {
-  // 410 plutôt que 404 : la page a existé et n'a pas de successeur. Google la sort
-  // de son index bien plus vite ainsi.
+  // 410 plutôt que 404 : la page a existé et n'a pas de successeur. Google la sort de
+  // son index bien plus vite ainsi.
   return new Response('Cette page a été supprimée.', {
     status: 410,
     headers: { 'Content-Type': 'text/plain; charset=utf-8' }
   });
 }
 
-if (resolved.kind === 'notfound' || resolved.kind === 'post') {
-  // Les articles arrivent avec la capacité « actualités » ; d'ici là ils tombent en
-  // 404 plutôt que d'être à demi rendus.
-  return new Response(null, { status: 404 });
-}
+if (resolved.kind === 'notfound') return new Response(null, { status: 404 });
 
-const { page, blocks } = resolved;
-
-// Les blocs ne portent que des identifiants : on résout les médias en une passe,
-// pour disposer des dimensions et des variantes au moment du rendu.
-const media = await loadMedia(env, mediaIdsInBlocks(blocks));
-
-const title = pageTitle(page.seoTitle, page.title);
-const description = pageDescription(page.seoDescription, blocks);
-const canonical = absoluteUrl(siteUrl, page.path);
-
-const trail = [{ name: 'Accueil', path: '/' }];
-if (page.path !== '/') trail.push({ name: page.title, path: page.path });
-
-const jsonLd: unknown[] = [
-  webPage(siteUrl, { title: page.title, description, path: page.path }),
-  breadcrumbList(siteUrl, trail)
-];
-if (page.path === '/') jsonLd.unshift(sportsClub(siteUrl));
-
-// Un aperçu n'est ni mis en cache ni indexé. Sans ces deux garde-fous, un lien
-// partagé par erreur ferait entrer un brouillon dans l'index de Google *et* dans le
-// cache partagé de Cloudflare, où il resterait visible de tous.
+// Un aperçu n'est ni mis en cache ni indexé. Sans ces deux garde-fous, un lien partagé
+// par erreur ferait entrer un brouillon dans l'index de Google *et* dans le cache
+// partagé de Cloudflare, où il resterait visible de tous.
 if (isPreview) {
   Astro.response.headers.set('Cache-Control', 'private, no-store');
   Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
 } else {
   Astro.response.headers.set('Cache-Control', HTML_CACHE_CONTROL);
 }
+
+const post = resolved.kind === 'post' ? resolved.post : null;
+const page = resolved.kind === 'page' ? resolved.page : null;
+const blocks = resolved.kind === 'page' ? resolved.blocks : [];
+
+// Les blocs ne portent que des identifiants : on résout les médias en une passe, pour
+// disposer des dimensions et des variantes au moment du rendu.
+const media = await loadMedia(env, mediaIdsInBlocks(blocks));
+
+const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' });
+
+// --- Vue « actualité » --------------------------------------------------------
+const postPublished = post?.publishedAt ? new Date(post.publishedAt).toISOString() : null;
+const postDescription = post
+  ? (post.seoDescription ?? post.excerpt ?? `${post.title} — Nozay Badminton Association`)
+  : '';
+const postJsonLd = post
+  ? [
+      article(siteUrl, {
+        title: post.title,
+        description: postDescription,
+        path: post.path,
+        publishedAt: postPublished,
+        updatedAt: post.updatedAt ? new Date(post.updatedAt).toISOString() : null,
+        authorName: post.authorName
+      }),
+      breadcrumbList(siteUrl, [
+        { name: 'Accueil', path: '/' },
+        { name: 'Actualités', path: '/actualites/' },
+        { name: post.title, path: post.path }
+      ])
+    ]
+  : [];
+
+// --- Vue « page » -------------------------------------------------------------
+const pageDescriptionText = page ? pageDescription(page.seoDescription, blocks) : '';
+const pageJsonLd: unknown[] = [];
+if (page) {
+  const trail = [{ name: 'Accueil', path: '/' }];
+  if (page.path !== '/') trail.push({ name: page.title, path: page.path });
+  pageJsonLd.push(webPage(siteUrl, { title: page.title, description: pageDescriptionText, path: page.path }));
+  pageJsonLd.push(breadcrumbList(siteUrl, trail));
+  if (page.path === '/') pageJsonLd.unshift(sportsClub(siteUrl));
+}
 ---
 
-<BaseLayout
-  title={title}
-  description={description}
-  canonical={canonical}
-  noindex={page.noindex || isPreview}
-  jsonLd={jsonLd}
->
-  {/* Le bloc `hero` porte déjà le h1 ; sans lui, le titre de la page en tient lieu,
-      pour qu'il y ait toujours exactement un h1 — l'ancien site en avait deux. */}
-  {blocks[0]?.type !== 'hero' && (
-    <div class="mx-auto max-w-5xl px-4 pt-10">
-      <h1 class="text-3xl font-semibold tracking-tight">{page.title}</h1>
-    </div>
-  )}
-  {blocks.map((block) => <BlockRenderer block={block} media={media} />)}
-</BaseLayout>
+{post && (
+  <BaseLayout
+    title={pageTitle(post.seoTitle, post.title)}
+    description={postDescription}
+    canonical={absoluteUrl(siteUrl, post.path)}
+    ogType="article"
+    noindex={isPreview}
+    jsonLd={postJsonLd}
+  >
+    <article class="mx-auto max-w-3xl px-4 py-10">
+      <h1 class="text-3xl font-semibold tracking-tight">{post.title}</h1>
+      <p class="text-muted-foreground mt-2 text-sm">
+        {postPublished && (
+          <time datetime={postPublished}>{dateFormatter.format(new Date(postPublished))}</time>
+        )}
+        {postPublished && ' · '}
+        {post.authorName}
+      </p>
+      {/* Le corps a été assaini à l'écriture avec le profil du site public : c'est
+          l'API qui fait autorité, pas ce composant. */}
+      <div class="prose prose-neutral dark:prose-invert mt-6 max-w-none" set:html={post.bodyHtml} />
+      <p class="mt-10">
+        <a href="/actualites/" class="text-primary hover:underline">← Toutes les actualités</a>
+      </p>
+    </article>
+  </BaseLayout>
+)}
+
+{page && (
+  <BaseLayout
+    title={pageTitle(page.seoTitle, page.title)}
+    description={pageDescriptionText}
+    canonical={absoluteUrl(siteUrl, page.path)}
+    noindex={page.noindex || isPreview}
+    jsonLd={pageJsonLd}
+  >
+    {/* Le bloc `hero` porte déjà le h1 ; sans lui, le titre de la page en tient lieu,
+        pour qu'il y ait toujours exactement un h1 — l'ancien site en avait deux. */}
+    {blocks[0]?.type !== 'hero' && (
+      <div class="mx-auto max-w-5xl px-4 pt-10">
+        <h1 class="text-3xl font-semibold tracking-tight">{page.title}</h1>
+      </div>
+    )}
+    {blocks.map((block) => <BlockRenderer block={block} media={media} />)}
+  </BaseLayout>
+)}
