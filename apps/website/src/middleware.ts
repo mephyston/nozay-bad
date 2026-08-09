@@ -20,6 +20,25 @@ function canonicalHostFor(siteUrl: string | undefined): string | null {
   }
 }
 
+/**
+ * Le site est-il servi depuis la machine du développeur ?
+ *
+ * Ce contrôle porte sur l'hôte demandé, et non sur une variable d'environnement.
+ * `APP_ENV` vient de `wrangler.json` et n'existe donc pas sous `astro dev` ; quant à
+ * `PUBLIC_APP_ENV`, il retombe sur « production » quand il n'est pas posé. Faire
+ * dépendre la redirection de ces valeurs a produit exactement ce qu'il fallait
+ * éviter : `localhost:4323` renvoyé vers `nozaybad.fr:4323`.
+ */
+function isLocalHost(hostname: string): boolean {
+  return (
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    hostname === '::1' ||
+    hostname === '0.0.0.0' ||
+    /^127\./.test(hostname)
+  );
+}
+
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
   const runtimeEnv = resolveEnv(context.locals);
@@ -27,8 +46,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const canonical = canonicalHostFor(runtimeEnv.SITE_URL ?? import.meta.env.PUBLIC_SITE_URL);
 
   // `www.nozaybad.fr` et l'apex servant le même contenu diluent l'indexation et
-  // dédoublent le cache. On tranche par une redirection permanente vers l'apex.
-  if (canonical && appEnv !== 'development' && url.hostname !== canonical) {
+  // dédoublent le cache. On tranche par une redirection permanente vers l'apex —
+  // jamais en local, où elle enverrait le développeur sur le site en ligne.
+  if (canonical && !isLocalHost(url.hostname) && appEnv !== 'development' && url.hostname !== canonical) {
     url.hostname = canonical;
     return Response.redirect(url.toString(), 301);
   }

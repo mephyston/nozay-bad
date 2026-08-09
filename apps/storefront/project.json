@@ -34,7 +34,7 @@
       "executor": "nx:run-commands",
       "cache": false,
       "options": {
-        "command": "astro dev --port 4322",
+        "command": "PUBLIC_APP_ENV=development astro dev --port 4322",
         "cwd": "apps/storefront"
       }
     }

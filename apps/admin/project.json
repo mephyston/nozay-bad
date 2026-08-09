@@ -32,7 +32,7 @@
       "executor": "nx:run-commands",
       "cache": false,
       "options": {
-        "command": "astro dev --port 4321",
+        "command": "PUBLIC_APP_ENV=development astro dev --port 4321",
         "cwd": "apps/admin"
       }
     }

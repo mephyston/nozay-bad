@@ -28,7 +28,7 @@
       "executor": "nx:run-commands",
       "cache": false,
       "options": {
-        "command": "astro dev --port 4323",
+        "command": "PUBLIC_APP_ENV=development astro dev --port 4323",
         "cwd": "apps/website"
       }
     }
