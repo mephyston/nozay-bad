@@ -1,3 +1,16 @@
+# [1.0.0-beta.73](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.72...v1.0.0-beta.73) (2026-08-09)
+
+
+### Bug Fixes
+
+* **website:** reconnaître [::1] comme hôte local ([28e032a](https://github.com/mephyston/nozay-bad/commit/28e032a1cda928933448c4c85ba2376f442c53a4))
+* **website:** servir les médias, et n'imposer la barre finale qu'aux pages ([8fabb4a](https://github.com/mephyston/nozay-bad/commit/8fabb4a58dc5dc4e392af1ea30c744cb059eced9))
+
+
+### Features
+
+* **import:** lecture de l'export WordPress et inventaire de curation ([42b2535](https://github.com/mephyston/nozay-bad/commit/42b25359fab117ef4ccd72ecdf508e7f2a6a8ab3))
+
 # [1.0.0-beta.72](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.71...v1.0.0-beta.72) (2026-08-09)
 
 
