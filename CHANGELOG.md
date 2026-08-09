@@ -1,3 +1,11 @@
+# [1.0.0-beta.72](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.71...v1.0.0-beta.72) (2026-08-09)
+
+
+### Bug Fixes
+
+* **dev:** fixer le port de chaque application au lieu de le laisser glisser ([e486432](https://github.com/mephyston/nozay-bad/commit/e4864324eaf152896086014cc4f048175c7e7c26))
+* **website:** ne plus rediriger localhost vers le domaine de production ([1cab670](https://github.com/mephyston/nozay-bad/commit/1cab6707692bdf8cd52471b1fd3114652c175c43))
+
 # [1.0.0-beta.71](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.70...v1.0.0-beta.71) (2026-08-09)
 
 
