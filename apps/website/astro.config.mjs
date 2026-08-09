@@ -16,11 +16,11 @@ const SITE_URL =
 export default defineConfig({
   output: 'server',
   site: SITE_URL,
-  // Toutes les URL héritées de WordPress se terminent par une barre oblique, et ce
-  // sont elles qui sont indexées. On conserve exactement cette forme : Astro redirige
-  // alors de lui-même la variante sans barre, plutôt que de servir deux URL pour une
-  // même page.
-  trailingSlash: 'always',
+  // Les URL héritées de WordPress se terminent toutes par une barre oblique et ce sont
+  // elles qui sont indexées — mais `'always'` l'exige aussi des fichiers, et
+  // `/media/<clé>/400.webp` tombait alors en 404. La règle est donc appliquée par le
+  // middleware, qui sait distinguer une page d'un fichier.
+  trailingSlash: 'ignore',
   adapter: cloudflare({
     mode: 'advanced',
     runtime: { mode: 'local' },

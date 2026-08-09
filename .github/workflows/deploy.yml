@@ -464,6 +464,10 @@ jobs:
             if (process.env.REF_NAME !== 'main') {
               cfg.name = 'nba-website-staging';
               cfg.services = [{ binding: 'API_SERVICE', service: 'nba-api-staging' }];
+              // Le compartiment doit être repointé comme le service : la configuration
+              // générée aplatit l'environnement par défaut, donc la préproduction
+              // hériterait du compartiment de production — vide, d'où des médias en 404.
+              cfg.r2_buckets = [{ binding: 'MEDIA', bucket_name: 'nba-media-staging' }];
               cfg.vars = Object.assign({}, cfg.vars, {
                 SITE_URL: 'https://staging-www.nozaybad.fr',
                 APP_ENV: 'staging'
