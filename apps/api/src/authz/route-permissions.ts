@@ -201,5 +201,15 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // Historique des pages. Restaurer réécrit le contenu : c'est un acte de rédaction,
   // pas un droit distinct.
   { method: 'GET', path: '/cms/pages/:id/revisions', permission: 'cms:pages:read' },
-  { method: 'POST', path: '/cms/pages/:id/revisions/:revisionId/restore', permission: 'cms:pages:write' }
+  { method: 'POST', path: '/cms/pages/:id/revisions/:revisionId/restore', permission: 'cms:pages:write' },
+  // Actualités. Les lectures sont ouvertes au site public (`service`) : archives,
+  // flux RSS et page d'accueil en dépendent.
+  { method: 'GET', path: '/cms/posts', permission: 'cms:posts:read', service: true },
+  { method: 'GET', path: '/cms/posts/:id', permission: 'cms:posts:read' },
+  { method: 'POST', path: '/cms/posts', permission: 'cms:posts:write' },
+  { method: 'PUT', path: '/cms/posts/:id', permission: 'cms:posts:write' },
+  { method: 'POST', path: '/cms/posts/:id/publish', permission: 'cms:posts:write' },
+  { method: 'DELETE', path: '/cms/posts/:id', permission: 'cms:posts:delete' },
+  { method: 'GET', path: '/cms/post-categories', permission: 'cms:posts:read', service: true },
+  { method: 'POST', path: '/cms/post-categories', permission: 'cms:posts:write' }
 ];

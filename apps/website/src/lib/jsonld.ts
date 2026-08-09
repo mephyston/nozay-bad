@@ -64,3 +64,42 @@ export function webPage(siteUrl: string, params: { title: string; description: s
 export function serialiseJsonLd(value: unknown): string {
   return JSON.stringify(value).replace(/</g, '\\u003c');
 }
+
+export function article(
+  siteUrl: string,
+  params: {
+    title: string;
+    description: string;
+    path: string;
+    publishedAt: string | null;
+    updatedAt: string | null;
+    authorName: string;
+    image?: string;
+  }
+) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: params.title,
+    description: params.description,
+    mainEntityOfPage: new URL(params.path, siteUrl).toString(),
+    ...(params.publishedAt ? { datePublished: params.publishedAt } : {}),
+    ...(params.updatedAt ? { dateModified: params.updatedAt } : {}),
+    author: { '@type': 'Person', name: params.authorName },
+    publisher: { '@id': clubId(siteUrl) },
+    ...(params.image ? { image: params.image } : {})
+  };
+}
+
+export function itemList(siteUrl: string, items: { name: string; path: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    itemListElement: items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.name,
+      url: new URL(item.path, siteUrl).toString()
+    }))
+  };
+}

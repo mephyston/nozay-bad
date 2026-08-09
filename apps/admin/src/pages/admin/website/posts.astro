@@ -1,0 +1,84 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { PostsManager } from '@nba/cms-ui';
+import { createAdminApiClient } from '../../../lib/api';
+import { can, guardAction } from '../../../lib/guard';
+
+const canWrite = can(Astro.locals, 'cms:posts:write');
+const canDelete = can(Astro.locals, 'cms:posts:delete');
+
+const apiService = createAdminApiClient(Astro.locals);
+
+const ACTIONS = {
+  create: 'cms:posts:write',
+  publish: 'cms:posts:write',
+  delete: 'cms:posts:delete'
+} as const;
+
+if (Astro.request.method === 'POST') {
+  const data = (await Astro.request.json()) as any;
+  const denied = guardAction(Astro.locals, data.action, ACTIONS);
+  if (denied) return denied;
+
+  const routes: Record<string, { url: string; method: string; body?: unknown }> = {
+    create: {
+      url: 'http://localhost/cms/posts',
+      method: 'POST',
+      body: { title: data.title, excerpt: data.excerpt || undefined, bodyHtml: data.bodyHtml }
+    },
+    publish: {
+      url: `http://localhost/cms/posts/${data.id}/publish`,
+      method: 'POST',
+      body: { published: data.published }
+    },
+    delete: { url: `http://localhost/cms/posts/${data.id}`, method: 'DELETE' }
+  };
+
+  const route = routes[data.action];
+  const apiRes = await apiService.fetch(route.url, {
+    method: route.method,
+    headers: { 'Content-Type': 'application/json' },
+    ...(route.body ? { body: JSON.stringify(route.body) } : {})
+  });
+
+  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+  return new Response(JSON.stringify(await apiRes.json()), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+let posts: any[] = [];
+let errorMsg = '';
+
+try {
+  const res = await apiService.fetch('http://localhost/cms/posts?limit=100');
+  if (res.ok) {
+    const json = (await res.json()) as any;
+    posts = json.data?.posts ?? [];
+  } else {
+    errorMsg = 'Impossible de charger les actualités.';
+  }
+} catch {
+  errorMsg = 'Impossible de charger les actualités.';
+}
+---
+
+<Layout title="Actualités du site - NBA 91">
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Actualités du site"
+  >
+    <PageHeader
+      title="Actualités du site"
+      description="Les actualités publiques. À ne pas confondre avec les annonces, qui s'adressent aux adhérents connectés et peuvent déclencher une notification."
+    />
+    {errorMsg && <ErrorAlert message={errorMsg} />}
+    <PostsManager client:load posts={posts} canWrite={canWrite} canDelete={canDelete} />
+  </AdminLayout>
+</Layout>
