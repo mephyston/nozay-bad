@@ -2,15 +2,36 @@ import { describe, it, expect } from 'vitest';
 import { isLocalHost, needsTrailingSlash } from './routing';
 
 describe('isLocalHost', () => {
-  it('reconnaît les hôtes de développement', () => {
-    for (const host of ['localhost', 'site.localhost', '127.0.0.1', '127.1.2.3', '::1', '0.0.0.0']) {
-      expect(isLocalHost(host), host).toBe(true);
+  /**
+   * Les hôtes sont dérivés d'un vrai `URL`, jamais écrits à la main.
+   *
+   * La version précédente comparait à « ::1 » alors que `URL.hostname` rend « [::1] »
+   * : le test validait la chaîne supposée, le middleware voyait l'autre, et
+   * http://[::1]:4323 partait en 301 vers le site en ligne.
+   */
+  const hostOf = (url: string) => new URL(url).hostname;
+
+  it('reconnaît les hôtes de développement, sous la forme que produit URL', () => {
+    for (const url of [
+      'http://localhost:4323/',
+      'http://site.localhost:4323/',
+      'http://127.0.0.1:4323/',
+      'http://127.1.2.3/',
+      'http://[::1]:4323/',
+      'http://0.0.0.0:4323/'
+    ]) {
+      expect(isLocalHost(hostOf(url)), url).toBe(true);
     }
   });
 
   it('ne prend pas un domaine public pour un hôte local', () => {
-    for (const host of ['nozaybad.fr', 'www.nozaybad.fr', 'staging-www.nozaybad.fr', 'notlocalhost.fr']) {
-      expect(isLocalHost(host), host).toBe(false);
+    for (const url of [
+      'https://nozaybad.fr/',
+      'https://www.nozaybad.fr/',
+      'https://staging-www.nozaybad.fr/',
+      'https://notlocalhost.fr/'
+    ]) {
+      expect(isLocalHost(hostOf(url)), url).toBe(false);
     }
   });
 });

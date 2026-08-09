@@ -16,12 +16,16 @@
  * `nozaybad.fr:4323`, et un 301 reste en cache dans le navigateur indéfiniment.
  */
 export function isLocalHost(hostname: string): boolean {
+  // `URL.hostname` rend une adresse IPv6 **entre crochets** : « [::1] », et non
+  // « ::1 ». Comparer à la forme nue laissait passer la redirection, et le test ne
+  // l'a pas vu parce qu'il vérifiait la chaîne supposée plutôt que celle produite.
+  const host = hostname.replace(/^\[|\]$/g, '').toLowerCase();
   return (
-    hostname === 'localhost' ||
-    hostname.endsWith('.localhost') ||
-    hostname === '::1' ||
-    hostname === '0.0.0.0' ||
-    /^127\./.test(hostname)
+    host === 'localhost' ||
+    host.endsWith('.localhost') ||
+    host === '::1' ||
+    host === '0.0.0.0' ||
+    /^127\./.test(host)
   );
 }
 
