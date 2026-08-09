@@ -24,8 +24,30 @@ const MENU = new Set([
 /** Pages sans valeur : démonstrations du thème, essais, restes de plugins. */
 const WORTHLESS = /^\/(forum-2|photos-2|my-instagram-feed-demo|facebook-demo|compte-client|formulaire-client|vignetter-les-photos|page-de-destination-de-widget|tutorial-badnet|consignes-sanitaires|calendrier-codep|article-de-presse|les-joueurs|\d+-\d+)\/$/;
 
+/**
+ * Pages tranchées par le bureau : non migrées.
+ *
+ * Elles portaient du contenu réel et ont été indexées, d'où une redirection vers le
+ * parent pertinent plutôt qu'un 410 — un visiteur qui suit un vieux lien atterrit sur
+ * la rubrique voisine au lieu d'une impasse. `/telechargements/` fait exception, faute
+ * de successeur crédible.
+ *
+ * `/livret-daccueil-jeunes/` existait en double, comme page et comme article : ne pas
+ * migrer la page lève au passage la seule collision d'adresses de tout l'export.
+ */
+const ARBITRATED = {
+  '/adultes/resultat-2018-2019/': '/adultes-2/',
+  '/livret-daccueil-jeunes/': '/jeunes-2/',
+  '/inscription-newsletter/': '/inscription/',
+  '/telechargements/': ''
+};
+
 /** Redirections évidentes, dérivées de l'arborescence de l'ancien site. */
 function suggestTarget(path) {
+  if (Object.hasOwn(ARBITRATED, path)) {
+    const target = ARBITRATED[path];
+    return target ? { decision: '301', target } : { decision: '410', target: '' };
+  }
   if (WORTHLESS.test(path)) return { decision: '410', target: '' };
   if (path.startsWith('/les-equipes/') || /^\/(equipe-|saison-|classement-)/.test(path))
     return { decision: '301', target: '/adultes-2/' };

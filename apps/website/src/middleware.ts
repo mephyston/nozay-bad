@@ -1,6 +1,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import { applySecurityHeaders } from './lib/security-headers';
 import { resolveEnv } from './lib/request-context';
+import { isLocalHost, needsTrailingSlash } from './lib/routing';
 
 /**
  * Aucune authentification : tout ce que sert ce site est public.
@@ -20,25 +21,6 @@ function canonicalHostFor(siteUrl: string | undefined): string | null {
   }
 }
 
-/**
- * Le site est-il servi depuis la machine du développeur ?
- *
- * Ce contrôle porte sur l'hôte demandé, et non sur une variable d'environnement.
- * `APP_ENV` vient de `wrangler.json` et n'existe donc pas sous `astro dev` ; quant à
- * `PUBLIC_APP_ENV`, il retombe sur « production » quand il n'est pas posé. Faire
- * dépendre la redirection de ces valeurs a produit exactement ce qu'il fallait
- * éviter : `localhost:4323` renvoyé vers `nozaybad.fr:4323`.
- */
-function isLocalHost(hostname: string): boolean {
-  return (
-    hostname === 'localhost' ||
-    hostname.endsWith('.localhost') ||
-    hostname === '::1' ||
-    hostname === '0.0.0.0' ||
-    /^127\./.test(hostname)
-  );
-}
-
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
   const runtimeEnv = resolveEnv(context.locals);
@@ -50,6 +32,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // jamais en local, où elle enverrait le développeur sur le site en ligne.
   if (canonical && !isLocalHost(url.hostname) && appEnv !== 'development' && url.hostname !== canonical) {
     url.hostname = canonical;
+    return Response.redirect(url.toString(), 301);
+  }
+
+  // Barre oblique finale : imposée aux pages, jamais aux fichiers (voir `routing.ts`).
+  if (needsTrailingSlash(url.pathname)) {
+    url.pathname += '/';
     return Response.redirect(url.toString(), 301);
   }
 
