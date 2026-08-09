@@ -1,3 +1,10 @@
+# [1.0.0-beta.76](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.75...v1.0.0-beta.76) (2026-08-09)
+
+
+### Features
+
+* **website:** page d'accueil à la racine, grille de créneaux, médias dans le texte ([5cf3a66](https://github.com/mephyston/nozay-bad/commit/5cf3a665fdc4702ca79a5815915b5ef32ef96957))
+
 # [1.0.0-beta.75](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.74...v1.0.0-beta.75) (2026-08-09)
 
 
