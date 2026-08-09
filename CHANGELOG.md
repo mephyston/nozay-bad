@@ -1,3 +1,10 @@
+# [1.0.0-beta.70](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.69...v1.0.0-beta.70) (2026-08-09)
+
+
+### Features
+
+* **cms:** actualités publiques, archives, RSS et JSON-LD Article ([7e566ef](https://github.com/mephyston/nozay-bad/commit/7e566efc1b0c867542b60d1513c27df21b50a2f9))
+
 # [1.0.0-beta.69](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.68...v1.0.0-beta.69) (2026-08-09)
 
 
