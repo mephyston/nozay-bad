@@ -1,3 +1,11 @@
+# [1.0.0-beta.75](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.74...v1.0.0-beta.75) (2026-08-09)
+
+
+### Features
+
+* **shop:** workflow de paiement des commandes — valider, payer, annuler ([7f000e5](https://github.com/mephyston/nozay-bad/commit/7f000e58d9e701ce6b790120a9c4081e81704c27))
+* **website:** actualités enrichies, blocs d'accueil et menus administrables ([477e25b](https://github.com/mephyston/nozay-bad/commit/477e25bbb86aa6e1ebaccce637fcb201976c4c51))
+
 # [1.0.0-beta.74](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.73...v1.0.0-beta.74) (2026-08-09)
 
 
