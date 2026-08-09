@@ -1,3 +1,10 @@
+# [1.0.0-beta.77](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.76...v1.0.0-beta.77) (2026-08-09)
+
+
+### Performance Improvements
+
+* **website:** servir les pages depuis le cache du bord ([04b7ce3](https://github.com/mephyston/nozay-bad/commit/04b7ce32b872a6bfba8d8b45721a13c1b9ee5c91))
+
 # [1.0.0-beta.76](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.75...v1.0.0-beta.76) (2026-08-09)
 
 
