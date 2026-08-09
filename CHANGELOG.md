@@ -1,3 +1,10 @@
+# [1.0.0-beta.74](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.73...v1.0.0-beta.74) (2026-08-09)
+
+
+### Features
+
+* **import:** reprise du contenu WordPress — 99 articles, 21 pages, 72 redirections ([f6fd5fd](https://github.com/mephyston/nozay-bad/commit/f6fd5fdc130b213b55dfa379b4fce269f080cce5))
+
 # [1.0.0-beta.73](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.72...v1.0.0-beta.73) (2026-08-09)
 
 
