@@ -1,5 +1,5 @@
-import { type Db, type Tx, AppError } from '@nba/db';
-import { ApproveOrderRepository } from './repository';
+import { type Db, AppError } from '@nba/db';
+import { PayOrderRepository } from './repository';
 import { Order } from '../shared/order';
 import {
   OrderNotFoundError,
@@ -12,10 +12,17 @@ import {
 } from '../shared/errors';
 import { getContactEmailsForMember, isSeasonClosed } from '@nba/members-api';
 import { notifyContacts } from '@nba/notifications-api';
-import { ApproveOrderInput, ApproveOrderOutput } from "./dto";
+import { PayOrderInput, PayOrderOutput } from './dto';
 
-export async function approveOrder(db: Db, input: ApproveOrderInput): Promise<ApproveOrderOutput> {
-  const repo = new ApproveOrderRepository();
+/**
+ * Encaissement d'une commande en attente de paiement.
+ *
+ * C'est le seul passage qui écrit en comptabilité : la recette est datée du
+ * règlement, pas de la commande, et une commande jamais réglée ne laisse donc
+ * aucune trace dans l'exercice. Le stock a déjà été réservé à la validation.
+ */
+export async function payOrder(db: Db, input: PayOrderInput): Promise<PayOrderOutput> {
+  const repo = new PayOrderRepository();
   const id = typeof input === 'number' ? input : input.id;
   const requestedPaidAt = typeof input === 'object' ? input.paidAt : undefined;
 
@@ -24,10 +31,12 @@ export async function approveOrder(db: Db, input: ApproveOrderInput): Promise<Ap
   if (!orderData) {
     throw new OrderNotFoundError();
   }
-  const order = new Order(orderData);
+  const order = new Order(orderData as any);
 
-  if (!order.canBeApproved()) {
-    throw new OrderInvalidOrProcessedError();
+  if (!order.canBePaid()) {
+    throw new OrderInvalidOrProcessedError(
+      "Seule une commande en attente de paiement peut être encaissée."
+    );
   }
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -90,30 +99,26 @@ export async function approveOrder(db: Db, input: ApproveOrderInput): Promise<Ap
     accrualNote
   });
 
-  const stmt2 = repo.buildApproveOrderStatement(db, id, paidAt);
-
-  const stmts: any[] = [stmt1, stmt2];
-  if (product.trackStock) {
-    stmts.push(repo.buildDecrementStockStatement(db, product.id, order.quantity));
-  }
+  // Doit rester juste après stmt1 : c'est de lui que `last_insert_rowid()` tire l'id.
+  const stmt2 = repo.buildPayOrderStatement(db, id, paidAt);
 
   // Phase 3 : Écriture (db.batch)
-  const results = await db.batch(stmts as any);
+  const results = await db.batch([stmt1, stmt2] as any);
 
-  // Détection d'échec du verrou optimiste (status !== 'pending' au moment de l'écriture)
+  // Détection d'échec du verrou optimiste (status !== 'awaiting_payment' à l'écriture)
   const changes = results[1]?.meta?.changes;
   if (!changes) {
     throw new ConcurrentModificationError();
   }
 
   await notifyContacts(db, await getContactEmailsForMember(db, member.id), {
-    title: 'Commande validée',
-    body: `Votre commande ${product.name} ×${order.quantity} est validée.`,
+    title: 'Commande payée',
+    body: `Le règlement de votre commande ${product.name} ×${order.quantity} est enregistré. Merci !`,
     url: '/mon-compte',
-    source: 'order:approved',
+    source: 'order:paid',
     category: 'order'
   });
 
   const updated = await repo.getOrderById(db, id);
-  return updated as any;
+  return updated as PayOrderOutput;
 }

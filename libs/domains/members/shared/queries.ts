@@ -83,6 +83,42 @@ export async function getContactEmailsForMember(db: DbOrTx, memberId: number): P
 }
 
 /**
+ * Emails de contact de plusieurs adhérents, dédupliqués.
+ *
+ * Une seule requête par lot plutôt qu'un aller-retour par adhérent : les appelants
+ * sont des traitements programmés, où chaque requête D1 consomme une sous-requête du
+ * Worker. Le lot reste sous le plafond de paramètres liés de D1.
+ */
+export async function getContactEmailsForMembers(db: DbOrTx, memberIds: number[]): Promise<string[]> {
+  if (memberIds.length === 0) return [];
+
+  const emails = new Set<string>();
+  const unique = [...new Set(memberIds)];
+  const chunkSize = 90;
+
+  for (let i = 0; i < unique.length; i += chunkSize) {
+    const rows = await db
+      .select({
+        email: membersTable.email,
+        parent1Email: membersTable.parent1Email,
+        parent2Email: membersTable.parent2Email
+      })
+      .from(membersTable)
+      .where(inArray(membersTable.id, unique.slice(i, i + chunkSize)))
+      .all();
+
+    for (const row of rows) {
+      for (const value of [row.email, row.parent1Email, row.parent2Email]) {
+        const normalized = value?.trim().toLowerCase();
+        if (normalized) emails.add(normalized);
+      }
+    }
+  }
+
+  return [...emails];
+}
+
+/**
  * Emails de contact des foyers de la saison active, normalisés en minuscules.
  *
  * Les emails des parents sont inclus : pour un adhérent mineur, l'adresse au

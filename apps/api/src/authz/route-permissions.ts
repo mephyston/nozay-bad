@@ -149,8 +149,11 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'DELETE', path: '/shop/product-categories/:id', permission: 'shop:categories:write' },
   { method: 'GET', path: '/shop/orders', permission: 'shop:orders:read', service: true },
   { method: 'POST', path: '/shop/orders', permission: 'shop:orders:write', service: true },
-  { method: 'POST', path: '/shop/orders/:id/approve', permission: 'shop:orders:approve' },
+  // Les quatre transitions du workflow relèvent de la même décision de gestion.
+  { method: 'POST', path: '/shop/orders/:id/validate', permission: 'shop:orders:approve' },
+  { method: 'POST', path: '/shop/orders/:id/pay', permission: 'shop:orders:approve' },
   { method: 'POST', path: '/shop/orders/:id/reject', permission: 'shop:orders:approve' },
+  { method: 'POST', path: '/shop/orders/:id/cancel', permission: 'shop:orders:approve' },
 
   // ── Notifications ──────────────────────────────────────────────────────────
   // Abonnement et préférences : gestes personnels d'un utilisateur sur son propre

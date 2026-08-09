@@ -30,7 +30,13 @@ export const ordersTable = sqliteTable('orders', {
   quantity: integer('quantity').notNull().default(1),
   totalAmountCents: integer('total_amount_cents').notNull(),
   paymentMethodId: integer('payment_method_id').notNull(),
-  status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
+  // created → awaiting_payment → paid. `rejected` ferme une demande non validée,
+  // `cancelled` une commande validée que le règlement n'a jamais suivie.
+  status: text('status', {
+    enum: ['created', 'awaiting_payment', 'paid', 'rejected', 'cancelled']
+  }).notNull().default('created'),
+  /** Date de mise en attente de règlement : point de départ des relances. */
+  awaitingPaymentSince: text('awaiting_payment_since'),
   paidAt: text('paid_at'),
   ledgerEntryId: integer('ledger_entry_id'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()

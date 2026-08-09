@@ -10,7 +10,7 @@ import {
   getAccountByCode as getAccountingAccountByCode
 } from '@nba/accounting-api';
 
-export class ApproveOrderRepository {
+export class PayOrderRepository {
   async getOrderById(db: DbOrTx, id: number): Promise<typeof ordersTable.$inferSelect | undefined> {
     return db.select().from(ordersTable).where(eq(ordersTable.id, id)).get();
   }
@@ -69,20 +69,19 @@ export class ApproveOrderRepository {
     });
   }
 
-  buildApproveOrderStatement(db: DbOrTx, id: number, paidAt: string): any {
+  /**
+   * Rattache l'écriture de recette créée juste avant dans le même batch.
+   * `last_insert_rowid()` ne vaut que pour un unique enfant : cette instruction doit
+   * donc rester la seconde du batch, immédiatement après la création de l'écriture.
+   */
+  buildPayOrderStatement(db: DbOrTx, id: number, paidAt: string): any {
     return db.update(ordersTable)
       .set({
-        status: 'approved',
+        status: 'paid',
         paidAt: paidAt,
         ledgerEntryId: sql`(SELECT last_insert_rowid())`
       })
-      .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')));
-  }
-
-  buildDecrementStockStatement(db: DbOrTx, productId: number, quantity: number): any {
-    return db.update(productsTable)
-      .set({ stock: sql`${productsTable.stock} - ${quantity}` })
-      .where(eq(productsTable.id, productId));
+      .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'awaiting_payment')));
   }
 
   async createRecetteTransaction(db: DbOrTx, values: {
@@ -107,13 +106,5 @@ export class ApproveOrderRepository {
       accrualType: values.accrualType,
       accrualNote: values.accrualNote
     });
-  }
-
-  async approveWithLock(db: DbOrTx, id: number, ledgerEntryId: number): Promise<typeof ordersTable.$inferSelect | undefined> {
-    return db.update(ordersTable)
-      .set({ status: 'approved', ledgerEntryId })
-      .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')))
-      .returning()
-      .get();
   }
 }

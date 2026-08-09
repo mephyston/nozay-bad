@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { sql, eq } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
-import { approveOrder } from './handler';
-import { ApproveOrderRepository } from './repository';
+import { payOrder } from './handler';
+import { PayOrderRepository } from './repository';
 import { ordersTable, productsTable, productCategoriesTable } from '../shared/schema';
 // eslint-disable-next-line no-restricted-imports
 import { membersTable } from '@nba/members/schema';
@@ -11,7 +11,7 @@ import { seasonsTable } from '@nba/accounting/schema';
 import { ShopCategoryNotConfiguredError } from '../shared/errors';
 import { getSeasonReports } from '@nba/accounting-api';
 
-describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)', () => {
+describe("payOrder (encaissement d'une commande boutique et écriture comptable)", () => {
   let db: any;
   let mockD1: any;
 
@@ -131,7 +131,7 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
     unconfiguredProductCatId = 999999;
   });
 
-  it('1. Nominal case: approves order and creates revenue ledger entry with resolved accounting category', async () => {
+  it('1. Nominal case: pays order and creates revenue ledger entry with resolved accounting category', async () => {
     // Seed product: Boîte Volants RSL (15.00 € = 1500 Cents)
     const product = await db.insert(productsTable).values({
       name: 'Boîte Volants RSL Grade 1',
@@ -142,7 +142,7 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
       createdAt: new Date()
     }).returning().get();
 
-    // Create pending order (2 x 15.00 € = 30.00 € = 3000 Cents)
+    // Commande validée, en attente de règlement (2 x 15.00 € = 30.00 € = 3000 Cents)
     const order = await db.insert(ordersTable).values({
       seasonId,
       memberId,
@@ -150,14 +150,14 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
       quantity: 2,
       totalAmountCents: 3000,
       paymentMethodId: virementPaymentMethodId,
-      status: 'pending',
+      status: 'awaiting_payment',
       createdAt: new Date()
     }).returning().get();
 
-    // Approve order
-    const result = await approveOrder(db, order.id);
+    // Encaissement
+    const result = await payOrder(db, order.id);
 
-    expect(result.status).toBe('approved');
+    expect(result.status).toBe('paid');
     expect(result.ledgerEntryId).toBeDefined();
 
     // Verify ledger entry created in accounting
@@ -193,16 +193,16 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
 
     const order1 = await db.insert(ordersTable).values({
       seasonId, memberId, productId: prodVolants.id, quantity: 1, totalAmountCents: 2000,
-      paymentMethodId: virementPaymentMethodId, status: 'pending', createdAt: new Date()
+      paymentMethodId: virementPaymentMethodId, status: 'awaiting_payment', createdAt: new Date()
     }).returning().get();
 
     const order2 = await db.insert(ordersTable).values({
       seasonId, memberId, productId: prodCordage.id, quantity: 1, totalAmountCents: 1200,
-      paymentMethodId: virementPaymentMethodId, status: 'pending', createdAt: new Date()
+      paymentMethodId: virementPaymentMethodId, status: 'awaiting_payment', createdAt: new Date()
     }).returning().get();
 
-    await approveOrder(db, order1.id);
-    await approveOrder(db, order2.id);
+    await payOrder(db, order1.id);
+    await payOrder(db, order2.id);
 
     // Generate AG report
     const report = await getSeasonReports(db, { seasonId: '25-26' });
@@ -239,16 +239,16 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
 
     const order1 = await db.insert(ordersTable).values({
       seasonId, memberId, productId: prodTextile.id, quantity: 1, totalAmountCents: 2500,
-      paymentMethodId: virementPaymentMethodId, status: 'pending', createdAt: new Date()
+      paymentMethodId: virementPaymentMethodId, status: 'awaiting_payment', createdAt: new Date()
     }).returning().get();
 
     const order2 = await db.insert(ordersTable).values({
       seasonId, memberId, productId: prodEquipment.id, quantity: 2, totalAmountCents: 1000,
-      paymentMethodId: virementPaymentMethodId, status: 'pending', createdAt: new Date()
+      paymentMethodId: virementPaymentMethodId, status: 'awaiting_payment', createdAt: new Date()
     }).returning().get();
 
-    await approveOrder(db, order1.id);
-    await approveOrder(db, order2.id);
+    await payOrder(db, order1.id);
+    await payOrder(db, order2.id);
 
     // Generate AG report
     const report = await getSeasonReports(db, { seasonId: '25-26' });
@@ -260,8 +260,8 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
     expect(catTotals[key].total).toBe(3500); // 2500 + 1000 = 3500 Cents
   });
 
-  it('4. Rejects approval when product family has no accounting category configured', async () => {
-    vi.spyOn(ApproveOrderRepository.prototype, 'getProductCategoryById').mockResolvedValueOnce(null as any);
+  it('4. Rejects payment when product family has no accounting category configured', async () => {
+    vi.spyOn(PayOrderRepository.prototype, 'getProductCategoryById').mockResolvedValueOnce(null as any);
 
     const product = await db.insert(productsTable).values({
       name: 'Objet Mystère',
@@ -274,13 +274,13 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
 
     const order = await db.insert(ordersTable).values({
       seasonId, memberId, productId: product.id, quantity: 1, totalAmountCents: 1000,
-      paymentMethodId: virementPaymentMethodId, status: 'pending', createdAt: new Date()
+      paymentMethodId: virementPaymentMethodId, status: 'awaiting_payment', createdAt: new Date()
     }).returning().get();
 
-    await expect(approveOrder(db, order.id)).rejects.toThrowError(ShopCategoryNotConfiguredError);
+    await expect(payOrder(db, order.id)).rejects.toThrowError(ShopCategoryNotConfiguredError);
   });
 
-  it('5. Approving an order paid in a past closed season creates ledger entry on active season with recette_exercice_anterieur accrual', async () => {
+  it('5. Paying an order settled in a past closed season creates ledger entry on active season with recette_exercice_anterieur accrual', async () => {
     // Seed closed past season 24-25 (2024-09-01 to 2025-08-31, closedAt = set)
     const closedSeason = await db.insert(seasonsTable).values({
       code: '24-25',
@@ -309,13 +309,13 @@ describe('approveOrder (End-to-End Shop Order Approval & Accounting Integration)
       totalAmountCents: 500,
       paymentMethodId: virementPaymentMethodId,
       paidAt: '2025-08-28', // Paid inside closed season 24-25
-      status: 'pending',
+      status: 'awaiting_payment',
       createdAt: new Date()
     }).returning().get();
 
-    const result = await approveOrder(db, order.id);
+    const result = await payOrder(db, order.id);
 
-    expect(result.status).toBe('approved');
+    expect(result.status).toBe('paid');
     expect(result.paidAt).toBe('2025-08-28');
 
     const entryRes = await mockD1.prepare('SELECT * FROM ledger_entries WHERE id = ?').bind(result.ledgerEntryId!).all();

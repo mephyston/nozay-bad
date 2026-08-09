@@ -68,7 +68,7 @@ describe('matchRule', () => {
 
   it("n'accorde `service` qu'aux routes réellement appelées par le storefront", () => {
     expect(matchRule('POST', '/shop/orders')?.service).toBe(true);
-    expect(matchRule('POST', '/shop/orders/1/approve')?.service).toBeUndefined();
+    expect(matchRule('POST', '/shop/orders/1/pay')?.service).toBeUndefined();
     expect(matchRule('GET', '/iam/me')?.service).toBeUndefined();
   });
 });

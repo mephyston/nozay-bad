@@ -54,7 +54,7 @@ export async function createOrder(db: Db, body: CreateOrderInput): Promise<Creat
     quantity: body.quantity,
     totalAmountCents: product.priceCents * body.quantity,
     paymentMethodId: paymentMethod.id,
-    status: 'pending',
+    status: 'created',
     paidAt: body.paidAt || null,
     createdAt: new Date()
   });

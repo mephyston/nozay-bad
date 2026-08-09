@@ -285,7 +285,7 @@ describe('Database Tests', () => {
       quantity: 2,
       totalAmountCents: 3000,
       paymentMethodId: 1,
-      status: 'pending',
+      status: 'created',
       createdAt: new Date()
     }).returning().get();
 

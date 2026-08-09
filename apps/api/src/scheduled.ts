@@ -1,5 +1,10 @@
 import { createDb } from '@nba/db';
-import { getBirthdaysForActiveSeason, getHouseholdEmailsForActiveSeason } from '@nba/members-api';
+import {
+  getBirthdaysForActiveSeason,
+  getContactEmailsForMembers,
+  getHouseholdEmailsForActiveSeason
+} from '@nba/members-api';
+import { getOrdersAwaitingPaymentSince } from '@nba/shop-api';
 import {
   dispatchPendingNotifications,
   enqueueNotification,
@@ -11,7 +16,8 @@ import {
 export type ScheduledBindings = {
   DB: D1Database;
   /**
-   * Rappels automatiques de cotisation. Désactivés par défaut : personne ne doit
+   * Rappels automatiques : cotisation non soldée et commande boutique en attente de
+   * paiement. Désactivés par défaut, d'un seul interrupteur : personne ne doit
    * recevoir de relance parce qu'un déploiement a eu lieu. Mettre à "true" en var
    * de Worker pour les activer.
    */
@@ -30,6 +36,14 @@ export const WEEKLY_CRON = '0 8 * * 1';
 
 /** Rétention de l'historique des notifications, en jours. */
 const HISTORY_RETENTION_DAYS = 90;
+
+/**
+ * Ancienneté au-delà de laquelle une commande en attente de paiement est relancée.
+ *
+ * Une commande validée le matin ne doit pas être relancée le soir : le délai laisse
+ * le temps de passer au club régler son achat.
+ */
+const ORDER_REMINDER_AFTER_DAYS = 7;
 
 async function sendUnpaidReminders(db: ReturnType<typeof createDb>, now: Date): Promise<void> {
   const result = await enqueueNotification(
@@ -51,6 +65,49 @@ async function sendUnpaidReminders(db: ReturnType<typeof createDb>, now: Date): 
 
   if (!result.skipped) {
     console.log(`[push] rappel cotisation : ${result.queued} appareil(s) en file`);
+  }
+}
+
+/**
+ * Relance les commandes boutique validées et toujours impayées.
+ *
+ * Le ciblage traverse deux domaines — les commandes viennent de `shop`, les adresses
+ * de `members` — et se résout donc ici : le contexte notifications reste feuille et
+ * ne reçoit qu'une liste d'emails.
+ */
+export async function sendAwaitingPaymentOrderReminders(
+  db: ReturnType<typeof createDb>,
+  now: Date
+): Promise<void> {
+  const cutoff = new Date(now.getTime() - ORDER_REMINDER_AFTER_DAYS * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split('T')[0];
+
+  const orders = await getOrdersAwaitingPaymentSince(db, cutoff);
+  if (orders.length === 0) return;
+
+  const emails = await getContactEmailsForMembers(db, orders.map((order) => order.memberId));
+  if (emails.length === 0) return;
+
+  const result = await enqueueNotification(
+    db,
+    {
+      title: 'Commande à régler',
+      body: "Une commande boutique validée attend votre règlement. Retrouvez le détail dans votre espace adhérent.",
+      url: '/mon-compte',
+      target: { kind: 'emails', emails },
+      targetLabel: 'emails',
+      targetDetail: `${orders.length} commande(s) en attente de paiement`,
+      source: 'reminder:order-awaiting-payment',
+      category: 'reminder',
+      // Un Cron Trigger peut être invoqué plus d'une fois pour la même échéance.
+      skipIfSentSince: new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000)
+    },
+    now
+  );
+
+  if (!result.skipped) {
+    console.log(`[push] relance commandes : ${result.queued} appareil(s) en file`);
   }
 }
 
@@ -110,6 +167,7 @@ export async function handleScheduled(
   if (event.cron === WEEKLY_CRON) {
     if (env.PUSH_REMINDERS_ENABLED === 'true') {
       await sendUnpaidReminders(db, now);
+      await sendAwaitingPaymentOrderReminders(db, now);
     }
     const purged = await purgeNotificationHistory(db, HISTORY_RETENTION_DAYS, now);
     if (purged > 0) {

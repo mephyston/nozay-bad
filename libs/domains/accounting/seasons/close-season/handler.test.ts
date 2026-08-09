@@ -227,7 +227,7 @@ describe('closeSeason (Pre-closure Checks, Rollover & Reopen - PROMPT 13)', () =
   });
 
   it('blocks closure if unvalidated paid shop orders exist', async () => {
-    // Insert an order with paidAt set but status pending on season 1
+    // Commande portant une date de règlement, mais jamais encaissée en comptabilité
     const { ordersTable, productsTable, productCategoriesTable } = await import('@nba/shop/schema');
     const { paymentMethodsTable } = await import('@nba/accounting/schema');
     const { sql } = await import('drizzle-orm');
@@ -257,7 +257,7 @@ describe('closeSeason (Pre-closure Checks, Rollover & Reopen - PROMPT 13)', () =
       totalAmountCents: 1200,
       paymentMethodId: pm[0].id,
       paidAt: '2025-05-15',
-      status: 'pending',
+      status: 'awaiting_payment',
       createdAt: new Date()
     });
 
@@ -265,6 +265,6 @@ describe('closeSeason (Pre-closure Checks, Rollover & Reopen - PROMPT 13)', () =
     expect(checks.canClose).toBe(false);
     expect(checks.blockingItems.some(i => i.code === 'UNVALIDATED_PAID_ORDERS')).toBe(true);
 
-    await expect(closeSeason(db, '24-25')).rejects.toThrow("commande(s) boutique payée(s) non validée(s)");
+    await expect(closeSeason(db, '24-25')).rejects.toThrow("commande(s) boutique réglée(s) mais non encaissée(s)");
   });
 });

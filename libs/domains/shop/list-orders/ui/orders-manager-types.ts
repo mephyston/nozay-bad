@@ -1,3 +1,7 @@
+import type { OrderStatus } from '../../shared/order';
+
+export type { OrderStatus };
+
 export interface Order {
   id: number;
   seasonId: string;
@@ -6,10 +10,14 @@ export interface Order {
   quantity: number;
   totalAmount: number;
   paymentMethod: 'virement' | 'cheque' | 'especes' | 'labaz' | 'ancv' | 'pass_sport' | 'ticket_loisir' | 'up_loisir';
-  status: 'pending' | 'approved' | 'rejected';
+  status: OrderStatus;
+  awaitingPaymentSince: string | null;
   ledgerEntryId: number | null;
   createdAt: string | Date;
 }
+
+/** Onglets de la page commandes. Un onglet par étape du workflow, plus l'historique. */
+export type OrdersTab = 'created' | 'awaiting_payment' | 'history';
 
 export interface Member {
   id: number;

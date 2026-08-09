@@ -1,6 +1,6 @@
 <script lang="ts">
   import { SearchableCombobox, Badge, Amount, DataTable, DataTableToolbar, Table, FormField, Card } from '@nba/ui';
-  import { Check, X, History } from "@lucide/svelte";
+  import { Check, X, Ban, History } from "@lucide/svelte";
   
   import type { OrderItem, Season } from './orders-manager-types';
   import type { Snippet } from 'svelte';
@@ -90,10 +90,10 @@
                   <Amount cents={(item.order as any).totalAmountCents ?? item.order.totalAmount} />
                 </Table.Cell>
                 <Table.Cell class="text-center">
-                  {#if item.order.status === 'approved'}
+                  {#if item.order.status === 'paid'}
                     <Badge variant="success">
                       <Check class="w-3 h-3" />
-                      Validée
+                      Payée
                     </Badge>
                     {#if item.order.ledgerEntryId}
                       <div class="text-[10px] text-muted-foreground mt-0.5">
@@ -104,6 +104,11 @@
                     <Badge variant="destructive">
                       <X class="w-3 h-3" />
                       Refusée
+                    </Badge>
+                  {:else if item.order.status === 'cancelled'}
+                    <Badge variant="outline">
+                      <Ban class="w-3 h-3" />
+                      Annulée
                     </Badge>
                   {/if}
                 </Table.Cell>
@@ -142,10 +147,10 @@
               {/if}
             </div>
             <div class="flex flex-col items-end shrink-0">
-              {#if item.order.status === 'approved'}
+              {#if item.order.status === 'paid'}
                 <Badge variant="success" size="sm">
                   <Check class="w-3 h-3" />
-                  Validée
+                  Payée
                 </Badge>
                 {#if item.order.ledgerEntryId}
                   <div class="text-[10px] text-muted-foreground mt-1">
@@ -156,6 +161,11 @@
                 <Badge variant="destructive" size="sm">
                   <X class="w-3 h-3" />
                   Refusée
+                </Badge>
+              {:else if item.order.status === 'cancelled'}
+                <Badge variant="outline" size="sm">
+                  <Ban class="w-3 h-3" />
+                  Annulée
                 </Badge>
               {/if}
             </div>

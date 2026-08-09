@@ -38,6 +38,7 @@ export {
   getAllMembers,
   getHouseholdEmailsForActiveSeason,
   getContactEmailsForMember,
+  getContactEmailsForMembers,
   getMemberGroupsForActiveSeason,
   getMemberContactsByEmails,
   getBirthdaysForActiveSeason,

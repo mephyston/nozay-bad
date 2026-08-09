@@ -18,10 +18,12 @@ export async function rejectOrder(db: Db, id: RejectOrderInput): Promise<RejectO
   if (!orderData) {
     throw new OrderNotFoundError();
   }
-  const order = new Order(orderData);
+  const order = new Order(orderData as any);
 
   if (!order.canBeRejected()) {
-    throw new OrderInvalidOrProcessedError();
+    throw new OrderInvalidOrProcessedError(
+      "Seule une commande au statut « créée » peut être refusée. Une commande déjà validée s'annule."
+    );
   }
 
   if (await isSeasonClosed(db, order.seasonId)) {

@@ -22,6 +22,13 @@
       "when": 1786267546737,
       "tag": "0002_schedules_events",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1786281052034,
+      "tag": "0003_order_payment_workflow",
+      "breakpoints": true
     }
   ]
 }

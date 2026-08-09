@@ -109,7 +109,7 @@ describe('Products API Endpoints', () => {
 });
 
 describe('Orders API Endpoints', () => {
-  it('processes orders and creates transaction on approval', async () => {
+  it('walks an order from creation to payment and books the revenue', async () => {
     const { mockD1, db } = await setupMockDb();
 
     // Insert a season
@@ -138,7 +138,7 @@ describe('Orders API Endpoints', () => {
       RETURNING id
     `) as { id: number };
 
-    // Insert product (trackStock activé : l'approbation doit décrémenter le stock)
+    // Insert product (trackStock activé : la validation doit décrémenter le stock)
     await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', productCategoryId: productCat.id, priceCents: 1200, stock: 5, trackStock: true, active: true, createdAt: new Date() }).run();
 
     const pmRes = await mockD1.prepare('SELECT code FROM payment_methods').all();
@@ -155,16 +155,33 @@ describe('Orders API Endpoints', () => {
     const orderJson = await createRes.json() as any;
     expect(orderJson.success).toBe(true);
 
-    // 2. Approve order
-    const approveRes = await app.request(`http://localhost/shop/orders/${orderJson.data.id}/approve`, {
+    expect(orderJson.data.status).toBe('created');
+
+    // 2. Validate order : réserve le stock, sans toucher à la comptabilité
+    const validateRes = await app.request(`http://localhost/shop/orders/${orderJson.data.id}/validate`, {
       method: 'POST'
     }, { DB: mockD1 as any });
 
-    expect(approveRes.status).toBe(200);
-    const approveJson = await approveRes.json() as any;
-    expect(approveJson.success).toBe(true);
+    expect(validateRes.status).toBe(200);
+    const validateJson = await validateRes.json() as any;
+    expect(validateJson.data.status).toBe('awaiting_payment');
+    expect(validateJson.data.awaitingPaymentSince).toBeTruthy();
 
-    // Verify stock is decremented
+    const afterValidation = await db.select().from(productsTable).where(eq(productsTable.id, 1)).get();
+    expect(afterValidation!.stock).toBe(3);
+    expect(await db.select().from(ledgerEntriesTable).all()).toHaveLength(0);
+
+    // 3. Pay order : c'est ici que la recette entre en comptabilité
+    const payRes = await app.request(`http://localhost/shop/orders/${orderJson.data.id}/pay`, {
+      method: 'POST'
+    }, { DB: mockD1 as any });
+
+    expect(payRes.status).toBe(200);
+    const payJson = await payRes.json() as any;
+    expect(payJson.success).toBe(true);
+    expect(payJson.data.status).toBe('paid');
+
+    // L'encaissement ne retouche pas au stock, déjà décrémenté à la validation.
     const prod = await db.select().from(productsTable).where(eq(productsTable.id, 1)).get();
     expect(prod!.stock).toBe(3);
 
@@ -172,7 +189,7 @@ describe('Orders API Endpoints', () => {
     const ledgerEntries = await db.select().from(ledgerEntriesTable).all();
     expect(ledgerEntries.length).toBeGreaterThan(0);
 
-    // 3. Read orders (GET /shop/orders)
+    // 4. Read orders (GET /shop/orders)
     const getRes = await app.request('http://localhost/shop/orders', undefined, { DB: mockD1 as any });
     expect(getRes.status).toBe(200);
     const getJson = await getRes.json() as any;
@@ -230,11 +247,16 @@ describe('Orders API Endpoints', () => {
     const prod = await db.select().from(productsTable).where(eq(productsTable.id, 1)).get();
     expect(prod!.stock).toBe(5);
 
-    // 4. Trying to approve rejected order should fail
-    const approveRes = await app.request(`http://localhost/shop/orders/${order.id}/approve`, {
+    // 4. Trying to validate or pay a rejected order should fail
+    const validateRes = await app.request(`http://localhost/shop/orders/${order.id}/validate`, {
       method: 'POST'
     }, { DB: mockD1 as any });
-    expect(approveRes.status).toBe(400);
+    expect(validateRes.status).toBe(400);
+
+    const payRes = await app.request(`http://localhost/shop/orders/${order.id}/pay`, {
+      method: 'POST'
+    }, { DB: mockD1 as any });
+    expect(payRes.status).toBe(400);
 
     // 5. Trying to reject already rejected order should fail
     const rejectRes2 = await app.request(`http://localhost/shop/orders/${order.id}/reject`, {
@@ -320,20 +342,20 @@ describe('Orders API Endpoints', () => {
     expect(createJson.success).toBe(false);
     expect(createJson.error).toBe('La saison est clôturée. Impossible de soumettre une commande.');
 
-    // To test approval and rejection, insert a pending order directly bypassing endpoint
+    // Pour tester les transitions, on insère une commande directement, sans passer par la route.
     await db.run(sql`
       INSERT INTO orders (id, season_id, member_id, product_id, quantity, total_amount_cents, payment_method_id, status, created_at)
-      VALUES (10, 1, 1, 1, 2, 2400, 1, 'pending', strftime('%s', 'now'))
+      VALUES (10, 1, 1, 1, 2, 2400, 1, 'created', strftime('%s', 'now'))
     `);
 
-    // Try approving the order on closed season -> expect 400
-    const approveRes = await app.request('http://localhost/shop/orders/10/approve', {
+    // Try validating the order on closed season -> expect 400
+    const validateRes = await app.request('http://localhost/shop/orders/10/validate', {
       method: 'POST'
     }, { DB: mockD1 as any });
-    expect(approveRes.status).toBe(400);
-    const approveJson = await approveRes.json() as any;
-    expect(approveJson.success).toBe(false);
-    expect(approveJson.error).toBe('La saison est clôturée');
+    expect(validateRes.status).toBe(400);
+    const validateJson = await validateRes.json() as any;
+    expect(validateJson.success).toBe(false);
+    expect(validateJson.error).toBe('La saison est clôturée');
 
     // Try rejecting the order on closed season -> expect 400
     const rejectRes = await app.request('http://localhost/shop/orders/10/reject', {
@@ -359,9 +381,9 @@ describe('Orders API Endpoints', () => {
     expect(json.error).toContain('Validation failed');
   });
 
-  it('should return 404 AppError when order is not found for approval', async () => {
+  it('should return 404 AppError when order is not found for payment', async () => {
     const { mockD1 } = await setupMockDb();
-    const res = await app.request('http://localhost/shop/orders/9999/approve', {
+    const res = await app.request('http://localhost/shop/orders/9999/pay', {
       method: 'POST'
     }, { DB: mockD1 as any });
     expect(res.status).toBe(404);

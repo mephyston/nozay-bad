@@ -30,6 +30,6 @@ Le site comporte également les pages *Politique de confidentialité* et *Mentio
 
 - La **validation ou le refus** de sa note de frais ;
 - La **validation ou le refus** de sa commande boutique ;
-- Les annonces envoyées par le bureau et, si elles sont activées, les relances de cotisation et les anniversaires.
+- Les annonces envoyées par le bureau et, si elles sont activées, les relances de cotisation et de commande à régler, ainsi que les anniversaires.
 
 Ces messages ne partent que vers les appareils réellement abonnés aux notifications.

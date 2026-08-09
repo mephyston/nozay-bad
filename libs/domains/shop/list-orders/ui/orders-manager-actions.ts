@@ -14,48 +14,81 @@ export async function getErrorMessage(res: Response, defaultMsg: string): Promis
   }
 }
 
-export async function approveOrder(orderId: number): Promise<{ success: boolean; error?: string }> {
+export interface OrderActionResult {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Poste une transition de commande à la page admin courante.
+ *
+ * `flash` n'est émis qu'en cas de succès : un refus laisse la page en l'état, avec
+ * l'erreur affichée en place.
+ */
+async function postOrderAction(
+  action: string,
+  orderId: number,
+  messages: { error: string; flash: string },
+  payload: Record<string, unknown> = {}
+): Promise<OrderActionResult> {
   try {
     const res = await fetch('', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'approve', id: orderId })
+      body: JSON.stringify({ action, id: orderId, ...payload })
     });
 
     if (!res.ok) {
-      const errText = await getErrorMessage(res, 'Erreur lors de la validation');
-      return { success: false, error: errText };
+      return { success: false, error: await getErrorMessage(res, messages.error) };
     }
 
-    flashAndReload('Commande validée.');
-
+    flashAndReload(messages.flash);
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || 'Une erreur est survenue' };
   }
 }
 
-export async function rejectOrder(orderId: number): Promise<{ success: boolean; error?: string }> {
+/** Créée → en attente de paiement. Réserve le stock, n'écrit rien en compta. */
+export async function validateOrder(orderId: number): Promise<OrderActionResult> {
+  return postOrderAction('validate', orderId, {
+    error: 'Erreur lors de la validation',
+    flash: 'Commande validée : en attente de paiement.'
+  });
+}
+
+/** En attente de paiement → payée. Génère l'écriture de recette. */
+export async function payOrder(orderId: number, paidAt?: string): Promise<OrderActionResult> {
+  return postOrderAction(
+    'pay',
+    orderId,
+    { error: "Erreur lors de l'encaissement", flash: 'Commande payée : recette enregistrée.' },
+    paidAt ? { paidAt } : {}
+  );
+}
+
+export async function rejectOrder(orderId: number): Promise<OrderActionResult> {
   if (!(await uiConfirm('Êtes-vous sûr de vouloir refuser cette commande ?'))) {
     return { success: false };
   }
 
-  try {
-    const res = await fetch('', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'reject', id: orderId })
-    });
+  return postOrderAction('reject', orderId, {
+    error: 'Erreur lors du refus',
+    flash: 'Commande refusée.'
+  });
+}
 
-    if (!res.ok) {
-      const errText = await getErrorMessage(res, 'Erreur lors du rejet');
-      return { success: false, error: errText };
-    }
-
-    flashAndReload('Commande rejetée.');
-
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || 'Une erreur est survenue' };
+export async function cancelOrder(orderId: number): Promise<OrderActionResult> {
+  if (
+    !(await uiConfirm(
+      "Annuler cette commande faute de règlement ? Le stock réservé sera rendu."
+    ))
+  ) {
+    return { success: false };
   }
+
+  return postOrderAction('cancel', orderId, {
+    error: "Erreur lors de l'annulation",
+    flash: 'Commande annulée.'
+  });
 }

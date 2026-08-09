@@ -34,7 +34,7 @@ Le bouton **Clôturer** lance d'abord une **vérification comptable**. La clôtu
 - des lignes de relevé bancaire restent non rapprochées ;
 - des remises de chèques ne sont pas encaissées ;
 - des chèques restent en coffre, non remis en banque ;
-- des commandes boutique payées n'ont pas été validées.
+- des commandes boutique portent une date de règlement sans avoir été encaissées en comptabilité.
 
 D'autres constats sont signalés en **avertissement**, sans bloquer :
 

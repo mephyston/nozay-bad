@@ -14,11 +14,23 @@ const apiService = createAdminApiClient(Astro.locals);
 
 const season = Astro.url.searchParams.get('season') || '25-26';
 
+// Les quatre transitions du workflow relèvent de la même décision de gestion —
+// accepter, refuser, encaisser, annuler — et donc du même droit.
 const ACTIONS = {
-  approve: 'shop:orders:approve',
+  validate: 'shop:orders:approve',
+  pay: 'shop:orders:approve',
   reject: 'shop:orders:approve',
+  cancel: 'shop:orders:approve',
   update: 'shop:orders:write'
 } as const;
+
+/** Transition → segment d'URL de l'API. */
+const TRANSITION_PATHS: Record<string, string> = {
+  validate: 'validate',
+  pay: 'pay',
+  reject: 'reject',
+  cancel: 'cancel'
+};
 
 if (Astro.request.method === 'POST') {
   try {
@@ -33,17 +45,13 @@ if (Astro.request.method === 'POST') {
       if (denied) return denied;
     }
 
-    if (data.action === 'approve') {
-      const apiRes = await apiService.fetch(`http://localhost/shop/orders/${data.id}/approve`, {
-        method: 'POST'
-      });
-      if (!apiRes.ok) {
-        return new Response(await apiRes.text(), { status: apiRes.status });
-      }
-      return new Response(JSON.stringify(await apiRes.json()));
-    } else if (data.action === 'reject') {
-      const apiRes = await apiService.fetch(`http://localhost/shop/orders/${data.id}/reject`, {
-        method: 'POST'
+    const transition = TRANSITION_PATHS[data.action];
+    if (transition) {
+      const apiRes = await apiService.fetch(`http://localhost/shop/orders/${data.id}/${transition}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // `paidAt` n'est porté que par l'encaissement ; les autres l'ignorent.
+        body: JSON.stringify(data.paidAt ? { paidAt: data.paidAt } : {})
       });
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });
@@ -125,7 +133,7 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
 
       <PageHeader
         title="Commandes Boutique"
-        description={`Validez ou refusez les demandes d'achats boutique des adhérents et consultez l'historique pour la saison ${displaySeasonName}.`}
+        description={`Validez les demandes d'achats, encaissez les commandes en attente de paiement et consultez l'historique pour la saison ${displaySeasonName}.`}
         class="print:hidden"
       >
         <Fragment slot="actions">

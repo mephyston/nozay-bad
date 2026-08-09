@@ -52,7 +52,7 @@ describe('createOrder handler (Eligibility & Validation)', () => {
     });
 
     expect(order).toBeDefined();
-    expect(order.status).toBe('pending');
+    expect(order.status).toBe('created');
     expect(order.totalAmountCents).toBe(1500);
   });
 

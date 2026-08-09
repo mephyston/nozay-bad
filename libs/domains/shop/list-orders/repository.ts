@@ -1,6 +1,7 @@
 import { eq, and, inArray } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { ordersTable, productsTable } from '../shared/schema';
+import type { OrderStatus } from '../shared/order';
 import { getMembersByIds } from '@nba/members-api';
 import { paymentMethodsTable } from '@nba/accounting/schema';
 
@@ -11,7 +12,7 @@ export class ListOrdersRepository {
   async list(db: DbOrTx, filters: { seasonId?: number; status?: string; memberId?: number }): Promise<(typeof ordersTable.$inferSelect)[]> {
     const conditions = [];
     if (filters.seasonId) conditions.push(eq(ordersTable.seasonId, filters.seasonId));
-    if (filters.status) conditions.push(eq(ordersTable.status, filters.status as 'pending' | 'approved' | 'rejected'));
+    if (filters.status) conditions.push(eq(ordersTable.status, filters.status as OrderStatus));
     if (filters.memberId) conditions.push(eq(ordersTable.memberId, filters.memberId));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

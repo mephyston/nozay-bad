@@ -73,7 +73,7 @@ export async function getCloseSeasonChecks(
     const totalCents = unvalidatedPaidOrders.reduce((sum, o) => sum + (o.totalAmountCents || 0), 0);
     blockingItems.push({
       code: 'UNVALIDATED_PAID_ORDERS',
-      message: `Il reste ${unvalidatedPaidOrders.length} commande(s) boutique payée(s) non validée(s) (Montant total: ${(totalCents / 100).toFixed(2)} €). Validation requise avant clôture.`,
+      message: `Il reste ${unvalidatedPaidOrders.length} commande(s) boutique réglée(s) mais non encaissée(s) en comptabilité (Montant total: ${(totalCents / 100).toFixed(2)} €). Encaissement requis avant clôture.`,
       details: unvalidatedPaidOrders.map(o => ({ id: o.id, paidAt: o.paidAt, totalAmountCents: o.totalAmountCents, memberId: o.memberId }))
     });
   }

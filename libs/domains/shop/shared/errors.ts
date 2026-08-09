@@ -35,6 +35,18 @@ export class MemberNotFoundError extends AppError {
   }
 }
 
+export class InsufficientStockError extends AppError {
+  constructor(productName?: string) {
+    super(
+      productName
+        ? `Stock insuffisant pour ${productName}.`
+        : "Stock insuffisant pour cet article.",
+      400
+    );
+    this.name = 'InsufficientStockError';
+  }
+}
+
 export class ConcurrentModificationError extends AppError {
   constructor(message = 'Commande déjà traitée (conflit concurrent)') {
     super(message, 409);
