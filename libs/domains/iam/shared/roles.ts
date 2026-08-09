@@ -123,6 +123,11 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'cms:media:delete',
     'cms:nav:read',
     'cms:nav:write',
+    'schedules:slots:read',
+    'schedules:slots:write',
+    'events:events:read',
+    'events:events:write',
+    'events:events:delete',
     // Représentation légale : accorde et révoque les accès.
     'iam:users:read',
     'iam:users:write',
@@ -156,6 +161,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'announcements:posts:read',
     'cms:pages:read',
     'cms:posts:read',
+    'schedules:slots:read',
+    'events:events:read',
     'settings:hub:read',
     'ai:assistant:use'
   ],
@@ -185,6 +192,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'cms:media:read',
     'cms:media:write',
     'cms:nav:read',
+    'schedules:slots:read',
+    'events:events:read',
+    'events:events:write',
     // Boutique : catalogue et suivi des commandes, sans encaissement.
     'shop:products:read',
     'shop:products:write',
@@ -211,6 +221,10 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'announcements:posts:read',
     'cms:pages:read',
     'cms:posts:read',
+    // L'entraîneur vit les créneaux au quotidien : il les tient à jour.
+    'schedules:slots:read',
+    'schedules:slots:write',
+    'events:events:read',
     // Les catégories de produits vivent dans les réglages : sans cette entrée, l'écran
     // existe mais aucun chemin du menu n'y mène.
     'settings:hub:read'
@@ -248,7 +262,12 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'cms:media:write',
     'cms:media:delete',
     'cms:nav:read',
-    'cms:nav:write'
+    'cms:nav:write',
+    'schedules:slots:read',
+    'schedules:slots:write',
+    'events:events:read',
+    'events:events:write',
+    'events:events:delete'
   ],
 
   // Socle du deny-by-default : aucun droit métier. Attribué à un compte créé sans

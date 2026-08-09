@@ -86,6 +86,15 @@ export const ALL_PERMISSIONS = [
   'cms:nav:read',
   'cms:nav:write',
 
+  // — Créneaux et agenda —
+  // Données du club, pas du contenu : un créneau change quand la mairie réattribue un
+  // gymnase. D'où des droits distincts de ceux du site, qui ne fait que les afficher.
+  'schedules:slots:read',
+  'schedules:slots:write',
+  'events:events:read',
+  'events:events:write',
+  'events:events:delete',
+
   // — Assistant IA —
   'ai:assistant:use',
 

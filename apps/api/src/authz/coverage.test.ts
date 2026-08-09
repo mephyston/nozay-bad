@@ -39,7 +39,7 @@ describe('couverture de ROUTE_PERMISSIONS', () => {
   });
 
   it('déclare au moins une règle par domaine monté', () => {
-    for (const prefix of ['/members', '/accounting', '/expenses', '/shop', '/iam', '/notifications', '/announcements', '/cms', '/dashboard', '/ai']) {
+    for (const prefix of ['/members', '/accounting', '/expenses', '/shop', '/iam', '/notifications', '/announcements', '/cms', '/schedules', '/events', '/dashboard', '/ai']) {
       expect(
         ROUTE_PERMISSIONS.some((r) => r.path.startsWith(prefix)),
         `aucune règle pour ${prefix}`

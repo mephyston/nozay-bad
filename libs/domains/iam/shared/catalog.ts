@@ -65,6 +65,11 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'cms:media:delete': 'Supprimer un média',
   'cms:nav:read': 'Consulter les menus et les redirections',
   'cms:nav:write': 'Modifier les menus et les redirections',
+  'schedules:slots:read': 'Consulter les créneaux',
+  'schedules:slots:write': 'Modifier les créneaux',
+  'events:events:read': "Consulter l'agenda",
+  'events:events:write': 'Créer et modifier un événement',
+  'events:events:delete': 'Supprimer un événement',
 
   'ai:assistant:use': "Utiliser l'assistant IA",
 
@@ -90,6 +95,8 @@ export const PERMISSION_GROUPS: { domain: string; label: string }[] = [
   { domain: 'notifications', label: 'Communication' },
   { domain: 'announcements', label: 'Annonces' },
   { domain: 'cms', label: 'Site public' },
+  { domain: 'schedules', label: 'Créneaux' },
+  { domain: 'events', label: 'Agenda' },
   { domain: 'ai', label: 'Assistant IA' },
   { domain: 'settings', label: 'Réglages' },
   { domain: 'iam', label: 'Accès et rôles' },

@@ -71,7 +71,9 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { name: 'Pages', icon: 'FileText', href: '/admin/website/pages', permission: 'cms:pages:read' },
       { name: 'Actualités du site', icon: 'Newspaper', href: '/admin/website/posts', permission: 'cms:posts:read' },
-      { name: 'Médiathèque', icon: 'Image', href: '/admin/website/media', permission: 'cms:media:read' }
+      { name: 'Médiathèque', icon: 'Image', href: '/admin/website/media', permission: 'cms:media:read' },
+      { name: 'Créneaux', icon: 'CalendarClock', href: '/admin/website/schedules', permission: 'schedules:slots:read' },
+      { name: 'Agenda', icon: 'CalendarDays', href: '/admin/website/events', permission: 'events:events:read' }
     ]
   },
   {
