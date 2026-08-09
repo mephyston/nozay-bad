@@ -1,3 +1,10 @@
+# [1.0.0-beta.68](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.67...v1.0.0-beta.68) (2026-08-09)
+
+
+### Bug Fixes
+
+* **cms:** reconnaître website comme appelant de service, et compter les redirections ([34cf432](https://github.com/mephyston/nozay-bad/commit/34cf4322b0f183bfdb86e692d9e3a78b17b309b8))
+
 # [1.0.0-beta.67](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.66...v1.0.0-beta.67) (2026-08-08)
 
 
