@@ -105,7 +105,7 @@ export default defineConfig({
         '@nba/notifications-ui',
         '@nba/iam',
         '@nba/iam-ui',
-        '@nba/announcements-ui', '@nba/cms-ui'
+        '@nba/announcements-ui', '@nba/cms-ui', '@nba/schedules-ui', '@nba/events-ui'
       ]
     },
     ssr: {

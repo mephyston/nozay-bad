@@ -27,6 +27,10 @@ export async function setupMockDb() {
     'cms_media',
     'cms_redirects',
     'cms_content_version',
+    // Créneaux et agenda : enfants avant parents, comme le reste de la liste.
+    'schedule_slots',
+    'club_events',
+    'venues',
     'push_deliveries',
     'push_messages',
     'push_preferences',

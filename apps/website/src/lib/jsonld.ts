@@ -103,3 +103,52 @@ export function itemList(siteUrl: string, items: { name: string; path: string }[
     }))
   };
 }
+
+/**
+ * Horaires d'ouverture dérivés des créneaux.
+ *
+ * C'est ce qui rend la page « Créneaux » lisible par une machine — ce que l'iframe
+ * Google Sheets de l'ancien site n'a jamais été.
+ */
+const ISO_DAYS = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+export function openingHours(slots: { weekday: number; startTime: string; endTime: string }[]) {
+  return slots.map((slot) => ({
+    '@type': 'OpeningHoursSpecification',
+    dayOfWeek: `https://schema.org/${ISO_DAYS[slot.weekday]}`,
+    opens: slot.startTime,
+    closes: slot.endTime
+  }));
+}
+
+export function sportsEvent(
+  siteUrl: string,
+  event: {
+    title: string;
+    slug: string;
+    startsAt: string;
+    endsAt: string | null;
+    venueLabel: string | null;
+    status: string;
+    description?: string | null;
+  }
+) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'SportsEvent',
+    name: event.title,
+    startDate: event.startsAt,
+    ...(event.endsAt ? { endDate: event.endsAt } : {}),
+    // Un événement annulé garde sa fiche : c'est précisément ce que cherche quelqu'un
+    // qui comptait s'y rendre, et Google sait l'afficher comme tel.
+    eventStatus:
+      event.status === 'cancelled' ? 'https://schema.org/EventCancelled' : 'https://schema.org/EventScheduled',
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    ...(event.venueLabel
+      ? { location: { '@type': 'Place', name: event.venueLabel, address: { '@type': 'PostalAddress', addressCountry: 'FR' } } }
+      : {}),
+    ...(event.description ? { description: event.description } : {}),
+    organizer: { '@id': clubId(siteUrl) },
+    url: new URL('/agenda/', siteUrl).toString()
+  };
+}

@@ -23,7 +23,9 @@
       "@nba/announcements-api": ["../../libs/domains/announcements/index.ts"],
       "@nba/announcements-ui": ["../../libs/domains/announcements/shared/ui.ts"],
       "@nba/cms-ui": ["../../libs/domains/cms/shared/ui.ts"],
-      "@nba/preview": ["../../libs/shared/preview/src/index.ts"]
+      "@nba/preview": ["../../libs/shared/preview/src/index.ts"],
+      "@nba/schedules-ui": ["../../libs/domains/schedules/shared/ui.ts"],
+      "@nba/events-ui": ["../../libs/domains/events/shared/ui.ts"]
     }
   }
 }

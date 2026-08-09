@@ -8,6 +8,20 @@
       "when": 1786226044622,
       "tag": "0000_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1786226044623,
+      "tag": "0001_seed_reference_data",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786267546737,
+      "tag": "0002_schedules_events",
+      "breakpoints": true
     }
   ]
 }

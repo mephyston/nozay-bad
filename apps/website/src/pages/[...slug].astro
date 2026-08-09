@@ -3,10 +3,10 @@ import { normalisePath } from '@nba/cms/public';
 import { verifyPreviewToken } from '@nba/preview';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BlockRenderer from '../components/blocks/BlockRenderer.astro';
-import { resolvePublicRoute, loadMedia, mediaIdsInBlocks } from '../lib/cms';
+import { resolvePublicRoute, loadMedia, mediaIdsInBlocks, listScheduleSlots } from '../lib/cms';
 import { resolveEnv } from '../lib/request-context';
 import { pageTitle, pageDescription, absoluteUrl } from '../lib/seo';
-import { sportsClub, webPage, breadcrumbList, article } from '../lib/jsonld';
+import { sportsClub, webPage, breadcrumbList, article, openingHours } from '../lib/jsonld';
 import { HTML_CACHE_CONTROL } from '../lib/cache';
 
 const env = resolveEnv(Astro.locals);
@@ -59,6 +59,11 @@ const blocks = resolved.kind === 'page' ? resolved.blocks : [];
 // disposer des dimensions et des variantes au moment du rendu.
 const media = await loadMedia(env, mediaIdsInBlocks(blocks));
 
+// Les créneaux ne sont chargés que si la page en affiche : une page de prose ne doit
+// pas payer un aller-retour inutile.
+const needsSchedule = blocks.some((block) => block.type === 'schedule');
+const slots = needsSchedule ? await listScheduleSlots(env) : [];
+
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' });
 
 // --- Vue « actualité » --------------------------------------------------------
@@ -93,6 +98,15 @@ if (page) {
   pageJsonLd.push(webPage(siteUrl, { title: page.title, description: pageDescriptionText, path: page.path }));
   pageJsonLd.push(breadcrumbList(siteUrl, trail));
   if (page.path === '/') pageJsonLd.unshift(sportsClub(siteUrl));
+  // Les horaires rendent la page « Créneaux » exploitable par une machine.
+  if (slots.length > 0) {
+    pageJsonLd.push({
+      '@context': 'https://schema.org',
+      '@type': 'SportsClub',
+      name: 'Nozay Badminton Association',
+      openingHoursSpecification: openingHours(slots)
+    });
+  }
 }
 ---
 
@@ -139,6 +153,6 @@ if (page) {
         <h1 class="text-3xl font-semibold tracking-tight">{page.title}</h1>
       </div>
     )}
-    {blocks.map((block) => <BlockRenderer block={block} media={media} />)}
+    {blocks.map((block) => <BlockRenderer block={block} media={media} slots={slots} />)}
   </BaseLayout>
 )}

@@ -1,0 +1,61 @@
+---
+import type { ScheduleBlock } from '@nba/cms/public';
+import type { ScheduleSlotView } from '../../lib/cms';
+
+interface Props { block: ScheduleBlock; slots?: ScheduleSlotView[] }
+const { block, slots = [] } = Astro.props;
+
+const WEEKDAYS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+const AUDIENCES: Record<string, string> = {
+  minibad: 'Minibad (U9)', poussins: 'Poussins (U11)', jeunes: 'Jeunes',
+  elite_jeunes: 'Élite Jeunes', adultes_loisir: 'Adultes loisirs',
+  adultes_competition: 'Adultes compétition', jeu_libre: 'Jeu libre'
+};
+
+// Le bloc ne porte qu'une requête : le filtrage final se fait ici, sur les créneaux
+// que le domaine a rendus.
+const shown = block.audiences.length > 0
+  ? slots.filter((slot) => block.audiences.includes(slot.audience))
+  : slots;
+
+const byDay = WEEKDAYS.map((label, weekday) => ({
+  label,
+  weekday,
+  slots: shown.filter((slot) => slot.weekday === weekday)
+})).filter((group) => group.weekday > 0 && group.slots.length > 0);
+---
+<section class="mx-auto max-w-5xl px-4 py-8">
+  {block.heading && <h2 class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
+
+  {byDay.length === 0 ? (
+    <p class="text-muted-foreground">Les créneaux ne sont pas encore renseignés pour cette saison.</p>
+  ) : (
+    <div class="overflow-x-auto">
+      {/* Un vrai tableau, indexable et lisible au lecteur d'écran — là où l'ancien
+          site enfermait la même information dans une feuille Google en iframe. */}
+      <table class="w-full min-w-[36rem] text-left text-sm">
+        <caption class="sr-only">Créneaux d'entraînement par jour</caption>
+        <thead class="border-border border-b">
+          <tr>
+            <th scope="col" class="py-2 pr-4 font-medium">Jour</th>
+            <th scope="col" class="py-2 pr-4 font-medium">Horaire</th>
+            <th scope="col" class="py-2 pr-4 font-medium">Groupe</th>
+            <th scope="col" class="py-2 pr-4 font-medium">Gymnase</th>
+          </tr>
+        </thead>
+        <tbody class="divide-border divide-y">
+          {byDay.map((group) =>
+            group.slots.map((slot, index) => (
+              <tr>
+                <th scope="row" class="py-2 pr-4 font-normal">{index === 0 ? group.label : ''}</th>
+                <td class="py-2 pr-4 tabular-nums">{slot.startTime} – {slot.endTime}</td>
+                <td class="py-2 pr-4">{slot.label ?? AUDIENCES[slot.audience] ?? slot.audience}</td>
+                <td class="text-muted-foreground py-2 pr-4">{slot.venue?.name ?? '—'}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  )}
+</section>

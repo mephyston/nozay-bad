@@ -2,6 +2,8 @@
   "comment": "Migrations D1 livrées : append-only. Voir scripts/check-migrations-append-only.js",
   "migrations": {
     "0000_baseline.sql": "87f74fdad0a33e80",
-    "0001_seed_reference_data.sql": "1c16e4c5de6963b6"
+    "0001_seed_reference_data.sql": "1c16e4c5de6963b6",
+    "0002_schedules_events.sql": "5d92c21fb7fd397c",
+    "0003_schedules_events_permissions.sql": "e284f913c1f852c7"
   }
 }

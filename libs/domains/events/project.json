@@ -1,0 +1,8 @@
+{
+  "name": "@nba/events-api",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/domains/events",
+  "targets": { "lint": { "command": "eslint {projectRoot}" } },
+  "tags": ["type:api", "scope:events"]
+}

@@ -211,5 +211,20 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/cms/posts/:id/publish', permission: 'cms:posts:write' },
   { method: 'DELETE', path: '/cms/posts/:id', permission: 'cms:posts:delete' },
   { method: 'GET', path: '/cms/post-categories', permission: 'cms:posts:read', service: true },
-  { method: 'POST', path: '/cms/post-categories', permission: 'cms:posts:write' }
+  { method: 'POST', path: '/cms/post-categories', permission: 'cms:posts:write' },
+
+  // Créneaux. Le site public les affiche, d'où `service` en lecture : c'est ce qui
+  // remplace l'iframe Google Sheets, invisible des moteurs.
+  { method: 'GET', path: '/schedules', permission: 'schedules:slots:read', service: true },
+  { method: 'GET', path: '/schedules/venues', permission: 'schedules:slots:read', service: true },
+  { method: 'POST', path: '/schedules/venues', permission: 'schedules:slots:write' },
+  { method: 'POST', path: '/schedules', permission: 'schedules:slots:write' },
+  { method: 'PUT', path: '/schedules/:id', permission: 'schedules:slots:write' },
+  { method: 'DELETE', path: '/schedules/:id', permission: 'schedules:slots:write' },
+
+  // Agenda. Remplace l'iframe Google Calendar : chaque événement devient indexable.
+  { method: 'GET', path: '/events', permission: 'events:events:read', service: true },
+  { method: 'POST', path: '/events', permission: 'events:events:write' },
+  { method: 'PUT', path: '/events/:id', permission: 'events:events:write' },
+  { method: 'DELETE', path: '/events/:id', permission: 'events:events:delete' }
 ];

@@ -41,6 +41,10 @@ export default defineConfig({
       '@nba/cms-api': path.resolve(__dirname, './libs/domains/cms/index.ts'),
       '@nba/cms/public': path.resolve(__dirname, './libs/domains/cms/shared/public.ts'),
       '@nba/cms-ui': path.resolve(__dirname, './libs/domains/cms/shared/ui.ts'),
+      '@nba/schedules-api': path.resolve(__dirname, './libs/domains/schedules/index.ts'),
+      '@nba/events-api': path.resolve(__dirname, './libs/domains/events/index.ts'),
+      '@nba/schedules-ui': path.resolve(__dirname, './libs/domains/schedules/shared/ui.ts'),
+      '@nba/events-ui': path.resolve(__dirname, './libs/domains/events/shared/ui.ts'),
       '@nba/cms/schema': path.resolve(__dirname, './libs/domains/cms/shared/schema.ts'),
       '@nba/announcements-api': path.resolve(__dirname, './libs/domains/announcements/index.ts'),
       '@nba/announcements/schema': path.resolve(__dirname, './libs/domains/announcements/shared/schema.ts'),
@@ -259,6 +263,30 @@ export default defineConfig({
             },
           }),
         ],
+        cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-schedules-api'),
+        test: {
+          name: 'features-schedules-api',
+          globals: true,
+          root: path.resolve(__dirname, 'libs/domains/schedules'),
+          include: ['**/*.test.ts'],
+          exclude: ['**/ui/**', '**/node_modules/**'],
+        }
+      },
+      {
+        extends: true,
+        plugins: [cloudflareTest({ wrangler: { configPath: wranglerConfig } })],
+        cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-events-api'),
+        test: {
+          name: 'features-events-api',
+          globals: true,
+          root: path.resolve(__dirname, 'libs/domains/events'),
+          include: ['**/*.test.ts'],
+          exclude: ['**/ui/**', '**/node_modules/**'],
+        }
+      },
+      {
+        extends: true,
+        plugins: [cloudflareTest({ wrangler: { configPath: wranglerConfig } })],
         cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-cms-api'),
         test: {
           name: 'features-cms-api',

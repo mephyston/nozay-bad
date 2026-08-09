@@ -83,6 +83,16 @@ export default tseslint.config(
               onlyDependOnLibsWithTags: ['scope:shop', 'scope:shared', 'scope:members', 'scope:accounting', 'scope:notifications']
             },
             {
+              sourceTag: 'scope:schedules',
+              // Feuille : les créneaux ne dépendent d'aucun autre domaine. C'est le
+              // site — et demain le storefront — qui composent.
+              onlyDependOnLibsWithTags: ['scope:schedules', 'scope:shared']
+            },
+            {
+              sourceTag: 'scope:events',
+              onlyDependOnLibsWithTags: ['scope:events', 'scope:shared']
+            },
+            {
               sourceTag: 'scope:cms',
               // Feuille : le CMS ne dépend d'aucun autre domaine. Les créneaux et
               // l'agenda seront composés par apps/website, pas importés ici — un bloc

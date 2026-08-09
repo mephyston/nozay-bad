@@ -150,3 +150,40 @@ export async function listPostCategories(
 ): Promise<{ slug: string; name: string }[]> {
   return (await getJson<{ slug: string; name: string }[]>(env, '/cms/post-categories')) ?? [];
 }
+
+export interface ScheduleSlotView {
+  id: number;
+  weekday: number;
+  startTime: string;
+  endTime: string;
+  audience: string;
+  label: string | null;
+  coachName: string | null;
+  venue: { name: string; streetAddress: string | null; postalCode: string | null; city: string | null } | null;
+}
+
+export interface ClubEventView {
+  id: number;
+  slug: string;
+  title: string;
+  startsAt: string;
+  endsAt: string | null;
+  allDay: boolean;
+  category: string;
+  venueLabel: string | null;
+  descriptionHtml: string | null;
+  externalUrl: string | null;
+  status: string;
+}
+
+export async function listScheduleSlots(
+  env: WebsiteEnv,
+  options: { audiences?: string[] } = {}
+): Promise<ScheduleSlotView[]> {
+  const query = options.audiences?.length ? `?audiences=${options.audiences.join(',')}` : '';
+  return (await getJson<ScheduleSlotView[]>(env, `/schedules${query}`)) ?? [];
+}
+
+export async function listClubEvents(env: WebsiteEnv, limit = 50): Promise<ClubEventView[]> {
+  return (await getJson<ClubEventView[]>(env, `/events?limit=${limit}`)) ?? [];
+}
