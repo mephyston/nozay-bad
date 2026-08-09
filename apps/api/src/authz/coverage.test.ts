@@ -56,3 +56,45 @@ function matchRuleExact(method: string, path: string): boolean {
   const rule = matchRule(method, path);
   return rule?.path === path;
 }
+
+/**
+ * Appelants de service.
+ *
+ * Le site public a été refusé en production comme « appelant inconnu » alors que son
+ * en-tête était correct : le type du client, la table des routes et le middleware
+ * avaient été élargis séparément, et le troisième avait été oublié. Ces cas
+ * verrouillent la cohérence entre les deux extrémités.
+ */
+describe('appelants de service', () => {
+  const KEY = 'cle-de-test';
+  const ENV = { INTERNAL_API_KEY: KEY } as never;
+
+  /** Le middleware s'exécute avant le handler : seul son verdict est observé ici. */
+  const call = (path: string, caller: string, init: RequestInit = {}) =>
+    app.request(
+      path,
+      { ...init, headers: { 'x-api-key': KEY, 'x-caller': caller, ...(init.headers ?? {}) } },
+      ENV
+    );
+
+  it('laisse storefront et website atteindre une route de service', async () => {
+    for (const caller of ['storefront', 'website']) {
+      const res = await call('/cms/route?path=/', caller);
+      expect(res.status, `${caller} refusé sur une route « service »`).not.toBe(403);
+    }
+  });
+
+  it("refuse à un appelant de service une route qui ne l'est pas", async () => {
+    const res = await call('/cms/pages', 'website', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'X' })
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("refuse un appelant qui n'est déclaré nulle part", async () => {
+    const res = await call('/cms/route?path=/', 'inconnu');
+    expect(res.status).toBe(403);
+  });
+});

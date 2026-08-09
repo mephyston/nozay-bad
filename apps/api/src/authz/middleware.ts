@@ -44,12 +44,22 @@ function deny(
  * et suffit à escalader dès qu'un proxy oublie de nettoyer les en-têtes entrants.
  *
  * L'identité est digne de foi parce que la couche de transport l'est : l'API rejette
- * toute requête sans `INTERNAL_API_KEY`, un secret que seuls les Workers admin et
- * storefront détiennent — le navigateur ne l'atteint jamais directement. `x-caller`
- * distingue les deux appelants ; comme ils partagent la même clé, il prévient une
- * erreur de câblage, pas un pair compromis. Des clés par appelant seraient le
+ * toute requête sans `INTERNAL_API_KEY`, un secret que seuls les Workers admin,
+ * storefront et website détiennent — le navigateur ne l'atteint jamais directement.
+ * `x-caller` distingue les appelants ; comme ils partagent la même clé, il prévient
+ * une erreur de câblage, pas un pair compromis. Des clés par appelant seraient le
  * durcissement suivant.
  */
+/**
+ * Appelants sans identité, restreints aux routes `service`.
+ *
+ * Les tenir dans un ensemble nommé plutôt qu'en comparaison littérale évite ce qui
+ * vient de se produire : ajouter un troisième Worker, élargir le type du client et la
+ * table des routes, et oublier ce point de contrôle — la requête part alors avec un
+ * en-tête valide et se fait refuser comme « appelant inconnu ».
+ */
+const SERVICE_CALLERS = new Set(['storefront', 'website']);
+
 export function authorize(): MiddlewareHandler<{ Bindings: AuthzBindings }> {
   return async (c, next) => {
     if (EXEMPT_PATHS.has(c.req.path)) return next();
@@ -67,9 +77,12 @@ export function authorize(): MiddlewareHandler<{ Bindings: AuthzBindings }> {
 
     const caller = c.req.header('x-caller') || '';
 
-    if (caller === 'storefront') {
+    // Appelants de service : des Workers sans compte ni identité. Le storefront sert
+    // l'espace adhérent, website le site public. Ni l'un ni l'autre ne porte de
+    // permission propre, ils sont donc bornés aux routes marquées `service`.
+    if (SERVICE_CALLERS.has(caller)) {
       if (!rule.service) {
-        const res = deny(c, 403, 'Accès refusé', 'route interdite au storefront', enforcing);
+        const res = deny(c, 403, 'Accès refusé', `route interdite à ${caller}`, enforcing);
         return res ?? next();
       }
       return next();

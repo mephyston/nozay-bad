@@ -36,8 +36,20 @@ export async function resolveRoute(db: Db, input: ResolveRouteInput): Promise<Re
 
   const redirect = await repo.findRedirect(db, path);
   if (redirect) {
-    // Comptage au fil de l'eau, sans bloquer la réponse ni la faire échouer.
-    void repo.countHit(db, redirect.id).catch(() => undefined);
+    // Comptage attendu, et non détaché.
+    //
+    // Une promesse laissée en suspens est **annulée** dès que le Worker rend sa
+    // réponse : le compteur restait à zéro en production alors qu'il s'incrémentait
+    // en test, où rien ne l'interrompt. Attendre coûte une écriture indexée sur un
+    // chemin déjà froid — ce sont des URL héritées de WordPress — et c'est ce
+    // compteur qui dira quand une redirection peut être retirée.
+    //
+    // L'échec ne doit pas pour autant transformer une redirection en erreur.
+    try {
+      await repo.countHit(db, redirect.id);
+    } catch {
+      // Statistique : son échec ne concerne pas le visiteur.
+    }
     if (!redirect.toPath) return { kind: 'gone' };
     return { kind: 'redirect', toPath: redirect.toPath, statusCode: redirect.statusCode };
   }
