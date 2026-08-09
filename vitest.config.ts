@@ -69,8 +69,16 @@ export default defineConfig({
     // Filet de sécurité pour `vitest --changed` (CI) : ces fichiers ne sont PAS dans le
     // graphe d'imports (migrations SQL, config wrangler du pool, configs racine). S'ils
     // changent, Vitest ignore --changed et relance TOUTE la suite.
+    //
+    // `package-lock.json` et non `package.json` : c'est un **changement de dépendance**
+    // qu'on veut attraper, et npm écrit toujours le lock quand il y en a un. Viser
+    // `package.json` faisait au contraire tout relancer à chaque release — le robot
+    // semantic-release n'y touche que le numéro de version, et son commit porte
+    // `[skip ci]`, donc il n'a pas de run à lui. `NX_BASE` restait alors en deçà, et le
+    // bump se retrouvait dans l'intervalle comparé du push suivant : un push sur deux
+    // rejouait la suite entière pour rien.
     forceRerunTriggers: [
-      '**/package.json',
+      '**/package-lock.json',
       '**/{vitest,vite}.config.*',
       '**/vitest.setup.ts',
       '**/vitest.wrangler.ts',
