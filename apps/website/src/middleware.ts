@@ -1,7 +1,11 @@
 import { defineMiddleware } from 'astro:middleware';
+import { waitUntil } from 'cloudflare:workers';
+import { verifyPreviewToken } from '@nba/preview';
 import { applySecurityHeaders } from './lib/security-headers';
 import { resolveEnv } from './lib/request-context';
 import { isLocalHost, needsTrailingSlash } from './lib/routing';
+import { cachedContentVersion, withPageCache } from './lib/cache';
+import { getContentVersion } from './lib/cms';
 
 /**
  * Aucune authentification : tout ce que sert ce site est public.
@@ -41,9 +45,48 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return Response.redirect(url.toString(), 301);
   }
 
-  const response = await next();
-
   // La préproduction ne doit jamais entrer dans un index, quoi qu'il arrive : le
   // `robots.txt` le dit déjà, l'en-tête le répète pour les pages atteintes en direct.
-  return applySecurityHeaders(response, { noindex: appEnv === 'staging' });
+  const render = async () =>
+    applySecurityHeaders(await next(), { noindex: appEnv === 'staging' });
+
+  /*
+    Cache de page, ici et pas dans les pages elles-mêmes.
+
+    C'est le seul endroit où `next()` fournit exactement la fonction de rendu
+    qu'attend `withPageCache`, et où la réponse mise de côté porte déjà ses en-têtes
+    de sécurité — un succès de cache doit les servir aussi.
+
+    Trois requêtes ne passent jamais par le cache :
+     - autre chose qu'un `GET`, qui n'a rien à relire ;
+     - un aperçu de brouillon, propre à un seul lecteur et qui n'a rien à faire dans
+       un cache **partagé** ;
+     - la préproduction, dont le contenu n'a pas à survivre dans les mêmes entrées.
+
+    Le jeton d'aperçu est **vérifié**, et pas seulement constaté. Se contenter de sa
+    présence laisserait n'importe qui contourner le cache en ajoutant
+    `?preview=nimportequoi`, et forcer un rendu complet à chaque requête — exactement
+    le coût qu'on cherche à supprimer. Un jeton invalide désigne donc une page
+    publique ordinaire, servie et mise en cache comme telle.
+
+    Un aperçu valide, lui, court-circuite la **recherche** autant que l'écriture : la
+    clé ignorant la chaîne de requête, un brouillon y trouverait sinon la version
+    publiée à sa place.
+  */
+  const isPreview = await verifyPreviewToken(
+    url.searchParams.get('preview'),
+    url.pathname,
+    runtimeEnv.PREVIEW_TOKEN_SECRET
+  );
+
+  if (context.request.method !== 'GET' || isPreview || appEnv === 'staging') return render();
+
+  const version = await cachedContentVersion(() => getContentVersion(runtimeEnv), waitUntil);
+
+  return withPageCache(render, {
+    pathname: url.pathname,
+    version,
+    cacheable: true,
+    waitUntil
+  });
 });
