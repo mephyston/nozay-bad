@@ -1,17 +1,10 @@
 <script lang="ts" module>
-  export interface PickableMedia {
-    id: number;
-    key: string;
-    mimeType: string;
-    sizeBytes: number;
-    width: number | null;
-    height: number | null;
-    alt: string;
-  }
+  export type { PickableMedia } from './media-types';
 </script>
 
 <script lang="ts">
   import { Sheet, Input, Button, EmptyState } from '@nba/ui';
+  import { mediaUrl } from '../../media-url';
   import { ImageOff, Search } from '@lucide/svelte';
   import { humanSize } from './media-upload';
 
@@ -45,7 +38,6 @@
   let searchTerm = $state('');
 
   const isImage = (mime: string) => mime.startsWith('image/');
-  const publicUrl = (key: string) => `/media/${key.replace(/^media\//, '')}`;
 
   const shown = $derived(
     media
@@ -111,7 +103,7 @@
               <span class="bg-muted flex aspect-video items-center justify-center overflow-hidden">
                 {#if isImage(item.mimeType)}
                   <img
-                    src={publicUrl(item.key)}
+                    src={mediaUrl(item.key)}
                     alt={item.alt}
                     loading="lazy"
                     class="h-full w-full object-cover"

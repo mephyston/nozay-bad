@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Plus, Trash2, ExternalLink, Upload } from '@lucide/svelte';
+  import { mediaUrl } from '../../media-url';
   import {
     Button,
     Input,
@@ -42,7 +43,6 @@
   let errorMsg = $state('');
   let searchTerm = $state('');
 
-  const publicUrl = (key: string) => `/media/${key.replace(/^media\//, '')}`;
   const isImage = (mime: string) => mime.startsWith('image/');
 
   const filteredMedia = $derived(
@@ -156,7 +156,7 @@
           <div class="flex aspect-video items-center justify-center overflow-hidden bg-muted">
             {#if isImage(row.mimeType)}
               <img
-                src={publicUrl(row.key)}
+                src={mediaUrl(row.key)}
                 alt={row.alt}
                 width={row.width ?? undefined}
                 height={row.height ?? undefined}
@@ -173,7 +173,7 @@
               <DataTableRowActions>
                 <DropdownMenu.Label>Actions</DropdownMenu.Label>
                 <DropdownMenu.Item
-                  onclick={() => window.open(publicUrl(row.key), '_blank', 'noopener')}
+                  onclick={() => window.open(mediaUrl(row.key), '_blank', 'noopener')}
                   class="cursor-pointer"
                 >
                   <ExternalLink class="mr-2 h-3.5 w-3.5" />

@@ -25,9 +25,34 @@ function isActive(item: NavItemView): boolean {
 ---
 <header class="border-border bg-background sticky top-0 z-40 border-b">
   <div class="mx-auto flex max-w-5xl items-center gap-4 px-4 py-3">
+    {/*
+      Deux marques selon la largeur, et non une seule redimensionnée : l'écusson tient
+      dans un carré et reste lisible à 36 px, là où la version complète — qui porte le
+      nom du club — deviendrait illisible sur mobile.
+
+      `alt` vide sur les deux : le nom qui suit dit déjà où mène ce lien, et le
+      dupliquer ferait annoncer « Nozay Badminton Association » deux fois de suite au
+      lecteur d'écran.
+    */}
     <a href="/" class="flex shrink-0 items-center gap-2 font-semibold">
-      <img src="/logo.png" alt="" width="36" height="36" class="h-9 w-9" />
-      <span class="hidden sm:inline">Nozay Badminton</span>
+      {/*
+        Deux enveloppes en `display: contents` plutôt que quatre images à variantes
+        croisées `dark:md:` : le passage clair/sombre se lit d'un coup, et la règle
+        de largeur reste écrite une seule fois par thème.
+
+        Les variantes sombres sont produites par `scripts/make-dark-logo.py`, qui
+        échange clair et sombre en préservant le rouge de la marque — un `filter:
+        invert()` en CSS retournerait aussi l'écusson.
+      */}
+      <span class="contents dark:hidden">
+        <img src="/logo.png" alt="" width="36" height="36" class="h-9 w-9 md:hidden" />
+        <img src="/logo-large.png" alt="" width="270" height="270" class="hidden h-10 w-10 md:block" />
+      </span>
+      <span class="hidden dark:contents">
+        <img src="/logo-dark.png" alt="" width="36" height="36" class="h-9 w-9 md:hidden" />
+        <img src="/logo-large-dark.png" alt="" width="270" height="270" class="hidden h-10 w-10 md:block" />
+      </span>
+      <span class="hidden sm:inline">Nozay Badminton Association</span>
     </a>
 
     {/* Les sous-menus s'ouvrent au survol **et** au focus clavier : un `:hover` seul

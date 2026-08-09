@@ -1,6 +1,11 @@
 import { type Db } from '@nba/db';
-import { buildPath, slugify, assertValidSlug } from '../../shared/slug';
-import { CmsPageNotFoundError, CmsPathConflictError, CmsInvalidSlugError } from '../../shared/errors';
+import { buildPagePath, slugify, assertValidSlug } from '../../shared/slug';
+import {
+  CmsPageNotFoundError,
+  CmsPathConflictError,
+  CmsInvalidSlugError,
+  CmsHomePageConflictError
+} from '../../shared/errors';
 import { CreatePageRepository } from './repository';
 import type { CreatePageInput, CreatePageOutput } from './dto';
 
@@ -30,7 +35,13 @@ export async function createPage(
     parentPath = parent.path;
   }
 
-  const path = buildPath(parentPath, slug);
+  const template = input.template ?? 'default';
+  // Même règle qu'à la modification : la racine n'appartient qu'à une page.
+  if (template === 'home') {
+    const currentHome = await repo.findHome(db);
+    if (currentHome) throw new CmsHomePageConflictError(currentHome.title);
+  }
+  const path = buildPagePath(template, parentPath, slug);
 
   // Contrôle explicite avant écriture : l'index unique protège la donnée, mais son
   // erreur ne dit pas *quelle* page occupe déjà l'adresse.
@@ -42,7 +53,7 @@ export async function createPage(
     parentId: input.parentId ?? null,
     title: input.title,
     status: 'draft',
-    template: input.template ?? 'default',
+    template,
     seoTitle: input.seoTitle ?? null,
     seoDescription: input.seoDescription ?? null,
     noindex: input.noindex ?? false,

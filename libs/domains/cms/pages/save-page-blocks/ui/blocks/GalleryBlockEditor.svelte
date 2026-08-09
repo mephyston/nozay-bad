@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Input, Label, Button } from '@nba/ui';
+  import { Input, Label, Button, Select } from '@nba/ui';
+  import { mediaUrl } from '../../../../media/media-url';
   import { ImagePlus, X } from '@lucide/svelte';
   import MediaPicker, { type PickableMedia } from '../../../../media/list-media/ui/MediaPicker.svelte';
   import type { GalleryBlock } from '../../../../shared/blocks';
@@ -29,7 +30,6 @@
     }))
   );
 
-  const publicUrl = (key: string) => `/media/${key.replace(/^media\//, '')}`;
 
   function add(item: PickableMedia) {
     // Le doublon serait retiré par l'API de toute façon ; l'écarter ici évite surtout
@@ -52,9 +52,28 @@
 </script>
 
 <div class="space-y-4">
-  <div class="space-y-1.5">
-    <Label for="gallery-heading">Titre de section</Label>
-    <Input id="gallery-heading" bind:value={block.heading} placeholder="Le tournoi 2026 en images" />
+  <div class="grid gap-3 sm:grid-cols-2">
+    <div class="space-y-1.5">
+      <Label for="gallery-heading">Titre de section</Label>
+      <Input id="gallery-heading" bind:value={block.heading} placeholder="Le tournoi 2026 en images" />
+    </div>
+    <div class="space-y-1.5">
+      <Label for="gallery-columns">Images par rangée</Label>
+      <Select
+        id="gallery-columns"
+        value={String(block.columns ?? 3)}
+        onchange={(e) =>
+          (block.columns = Number((e.currentTarget as HTMLSelectElement).value) as 1 | 2 | 3 | 4)}
+      >
+        <option value="1">1 — pleine largeur</option>
+        <option value="2">2 — grandes</option>
+        <option value="3">3 — moyennes</option>
+        <option value="4">4 — petites</option>
+      </Select>
+      <p class="text-muted-foreground text-xs">
+        C'est ce réglage qui décide de la taille des images. Sur téléphone, jamais plus de deux.
+      </p>
+    </div>
   </div>
 
   <div class="space-y-2">
@@ -67,7 +86,7 @@
             <div class="bg-muted flex aspect-video items-center justify-center overflow-hidden">
               {#if entry.media}
                 <img
-                  src={publicUrl(entry.media.key)}
+                  src={mediaUrl(entry.media.key)}
                   alt={entry.media.alt}
                   loading="lazy"
                   class="h-full w-full object-cover"
@@ -123,7 +142,7 @@
 
     {#if chosen.length === 0}
       <p class="text-muted-foreground text-xs">
-        Les images s'affichent en grille, dans l'ordre choisi ici.
+        Les images s'affichent en grille, dans l'ordre choisi ici, toutes au même format.
       </p>
     {/if}
   </div>

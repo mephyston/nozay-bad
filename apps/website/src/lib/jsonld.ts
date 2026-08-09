@@ -139,8 +139,9 @@ export function sportsEvent(
     name: event.title,
     startDate: event.startsAt,
     ...(event.endsAt ? { endDate: event.endsAt } : {}),
-    // Un événement annulé garde sa fiche : c'est précisément ce que cherche quelqu'un
-    // qui comptait s'y rendre, et Google sait l'afficher comme tel.
+    // La route ne sert que les événements publiés : un annulé n'arrive pas jusqu'ici.
+    // La correspondance est conservée pour rester juste si cette règle change — c'est
+    // le vocabulaire attendu par Google, pas une décision de ce fichier.
     eventStatus:
       event.status === 'cancelled' ? 'https://schema.org/EventCancelled' : 'https://schema.org/EventScheduled',
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',

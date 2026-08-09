@@ -1,0 +1,318 @@
+---
+import type { CarouselBlock, CarouselSlideValue, CmsMediaRow, CmsMediaVariantRow } from '@nba/cms/public';
+import Picture from '../Picture.astro';
+
+type MediaEntry = { media: CmsMediaRow; variants: CmsMediaVariantRow[] };
+
+interface Props {
+  block: CarouselBlock;
+  media?: Map<number, MediaEntry>;
+  /** Le carrousel ouvre-t-il la page ? Décide de la visibilité de son titre. */
+  opensPage?: boolean;
+}
+
+const { block, media = new Map<number, MediaEntry>(), opensPage = false } = Astro.props;
+
+/**
+ * Une diapositive dont l'image a disparu de la médiathèque est retirée, et non rendue
+ * avec un cadre vide : le bandeau afficherait une bande noire pendant six secondes,
+ * ce qui se remarque bien plus qu'une diapositive de moins.
+ */
+const slides = block.slides
+  .map((slide) => ({ slide, image: media.get(slide.mediaId) }))
+  .filter((entry): entry is { slide: CarouselSlideValue; image: MediaEntry } => !!entry.image);
+
+/** Seule une diapositive ne se succède à rien : ni pastilles, ni pause, ni minuterie. */
+const isCarousel = slides.length > 1;
+
+// Un lien sortant s'ouvre dans un nouvel onglet ; `rel` est posé ici et jamais lu du contenu.
+const isExternal = (href: string) => /^https?:\/\//i.test(href);
+
+/**
+ * Niveau des titres de diapositive, relatif au bloc.
+ *
+ * Avec un titre de bloc, celui-ci est le `h2` de la section et les diapositives sont
+ * ses `h3`. Sans lui, les diapositives deviennent les `h2` : les laisser en `h3`
+ * sauterait un niveau depuis le `h1` de la page, et un lecteur d'écran ne peut alors
+ * plus distinguer un saut voulu d'une section manquante.
+ */
+const SlideHeading = block.heading ? 'h3' : 'h2';
+---
+{/*
+  Aucune marge haute quand le carrousel ouvre la page : le bandeau vient alors se
+  coller sous l'en-tête, comme on l'attend d'un visuel de tête. Ailleurs dans la page,
+  la marge haute reste — elle sépare le bandeau du bloc précédent.
+*/}
+{slides.length > 0 && (
+  <section class:list={['pb-8', !opensPage && 'pt-8']}>
+    {/*
+      Titre de section, visible seulement si le carrousel ne débute pas la page.
+
+      En tête de page, un titre posé au-dessus d'un bandeau pleine largeur flotte sans
+      rattachement — même gêne que le titre de page, traitée de la même façon. Il reste
+      dans le HTML : il porte le niveau de titre dont dépendent les diapositives, et
+      nomme la région du carrousel pour les lecteurs d'écran.
+    */}
+    {block.heading && (
+      <h2
+        class:list={[
+          opensPage ? 'sr-only' : 'mx-auto mb-4 max-w-5xl px-4 text-2xl font-semibold tracking-tight'
+        ]}
+      >
+        {block.heading}
+      </h2>
+    )}
+
+    {/*
+      `aria-roledescription` et le libellé disent ce qu'est cette région : sans eux, un
+      lecteur d'écran annonce un groupe d'images sans rapport les unes avec les autres,
+      et rien n'explique pourquoi son contenu change tout seul.
+    */}
+    <div
+      class="nba-carousel relative isolate h-[420px] overflow-hidden md:h-[520px]"
+      data-nba-carousel
+      role="group"
+      aria-roledescription="carrousel"
+      aria-label={block.heading ?? 'Diaporama'}
+    >
+      {/*
+        `inert` neutralise entièrement une diapositive masquée : sans lui, le bouton
+        d'une diapositive invisible resterait atteignable au tabulateur et le lecteur
+        d'écran lirait les quatre à la suite. Posé au rendu pour que ce soit vrai avant
+        même que le script ne tourne.
+      */}
+      {slides.map(({ slide, image }, index) => (
+        <div
+          class="nba-carousel-slide absolute inset-0"
+          data-slide
+          data-active={index === 0 ? '' : undefined}
+          inert={index !== 0}
+        >
+          <Picture
+            media={image.media}
+            variants={image.variants}
+            priority={index === 0}
+            sizes="100vw"
+            class="absolute inset-0 h-full w-full object-cover"
+          />
+
+          {/*
+            Voile dégradé plutôt qu'uniforme : le texte est posé en bas, c'est donc en
+            bas qu'il faut assombrir. Un voile plat sur toute la hauteur ternirait
+            l'image entière pour ne servir qu'un quart de sa surface.
+          */}
+          <div
+            class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/5"
+            aria-hidden="true"
+          ></div>
+
+          <div class="absolute inset-0 flex flex-col justify-end">
+            <div class="mx-auto w-full max-w-5xl px-4 pb-20">
+              <SlideHeading class="text-3xl font-semibold tracking-tight text-white drop-shadow-lg sm:text-4xl">
+                {slide.title}
+              </SlideHeading>
+              {slide.description && (
+                <p class="mt-2 max-w-2xl text-base text-white/90 drop-shadow sm:text-lg">
+                  {slide.description}
+                </p>
+              )}
+              {slide.ctaLabel && slide.ctaHref && (
+                <a
+                  href={slide.ctaHref}
+                  target={isExternal(slide.ctaHref) ? '_blank' : undefined}
+                  rel={isExternal(slide.ctaHref) ? 'noopener noreferrer' : undefined}
+                  class="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring mt-5 inline-flex items-center rounded-md px-5 py-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                >
+                  {slide.ctaLabel}
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {isCarousel && (
+        // Commandes communes, hors des diapositives : elles ne doivent pas s'effacer
+        // avec l'image qu'elles pilotent.
+        <div class="absolute inset-x-0 bottom-0 z-10">
+          <div class="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 pb-6">
+            <div class="flex items-center gap-2" data-dots>
+              {slides.map((_, index) => (
+                <button
+                  type="button"
+                  data-dot
+                  aria-current={index === 0 ? 'true' : 'false'}
+                  aria-label={`Afficher la diapositive ${index + 1} sur ${slides.length}`}
+                  class="nba-carousel-dot focus-visible:ring-ring h-2.5 w-2.5 rounded-full bg-white/50 transition-[background-color,width] hover:bg-white/80 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                ></button>
+              ))}
+            </div>
+
+            {/*
+              Posé masqué et révélé par le script : sans JavaScript rien ne défile tout
+              seul, donc ce bouton n'aurait rien à arrêter.
+            */}
+            <button
+              type="button"
+              data-nba-carousel-toggle
+              hidden
+              class="focus-visible:ring-ring inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-black/35 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/55 hover:text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+              aria-label="Mettre en pause le diaporama"
+              title="Mettre en pause le diaporama"
+            >
+              <svg
+                class="nba-carousel-icon-pause h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M9 5v14M15 5v14" />
+              </svg>
+              <svg
+                class="nba-carousel-icon-play h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M8 5.5v13a1 1 0 0 0 1.5.87l11-6.5a1 1 0 0 0 0-1.74l-11-6.5A1 1 0 0 0 8 5.5Z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  </section>
+)}
+
+<style>
+  /*
+    Le fondu enchaîné : les diapositives sont empilées au même endroit, seule
+    l'opacité les distingue. `opacity` et non `display`, sans quoi il n'y aurait rien
+    à enchaîner — l'ancienne disparaîtrait avant que la nouvelle n'arrive.
+  */
+  .nba-carousel-slide {
+    opacity: 0;
+    transition: opacity 700ms ease-in-out;
+  }
+
+  .nba-carousel-slide[data-active] {
+    opacity: 1;
+  }
+
+  /* La pastille de la diapositive en cours s'allonge : la couleur seule ne suffirait
+     pas à qui distingue mal les contrastes. */
+  .nba-carousel-dot[aria-current='true'] {
+    width: 1.75rem;
+    background-color: rgb(255 255 255 / 0.95);
+  }
+
+  .nba-carousel[data-paused] .nba-carousel-icon-pause,
+  .nba-carousel:not([data-paused]) .nba-carousel-icon-play {
+    display: none;
+  }
+
+  /*
+    Mouvement refusé : plus d'avance automatique (côté script) et plus de fondu. Les
+    pastilles restent, elles : c'est par elles que le visiteur parcourt les
+    diapositives lui-même.
+  */
+  @media (prefers-reduced-motion: reduce) {
+    .nba-carousel-slide {
+      transition: none;
+    }
+
+    [data-nba-carousel-toggle] {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  /*
+    Diaporama : avance seule, s'arrête au survol, se pilote aux pastilles.
+
+    Script hissé et non `is:inline` : une page peut porter plusieurs carrousels, et
+    Astro ne regroupe que les scripts hissés. En ligne, le même code serait émis une
+    fois par bloc et chaque diaporama recevrait autant de minuteries qu'il y a de blocs.
+  */
+  const DELAY_MS = 6000;
+
+  for (const carousel of document.querySelectorAll<HTMLElement>('[data-nba-carousel]')) {
+    const slides = [...carousel.querySelectorAll<HTMLElement>('[data-slide]')];
+    const dots = [...carousel.querySelectorAll<HTMLButtonElement>('[data-dot]')];
+    const toggle = carousel.querySelector<HTMLButtonElement>('[data-nba-carousel-toggle]');
+
+    // Une seule diapositive : le rendu n'a posé aucune commande, il n'y a rien à animer.
+    if (slides.length < 2) continue;
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    let index = 0;
+    /** Arrêt demandé au bouton : il survit au départ du pointeur. */
+    let paused = false;
+    /** Arrêt tant que le pointeur ou le clavier est sur le bandeau. */
+    let held = false;
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    function show(next: number) {
+      index = (next + slides.length) % slides.length;
+      slides.forEach((slide, i) => {
+        slide.toggleAttribute('data-active', i === index);
+        // Reprend ce que le rendu avait posé : une diapositive masquée sort du
+        // parcours clavier et du lecteur d'écran.
+        slide.inert = i !== index;
+      });
+      dots.forEach((dot, i) => dot.setAttribute('aria-current', i === index ? 'true' : 'false'));
+    }
+
+    function sync() {
+      if (timer !== null) clearInterval(timer);
+      timer = null;
+      // `reduced` est relu à chaque fois : le réglage système peut changer en cours
+      // de visite, et l'écouteur ci-dessous rappelle alors cette fonction.
+      if (!paused && !held && !reduced.matches) {
+        timer = setInterval(() => show(index + 1), DELAY_MS);
+      }
+    }
+
+    const hold = (value: boolean) => {
+      held = value;
+      sync();
+    };
+
+    carousel.addEventListener('mouseenter', () => hold(true));
+    carousel.addEventListener('mouseleave', () => hold(false));
+    // Le clavier aussi : la diapositive atteinte au tabulateur ne doit pas s'effacer
+    // pendant qu'on lit son bouton.
+    carousel.addEventListener('focusin', () => hold(true));
+    carousel.addEventListener('focusout', (event) => {
+      if (!carousel.contains(event.relatedTarget as Node | null)) hold(false);
+    });
+
+    dots.forEach((dot, i) =>
+      dot.addEventListener('click', () => {
+        show(i);
+        // Remet le compte à zéro : sans cela, la diapositive choisie pourrait céder la
+        // place un dixième de seconde plus tard.
+        sync();
+      })
+    );
+
+    if (toggle) {
+      toggle.hidden = false;
+      toggle.addEventListener('click', () => {
+        paused = carousel.toggleAttribute('data-paused');
+        const label = paused ? 'Reprendre le diaporama' : 'Mettre en pause le diaporama';
+        toggle.setAttribute('aria-label', label);
+        toggle.setAttribute('title', label);
+        sync();
+      });
+    }
+
+    reduced.addEventListener('change', sync);
+    sync();
+  }
+</script>

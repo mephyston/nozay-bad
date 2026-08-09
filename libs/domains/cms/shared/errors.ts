@@ -59,3 +59,13 @@ export class CmsNavDepthError extends AppError {
     this.name = 'CmsNavDepthError';
   }
 }
+
+export class CmsHomePageConflictError extends AppError {
+  constructor(title: string) {
+    super(
+      `« ${title} » est déjà la page d'accueil. Changez d'abord son gabarit pour libérer la racine.`,
+      409
+    );
+    this.name = 'CmsHomePageConflictError';
+  }
+}

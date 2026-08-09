@@ -36,6 +36,12 @@ export const BLOCK_KINDS: BlockKind[] = [
     create: () => ({ type: 'cta_grid', columns: 3, items: [] })
   },
   {
+    type: 'carousel',
+    label: 'Carrousel',
+    hint: 'Bandeau pleine largeur : les images se succèdent, texte et bouton devant.',
+    create: () => ({ type: 'carousel', slides: [] })
+  },
+  {
     type: 'gallery',
     label: 'Galerie',
     hint: 'Plusieurs images de la médiathèque, en grille.',

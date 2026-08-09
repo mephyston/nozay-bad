@@ -9,20 +9,61 @@ interface Props {
 
 const { block, media = new Map() } = Astro.props;
 const items = block.mediaIds.map((id) => media.get(id)).filter((v): v is NonNullable<typeof v> => !!v);
+
+/** Trois par rangée à défaut : la disposition des galeries d'avant ce réglage. */
+const columns = block.columns ?? 3;
+
+// Jamais plus de deux sur un téléphone, quel que soit le choix : au-delà, une vignette
+// fait moins de 100 px de large et ne montre plus rien.
+const GRID = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-2',
+  3: 'grid-cols-2 sm:grid-cols-3',
+  4: 'grid-cols-2 sm:grid-cols-4'
+}[columns];
+
+/**
+ * Format imposé aux vignettes.
+ *
+ * C'est ce qui manquait, et c'était le vrai défaut : sans hauteur de cellule, une
+ * rangée prenait celle de son image la plus verticale. Un logo en portrait au milieu
+ * de deux photos faisait une rangée de 430 px là où la suivante en faisait 218, et les
+ * photos voisines s'y trouvaient recadrées durement.
+ *
+ * Une image seule occupe toute la largeur : en 4/3 elle ferait la hauteur d'un écran,
+ * d'où le 16/9 dans ce cas.
+ */
+const RATIO = columns === 1 ? 'aspect-[16/9]' : 'aspect-[4/3]';
+
+/** Largeur réelle d'une vignette, pour que le navigateur choisisse la bonne variante. */
+const SIZES = {
+  1: '100vw',
+  2: '50vw',
+  3: '(max-width: 640px) 50vw, 33vw',
+  4: '(max-width: 640px) 50vw, 25vw'
+}[columns];
 ---
 <section class="mx-auto max-w-5xl px-4 py-8">
   {block.heading && <h2 class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
   {items.length > 0 && (
-    <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+    <ul class:list={['grid gap-3', GRID]}>
+      {/*
+        `object-contain` et non `cover` : la case impose sa **place**, jamais son
+        cadrage. Une image plus verticale que sa case n'y est donc pas amputée de son
+        haut et de son bas — ce qui décapitait les logos — elle s'y pose entière, avec
+        une bande neutre de part et d'autre. Le prix est visible et assumé : un bandeau
+        très large laisse deux bandes. Il reste faible ici, la plupart des photos du
+        club étant en 4/3, soit exactement le format des cases.
+      */}
       {items.map((entry, index) => (
-        <li class="overflow-hidden rounded-lg">
+        <li class:list={['bg-muted overflow-hidden rounded-lg', RATIO]}>
           {/* La première image d'une galerie en tête de page est souvent le LCP. */}
           <Picture
             media={entry.media}
             variants={entry.variants}
             priority={index === 0}
-            sizes="(max-width: 640px) 50vw, 33vw"
-            class="h-full w-full object-cover"
+            sizes={SIZES}
+            class="h-full w-full object-contain"
           />
         </li>
       ))}

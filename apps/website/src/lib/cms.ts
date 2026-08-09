@@ -106,6 +106,9 @@ export function mediaIdsInBlocks(blocks: import('@nba/cms/public').BlockPayload[
       ids.push(...block.items.map((i) => i.mediaId).filter((v): v is number => !!v));
       if (block.backgroundMediaId) ids.push(block.backgroundMediaId);
     }
+    if (block.type === 'carousel') {
+      ids.push(...block.slides.map((s) => s.mediaId).filter((id) => id > 0));
+    }
     if (block.type === 'pdf_link') {
       ids.push(block.mediaId);
       if (block.thumbnailMediaId) ids.push(block.thumbnailMediaId);

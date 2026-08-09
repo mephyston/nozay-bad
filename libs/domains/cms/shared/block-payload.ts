@@ -13,8 +13,18 @@ import { CmsBlockPayloadError } from './errors';
  * Rien ici ne fait confiance à l'éditeur : la charge utile arrive d'un navigateur.
  */
 
-/** Identifiant de ressource chez un fournisseur d'intégration. */
+/** Identifiant de ressource chez un fournisseur d'intégration : un jeton opaque. */
 const RESOURCE_ID = /^[A-Za-z0-9_-]{8,200}$/;
+
+/**
+ * Identifiant d'agenda Google : une **adresse**, et non un jeton.
+ *
+ * `nom@gmail.com` pour un agenda personnel, `…@group.calendar.google.com` pour un
+ * agenda partagé. Le contrôle reste grossier — c'est Google qui tranchera — mais il
+ * écarte l'erreur réellement commise : coller l'URL d'intégration entière. D'où le
+ * refus de la barre oblique, qu'aucun identifiant ne porte et que toute URL porte.
+ */
+const CALENDAR_ID = /^[^\s@/]+@[^\s@/]+\.[^\s@/]{2,}$/;
 
 /** Adresse électronique, contrôle de forme volontairement grossier. */
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -69,11 +79,46 @@ export function normaliseBlockPayload(type: BlockType, raw: unknown, position: n
     case 'cta_grid':
       return { ...payload, items: keepSafeLinks(payload.items) };
 
+    case 'carousel': {
+      const slides = payload.slides.map((slide, index) => {
+        // Une diapositive est d'abord une image : sans elle il ne reste qu'un trou à
+        // la taille d'une carte, que le ruban promènera indéfiniment.
+        if (!slide.mediaId) {
+          throw new CmsBlockPayloadError(position, `diapositive ${index + 1} : choisissez une image`);
+        }
+        const title = slide.title.trim();
+        if (!title) {
+          throw new CmsBlockPayloadError(position, `diapositive ${index + 1} : le titre est vide`);
+        }
+
+        // Contrairement à `cta_grid`, un lien inexploitable ne fait pas disparaître
+        // l'entrée : la carte garde son image, son titre et sa description, qui
+        // valent d'être lus. Seul le bouton tombe — un bouton sans destination, lui,
+        // n'a toujours aucun sens.
+        const { ctaLabel, ctaHref, ...rest } = slide;
+        const label = ctaLabel?.trim();
+        const keepCta = !!label && !!ctaHref && isSafeHref(ctaHref);
+
+        return keepCta ? { ...rest, title, ctaLabel: label, ctaHref } : { ...rest, title };
+      });
+      return { ...payload, slides };
+    }
+
     case 'embed': {
-      if (!RESOURCE_ID.test(payload.resourceId)) {
+      // La forme attendue dépend du fournisseur : YouTube et Sheets désignent leur
+      // ressource par un jeton, Google Agenda par une adresse. Un contrôle unique
+      // refusait tout agenda, alors même que l'écran en demandait l'adresse.
+      const isCalendar = payload.provider === 'google_calendar';
+      const accepted = isCalendar
+        ? CALENDAR_ID.test(payload.resourceId)
+        : RESOURCE_ID.test(payload.resourceId);
+
+      if (!accepted) {
         throw new CmsBlockPayloadError(
           position,
-          "l'identifiant de la ressource n'est pas reconnu — collez l'identifiant, pas l'adresse complète"
+          isCalendar
+            ? "l'identifiant de l'agenda est une adresse, de la forme nom@group.calendar.google.com"
+            : "l'identifiant de la ressource n'est pas reconnu — collez l'identifiant, pas l'adresse complète"
         );
       }
       // `fixed` sans hauteur ne peut pas réserver sa place dans la page, donc décale

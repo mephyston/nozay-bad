@@ -22,6 +22,7 @@ import { updatePostRoute } from './posts/update-post/route';
 import { publishPostRoute } from './posts/publish-post/route';
 import { deletePostRoute } from './posts/delete-post/route';
 import { listPostCategoriesRoute } from './categories/list-post-categories/route';
+import { listPageRedirectsRoute } from './redirects/list-page-redirects/route';
 import { listNavItemsRoute } from './navigation/list-nav-items/route';
 import { saveNavItemRoute } from './navigation/save-nav-item/route';
 import { deleteNavItemRoute } from './navigation/delete-nav-item/route';
@@ -57,6 +58,7 @@ cmsRouter.route('/', getPostRoute);
 cmsRouter.route('/', updatePostRoute);
 cmsRouter.route('/', deletePostRoute);
 // `/nav/reorder` avant `/nav/:id` : le segment littéral doit gagner sur le motif.
+cmsRouter.route('/', listPageRedirectsRoute);
 cmsRouter.route('/', reorderNavItemsRoute);
 cmsRouter.route('/', listNavItemsRoute);
 cmsRouter.route('/', saveNavItemRoute);

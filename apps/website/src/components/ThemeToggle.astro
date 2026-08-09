@@ -32,6 +32,10 @@
     if (!button) return;
     button.addEventListener('click', () => {
       const dark = document.documentElement.classList.toggle('dark');
+      // Même réglage qu'au chargement dans `BaseLayout` : sans lui, les barres de
+      // défilement et les champs natifs garderaient l'ancien thème jusqu'à la page
+      // suivante.
+      document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
       try {
         localStorage.setItem('theme', dark ? 'dark' : 'light');
       } catch {

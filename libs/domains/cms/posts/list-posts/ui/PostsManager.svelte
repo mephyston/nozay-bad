@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Plus, Edit, Trash2, Eye, EyeOff, ExternalLink, ImagePlus, X } from '@lucide/svelte';
+  import { mediaPath, mediaUrl } from '../../../media/media-url';
   import MediaPicker, { type PickableMedia } from '../../../media/list-media/ui/MediaPicker.svelte';
   import {
     Button,
@@ -61,6 +62,7 @@
   let selectedCategoryIds = $state<number[]>([]);
   let coverPickerOpen = $state(false);
   let filePickerOpen = $state(false);
+  let inlineImagePickerOpen = $state(false);
 
   const coverMedia = $derived(
     coverMediaId === null ? null : media.find((m: PickableMedia) => m.id === coverMediaId) ?? null
@@ -84,7 +86,9 @@
 
   function onFileChosen(item: PickableMedia) {
     resolveFilePick?.({
-      href: `/media/${item.key.replace(/^media\//, '')}`,
+      // `mediaPath` et non `mediaUrl` : cette adresse part dans le corps de
+      // l'actualité et sera enregistrée. Elle doit rester relative.
+      href: mediaPath(item.key),
       label: item.alt || item.key.split('/').pop() || 'Document'
     });
     resolveFilePick = null;
@@ -96,6 +100,41 @@
     if (!filePickerOpen && resolveFilePick) {
       resolveFilePick(null);
       resolveFilePick = null;
+    }
+  });
+
+  /**
+   * Insertion d'une image dans le corps du texte.
+   *
+   * Même mécanique que le fichier : l'éditeur réclame et attend, le sheet s'ouvre ici.
+   * Les deux sélecteurs sont distincts — l'un ne montre que des images, l'autre que des
+   * documents — et ne peuvent donc pas se dénouer l'un l'autre.
+   */
+  let resolveImagePick:
+    | ((picked: { src: string; alt: string; width?: number | null; height?: number | null } | null) => void)
+    | null = null;
+
+  function pickInlineImage(): Promise<{ src: string; alt: string; width?: number | null; height?: number | null } | null> {
+    inlineImagePickerOpen = true;
+    return new Promise((resolve) => {
+      resolveImagePick = resolve;
+    });
+  }
+
+  function onInlineImageChosen(item: PickableMedia) {
+    resolveImagePick?.({
+      src: `/media/${item.key.replace(/^media\//, '')}`,
+      alt: item.alt,
+      width: item.width,
+      height: item.height
+    });
+    resolveImagePick = null;
+  }
+
+  $effect(() => {
+    if (!inlineImagePickerOpen && resolveImagePick) {
+      resolveImagePick(null);
+      resolveImagePick = null;
     }
   });
 
@@ -417,7 +456,7 @@
     {#if coverMedia}
       <div class="border-border flex items-center gap-3 rounded-md border p-2">
         <img
-          src={`/media/${coverMedia.key.replace(/^media\//, '')}`}
+          src={mediaUrl(coverMedia.key)}
           alt={coverMedia.alt}
           class="h-16 w-24 shrink-0 rounded object-cover"
         />
@@ -459,7 +498,13 @@
   {/if}
 
   <FormField id="post-body" label="Texte">
-    <RichTextEditor id="post-body" bind:value={bodyHtml} disabled={busy} onPickFile={pickFile} />
+    <RichTextEditor
+      id="post-body"
+      bind:value={bodyHtml}
+      disabled={busy}
+      onPickFile={pickFile}
+      onPickImage={pickInlineImage}
+    />
   </FormField>
 </FormSheet>
 
@@ -477,4 +522,12 @@
   kind="document"
   title="Fichier à insérer"
   onSelect={onFileChosen}
+/>
+
+<MediaPicker
+  bind:open={inlineImagePickerOpen}
+  {media}
+  kind="image"
+  title="Image à insérer dans le texte"
+  onSelect={onInlineImageChosen}
 />

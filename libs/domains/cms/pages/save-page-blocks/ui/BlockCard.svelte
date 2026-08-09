@@ -6,6 +6,7 @@
   import RichtextBlockEditor from './blocks/RichtextBlockEditor.svelte';
   import HeroBlockEditor from './blocks/HeroBlockEditor.svelte';
   import CtaGridBlockEditor from './blocks/CtaGridBlockEditor.svelte';
+  import CarouselBlockEditor from './blocks/CarouselBlockEditor.svelte';
   import GalleryBlockEditor from './blocks/GalleryBlockEditor.svelte';
   import EmbedBlockEditor from './blocks/EmbedBlockEditor.svelte';
   import PersonCardsBlockEditor from './blocks/PersonCardsBlockEditor.svelte';
@@ -51,11 +52,13 @@
 
   <div class="p-3">
     {#if block.type === 'richtext'}
-      <RichtextBlockEditor bind:block />
+      <RichtextBlockEditor bind:block {media} />
     {:else if block.type === 'hero'}
       <HeroBlockEditor bind:block />
     {:else if block.type === 'cta_grid'}
       <CtaGridBlockEditor bind:block {media} {targets} />
+    {:else if block.type === 'carousel'}
+      <CarouselBlockEditor bind:block {media} {targets} />
     {:else if block.type === 'gallery'}
       <GalleryBlockEditor bind:block {media} />
     {:else if block.type === 'embed'}

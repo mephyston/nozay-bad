@@ -12,50 +12,269 @@ const AUDIENCES: Record<string, string> = {
   adultes_competition: 'Adultes compétition', jeu_libre: 'Jeu libre'
 };
 
+/**
+ * Trois familles de couleur, et pas une par public.
+ *
+ * Sept aplats distincts ne passent pas : sur une grille, l'œil compare n'importe
+ * quelle case à n'importe quelle autre — toutes les paires comptent, pas seulement
+ * les voisines. Dans cette configuration le vert et l'orange tombent à ΔE 3,2 en
+ * protanopie, et le magenta et l'orange à 12,9 en vision normale, sous le plancher
+ * de 15. Trois teintes sont le maximum qui tienne à la fois en clair et en sombre
+ * (vérifié : pire paire ΔE 9,2 / 20,9).
+ *
+ * La couleur ne porte donc que la famille ; le public exact est **écrit dans chaque
+ * case**. Personne ne dépend de la couleur pour lire le tableau.
+ */
+const FAMILY: Record<string, 'jeunes' | 'adultes' | 'libre'> = {
+  minibad: 'jeunes', poussins: 'jeunes', jeunes: 'jeunes', elite_jeunes: 'jeunes',
+  adultes_loisir: 'adultes', adultes_competition: 'adultes',
+  jeu_libre: 'libre'
+};
+const FAMILY_LABELS: Record<string, string> = {
+  jeunes: 'Jeunes', adultes: 'Adultes', libre: 'Jeu libre'
+};
+
 // Le bloc ne porte qu'une requête : le filtrage final se fait ici, sur les créneaux
 // que le domaine a rendus.
 const shown = block.audiences.length > 0
   ? slots.filter((slot) => block.audiences.includes(slot.audience))
   : slots;
 
-const byDay = WEEKDAYS.map((label, weekday) => ({
-  label,
-  weekday,
-  slots: shown.filter((slot) => slot.weekday === weekday)
-})).filter((group) => group.weekday > 0 && group.slots.length > 0);
+/**
+ * Colonnes : les jours réellement occupés, chacun scindé par les gymnases **qu'il
+ * utilise**.
+ *
+ * Le découpage est calculé jour par jour, et non une fois pour toute la semaine : un
+ * gymnase qui ne sert pas le mercredi n'y ouvre pas une colonne vide. La grille passe
+ * ainsi de neuf colonnes à six sur la saison en cours, et tient sans défilement.
+ */
+const days = WEEKDAYS
+  .map((label, weekday) => ({ label, weekday }))
+  .filter((day) => day.weekday > 0 && shown.some((slot) => slot.weekday === day.weekday))
+  .map((day) => ({
+    ...day,
+    venues: [
+      ...new Set(
+        shown
+          .filter((slot) => slot.weekday === day.weekday)
+          .map((slot) => slot.venue?.name ?? '—')
+      )
+    ].sort()
+  }));
+
+// Lignes : les plages horaires distinctes, du matin au soir. Les horaires du club
+// sont irréguliers (13:15–14:15, 10:00–13:00) : une grille à pas fixe laisserait
+// des lignes vides sans rien gagner en lisibilité.
+const ranges = [...new Set(shown.map((slot) => `${slot.startTime}|${slot.endTime}`))]
+  .sort()
+  .map((key) => {
+    const [startTime, endTime] = key.split('|');
+    return { key, startTime, endTime };
+  });
+
+/**
+ * Nom court d'un gymnase, pour l'en-tête de colonne.
+ *
+ * Heuristique assumée, faute d'un champ dédié en base : « Gymnase Pierre Dupuis »
+ * donne « Dupuis » — le mot distinctif est le patronyme — tandis que « Halle des
+ * Sports » donne « Halle », son nom d'usage. Le nom complet reste lu par les lecteurs
+ * d'écran et disponible en infobulle ; rien ne se perd si la règle tombe à côté sur un
+ * futur gymnase. Le jour où le club en compte plus de deux, mieux vaudra une colonne
+ * `shortName` sur `venues` qu'une heuristique plus fine.
+ */
+function shortVenue(name: string): string {
+  const words = name.trim().split(/\s+/);
+  if (words.length < 2) return name;
+  return /^gymnase$/i.test(words[0]) ? words[words.length - 1] : words[0];
+}
+
+/** Créneaux d'une case. Plusieurs sont possibles : deux groupes partagent parfois l'heure et la salle. */
+const cellSlots = (weekday: number, venue: string, range: { startTime: string; endTime: string }) =>
+  shown.filter(
+    (slot) =>
+      slot.weekday === weekday &&
+      (slot.venue?.name ?? '—') === venue &&
+      slot.startTime === range.startTime &&
+      slot.endTime === range.endTime
+  );
+
+const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'libre'))];
 ---
 <section class="mx-auto max-w-5xl px-4 py-8">
   {block.heading && <h2 class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
 
-  {byDay.length === 0 ? (
+  {shown.length === 0 ? (
     <p class="text-muted-foreground">Les créneaux ne sont pas encore renseignés pour cette saison.</p>
   ) : (
-    <div class="overflow-x-auto">
-      {/* Un vrai tableau, indexable et lisible au lecteur d'écran — là où l'ancien
-          site enfermait la même information dans une feuille Google en iframe. */}
-      <table class="w-full min-w-[36rem] text-left text-sm">
-        <caption class="sr-only">Créneaux d'entraînement par jour</caption>
-        <thead class="border-border border-b">
-          <tr>
-            <th scope="col" class="py-2 pr-4 font-medium">Jour</th>
-            <th scope="col" class="py-2 pr-4 font-medium">Horaire</th>
-            <th scope="col" class="py-2 pr-4 font-medium">Groupe</th>
-            <th scope="col" class="py-2 pr-4 font-medium">Gymnase</th>
-          </tr>
-        </thead>
-        <tbody class="divide-border divide-y">
-          {byDay.map((group) =>
-            group.slots.map((slot, index) => (
+    <div class="nba-schedule">
+      {usedFamilies.length > 1 && (
+        <ul class="mb-4 flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
+          {usedFamilies.map((family) => (
+            <li class="flex items-center gap-2">
+              <span
+                class="h-3 w-3 shrink-0 rounded-sm"
+                style={`background: var(--group-${family})`}
+                aria-hidden="true"
+              ></span>
+              <span class="text-muted-foreground">{FAMILY_LABELS[family]}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/*
+        Grille hebdomadaire : les jours en colonnes, les horaires en lignes, chaque
+        jour scindé par gymnase. Réservée aux écrans larges — neuf colonnes sur un
+        téléphone ne se lisent pas, d'où la liste par jour en dessous.
+      */}
+      <div class="hidden overflow-x-auto md:block">
+        <table class="w-full border-separate border-spacing-0 text-left text-sm">
+          <caption class="sr-only">
+            Créneaux d'entraînement : les jours en colonnes, scindés par gymnase, les horaires en lignes.
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" rowspan="2" class="border-border sticky left-0 z-10 border-b bg-background px-3 py-2 align-bottom font-medium">
+                Horaire
+              </th>
+              {days.map((day) => (
+                <th
+                  scope="colgroup"
+                  colspan={day.venues.length}
+                  class="border-border border-b border-l px-3 py-2 text-center font-medium"
+                >
+                  {day.label}
+                </th>
+              ))}
+            </tr>
+            <tr>
+              {days.map((day) =>
+                day.venues.map((venue, index) => (
+                  <th
+                    scope="col"
+                    class:list={[
+                      'border-border text-muted-foreground min-w-[8rem] border-b px-3 py-1.5 text-xs font-normal',
+                      index === 0 && 'border-l'
+                    ]}
+                  >
+                    {/*
+                      Le nom court est affiché, le nom complet lu : `title` seul ne
+                      s'annonce pas de façon fiable au lecteur d'écran, et n'existe pas
+                      au toucher.
+                    */}
+                    <span aria-hidden="true" title={venue}>{shortVenue(venue)}</span>
+                    <span class="sr-only">{venue}</span>
+                  </th>
+                ))
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {ranges.map((range) => (
               <tr>
-                <th scope="row" class="py-2 pr-4 font-normal">{index === 0 ? group.label : ''}</th>
-                <td class="py-2 pr-4 tabular-nums">{slot.startTime} – {slot.endTime}</td>
-                <td class="py-2 pr-4">{slot.label ?? AUDIENCES[slot.audience] ?? slot.audience}</td>
-                <td class="text-muted-foreground py-2 pr-4">{slot.venue?.name ?? '—'}</td>
+                <th
+                  scope="row"
+                  class="border-border sticky left-0 z-10 border-b bg-background px-3 py-2 text-left font-normal tabular-nums whitespace-nowrap"
+                >
+                  {range.startTime} – {range.endTime}
+                </th>
+                {days.map((day) =>
+                  day.venues.map((venue, index) => {
+                    const cell = cellSlots(day.weekday, venue, range);
+                    return (
+                      <td
+                        class:list={[
+                          'border-border border-b px-1.5 py-1.5 align-top',
+                          index === 0 && 'border-l'
+                        ]}
+                      >
+                        {cell.map((slot) => (
+                          <div
+                            class="nba-slot rounded-md px-2 py-1.5"
+                            data-family={FAMILY[slot.audience] ?? 'libre'}
+                          >
+                            <span class="block font-medium">
+                              {slot.label ?? AUDIENCES[slot.audience] ?? slot.audience}
+                            </span>
+                            <span class="text-muted-foreground block text-xs tabular-nums">
+                              {slot.startTime} – {slot.endTime}
+                            </span>
+                          </div>
+                        ))}
+                      </td>
+                    );
+                  })
+                )}
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Sur téléphone, la grille devient une liste par jour : même information, sans défilement latéral. */}
+      <div class="space-y-5 md:hidden">
+        {days.map((day) => (
+          <div>
+            <h3 class="mb-2 font-semibold">{day.label}</h3>
+            <ul class="space-y-1.5">
+              {shown
+                .filter((slot) => slot.weekday === day.weekday)
+                .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                .map((slot) => (
+                  <li class="nba-slot rounded-md px-3 py-2" data-family={FAMILY[slot.audience] ?? 'libre'}>
+                    <span class="block font-medium">
+                      {slot.label ?? AUDIENCES[slot.audience] ?? slot.audience}
+                    </span>
+                    <span class="text-muted-foreground block text-xs tabular-nums">
+                      {slot.startTime} – {slot.endTime} · {slot.venue?.name ?? '—'}
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          </div>
+        ))}
+      </div>
     </div>
   )}
 </section>
+
+<style>
+  /*
+    Trois teintes, choisies dans la palette catégorielle de référence et vérifiées
+    au validateur pour les deux fonds du site (toutes paires) :
+      clair  #faf9f5 — pire paire ΔE 9,2 (deutan) / 24,0 (vision normale)
+      sombre #262624 — pire paire ΔE 9,4 (deutan) / 20,9 (vision normale)
+
+    Les pas sombres sont **choisis** pour le fond sombre, jamais dérivés des clairs :
+    éclaircir mécaniquement ferait sortir de la bande de luminosité.
+  */
+  .nba-schedule {
+    --group-jeunes: #2a78d6;
+    --group-adultes: #eb6834;
+    --group-libre: #1baf7a;
+  }
+
+  :global(.dark) .nba-schedule {
+    --group-jeunes: #3987e5;
+    --group-adultes: #d95926;
+    --group-libre: #199e70;
+  }
+
+  /*
+    Fond teinté et non aplat : le texte garde l'encre du thème plutôt que la couleur
+    de sa famille — une couleur de série ne doit jamais porter du texte. Le liseré
+    à gauche donne la teinte à pleine saturation, seule zone où elle est franche.
+  */
+  .nba-slot {
+    border-left: 3px solid var(--family-color);
+    background: color-mix(in oklab, var(--family-color) 12%, transparent);
+  }
+  .nba-slot[data-family='jeunes'] { --family-color: var(--group-jeunes); }
+  .nba-slot[data-family='adultes'] { --family-color: var(--group-adultes); }
+  .nba-slot[data-family='libre'] { --family-color: var(--group-libre); }
+
+  .nba-slot + .nba-slot {
+    /* Deux groupes dans la même case : un écart franc, pas deux fonds accolés. */
+    margin-top: 0.375rem;
+  }
+</style>

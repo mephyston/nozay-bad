@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Input, Label, Button, Select, Combobox, type ComboboxItem } from '@nba/ui';
+  import { mediaUrl } from '../../../../media/media-url';
   import { ImagePlus, X, Trash2 } from '@lucide/svelte';
   import MediaPicker, { type PickableMedia } from '../../../../media/list-media/ui/MediaPicker.svelte';
   import type { CtaGridBlock } from '../../../../shared/blocks';
@@ -93,7 +94,7 @@
     {#if background}
       <div class="border-border flex items-center gap-3 rounded-md border p-2">
         <img
-          src={`/media/${background.key.replace(/^media\//, '')}`}
+          src={mediaUrl(background.key)}
           alt={background.alt}
           class="h-16 w-28 shrink-0 rounded object-cover"
         />

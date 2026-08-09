@@ -57,6 +57,72 @@ describe('normaliseBlockPayload — liens', () => {
   });
 });
 
+describe('normaliseBlockPayload — carrousel', () => {
+  const slide = { mediaId: 12, title: 'Tournoi de printemps' };
+
+  it("garde la carte mais retire le bouton dont la destination est refusée", () => {
+    // Écart assumé avec `cta_grid`, où l'entrée entière disparaît : ici l'image, le
+    // titre et la description valent d'être lus sans le bouton.
+    const block = normaliseBlockPayload(
+      'carousel',
+      {
+        slides: [
+          { ...slide, description: 'Le 12 avril', ctaLabel: 'Voir', ctaHref: 'javascript:alert(1)' },
+          { mediaId: 13, title: 'Créneaux', ctaLabel: 'Consulter', ctaHref: '/creneaux/' }
+        ]
+      },
+      0
+    );
+    // `toEqual` et non `toMatchObject` : ce qui est vérifié ici, c'est justement
+    // l'**absence** des deux clés du bouton sur la première carte.
+    expect(block).toEqual({
+      type: 'carousel',
+      slides: [
+        { mediaId: 12, title: 'Tournoi de printemps', description: 'Le 12 avril' },
+        { mediaId: 13, title: 'Créneaux', ctaLabel: 'Consulter', ctaHref: '/creneaux/' }
+      ]
+    });
+  });
+
+  it("retire un bouton dont il manque le libellé ou l'adresse", () => {
+    const block = normaliseBlockPayload(
+      'carousel',
+      { slides: [{ ...slide, ctaHref: '/creneaux/' }, { mediaId: 13, title: 'B', ctaLabel: 'Voir' }] },
+      0
+    );
+    expect(block).toEqual({
+      type: 'carousel',
+      slides: [
+        { mediaId: 12, title: 'Tournoi de printemps' },
+        { mediaId: 13, title: 'B' }
+      ]
+    });
+  });
+
+  it('refuse une diapositive sans image, en la désignant par son rang', () => {
+    // Le message est lu par un bénévole : « /slides/1/mediaId — Expected integer »
+    // ne lui dirait pas quelle carte reprendre.
+    expect(() =>
+      normaliseBlockPayload('carousel', { slides: [slide, { mediaId: 0, title: 'B' }] }, 0)
+    ).toThrow(/diapositive 2 : choisissez une image/);
+  });
+
+  it('refuse une diapositive sans titre', () => {
+    expect(() =>
+      normaliseBlockPayload('carousel', { slides: [{ mediaId: 12, title: '   ' }] }, 3)
+    ).toThrow(/Bloc 4.*diapositive 1 : le titre est vide/);
+  });
+
+  it('rogne le titre et le libellé du bouton', () => {
+    const block = normaliseBlockPayload(
+      'carousel',
+      { slides: [{ mediaId: 12, title: '  Tournoi  ', ctaLabel: '  Voir  ', ctaHref: '/x/' }] },
+      0
+    );
+    expect(block).toMatchObject({ slides: [{ title: 'Tournoi', ctaLabel: 'Voir' }] });
+  });
+});
+
 describe('normaliseBlockPayload — intégrations', () => {
   it("refuse une adresse complète là où un identifiant est attendu", () => {
     expect(() =>
@@ -75,6 +141,45 @@ describe('normaliseBlockPayload — intégrations', () => {
       0
     );
     expect(block).toMatchObject({ provider: 'youtube', resourceId: 'T4_qiRVEXcI' });
+  });
+
+  it("accepte l'adresse d'un agenda Google, qui n'est pas un jeton", () => {
+    // Un contrôle unique pour tous les fournisseurs refusait tout agenda, alors que
+    // l'écran en demande précisément l'adresse.
+    for (const resourceId of ['nozaybad@gmail.com', 'abc123@group.calendar.google.com']) {
+      const block = normaliseBlockPayload(
+        'embed',
+        { provider: 'google_calendar', resourceId, title: 'Agenda du club', aspect: '4/3' },
+        0
+      );
+      expect(block).toMatchObject({ provider: 'google_calendar', resourceId });
+    }
+  });
+
+  it("refuse une URL d'intégration collée à la place de l'adresse de l'agenda", () => {
+    expect(() =>
+      normaliseBlockPayload(
+        'embed',
+        {
+          provider: 'google_calendar',
+          resourceId: 'https://calendar.google.com/calendar/embed?src=nozaybad@gmail.com',
+          title: 'Agenda du club',
+          aspect: '4/3'
+        },
+        0
+      )
+    ).toThrow(/adresse/);
+  });
+
+  it("n'accepte pas une adresse là où un jeton est attendu", () => {
+    // La contrepartie : l'assouplissement ne doit valoir que pour l'agenda.
+    expect(() =>
+      normaliseBlockPayload(
+        'embed',
+        { provider: 'youtube', resourceId: 'nozaybad@gmail.com', title: 'Vidéo', aspect: '16/9' },
+        0
+      )
+    ).toThrow(/identifiant/);
   });
 
   it('exige une hauteur pour un cadre à taille fixe, sinon la page se décale', () => {
@@ -103,7 +208,7 @@ describe('normaliseBlockPayload — robustesse', () => {
   });
 
   it('refuse un type inconnu', () => {
-    expect(() => normaliseBlockPayload('carousel' as never, {}, 0)).toThrow(/inconnu/);
+    expect(() => normaliseBlockPayload('diaporama' as never, {}, 0)).toThrow(/inconnu/);
   });
 
   it('déduplique une galerie', () => {

@@ -27,14 +27,32 @@ if (Astro.request.method === 'POST') {
     create: {
       url: 'http://localhost/cms/posts',
       method: 'POST',
-      body: { title: data.title, excerpt: data.excerpt || undefined, bodyHtml: data.bodyHtml }
+      body: {
+        title: data.title,
+        excerpt: data.excerpt || undefined,
+        bodyHtml: data.bodyHtml,
+        coverMediaId: data.coverMediaId,
+        categoryIds: data.categoryIds
+      }
     },
     update: {
       url: `http://localhost/cms/posts/${data.id}`,
       method: 'PUT',
       // `excerpt` vidé doit effacer le chapô : on envoie `null`, pas `undefined`,
       // que le validateur traiterait comme « champ absent, ne rien changer ».
-      body: { title: data.title, excerpt: data.excerpt || null, bodyHtml: data.bodyHtml }
+      //
+      // Même raison pour `coverMediaId`, que le formulaire envoie toujours : `null`
+      // quand la couverture a été retirée, un identifiant sinon. Ces deux champs, avec
+      // `categoryIds`, étaient jusqu'ici **absents du corps transmis** — le formulaire
+      // les envoyait, ce pont les jetait, et ni la couverture ni les rubriques n'étaient
+      // jamais enregistrées.
+      body: {
+        title: data.title,
+        excerpt: data.excerpt || null,
+        bodyHtml: data.bodyHtml,
+        coverMediaId: data.coverMediaId,
+        categoryIds: data.categoryIds
+      }
     },
     publish: {
       url: `http://localhost/cms/posts/${data.id}/publish`,

@@ -24,6 +24,22 @@ export default defineConfig({
   adapter: cloudflare({
     mode: 'advanced',
     runtime: { mode: 'local' },
+    /*
+      Stockage local partagé avec l'API.
+
+      Sans réglage, chaque projet persiste ses liaisons dans son propre
+      `.wrangler/state` : l'API écrivait les médias déposés dans le sien, le site les
+      cherchait dans le sien, et toute image envoyée depuis l'administration
+      ressortait en 404 — en développement seulement, la production ne connaissant
+      qu'un seul conteneur `nba-media`.
+
+      Le chemin est résolu depuis la racine Vite (`apps/website`) puis suffixé de
+      `v3` par le greffon Cloudflare. C'est l'API qu'on désigne parce que c'est elle
+      qui écrit ; le site ne fait que lire.
+
+      N'a d'effet qu'en local : rien de tout ceci n'existe une fois déployé.
+    */
+    persistState: { path: '../api/.wrangler/state' },
     // Les variantes d'images sont produites une fois à l'import : aucun service de
     // transformation à l'exécution, ce qui garde le site sur l'offre gratuite.
     imageService: 'passthrough'

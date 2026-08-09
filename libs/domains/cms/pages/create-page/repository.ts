@@ -7,6 +7,10 @@ export class CreatePageRepository {
     return db.select().from(cmsPagesTable).where(eq(cmsPagesTable.id, id)).get();
   }
 
+  async findHome(db: DbOrTx): Promise<CmsPageRow | undefined> {
+    return db.select().from(cmsPagesTable).where(eq(cmsPagesTable.template, 'home')).get();
+  }
+
   async findByPath(db: DbOrTx, path: string): Promise<CmsPageRow | undefined> {
     return db.select().from(cmsPagesTable).where(eq(cmsPagesTable.path, path)).get();
   }

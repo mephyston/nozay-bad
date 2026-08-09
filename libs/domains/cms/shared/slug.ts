@@ -56,6 +56,24 @@ export function normalisePath(input: string): string {
   return withTrailing.replace(/\/{2,}/g, '/');
 }
 
+/**
+ * Chemin d'une page, gabarit compris.
+ *
+ * Le gabarit `home` **désigne la racine** : la page qui le porte est servie à « / »,
+ * et son slug n'entre pas dans son adresse. C'est le seul moyen d'atteindre la racine,
+ * `buildPath` produisant toujours « /slug/ ». Le slug reste néanmoins stocké : il
+ * redevient l'adresse de la page le jour où une autre reprend l'accueil.
+ */
+export function buildPagePath(
+  template: 'default' | 'home' | 'landing',
+  parentPath: string | null,
+  slug: string
+): string {
+  assertValidSlug(slug);
+  if (template === 'home') return ROOT_PATH;
+  return buildPath(parentPath, slug);
+}
+
 /** Compose le chemin d'une page à partir de celui de son parent. */
 export function buildPath(parentPath: string | null, slug: string): string {
   assertValidSlug(slug);

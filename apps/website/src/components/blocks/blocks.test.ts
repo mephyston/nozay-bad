@@ -16,7 +16,7 @@ import { BLOCK_TYPES } from '@nba/cms/public';
 const BLOCKS_DIR = __dirname;
 
 /** Types dont le rendu n'est pas encore écrit, avec la phase qui les apportera. */
-const NOT_YET_RENDERED = new Set(['embed', 'person_cards']);
+const NOT_YET_RENDERED = new Set(['person_cards']);
 
 /**
  * Correspondance type → composant, explicite.
@@ -29,6 +29,7 @@ const COMPONENT_BY_TYPE: Record<string, string> = {
   richtext: 'RichText',
   hero: 'Hero',
   cta_grid: 'CtaGrid',
+  carousel: 'Carousel',
   gallery: 'Gallery',
   embed: 'Embed',
   person_cards: 'PersonCards',

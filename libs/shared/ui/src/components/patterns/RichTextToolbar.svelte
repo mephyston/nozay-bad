@@ -1,11 +1,15 @@
 <script lang="ts">
-  import { Bold, Italic, Underline, Link2, Link2Off, List, ListOrdered, Paperclip } from '@lucide/svelte';
+  import {
+    Bold, Italic, Underline, Link2, Link2Off, List, ListOrdered, Paperclip, ImagePlus,
+    Heading2, Heading3
+  } from '@lucide/svelte';
 
   let {
     activeCommands = [],
     onCommand,
     disabled = false,
-    canInsertFile = false
+    canInsertFile = false,
+    canInsertImage = false
   }: {
     /** Commandes actuellement actives sous le curseur, pour l'état enfoncé des boutons. */
     activeCommands?: string[];
@@ -13,11 +17,18 @@
     disabled?: boolean;
     /** Affiche « Fichier » : seuls les écrans reliés à la médiathèque savent le servir. */
     canInsertFile?: boolean;
+    /** Affiche « Image » : seuls les écrans reliés à la médiathèque savent la servir. */
+    canInsertImage?: boolean;
   } = $props();
 
   // Dérivé et non figé : `canInsertFile` dépend de l'écran appelant, qui peut le
   // basculer après le montage.
   const groups = $derived([
+    [
+      // Les titres d'abord : c'est la structure du texte, avant sa mise en forme.
+      { command: 'heading2', label: 'Titre de section', icon: Heading2 },
+      { command: 'heading3', label: 'Sous-titre', icon: Heading3 }
+    ],
     [
       { command: 'bold', label: 'Gras', icon: Bold },
       { command: 'italic', label: 'Italique', icon: Italic },
@@ -31,8 +42,17 @@
       { command: 'createLink', label: 'Insérer un lien', icon: Link2 },
       { command: 'unlink', label: 'Retirer le lien', icon: Link2Off }
     ],
-    ...(canInsertFile
-      ? [[{ command: 'insertFile', label: 'Insérer un fichier à télécharger', icon: Paperclip }]]
+    ...(canInsertFile || canInsertImage
+      ? [
+          [
+            ...(canInsertImage
+              ? [{ command: 'insertImage', label: 'Insérer une image', icon: ImagePlus }]
+              : []),
+            ...(canInsertFile
+              ? [{ command: 'insertFile', label: 'Insérer un fichier à télécharger', icon: Paperclip }]
+              : [])
+          ]
+        ]
       : [])
   ]);
 </script>

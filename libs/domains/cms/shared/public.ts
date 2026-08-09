@@ -16,6 +16,7 @@ export type {
   RichtextBlock,
   HeroBlock,
   CtaGridBlock,
+  CarouselBlock,
   GalleryBlock,
   EmbedBlock,
   PersonCardsBlock,
@@ -23,6 +24,7 @@ export type {
   PdfLinkBlock,
   PostsFeedBlock,
   CtaLinkValue,
+  CarouselSlideValue,
   PersonValue
 } from './blocks';
 

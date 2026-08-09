@@ -39,6 +39,7 @@ Vous ne choisissez jamais un fichier depuis cet écran : c'est le formulaire qui
 | Couverture d'une [actualité](/admin/help/site-actualites) | Les images |
 | Fichier inséré dans un texte d'actualité | Les documents |
 | Image de fond d'une **Grille de liens** | Les images |
+| Image d'une diapositive de **Carrousel** | Les images |
 | Bloc **Galerie** | Les images, ajoutées une à une |
 | Bloc **Document** | Les documents |
 

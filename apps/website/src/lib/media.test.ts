@@ -11,9 +11,10 @@ describe('mediaIdsInBlocks', () => {
       { type: 'cta_grid', columns: 2, items: [{ label: 'L', href: '/x/', mediaId: 4 }] },
       { type: 'pdf_link', mediaId: 5, label: 'PDF', thumbnailMediaId: 6 },
       { type: 'person_cards', people: [{ name: 'N', role: 'R', responsibilities: [], mediaId: 7 }] },
+      { type: 'carousel', slides: [{ mediaId: 8, title: 'T' }] },
       { type: 'richtext', html: '<p>sans média</p>' }
     ];
-    expect(mediaIdsInBlocks(blocks).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(mediaIdsInBlocks(blocks).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
   it('ne rend rien quand aucun bloc ne porte de média', () => {

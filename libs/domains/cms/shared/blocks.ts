@@ -16,6 +16,7 @@ export const BLOCK_TYPES = [
   'richtext',
   'hero',
   'cta_grid',
+  'carousel',
   'gallery',
   'embed',
   'person_cards',
@@ -97,12 +98,71 @@ export const ctaGridBlockSchema = Type.Object(
   { additionalProperties: false }
 );
 
+/**
+ * Diapositive d'un carrousel : une image, un titre, une phrase, un bouton.
+ *
+ * Les bornes de longueur ne protègent pas la base — elles protègent la **carte**. Une
+ * diapositive fait la même taille que ses voisines quel que soit son contenu ; un
+ * titre de 300 caractères ne l'agrandit pas, il la fait déborder. D'où des limites
+ * plus serrées qu'ailleurs : 120 pour le titre, 240 pour la description.
+ *
+ * `minLength` est volontairement absent du titre et `minimum: 0` toléré sur
+ * `mediaId` : ces deux cas sont ceux d'une diapositive qu'on vient d'ajouter et pas
+ * encore remplie. Les refuser ici produirait « /slides/0/title — Expected string
+ * length greater or equal to 1 » à l'écran. C'est `normaliseBlockPayload` qui les
+ * refuse, avec une phrase lisible par un bénévole.
+ */
+const CarouselSlide = Type.Object(
+  {
+    /** Image de la carte. Le rendu la recadre : toutes les diapositives ont le même format. */
+    mediaId: Type.Integer({ minimum: 0 }),
+    title: Type.String({ maxLength: 120 }),
+    description: Type.Optional(Type.String({ maxLength: 240 })),
+    /** Le bouton se pose des deux champs à la fois, ou pas du tout. */
+    ctaLabel: Type.Optional(Type.String({ maxLength: 60 })),
+    ctaHref: Type.Optional(Type.String({ maxLength: 500 }))
+  },
+  { additionalProperties: false }
+);
+
+/**
+ * Carrousel de cartes, en ruban défilant.
+ *
+ * Distinct de `cta_grid` et non une variante : la grille sert des raccourcis et des
+ * logos, où l'image est facultative et le libellé porte tout le sens. Ici l'image est
+ * le sujet, et chaque carte porte un texte. Les fondre en un seul bloc obligerait à
+ * cacher la moitié des champs derrière un sélecteur de disposition — et à migrer les
+ * grilles de partenaires déjà en ligne pour rien.
+ *
+ * Douze diapositives au maximum : au-delà, les dernières ne sont jamais vues, le
+ * ruban étant trop long pour qu'un visiteur en attende la fin.
+ */
+export const carouselBlockSchema = Type.Object(
+  {
+    type: Type.Literal('carousel'),
+    heading: Type.Optional(Type.String({ maxLength: 160 })),
+    slides: Type.Array(CarouselSlide, { maxItems: 12 })
+  },
+  { additionalProperties: false }
+);
+
 export const galleryBlockSchema = Type.Object(
   {
     type: Type.Literal('gallery'),
     heading: Type.Optional(Type.String({ maxLength: 160 })),
     mediaIds: Type.Array(Type.Integer({ minimum: 1 }), { maxItems: 60 }),
-    layout: Type.Union([Type.Literal('grid'), Type.Literal('carousel')])
+    layout: Type.Union([Type.Literal('grid'), Type.Literal('carousel')]),
+    /**
+     * Vignettes par rangée — donc leur taille à l'écran.
+     *
+     * **Optionnel, et il doit le rester** : les galeries déjà enregistrées ne portent
+     * pas ce champ. Le rendre obligatoire ferait échouer `Value.Check` à la relecture,
+     * `parseStoredBlock` rendrait `null`, et le bloc **disparaîtrait** des pages en
+     * ligne sans un mot. Le rendu retient trois à défaut, la valeur d'avant.
+     */
+    columns: Type.Optional(
+      Type.Union([Type.Literal(1), Type.Literal(2), Type.Literal(3), Type.Literal(4)])
+    )
   },
   { additionalProperties: false }
 );
@@ -196,6 +256,7 @@ export const BLOCK_SCHEMAS = {
   richtext: richtextBlockSchema,
   hero: heroBlockSchema,
   cta_grid: ctaGridBlockSchema,
+  carousel: carouselBlockSchema,
   gallery: galleryBlockSchema,
   embed: embedBlockSchema,
   person_cards: personCardsBlockSchema,
@@ -207,6 +268,7 @@ export const BLOCK_SCHEMAS = {
 export type RichtextBlock = Static<typeof richtextBlockSchema>;
 export type HeroBlock = Static<typeof heroBlockSchema>;
 export type CtaGridBlock = Static<typeof ctaGridBlockSchema>;
+export type CarouselBlock = Static<typeof carouselBlockSchema>;
 export type GalleryBlock = Static<typeof galleryBlockSchema>;
 export type EmbedBlock = Static<typeof embedBlockSchema>;
 export type PersonCardsBlock = Static<typeof personCardsBlockSchema>;
@@ -218,6 +280,7 @@ export type BlockPayload =
   | RichtextBlock
   | HeroBlock
   | CtaGridBlock
+  | CarouselBlock
   | GalleryBlock
   | EmbedBlock
   | PersonCardsBlock
@@ -226,4 +289,5 @@ export type BlockPayload =
   | PostsFeedBlock;
 
 export type CtaLinkValue = Static<typeof CtaLink>;
+export type CarouselSlideValue = Static<typeof CarouselSlide>;
 export type PersonValue = Static<typeof Person>;

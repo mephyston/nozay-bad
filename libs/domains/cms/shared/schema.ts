@@ -50,7 +50,17 @@ export const cmsPagesTable = sqliteTable(
     status: text('status', { enum: ['draft', 'published'] })
       .notNull()
       .default('draft'),
-    /** Gabarit de rendu. `home` porte la grille d'actualités, `default` la prose. */
+    /**
+     * Rôle de la page.
+     *
+     * `home` **désigne la racine** : la page qui le porte est servie à « / » (cf.
+     * `buildPagePath`). C'est aujourd'hui le seul effet de cette colonne — le rendu,
+     * lui, découle entièrement des blocs de la page, jamais de son gabarit.
+     *
+     * `landing` n'est lu par aucun code : hérité d'une intention de découpage par
+     * gabarit qui n'a pas eu lieu, il est conservé pour ne pas réécrire l'énumération
+     * sans besoin, mais l'administration ne le propose pas.
+     */
     template: text('template', { enum: ['default', 'home', 'landing'] })
       .notNull()
       .default('default'),
@@ -92,8 +102,8 @@ export const cmsPageBlocksTable = sqliteTable(
     /** Discriminant de l'union TypeScript (`shared/blocks.ts`). */
     type: text('type', {
       enum: [
-        'richtext', 'hero', 'cta_grid', 'gallery', 'embed', 'person_cards', 'schedule',
-        'pdf_link', 'posts_feed'
+        'richtext', 'hero', 'cta_grid', 'carousel', 'gallery', 'embed', 'person_cards',
+        'schedule', 'pdf_link', 'posts_feed'
       ]
     }).notNull(),
     /** Charge utile JSON, validée **et assainie** par l'API avant écriture. */

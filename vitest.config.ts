@@ -297,6 +297,25 @@ export default defineConfig({
         }
       },
       {
+        // Le pendant « ui » manquait au domaine CMS : `features-cms-api` exclut
+        // `**/ui/**`, si bien qu'un test posé à côté d'un composant n'était ramassé
+        // par aucun projet et ne s'exécutait jamais — sans le moindre avertissement.
+        extends: true,
+        plugins: [svelte()],
+        cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-cms-ui'),
+        resolve: {
+          conditions: ['browser'],
+        },
+        test: {
+          name: 'features-cms-ui',
+          globals: true,
+          environment: 'jsdom',
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
+          root: path.resolve(__dirname, 'libs/domains/cms'),
+          include: ['**/ui/**/*.test.ts'],
+        }
+      },
+      {
         extends: true,
         plugins: [
           cloudflareTest({

@@ -126,6 +126,18 @@ const postJsonLd = post
   : [];
 
 // --- Vue « page » -------------------------------------------------------------
+
+/**
+ * La page s'ouvre-t-elle sur un visuel pleine largeur ?
+ *
+ * Seuls comptent les blocs qui occupent toute la largeur en tête de page : un titre
+ * posé au-dessus y flotte sans rattachement. Une galerie ou une grille de liens sans
+ * bannière restent dans la colonne de texte, où le titre garde tout son sens.
+ */
+const firstBlock = blocks[0];
+const openingIsVisual =
+  firstBlock?.type === 'carousel' ||
+  (firstBlock?.type === 'cta_grid' && Boolean(firstBlock.backgroundMediaId));
 const pageDescriptionText = page ? pageDescription(page.seoDescription, blocks) : '';
 const pageJsonLd: unknown[] = [];
 if (page) {
@@ -206,15 +218,32 @@ if (page) {
     noindex={page.noindex || isPreview}
     jsonLd={pageJsonLd}
   >
-    {/* Le bloc `hero` porte déjà le h1 ; sans lui, le titre de la page en tient lieu,
-        pour qu'il y ait toujours exactement un h1 — l'ancien site en avait deux. */}
+    {/*
+      Exactement un h1 par page, toujours — mais pas toujours à l'œil.
+
+      Trois cas, décidés par le premier bloc :
+       - `hero` porte son propre h1 : la page n'en ajoute aucun, sinon il y en aurait
+         deux (le défaut de l'ancien site) ;
+       - un bloc qui ouvre la page en pleine largeur (carrousel, bannière) rend un
+         titre posé au-dessus disgracieux : le h1 reste dans le HTML mais devient
+         invisible. Le retirer serait pire — les lecteurs d'écran naviguent de titre en
+         titre, et une page sans h1 les prive de point d'entrée. Le référencement, lui,
+         s'appuie sur `<title>`, qui est renseigné dans tous les cas ;
+       - partout ailleurs, le titre s'affiche normalement.
+    */}
     {blocks[0]?.type !== 'hero' && (
-      <div class="mx-auto max-w-5xl px-4 pt-10">
-        <h1 class="text-3xl font-semibold tracking-tight">{page.title}</h1>
+      <div class={openingIsVisual ? 'sr-only' : 'mx-auto max-w-5xl px-4 pt-10'}>
+        <h1 class:list={[!openingIsVisual && 'text-3xl font-semibold tracking-tight']}>{page.title}</h1>
       </div>
     )}
-    {blocks.map((block) => (
-      <BlockRenderer block={block} media={media} slots={slots} posts={postsFor(block)} />
+    {blocks.map((block, index) => (
+      <BlockRenderer
+        block={block}
+        media={media}
+        slots={slots}
+        posts={postsFor(block)}
+        opensPage={index === 0}
+      />
     ))}
   </BaseLayout>
 )}

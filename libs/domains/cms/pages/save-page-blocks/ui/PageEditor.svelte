@@ -1,5 +1,16 @@
 <script lang="ts">
-  import { Button, Input, Label, Badge, EmptyState, toast, uiConfirm, flashAndReload } from '@nba/ui';
+  import {
+    Button,
+    Input,
+    Label,
+    Select,
+    Badge,
+    CollapsibleSection,
+    EmptyState,
+    toast,
+    uiConfirm,
+    flashAndReload
+  } from '@nba/ui';
   import type { BlockPayload } from '../../../shared/blocks';
   import { BLOCK_KINDS } from './block-editor-registry';
   import BlockCard from './BlockCard.svelte';
@@ -9,6 +20,9 @@
   interface PageRow {
     id: number;
     title: string;
+    slug: string;
+    path: string;
+    template: 'default' | 'home' | 'landing';
     path: string;
     status: 'draft' | 'published';
     seoTitle: string | null;
@@ -24,6 +38,7 @@
     media = [],
     targets = [],
     categories = [],
+    redirects = [],
     canWrite = false,
     canDelete = false
   } = $props<{
@@ -34,6 +49,8 @@
     /** Médiathèque, cibles de liens et catégories : ressources communes aux éditeurs de blocs. */
     media?: any[];
     targets?: { path: string; title: string; kind: 'page' | 'post' }[];
+    /** Anciennes adresses menant ici, pour l'encart des redirections. */
+    redirects?: { id: number; fromPath: string; statusCode: number; hitCount: number; note: string | null }[];
     categories?: { slug: string; name: string }[];
     canWrite?: boolean;
     canDelete?: boolean;
@@ -43,8 +60,21 @@
   // l'enregistrement. L'écriture est un remplacement intégral côté serveur.
   let blocks = $state<BlockPayload[]>(structuredClone($state.snapshot(initialBlocks)));
   let title = $state(page.title);
+  let slug = $state(page.slug);
+  let template = $state<'default' | 'home' | 'landing'>(page.template);
   let seoTitle = $state(page.seoTitle ?? '');
   let seoDescription = $state(page.seoDescription ?? '');
+
+  /**
+   * Adresse telle qu'elle sera après enregistrement.
+   *
+   * Recalculée ici pour que l'auteur voie l'effet de sa saisie avant de valider : le
+   * gabarit « accueil » impose la racine et neutralise le slug, et le chemin du parent
+   * est repris de l'adresse actuelle.
+   */
+  const parentPath = $derived(page.path.slice(0, page.path.length - `${page.slug}/`.length) || '/');
+  const nextPath = $derived(template === 'home' ? '/' : `${parentPath}${slug}/`);
+  const pathChanges = $derived(nextPath !== page.path);
   let busy = $state(false);
   let dirty = $state(false);
 
@@ -81,7 +111,7 @@
     if (busy) return;
     busy = true;
     try {
-      await saveMeta({ title, seoTitle, seoDescription });
+      await saveMeta({ title, slug, template, seoTitle, seoDescription });
       await saveBlocks($state.snapshot(blocks) as BlockPayload[]);
       flashAndReload('Page enregistrée.');
     } catch (error) {
@@ -132,6 +162,47 @@
         <Input id="page-title" bind:value={title} oninput={touch} />
       </div>
       <div>
+        <!--
+          Deux valeurs seulement, et non les trois du schéma : `landing` n'est lu par
+          aucun code de rendu — le site compose une page à partir de ses blocs, jamais
+          de son gabarit. L'offrir donnerait un choix sans effet.
+        -->
+        <Label for="page-template">Rôle de la page</Label>
+        <Select
+          id="page-template"
+          value={template}
+          onchange={(e) => {
+            template = (e.currentTarget as HTMLSelectElement).value as 'default' | 'home' | 'landing';
+            touch();
+          }}
+        >
+          <option value="default">Page normale</option>
+          <option value="home">Page d'accueil — servie à la racine « / »</option>
+        </Select>
+      </div>
+      <div class="sm:col-span-2">
+        <Label for="page-slug">Adresse</Label>
+        <Input
+          id="page-slug"
+          bind:value={slug}
+          oninput={touch}
+          disabled={template === 'home'}
+          placeholder="presentation"
+        />
+        <p class="text-muted-foreground mt-1 text-xs">
+          {#if template === 'home'}
+            La page d'accueil est servie à <code class="text-foreground">/</code> ; son adresse
+            reste enregistrée et lui sera rendue si une autre page reprend l'accueil.
+          {:else}
+            Adresse : <code class="text-foreground">{nextPath}</code>
+            {#if pathChanges}
+              — l'ancienne <code class="text-foreground">{page.path}</code> redirigera
+              automatiquement (301) vers la nouvelle, elle et ses sous-pages.
+            {/if}
+          {/if}
+        </p>
+      </div>
+      <div>
         <Label for="page-seo-title">Titre pour les moteurs</Label>
         <Input id="page-seo-title" bind:value={seoTitle} oninput={touch} placeholder="Repris du titre si vide" />
       </div>
@@ -148,6 +219,36 @@
         </p>
       </div>
     </div>
+  {/if}
+
+  {#if redirects.length > 0}
+    <!--
+      Repliée par défaut : c'est une information de contrôle, consultée le jour où l'on
+      se demande si une ancienne adresse sert encore. Dépliée en permanence, elle
+      poussait les blocs — le vrai travail de cet écran — d'autant plus bas que la page
+      traînait d'anciennes adresses derrière elle. Le compteur reste visible replié,
+      ce qui suffit à savoir s'il y a quelque chose à regarder.
+    -->
+    <CollapsibleSection
+      title="Anciennes adresses"
+      description="Elles redirigent vers cette page. Le compteur dit combien de visiteurs les ont empruntées : une redirection encore utilisée ne doit pas être retirée."
+      badge={redirects.length}
+    >
+      <ul class="space-y-1.5">
+        {#each redirects as redirect (redirect.id)}
+          <li class="flex flex-wrap items-center gap-2 text-xs">
+            <code class="text-foreground">{redirect.fromPath}</code>
+            <span class="text-muted-foreground" aria-hidden="true">→</span>
+            <Badge variant="outline" size="xs">{redirect.statusCode}</Badge>
+            <span class="text-muted-foreground">
+              {redirect.hitCount === 0
+                ? 'jamais empruntée'
+                : `${redirect.hitCount} visite${redirect.hitCount > 1 ? 's' : ''}`}
+            </span>
+          </li>
+        {/each}
+      </ul>
+    </CollapsibleSection>
   {/if}
 
   {#if blocks.length === 0}

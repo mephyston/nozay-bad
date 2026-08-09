@@ -147,7 +147,7 @@
   async function remove(row: EventRow) {
     const confirmed = await uiConfirm({
       title: `Supprimer « ${row.title} » ?`,
-      description: "Pour un événement annulé, préférez le statut « Annulé » : la fiche reste en ligne et informe ceux qui comptaient s'y rendre.",
+      description: "Pour un événement qui n'aura pas lieu, préférez le statut « Annulé » : il quitte l'agenda du site, mais reste ici avec sa trace. La suppression, elle, est définitive.",
       confirmLabel: 'Supprimer', destructive: true
     });
     if (!confirmed) return;

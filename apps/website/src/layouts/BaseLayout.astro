@@ -1,6 +1,5 @@
 ---
 import '../styles/global.css';
-import { ModeWatcher } from 'mode-watcher';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import { serialiseJsonLd } from '../lib/jsonld';
@@ -50,7 +49,12 @@ const image = ogImage ?? new URL('/og-default.jpg', Astro.site ?? canonical).toS
         try {
           const stored = localStorage.getItem('theme');
           const dark = stored ? stored === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+          // `toggle` avec second argument : il **retire** aussi la classe. Un simple
+          // `add` conditionnel laisserait un thème sombre en place au retour au clair.
           document.documentElement.classList.toggle('dark', dark);
+          // Accorde les éléments natifs — barres de défilement, champs de formulaire —
+          // qui ne connaissent pas nos classes.
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
         } catch {
           /* localStorage refusé (navigation privée stricte) : on garde le thème clair. */
         }
@@ -79,23 +83,8 @@ const image = ogImage ?? new URL('/og-default.jpg', Astro.site ?? canonical).toS
       <script type="application/ld+json" set:html={serialiseJsonLd(entry)} />
     ))}
 
-    {/* Anti-scintillement : le thème doit être posé avant le premier rendu, sinon
-        une page sombre s'affiche brièvement en clair. */}
-    <script is:inline>
-      (() => {
-        try {
-          const stored = localStorage.getItem('mode-watcher-mode');
-          const dark = stored
-            ? stored === 'dark'
-            : window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (dark) document.documentElement.classList.add('dark');
-          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
-        } catch {}
-      })();
-    </script>
   </head>
   <body class="bg-background text-foreground min-h-dvh flex flex-col">
-    <ModeWatcher client:load />
     <SiteHeader />
     <main class="flex-1">
       <slot />

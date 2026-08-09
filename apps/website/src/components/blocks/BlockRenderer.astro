@@ -4,6 +4,8 @@ import type { ScheduleSlotView, PostRow } from '../../lib/cms';
 import RichText from './RichText.astro';
 import Hero from './Hero.astro';
 import CtaGrid from './CtaGrid.astro';
+import Carousel from './Carousel.astro';
+import Embed from './Embed.astro';
 import PdfLink from './PdfLink.astro';
 import Gallery from './Gallery.astro';
 import Schedule from './Schedule.astro';
@@ -11,8 +13,21 @@ import PostsFeed from './PostsFeed.astro';
 
 type MediaMap = Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
 
-interface Props { block: BlockPayload; media?: MediaMap; slots?: ScheduleSlotView[]; posts?: PostRow[] }
-const { block, media = new Map() as MediaMap, slots = [], posts = [] } = Astro.props;
+interface Props {
+  block: BlockPayload;
+  media?: MediaMap;
+  slots?: ScheduleSlotView[];
+  posts?: PostRow[];
+  /** Ce bloc ouvre-t-il la page ? Seul le carrousel s'en sert, pour son titre. */
+  opensPage?: boolean;
+}
+const {
+  block,
+  media = new Map() as MediaMap,
+  slots = [],
+  posts = [],
+  opensPage = false
+} = Astro.props;
 ---
 {/*
   Un type sans rendu ne produit rien plutôt que de faire tomber la page : c'est le
@@ -22,7 +37,9 @@ const { block, media = new Map() as MediaMap, slots = [], posts = [] } = Astro.p
 {block.type === 'richtext' && <RichText block={block} />}
 {block.type === 'hero' && <Hero block={block} media={media} />}
 {block.type === 'cta_grid' && <CtaGrid block={block} media={media} />}
+{block.type === 'carousel' && <Carousel block={block} media={media} {opensPage} />}
 {block.type === 'pdf_link' && <PdfLink block={block} media={media} />}
 {block.type === 'gallery' && <Gallery block={block} media={media} />}
+{block.type === 'embed' && <Embed block={block} />}
 {block.type === 'schedule' && <Schedule block={block} slots={slots} />}
 {block.type === 'posts_feed' && <PostsFeed block={block} posts={posts} />}

@@ -10,7 +10,8 @@
     placeholder = '',
     disabled = false,
     class: className = '',
-    onPickFile
+    onPickFile,
+    onPickImage
   }: {
     /** HTML restreint. L'assainissement d'autorité reste côté serveur. */
     value?: string;
@@ -26,6 +27,14 @@
      * Renvoie `null` si l'utilisateur renonce. Le bouton n'apparaît qu'avec elle.
      */
     onPickFile?: () => Promise<{ href: string; label: string } | null>;
+    /**
+     * Choix d'une image à insérer au curseur.
+     *
+     * Même contrat que `onPickFile` : l'éditeur réclame, l'écran appelant fournit. Le
+     * `src` doit désigner un média du site — le serveur n'accepte que les chemins
+     * `/media/`, et retirerait purement et simplement une image distante.
+     */
+    onPickImage?: () => Promise<{ src: string; alt: string; width?: number | null; height?: number | null } | null>;
   } = $props();
 
   let editor = $state<HTMLDivElement | null>(null);
@@ -35,6 +44,15 @@
   let savedRange: Range | null = null;
 
   const TRACKED = ['bold', 'italic', 'underline', 'insertUnorderedList', 'insertOrderedList'];
+
+  /**
+   * Titres intermédiaires proposés, du plus fort au plus faible.
+   *
+   * Pas de `h1` : c'est le titre de la page, unique et posé par le gabarit. Le profil
+   * d'assainissement le dit d'ailleurs à sa façon, en repliant tout `h1` reçu sur un
+   * `h2`. La hiérarchie utile à l'auteur commence donc à `h2`.
+   */
+  const HEADINGS: Record<string, string> = { heading2: 'h2', heading3: 'h3' };
 
   /**
    * Zone d'édition pilotée par `document.execCommand`.
@@ -53,34 +71,66 @@
     refreshActiveCommands();
   }
 
-  async function insertFileLink(): Promise<void> {
-    if (!onPickFile || disabled) return;
-    // La sélection est mémorisée *avant* l'ouverture du sélecteur : le temps de choisir,
-    // le focus a quitté la zone d'édition et le curseur serait perdu.
+  /**
+   * Échappe une valeur destinée à un attribut ou à du texte inséré.
+   *
+   * Le serveur assainit de toute façon, mais une apostrophe dans un nom de fichier
+   * suffirait à refermer l'attribut et à produire un balisage cassé que l'auteur verrait
+   * à l'écran. On échappe donc à la source.
+   */
+  function escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /**
+   * Insère du balisage au curseur, après avoir laissé l'utilisateur choisir.
+   *
+   * La sélection est mémorisée *avant* l'ouverture du sélecteur : le temps de choisir,
+   * le focus a quitté la zone d'édition et le curseur serait perdu.
+   */
+  async function insertAtCursor<T>(pick: () => Promise<T | null>, toHtml: (picked: T) => string) {
+    if (disabled) return;
     saveSelection();
-    const picked = await onPickFile();
+    const picked = await pick();
     if (!picked) {
       savedRange = null;
       return;
     }
     editor?.focus();
     restoreSelection();
-    // `insertHTML` plutôt que `createLink` : il n'y a pas de sélection à envelopper,
-    // c'est le libellé du fichier qui devient le texte du lien.
-    document.execCommand('insertHTML', false, `<a href="${picked.href}">${picked.label}</a>&nbsp;`);
+    document.execCommand('insertHTML', false, toHtml(picked));
     syncFromEditor();
     savedRange = null;
   }
 
   function handleCommand(command: string): void {
-    if (command === 'insertFile') {
-      void insertFileLink();
+    if (command === 'insertFile' && onPickFile) {
+      // `insertHTML` plutôt que `createLink` : il n'y a pas de sélection à envelopper,
+      // c'est le libellé du fichier qui devient le texte du lien.
+      void insertAtCursor(onPickFile, (f) => `<a href="${escapeHtml(f.href)}">${escapeHtml(f.label)}</a>&nbsp;`);
+      return;
+    }
+    if (command === 'insertImage' && onPickImage) {
+      // `width` et `height` sont posés quand la médiathèque les connaît : ce sont eux
+      // qui réservent la place et suppriment le décalage de mise en page au chargement.
+      void insertAtCursor(onPickImage, (image) => {
+        const size = image.width && image.height ? ` width="${image.width}" height="${image.height}"` : '';
+        return `<img src="${escapeHtml(image.src)}" alt="${escapeHtml(image.alt)}"${size}>`;
+      });
       return;
     }
     if (command === 'createLink') {
       saveSelection();
       linkUrl = '';
       linkOpen = true;
+      return;
+    }
+    if (HEADINGS[command]) {
+      toggleHeading(command);
       return;
     }
     exec(command);
@@ -117,15 +167,43 @@
     if (editor) value = editor.innerHTML;
   }
 
+  /**
+   * Balise du bloc sous le curseur.
+   *
+   * `formatBlock` ne se suit pas avec `queryCommandState`, qui ne connaît que les
+   * commandes à deux états : c'est `queryCommandValue` qui rend le nom de la balise.
+   * D'où un suivi distinct de celui des commandes de caractère.
+   */
+  function currentBlockTag(): string {
+    try {
+      return (document.queryCommandValue('formatBlock') || '').toLowerCase();
+    } catch {
+      return '';
+    }
+  }
+
+  function toggleHeading(command: string): void {
+    const tag = HEADINGS[command];
+    // Recliquer sur le niveau déjà posé ramène au paragraphe : sans cela, un titre mis
+    // par mégarde ne pourrait plus être défait autrement qu'en retapant la ligne.
+    exec('formatBlock', currentBlockTag() === tag ? '<p>' : `<${tag}>`);
+  }
+
   function refreshActiveCommands(): void {
     if (!editor || typeof document.queryCommandState !== 'function') return;
-    activeCommands = TRACKED.filter((command) => {
+    const active = TRACKED.filter((command) => {
       try {
         return document.queryCommandState(command);
       } catch {
         return false;
       }
     });
+
+    const tag = currentBlockTag();
+    for (const [command, heading] of Object.entries(HEADINGS)) {
+      if (tag === heading) active.push(command);
+    }
+    activeCommands = active;
   }
 
   /**
@@ -143,6 +221,18 @@
   }
 
   onMount(() => {
+    /*
+      Entrée crée un `<p>`, et non le `<div>` que produisent Chrome et Safari par
+      défaut. L'assainisseur replie déjà `div` sur `p`, donc l'enregistré ne changeait
+      pas ; mais dans la zone d'édition ces `<div>` échappaient aux marges de
+      paragraphe, et le texte apparaissait tassé après un titre.
+    */
+    try {
+      document.execCommand('defaultParagraphSeparator', false, 'p');
+    } catch {
+      /* Commande inconnue du navigateur : le repli côté serveur suffit. */
+    }
+
     const onSelectionChange = () => {
       if (document.activeElement === editor) refreshActiveCommands();
     };
@@ -160,7 +250,7 @@
 </script>
 
 <div class={`rounded-md border border-input bg-background focus-within:ring-1 focus-within:ring-ring ${className}`}>
-  <RichTextToolbar {activeCommands} {disabled} onCommand={handleCommand} canInsertFile={Boolean(onPickFile)} />
+  <RichTextToolbar {activeCommands} {disabled} onCommand={handleCommand} canInsertFile={Boolean(onPickFile)} canInsertImage={Boolean(onPickImage)} />
 
   {#if linkOpen}
     <div class="flex items-center gap-2 border-b border-input px-2 py-2">
@@ -222,6 +312,26 @@
   }
   .nba-rich-text :global(ol) {
     list-style: decimal;
+  }
+  /*
+    Les titres se voient dans la zone d'édition, sinon l'auteur ne distingue pas ce
+    qu'il vient de poser. Les tailles suivent celles du site public, à l'échelle près.
+  */
+  .nba-rich-text :global(h2),
+  .nba-rich-text :global(h3) {
+    margin: 0.75rem 0 0.375rem;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  .nba-rich-text :global(h2:first-child),
+  .nba-rich-text :global(h3:first-child) {
+    margin-top: 0;
+  }
+  .nba-rich-text :global(h2) {
+    font-size: 1.25rem;
+  }
+  .nba-rich-text :global(h3) {
+    font-size: 1.0625rem;
   }
   .nba-rich-text :global(a) {
     color: var(--primary);

@@ -216,6 +216,7 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'GET', path: '/cms/post-categories', permission: 'cms:posts:read', service: true },
   // Les menus font partie de la structure du site : qui peut composer les pages peut
   // les ranger. Pas de permission dédiée pour une poignée d'entrées.
+  { method: 'GET', path: '/cms/redirects', permission: 'cms:pages:read' },
   { method: 'GET', path: '/cms/nav', permission: 'cms:pages:read', service: true },
   { method: 'POST', path: '/cms/nav', permission: 'cms:pages:write' },
   { method: 'PUT', path: '/cms/nav/reorder', permission: 'cms:pages:write' },
