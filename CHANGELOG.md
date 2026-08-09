@@ -1,3 +1,10 @@
+# [1.0.0-beta.69](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.68...v1.0.0-beta.69) (2026-08-09)
+
+
+### Features
+
+* **cms:** éditeur de blocs, historique des versions et aperçu signé ([973ee77](https://github.com/mephyston/nozay-bad/commit/973ee7739d0bdca4d2c8ce10a308e25fafd03de1))
+
 # [1.0.0-beta.68](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.67...v1.0.0-beta.68) (2026-08-09)
 
 
