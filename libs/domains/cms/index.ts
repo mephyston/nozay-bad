@@ -22,6 +22,10 @@ import { updatePostRoute } from './posts/update-post/route';
 import { publishPostRoute } from './posts/publish-post/route';
 import { deletePostRoute } from './posts/delete-post/route';
 import { listPostCategoriesRoute } from './categories/list-post-categories/route';
+import { listNavItemsRoute } from './navigation/list-nav-items/route';
+import { saveNavItemRoute } from './navigation/save-nav-item/route';
+import { deleteNavItemRoute } from './navigation/delete-nav-item/route';
+import { reorderNavItemsRoute } from './navigation/reorder-nav-items/route';
 import { savePostCategoryRoute } from './categories/save-post-category/route';
 
 export type Bindings = {
@@ -52,6 +56,11 @@ cmsRouter.route('/', createPostRoute);
 cmsRouter.route('/', getPostRoute);
 cmsRouter.route('/', updatePostRoute);
 cmsRouter.route('/', deletePostRoute);
+// `/nav/reorder` avant `/nav/:id` : le segment littéral doit gagner sur le motif.
+cmsRouter.route('/', reorderNavItemsRoute);
+cmsRouter.route('/', listNavItemsRoute);
+cmsRouter.route('/', saveNavItemRoute);
+cmsRouter.route('/', deleteNavItemRoute);
 cmsRouter.route('/', listMediaRoute);
 cmsRouter.route('/', uploadMediaRoute);
 cmsRouter.route('/', getMediaRoute);
@@ -69,6 +78,8 @@ export { getMedia } from './media/get-media/handler';
 export { listPosts } from './posts/list-posts/handler';
 export { getPost } from './posts/get-post/handler';
 export { listPostCategories } from './categories/list-post-categories/handler';
+export { listNavItems } from './navigation/list-nav-items/handler';
+export type { NavItemView } from './navigation/list-nav-items/dto';
 export { listPageRevisions } from './revisions/list-page-revisions/handler';
 export { restorePageRevision } from './revisions/restore-page-revision/handler';
 export { BLOCK_TYPES } from './shared/blocks';

@@ -214,6 +214,13 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/cms/posts/:id/publish', permission: 'cms:posts:write' },
   { method: 'DELETE', path: '/cms/posts/:id', permission: 'cms:posts:delete' },
   { method: 'GET', path: '/cms/post-categories', permission: 'cms:posts:read', service: true },
+  // Les menus font partie de la structure du site : qui peut composer les pages peut
+  // les ranger. Pas de permission dédiée pour une poignée d'entrées.
+  { method: 'GET', path: '/cms/nav', permission: 'cms:pages:read', service: true },
+  { method: 'POST', path: '/cms/nav', permission: 'cms:pages:write' },
+  { method: 'PUT', path: '/cms/nav/reorder', permission: 'cms:pages:write' },
+  { method: 'PUT', path: '/cms/nav/:id', permission: 'cms:pages:write' },
+  { method: 'DELETE', path: '/cms/nav/:id', permission: 'cms:pages:write' },
   { method: 'POST', path: '/cms/post-categories', permission: 'cms:posts:write' },
 
   // Créneaux. Le site public les affiche, d'où `service` en lecture : c'est ce qui

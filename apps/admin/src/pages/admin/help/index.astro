@@ -25,12 +25,13 @@ const categoryNames: Record<string, string> = {
   'comptabilite': 'Comptabilité et Trésorerie',
   'boutique': 'Boutique',
   'communication': 'Communication',
+  'site': 'Site public',
   'admin': 'Administration'
 };
 
 // Ordre d'affichage des rubriques, calqué sur le menu d'administration. Sans lui,
 // l'ordre dépendait de la première occurrence rencontrée dans la collection.
-const categoryOrder = ['admin', 'adherents', 'comptabilite', 'boutique', 'communication'];
+const categoryOrder = ['admin', 'adherents', 'comptabilite', 'boutique', 'communication', 'site'];
 const sortedCategories = Object.entries(groupedHelp).sort(
   ([a], [b]) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b)
 );

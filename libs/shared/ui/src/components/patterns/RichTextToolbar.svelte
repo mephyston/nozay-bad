@@ -1,18 +1,23 @@
 <script lang="ts">
-  import { Bold, Italic, Underline, Link2, Link2Off, List, ListOrdered } from '@lucide/svelte';
+  import { Bold, Italic, Underline, Link2, Link2Off, List, ListOrdered, Paperclip } from '@lucide/svelte';
 
   let {
     activeCommands = [],
     onCommand,
-    disabled = false
+    disabled = false,
+    canInsertFile = false
   }: {
     /** Commandes actuellement actives sous le curseur, pour l'état enfoncé des boutons. */
     activeCommands?: string[];
     onCommand: (command: string) => void;
     disabled?: boolean;
+    /** Affiche « Fichier » : seuls les écrans reliés à la médiathèque savent le servir. */
+    canInsertFile?: boolean;
   } = $props();
 
-  const groups = [
+  // Dérivé et non figé : `canInsertFile` dépend de l'écran appelant, qui peut le
+  // basculer après le montage.
+  const groups = $derived([
     [
       { command: 'bold', label: 'Gras', icon: Bold },
       { command: 'italic', label: 'Italique', icon: Italic },
@@ -25,8 +30,11 @@
     [
       { command: 'createLink', label: 'Insérer un lien', icon: Link2 },
       { command: 'unlink', label: 'Retirer le lien', icon: Link2Off }
-    ]
-  ];
+    ],
+    ...(canInsertFile
+      ? [[{ command: 'insertFile', label: 'Insérer un fichier à télécharger', icon: Paperclip }]]
+      : [])
+  ]);
 </script>
 
 <div class="flex flex-wrap items-center gap-1 border-b border-input bg-muted/40 px-1.5 py-1" role="toolbar" aria-label="Mise en forme">

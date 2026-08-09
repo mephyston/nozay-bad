@@ -35,7 +35,7 @@ export async function createPost(
     title: input.title,
     excerpt: input.excerpt ?? null,
     bodyHtml,
-    coverMediaId: null,
+    coverMediaId: input.coverMediaId ?? null,
     // L'import fournit sa propre date ; une saisie manuelle démarre en brouillon.
     status: input.publishedAt ? 'published' : 'draft',
     seoTitle: null,

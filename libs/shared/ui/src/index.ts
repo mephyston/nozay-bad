@@ -48,6 +48,7 @@ export { default as DataTableToolbar } from './components/patterns/DataTableTool
 export { default as DataTableColumnHeader } from "./components/patterns/DataTableColumnHeader.svelte";
 export { default as DataTableRowActions } from "./components/patterns/DataTableRowActions.svelte";
 export { default as FormField } from "./components/patterns/FormField.svelte";
+export { default as FormSheet } from "./components/patterns/FormSheet.svelte";
 export { default as RichTextEditor } from './components/patterns/RichTextEditor.svelte';
 export { default as RichTextToolbar } from './components/patterns/RichTextToolbar.svelte';
 export { default as PageHeader } from './components/patterns/PageHeader.svelte';

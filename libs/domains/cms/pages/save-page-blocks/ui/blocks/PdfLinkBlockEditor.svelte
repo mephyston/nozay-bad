@@ -1,25 +1,61 @@
 <script lang="ts">
-  import { Input, Label } from '@nba/ui';
+  import { Input, Label, Button } from '@nba/ui';
+  import { FilePlus, X } from '@lucide/svelte';
+  import MediaPicker, { type PickableMedia } from '../../../../media/list-media/ui/MediaPicker.svelte';
+  import { humanSize } from '../../../../media/list-media/ui/media-upload';
   import type { PdfLinkBlock } from '../../../../shared/blocks';
 
-  let { block = $bindable() } = $props<{ block: PdfLinkBlock }>();
+  let { block = $bindable(), media = [] } = $props<{
+    block: PdfLinkBlock;
+    media?: PickableMedia[];
+  }>();
+
+  let pickerOpen = $state(false);
+
+  const document_ = $derived(
+    block.mediaId ? media.find((m: PickableMedia) => m.id === block.mediaId) ?? null : null
+  );
 </script>
 
 <div class="space-y-3">
-  <div>
+  <div class="space-y-1.5">
     <Label for="pdf-label">Libellé du lien</Label>
     <Input id="pdf-label" bind:value={block.label} placeholder="Télécharger le livret d'accueil" />
   </div>
-  <div>
-    <Label for="pdf-media">Identifiant du document</Label>
-    <Input id="pdf-media" type="number" bind:value={block.mediaId} />
-    <p class="text-muted-foreground mt-1 text-xs">
-      Numéro du document dans la médiathèque. Le sélecteur visuel arrive avec la
-      prochaine tranche.
-    </p>
+
+  <div class="space-y-1.5">
+    <Label>Document</Label>
+    {#if document_}
+      <div class="border-border flex items-center gap-3 rounded-md border p-2">
+        <span class="text-2xl" aria-hidden="true">📄</span>
+        <span class="min-w-0 flex-1">
+          <span class="block truncate text-sm font-medium">{document_.alt || document_.key.split('/').pop()}</span>
+          <span class="text-muted-foreground block text-xs">{humanSize(document_.sizeBytes)}</span>
+        </span>
+        <Button type="button" variant="ghost" size="sm" onclick={() => (pickerOpen = true)}>Remplacer</Button>
+        <Button type="button" variant="ghost" size="icon-sm" onclick={() => (block.mediaId = 0)}>
+          <X class="h-4 w-4" />
+          <span class="sr-only">Retirer le document</span>
+        </Button>
+      </div>
+    {:else}
+      <Button type="button" variant="outline" class="gap-1.5" onclick={() => (pickerOpen = true)}>
+        <FilePlus class="h-4 w-4" />
+        Choisir un document
+      </Button>
+    {/if}
   </div>
-  <div>
+
+  <div class="space-y-1.5">
     <Label for="pdf-description">Description</Label>
     <Input id="pdf-description" bind:value={block.description} />
   </div>
 </div>
+
+<MediaPicker
+  bind:open={pickerOpen}
+  {media}
+  kind="document"
+  title="Document à mettre en téléchargement"
+  onSelect={(item) => (block.mediaId = item.id)}
+/>

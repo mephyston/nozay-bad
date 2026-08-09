@@ -21,5 +21,19 @@ export async function listPosts(db: Db, filters: ListPostsInput = {}): Promise<L
     limit: Math.min(filters.limit ?? DEFAULT_LIMIT, MAX_LIMIT),
     offset: filters.offset ?? 0
   });
-  return { posts: rows, total };
+
+  // Deux requêtes de plus au total, quel que soit le nombre d'articles rendus.
+  const [covers, categories] = await Promise.all([
+    repo.coversFor(db, [...new Set(rows.map((row) => row.coverMediaId).filter((id): id is number => id !== null))]),
+    repo.categoriesFor(db, rows.map((row) => row.id))
+  ]);
+
+  return {
+    posts: rows.map((row) => ({
+      ...row,
+      cover: row.coverMediaId === null ? null : covers.get(row.coverMediaId) ?? null,
+      categories: categories.get(row.id) ?? []
+    })),
+    total
+  };
 }

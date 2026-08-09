@@ -1,0 +1,38 @@
+---
+import type { PostsFeedBlock } from '@nba/cms/public';
+import type { PostRow } from '../../lib/cms';
+import PostCard from '../PostCard.astro';
+
+interface Props { block: PostsFeedBlock; posts?: PostRow[] }
+const { block, posts = [] } = Astro.props;
+
+// Le bloc ne porte qu'une requête : la page a déjà interrogé le domaine, il ne reste
+// qu'à respecter la limite demandée.
+const shown = posts.slice(0, block.limit);
+const showImages = block.showImages !== false;
+const archiveHref = block.categorySlug ? `/actualites/?categorie=${block.categorySlug}` : '/actualites/';
+---
+<section class="mx-auto max-w-5xl px-4 py-8">
+  {block.heading && <h2 class="mb-6 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
+
+  {shown.length === 0 ? (
+    <p class="text-muted-foreground">Aucune actualité pour le moment.</p>
+  ) : (
+    <ul class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {shown.map((post, index) => (
+        <li class="flex">
+          {/* Les deux premières cartes sont visibles d'emblée sur la plupart des écrans. */}
+          <PostCard post={post} priority={index < 2} showImage={showImages} />
+        </li>
+      ))}
+    </ul>
+  )}
+
+  {block.showArchiveLink !== false && shown.length > 0 && (
+    <p class="mt-6">
+      <a href={archiveHref} class="text-primary text-sm font-medium hover:underline">
+        Toutes les actualités <span aria-hidden="true">→</span>
+      </a>
+    </p>
+  )}
+</section>

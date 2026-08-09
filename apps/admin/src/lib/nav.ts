@@ -63,7 +63,9 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Communication',
     items: [
       { name: 'Annonces', icon: 'Megaphone', href: '/admin/announcements', permission: 'announcements:posts:read' },
-      { name: 'Notifications', icon: 'Bell', href: '/admin/notifications', permission: 'notifications:messages:read' }
+      { name: 'Notifications', icon: 'Bell', href: '/admin/notifications', permission: 'notifications:messages:read' },
+      { name: 'Créneaux', icon: 'CalendarClock', href: '/admin/website/schedules', permission: 'schedules:slots:read' },
+      { name: 'Agenda', icon: 'CalendarDays', href: '/admin/website/events', permission: 'events:events:read' }
     ]
   },
   {
@@ -72,8 +74,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { name: 'Pages', icon: 'FileText', href: '/admin/website/pages', permission: 'cms:pages:read' },
       { name: 'Actualités du site', icon: 'Newspaper', href: '/admin/website/posts', permission: 'cms:posts:read' },
       { name: 'Médiathèque', icon: 'Image', href: '/admin/website/media', permission: 'cms:media:read' },
-      { name: 'Créneaux', icon: 'CalendarClock', href: '/admin/website/schedules', permission: 'schedules:slots:read' },
-      { name: 'Agenda', icon: 'CalendarDays', href: '/admin/website/events', permission: 'events:events:read' }
+      { name: 'Menus', icon: 'Menu', href: '/admin/website/menus', permission: 'cms:pages:read' }
     ]
   },
   {

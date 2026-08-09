@@ -33,7 +33,8 @@ const COMPONENT_BY_TYPE: Record<string, string> = {
   embed: 'Embed',
   person_cards: 'PersonCards',
   schedule: 'Schedule',
-  pdf_link: 'PdfLink'
+  pdf_link: 'PdfLink',
+  posts_feed: 'PostsFeed'
 };
 
 function componentName(type: string): string {

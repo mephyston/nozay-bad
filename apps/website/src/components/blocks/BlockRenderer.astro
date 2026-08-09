@@ -1,17 +1,18 @@
 ---
 import type { BlockPayload, CmsMediaRow, CmsMediaVariantRow } from '@nba/cms/public';
-import type { ScheduleSlotView } from '../../lib/cms';
+import type { ScheduleSlotView, PostRow } from '../../lib/cms';
 import RichText from './RichText.astro';
 import Hero from './Hero.astro';
 import CtaGrid from './CtaGrid.astro';
 import PdfLink from './PdfLink.astro';
 import Gallery from './Gallery.astro';
 import Schedule from './Schedule.astro';
+import PostsFeed from './PostsFeed.astro';
 
 type MediaMap = Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
 
-interface Props { block: BlockPayload; media?: MediaMap; slots?: ScheduleSlotView[] }
-const { block, media = new Map() as MediaMap, slots = [] } = Astro.props;
+interface Props { block: BlockPayload; media?: MediaMap; slots?: ScheduleSlotView[]; posts?: PostRow[] }
+const { block, media = new Map() as MediaMap, slots = [], posts = [] } = Astro.props;
 ---
 {/*
   Un type sans rendu ne produit rien plutôt que de faire tomber la page : c'est le
@@ -20,7 +21,8 @@ const { block, media = new Map() as MediaMap, slots = [] } = Astro.props;
 */}
 {block.type === 'richtext' && <RichText block={block} />}
 {block.type === 'hero' && <Hero block={block} media={media} />}
-{block.type === 'cta_grid' && <CtaGrid block={block} />}
+{block.type === 'cta_grid' && <CtaGrid block={block} media={media} />}
 {block.type === 'pdf_link' && <PdfLink block={block} media={media} />}
 {block.type === 'gallery' && <Gallery block={block} media={media} />}
 {block.type === 'schedule' && <Schedule block={block} slots={slots} />}
+{block.type === 'posts_feed' && <PostsFeed block={block} posts={posts} />}

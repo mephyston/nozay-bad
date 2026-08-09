@@ -5,6 +5,8 @@ export interface UpdatePostInput {
   title?: string;
   excerpt?: string | null;
   bodyHtml?: string;
+  /** `null` retire la couverture ; absent la laisse inchangée. */
+  coverMediaId?: number | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
   categoryIds?: number[];

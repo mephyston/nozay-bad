@@ -60,6 +60,12 @@ export const BLOCK_KINDS: BlockKind[] = [
     create: () => ({ type: 'person_cards', people: [] })
   },
   {
+    type: 'posts_feed',
+    label: 'Actualités',
+    hint: 'Les dernières actualités du site, en cartes.',
+    create: () => ({ type: 'posts_feed', limit: 6, showImages: true, showArchiveLink: true })
+  },
+  {
     type: 'schedule',
     label: 'Créneaux',
     hint: 'Tableau des créneaux, tenu à jour depuis la rubrique dédiée.',

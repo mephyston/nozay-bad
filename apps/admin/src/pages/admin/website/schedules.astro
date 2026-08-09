@@ -22,7 +22,18 @@ if (Astro.request.method === 'POST') {
 
   const routes: Record<string, { url: string; method: string; body?: unknown }> = {
     create: { url: 'http://localhost/schedules', method: 'POST', body: data },
-    update: { url: `http://localhost/schedules/${data.id}`, method: 'PUT', body: { active: data.active } },
+    // Seules les clés présentes sont transmises : le même point d'entrée sert au
+    // masquage depuis la liste (`active` seul) et à l'édition complète du créneau,
+    // et le validateur traite un champ absent comme « ne rien changer ».
+    update: {
+      url: `http://localhost/schedules/${data.id}`,
+      method: 'PUT',
+      body: Object.fromEntries(
+        (['venueId', 'audience', 'weekday', 'startTime', 'endTime', 'label', 'active'] as const)
+          .filter((key) => data[key] !== undefined)
+          .map((key) => [key, data[key]])
+      )
+    },
     delete: { url: `http://localhost/schedules/${data.id}`, method: 'DELETE' }
   };
   const route = routes[data.action];
@@ -66,11 +77,15 @@ const seasonCode = `${String(startYear).slice(2)}-${String(startYear + 1).slice(
     permissions={Astro.locals.user?.permissions || []}
     breadcrumb="Créneaux"
   >
-    <PageHeader
-      title="Créneaux"
-      description={`Saison ${seasonCode}. Ces créneaux alimentent la page publique : ils remplacent la feuille Google que les moteurs de recherche ne voyaient pas.`}
-    />
-    {errorMsg && <ErrorAlert message={errorMsg} />}
-    <SchedulesManager client:load slots={slots} venues={venues} seasonCode={seasonCode} canWrite={canWrite} />
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader
+        title="Créneaux"
+        description={`Saison ${seasonCode}. Ces créneaux alimentent la page publique : ils remplacent la feuille Google que les moteurs de recherche ne voyaient pas.`}
+      />
+
+      <SchedulesManager client:load slots={slots} venues={venues} seasonCode={seasonCode} canWrite={canWrite} />
+    </div>
   </AdminLayout>
 </Layout>

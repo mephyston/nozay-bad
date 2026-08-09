@@ -36,3 +36,26 @@ export class CmsCyclicParentError extends AppError {
     this.name = 'CmsCyclicParentError';
   }
 }
+
+export class CmsNavItemNotFoundError extends AppError {
+  constructor(message = 'Entrée de menu introuvable') {
+    super(message, 404);
+    this.name = 'CmsNavItemNotFoundError';
+  }
+}
+
+export class CmsNavTargetError extends AppError {
+  constructor(message = 'Une entrée de menu pointe soit une page du site, soit une adresse extérieure.') {
+    super(message, 400);
+    this.name = 'CmsNavTargetError';
+  }
+}
+
+export class CmsNavDepthError extends AppError {
+  constructor(
+    message = 'Un menu ne peut compter que deux niveaux : un sous-menu ne peut pas en contenir un autre.'
+  ) {
+    super(message, 400);
+    this.name = 'CmsNavDepthError';
+  }
+}

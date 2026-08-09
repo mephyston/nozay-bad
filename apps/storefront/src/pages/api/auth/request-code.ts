@@ -28,6 +28,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const turnstileToken = body?.turnstileToken;
   if (!identifier) return json({ ok: false, error: 'Email ou numéro de licence requis.' }, 400);
 
+  // Bypass du rate-limit en développement (opt-in via .dev.vars).
+  //
+  // En local il n'y a pas de `CF-Connecting-IP` : `clientIp()` retombe sur 127.0.0.1,
+  // donc *toutes* les tentatives — quel que soit le compte testé — partagent le même
+  // compteur de 5 codes / 15 min. Deux essais de bout en bout et l'on est bloqué.
+  //
+  // Double verrou volontaire : `IS_DEV` vient de `import.meta.env.DEV`, inliné à false
+  // au build de production — poser la variable sur un Worker déployé resterait donc
+  // sans effet. La variable, elle, rend le bypass explicite : la retirer permet de
+  // tester le limiteur lui-même en local.
+  const bypassRateLimit = IS_DEV && env.AUTH_RATE_LIMIT_DISABLED === 'true';
+
   // Anti-bot
   const verify = await verifyTurnstileToken(turnstileToken, ip, { kv, runtimeEnv: env });
   if (!verify.success) {
@@ -35,7 +47,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   // Rate-limit par IP (5 codes / 15 min)
-  if (await rateLimiter.isRateLimited(`otp-ip:${ip}`, 5, 15 * 60 * 1000, kv)) {
+  if (!bypassRateLimit && (await rateLimiter.isRateLimited(`otp-ip:${ip}`, 5, 15 * 60 * 1000, kv))) {
     return json({ ok: false, error: 'Trop de demandes. Réessayez dans quelques minutes.' }, 429);
   }
 
@@ -70,7 +82,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   // Rate-limit par email (5 codes / 15 min) pour éviter le harcèlement d'une boîte.
-  if (await rateLimiter.isRateLimited(`otp-mail:${accountEmail}`, 5, 15 * 60 * 1000, kv)) {
+  if (!bypassRateLimit && (await rateLimiter.isRateLimited(`otp-mail:${accountEmail}`, 5, 15 * 60 * 1000, kv))) {
     return json({ ok: false, error: 'Trop de demandes pour ce compte. Réessayez plus tard.' }, 429);
   }
 

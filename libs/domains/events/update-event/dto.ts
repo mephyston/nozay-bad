@@ -2,6 +2,7 @@ import type { ClubEventRow } from '../shared/schema';
 
 export interface UpdateEventInput {
   eventId: number;
+  category?: ClubEventRow['category'];
   title?: string;
   startsAt?: string;
   endsAt?: string | null;

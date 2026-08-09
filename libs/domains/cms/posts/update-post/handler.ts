@@ -25,6 +25,7 @@ export async function updatePost(
     title: input.title ?? post.title,
     excerpt: input.excerpt === undefined ? post.excerpt : input.excerpt,
     bodyHtml: input.bodyHtml === undefined ? post.bodyHtml : sanitizeRichText(input.bodyHtml, CMS_PROFILE),
+    coverMediaId: input.coverMediaId === undefined ? post.coverMediaId : input.coverMediaId,
     seoTitle: input.seoTitle === undefined ? post.seoTitle : input.seoTitle,
     seoDescription: input.seoDescription === undefined ? post.seoDescription : input.seoDescription,
     updatedAt: now

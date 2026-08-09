@@ -70,7 +70,24 @@ export function createApiClient(env?: ApiClientEnv, identity?: CallerIdentity) {
         headers.delete('x-preview-verified');
       }
 
-      if (env?.API_SERVICE && typeof env.API_SERVICE.fetch === 'function') {
+      // En développement, `API_URL` l'emporte sur le binding de service.
+      //
+      // `wrangler dev` ne partage plus ses bindings de service entre processus : ils
+      // ne se résolvent qu'entre workers lancés dans une même session. Or l'admin, la
+      // boutique et le site tournent sous `astro dev`, chacun dans le sien. Le binding
+      // y est bien **présent** — donc vrai, donc choisi ci-dessous — mais toute
+      // requête revient en `503 Worker "nba-api" not found`. Il masquait ainsi le
+      // repli HTTP écrit juste en dessous, qui est le chemin local prévu.
+      //
+      // Double verrou, comme ailleurs dans le dépôt : `import.meta.env.DEV` est inliné
+      // à false au build de production, où le binding reste donc toujours souverain —
+      // poser `API_URL` sur un Worker déployé n'aurait aucun effet.
+      const preferHttpInDev =
+        typeof import.meta !== 'undefined' &&
+        Boolean((import.meta as { env?: { DEV?: boolean } }).env?.DEV) &&
+        Boolean(env?.API_URL);
+
+      if (!preferHttpInDev && env?.API_SERVICE && typeof env.API_SERVICE.fetch === 'function') {
         return env.API_SERVICE.fetch(input, { ...init, headers });
       }
 

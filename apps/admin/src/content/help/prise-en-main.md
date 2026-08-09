@@ -15,7 +15,7 @@ Une adresse authentifiée mais inconnue de l'application n'obtient que le rôle 
 
 ## Le menu
 
-Le menu latéral regroupe les rubriques par domaine : Adhérents, Comptabilité, Boutique, Communication, Réglages, Assistance. **Vous ne voyez que les rubriques auxquelles vous avez droit** — le menu est construit à partir des mêmes permissions que le contrôle d'accès des pages, une entrée visible mène donc toujours à une page qui s'ouvre.
+Le menu latéral regroupe les rubriques par domaine : Adhérents, Comptabilité, Boutique, Communication, Site public, Réglages, Assistance. **Vous ne voyez que les rubriques auxquelles vous avez droit** — le menu est construit à partir des mêmes permissions que le contrôle d'accès des pages, une entrée visible mène donc toujours à une page qui s'ouvre.
 
 Sur mobile, une barre d'actions en bas d'écran donne accès au menu et aux gestes les plus fréquents selon vos droits : enregistrer un chèque, créer une commande, saisir une note de frais.
 

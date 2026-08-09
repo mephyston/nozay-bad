@@ -27,7 +27,18 @@ if (Astro.request.method === 'POST') {
       method: 'POST',
       body: { title: data.title, startsAt: data.startsAt, category: data.category, venueLabel: data.venueLabel }
     },
-    update: { url: `http://localhost/events/${data.id}`, method: 'PUT', body: { status: data.status } },
+    // Seules les clés présentes sont transmises : le même point d'entrée sert au
+    // changement de statut depuis la liste (`status` seul) et à l'édition complète
+    // de la fiche, et le validateur traite un champ absent comme « ne rien changer ».
+    update: {
+      url: `http://localhost/events/${data.id}`,
+      method: 'PUT',
+      body: Object.fromEntries(
+        (['title', 'startsAt', 'category', 'venueLabel', 'status'] as const)
+          .filter((key) => data[key] !== undefined)
+          .map((key) => [key, data[key]])
+      )
+    },
     delete: { url: `http://localhost/events/${data.id}`, method: 'DELETE' }
   };
   const route = routes[data.action];
@@ -62,11 +73,15 @@ try {
     permissions={Astro.locals.user?.permissions || []}
     breadcrumb="Agenda"
   >
-    <PageHeader
-      title="Agenda"
-      description="Compétitions, stages et animations. Chaque événement publié devient une fiche indexable, là où l'agenda Google intégré restait invisible."
-    />
-    {errorMsg && <ErrorAlert message={errorMsg} />}
-    <EventsManager client:load events={events} canWrite={canWrite} canDelete={canDelete} />
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader
+        title="Agenda"
+        description="Compétitions, stages et animations. Chaque événement publié devient une fiche indexable, là où l'agenda Google intégré restait invisible."
+      />
+
+      <EventsManager client:load events={events} canWrite={canWrite} canDelete={canDelete} />
+    </div>
   </AdminLayout>
 </Layout>

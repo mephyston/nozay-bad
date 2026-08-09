@@ -11,17 +11,25 @@
   import PersonCardsBlockEditor from './blocks/PersonCardsBlockEditor.svelte';
   import ScheduleBlockEditor from './blocks/ScheduleBlockEditor.svelte';
   import PdfLinkBlockEditor from './blocks/PdfLinkBlockEditor.svelte';
+  import PostsFeedBlockEditor from './blocks/PostsFeedBlockEditor.svelte';
 
   let {
     block = $bindable(),
     index,
     total,
+    media = [],
+    targets = [],
+    categories = [],
     onMove,
     onRemove
   } = $props<{
     block: BlockPayload;
     index: number;
     total: number;
+    /** Ressources de la page hôte, transmises aux éditeurs qui en ont besoin. */
+    media?: any[];
+    targets?: { path: string; title: string; kind: 'page' | 'post' }[];
+    categories?: { slug: string; name: string }[];
     onMove: (from: number, to: number) => void;
     onRemove: (index: number) => void;
   }>();
@@ -47,9 +55,9 @@
     {:else if block.type === 'hero'}
       <HeroBlockEditor bind:block />
     {:else if block.type === 'cta_grid'}
-      <CtaGridBlockEditor bind:block />
+      <CtaGridBlockEditor bind:block {media} {targets} />
     {:else if block.type === 'gallery'}
-      <GalleryBlockEditor bind:block />
+      <GalleryBlockEditor bind:block {media} />
     {:else if block.type === 'embed'}
       <EmbedBlockEditor bind:block />
     {:else if block.type === 'person_cards'}
@@ -57,7 +65,9 @@
     {:else if block.type === 'schedule'}
       <ScheduleBlockEditor bind:block />
     {:else if block.type === 'pdf_link'}
-      <PdfLinkBlockEditor bind:block />
+      <PdfLinkBlockEditor bind:block {media} />
+    {:else if block.type === 'posts_feed'}
+      <PostsFeedBlockEditor bind:block {categories} />
     {/if}
   </div>
 </div>

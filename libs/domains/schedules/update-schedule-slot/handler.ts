@@ -1,6 +1,6 @@
 import { type Db } from '@nba/db';
 import { isOrderedRange } from '../shared/slot';
-import { InvalidSlotTimesError, ScheduleSlotNotFoundError } from '../shared/errors';
+import { InvalidSlotTimesError, ScheduleSlotNotFoundError, VenueNotFoundError } from '../shared/errors';
 import { UpdateScheduleSlotRepository } from './repository';
 import type { UpdateScheduleSlotInput, UpdateScheduleSlotOutput } from './dto';
 
@@ -18,7 +18,15 @@ export async function updateScheduleSlot(
   const endTime = input.endTime ?? slot.endTime;
   if (!isOrderedRange(startTime, endTime)) throw new InvalidSlotTimesError();
 
+  // Même contrôle qu'à la création : la colonne porte une clé étrangère, mais D1 ne
+  // l'applique pas toujours — un gymnase inexistant passerait donc en base.
+  if (input.venueId !== undefined && !(await repo.findVenue(db, input.venueId))) {
+    throw new VenueNotFoundError();
+  }
+
   return repo.update(db, slot.id, {
+    venueId: input.venueId ?? slot.venueId,
+    audience: input.audience ?? slot.audience,
     weekday: input.weekday ?? slot.weekday,
     startTime,
     endTime,

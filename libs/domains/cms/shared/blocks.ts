@@ -20,7 +20,8 @@ export const BLOCK_TYPES = [
   'embed',
   'person_cards',
   'schedule',
-  'pdf_link'
+  'pdf_link',
+  'posts_feed'
 ] as const;
 
 export type BlockType = (typeof BLOCK_TYPES)[number];
@@ -83,7 +84,15 @@ export const ctaGridBlockSchema = Type.Object(
     type: Type.Literal('cta_grid'),
     heading: Type.Optional(Type.String({ maxLength: 160 })),
     columns: Type.Union([Type.Literal(2), Type.Literal(3), Type.Literal(4)]),
-    items: Type.Array(CtaLink, { maxItems: 24 })
+    items: Type.Array(CtaLink, { maxItems: 24 }),
+    /**
+     * Bannière derrière les boutons.
+     *
+     * C'est la forme de l'accueil : une image large, les raccourcis posés devant. Le
+     * bloc reste utilisable sans elle — une grille de logos de partenaires n'en veut
+     * pas — d'où l'optionnalité plutôt qu'un type de bloc distinct.
+     */
+    backgroundMediaId: Type.Optional(Type.Integer({ minimum: 1 }))
   },
   { additionalProperties: false }
 );
@@ -161,6 +170,27 @@ export const pdfLinkBlockSchema = Type.Object(
   { additionalProperties: false }
 );
 
+/**
+ * Dernières actualités.
+ *
+ * Comme `schedule`, le bloc porte une **requête** et jamais des articles : la page
+ * d'accueil ne fige pas la liste qu'elle affichait le jour de sa dernière
+ * publication. C'est `apps/website` qui interroge le domaine au rendu.
+ */
+export const postsFeedBlockSchema = Type.Object(
+  {
+    type: Type.Literal('posts_feed'),
+    heading: Type.Optional(Type.String({ maxLength: 160 })),
+    /** Six sur l'accueil ; au-delà, la page d'archives fait mieux le travail. */
+    limit: Type.Integer({ minimum: 1, maximum: 12 }),
+    categorySlug: Type.Optional(Type.String({ maxLength: 120 })),
+    showImages: Type.Optional(Type.Boolean()),
+    /** Lien « toutes les actualités » sous la grille. */
+    showArchiveLink: Type.Optional(Type.Boolean())
+  },
+  { additionalProperties: false }
+);
+
 /** Schéma par type, pour valider une charge utile une fois son discriminant connu. */
 export const BLOCK_SCHEMAS = {
   richtext: richtextBlockSchema,
@@ -170,7 +200,8 @@ export const BLOCK_SCHEMAS = {
   embed: embedBlockSchema,
   person_cards: personCardsBlockSchema,
   schedule: scheduleBlockSchema,
-  pdf_link: pdfLinkBlockSchema
+  pdf_link: pdfLinkBlockSchema,
+  posts_feed: postsFeedBlockSchema
 } as const;
 
 export type RichtextBlock = Static<typeof richtextBlockSchema>;
@@ -181,6 +212,7 @@ export type EmbedBlock = Static<typeof embedBlockSchema>;
 export type PersonCardsBlock = Static<typeof personCardsBlockSchema>;
 export type ScheduleBlock = Static<typeof scheduleBlockSchema>;
 export type PdfLinkBlock = Static<typeof pdfLinkBlockSchema>;
+export type PostsFeedBlock = Static<typeof postsFeedBlockSchema>;
 
 export type BlockPayload =
   | RichtextBlock
@@ -190,7 +222,8 @@ export type BlockPayload =
   | EmbedBlock
   | PersonCardsBlock
   | ScheduleBlock
-  | PdfLinkBlock;
+  | PdfLinkBlock
+  | PostsFeedBlock;
 
 export type CtaLinkValue = Static<typeof CtaLink>;
 export type PersonValue = Static<typeof Person>;

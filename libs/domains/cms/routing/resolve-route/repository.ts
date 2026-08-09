@@ -1,10 +1,15 @@
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import {
   cmsPagesTable,
   cmsPageBlocksTable,
   cmsPostsTable,
   cmsRedirectsTable,
+  cmsMediaTable,
+  cmsPostCategoriesTable,
+  cmsPostCategoryLinksTable,
+  type CmsMediaRow,
+  type CmsPostCategoryRow,
   type CmsPageRow,
   type CmsPageBlockRow,
   type CmsPostRow,
@@ -33,6 +38,24 @@ export class ResolveRouteRepository {
       ? eq(cmsPostsTable.path, path)
       : and(eq(cmsPostsTable.path, path), eq(cmsPostsTable.status, 'published'));
     return db.select().from(cmsPostsTable).where(condition).get();
+  }
+
+  async findMedia(db: DbOrTx, id: number): Promise<CmsMediaRow | undefined> {
+    return db.select().from(cmsMediaTable).where(eq(cmsMediaTable.id, id)).get();
+  }
+
+  async categoriesOf(db: DbOrTx, postId: number): Promise<CmsPostCategoryRow[]> {
+    const links = await db
+      .select()
+      .from(cmsPostCategoryLinksTable)
+      .where(eq(cmsPostCategoryLinksTable.postId, postId))
+      .all();
+    if (links.length === 0) return [];
+    return db
+      .select()
+      .from(cmsPostCategoriesTable)
+      .where(inArray(cmsPostCategoriesTable.id, links.map((l) => l.categoryId)))
+      .all();
   }
 
   async findRedirect(db: DbOrTx, path: string): Promise<CmsRedirectRow | undefined> {

@@ -102,7 +102,10 @@ export function mediaIdsInBlocks(blocks: import('@nba/cms/public').BlockPayload[
   for (const block of blocks) {
     if (block.type === 'hero' && block.mediaId) ids.push(block.mediaId);
     if (block.type === 'gallery') ids.push(...block.mediaIds);
-    if (block.type === 'cta_grid') ids.push(...block.items.map((i) => i.mediaId).filter((v): v is number => !!v));
+    if (block.type === 'cta_grid') {
+      ids.push(...block.items.map((i) => i.mediaId).filter((v): v is number => !!v));
+      if (block.backgroundMediaId) ids.push(block.backgroundMediaId);
+    }
     if (block.type === 'pdf_link') {
       ids.push(block.mediaId);
       if (block.thumbnailMediaId) ids.push(block.thumbnailMediaId);
@@ -112,6 +115,20 @@ export function mediaIdsInBlocks(blocks: import('@nba/cms/public').BlockPayload[
     }
   }
   return ids;
+}
+
+export interface PostCoverRow {
+  id: number;
+  key: string;
+  alt: string;
+  width: number | null;
+  height: number | null;
+}
+
+export interface PostCategoryRow {
+  id: number;
+  slug: string;
+  name: string;
 }
 
 export interface PostRow {
@@ -126,6 +143,9 @@ export interface PostRow {
   updatedAt: string | number;
   seoTitle: string | null;
   seoDescription: string | null;
+  /** Renvoyés joints par l'API : composer une carte ne coûte aucune requête de plus. */
+  cover?: PostCoverRow | null;
+  categories?: PostCategoryRow[];
 }
 
 export interface PostList {
@@ -149,6 +169,27 @@ export async function listPostCategories(
   env: WebsiteEnv
 ): Promise<{ slug: string; name: string }[]> {
   return (await getJson<{ slug: string; name: string }[]>(env, '/cms/post-categories')) ?? [];
+}
+
+export interface NavItemView {
+  id: number;
+  label: string;
+  href: string;
+  externalUrl: string | null;
+  children: NavItemView[];
+}
+
+/**
+ * Menu d'un emplacement.
+ *
+ * Appelé à chaque page : un échec renvoie une liste vide plutôt qu'une erreur, pour
+ * qu'une API momentanément indisponible retire la navigation sans emporter le site.
+ */
+export async function listNavItems(
+  env: WebsiteEnv,
+  location: 'header' | 'footer'
+): Promise<NavItemView[]> {
+  return (await getJson<NavItemView[]>(env, `/cms/nav?location=${location}`)) ?? [];
 }
 
 export interface ScheduleSlotView {

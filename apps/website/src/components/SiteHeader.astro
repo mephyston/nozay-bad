@@ -1,37 +1,154 @@
 ---
+import ThemeToggle from './ThemeToggle.astro';
+import { resolveEnv } from '../lib/request-context';
+import { listNavItems, type NavItemView } from '../lib/cms';
+
 /**
  * En-tête du site.
  *
- * Le menu vient de la base à partir de la phase des menus administrables ; en
- * attendant, l'arborescence reprise de WordPress est posée ici pour que la recette
- * de parité puisse commencer.
+ * Le menu vient de la base : il se compose depuis l'écran « Menus du site » de
+ * l'administration, sur deux niveaux au plus. Une liste vide — API indisponible, ou
+ * menu jamais renseigné — laisse au moins le logo et le retour à l'accueil, plutôt
+ * qu'un en-tête cassé.
  */
-const NAV = [
-  { label: 'Accueil', href: '/' },
-  { label: 'Le club', href: '/notre-club/' },
-  { label: 'Jeunes', href: '/jeunes-2/' },
-  { label: 'Adultes compétition', href: '/adultes-2/' },
-  { label: 'Adultes loisirs', href: '/adultes-loisirs/' },
-  { label: 'Agenda', href: '/agenda/' }
-];
+const env = resolveEnv(Astro.locals);
+const nav: NavItemView[] = await listNavItems(env, 'header');
 const current = Astro.url.pathname;
+
+const isExternal = (item: NavItemView) => item.externalUrl !== null;
+
+/** Une entrée est active si l'on est dessus, ou sur l'une de ses sous-entrées. */
+function isActive(item: NavItemView): boolean {
+  if (item.href === current) return true;
+  return item.children.some((child) => child.href === current);
+}
 ---
-<header class="border-border border-b">
-  <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-4">
-    <a href="/" class="flex items-center gap-2 font-semibold">
+<header class="border-border bg-background sticky top-0 z-40 border-b">
+  <div class="mx-auto flex max-w-5xl items-center gap-4 px-4 py-3">
+    <a href="/" class="flex shrink-0 items-center gap-2 font-semibold">
       <img src="/logo.png" alt="" width="36" height="36" class="h-9 w-9" />
-      <span>Nozay Badminton</span>
+      <span class="hidden sm:inline">Nozay Badminton</span>
     </a>
-    <nav aria-label="Navigation principale" class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-      {NAV.map((item) => (
-        <a
-          href={item.href}
-          aria-current={current === item.href ? 'page' : undefined}
-          class="hover:text-primary aria-[current=page]:text-primary aria-[current=page]:font-medium"
-        >
-          {item.label}
-        </a>
-      ))}
+
+    {/* Les sous-menus s'ouvrent au survol **et** au focus clavier : un `:hover` seul
+        rendrait les sous-entrées inatteignables sans souris. */}
+    <nav aria-label="Navigation principale" class="hidden flex-1 md:block">
+      <ul class="flex flex-wrap items-center gap-x-1 text-sm">
+        {nav.map((item) => (
+          <li class="group relative">
+            <a
+              href={item.href}
+              target={isExternal(item) ? '_blank' : undefined}
+              rel={isExternal(item) ? 'noopener noreferrer' : undefined}
+              aria-current={item.href === current ? 'page' : undefined}
+              aria-haspopup={item.children.length > 0 ? 'true' : undefined}
+              class:list={[
+                'hover:bg-muted inline-flex items-center gap-1 rounded-md px-3 py-2 transition-colors',
+                isActive(item) && 'text-primary font-medium'
+              ]}
+            >
+              {item.label}
+              {item.children.length > 0 && (
+                <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              )}
+            </a>
+
+            {item.children.length > 0 && (
+              <ul class="border-border bg-background invisible absolute left-0 top-full z-50 min-w-56 rounded-md border p-1 opacity-0 shadow-lg transition-[opacity,visibility] group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+                {item.children.map((child) => (
+                  <li>
+                    <a
+                      href={child.href}
+                      target={child.externalUrl !== null ? '_blank' : undefined}
+                      rel={child.externalUrl !== null ? 'noopener noreferrer' : undefined}
+                      aria-current={child.href === current ? 'page' : undefined}
+                      class:list={[
+                        'hover:bg-muted block rounded-sm px-3 py-2 text-sm transition-colors',
+                        child.href === current && 'text-primary font-medium'
+                      ]}
+                    >
+                      {child.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ul>
     </nav>
+
+    <div class="ml-auto flex items-center gap-1">
+      <ThemeToggle />
+
+      <button
+        type="button"
+        id="burger"
+        class="hover:bg-muted text-muted-foreground inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors md:hidden"
+        aria-label="Ouvrir le menu"
+        aria-expanded="false"
+        aria-controls="mobile-nav"
+      >
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
   </div>
+
+  {/* Le menu mobile est rendu déplié dans le HTML puis masqué par `hidden` : son
+      contenu reste donc lisible des moteurs et des lecteurs d'écran même si le script
+      n'a pas encore été exécuté. */}
+  <nav id="mobile-nav" aria-label="Navigation principale" class="border-border hidden border-t md:hidden">
+    <ul class="mx-auto max-w-5xl px-4 py-2 text-sm">
+      {nav.map((item) => (
+        <li class="py-0.5">
+          <a
+            href={item.href}
+            target={isExternal(item) ? '_blank' : undefined}
+            rel={isExternal(item) ? 'noopener noreferrer' : undefined}
+            aria-current={item.href === current ? 'page' : undefined}
+            class:list={['block rounded-md px-2 py-2', isActive(item) && 'text-primary font-medium']}
+          >
+            {item.label}
+          </a>
+          {item.children.length > 0 && (
+            <ul class="border-border ml-3 border-l pl-2">
+              {item.children.map((child) => (
+                <li>
+                  <a
+                    href={child.href}
+                    target={child.externalUrl !== null ? '_blank' : undefined}
+                    rel={child.externalUrl !== null ? 'noopener noreferrer' : undefined}
+                    aria-current={child.href === current ? 'page' : undefined}
+                    class:list={[
+                      'text-muted-foreground block rounded-md px-2 py-1.5',
+                      child.href === current && 'text-primary font-medium'
+                    ]}
+                  >
+                    {child.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </li>
+      ))}
+    </ul>
+  </nav>
 </header>
+
+<script is:inline>
+  (() => {
+    const burger = document.getElementById('burger');
+    const nav = document.getElementById('mobile-nav');
+    if (!burger || !nav) return;
+    burger.addEventListener('click', () => {
+      const open = !nav.classList.toggle('hidden');
+      burger.setAttribute('aria-expanded', String(open));
+      burger.setAttribute('aria-label', open ? 'Fermer le menu' : 'Ouvrir le menu');
+    });
+  })();
+</script>

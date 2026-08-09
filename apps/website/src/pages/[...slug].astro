@@ -1,9 +1,16 @@
 ---
-import { normalisePath } from '@nba/cms/public';
+import { normalisePath, type BlockPayload } from '@nba/cms/public';
 import { verifyPreviewToken } from '@nba/preview';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BlockRenderer from '../components/blocks/BlockRenderer.astro';
-import { resolvePublicRoute, loadMedia, mediaIdsInBlocks, listScheduleSlots } from '../lib/cms';
+import {
+  resolvePublicRoute,
+  loadMedia,
+  mediaIdsInBlocks,
+  listScheduleSlots,
+  listPublishedPosts,
+  type PostRow
+} from '../lib/cms';
 import { resolveEnv } from '../lib/request-context';
 import { pageTitle, pageDescription, absoluteUrl } from '../lib/seo';
 import { sportsClub, webPage, breadcrumbList, article, openingHours } from '../lib/jsonld';
@@ -52,6 +59,8 @@ if (isPreview) {
 }
 
 const post = resolved.kind === 'post' ? resolved.post : null;
+const postCover = resolved.kind === 'post' ? resolved.cover : null;
+const postCategories = resolved.kind === 'post' ? resolved.categories : [];
 const page = resolved.kind === 'page' ? resolved.page : null;
 const blocks = resolved.kind === 'page' ? resolved.blocks : [];
 
@@ -63,6 +72,33 @@ const media = await loadMedia(env, mediaIdsInBlocks(blocks));
 // pas payer un aller-retour inutile.
 const needsSchedule = blocks.some((block) => block.type === 'schedule');
 const slots = needsSchedule ? await listScheduleSlots(env) : [];
+
+// Idem pour les actualités : une page qui n'en affiche pas ne paie pas la requête.
+//
+// Une lecture par **catégorie** demandée, et non par bloc : deux blocs qui montrent la
+// même catégorie se partagent le chargement, à la plus haute des limites qu'ils
+// réclament. La clé vide est le cas « toutes catégories ».
+const feedNeeds = new Map<string, number>();
+for (const block of blocks) {
+  if (block.type !== 'posts_feed') continue;
+  const key = block.categorySlug ?? '';
+  feedNeeds.set(key, Math.max(feedNeeds.get(key) ?? 0, block.limit));
+}
+
+const feedPosts = new Map<string, PostRow[]>(
+  await Promise.all(
+    [...feedNeeds].map(
+      async ([category, limit]) =>
+        [
+          category,
+          (await listPublishedPosts(env, { limit, category: category || undefined })).posts
+        ] as const
+    )
+  )
+);
+
+const postsFor = (block: BlockPayload): PostRow[] =>
+  block.type === 'posts_feed' ? feedPosts.get(block.categorySlug ?? '') ?? [] : [];
 
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' });
 
@@ -120,7 +156,31 @@ if (page) {
     jsonLd={postJsonLd}
   >
     <article class="mx-auto max-w-3xl px-4 py-10">
+      {postCover && (
+        <img
+          src={`/media/${postCover.key.replace(/^media\//, '')}`}
+          alt={postCover.alt}
+          width={postCover.width ?? undefined}
+          height={postCover.height ?? undefined}
+          fetchpriority="high"
+          class="mb-6 aspect-[16/9] w-full rounded-lg object-cover"
+        />
+      )}
       <h1 class="text-3xl font-semibold tracking-tight">{post.title}</h1>
+      {postCategories.length > 0 && (
+        <ul class="mt-3 flex flex-wrap gap-1.5">
+          {postCategories.map((category) => (
+            <li>
+              <a
+                href={`/actualites/?categorie=${category.slug}`}
+                class="bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-medium hover:underline"
+              >
+                {category.name}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
       <p class="text-muted-foreground mt-2 text-sm">
         {postPublished && (
           <time datetime={postPublished}>{dateFormatter.format(new Date(postPublished))}</time>
@@ -153,6 +213,8 @@ if (page) {
         <h1 class="text-3xl font-semibold tracking-tight">{page.title}</h1>
       </div>
     )}
-    {blocks.map((block) => <BlockRenderer block={block} media={media} slots={slots} />)}
+    {blocks.map((block) => (
+      <BlockRenderer block={block} media={media} slots={slots} posts={postsFor(block)} />
+    ))}
   </BaseLayout>
 )}

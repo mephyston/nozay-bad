@@ -18,10 +18,12 @@ Un compte n'a accès qu'à ce qu'on lui a explicitement accordé. Créer un comp
 
 Un rôle correspond à une fonction réelle dans l'association. Vous pouvez en attribuer plusieurs à la même personne — une secrétaire qui assure aussi la trésorerie reçoit les deux rôles.
 
-- **Membre** — Tableau de bord et centre d'aide uniquement. C'est le rôle par défaut.
-- **Secrétaire** — Le fichier des adhérents (consultation, modification, import Poona), les attestations CSE, la communication (notifications) et le catalogue de la boutique. Consultation seule côté finances.
-- **Trésorier·ère** — La comptabilité complète : grand livre, factures, rapprochement bancaire, chèques, exercices, budget et rapports. Les notes de frais, de la saisie au remboursement. L'encaissement des commandes.
-- **Président·e** — La consultation de l'ensemble du club, les actes de gouvernance (ouverture et clôture d'exercice, vote du budget), la validation des notes de frais et des commandes, la communication, et la gestion des accès.
+- **Accès minimal** — Tableau de bord et centre d'aide uniquement, aucun droit métier. C'est ce qu'on attribue à un compte créé sans rôle : il peut se connecter, rien de plus.
+- **Communication** — Les annonces du club, les notifications aux adhérents et **le site public dans son ensemble** : pages, actualités, médiathèque, créneaux, agenda et menus. Ni finances, ni fichier des adhérents : c'est le rôle à donner au bénévole qui anime la communication, sans lui ouvrir le secrétariat.
+- **Entraîneur·e** — Le catalogue de la boutique et les commandes passées pour les adhérents, dont il consulte le fichier. Il tient également **les créneaux** à jour : ce sont les encadrants qui vivent les horaires au quotidien. Il ne valide pas les commandes : l'encaissement relève de la trésorerie.
+- **Secrétaire** — Le fichier des adhérents (consultation, modification, import Poona), les attestations CSE, la communication (annonces et notifications), le catalogue de la boutique, et la **rédaction** sur le site public (pages, actualités, médiathèque, agenda) sans la main sur l'arborescence ni les suppressions. Consultation seule côté finances.
+- **Trésorier·ère** — La comptabilité complète : grand livre, factures, rapprochement bancaire, chèques, exercices, budget et rapports. Les notes de frais, de la saisie au remboursement. L'encaissement des commandes. Consultation seule des pages, actualités, créneaux et agenda du site public.
+- **Président·e** — La consultation de l'ensemble du club, les actes de gouvernance (ouverture et clôture d'exercice, vote du budget), la validation des notes de frais et des commandes, la communication, le site public dans son ensemble, et la gestion des accès.
 - **Super administrateur** — Tous les droits, y compris la configuration technique.
 
 > [!NOTE]
@@ -34,6 +36,19 @@ Depuis **Réglages → Accès & Rôles**, ajoutez la personne avec l'adresse e-m
 > [!CAUTION]
 > Ne donnez le rôle **Super administrateur** qu'aux personnes qui en ont réellement besoin. Il ouvre la configuration technique et permet de consulter l'application sous l'identité d'un autre compte.
 
+## Ajuster ce qu'un rôle permet
+
+Depuis le panneau **Que permet chaque rôle ?**, un super administrateur peut cocher ou décocher les droits d'un rôle. La modification s'applique immédiatement à tous les comptes qui le portent — comptez quelques secondes de propagation.
+
+Trois points à connaître :
+
+- Le rôle **Super administrateur** n'est pas modifiable : il détient tous les droits par construction, y compris ceux des fonctionnalités à venir. C'est aussi ce qui garantit qu'on ne peut pas se verrouiller hors de cet écran.
+- Le tableau de bord et le centre d'aide restent toujours accordés, même si vous les décochez : sans eux, la personne ne verrait plus rien après s'être connectée.
+- Un rôle qui s'écarte de sa définition d'origine est signalé, avec le nombre d'ajouts et de retraits, et un bouton pour y revenir. Chaque modification est enregistrée avec son auteur et sa date.
+
+> [!CAUTION]
+> Modifier un rôle change les droits de **toutes** les personnes qui le portent, pas seulement les vôtres. Vérifiez la colonne concernée avant d'enregistrer.
+
 ## Retirer un accès
 
 Supprimer un compte lui retire immédiatement l'accès. Un garde-fou empêche de supprimer — ou de rétrograder — le dernier super administrateur : sans lui, plus personne ne pourrait attribuer de rôle, et il faudrait une intervention technique pour rouvrir l'application.
@@ -41,6 +56,150 @@ Supprimer un compte lui retire immédiatement l'accès. Un garde-fou empêche de
 ## Consulter en tant qu'un autre compte
 
 Un super administrateur peut consulter l'application sous l'identité d'un autre compte, pour reproduire ce qu'une personne voit quand elle signale un problème. Un bandeau orange rappelle en permanence sous quelle identité vous agissez. Cette fonction ne permet jamais d'obtenir plus de droits que les siens.
+
+
+--- Article: agenda.md ---
+---
+title: "Agenda"
+description: "Publier les compétitions, stages et animations sur l'agenda du site public."
+category: "communication"
+order: 4
+---
+
+**Communication → Agenda** tient le calendrier du club : compétitions, interclubs, tournois, stages, animations et assemblées. Les événements publiés composent la page **Agenda** du site public.
+
+Ils remplacent l'agenda Google intégré de l'ancien site, dont le contenu était **entièrement invisible pour les moteurs de recherche** : une compétition annoncée n'existait que pour qui ouvrait la page. Chaque événement publié est désormais du texte indexable, accompagné de ses données structurées — c'est ce qui permet à une date d'apparaître directement dans une recherche.
+
+## Ajouter un événement
+
+| Champ | Détail |
+|---|---|
+| **Titre** | 200 caractères au maximum. « Interclubs D3 — journée 4 » |
+| **Début** | Date et heure. Obligatoire |
+| **Catégorie** | Compétition, Interclubs, Tournoi, Stage, Vie du club, Assemblée |
+| **Lieu** | Texte libre : « Halle des Sports », ou le gymnase du club adverse |
+
+Le **lieu** est volontairement libre, et non choisi parmi les gymnases du club : la moitié des événements se déroulent en déplacement, dans des salles que le club ne référence pas.
+
+L'événement est créé **en brouillon** : il n'apparaît sur le site qu'une fois publié.
+
+> [!NOTE]
+> Le formulaire ne demande pas d'heure de fin ni de description. Le modèle les prévoit, ainsi qu'un lien vers la fiche FFBaD ou Badnet, mais les champs correspondants ne sont pas encore dans l'écran. Mettez l'essentiel dans le titre en attendant.
+
+## Publier, annuler, supprimer
+
+Le statut se change **depuis la liste**, par le menu **⋯**.
+
+| Statut | Sur le site public |
+|---|---|
+| **Brouillon** | Invisible |
+| **En ligne** | Affiché dans l'agenda, s'il est à venir |
+| **Annulé** | Retiré de l'agenda |
+
+> [!IMPORTANT]
+> **Annuler retire l'événement du site**, il ne l'y laisse pas barré. Si l'annulation doit être portée à la connaissance de ceux qui comptaient s'y rendre, publiez une [annonce](/admin/help/annonces) ou une [actualité](/admin/help/site-actualites) : l'agenda, lui, ne montre que ce qui aura bien lieu.
+
+Le statut **Annulé** garde une trace côté administration : l'événement reste dans la liste, marqué en rouge, plutôt que d'être effacé. C'est ce qui le distingue de la **suppression**, définitive, réservée à un événement saisi par erreur.
+
+## Ce que voit le visiteur
+
+La page **Agenda** liste les cinquante prochains événements publiés, du plus proche au plus lointain, avec leur date en toutes lettres, leur heure, leur catégorie et leur lieu.
+
+Un événement du jour **reste affiché jusqu'à minuit**, même si son heure de début est passée : une compétition ne disparaît pas de l'affiche à 9 h 01.
+
+Les événements passés disparaissent du site le lendemain, mais restent visibles dans l'écran d'administration, qui affiche aussi l'historique.
+
+## Agenda ou créneaux ?
+
+Deux rubriques voisines, à ne pas confondre :
+
+- l'**Agenda** porte des événements **datés et ponctuels** : un tournoi le 14 novembre, l'assemblée générale du 20 juin ;
+- les [**Créneaux**](/admin/help/creneaux) portent les **horaires hebdomadaires** d'entraînement, qui reviennent chaque semaine de la saison.
+
+## Qui peut faire quoi
+
+| Action | Droit requis |
+|---|---|
+| Consulter l'agenda | Consulter l'agenda |
+| Ajouter, modifier, publier, annuler | Créer et modifier un événement |
+| Supprimer | Supprimer un événement |
+
+Les rôles **Communication**, **Président·e** et **Super administrateur** disposent de l'ensemble. Le rôle **Secrétaire** peut créer et modifier, mais pas supprimer. Les droits se règlent depuis [Accès & Rôles](/admin/help/acces-permissions).
+
+
+--- Article: annonces.md ---
+---
+title: "Annonces"
+description: "Publier les informations du club sur l'accueil de l'espace adhérent."
+category: "communication"
+order: 1
+---
+
+**Communication → Annonces** sert à publier les informations du club : tournois, assemblée générale, fermeture des créneaux, changement d'horaire.
+
+À ne pas confondre avec les [actualités du site](/admin/help/site-actualites), qui sont publiques et lisibles par n'importe qui : une annonce s'adresse aux **adhérents connectés**, et peut faire sonner leur téléphone.
+
+Une annonce publiée apparaît **sur l'accueil de l'espace adhérent** (les 3 plus récentes) et **sur la page « Annonces du club »**, qui en conserve l'historique complet. Contrairement à une notification, elle reste consultable indéfiniment : un adhérent qui n'a pas activé les notifications, ou qui a balayé la notification sur son téléphone, retrouve l'information.
+
+## Rédiger une annonce
+
+| Champ | Détail |
+|---|---|
+| **Titre** | Ce que l'adhérent lit en premier. 200 caractères au maximum |
+| **Texte** | Le corps de l'annonce, avec sa mise en forme |
+| **Statut** | **Brouillon** (invisible des adhérents) ou **Publiée** (visible) |
+
+La barre d'outils au-dessus du texte permet de mettre en **gras**, en *italique*, de souligner, d'insérer un lien et de créer des listes à puces ou numérotées. C'est volontairement limité : une annonce doit rester lisible sur un téléphone.
+
+> [!TIP]
+> Vous pouvez coller du texte depuis un traitement de texte ou un e-mail : seul le texte est repris, sans les polices ni les couleurs d'origine. Vous remettez ensuite la mise en forme voulue avec la barre d'outils.
+
+Pour un lien, sélectionnez d'abord le texte à transformer en lien, puis cliquez sur l'icône de chaîne. Les adresses acceptées commencent par \`https://\`, \`http://\`, \`mailto:\` ou \`/\` (une page de l'espace adhérent, par exemple \`/boutique\`).
+
+## Brouillon ou publiée
+
+Une annonce est créée **en brouillon** par défaut : vous pouvez la préparer, la relire, la faire valider, et ne la publier qu'au bon moment. Tant qu'elle est en brouillon, aucun adhérent ne la voit.
+
+Passez le statut à **Publiée** pour la rendre visible. La date de publication est alors enregistrée — c'est elle qui détermine l'ordre d'affichage.
+
+Depuis la liste, le menu **⋯** permet de basculer une annonce d'un statut à l'autre sans rouvrir le formulaire : **Publier** pour un brouillon, **Repasser en brouillon** pour une annonce publiée. C'est le geste à retenir en cas d'urgence — un tournoi annulé, une date erronée : deux clics et l'annonce disparaît de l'espace adhérent.
+
+> [!NOTE]
+> Repasser une annonce en brouillon puis la republier **ne change pas** sa date de publication d'origine. Corriger une faute de frappe dans une vieille annonce ne la fait donc pas remonter en tête de l'accueil.
+
+## Prévenir les adhérents
+
+Publier une annonce ne prévient personne : elle attend d'être lue. Pour faire sonner les téléphones, cochez **« Prévenir les adhérents »** au moment de la publication. Une notification part alors vers tous les adhérents qui ont activé les notifications, et les renvoie vers la page des annonces.
+
+La notification reprend le **titre de l'annonce** et le **début de son texte** (environ 300 caractères, sans la mise en forme). Un aperçu de ce que recevront les adhérents s'affiche sous la case une fois celle-ci cochée.
+
+La case n'est activable que lorsque le statut est **Publiée** : tant que l'annonce est un brouillon, elle reste visible mais grisée.
+
+Vous pouvez aussi diffuser après coup : dans la liste, ouvrez le menu **⋯** d'une annonce publiée et choisissez **Prévenir les adhérents**.
+
+> [!IMPORTANT]
+> Une annonce n'est diffusée **qu'une seule fois**. Une fois l'envoi effectué, l'option disparaît, et modifier l'annonce ne déclenche aucun nouvel envoi. C'est ce qui évite de notifier tout le club à chaque correction.
+
+La colonne **Diffusion** de la liste indique la date d'envoi, ou un tiret si l'annonce n'a jamais été diffusée.
+
+## Qui peut faire quoi
+
+| Action | Droit requis |
+|---|---|
+| Consulter les annonces | Consulter les annonces |
+| Créer, modifier, publier | Rédiger et publier une annonce |
+| Supprimer | Supprimer une annonce |
+| Prévenir les adhérents | **Envoyer une notification au club** |
+
+La diffusion relève du même droit que l'envoi depuis l'écran [Notifications](/admin/help/notifications) : une annonce diffusée atteint tous les téléphones du club, ce qui n'est pas du même ordre que la rédaction. Un compte qui peut rédiger sans pouvoir diffuser ne voit simplement pas la case à cocher.
+
+Le rôle **Communication** réunit exactement ces droits — annonces et notifications, sans accès aux finances ni au fichier des adhérents. C'est celui à attribuer au bénévole qui anime la communication du club.
+
+Les droits se règlent depuis [Accès & Rôles](/admin/help/acces-permissions), rubrique **Annonces**.
+
+## Supprimer une annonce
+
+La suppression est **définitive** : l'annonce disparaît de l'accueil et de l'historique. Si vous souhaitez seulement la retirer de la vue des adhérents en la conservant, repassez-la en **brouillon**.
 
 
 --- Article: assistant-ia.md ---
@@ -118,14 +277,14 @@ La signature doit être un fichier **JPEG de 48 Ko au maximum**. Le format et le
 --- Article: boutique-commandes.md ---
 ---
 title: "Boutique : commandes"
-description: "Saisir, valider ou refuser les commandes des adhérents, et l'écriture qui en découle."
+description: "Valider, encaisser ou refuser les commandes des adhérents, et l'écriture qui en découle."
 category: "boutique"
 order: 2
 ---
 
-**Boutique → Commandes** présente deux listes : les commandes **en attente** et l'**historique** (validées et refusées). La recherche porte sur l'adhérent, sa licence, le produit, le moyen de paiement et le montant.
+**Boutique → Commandes** présente trois listes : les commandes **à valider**, celles **en attente de paiement** et l'**historique** (payées, refusées, annulées). La recherche porte sur l'adhérent, sa licence, le produit, le moyen de paiement et le montant.
 
-Une commande suit trois états : **en attente** → **validée** ou **refusée**.
+Une commande suit le parcours **créée** → **en attente de paiement** → **payée**. Deux issues la referment sans règlement : le **refus** d'une demande non validée, et l'**annulation** d'une commande validée que le paiement n'a jamais suivie.
 
 ## D'où viennent les commandes
 
@@ -142,26 +301,43 @@ Une commande est refusée à la saisie si :
 
 ## Valider une commande
 
-La validation est l'acte comptable de la boutique. Elle enchaîne trois effets :
+La validation accepte la demande et met la commande **en attente de paiement**. Elle produit deux effets :
+
+1. **Le stock est décrémenté**, si le produit en assure le suivi : l'article est désormais réservé à cet adhérent ;
+2. **L'adhérent est notifié** que sa commande est validée et du montant à régler.
+
+Rien n'est écrit en comptabilité à ce stade : une commande non réglée n'a pas à peser sur l'exercice.
+
+## Encaisser une commande
+
+L'encaissement est l'acte comptable de la boutique. Il enchaîne deux effets :
 
 1. **Une recette est écrite au grand livre**, libellée « Achat boutique – *adhérent* – *produit* × *quantité* », imputée à la catégorie comptable de la **famille du produit** et rattachée à l'adhérent ;
-2. **Le stock est décrémenté**, si le produit en assure le suivi ;
-3. **L'adhérent est notifié** de la validation sur son téléphone, s'il a activé les notifications.
+2. **L'adhérent est notifié** de l'enregistrement de son règlement.
 
 L'exercice de rattachement est déduit de la **date de paiement**, et non de la date de la commande. Si cette date tombe dans un exercice déjà arrêté, la recette est portée sur l'exercice ouvert sous forme de **régularisation** documentée, plutôt que refusée.
 
-Une commande déjà traitée ne peut pas l'être une seconde fois : si deux personnes valident en même temps, la seconde reçoit un message de conflit.
+Une commande déjà traitée ne peut pas l'être une seconde fois : si deux personnes encaissent en même temps, la seconde reçoit un message de conflit.
 
-## Refuser une commande
+## Les relances
 
-Le refus laisse la commande dans l'historique, sans écriture comptable ni mouvement de stock, et notifie l'adhérent.
+Les commandes en attente de paiement depuis **plus de sept jours** déclenchent une relance hebdomadaire à l'adhérent, dans la catégorie **Relances** de ses notifications. La liste affiche l'ancienneté de chaque attente, pour repérer d'un coup d'œil celles qui traînent.
+
+Les relances automatiques ne partent que si elles ont été activées sur le service (variable \`PUSH_REMINDERS_ENABLED\`), le même interrupteur que les relances de cotisation.
+
+## Refuser ou annuler une commande
+
+- Le **refus** ferme une demande **non encore validée**. Aucun mouvement de stock, aucune écriture.
+- L'**annulation** ferme une commande **validée et jamais réglée** : le stock réservé est rendu au catalogue. Aucune écriture non plus, puisque la recette n'a jamais existé.
+
+Les deux laissent la commande dans l'historique et notifient l'adhérent.
 
 ## Ce qui bloque la clôture
 
-Une **commande payée mais non validée** empêche la clôture de l'exercice : la recette correspondante n'existe pas encore en comptabilité. Voir [Saisons comptables](/admin/help/gestion-saisons).
+Une **commande portant une date de paiement mais non encaissée** empêche la clôture de l'exercice : la recette correspondante n'existe pas encore en comptabilité. Voir [Saisons comptables](/admin/help/gestion-saisons).
 
 > [!NOTE]
-> Consulter les commandes et les valider sont deux droits distincts. Le secrétariat suit les commandes, le trésorier et la présidence les valident — parce que valider, c'est écrire une recette.
+> Consulter les commandes et les traiter sont deux droits distincts. Le secrétariat suit les commandes, le trésorier et la présidence les valident et les encaissent — parce qu'encaisser, c'est écrire une recette.
 
 
 --- Article: boutique-produits.md ---
@@ -369,6 +545,71 @@ Chaque écran a ses propres droits : vous n'y voyez que ce que vos rôles autori
 > L'écran **Catégories et classes** est le seul à comporter deux onglets : *Catégories comptables* et *Plan comptable*. Les trois autres écrans n'affichent qu'une seule liste.
 
 
+--- Article: creneaux.md ---
+---
+title: "Créneaux"
+description: "Tenir à jour les horaires d'entraînement affichés sur le site public."
+category: "communication"
+order: 3
+---
+
+**Communication → Créneaux** tient les horaires d'entraînement de la saison : jour, heure, groupe, gymnase.
+
+Ces créneaux sont **la source unique** des horaires. Ils alimentent le site public dès qu'ils changent, sans qu'aucune page ait à être modifiée : chaque page qui porte un bloc **Créneaux** les affiche à jour. Voir [Les blocs de contenu](/admin/help/site-blocs).
+
+Ils remplacent la feuille Google de l'ancien site, que les moteurs de recherche ne voyaient pas : « horaires badminton Nozay » ne ramenait rien. Le tableau est désormais du texte indexable, lisible aussi par un lecteur d'écran.
+
+## La saison
+
+L'écran travaille sur la **saison en cours**, indiquée sous le titre. Elle bascule au mois d'août, comme le calendrier sportif : la saison 25-26 commence en août 2025.
+
+Un créneau créé est rattaché à cette saison. Ceux des saisons précédentes restent en base mais ne s'affichent plus.
+
+## Les gymnases
+
+Un créneau se rattache obligatoirement à un **gymnase**. Si aucun n'est enregistré, l'écran vous le signale et le bouton de création reste indisponible : commencez par faire enregistrer les gymnases du club.
+
+L'adresse du gymnase sert aussi aux données structurées du site — c'est ce qui permet à une recherche « badminton près de chez moi » de situer le club.
+
+## Ajouter un créneau
+
+| Champ | Détail |
+|---|---|
+| **Jour** | Du lundi au dimanche |
+| **Début** et **Fin** | En heure locale. La fin doit suivre le début, l'application le vérifie |
+| **Groupe** | Minibad (U9), Poussins (U11), Jeunes, Élite Jeunes, Adultes loisirs, Adultes compétition, Jeu libre |
+| **Gymnase** | Parmi ceux enregistrés |
+| **Intitulé** | Facultatif. Remplace le nom du groupe sur le site : « Jeunes — groupe compétition » |
+
+Un créneau est **affiché sur le site dès son ajout** : il n'y a pas d'étape de publication. C'est volontaire — un horaire est un fait du club, pas une publication à préparer.
+
+## Masquer plutôt que supprimer
+
+Le menu **⋯** propose **Masquer du site** : le créneau disparaît des pages publiques mais reste dans la liste, grisé, avec la mention « Masqué ». **Réafficher** le remet en ligne.
+
+C'est le bon geste pour une interruption temporaire — vacances scolaires, gymnase indisponible, créneau suspendu quelques semaines.
+
+> [!TIP]
+> Préférez toujours le masquage à la suppression pour un retrait temporaire : l'historique est conservé, et vous n'avez pas à ressaisir le créneau au retour.
+
+La **suppression** est définitive. Elle se justifie pour un créneau saisi par erreur.
+
+## Ce que voit le visiteur
+
+Un tableau groupé par jour, avec l'horaire, le groupe (ou l'intitulé si vous en avez saisi un) et le gymnase. Les créneaux masqués n'y figurent jamais.
+
+Une page peut n'afficher qu'une partie des créneaux — ceux des jeunes sur la page Jeunes, par exemple. Ce filtrage se règle dans le bloc de la page, pas ici : voir [Les blocs de contenu](/admin/help/site-blocs).
+
+## Qui peut faire quoi
+
+| Action | Droit requis |
+|---|---|
+| Consulter les créneaux | Consulter les créneaux |
+| Ajouter, modifier, masquer, supprimer | Modifier les créneaux |
+
+Le rôle **Entraîneur·e** porte le droit d'écriture : ce sont les encadrants qui vivent les créneaux au quotidien, et qui savent le premier soir qu'un horaire a changé. Les rôles **Communication**, **Président·e** et **Super administrateur** l'ont également. Les droits se règlent depuis [Accès & Rôles](/admin/help/acces-permissions).
+
+
 --- Article: espace-adherent.md ---
 ---
 title: "L'espace adhérent"
@@ -402,7 +643,7 @@ Le site comporte également les pages *Politique de confidentialité* et *Mentio
 
 - La **validation ou le refus** de sa note de frais ;
 - La **validation ou le refus** de sa commande boutique ;
-- Les annonces envoyées par le bureau et, si elles sont activées, les relances de cotisation et les anniversaires.
+- Les annonces envoyées par le bureau et, si elles sont activées, les relances de cotisation et de commande à régler, ainsi que les anniversaires.
 
 Ces messages ne partent que vers les appareils réellement abonnés aux notifications.
 
@@ -611,7 +852,7 @@ Le bouton **Clôturer** lance d'abord une **vérification comptable**. La clôtu
 - des lignes de relevé bancaire restent non rapprochées ;
 - des remises de chèques ne sont pas encaissées ;
 - des chèques restent en coffre, non remis en banque ;
-- des commandes boutique payées n'ont pas été validées.
+- des commandes boutique portent une date de règlement sans avoir été encaissées en comptabilité.
 
 D'autres constats sont signalés en **avertissement**, sans bloquer :
 
@@ -942,7 +1183,7 @@ Une adresse authentifiée mais inconnue de l'application n'obtient que le rôle 
 
 ## Le menu
 
-Le menu latéral regroupe les rubriques par domaine : Adhérents, Comptabilité, Boutique, Communication, Réglages, Assistance. **Vous ne voyez que les rubriques auxquelles vous avez droit** — le menu est construit à partir des mêmes permissions que le contrôle d'accès des pages, une entrée visible mène donc toujours à une page qui s'ouvre.
+Le menu latéral regroupe les rubriques par domaine : Adhérents, Comptabilité, Boutique, Communication, Site public, Réglages, Assistance. **Vous ne voyez que les rubriques auxquelles vous avez droit** — le menu est construit à partir des mêmes permissions que le contrôle d'accès des pages, une entrée visible mène donc toujours à une page qui s'ouvre.
 
 Sur mobile, une barre d'actions en bas d'écran donne accès au menu et aux gestes les plus fréquents selon vos droits : enregistrer un chèque, créer une commande, saisir une note de frais.
 
@@ -1128,6 +1369,520 @@ Supprimer un bordereau **libère les chèques qu'il contenait** — ils redevien
 > Un chèque encore en coffre ou une remise non encaissée **empêche la clôture de l'exercice**. Voir [Saisons comptables](/admin/help/gestion-saisons).
 
 
+--- Article: site-actualites.md ---
+---
+title: "Actualités du site"
+description: "Rédiger et publier les actualités publiques du club."
+category: "site"
+order: 3
+---
+
+**Site public → Actualités du site** publie les nouvelles du club sur le site public : compétitions, résultats, animations, vie de l'association.
+
+> [!IMPORTANT]
+> À ne pas confondre avec les [Annonces](/admin/help/annonces). Une **actualité** est publique, lisible par n'importe qui, indexée par Google, et ne prévient personne. Une **annonce** s'adresse aux adhérents connectés à leur espace, et peut déclencher une notification sur leur téléphone. Une soirée du club se raconte en actualité ; un changement d'horaire de dernière minute se diffuse en annonce.
+
+## Rédiger une actualité
+
+Le bouton **Nouvelle actualité** ouvre le formulaire.
+
+| Champ | Détail |
+|---|---|
+| **Titre** | 200 caractères au maximum. Il donne l'adresse publique de l'article |
+| **Chapô** | Une phrase d'accroche, 500 caractères. Reprise dans les listes, les partages et les résultats de recherche |
+| **Image de couverture** | Choisie dans la [médiathèque](/admin/help/site-mediatheque). Elle illustre les cartes des listes et le partage sur les réseaux |
+| **Catégories** | À cocher, si des catégories existent. Elles servent de filtre sur la page d'archives |
+| **Texte** | Le corps de l'article |
+
+L'actualité est créée **en brouillon** : elle n'apparaît sur le site qu'une fois publiée.
+
+Le **chapô** mérite qu'on s'y arrête : c'est lui qui s'affiche sous le titre dans la liste des actualités, dans les cartes de la page d'accueil, dans les résultats Google et dans l'aperçu quand quelqu'un partage le lien. Sans chapô, c'est le début du texte qui sert, souvent maladroitement.
+
+## La barre d'outils
+
+**Gras**, *italique*, souligné, liste à puces, liste numérotée, insérer un lien, retirer un lien, et **insérer un fichier à télécharger** — ce dernier ouvre la médiathèque et pose un lien vers le document choisi.
+
+Le collage depuis un traitement de texte ou un courriel ne reprend **que le texte**, sans les polices ni les couleurs.
+
+Pour un lien, sélectionnez le texte à transformer, puis cliquez sur l'icône de chaîne. Les adresses acceptées commencent par \`https://\`, \`http://\`, \`mailto:\` ou \`/\`.
+
+## Publier
+
+Le statut se change **depuis la liste**, par le menu **⋯** : **Publier**, ou **Repasser en brouillon**. Le formulaire ne sert qu'au contenu.
+
+La **date de publication** est posée à la première mise en ligne, et ne bouge plus ensuite. Corriger une faute dans un vieil article ne le fait donc pas remonter en tête du flux.
+
+Une actualité publiée apparaît :
+
+- sur la page **Actualités** du site, paginée par douze, avec ses filtres par catégorie ;
+- dans les blocs **Actualités** des pages qui en portent un (voir [Les blocs de contenu](/admin/help/site-blocs)) ;
+- dans le **flux RSS** du site.
+
+Publier ou dépublier renouvelle le cache du site : comptez quelques secondes.
+
+L'entrée **Voir sur le site** du menu **⋯** ouvre l'article dans un nouvel onglet, pour vérifier le rendu.
+
+## Les catégories
+
+Les catégories permettent de filtrer les archives (\`/actualites/?categorie=…\`). Elles ne se créent pas encore depuis cet écran : celles reprises de l'ancien site sont disponibles, et l'ajout d'une nouvelle catégorie passe pour l'instant par le responsable technique.
+
+Une actualité peut appartenir à plusieurs catégories, ou à aucune.
+
+## Supprimer
+
+La suppression est **définitive** et l'adresse de l'article ne répond plus.
+
+> [!CAUTION]
+> Un article publié a pu être partagé par courriel ou sur les réseaux sociaux, et il est probablement indexé. Le supprimer produit une erreur 404 pour tous ceux qui suivent ces liens. Pour le retirer de la vue du public sans casser les liens existants, préférez **Repasser en brouillon** — l'adresse répondra alors une page « introuvable », mais l'article restera récupérable.
+
+## Qui peut faire quoi
+
+| Action | Droit requis |
+|---|---|
+| Consulter les actualités | Consulter les actualités du site |
+| Créer, modifier, publier | Rédiger et publier une actualité |
+| Supprimer | Supprimer une actualité |
+
+Les rôles **Communication** et **Président·e** disposent de l'ensemble. Le rôle **Secrétaire** peut rédiger et publier, mais pas supprimer. Les droits se règlent depuis [Accès & Rôles](/admin/help/acces-permissions).
+
+
+--- Article: site-blocs.md ---
+---
+title: "Les blocs de contenu"
+description: "Catalogue des blocs disponibles dans une page du site : ce que fait chacun, ses champs et ses limites."
+category: "site"
+order: 2
+---
+
+Une page du site public se compose en empilant des **blocs**. Cet article décrit chacun d'eux : à quoi il sert, ce qu'il demande, et ce que le visiteur voit à l'arrivée. Pour la mécanique de l'éditeur — créer, enregistrer, publier —, voir [Pages du site](/admin/help/site-pages).
+
+## Choisir le bon bloc
+
+| Ce que vous voulez faire | Le bloc |
+|---|---|
+| Écrire des paragraphes | **Texte** |
+| Ouvrir la page par une grande accroche | **Accroche** |
+| Proposer des raccourcis ou afficher des partenaires | **Grille de liens** |
+| Montrer plusieurs photos | **Galerie** |
+| Mettre un PDF en téléchargement | **Document** |
+| Afficher les horaires d'entraînement | **Créneaux** |
+| Reprendre les dernières actualités | **Actualités** |
+| Intégrer une vidéo ou un agenda extérieur | **Intégration** *(pas encore affiché)* |
+| Présenter le bureau ou les encadrants | **Personnes** *(pas encore affiché)* |
+
+> [!WARNING]
+> Les blocs **Intégration** et **Personnes** peuvent être ajoutés et enregistrés, mais **ne produisent encore rien sur le site public** : leur rendu n'est pas écrit. Ne les utilisez pas sur une page en ligne, vous obtiendriez un trou dans la mise en page. En attendant, présentez le bureau avec un bloc **Texte**.
+
+---
+
+## Texte
+
+Le bloc de base : des paragraphes, des listes et des liens. C'est celui qui porte la prose d'une page.
+
+**La barre d'outils** propose : **gras**, *italique*, souligné, liste à puces, liste numérotée, insérer un lien, retirer un lien.
+
+Pour un lien, sélectionnez d'abord le texte à transformer, puis cliquez sur l'icône de chaîne. Les adresses acceptées commencent par \`https://\`, \`http://\`, \`mailto:\` ou \`/\` (une page du site, par exemple \`/inscription/\`).
+
+> [!TIP]
+> Vous pouvez coller depuis un traitement de texte ou un courriel : **seul le texte est repris**, sans les polices ni les couleurs d'origine. Vous remettez ensuite la mise en forme voulue avec la barre d'outils. C'est ce qui évite les pages bariolées de l'ancien site.
+
+Quelques points à connaître :
+
+- Le **titre de la page** est déjà affiché au-dessus : ne le répétez pas dans le texte.
+- Un bloc **Texte vide est refusé** à l'enregistrement. Il occuperait une place dans la page sans que personne comprenne pourquoi elle « saute ».
+- Les titres intermédiaires, les tableaux et les images à l'intérieur d'un texte sont **conservés** lorsqu'ils existent — c'est le cas des pages reprises de WordPress — mais la barre d'outils ne permet pas encore d'en créer. Pour des photos, utilisez un bloc **Galerie** ; pour un PDF, un bloc **Document**.
+- Les images d'un texte doivent pointer la [médiathèque](/admin/help/site-mediatheque). Une image hébergée ailleurs est retirée à l'enregistrement — c'est ce qui écarte d'un geste les pixels de suivi et les images qui disparaissent le jour où le site voisin ferme.
+
+---
+
+## Accroche
+
+Le grand bandeau qui ouvre une page : un titre, une phrase, et jusqu'à **quatre boutons**.
+
+| Champ | Détail |
+|---|---|
+| **Titre** | Obligatoire. 160 caractères au maximum |
+| **Sous-titre** | Une phrase, 320 caractères |
+| **Boutons** | Un libellé et une adresse par bouton, quatre au maximum |
+
+L'adresse d'un bouton est soit un chemin du site (\`/creneaux/\`), soit une adresse extérieure complète (\`https://…\`). Un bouton dont l'adresse n'est pas exploitable **disparaît entièrement** à l'enregistrement : un bouton sans destination n'a pas de sens.
+
+> [!IMPORTANT]
+> Placez l'accroche en **premier bloc** de la page. Le titre de l'accroche tient alors lieu de titre principal ; ailleurs dans la page, le titre de la page s'affiche en plus et vous vous retrouvez avec deux grands titres concurrents.
+
+Quatre boutons est un maximum volontaire : au-delà, ce n'est plus une accroche, c'est un menu — utilisez une **Grille de liens**.
+
+---
+
+## Grille de liens
+
+Des cartes cliquables disposées en colonnes. Le même bloc sert deux usages : les raccourcis de la page d'accueil, et une rangée de logos de partenaires.
+
+| Champ | Détail |
+|---|---|
+| **Titre de section** | Facultatif, affiché au-dessus de la grille |
+| **Colonnes** | 2, 3 ou 4. Sur téléphone, tout passe en une seule colonne |
+| **Image de fond (bannière)** | Facultative, choisie dans la médiathèque |
+| **Boutons** | Jusqu'à 24 entrées, chacune avec un libellé, une cible et une description facultative |
+
+Pour la cible de chaque bouton, choisissez d'abord sa nature :
+
+- **Une page ou actualité du site** — un champ de recherche propose toutes les pages et actualités existantes. C'est la bonne option dans la quasi-totalité des cas : le lien reste juste.
+- **Une adresse extérieure** — saisissez l'adresse complète. Elle s'ouvrira dans un nouvel onglet.
+
+> [!NOTE]
+> Changer la nature d'un lien **vide l'adresse déjà saisie**. C'est voulu : une adresse extérieure n'est pas un chemin interne, et conserver l'ancienne valeur produirait un lien silencieusement faux.
+
+**Avec une image de fond**, la grille devient une bannière : l'image occupe toute la largeur, un voile sombre est appliqué pour que le texte reste lisible, et les boutons se posent devant. **Sans image**, les cartes s'affichent bordées sur fond neutre — la forme adaptée à des logos ou à une liste de liens.
+
+---
+
+## Galerie
+
+Plusieurs images de la médiathèque, affichées en grille (deux colonnes sur téléphone, trois sur ordinateur).
+
+| Champ | Détail |
+|---|---|
+| **Titre de section** | Facultatif : « Le tournoi 2026 en images » |
+| **Images** | Ajoutées une à une depuis la médiathèque, soixante au maximum |
+
+**Ajouter une image** ouvre la médiathèque filtrée sur les images. Chaque vignette ajoutée porte ses commandes : **↑** et **↓** pour changer sa place dans la grille, **✕** pour la retirer. L'ordre affiché ici est celui que verra le visiteur.
+
+Ajouter deux fois la même image est sans effet : une répétition dans une galerie est toujours une fausse manœuvre.
+
+Si une image a été supprimée de la médiathèque depuis, sa vignette affiche « Image introuvable » avec son numéro — retirez l'entrée. Le site public, lui, l'ignore déjà : une image manquante ne casse jamais la galerie.
+
+---
+
+## Document
+
+Un lien de téléchargement vers un PDF de la médiathèque, présenté en carte cliquable.
+
+| Champ | Détail |
+|---|---|
+| **Libellé du lien** | Obligatoire. Ce que lit le visiteur : « Télécharger le livret d'accueil » |
+| **Document** | Choisi dans la médiathèque, parmi les fichiers qui ne sont pas des images |
+| **Description** | Facultative, affichée sous le libellé |
+
+Le bouton **Choisir un document** ouvre la médiathèque filtrée sur les documents. La taille du fichier est affichée à côté du nom une fois le document choisi — un PDF de 8 Mo se télécharge mal en 4G, pensez à l'alléger avant de le déposer.
+
+Si le document venait à être supprimé de la médiathèque, le bloc n'afficherait rien plutôt qu'un lien mort.
+
+---
+
+## Créneaux
+
+Le tableau des horaires d'entraînement, par jour de la semaine.
+
+| Champ | Détail |
+|---|---|
+| **Titre de section** | Facultatif : « Les créneaux », « Horaires des jeunes » |
+| **Publics** | Les groupes à afficher, séparés par des virgules. Vide = tous les créneaux |
+
+> [!IMPORTANT]
+> Ce bloc **n'enregistre aucun horaire**. Il affiche ceux tenus à jour dans [Communication → Créneaux](/admin/help/creneaux), pour qu'ils ne soient saisis qu'à un seul endroit. Modifier un horaire là-bas met à jour toutes les pages qui l'affichent.
+
+Le champ **Publics** attend les codes internes des groupes, pas leur libellé :
+
+| À saisir | Groupe affiché |
+|---|---|
+| \`minibad\` | Minibad (U9) |
+| \`poussins\` | Poussins (U11) |
+| \`jeunes\` | Jeunes |
+| \`elite_jeunes\` | Élite Jeunes |
+| \`adultes_loisir\` | Adultes loisirs |
+| \`adultes_competition\` | Adultes compétition |
+| \`jeu_libre\` | Jeu libre |
+
+Ainsi, une page « Jeunes » porte \`minibad, poussins, jeunes, elite_jeunes\`. Un code mal orthographié ne fait pas d'erreur : il ne remonte simplement aucun créneau.
+
+Le visiteur voit un vrai tableau — jour, horaire, groupe, gymnase — lisible par les moteurs de recherche et par un lecteur d'écran, là où l'ancien site enfermait la même information dans une feuille Google invisible. Si aucun créneau ne correspond, le bloc affiche « Les créneaux ne sont pas encore renseignés pour cette saison. »
+
+Les créneaux **masqués** dans l'écran Créneaux n'apparaissent jamais ici.
+
+---
+
+## Actualités
+
+Les dernières actualités du site, en cartes.
+
+| Champ | Détail |
+|---|---|
+| **Titre de section** | Facultatif : « Actualités du club » |
+| **Nombre d'actualités** | 3, 6, 9 ou 12 |
+| **Catégorie** | Restreint la liste à une catégorie. « Toutes les catégories » par défaut |
+| **Afficher les images de couverture** | Coché par défaut |
+| **Afficher le lien « Toutes les actualités »** | Coché par défaut, renvoie vers la page d'archives |
+
+Comme le bloc Créneaux, celui-ci ne fige rien : il interroge les actualités au moment où le visiteur ouvre la page. Une actualité publiée ce matin apparaît d'elle-même sur l'accueil, sans avoir à republier la page.
+
+Seules les actualités **publiées** remontent, de la plus récente à la plus ancienne. S'il n'y en a aucune, le bloc affiche « Aucune actualité pour le moment. »
+
+Choisir une **catégorie** restreint la liste, et fait pointer le lien « Toutes les actualités » vers les archives de cette catégorie. Une page « Jeunes » peut ainsi ne montrer que les actualités des jeunes.
+
+> [!TIP]
+> Deux blocs Actualités sur la même page sont possibles — les compétitions d'un côté, la vie du club de l'autre. Donnez un titre de section à chacun, sans quoi le visiteur voit deux grilles sans comprendre ce qui les distingue.
+
+---
+
+## Intégration *(pas encore affiché sur le site)*
+
+Prévu pour insérer une vidéo YouTube, une feuille de calcul ou un agenda Google.
+
+| Champ | Détail |
+|---|---|
+| **Service** | YouTube, Google Sheets ou Google Agenda |
+| **Identifiant** | L'identifiant de la ressource, **pas son adresse** : dans \`youtu.be/T4_qiRVEXcI\`, c'est \`T4_qiRVEXcI\` |
+| **Titre** | Obligatoire : un cadre sans titre est incompréhensible pour un lecteur d'écran |
+
+On n'enregistre jamais une adresse complète, mais un service pris dans une liste fermée et un identifiant. C'est ce qui empêche qu'un écran d'administration devienne un moyen d'insérer n'importe quel contenu extérieur dans le site.
+
+L'identifiant ne peut contenir que des lettres, des chiffres, des tirets et des soulignés, et compter au moins huit caractères. Une adresse d'agenda Google de la forme \`…@gmail.com\` est donc refusée en l'état.
+
+Rappel : même correctement rempli, ce bloc **n'affiche rien** sur le site public pour le moment.
+
+---
+
+## Personnes *(pas encore affiché sur le site)*
+
+Prévu pour les cartes de contact : bureau, commissions, encadrants.
+
+| Champ | Détail |
+|---|---|
+| **Titre de section** | « Le bureau », « Les encadrants » |
+| **Nom** et **Fonction** | Une ligne par personne |
+| **Adresse électronique** et **Téléphone** | Facultatifs. Une adresse mal formée est effacée à l'enregistrement plutôt que de produire un lien cassé |
+| **Responsabilités** | Une par ligne, douze au maximum |
+
+Quarante personnes au maximum par bloc.
+
+> [!CAUTION]
+> Publier le téléphone personnel d'un bénévole sur un site public l'expose au démarchage et à la récupération automatisée. Préférez une adresse électronique dédiée à la fonction (\`president@…\`) plutôt qu'un numéro privé — et demandez son accord à la personne concernée.
+
+Rappel : ce bloc **n'affiche rien** sur le site public pour le moment.
+
+---
+
+## Ce qui est vérifié à l'enregistrement
+
+Tout ce que vous saisissez est contrôlé par le serveur, jamais seulement par le navigateur :
+
+- Les liens dangereux sont refusés — un bouton dont l'adresse ne va nulle part disparaît.
+- Le texte riche est nettoyé : scripts, styles et cadres sont retirés ; les images doivent venir de la médiathèque.
+- Un bloc refusé fait échouer **tout l'enregistrement**, avec un message indiquant le numéro du bloc en cause. La page n'est jamais enregistrée à moitié.
+
+
+--- Article: site-mediatheque.md ---
+---
+title: "Médiathèque"
+description: "Déposer et gérer les images et documents utilisés par le site public."
+category: "site"
+order: 4
+---
+
+**Site public → Médiathèque** regroupe les images et les documents du site. Un fichier déposé ici est réutilisable partout : couverture d'actualité, bannière d'une grille de liens, galerie, PDF en téléchargement.
+
+L'écran affiche une grille de vignettes — on y cherche une image à l'œil, pas une ligne dans un tableau. La barre de recherche filtre sur la description et le nom de fichier.
+
+## Déposer un fichier
+
+Le bouton **Ajouter un média** demande deux choses : le fichier, et son **texte alternatif**.
+
+**Formats acceptés** : JPEG, PNG, WebP, AVIF, GIF et PDF. Tout le reste est refusé, y compris les fichiers SVG — ce sont des documents qui peuvent porter du code exécutable.
+
+**Taille maximale** : 12 Mo.
+
+> [!NOTE]
+> Les images sont **réduites à 1600 pixels de large et converties en WebP dans votre navigateur** avant d'être envoyées. Une photo de téléphone de 4 Mo arrive donc allégée, sans que vous ayez à la retoucher. Une image déjà petite et bien compressée est laissée telle quelle : la réencoder ferait perdre de la qualité pour rien.
+
+Déposer deux fois le même fichier **ne crée pas de doublon** : l'application reconnaît un contenu identique et vous renvoie vers le média existant.
+
+## Le texte alternatif
+
+Il est demandé au dépôt, et obligatoire pour une image. Ce n'est pas une formalité : il est lu à voix haute par les lecteurs d'écran, affiché si l'image ne se charge pas, et utilisé par les moteurs de recherche.
+
+Décrivez ce que **montre** l'image, en quelques mots : « L'équipe interclubs devant le gymnase Pierre Dupuis », et non « photo » ou « IMG_2451 ». C'est aussi ce texte qui sert de nom au média dans les listes et les sélecteurs — un média bien décrit se retrouve à la recherche.
+
+Il est demandé au dépôt parce que personne ne revient le remplir ensuite.
+
+## Utiliser un média
+
+Vous ne choisissez jamais un fichier depuis cet écran : c'est le formulaire qui en a besoin qui ouvre la médiathèque, filtrée sur ce qu'il attend.
+
+| Où | Ce qui est proposé |
+|---|---|
+| Couverture d'une [actualité](/admin/help/site-actualites) | Les images |
+| Fichier inséré dans un texte d'actualité | Les documents |
+| Image de fond d'une **Grille de liens** | Les images |
+| Bloc **Galerie** | Les images, ajoutées une à une |
+| Bloc **Document** | Les documents |
+
+Voir [Les blocs de contenu](/admin/help/site-blocs) pour le détail de chaque bloc.
+
+Le menu **⋯** d'une vignette permet d'**Ouvrir** le fichier dans un nouvel onglet — pratique pour récupérer son adresse publique, de la forme \`/media/…\`.
+
+Dans tous les cas, la médiathèque s'ouvre avec sa recherche : c'est le texte alternatif et le nom du fichier qui sont interrogés. Une raison de plus de décrire correctement ce que vous déposez.
+
+## Supprimer un média
+
+La suppression est refusée si le média est utilisé comme **couverture d'une actualité ou image d'une page** : le message vous le dit, et vous devez d'abord le retirer de là où il sert.
+
+> [!WARNING]
+> Ce contrôle ne couvre pas tous les usages : un fichier utilisé à l'intérieur du texte d'un article, ou dans une galerie, peut être supprimé sans avertissement. Vérifiez avant, surtout pour un document mis en téléchargement depuis plusieurs pages.
+
+Le fichier lui-même reste stocké : seule sa fiche disparaît de la médiathèque. Le redéposer plus tard retombera sur le même fichier, sans occuper d'espace supplémentaire.
+
+## Qui peut faire quoi
+
+| Action | Droit requis |
+|---|---|
+| Consulter la médiathèque | Consulter la médiathèque |
+| Déposer un fichier | Ajouter un média |
+| Supprimer | Supprimer un média |
+
+Déposer et supprimer sont deux droits distincts : ajouter un fichier est sans conséquence, alors que retirer un média peut vider l'illustration d'une page déjà en ligne. Les rôles **Communication** et **Président·e** disposent des trois ; le rôle **Secrétaire** peut déposer sans pouvoir supprimer. Les droits se règlent depuis [Accès & Rôles](/admin/help/acces-permissions).
+
+
+--- Article: site-menus.md ---
+---
+title: "Menus du site (à venir)"
+description: "Ce que permettra la gestion des menus du site public, et comment faire en attendant."
+category: "site"
+order: 5
+---
+
+> [!IMPORTANT]
+> **Cette fonctionnalité est en cours de développement.** Aucun écran ne lui correspond encore dans le menu d'administration. Cet article décrit ce qu'elle permettra, pour que vous sachiez ce qui vous attend — et surtout comment faire d'ici là.
+
+## Comment se règle le menu aujourd'hui
+
+Le menu de l'en-tête du site public et les liens du pied de page sont **écrits dans le code**. Créer une page ne l'y ajoute pas, et la retirer du site ne l'en enlève pas.
+
+Pour faire figurer une nouvelle page dans le menu du site, demandez la modification au responsable technique. Prévoyez le délai d'une mise en production.
+
+> [!CAUTION]
+> Conséquence à connaître : si vous **supprimez** une page qui figure dans le menu, le lien reste affiché sur le site et mène à une erreur 404 jusqu'à la prochaine mise en production. Prévenez avant de supprimer une page référencée par le menu — voir [Pages du site](/admin/help/site-pages).
+
+En attendant, une page peut parfaitement être atteinte sans figurer au menu : depuis un bloc **Grille de liens** ou **Accroche** posé sur une page qui, elle, est au menu. C'est souvent suffisant pour une page saisonnière — inscriptions, tournoi annuel.
+
+## Ce que permettra l'écran à venir
+
+Deux menus distincts seront administrables :
+
+- l'**en-tête**, la navigation principale du site ;
+- le **pied de page**, réservé aux liens de bas de page.
+
+Chaque entrée portera :
+
+| Champ | Détail |
+|---|---|
+| **Libellé** | Le texte affiché, 80 caractères au maximum. Il est indépendant du titre de la page : une page « Présentation du club et de ses activités » peut s'appeler « Le club » dans le menu |
+| **Cible** | **Soit** une page du site, **soit** une adresse extérieure — jamais les deux |
+| **Emplacement** | En-tête ou pied de page |
+| **Position** | L'ordre dans le menu ; une nouvelle entrée se pose à la fin |
+| **Sous-menu** | Une entrée peut être rangée sous une autre |
+
+Deux niveaux au maximum : une entrée, et son sous-menu. Un troisième niveau serait inatteignable au survol sur grand écran et illisible une fois replié sur téléphone.
+
+Une entrée qui pointe une **page du site** suit cette page : son adresse est résolue au moment de l'affichage, et supprimer la page emportera l'entrée de menu avec elle. C'est précisément ce que le menu écrit en dur ne sait pas faire aujourd'hui.
+
+## Qui pourra le faire
+
+Le droit correspondant s'appelle **Modifier les menus et les redirections**. Il est déjà attribué aux rôles **Communication**, **Président·e** et **Super administrateur**.
+
+Il n'est **pas** accordé au rôle **Secrétaire**, qui peut rédiger des pages mais pas toucher à l'arborescence : modifier un menu ou une redirection se paie en référencement, et cela relève de la commission Communication et de la présidence. Voir [Accès & Rôles](/admin/help/acces-permissions).
+
+
+--- Article: site-pages.md ---
+---
+title: "Pages du site"
+description: "Composer, publier et faire évoluer les pages du site public."
+category: "site"
+order: 1
+---
+
+**Site public → Pages** contient les pages du site que voient les visiteurs — présentation du club, inscription, contacts. C'est le site public, à ne pas confondre avec l'[espace adhérent](/admin/help/espace-adherent), qui demande une connexion.
+
+## Une page est une pile de blocs
+
+Une page n'est pas un document libre : c'est une **suite ordonnée de blocs**, chacun d'un type précis — un texte, une accroche, une galerie, un tableau de créneaux. Vous les empilez, vous les déplacez, vous les retirez.
+
+C'est un choix délibéré. Un éditeur libre laisse produire des pages illisibles sur téléphone, des images de 4 Mo et des titres dans le désordre — c'est exactement ce que faisait l'ancien site WordPress. Avec des blocs, la mise en page reste cohérente quoi que vous saisissiez.
+
+Le détail de chaque type de bloc est décrit dans [Les blocs de contenu](/admin/help/site-blocs).
+
+## Créer une page
+
+Le bouton **Nouvelle page** ne demande qu'un titre. La page est créée **en brouillon**, et son adresse est déduite du titre : « Notre club » donne \`/notre-club/\`.
+
+> [!IMPORTANT]
+> L'adresse est fixée à la création et ne se modifie pas depuis l'application. Choisissez le titre en conséquence : une page publiée puis renommée garderait son adresse d'origine. En cas d'erreur, supprimez la page tant qu'elle est en brouillon et recréez-la.
+
+Une page est toujours créée en brouillon, jamais en ligne : une page vide publiée le temps d'être rédigée serait indexée dans cet état par les moteurs de recherche.
+
+## L'éditeur
+
+Cliquez sur le titre d'une page pour l'ouvrir. L'écran réunit :
+
+| Zone | Rôle |
+|---|---|
+| **Bandeau du haut** | Statut (Brouillon / En ligne), adresse publique, lien **Aperçu**, et la mention « Modifications non enregistrées » s'il y a lieu |
+| **Titre** | Le titre affiché en haut de la page publique, et repris dans l'onglet du navigateur |
+| **Titre pour les moteurs** | Ce que Google affiche dans ses résultats. Vide, c'est le titre de la page qui sert |
+| **Description pour les moteurs** | La phrase sous le lien dans les résultats de recherche. Visez 155 caractères |
+| **Les blocs** | Le contenu proprement dit, dans l'ordre où il s'affichera |
+| **Ajouter un bloc** | Un bouton par type de bloc ; survolez-en un pour lire ce qu'il fait |
+| **Historique** | Les versions précédentes de la page |
+
+Chaque bloc porte son numéro, son type, et trois commandes : **↑** et **↓** pour le déplacer, **Retirer** pour le supprimer. Retirer un bloc ne prend effet qu'à l'enregistrement.
+
+## Enregistrer, puis publier
+
+Ce sont deux gestes distincts.
+
+**Enregistrer** écrit vos modifications et crée une version dans l'historique. Une page en ligne est mise à jour immédiatement pour les visiteurs ; une page en brouillon reste invisible.
+
+**Publier** met la page en ligne. **Retirer du site** l'en enlève sans rien effacer : la page redevient un brouillon, son contenu est conservé.
+
+> [!NOTE]
+> Publier exige d'avoir enregistré au préalable. Si vous tentez de publier avec des modifications en cours, l'application refuse et vous le dit : sans cela, vous mettriez en ligne la version précédente en croyant publier celle que vous avez sous les yeux.
+
+Publier ou dépublier **renouvelle le cache de tout le site**. Comptez quelques secondes avant que le changement soit visible partout — et sachez que c'est ce mécanisme qui garantit qu'aucun visiteur ne reste sur une version périmée.
+
+La **date de publication** n'est posée qu'à la première mise en ligne. Corriger une faute dans une vieille page ne la fait donc pas passer pour une nouveauté aux yeux de Google.
+
+## Relire avant de publier
+
+Le lien **Aperçu** ouvre la page sur le site public, telle qu'elle sera rendue, même si elle est encore en brouillon. Le lien porte un jeton signé, valable pour cette page : il permet de faire relire un brouillon par quelqu'un d'autre sans le publier.
+
+C'est le seul moyen fiable de vérifier une mise en page : l'éditeur montre les champs, pas le rendu.
+
+## L'historique
+
+Chaque enregistrement conserve un instantané de l'état **précédent** — celui qui fonctionnait. Le panneau **Historique**, en bas de l'éditeur, les liste avec leur date, leur auteur et leur nombre de blocs. Les **vingt dernières versions** d'une page sont conservées ; au-delà, les plus anciennes sont effacées.
+
+**Restaurer** remplace le contenu actuel par celui de la version choisie. L'adresse et la mise en ligne ne changent pas, et le contenu remplacé part lui-même dans l'historique : un retour en arrière reste réversible.
+
+## Supprimer une page
+
+La suppression est **définitive** : la page, ses blocs et son historique disparaissent, et son adresse ne répond plus.
+
+> [!CAUTION]
+> Si la page était en ligne, son adresse est probablement connue de Google et partagée dans des courriels ou sur les réseaux. La supprimer produit une erreur 404 pour tous ces visiteurs. Pour retirer une page de la vue du public en conservant cette possibilité de retour, préférez **Retirer du site**.
+
+Les redirections d'une ancienne adresse vers une nouvelle existent bien (celles de l'ancien site WordPress sont en place), mais elles ne se règlent pas encore depuis l'application. Signalez le besoin au responsable technique.
+
+## Qui peut faire quoi
+
+| Action | Droit requis |
+|---|---|
+| Consulter les pages | Consulter les pages du site |
+| Créer, modifier, publier, restaurer une version | Créer et modifier une page du site |
+| Supprimer | Supprimer une page du site |
+
+Les rôles **Communication** et **Président·e** disposent de l'ensemble. Le rôle **Secrétaire** peut créer et modifier, mais pas supprimer. Les droits se règlent depuis [Accès & Rôles](/admin/help/acces-permissions).
+
+
 --- Article: soldes-initiaux.md ---
 ---
 title: "Soldes initiaux"
@@ -1243,7 +1998,7 @@ export const categoriesTable = sqliteTable('categories', {
 
 export const seasonBalancesTable = sqliteTable('season_balances', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  season_id: integer('season_id').notNull(),
+  season_id: integer('season_id').notNull().references(() => seasonsTable.id),
   account_id: integer('account_id').notNull().references(() => accountsTable.id),
   initial_balance_cents: integer('initial_balance_cents').notNull(),
   created_at: integer('created_at', { mode: 'timestamp' }).notNull()
@@ -1266,7 +2021,7 @@ export const bankStatementLinesTable = sqliteTable('bank_statement_lines', {
 
 export const checkDepositsTable = sqliteTable('check_deposits', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  season_id: integer('season_id').notNull(),
+  season_id: integer('season_id').notNull().references(() => seasonsTable.id),
   reference: text('reference').notNull().unique(),
   date: text('date').notNull(),
   amount_cents: integer('amount_cents').notNull(),
@@ -1278,7 +2033,7 @@ export const checkDepositsTable = sqliteTable('check_deposits', {
 export const invoicesTable = sqliteTable('invoices', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   invoice_number: text('invoice_number').notNull().unique(),
-  season_id: integer('season_id').notNull(),
+  season_id: integer('season_id').notNull().references(() => seasonsTable.id),
   date: text('date').notNull(),
   due_date: text('due_date').notNull(),
   client_name: text('client_name').notNull(),
@@ -1306,7 +2061,7 @@ export const invoiceItemsTable = sqliteTable('invoice_items', {
 
 export const ledgerEntriesTable = sqliteTable('ledger_entries', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  season_id: integer('season_id').notNull(),
+  season_id: integer('season_id').notNull().references(() => seasonsTable.id),
   type: text('type', { enum: ['recette', 'depense', 'transfert'] }).notNull(),
   account_id: integer('account_id').notNull().references(() => accountsTable.id),
   destination_account_id: integer('destination_account_id').references(() => accountsTable.id),
@@ -1336,7 +2091,7 @@ export const ledgerEntriesTable = sqliteTable('ledger_entries', {
 export const checksTable = sqliteTable('checks', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   check_deposit_id: integer('check_deposit_id').references(() => checkDepositsTable.id),
-  season_id: integer('season_id').notNull(),
+  season_id: integer('season_id').notNull().references(() => seasonsTable.id),
   number: text('number').notNull(),
   amount_cents: integer('amount_cents').notNull(),
   emitter: text('emitter').notNull(),
@@ -1350,7 +2105,7 @@ export const checksTable = sqliteTable('checks', {
 
 export const seasonCategoryBudgetsTable = sqliteTable('season_category_budgets', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  season_id: integer('season_id').notNull(),
+  season_id: integer('season_id').notNull().references(() => seasonsTable.id),
   category_id: integer('category_id').notNull().references(() => categoriesTable.id),
   type: text('type', { enum: ['recette', 'depense'] }).notNull(),
   amount_cents: integer('amount_cents').notNull().default(0),
@@ -1389,7 +2144,13 @@ export const ordersTable = sqliteTable('orders', {
   quantity: integer('quantity').notNull().default(1),
   total_amount_cents: integer('total_amount_cents').notNull(),
   payment_method_id: integer('payment_method_id').notNull(),
-  status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
+  // created → awaiting_payment → paid. \`rejected\` ferme une demande non validée,
+  // \`cancelled\` une commande validée que le règlement n'a jamais suivie.
+  status: text('status', {
+    enum: ['created', 'awaiting_payment', 'paid', 'rejected', 'cancelled']
+  }).notNull().default('created'),
+  /** Date de mise en attente de règlement : point de départ des relances. */
+  awaiting_payment_since: text('awaiting_payment_since'),
   paid_at: text('paid_at'),
   ledger_entry_id: integer('ledger_entry_id'),
   created_at: integer('created_at', { mode: 'timestamp' }).notNull()
@@ -1441,7 +2202,62 @@ export const adminUserRolesTable = sqliteTable(
   })
 );
 
+/**
+ * Droits accordés par chaque rôle, modifiables depuis l'application.
+ *
+ * \`super_admin\` n'y figure pas : il vaut toujours la totalité du catalogue, calculée
+ * en code. S'il était rangé ici sous forme de lignes figées, une permission ajoutée
+ * par une nouvelle fonctionnalité ne lui serait pas accordée — on livrerait un écran
+ * que le super administrateur ne peut pas ouvrir — et retirer par mégarde son droit
+ * d'édition verrouillerait l'application sans recours.
+ *
+ * Les valeurs de départ viennent de \`ROLE_PERMISSIONS\` (migration 0013), qui reste la
+ * définition d'origine : l'écran signale les rôles qui s'en écartent.
+ */
+export const rolePermissionsTable = sqliteTable(
+  'role_permissions',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    role: text('role').notNull(),
+    permission: text('permission').notNull(),
+    created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    role_permissions_role_permission_idx: uniqueIndex('role_permissions_role_permission_idx').on(
+      table.role,
+      table.permission
+    ),
+    role_permissions_role_idx: index('role_permissions_role_idx').on(table.role)
+  })
+);
+
+/**
+ * Journal des modifications de droits.
+ *
+ * Tant que le mapping vivait en code, git donnait gratuitement l'auteur, la date et
+ * la justification de chaque changement. En le rendant modifiable depuis l'écran, on
+ * perd cette trace : ce journal la remplace. Il est en ajout seul.
+ */
+export const rolePermissionLogTable = sqliteTable(
+  'role_permission_log',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    role: text('role').notNull(),
+    permission: text('permission').notNull(),
+    action: text('action', { enum: ['granted', 'revoked'] }).notNull(),
+    /** Adresse du compte auteur de la modification. */
+    actor_email: text('actor_email').notNull(),
+    created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    role_permission_log_role_idx: index('role_permission_log_role_idx').on(table.role),
+    role_permission_log_created_at_idx: index('role_permission_log_created_at_idx').on(table.createdAt)
+  })
+);
+
 export type AdminUserRow = typeof adminUsersTable.\$inferSelect;
+export type RolePermissionRow = typeof rolePermissionsTable.\$inferSelect;
+export type RolePermissionLogRow = typeof rolePermissionLogTable.\$inferSelect;
 export type AdminUserRoleRow = typeof adminUserRolesTable.\$inferSelect;
 
 // Schema: members

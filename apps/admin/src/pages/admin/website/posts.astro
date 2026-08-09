@@ -13,6 +13,7 @@ const apiService = createAdminApiClient(Astro.locals);
 
 const ACTIONS = {
   create: 'cms:posts:write',
+  update: 'cms:posts:write',
   publish: 'cms:posts:write',
   delete: 'cms:posts:delete'
 } as const;
@@ -27,6 +28,13 @@ if (Astro.request.method === 'POST') {
       url: 'http://localhost/cms/posts',
       method: 'POST',
       body: { title: data.title, excerpt: data.excerpt || undefined, bodyHtml: data.bodyHtml }
+    },
+    update: {
+      url: `http://localhost/cms/posts/${data.id}`,
+      method: 'PUT',
+      // `excerpt` vidé doit effacer le chapô : on envoie `null`, pas `undefined`,
+      // que le validateur traiterait comme « champ absent, ne rien changer ».
+      body: { title: data.title, excerpt: data.excerpt || null, bodyHtml: data.bodyHtml }
     },
     publish: {
       url: `http://localhost/cms/posts/${data.id}/publish`,
@@ -50,15 +58,32 @@ if (Astro.request.method === 'POST') {
 }
 
 let posts: any[] = [];
+let media: any[] = [];
+let categories: any[] = [];
 let errorMsg = '';
 
+// La médiathèque et les catégories alimentent le formulaire (couverture, insertion de
+// fichier, rattachement). Chargées avec la liste et non à l'ouverture du sheet : le
+// formulaire s'ouvre alors sans attente, et l'échec de l'une n'empêche pas d'écrire.
 try {
-  const res = await apiService.fetch('http://localhost/cms/posts?limit=100');
-  if (res.ok) {
-    const json = (await res.json()) as any;
-    posts = json.data?.posts ?? [];
+  const [postsRes, mediaRes, categoriesRes] = await Promise.all([
+    apiService.fetch('http://localhost/cms/posts?limit=100'),
+    apiService.fetch('http://localhost/cms/media?limit=200'),
+    apiService.fetch('http://localhost/cms/post-categories')
+  ]);
+
+  if (postsRes.ok) {
+    posts = ((await postsRes.json()) as any).data?.posts ?? [];
   } else {
     errorMsg = 'Impossible de charger les actualités.';
+  }
+
+  if (mediaRes.ok) {
+    media = ((await mediaRes.json()) as any).data ?? [];
+  }
+  if (categoriesRes.ok) {
+    const payload = (await categoriesRes.json()) as any;
+    categories = payload.data ?? [];
   }
 } catch {
   errorMsg = 'Impossible de charger les actualités.';
@@ -74,11 +99,22 @@ try {
     permissions={Astro.locals.user?.permissions || []}
     breadcrumb="Actualités du site"
   >
-    <PageHeader
-      title="Actualités du site"
-      description="Les actualités publiques. À ne pas confondre avec les annonces, qui s'adressent aux adhérents connectés et peuvent déclencher une notification."
-    />
-    {errorMsg && <ErrorAlert message={errorMsg} />}
-    <PostsManager client:load posts={posts} canWrite={canWrite} canDelete={canDelete} />
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader
+        title="Actualités du site"
+        description="Les actualités publiques. À ne pas confondre avec les annonces, qui s'adressent aux adhérents connectés et peuvent déclencher une notification."
+      />
+
+      <PostsManager
+        client:load
+        posts={posts}
+        media={media}
+        categories={categories}
+        canWrite={canWrite}
+        canDelete={canDelete}
+      />
+    </div>
   </AdminLayout>
 </Layout>

@@ -21,6 +21,9 @@
     blocks: initialBlocks = [],
     revisions = [],
     previewUrl = '',
+    media = [],
+    targets = [],
+    categories = [],
     canWrite = false,
     canDelete = false
   } = $props<{
@@ -28,6 +31,10 @@
     blocks: BlockPayload[];
     revisions: unknown[];
     previewUrl?: string;
+    /** Médiathèque, cibles de liens et catégories : ressources communes aux éditeurs de blocs. */
+    media?: any[];
+    targets?: { path: string; title: string; kind: 'page' | 'post' }[];
+    categories?: { slug: string; name: string }[];
     canWrite?: boolean;
     canDelete?: boolean;
   }>();
@@ -148,7 +155,16 @@
   {:else}
     <div class="space-y-3">
       {#each blocks as block, index (index)}
-        <BlockCard bind:block={blocks[index]} {index} total={blocks.length} onMove={move} onRemove={removeBlock} />
+        <BlockCard
+          bind:block={blocks[index]}
+          {index}
+          total={blocks.length}
+          {media}
+          {targets}
+          {categories}
+          onMove={move}
+          onRemove={removeBlock}
+        />
       {/each}
     </div>
   {/if}

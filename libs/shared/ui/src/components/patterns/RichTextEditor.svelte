@@ -9,7 +9,8 @@
     id,
     placeholder = '',
     disabled = false,
-    class: className = ''
+    class: className = '',
+    onPickFile
   }: {
     /** HTML restreint. L'assainissement d'autorité reste côté serveur. */
     value?: string;
@@ -17,6 +18,14 @@
     placeholder?: string;
     disabled?: boolean;
     class?: string;
+    /**
+     * Choix d'un fichier à insérer en lien de téléchargement.
+     *
+     * Fournie par l'écran appelant, jamais par l'éditeur : c'est ce qui permet à ce
+     * composant partagé d'ignorer la médiathèque, qui appartient au domaine du site.
+     * Renvoie `null` si l'utilisateur renonce. Le bouton n'apparaît qu'avec elle.
+     */
+    onPickFile?: () => Promise<{ href: string; label: string } | null>;
   } = $props();
 
   let editor = $state<HTMLDivElement | null>(null);
@@ -44,7 +53,30 @@
     refreshActiveCommands();
   }
 
+  async function insertFileLink(): Promise<void> {
+    if (!onPickFile || disabled) return;
+    // La sélection est mémorisée *avant* l'ouverture du sélecteur : le temps de choisir,
+    // le focus a quitté la zone d'édition et le curseur serait perdu.
+    saveSelection();
+    const picked = await onPickFile();
+    if (!picked) {
+      savedRange = null;
+      return;
+    }
+    editor?.focus();
+    restoreSelection();
+    // `insertHTML` plutôt que `createLink` : il n'y a pas de sélection à envelopper,
+    // c'est le libellé du fichier qui devient le texte du lien.
+    document.execCommand('insertHTML', false, `<a href="${picked.href}">${picked.label}</a>&nbsp;`);
+    syncFromEditor();
+    savedRange = null;
+  }
+
   function handleCommand(command: string): void {
+    if (command === 'insertFile') {
+      void insertFileLink();
+      return;
+    }
     if (command === 'createLink') {
       saveSelection();
       linkUrl = '';
@@ -128,7 +160,7 @@
 </script>
 
 <div class={`rounded-md border border-input bg-background focus-within:ring-1 focus-within:ring-ring ${className}`}>
-  <RichTextToolbar {activeCommands} {disabled} onCommand={handleCommand} />
+  <RichTextToolbar {activeCommands} {disabled} onCommand={handleCommand} canInsertFile={Boolean(onPickFile)} />
 
   {#if linkOpen}
     <div class="flex items-center gap-2 border-b border-input px-2 py-2">

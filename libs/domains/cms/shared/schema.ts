@@ -91,7 +91,10 @@ export const cmsPageBlocksTable = sqliteTable(
     position: integer('position').notNull(),
     /** Discriminant de l'union TypeScript (`shared/blocks.ts`). */
     type: text('type', {
-      enum: ['richtext', 'hero', 'cta_grid', 'gallery', 'embed', 'person_cards', 'schedule', 'pdf_link']
+      enum: [
+        'richtext', 'hero', 'cta_grid', 'gallery', 'embed', 'person_cards', 'schedule',
+        'pdf_link', 'posts_feed'
+      ]
     }).notNull(),
     /** Charge utile JSON, validée **et assainie** par l'API avant écriture. */
     payload: text('payload').notNull()

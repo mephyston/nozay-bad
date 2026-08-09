@@ -2,6 +2,8 @@ import type { ScheduleSlotRow } from '../shared/schema';
 
 export interface UpdateScheduleSlotInput {
   slotId: number;
+  venueId?: number;
+  audience?: ScheduleSlotRow['audience'];
   weekday?: number;
   startTime?: string;
   endTime?: string;

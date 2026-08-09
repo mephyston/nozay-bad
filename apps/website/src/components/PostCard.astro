@@ -1,0 +1,88 @@
+---
+import type { PostRow } from '../lib/cms';
+
+interface Props {
+  post: PostRow;
+  /** Première carte au-dessus de la ligne de flottaison : image chargée sans délai. */
+  priority?: boolean;
+  showImage?: boolean;
+}
+
+const { post, priority = false, showImage = true } = Astro.props;
+
+const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' });
+const published = post.publishedAt ? new Date(post.publishedAt) : null;
+
+/**
+ * Amorce du texte.
+ *
+ * Le chapô fait autorité quand il existe — c'est la phrase que la rédaction a
+ * choisie. À défaut on retombe sur le corps, débarrassé de son balisage : les
+ * fermetures de blocs deviennent des espaces, sans quoi « …du club.</p><p>Rendez-vous »
+ * se lirait « du club.Rendez-vous ».
+ */
+const preview =
+  post.excerpt?.trim() ||
+  post.bodyHtml
+    .replace(/<\/(p|li|ul|ol|h2|h3|h4|blockquote)\s*>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const cover = showImage ? post.cover : null;
+const coverSrc = cover ? `/media/${cover.key.replace(/^media\//, '')}` : null;
+---
+{/*
+  Toute la carte est cliquable via le lien du titre étendu en overlay : la cible reste
+  un seul lien pour le lecteur d'écran, là où envelopper la carte entière dupliquerait
+  l'annonce du titre, de la date et du texte dans un même intitulé.
+*/}
+<article class="group border-border relative flex flex-col overflow-hidden rounded-lg border transition-shadow hover:shadow-md">
+  {coverSrc && (
+    <div class="bg-muted aspect-[16/9] overflow-hidden">
+      <img
+        src={coverSrc}
+        alt={cover!.alt}
+        width={cover!.width ?? undefined}
+        height={cover!.height ?? undefined}
+        loading={priority ? 'eager' : 'lazy'}
+        decoding={priority ? 'sync' : 'async'}
+        fetchpriority={priority ? 'high' : undefined}
+        class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+      />
+    </div>
+  )}
+
+  <div class="flex flex-1 flex-col p-4">
+    {post.categories && post.categories.length > 0 && (
+      <ul class="mb-2 flex flex-wrap gap-1.5">
+        {post.categories.map((category) => (
+          <li class="bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-medium">
+            {category.name}
+          </li>
+        ))}
+      </ul>
+    )}
+
+    <h3 class="text-lg font-semibold leading-snug tracking-tight">
+      {/* `after:absolute inset-0` : la zone cliquable couvre la carte, le lien reste unique. */}
+      <a href={post.path} class="after:absolute after:inset-0 hover:underline">{post.title}</a>
+    </h3>
+
+    {published && (
+      <p class="text-muted-foreground mt-1 text-sm">
+        <time datetime={published.toISOString()}>{dateFormatter.format(published)}</time>
+      </p>
+    )}
+
+    {preview && <p class="text-muted-foreground mt-2 line-clamp-3 text-sm">{preview}</p>}
+
+    <span class="text-primary mt-3 inline-block text-sm font-medium group-hover:underline">
+      Voir plus <span aria-hidden="true">→</span>
+    </span>
+  </div>
+</article>

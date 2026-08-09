@@ -71,6 +71,9 @@ if (Astro.request.method === 'POST') {
 let page: any = null;
 let blocks: any[] = [];
 let revisions: any[] = [];
+let media: any[] = [];
+let targets: { path: string; title: string; kind: 'page' | 'post' }[] = [];
+let categories: any[] = [];
 let errorMsg = '';
 
 try {
@@ -87,6 +90,29 @@ try {
   if (revisionsRes.ok) {
     const json = (await revisionsRes.json()) as any;
     revisions = json.data ?? [];
+  }
+
+  // Ressources des éditeurs de blocs : la médiathèque (bannière, documents), les
+  // cibles internes possibles (pages et actualités) et les catégories d'actualités.
+  // L'échec de l'une n'empêche pas d'éditer la page — les champs concernés retombent
+  // simplement sur une saisie libre.
+  const [mediaRes, pagesRes, postsRes, categoriesRes] = await Promise.all([
+    apiService.fetch('http://localhost/cms/media?limit=200'),
+    apiService.fetch('http://localhost/cms/pages'),
+    apiService.fetch('http://localhost/cms/posts?limit=100'),
+    apiService.fetch('http://localhost/cms/post-categories')
+  ]);
+
+  if (mediaRes.ok) media = ((await mediaRes.json()) as any).data ?? [];
+  if (categoriesRes.ok) categories = ((await categoriesRes.json()) as any).data ?? [];
+
+  if (pagesRes.ok) {
+    const rows = ((await pagesRes.json()) as any).data ?? [];
+    targets.push(...rows.map((row: any) => ({ path: row.path, title: row.title, kind: 'page' as const })));
+  }
+  if (postsRes.ok) {
+    const rows = ((await postsRes.json()) as any).data?.posts ?? [];
+    targets.push(...rows.map((row: any) => ({ path: row.path, title: row.title, kind: 'post' as const })));
   }
 } catch {
   errorMsg = 'Impossible de charger cette page.';
@@ -117,18 +143,25 @@ if (page && websiteBase) {
     permissions={Astro.locals.user?.permissions || []}
     breadcrumb="Pages du site"
   >
-    <PageHeader title={page?.title ?? 'Page'} description="Composez la page en empilant des blocs." />
-    {errorMsg && <ErrorAlert message={errorMsg} />}
-    {page && (
-      <PageEditor
-        client:load
-        page={page}
-        blocks={blocks}
-        revisions={revisions}
-        previewUrl={previewUrl}
-        canWrite={canWrite}
-        canDelete={canDelete}
-      />
-    )}
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader title={page?.title ?? 'Page'} description="Composez la page en empilant des blocs." />
+
+      {page && (
+        <PageEditor
+          client:load
+          page={page}
+          blocks={blocks}
+          revisions={revisions}
+          previewUrl={previewUrl}
+          media={media}
+          targets={targets}
+          categories={categories}
+          canWrite={canWrite}
+          canDelete={canDelete}
+        />
+      )}
+    </div>
   </AdminLayout>
 </Layout>

@@ -1,26 +1,77 @@
 ---
-import type { CtaGridBlock } from '@nba/cms/public';
-interface Props { block: CtaGridBlock }
-const { block } = Astro.props;
+import type { CtaGridBlock, CmsMediaRow, CmsMediaVariantRow } from '@nba/cms/public';
+import Picture from '../Picture.astro';
+
+interface Props {
+  block: CtaGridBlock;
+  media?: Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
+}
+
+const { block, media = new Map() } = Astro.props;
 const columns = { 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3', 4: 'sm:grid-cols-2 lg:grid-cols-4' }[block.columns];
 // Un lien sortant s'ouvre dans un nouvel onglet ; `rel` est posé ici et jamais lu du contenu.
 const isExternal = (href: string) => /^https?:\/\//i.test(href);
+
+const background = block.backgroundMediaId ? media.get(block.backgroundMediaId) : undefined;
 ---
-<section class="mx-auto max-w-5xl px-4 py-8">
-  {block.heading && <h2 class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
-  <ul class:list={['grid gap-4', columns]}>
-    {block.items.map((item) => (
-      <li>
-        <a
-          href={item.href}
-          target={isExternal(item.href) ? '_blank' : undefined}
-          rel={isExternal(item.href) ? 'noopener noreferrer' : undefined}
-          class="border-border hover:border-primary block h-full rounded-lg border p-4 transition-colors"
-        >
-          <span class="font-medium">{item.label}</span>
-          {item.description && <span class="text-muted-foreground mt-1 block text-sm">{item.description}</span>}
-        </a>
-      </li>
-    ))}
-  </ul>
-</section>
+{background ? (
+  <section class="relative isolate">
+    {/*
+      Bannière décorative : `alt` vide et `aria-hidden`. Elle n'apporte aucune
+      information que les raccourcis posés devant ne portent déjà, et l'annoncer
+      obligerait le lecteur d'écran à traverser une description sans objet avant
+      d'atteindre les liens.
+    */}
+    <div class="absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
+      <Picture
+        media={{ ...background.media, alt: '' }}
+        variants={background.variants}
+        priority={true}
+        sizes="100vw"
+        class="h-full w-full object-cover"
+      />
+      {/* Voile sombre : sans lui, le texte des boutons devient illisible sur une photo claire. */}
+      <div class="absolute inset-0 bg-black/45"></div>
+    </div>
+
+    <div class="mx-auto max-w-5xl px-4 py-16">
+      {block.heading && (
+        <h2 class="mb-6 text-3xl font-semibold tracking-tight text-white drop-shadow">{block.heading}</h2>
+      )}
+      <ul class:list={['grid gap-4', columns]}>
+        {block.items.map((item) => (
+          <li>
+            <a
+              href={item.href}
+              target={isExternal(item.href) ? '_blank' : undefined}
+              rel={isExternal(item.href) ? 'noopener noreferrer' : undefined}
+              class="block h-full rounded-lg border border-white/30 bg-white/10 p-4 text-white backdrop-blur-sm transition-colors hover:border-white hover:bg-white/20"
+            >
+              <span class="font-medium">{item.label}</span>
+              {item.description && <span class="mt-1 block text-sm text-white/80">{item.description}</span>}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+) : (
+  <section class="mx-auto max-w-5xl px-4 py-8">
+    {block.heading && <h2 class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
+    <ul class:list={['grid gap-4', columns]}>
+      {block.items.map((item) => (
+        <li>
+          <a
+            href={item.href}
+            target={isExternal(item.href) ? '_blank' : undefined}
+            rel={isExternal(item.href) ? 'noopener noreferrer' : undefined}
+            class="border-border hover:border-primary block h-full rounded-lg border p-4 transition-colors"
+          >
+            <span class="font-medium">{item.label}</span>
+            {item.description && <span class="text-muted-foreground mt-1 block text-sm">{item.description}</span>}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}

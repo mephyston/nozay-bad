@@ -32,7 +32,15 @@ export async function resolveRoute(db: Db, input: ResolveRouteInput): Promise<Re
   }
 
   const post = await repo.findPost(db, path, includeDrafts);
-  if (post) return { kind: 'post', post };
+  if (post) {
+    // Deux lectures de plus sur le chemin chaud, mais seulement pour un article, et
+    // seulement une fois la correspondance trouvée : une page ne les paie jamais.
+    const [cover, categories] = await Promise.all([
+      post.coverMediaId === null ? Promise.resolve(null) : repo.findMedia(db, post.coverMediaId),
+      repo.categoriesOf(db, post.id)
+    ]);
+    return { kind: 'post', post, cover: cover ?? null, categories };
+  }
 
   const redirect = await repo.findRedirect(db, path);
   if (redirect) {

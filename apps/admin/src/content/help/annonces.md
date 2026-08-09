@@ -7,6 +7,8 @@ order: 1
 
 **Communication → Annonces** sert à publier les informations du club : tournois, assemblée générale, fermeture des créneaux, changement d'horaire.
 
+À ne pas confondre avec les [actualités du site](/admin/help/site-actualites), qui sont publiques et lisibles par n'importe qui : une annonce s'adresse aux **adhérents connectés**, et peut faire sonner leur téléphone.
+
 Une annonce publiée apparaît **sur l'accueil de l'espace adhérent** (les 3 plus récentes) et **sur la page « Annonces du club »**, qui en conserve l'historique complet. Contrairement à une notification, elle reste consultable indéfiniment : un adhérent qui n'a pas activé les notifications, ou qui a balayé la notification sur son téléphone, retrouve l'information.
 
 ## Rédiger une annonce

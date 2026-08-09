@@ -1,5 +1,7 @@
 <script lang="ts">
   import {
+    ChevronRight,
+    Menu as MenuIcon,
     LayoutDashboard,
     Coins,
     Users,
@@ -55,7 +57,8 @@
   // où l'on ne veut pas charger de composants Svelte.
   const ICONS: Record<string, any> = {
     LayoutDashboard, Sparkles, Users, BarChart3, BookOpen, FileCheck, Scale,
-    Landmark, Wallet, Coins, Package, ShoppingCart, Bell, Megaphone, Image, FileText, Newspaper, CalendarClock, CalendarDays, Settings, User, HelpCircle
+    Landmark, Wallet, Coins, Package, ShoppingCart, Bell, Megaphone, Image, FileText, Newspaper, CalendarClock, CalendarDays, Settings, User, HelpCircle,
+    Menu: MenuIcon
   };
 
   // Le menu dérive de la même table que le contrôle d'accès des pages : une entrée
@@ -70,6 +73,71 @@
       }))
       .filter(g => g.items.length > 0)
   );
+
+  /**
+   * Sections repliées, et position de la barre latérale.
+   *
+   * Le menu compte une vingtaine d'entrées : tout déplier oblige à faire défiler pour
+   * atteindre les dernières sections, et l'île est **remontée à chaque navigation** —
+   * le défilement repartait donc du haut à chaque changement de page. `transition:persist`
+   * réglerait le remontage, mais casse la navigation sur ce layout, qui enveloppe le
+   * contenu. On restaure donc l'état à la main, ce qui a l'avantage de survivre aussi à
+   * un vrai rechargement.
+   */
+  const COLLAPSED_KEY = 'sidebar_collapsed_groups';
+  const SCROLL_KEY = 'sidebar_scroll';
+
+  let collapsedGroups = $state<string[]>([]);
+  let navElement = $state<HTMLElement | null>(null);
+
+  /** Section contenant la page courante : toujours ouverte, quel qu'ait été le choix. */
+  const activeGroupLabel = $derived(
+    filteredNavGroups.find((group) => group.items.some((item) => isItemActive(item)))?.label ?? ''
+  );
+
+  function isGroupOpen(label: string): boolean {
+    if (!label) return true;
+    if (label === activeGroupLabel) return true;
+    return !collapsedGroups.includes(label);
+  }
+
+  function toggleGroup(label: string) {
+    collapsedGroups = collapsedGroups.includes(label)
+      ? collapsedGroups.filter((value) => value !== label)
+      : [...collapsedGroups, label];
+    try {
+      localStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsedGroups));
+    } catch {
+      /* Stockage refusé : le pli vaut au moins pour la session en cours. */
+    }
+  }
+
+  onMount(() => {
+    try {
+      const stored = localStorage.getItem(COLLAPSED_KEY);
+      if (stored) collapsedGroups = JSON.parse(stored);
+    } catch {
+      /* Valeur illisible : on repart toutes sections ouvertes. */
+    }
+
+    if (!navElement) return;
+    try {
+      const saved = sessionStorage.getItem(SCROLL_KEY);
+      if (saved) navElement.scrollTop = Number(saved);
+    } catch {
+      /* Sans stockage de session, la barre repart simplement en haut. */
+    }
+
+    const remember = () => {
+      try {
+        sessionStorage.setItem(SCROLL_KEY, String(navElement?.scrollTop ?? 0));
+      } catch {
+        /* Idem : rien à restaurer au prochain rendu. */
+      }
+    };
+    navElement.addEventListener('scroll', remember, { passive: true });
+    return () => navElement?.removeEventListener('scroll', remember);
+  });
 
   function isItemActive(item: { name: string, href: string }): boolean {
     const parts = breadcrumb.split(" / ").map(p => p.trim().toLowerCase());
@@ -230,15 +298,32 @@
   </Sidebar.Header>
 
   <!-- Navigation items -->
-  <Sidebar.Content class="p-2 space-y-4">
+  <Sidebar.Content class="p-2 space-y-4" bind:ref={navElement}>
     {#each filteredNavGroups as group}
       <Sidebar.Group class="p-0">
         {#if group.label}
-          <Sidebar.GroupLabel class="px-3 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden">
-            {group.label}
-          </Sidebar.GroupLabel>
+          {@const open = isGroupOpen(group.label)}
+          {@const isActiveGroup = group.label === activeGroupLabel}
+          <!--
+            La section de la page courante reste dépliée et son bouton est inerte :
+            pouvoir replier la branche sur laquelle on se trouve masquerait l'entrée
+            active, et la barre latérale ne dirait plus où l'on est.
+          -->
+          <button
+            type="button"
+            onclick={() => !isActiveGroup && toggleGroup(group.label)}
+            aria-expanded={open}
+            disabled={isActiveGroup}
+            class="flex w-full items-center gap-1 rounded-md px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground group-data-[collapsible=icon]:hidden"
+          >
+            <ChevronRight
+              class={`h-3 w-3 shrink-0 transition-transform ${open ? 'rotate-90' : ''}`}
+              aria-hidden="true"
+            />
+            <span>{group.label}</span>
+          </button>
         {/if}
-        <Sidebar.GroupContent>
+        <Sidebar.GroupContent class={group.label && !isGroupOpen(group.label) ? 'hidden group-data-[collapsible=icon]:block' : ''}>
           <Sidebar.Menu>
             {#each group.items as item}
               <Sidebar.MenuItem>

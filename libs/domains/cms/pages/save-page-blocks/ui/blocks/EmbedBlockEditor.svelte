@@ -14,14 +14,11 @@
 <div class="space-y-3">
   <div>
     <Label for="embed-provider">Service</Label>
-    <Select.Root type="single" bind:value={block.provider}>
-      <Select.Trigger id="embed-provider">{block.provider}</Select.Trigger>
-      <Select.Content>
-        <Select.Item value="youtube">YouTube</Select.Item>
-        <Select.Item value="google_sheet">Google Sheets</Select.Item>
-        <Select.Item value="google_calendar">Google Agenda</Select.Item>
-      </Select.Content>
-    </Select.Root>
+    <Select id="embed-provider" bind:value={block.provider}>
+      <option value="youtube">YouTube</option>
+      <option value="google_sheet">Google Sheets</option>
+      <option value="google_calendar">Google Agenda</option>
+    </Select>
   </div>
   <div>
     <Label for="embed-resource">Identifiant</Label>

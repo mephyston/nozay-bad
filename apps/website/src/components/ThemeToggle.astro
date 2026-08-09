@@ -1,0 +1,42 @@
+---
+/**
+ * Bascule clair / sombre.
+ *
+ * Le thème initial est déjà posé par le script en ligne de `BaseLayout` : ce
+ * composant ne fait que le basculer et mémoriser le choix. Tant que le visiteur n'a
+ * rien choisi, `prefers-color-scheme` continue de décider — on n'écrit dans
+ * `localStorage` qu'au premier clic, ce qui laisse le réglage système gagner par
+ * défaut plutôt que de figer un thème dès la première visite.
+ */
+---
+<button
+  type="button"
+  id="theme-toggle"
+  class="hover:bg-muted text-muted-foreground hover:text-foreground inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors"
+  aria-label="Basculer entre le thème clair et le thème sombre"
+  title="Changer de thème"
+>
+  {/* Une seule icône visible à la fois, pilotée par la classe `dark` de la racine. */}
+  <svg class="h-5 w-5 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+  </svg>
+  <svg class="hidden h-5 w-5 dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+  </svg>
+</button>
+
+<script is:inline>
+  (() => {
+    const button = document.getElementById('theme-toggle');
+    if (!button) return;
+    button.addEventListener('click', () => {
+      const dark = document.documentElement.classList.toggle('dark');
+      try {
+        localStorage.setItem('theme', dark ? 'dark' : 'light');
+      } catch {
+        /* Choix non mémorisable : la bascule vaut au moins pour la page en cours. */
+      }
+    });
+  })();
+</script>

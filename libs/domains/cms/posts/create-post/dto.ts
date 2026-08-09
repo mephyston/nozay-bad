@@ -5,6 +5,8 @@ export interface CreatePostInput {
   slug?: string;
   excerpt?: string;
   bodyHtml?: string;
+  /** Média affiché en couverture dans les cartes et en tête d'article. */
+  coverMediaId?: number | null;
   categoryIds?: number[];
   /** Repris de WordPress à l'import, pour que rejouer ne duplique pas. */
   legacyWpId?: number;

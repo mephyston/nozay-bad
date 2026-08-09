@@ -24,6 +24,7 @@ export async function updateEvent(db: Db, input: UpdateEventInput, now: Date = n
   if (!isOrderedRange(startsAt, endsAt)) throw new InvalidEventDatesError();
 
   return repo.update(db, event.id, {
+    category: input.category ?? event.category,
     title: input.title ?? event.title,
     startsAt,
     endsAt,

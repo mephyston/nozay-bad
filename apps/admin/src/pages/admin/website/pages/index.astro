@@ -64,11 +64,15 @@ try {
     permissions={Astro.locals.user?.permissions || []}
     breadcrumb="Pages du site"
   >
-    <PageHeader
-      title="Pages du site"
-      description="Les pages du site public. Une page reste invisible tant qu'elle n'est pas publiée."
-    />
-    {errorMsg && <ErrorAlert message={errorMsg} />}
-    <PagesManager client:load pages={pages} canWrite={canWrite} canDelete={canDelete} />
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader
+        title="Pages du site"
+        description="Les pages du site public. Une page reste invisible tant qu'elle n'est pas publiée."
+      />
+
+      <PagesManager client:load pages={pages} canWrite={canWrite} canDelete={canDelete} />
+    </div>
   </AdminLayout>
 </Layout>

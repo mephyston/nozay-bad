@@ -21,6 +21,7 @@ export type {
   PersonCardsBlock,
   ScheduleBlock,
   PdfLinkBlock,
+  PostsFeedBlock,
   CtaLinkValue,
   PersonValue
 } from './blocks';

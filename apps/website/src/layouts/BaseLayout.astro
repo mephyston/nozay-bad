@@ -36,6 +36,27 @@ const image = ogImage ?? new URL('/og-default.jpg', Astro.site ?? canonical).toS
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="/favicon.png" />
 
+    {/*
+      Thème appliqué avant le premier rendu.
+
+      En ligne et bloquant, à dessein : le HTML est servi depuis un cache **partagé**
+      et ne peut donc pas porter la préférence d'un visiteur. Différer ce script
+      afficherait une page claire le temps qu'il s'exécute, puis la basculerait en
+      sombre — le « flash » que tout le monde connaît. Trois lignes bloquantes valent
+      mieux ici qu'un rendu correct une frame trop tard.
+    */}
+    <script is:inline>
+      (() => {
+        try {
+          const stored = localStorage.getItem('theme');
+          const dark = stored ? stored === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+          document.documentElement.classList.toggle('dark', dark);
+        } catch {
+          /* localStorage refusé (navigation privée stricte) : on garde le thème clair. */
+        }
+      })();
+    </script>
+
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />

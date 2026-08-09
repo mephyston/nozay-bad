@@ -72,11 +72,15 @@ try {
     permissions={Astro.locals.user?.permissions || []}
     breadcrumb="Médiathèque"
   >
-    <PageHeader
-      title="Médiathèque"
-      description="Images et documents du site public. Les fichiers déposés ici sont réutilisables dans toutes les pages."
-    />
-    {errorMsg && <ErrorAlert message={errorMsg} />}
-    <MediaLibrary client:load media={media} canWrite={canWrite} canDelete={canDelete} />
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader
+        title="Médiathèque"
+        description="Images et documents du site public. Les fichiers déposés ici sont réutilisables dans toutes les pages."
+      />
+
+      <MediaLibrary client:load media={media} canWrite={canWrite} canDelete={canDelete} />
+    </div>
   </AdminLayout>
 </Layout>
