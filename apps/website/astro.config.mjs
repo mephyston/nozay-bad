@@ -42,5 +42,12 @@ export default defineConfig({
     },
     ssr: { external: ['@astrojs/cloudflare'] }
   },
+  // Port fixe et strict.
+  //
+  // Sans `strictPort`, Astro glisse en silence sur le port suivant quand le sien est
+  // pris : lancer les trois applications dans le désordre les décale d'un cran chacune
+  // et l'on se retrouve avec le storefront sur le port du site. Mieux vaut un échec
+  // franc, qui dit lequel des serveurs tourne déjà.
+  server: { port: 4323, strictPort: true },
   srcDir: './src'
 });
