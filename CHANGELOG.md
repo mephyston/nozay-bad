@@ -1,3 +1,10 @@
+# [1.0.0-beta.71](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.70...v1.0.0-beta.71) (2026-08-09)
+
+
+### Features
+
+* **schedules,events:** créneaux et agenda natifs, en remplacement des iframes Google ([1db2629](https://github.com/mephyston/nozay-bad/commit/1db262974ba8ef5dd8b347025770080639f608a7))
+
 # [1.0.0-beta.70](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.69...v1.0.0-beta.70) (2026-08-09)
 
 
