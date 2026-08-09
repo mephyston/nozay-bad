@@ -7,6 +7,7 @@ export default defineConfig({
       'cloudflare:workers': path.resolve(__dirname, '../admin/src/mocks/cloudflare-workers.ts'),
       '@nba/api-client': path.resolve(__dirname, '../../libs/shared/api-client/src/index.ts'),
       '@nba/html': path.resolve(__dirname, '../../libs/shared/html/src/index.ts'),
+      '@nba/preview': path.resolve(__dirname, '../../libs/shared/preview/src/index.ts'),
       '@nba/cms/public': path.resolve(__dirname, '../../libs/domains/cms/shared/public.ts'),
       '@nba/db': path.resolve(__dirname, '../../libs/shared/db/src/index.ts')
     }

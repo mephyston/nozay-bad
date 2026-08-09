@@ -33,6 +33,12 @@ const STOREFRONT_URL =
     : APP_ENV === 'staging'
       ? 'https://staging-my.nozaybad.fr'
       : 'https://my.nozaybad.fr';
+const WEBSITE_URL =
+  APP_ENV === 'development'
+    ? 'http://localhost:4323'
+    : APP_ENV === 'staging'
+      ? 'https://staging-www.nozaybad.fr'
+      : 'https://nozaybad.fr';
 
 export default defineConfig({
   output: 'server',
@@ -83,7 +89,8 @@ export default defineConfig({
     define: {
       'import.meta.env.PUBLIC_APP_VERSION': JSON.stringify(process.env.VITE_APP_VERSION || pkg.version),
       'import.meta.env.PUBLIC_APP_ENV': JSON.stringify(APP_ENV),
-      'import.meta.env.PUBLIC_STOREFRONT_URL': JSON.stringify(STOREFRONT_URL)
+      'import.meta.env.PUBLIC_STOREFRONT_URL': JSON.stringify(STOREFRONT_URL),
+      'import.meta.env.PUBLIC_WEBSITE_URL': JSON.stringify(WEBSITE_URL)
     },
     plugins: [tailwindcss()],
     optimizeDeps: {

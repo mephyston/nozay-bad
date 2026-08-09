@@ -92,7 +92,7 @@ describe('savePageBlocks', () => {
     await savePageBlocks(db, { pageId, blocks: [{ type: 'richtext', payload: { html: '<p>A</p>' } }] });
     const result = await savePageBlocks(db, { pageId, blocks: [] });
 
-    expect(result).toEqual({ pageId, count: 0 });
+    expect(result).toMatchObject({ pageId, count: 0 });
     expect((await getPage(db, { pageId })).blocks).toEqual([]);
   });
 

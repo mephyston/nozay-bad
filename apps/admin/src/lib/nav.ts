@@ -69,6 +69,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Site public',
     items: [
+      { name: 'Pages', icon: 'FileText', href: '/admin/website/pages', permission: 'cms:pages:read' },
       { name: 'Médiathèque', icon: 'Image', href: '/admin/website/media', permission: 'cms:media:read' }
     ]
   },

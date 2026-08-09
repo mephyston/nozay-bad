@@ -1,0 +1,8 @@
+{
+  "name": "@nba/preview",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/shared/preview/src",
+  "targets": { "lint": { "command": "eslint {projectRoot}" } },
+  "tags": ["type:util", "scope:shared"]
+}

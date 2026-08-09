@@ -197,5 +197,9 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'GET', path: '/cms/media', permission: 'cms:media:read', service: true },
   { method: 'GET', path: '/cms/media/:id', permission: 'cms:media:read', service: true },
   { method: 'POST', path: '/cms/media', permission: 'cms:media:write' },
-  { method: 'DELETE', path: '/cms/media/:id', permission: 'cms:media:delete' }
+  { method: 'DELETE', path: '/cms/media/:id', permission: 'cms:media:delete' },
+  // Historique des pages. Restaurer réécrit le contenu : c'est un acte de rédaction,
+  // pas un droit distinct.
+  { method: 'GET', path: '/cms/pages/:id/revisions', permission: 'cms:pages:read' },
+  { method: 'POST', path: '/cms/pages/:id/revisions/:revisionId/restore', permission: 'cms:pages:write' }
 ];

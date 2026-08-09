@@ -13,12 +13,13 @@ export interface WebsiteEnv {
   API_SERVICE?: { fetch: typeof fetch };
   API_URL?: string;
   INTERNAL_API_KEY?: string;
+  PREVIEW_TOKEN_SECRET?: string;
   SITE_URL?: string;
   APP_ENV?: string;
 }
 
-function client(env: WebsiteEnv) {
-  return createApiClient(env as never, { caller: 'website' });
+function client(env: WebsiteEnv, previewVerified = false) {
+  return createApiClient(env as never, { caller: 'website', previewVerified });
 }
 
 /** Enveloppe de réponse commune à toute l'API. */
@@ -28,8 +29,8 @@ interface Envelope<T> {
   error?: string;
 }
 
-async function getJson<T>(env: WebsiteEnv, path: string): Promise<T | null> {
-  const response = await client(env).fetch(`http://localhost${path}`);
+async function getJson<T>(env: WebsiteEnv, path: string, previewVerified = false): Promise<T | null> {
+  const response = await client(env, previewVerified).fetch(`http://localhost${path}`);
   if (!response.ok) return null;
   const body = (await response.json()) as Envelope<T>;
   return body.success && body.data !== undefined ? body.data : null;
@@ -41,8 +42,16 @@ async function getJson<T>(env: WebsiteEnv, path: string): Promise<T | null> {
  * Un seul aller-retour : l'API consulte pages, articles et redirections d'un bloc.
  * Une page morte de WordPress ne coûte donc pas trois requêtes.
  */
-export async function resolvePublicRoute(env: WebsiteEnv, path: string): Promise<ResolveRouteOutput> {
-  const resolved = await getJson<ResolveRouteOutput>(env, `/cms/route?path=${encodeURIComponent(path)}`);
+export async function resolvePublicRoute(
+  env: WebsiteEnv,
+  path: string,
+  previewVerified = false
+): Promise<ResolveRouteOutput> {
+  const resolved = await getJson<ResolveRouteOutput>(
+    env,
+    `/cms/route?path=${encodeURIComponent(path)}`,
+    previewVerified
+  );
   // Une API indisponible ne doit pas se traduire par une page blanche : on rend un
   // 404 propre, que le cache ne retiendra pas puisqu'il n'est pas mis en cache.
   return resolved ?? { kind: 'notfound' };

@@ -22,7 +22,8 @@
       "@nba/notifications-ui": ["../../libs/domains/notifications/shared/ui.ts"],
       "@nba/announcements-api": ["../../libs/domains/announcements/index.ts"],
       "@nba/announcements-ui": ["../../libs/domains/announcements/shared/ui.ts"],
-      "@nba/cms-ui": ["../../libs/domains/cms/shared/ui.ts"]
+      "@nba/cms-ui": ["../../libs/domains/cms/shared/ui.ts"],
+      "@nba/preview": ["../../libs/shared/preview/src/index.ts"]
     }
   }
 }

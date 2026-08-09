@@ -13,6 +13,8 @@ import { listMediaRoute } from './media/list-media/route';
 import { uploadMediaRoute } from './media/upload-media/route';
 import { getMediaRoute } from './media/get-media/route';
 import { deleteMediaRoute } from './media/delete-media/route';
+import { listPageRevisionsRoute } from './revisions/list-page-revisions/route';
+import { restorePageRevisionRoute } from './revisions/restore-page-revision/route';
 
 export type Bindings = {
   DB: D1Database;
@@ -25,6 +27,8 @@ export const cmsRouter = new Hono<{ Bindings: Bindings }>();
 // `/pages/12/blocks` et `/pages/12/publish`.
 cmsRouter.route('/', resolveRouteRoute);
 cmsRouter.route('/', getContentVersionRoute);
+cmsRouter.route('/', restorePageRevisionRoute);
+cmsRouter.route('/', listPageRevisionsRoute);
 cmsRouter.route('/', savePageBlocksRoute);
 cmsRouter.route('/', publishPageRoute);
 cmsRouter.route('/', listPagesRoute);
@@ -46,5 +50,7 @@ export { getContentVersion, bumpContentVersion } from './shared/cache-version';
 export { normalisePath, slugify, buildPath, ROOT_PATH } from './shared/slug';
 export { listMedia } from './media/list-media/handler';
 export { getMedia } from './media/get-media/handler';
+export { listPageRevisions } from './revisions/list-page-revisions/handler';
+export { restorePageRevision } from './revisions/restore-page-revision/handler';
 export { BLOCK_TYPES } from './shared/blocks';
 export type { BlockType, BlockPayload } from './shared/blocks';

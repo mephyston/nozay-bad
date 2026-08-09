@@ -21,6 +21,15 @@ export type CallerIdentity = {
   caller: 'admin' | 'storefront' | 'website';
   /** Adresse de l'utilisateur, exigée par l'API pour tout appel `admin`. */
   userEmail?: string;
+  /**
+   * Le site public affirme avoir vérifié un jeton d'aperçu valide.
+   *
+   * C'est le seul cas où il peut lire un brouillon. La vérification cryptographique
+   * vit dans le Worker du site — un domaine métier ne dépend pas de
+   * l'authentification — et l'API s'en remet à lui sur la même base que
+   * `x-user-email` : la clé interne, que seuls les Workers détiennent.
+   */
+  previewVerified?: boolean;
 };
 
 export function createApiClient(env?: ApiClientEnv, identity?: CallerIdentity) {
@@ -53,6 +62,13 @@ export function createApiClient(env?: ApiClientEnv, identity?: CallerIdentity) {
       if (identity?.userEmail) headers.set('x-user-email', identity.userEmail);
       else headers.delete('x-user-email');
       headers.delete('x-user-permissions');
+      // Toujours réécrit, jamais relayé : sans cela, un en-tête entrant ouvrirait les
+      // brouillons à n'importe quel visiteur.
+      if (identity?.caller === 'website' && identity.previewVerified) {
+        headers.set('x-preview-verified', '1');
+      } else {
+        headers.delete('x-preview-verified');
+      }
 
       if (env?.API_SERVICE && typeof env.API_SERVICE.fetch === 'function') {
         return env.API_SERVICE.fetch(input, { ...init, headers });

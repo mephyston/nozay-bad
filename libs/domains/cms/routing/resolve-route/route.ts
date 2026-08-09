@@ -24,10 +24,16 @@ resolveRouteRoute.get(
     const { path } = c.req.valid('query');
     const db = createDb(c.env.DB);
 
-    // Seule l'administration voit les brouillons. Le site public atteint cette route
-    // en tant que service, sans identité : la contrainte est posée ici plutôt que
-    // côté appelant, pour qu'aucun oubli de paramètre ne divulgue un brouillon.
-    const includeDrafts = c.req.header('x-caller') === 'admin';
+    // Qui voit les brouillons.
+    //
+    // L'administration, toujours. Le site public seulement s'il affirme avoir vérifié
+    // un jeton d'aperçu — la vérification cryptographique vit dans le Worker du site,
+    // parce qu'un domaine métier ne dépend pas de l'authentification. La confiance
+    // repose ici sur la même base que `x-user-email` côté admin : la clé interne, que
+    // seuls les Workers détiennent.
+    const caller = c.req.header('x-caller');
+    const includeDrafts =
+      caller === 'admin' || (caller === 'website' && c.req.header('x-preview-verified') === '1');
 
     const resolved = await resolveRoute(db, { path, includeDrafts });
     return c.json({ success: true, data: resolved });
