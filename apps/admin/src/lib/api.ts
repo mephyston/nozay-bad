@@ -12,14 +12,24 @@ import { createApiClient } from '@nba/api-client';
  *
  * Un test d'architecture interdit `createApiClient(` sous `src/pages/admin/**`.
  */
-export function createAdminApiClient(locals: App.Locals) {
+/**
+ * Environnement d'exécution du Worker.
+ *
+ * `locals.runtime.env` lève en Astro v6 : `cloudflare:workers` fait autorité, la
+ * lecture de `locals` n'est là que par compatibilité, sous try/catch.
+ */
+export function resolveEnv(locals: App.Locals): Record<string, unknown> {
   let runtimeEnv: Record<string, string> = {};
   try {
     runtimeEnv = ((locals as any).runtime?.env || {}) as Record<string, string>;
   } catch {
     // Astro v6 : `locals.runtime.env` lève en production. cfEnv suffit alors.
   }
-  const resolvedEnv = { ...cfEnv, ...runtimeEnv } as Record<string, unknown>;
+  return { ...cfEnv, ...runtimeEnv } as Record<string, unknown>;
+}
+
+export function createAdminApiClient(locals: App.Locals) {
+  const resolvedEnv = resolveEnv(locals);
 
   const userEmail = locals.user?.email;
   if (!userEmail) {

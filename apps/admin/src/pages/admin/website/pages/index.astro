@@ -1,0 +1,74 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import AdminLayout from '../../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { PagesManager } from '@nba/cms-ui';
+import { createAdminApiClient } from '../../../../lib/api';
+import { can, guardAction } from '../../../../lib/guard';
+
+const canWrite = can(Astro.locals, 'cms:pages:write');
+const canDelete = can(Astro.locals, 'cms:pages:delete');
+
+const apiService = createAdminApiClient(Astro.locals);
+
+const ACTIONS = {
+  create: 'cms:pages:write',
+  delete: 'cms:pages:delete'
+} as const;
+
+if (Astro.request.method === 'POST') {
+  const data = (await Astro.request.json()) as any;
+  const denied = guardAction(Astro.locals, data.action, ACTIONS);
+  if (denied) return denied;
+
+  const routes: Record<string, { url: string; method: string; body?: unknown }> = {
+    create: { url: 'http://localhost/cms/pages', method: 'POST', body: { title: data.title } },
+    delete: { url: `http://localhost/cms/pages/${data.id}`, method: 'DELETE' }
+  };
+
+  const route = routes[data.action];
+  const apiRes = await apiService.fetch(route.url, {
+    method: route.method,
+    headers: { 'Content-Type': 'application/json' },
+    ...(route.body ? { body: JSON.stringify(route.body) } : {})
+  });
+
+  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+  return new Response(JSON.stringify(await apiRes.json()), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+let pages: any[] = [];
+let errorMsg = '';
+
+try {
+  const res = await apiService.fetch('http://localhost/cms/pages');
+  if (res.ok) {
+    const json = (await res.json()) as any;
+    pages = json.data ?? [];
+  } else {
+    errorMsg = 'Impossible de charger les pages.';
+  }
+} catch {
+  errorMsg = 'Impossible de charger les pages.';
+}
+---
+
+<Layout title="Pages du site - NBA 91">
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Pages du site"
+  >
+    <PageHeader
+      title="Pages du site"
+      description="Les pages du site public. Une page reste invisible tant qu'elle n'est pas publiée."
+    />
+    {errorMsg && <ErrorAlert message={errorMsg} />}
+    <PagesManager client:load pages={pages} canWrite={canWrite} canDelete={canDelete} />
+  </AdminLayout>
+</Layout>

@@ -27,6 +27,10 @@ savePageBlocksRoute.put(
     }
     const { blocks } = c.req.valid('json');
     const db = createDb(c.env.DB);
-    return c.json({ success: true, data: await savePageBlocks(db, { pageId, blocks: blocks as never }) });
+    const authorEmail = c.req.header('x-user-email') || '';
+    return c.json({
+      success: true,
+      data: await savePageBlocks(db, { pageId, blocks: blocks as never }, authorEmail)
+    });
   }
 );

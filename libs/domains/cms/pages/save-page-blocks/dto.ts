@@ -14,4 +14,6 @@ export interface SavePageBlocksInput {
 export interface SavePageBlocksOutput {
   pageId: number;
   count: number;
+  /** Numéro de la révision créée, qui porte l'état précédent. */
+  revision: number;
 }

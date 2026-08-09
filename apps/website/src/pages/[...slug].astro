@@ -4,6 +4,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import BlockRenderer from '../components/blocks/BlockRenderer.astro';
 import { resolvePublicRoute, loadMedia, mediaIdsInBlocks } from '../lib/cms';
 import { resolveEnv } from '../lib/request-context';
+import { verifyPreviewToken } from '@nba/preview';
 import { pageTitle, pageDescription, absoluteUrl } from '../lib/seo';
 import { sportsClub, webPage, breadcrumbList } from '../lib/jsonld';
 import { HTML_CACHE_CONTROL } from '../lib/cache';
@@ -12,7 +13,16 @@ const env = resolveEnv(Astro.locals);
 const siteUrl = env.SITE_URL ?? import.meta.env.PUBLIC_SITE_URL ?? Astro.url.origin;
 
 const path = normalisePath(Astro.url.pathname);
-const resolved = await resolvePublicRoute(env, path);
+
+// Aperçu : le jeton porte le chemin et une échéance. Vérifié ici, dans le Worker du
+// site — le domaine cms ne dépend pas de l'authentification.
+const isPreview = await verifyPreviewToken(
+  Astro.url.searchParams.get('preview'),
+  path,
+  env.PREVIEW_TOKEN_SECRET
+);
+
+const resolved = await resolvePublicRoute(env, path, isPreview);
 
 // Redirections et 410 sortent avant tout rendu : ce sont les ~70 URL héritées de
 // WordPress qui n'ont pas de contenu ici, et elles ne doivent rien coûter.
@@ -54,16 +64,22 @@ const jsonLd: unknown[] = [
 ];
 if (page.path === '/') jsonLd.unshift(sportsClub(siteUrl));
 
-// Le middleware ne pose pas cet en-tête : seules les pages réellement publiées sont
-// mises en cache, et c'est ici qu'on le sait.
-Astro.response.headers.set('Cache-Control', HTML_CACHE_CONTROL);
+// Un aperçu n'est ni mis en cache ni indexé. Sans ces deux garde-fous, un lien
+// partagé par erreur ferait entrer un brouillon dans l'index de Google *et* dans le
+// cache partagé de Cloudflare, où il resterait visible de tous.
+if (isPreview) {
+  Astro.response.headers.set('Cache-Control', 'private, no-store');
+  Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+} else {
+  Astro.response.headers.set('Cache-Control', HTML_CACHE_CONTROL);
+}
 ---
 
 <BaseLayout
   title={title}
   description={description}
   canonical={canonical}
-  noindex={page.noindex}
+  noindex={page.noindex || isPreview}
   jsonLd={jsonLd}
 >
   {/* Le bloc `hero` porte déjà le h1 ; sans lui, le titre de la page en tient lieu,

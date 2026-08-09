@@ -1,0 +1,72 @@
+import type { BlockPayload, BlockType } from '../../../shared/blocks';
+
+/**
+ * Catalogue des blocs pour l'éditeur.
+ *
+ * Il porte le libellé, l'explication et la charge utile de départ de chaque type.
+ * Séparer cette table des composants permet au sélecteur « ajouter un bloc » de rester
+ * une simple boucle, et met les valeurs par défaut à un seul endroit.
+ */
+
+export interface BlockKind {
+  type: BlockType;
+  label: string;
+  /** Ce que le bloc sert à faire, en une phrase, pour un bénévole non technicien. */
+  hint: string;
+  create: () => BlockPayload;
+}
+
+export const BLOCK_KINDS: BlockKind[] = [
+  {
+    type: 'richtext',
+    label: 'Texte',
+    hint: 'Paragraphes, titres, listes, tableaux et liens.',
+    create: () => ({ type: 'richtext', html: '<p></p>' })
+  },
+  {
+    type: 'hero',
+    label: 'Accroche',
+    hint: "Grand titre en tête de page, avec jusqu'à quatre boutons.",
+    create: () => ({ type: 'hero', title: '', ctas: [] })
+  },
+  {
+    type: 'cta_grid',
+    label: 'Grille de liens',
+    hint: 'Boutons ou logos en colonnes — partenaires, raccourcis.',
+    create: () => ({ type: 'cta_grid', columns: 3, items: [] })
+  },
+  {
+    type: 'gallery',
+    label: 'Galerie',
+    hint: 'Plusieurs images de la médiathèque, en grille.',
+    create: () => ({ type: 'gallery', mediaIds: [], layout: 'grid' })
+  },
+  {
+    type: 'pdf_link',
+    label: 'Document',
+    hint: 'Lien de téléchargement vers un PDF de la médiathèque.',
+    create: () => ({ type: 'pdf_link', mediaId: 0, label: '' })
+  },
+  {
+    type: 'embed',
+    label: 'Intégration',
+    hint: 'Vidéo YouTube, agenda ou feuille de calcul Google.',
+    create: () => ({ type: 'embed', provider: 'youtube', resourceId: '', title: '', aspect: '16/9' })
+  },
+  {
+    type: 'person_cards',
+    label: 'Personnes',
+    hint: 'Cartes de contact — bureau, commissions, encadrants.',
+    create: () => ({ type: 'person_cards', people: [] })
+  },
+  {
+    type: 'schedule',
+    label: 'Créneaux',
+    hint: 'Tableau des créneaux, tenu à jour depuis la rubrique dédiée.',
+    create: () => ({ type: 'schedule', audiences: [] })
+  }
+];
+
+export function labelOf(type: BlockType): string {
+  return BLOCK_KINDS.find((kind) => kind.type === type)?.label ?? type;
+}

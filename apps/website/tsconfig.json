@@ -6,6 +6,7 @@
       "@nba/ui": ["../../libs/shared/ui/src/index.ts"],
       "@nba/api-client": ["../../libs/shared/api-client/src/index.ts"],
       "@nba/html": ["../../libs/shared/html/src/index.ts"],
+      "@nba/preview": ["../../libs/shared/preview/src/index.ts"],
       "@nba/cms/public": ["../../libs/domains/cms/shared/public.ts"],
       "@nba/db": ["../../libs/shared/db/src/index.ts"]
     }

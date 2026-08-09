@@ -15,6 +15,7 @@
       "@nba/pdf": ["libs/shared/pdf/src/index.ts"],
       "@nba/push": ["libs/shared/push/src/index.ts"],
       "@nba/html": ["libs/shared/html/src/index.ts"],
+      "@nba/preview": ["libs/shared/preview/src/index.ts"],
       "@nba/db/test-utils": ["libs/shared/db/src/test-utils.ts"],
       "@nba/ui": ["libs/shared/ui/src/index.ts"],
       "@nba/api-client": ["libs/shared/api-client/src/index.ts"],
