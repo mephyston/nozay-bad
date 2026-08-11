@@ -1,3 +1,17 @@
+# [1.0.0-beta.78](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.77...v1.0.0-beta.78) (2026-08-11)
+
+
+### Bug Fixes
+
+* **admin:** rendre lisibles les confirmations de suppression ([fe157d9](https://github.com/mephyston/nozay-bad/commit/fe157d931134c5b507b01338f077cdb36afc472e))
+
+
+### Features
+
+* **cms:** éditeur enrichi, dépôt sur place, menus conteneurs et bloc colonnes ([eff0c26](https://github.com/mephyston/nozay-bad/commit/eff0c26259bd2d1a6e50247c6258fb716f47152e))
+* **import:** rattacher les images à la une aux articles repris ([1e46108](https://github.com/mephyston/nozay-bad/commit/1e461086d22010c34f6e727836bb98bf0e421f1a))
+* **website:** soustraire les adresses e-mail aux moissonneurs ([47d482c](https://github.com/mephyston/nozay-bad/commit/47d482c34e196e758db9c7450ce56344357cfa5b))
+
 # [1.0.0-beta.77](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.76...v1.0.0-beta.77) (2026-08-09)
 
 
