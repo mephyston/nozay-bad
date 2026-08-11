@@ -8,13 +8,16 @@
   let {
     block = $bindable(),
     media = [],
+    canUploadMedia = false,
     targets = []
   } = $props<{
     block: CtaGridBlock;
     /** Médiathèque de la page hôte : sert la bannière de fond. */
     media?: PickableMedia[];
+    /** `cms:media:write` : autorise le dépôt depuis le sélecteur. */
+    canUploadMedia?: boolean;
     /** Pages et actualités du site, pour la cible d'un lien interne. */
-    targets?: { path: string; title: string; kind: 'page' | 'post' }[];
+    targets?: { path: string; title: string; kind: 'page' | 'post'; status?: 'draft' | 'published' }[];
   }>();
 
   let backgroundPickerOpen = $state(false);
@@ -168,6 +171,7 @@
 <MediaPicker
   bind:open={backgroundPickerOpen}
   {media}
+  canUpload={canUploadMedia}
   kind="image"
   title="Image de fond de la bannière"
   onSelect={(item) => (block.backgroundMediaId = item.id)}

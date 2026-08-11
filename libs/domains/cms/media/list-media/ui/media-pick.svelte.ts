@@ -1,6 +1,29 @@
 import type { PickableMedia } from './media-types';
 
 /**
+ * Médias déposés depuis un sélecteur, le temps de la page.
+ *
+ * La liste que reçoit un sélecteur est chargée par la page d'administration au rendu :
+ * un fichier déposé ensuite n'y figure pas. Recharger la page le ferait apparaître,
+ * mais emporterait le brouillon en cours — c'est précisément ce que le dépôt sur place
+ * cherche à éviter.
+ *
+ * D'où cette liste partagée par tous les sélecteurs de la page : le fichier déposé
+ * depuis le bloc texte est aussi visible depuis le choix de couverture, sans qu'aucun
+ * écran n'ait à faire redescendre quoi que ce soit à ses enfants.
+ */
+const uploads = $state<PickableMedia[]>([]);
+
+/** Ajoute un média fraîchement déposé, en tête — c'est celui qu'on vient de choisir. */
+export function rememberUpload(media: PickableMedia): void {
+  if (!uploads.some((item) => item.id === media.id)) uploads.unshift(media);
+}
+
+export function recentUploads(): PickableMedia[] {
+  return uploads;
+}
+
+/**
  * Choix d'un média, exposé sous forme de promesse.
  *
  * `RichTextEditor` appartient à `@nba/ui` et ignore tout de la médiathèque : il réclame

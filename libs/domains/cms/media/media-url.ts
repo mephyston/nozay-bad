@@ -26,6 +26,14 @@
 const WEBSITE_ORIGIN = (import.meta.env.PUBLIC_WEBSITE_URL as string | undefined) ?? '';
 
 /**
+ * Origine du site public, pour les composants qui résolvent une adresse eux-mêmes.
+ *
+ * `RichTextEditor` en est le seul client : appartenant à `@nba/ui`, il ne peut pas
+ * importer ce module — c'est donc l'écran du domaine qui lui passe l'origine.
+ */
+export const websiteOrigin = WEBSITE_ORIGIN;
+
+/**
  * Chemin **relatif** d'un média : `/media/<clé>`.
  *
  * C'est la forme à écrire partout où l'adresse est **enregistrée** — un lien de

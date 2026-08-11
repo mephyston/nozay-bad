@@ -8,13 +8,16 @@
   let {
     block = $bindable(),
     media = [],
+    canUploadMedia = false,
     targets = []
   } = $props<{
     block: CarouselBlock;
     /** Médiathèque de la page hôte : le bloc ne stocke que des identifiants. */
     media?: PickableMedia[];
+    /** `cms:media:write` : autorise le dépôt depuis le sélecteur. */
+    canUploadMedia?: boolean;
     /** Pages et actualités du site, pour la cible du bouton d'une diapositive. */
-    targets?: { path: string; title: string; kind: 'page' | 'post' }[];
+    targets?: { path: string; title: string; kind: 'page' | 'post'; status?: 'draft' | 'published' }[];
   }>();
 
   /** Plafond du schéma. Au-delà, les dernières diapositives ne sont jamais vues. */
@@ -237,6 +240,7 @@
 <MediaPicker
   bind:open={pickerOpen}
   {media}
+  canUpload={canUploadMedia}
   kind="image"
   title="Image de la diapositive"
   onSelect={(item) => (block.slides[pickerFor].mediaId = item.id)}

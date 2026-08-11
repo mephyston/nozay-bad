@@ -146,11 +146,37 @@ describe('CMS_PROFILE — les gardes du moteur restent en place', () => {
   });
 });
 
+describe('CMS_PROFILE — alignement centré', () => {
+  it('conserve le centrage sur les blocs de texte', () => {
+    expect(cms('<p class="nba-center">Centré</p>')).toBe('<p class="nba-center">Centré</p>');
+    expect(cms('<h2 class="nba-center">Titre</h2>')).toBe('<h2 class="nba-center">Titre</h2>');
+  });
+
+  it('refuse toute autre classe : `class` n’ouvre pas la mise en forme libre', () => {
+    expect(cms('<p class="text-6xl">Non</p>')).toBe('<p>Non</p>');
+    expect(cms('<p class="nba-center danger">Non</p>')).toBe('<p>Non</p>');
+    expect(cms('<p class="">Non</p>')).toBe('<p>Non</p>');
+  });
+
+  it("refuse le style en ligne, que produirait execCommand('justifyCenter')", () => {
+    expect(cms('<p style="text-align:center">Non</p>')).toBe('<p>Non</p>');
+  });
+
+  it('reste idempotent avec le centrage', () => {
+    const once = cms('<h2 id="a" class="nba-center">Titre</h2><p class="nba-center">Texte</p>');
+    expect(cms(once)).toBe(once);
+  });
+});
+
 describe('cloisonnement des profils', () => {
   it("le profil annonce ignore tout ce que le profil site public ajoute", () => {
     expect(sanitizeRichText('<h2>Titre</h2>', ANNOUNCEMENT_PROFILE)).toBe('Titre');
     expect(sanitizeRichText('<img src="/media/x/1.webp">', ANNOUNCEMENT_PROFILE)).toBe('');
     expect(sanitizeRichText('<table><tr><td>1</td></tr></table>', ANNOUNCEMENT_PROFILE)).toBe('1');
+  });
+
+  it("le centrage n'est pas offert aux annonces", () => {
+    expect(sanitizeRichText('<p class="nba-center">Texte</p>', ANNOUNCEMENT_PROFILE)).toBe('<p>Texte</p>');
   });
 
   it('le profil annonce reste celui par défaut', () => {

@@ -5,9 +5,11 @@
   import { humanSize } from '../../../../media/list-media/ui/media-upload';
   import type { PdfLinkBlock } from '../../../../shared/blocks';
 
-  let { block = $bindable(), media = [] } = $props<{
+  let { block = $bindable(), media = [], canUploadMedia = false } = $props<{
     block: PdfLinkBlock;
     media?: PickableMedia[];
+    /** `cms:media:write` : autorise le dépôt depuis le sélecteur. */
+    canUploadMedia?: boolean;
   }>();
 
   let pickerOpen = $state(false);
@@ -55,6 +57,7 @@
 <MediaPicker
   bind:open={pickerOpen}
   {media}
+  canUpload={canUploadMedia}
   kind="document"
   title="Document à mettre en téléchargement"
   onSelect={(item) => (block.mediaId = item.id)}

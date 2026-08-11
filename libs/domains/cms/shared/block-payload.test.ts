@@ -236,6 +236,46 @@ describe('normaliseBlockPayload — robustesse', () => {
   });
 });
 
+describe('normaliseBlockPayload — columns', () => {
+  const two = (a: string, b: string) => ({ items: [{ html: a }, { html: b }] });
+
+  it('assainit chaque colonne au profil du site public', () => {
+    const block = normaliseBlockPayload(
+      'columns',
+      two('<h2>Jeunes</h2><script>alert(1)</script>', '<p>Adultes</p>'),
+      0
+    );
+    expect(block).toEqual({
+      type: 'columns',
+      items: [{ html: '<h2>Jeunes</h2>' }, { html: '<p>Adultes</p>' }]
+    });
+  });
+
+  it('refuse une colonne vide, qui décalerait ses voisines', () => {
+    expect(() => normaliseBlockPayload('columns', two('<p>A</p>', '<p>  </p>'), 1)).toThrow(
+      /colonne 2/
+    );
+  });
+
+  it("accepte une colonne qui ne porte qu'une image", () => {
+    const block = normaliseBlockPayload(
+      'columns',
+      { items: [{ html: '<p>A</p>' }, { html: '<p></p>', mediaId: 4 }] },
+      0
+    );
+    expect(block).toMatchObject({ items: [{ html: '<p>A</p>' }, { mediaId: 4 }] });
+  });
+
+  it('refuse moins de deux colonnes, et plus de trois', () => {
+    expect(() => normaliseBlockPayload('columns', { items: [{ html: '<p>A</p>' }] }, 0)).toThrow(
+      CmsBlockPayloadError
+    );
+    expect(() =>
+      normaliseBlockPayload('columns', { items: Array(4).fill({ html: '<p>A</p>' }) }, 0)
+    ).toThrow(CmsBlockPayloadError);
+  });
+});
+
 describe('parseStoredBlock', () => {
   it('relit une ligne saine', () => {
     expect(parseStoredBlock('richtext', '{"type":"richtext","html":"<p>A</p>"}')).toEqual({

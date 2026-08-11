@@ -1,0 +1,68 @@
+---
+import type { ColumnsBlock, CmsMediaRow, CmsMediaVariantRow } from '@nba/cms/public';
+import { obfuscateEmails } from '@nba/html';
+import Picture from '../Picture.astro';
+
+interface Props {
+  block: ColumnsBlock;
+  media?: Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
+}
+
+const { block, media = new Map() } = Astro.props;
+
+/**
+ * Colonnes côte à côte à partir de `md`, empilées en dessous.
+ *
+ * Le point de bascule est `md` (768 px) et non `sm` : deux colonnes de texte sur un
+ * écran de 640 px donnent des lignes de six mots, moins lisibles que la pile. C'est
+ * la limite que ne franchissait pas l'ancien site, dont les `td width="45%"`
+ * restaient côte à côte jusque sur un téléphone.
+ *
+ * La classe est écrite en toutes lettres et non composée : Tailwind balaie les
+ * sources à la recherche de noms de classes complets, et `md:grid-cols-${n}` ne
+ * produirait aucune règle.
+ */
+const grid = block.items.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2';
+
+/**
+ * `sizes` accordé à la grille : chaque colonne occupe la moitié ou le tiers de la
+ * colonne de texte (max-w-5xl, soit 1024 px) sur grand écran, toute la largeur sinon.
+ * Sans lui, le navigateur téléchargerait la variante prévue pour la pleine largeur.
+ */
+const sizes =
+  block.items.length === 3
+    ? '(min-width: 768px) 320px, 100vw'
+    : '(min-width: 768px) 480px, 100vw';
+---
+
+<section class="mx-auto max-w-5xl px-4 py-6">
+  {block.heading && (
+    <h2 class="mb-6 text-2xl font-semibold tracking-tight">{block.heading}</h2>
+  )}
+
+  <div class:list={['grid gap-6', grid]}>
+    {block.items.map((column) => {
+      const picture = column.mediaId ? media.get(column.mediaId) : undefined;
+      return (
+        <div>
+          {picture && (
+            <Picture
+              media={picture.media}
+              variants={picture.variants}
+              sizes={sizes}
+              class="mb-3 h-auto w-full rounded-lg"
+            />
+          )}
+          {/*
+            Même conteneur `prose` que le bloc de texte : les colonnes doivent lire
+            exactement comme un paragraphe ordinaire, à la largeur près.
+          */}
+          <div
+            class="prose prose-neutral dark:prose-invert max-w-none"
+            set:html={obfuscateEmails(column.html)}
+          />
+        </div>
+      );
+    })}
+  </div>
+</section>

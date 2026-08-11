@@ -24,6 +24,12 @@ export const BLOCK_KINDS: BlockKind[] = [
     create: () => ({ type: 'richtext', html: '<p></p>' })
   },
   {
+    type: 'columns',
+    label: 'Colonnes',
+    hint: 'Deux ou trois contenus côte à côte, empilés sur téléphone.',
+    create: () => ({ type: 'columns', items: [{ html: '<p></p>' }, { html: '<p></p>' }] })
+  },
+  {
     type: 'hero',
     label: 'Accroche',
     hint: "Grand titre en tête de page, avec jusqu'à quatre boutons.",

@@ -139,6 +139,20 @@ export function normaliseBlockPayload(type: BlockType, raw: unknown, position: n
         }))
       };
 
+    case 'columns': {
+      const items = payload.items.map((column, index) => {
+        const html = sanitizeRichText(column.html, CMS_PROFILE);
+        // Une colonne vide n'est pas anodine : elle occupe sa part de la grille, et
+        // les voisines se retrouvent décalées sans que personne ne comprenne pourquoi.
+        // Une image seule suffit en revanche à la remplir.
+        if (!column.mediaId && isRichTextEmpty(html, CMS_PROFILE) && !html.includes('<img')) {
+          throw new CmsBlockPayloadError(position, `colonne ${index + 1} : elle est vide`);
+        }
+        return { ...column, html };
+      });
+      return { ...payload, items };
+    }
+
     case 'gallery':
       // Doublons retirés : la même image deux fois dans une galerie est toujours une
       // fausse manœuvre, jamais une intention.

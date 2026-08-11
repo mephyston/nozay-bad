@@ -11,14 +11,33 @@ const canDelete = can(Astro.locals, 'cms:posts:delete');
 
 const apiService = createAdminApiClient(Astro.locals);
 
+const canUploadMedia = can(Astro.locals, 'cms:media:write');
+
 const ACTIONS = {
   create: 'cms:posts:write',
   update: 'cms:posts:write',
   publish: 'cms:posts:write',
-  delete: 'cms:posts:delete'
+  delete: 'cms:posts:delete',
+  upload: 'cms:media:write'
 } as const;
 
 if (Astro.request.method === 'POST') {
+  // Dépôt d'un média depuis le sélecteur, sans quitter le formulaire — il arrive en
+  // multipart, là où toutes les autres actions de cet écran parlent JSON. Rédiger une
+  // actualité et déposer un fichier restent deux droits distincts.
+  const contentType = Astro.request.headers.get('content-type') ?? '';
+  if (contentType.includes('multipart/form-data')) {
+    const denied = guardAction(Astro.locals, 'upload', ACTIONS);
+    if (denied) return denied;
+
+    const form = await Astro.request.formData();
+    const apiRes = await apiService.fetch('http://localhost/cms/media', { method: 'POST', body: form });
+    if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+    return new Response(JSON.stringify(await apiRes.json()), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
   const data = (await Astro.request.json()) as any;
   const denied = guardAction(Astro.locals, data.action, ACTIONS);
   if (denied) return denied;
@@ -78,22 +97,46 @@ if (Astro.request.method === 'POST') {
 let posts: any[] = [];
 let media: any[] = [];
 let categories: any[] = [];
+let targets: { path: string; title: string; kind: 'page' | 'post'; status?: 'draft' | 'published' }[] = [];
 let errorMsg = '';
 
-// La médiathèque et les catégories alimentent le formulaire (couverture, insertion de
-// fichier, rattachement). Chargées avec la liste et non à l'ouverture du sheet : le
-// formulaire s'ouvre alors sans attente, et l'échec de l'une n'empêche pas d'écrire.
+// La médiathèque, les catégories et les cibles de liens alimentent le formulaire
+// (couverture, insertion de fichier, rattachement, lien interne). Chargées avec la
+// liste et non à l'ouverture du sheet : le formulaire s'ouvre alors sans attente, et
+// l'échec de l'une n'empêche pas d'écrire.
 try {
-  const [postsRes, mediaRes, categoriesRes] = await Promise.all([
+  const [postsRes, mediaRes, categoriesRes, pagesRes] = await Promise.all([
     apiService.fetch('http://localhost/cms/posts?limit=100'),
     apiService.fetch('http://localhost/cms/media?limit=200'),
-    apiService.fetch('http://localhost/cms/post-categories')
+    apiService.fetch('http://localhost/cms/post-categories'),
+    apiService.fetch('http://localhost/cms/pages')
   ]);
 
   if (postsRes.ok) {
     posts = ((await postsRes.json()) as any).data?.posts ?? [];
+    // Un article peut renvoyer vers un autre : la liste déjà chargée sert deux fois.
+    targets.push(
+      ...posts.map((row: any) => ({
+        path: row.path,
+        title: row.title,
+        kind: 'post' as const,
+        status: row.status
+      }))
+    );
   } else {
     errorMsg = 'Impossible de charger les actualités.';
+  }
+
+  if (pagesRes.ok) {
+    const rows = ((await pagesRes.json()) as any).data ?? [];
+    targets.unshift(
+      ...rows.map((row: any) => ({
+        path: row.path,
+        title: row.title,
+        kind: 'page' as const,
+        status: row.status
+      }))
+    );
   }
 
   if (mediaRes.ok) {
@@ -132,6 +175,8 @@ try {
         categories={categories}
         canWrite={canWrite}
         canDelete={canDelete}
+        canUploadMedia={canUploadMedia}
+        targets={targets}
       />
     </div>
   </AdminLayout>

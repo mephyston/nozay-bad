@@ -28,7 +28,8 @@
     pageId: number | null;
     externalUrl: string | null;
     position: number;
-    href: string;
+    /** Nul pour un conteneur : une entrée qui ne fait que regrouper. */
+    href: string | null;
     children: NavItem[];
   }
 
@@ -51,7 +52,7 @@
 
   let editingId = $state<number | null>(null);
   let label = $state('');
-  let targetKind = $state<'page' | 'external'>('page');
+  let targetKind = $state<'page' | 'external' | 'none'>('page');
   let pageId = $state('');
   let externalUrl = $state('');
   let parentId = $state('');
@@ -106,7 +107,9 @@
   function startEdit(item: NavItem) {
     editingId = item.id;
     label = item.label;
-    targetKind = item.pageId !== null ? 'page' : 'external';
+    // Ni page ni adresse : l'entrée ne fait que regrouper.
+    targetKind =
+      item.pageId !== null ? 'page' : item.externalUrl !== null ? 'external' : 'none';
     pageId = item.pageId !== null ? String(item.pageId) : '';
     externalUrl = item.externalUrl ?? '';
     parentId = item.parentId !== null ? String(item.parentId) : '';
@@ -133,6 +136,10 @@
         if (!label.trim()) return "L'intitulé de l'entrée est obligatoire.";
         if (targetKind === 'page' && !pageId) return 'Choisissez la page vers laquelle pointe cette entrée.';
         if (targetKind === 'external' && !externalUrl.trim()) return "Saisissez l'adresse extérieure.";
+        // Le serveur refuse déjà une sous-entrée sans cible ; le dire ici évite
+        // l'aller-retour, et nomme la contrainte au moment où elle se pose.
+        if (targetKind === 'none' && parentId)
+          return 'Une sous-entrée doit mener quelque part : seules les entrées de premier niveau peuvent se contenter de regrouper.';
         return null;
       },
       submit: () =>
@@ -232,7 +239,11 @@
                         {#if item.externalUrl}
                           <ExternalLink class="h-3 w-3 shrink-0" aria-hidden="true" />
                         {/if}
-                        <code class="truncate">{item.href}</code>
+                        {#if item.href === null}
+                          <span class="italic">Regroupe seulement ses sous-entrées</span>
+                        {:else}
+                          <code class="truncate">{item.href}</code>
+                        {/if}
                       </span>
                     </span>
 
@@ -372,14 +383,21 @@
     <Select
       id="nav-target-kind"
       value={targetKind}
-      onchange={(e) => (targetKind = (e.currentTarget as HTMLSelectElement).value as 'page' | 'external')}
+      onchange={(e) =>
+        (targetKind = (e.currentTarget as HTMLSelectElement).value as 'page' | 'external' | 'none')}
     >
       <option value="page">Une page du site</option>
       <option value="external">Une adresse extérieure</option>
+      <option value="none" disabled={Boolean(parentId)}>Aucune — regroupe seulement ses sous-entrées</option>
     </Select>
   </FormField>
 
-  {#if targetKind === 'page'}
+  {#if targetKind === 'none'}
+    <p class="text-muted-foreground text-sm">
+      Cette entrée n'est pas cliquable : elle sert d'intitulé au-dessus de ses sous-entrées.
+      Pensez à lui en ajouter, sans quoi elle n'affichera rien.
+    </p>
+  {:else if targetKind === 'page'}
     <FormField id="nav-page" label="Page">
       <Combobox
         id="nav-page"

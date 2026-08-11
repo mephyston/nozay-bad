@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     Bold, Italic, Underline, Link2, Link2Off, List, ListOrdered, Paperclip, ImagePlus,
-    Heading2, Heading3
+    Heading2, Heading3, AlignCenter
   } from '@lucide/svelte';
 
   let {
@@ -36,7 +36,10 @@
     ],
     [
       { command: 'insertUnorderedList', label: 'Liste à puces', icon: List },
-      { command: 'insertOrderedList', label: 'Liste numérotée', icon: ListOrdered }
+      { command: 'insertOrderedList', label: 'Liste numérotée', icon: ListOrdered },
+      // Centrer plutôt qu'un jeu complet d'alignements : le fer à gauche est la valeur
+      // par défaut, et le fer à droite ou la justification ne servent aucun besoin ici.
+      { command: 'alignCenter', label: 'Centrer', icon: AlignCenter }
     ],
     [
       { command: 'createLink', label: 'Insérer un lien', icon: Link2 },
@@ -57,7 +60,20 @@
   ]);
 </script>
 
-<div class="flex flex-wrap items-center gap-1 border-b border-input bg-muted/40 px-1.5 py-1" role="toolbar" aria-label="Mise en forme">
+<!--
+  Collante en tête de la zone d'édition : sur un texte long, appliquer un style
+  obligeait sinon à remonter jusqu'en haut, puis à redescendre retrouver son curseur.
+  Elle se cale sur le conteneur défilant le plus proche — la page pour un formulaire
+  en pleine largeur, le panneau pour un formulaire en sheet — sans rien savoir de l'un
+  ni de l'autre.
+
+  Le fond est posé en CSS et non par une classe utilitaire : voir le bloc `style`.
+-->
+<div
+  class="nba-rich-toolbar sticky top-0 z-10 flex flex-wrap items-center gap-1 border-b border-input px-1.5 py-1"
+  role="toolbar"
+  aria-label="Mise en forme"
+>
   {#each groups as group, groupIndex (groupIndex)}
     {#if groupIndex > 0}
       <span class="mx-0.5 h-5 w-px bg-border" aria-hidden="true"></span>
@@ -84,3 +100,23 @@
     {/each}
   {/each}
 </div>
+
+<style>
+  /*
+    Fond **opaque**, et écrit ici plutôt qu'en classe utilitaire.
+
+    Opaque parce que la barre est collante : le texte défile maintenant dessous, et
+    l'ancien `bg-muted/40` le laissait lire au travers des icônes.
+
+    En CSS parce que la valeur arbitraire qui reproduisait la teinte d'origine
+    (`bg-[color-mix(…)]`) n'était pas émise par Tailwind, et se rendait donc
+    entièrement transparente — le symptôme même qu'elle devait corriger.
+
+    L'ombre est discrète et permanente : elle détache la barre du texte qui passe
+    dessous, sans clignoter au moment où le collage s'enclenche.
+  */
+  .nba-rich-toolbar {
+    background-color: var(--muted);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+  }
+</style>

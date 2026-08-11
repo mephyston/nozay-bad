@@ -22,16 +22,31 @@ export async function saveNavItem(db: Db, input: SaveNavItemInput): Promise<Save
 
   const pageId = input.pageId ?? null;
   const externalUrl = input.externalUrl?.trim() ? input.externalUrl.trim() : null;
+  const parentId = input.parentId ?? null;
 
-  // Exactement une cible. Les deux serviraient l'une au détriment de l'autre selon le
-  // code de rendu ; aucune donnerait une entrée de menu qui ne mène nulle part.
-  if ((pageId === null) === (externalUrl === null)) throw new CmsNavTargetError();
+  // Jamais deux cibles : elles se serviraient l'une au détriment de l'autre selon le
+  // code de rendu.
+  if (pageId !== null && externalUrl !== null) throw new CmsNavTargetError();
+
+  /*
+    Aucune cible : c'est un **conteneur**, une entrée qui ne fait que regrouper — la
+    forme qu'avait le menu WordPress, où « Le club » n'était pas une page mais un
+    chapeau au-dessus de « Présentation », « Notre équipe » et « Partenaires ».
+
+    Réservé au premier niveau : une sous-entrée est une feuille, la profondeur étant
+    bornée à deux. Sans cible ni descendance possible, elle ne mènerait nulle part.
+  */
+  if (pageId === null && externalUrl === null && parentId !== null) {
+    throw new CmsNavTargetError(
+      'Une sous-entrée doit mener quelque part : choisissez une page ou une adresse extérieure.'
+    );
+  }
+
   if (pageId !== null && !(await repo.pageExists(db, pageId))) throw new CmsPageNotFoundError();
   if (externalUrl !== null && !isSafeHref(externalUrl)) {
     throw new CmsNavTargetError("L'adresse extérieure doit commencer par http:// ou https://.");
   }
 
-  const parentId = input.parentId ?? null;
   if (parentId !== null) {
     const parent = await repo.findById(db, parentId);
     if (!parent) throw new CmsNavItemNotFoundError('Le menu parent est introuvable.');

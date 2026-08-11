@@ -19,9 +19,10 @@ export async function listNavItems(
 
   const toView = (row: (typeof rows)[number]): NavItemView => ({
     ...row,
-    // Une page supprimée emporte son entrée par cascade ; le repli sur '#' ne couvre
-    // que le cas d'une entrée mal formée, jamais servie telle quelle par l'admin.
-    href: row.pageId !== null ? pathById.get(row.pageId) ?? '#' : row.externalUrl ?? '#',
+    // Une page supprimée emporte son entrée par cascade. `null` ne dit donc pas
+    // « adresse introuvable » mais « entrée sans cible » : un conteneur, que le rendu
+    // affiche en intitulé plutôt qu'en lien.
+    href: row.pageId !== null ? pathById.get(row.pageId) ?? null : row.externalUrl,
     children: []
   });
 

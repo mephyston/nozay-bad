@@ -5,10 +5,12 @@
   import MediaPicker, { type PickableMedia } from '../../../../media/list-media/ui/MediaPicker.svelte';
   import type { GalleryBlock } from '../../../../shared/blocks';
 
-  let { block = $bindable(), media = [] } = $props<{
+  let { block = $bindable(), media = [], canUploadMedia = false } = $props<{
     block: GalleryBlock;
     /** Médiathèque de la page hôte : le bloc ne stocke que des identifiants. */
     media?: PickableMedia[];
+    /** `cms:media:write` : autorise le dépôt depuis le sélecteur. */
+    canUploadMedia?: boolean;
   }>();
 
   /** Plafond du schéma. Au-delà, ce n'est plus une galerie mais un album. */
@@ -151,6 +153,7 @@
 <MediaPicker
   bind:open={pickerOpen}
   {media}
+  canUpload={canUploadMedia}
   kind="image"
   title="Image à ajouter à la galerie"
   onSelect={add}

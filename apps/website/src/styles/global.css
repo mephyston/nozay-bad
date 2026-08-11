@@ -263,6 +263,19 @@
   -webkit-mask-size: contain;
 }
 
+/*
+  Centrage d'un bloc de texte riche, posé par l'éditeur d'administration.
+
+  Écrit à la main, et non repris de l'utilitaire Tailwind de même rôle : la classe
+  arrive dans du HTML **stocké**, injecté par `set:html`, que le balayage de Tailwind
+  ne voit jamais. Un `text-center` n'y serait donc pas généré, et le centrage
+  n'existerait qu'à l'écran de l'éditeur. Le nom est préfixé pour que le rapprochement
+  reste explicite avec la liste blanche de `@nba/html`, seule à l'autoriser.
+*/
+.nba-center {
+  text-align: center;
+}
+
 /* Les marges de `prose` sur le premier et le dernier bloc décaleraient l'encart. */
 .md-alert > :first-child {
   margin-top: 0;

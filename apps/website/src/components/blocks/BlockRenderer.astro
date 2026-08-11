@@ -10,6 +10,7 @@ import PdfLink from './PdfLink.astro';
 import Gallery from './Gallery.astro';
 import Schedule from './Schedule.astro';
 import PostsFeed from './PostsFeed.astro';
+import Columns from './Columns.astro';
 
 type MediaMap = Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
 
@@ -43,3 +44,4 @@ const {
 {block.type === 'embed' && <Embed block={block} />}
 {block.type === 'schedule' && <Schedule block={block} slots={slots} />}
 {block.type === 'posts_feed' && <PostsFeed block={block} posts={posts} />}
+{block.type === 'columns' && <Columns block={block} media={media} />}

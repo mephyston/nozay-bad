@@ -116,6 +116,9 @@ export function mediaIdsInBlocks(blocks: import('@nba/cms/public').BlockPayload[
     if (block.type === 'person_cards') {
       ids.push(...block.people.map((p) => p.mediaId).filter((v): v is number => !!v));
     }
+    if (block.type === 'columns') {
+      ids.push(...block.items.map((c) => c.mediaId).filter((v): v is number => !!v));
+    }
   }
   return ids;
 }
@@ -177,7 +180,8 @@ export async function listPostCategories(
 export interface NavItemView {
   id: number;
   label: string;
-  href: string;
+  /** Nul pour un conteneur : une entrée qui regroupe, sans page à elle. */
+  href: string | null;
   externalUrl: string | null;
   children: NavItemView[];
 }

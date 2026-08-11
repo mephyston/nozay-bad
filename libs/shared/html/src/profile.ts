@@ -88,6 +88,22 @@ function textAttribute(maxLength: number): AttributeSpec {
   };
 }
 
+/**
+ * Alignement d'un bloc, porté par une classe et non par un `style`.
+ *
+ * Une classe se vérifie contre une liste fermée ; un `style` demanderait d'analyser
+ * du CSS pour distinguer `text-align:center` de tout ce qu'on ne veut pas voir
+ * arriver. `document.execCommand('justifyCenter')` produit justement un `style`, d'où
+ * le centrage posé à la main par l'éditeur.
+ *
+ * Le nom est préfixé — jamais `text-center` : la classe voyage dans du HTML stocké,
+ * que Tailwind ne balaie pas, donc l'utilitaire de même nom ne serait pas généré. La
+ * règle est écrite explicitement dans les feuilles du site et de l'éditeur.
+ */
+const blockClassAttribute: AttributeSpec = {
+  sanitize: (raw) => (decodeEntities(raw).trim() === 'nba-center' ? 'nba-center' : null)
+};
+
 /** Valeur contrainte à une liste fermée. */
 function enumAttribute(values: readonly string[]): AttributeSpec {
   return {
@@ -157,9 +173,14 @@ export const CMS_PROFILE: SanitizeProfile = {
       // Hors de la zone visible au chargement, et jamais bloquant pour le rendu.
       derive: () => ({ loading: 'lazy', decoding: 'async' })
     },
-    h2: { attributes: { id: slugAttribute } },
-    h3: { attributes: { id: slugAttribute } },
-    h4: { attributes: { id: slugAttribute } },
+    // `class` n'accepte que l'alignement centré (voir `blockClassAttribute`) : ce n'est
+    // pas une ouverture à la mise en forme libre, mais un attribut à valeur unique.
+    p: { attributes: { class: blockClassAttribute } },
+    h2: { attributes: { id: slugAttribute, class: blockClassAttribute } },
+    h3: { attributes: { id: slugAttribute, class: blockClassAttribute } },
+    h4: { attributes: { id: slugAttribute, class: blockClassAttribute } },
+    figure: { attributes: { class: blockClassAttribute } },
+    blockquote: { attributes: { class: blockClassAttribute } },
     th: { attributes: { colspan: numericAttribute(64), rowspan: numericAttribute(64) } },
     td: { attributes: { colspan: numericAttribute(64), rowspan: numericAttribute(64) } }
   }

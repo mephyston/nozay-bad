@@ -13,12 +13,14 @@
   import ScheduleBlockEditor from './blocks/ScheduleBlockEditor.svelte';
   import PdfLinkBlockEditor from './blocks/PdfLinkBlockEditor.svelte';
   import PostsFeedBlockEditor from './blocks/PostsFeedBlockEditor.svelte';
+  import ColumnsBlockEditor from './blocks/ColumnsBlockEditor.svelte';
 
   let {
     block = $bindable(),
     index,
     total,
     media = [],
+    canUploadMedia = false,
     targets = [],
     categories = [],
     onMove,
@@ -29,7 +31,9 @@
     total: number;
     /** Ressources de la page hôte, transmises aux éditeurs qui en ont besoin. */
     media?: any[];
-    targets?: { path: string; title: string; kind: 'page' | 'post' }[];
+    /** `cms:media:write` : autorise le dépôt depuis les sélecteurs. */
+    canUploadMedia?: boolean;
+    targets?: { path: string; title: string; kind: 'page' | 'post'; status?: 'draft' | 'published' }[];
     categories?: { slug: string; name: string }[];
     onMove: (from: number, to: number) => void;
     onRemove: (index: number) => void;
@@ -52,15 +56,15 @@
 
   <div class="p-3">
     {#if block.type === 'richtext'}
-      <RichtextBlockEditor bind:block {media} />
+      <RichtextBlockEditor bind:block {media} {canUploadMedia} {targets} />
     {:else if block.type === 'hero'}
       <HeroBlockEditor bind:block />
     {:else if block.type === 'cta_grid'}
-      <CtaGridBlockEditor bind:block {media} {targets} />
+      <CtaGridBlockEditor bind:block {media} {canUploadMedia} {targets} />
     {:else if block.type === 'carousel'}
-      <CarouselBlockEditor bind:block {media} {targets} />
+      <CarouselBlockEditor bind:block {media} {canUploadMedia} {targets} />
     {:else if block.type === 'gallery'}
-      <GalleryBlockEditor bind:block {media} />
+      <GalleryBlockEditor bind:block {media} {canUploadMedia} />
     {:else if block.type === 'embed'}
       <EmbedBlockEditor bind:block />
     {:else if block.type === 'person_cards'}
@@ -68,9 +72,11 @@
     {:else if block.type === 'schedule'}
       <ScheduleBlockEditor bind:block />
     {:else if block.type === 'pdf_link'}
-      <PdfLinkBlockEditor bind:block {media} />
+      <PdfLinkBlockEditor bind:block {media} {canUploadMedia} />
     {:else if block.type === 'posts_feed'}
       <PostsFeedBlockEditor bind:block {categories} />
+    {:else if block.type === 'columns'}
+      <ColumnsBlockEditor bind:block {media} {canUploadMedia} {targets} />
     {/if}
   </div>
 </div>

@@ -22,7 +22,8 @@ export const BLOCK_TYPES = [
   'person_cards',
   'schedule',
   'pdf_link',
-  'posts_feed'
+  'posts_feed',
+  'columns'
 ] as const;
 
 export type BlockType = (typeof BLOCK_TYPES)[number];
@@ -251,6 +252,42 @@ export const postsFeedBlockSchema = Type.Object(
   { additionalProperties: false }
 );
 
+/**
+ * Colonne d'un bloc « Colonnes » : une image facultative, puis du texte riche.
+ *
+ * L'image est **au-dessus** du texte et non à côté : c'est ce qui permet à la colonne
+ * de se replier sans réagencement sous 768 px. La forme observée sur l'ancien site —
+ * image à gauche, texte à droite, dans un `td width="45%"` — donne exactement l'inverse,
+ * et c'est ce qui rend ces pages illisibles sur téléphone.
+ */
+const Column = Type.Object(
+  {
+    /** Texte riche, assaini au profil du site public comme n'importe quel bloc de texte. */
+    html: Type.String({ maxLength: 20000 }),
+    mediaId: Type.Optional(Type.Integer({ minimum: 1 }))
+  },
+  { additionalProperties: false }
+);
+
+/**
+ * Contenus disposés côte à côte, repliés en pile sur mobile.
+ *
+ * Le nombre de colonnes n'est pas un champ : c'est `items.length`. Le porter en double
+ * ouvrirait la seule incohérence que ce bloc puisse produire — « trois colonnes » avec
+ * deux contenus — pour aucun gain.
+ *
+ * Deux ou trois, jamais quatre : au-delà, chaque colonne devient trop étroite pour du
+ * texte sur un écran d'ordinateur portable, et la grille de liens fait mieux le travail.
+ */
+export const columnsBlockSchema = Type.Object(
+  {
+    type: Type.Literal('columns'),
+    heading: Type.Optional(Type.String({ maxLength: 160 })),
+    items: Type.Array(Column, { minItems: 2, maxItems: 3 })
+  },
+  { additionalProperties: false }
+);
+
 /** Schéma par type, pour valider une charge utile une fois son discriminant connu. */
 export const BLOCK_SCHEMAS = {
   richtext: richtextBlockSchema,
@@ -262,7 +299,8 @@ export const BLOCK_SCHEMAS = {
   person_cards: personCardsBlockSchema,
   schedule: scheduleBlockSchema,
   pdf_link: pdfLinkBlockSchema,
-  posts_feed: postsFeedBlockSchema
+  posts_feed: postsFeedBlockSchema,
+  columns: columnsBlockSchema
 } as const;
 
 export type RichtextBlock = Static<typeof richtextBlockSchema>;
@@ -275,6 +313,7 @@ export type PersonCardsBlock = Static<typeof personCardsBlockSchema>;
 export type ScheduleBlock = Static<typeof scheduleBlockSchema>;
 export type PdfLinkBlock = Static<typeof pdfLinkBlockSchema>;
 export type PostsFeedBlock = Static<typeof postsFeedBlockSchema>;
+export type ColumnsBlock = Static<typeof columnsBlockSchema>;
 
 export type BlockPayload =
   | RichtextBlock
@@ -286,8 +325,10 @@ export type BlockPayload =
   | PersonCardsBlock
   | ScheduleBlock
   | PdfLinkBlock
-  | PostsFeedBlock;
+  | PostsFeedBlock
+  | ColumnsBlock;
 
 export type CtaLinkValue = Static<typeof CtaLink>;
 export type CarouselSlideValue = Static<typeof CarouselSlide>;
 export type PersonValue = Static<typeof Person>;
+export type ColumnValue = Static<typeof Column>;

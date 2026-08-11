@@ -6,6 +6,7 @@ import {
   uniqueIndex,
   type AnySQLiteColumn
 } from 'drizzle-orm/sqlite-core';
+import { BLOCK_TYPES } from './blocks';
 
 /**
  * Contenu du site public.
@@ -99,13 +100,15 @@ export const cmsPageBlocksTable = sqliteTable(
       .notNull()
       .references(() => cmsPagesTable.id, { onDelete: 'cascade' }),
     position: integer('position').notNull(),
-    /** Discriminant de l'union TypeScript (`shared/blocks.ts`). */
-    type: text('type', {
-      enum: [
-        'richtext', 'hero', 'cta_grid', 'carousel', 'gallery', 'embed', 'person_cards',
-        'schedule', 'pdf_link', 'posts_feed'
-      ]
-    }).notNull(),
+    /**
+     * Discriminant de l'union TypeScript.
+     *
+     * Repris de `BLOCK_TYPES` et non recopié : la liste était écrite deux fois, et
+     * ajouter un type de bloc échouait au `typecheck` sur cette ligne, loin de la
+     * modification. `enum` ne produit ici aucune contrainte SQL — c'est du typage —
+     * donc l'alignement ne demande aucune migration.
+     */
+    type: text('type', { enum: BLOCK_TYPES }).notNull(),
     /** Charge utile JSON, validée **et assainie** par l'API avant écriture. */
     payload: text('payload').notNull()
   },

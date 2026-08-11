@@ -40,7 +40,8 @@
     categories = [],
     redirects = [],
     canWrite = false,
-    canDelete = false
+    canDelete = false,
+    canUploadMedia = false
   } = $props<{
     page: PageRow;
     blocks: BlockPayload[];
@@ -48,12 +49,14 @@
     previewUrl?: string;
     /** Médiathèque, cibles de liens et catégories : ressources communes aux éditeurs de blocs. */
     media?: any[];
-    targets?: { path: string; title: string; kind: 'page' | 'post' }[];
+    targets?: { path: string; title: string; kind: 'page' | 'post'; status?: 'draft' | 'published' }[];
     /** Anciennes adresses menant ici, pour l'encart des redirections. */
     redirects?: { id: number; fromPath: string; statusCode: number; hitCount: number; note: string | null }[];
     categories?: { slug: string; name: string }[];
     canWrite?: boolean;
     canDelete?: boolean;
+    /** `cms:media:write` : autorise le dépôt depuis les sélecteurs des blocs. */
+    canUploadMedia?: boolean;
   }>();
 
   // Copie locale : l'éditeur travaille sur son propre état et n'envoie qu'à
@@ -261,6 +264,7 @@
           {index}
           total={blocks.length}
           {media}
+          {canUploadMedia}
           {targets}
           {categories}
           onMove={move}

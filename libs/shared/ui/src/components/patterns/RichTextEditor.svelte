@@ -11,7 +11,9 @@
     disabled = false,
     class: className = '',
     onPickFile,
-    onPickImage
+    onPickImage,
+    mediaOrigin = '',
+    linkSuggestions = []
   }: {
     /** HTML restreint. L'assainissement d'autorité reste côté serveur. */
     value?: string;
@@ -35,7 +37,41 @@
      * `/media/`, et retirerait purement et simplement une image distante.
      */
     onPickImage?: () => Promise<{ src: string; alt: string; width?: number | null; height?: number | null } | null>;
+    /**
+     * Origine à préfixer aux images **le temps de l'affichage**.
+     *
+     * Les octets d'un média sont servis par le site public, et par lui seul. Une
+     * administration sur un autre domaine ne répond donc rien sur `/media/…`, et une
+     * image insérée restait invisible dans la zone d'édition — alors même qu'elle
+     * s'affichait correctement une fois la page publiée.
+     *
+     * Le chemin relatif reste seul enregistré : c'est la forme qu'exige l'assainisseur,
+     * et y graver un domaine coupleraient le contenu à l'environnement qui l'a produit.
+     * D'où la règle tenue par les deux fonctions ci-dessous — **le DOM porte l'adresse
+     * affichable, `value` porte le chemin enregistré** — et non un aller simple qui
+     * laisserait l'origine s'écrire en base à la première frappe.
+     */
+    mediaOrigin?: string;
+    /**
+     * Adresses proposées à l'insertion d'un lien.
+     *
+     * Volontairement générique — `href`, `label`, et une mention libre — plutôt qu'une
+     * liste de pages : ce composant appartient à `@nba/ui` et n'a pas à savoir ce
+     * qu'est une page, un article ou un brouillon. L'écran appelant traduit son
+     * domaine dans ce vocabulaire, et reste seul juge de ce qu'il propose.
+     *
+     * Vide, l'insertion de lien retombe sur la seule saisie d'adresse.
+     */
+    linkSuggestions?: { href: string; label: string; hint?: string }[];
   } = $props();
+
+  /** Chemin enregistré → adresse affichable. */
+  const toDisplay = (html: string): string =>
+    mediaOrigin ? html.replaceAll('src="/media/', `src="${mediaOrigin}/media/`) : html;
+
+  /** Adresse affichable → chemin enregistré. */
+  const toStored = (html: string): string =>
+    mediaOrigin ? html.replaceAll(`src="${mediaOrigin}/media/`, 'src="/media/') : html;
 
   let editor = $state<HTMLDivElement | null>(null);
   let activeCommands = $state<string[]>([]);
@@ -53,6 +89,17 @@
    * `h2`. La hiérarchie utile à l'auteur commence donc à `h2`.
    */
   const HEADINGS: Record<string, string> = { heading2: 'h2', heading3: 'h3' };
+
+  /**
+   * Centrage : une classe posée sur le bloc, jamais un `style`.
+   *
+   * `document.execCommand('justifyCenter')` écrit `style="text-align:center"`, que
+   * l'assainisseur refuse — analyser du CSS pour n'en garder qu'une déclaration
+   * coûterait plus cher que le bénéfice. Le profil du site accepte en revanche cette
+   * classe unique, et les feuilles de l'éditeur comme du site la rendent.
+   */
+  const CENTER_CLASS = 'nba-center';
+  const CENTERABLE = new Set(['p', 'h2', 'h3', 'h4', 'blockquote', 'figure']);
 
   /**
    * Zone d'édition pilotée par `document.execCommand`.
@@ -102,7 +149,8 @@
     }
     editor?.focus();
     restoreSelection();
-    document.execCommand('insertHTML', false, toHtml(picked));
+    // Inséré sous sa forme affichable : `syncFromEditor` le ramènera au chemin relatif.
+    document.execCommand('insertHTML', false, toDisplay(toHtml(picked)));
     syncFromEditor();
     savedRange = null;
   }
@@ -126,7 +174,15 @@
     if (command === 'createLink') {
       saveSelection();
       linkUrl = '';
+      linkSearch = '';
+      // Le site d'abord quand on a de quoi proposer : c'est la cible la plus fréquente,
+      // et celle qu'on saisit le plus mal à la main.
+      linkMode = linkSuggestions.length > 0 ? 'internal' : 'external';
       linkOpen = true;
+      return;
+    }
+    if (command === 'alignCenter') {
+      toggleCenter();
       return;
     }
     if (HEADINGS[command]) {
@@ -134,6 +190,36 @@
       return;
     }
     exec(command);
+  }
+
+  /** Bloc portant le curseur, borné à la zone d'édition. */
+  function currentBlock(): HTMLElement | null {
+    let node: Node | null = window.getSelection()?.anchorNode ?? null;
+    while (node && node !== editor) {
+      if (node instanceof HTMLElement && CENTERABLE.has(node.tagName.toLowerCase())) return node;
+      node = node.parentNode;
+    }
+    return null;
+  }
+
+  function toggleCenter(): void {
+    if (disabled) return;
+    editor?.focus();
+    if (savedRange) restoreSelection();
+
+    // Une première ligne tapée sans passer par Entrée reste un simple nœud de texte,
+    // sans bloc à porter la classe : on lui en donne un plutôt que de ne rien faire.
+    if (!currentBlock()) document.execCommand('formatBlock', false, '<p>');
+
+    const block = currentBlock();
+    if (!block) return;
+
+    block.classList.toggle(CENTER_CLASS);
+    // `class=""` traverserait l'assainisseur pour finir en attribut vide dans la page.
+    if (block.className.trim() === '') block.removeAttribute('class');
+
+    syncFromEditor();
+    refreshActiveCommands();
   }
 
   function saveSelection(): void {
@@ -148,13 +234,32 @@
     selection?.addRange(savedRange);
   }
 
-  function applyLink(): void {
-    const url = linkUrl.trim();
+  /**
+   * Pose le lien sur la sélection — ou l'écrit en entier s'il n'y en a pas.
+   *
+   * `createLink` enveloppe une sélection : sans elle, il ne fait rien, et le clic
+   * restait sans effet. Quand on choisit une page dans la liste, son titre fournit
+   * précisément le texte qui manquait.
+   */
+  function applyLink(url: string, label?: string): void {
+    const href = url.trim();
     // Contrôle de confort : le serveur reste l'autorité et retirera tout lien non conforme.
-    const acceptable = /^(https?:\/\/|mailto:|\/)/i.test(url);
-    if (!acceptable) return;
+    if (!/^(https?:\/\/|mailto:|\/)/i.test(href)) return;
     linkOpen = false;
-    exec('createLink', url);
+
+    const collapsed = savedRange?.collapsed ?? true;
+    if (collapsed && label) {
+      editor?.focus();
+      restoreSelection();
+      document.execCommand(
+        'insertHTML',
+        false,
+        `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>&nbsp;`
+      );
+      syncFromEditor();
+    } else {
+      exec('createLink', href);
+    }
     savedRange = null;
   }
 
@@ -163,8 +268,19 @@
     savedRange = null;
   }
 
+  let linkMode = $state<'internal' | 'external'>('external');
+  let linkSearch = $state('');
+
+  const suggestions = $derived(
+    linkSuggestions.filter((item) => {
+      const term = linkSearch.trim().toLowerCase();
+      if (!term) return true;
+      return item.label.toLowerCase().includes(term) || item.href.toLowerCase().includes(term);
+    })
+  );
+
   function syncFromEditor(): void {
-    if (editor) value = editor.innerHTML;
+    if (editor) value = toStored(editor.innerHTML);
   }
 
   /**
@@ -203,6 +319,7 @@
     for (const [command, heading] of Object.entries(HEADINGS)) {
       if (tag === heading) active.push(command);
     }
+    if (currentBlock()?.classList.contains(CENTER_CLASS)) active.push('alignCenter');
     activeCommands = active;
   }
 
@@ -241,9 +358,11 @@
   });
 
   // Synchronisation entrante : réinitialisation du formulaire, ou ouverture en édition.
-  // La garde d'égalité évite de replacer le curseur au début à chaque frappe.
+  // La garde d'égalité évite de replacer le curseur au début à chaque frappe — elle
+  // porte donc sur la forme **affichable**, la seule que le DOM contienne.
   $effect(() => {
-    if (editor && value !== editor.innerHTML) editor.innerHTML = value ?? '';
+    const html = toDisplay(value ?? '');
+    if (editor && html !== editor.innerHTML) editor.innerHTML = html;
   });
 
   const isEmpty = $derived(!value || value === '<br>' || value === '<p></p>');
@@ -253,22 +372,87 @@
   <RichTextToolbar {activeCommands} {disabled} onCommand={handleCommand} canInsertFile={Boolean(onPickFile)} canInsertImage={Boolean(onPickImage)} />
 
   {#if linkOpen}
-    <div class="flex items-center gap-2 border-b border-input px-2 py-2">
-      <Input
-        bind:value={linkUrl}
-        placeholder="https://exemple.fr ou /boutique"
-        aria-label="Adresse du lien"
-        class="h-9"
-        onkeydown={(e: KeyboardEvent) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            applyLink();
-          }
-          if (e.key === 'Escape') cancelLink();
-        }}
-      />
-      <Button type="button" size="sm" onclick={applyLink}>Ajouter</Button>
-      <Button type="button" size="sm" variant="ghost" onclick={cancelLink}>Annuler</Button>
+    <div class="space-y-2 border-b border-input px-2 py-2">
+      {#if linkSuggestions.length > 0}
+        <!-- Deux natures de lien, et non deux champs : on ne saisit pas une adresse
+             interne à la main quand la liste des pages est là. -->
+        <div class="flex gap-1" role="group" aria-label="Nature du lien">
+          <Button
+            type="button"
+            size="sm"
+            variant={linkMode === 'internal' ? 'secondary' : 'ghost'}
+            aria-pressed={linkMode === 'internal'}
+            onclick={() => (linkMode = 'internal')}
+          >
+            Une page du site
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={linkMode === 'external' ? 'secondary' : 'ghost'}
+            aria-pressed={linkMode === 'external'}
+            onclick={() => (linkMode = 'external')}
+          >
+            Une adresse extérieure
+          </Button>
+        </div>
+      {/if}
+
+      {#if linkMode === 'internal' && linkSuggestions.length > 0}
+        <Input
+          bind:value={linkSearch}
+          placeholder="Rechercher une page…"
+          aria-label="Rechercher une page"
+          class="h-9"
+          onkeydown={(e: KeyboardEvent) => {
+            if (e.key === 'Escape') cancelLink();
+          }}
+        />
+        {#if suggestions.length === 0}
+          <p class="text-muted-foreground px-1 py-2 text-sm">Aucune page ne correspond.</p>
+        {:else}
+          <ul class="max-h-56 overflow-y-auto">
+            {#each suggestions as item (item.href)}
+              <li>
+                <button
+                  type="button"
+                  class="hover:bg-muted flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm"
+                  onclick={() => applyLink(item.href, item.label)}
+                >
+                  <span class="min-w-0 flex-1 truncate">{item.label}</span>
+                  {#if item.hint}
+                    <span class="bg-muted text-muted-foreground shrink-0 rounded-full px-2 py-0.5 text-xs">
+                      {item.hint}
+                    </span>
+                  {/if}
+                  <span class="text-muted-foreground hidden shrink-0 text-xs sm:inline">{item.href}</span>
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+        <div class="flex justify-end">
+          <Button type="button" size="sm" variant="ghost" onclick={cancelLink}>Annuler</Button>
+        </div>
+      {:else}
+        <div class="flex items-center gap-2">
+          <Input
+            bind:value={linkUrl}
+            placeholder="https://exemple.fr ou /boutique"
+            aria-label="Adresse du lien"
+            class="h-9"
+            onkeydown={(e: KeyboardEvent) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                applyLink(linkUrl);
+              }
+              if (e.key === 'Escape') cancelLink();
+            }}
+          />
+          <Button type="button" size="sm" onclick={() => applyLink(linkUrl)}>Ajouter</Button>
+          <Button type="button" size="sm" variant="ghost" onclick={cancelLink}>Annuler</Button>
+        </div>
+      {/if}
     </div>
   {/if}
 
@@ -336,5 +520,13 @@
   .nba-rich-text :global(a) {
     color: var(--primary);
     text-decoration: underline;
+  }
+  /*
+    Le centrage se voit dans la zone d'édition, comme les titres. Règle écrite à la
+    main : la classe vit dans du HTML stocké, que Tailwind ne balaie pas — un
+    utilitaire de même nom ne serait tout simplement pas généré.
+  */
+  .nba-rich-text :global(.nba-center) {
+    text-align: center;
   }
 </style>

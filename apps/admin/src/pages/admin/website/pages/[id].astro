@@ -15,14 +15,33 @@ if (!Number.isSafeInteger(pageId) || pageId < 1) return Astro.redirect('/admin/w
 
 const apiService = createAdminApiClient(Astro.locals);
 
+const canUploadMedia = can(Astro.locals, 'cms:media:write');
+
 const ACTIONS = {
   updateMeta: 'cms:pages:write',
   saveBlocks: 'cms:pages:write',
   publish: 'cms:pages:write',
-  restore: 'cms:pages:write'
+  restore: 'cms:pages:write',
+  upload: 'cms:media:write'
 } as const;
 
 if (Astro.request.method === 'POST') {
+  // Dépôt d'un média depuis un sélecteur de bloc, sans quitter l'éditeur — il arrive en
+  // multipart, là où toutes les autres actions de cet écran parlent JSON. Composer une
+  // page et déposer un fichier restent deux droits distincts.
+  const contentType = Astro.request.headers.get('content-type') ?? '';
+  if (contentType.includes('multipart/form-data')) {
+    const denied = guardAction(Astro.locals, 'upload', ACTIONS);
+    if (denied) return denied;
+
+    const form = await Astro.request.formData();
+    const apiRes = await apiService.fetch('http://localhost/cms/media', { method: 'POST', body: form });
+    if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+    return new Response(JSON.stringify(await apiRes.json()), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
   const data = (await Astro.request.json()) as any;
   const denied = guardAction(Astro.locals, data.action, ACTIONS);
   if (denied) return denied;
@@ -74,7 +93,7 @@ let page: any = null;
 let blocks: any[] = [];
 let revisions: any[] = [];
 let media: any[] = [];
-let targets: { path: string; title: string; kind: 'page' | 'post' }[] = [];
+let targets: { path: string; title: string; kind: 'page' | 'post'; status?: 'draft' | 'published' }[] = [];
 let categories: any[] = [];
 let redirects: any[] = [];
 let errorMsg = '';
@@ -120,11 +139,11 @@ try {
 
   if (pagesRes.ok) {
     const rows = ((await pagesRes.json()) as any).data ?? [];
-    targets.push(...rows.map((row: any) => ({ path: row.path, title: row.title, kind: 'page' as const })));
+    targets.push(...rows.map((row: any) => ({ path: row.path, title: row.title, kind: 'page' as const, status: row.status })));
   }
   if (postsRes.ok) {
     const rows = ((await postsRes.json()) as any).data?.posts ?? [];
-    targets.push(...rows.map((row: any) => ({ path: row.path, title: row.title, kind: 'post' as const })));
+    targets.push(...rows.map((row: any) => ({ path: row.path, title: row.title, kind: 'post' as const, status: row.status })));
   }
 } catch {
   errorMsg = 'Impossible de charger cette page.';
@@ -173,6 +192,7 @@ if (page && websiteBase) {
         redirects={redirects}
           canWrite={canWrite}
           canDelete={canDelete}
+          canUploadMedia={canUploadMedia}
         />
       )}
     </div>

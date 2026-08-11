@@ -17,6 +17,14 @@ const current = Astro.url.pathname;
 
 const isExternal = (item: NavItemView) => item.externalUrl !== null;
 
+/**
+ * Entrée qui ne fait que regrouper, sans page à elle.
+ *
+ * Le menu hérité de WordPress est bâti ainsi : « Le club » n'est pas une page, c'est
+ * un chapeau au-dessus de « Présentation », « Notre équipe » et « Partenaires ».
+ */
+const isContainer = (item: NavItemView) => item.href === null;
+
 /** Une entrée est active si l'on est dessus, ou sur l'une de ses sous-entrées. */
 function isActive(item: NavItemView): boolean {
   if (item.href === current) return true;
@@ -61,24 +69,51 @@ function isActive(item: NavItemView): boolean {
       <ul class="flex flex-wrap items-center gap-x-1 text-sm">
         {nav.map((item) => (
           <li class="group relative">
-            <a
-              href={item.href}
-              target={isExternal(item) ? '_blank' : undefined}
-              rel={isExternal(item) ? 'noopener noreferrer' : undefined}
-              aria-current={item.href === current ? 'page' : undefined}
-              aria-haspopup={item.children.length > 0 ? 'true' : undefined}
-              class:list={[
-                'hover:bg-muted inline-flex items-center gap-1 rounded-md px-3 py-2 transition-colors',
-                isActive(item) && 'text-primary font-medium'
-              ]}
-            >
-              {item.label}
-              {item.children.length > 0 && (
-                <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              )}
-            </a>
+            {/*
+              Un conteneur est un `<button>`, jamais un `<span>`.
+
+              Le sous-menu est masqué par `invisible`, donc `visibility: hidden`, donc
+              ses liens ne sont **pas focusables** : sans un élément focusable pour
+              déclencher `group-focus-within`, tout le sous-menu deviendrait
+              inatteignable au clavier. Le bouton conserve l'ouverture au survol comme
+              au focus, sans une ligne de JavaScript.
+            */}
+            {isContainer(item) ? (
+              <button
+                type="button"
+                aria-haspopup={item.children.length > 0 ? 'true' : undefined}
+                class:list={[
+                  'hover:bg-muted inline-flex items-center gap-1 rounded-md px-3 py-2 transition-colors',
+                  isActive(item) && 'text-primary font-medium'
+                ]}
+              >
+                {item.label}
+                {item.children.length > 0 && (
+                  <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                )}
+              </button>
+            ) : (
+              <a
+                href={item.href}
+                target={isExternal(item) ? '_blank' : undefined}
+                rel={isExternal(item) ? 'noopener noreferrer' : undefined}
+                aria-current={item.href === current ? 'page' : undefined}
+                aria-haspopup={item.children.length > 0 ? 'true' : undefined}
+                class:list={[
+                  'hover:bg-muted inline-flex items-center gap-1 rounded-md px-3 py-2 transition-colors',
+                  isActive(item) && 'text-primary font-medium'
+                ]}
+              >
+                {item.label}
+                {item.children.length > 0 && (
+                  <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                )}
+              </a>
+            )}
 
             {item.children.length > 0 && (
               <ul class="border-border bg-background invisible absolute left-0 top-full z-50 min-w-56 rounded-md border p-1 opacity-0 shadow-lg transition-[opacity,visibility] group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
@@ -130,15 +165,27 @@ function isActive(item: NavItemView): boolean {
     <ul class="mx-auto max-w-5xl px-4 py-2 text-sm">
       {nav.map((item) => (
         <li class="py-0.5">
-          <a
-            href={item.href}
-            target={isExternal(item) ? '_blank' : undefined}
-            rel={isExternal(item) ? 'noopener noreferrer' : undefined}
-            aria-current={item.href === current ? 'page' : undefined}
-            class:list={['block rounded-md px-2 py-2', isActive(item) && 'text-primary font-medium']}
-          >
-            {item.label}
-          </a>
+          {/*
+            Sur mobile, un conteneur devient un simple intitulé au-dessus de ses
+            sous-entrées — jamais une cible tactile qui ne mènerait nulle part. Rien ne
+            s'y perd : ce menu rend déjà les sous-entrées dépliées, elles sont donc
+            sous les yeux sans qu'aucun repli n'ait à être ouvert.
+          */}
+          {isContainer(item) ? (
+            <p class="text-muted-foreground px-2 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide">
+              {item.label}
+            </p>
+          ) : (
+            <a
+              href={item.href}
+              target={isExternal(item) ? '_blank' : undefined}
+              rel={isExternal(item) ? 'noopener noreferrer' : undefined}
+              aria-current={item.href === current ? 'page' : undefined}
+              class:list={['block rounded-md px-2 py-2', isActive(item) && 'text-primary font-medium']}
+            >
+              {item.label}
+            </a>
+          )}
           {item.children.length > 0 && (
             <ul class="border-border ml-3 border-l pl-2">
               {item.children.map((child) => (

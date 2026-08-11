@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus, Edit, Trash2, Eye, EyeOff, ExternalLink, ImagePlus, X } from '@lucide/svelte';
-  import { mediaPath, mediaUrl } from '../../../media/media-url';
+  import { mediaPath, mediaUrl, websiteOrigin } from '../../../media/media-url';
   import MediaPicker, { type PickableMedia } from '../../../media/list-media/ui/MediaPicker.svelte';
   import {
     Button,
@@ -40,7 +40,9 @@
     media = [],
     categories = [],
     canWrite = false,
-    canDelete = false
+    canDelete = false,
+    canUploadMedia = false,
+    targets = []
   } = $props<{
     posts: PostRow[];
     /** Médiathèque, déjà chargée par la page : sert la couverture et l'insertion de fichiers. */
@@ -48,7 +50,27 @@
     categories?: { id: number; name: string }[];
     canWrite?: boolean;
     canDelete?: boolean;
+    /** `cms:media:write` : autorise le dépôt depuis les sélecteurs, sans passer par la médiathèque. */
+    canUploadMedia?: boolean;
+    /** Pages et actualités du site, proposées à l'insertion d'un lien interne. */
+    targets?: { path: string; title: string; kind: 'page' | 'post'; status?: 'draft' | 'published' }[];
   }>();
+
+  /**
+   * Cibles traduites dans le vocabulaire de `RichTextEditor`, qui ignore tout du CMS.
+   *
+   * Le statut est affiché sans filtrer : lier une page en brouillon est parfois
+   * délibéré — on prépare un dossier, on publie les deux ensemble. Le masquer
+   * laisserait l'auteur croire que la page n'existe pas ; l'afficher le prévient que
+   * le lien tombera en 404 tant que la publication n'a pas suivi.
+   */
+  const linkSuggestions = $derived(
+    targets.map((target: { path: string; title: string; status?: string }) => ({
+      href: target.path,
+      label: target.title,
+      hint: target.status === 'draft' ? 'Brouillon' : 'Publié'
+    }))
+  );
 
   let editingId = $state<number | null>(null);
   let title = $state('');
@@ -502,6 +524,8 @@
       id="post-body"
       bind:value={bodyHtml}
       disabled={busy}
+      mediaOrigin={websiteOrigin}
+      {linkSuggestions}
       onPickFile={pickFile}
       onPickImage={pickInlineImage}
     />
@@ -513,6 +537,7 @@
   {media}
   kind="image"
   title="Image de couverture"
+  canUpload={canUploadMedia}
   onSelect={(item) => (coverMediaId = item.id)}
 />
 
@@ -521,6 +546,7 @@
   {media}
   kind="document"
   title="Fichier à insérer"
+  canUpload={canUploadMedia}
   onSelect={onFileChosen}
 />
 
@@ -529,5 +555,6 @@
   {media}
   kind="image"
   title="Image à insérer dans le texte"
+  canUpload={canUploadMedia}
   onSelect={onInlineImageChosen}
 />
