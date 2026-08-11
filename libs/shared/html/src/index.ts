@@ -8,6 +8,7 @@
 
 export { sanitizeRichText } from './sanitize';
 export { richTextToPlain, isRichTextEmpty } from './plain-text';
+export { obfuscateEmails } from './obfuscate-emails';
 export { ANNOUNCEMENT_PROFILE, CMS_PROFILE } from './profile';
 export type { SanitizeProfile, TagSpec, AttributeSpec } from './profile';
 export { decodeEntities, escapeText, escapeAttribute, isSafeHref, isSameOriginPath } from './entities';

@@ -1,6 +1,7 @@
 ---
 import { normalisePath, type BlockPayload } from '@nba/cms/public';
 import { verifyPreviewToken } from '@nba/preview';
+import { obfuscateEmails } from '@nba/html';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BlockRenderer from '../components/blocks/BlockRenderer.astro';
 import {
@@ -202,7 +203,7 @@ if (page) {
       </p>
       {/* Le corps a été assaini à l'écriture avec le profil du site public : c'est
           l'API qui fait autorité, pas ce composant. */}
-      <div class="prose prose-neutral dark:prose-invert mt-6 max-w-none" set:html={post.bodyHtml} />
+      <div class="prose prose-neutral dark:prose-invert mt-6 max-w-none" set:html={obfuscateEmails(post.bodyHtml)} />
       <p class="mt-10">
         <a href="/actualites/" class="text-primary hover:underline">← Toutes les actualités</a>
       </p>

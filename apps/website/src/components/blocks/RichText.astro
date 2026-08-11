@@ -1,7 +1,12 @@
 ---
 import type { RichtextBlock } from '@nba/cms/public';
+import { obfuscateEmails } from '@nba/html';
 interface Props { block: RichtextBlock }
 const { block } = Astro.props;
+
+// Les adresses e-mail sont soustraites aux moissonneurs ici, au rendu : le contenu
+// stocké reste lisible, et l'auteur retrouve dans l'éditeur ce qu'il a écrit.
+const html = obfuscateEmails(block.html);
 ---
 {/*
   Seul endroit du site autorisé à poser du HTML brut. Le contenu a été réduit à
@@ -18,5 +23,5 @@ const { block } = Astro.props;
   65 caractères et le texte serait plus étroit que tout ce qui l'entoure.
 */}
 <div class="mx-auto max-w-5xl px-4 py-6">
-  <div class="prose prose-neutral dark:prose-invert max-w-none" set:html={block.html} />
+  <div class="prose prose-neutral dark:prose-invert max-w-none" set:html={html} />
 </div>

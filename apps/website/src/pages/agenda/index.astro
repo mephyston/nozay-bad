@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { obfuscateEmails } from '@nba/html';
 import { resolveEnv } from '../../lib/request-context';
 import { listClubEvents } from '../../lib/cms';
 import { absoluteUrl } from '../../lib/seo';
@@ -74,7 +75,7 @@ const jsonLd: unknown[] = [
             </p>
             {event.venueLabel && <p class="text-muted-foreground mt-1 text-sm">{event.venueLabel}</p>}
             {event.descriptionHtml && (
-              <div class="prose prose-neutral dark:prose-invert mt-2 max-w-none text-sm" set:html={event.descriptionHtml} />
+              <div class="prose prose-neutral dark:prose-invert mt-2 max-w-none text-sm" set:html={obfuscateEmails(event.descriptionHtml)} />
             )}
             {event.externalUrl && (
               <p class="mt-2">

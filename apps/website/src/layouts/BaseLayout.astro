@@ -90,5 +90,32 @@ const image = ogImage ?? new URL('/og-default.jpg', Astro.site ?? canonical).toS
       <slot />
     </main>
     <SiteFooter />
+
+    {/*
+      Restitution des adresses e-mail dissimulées au rendu (voir `obfuscateEmails`).
+
+      En fin de corps et non dans l'en-tête : le script ne fait que retoucher du texte
+      déjà affiché, et n'a aucune raison de retarder le premier rendu. Avant son
+      exécution, la page montre « contact [arobase] nozaybad.fr » — lisible, et sans
+      rien à moissonner pour un robot qui n'exécute pas de JavaScript.
+    */}
+    <script is:inline>
+      (() => {
+        for (const node of document.querySelectorAll('[data-eml]')) {
+          let address;
+          try {
+            address = atob(node.dataset.eml);
+          } catch {
+            // Attribut abîmé : on laisse la forme lisible en place plutôt que d'écrire
+            // une adresse fausse, sur laquelle personne ne pourrait écrire.
+            continue;
+          }
+          if (node.tagName === 'A') node.setAttribute('href', 'mailto:' + address);
+          // Le libellé n'est remplacé que s'il portait lui-même l'adresse : « Nous
+          // écrire » a été choisi par la rédaction, et doit le rester.
+          if (node.textContent.includes('[arobase]')) node.textContent = address;
+        }
+      })();
+    </script>
   </body>
 </html>
