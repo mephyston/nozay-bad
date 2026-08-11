@@ -57,7 +57,30 @@ function main() {
   const items = readWxr(WXR);
   const media: MediaEntry[] = JSON.parse(readFileSync('.data/wp/media-manifest.json', 'utf-8'));
   const bySource = new Map(media.map((m) => [m.source, m]));
+  // L'identifiant d'un média est son rang dans le manifeste : même convention que la
+  // boucle d'insertion plus bas, dont il ne faut pas s'écarter.
+  const mediaIdBySource = new Map(media.map((m, index) => [m.source, index + 1]));
+  const attachments = new Map(items.filter((i) => i.type === 'attachment').map((a) => [a.id, a]));
   const plan = decisions();
+
+  /**
+   * Image à la une, résolue vers l'identifiant de média de la reprise.
+   *
+   * `_thumbnail_id` désigne un attachement, dont l'URL donne le chemin source qui sert
+   * de clé au manifeste. Une vignette (`photo-800x600.jpg`) ramène à son original :
+   * c'est lui qui a été transcodé, les tailles étant reproduites en variantes.
+   */
+  function coverIdOf(item: { meta?: Record<string, string> }): number | null {
+    const thumbnailId = Number(item.meta?._thumbnail_id);
+    if (!Number.isSafeInteger(thumbnailId) || thumbnailId <= 0) return null;
+
+    const url: string = attachments.get(thumbnailId)?.attachmentUrl ?? '';
+    const relative = url.match(/wp-content\/uploads\/(.+)$/)?.[1];
+    if (!relative) return null;
+
+    const source = decodeURIComponent(relative).replace(/-\d+x\d+(\.[a-z]+)$/i, '$1');
+    return mediaIdBySource.get(source) ?? null;
+  }
 
   const sql: string[] = [
     '-- Reprise du contenu WordPress. Généré par scripts/wp-import/emit-sql.ts.',
@@ -110,6 +133,9 @@ function main() {
 
   // --- Articles -------------------------------------------------------------
   let postId = 0;
+  let covered = 0;
+  const coverUpdates: string[] = [];
+
   for (const item of items) {
     if (item.type !== 'post' || item.status !== 'publish') continue;
     postId++;
@@ -117,10 +143,11 @@ function main() {
     const body = bodyOf(item.body, path);
     // Le chapô alimente la liste et sert de meta description par défaut.
     const excerpt = item.excerpt?.trim() ? item.excerpt.trim().slice(0, 500) : null;
+    const coverId = coverIdOf(item);
 
     sql.push(
-      `INSERT OR IGNORE INTO cms_posts (id, slug, path, title, excerpt, body_html, status, author_name, author_email, published_at, legacy_wp_id, created_at, updated_at) VALUES ` +
-      `(${postId}, ${q(item.slug)}, ${q(path)}, ${q(item.title)}, ${q(excerpt)}, ${q(body)}, 'published', ` +
+      `INSERT OR IGNORE INTO cms_posts (id, slug, path, title, excerpt, body_html, cover_media_id, status, author_name, author_email, published_at, legacy_wp_id, created_at, updated_at) VALUES ` +
+      `(${postId}, ${q(item.slug)}, ${q(path)}, ${q(item.title)}, ${q(excerpt)}, ${q(body)}, ${coverId ?? 'NULL'}, 'published', ` +
       `${q('Nozay Badminton Association')}, ${q(AUTHOR)}, ${ts(item.publishedAt)}, ${item.id}, ${NOW}, ${NOW});`
     );
     for (const c of item.categories) {
@@ -128,6 +155,27 @@ function main() {
       if (cid) sql.push(`INSERT OR IGNORE INTO cms_post_category_links (post_id, category_id) VALUES (${postId}, ${cid});`);
     }
     if (!body.trim()) notes.push(`${path} : article au corps vide après reprise`);
+
+    if (coverId === null) notes.push(`${path} : article sans image à la une — la carte s'affichera sans illustration`);
+    else {
+      covered++;
+      coverUpdates.push(
+        `UPDATE cms_posts SET cover_media_id = ${coverId} WHERE legacy_wp_id = ${item.id} AND cover_media_id IS NULL;`
+      );
+    }
+  }
+
+  // --- Couvertures, reposées ------------------------------------------------
+  // `INSERT OR IGNORE` laisse intacte une ligne déjà présente : sur une base où la
+  // reprise a déjà tourné, la couverture ajoutée ci-dessus n'arriverait jamais. On la
+  // repose donc en `UPDATE`, appariée par `legacy_wp_id` — l'identifiant WordPress, seul
+  // repère stable si les `id` ont bougé depuis.
+  //
+  // La garde `cover_media_id IS NULL` est ce qui rend l'opération rejouable sans dégât :
+  // une couverture choisie depuis l'administration n'est pas réécrasée par celle de
+  // WordPress à chaque passage.
+  if (coverUpdates.length) {
+    sql.push('', '-- Images à la une : rattrapage pour une base déjà garnie.', ...coverUpdates);
   }
 
   // --- Pages ----------------------------------------------------------------
@@ -181,7 +229,7 @@ function main() {
   console.log(`SQL écrit → ${OUT} (${sql.length} instructions)`);
   console.log(`  médias        ${media.length}`);
   console.log(`  catégories    ${categoryIds.size}`);
-  console.log(`  articles      ${postId}`);
+  console.log(`  articles      ${postId} (dont ${covered} avec une image à la une)`);
   console.log(`  pages         ${pageId}`);
   console.log(`  redirections  ${redirects}`);
   console.log(`\n${notes.length} point(s) à reprendre → .data/wp/import-notes.txt`);
