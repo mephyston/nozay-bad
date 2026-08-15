@@ -40,8 +40,18 @@ export default defineConfig({
       N'a d'effet qu'en local : rien de tout ceci n'existe une fois déployé.
     */
     persistState: { path: '../api/.wrangler/state' },
-    // Les variantes d'images sont produites une fois à l'import : aucun service de
-    // transformation à l'exécution, ce qui garde le site sur l'offre gratuite.
+    /*
+      Aucune transformation, ni au build ni à l'exécution.
+
+      Le site ne fait passer aucune image par `<Image />` : les déclinaisons sont déjà
+      produites en amont — au dépôt par l'API (binding Images), à la reprise par
+      `scripts/wp-import` — et `Picture.astro` se contente de les servir depuis R2 sous
+      cache immuable. Il n'y a donc rien à transformer ici, et `'passthrough'` le dit.
+
+      À ne pas confondre avec `'compile'`, qui pré-optimiserait au build les images
+      importées depuis `src/`. Le jour où le site en importerait, c'est cette
+      valeur-là qu'il faudrait, pas celle-ci.
+    */
     imageService: 'passthrough'
   }),
   // Ni PWA ni service worker : site public, indexable, sans session. Un worker de

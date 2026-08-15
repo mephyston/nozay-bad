@@ -4,6 +4,7 @@ import { verifyPreviewToken } from '@nba/preview';
 import { obfuscateEmails } from '@nba/html';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BlockRenderer from '../components/blocks/BlockRenderer.astro';
+import Picture from '../components/Picture.astro';
 import {
   resolvePublicRoute,
   loadMedia,
@@ -64,6 +65,7 @@ if (isPreview) {
 
 const post = resolved.kind === 'post' ? resolved.post : null;
 const postCover = resolved.kind === 'post' ? resolved.cover : null;
+const postCoverVariants = resolved.kind === 'post' ? resolved.coverVariants : [];
 const postCategories = resolved.kind === 'post' ? resolved.categories : [];
 const page = resolved.kind === 'page' ? resolved.page : null;
 const blocks = resolved.kind === 'page' ? resolved.blocks : [];
@@ -215,13 +217,21 @@ if (page) {
     jsonLd={postJsonLd}
   >
     <article class="mx-auto max-w-3xl px-4 py-10">
+      {/*
+        La couverture est l'élément LCP de l'article : pleine largeur, au-dessus de la
+        ligne de flottaison, chargée en priorité. C'est donc l'image du site qui gagne
+        le plus à être déclinée — elle servait jusqu'ici son original, quelle que soit
+        la taille de l'écran.
+
+        `sizes` : l'article tient dans `max-w-3xl`, la case se fige donc à 736 px une
+        fois la fenêtre assez large, et vaut la largeur utile en deçà.
+      */}
       {postCover && (
-        <img
-          src={`/media/${postCover.key.replace(/^media\//, '')}`}
-          alt={postCover.alt}
-          width={postCover.width ?? undefined}
-          height={postCover.height ?? undefined}
-          fetchpriority="high"
+        <Picture
+          media={postCover}
+          variants={postCoverVariants}
+          priority={true}
+          sizes="(min-width: 800px) 736px, calc(100vw - 2rem)"
           class="mb-6 aspect-[16/9] w-full rounded-lg object-cover"
         />
       )}

@@ -83,6 +83,10 @@ export { getContentVersion, bumpContentVersion } from './shared/cache-version';
 export { normalisePath, slugify, buildPath, ROOT_PATH } from './shared/slug';
 export { listMedia } from './media/list-media/handler';
 export { getMedia } from './media/get-media/handler';
+// Exposé pour être éprouvé contre le vrai binding Images dans le pool workerd
+// (`apps/api/src/media-transcoder.test.ts`), que les tests du domaine ne peuvent pas
+// atteindre puisqu'ils tournent hors de workerd.
+export { imagesTranscoder } from './media/upload-media/route';
 export { listPosts } from './posts/list-posts/handler';
 export { getPost } from './posts/get-post/handler';
 export { notifyPost } from './posts/notify-post/handler';

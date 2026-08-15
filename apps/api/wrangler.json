@@ -29,6 +29,9 @@
     "binding": "AI",
     "remote": true
   },
+  "images": {
+    "binding": "IMAGES"
+  },
   "triggers": {
     "crons": [
       "* * * * *",
@@ -49,6 +52,9 @@
       "ai": {
         "binding": "AI",
         "remote": true
+      },
+      "images": {
+        "binding": "IMAGES"
       },
       "triggers": {
         "crons": [

@@ -1,5 +1,7 @@
 import type { BlockPayload } from '../../shared/blocks';
-import type { CmsPageRow, CmsPostRow, CmsPostCategoryRow, CmsMediaRow } from '../../shared/schema';
+import type {
+  CmsPageRow, CmsPostRow, CmsPostCategoryRow, CmsMediaRow, CmsMediaVariantRow
+} from '../../shared/schema';
 
 export interface ResolveRouteInput {
   /** Chemin déjà normalisé par `normalisePath`. */
@@ -32,7 +34,14 @@ export interface ResolvedPageView {
  */
 export type ResolveRouteOutput =
   | ({ kind: 'page' } & ResolvedPageView)
-  | { kind: 'post'; post: CmsPostRow; cover: CmsMediaRow | null; categories: CmsPostCategoryRow[] }
+  | {
+      kind: 'post';
+      post: CmsPostRow;
+      cover: CmsMediaRow | null;
+      /** Déclinaisons de la couverture, par largeur croissante. Vide si elle n'en a pas. */
+      coverVariants: CmsMediaVariantRow[];
+      categories: CmsPostCategoryRow[];
+    }
   | { kind: 'redirect'; toPath: string; statusCode: number }
   | { kind: 'gone' }
   | { kind: 'notfound' };

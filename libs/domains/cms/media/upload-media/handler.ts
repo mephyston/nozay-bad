@@ -1,7 +1,8 @@
 import { type Db, AppError } from '@nba/db';
-import { contentHashOf, isAllowedMediaType, originalKey } from '../../shared/media';
+import { contentHashOf, isAllowedMediaType, isTranscodableImage, originalKey } from '../../shared/media';
 import { UploadMediaRepository } from './repository';
-import type { UploadMediaInput, UploadMediaOutput, MediaStore } from './dto';
+import { buildVariants } from './variants';
+import type { UploadMediaInput, UploadMediaOutput, MediaStore, ImageTranscoder } from './dto';
 
 /** 12 Mio : au-delà, c'est une photo non redimensionnée, pas un média de site. */
 const MAX_BYTES = 12 * 1024 * 1024;
@@ -17,6 +18,12 @@ export async function uploadMedia(
   db: Db,
   store: MediaStore,
   input: UploadMediaInput,
+  /**
+   * Absent, le média est déposé sans déclinaison — c'est le comportement d'avant.
+   * Optionnel et non requis pour que l'échec d'un binding ne prive pas la médiathèque
+   * de son dépôt, et pour que les tests qui n'y touchent pas restent inchangés.
+   */
+  transcoder?: ImageTranscoder,
   now: Date = new Date()
 ): Promise<UploadMediaOutput> {
   if (!isAllowedMediaType(input.mimeType)) {
@@ -40,12 +47,20 @@ export async function uploadMedia(
   const contentHash = await contentHashOf(input.bytes);
 
   const existing = await repo.findByHash(db, contentHash);
-  if (existing) return existing;
+  if (existing) {
+    // Redéposer une image sert de rattrapage : les médias antérieurs à la production
+    // d'échelles n'en ont aucune, et rien d'autre dans l'administration ne permet de
+    // la réclamer. On ne retente que si elle manque encore.
+    if (!(await repo.hasVariants(db, existing.id))) {
+      await produceVariants(db, repo, store, transcoder, existing.id, contentHash, input);
+    }
+    return existing;
+  }
 
   const key = originalKey(contentHash, input.mimeType);
   if (!(await store.has(key))) await store.put(key, input.bytes, input.mimeType);
 
-  return repo.insert(db, {
+  const media = await repo.insert(db, {
     key,
     mimeType: input.mimeType,
     sizeBytes: input.bytes.byteLength,
@@ -58,4 +73,38 @@ export async function uploadMedia(
     legacyWpId: null,
     createdAt: now
   });
+
+  await produceVariants(db, repo, store, transcoder, media.id, contentHash, input);
+  return media;
+}
+
+/**
+ * Produit et enregistre l'échelle, si tant est qu'elle ait un sens ici.
+ *
+ * Attendu dans la requête plutôt que détaché : une promesse laissée en suspens est
+ * annulée à la fin de la requête sur Workers, et l'on se retrouverait avec des tests
+ * verts et une production sans déclinaison. Les transformations partent en parallèle,
+ * le dépôt n'y perd que quelques centaines de millisecondes.
+ */
+async function produceVariants(
+  db: Db,
+  repo: UploadMediaRepository,
+  store: MediaStore,
+  transcoder: ImageTranscoder | undefined,
+  mediaId: number,
+  contentHash: string,
+  input: UploadMediaInput
+): Promise<void> {
+  if (!transcoder) return;
+  if (!isTranscodableImage(input.mimeType)) return;
+  if (!input.width || !input.height) return;
+
+  const rows = await buildVariants(transcoder, store, {
+    mediaId,
+    contentHash,
+    bytes: input.bytes,
+    width: input.width,
+    height: input.height
+  });
+  await repo.insertVariants(db, rows);
 }

@@ -6,9 +6,11 @@ import {
   cmsPostsTable,
   cmsRedirectsTable,
   cmsMediaTable,
+  cmsMediaVariantsTable,
   cmsPostCategoriesTable,
   cmsPostCategoryLinksTable,
   type CmsMediaRow,
+  type CmsMediaVariantRow,
   type CmsPostCategoryRow,
   type CmsPageRow,
   type CmsPageBlockRow,
@@ -49,6 +51,23 @@ export class ResolveRouteRepository {
 
   async findMedia(db: DbOrTx, id: number): Promise<CmsMediaRow | undefined> {
     return db.select().from(cmsMediaTable).where(eq(cmsMediaTable.id, id)).get();
+  }
+
+  /**
+   * Déclinaisons de la couverture, par largeur croissante — l'ordre qu'attend `srcset`.
+   *
+   * Sans elles la page d'article sert l'original en pleine largeur, et c'est son
+   * élément LCP : l'image la plus lourde de la page, chargée en priorité, au-dessus de
+   * la ligne de flottaison. Une liste vide reste normale, tous les médias n'ayant pas
+   * encore d'échelle.
+   */
+  async findMediaVariants(db: DbOrTx, mediaId: number): Promise<CmsMediaVariantRow[]> {
+    return db
+      .select()
+      .from(cmsMediaVariantsTable)
+      .where(eq(cmsMediaVariantsTable.mediaId, mediaId))
+      .orderBy(asc(cmsMediaVariantsTable.width))
+      .all();
   }
 
   async categoriesOf(db: DbOrTx, postId: number): Promise<CmsPostCategoryRow[]> {

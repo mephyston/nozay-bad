@@ -34,13 +34,15 @@ export async function resolveRoute(db: Db, input: ResolveRouteInput): Promise<Re
 
   const post = await repo.findPost(db, path, includeDrafts, includePrivate);
   if (post) {
-    // Deux lectures de plus sur le chemin chaud, mais seulement pour un article, et
-    // seulement une fois la correspondance trouvée : une page ne les paie jamais.
-    const [cover, categories] = await Promise.all([
+    // Trois lectures de plus sur le chemin chaud, mais seulement pour un article, et
+    // seulement une fois la correspondance trouvée : une page ne les paie jamais. Elles
+    // partent ensemble, la troisième ne coûte donc pas un aller-retour de plus.
+    const [cover, coverVariants, categories] = await Promise.all([
       post.coverMediaId === null ? Promise.resolve(null) : repo.findMedia(db, post.coverMediaId),
+      post.coverMediaId === null ? Promise.resolve([]) : repo.findMediaVariants(db, post.coverMediaId),
       repo.categoriesOf(db, post.id)
     ]);
-    return { kind: 'post', post, cover: cover ?? null, categories };
+    return { kind: 'post', post, cover: cover ?? null, coverVariants, categories };
   }
 
   const redirect = await repo.findRedirect(db, path);

@@ -5,9 +5,14 @@ import { resolveRoute } from './handler';
 import { createPage } from '../../pages/create-page/handler';
 import { publishPage } from '../../pages/publish-page/handler';
 import { savePageBlocks } from '../../pages/save-page-blocks/handler';
+import { createPost } from '../../posts/create-post/handler';
+import { updatePost } from '../../posts/update-post/handler';
+import { publishPost } from '../../posts/publish-post/handler';
+import { uploadMedia } from '../../media/upload-media/handler';
 import { cmsRedirectsTable } from '../../shared/schema';
 
 const AUTHOR = 'communication@nozaybad.fr';
+const POST_AUTHOR = { email: AUTHOR, name: 'Communication' };
 
 async function publishedPage(db: Db, title: string, slug: string) {
   const page = await createPage(db, { title, slug }, AUTHOR);
@@ -107,5 +112,39 @@ describe('resolveRoute', () => {
 
   it('rend notfound sur un chemin inconnu, jamais une erreur', async () => {
     expect((await resolveRoute(db, { path: '/nimporte-quoi/' })).kind).toBe('notfound');
+  });
+
+  it('sert la couverture d’un article avec ses déclinaisons, par largeur croissante', async () => {
+    // C'est l'élément LCP de la page d'article. Sans ses déclinaisons, le rendu retombe
+    // sur l'original en pleine largeur — l'image la plus lourde du site, chargée en
+    // priorité, quelle que soit la taille de l'écran.
+    const store = { async has() { return false; }, async put() {} };
+    const media = await uploadMedia(
+      db, store, { bytes: new Uint8Array(64).fill(1).buffer, mimeType: 'image/png', width: 1600, height: 900 },
+      { async resize(_b, { width, format }) { return { bytes: new Uint8Array(width).buffer, contentType: format }; } }
+    );
+
+    const post = await createPost(db, { title: 'Tournoi de rentrée' }, POST_AUTHOR);
+    await updatePost(db, { postId: post.id, coverMediaId: media.id });
+    await publishPost(db, { postId: post.id, published: true });
+
+    const resolved = await resolveRoute(db, { path: post.path });
+
+    expect(resolved.kind).toBe('post');
+    if (resolved.kind !== 'post') return;
+    expect(resolved.cover?.id).toBe(media.id);
+    expect(resolved.coverVariants.map((v) => v.width)).toEqual([400, 400, 800, 800, 1200, 1200, 1600, 1600]);
+  });
+
+  it('rend une liste vide de déclinaisons quand l’article n’a pas de couverture', async () => {
+    const post = await createPost(db, { title: 'Sans image' }, POST_AUTHOR);
+    await publishPost(db, { postId: post.id, published: true });
+
+    const resolved = await resolveRoute(db, { path: post.path });
+
+    expect(resolved.kind).toBe('post');
+    if (resolved.kind !== 'post') return;
+    expect(resolved.cover).toBeNull();
+    expect(resolved.coverVariants).toEqual([]);
   });
 });

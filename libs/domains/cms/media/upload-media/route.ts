@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 import { createDb } from '@nba/db';
 import { uploadMedia } from './handler';
-import type { MediaStore } from './dto';
+import type { MediaStore, ImageTranscoder } from './dto';
 
-export type Bindings = { DB: D1Database; MEDIA: R2Bucket };
+export type Bindings = { DB: D1Database; MEDIA: R2Bucket; IMAGES?: ImagesBinding };
 
 export const uploadMediaRoute = new Hono<{ Bindings: Bindings }>();
 
@@ -15,6 +15,35 @@ function r2Store(bucket: R2Bucket): MediaStore {
     },
     async put(key, bytes, mimeType) {
       await bucket.put(key, bytes, { httpMetadata: { contentType: mimeType } });
+    }
+  };
+}
+
+/**
+ * Adaptateur sur le binding Images, même intention que `r2Store`.
+ *
+ * Le transcodage a lieu **une fois, au dépôt**, et non à chaque requête : les
+ * déclinaisons partent ensuite dans R2 sous cache immuable d'un an. C'est ce qui garde
+ * la consommation à quelques transformations par image déposée, très en deçà des
+ * 5 000 par mois de l'offre gratuite, là où une transformation à la volée les
+ * épuiserait sur un seul passage de robot.
+ */
+export function imagesTranscoder(images: ImagesBinding): ImageTranscoder {
+  return {
+    async resize(bytes, { width, format, quality }) {
+      // Un flux neuf à chaque appel : `input()` le consomme, et le réutiliser d'une
+      // largeur à l'autre donnerait une image vide à partir de la deuxième.
+      const result = await images
+        .input(new Blob([bytes]).stream())
+        .transform({ width })
+        .output({ format: format as 'image/avif' | 'image/webp', quality });
+
+      // `contentType()` et non `format` : le service ne rend pas toujours ce qu'on lui
+      // demande, et c'est à l'appelant de s'en apercevoir (voir `TranscodedImage`).
+      return {
+        bytes: await new Response(result.image()).arrayBuffer(),
+        contentType: result.contentType()
+      };
     }
   };
 }
@@ -33,14 +62,25 @@ uploadMediaRoute.post('/media', async (c) => {
   };
 
   const db = createDb(c.env.DB);
-  const media = await uploadMedia(db, r2Store(c.env.MEDIA), {
-    bytes: await file.arrayBuffer(),
-    mimeType: file.type,
-    width: toInt(form.get('width')),
-    height: toInt(form.get('height')),
-    alt: (form.get('alt') as string) ?? '',
-    title: (form.get('title') as string) ?? undefined
-  });
+  const media = await uploadMedia(
+    db,
+    r2Store(c.env.MEDIA),
+    {
+      bytes: await file.arrayBuffer(),
+      mimeType: file.type,
+      width: toInt(form.get('width')),
+      height: toInt(form.get('height')),
+      alt: (form.get('alt') as string) ?? '',
+      title: (form.get('title') as string) ?? undefined
+    },
+    // Binding absent : le dépôt se fait quand même, sans déclinaison. Refuser ici
+    // rendrait la médiathèque inutilisable pour une optimisation manquante.
+    //
+    // `c.env?.` et non `c.env.` : c'est cette forme-là que reconnaît
+    // `scripts/check-env-declarations.js`, qui vérifie que tout binding utilisé est
+    // bien déclaré. Écrit sans le `?.`, le binding échapperait à la vérification.
+    c.env?.IMAGES ? imagesTranscoder(c.env.IMAGES) : undefined
+  );
 
   return c.json({ success: true, data: media });
 });

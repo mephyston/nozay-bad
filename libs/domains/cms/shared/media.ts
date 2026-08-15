@@ -35,6 +35,18 @@ export function isAllowedMediaType(mimeType: string): boolean {
   return Object.hasOwn(EXTENSIONS, mimeType);
 }
 
+/**
+ * Ce média mérite-t-il une échelle de déclinaisons ?
+ *
+ * Plus étroit que `isAllowedMediaType` : un PDF n'a pas de largeur, et un GIF ne
+ * survivrait pas au transcodage — il est presque toujours animé ici, et le rendre en
+ * AVIF ou WebP fixe le figerait sur sa première image. Les deux restent acceptés au
+ * dépôt, ils sont simplement servis tels quels.
+ */
+export function isTranscodableImage(mimeType: string): boolean {
+  return mimeType === 'image/jpeg' || mimeType === 'image/png' || mimeType === 'image/webp';
+}
+
 export function originalKey(contentHash: string, mimeType: string): string {
   return `${MEDIA_KEY_PREFIX}${contentHash}/original.${extensionFor(mimeType)}`;
 }

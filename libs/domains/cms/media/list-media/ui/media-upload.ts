@@ -3,12 +3,16 @@
  *
  * Deux raisons de passer par le navigateur plutôt que par le serveur :
  *
- *  1. Les Workers n'ont pas de bibliothèque de traitement d'image, et le plan gratuit
- *     exclut les transformations à la volée. Sans cette étape, une photo de téléphone
- *     de 4 Mo partirait telle quelle — c'est exactement ce que fait l'ancien site, qui
- *     sert des PNG d'équipes à 4,3 Mo.
+ *  1. Sans cette étape, une photo de téléphone de 4 Mo partirait telle quelle — c'est
+ *     exactement ce que fait l'ancien site, qui sert des PNG d'équipes à 4,3 Mo. La
+ *     plafonner ici épargne l'envoi depuis un mobile et la limite de 12 Mio de l'API.
  *  2. Les dimensions sont obligatoires côté API : c'est ce qui permet au rendu de
  *     réserver la place de l'image et de ne pas décaler la page.
+ *
+ * Ce qui se passe **ensuite** ne relève plus du navigateur : l'API décline l'original
+ * en 400/800/1200/1600 px, en AVIF et en WebP, via le binding Images du Worker. Le
+ * canvas ne saurait pas produire l'AVIF — seul Chrome l'encode, et les autres
+ * retombent silencieusement en PNG.
  */
 
 /** Au-delà, aucun écran d'adhérent n'en tire quoi que ce soit. */
