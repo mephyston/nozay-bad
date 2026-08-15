@@ -104,7 +104,13 @@ jobs:
       - name: Derive appropriate SHAs for affected commands
         uses: nrwl/nx-set-shas@v5
         with:
-          main-branch-name: 'main'
+          # L'action prend le dernier run vert de la branche nommée ici. Codée en dur sur
+          # 'main', elle faisait comparer les push staging à la pointe de main — un commit
+          # de merge même pas ancêtre de staging, ~1500 fichiers de diff : toute la suite de
+          # tests et la régression visuelle rejouées à chaque commit. Le dernier vert doit
+          # être celui de la branche qu'on pousse. Sur une PR, l'action utilise le SHA
+          # d'origine de la PR : 'main' y reste correct.
+          main-branch-name: ${{ github.event_name == 'pull_request' && 'main' || github.ref_name }}
 
       - name: Detect affected projects
         id: affected
@@ -115,6 +121,7 @@ jobs:
             echo "Forcing deployment of all applications"
             API_AFFECTED="true"
             STOREFRONT_AFFECTED="true"
+            WEBSITE_AFFECTED="true"
             ADMIN_AFFECTED="true"
             DS_AFFECTED="true"
           else
@@ -171,7 +178,13 @@ jobs:
       - name: Derive appropriate SHAs for affected commands
         uses: nrwl/nx-set-shas@v5
         with:
-          main-branch-name: 'main'
+          # L'action prend le dernier run vert de la branche nommée ici. Codée en dur sur
+          # 'main', elle faisait comparer les push staging à la pointe de main — un commit
+          # de merge même pas ancêtre de staging, ~1500 fichiers de diff : toute la suite de
+          # tests et la régression visuelle rejouées à chaque commit. Le dernier vert doit
+          # être celui de la branche qu'on pousse. Sur une PR, l'action utilise le SHA
+          # d'origine de la PR : 'main' y reste correct.
+          main-branch-name: ${{ github.event_name == 'pull_request' && 'main' || github.ref_name }}
 
       - name: Verify environment variable & binding declarations
         run: node scripts/check-env-declarations.js
