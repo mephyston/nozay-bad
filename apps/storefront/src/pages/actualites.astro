@@ -1,0 +1,114 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import MobileNav from '../components/MobileNav.svelte';
+import PostCard from '../components/PostCard.astro';
+import { env } from 'cloudflare:workers';
+import { getActiveMemberStatus } from '../lib/member-status';
+import {
+  fetchPosts,
+  filterByCategory,
+  listCategories,
+  readCategoryFilter,
+  CATEGORY_PARAM
+} from '../lib/posts';
+import { fetchUpcomingEvents } from '../lib/agenda';
+
+/**
+ * Toute la vie du club sur un seul écran.
+ *
+ * « Animations » et « Jeunes » étaient deux pages jumelles qui se partageaient la même
+ * liste ; elles sont devenues deux positions parmi d'autres d'un filtre par rubrique.
+ * Une rubrique de moins dans la barre, et surtout plus de doute sur l'écran où chercher
+ * une actualité donnée.
+ *
+ * Le filtre passe par l'URL et non par du JavaScript : la page est rendue côté serveur
+ * sans hydratation, chaque position est donc partageable et le retour arrière la
+ * restitue. C'est aussi ce qui permet à la barre de navigation de mettre « Actualités »
+ * en évidence quel que soit le filtre actif.
+ */
+const session = Astro.locals.session;
+const status = await getActiveMemberStatus(env, session);
+
+// L'agenda est lu en même temps que les actualités, et **au nom du profil actif** :
+// c'est ce qui permet à une actualité rattachée à un événement de porter son encart
+// d'inscription, avec le bon bouton selon que l'adhérent y est déjà inscrit ou non.
+// Une seule lecture pour toutes les cartes.
+const [{ posts, failed }, events] = await Promise.all([
+  fetchPosts(env, 50),
+  fetchUpcomingEvents(env, 50, session?.activeMemberId)
+]);
+
+const availableCategories = listCategories(posts);
+
+// Un slug inconnu — rubrique supprimée, lien tapé de travers — retombe sur « Tout »
+// plutôt que d'afficher un écran vide sous un filtre qui n'existe plus.
+const requested = readCategoryFilter(Astro.url);
+const activeSlug = availableCategories.some((c) => c.slug === requested) ? requested : null;
+
+// Toute rubrique proposée classe au moins une actualité : une fois le slug validé, la
+// liste filtrée ne peut pas être vide. Le seul cas de liste vide reste « aucune
+// actualité du tout ».
+const visible = filterByCategory(posts, activeSlug);
+
+// « Tout » est la position par défaut : son lien n'emporte pas de paramètre, pour que
+// l'URL nue reste l'adresse canonique de la page.
+const hrefFor = (slug: string | null) =>
+  slug === null ? '/actualites' : `/actualites?${CATEGORY_PARAM}=${encodeURIComponent(slug)}`;
+
+const pillClass = (active: boolean) =>
+  [
+    'inline-flex min-h-[36px] items-center rounded-full border px-3.5 py-1.5 text-sm font-medium decoration-transparent transition-colors',
+    active
+      ? 'border-primary bg-primary text-primary-foreground'
+      : 'border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground'
+  ].join(' ');
+---
+
+<Layout title="Actualités - Nozay Bad">
+  <Header currentPath="/actualites" canExpense={status.canExpense} />
+
+  <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
+    <div class="max-w-3xl mx-auto">
+      <h1 class="mb-4 text-xl sm:text-2xl font-bold text-foreground">Actualités</h1>
+
+      {availableCategories.length > 0 && (
+        <nav
+          class="mb-5 -mx-3 flex gap-2 overflow-x-auto px-3 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+          aria-label="Filtrer par rubrique"
+        >
+          <a href={hrefFor(null)} aria-current={activeSlug === null ? 'page' : undefined} class={`shrink-0 ${pillClass(activeSlug === null)}`}>
+            Tout
+          </a>
+          {availableCategories.map((category) => (
+            <a
+              href={hrefFor(category.slug)}
+              aria-current={category.slug === activeSlug ? 'page' : undefined}
+              class={`shrink-0 ${pillClass(category.slug === activeSlug)}`}
+            >
+              {category.name}
+            </a>
+          ))}
+        </nav>
+      )}
+
+      {failed && (
+        <p class="rounded-lg border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+          Les actualités n'ont pas pu être chargées. Réessayez dans un instant.
+        </p>
+      )}
+
+      {!failed && visible.length === 0 && (
+        <p class="rounded-lg border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+          Aucune actualité pour le moment.
+        </p>
+      )}
+
+      <div class="space-y-4">
+        {visible.map((post) => <PostCard post={post} events={events} />)}
+      </div>
+    </div>
+  </main>
+
+  <MobileNav client:idle currentPath="/actualites" canExpense={status.canExpense} />
+</Layout>

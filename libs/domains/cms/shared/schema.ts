@@ -173,6 +173,31 @@ export const cmsPostsTable = sqliteTable(
     status: text('status', { enum: ['draft', 'published'] })
       .notNull()
       .default('draft'),
+    /**
+     * Qui peut lire l'actualité.
+     *
+     * `public` : le site public **et** l'espace adhérent. `private` : l'espace adhérent
+     * seul — une information de vie interne, qui n'a pas à être indexée ni lue par un
+     * visiteur de passage.
+     *
+     * Le défaut est `public` parce que c'est le sens de la reprise WordPress : les 99
+     * articles importés étaient tous en ligne. Une nouveauté restreinte se déclare ;
+     * l'inverse aurait rendu invisible tout l'existant à la migration.
+     *
+     * Le cloisonnement est appliqué **côté API selon l'appelant**, jamais par le
+     * client : le site public et l'espace adhérent interrogent la même route.
+     */
+    visibility: text('visibility', { enum: ['public', 'private'] })
+      .notNull()
+      .default('public'),
+    /**
+     * Horodatage de la diffusion push. Non nul = déjà notifié.
+     *
+     * Repris tel quel des annonces, dont ce champ portait la garde d'idempotence : on
+     * ne renotifie jamais, quelles que soient les modifications ultérieures. C'est ce
+     * qui rend l'action de diffusion rejouable sans risque depuis l'administration.
+     */
+    notifiedAt: integer('notified_at', { mode: 'timestamp' }),
     seoTitle: text('seo_title'),
     seoDescription: text('seo_description'),
     /**
@@ -184,6 +209,21 @@ export const cmsPostsTable = sqliteTable(
     authorName: text('author_name').notNull(),
     authorEmail: text('author_email').notNull(),
     publishedAt: integer('published_at', { mode: 'timestamp' }),
+    /**
+     * Événement de l'agenda que l'actualité annonce, s'il y en a un.
+     *
+     * Sert à porter l'appel à l'inscription au bout de l'article : « la soirée raclette
+     * a lieu le 14 février » et le bouton juste en dessous, plutôt qu'un lecteur qu'on
+     * renvoie chercher l'agenda.
+     *
+     * Entier nu, **sans clé étrangère** : la déclarer obligerait ce schéma à importer
+     * celui du domaine `events`, et le CMS n'a pas à en dépendre pour stocker un
+     * numéro. Le lien est résolu à la lecture, par l'écran qui affiche l'actualité, et
+     * un identifiant devenu orphelin est simplement ignoré au rendu — le cas est de
+     * toute façon rare, un événement s'annule (`cancelled`) bien plus qu'il ne se
+     * supprime.
+     */
+    eventId: integer('event_id'),
     /** Identifiant d'origine WordPress : rejouer l'import ne crée pas de doublon. */
     legacyWpId: integer('legacy_wp_id'),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
@@ -193,6 +233,12 @@ export const cmsPostsTable = sqliteTable(
     pathIdx: uniqueIndex('cms_posts_path_idx').on(table.path),
     // Le seul accès chaud : « les N dernières publiées », sur l'accueil et le flux.
     feedIdx: index('cms_posts_status_published_idx').on(table.status, table.publishedAt),
+    // Même accès, mais restreint au public : c'est la requête du site, la plus servie.
+    publicFeedIdx: index('cms_posts_visibility_status_published_idx').on(
+      table.visibility,
+      table.status,
+      table.publishedAt
+    ),
     legacyIdx: uniqueIndex('cms_posts_legacy_wp_id_idx').on(table.legacyWpId)
   })
 );
@@ -275,7 +321,16 @@ export const cmsNavItemsTable = sqliteTable(
   'cms_nav_items',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    location: text('location', { enum: ['header', 'footer'] }).notNull(),
+    /**
+     * `legal` est la barre basse du pied de page — mentions légales, confidentialité.
+     * Un emplacement à part et non une rubrique du menu `footer` : ces liens ne sont
+     * pas de la navigation éditoriale, ils sont dus au visiteur, et les mêler à la
+     * colonne « Le site » reviendrait à les faire disparaître au premier remaniement.
+     *
+     * L'énumération ne produit aucune contrainte SQL — c'est du typage — donc ajouter
+     * un emplacement ne demande pas de migration.
+     */
+    location: text('location', { enum: ['header', 'footer', 'legal'] }).notNull(),
     parentId: integer('parent_id').references((): AnySQLiteColumn => cmsNavItemsTable.id, {
       onDelete: 'cascade'
     }),
@@ -329,6 +384,30 @@ export const cmsContentVersionTable = sqliteTable('cms_content_version', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
 });
 
+/**
+ * Réglages du site public. Ligne unique, `id = 1`, comme la version de contenu.
+ *
+ * Une ligne à colonnes nommées plutôt qu'une table clé/valeur : ces réglages sont peu
+ * nombreux, connus à l'avance et typés. Le format clé/valeur aurait rendu chaque
+ * lecture optionnelle et chaque valeur `string | undefined`, pour ne gagner que la
+ * possibilité d'ajouter un réglage sans migration — ce qui n'est pas un besoin ici.
+ *
+ * Toute écriture incrémente la version de contenu : ces valeurs sont rendues sur
+ * **toutes** les pages, donc dans toutes les entrées du cache.
+ */
+export const cmsSiteSettingsTable = sqliteTable('cms_site_settings', {
+  id: integer('id').primaryKey(),
+  /** Phrase sous le nom du club, dans le pied de page. */
+  footerDescription: text('footer_description').notNull().default(''),
+  /** Adresse affichée, sur une ou deux lignes. Vide = rien n'est affiché. */
+  footerAddress: text('footer_address').notNull().default(''),
+  /** Nul = le réseau n'est pas affiché. Une chaîne vide serait un lien mort. */
+  instagramUrl: text('instagram_url'),
+  facebookUrl: text('facebook_url'),
+  updatedByEmail: text('updated_by_email').notNull().default(''),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
+});
+
 export type CmsPageRow = typeof cmsPagesTable.$inferSelect;
 export type CmsPageBlockRow = typeof cmsPageBlocksTable.$inferSelect;
 export type CmsPageRevisionRow = typeof cmsPageRevisionsTable.$inferSelect;
@@ -337,4 +416,5 @@ export type CmsPostCategoryRow = typeof cmsPostCategoriesTable.$inferSelect;
 export type CmsMediaRow = typeof cmsMediaTable.$inferSelect;
 export type CmsMediaVariantRow = typeof cmsMediaVariantsTable.$inferSelect;
 export type CmsNavItemRow = typeof cmsNavItemsTable.$inferSelect;
+export type CmsSiteSettingsRow = typeof cmsSiteSettingsTable.$inferSelect;
 export type CmsRedirectRow = typeof cmsRedirectsTable.$inferSelect;

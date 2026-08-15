@@ -3,27 +3,39 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import MobileNav from '../components/MobileNav.svelte';
 import PushOptIn from '../components/PushOptIn.svelte';
-import { AnnouncementCard } from '@nba/announcements-ui';
+import PostSummaryCard from '../components/PostSummaryCard.astro';
+import AgendaCard from '../components/AgendaCard.astro';
+import BirthdayCard from '../components/BirthdayCard.astro';
 import { env } from 'cloudflare:workers';
 import { getActiveMemberStatus } from '../lib/member-status';
-import { fetchPublishedAnnouncements } from '../lib/announcements';
+import { fetchPosts } from '../lib/posts';
+import { fetchUpcomingEvents } from '../lib/agenda';
+import { fetchTodayBirthdays } from '../lib/birthdays';
 
 const session = Astro.locals.session;
 const active = session?.members.find((m) => m.id === session.activeMemberId);
 const firstName = active?.firstName ?? '';
 
-// Statut lu en direct (autorisation frais effective sans reconnexion) + saison pour le badge.
+// Statut lu en direct : autorisation frais effective sans reconnexion.
 const status = await getActiveMemberStatus(env, session);
 const canExpense = status.canExpense;
-const activeSeasonName = status.seasonName;
 
-// Les 3 dernières annonces publiées. Le bloc disparaît s'il n'y en a aucune, ou si
-// l'API n'a pas répondu : l'accueil ne doit jamais montrer un cadre vide.
-const { announcements } = await fetchPublishedAnnouncements(env, 3);
+// Les trois blocs de l'accueil sont indépendants : ils sont donc lus en parallèle, et
+// chacun disparaît seul s'il n'a rien à montrer ou si l'API n'a pas répondu — l'accueil
+// ne doit jamais afficher un cadre vide.
+//
+// Un seul événement est demandé, et **au nom du profil actif** : l'encart n'annonce que
+// le prochain rendez-vous, et son bouton d'inscription doit savoir si l'adhérent s'y
+// est déjà annoncé.
+const [{ posts }, events, birthdays] = await Promise.all([
+  fetchPosts(env, 3),
+  fetchUpcomingEvents(env, 1, session?.activeMemberId),
+  fetchTodayBirthdays(env)
+]);
 ---
 
 <Layout title="Espace adhérent - Nozay Bad">
-  <Header currentPath="/" activeSeasonName={activeSeasonName || undefined} canExpense={canExpense} />
+  <Header currentPath="/" canExpense={canExpense} />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     <div class="max-w-3xl mx-auto">
@@ -34,101 +46,45 @@ const { announcements } = await fetchPublishedAnnouncements(env, 3);
       </div>
 
       <div class="mb-6">
-        <h1 class="text-xl sm:text-2xl font-bold text-foreground">
+        <h1 class="text-2xl sm:text-3xl font-bold text-foreground">
           Bonjour{firstName ? ` ${firstName}` : ''}
         </h1>
       </div>
 
-      {announcements.length > 0 && (
-        <section class="mb-6" aria-labelledby="annonces-title">
-          <h2 id="annonces-title" class="sr-only">Dernières annonces</h2>
-          <div class="space-y-3">
-            {announcements.map((announcement) => (
-              <AnnouncementCard announcement={announcement} />
+      {birthdays.length > 0 && (
+        <div class="mb-6">
+          <BirthdayCard birthdays={birthdays} />
+        </div>
+      )}
+
+      <div class="mb-6 empty:mb-0">
+        <AgendaCard event={events[0] ?? null} />
+      </div>
+
+      {posts.length > 0 && (
+        <section aria-labelledby="actualites-title">
+          <h2 id="actualites-title" class="mb-3 text-base font-semibold text-foreground">
+            Dernières actualités
+          </h2>
+          {/*
+            Cartes résumées, et non les articles en entier : l'accueil donne un aperçu
+            de ce qui bouge, la lecture se fait dans « Actualités ». Trois articles
+            complets faisaient de l'accueil une seconde page d'actualités, plus longue
+            que l'originale.
+          */}
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {posts.map((post, index) => (
+              <PostSummaryCard post={post} priority={index === 0} />
             ))}
           </div>
           <a
-            href="/annonces"
+            href="/actualites"
             class="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline min-h-[44px]"
           >
-            Voir toutes les annonces &rarr;
+            Voir toutes les actualités &rarr;
           </a>
         </section>
       )}
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <a
-          href="/mon-compte"
-          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline group min-h-[44px]"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
-              <p class="text-sm font-semibold text-foreground">Mon compte</p>
-            </div>
-            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Ouvrir &rarr;</span>
-          </div>
-          <p class="text-xs text-muted-foreground">{canExpense ? 'Cotisation, commandes et notes de frais.' : 'Cotisation et commandes.'}</p>
-        </a>
-
-        <a
-          href="/boutique"
-          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline group min-h-[44px]"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
-              <p class="text-sm font-semibold text-foreground">Boutique</p>
-            </div>
-            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Ouvrir &rarr;</span>
-          </div>
-          <p class="text-xs text-muted-foreground">Commandez volants, cordages et équipements du club.</p>
-        </a>
-
-        <a
-          href="/attestation"
-          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline group min-h-[44px]"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
-              <p class="text-sm font-semibold text-foreground">Attestation CSE</p>
-            </div>
-            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Ouvrir &rarr;</span>
-          </div>
-          <p class="text-xs text-muted-foreground">Consultez et téléchargez votre attestation de paiement.</p>
-        </a>
-
-        <a
-          href="/notifications"
-          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline group min-h-[44px]"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
-              <p class="text-sm font-semibold text-foreground">Notifications</p>
-            </div>
-            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Ouvrir &rarr;</span>
-          </div>
-          <p class="text-xs text-muted-foreground">Choisissez les annonces du club que vous souhaitez recevoir.</p>
-        </a>
-
-        {canExpense && (
-          <a
-            href="/note-de-frais"
-            class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline group min-h-[44px]"
-          >
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2.5">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>
-                <p class="text-sm font-semibold text-foreground">Note de frais</p>
-              </div>
-              <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Ouvrir &rarr;</span>
-            </div>
-            <p class="text-xs text-muted-foreground">Soumettez vos dépenses engagées pour le compte du club.</p>
-          </a>
-        )}
-      </div>
     </div>
   </main>
 

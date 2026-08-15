@@ -28,6 +28,8 @@ export async function updatePost(
     coverMediaId: input.coverMediaId === undefined ? post.coverMediaId : input.coverMediaId,
     seoTitle: input.seoTitle === undefined ? post.seoTitle : input.seoTitle,
     seoDescription: input.seoDescription === undefined ? post.seoDescription : input.seoDescription,
+    visibility: input.visibility ?? post.visibility,
+    eventId: input.eventId === undefined ? post.eventId : input.eventId,
     updatedAt: now
   };
 

@@ -10,6 +10,9 @@ export interface UpdatePostInput {
   seoTitle?: string | null;
   seoDescription?: string | null;
   categoryIds?: number[];
+  visibility?: 'public' | 'private';
+  /** `null` détache l'événement ; absent le laisse inchangé. */
+  eventId?: number | null;
 }
 
 export type UpdatePostOutput = CmsPostRow;

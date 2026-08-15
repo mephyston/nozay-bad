@@ -7,5 +7,11 @@ export const updatePostSchema = Type.Object({
   coverMediaId: Type.Optional(Type.Union([Type.Integer({ minimum: 1 }), Type.Null()])),
   seoTitle: Type.Optional(Type.Union([Type.String({ maxLength: 200 }), Type.Null()])),
   seoDescription: Type.Optional(Type.Union([Type.String({ maxLength: 320 }), Type.Null()])),
-  categoryIds: Type.Optional(Type.Array(Type.Integer({ minimum: 1 }), { maxItems: 10 }))
+  categoryIds: Type.Optional(Type.Array(Type.Integer({ minimum: 1 }), { maxItems: 10 })),
+  visibility: Type.Optional(Type.Union([Type.Literal('public'), Type.Literal('private')])),
+  /**
+   * Événement de l'agenda annoncé par l'actualité. `null` détache, absent laisse
+   * inchangé — même idiome que `excerpt` et `coverMediaId` juste au-dessus.
+   */
+  eventId: Type.Optional(Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]))
 });
