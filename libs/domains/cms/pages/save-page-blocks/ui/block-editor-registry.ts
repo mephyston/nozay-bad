@@ -72,6 +72,12 @@ export const BLOCK_KINDS: BlockKind[] = [
     create: () => ({ type: 'person_cards', people: [] })
   },
   {
+    type: 'events',
+    label: 'Agenda',
+    hint: 'Les prochains rendez-vous du club, mis à jour tout seuls.',
+    create: () => ({ type: 'events', limit: 6, categories: [], showArchiveLink: true })
+  },
+  {
     type: 'posts_feed',
     label: 'Actualités',
     hint: 'Les dernières actualités du site, en cartes.',

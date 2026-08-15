@@ -35,7 +35,11 @@ resolveRouteRoute.get(
     const includeDrafts =
       caller === 'admin' || (caller === 'website' && c.req.header('x-preview-verified') === '1');
 
-    const resolved = await resolveRoute(db, { path, includeDrafts });
+    // Même liste blanche que la liste des actualités : seuls l'administration et
+    // l'espace adhérent atteignent une actualité réservée par son adresse.
+    const includePrivate = caller === 'admin' || caller === 'storefront';
+
+    const resolved = await resolveRoute(db, { path, includeDrafts, includePrivate });
     return c.json({ success: true, data: resolved });
   }
 );

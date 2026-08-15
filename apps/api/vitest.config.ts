@@ -27,8 +27,6 @@ export default defineConfig({
       '@nba/cms/schema': path.resolve(__dirname, '../../libs/domains/cms/shared/schema.ts'),
       '@nba/schedules-api': path.resolve(__dirname, '../../libs/domains/schedules/index.ts'),
       '@nba/events-api': path.resolve(__dirname, '../../libs/domains/events/index.ts'),
-      '@nba/announcements-api': path.resolve(__dirname, '../../libs/domains/announcements/index.ts'),
-      '@nba/announcements/schema': path.resolve(__dirname, '../../libs/domains/announcements/shared/schema.ts'),
       '@nba/members-api': path.resolve(__dirname, '../../libs/domains/members/index.ts'),
       '@nba/members/schema': path.resolve(__dirname, '../../libs/domains/members/shared/schema.ts'),
       '@nba/iam': path.resolve(__dirname, '../../libs/domains/iam/index.ts'),

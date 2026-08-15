@@ -6,6 +6,7 @@ import { resolveEnv } from './lib/request-context';
 import { isLocalHost, needsTrailingSlash } from './lib/routing';
 import { cachedContentVersion, withPageCache } from './lib/cache';
 import { getContentVersion } from './lib/cms';
+import { createRenderContext } from './lib/render-context';
 
 /**
  * Aucune authentification : tout ce que sert ce site est public.
@@ -69,9 +70,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
     le coût qu'on cherche à supprimer. Un jeton invalide désigne donc une page
     publique ordinaire, servie et mise en cache comme telle.
 
-    Un aperçu valide, lui, court-circuite la **recherche** autant que l'écriture : la
-    clé ignorant la chaîne de requête, un brouillon y trouverait sinon la version
-    publiée à sa place.
+    Un aperçu valide, lui, court-circuite la **recherche** autant que l'écriture : le
+    paramètre `preview` n'entrant pas dans la clé, un brouillon y trouverait sinon la
+    version publiée à sa place.
+
+    S'y ajoute la demande de plage (`Range`), qu'un lecteur de PDF mobile émet à chaque
+    saut de page : la réponse est un 206 partiel, que l'API Cache refuse de ranger et
+    qui n'aurait de toute façon aucun sens sous la clé du document entier.
   */
   const isPreview = await verifyPreviewToken(
     url.searchParams.get('preview'),
@@ -79,14 +84,32 @@ export const onRequest = defineMiddleware(async (context, next) => {
     runtimeEnv.PREVIEW_TOKEN_SECRET
   );
 
-  if (context.request.method !== 'GET' || isPreview || appEnv === 'staging') return render();
+  const bypass =
+    context.request.method !== 'GET' ||
+    isPreview ||
+    appEnv === 'staging' ||
+    context.request.headers.has('range');
+
+  if (bypass) {
+    // Contexte tout de même posé : sans version, les lectures d'API ne sont pas
+    // rangées, mais elles ont toujours besoin de `waitUntil` et d'un endroit où
+    // signaler un repli.
+    context.locals.render = createRenderContext({ waitUntil });
+    return render();
+  }
 
   const version = await cachedContentVersion(() => getContentVersion(runtimeEnv), waitUntil);
+  const renderContext = createRenderContext({ version, waitUntil });
+  context.locals.render = renderContext;
 
   return withPageCache(render, {
     pathname: url.pathname,
+    search: url.searchParams,
     version,
     cacheable: true,
-    waitUntil
+    waitUntil,
+    // Lu après le flux, quand tous les composants ont fini : une page à laquelle il
+    // manque son menu ou ses actualités est servie, jamais figée une heure au bord.
+    isDegraded: () => renderContext.degraded
   });
 });

@@ -1,15 +1,7 @@
 import type { APIRoute } from 'astro';
 import { listPublishedPosts } from '../lib/cms';
 import { resolveEnv } from '../lib/request-context';
-
-/** Échappement XML : un titre contenant « & » ou « < » casserait le flux. */
-function escapeXml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
+import { escapeXml } from '../lib/xml';
 
 export const GET: APIRoute = async ({ locals, url }) => {
   const env = resolveEnv(locals);

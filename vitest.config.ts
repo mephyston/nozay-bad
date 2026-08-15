@@ -46,9 +46,6 @@ export default defineConfig({
       '@nba/schedules-ui': path.resolve(__dirname, './libs/domains/schedules/shared/ui.ts'),
       '@nba/events-ui': path.resolve(__dirname, './libs/domains/events/shared/ui.ts'),
       '@nba/cms/schema': path.resolve(__dirname, './libs/domains/cms/shared/schema.ts'),
-      '@nba/announcements-api': path.resolve(__dirname, './libs/domains/announcements/index.ts'),
-      '@nba/announcements/schema': path.resolve(__dirname, './libs/domains/announcements/shared/schema.ts'),
-      '@nba/announcements-ui': path.resolve(__dirname, './libs/domains/announcements/shared/ui.ts'),
     },
 
   },

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Input, Label, Button } from '@nba/ui';
+  import { Input, Label, Button, Checkbox } from '@nba/ui';
   import { FilePlus, X } from '@lucide/svelte';
   import MediaPicker, { type PickableMedia } from '../../../../media/list-media/ui/MediaPicker.svelte';
   import { humanSize } from '../../../../media/list-media/ui/media-upload';
@@ -17,6 +17,9 @@
   const document_ = $derived(
     block.mediaId ? media.find((m: PickableMedia) => m.id === block.mediaId) ?? null : null
   );
+
+  /** L'aperçu n'a de sens que pour un PDF : un `.docx` en cadre ne s'affiche pas. */
+  const isPdf = $derived(document_?.mimeType === 'application/pdf');
 </script>
 
 <div class="space-y-3">
@@ -52,6 +55,42 @@
     <Label for="pdf-description">Description</Label>
     <Input id="pdf-description" bind:value={block.description} />
   </div>
+
+  <div class="space-y-1.5">
+    <label class="flex items-start gap-2 text-sm">
+      <Checkbox
+        checked={block.preview === true}
+        onCheckedChange={(v) => (block.preview = v === true)}
+        disabled={!isPdf}
+      />
+      <span>
+        <span class="font-medium">Afficher un aperçu du document</span>
+        <span class="text-muted-foreground block text-xs">
+          {#if isPdf}
+            Le document s'affiche dans un cadre sous le lien, sur ordinateur seulement :
+            les navigateurs mobiles ne savent pas le rendre. Le lien reste le chemin
+            d'accès dans tous les cas.
+          {:else}
+            Réservé aux PDF. Ce document n'en est pas un.
+          {/if}
+        </span>
+      </span>
+    </label>
+  </div>
+
+  {#if block.preview && isPdf}
+    <div class="space-y-1.5">
+      <Label for="pdf-height">Hauteur du cadre (px)</Label>
+      <Input
+        id="pdf-height"
+        type="number"
+        min="200"
+        max="2000"
+        value={block.previewHeightPx ?? 720}
+        oninput={(e) => (block.previewHeightPx = Number((e.currentTarget as HTMLInputElement).value) || undefined)}
+      />
+    </div>
+  {/if}
 </div>
 
 <MediaPicker

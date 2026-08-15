@@ -33,11 +33,18 @@ export class ResolveRouteRepository {
       .all();
   }
 
-  async findPost(db: DbOrTx, path: string, includeDrafts: boolean): Promise<CmsPostRow | undefined> {
-    const condition = includeDrafts
-      ? eq(cmsPostsTable.path, path)
-      : and(eq(cmsPostsTable.path, path), eq(cmsPostsTable.status, 'published'));
-    return db.select().from(cmsPostsTable).where(condition).get();
+  async findPost(
+    db: DbOrTx,
+    path: string,
+    includeDrafts: boolean,
+    includePrivate: boolean
+  ): Promise<CmsPostRow | undefined> {
+    const conditions = [eq(cmsPostsTable.path, path)];
+    if (!includeDrafts) conditions.push(eq(cmsPostsTable.status, 'published'));
+    // Une actualité réservée est introuvable pour le site public : la résolution rend
+    // « rien », et le visiteur reçoit le 404 de n'importe quelle adresse inexistante.
+    if (!includePrivate) conditions.push(eq(cmsPostsTable.visibility, 'public'));
+    return db.select().from(cmsPostsTable).where(and(...conditions)).get();
   }
 
   async findMedia(db: DbOrTx, id: number): Promise<CmsMediaRow | undefined> {

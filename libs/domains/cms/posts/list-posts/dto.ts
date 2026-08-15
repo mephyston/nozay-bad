@@ -2,6 +2,13 @@ import type { CmsPostRow, CmsPostCategoryRow, CmsMediaRow } from '../../shared/s
 
 export interface ListPostsInput {
   status?: 'draft' | 'published';
+  /**
+   * Restreint aux actualités publiques.
+   *
+   * Posé par la **route** d'après l'appelant, jamais par le client : le site public et
+   * l'espace adhérent interrogent la même liste, et c'est l'API qui tranche.
+   */
+  visibility?: 'public' | 'private';
   categorySlug?: string;
   limit?: number;
   offset?: number;

@@ -6,7 +6,11 @@
     licence: string;
   }
 
-  let { members = [], activeMemberId }: { members: Member[]; activeMemberId: number } = $props();
+  let {
+    members = [],
+    activeMemberId,
+    currentPath = ''
+  }: { members: Member[]; activeMemberId: number; currentPath?: string } = $props();
 
   let open = $state(false);
   let busy = $state(false);
@@ -55,6 +59,17 @@
   {#if open}
     <button type="button" class="fixed inset-0 z-40 cursor-default" aria-label="Fermer" onclick={() => (open = false)}></button>
     <div class="absolute right-0 z-50 mt-1 w-56 rounded-md border border-border bg-popover p-1 shadow-lg">
+      <a
+        href="/mon-compte"
+        aria-current={currentPath === '/mon-compte' ? 'page' : undefined}
+        class={`block rounded px-2 py-1.5 text-xs decoration-transparent hover:bg-accent ${
+          currentPath === '/mon-compte' ? 'font-semibold text-primary' : 'text-foreground'
+        }`}
+      >
+        Mon compte
+      </a>
+      <div class="my-1 border-t border-border"></div>
+
       {#if members.length > 1}
         <p class="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">Changer de profil</p>
         {#each members as m (m.id)}

@@ -14,7 +14,15 @@ export function clubId(siteUrl: string): string {
   return new URL('/#club', siteUrl).toString();
 }
 
-export function sportsClub(siteUrl: string) {
+/**
+ * @param sameAs Comptes officiels du club, tels que réglés dans l'administration.
+ *   Rattache ces comptes à cette fiche : sans `sameAs`, la page Facebook et le site
+ *   restent deux entités sans lien pour un moteur, et c'est souvent le réseau qui
+ *   l'emporte dans les résultats sur le nom du club. Le paramètre est **requis** — un
+ *   défaut à `[]` aurait rendu l'oubli silencieux, et l'oubli est ici invisible à la
+ *   relecture comme au rendu.
+ */
+export function sportsClub(siteUrl: string, sameAs: readonly string[]) {
   return {
     '@context': 'https://schema.org',
     '@type': 'SportsClub',
@@ -22,6 +30,7 @@ export function sportsClub(siteUrl: string) {
     name: SITE_NAME,
     sport: 'Badminton',
     url: siteUrl,
+    sameAs: [...sameAs],
     address: {
       '@type': 'PostalAddress',
       addressLocality: 'Nozay',

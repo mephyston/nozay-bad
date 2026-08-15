@@ -1,6 +1,6 @@
 ---
 import type { BlockPayload, CmsMediaRow, CmsMediaVariantRow } from '@nba/cms/public';
-import type { ScheduleSlotView, PostRow } from '../../lib/cms';
+import type { ScheduleSlotView, PostRow, ClubEventView } from '../../lib/cms';
 import RichText from './RichText.astro';
 import Hero from './Hero.astro';
 import CtaGrid from './CtaGrid.astro';
@@ -11,6 +11,7 @@ import Gallery from './Gallery.astro';
 import Schedule from './Schedule.astro';
 import PostsFeed from './PostsFeed.astro';
 import Columns from './Columns.astro';
+import Events from './Events.astro';
 
 type MediaMap = Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
 
@@ -19,6 +20,7 @@ interface Props {
   media?: MediaMap;
   slots?: ScheduleSlotView[];
   posts?: PostRow[];
+  events?: ClubEventView[];
   /** Ce bloc ouvre-t-il la page ? Seul le carrousel s'en sert, pour son titre. */
   opensPage?: boolean;
 }
@@ -27,6 +29,7 @@ const {
   media = new Map() as MediaMap,
   slots = [],
   posts = [],
+  events = [],
   opensPage = false
 } = Astro.props;
 ---
@@ -45,3 +48,4 @@ const {
 {block.type === 'schedule' && <Schedule block={block} slots={slots} />}
 {block.type === 'posts_feed' && <PostsFeed block={block} posts={posts} />}
 {block.type === 'columns' && <Columns block={block} media={media} />}
+{block.type === 'events' && <Events block={block} events={events} />}

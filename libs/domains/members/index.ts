@@ -3,6 +3,7 @@ import { importMembersRoute } from './import-members-csv/route';
 import { listMembersRoute } from './list-members/route';
 import { lookupHouseholdRoute } from './lookup-household/route';
 import { setExpenseAuthorizationRoute } from './set-expense-authorization/route';
+import { listBirthdaysRoute } from './list-birthdays/route';
 import { getMemberByLicenceRoute } from './get-member-by-licence/route';
 import { getMemberCseDataRoute } from './get-member-cse-data/route';
 import { getAttestationConfigRoute } from './get-attestation-config/route';
@@ -21,6 +22,8 @@ membersRouter.route('/', importMembersRoute);
 membersRouter.route('/', listMembersRoute);
 // Route littérale avant `/:licence` pour ne pas être capturée par le paramètre.
 membersRouter.route('/', lookupHouseholdRoute);
+// Littérale elle aussi : `/birthdays` serait sinon lu comme un numéro de licence.
+membersRouter.route('/', listBirthdaysRoute);
 membersRouter.route('/', setExpenseAuthorizationRoute);
 membersRouter.route('/', getMemberByLicenceRoute);
 membersRouter.route('/', getMemberCseDataRoute);

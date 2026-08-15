@@ -7,8 +7,21 @@
  * maîtrisons chaque octet de balisage, donc rien ne justifie de rester en observation.
  */
 
-/** Fournisseurs d'intégration autorisés en cadre, alignés sur le bloc `embed`. */
+/**
+ * Origines autorisées en cadre.
+ *
+ * Les quatre fournisseurs sont alignés sur le bloc `embed`, dont la liste fermée est
+ * la raison d'être — accepter un `src` libre ferait de l'administration un vecteur
+ * d'injection de cadre.
+ *
+ * `'self'` s'y ajoute pour l'aperçu des documents du bloc `pdf_link` : le PDF est
+ * servi par `/media/…`, donc par nous. L'ouverture est bornée à notre propre origine
+ * et ne concède rien à un tiers. `object-src` reste à `'none'` : `<object>` et
+ * `<embed>` accepteraient n'importe quel type de contenu, là où une `iframe`
+ * de même origine ne sert que ce que nous avons déposé.
+ */
 const FRAME_SRC = [
+  "'self'",
   'https://www.youtube-nocookie.com',
   'https://www.youtube.com',
   'https://docs.google.com',

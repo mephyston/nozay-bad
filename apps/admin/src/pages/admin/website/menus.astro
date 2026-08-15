@@ -40,19 +40,22 @@ if (Astro.request.method === 'POST') {
 
 let header: any[] = [];
 let footer: any[] = [];
+let legal: any[] = [];
 let pages: any[] = [];
 let errorMsg = '';
 
 try {
-  const [headerRes, footerRes, pagesRes] = await Promise.all([
+  const [headerRes, footerRes, legalRes, pagesRes] = await Promise.all([
     apiService.fetch('http://localhost/cms/nav?location=header'),
     apiService.fetch('http://localhost/cms/nav?location=footer'),
+    apiService.fetch('http://localhost/cms/nav?location=legal'),
     apiService.fetch('http://localhost/cms/pages')
   ]);
 
   if (headerRes.ok) header = ((await headerRes.json()) as any).data ?? [];
   else errorMsg = 'Impossible de charger les menus.';
   if (footerRes.ok) footer = ((await footerRes.json()) as any).data ?? [];
+  if (legalRes.ok) legal = ((await legalRes.json()) as any).data ?? [];
   if (pagesRes.ok) pages = ((await pagesRes.json()) as any).data ?? [];
 } catch {
   errorMsg = 'Impossible de charger les menus.';
@@ -73,10 +76,10 @@ try {
 
       <PageHeader
         title="Menus du site"
-        description="La barre de navigation et le pied de page du site public. Une entrée principale peut porter un sous-menu, qui s'affiche au survol sur ordinateur et dans le menu déroulant sur mobile."
+        description="La barre de navigation, la colonne de liens du pied de page et la barre légale du site public. Une entrée principale peut porter un sous-menu, qui s'affiche au survol sur ordinateur et dans le menu déroulant sur mobile."
       />
 
-      <MenusManager client:load header={header} footer={footer} pages={pages} canWrite={canWrite} />
+      <MenusManager client:load header={header} footer={footer} legal={legal} pages={pages} canWrite={canWrite} />
     </div>
   </AdminLayout>
 </Layout>

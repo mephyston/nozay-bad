@@ -1,0 +1,168 @@
+---
+import type { EventsBlock } from '@nba/cms/public';
+import type { ClubEventView } from '../../lib/cms';
+
+interface Props { block: EventsBlock; events?: ClubEventView[] }
+const { block, events = [] } = Astro.props;
+
+const CATEGORIES: Record<string, string> = {
+  competition: 'Compétition',
+  interclubs: 'Interclubs',
+  tournoi: 'Tournoi',
+  stage: 'Stage',
+  vie_du_club: 'Vie du club',
+  assemblee: 'Assemblée'
+};
+
+/**
+ * Trois familles de couleur, et non une par catégorie.
+ *
+ * Même raisonnement que la grille des créneaux : six aplats distincts ne tiennent pas
+ * le contraste entre eux, en vision normale comme en protanopie. La teinte ne porte
+ * donc que la **nature** du rendez-vous — on joue, on apprend, on se retrouve — et la
+ * catégorie exacte reste écrite en toutes lettres sur chaque carte. Personne n'a
+ * besoin de la couleur pour lire l'agenda.
+ */
+const FAMILY: Record<string, 'jeu' | 'formation' | 'club'> = {
+  competition: 'jeu',
+  interclubs: 'jeu',
+  tournoi: 'jeu',
+  stage: 'formation',
+  vie_du_club: 'club',
+  assemblee: 'club'
+};
+
+const FAMILY_CLASS: Record<string, string> = {
+  jeu: 'bg-primary/10 text-primary',
+  formation: 'bg-info/10 text-info',
+  club: 'bg-success/10 text-success'
+};
+
+/**
+ * Les dates sont stockées en heure locale sans fuseau : les relire telles quelles
+ * évite tout décalage à l'affichage.
+ */
+const parse = (value: string) => new Date(`${value}:00`);
+
+/*
+  Ce que le bloc montre : ce qui **vient**, jamais ce qui est passé.
+
+  Un agenda posé sur une page d'accueil doit vieillir tout seul. Le filtrage se fait au
+  rendu et non à l'enregistrement, sinon la page figerait la liste du jour où on l'a
+  composée.
+
+  Les événements annulés sont écartés côté domaine — c'est la raison d'être du statut
+  « annulé », qui retire du site sans effacer la trace en administration.
+*/
+const now = new Date();
+const shown = events
+  .filter((event) => block.categories.length === 0 || block.categories.includes(event.category))
+  .filter((event) => parse(event.endsAt ?? event.startsAt) >= now)
+  .sort((a, b) => parse(a.startsAt).getTime() - parse(b.startsAt).getTime())
+  .slice(0, block.limit);
+
+const dayNumber = new Intl.DateTimeFormat('fr-FR', { day: 'numeric' });
+const monthShort = new Intl.DateTimeFormat('fr-FR', { month: 'short' });
+const weekdayShort = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' });
+const time = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
+const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' });
+---
+
+<section class="mx-auto max-w-5xl px-4 py-8">
+  {block.heading && <h2 class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
+
+  {shown.length === 0 ? (
+    <p class="border-border text-muted-foreground rounded-lg border border-dashed px-4 py-6 text-center text-sm">
+      Aucun rendez-vous à venir pour le moment.
+    </p>
+  ) : (
+    <ul class="space-y-2">
+      {shown.map((event) => {
+        const start = parse(event.startsAt);
+        const end = event.endsAt ? parse(event.endsAt) : null;
+        // Un événement qui déborde sur un autre jour affiche ses deux dates ; sinon
+        // seule l'heure de fin, qui suffit.
+        const sameDay = end !== null && end.toDateString() === start.toDateString();
+        return (
+          <li>
+            <article class="border-border hover:border-primary/40 flex items-stretch gap-4 rounded-xl border p-3 transition-colors sm:gap-5 sm:p-4">
+              {/*
+                Pastille de date : le jour et le mois, en gros.
+
+                C'est ce qu'on cherche dans un agenda — « c'est quand ? » — avant même
+                de lire le titre. `aria-hidden` sur la pastille et date complète en
+                texte masqué : « 14 févr. » découpé en deux lignes se lit mal à voix
+                haute, là où « samedi 14 février 2026 » ne laisse aucun doute.
+              */}
+              <div
+                class:list={[
+                  'flex w-16 shrink-0 flex-col items-center justify-center rounded-lg py-2',
+                  FAMILY_CLASS[FAMILY[event.category] ?? 'club']
+                ]}
+                aria-hidden="true"
+              >
+                <span class="text-[11px] font-medium uppercase leading-none opacity-80">
+                  {weekdayShort.format(start)}
+                </span>
+                <span class="text-2xl font-bold leading-tight">{dayNumber.format(start)}</span>
+                <span class="text-[11px] font-medium uppercase leading-none opacity-80">
+                  {monthShort.format(start)}
+                </span>
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <h3 class="font-semibold leading-snug">
+                  {event.externalUrl ? (
+                    <a
+                      href={event.externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="hover:underline"
+                    >
+                      {event.title}
+                    </a>
+                  ) : (
+                    event.title
+                  )}
+                </h3>
+
+                <p class="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                  <span class="sr-only">{fullDate.format(start)}</span>
+                  {!event.allDay && (
+                    <span>
+                      {time.format(start)}
+                      {end && sameDay && ` – ${time.format(end)}`}
+                    </span>
+                  )}
+                  {event.allDay && <span>Toute la journée</span>}
+                  {end && !sameDay && <span>jusqu'au {fullDate.format(end)}</span>}
+                  {event.venueLabel && (
+                    <>
+                      <span aria-hidden="true">·</span>
+                      <span>{event.venueLabel}</span>
+                    </>
+                  )}
+                </p>
+
+                <span
+                  class:list={[
+                    'mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium',
+                    FAMILY_CLASS[FAMILY[event.category] ?? 'club']
+                  ]}
+                >
+                  {CATEGORIES[event.category] ?? event.category}
+                </span>
+              </div>
+            </article>
+          </li>
+        );
+      })}
+    </ul>
+  )}
+
+  {block.showArchiveLink !== false && shown.length > 0 && (
+    <a href="/agenda/" class="text-primary mt-4 inline-block text-sm font-medium hover:underline">
+      Tout l'agenda <span aria-hidden="true">→</span>
+    </a>
+  )}
+</section>

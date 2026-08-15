@@ -6,6 +6,7 @@ import {
   CmsNavDepthError,
   CmsPageNotFoundError
 } from '../../shared/errors';
+import { bumpContentVersion } from '../../shared/cache-version';
 import { SaveNavItemRepository } from './repository';
 import type { SaveNavItemInput, SaveNavItemOutput } from './dto';
 
@@ -62,7 +63,7 @@ export async function saveNavItem(db: Db, input: SaveNavItemInput): Promise<Save
   }
 
   if (input.navItemId === undefined) {
-    return repo.insert(db, {
+    const created = await repo.insert(db, {
       location: input.location,
       parentId,
       label: input.label,
@@ -70,6 +71,12 @@ export async function saveNavItem(db: Db, input: SaveNavItemInput): Promise<Save
       externalUrl,
       position: input.position ?? (await repo.nextPosition(db, input.location, parentId))
     });
+
+  // Les menus sont rendus sur **toutes** les pages : sans invalidation, une entrée
+  // ajoutée ou renommée resterait invisible jusqu'à expiration du cache du bord — une
+  // heure — et l'on croirait l'enregistrement perdu.
+    await bumpContentVersion(db);
+    return created;
   }
 
   const existing = await repo.findById(db, input.navItemId);
@@ -82,7 +89,7 @@ export async function saveNavItem(db: Db, input: SaveNavItemInput): Promise<Save
     if (children) throw new CmsNavDepthError('Cette entrée porte un sous-menu : videz-le avant de la déplacer.');
   }
 
-  return repo.update(db, existing.id, {
+  const updated = await repo.update(db, existing.id, {
     location: input.location,
     parentId,
     label: input.label,
@@ -90,4 +97,6 @@ export async function saveNavItem(db: Db, input: SaveNavItemInput): Promise<Save
     externalUrl,
     position: input.position ?? existing.position
   });
+  await bumpContentVersion(db);
+  return updated;
 }

@@ -1,6 +1,7 @@
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { cmsNavItemsTable, cmsPagesTable, type CmsNavItemRow } from '../../shared/schema';
+import type { NavLocation } from '../../shared/nav';
 
 export class SaveNavItemRepository {
   async findById(db: DbOrTx, id: number): Promise<CmsNavItemRow | undefined> {
@@ -13,7 +14,7 @@ export class SaveNavItemRepository {
   }
 
   /** Rang suivant dans la fratrie, pour qu'une nouvelle entrée se pose à la fin. */
-  async nextPosition(db: DbOrTx, location: 'header' | 'footer', parentId: number | null): Promise<number> {
+  async nextPosition(db: DbOrTx, location: NavLocation, parentId: number | null): Promise<number> {
     const [row] = await db
       .select({ max: sql<number>`coalesce(max(${cmsNavItemsTable.position}), -1)` })
       .from(cmsNavItemsTable)

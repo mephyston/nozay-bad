@@ -12,7 +12,7 @@ export const NOTIFICATION_CATEGORIES = [
   {
     id: 'announcement',
     label: 'Communications du bureau',
-    description: 'Annonces générales, tournois, assemblée générale.'
+    description: 'Actualités du club, tournois, assemblée générale.'
   },
   {
     id: 'birthday',

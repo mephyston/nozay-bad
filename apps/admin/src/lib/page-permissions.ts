@@ -47,12 +47,12 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
   '/admin/shop/products': 'shop:products:read',
   '/admin/shop/orders': 'shop:orders:read',
 
-  '/admin/announcements': 'announcements:posts:read',
   '/admin/website/media': 'cms:media:read',
   '/admin/website/pages': 'cms:pages:read',
   '/admin/website/pages/[id]': 'cms:pages:read',
   '/admin/website/posts': 'cms:posts:read',
   '/admin/website/menus': 'cms:pages:read',
+  '/admin/website/footer': 'cms:pages:read',
   '/admin/website/schedules': 'schedules:slots:read',
   '/admin/website/events': 'events:events:read',
   '/admin/notifications': 'notifications:messages:read',

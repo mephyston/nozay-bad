@@ -17,6 +17,7 @@ export async function listPosts(db: Db, filters: ListPostsInput = {}): Promise<L
 
   const { rows, total } = await repo.list(db, {
     status: filters.status,
+    visibility: filters.visibility,
     ids,
     limit: Math.min(filters.limit ?? DEFAULT_LIMIT, MAX_LIMIT),
     offset: filters.offset ?? 0

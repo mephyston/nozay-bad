@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Input, Label, Button, Select } from '@nba/ui';
+  import { Input, Label, Button, Select, Checkbox } from '@nba/ui';
   import { mediaUrl } from '../../../../media/media-url';
   import { ImagePlus, X } from '@lucide/svelte';
   import MediaPicker, { type PickableMedia } from '../../../../media/list-media/ui/MediaPicker.svelte';
@@ -60,6 +60,23 @@
       <Input id="gallery-heading" bind:value={block.heading} placeholder="Le tournoi 2026 en images" />
     </div>
     <div class="space-y-1.5">
+      <Label for="gallery-layout">Disposition</Label>
+      <Select
+        id="gallery-layout"
+        value={block.layout ?? 'grid'}
+        onchange={(e) =>
+          (block.layout = (e.currentTarget as HTMLSelectElement).value as 'grid' | 'carousel')}
+      >
+        <option value="grid">Grille — toutes visibles d'un coup</option>
+        <option value="carousel">Ruban — défilement horizontal</option>
+      </Select>
+      <p class="text-muted-foreground text-xs">
+        En ruban, chaque image garde ses proportions : une photo en portrait donne une
+        carte étroite, un panoramique une carte large, et aucune n'est recadrée.
+      </p>
+    </div>
+
+    <div class="space-y-1.5" class:opacity-50={block.layout === 'carousel'}>
       <Label for="gallery-columns">Images par rangée</Label>
       <Select
         id="gallery-columns"
@@ -73,10 +90,31 @@
         <option value="4">4 — petites</option>
       </Select>
       <p class="text-muted-foreground text-xs">
-        C'est ce réglage qui décide de la taille des images. Sur téléphone, jamais plus de deux.
+        {#if block.layout === 'carousel'}
+          Sans effet en ruban : la hauteur y est commune et la largeur suit l'image.
+        {:else}
+          C'est ce réglage qui décide de la taille des images. Sur téléphone, jamais plus de deux.
+        {/if}
       </p>
     </div>
   </div>
+
+  {#if block.layout === 'carousel'}
+    <label class="flex items-start gap-2 text-sm">
+      <Checkbox
+        checked={block.autoScroll === true}
+        onCheckedChange={(v) => (block.autoScroll = v === true)}
+      />
+      <span>
+        <span class="font-medium">Faire défiler automatiquement</span>
+        <span class="text-muted-foreground block text-xs">
+          Le ruban glisse de la droite vers la gauche. Il s'arrête au survol, et un
+          bouton de pause reste disponible — le mouvement est désactivé d'office pour
+          les visiteurs qui demandent moins d'animation.
+        </span>
+      </span>
+    </label>
+  {/if}
 
   <div class="space-y-2">
     <Label>Images</Label>

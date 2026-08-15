@@ -60,6 +60,13 @@ export class CmsNavDepthError extends AppError {
   }
 }
 
+export class CmsSocialUrlError extends AppError {
+  constructor(network: string) {
+    super(`L'adresse ${network} doit commencer par http:// ou https://.`, 400);
+    this.name = 'CmsSocialUrlError';
+  }
+}
+
 export class CmsHomePageConflictError extends AppError {
   constructor(title: string) {
     super(
@@ -67,5 +74,47 @@ export class CmsHomePageConflictError extends AppError {
       409
     );
     this.name = 'CmsHomePageConflictError';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Diffusion push d'une actualité
+// ---------------------------------------------------------------------------
+
+export class CmsPostNotFoundError extends AppError {
+  constructor(message = 'Actualité introuvable') {
+    super(message, 404);
+    this.name = 'CmsPostNotFoundError';
+  }
+}
+
+export class CmsPostNotPublishedError extends AppError {
+  constructor() {
+    super("Publiez l'actualité avant de la diffuser.", 409);
+    this.name = 'CmsPostNotPublishedError';
+  }
+}
+
+export class CmsPostAlreadyNotifiedError extends AppError {
+  constructor() {
+    super('Cette actualité a déjà été diffusée aux adhérents.', 409);
+    this.name = 'CmsPostAlreadyNotifiedError';
+  }
+}
+
+/**
+ * Une actualité publique n'est pas diffusée en notification.
+ *
+ * La notification s'adresse aux adhérents abonnés, dans l'espace qui leur est réservé.
+ * Une actualité publique vit sur le site, où elle se lit sans compte : la pousser sur
+ * les téléphones du club en ferait une alerte pour une information de vitrine.
+ */
+export class CmsPostNotPrivateError extends AppError {
+  constructor() {
+    super(
+      "Seule une actualité réservée aux adhérents peut être diffusée en notification.",
+      409
+    );
+    this.name = 'CmsPostNotPrivateError';
   }
 }

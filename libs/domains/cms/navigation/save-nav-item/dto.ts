@@ -1,9 +1,10 @@
 import type { CmsNavItemRow } from '../../shared/schema';
+import type { NavLocation } from '../../shared/nav';
 
 export interface SaveNavItemInput {
   /** Absent : création. Présent : modification de l'entrée existante. */
   navItemId?: number;
-  location: 'header' | 'footer';
+  location: NavLocation;
   label: string;
   pageId?: number | null;
   externalUrl?: string | null;

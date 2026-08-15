@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Input, Label, Select } from '@nba/ui';
+  import { Input, Label, Select, Checkbox } from '@nba/ui';
   import type { EmbedBlock } from '../../../../shared/blocks';
 
   let { block = $bindable() } = $props<{ block: EmbedBlock }>();
@@ -59,6 +59,25 @@
         une hauteur fixe.
       </p>
     </div>
+
+    {#if block.provider === 'google_sheet'}
+      <label class="flex items-start gap-2 text-sm sm:col-span-2">
+        <Checkbox
+          checked={block.editable === true}
+          onCheckedChange={(v) => (block.editable = v === true)}
+        />
+        <span>
+          <span class="font-medium">Autoriser la modification</span>
+          <span class="text-muted-foreground block text-xs">
+            Le tableau s'affiche en écriture au lieu de la lecture seule. Ce réglage ne
+            donne aucun droit par lui-même : c'est le partage du document côté Google qui
+            décide. Si la feuille est ouverte en modification à toute personne disposant
+            du lien, <strong>n'importe quel visiteur de la page pourra l'écrire</strong>,
+            sans compte ni nom. L'historique des versions de Google reste le seul recours.
+          </span>
+        </span>
+      </label>
+    {/if}
 
     {#if block.aspect === 'fixed'}
       <div>

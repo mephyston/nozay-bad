@@ -25,10 +25,17 @@ export class ListPostsRepository {
 
   async list(
     db: DbOrTx,
-    filters: { status?: 'draft' | 'published'; ids?: number[]; limit: number; offset: number }
+    filters: {
+      status?: 'draft' | 'published';
+      visibility?: 'public' | 'private';
+      ids?: number[];
+      limit: number;
+      offset: number;
+    }
   ): Promise<{ rows: CmsPostRow[]; total: number }> {
     const conditions: SQL[] = [];
     if (filters.status) conditions.push(eq(cmsPostsTable.status, filters.status));
+    if (filters.visibility) conditions.push(eq(cmsPostsTable.visibility, filters.visibility));
     // Une catégorie sans article donne une liste vide, jamais la liste complète.
     if (filters.ids) {
       if (filters.ids.length === 0) return { rows: [], total: 0 };

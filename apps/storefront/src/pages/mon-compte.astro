@@ -70,7 +70,7 @@ const isPaid = Boolean(cotisation?.paid);
 ---
 
 <Layout title="Mon compte - Nozay Bad">
-  <Header currentPath="/mon-compte" activeSeasonName={seasonName || undefined} canExpense={canExpense} />
+  <Header currentPath="/mon-compte" canExpense={canExpense} />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     <div class="max-w-3xl mx-auto space-y-8">
@@ -78,6 +78,22 @@ const isPaid = Boolean(cotisation?.paid);
 
       <!-- Notifications : ne s'affiche que si l'appareil peut en recevoir. -->
       <PushOptIn client:idle />
+
+      <!-- Réglage des catégories reçues. L'accès vit ici, avec le reste de ce qui
+           relève du compte : l'accueil est réservé à ce qui change tous les jours. -->
+      <a
+        href="/notifications"
+        class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline group min-h-[44px]"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
+            <p class="text-sm font-semibold text-foreground">Notifications</p>
+          </div>
+          <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Ouvrir &rarr;</span>
+        </div>
+        <p class="text-sm text-muted-foreground">Choisissez les actualités du club que vous souhaitez recevoir.</p>
+      </a>
 
       <!-- Ma cotisation : repliable comme le reste, mais ouverte d'emblée — c'est
            l'information qu'on vient chercher sur cette page. -->

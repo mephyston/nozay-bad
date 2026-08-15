@@ -88,7 +88,7 @@ const activeSeasonId = activeSeason.id;
 ---
 
 <Layout title="Notes de frais - NBA 91">
-  <Header currentPath="/note-de-frais" activeSeasonName={activeSeason.name || activeSeasonId} canExpense={canExpense} />
+  <Header currentPath="/note-de-frais" canExpense={canExpense} />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     {errorMsg && (

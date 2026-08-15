@@ -1,7 +1,8 @@
 import type { CmsNavItemRow } from '../../shared/schema';
+import type { NavLocation } from '../../shared/nav';
 
 export interface ListNavItemsInput {
-  location?: 'header' | 'footer';
+  location?: NavLocation;
 }
 
 /** Entrée de menu, avec le chemin de la page liée déjà résolu. */

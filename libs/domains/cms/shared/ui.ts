@@ -9,3 +9,4 @@ export { default as PagesManager } from '../pages/list-pages/ui/PagesManager.sve
 export { default as PageEditor } from '../pages/save-page-blocks/ui/PageEditor.svelte';
 export { default as PostsManager } from '../posts/list-posts/ui/PostsManager.svelte';
 export { default as MenusManager } from '../navigation/list-nav-items/ui/MenusManager.svelte';
+export { default as SiteSettingsForm } from '../settings/save-site-settings/ui/SiteSettingsForm.svelte';

@@ -10,11 +10,14 @@ import {
   mediaIdsInBlocks,
   listScheduleSlots,
   listPublishedPosts,
+  listClubEvents,
+  getSiteSettings,
   type PostRow
 } from '../lib/cms';
 import { resolveEnv } from '../lib/request-context';
 import { pageTitle, pageDescription, absoluteUrl } from '../lib/seo';
-import { sportsClub, webPage, breadcrumbList, article, openingHours } from '../lib/jsonld';
+import { sportsClub, webPage, breadcrumbList, article, openingHours, sportsEvent } from '../lib/jsonld';
+import { socialLinks } from '../lib/social';
 import { HTML_CACHE_CONTROL } from '../lib/cache';
 
 const env = resolveEnv(Astro.locals);
@@ -73,6 +76,13 @@ const media = await loadMedia(env, mediaIdsInBlocks(blocks));
 // pas payer un aller-retour inutile.
 const needsSchedule = blocks.some((block) => block.type === 'schedule');
 const slots = needsSchedule ? await listScheduleSlots(env) : [];
+
+// Même règle pour l'agenda : une seule lecture, quel que soit le nombre de blocs, et
+// aucune si la page n'en porte pas. Le filtrage par catégorie se fait au rendu — la
+// liste tient en quelques dizaines de lignes, la découper par requête coûterait plus
+// d'allers-retours qu'elle n'en économiserait.
+const needsEvents = blocks.some((block) => block.type === 'events');
+const clubEvents = needsEvents ? await listClubEvents(env) : [];
 
 // Idem pour les actualités : une page qui n'en affiche pas ne paie pas la requête.
 //
@@ -146,7 +156,43 @@ if (page) {
   if (page.path !== '/') trail.push({ name: page.title, path: page.path });
   pageJsonLd.push(webPage(siteUrl, { title: page.title, description: pageDescriptionText, path: page.path }));
   pageJsonLd.push(breadcrumbList(siteUrl, trail));
-  if (page.path === '/') pageJsonLd.unshift(sportsClub(siteUrl));
+  // Fiche du club sur la seule page d'accueil : c'est l'ancre que `organizer` et
+  // `publisher` visent ailleurs, et la répéter sur chaque page n'ajoute rien. Les
+  // comptes sociaux viennent des réglages, comme dans le pied de page.
+  if (page.path === '/') pageJsonLd.unshift(sportsClub(siteUrl, socialLinks(await getSiteSettings(env)).map((l) => l.href)));
+  /*
+    Balisage des événements, repris de la page `/agenda/` supprimée.
+
+    Il vit désormais **avec le bloc** plutôt qu'avec une route : la page d'agenda est
+    composée depuis l'administration, et le balisage doit suivre le bloc partout où on
+    le pose — accueil comprise — et non rester attaché à une adresse.
+
+    Les événements décrits sont ceux que la page **affiche réellement** : décrire à
+    Google des rendez-vous absents de la page reviendrait à lui promettre un contenu
+    qu'il ne trouverait pas.
+    */
+  for (const block of blocks) {
+    if (block.type !== 'events') continue;
+    const today = new Date().toISOString().slice(0, 10);
+    const shown = clubEvents
+      .filter((event) => block.categories.length === 0 || block.categories.includes(event.category))
+      .filter((event) => (event.endsAt ?? event.startsAt).slice(0, 10) >= today)
+      .slice(0, block.limit);
+    for (const event of shown) {
+      pageJsonLd.push(
+        sportsEvent(siteUrl, {
+          title: event.title,
+          slug: event.slug,
+          startsAt: event.startsAt,
+          endsAt: event.endsAt,
+          venueLabel: event.venueLabel,
+          status: event.status,
+          description: event.descriptionHtml
+        })
+      );
+    }
+  }
+
   // Les horaires rendent la page « Créneaux » exploitable par une machine.
   if (slots.length > 0) {
     pageJsonLd.push({
@@ -242,6 +288,7 @@ if (page) {
         block={block}
         media={media}
         slots={slots}
+        events={clubEvents}
         posts={postsFor(block)}
         opensPage={index === 0}
       />

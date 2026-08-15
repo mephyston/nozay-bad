@@ -48,6 +48,19 @@
   --sidebar-accent-foreground: rgb(52, 52, 52);
   --sidebar-border: rgb(235, 235, 235);
   --sidebar-ring: rgb(181, 181, 181);
+  /*
+    Pied de page : un bandeau sombre, dans les deux thèmes.
+
+    Ces quatre jetons ne dérivent d'aucun autre, à dessein. Le pied de page ne suit
+    pas le thème de la page — il tranche avec lui — donc réutiliser `--card` ou
+    `--muted` le ferait pâlir en clair, précisément là où on veut la rupture. Les
+    contrastes sont vérifiés sur le fond du pied, pas sur celui de la page :
+    12,7:1 pour le texte courant, 5,7:1 pour le texte secondaire.
+  */
+  --footer: rgb(42, 40, 37);
+  --footer-foreground: rgb(240, 238, 232);
+  --footer-muted: rgb(166, 161, 150);
+  --footer-border: rgb(70, 66, 61);
   --font-sans: Outfit, sans-serif;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: Geist Mono, ui-monospace, monospace;
@@ -109,6 +122,15 @@
   --sidebar-accent-foreground: rgb(195, 192, 182);
   --sidebar-border: rgb(235, 235, 235);
   --sidebar-ring: rgb(181, 181, 181);
+  /*
+    Un cran plus sombre que la page, et non plus clair : le pied reste le socle sur
+    lequel le contenu repose. Le liseré `--footer-border` fait le reste du travail de
+    séparation, que l'écart de fond seul ne suffirait pas à porter en thème sombre.
+  */
+  --footer: rgb(23, 23, 21);
+  --footer-foreground: rgb(236, 234, 228);
+  --footer-muted: rgb(160, 156, 146);
+  --footer-border: rgb(56, 54, 50);
   --font-sans: Outfit, sans-serif;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: Geist Mono, ui-monospace, monospace;
@@ -168,6 +190,10 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-footer: var(--footer);
+  --color-footer-foreground: var(--footer-foreground);
+  --color-footer-muted: var(--footer-muted);
+  --color-footer-border: var(--footer-border);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);

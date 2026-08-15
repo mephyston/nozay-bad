@@ -19,6 +19,7 @@ export async function resolveRoute(db: Db, input: ResolveRouteInput): Promise<Re
   const repo = new ResolveRouteRepository();
   const path = normalisePath(input.path);
   const includeDrafts = input.includeDrafts === true;
+  const includePrivate = input.includePrivate === true;
 
   const page = await repo.findPage(db, path, includeDrafts);
   if (page) {
@@ -31,7 +32,7 @@ export async function resolveRoute(db: Db, input: ResolveRouteInput): Promise<Re
     return { kind: 'page', page, blocks };
   }
 
-  const post = await repo.findPost(db, path, includeDrafts);
+  const post = await repo.findPost(db, path, includeDrafts, includePrivate);
   if (post) {
     // Deux lectures de plus sur le chemin chaud, mais seulement pour un article, et
     // seulement une fois la correspondance trouvée : une page ne les paie jamais.

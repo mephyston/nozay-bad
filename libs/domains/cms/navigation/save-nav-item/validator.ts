@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox';
 
 export const saveNavItemSchema = Type.Object({
-  location: Type.Union([Type.Literal('header'), Type.Literal('footer')]),
+  location: Type.Union([Type.Literal('header'), Type.Literal('footer'), Type.Literal('legal')]),
   label: Type.String({ minLength: 1, maxLength: 80 }),
   /**
    * Cible : une page du site **ou** une adresse extérieure, jamais les deux.

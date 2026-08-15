@@ -138,7 +138,7 @@
         <div class="text-sm font-semibold text-foreground">Notifications</div>
         <p class="text-xs text-muted-foreground mt-1">
           {#if state === 'on'}
-            Cet appareil reçoit les annonces du club.
+            Cet appareil reçoit les actualités du club.
           {:else if state === 'needs-install'}
             Sur iPhone et iPad, installez d'abord l'application : bouton Partager, puis « Sur l'écran
             d'accueil ». Les notifications seront ensuite activables depuis l'application.
@@ -146,7 +146,7 @@
             Les notifications sont bloquées pour ce site. Réautorisez-les dans les réglages de votre
             navigateur pour pouvoir les activer.
           {:else}
-            Soyez prévenu des annonces du club et du suivi de vos demandes.
+            Soyez prévenu des actualités du club et du suivi de vos demandes.
           {/if}
         </p>
         {#if error}

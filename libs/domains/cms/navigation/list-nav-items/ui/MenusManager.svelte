@@ -20,9 +20,11 @@
     flashAndReload
   } from '@nba/ui';
 
+  import { NAV_LOCATIONS, NAV_LOCATION_LABELS, type NavLocation } from '../../../shared/nav';
+
   interface NavItem {
     id: number;
-    location: 'header' | 'footer';
+    location: NavLocation;
     parentId: number | null;
     label: string;
     pageId: number | null;
@@ -36,16 +38,50 @@
   let {
     header = [],
     footer = [],
+    legal = [],
     pages = [],
     canWrite = false
   } = $props<{
     header?: NavItem[];
     footer?: NavItem[];
+    legal?: NavItem[];
     pages?: { id: number; title: string; path: string; status: string }[];
     canWrite?: boolean;
   }>();
 
-  let location = $state<'header' | 'footer'>('header');
+  /**
+   * Onglet actif, porté par l'URL (`?emplacement=`) et non par le seul état du
+   * composant.
+   *
+   * Après une écriture, `flashAndReload` réaffiche la page courante et l'île est
+   * remontée : un état local repartait donc sur « En-tête », et l'entrée qu'on venait
+   * d'ajouter au pied de page disparaissait de l'écran. Passer par l'URL rend aussi
+   * l'onglet partageable et compatible avec le bouton Précédent.
+   */
+  const LOCATION_PARAM = 'emplacement';
+
+  function locationFromUrl(): NavLocation {
+    if (typeof window === 'undefined') return 'header';
+    const requested = new URLSearchParams(window.location.search).get(LOCATION_PARAM) ?? '';
+    return (NAV_LOCATIONS as readonly string[]).includes(requested)
+      ? (requested as NavLocation)
+      : 'header';
+  }
+
+  let location = $state<NavLocation>(locationFromUrl());
+
+  /*
+    `replaceState` et non une navigation : changer d'onglet ne recharge rien, on ne
+    fait qu'enregistrer où l'on est pour le prochain réaffichage. L'emplacement par
+    défaut n'écrit pas de paramètre, pour garder l'URL nue quand elle peut l'être.
+  */
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (location === 'header') url.searchParams.delete(LOCATION_PARAM);
+    else url.searchParams.set(LOCATION_PARAM, location);
+    if (url.toString() !== window.location.href) window.history.replaceState({}, '', url);
+  });
   let showFormSheet = $state(false);
   let busy = $state(false);
   let errorMsg = $state('');
@@ -57,7 +93,18 @@
   let externalUrl = $state('');
   let parentId = $state('');
 
-  const tree = $derived(location === 'header' ? header : footer);
+  const trees: Record<NavLocation, NavItem[]> = $derived({ header, footer, legal });
+  const tree = $derived(trees[location]);
+
+  /**
+   * Un mot par emplacement, réutilisé par l'onglet vide et par le formulaire : trois
+   * emplacements et deux formulations en ternaire finissaient toujours par diverger.
+   */
+  const LOCATION_HINTS: Record<NavLocation, string> = {
+    header: 'Ajoutez les entrées de la barre de navigation du site.',
+    footer: 'Ajoutez les liens de la colonne « Le site » du pied de page.',
+    legal: 'Ajoutez les liens de la barre légale, tout en bas : mentions légales, confidentialité.'
+  };
 
   const pageItems: ComboboxItem[] = $derived(
     pages.map((page) => ({
@@ -200,9 +247,13 @@
 
 <Tabs.Root bind:value={location}>
   <div class="flex flex-wrap items-center justify-between gap-3">
-    <Tabs.List>
-      <Tabs.Trigger value="header">En-tête</Tabs.Trigger>
-      <Tabs.Trigger value="footer">Pied de page</Tabs.Trigger>
+    <!-- `w-full sm:w-fit` : `Tabs.List` s'étire sur toute la largeur par défaut (le
+         composant impose `w-full` pour le défilement horizontal sur mobile). Sur
+         écran large, la barre se réduit à ses onglets, comme partout ailleurs. -->
+    <Tabs.List class="w-full justify-start sm:w-fit sm:justify-center">
+      {#each NAV_LOCATIONS as value (value)}
+        <Tabs.Trigger {value}>{NAV_LOCATION_LABELS[value]}</Tabs.Trigger>
+      {/each}
     </Tabs.List>
 
     {#if canWrite}
@@ -213,16 +264,14 @@
     {/if}
   </div>
 
-  {#each ['header', 'footer'] as value (value)}
+  {#each NAV_LOCATIONS as value (value)}
     <Tabs.Content {value} class="mt-4">
       {#if tree.length === 0}
         <Card.Root>
           <Card.Content class="p-6">
             <EmptyState
               title="Menu vide"
-              description={value === 'header'
-                ? "Ajoutez les entrées de la barre de navigation du site."
-                : 'Ajoutez les liens du pied de page.'}
+              description={LOCATION_HINTS[value]}
             />
           </Card.Content>
         </Card.Root>
@@ -357,8 +406,8 @@
   bind:open={showFormSheet}
   title={editingId ? "Modifier l'entrée" : 'Nouvelle entrée de menu'}
   description={location === 'header'
-    ? "Dans la barre de navigation du site. Une entrée sans sous-menu est un lien direct."
-    : 'Dans le pied de page du site.'}
+    ? 'Dans la barre de navigation du site. Une entrée sans sous-menu est un lien direct.'
+    : LOCATION_HINTS[location]}
   icon={editingId ? Edit : Plus}
   error={errorMsg}
   isSubmitting={busy}

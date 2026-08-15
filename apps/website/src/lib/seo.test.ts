@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { pageTitle, pageDescription, absoluteUrl, SITE_NAME } from './seo';
 import { serialiseJsonLd, sportsClub, breadcrumbList } from './jsonld';
+import { socialLinks } from './social';
+import { SITE_SETTINGS_FALLBACK } from './cms';
 import { applySecurityHeaders } from './security-headers';
 import type { BlockPayload } from '@nba/cms/public';
 
@@ -61,7 +63,17 @@ describe('JSON-LD', () => {
   });
 
   it('ancre le club sur un identifiant stable', () => {
-    expect(sportsClub('https://nozaybad.fr')['@id']).toBe('https://nozaybad.fr/#club');
+    expect(sportsClub('https://nozaybad.fr', [])['@id']).toBe('https://nozaybad.fr/#club');
+  });
+
+  it('déclare les comptes du club en sameAs', () => {
+    // Le pied de page et le balisage lisent la même liste : ajouter un réseau à l'un
+    // sans l'autre est l'oubli que ce cas rend impossible.
+    const links = socialLinks(SITE_SETTINGS_FALLBACK);
+    expect(links.length).toBeGreaterThan(0);
+    expect(sportsClub('https://nozaybad.fr', links.map((l) => l.href)).sameAs).toEqual(
+      links.map((l) => l.href)
+    );
   });
 
   it('numérote le fil d’Ariane à partir de 1', () => {
@@ -71,6 +83,27 @@ describe('JSON-LD', () => {
     ]);
     expect(crumbs.itemListElement[0].position).toBe(1);
     expect(crumbs.itemListElement[1].item).toBe('https://nozaybad.fr/presentation/');
+  });
+});
+
+describe('comptes sociaux', () => {
+  it('ignore un réseau non renseigné plutôt que de produire un lien mort', () => {
+    const links = socialLinks({ ...SITE_SETTINGS_FALLBACK, instagramUrl: null, facebookUrl: '  ' });
+    expect(links).toEqual([]);
+  });
+
+  it('conserve l’ordre d’affichage, indépendant de l’ordre des réglages', () => {
+    expect(socialLinks(SITE_SETTINGS_FALLBACK).map((l) => l.name)).toEqual(['Instagram', 'Facebook']);
+  });
+
+  it('ne retient que des URL de profil canoniques dans les valeurs de repli', () => {
+    // `?locale=fr_FR` traîne sur toute page Facebook copiée depuis un navigateur :
+    // c'est un réglage d'affichage, et il n'affirme aucune identité.
+    for (const { href } of socialLinks(SITE_SETTINGS_FALLBACK)) {
+      const url = new URL(href);
+      expect(url.protocol).toBe('https:');
+      expect(url.search).toBe('');
+    }
   });
 });
 

@@ -1,27 +1,34 @@
 <script lang="ts">
-  import { Home, ShoppingCart, Wallet, MoreHorizontal } from '@lucide/svelte';
+  import { Home, ShoppingCart, Newspaper, CalendarDays, MoreHorizontal } from '@lucide/svelte';
 
   let { currentPath = '', canExpense = true }: { currentPath?: string; canExpense?: boolean } = $props();
 
-  // Trois destinations quotidiennes seulement : au-delà, les onglets deviennent
-  // trop étroits sur un petit écran et aucun n'est plus atteignable au pouce.
+  // Les quatre rubriques de lecture du club, plus « Plus » : cinq cases, la limite de
+  // ce qu'une barre d'onglets supporte avant que les libellés ne deviennent illisibles.
+  //
+  // « Jeunes » n'a plus d'onglet : c'est devenu une rubrique parmi d'autres du filtre
+  // d'« Actualités », qui réunit désormais toutes les communications du club. La case
+  // ainsi libérée revient à « Agenda », qui n'aurait aucun autre chemin.
   const items = [
     { href: '/', label: 'Accueil', icon: Home },
-    { href: '/mon-compte', label: 'Compte', icon: Wallet },
+    { href: '/actualites', label: 'Actualités', icon: Newspaper },
+    { href: '/agenda', label: 'Agenda', icon: CalendarDays },
     { href: '/boutique', label: 'Boutique', icon: ShoppingCart }
   ];
 
   // Écrans plus rarement consultés : ils n'ont pas leur propre onglet, mais restent
   // accessibles à tout moment — y compris en PWA, où le pied de page est masqué.
   //
-  // Les pages légales n'y figurent pas : ce menu sert à agir, et elles se consultent
-  // une fois. Elles restent atteignables depuis le pied de page de chaque écran et
-  // depuis la page de connexion.
+  // Ne sont listés ici que les écrans sans autre chemin. « Mon compte » s'atteint en un
+  // geste depuis le menu de l'en-tête, et « Mes notifications » depuis « Mon compte » :
+  // les répéter ici allongeait le menu sans rien rendre accessible.
+  //
+  // Les pages légales n'y figurent pas non plus : ce menu sert à agir, et elles se
+  // consultent une fois. Elles restent atteignables depuis le pied de page de chaque
+  // écran et depuis la page de connexion.
   const secondaryLinks = $derived([
-    { href: '/annonces', label: 'Annonces du club' },
     ...(canExpense ? [{ href: '/note-de-frais', label: 'Notes de frais' }] : []),
-    { href: '/attestation', label: 'Attestation CSE' },
-    { href: '/notifications', label: 'Mes notifications' }
+    { href: '/attestation', label: 'Attestation CSE' }
   ]);
 
   const isSecondaryActive = $derived(secondaryLinks.some((l) => l.href === currentPath));

@@ -2,6 +2,7 @@
   import {
     ChevronRight,
     Menu as MenuIcon,
+    PanelBottom,
     LayoutDashboard,
     Coins,
     Users,
@@ -57,7 +58,7 @@
   // où l'on ne veut pas charger de composants Svelte.
   const ICONS: Record<string, any> = {
     LayoutDashboard, Sparkles, Users, BarChart3, BookOpen, FileCheck, Scale,
-    Landmark, Wallet, Coins, Package, ShoppingCart, Bell, Megaphone, Image, FileText, Newspaper, CalendarClock, CalendarDays, Settings, User, HelpCircle,
+    Landmark, Wallet, Coins, Package, ShoppingCart, Bell, Megaphone, Image, FileText, Newspaper, CalendarClock, CalendarDays, PanelBottom, Settings, User, HelpCircle,
     Menu: MenuIcon
   };
 
@@ -190,11 +191,6 @@
     }
     if (item.href === "/admin/shop/orders") {
       return primary === "boutique" && sub === "commandes";
-    }
-
-    // Communication
-    if (item.href === "/admin/announcements") {
-      return primary === "annonces";
     }
 
     // Réglages & IAM

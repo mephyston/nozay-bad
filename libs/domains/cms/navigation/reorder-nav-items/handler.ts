@@ -1,5 +1,6 @@
 import { type Db } from '@nba/db';
 import { CmsNavItemNotFoundError, CmsNavTargetError } from '../../shared/errors';
+import { bumpContentVersion } from '../../shared/cache-version';
 import { ReorderNavItemsRepository } from './repository';
 import type { ReorderNavItemsInput, ReorderNavItemsOutput } from './dto';
 
@@ -29,5 +30,10 @@ export async function reorderNavItems(
   }
 
   await db.batch(repo.buildPositionStatements(db, input.ids) as never);
+
+  // Les menus sont rendus sur **toutes** les pages : sans invalidation, une entrée
+  // ajoutée ou renommée resterait invisible jusqu'à expiration du cache du bord — une
+  // heure — et l'on croirait l'enregistrement perdu.
+  await bumpContentVersion(db);
   return { reordered: input.ids.length };
 }

@@ -26,7 +26,14 @@ const id = encodeURIComponent(block.resourceId);
 const SRC = {
   // `youtube-nocookie` : pas de traceur tant que le visiteur n'a pas lancé la lecture.
   youtube: `https://www.youtube-nocookie.com/embed/${id}`,
-  google_sheet: `https://docs.google.com/spreadsheets/d/${id}/preview`,
+  /*
+    Lecture seule par défaut. En modification, `rm=minimal` retire les menus de Google
+    et ne laisse que la grille — le cadre reste une partie de la page, pas une
+    application dans la page.
+  */
+  google_sheet: block.editable
+    ? `https://docs.google.com/spreadsheets/d/${id}/edit?rm=minimal`
+    : `https://docs.google.com/spreadsheets/d/${id}/preview`,
   // `ctz` évite que l'agenda ne s'affiche dans le fuseau du serveur de Google.
   google_calendar: `https://calendar.google.com/calendar/embed?src=${id}&ctz=Europe%2FParis`
 }[block.provider];

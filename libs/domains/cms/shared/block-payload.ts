@@ -126,7 +126,9 @@ export function normaliseBlockPayload(type: BlockType, raw: unknown, position: n
       if (payload.aspect === 'fixed' && payload.heightPx === undefined) {
         throw new CmsBlockPayloadError(position, 'une hauteur est nécessaire pour un cadre à taille fixe');
       }
-      return payload;
+      // La modification ne concerne que les feuilles de calcul : la retenir ailleurs
+      // laisserait un drapeau sans effet, qu'une lecture rapide croirait actif.
+      return isCalendar || payload.provider === 'youtube' ? { ...payload, editable: undefined } : payload;
     }
 
     case 'person_cards':

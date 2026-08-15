@@ -46,10 +46,7 @@
       "@nba/events/schema": ["libs/domains/events/shared/schema.ts"],
       "@nba/schedules-ui": ["libs/domains/schedules/shared/ui.ts"],
       "@nba/events-ui": ["libs/domains/events/shared/ui.ts"],
-      "@nba/cms/schema": ["libs/domains/cms/shared/schema.ts"],
-      "@nba/announcements-api": ["libs/domains/announcements/index.ts"],
-      "@nba/announcements/schema": ["libs/domains/announcements/shared/schema.ts"],
-      "@nba/announcements-ui": ["libs/domains/announcements/shared/ui.ts"]
+      "@nba/cms/schema": ["libs/domains/cms/shared/schema.ts"]
     }
 
   },

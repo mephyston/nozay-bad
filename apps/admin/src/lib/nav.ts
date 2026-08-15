@@ -62,7 +62,9 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Communication',
     items: [
-      { name: 'Annonces', icon: 'Megaphone', href: '/admin/announcements', permission: 'announcements:posts:read' },
+      // En tête de la communication, et non sous « Site public » : depuis l'absorption
+      // des annonces, une actualité s'adresse aussi bien aux adhérents qu'aux visiteurs.
+      { name: 'Actualités', icon: 'Newspaper', href: '/admin/website/posts', permission: 'cms:posts:read' },
       { name: 'Notifications', icon: 'Bell', href: '/admin/notifications', permission: 'notifications:messages:read' },
       { name: 'Créneaux', icon: 'CalendarClock', href: '/admin/website/schedules', permission: 'schedules:slots:read' },
       { name: 'Agenda', icon: 'CalendarDays', href: '/admin/website/events', permission: 'events:events:read' }
@@ -72,9 +74,9 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Site public',
     items: [
       { name: 'Pages', icon: 'FileText', href: '/admin/website/pages', permission: 'cms:pages:read' },
-      { name: 'Actualités du site', icon: 'Newspaper', href: '/admin/website/posts', permission: 'cms:posts:read' },
       { name: 'Médiathèque', icon: 'Image', href: '/admin/website/media', permission: 'cms:media:read' },
-      { name: 'Menus', icon: 'Menu', href: '/admin/website/menus', permission: 'cms:pages:read' }
+      { name: 'Menus', icon: 'Menu', href: '/admin/website/menus', permission: 'cms:pages:read' },
+      { name: 'Pied de page', icon: 'PanelBottom', href: '/admin/website/footer', permission: 'cms:pages:read' }
     ]
   },
   {

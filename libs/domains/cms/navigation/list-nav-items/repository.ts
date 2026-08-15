@@ -1,9 +1,10 @@
 import { asc, eq } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { cmsNavItemsTable, cmsPagesTable, type CmsNavItemRow, type CmsPageRow } from '../../shared/schema';
+import type { NavLocation } from '../../shared/nav';
 
 export class ListNavItemsRepository {
-  async list(db: DbOrTx, location?: 'header' | 'footer'): Promise<CmsNavItemRow[]> {
+  async list(db: DbOrTx, location?: NavLocation): Promise<CmsNavItemRow[]> {
     const base = db
       .select()
       .from(cmsNavItemsTable)

@@ -12,6 +12,7 @@ const items = block.mediaIds.map((id) => media.get(id)).filter((v): v is NonNull
 
 /** Trois par rangée à défaut : la disposition des galeries d'avant ce réglage. */
 const columns = block.columns ?? 3;
+const isRibbon = block.layout === 'carousel';
 
 // Jamais plus de deux sur un téléphone, quel que soit le choix : au-delà, une vignette
 // fait moins de 100 px de large et ne montre plus rien.
@@ -23,7 +24,7 @@ const GRID = {
 }[columns];
 
 /**
- * Format imposé aux vignettes.
+ * Format imposé aux vignettes, **en grille seulement**.
  *
  * C'est ce qui manquait, et c'était le vrai défaut : sans hauteur de cellule, une
  * rangée prenait celle de son image la plus verticale. Un logo en portrait au milieu
@@ -42,31 +43,351 @@ const SIZES = {
   3: '(max-width: 640px) 50vw, 33vw',
   4: '(max-width: 640px) 50vw, 25vw'
 }[columns];
+
+/**
+ * Le ruban défile-t-il tout seul ?
+ *
+ * Doublé d'une condition de nombre : une image unique n'a nulle part où aller, et un
+ * bouton de pause pour une image immobile n'aurait aucun sens.
+ */
+const scrolls = isRibbon && block.autoScroll === true && items.length > 1;
+
+/** Adresse de l'original, servie en pleine taille dans la visionneuse. */
+const fullSize = (entry: (typeof items)[number]) =>
+  `/media/${entry.media.key.replace(/^media\//, '')}`;
+
+const dialogId = `gallery-viewer-${block.mediaIds.join('-').slice(0, 40)}`;
 ---
 <section class="mx-auto max-w-5xl px-4 py-8">
   {block.heading && <h2 class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
+
   {items.length > 0 && (
-    <ul class:list={['grid gap-3', GRID]}>
-      {/*
-        `object-contain` et non `cover` : la case impose sa **place**, jamais son
-        cadrage. Une image plus verticale que sa case n'y est donc pas amputée de son
-        haut et de son bas — ce qui décapitait les logos — elle s'y pose entière, avec
-        une bande neutre de part et d'autre. Le prix est visible et assumé : un bandeau
-        très large laisse deux bandes. Il reste faible ici, la plupart des photos du
-        club étant en 4/3, soit exactement le format des cases.
-      */}
-      {items.map((entry, index) => (
-        <li class:list={['bg-muted overflow-hidden rounded-lg', RATIO]}>
-          {/* La première image d'une galerie en tête de page est souvent le LCP. */}
-          <Picture
-            media={entry.media}
-            variants={entry.variants}
-            priority={index === 0}
-            sizes={SIZES}
-            class="h-full w-full object-contain"
-          />
-        </li>
-      ))}
-    </ul>
+    <div class="nba-gallery relative" data-nba-gallery data-viewer={dialogId}>
+      {isRibbon ? (
+        <div
+          class="nba-gallery-track flex gap-3 overflow-x-auto pb-2"
+          data-track
+          data-scrolls={scrolls ? '' : undefined}
+        >
+          {/*
+            En ruban, la case épouse l'image au lieu de l'inverse.
+
+            Hauteur commune, largeur libre : une photo en portrait donne une carte
+            étroite, un panoramique une carte large, et **aucune n'est recadrée ni
+            bordée de bandes neutres**. C'est ce que la grille ne peut pas offrir —
+            des largeurs variables y produiraient des rangées en dents de scie, le
+            défaut que le format imposé corrige.
+          */}
+          {/*
+            Boucle sans couture : la série est écrite **deux fois**.
+
+            C'est ce qui permet de revenir au début sans que rien ne saute. Arrivé au
+            premier élément du second exemplaire, le ruban est visuellement identique à
+            son point de départ : on y retranche la largeur d'un exemplaire, et l'œil ne
+            voit qu'un défilement continu. Sans ce doublon, il n'y a que deux issues —
+            un retour brutal à zéro, ou un arrêt sur la dernière image.
+
+            Le doublon est **retiré de l'arbre d'accessibilité** et du parcours clavier :
+            un lecteur d'écran annoncerait sinon chaque photo deux fois. `tabindex="-1"`
+            accompagne `aria-hidden` — masquer un élément focusable sans le sortir du
+            parcours produirait exactement l'incohérence que la règle interdit. Le clic
+            reste actif : une image visible doit s'ouvrir.
+          */}
+          {(scrolls ? [...items, ...items] : items).map((entry, index) => {
+            const duplicated = index >= items.length;
+            return (
+              <button
+                type="button"
+                class="nba-gallery-item bg-muted focus-visible:ring-ring h-56 shrink-0 overflow-hidden rounded-lg sm:h-72 focus-visible:ring-2 focus-visible:outline-none"
+                data-full={fullSize(entry)}
+                data-alt={entry.media.alt}
+                data-loop-start={duplicated && index === items.length ? '' : undefined}
+                aria-hidden={duplicated ? 'true' : undefined}
+                tabindex={duplicated ? -1 : undefined}
+                aria-label={
+                  duplicated
+                    ? undefined
+                    : entry.media.alt
+                      ? `Agrandir : ${entry.media.alt}`
+                      : 'Agrandir l’image'
+                }
+              >
+                <Picture
+                  media={entry.media}
+                  variants={entry.variants}
+                  priority={index === 0}
+                  sizes="(max-width: 640px) 60vw, 40vw"
+                  class="h-full w-auto"
+                />
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <ul class:list={['grid gap-3', GRID]}>
+          {/*
+            `object-contain` et non `cover` : la case impose sa **place**, jamais son
+            cadrage. Une image plus verticale que sa case n'y est donc pas amputée de
+            son haut et de son bas — ce qui décapitait les logos — elle s'y pose
+            entière, avec une bande neutre de part et d'autre.
+          */}
+          {items.map((entry, index) => (
+            <li class:list={['bg-muted overflow-hidden rounded-lg', RATIO]}>
+              <button
+                type="button"
+                class="nba-gallery-item focus-visible:ring-ring h-full w-full focus-visible:ring-2 focus-visible:outline-none"
+                data-full={fullSize(entry)}
+                data-alt={entry.media.alt}
+                aria-label={entry.media.alt ? `Agrandir : ${entry.media.alt}` : 'Agrandir l’image'}
+              >
+                {/* La première image d'une galerie en tête de page est souvent le LCP. */}
+                <Picture
+                  media={entry.media}
+                  variants={entry.variants}
+                  priority={index === 0}
+                  sizes={SIZES}
+                  class="h-full w-full object-contain"
+                />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {scrolls && (
+        /*
+          Commande de pause, discrète mais permanente.
+
+          Exigée dès qu'un mouvement démarre seul et dure plus de cinq secondes
+          (WCAG 2.2.2). Le survol suspend aussi le défilement, mais le survol n'existe
+          pas au doigt ni au clavier : ce bouton est le seul arrêt universel.
+        */
+        <button
+          type="button"
+          class="border-border bg-background/80 text-muted-foreground hover:text-foreground absolute right-2 top-2 rounded-full border p-1.5 backdrop-blur transition-colors"
+          data-toggle
+          aria-label="Mettre en pause le défilement"
+          title="Mettre en pause le défilement"
+        >
+          <svg class="nba-gallery-icon-pause h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
+          </svg>
+          <svg class="nba-gallery-icon-play h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </button>
+      )}
+    </div>
   )}
 </section>
+
+{/*
+  Visionneuse : l'élément `<dialog>` natif, et non un composant.
+
+  Le navigateur y apporte gratuitement ce qu'une réimplémentation rate presque
+  toujours — le piège de focus, la fermeture par Échap, l'inertie du reste de la page
+  et le fond assombri. Le site ne porte par ailleurs aucune île Svelte : en importer
+  une pour ouvrir une image ferait descendre un moteur de composants sur toutes les
+  pages qui contiennent une galerie.
+*/}
+{items.length > 0 && (
+  <dialog
+    id={dialogId}
+    class="nba-gallery-viewer bg-transparent p-0 backdrop:bg-black/70"
+    aria-label="Image en grand"
+  >
+    {/*
+      `w-fit` et image en `block` : le conteneur épouse l'image.
+
+      Sans cela il s'étire à la largeur du dialogue — jusqu'à 95 % de la fenêtre — alors
+      qu'une photo en paysage, limitée par sa hauteur, occupe bien moins. La croix,
+      calée sur ce conteneur, se retrouvait alors très à droite sur le fond sombre,
+      loin de l'image et hors du regard.
+    */}
+    <div class="relative w-fit">
+      <img data-viewer-image src="" alt="" class="block max-h-[90dvh] max-w-[95vw] rounded-lg object-contain" />
+
+      {/*
+        Croix de fermeture, en plus d'Échap et du clic à côté.
+
+        Les deux autres sorties existent mais ne s'annoncent pas : Échap ne se devine
+        pas au doigt, et rien n'indique que le fond est cliquable. La croix est le seul
+        chemin **visible**, et le seul qu'un lecteur d'écran peut nommer.
+      */}
+      <form method="dialog">
+        <button
+          type="submit"
+          class="absolute right-2 top-2 rounded-full bg-black/60 p-2 text-white backdrop-blur transition-colors hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+          aria-label="Fermer l’image"
+          title="Fermer"
+        >
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </form>
+    </div>
+  </dialog>
+)}
+
+<style>
+  /*
+    Barre de défilement masquée.
+
+    Le ruban se parcourt au doigt, à la molette, au clavier par les images elles-mêmes
+    — qui sont des boutons et défilent donc à la tabulation — et tout seul quand le
+    défilement est actif. La barre n'apporte aucune de ces capacités, elle ne fait que
+    souligner d'un trait gris le bas de chaque galerie.
+  */
+  .nba-gallery-track {
+    scrollbar-width: none;
+  }
+  .nba-gallery-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  /*
+    Centrage de la visionneuse.
+
+    Un `<dialog>` modal est centré par la feuille de style du navigateur, au moyen d'un
+    `margin: auto` — que la préflight de Tailwind annule en posant `margin: 0` sur tous
+    les éléments. Sans cette ligne, la visionneuse s'ouvre collée en haut à gauche.
+  */
+  .nba-gallery-viewer {
+    margin: auto;
+    width: fit-content;
+    max-width: 95vw;
+    max-height: 90dvh;
+    /* La croix déborde légèrement du coin de l'image : rien ne doit la rogner. */
+    overflow: visible;
+  }
+
+  .nba-gallery-icon-play {
+    display: none;
+  }
+  /* Une seule icône à la fois : celle de l'action que le bouton déclenche. */
+  .nba-gallery[data-paused] .nba-gallery-icon-pause,
+  .nba-gallery:not([data-paused]) .nba-gallery-icon-play {
+    display: none;
+  }
+  .nba-gallery[data-paused] .nba-gallery-icon-play {
+    display: block;
+  }
+</style>
+
+<script>
+  /*
+    Script hissé et non `is:inline` : une page peut porter plusieurs galeries, et Astro
+    ne regroupe que les scripts hissés. En ligne, le même code serait émis une fois par
+    bloc, et chaque ruban recevrait autant de boucles qu'il y a de blocs.
+
+    Même mécanique que le bloc `carousel`, dont le comportement est déjà éprouvé :
+    arrêt demandé au bouton, arrêt tant que le pointeur ou le clavier est dessus, et
+    silence complet si le système demande moins d'animation.
+  */
+  const SPEED_PX_PER_FRAME = 0.4;
+
+  for (const gallery of document.querySelectorAll<HTMLElement>('[data-nba-gallery]')) {
+    // --- Visionneuse -------------------------------------------------------
+    const viewer = document.getElementById(gallery.dataset.viewer ?? '') as HTMLDialogElement | null;
+    const viewerImage = viewer?.querySelector<HTMLImageElement>('[data-viewer-image]');
+
+    for (const item of gallery.querySelectorAll<HTMLButtonElement>('.nba-gallery-item')) {
+      item.addEventListener('click', () => {
+        if (!viewer || !viewerImage) return;
+        viewerImage.src = item.dataset.full ?? '';
+        // L'alternative suit l'image : la visionneuse n'a pas de texte à elle.
+        viewerImage.alt = item.dataset.alt ?? '';
+        viewer.showModal();
+      });
+    }
+
+    // Clic sur le fond assombri : l'événement a pour cible l'élément `dialog`
+    // lui-même, jamais son contenu. C'est ce qui distingue « à côté de l'image » de
+    // « sur l'image », sans mesurer la moindre coordonnée.
+    viewer?.addEventListener('click', (event) => {
+      if (event.target === viewer) viewer.close();
+    });
+
+    // --- Défilement automatique -------------------------------------------
+    const track = gallery.querySelector<HTMLElement>('[data-track][data-scrolls]');
+    const toggle = gallery.querySelector<HTMLButtonElement>('[data-toggle]');
+    if (!track) continue;
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    /** Arrêt demandé au bouton : il survit au départ du pointeur. */
+    let paused = false;
+    /** Arrêt tant que le pointeur ou le clavier est sur le ruban. */
+    let held = false;
+    let frame: number | null = null;
+
+    /*
+      Point de bouclage : le début du second exemplaire de la série.
+
+      Mesuré et non calculé — `scrollWidth / 2` tomberait à côté, l'espace entre les
+      deux exemplaires n'appartenant à aucun des deux. `offsetLeft` donne la valeur
+      exacte, et c'est celle qu'on retranche pour revenir au point de départ sans
+      qu'aucune image ne bouge à l'écran.
+    */
+    const loopMarker = track.querySelector<HTMLElement>('[data-loop-start]');
+    let loopAt = 0;
+
+    function remeasure() {
+      loopAt = loopMarker?.offsetLeft ?? 0;
+    }
+
+    // Les largeurs dépendent des images, qui arrivent après le HTML : sans nouvelle
+    // mesure au chargement, le point de bouclage resterait celui d'un ruban vide.
+    for (const img of track.querySelectorAll('img')) {
+      if (img.complete) continue;
+      img.addEventListener('load', remeasure, { once: true });
+    }
+    window.addEventListener('resize', remeasure);
+    remeasure();
+
+    function step() {
+      track!.scrollLeft += SPEED_PX_PER_FRAME;
+      // Le retour est invisible : à cet endroit précis, le ruban montre exactement ce
+      // qu'il montrait au départ.
+      if (loopAt > 0 && track!.scrollLeft >= loopAt) track!.scrollLeft -= loopAt;
+      frame = requestAnimationFrame(step);
+    }
+
+    function sync() {
+      if (frame !== null) cancelAnimationFrame(frame);
+      frame = null;
+      // `reduced` est relu à chaque fois : le réglage système peut changer en cours de
+      // visite, et l'écouteur ci-dessous rappelle alors cette fonction.
+      if (!paused && !held && !reduced.matches) frame = requestAnimationFrame(step);
+    }
+
+    const hold = (value: boolean) => {
+      held = value;
+      sync();
+    };
+
+    gallery.addEventListener('mouseenter', () => hold(true));
+    gallery.addEventListener('mouseleave', () => hold(false));
+    // Le clavier aussi : l'image atteinte au tabulateur ne doit pas glisser pendant
+    // qu'on s'apprête à l'ouvrir.
+    gallery.addEventListener('focusin', () => hold(true));
+    gallery.addEventListener('focusout', (event) => {
+      if (!gallery.contains(event.relatedTarget as Node | null)) hold(false);
+    });
+    // Faire défiler à la main suspend aussi : reprendre sous les doigts du visiteur
+    // lui reprendrait la main.
+    track.addEventListener('pointerdown', () => hold(true));
+
+    toggle?.addEventListener('click', () => {
+      paused = gallery.toggleAttribute('data-paused');
+      const label = paused ? 'Reprendre le défilement' : 'Mettre en pause le défilement';
+      toggle.setAttribute('aria-label', label);
+      toggle.setAttribute('title', label);
+      sync();
+    });
+
+    reduced.addEventListener('change', sync);
+    sync();
+  }
+</script>

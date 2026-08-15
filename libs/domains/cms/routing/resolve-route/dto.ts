@@ -9,6 +9,14 @@ export interface ResolveRouteInput {
    * demande jamais, et la route ne le lui accorderait pas.
    */
   includeDrafts?: boolean;
+  /**
+   * Rend les actualités réservées aux adhérents atteignables par leur adresse.
+   *
+   * Faux par défaut, et le site public ne le demande jamais : sans cette garde, une
+   * actualité réservée resterait absente des listes mais servie à qui devinerait son
+   * URL — et indexable dès le premier partage de lien.
+   */
+  includePrivate?: boolean;
 }
 
 export interface ResolvedPageView {

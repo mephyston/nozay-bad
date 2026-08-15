@@ -1,5 +1,7 @@
 import { createApiClient } from '@nba/api-client';
 import type { ResolveRouteOutput } from '@nba/cms/public';
+import { withDataCache } from './cache';
+import { markDegraded, renderContextOf } from './render-context';
 
 /**
  * Accès au contenu, via le service binding vers l'API.
@@ -29,11 +31,63 @@ interface Envelope<T> {
   error?: string;
 }
 
+/**
+ * Une lecture, mise en cache au bord et surveillée.
+ *
+ * Deux choses s'ajoutent ici à l'appel lui-même, et elles valent pour toutes les
+ * lectures du site puisqu'elles passent toutes par cette fonction :
+ *
+ *  - le résultat est rangé sous la version de contenu (`withDataCache`), ce qui évite
+ *    de redemander les mêmes menus et les mêmes réglages à chaque rendu ;
+ *  - une **panne** marque le rendu comme dégradé, pour que la page servie avec ses
+ *    valeurs de repli ne soit pas figée une heure au bord.
+ *
+ * Panne et absence sont distinguées, et c'est ce qui fait la valeur du signal. Un 404
+ * — un média cité par un bloc et supprimé depuis — est une vérité stable : la page
+ * doit être servie sans son image *et* mise en cache comme n'importe quelle autre.
+ * Une coupure, un 5xx ou une réponse illisible, eux, se répareront tout seuls : rien
+ * de ce qu'ils produisent ne doit survivre.
+ *
+ * Un aperçu n'est jamais rangé : `previewVerified` désigne des brouillons.
+ */
 async function getJson<T>(env: WebsiteEnv, path: string, previewVerified = false): Promise<T | null> {
-  const response = await client(env, previewVerified).fetch(`http://localhost${path}`);
-  if (!response.ok) return null;
-  const body = (await response.json()) as Envelope<T>;
-  return body.success && body.data !== undefined ? body.data : null;
+  const context = renderContextOf(env);
+
+  const read = async (): Promise<T | null> => {
+    let response: Response;
+    try {
+      response = await client(env, previewVerified).fetch(`http://localhost${path}`);
+    } catch {
+      // Liaison de service morte. Un 500 vaudrait ici une page blanche : on rend la
+      // page avec ses replis, et le marquage empêche de la ranger.
+      markDegraded(env);
+      return null;
+    }
+
+    // 404 : la seule absence légitime. Tout le reste — 401 mal configuré, 429, 5xx —
+    // est une panne, et rien de ce qu'elle produit ne doit être rangé. La distinction
+    // porte double depuis que les 404 du site sont mises en cache : sans elle, une API
+    // qui répond 403 transformerait le site entier en 404 figées au bord.
+    if (response.status !== 404 && !response.ok) {
+      markDegraded(env);
+      return null;
+    }
+    if (!response.ok) return null;
+
+    try {
+      const body = (await response.json()) as Envelope<T>;
+      if (!body.success) {
+        markDegraded(env);
+        return null;
+      }
+      return body.data ?? null;
+    } catch {
+      markDegraded(env);
+      return null;
+    }
+  };
+
+  return withDataCache(path, previewVerified ? null : (context?.version ?? null), read, context?.waitUntil);
 }
 
 /**
@@ -194,9 +248,38 @@ export interface NavItemView {
  */
 export async function listNavItems(
   env: WebsiteEnv,
-  location: 'header' | 'footer'
+  location: 'header' | 'footer' | 'legal'
 ): Promise<NavItemView[]> {
   return (await getJson<NavItemView[]>(env, `/cms/nav?location=${location}`)) ?? [];
+}
+
+/**
+ * Réglages du site : ce que le pied de page affiche en propre.
+ *
+ * Rendu sur toutes les pages, donc lu à chaque rendu — mais un rendu ne survient
+ * qu'au défaut de cache, et toute écriture de ces réglages incrémente la version de
+ * contenu. Une modification est donc visible tout de suite, sans que la lecture pèse
+ * sur le trafic servi depuis le bord.
+ *
+ * Une API indisponible retombe sur les valeurs par défaut plutôt que de vider le pied
+ * de page : c'est la même règle que pour les menus.
+ */
+export interface SiteSettingsView {
+  footerDescription: string;
+  footerAddress: string;
+  instagramUrl: string | null;
+  facebookUrl: string | null;
+}
+
+export const SITE_SETTINGS_FALLBACK: SiteSettingsView = {
+  footerDescription: "Plus qu'une Tribu !",
+  footerAddress: 'Place de la Mairie, 91620 Nozay',
+  instagramUrl: 'https://www.instagram.com/nozaybad/',
+  facebookUrl: 'https://www.facebook.com/nozaybad/'
+};
+
+export async function getSiteSettings(env: WebsiteEnv): Promise<SiteSettingsView> {
+  return (await getJson<SiteSettingsView>(env, '/cms/settings')) ?? SITE_SETTINGS_FALLBACK;
 }
 
 export interface ScheduleSlotView {

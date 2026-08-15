@@ -1,0 +1,87 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { SiteSettingsForm } from '@nba/cms-ui';
+import { createAdminApiClient } from '../../../lib/api';
+import { can, guardAction } from '../../../lib/guard';
+
+/**
+ * Pied de page du site public.
+ *
+ * Les liens, eux, sont des menus : ils vivent dans « Menus du site », emplacements
+ * « Pied de page » et « Barre légale ». Recopier ici un second éditeur de liens
+ * aurait fait deux endroits pour la même chose, dont un seul serait tenu à jour.
+ */
+const canWrite = can(Astro.locals, 'cms:pages:write');
+const apiService = createAdminApiClient(Astro.locals);
+
+const ACTIONS = { save: 'cms:pages:write' } as const;
+
+if (Astro.request.method === 'POST') {
+  const data = (await Astro.request.json()) as any;
+  const denied = guardAction(Astro.locals, data.action, ACTIONS);
+  if (denied) return denied;
+
+  const apiRes = await apiService.fetch('http://localhost/cms/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      footerDescription: String(data.footerDescription ?? ''),
+      footerAddress: String(data.footerAddress ?? ''),
+      instagramUrl: String(data.instagramUrl ?? ''),
+      facebookUrl: String(data.facebookUrl ?? '')
+    })
+  });
+
+  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+  return new Response(JSON.stringify(await apiRes.json()), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+let settings = {
+  footerDescription: '',
+  footerAddress: '',
+  instagramUrl: '' as string | null,
+  facebookUrl: '' as string | null
+};
+let errorMsg = '';
+
+try {
+  const res = await apiService.fetch('http://localhost/cms/settings');
+  if (res.ok) settings = ((await res.json()) as any).data ?? settings;
+  else errorMsg = 'Impossible de charger les réglages du pied de page.';
+} catch {
+  errorMsg = 'Impossible de charger les réglages du pied de page.';
+}
+---
+
+<Layout title="Pied de page du site - NBA 91">
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Pied de page"
+  >
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader
+        title="Pied de page"
+        description="Ce que le bas du site public affiche en propre : la présentation du club, son adresse et ses réseaux sociaux. Les liens se composent depuis « Menus du site », emplacements « Pied de page » et « Barre légale »."
+      />
+
+      <SiteSettingsForm
+        client:load
+        footerDescription={settings.footerDescription}
+        footerAddress={settings.footerAddress}
+        instagramUrl={settings.instagramUrl}
+        facebookUrl={settings.facebookUrl}
+        canWrite={canWrite}
+      />
+    </div>
+  </AdminLayout>
+</Layout>

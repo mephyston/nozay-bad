@@ -14,6 +14,7 @@
   import PdfLinkBlockEditor from './blocks/PdfLinkBlockEditor.svelte';
   import PostsFeedBlockEditor from './blocks/PostsFeedBlockEditor.svelte';
   import ColumnsBlockEditor from './blocks/ColumnsBlockEditor.svelte';
+  import EventsBlockEditor from './blocks/EventsBlockEditor.svelte';
 
   let {
     block = $bindable(),
@@ -75,6 +76,8 @@
       <PdfLinkBlockEditor bind:block {media} {canUploadMedia} />
     {:else if block.type === 'posts_feed'}
       <PostsFeedBlockEditor bind:block {categories} />
+    {:else if block.type === 'events'}
+      <EventsBlockEditor bind:block />
     {:else if block.type === 'columns'}
       <ColumnsBlockEditor bind:block {media} {canUploadMedia} {targets} />
     {/if}

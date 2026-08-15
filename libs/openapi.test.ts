@@ -14,9 +14,6 @@ import { updateProductSchema } from './domains/shop/update-product/validator';
 import { subscribeBodySchema } from './domains/notifications/subscribe/validator';
 import { unsubscribeBodySchema } from './domains/notifications/unsubscribe/validator';
 import { sendNotificationSchema } from './domains/notifications/shared/validators';
-import { listAnnouncementsQuerySchema } from './domains/announcements/list-announcements/validator';
-import { createAnnouncementSchema } from './domains/announcements/create-announcement/validator';
-import { updateAnnouncementSchema } from './domains/announcements/update-announcement/validator';
 
 // Define accounting schemas using TypeBox to ensure they are part of the OpenAPI spec
 const createSeasonSchema = Type.Object({
@@ -591,109 +588,6 @@ describe('OpenAPI Spec Generator', () => {
             }
           }
         },
-        '/announcements': {
-          get: {
-            summary: 'List club announcements (storefront callers only ever receive published ones)',
-            tags: ['Announcements'],
-            parameters: [
-              { name: 'status', in: 'query', required: false, schema: Type.Union([Type.Literal('draft'), Type.Literal('published')]) },
-              { name: 'limit', in: 'query', required: false, schema: Type.String() },
-              { name: 'offset', in: 'query', required: false, schema: Type.String() }
-            ],
-            responses: {
-              200: {
-                description: 'Announcements, most recently published first',
-                content: {
-                  'application/json': {
-                    schema: Type.Object({ success: Type.Boolean(), data: Type.Any() })
-                  }
-                }
-              }
-            }
-          },
-          post: {
-            summary: 'Create an announcement (draft by default)',
-            tags: ['Announcements'],
-            requestBody: {
-              required: true,
-              content: {
-                'application/json': {
-                  schema: { $ref: '#/components/schemas/CreateAnnouncementInput' }
-                }
-              }
-            },
-            responses: {
-              200: {
-                description: 'Created announcement',
-                content: {
-                  'application/json': {
-                    schema: Type.Object({ success: Type.Boolean(), data: Type.Any() })
-                  }
-                }
-              }
-            }
-          }
-        },
-        '/announcements/{id}': {
-          put: {
-            summary: 'Update an announcement',
-            tags: ['Announcements'],
-            parameters: [{ name: 'id', in: 'path', required: true, schema: Type.Integer() }],
-            requestBody: {
-              required: true,
-              content: {
-                'application/json': {
-                  schema: { $ref: '#/components/schemas/UpdateAnnouncementInput' }
-                }
-              }
-            },
-            responses: {
-              200: {
-                description: 'Updated announcement',
-                content: {
-                  'application/json': {
-                    schema: Type.Object({ success: Type.Boolean(), data: Type.Any() })
-                  }
-                }
-              }
-            }
-          },
-          delete: {
-            summary: 'Delete an announcement',
-            tags: ['Announcements'],
-            parameters: [{ name: 'id', in: 'path', required: true, schema: Type.Integer() }],
-            responses: {
-              200: {
-                description: 'Deleted announcement id',
-                content: {
-                  'application/json': {
-                    schema: Type.Object({ success: Type.Boolean(), data: Type.Object({ id: Type.Integer() }) })
-                  }
-                }
-              }
-            }
-          }
-        },
-        '/announcements/{id}/notify': {
-          post: {
-            summary: 'Push a published announcement to subscribed members (once only)',
-            tags: ['Announcements'],
-            parameters: [{ name: 'id', in: 'path', required: true, schema: Type.Integer() }],
-            responses: {
-              200: {
-                description: 'Queued delivery summary',
-                content: {
-                  'application/json': {
-                    schema: Type.Object({
-                      success: Type.Boolean(),
-                      data: Type.Object({ id: Type.Integer(), queued: Type.Integer(), notifiedAt: Type.String() })
-                    })
-                  }
-                }
-              }
-            }
-          }
-        }
       },
       components: {
         schemas: {
@@ -708,10 +602,7 @@ describe('OpenAPI Spec Generator', () => {
           ChangeInvoiceStatusInput: changeInvoiceStatusSchema,
           SubscribePushInput: subscribeBodySchema,
           UnsubscribePushInput: unsubscribeBodySchema,
-          SendNotificationInput: sendNotificationSchema,
-          ListAnnouncementsQuery: listAnnouncementsQuerySchema,
-          CreateAnnouncementInput: createAnnouncementSchema,
-          UpdateAnnouncementInput: updateAnnouncementSchema
+          SendNotificationInput: sendNotificationSchema
         }
       }
     };

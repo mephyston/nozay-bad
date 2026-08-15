@@ -23,7 +23,8 @@ export const BLOCK_TYPES = [
   'schedule',
   'pdf_link',
   'posts_feed',
-  'columns'
+  'columns',
+  'events'
 ] as const;
 
 export type BlockType = (typeof BLOCK_TYPES)[number];
@@ -163,7 +164,15 @@ export const galleryBlockSchema = Type.Object(
      */
     columns: Type.Optional(
       Type.Union([Type.Literal(1), Type.Literal(2), Type.Literal(3), Type.Literal(4)])
-    )
+    ),
+    /**
+     * Fait défiler le ruban de droite à gauche, en disposition « ruban ».
+     *
+     * Sans effet en grille, qui n'a rien à faire défiler. **Optionnel** au même titre
+     * que `columns`, et pour la même raison : les galeries déjà enregistrées ne le
+     * portent pas, et l'exiger les ferait disparaître des pages en ligne.
+     */
+    autoScroll: Type.Optional(Type.Boolean())
   },
   { additionalProperties: false }
 );
@@ -188,7 +197,21 @@ export const embedBlockSchema = Type.Object(
     /** Obligatoire : un `<iframe>` sans titre est inaccessible au lecteur d'écran. */
     title: Type.String({ minLength: 1, maxLength: 160 }),
     aspect: Type.Union([Type.Literal('16/9'), Type.Literal('4/3'), Type.Literal('fixed')]),
-    heightPx: Type.Optional(Type.Integer({ minimum: 200, maximum: 2000 }))
+    heightPx: Type.Optional(Type.Integer({ minimum: 200, maximum: 2000 })),
+    /**
+     * Sert la feuille de calcul en **écriture** plutôt qu'en lecture seule.
+     *
+     * Propre à `google_sheet` ; la normalisation l'écarte des autres fournisseurs, où
+     * elle n'aurait aucun sens. Ce que le champ décide n'est qu'une adresse — `/edit`
+     * au lieu de `/preview` — mais ses conséquences ne sont pas dans le code : c'est le
+     * **partage du document côté Google** qui détermine réellement qui peut écrire. Une
+     * feuille ouverte en modification à toute personne disposant du lien devient
+     * modifiable par n'importe quel visiteur de la page, sans compte ni trace nominative.
+     *
+     * **Optionnel, et il doit le rester** : les intégrations déjà enregistrées ne le
+     * portent pas.
+     */
+    editable: Type.Optional(Type.Boolean())
   },
   { additionalProperties: false }
 );
@@ -220,13 +243,50 @@ export const scheduleBlockSchema = Type.Object(
   { additionalProperties: false }
 );
 
+/**
+ * Agenda du club : les prochains rendez-vous.
+ *
+ * Comme `schedule` et `posts_feed`, le bloc porte une **requête** et jamais des
+ * événements : la page ne fige pas une liste qui vieillirait dès le lendemain. Ce sont
+ * les dates réelles qui décident de ce qui s'affiche, à chaque rendu.
+ */
+export const eventsBlockSchema = Type.Object(
+  {
+    type: Type.Literal('events'),
+    heading: Type.Optional(Type.String({ maxLength: 160 })),
+    /** Six sur une page d'accueil ; au-delà, la page d'agenda fait mieux le travail. */
+    limit: Type.Integer({ minimum: 1, maximum: 24 }),
+    /** Catégories retenues. Liste vide = toutes, comme pour les publics de `schedule`. */
+    categories: Type.Array(Type.String({ maxLength: 40 }), { maxItems: 8 }),
+    /** Lien « tout l'agenda » sous la liste. */
+    showArchiveLink: Type.Optional(Type.Boolean())
+  },
+  { additionalProperties: false }
+);
+
 export const pdfLinkBlockSchema = Type.Object(
   {
     type: Type.Literal('pdf_link'),
     mediaId: Type.Integer({ minimum: 1 }),
     label: Type.String({ minLength: 1, maxLength: 160 }),
     description: Type.Optional(Type.String({ maxLength: 320 })),
-    thumbnailMediaId: Type.Optional(Type.Integer({ minimum: 1 }))
+    thumbnailMediaId: Type.Optional(Type.Integer({ minimum: 1 })),
+    /**
+     * Affiche le document dans un cadre, **en plus** du lien.
+     *
+     * Une amélioration, jamais un remplacement : Safari iOS et Chrome Android ne
+     * rendent pas un PDF en cadre — selon les versions, un rectangle blanc ou un
+     * téléchargement forcé. Le rendu est donc réservé aux écrans larges, et le lien
+     * reste le chemin fiable partout.
+     *
+     * **Optionnel, et il doit le rester** : les blocs déjà enregistrés ne portent pas
+     * ce champ. Le rendre obligatoire ferait échouer `Value.Check` à la relecture,
+     * `parseStoredBlock` rendrait `null`, et le bloc disparaîtrait des pages en ligne
+     * sans un mot.
+     */
+    preview: Type.Optional(Type.Boolean()),
+    /** Hauteur du cadre. Mêmes bornes que `embed`, pour les mêmes raisons de mise en page. */
+    previewHeightPx: Type.Optional(Type.Integer({ minimum: 200, maximum: 2000 }))
   },
   { additionalProperties: false }
 );
@@ -300,7 +360,8 @@ export const BLOCK_SCHEMAS = {
   schedule: scheduleBlockSchema,
   pdf_link: pdfLinkBlockSchema,
   posts_feed: postsFeedBlockSchema,
-  columns: columnsBlockSchema
+  columns: columnsBlockSchema,
+  events: eventsBlockSchema
 } as const;
 
 export type RichtextBlock = Static<typeof richtextBlockSchema>;
@@ -314,6 +375,7 @@ export type ScheduleBlock = Static<typeof scheduleBlockSchema>;
 export type PdfLinkBlock = Static<typeof pdfLinkBlockSchema>;
 export type PostsFeedBlock = Static<typeof postsFeedBlockSchema>;
 export type ColumnsBlock = Static<typeof columnsBlockSchema>;
+export type EventsBlock = Static<typeof eventsBlockSchema>;
 
 export type BlockPayload =
   | RichtextBlock
@@ -326,7 +388,8 @@ export type BlockPayload =
   | ScheduleBlock
   | PdfLinkBlock
   | PostsFeedBlock
-  | ColumnsBlock;
+  | ColumnsBlock
+  | EventsBlock;
 
 export type CtaLinkValue = Static<typeof CtaLink>;
 export type CarouselSlideValue = Static<typeof CarouselSlide>;
