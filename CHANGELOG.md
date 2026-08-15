@@ -1,3 +1,14 @@
+# [1.0.0-beta.79](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.78...v1.0.0-beta.79) (2026-08-15)
+
+
+### Features
+
+* **admin:** piloter les inscriptions et relever la liste des inscrits ([2ad0cbe](https://github.com/mephyston/nozay-bad/commit/2ad0cbe4fe2cf63c876cb2d263d89309e016292d))
+* **cms:** poursuivre la reprise du site WordPress ([af0c1dc](https://github.com/mephyston/nozay-bad/commit/af0c1dc20989bfc6d4f13032c5d349f52e3aef69))
+* **cms:** rattacher une actualité à un événement, et résumer l'accueil adhérent ([152b0d8](https://github.com/mephyston/nozay-bad/commit/152b0d86a9198f7c2af326a1f8196fdff0ba753c))
+* **events:** ouvrir les inscriptions aux événements de l'agenda ([f07827f](https://github.com/mephyston/nozay-bad/commit/f07827fcf498877c4adaf53220c4260396dfab08))
+* **storefront:** agenda de l'espace adhérent et inscription en ligne ([58e69d6](https://github.com/mephyston/nozay-bad/commit/58e69d61fade3f4276550e8def8e41e2c31a17cd))
+
 # [1.0.0-beta.78](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.77...v1.0.0-beta.78) (2026-08-11)
 
 
