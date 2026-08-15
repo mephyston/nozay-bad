@@ -60,16 +60,18 @@ export async function updateRolePermissions(
   const revoked = [...before].filter((p) => !after.has(p)).sort();
 
   if (granted.length > 0 || revoked.length > 0) {
-    await repo.replaceForRole(db, role, [...after], now);
-    await repo.log(
-      db,
-      [
+    // Un seul lot : le remplacement des droits et sa trace au journal réussissent ou
+    // échouent ensemble. D1 n'offrant pas de transaction interactive, c'est `batch()`
+    // qui tient ce rôle — et c'est aussi lui qui permet de découper les insertions
+    // sans perdre l'atomicité.
+    const statements = repo.buildReplaceStatements(db, role, [...after], now, {
+      actorEmail,
+      entries: [
         ...granted.map((permission) => ({ role, permission, action: 'granted' as const })),
         ...revoked.map((permission) => ({ role, permission, action: 'revoked' as const }))
-      ],
-      actorEmail,
-      now
-    );
+      ]
+    });
+    await db.batch(statements as never);
   }
 
   return { role, permissions: [...after].sort(), granted, revoked };

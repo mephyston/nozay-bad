@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import type { Db } from '@nba/db';
 import { setupIamDb } from '../test-support';
 import { ROLE_PERMISSIONS } from '../shared/roles';
+import { ALL_PERMISSIONS } from '../shared/permissions';
 import { getActor } from '../get-actor/handler';
 import { createUser } from '../create-user/handler';
 import { listRolePermissions } from '../list-role-permissions/handler';
@@ -107,6 +108,41 @@ describe('updateRolePermissions', () => {
     expect(actor?.permissions.has('iam:roles:write')).toBe(true);
     expect(actor?.permissions.has('accounting:ledger:delete')).toBe(true);
   });
+
+  it('accorde le catalogue entier à un rôle sans buter sur la limite de D1', async () => {
+    /*
+      Une écriture multi-lignes consomme une variable liée par colonne et par ligne, et
+      D1 en refuse plus de cent par requête. Insérer tous les droits d'un rôle en une
+      seule fois cassait donc au-delà de 33 permissions — soit 102 variables.
+
+      Le défaut n'a mordu qu'en production, sur un rôle enrichi depuis l'écran des
+      droits, avec une erreur 500 opaque ; en local, les rôles étaient restés sous le
+      seuil. D'où ce test au plafond réel du catalogue plutôt qu'à une valeur choisie.
+    */
+    const all = [...ALL_PERMISSIONS];
+    const result = await updateRolePermissions(db, 'membre', all, ACTOR);
+
+    expect(result.permissions.length).toBe(all.length);
+    expect((await permissionsOf('membre')).length).toBe(all.length);
+
+    // Le journal est écrit dans le même lot, et se découpe aussi : cinq colonnes par
+    // ligne, donc il déborde encore plus vite que les droits eux-mêmes.
+    const logged = (await db.all(
+      sql`SELECT COUNT(*) AS n FROM role_permission_log WHERE role = 'membre'`
+    )) as { n: number }[];
+    expect(logged[0].n).toBe(result.granted.length);
+  });
+
+  it('révoque en masse sans laisser de droits derrière', async () => {
+    // Le chemin inverse : le journal porte alors une ligne par droit retiré.
+    await updateRolePermissions(db, 'membre', [...ALL_PERMISSIONS], ACTOR);
+    const result = await updateRolePermissions(db, 'membre', [], ACTOR);
+
+    // Le socle commun est réimposé : un compte sans tableau de bord ne verrait plus rien.
+    expect(result.permissions).toEqual(['dashboard:overview:read', 'help:docs:read']);
+    expect(await permissionsOf('membre')).toEqual(['dashboard:overview:read', 'help:docs:read']);
+  });
+
 });
 
 describe('listRolePermissions', () => {
