@@ -15,7 +15,7 @@ listEventsRoute.get(
   }),
   async (c) => {
     if (!c.env?.DB) return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-    const { past, limit } = c.req.valid('query');
+    const { past, limit, memberId } = c.req.valid('query');
     const db = createDb(c.env.DB);
 
     // Brouillons et événements annulés restent à l'administration.
@@ -26,7 +26,8 @@ listEventsRoute.get(
       data: await listEvents(db, {
         includePast: past === '1',
         includeUnpublished,
-        limit: limit ? Number(limit) : undefined
+        limit: limit ? Number(limit) : undefined,
+        memberId: memberId ? Number(memberId) : undefined
       })
     });
   }

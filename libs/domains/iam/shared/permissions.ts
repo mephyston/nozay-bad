@@ -64,9 +64,6 @@ export const ALL_PERMISSIONS = [
   // — Annonces —
   // Rédiger une annonce et la diffuser sur les téléphones du club sont deux actes
   // distincts : la diffusion reste gouvernée par `notifications:messages:send`.
-  'announcements:posts:read',
-  'announcements:posts:write',
-  'announcements:posts:delete',
 
   // — Site public —
   // Le CMS du site vitrine. Distinct des annonces : une annonce s'adresse aux
@@ -94,6 +91,11 @@ export const ALL_PERMISSIONS = [
   'events:events:read',
   'events:events:write',
   'events:events:delete',
+  // Lire qui s'est inscrit à un événement, nom par nom. Droit distinct de la tenue de
+  // l'agenda : une fiche d'événement est publique, la liste de ses inscrits est une
+  // donnée nominative d'adhérents. Ouvrir ou fermer les inscriptions relève en
+  // revanche de `events:events:write` — c'est un champ de l'événement.
+  'events:registrations:read',
 
   // — Assistant IA —
   'ai:assistant:use',

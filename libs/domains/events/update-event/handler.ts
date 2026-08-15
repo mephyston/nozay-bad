@@ -34,6 +34,7 @@ export async function updateEvent(db: Db, input: UpdateEventInput, now: Date = n
         ? event.descriptionHtml
         : sanitizeRichText(input.descriptionHtml, CMS_PROFILE),
     status: input.status ?? event.status,
+    registration: input.registration ?? event.registration,
     updatedAt: now
   });
 }

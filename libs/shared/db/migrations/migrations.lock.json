@@ -5,6 +5,10 @@
     "0001_seed_reference_data.sql": "1c16e4c5de6963b6",
     "0002_schedules_events.sql": "5d92c21fb7fd397c",
     "0003_schedules_events_permissions.sql": "e284f913c1f852c7",
-    "0004_order_payment_workflow.sql": "eb6aee1c465502a3"
+    "0004_order_payment_workflow.sql": "eb6aee1c465502a3",
+    "0005_posts_replace_announcements.sql": "556b78aa57f9b9ec",
+    "0006_canonical_post_categories.sql": "2581172936e777b4",
+    "0007_cms_site_settings.sql": "a45637fc792fccc2",
+    "0008_event_registrations.sql": "fc25e0362a9cf139"
   }
 }

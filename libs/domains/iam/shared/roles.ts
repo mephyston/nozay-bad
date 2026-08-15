@@ -98,7 +98,6 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'shop:products:read',
     'shop:orders:read',
     'notifications:messages:read',
-    'announcements:posts:read',
     // Actes de gouvernance : ouverture et clôture d'exercice, vote du budget.
     'accounting:seasons:write',
     'accounting:seasons:close',
@@ -108,8 +107,6 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'shop:orders:approve',
     // Communication officielle du club.
     'notifications:messages:send',
-    'announcements:posts:write',
-    'announcements:posts:delete',
     // Le site public engage l'image du club vis-à-vis de l'extérieur : la présidence
     // y a la main pleine, y compris sur l'arborescence des URL.
     'cms:pages:read',
@@ -128,6 +125,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'events:events:read',
     'events:events:write',
     'events:events:delete',
+    'events:registrations:read',
     // Représentation légale : accorde et révoque les accès.
     'iam:users:read',
     'iam:users:write',
@@ -158,7 +156,6 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'shop:orders:approve',
     'notifications:messages:read',
     // Consultation seule : la communication du club n'est pas du ressort de la trésorerie.
-    'announcements:posts:read',
     'cms:pages:read',
     'cms:posts:read',
     'schedules:slots:read',
@@ -179,9 +176,6 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     // Communication du club.
     'notifications:messages:read',
     'notifications:messages:send',
-    'announcements:posts:read',
-    'announcements:posts:write',
-    'announcements:posts:delete',
     // Site public : rédaction, sans la main sur l'arborescence des URL — modifier un
     // menu ou une redirection se paie en référencement, cela reste à la présidence
     // et à la commission Communication.
@@ -195,6 +189,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'schedules:slots:read',
     'events:events:read',
     'events:events:write',
+    'events:registrations:read',
     // Boutique : catalogue et suivi des commandes, sans encaissement.
     'shop:products:read',
     'shop:products:write',
@@ -218,7 +213,6 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'shop:orders:read',
     'shop:orders:write',
     // Consultation seule : l'entraîneur suit les annonces et le site sans les rédiger.
-    'announcements:posts:read',
     'cms:pages:read',
     'cms:posts:read',
     // L'entraîneur vit les créneaux au quotidien : il les tient à jour.
@@ -244,9 +238,6 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
    */
   communication: [
     ...BASE,
-    'announcements:posts:read',
-    'announcements:posts:write',
-    'announcements:posts:delete',
     // Diffuser une annonce fait sonner tous les téléphones du club : c'est le cœur
     // du rôle, pas un droit accessoire.
     'notifications:messages:read',
@@ -267,7 +258,10 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'schedules:slots:write',
     'events:events:read',
     'events:events:write',
-    'events:events:delete'
+    'events:events:delete',
+    // Qui tient l'agenda relève les inscriptions : c'est la même personne qui annonce
+    // la soirée et qui compte les couverts.
+    'events:registrations:read'
   ],
 
   // Socle du deny-by-default : aucun droit métier. Attribué à un compte créé sans

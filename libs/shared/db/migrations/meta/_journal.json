@@ -29,6 +29,20 @@
       "when": 1786281052034,
       "tag": "0003_order_payment_workflow",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1786798300071,
+      "tag": "0004_cool_omega_sentinel",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1786814336928,
+      "tag": "0005_realign_after_manual_migrations",
+      "breakpoints": true
     }
   ]
 }

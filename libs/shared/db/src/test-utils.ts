@@ -12,7 +12,6 @@ export async function setupMockDb() {
     'admin_user_roles',
     'admin_users',
     'attestation_config',
-    'announcements',
     // CMS du site public. Enfants avant parents, comme le reste de la liste : une
     // table oubliée ici ne casse rien tout de suite, elle laisse fuiter des lignes
     // d'un test à l'autre — ce qui se lit comme de l'instabilité, pas comme un bug.
@@ -27,8 +26,10 @@ export async function setupMockDb() {
     'cms_media',
     'cms_redirects',
     'cms_content_version',
+    'cms_site_settings',
     // Créneaux et agenda : enfants avant parents, comme le reste de la liste.
     'schedule_slots',
+    'club_event_registrations',
     'club_events',
     'venues',
     'push_deliveries',

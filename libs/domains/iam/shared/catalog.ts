@@ -51,9 +51,6 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'notifications:messages:read': "Consulter l'historique des notifications",
   'notifications:messages:send': 'Envoyer une notification au club',
 
-  'announcements:posts:read': 'Consulter les annonces',
-  'announcements:posts:write': 'Rédiger et publier une annonce',
-  'announcements:posts:delete': 'Supprimer une annonce',
   'cms:pages:read': 'Consulter les pages du site',
   'cms:pages:write': 'Créer et modifier une page du site',
   'cms:pages:delete': 'Supprimer une page du site',
@@ -70,6 +67,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'events:events:read': "Consulter l'agenda",
   'events:events:write': 'Créer et modifier un événement',
   'events:events:delete': 'Supprimer un événement',
+  'events:registrations:read': "Voir les inscrits à un événement",
 
   'ai:assistant:use': "Utiliser l'assistant IA",
 
@@ -93,7 +91,6 @@ export const PERMISSION_GROUPS: { domain: string; label: string }[] = [
   { domain: 'expenses', label: 'Notes de frais' },
   { domain: 'shop', label: 'Boutique' },
   { domain: 'notifications', label: 'Communication' },
-  { domain: 'announcements', label: 'Annonces' },
   { domain: 'cms', label: 'Site public' },
   { domain: 'schedules', label: 'Créneaux' },
   { domain: 'events', label: 'Agenda' },

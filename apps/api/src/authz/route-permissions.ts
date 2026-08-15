@@ -40,6 +40,9 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/members/import', permission: 'members:members:import' },
   // Recherche du foyer à la connexion OTP : appelée avant toute session.
   { method: 'POST', path: '/members/lookup-household', permission: 'members:members:read', service: true },
+  // Anniversaires du jour, affichés sur l'accueil de l'espace adhérent : même contenu
+  // que l'annonce poussée à tout le club chaque matin.
+  { method: 'GET', path: '/members/birthdays', permission: 'members:members:read', service: true },
   { method: 'PATCH', path: '/members/:id/expense-authorization', permission: 'members:members:write' },
   { method: 'GET', path: '/members/attestation/config', permission: 'members:attestations:read' },
   { method: 'PUT', path: '/members/attestation/config', permission: 'members:attestations:write' },
@@ -170,16 +173,6 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/notifications/messages', permission: 'notifications:messages:send' },
   { method: 'POST', path: '/notifications/dispatch', permission: 'notifications:messages:send' },
 
-  // Annonces du club. La lecture est ouverte au storefront (`service`), qui n'a ni
-  // identité ni permission : la route s'y limite d'elle-même aux annonces publiées.
-  { method: 'GET', path: '/announcements', permission: 'announcements:posts:read', service: true },
-  { method: 'POST', path: '/announcements', permission: 'announcements:posts:write' },
-  { method: 'PUT', path: '/announcements/:id', permission: 'announcements:posts:write' },
-  { method: 'DELETE', path: '/announcements/:id', permission: 'announcements:posts:delete' },
-  // Diffuser une annonce, c'est faire sonner tous les téléphones du club : l'acte relève
-  // du même droit que l'envoi d'une notification, et non de la rédaction.
-  { method: 'POST', path: '/announcements/:id/notify', permission: 'notifications:messages:send' },
-
   // Site public. Les lectures sont ouvertes au Worker du site (`service`), qui n'a ni
   // identité ni permission : chaque route s'y limite d'elle-même au contenu publié,
   // en regardant `x-caller`. La garde vit dans la route et non chez l'appelant, pour
@@ -213,6 +206,9 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'PUT', path: '/cms/posts/:id', permission: 'cms:posts:write' },
   { method: 'POST', path: '/cms/posts/:id/publish', permission: 'cms:posts:write' },
   { method: 'DELETE', path: '/cms/posts/:id', permission: 'cms:posts:delete' },
+  // Diffuser une actualité, c'est faire sonner tous les téléphones du club : l'acte
+  // relève du même droit que l'envoi d'une notification, et non de la rédaction.
+  { method: 'POST', path: '/cms/posts/:id/notify', permission: 'notifications:messages:send' },
   { method: 'GET', path: '/cms/post-categories', permission: 'cms:posts:read', service: true },
   // Les menus font partie de la structure du site : qui peut composer les pages peut
   // les ranger. Pas de permission dédiée pour une poignée d'entrées.
@@ -222,6 +218,11 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'PUT', path: '/cms/nav/reorder', permission: 'cms:pages:write' },
   { method: 'PUT', path: '/cms/nav/:id', permission: 'cms:pages:write' },
   { method: 'DELETE', path: '/cms/nav/:id', permission: 'cms:pages:write' },
+  // Réglages du pied de page : phrase de présentation, adresse, comptes sociaux. Même
+  // droit que les menus — c'est la même chose, du châssis de site plutôt que du
+  // contenu — et lecture ouverte au site, qui les affiche sur toutes ses pages.
+  { method: 'GET', path: '/cms/settings', permission: 'cms:pages:read', service: true },
+  { method: 'PUT', path: '/cms/settings', permission: 'cms:pages:write' },
   { method: 'POST', path: '/cms/post-categories', permission: 'cms:posts:write' },
 
   // Créneaux. Le site public les affiche, d'où `service` en lecture : c'est ce qui
@@ -237,5 +238,13 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'GET', path: '/events', permission: 'events:events:read', service: true },
   { method: 'POST', path: '/events', permission: 'events:events:write' },
   { method: 'PUT', path: '/events/:id', permission: 'events:events:write' },
-  { method: 'DELETE', path: '/events/:id', permission: 'events:events:delete' }
+  { method: 'DELETE', path: '/events/:id', permission: 'events:events:delete' },
+
+  // Inscriptions. S'inscrire et se désinscrire sont ouverts au service — c'est
+  // l'espace adhérent qui appelle, au nom de la session qu'il détient. Lire la liste
+  // ne l'est pas : des noms d'adhérents ne sortent qu'auprès d'une identité
+  // d'administration. C'est toute la différence entre compter et savoir qui.
+  { method: 'POST', path: '/events/:id/registrations', permission: 'events:events:read', service: true },
+  { method: 'DELETE', path: '/events/:id/registrations', permission: 'events:events:read', service: true },
+  { method: 'GET', path: '/events/:id/registrations', permission: 'events:registrations:read' }
 ];

@@ -14,5 +14,10 @@ export const updateEventSchema = Type.Object({
   descriptionHtml: Type.Optional(Type.String({ maxLength: 20000 })),
   status: Type.Optional(
     Type.Union([Type.Literal('draft'), Type.Literal('published'), Type.Literal('cancelled')])
+  ),
+  // Ouvrir ou fermer les inscriptions est une modification de l'événement comme une
+  // autre : aucune permission particulière, `events:events:write` suffit.
+  registration: Type.Optional(
+    Type.Union([Type.Literal('none'), Type.Literal('open'), Type.Literal('closed')])
   )
 });

@@ -9,5 +9,6 @@ export interface UpdateEventInput {
   venueLabel?: string | null;
   descriptionHtml?: string;
   status?: ClubEventRow['status'];
+  registration?: ClubEventRow['registration'];
 }
 export type UpdateEventOutput = ClubEventRow;
