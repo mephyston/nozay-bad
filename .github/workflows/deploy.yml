@@ -197,6 +197,13 @@ jobs:
       - name: Verify schema integrity & reference data
         run: node scripts/check-schema-integrity.js
 
+      # Nx ne lit pas les imports des fichiers .astro/.svelte : les dépendances qui en
+      # découlent sont déclarées à la main dans les project.json. Sans ce contrôle, un
+      # import ajouté sans sa déclaration laisse l'application hors du calcul d'affected,
+      # donc ni testée ni redéployée quand la lib change — et personne ne le voit.
+      - name: Verify Nx dependency graph covers every @nba/* import
+        run: node scripts/check-nx-deps.js
+
       - name: Run TypeScript typecheck
         run: npm run typecheck
 
