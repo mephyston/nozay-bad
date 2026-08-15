@@ -1,3 +1,11 @@
+# [1.0.0-beta.81](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.80...v1.0.0-beta.81) (2026-08-15)
+
+
+### Features
+
+* **iam:** éditer les droits d'un rôle en liste plutôt que dans la matrice ([ba23ebd](https://github.com/mephyston/nozay-bad/commit/ba23ebd5848a37af5d9fbd608a3daa151537cdd0))
+* **website:** cibles tactiles, balayage du carrousel et images à la bonne taille ([904e51e](https://github.com/mephyston/nozay-bad/commit/904e51e854943e2e050391d183f250399bae23d9))
+
 # [1.0.0-beta.80](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.79...v1.0.0-beta.80) (2026-08-15)
 
 
