@@ -269,6 +269,19 @@
         >
           {loading ? 'Envoi…' : 'Recevoir un code'}
         </button>
+
+        <!-- Affiché à tout le monde, sans condition : c'est le seul moyen de toucher qui
+             n'a jamais été licencié au club, et donc n'est dans aucun fichier — lui ne
+             recevra aucun email. Inconditionnel, donc ne révèle rien de personne. -->
+        <p class="text-center text-[11px] text-muted-foreground">
+          Pas encore adhérent ?
+          <a
+            href="https://www.myffbad.fr/adherer/NBA91"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="underline hover:text-foreground">Prenez votre licence</a
+          >.
+        </p>
       </form>
     {:else if step === 'code'}
       <form class="mt-4 space-y-4" onsubmit={verifyCode}>

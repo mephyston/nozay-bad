@@ -1,4 +1,5 @@
 import { createApiClient } from '@nba/api-client';
+import { listSeasons, displaySeason } from './season';
 
 export interface ActiveMemberStatus {
   canExpense: boolean;
@@ -15,6 +16,10 @@ export interface ActiveMemberStatus {
  * snapshot de session. Ainsi une (dé)autorisation de notes de frais ou un paiement pris
  * en compte côté admin devient effectif dès le prochain chargement de page, sans que
  * l'adhérent ait à se reconnecter. Repli sur les valeurs de session si l'API échoue.
+ *
+ * La saison lue est celle de la SESSION (donc celle du calendrier), et non la saison
+ * comptable : sinon une clôture anticipée ferait chercher le dossier de l'adhérent dans
+ * une saison où il n'existe pas, et l'app afficherait une cotisation à zéro.
  */
 export async function getActiveMemberStatus(env: any, session: any): Promise<ActiveMemberStatus> {
   const active = session?.members?.find((m: any) => m.id === session?.activeMemberId);
@@ -32,17 +37,9 @@ export async function getActiveMemberStatus(env: any, session: any): Promise<Act
 
   const api = createApiClient(env);
 
-  let seasonCode = '';
-  let seasonName = '';
-  try {
-    const sres = await api.fetch('http://localhost/accounting/seasons');
-    if (sres.ok) {
-      const seasons = ((await sres.json()) as any).data || [];
-      const s = seasons.find((x: any) => x.active) || seasons[0];
-      seasonCode = s?.id || '';
-      seasonName = s?.name || '';
-    }
-  } catch {}
+  const season = displaySeason(await listSeasons(env), session?.seasonCode);
+  const seasonCode = season?.code || '';
+  const seasonName = season?.name || '';
 
   try {
     const mres = await api.fetch(

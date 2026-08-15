@@ -42,7 +42,7 @@ export function applySecurityHeaders(response: Response): Response {
  * Renvoie la réponse elle-même si ses en-têtes sont modifiables, sinon une copie
  * qui l'est (le corps est transmis tel quel, sans le bufferiser).
  */
-function withMutableHeaders(response: Response): Response {
+export function withMutableHeaders(response: Response): Response {
   try {
     response.headers.set('X-Content-Type-Options', 'nosniff');
     return response;

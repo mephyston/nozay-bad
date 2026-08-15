@@ -7,14 +7,9 @@ import { ExpenseReportForm } from '@nba/expenses-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 import { getActiveMemberStatus } from '../lib/member-status';
+import { listSeasons, displaySeason, type Season } from '../lib/season';
 
 const apiService = createApiClient(env);
-
-interface Season {
-  id: string;
-  name: string;
-  active: boolean;
-}
 
 interface Member {
   id: number;
@@ -66,13 +61,8 @@ let categories: any[] = [];
 let errorMsg = '';
 
 try {
-  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
-  if (seasonsRes.ok) {
-    const json = await seasonsRes.json() as any;
-    seasons = json.data || [];
-  } else {
-    errorMsg = 'Impossible de charger les saisons.';
-  }
+  seasons = await listSeasons(env);
+  if (seasons.length === 0) errorMsg = 'Impossible de charger les saisons.';
 
   const categoriesRes = await apiService.fetch('http://localhost/accounting/categories');
   if (categoriesRes.ok) {
@@ -83,8 +73,9 @@ try {
   errorMsg = 'Une erreur de connexion est survenue lors du chargement des données.';
 }
 
-const activeSeason = seasons.find((s: Season) => s.active) || seasons[0] || { id: '25-26', name: 'Saison 2025-2026', active: false };
-const activeSeasonId = activeSeason.id;
+// Saison de la session (celle du calendrier), pas la saison comptable : une note de frais
+// doit s'imputer sur la saison que l'adhérent est en train de jouer.
+const activeSeasonId = displaySeason(seasons, session?.seasonCode)?.code ?? '';
 ---
 
 <Layout title="Notes de frais - NBA 91">

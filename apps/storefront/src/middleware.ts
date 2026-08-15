@@ -1,7 +1,18 @@
 import { defineMiddleware } from 'astro:middleware';
-import { verifySession, readSessionCookie, resolveSessionSecret } from './lib/auth';
-import { resolveEnv, IS_DEV } from './lib/request-context';
-import { applySecurityHeaders } from './lib/security-headers';
+import { createApiClient } from '@nba/api-client';
+import {
+  verifySession,
+  readSessionCookie,
+  resolveSessionSecret,
+  signSession,
+  buildSessionCookie,
+  buildLogoutCookie,
+  type SessionPayload,
+  type SessionMember
+} from './lib/auth';
+import { resolveEnv, IS_DEV, COOKIE_SECURE } from './lib/request-context';
+import { applySecurityHeaders, withMutableHeaders } from './lib/security-headers';
+import { listSeasons, isSeasonOpen, parisToday } from './lib/season';
 
 // Chemins accessibles sans session : page de login, endpoints d'auth, et assets Astro (_astro/_image).
 const PUBLIC_PREFIXES = ['/login', '/api/auth/', '/confidentialite', '/mentions-legales'];
@@ -40,6 +51,44 @@ async function attachSessionIfAny(
   }
 }
 
+/**
+ * Revalide une session dont la saison est terminée.
+ *
+ * Sans ce contrôle, la fin d'adhésion ne coupe rien : le JWT reste signé et valable 30
+ * jours, et un non-réinscrit continuerait de naviguer bien après le 1er septembre.
+ *
+ * Retourne la session régénérée si la licence a été renouvelée (l'adhérent à jour ne voit
+ * donc rien passer), ou `null` s'il faut le renvoyer au login.
+ */
+async function revalidateSeason(env: any, session: SessionPayload): Promise<SessionPayload | null> {
+  try {
+    const res = await createApiClient(env).fetch('http://localhost/members/lookup-household', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier: session.email })
+    });
+    if (!res.ok) return null;
+
+    const data = ((await res.json()) as any)?.data;
+    if (data?.status !== 'granted') return null;
+
+    const members = (data.members || []) as SessionMember[];
+    if (members.length === 0) return null;
+
+    // Le profil actif peut avoir disparu (un enfant du foyer non réinscrit) : on retombe
+    // alors sur le premier dossier valable plutôt que de laisser une session pointer dans
+    // le vide.
+    const activeMemberId = members.some((m) => m.id === session.activeMemberId)
+      ? session.activeMemberId
+      : members[0].id;
+
+    return { email: session.email, members, activeMemberId, seasonCode: data.seasonCode || '' };
+  } catch (err) {
+    console.error('[auth] revalidation de saison impossible:', err);
+    return null;
+  }
+}
+
 const handleRequest = async (
   context: Parameters<Parameters<typeof defineMiddleware>[0]>[0],
   next: Parameters<Parameters<typeof defineMiddleware>[0]>[1]
@@ -69,21 +118,55 @@ const handleRequest = async (
   }
 
   const token = readSessionCookie(request.headers.get('cookie'));
-  const session = token ? await verifySession(token, secret) : null;
+  let session = token ? await verifySession(token, secret) : null;
+
+  // Cookie à reposer si la session a été régénérée pour la nouvelle saison.
+  let refreshedCookie: string | null = null;
+  // Session valide mais révoquée faute de licence : son cookie doit être purgé.
+  let revoked = false;
+
+  if (session) {
+    const today = parisToday();
+    const seasons = await listSeasons(env, today);
+    // Liste vide = API injoignable. On ne coupe personne sur une panne : la licence sera
+    // revérifiée à la requête suivante.
+    if (seasons.length > 0 && !isSeasonOpen(seasons, session.seasonCode, today)) {
+      const renewed = await revalidateSeason(env, session);
+      if (renewed) {
+        session = renewed;
+        refreshedCookie = buildSessionCookie(await signSession(renewed, secret), COOKIE_SECURE);
+      } else {
+        session = null;
+        revoked = true;
+      }
+    }
+  }
 
   if (!session) {
-    if (path.startsWith('/api/')) {
-      return new Response(JSON.stringify({ ok: false, error: 'Non authentifié.' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      });
+    const response = path.startsWith('/api/')
+      ? new Response(JSON.stringify({ ok: false, error: 'Non authentifié.' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      : context.redirect(`/login?redirect=${encodeURIComponent(path + url.search)}`, 302);
+
+    if (revoked) {
+      const mutable = withMutableHeaders(response);
+      mutable.headers.append('Set-Cookie', buildLogoutCookie(COOKIE_SECURE));
+      return mutable;
     }
-    const redirectTo = encodeURIComponent(path + url.search);
-    return context.redirect(`/login?redirect=${redirectTo}`, 302);
+    return response;
   }
 
   (locals as any).session = session;
-  return next();
+
+  const response = await next();
+  if (refreshedCookie) {
+    const mutable = withMutableHeaders(response);
+    mutable.headers.append('Set-Cookie', refreshedCookie);
+    return mutable;
+  }
+  return response;
 };
 
 // M-03 : toutes les réponses (pages, API, redirections, 401) reçoivent les en-têtes

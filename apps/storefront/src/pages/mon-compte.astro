@@ -6,6 +6,7 @@ import PushOptIn from '../components/PushOptIn.svelte';
 import CollapsibleHistory from '../components/CollapsibleHistory.astro';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
+import { listSeasons, displaySeason } from '../lib/season';
 
 const session = Astro.locals.session;
 const active = session?.members.find((m) => m.id === session.activeMemberId);
@@ -40,28 +41,41 @@ let cotisation: any = null;
 let seasonName = '';
 let orders: any[] = [];
 let expenses: any[] = [];
+// Membres du foyer non réinscrits. Le foyer étant entré, aucun email d'alerte n'est parti :
+// c'est ici, et nulle part ailleurs, qu'un parent apprend qu'il manque une licence.
+let lapsedMembers: Array<{ firstName: string; lastName: string }> = [];
 
 if (active) {
   try {
-    const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
-    const seasons = seasonsRes.ok ? ((await seasonsRes.json()) as any).data || [] : [];
-    const activeSeason = seasons.find((s: any) => s.active) || seasons[0];
-    const seasonCode = activeSeason?.id;
-    seasonName = activeSeason?.name || '';
+    // Saison de la session (celle du calendrier), pas la saison comptable.
+    const season = displaySeason(await listSeasons(env), session?.seasonCode);
+    const seasonCode = season?.code;
+    seasonName = season?.name || '';
 
     // Adhérent d'abord → autorisation frais à jour avant de décider de charger les notes de frais.
     const memberRes = await apiService.fetch(`http://localhost/members/${encodeURIComponent(active.licence)}${seasonCode ? `?season=${encodeURIComponent(seasonCode)}` : ''}`);
     if (memberRes.ok) cotisation = ((await memberRes.json()) as any).data;
     canExpense = Boolean(cotisation?.expenseAuthorized ?? canExpense);
 
-    const [ordersRes, expensesRes] = await Promise.all([
+    const [ordersRes, expensesRes, householdRes] = await Promise.all([
       apiService.fetch(`http://localhost/shop/orders?memberId=${active.id}`),
-      canExpense ? apiService.fetch(`http://localhost/expenses?memberId=${active.id}`) : Promise.resolve(null)
+      canExpense ? apiService.fetch(`http://localhost/expenses?memberId=${active.id}`) : Promise.resolve(null),
+      // État du foyer, relu à chaque affichage : le rappel doit disparaître de lui-même dès
+      // que le bureau importe la licence manquante.
+      apiService.fetch('http://localhost/members/lookup-household', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: session?.email })
+      })
     ]);
     if (ordersRes.ok) orders = ((await ordersRes.json()) as any).data || [];
     if (expensesRes && expensesRes.ok) expenses = ((await expensesRes.json()) as any).data || [];
+    if (householdRes.ok) lapsedMembers = ((await householdRes.json()) as any)?.data?.lapsedMembers || [];
   } catch {}
 }
+
+const renewUrl = 'https://www.myffbad.fr/adherer/NBA91';
+const lapsedNames = lapsedMembers.map((m) => `${m.firstName} ${m.lastName}`);
 
 const due = cotisation?.amountDueCents ?? 0;
 const received = cotisation?.amountReceivedCents ?? 0;
@@ -75,6 +89,31 @@ const isPaid = Boolean(cotisation?.paid);
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     <div class="max-w-3xl mx-auto space-y-8">
       <h1 class="text-xl sm:text-2xl font-bold text-foreground">Mon compte</h1>
+
+      <!-- Foyer mixte : un membre réinscrit, un autre non. Placé tout en haut parce que
+           c'est la seule alerte de cette page qui appelle une action, et qu'aucun email
+           n'a été envoyé pour ce cas — le foyer ayant un accès valide. -->
+      {lapsedNames.length > 0 && (
+        <div class="rounded-xl border border-warning/20 bg-warning/10 px-5 py-4">
+          <p class="text-sm font-semibold text-warning">
+            {lapsedNames.length === 1
+              ? `${lapsedNames[0]} n'a pas de licence pour ${seasonName || 'cette saison'}`
+              : `${lapsedNames.slice(0, -1).join(', ')} et ${lapsedNames[lapsedNames.length - 1]} n'ont pas de licence pour ${seasonName || 'cette saison'}`}
+          </p>
+          <p class="mt-1 text-sm text-muted-foreground">
+            Si la réadhésion est déjà faite, cette information disparaîtra d'elle-même sous
+            quelques jours.
+          </p>
+          <a
+            href={renewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-3 inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 no-underline min-h-[44px]"
+          >
+            Reprendre la licence
+          </a>
+        </div>
+      )}
 
       <!-- Notifications : ne s'affiche que si l'appareil peut en recevoir. -->
       <PushOptIn client:idle />

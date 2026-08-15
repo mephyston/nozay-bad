@@ -16,6 +16,8 @@ declare namespace App {
       email: string;
       members: Array<{ id: number; firstName: string; lastName: string; licence: string; paid: boolean; expenseAuthorized: boolean }>;
       activeMemberId: number;
+      /** Saison (code) au titre de laquelle l'accès a été accordé — voir `lib/season.ts`. */
+      seasonCode: string;
     };
     runtime: import('@astrojs/cloudflare').Runtime<Env>;
   }

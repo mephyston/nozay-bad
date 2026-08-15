@@ -32,7 +32,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const newToken = await signSession(
-    { email: session.email, members: session.members, activeMemberId: memberId },
+    {
+      email: session.email,
+      members: session.members,
+      activeMemberId: memberId,
+      seasonCode: session.seasonCode
+    },
     secret
   );
 

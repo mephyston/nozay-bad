@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { sendOtpEmail } from './email';
+import { sendOtpEmail, sendRenewalEmail, sendUpcomingAccessEmail, FFBAD_MEMBERSHIP_URL } from './email';
 
 const KEY = 're_test_key';
 
@@ -77,5 +77,69 @@ describe('sendOtpEmail — garde-fou anti-envoi', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const body = JSON.parse((fetchMock.mock.calls[0][1] as any).body);
     expect(body.to).toEqual(['adherent@reel.fr']);
+  });
+});
+
+// Les emails d'adhésion passent par le même `deliver()` que l'OTP : ces tests vérifient
+// qu'ils n'ont pas réimplémenté les règles d'envoi dans leur coin.
+describe('emails d’adhésion — mêmes garde-fous que l’OTP', () => {
+  let fetchMock: any;
+
+  beforeEach(() => {
+    fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('sendRenewalEmail n’envoie RIEN sans clé API (dry-run)', async () => {
+    const res = await sendRenewalEmail({}, 'ancien@reel.fr', 'Saison 26-27');
+    expect(res.ok).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('sendRenewalEmail n’envoie RIEN pour un mode inconnu (fail-closed)', async () => {
+    await sendRenewalEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'staging' }, 'ancien@reel.fr', 'Saison 26-27');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('sendRenewalEmail redirige vers la boîte de test, jamais à l’ex-adhérent', async () => {
+    await sendRenewalEmail(
+      { RESEND_API_KEY: KEY, EMAIL_MODE: 'redirect', EMAIL_TEST_INBOX: 'test@boite.fr' },
+      'ancien@reel.fr',
+      'Saison 26-27'
+    );
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as any).body);
+    expect(body.to).toEqual(['test@boite.fr']);
+  });
+
+  it('sendRenewalEmail porte le lien de réadhésion FFBad', async () => {
+    await sendRenewalEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, 'ancien@reel.fr', 'Saison 26-27');
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as any).body);
+    expect(body.html).toContain(FFBAD_MEMBERSHIP_URL);
+    expect(body.text).toContain(FFBAD_MEMBERSHIP_URL);
+    expect(body.subject).toContain('Saison 26-27');
+  });
+
+  it('sendUpcomingAccessEmail n’envoie RIEN sans clé API (dry-run)', async () => {
+    const res = await sendUpcomingAccessEmail({}, 'nouveau@reel.fr', 'Saison 26-27', '2026-09-01');
+    expect(res.ok).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('sendUpcomingAccessEmail annonce la date d’ouverture en clair', async () => {
+    await sendUpcomingAccessEmail(
+      { RESEND_API_KEY: KEY, EMAIL_MODE: 'live' },
+      'nouveau@reel.fr',
+      'Saison 26-27',
+      '2026-09-01'
+    );
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as any).body);
+    expect(body.subject).toContain('1er septembre 2026');
+    expect(body.html).toContain('1er septembre 2026');
+    // Rien à faire de sa part : surtout pas de lien d'adhésion, il a déjà payé.
+    expect(body.html).not.toContain(FFBAD_MEMBERSHIP_URL);
   });
 });

@@ -34,11 +34,16 @@ export interface SessionPayload {
   email: string;
   members: SessionMember[];
   activeMemberId: number;
+  // Saison au titre de laquelle l'accès a été accordé. Le middleware s'en sert pour
+  // détecter qu'une saison s'est achevée et re-vérifier la licence — sans lui, une
+  // session survivrait 30 jours à la fin de l'adhésion.
+  seasonCode: string;
 }
 
 interface OtpRecord {
   hash: string;
   members: SessionMember[];
+  seasonCode: string;
   attempts: number;
 }
 
@@ -63,7 +68,8 @@ export async function signSession(payload: SessionPayload, secret: string): Prom
   return new SignJWT({
     email: payload.email,
     members: payload.members,
-    activeMemberId: payload.activeMemberId
+    activeMemberId: payload.activeMemberId,
+    seasonCode: payload.seasonCode
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -78,7 +84,11 @@ export async function verifySession(token: string, secret: string): Promise<Sess
     const email = typeof payload.email === 'string' ? payload.email : '';
     const activeMemberId = typeof payload.activeMemberId === 'number' ? payload.activeMemberId : members[0]?.id;
     if (!email || members.length === 0 || activeMemberId === undefined) return null;
-    return { email, members, activeMemberId };
+    // Une session émise avant l'introduction du champ n'en a pas : la chaîne vide ne
+    // correspondra à aucune saison ouverte, donc le middleware la re-vérifiera une fois
+    // puis la régénérera. La migration se fait d'elle-même.
+    const seasonCode = typeof payload.seasonCode === 'string' ? payload.seasonCode : '';
+    return { email, members, activeMemberId, seasonCode };
   } catch {
     return null;
   }
@@ -157,8 +167,14 @@ function otpKey(email: string): string {
   return `otp:${email.toLowerCase()}`;
 }
 
-export async function storeOtp(kv: any, email: string, code: string, members: SessionMember[]): Promise<void> {
-  const record: OtpRecord = { hash: await hashOtp(code, email), members, attempts: 0 };
+export async function storeOtp(
+  kv: any,
+  email: string,
+  code: string,
+  members: SessionMember[],
+  seasonCode: string
+): Promise<void> {
+  const record: OtpRecord = { hash: await hashOtp(code, email), members, seasonCode, attempts: 0 };
   if (kv && typeof kv.put === 'function') {
     await kv.put(otpKey(email), JSON.stringify(record), { expirationTtl: OTP_TTL_SECONDS });
     return;
@@ -169,6 +185,7 @@ export async function storeOtp(kv: any, email: string, code: string, members: Se
 export interface OtpVerifyResult {
   ok: boolean;
   members?: SessionMember[];
+  seasonCode?: string;
   error?: 'expired' | 'invalid' | 'locked';
 }
 
@@ -185,7 +202,7 @@ export async function verifyOtp(kv: any, email: string, code: string): Promise<O
   const candidate = await hashOtp(code, email);
   if (timingSafeEqual(candidate, record.hash)) {
     await deleteOtp(kv, key);
-    return { ok: true, members: record.members };
+    return { ok: true, members: record.members, seasonCode: record.seasonCode };
   }
 
   record.attempts += 1;

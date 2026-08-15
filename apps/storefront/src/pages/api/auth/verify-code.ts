@@ -53,7 +53,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return json({ ok: false, error: 'Aucun dossier associé.' }, 400);
   }
 
-  const token = await signSession({ email, members, activeMemberId }, secret);
+  // La saison est celle contre laquelle la licence a été vérifiée à la demande du code.
+  const token = await signSession(
+    { email, members, activeMemberId, seasonCode: result.seasonCode || '' },
+    secret
+  );
 
   // Pose la session, purge le cookie temporaire.
   const headers = new Headers({ 'Content-Type': 'application/json' });
