@@ -8,12 +8,16 @@ import { can, guardAction } from '../../../lib/guard';
 
 const canWrite = can(Astro.locals, 'events:events:write');
 const canDelete = can(Astro.locals, 'events:events:delete');
+const canReadRegistrations = can(Astro.locals, 'events:registrations:read');
 const apiService = createAdminApiClient(Astro.locals);
 
 const ACTIONS = {
   create: 'events:events:write',
   update: 'events:events:write',
-  delete: 'events:events:delete'
+  delete: 'events:events:delete',
+  // Lire les inscrits est un droit distinct de la tenue de l'agenda : la fiche est
+  // publique, la liste de ses inscrits est une donnée personnelle d'adhérents.
+  registrations: 'events:registrations:read'
 } as const;
 
 if (Astro.request.method === 'POST') {
@@ -25,7 +29,13 @@ if (Astro.request.method === 'POST') {
     create: {
       url: 'http://localhost/events',
       method: 'POST',
-      body: { title: data.title, startsAt: data.startsAt, category: data.category, venueLabel: data.venueLabel }
+      body: {
+        title: data.title,
+        startsAt: data.startsAt,
+        endsAt: data.endsAt,
+        category: data.category,
+        venueLabel: data.venueLabel
+      }
     },
     // Seules les clés présentes sont transmises : le même point d'entrée sert au
     // changement de statut depuis la liste (`status` seul) et à l'édition complète
@@ -34,12 +44,15 @@ if (Astro.request.method === 'POST') {
       url: `http://localhost/events/${data.id}`,
       method: 'PUT',
       body: Object.fromEntries(
-        (['title', 'startsAt', 'category', 'venueLabel', 'status'] as const)
+        (['title', 'startsAt', 'endsAt', 'category', 'venueLabel', 'status', 'registration'] as const)
           .filter((key) => data[key] !== undefined)
           .map((key) => [key, data[key]])
       )
     },
-    delete: { url: `http://localhost/events/${data.id}`, method: 'DELETE' }
+    delete: { url: `http://localhost/events/${data.id}`, method: 'DELETE' },
+    // Lecture à la demande : la liste nominative ne descend pas avec la page, elle
+    // n'est chargée que lorsque le bureau ouvre le panneau d'un événement précis.
+    registrations: { url: `http://localhost/events/${data.id}/registrations`, method: 'GET' }
   };
   const route = routes[data.action];
   const apiRes = await apiService.fetch(route.url, {
@@ -81,7 +94,13 @@ try {
         description="Compétitions, stages et animations. Chaque événement publié devient une fiche indexable, là où l'agenda Google intégré restait invisible."
       />
 
-      <EventsManager client:load events={events} canWrite={canWrite} canDelete={canDelete} />
+      <EventsManager
+        client:load
+        events={events}
+        canWrite={canWrite}
+        canDelete={canDelete}
+        canReadRegistrations={canReadRegistrations}
+      />
     </div>
   </AdminLayout>
 </Layout>
