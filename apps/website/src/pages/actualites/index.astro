@@ -106,7 +106,7 @@ const jsonLd = [
                 href={chip.href}
                 aria-current={chip.active ? 'page' : undefined}
                 class:list={[
-                  'inline-flex rounded-full border px-3.5 py-1.5 text-sm transition-colors',
+                  'inline-flex items-center rounded-full border px-3.5 py-3 text-sm transition-colors md:py-1.5',
                   chip.active
                     ? 'border-primary bg-primary text-primary-foreground font-medium'
                     : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
@@ -128,15 +128,28 @@ const jsonLd = [
             : 'Aucune actualité pour le moment.'}
         </p>
         {activeCategory && (
-          <a href="/actualites/" class="text-primary mt-2 inline-block hover:underline">
+          <a href="/actualites/" class="text-primary mt-2 inline-flex min-h-11 items-center hover:underline">
             Voir toutes les actualités
           </a>
         )}
       </div>
     ) : (
       <ul class="mt-8 grid gap-5 sm:grid-cols-2">
+        {/*
+          `sizes` explicite : les archives tiennent dans `max-w-3xl` et s'arrêtent à
+          deux colonnes, là où le fil d'accueil dispose de `max-w-5xl` et en tient
+          trois. Passé 800 px de large la case est figée à ~358 px — plus étroite que
+          ce que suppose le défaut de `PostCard`, qui ferait donc télécharger une
+          déclinaison plus lourde que nécessaire.
+        */}
         {posts.map((post, index) => (
-          <li class="flex"><PostCard post={post} priority={index < 2} /></li>
+          <li class="flex">
+            <PostCard
+              post={post}
+              priority={index < 2}
+              sizes="(min-width: 800px) 358px, (min-width: 640px) 50vw, calc(100vw - 2rem)"
+            />
+          </li>
         ))}
       </ul>
     )}
@@ -144,11 +157,11 @@ const jsonLd = [
     {lastPage > 1 && (
       <nav aria-label="Pagination" class="mt-8 flex items-center justify-between text-sm">
         {currentPage > 1
-          ? <a href={linkTo(currentPage - 1)} class="text-primary hover:underline">← Précédentes</a>
+          ? <a href={linkTo(currentPage - 1)} class="text-primary -ml-2 inline-flex min-h-11 items-center px-2 hover:underline">← Précédentes</a>
           : <span></span>}
         <span class="text-muted-foreground">Page {currentPage} sur {lastPage}</span>
         {currentPage < lastPage
-          ? <a href={linkTo(currentPage + 1)} class="text-primary hover:underline">Suivantes →</a>
+          ? <a href={linkTo(currentPage + 1)} class="text-primary -mr-2 inline-flex min-h-11 items-center px-2 hover:underline">Suivantes →</a>
           : <span></span>}
       </nav>
     )}

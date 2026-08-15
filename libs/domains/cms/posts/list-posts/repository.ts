@@ -1,8 +1,9 @@
-import { and, desc, eq, inArray, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, type SQL } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import {
   cmsPostsTable, cmsPostCategoriesTable, cmsPostCategoryLinksTable, cmsMediaTable,
-  type CmsPostRow, type CmsPostCategoryRow, type CmsMediaRow
+  cmsMediaVariantsTable,
+  type CmsPostRow, type CmsPostCategoryRow, type CmsMediaRow, type CmsMediaVariantRow
 } from '../../shared/schema';
 
 export class ListPostsRepository {
@@ -68,6 +69,36 @@ export class ListPostsRepository {
       .where(inArray(cmsMediaTable.id, mediaIds))
       .all();
     return new Map(rows.map((row) => [row.id, row]));
+  }
+
+  /**
+   * Déclinaisons des couvertures affichées, en une requête, indexées par média.
+   *
+   * Sans elles la carte ne peut poser aucun `srcset` et sert l'original : une
+   * couverture de 1600 px de large téléchargée pour une vignette rendue à 380 px.
+   * Triées par largeur croissante, comme les attend `<source srcset>`.
+   *
+   * Une liste vide est un cas normal, pas une anomalie : seuls les médias repris de
+   * WordPress ont des variantes, l'envoi depuis l'administration n'en produit pas
+   * encore. Le rendu retombe alors sur l'original, comme avant.
+   */
+  async coverVariantsFor(db: DbOrTx, mediaIds: number[]): Promise<Map<number, CmsMediaVariantRow[]>> {
+    const byMedia = new Map<number, CmsMediaVariantRow[]>();
+    if (mediaIds.length === 0) return byMedia;
+
+    const rows = await db
+      .select()
+      .from(cmsMediaVariantsTable)
+      .where(inArray(cmsMediaVariantsTable.mediaId, mediaIds))
+      .orderBy(asc(cmsMediaVariantsTable.width))
+      .all();
+
+    for (const row of rows) {
+      const list = byMedia.get(row.mediaId);
+      if (list) list.push(row);
+      else byMedia.set(row.mediaId, [row]);
+    }
+    return byMedia;
   }
 
   /** Catégories des articles affichés, en une requête, indexées par article. */

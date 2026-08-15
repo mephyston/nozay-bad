@@ -2,7 +2,12 @@
 import type { CmsMediaRow, CmsMediaVariantRow } from '@nba/cms/public';
 
 interface Props {
-  media: CmsMediaRow;
+  /**
+   * Ce que le rendu lit réellement, et non `CmsMediaRow` entier : une couverture
+   * d'article n'est renvoyée par l'API que sous cette forme réduite, et exiger la
+   * ligne complète obligerait l'appelant à la reconstituer pour rien.
+   */
+  media: Pick<CmsMediaRow, 'key' | 'alt' | 'width' | 'height'>;
   variants?: CmsMediaVariantRow[];
   /** Image de première importance : chargée sans délai et signalée au navigateur. */
   priority?: boolean;
@@ -43,3 +48,18 @@ const fallback = `/media/${media.key.replace(/^media\//, '')}`;
     class={className}
   />
 </picture>
+
+<style>
+  /*
+    `<picture>` disparaît de l'arbre de mise en page.
+
+    Il n'est qu'un porteur de `<source>` : aucune boîte n'a de raison d'exister entre
+    le conteneur et l'image. Sans cela il s'interpose en `display: inline`, de hauteur
+    automatique, et le `h-full` que l'appelant pose sur l'image se résout contre lui
+    plutôt que contre le conteneur — l'image cesse de remplir sa case dès que celle-ci
+    tient sa hauteur d'un `aspect-[16/9]` ou d'un `inset-0`.
+  */
+  picture {
+    display: contents;
+  }
+</style>

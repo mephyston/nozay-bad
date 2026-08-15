@@ -30,7 +30,7 @@ const archiveHref = block.categorySlug ? `/actualites/?categorie=${block.categor
 
   {block.showArchiveLink !== false && shown.length > 0 && (
     <p class="mt-6">
-      <a href={archiveHref} class="text-primary text-sm font-medium hover:underline">
+      <a href={archiveHref} class="text-primary inline-flex min-h-11 items-center text-sm font-medium hover:underline">
         Toutes les actualités <span aria-hidden="true">→</span>
       </a>
     </p>

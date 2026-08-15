@@ -205,6 +205,14 @@ export interface PostRow {
   seoDescription: string | null;
   /** Renvoyés joints par l'API : composer une carte ne coûte aucune requête de plus. */
   cover?: PostCoverRow | null;
+  /**
+   * Déclinaisons de la couverture, par largeur croissante.
+   *
+   * Absentes tant que le média n'en a pas — seule la reprise WordPress en produit,
+   * l'envoi depuis l'administration pas encore. La carte retombe alors sur
+   * l'original, sans `srcset`.
+   */
+  coverVariants?: import('@nba/cms/public').CmsMediaVariantRow[];
   categories?: PostCategoryRow[];
 }
 

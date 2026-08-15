@@ -132,19 +132,97 @@ const SlideHeading = block.heading ? 'h3' : 'h2';
       ))}
 
       {isCarousel && (
+        /*
+          Chevrons de part et d'autre du bandeau.
+
+          Posés masqués et révélés par le script, comme le bouton de pause : sans
+          JavaScript ils ne feraient rien, et un bouton mort est pire qu'un bouton
+          absent. `max-md:hidden` les retire en petite largeur — le pouce y dispose du
+          balayage, les pastilles restent, et un rond de 44 px au milieu du bord viendrait
+          buter contre le titre de la diapositive, qui court sur toute la largeur.
+        */
+        <Fragment>
+          <button
+            type="button"
+            data-prev
+            hidden
+            class="focus-visible:ring-ring absolute top-1/2 left-2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/55 hover:text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none max-md:hidden md:left-4"
+            aria-label="Diapositive précédente"
+            title="Diapositive précédente"
+          >
+            <svg
+              class="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            data-next
+            hidden
+            class="focus-visible:ring-ring absolute top-1/2 right-2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/55 hover:text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none max-md:hidden md:right-4"
+            aria-label="Diapositive suivante"
+            title="Diapositive suivante"
+          >
+            <svg
+              class="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
+        </Fragment>
+      )}
+
+      {isCarousel && (
         // Commandes communes, hors des diapositives : elles ne doivent pas s'effacer
         // avec l'image qu'elles pilotent.
         <div class="absolute inset-x-0 bottom-0 z-10">
           <div class="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 pb-6">
-            <div class="flex items-center gap-2" data-dots>
+            {/*
+              La puce visible est le `<span>`, pas le bouton.
+
+              Une pastille de 10 px est la bonne image — assez discrète pour ne pas
+              disputer la vedette à la photo — mais une cible de 10 px ne se touche
+              pas. Le bouton porte donc une zone de touche de 44 px, transparente, et
+              le `-mx-2` reprend le débord pour que la rangée reste optiquement calée
+              sur le bord de la diapositive. `gap-0` sur la rangée : l'écart visuel
+              entre puces vient maintenant du padding des boutons, et le rajouter
+              creuserait des trous entre des cibles déjà adjacentes.
+
+              44 px de haut mais 36 de large, et non 44 partout : la rangée compte
+              autant de boutons que de diapositives, et à 44 px pièce elle déborde
+              d'un écran de 375 px au-delà de six diapositives. La hauteur est la
+              dimension qui compte pour le pouce ; 36 px de large reste bien au-dessus
+              du minimum WCAG 2.5.8 (24 px).
+            */}
+            <div class="-mx-3 flex items-center gap-0" data-dots>
               {slides.map((_, index) => (
                 <button
                   type="button"
                   data-dot
                   aria-current={index === 0 ? 'true' : 'false'}
                   aria-label={`Afficher la diapositive ${index + 1} sur ${slides.length}`}
-                  class="nba-carousel-dot focus-visible:ring-ring h-2.5 w-2.5 rounded-full bg-white/50 transition-[background-color,width] hover:bg-white/80 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-                ></button>
+                  class="nba-carousel-dot focus-visible:ring-ring inline-flex h-11 w-9 items-center justify-center rounded-md focus-visible:ring-2 focus-visible:outline-none"
+                >
+                  <span
+                    class="nba-carousel-dot-mark h-2.5 w-2.5 rounded-full bg-white/50 transition-[background-color,width]"
+                  ></span>
+                </button>
               ))}
             </div>
 
@@ -156,7 +234,7 @@ const SlideHeading = block.heading ? 'h3' : 'h2';
               type="button"
               data-nba-carousel-toggle
               hidden
-              class="focus-visible:ring-ring inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-black/35 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/55 hover:text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+              class="focus-visible:ring-ring inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-black/35 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/55 hover:text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none md:h-9 md:w-9"
               aria-label="Mettre en pause le diaporama"
               title="Mettre en pause le diaporama"
             >
@@ -204,9 +282,15 @@ const SlideHeading = block.heading ? 'h3' : 'h2';
 
   /* La pastille de la diapositive en cours s'allonge : la couleur seule ne suffirait
      pas à qui distingue mal les contrastes. */
-  .nba-carousel-dot[aria-current='true'] {
+  /* La largeur et la couleur portent sur la marque, pas sur le bouton : celui-ci est
+     une zone de touche de taille fixe, l'étirer déplacerait les puces voisines. */
+  .nba-carousel-dot[aria-current='true'] .nba-carousel-dot-mark {
     width: 1.75rem;
     background-color: rgb(255 255 255 / 0.95);
+  }
+
+  .nba-carousel-dot:hover .nba-carousel-dot-mark {
+    background-color: rgb(255 255 255 / 0.8);
   }
 
   .nba-carousel[data-paused] .nba-carousel-icon-pause,
@@ -240,10 +324,20 @@ const SlideHeading = block.heading ? 'h3' : 'h2';
   */
   const DELAY_MS = 6000;
 
+  /**
+   * Course horizontale minimale, en pixels, pour qu'un geste compte comme un balayage.
+   *
+   * En dessous, c'est un clic dont le doigt a tremblé, ou le début d'un défilement de
+   * page : changer de diapositive là-dessus donnerait un bandeau qui saute tout seul.
+   */
+  const SWIPE_PX = 50;
+
   for (const carousel of document.querySelectorAll<HTMLElement>('[data-nba-carousel]')) {
     const slides = [...carousel.querySelectorAll<HTMLElement>('[data-slide]')];
     const dots = [...carousel.querySelectorAll<HTMLButtonElement>('[data-dot]')];
     const toggle = carousel.querySelector<HTMLButtonElement>('[data-nba-carousel-toggle]');
+    const prevButton = carousel.querySelector<HTMLButtonElement>('[data-prev]');
+    const nextButton = carousel.querySelector<HTMLButtonElement>('[data-next]');
 
     // Une seule diapositive : le rendu n'a posé aucune commande, il n'y a rien à animer.
     if (slides.length < 2) continue;
@@ -292,14 +386,72 @@ const SlideHeading = block.heading ? 'h3' : 'h2';
       if (!carousel.contains(event.relatedTarget as Node | null)) hold(false);
     });
 
-    dots.forEach((dot, i) =>
-      dot.addEventListener('click', () => {
-        show(i);
-        // Remet le compte à zéro : sans cela, la diapositive choisie pourrait céder la
-        // place un dixième de seconde plus tard.
-        sync();
-      })
-    );
+    /**
+     * Va à une diapositive et remet le compte à zéro.
+     *
+     * Sans la remise à zéro, la diapositive demandée pourrait céder la place un dixième
+     * de seconde plus tard — la minuterie en cours ne sait pas qu'on vient de choisir.
+     */
+    const goTo = (next: number) => {
+      show(next);
+      sync();
+    };
+
+    dots.forEach((dot, i) => dot.addEventListener('click', () => goTo(i)));
+
+    // Révélés ici, et pas au rendu : sans script ils n'auraient rien à faire avancer.
+    for (const [button, step] of [
+      [prevButton, -1],
+      [nextButton, 1]
+    ] as const) {
+      if (!button) continue;
+      button.hidden = false;
+      button.addEventListener('click', () => goTo(index + step));
+    }
+
+    /*
+      Balayage au doigt, glissé à la souris.
+
+      Rien ne suit le pointeur pendant le geste : les diapositives sont empilées et
+      enchaînées en fondu, il n'y a pas de ruban à décaler. On mesure donc la course
+      entre l'appui et le relâché, et on la traduit en un changement de diapositive —
+      le fondu habituel fait le reste.
+    */
+    /** Point d'appui du geste en cours, `null` quand aucun geste ne nous concerne. */
+    let origin: { x: number; y: number } | null = null;
+
+    carousel.addEventListener('pointerdown', (event) => {
+      // Bouton secondaire, ou second doigt d'un pincement : ce n'est pas un balayage.
+      if (!event.isPrimary || event.button !== 0) return;
+      // Un geste parti d'un bouton ou d'un lien appartient à ce bouton. Sans cette
+      // sortie, un appui un peu glissant sur l'appel à l'action changerait de
+      // diapositive sous le doigt qui s'apprête à cliquer.
+      origin = (event.target as Element).closest('a, button')
+        ? null
+        : { x: event.clientX, y: event.clientY };
+    });
+
+    carousel.addEventListener('pointerup', (event) => {
+      if (!origin) return;
+      const dx = event.clientX - origin.x;
+      const dy = event.clientY - origin.y;
+      origin = null;
+      // Plus horizontal que vertical, sinon un défilement de page commencé sur le
+      // bandeau — le cas ordinaire au doigt — ferait tourner le diaporama.
+      if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) <= Math.abs(dy)) return;
+      goTo(index + (dx < 0 ? 1 : -1));
+    });
+
+    // Geste repris en main par le navigateur (défilement, retour arrière au bord de
+    // l'écran) : il ne se terminera par aucun relâché, on oublie le point d'appui.
+    carousel.addEventListener('pointercancel', () => {
+      origin = null;
+    });
+
+    // Le glissé à la souris passe forcément sur une image, que le navigateur propose
+    // d'emporter avec son fantôme translucide. Ce serait le seul retour visuel du
+    // geste, et il ne dirait rien du diaporama.
+    carousel.addEventListener('dragstart', (event) => event.preventDefault());
 
     if (toggle) {
       toggle.hidden = false;

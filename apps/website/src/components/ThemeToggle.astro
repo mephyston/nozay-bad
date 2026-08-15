@@ -9,10 +9,12 @@
  * défaut plutôt que de figer un thème dès la première visite.
  */
 ---
+{/* 44 px au doigt, 36 px au curseur : la cible tactile ne doit pas imposer sa
+    corpulence à la barre de bureau, où la souris vise au pixel. */}
 <button
   type="button"
   id="theme-toggle"
-  class="hover:bg-muted text-muted-foreground hover:text-foreground inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors"
+  class="hover:bg-muted text-muted-foreground hover:text-foreground inline-flex h-11 w-11 items-center justify-center rounded-md transition-colors md:h-9 md:w-9"
   aria-label="Basculer entre le thème clair et le thème sombre"
   title="Changer de thème"
 >

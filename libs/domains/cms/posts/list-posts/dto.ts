@@ -1,4 +1,4 @@
-import type { CmsPostRow, CmsPostCategoryRow, CmsMediaRow } from '../../shared/schema';
+import type { CmsPostRow, CmsPostCategoryRow, CmsMediaRow, CmsMediaVariantRow } from '../../shared/schema';
 
 export interface ListPostsInput {
   status?: 'draft' | 'published';
@@ -17,11 +17,16 @@ export interface ListPostsInput {
 /**
  * Article enrichi de quoi composer une carte sans requête supplémentaire.
  *
- * Les deux champs sont ajoutés à `CmsPostRow` plutôt que substitués : les appelants
+ * Les champs sont ajoutés à `CmsPostRow` plutôt que substitués : les appelants
  * qui ne lisent que le titre et le chemin (flux RSS, plan du site) restent valides.
+ *
+ * `coverVariants` est à côté de `cover` et non dedans, pour la même raison : le
+ * remplacer par un objet `{ media, variants }` casserait les lecteurs existants.
  */
 export interface PostListItem extends CmsPostRow {
   cover: CmsMediaRow | null;
+  /** Déclinaisons de la couverture, par largeur croissante. Vide si elle n'en a pas. */
+  coverVariants: CmsMediaVariantRow[];
   categories: CmsPostCategoryRow[];
 }
 

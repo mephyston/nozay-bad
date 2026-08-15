@@ -23,9 +23,12 @@ export async function listPosts(db: Db, filters: ListPostsInput = {}): Promise<L
     offset: filters.offset ?? 0
   });
 
-  // Deux requêtes de plus au total, quel que soit le nombre d'articles rendus.
-  const [covers, categories] = await Promise.all([
-    repo.coversFor(db, [...new Set(rows.map((row) => row.coverMediaId).filter((id): id is number => id !== null))]),
+  const coverIds = [...new Set(rows.map((row) => row.coverMediaId).filter((id): id is number => id !== null))];
+
+  // Trois requêtes de plus au total, quel que soit le nombre d'articles rendus.
+  const [covers, coverVariants, categories] = await Promise.all([
+    repo.coversFor(db, coverIds),
+    repo.coverVariantsFor(db, coverIds),
     repo.categoriesFor(db, rows.map((row) => row.id))
   ]);
 
@@ -33,6 +36,7 @@ export async function listPosts(db: Db, filters: ListPostsInput = {}): Promise<L
     posts: rows.map((row) => ({
       ...row,
       cover: row.coverMediaId === null ? null : covers.get(row.coverMediaId) ?? null,
+      coverVariants: row.coverMediaId === null ? [] : coverVariants.get(row.coverMediaId) ?? [],
       categories: categories.get(row.id) ?? []
     })),
     total

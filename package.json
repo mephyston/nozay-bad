@@ -16,6 +16,7 @@
     "logs:storefront": "cd apps/storefront && astro dev logs --follow",
     "logs:website": "cd apps/website && astro dev logs --follow",
     "gen:pwa-icons": "node scripts/generate-pwa-icons.mjs",
+    "gen:website-logos": "node scripts/generate-website-logos.mjs",
     "storybook": "storybook dev -p 6006 --no-open",
     "build-storybook": "storybook build",
     "test:visual": "playwright test",

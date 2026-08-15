@@ -1,14 +1,26 @@
 ---
 import type { PostRow } from '../lib/cms';
+import Picture from './Picture.astro';
+
+/**
+ * Largeur rendue de la carte, pour la grille à trois colonnes de `PostsFeed`.
+ *
+ * Sous `sm` la carte occupe la largeur utile ; entre `sm` et `lg` la moitié ; au-delà
+ * la grille est bornée par `max-w-5xl`, ce qui fige la case à environ 320 px. Une
+ * page qui dispose ses cartes autrement doit passer son propre `sizes`, faute de quoi
+ * le navigateur choisit sa déclinaison sur une largeur qui n'est pas la bonne.
+ */
+const DEFAULT_SIZES = '(min-width: 1024px) 320px, (min-width: 640px) 50vw, calc(100vw - 2rem)';
 
 interface Props {
   post: PostRow;
   /** Première carte au-dessus de la ligne de flottaison : image chargée sans délai. */
   priority?: boolean;
   showImage?: boolean;
+  sizes?: string;
 }
 
-const { post, priority = false, showImage = true } = Astro.props;
+const { post, priority = false, showImage = true, sizes = DEFAULT_SIZES } = Astro.props;
 
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' });
 const published = post.publishedAt ? new Date(post.publishedAt) : null;
@@ -34,7 +46,6 @@ const preview =
     .trim();
 
 const cover = showImage ? post.cover : null;
-const coverSrc = cover ? `/media/${cover.key.replace(/^media\//, '')}` : null;
 ---
 {/*
   Toute la carte est cliquable via le lien du titre étendu en overlay : la cible reste
@@ -42,16 +53,19 @@ const coverSrc = cover ? `/media/${cover.key.replace(/^media\//, '')}` : null;
   l'annonce du titre, de la date et du texte dans un même intitulé.
 */}
 <article class="group border-border relative flex flex-col overflow-hidden rounded-lg border transition-shadow hover:shadow-md">
-  {coverSrc && (
+  {cover && (
     <div class="bg-muted aspect-[16/9] overflow-hidden">
-      <img
-        src={coverSrc}
-        alt={cover!.alt}
-        width={cover!.width ?? undefined}
-        height={cover!.height ?? undefined}
-        loading={priority ? 'eager' : 'lazy'}
-        decoding={priority ? 'sync' : 'async'}
-        fetchpriority={priority ? 'high' : undefined}
+      {/*
+        `<Picture>` et non un `<img>` nu : la carte servait l'original de la
+        couverture, soit jusqu'à 1600 px de large pour une vignette rendue à 380.
+        Le composant pose les `srcset` avif et webp par largeur, et le navigateur
+        prend la déclinaison qui correspond à `sizes`.
+      */}
+      <Picture
+        media={cover}
+        variants={post.coverVariants}
+        priority={priority}
+        sizes={sizes}
         class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
       />
     </div>

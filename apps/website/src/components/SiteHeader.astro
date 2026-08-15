@@ -48,19 +48,30 @@ function isActive(item: NavItemView): boolean {
         croisées `dark:md:` : le passage clair/sombre se lit d'un coup, et la règle
         de largeur reste écrite une seule fois par thème.
 
-        Les variantes sombres sont produites par `scripts/make-dark-logo.py`, qui
-        échange clair et sombre en préservant le rouge de la marque — un `filter:
+        Les masters PNG vivent dans `apps/website/assets/` et les WebP servis ici en
+        sont dérivés par `scripts/generate-website-logos.mjs`, à 3× la taille
+        d'affichage. Les variantes sombres viennent de `scripts/make-dark-logo.py`,
+        qui échange clair et sombre en préservant le rouge de la marque — un `filter:
         invert()` en CSS retournerait aussi l'écusson.
       */}
       <span class="contents dark:hidden">
-        <img src="/logo.png" alt="" width="36" height="36" class="h-9 w-9 md:hidden" />
-        <img src="/logo-large.png" alt="" width="270" height="270" class="hidden h-10 w-10 md:block" />
+        <img src="/logo.webp" alt="" width="108" height="108" class="h-9 w-9 md:hidden" />
+        <img src="/logo-large.webp" alt="" width="120" height="120" class="hidden h-10 w-10 md:block" />
       </span>
       <span class="hidden dark:contents">
-        <img src="/logo-dark.png" alt="" width="36" height="36" class="h-9 w-9 md:hidden" />
-        <img src="/logo-large-dark.png" alt="" width="270" height="270" class="hidden h-10 w-10 md:block" />
+        <img src="/logo-dark.webp" alt="" width="108" height="108" class="h-9 w-9 md:hidden" />
+        <img src="/logo-large-dark.webp" alt="" width="144" height="144" class="hidden h-10 w-10 md:block" />
       </span>
-      <span class="hidden sm:inline">Nozay Badminton Association</span>
+      {/*
+        `sr-only` et non `hidden` en dessous de `sm`.
+
+        Avec `hidden`, le nom sortait de l'arbre d'accessibilité en même temps que de
+        l'écran : les deux images portant un `alt` vide, le lien vers l'accueil se
+        retrouvait **sans nom du tout** sur mobile. Lighthouse le relevait à la fois
+        en accessibilité et en navigation agentique. Visuellement hidden et sr-only
+        reviennent au même ; seul le lecteur d'écran voit la différence.
+      */}
+      <span class="sr-only sm:not-sr-only">Nozay Badminton Association</span>
     </a>
 
     {/* Les sous-menus s'ouvrent au survol **et** au focus clavier : un `:hover` seul
@@ -146,7 +157,7 @@ function isActive(item: NavItemView): boolean {
       <button
         type="button"
         id="burger"
-        class="hover:bg-muted text-muted-foreground inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors md:hidden"
+        class="hover:bg-muted text-muted-foreground inline-flex h-11 w-11 items-center justify-center rounded-md transition-colors md:hidden"
         aria-label="Ouvrir le menu"
         aria-expanded="false"
         aria-controls="mobile-nav"
@@ -161,8 +172,14 @@ function isActive(item: NavItemView): boolean {
   {/* Le menu mobile est rendu déplié dans le HTML puis masqué par `hidden` : son
       contenu reste donc lisible des moteurs et des lecteurs d'écran même si le script
       n'a pas encore été exécuté. */}
+  {/*
+      `text-base` et non `text-sm` comme la barre de bureau : ici les entrées se visent
+      au pouce, pas au curseur. Avec les `py-2.5` ci-dessous, chaque lien fait 44 px de
+      haut — la cible tactile recommandée (Apple HIG, WCAG 2.5.5) ; en `text-sm py-1.5`
+      les sous-entrées tombaient à 32 px.
+  */}
   <nav id="mobile-nav" aria-label="Navigation principale" class="border-border hidden border-t md:hidden">
-    <ul class="mx-auto max-w-5xl px-4 py-2 text-sm">
+    <ul class="mx-auto max-w-5xl px-4 py-2 text-base">
       {nav.map((item) => (
         <li class="py-0.5">
           {/*
@@ -181,7 +198,7 @@ function isActive(item: NavItemView): boolean {
               target={isExternal(item) ? '_blank' : undefined}
               rel={isExternal(item) ? 'noopener noreferrer' : undefined}
               aria-current={item.href === current ? 'page' : undefined}
-              class:list={['block rounded-md px-2 py-2', isActive(item) && 'text-primary font-medium']}
+              class:list={['block rounded-md px-2 py-2.5', isActive(item) && 'text-primary font-medium']}
             >
               {item.label}
             </a>
@@ -196,7 +213,7 @@ function isActive(item: NavItemView): boolean {
                     rel={child.externalUrl !== null ? 'noopener noreferrer' : undefined}
                     aria-current={child.href === current ? 'page' : undefined}
                     class:list={[
-                      'text-muted-foreground block rounded-md px-2 py-1.5',
+                      'text-muted-foreground block rounded-md px-2 py-2.5',
                       child.href === current && 'text-primary font-medium'
                     ]}
                   >

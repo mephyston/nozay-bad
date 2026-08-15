@@ -98,7 +98,7 @@ const legalLinks = composedLegal.length > 0 ? composedLegal : withoutExternal(FA
           change pas avec le thème, donc l'autre variante ne servirait jamais.
           `alt` vide — le nom du club le suit immédiatement en toutes lettres.
         */}
-        <img src="/logo-large-dark.png" alt="" width="270" height="270" class="h-12 w-12" />
+        <img src="/logo-large-dark.webp" alt="" width="144" height="144" class="h-12 w-12" />
         <p class="font-semibold">{SITE_NAME}</p>
         {settings.footerDescription && (
           <p class="text-footer-muted text-sm">{settings.footerDescription}</p>
@@ -114,14 +114,16 @@ const legalLinks = composedLegal.length > 0 ? composedLegal : withoutExternal(FA
         <p id="footer-site" class="text-footer-muted text-xs font-semibold tracking-wider uppercase">
           Le site
         </p>
-        <ul class="flex flex-col gap-2 text-sm">
+        {/* Sans écart en mobile : le `py-3` des liens porte chaque cible à 44 px et
+            les rend jointives, un `gap` en plus ne ferait qu'allonger la colonne. */}
+        <ul class="flex flex-col gap-0 text-sm md:gap-2">
           {siteLinks.map((link) => (
             <li>
               <a
                 href={link.href}
                 target={link.external ? '_blank' : undefined}
                 rel={link.external ? 'noopener noreferrer' : undefined}
-                class="hover:text-primary transition-colors"
+                class="hover:text-primary block py-3 transition-colors md:py-0"
               >
                 {link.label}
               </a>
@@ -189,7 +191,7 @@ const legalLinks = composedLegal.length > 0 ? composedLegal : withoutExternal(FA
         )}
         {/* Lien à part, et non une phrase avec un lien dedans : dans une colonne
             étroite, la phrase se coupait entre « en » et « flux RSS ». */}
-        <a href="/rss.xml" class="text-footer-muted hover:text-primary text-sm transition-colors">
+        <a href="/rss.xml" class="text-footer-muted hover:text-primary inline-block py-3 text-sm transition-colors md:py-0">
           Flux RSS des actualités
         </a>
       </div>

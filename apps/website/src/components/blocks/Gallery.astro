@@ -164,7 +164,7 @@ const dialogId = `gallery-viewer-${block.mediaIds.join('-').slice(0, 40)}`;
         */
         <button
           type="button"
-          class="border-border bg-background/80 text-muted-foreground hover:text-foreground absolute right-2 top-2 rounded-full border p-1.5 backdrop-blur transition-colors"
+          class="border-border bg-background/80 text-muted-foreground hover:text-foreground absolute right-2 top-2 inline-flex h-11 w-11 items-center justify-center rounded-full border backdrop-blur transition-colors md:h-7 md:w-7"
           data-toggle
           aria-label="Mettre en pause le défilement"
           title="Mettre en pause le défilement"
@@ -217,7 +217,7 @@ const dialogId = `gallery-viewer-${block.mediaIds.join('-').slice(0, 40)}`;
       <form method="dialog">
         <button
           type="submit"
-          class="absolute right-2 top-2 rounded-full bg-black/60 p-2 text-white backdrop-blur transition-colors hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+          class="absolute right-2 top-2 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur transition-colors hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
           aria-label="Fermer l’image"
           title="Fermer"
         >
