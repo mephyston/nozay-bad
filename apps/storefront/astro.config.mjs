@@ -18,6 +18,17 @@ const ENV_LABEL = APP_ENV === 'development' ? ' (DEV)' : APP_ENV === 'staging' ?
 // secret du Worker). Vide = bouton d'activation des notifications masqué.
 const VAPID_PUBLIC_KEY = process.env.PUBLIC_VAPID_PUBLIC_KEY || '';
 
+// Domaine du site public, seul porteur de la liaison R2 et de la route `/media/`.
+// L'espace adhérent affiche les couvertures d'actualités : sans cette origine, leurs
+// adresses relatives seraient résolues ici, où rien ne répond. Même règle que côté
+// administration (`@nba/cms` → `media-url.ts`).
+const WEBSITE_URL =
+  APP_ENV === 'development'
+    ? 'http://localhost:4323'
+    : APP_ENV === 'staging'
+      ? 'https://staging-www.nozaybad.fr'
+      : 'https://nozaybad.fr';
+
 export default defineConfig({
   output: 'server',
   adapter: cloudflare({
@@ -70,7 +81,8 @@ export default defineConfig({
   vite: {
     define: {
       'import.meta.env.PUBLIC_APP_ENV': JSON.stringify(APP_ENV),
-      'import.meta.env.PUBLIC_VAPID_PUBLIC_KEY': JSON.stringify(VAPID_PUBLIC_KEY)
+      'import.meta.env.PUBLIC_VAPID_PUBLIC_KEY': JSON.stringify(VAPID_PUBLIC_KEY),
+      'import.meta.env.PUBLIC_WEBSITE_URL': JSON.stringify(WEBSITE_URL)
     },
     plugins: [tailwindcss()],
     optimizeDeps: {
@@ -83,7 +95,7 @@ export default defineConfig({
         '@nba/expenses-ui',
         '@nba/shop-ui',
         '@nba/iam-ui',
-        '@nba/announcements-ui'
+        '@nba/events-ui'
       ]
     },
     ssr: {
