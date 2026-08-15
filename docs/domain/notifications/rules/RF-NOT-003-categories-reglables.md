@@ -24,7 +24,7 @@ Un adhérent qui accepte les notifications ne veut pas forcément tout recevoir.
 
 **Application à l'envoi.** Toute diffusion porte une catégorie et écarte les comptes l'ayant coupée, quel que soit le ciblage — y compris une liste d'emails explicite issue d'un événement métier.
 
-**Envois manuels.** Une annonce envoyée depuis l'administration est toujours une communication du bureau. Les quatre autres catégories ne sont émises que par les crons et les événements métier : les proposer à l'émetteur n'offrirait que des façons de se tromper de destinataires.
+**Envois manuels.** Une actualité diffusée depuis l'administration est toujours une communication du bureau. Les quatre autres catégories ne sont émises que par les crons et les événements métier : les proposer à l'émetteur n'offrirait que des façons de se tromper de destinataires.
 
 **Enregistrement immédiat.** L'écran de réglages enregistre à chaque bascule, sans bouton de validation. En cas d'échec, la case revient à son état précédent : afficher un réglage non enregistré est pire que de ne rien afficher.
 

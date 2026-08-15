@@ -1,8 +1,8 @@
 # Domaine Métier : Notifications (Push)
 
-Le domaine **Notifications** gère l'envoi de notifications push aux adhérents sur leur téléphone : annonces du club diffusées depuis l'administration, retours automatiques sur leurs demandes (note de frais, commande boutique) et rappels programmés.
+Le domaine **Notifications** gère l'envoi de notifications push aux adhérents sur leur téléphone : actualités du club diffusées depuis l'administration, retours automatiques sur leurs demandes (note de frais, commande boutique) et rappels programmés.
 
-Il porte la **diffusion**, jamais le contenu durable : une notification est un événement éphémère, dont l'historique est purgé à 90 jours. Les communications écrites du club, elles, vivent dans le domaine [Annonces](../announcements/README.md), qui appelle celui-ci en sortie pour prévenir les adhérents d'une publication.
+Il porte la **diffusion**, jamais le contenu durable : une notification est un événement éphémère, dont l'historique est purgé à 90 jours. Les communications écrites du club, elles, vivent dans le domaine [CMS](../cms/README.md), qui appelle celui-ci en sortie pour prévenir les adhérents d'une publication.
 
 Il ne dépend d'aucun autre domaine. Les ciblages qui reposent sur des données adhérents — « cotisation non soldée », « les contacts de tel adhérent » — sont résolus par l'appelant, qui transmet une liste d'emails. Cette contrainte évite le cycle `members → accounting → expenses → notifications`.
 

@@ -2,7 +2,7 @@
 
 ## 1. Description et Objectif Métier
 
-Un adhérent connecté peut autoriser le club à lui envoyer des notifications sur l'appareil qu'il utilise. L'autorisation est donnée appareil par appareil, depuis « Mon compte », et reste révocable à tout moment. Elle permet de prévenir l'adhérent d'une annonce du club ou de l'avancement de ses demandes sans passer par l'email.
+Un adhérent connecté peut autoriser le club à lui envoyer des notifications sur l'appareil qu'il utilise. L'autorisation est donnée appareil par appareil, depuis « Mon compte », et reste révocable à tout moment. Elle permet de prévenir l'adhérent d'une actualité du club ou de l'avancement de ses demandes sans passer par l'email.
 
 ---
 
@@ -42,7 +42,7 @@ Fonctionnalité: Abonnement d'un appareil aux notifications
     Et un appareil dont le navigateur autorise les notifications
     Quand l'adhérent active les notifications depuis "Mon compte"
     Alors un abonnement est enregistré pour le compte "jean.dupont@example.com"
-    Et l'écran indique que cet appareil reçoit les annonces du club
+    Et l'écran indique que cet appareil reçoit les actualités du club
 
   Scénario: Appareil déjà abonné par un autre membre du foyer
     Étant donné une tablette déjà abonnée pour le compte "parent1@example.com"

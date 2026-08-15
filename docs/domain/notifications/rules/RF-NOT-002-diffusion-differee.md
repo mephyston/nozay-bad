@@ -30,7 +30,7 @@ Une notification est mise en file d'attente au moment où elle est décidée, pu
 
 **Rappels programmés.** Ils sont désactivés par défaut et protégés par une garde anti-doublon : un rappel de même origine déjà émis dans les 6 derniers jours n'est pas réémis, un Cron Trigger pouvant être invoqué plusieurs fois pour la même échéance.
 
-**Droit d'émission.** Consulter l'historique demande `notifications:read` ; émettre demande `notifications:*`. Le droit d'envoi n'est jamais accordé implicitement : une annonce part sur tous les téléphones du club et ne peut pas être rappelée.
+**Droit d'émission.** Consulter l'historique demande `notifications:read` ; émettre demande `notifications:*`. Le droit d'envoi n'est jamais accordé implicitement : une diffusion part sur tous les téléphones du club et ne peut pas être rappelée.
 
 ---
 
@@ -43,7 +43,7 @@ Fonctionnalité: Diffusion différée et fiabilisée des notifications
 
   Scénario: Annonce du club à tous les abonnés
     Étant donné 3 appareils abonnés répartis sur 2 comptes adhérents
-    Quand un administrateur envoie l'annonce "Tournoi interne samedi" à tous les abonnés
+    Quand un administrateur envoie l'actualité "Tournoi interne samedi" à tous les abonnés
     Alors 3 livraisons sont mises en file d'attente
     Et l'envoi effectif est réalisé en arrière-plan
 
@@ -79,7 +79,7 @@ Fonctionnalité: Diffusion différée et fiabilisée des notifications
 
   Scénario: Annonce sans destinataire abonné
     Étant donné qu'aucun adhérent n'a activé les notifications
-    Quand un administrateur envoie une annonce
+    Quand un administrateur envoie une actualité
     Alors le message est enregistré dans l'historique
     Et l'administrateur est averti qu'aucun appareil n'a été touché
 

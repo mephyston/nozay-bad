@@ -28,7 +28,7 @@ Les droits s'attribuent par fonction dans l'association, pas permission par perm
 
 **La communication a son rôle.** Une notification part vers tous les téléphones du club ; le droit d'émission n'est jamais accordé implicitement. Il est attribué délibérément à la présidence, au secrétariat, et au rôle `communication`.
 
-**`communication` ne voit que la communication.** Annonces et notifications, rien d'autre : ni finances, ni fichier des adhérents. Il existe pour confier la communication du club à un bénévole sans lui ouvrir le secrétariat, qui était jusqu'ici le seul autre porteur de ces droits — et qui donne accès au fichier des adhérents et aux attestations.
+**`communication` ne voit que la communication.** Contenu du site et notifications, rien d'autre : ni finances, ni fichier des adhérents. Il existe pour confier la communication du club à un bénévole sans lui ouvrir le secrétariat, qui était jusqu'ici le seul autre porteur de ces droits — et qui donne accès au fichier des adhérents et aux attestations.
 
 **`membre` est un socle, pas un métier.** Il ne correspond à aucune fonction : c'est le rôle attribué à un compte créé sans rôle explicite, pour qu'il puisse ouvrir son tableau de bord sans détenir le moindre droit métier. D'où son libellé « Accès minimal » à l'écran.
 
@@ -54,7 +54,6 @@ Les droits s'attribuent par fonction dans l'association, pas permission par perm
 | Commandes (création) | | | ✓ | lecture | ✓ | lecture | ✓ |
 | Commandes (encaissement) | | | | | ✓ | ✓ | ✓ |
 | Notifications (émission) | | ✓ | | ✓ | lecture | ✓ | ✓ |
-| Annonces (rédaction, publication) | | ✓ | lecture | ✓ | lecture | ✓ | ✓ |
 | Assistant IA | | | | | ✓ | ✓ | ✓ |
 | Gestion des accès | | | | | | ✓ | ✓ |
 | Usurpation | | | | | | | ✓ |
