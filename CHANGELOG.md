@@ -1,3 +1,16 @@
+# [1.0.0-beta.82](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.81...v1.0.0-beta.82) (2026-08-15)
+
+
+### Bug Fixes
+
+* **ci:** déclarer les dépendances que Nx ne voit pas dans les .astro et .svelte ([c6cbae5](https://github.com/mephyston/nozay-bad/commit/c6cbae56d23f61a1aca18bc3a78076779d5a4f4a))
+
+
+### Features
+
+* **cms:** décliner les images de la médiathèque en AVIF et WebP ([f1f3678](https://github.com/mephyston/nozay-bad/commit/f1f3678a09513a4fa587805dd56aa17ebdd9bd52))
+* **storefront:** conditionner l'accès à la licence de la saison en cours ([285214b](https://github.com/mephyston/nozay-bad/commit/285214ba8be31de67f2dc9c568e5426923488a55))
+
 # [1.0.0-beta.81](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.80...v1.0.0-beta.81) (2026-08-15)
 
 
