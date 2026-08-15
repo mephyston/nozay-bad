@@ -28,10 +28,21 @@
   const contentId = `collapsible-${Math.random().toString(36).slice(2, 9)}`;
 </script>
 
-<div class="rounded-xl border border-border bg-card overflow-hidden">
+<!--
+  `overflow-hidden` uniquement une fois replié.
+  Il n'est là que pour découper le fond survolé de l'en-tête aux angles arrondis — ce que
+  `rounded-t-xl` sur le bouton fait aussi bien. Or un ancêtre en `overflow: hidden` fait
+  d'un descendant en `position: sticky` un élément immobile : la barre d'actions de la
+  matrice des rôles s'échouait en bas d'une liste de 64 lignes, hors écran. Pendant
+  l'ouverture, la transition `slide` pose son propre `overflow: hidden` en style inline,
+  le temps de l'animation : le contenu ne déborde jamais.
+-->
+<div class="rounded-xl border border-border bg-card {open ? '' : 'overflow-hidden'}">
   <button
     type="button"
-    class="w-full flex items-center justify-between gap-3 p-4 text-left hover:bg-accent/50 transition-colors"
+    class="w-full flex items-center justify-between gap-3 p-4 text-left hover:bg-accent/50 transition-colors rounded-t-xl {open
+      ? ''
+      : 'rounded-b-xl'}"
     aria-expanded={open}
     aria-controls={contentId}
     onclick={() => (open = !open)}
