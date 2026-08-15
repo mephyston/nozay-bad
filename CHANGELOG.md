@@ -1,3 +1,10 @@
+# [1.0.0-beta.80](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.79...v1.0.0-beta.80) (2026-08-15)
+
+
+### Bug Fixes
+
+* **iam:** réparer l'enregistrement des droits d'un rôle bien pourvu ([c05f999](https://github.com/mephyston/nozay-bad/commit/c05f999f560c1f2060bc978a8d4ae519fd485672))
+
 # [1.0.0-beta.79](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.78...v1.0.0-beta.79) (2026-08-15)
 
 
