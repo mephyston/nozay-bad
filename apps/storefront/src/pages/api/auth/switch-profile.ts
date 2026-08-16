@@ -12,6 +12,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const env = resolveEnv(locals);
   const secret = resolveSessionSecret(env, IS_DEV);
 
+  // Fail-closed, comme le middleware : sans secret, on ne re-signe pas de session.
+  if (!secret) {
+    console.error('[auth] SESSION_SECRET non configuré');
+    return json({ ok: false, error: 'Erreur de configuration serveur.' }, 500);
+  }
+
   const token = readSessionCookie(request.headers.get('cookie'));
   const session = token ? await verifySession(token, secret) : null;
   if (!session) {

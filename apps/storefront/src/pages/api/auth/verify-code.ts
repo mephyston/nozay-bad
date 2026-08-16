@@ -9,12 +9,29 @@ import {
   resolveSessionSecret,
   type SessionMember
 } from '../../../lib/auth';
-import { resolveEnv, json, IS_DEV, COOKIE_SECURE } from '../../../lib/request-context';
+import { rateLimiter } from '../../../lib/turnstile';
+import { resolveEnv, clientIp, json, IS_DEV, COOKIE_SECURE } from '../../../lib/request-context';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const env = resolveEnv(locals);
   const kv = env.RATE_LIMIT_KV;
   const secret = resolveSessionSecret(env, IS_DEV);
+
+  // Fail-closed, comme le middleware : sans secret, on ne signe rien — surtout pas
+  // une session avec une clé vide.
+  if (!secret) {
+    console.error('[auth] SESSION_SECRET non configuré');
+    return json({ ok: false, error: 'Erreur de configuration serveur.' }, 500);
+  }
+
+  // Rate-limit par IP, pendant de celui de request-code : le compteur de tentatives
+  // du code (5, en KV) est la garde principale, mais son lecture-modification-écriture
+  // n'est pas atomique — une rafale distribuée pouvait le dépasser. Même bypass de
+  // développement que request-code (cf. le commentaire là-bas).
+  const bypassRateLimit = IS_DEV && env.AUTH_RATE_LIMIT_DISABLED === 'true';
+  if (!bypassRateLimit && (await rateLimiter.isRateLimited(`otp-verify:${clientIp(request)}`, 10, 15 * 60 * 1000, kv))) {
+    return json({ ok: false, error: 'Trop de tentatives. Réessayez dans quelques minutes.' }, 429);
+  }
 
   let body: any;
   try {

@@ -36,6 +36,9 @@ export const ALL: APIRoute = async ({ request, locals, params }) => {
     requestHeaders.delete('x-user-email');
     requestHeaders.delete('x-user-permissions');
     requestHeaders.delete('x-caller');
+    // Les cookies du navigateur (Cloudflare Access, usurpation) ne regardent pas
+    // l'API interne : on ne relaie jamais un secret dont le destinataire n'a pas l'usage.
+    requestHeaders.delete('cookie');
 
     return await createAdminApiClient(locals).fetch(targetUrl, {
       method: request.method,
@@ -45,7 +48,8 @@ export const ALL: APIRoute = async ({ request, locals, params }) => {
     });
   } catch (error) {
     console.error('API proxy error:', error);
-    return new Response(JSON.stringify({ error: 'Proxy failed', details: String(error) }), {
+    // Le détail reste dans les logs : une erreur interne n'a rien à dire au client.
+    return new Response(JSON.stringify({ success: false, error: 'Appel API échoué' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
