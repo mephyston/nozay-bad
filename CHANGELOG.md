@@ -1,3 +1,10 @@
+# [1.0.0-beta.83](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.82...v1.0.0-beta.83) (2026-08-16)
+
+
+### Features
+
+* **teams:** gestion des équipes interclubs, de l'engagement à la composition ([424ea82](https://github.com/mephyston/nozay-bad/commit/424ea8204090f0ba7778aba883a3e4439e5d53aa))
+
 # [1.0.0-beta.82](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.81...v1.0.0-beta.82) (2026-08-15)
 
 
