@@ -27,7 +27,7 @@
       bgIconClass="text-foreground"
       containerClass="border-border/50 hover:border-primary/30 from-card/80 to-card"
     >
-      <div class="text-3xl font-bold tracking-tight">{data.members.currentTotal}</div>
+      <div class="text-2xl font-bold font-outfit">{data.members.currentTotal}</div>
       <p class="text-xs text-muted-foreground mt-1 flex items-center gap-1">
         {#if data.members.previousTotal > 0}
           {@const diff = data.members.currentTotal - data.members.previousTotal}
@@ -60,7 +60,7 @@
       bgIconClass="text-destructive"
       containerClass="border-destructive/20 hover:border-destructive/40 from-destructive/5 to-card"
     >
-      <div class="text-3xl font-bold tracking-tight text-destructive">{data.members.unpaidCount}</div>
+      <div class="text-2xl font-bold font-outfit text-destructive">{data.members.unpaidCount}</div>
       <p class="text-xs text-muted-foreground mt-1">
         Adhérent(s) n'ayant pas réglé la totalité
       </p>
@@ -247,7 +247,7 @@
         title="Pôle Matériel" 
         icon={Package} 
         href={canReadAccounting ? '/admin/accounting/ledger' : undefined}
-        iconClass="text-indigo-500 bg-indigo-500/10"
+        iconClass="text-primary bg-primary/10"
       >
         <div class="space-y-4">
           <div class="flex justify-between text-sm">

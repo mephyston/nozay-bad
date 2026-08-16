@@ -436,7 +436,7 @@
 <Sidebar.Inset class="flex flex-col h-screen overflow-hidden">
   {#if isImpersonating}
     <!-- Bandeau permanent : on n'agit pas sous une autre identité sans le savoir. -->
-    <div class="shrink-0 flex flex-wrap items-center justify-center gap-2 bg-amber-500/15 text-amber-900 dark:text-amber-200 border-b border-amber-500/40 px-4 py-1.5 text-xs font-semibold">
+    <div class="shrink-0 flex flex-wrap items-center justify-center gap-2 bg-warning/15 text-warning border-b border-warning/40 px-4 py-1.5 text-xs font-semibold">
       <span>Vous consultez l'application en tant que <strong>{email}</strong>.</span>
       <button
         type="button"
