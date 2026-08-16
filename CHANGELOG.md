@@ -1,3 +1,10 @@
+# [1.0.0-beta.87](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.86...v1.0.0-beta.87) (2026-08-16)
+
+
+### Bug Fixes
+
+* **admin:** dégager le haut de l'écran de l'îlot dynamique, et ne plus renvoyer sur un refus ([3686753](https://github.com/mephyston/nozay-bad/commit/368675330a558b491c185f5d22eecfc6e2c46070))
+
 # [1.0.0-beta.86](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.85...v1.0.0-beta.86) (2026-08-16)
 
 
