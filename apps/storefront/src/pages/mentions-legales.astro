@@ -8,8 +8,6 @@ const lastUpdate = 'août 2026';
 // La barre de navigation n'est posée que pour un visiteur connecté : elle pointe
 // vers des écrans authentifiés, qui renverraient un visiteur anonyme vers le login.
 const session = Astro.locals.session;
-const activeMember = session?.members.find((m) => m.id === session.activeMemberId);
-const canExpense = activeMember?.expenseAuthorized ?? false;
 ---
 
 <Layout
@@ -83,7 +81,7 @@ const canExpense = activeMember?.expenseAuthorized ?? false;
     </div>
   </main>
 
-  {session && <MobileNav currentPath="/mentions-legales" canExpense={canExpense} />}
+  {session && <MobileNav currentPath="/mentions-legales" />}
 
   <script is:inline>
     // Assemble l'email côté client (anti-moissonnage bots).

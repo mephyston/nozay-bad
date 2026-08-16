@@ -33,6 +33,11 @@ export const NOTIFICATION_CATEGORIES = [
     id: 'reminder',
     label: 'Relances',
     description: 'Cotisation à régler, commande en attente.'
+  },
+  {
+    id: 'interclubs',
+    label: 'Mes équipes interclubs',
+    description: "Anomalie signalée sur une composition dont vous êtes capitaine."
   }
 ] as const;
 

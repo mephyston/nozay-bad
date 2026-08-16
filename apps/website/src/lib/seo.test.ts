@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { pageTitle, pageDescription, absoluteUrl, SITE_NAME } from './seo';
-import { serialiseJsonLd, sportsClub, breadcrumbList } from './jsonld';
+import { readFile } from 'node:fs/promises';
+import { serialiseJsonLd, sportsClub, webSite, breadcrumbList } from './jsonld';
 import { socialLinks } from './social';
 import { SITE_SETTINGS_FALLBACK } from './cms';
 import { applySecurityHeaders } from './security-headers';
@@ -74,6 +75,30 @@ describe('JSON-LD', () => {
     expect(sportsClub('https://nozaybad.fr', links.map((l) => l.href)).sameAs).toEqual(
       links.map((l) => l.href)
     );
+  });
+
+  it('rattache le site au club par le même identifiant', () => {
+    // Les deux nœuds sont émis côte à côte sur l'accueil. Si `publisher` cessait de
+    // viser l'ancre du club, Google verrait deux entités sans lien là où il doit en
+    // voir une seule — exactement ce que le balisage est là pour éviter.
+    expect(webSite('https://nozaybad.fr').publisher['@id']).toBe(
+      sportsClub('https://nozaybad.fr', [])['@id']
+    );
+  });
+
+  it('donne un logo d’au moins 112 px, seuil en deçà duquel Google l’écarte', async () => {
+    const { logo } = sportsClub('https://nozaybad.fr', []);
+    // Le petit `logo.webp` fait 108 px : la seule relecture ne distingue pas les deux
+    // fichiers, la mesure si.
+    const file = new URL(logo).pathname;
+    const bytes = await readFile(new URL(`../../public${file}`, import.meta.url));
+    // Les deux logos sont des WebP étendus (`VP8X`), seul format où les dimensions du
+    // canevas se lisent directement : largeur et hauteur moins un, sur 24 bits, aux
+    // octets 24 et 27. Le format est vérifié plutôt que supposé — la lecture d'un
+    // `VP8 ` simple au même endroit rend un nombre arbitraire, qui passerait le seuil
+    // sans rien mesurer.
+    expect(bytes.subarray(12, 16).toString('latin1')).toBe('VP8X');
+    expect(1 + bytes.readUIntLE(24, 3)).toBeGreaterThanOrEqual(112);
   });
 
   it('numérote le fil d’Ariane à partir de 1', () => {

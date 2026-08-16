@@ -17,7 +17,7 @@ import {
 } from '../lib/cms';
 import { resolveEnv } from '../lib/request-context';
 import { pageTitle, pageDescription, absoluteUrl } from '../lib/seo';
-import { sportsClub, webPage, breadcrumbList, article, openingHours, sportsEvent } from '../lib/jsonld';
+import { sportsClub, webSite, webPage, breadcrumbList, article, openingHours, sportsEvent } from '../lib/jsonld';
 import { socialLinks } from '../lib/social';
 import { HTML_CACHE_CONTROL } from '../lib/cache';
 
@@ -161,7 +161,13 @@ if (page) {
   // Fiche du club sur la seule page d'accueil : c'est l'ancre que `organizer` et
   // `publisher` visent ailleurs, et la répéter sur chaque page n'ajoute rien. Les
   // comptes sociaux viennent des réglages, comme dans le pied de page.
-  if (page.path === '/') pageJsonLd.unshift(sportsClub(siteUrl, socialLinks(await getSiteSettings(env)).map((l) => l.href)));
+  // Le club d'abord, le site ensuite : `webSite.publisher` renvoie à la fiche du club
+  // par son `@id`, et la lire décrite avant d'être citée épargne un aller-retour à qui
+  // relit la source. L'ordre n'a pas de sens pour un analyseur — il en a pour nous.
+  if (page.path === '/') {
+    pageJsonLd.unshift(webSite(siteUrl));
+    pageJsonLd.unshift(sportsClub(siteUrl, socialLinks(await getSiteSettings(env)).map((l) => l.href)));
+  }
   /*
     Balisage des événements, repris de la page `/agenda/` supprimée.
 

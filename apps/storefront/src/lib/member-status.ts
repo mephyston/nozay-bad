@@ -65,3 +65,52 @@ export async function getActiveMemberStatus(env: any, session: any): Promise<Act
 
   return { ...fallback, seasonCode, seasonName };
 }
+
+export interface SessionMemberStatus {
+  id: number;
+  firstName: string;
+  lastName: string;
+  licence: string;
+  paid: boolean;
+  isActive: boolean;
+}
+
+/**
+ * Statut de cotisation de TOUS les profils de la session, lu en direct comme ci-dessus.
+ *
+ * Sert les écrans de portée foyer — l'attestation CSE en premier lieu : un parent qui
+ * gère les licences de ses enfants doit pouvoir les récupérer d'une traite, sans changer
+ * de profil entre chaque. Les appels partent en parallèle (un foyer, donc une poignée),
+ * et chacun retombe sur le `paid` du snapshot de session si l'API échoue.
+ */
+export async function getSessionMembersStatus(env: any, session: any): Promise<SessionMemberStatus[]> {
+  const members: any[] = session?.members ?? [];
+  if (members.length === 0) return [];
+
+  const api = createApiClient(env);
+  const season = displaySeason(await listSeasons(env), session?.seasonCode);
+  const seasonCode = season?.code || '';
+
+  return Promise.all(
+    members.map(async (m) => {
+      let paid = Boolean(m.paid);
+      try {
+        const res = await api.fetch(
+          `http://localhost/members/${encodeURIComponent(m.licence)}${seasonCode ? `?season=${encodeURIComponent(seasonCode)}` : ''}`
+        );
+        if (res.ok) {
+          const fresh = ((await res.json()) as any).data;
+          if (fresh) paid = Boolean(fresh.paid);
+        }
+      } catch {}
+      return {
+        id: m.id,
+        firstName: m.firstName,
+        lastName: m.lastName,
+        licence: m.licence,
+        paid,
+        isActive: m.id === session?.activeMemberId
+      };
+    })
+  );
+}

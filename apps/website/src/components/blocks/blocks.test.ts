@@ -16,7 +16,7 @@ import { BLOCK_TYPES } from '@nba/cms/public';
 const BLOCKS_DIR = __dirname;
 
 /** Types dont le rendu n'est pas encore écrit, avec la phase qui les apportera. */
-const NOT_YET_RENDERED = new Set(['person_cards']);
+const NOT_YET_RENDERED = new Set<string>();
 
 /**
  * Correspondance type → composant, explicite.

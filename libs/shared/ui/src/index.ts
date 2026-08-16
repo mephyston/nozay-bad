@@ -63,3 +63,4 @@ export { default as MobileBottomNav } from './components/patterns/MobileBottomNa
 export { default as PwaInstallBanner } from './components/patterns/PwaInstallBanner.svelte';
 export { default as DashboardSummaryCard } from './components/patterns/DashboardSummaryCard.svelte';
 export { default as DashboardPoleCard } from './components/patterns/DashboardPoleCard.svelte';
+export { readCollapseState, writeCollapseState } from './lib/collapse-state';

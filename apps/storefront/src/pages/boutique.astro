@@ -6,7 +6,6 @@ import { ErrorAlert } from '@nba/ui';
 import { ShopCatalog } from '@nba/shop-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
-import { getActiveMemberStatus } from '../lib/member-status';
 import { listSeasons, displaySeason, type Season } from '../lib/season';
 
 const apiService = createApiClient(env);
@@ -60,7 +59,6 @@ if (Astro.request.method === 'POST') {
 const session = Astro.locals.session;
 const members: Member[] = session?.members ?? [];
 const initialMemberId = session?.activeMemberId ? String(session.activeMemberId) : '';
-const canExpense = (await getActiveMemberStatus(env, session)).canExpense;
 
 let products: Product[] = [];
 let seasons: Season[] = [];
@@ -87,7 +85,7 @@ const activeSeasonId = displaySeason(seasons, session?.seasonCode)?.code ?? '';
 ---
 
 <Layout title="Boutique Adhérents - NBA 91">
-  <Header currentPath="/boutique" canExpense={canExpense} />
+  <Header currentPath="/boutique" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     {errorMsg && (
@@ -106,7 +104,7 @@ const activeSeasonId = displaySeason(seasons, session?.seasonCode)?.code ?? '';
     />
   </main>
 
-  <MobileNav currentPath="/boutique" canExpense={canExpense} />
+  <MobileNav currentPath="/boutique" />
 
   <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
     <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>

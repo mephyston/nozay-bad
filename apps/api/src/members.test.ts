@@ -190,6 +190,44 @@ describe('POST /members/import', () => {
     expect(m2.status).toBe('suspendu'); // Non/Dossier annulé mapped to suspendu
   });
 
+  it("importe la « Date de paiement » Poona et ne l'efface pas au ré-import", async () => {
+    const { mockD1, db } = await setupMockDb();
+
+    const post = async (csv: string) => {
+      const formData = new FormData();
+      formData.append('file', new Blob([csv], { type: 'text/csv' }), 'poona.csv');
+      const res = await app.request(new Request('http://localhost/members/import', { method: 'POST', body: formData }), undefined, {
+        DB: mockD1 as any
+      });
+      expect(res.status).toBe(200);
+    };
+
+    const header = 'Saison;Adhérent validé;Sexe;Nom;Prénom;Licence;Date naissance;Payé;Date de paiement;Tarif';
+    await post(
+      `${header}
+"25-26";"Oui";"H";"REGLE";"Paul";"07000001";"22-09-1969";"Oui";"18-06-2026";"Loisirs"
+"25-26";"Oui";"F";"SANSDATE";"Anne";"07000002";"17-09-1990";"Oui";"";"Loisirs"`
+    );
+
+    const afterFirst = await db.select().from(membersTable).all();
+    // JJ-MM-AAAA converti en ISO, comme la date de naissance.
+    expect(afterFirst.find((m) => m.licence === '07000001')!.paymentDate).toBe('2026-06-18');
+    // Colonne vide : le PDF retombera sur le 1er septembre de la saison.
+    expect(afterFirst.find((m) => m.licence === '07000002')!.paymentDate).toBeNull();
+
+    // Ré-import avec la colonne vide pour tout le monde : la date connue survit.
+    await post(
+      `${header}
+"25-26";"Oui";"H";"REGLE";"Paul";"07000001";"22-09-1969";"Oui";"";"Loisirs"
+"25-26";"Oui";"F";"SANSDATE";"Anne";"07000002";"17-09-1990";"Oui";"12-07-2026";"Loisirs"`
+    );
+
+    const afterSecond = await db.select().from(membersTable).all();
+    expect(afterSecond).toHaveLength(2);
+    expect(afterSecond.find((m) => m.licence === '07000001')!.paymentDate).toBe('2026-06-18');
+    expect(afterSecond.find((m) => m.licence === '07000002')!.paymentDate).toBe('2026-07-12');
+  });
+
   it('should return 400 when file is missing', async () => {
     const { mockD1 } = await setupMockDb();
     const formData = new FormData(); // no file appended
@@ -460,7 +498,8 @@ describe('/members/:id/cse-data', () => {
     expect(paidNoTxData.success).toBe(true);
     expect(paidNoTxData.data.lastName).toBe('Dupont');
     expect(paidNoTxData.data.paymentMethod).toBe('virement'); // Default fallback
-    expect(paidNoTxData.data.paymentDate).toBe('date de validation'); // Default fallback
+    // Poona n'a pas exporté de date de paiement : le PDF retombera sur le 1er septembre.
+    expect(paidNoTxData.data.paymentDate).toBe('');
 
     // Add a transaction for Marie Dupont
     await db.run(sql`
@@ -474,8 +513,16 @@ describe('/members/:id/cse-data', () => {
     const paidWithTxData = await paidWithTxRes.json() as any;
     expect(paidWithTxData.success).toBe(true);
     expect(paidWithTxData.data.paymentMethod).toBe('Chèque');
-    expect(paidWithTxData.data.paymentDate).toBe('2026-07-10');
+    // La date de l'écriture comptable ne fait pas date de paiement : c'est la saisie du
+    // trésorier. Seule la colonne Poona `payment_date` alimente la date d'émission.
+    expect(paidWithTxData.data.paymentDate).toBe('');
     expect(paidWithTxData.data.amount).toBe(20000);
+
+    // Date de règlement renseignée par Poona : elle prime et devient la date d'émission.
+    await db.run(sql`UPDATE members SET payment_date = '2026-06-18' WHERE id = 20`);
+    const withPoonaDateRes = await app.request('http://localhost/members/20/cse-data', undefined, { DB: mockD1 as any });
+    const withPoonaDateData = await withPoonaDateRes.json() as any;
+    expect(withPoonaDateData.data.paymentDate).toBe('2026-06-18');
   });
 
   it('should verify NaN IDs and return 400 for members endpoint', async () => {

@@ -14,7 +14,7 @@ import {
   embed
 } from '@nba/pdf';
 import type { AttestationConfig } from './config';
-import { formatFrenchDate, formatSeason, numberToFrenchWords, paymentMethodLabel } from './format';
+import { formatFrenchDate, formatSeason, numberToFrenchWords, paymentMethodLabel, seasonIssueDate } from './format';
 
 // Données dynamiques issues de la fiche adhérent (cf. get-member-cse-data).
 export type AttestationData = {
@@ -23,7 +23,7 @@ export type AttestationData = {
   birthDate: string;
   amount: number; // centimes
   paymentMethod: string;
-  paymentDate: string; // ISO ou 'date de validation'
+  paymentDate: string; // ISO `YYYY-MM-DD`, ou '' si Poona ne l'a pas exportée
   season: string;
 };
 
@@ -89,10 +89,11 @@ export async function generateCseAttestationPdf(data: AttestationData, config: A
   });
 
   // ---------- SIGNATURE (2 colonnes) ----------
-  const dateStr =
-    data.paymentDate === 'date de validation' || !data.paymentDate
-      ? formatFrenchDate(new Date().toISOString().split('T')[0])
-      : formatFrenchDate(data.paymentDate);
+  // Date d'émission : la date de règlement exportée par Poona quand elle existe, sinon
+  // le 1er septembre de la saison couverte. Pas la date du jour : elle rendrait le PDF
+  // non reproductible et incohérent avec la saison attestée.
+  const issueDate = data.paymentDate || seasonIssueDate(data.season);
+  const dateStr = formatFrenchDate(issueDate || new Date().toISOString().split('T')[0]);
 
   const sigTop = y - 34;
   const leftColLeft = MARGIN;

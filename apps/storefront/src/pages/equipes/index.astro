@@ -1,0 +1,184 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import MobileNav from '../../components/MobileNav.svelte';
+import ShuttlecockIcon from '../../components/ShuttlecockIcon.svelte';
+import { env as cfEnv } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
+import { getActiveMemberStatus } from '../../lib/member-status';
+import { resolveEnv } from '../../lib/request-context';
+
+const session = Astro.locals.session;
+const env = resolveEnv(Astro.locals) ?? cfEnv;
+const status = await getActiveMemberStatus(env, session);
+
+const active = session?.members.find((m) => m.id === session.activeMemberId);
+/**
+ * Licence de l'adhérent consulté, normalisée comme partout ailleurs dans le domaine.
+ *
+ * Vide quand personne n'est connecté : sans ce garde-fou, `padStart` fabrique une licence
+ * `00000000` qui part en requête et se compare comme une vraie.
+ */
+const digits = String(active?.licence ?? '').replace(/\D/g, '');
+const viewerLicence = digits ? digits.padStart(8, '0') : '';
+
+const api = createApiClient(env);
+
+let teams: any[] = [];
+let errorMsg: string | null = null;
+
+try {
+  // La licence part avec la requête pour que l'API dise, équipe par équipe, ce que
+  // l'adhérent y est. Elle vient de la session : personne ne peut demander la liste
+  // « vue par » quelqu'un d'autre.
+  const query = new URLSearchParams({ seasonCode: status.seasonCode ?? '' });
+  if (viewerLicence) query.set('licence', viewerLicence);
+
+  const res = await api.fetch(`http://localhost/teams?${query}`);
+  if (res.ok) teams = ((await res.json()) as any).data?.teams ?? [];
+} catch {
+  errorMsg = 'Les équipes ne sont pas consultables pour le moment.';
+}
+
+/** Regroupées par championnat, dans l'ordre du domaine, puis par numéro. */
+const groups: Array<{ label: string; teams: any[] }> = [];
+for (const team of teams) {
+  const found = groups.find((g) => g.label === team.championshipLabel);
+  if (found) found.teams.push(team);
+  else groups.push({ label: team.championshipLabel, teams: [team] });
+}
+
+const name = (person: any) => (person ? `${person.firstName} ${person.lastName}`.trim() : null);
+
+/**
+ * Ce que l'adhérent est dans l'équipe, et comment la carte le dit.
+ *
+ * Deux niveaux de lecture, parce que l'écran répond à deux questions à la fois : la
+ * **bordure** se voit de loin et sépare « mes équipes » du reste de la liste ; le
+ * **badge** dit lequel des trois rôles, une fois l'œil posé. Le staff garde la couleur
+ * du club — c'est lui qui compose — et l'effectif prend le bleu.
+ */
+const ROLES: Record<string, { label: string; card: string; badge: string }> = {
+  captain: {
+    label: 'Vous êtes capitaine',
+    card: 'border-primary/60 bg-primary/5 hover:bg-primary/10',
+    badge: 'bg-primary/10 text-primary border-primary/20'
+  },
+  viceCaptain: {
+    label: 'Vous êtes vice-capitaine',
+    card: 'border-primary/40 bg-primary/5 hover:bg-primary/10',
+    badge: 'bg-primary/10 text-primary border-primary/20'
+  },
+  player: {
+    label: "Vous êtes dans l'effectif",
+    card: 'border-info/50 bg-info/5 hover:bg-info/10',
+    badge: 'bg-info/10 text-info border-info/20'
+  }
+};
+
+const roleOf = (team: any) => (team.viewerRole ? ROLES[team.viewerRole] : null);
+---
+
+<Layout title="Équipes - Nozay Bad">
+  <Header currentPath="/equipes" />
+
+  <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6 max-w-5xl mx-auto space-y-6">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">Équipes</h1>
+      <p class="text-muted-foreground text-sm mt-1">
+        Les équipes du club engagées en interclubs cette saison, leur staff et leur effectif.
+      </p>
+    </div>
+
+    {errorMsg && (
+      <div class="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+        {errorMsg}
+      </div>
+    )}
+
+    {teams.length === 0 && !errorMsg && (
+      <div class="rounded-lg border p-6 text-center text-sm text-muted-foreground">
+        Aucune équipe engagée pour le moment.
+      </div>
+    )}
+
+    {groups.map((group) => (
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+          {group.label}
+        </h2>
+        <div class="grid gap-3 sm:grid-cols-2">
+          {group.teams.map((team) => (
+            <a
+              href={`/equipes/${team.id}`}
+              class:list={[
+                'block rounded-lg border p-4 transition-colors space-y-2',
+                roleOf(team)?.card ?? 'hover:bg-muted/40'
+              ]}
+            >
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <p class="font-semibold">{team.name}</p>
+                  <p class="text-xs text-muted-foreground">
+                    {team.divisionLabel}
+                    {team.poolLabel ? ` · poule ${team.poolLabel}` : ''}
+                    {` · ${team.matchCount} matchs`}
+                  </p>
+                </div>
+                {roleOf(team) && (
+                  <span
+                    class:list={[
+                      'flex items-center gap-1 text-xs rounded-full border px-2 py-0.5 whitespace-nowrap',
+                      roleOf(team)!.badge
+                    ]}
+                  >
+                    {team.viewerRole === 'player' ? (
+                      <ShuttlecockIcon class="size-3.5 shrink-0" />
+                    ) : (
+                      // L'étoile du capitaine, au gabarit des icônes Lucide comme le
+                      // volant. Pleine pour le capitaine, creuse pour son vice : la
+                      // hiérarchie se lit sans avoir à relire le texte du badge.
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill={team.viewerRole === 'captain' ? 'currentColor' : 'none'}
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="size-3.5 shrink-0"
+                        aria-hidden="true"
+                      >
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                    )}
+                    {roleOf(team)!.label}
+                  </span>
+                )}
+              </div>
+
+              <dl class="text-xs text-muted-foreground space-y-0.5">
+                <div class="flex gap-1">
+                  <dt class="font-medium">Capitaine :</dt>
+                  <dd>{name(team.captain) ?? 'non désigné'}</dd>
+                </div>
+                {team.viceCaptain && (
+                  <div class="flex gap-1">
+                    <dt class="font-medium">Vice-capitaine :</dt>
+                    <dd>{name(team.viceCaptain)}</dd>
+                  </div>
+                )}
+                <div class="flex gap-1">
+                  <dt class="font-medium">Effectif :</dt>
+                  <dd>{team.rosterCount} joueur(s)</dd>
+                </div>
+              </dl>
+            </a>
+          ))}
+        </div>
+      </section>
+    ))}
+  </main>
+
+  <MobileNav currentPath="/equipes" client:load />
+</Layout>

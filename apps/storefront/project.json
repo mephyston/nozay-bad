@@ -12,6 +12,7 @@
     "@nba/expenses-api",
     "@nba/html",
     "@nba/shop-api",
+    "@nba/teams-api",
     "@nba/ui"
   ],
   "targets": {

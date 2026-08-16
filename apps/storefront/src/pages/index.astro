@@ -5,12 +5,14 @@ import MobileNav from '../components/MobileNav.svelte';
 import PushOptIn from '../components/PushOptIn.svelte';
 import PostSummaryCard from '../components/PostSummaryCard.astro';
 import AgendaCard from '../components/AgendaCard.astro';
+import NextFixtureCard from '../components/NextFixtureCard.astro';
 import BirthdayCard from '../components/BirthdayCard.astro';
 import { env } from 'cloudflare:workers';
 import { getActiveMemberStatus } from '../lib/member-status';
 import { fetchPosts } from '../lib/posts';
 import { fetchUpcomingEvents } from '../lib/agenda';
 import { fetchTodayBirthdays } from '../lib/birthdays';
+import { fetchMyFixtures, normalizeLicence } from '../lib/my-fixtures';
 
 const session = Astro.locals.session;
 const active = session?.members.find((m) => m.id === session.activeMemberId);
@@ -18,7 +20,6 @@ const firstName = active?.firstName ?? '';
 
 // Statut lu en direct : autorisation frais effective sans reconnexion.
 const status = await getActiveMemberStatus(env, session);
-const canExpense = status.canExpense;
 
 // Les trois blocs de l'accueil sont indépendants : ils sont donc lus en parallèle, et
 // chacun disparaît seul s'il n'a rien à montrer ou si l'API n'a pas répondu — l'accueil
@@ -27,15 +28,22 @@ const canExpense = status.canExpense;
 // Un seul événement est demandé, et **au nom du profil actif** : l'encart n'annonce que
 // le prochain rendez-vous, et son bouton d'inscription doit savoir si l'adhérent s'y
 // est déjà annoncé.
-const [{ posts }, events, birthdays] = await Promise.all([
+//
+// L'interclubs vient s'ajouter aux trois : il ne concerne que les adhérents engagés en
+// équipe, et l'encart disparaît pour tous les autres. Une seule rencontre est demandée,
+// la prochaine — l'agenda porte les suivantes.
+const licence = normalizeLicence(active?.licence);
+
+const [{ posts }, events, birthdays, fixtures] = await Promise.all([
   fetchPosts(env, 3),
   fetchUpcomingEvents(env, 1, session?.activeMemberId),
-  fetchTodayBirthdays(env)
+  fetchTodayBirthdays(env),
+  fetchMyFixtures(env, status.seasonCode ?? null, licence, 1)
 ]);
 ---
 
 <Layout title="Espace adhérent - Nozay Bad">
-  <Header currentPath="/" canExpense={canExpense} />
+  <Header currentPath="/" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     <div class="max-w-3xl mx-auto">
@@ -56,6 +64,14 @@ const [{ posts }, events, birthdays] = await Promise.all([
           <BirthdayCard birthdays={birthdays} />
         </div>
       )}
+
+      <!--
+        Avant l'agenda du club : une rencontre d'interclubs engage l'adhérent
+        personnellement, là où l'agenda l'invite.
+      -->
+      <div class="mb-6 empty:mb-0">
+        <NextFixtureCard fixture={fixtures[0] ?? null} />
+      </div>
 
       <div class="mb-6 empty:mb-0">
         <AgendaCard event={events[0] ?? null} />
@@ -88,7 +104,7 @@ const [{ posts }, events, birthdays] = await Promise.all([
     </div>
   </main>
 
-  <MobileNav currentPath="/" canExpense={canExpense} />
+  <MobileNav currentPath="/" />
 
   <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
     <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>

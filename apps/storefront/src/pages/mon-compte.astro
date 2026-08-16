@@ -84,7 +84,7 @@ const isPaid = Boolean(cotisation?.paid);
 ---
 
 <Layout title="Mon compte - Nozay Bad">
-  <Header currentPath="/mon-compte" canExpense={canExpense} />
+  <Header currentPath="/mon-compte" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     <div class="max-w-3xl mx-auto space-y-8">
@@ -134,18 +134,65 @@ const isPaid = Boolean(cotisation?.paid);
         <p class="text-sm text-muted-foreground">Choisissez les actualités du club que vous souhaitez recevoir.</p>
       </a>
 
-      <!-- Ma cotisation : repliable comme le reste, mais ouverte d'emblée — c'est
-           l'information qu'on vient chercher sur cette page. -->
-      <CollapsibleHistory title={`Ma cotisation${seasonName ? ` — ${seasonName}` : ''}`} open={true}>
-        <div class="p-5">
-          <div class="flex items-center justify-between mb-4">
-            <span class="text-sm font-semibold text-foreground">Statut</span>
-            {isPaid ? (
-              <span class="inline-flex items-center rounded-md border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">À jour</span>
-            ) : (
-              <span class="inline-flex items-center rounded-md border border-destructive/20 bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">Solde restant</span>
-            )}
+      <!-- Démarches personnelles. Elles vivent ici et non dans la barre de navigation :
+           celle-ci ne porte que les rubriques du club, identiques pour tout le monde et
+           sur les deux formats d'écran. « Mon compte » est le point d'entrée de tout ce
+           qui ne concerne que l'adhérent connecté — et il est à un geste, depuis le menu
+           en haut à droite comme depuis la barre du bas en mobile. -->
+      <a
+        href="/attestation"
+        class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline group min-h-[44px]"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+            <p class="text-sm font-semibold text-foreground">Mon attestation CSE</p>
           </div>
+          <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Ouvrir &rarr;</span>
+        </div>
+        <p class="text-sm text-muted-foreground">
+          {(session?.members.length ?? 0) > 1
+            ? "Attestation de paiement à présenter à votre comité d'entreprise, pour chaque adhérent de votre compte."
+            : "Attestation de paiement à présenter à votre comité d'entreprise."}
+        </p>
+      </a>
+
+      {canExpense && (
+        <a
+          href="/note-de-frais"
+          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline group min-h-[44px]"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>
+              <p class="text-sm font-semibold text-foreground">Déposer une note de frais</p>
+            </div>
+            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Ouvrir &rarr;</span>
+          </div>
+          <p class="text-sm text-muted-foreground">Demandez le remboursement d'une dépense engagée pour le club.</p>
+        </a>
+      )}
+
+      <!-- Ma cotisation : repliée comme le reste. Ce qu'on vient vérifier ici, c'est
+           « suis-je à jour ? » — la pastille de statut le dit dans l'en-tête, section
+           fermée ; le détail des montants ne s'ouvre que si on le demande. -->
+      <CollapsibleHistory
+        title={`Ma cotisation${seasonName ? ` — ${seasonName}` : ''}`}
+        description="Montant dû, déjà réglé et restant à payer pour la saison."
+      >
+        <svg slot="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
+
+        <!-- Fragment : un `slot` posé sur un élément produit par une expression n'est
+             pas reconnu par Astro, il doit l'être sur un enfant direct. -->
+        <Fragment slot="badge">
+          {isPaid ? (
+            <span class="inline-flex items-center rounded-md border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">À jour</span>
+          ) : (
+            <span class="inline-flex items-center rounded-md border border-destructive/20 bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">Solde restant</span>
+          )}
+        </Fragment>
+
+        <div class="p-5">
           <div class="grid grid-cols-3 gap-3 text-center">
             <div>
               <div class="text-xs text-muted-foreground">Montant dû</div>
@@ -164,7 +211,13 @@ const isPaid = Boolean(cotisation?.paid);
       </CollapsibleHistory>
 
       <!-- Mes commandes -->
-      <CollapsibleHistory title="Mes commandes" count={orders.length}>
+      <CollapsibleHistory
+        title="Mes commandes"
+        count={orders.length}
+        description="Vos achats à la boutique du club et leur règlement."
+      >
+        <svg slot="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+
         {orders.length === 0 ? (
           <p class="text-sm text-muted-foreground p-4">Aucune commande pour le moment.</p>
         ) : (
@@ -187,7 +240,13 @@ const isPaid = Boolean(cotisation?.paid);
 
       <!-- Mes notes de frais -->
       {canExpense && (
-        <CollapsibleHistory title="Mes notes de frais" count={expenses.length}>
+        <CollapsibleHistory
+          title="Mes notes de frais"
+          count={expenses.length}
+          description="Vos demandes de remboursement déposées et leur suivi."
+        >
+          <svg slot="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>
+
           {expenses.length === 0 ? (
             <p class="text-sm text-muted-foreground p-4">Aucune note de frais soumise.</p>
           ) : (
@@ -211,7 +270,7 @@ const isPaid = Boolean(cotisation?.paid);
     </div>
   </main>
 
-  <MobileNav currentPath="/mon-compte" canExpense={canExpense} />
+  <MobileNav currentPath="/mon-compte" />
 
   <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
     <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>

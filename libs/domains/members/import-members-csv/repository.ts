@@ -1,5 +1,5 @@
 import { membersTable } from '@nba/members/schema';
-import { inArray, eq } from 'drizzle-orm';
+import { inArray, eq, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { insertSeasons, getSeasonsByCodes } from '@nba/accounting-api';
 
@@ -58,6 +58,10 @@ export class ImportMembersRepository {
             amountReceivedCents: member.amountReceivedCents,
             amountRemainingCents: member.amountRemainingCents,
             paid: member.paid,
+            // Seul champ non écrasé aveuglément : Poona laisse « Date de paiement » vide
+            // dans la plupart des exports, et un ré-import ne doit pas effacer une date
+            // déjà connue — l'attestation retomberait sans bruit sur le 1er septembre.
+            paymentDate: sql`coalesce(excluded.payment_date, ${membersTable.paymentDate})`,
             parent1Name: member.parent1Name,
             parent1Email: member.parent1Email,
             parent1Phone: member.parent1Phone,

@@ -4,19 +4,11 @@ import Header from '../components/Header.astro';
 import MobileNav from '../components/MobileNav.svelte';
 import PushOptIn from '../components/PushOptIn.svelte';
 import PushPreferences from '../components/PushPreferences.svelte';
-import { env } from 'cloudflare:workers';
-import { getActiveMemberStatus } from '../lib/member-status';
 
-const session = Astro.locals.session;
-const status = await getActiveMemberStatus(env, session);
-const canExpense = status.canExpense;
 ---
 
 <Layout title="Mes notifications - Nozay Bad">
-  <Header
-    currentPath="/notifications"
-    canExpense={canExpense}
-  />
+  <Header currentPath="/notifications" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     <div class="max-w-3xl mx-auto space-y-8">
@@ -35,5 +27,5 @@ const canExpense = status.canExpense;
     </div>
   </main>
 
-  <MobileNav currentPath="/notifications" canExpense={canExpense} />
+  <MobileNav currentPath="/notifications" />
 </Layout>

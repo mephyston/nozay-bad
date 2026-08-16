@@ -6,6 +6,10 @@
     licence: string;
   }
 
+  // Ce menu ne porte QUE l'identité : qui je suis, changer de profil, se déconnecter.
+  // Aucun écran de contenu n'y figure : posé à côté du sélecteur de profil, un lien
+  // laisserait croire qu'il suit le profil qu'on vient de choisir alors qu'il suit le
+  // profil actif. Ces écrans vivent sur « Mon compte », qui est à un geste d'ici.
   let {
     members = [],
     activeMemberId,

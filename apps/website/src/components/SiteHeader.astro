@@ -30,6 +30,13 @@ function isActive(item: NavItemView): boolean {
   if (item.href === current) return true;
   return item.children.some((child) => child.href === current);
 }
+
+/**
+ * Rubrique dépliée à l'ouverture du menu mobile : celle où l'on se trouve, et elle
+ * seule — l'accordéon étant exclusif, une seule peut l'être. Le lecteur retrouve ainsi
+ * sa position dans le menu sans avoir à la rechercher ; ailleurs, tout est replié.
+ */
+const openSection = nav.findIndex((item) => item.children.length > 0 && isActive(item));
 ---
 <header class="border-border bg-background sticky top-0 z-40 border-b">
   <div class="mx-auto flex max-w-5xl items-center gap-4 px-4 py-3">
@@ -169,30 +176,49 @@ function isActive(item: NavItemView): boolean {
     </div>
   </div>
 
-  {/* Le menu mobile est rendu déplié dans le HTML puis masqué par `hidden` : son
-      contenu reste donc lisible des moteurs et des lecteurs d'écran même si le script
-      n'a pas encore été exécuté. */}
+  {/*
+      Menu mobile en accordéon : chaque rubrique est repliée, en ouvrir une referme
+      celle qui l'était — c'est ce que fait l'attribut `name` sur `<details>`, sans une
+      ligne de JavaScript et sans rien perdre si le script n'a pas encore tourné. Les
+      liens restent dans le HTML servi, donc lisibles des moteurs, repliés ou non.
+
+      Le repli est ce qui rend ce menu tenable : déplié, il faisait la moitié de sa
+      hauteur en sous-entrées qu'on n'était pas venu chercher.
+  */}
   {/*
       `text-base` et non `text-sm` comme la barre de bureau : ici les entrées se visent
       au pouce, pas au curseur. Avec les `py-2.5` ci-dessous, chaque lien fait 44 px de
       haut — la cible tactile recommandée (Apple HIG, WCAG 2.5.5) ; en `text-sm py-1.5`
       les sous-entrées tombaient à 32 px.
   */}
-  <nav id="mobile-nav" aria-label="Navigation principale" class="border-border hidden border-t md:hidden">
+  {/*
+      Le panneau se superpose à la page, il ne la pousse pas.
+
+      En flux, ouvrir le menu agrandissait l'en-tête et décalait tout le contenu vers le
+      bas — un saut de mise en page à chaque ouverture, et un second au repli. En
+      `absolute` sous la barre (`top-full`), la page reste exactement où elle est et le
+      menu passe devant : d'où le fond et l'ombre, que le panneau ne devait pas porter
+      tant qu'il partageait ceux de l'en-tête.
+
+      Le panneau défile pour lui-même, et sa hauteur est bornée à ce qui reste sous la
+      barre. L'en-tête étant `sticky top-0`, un menu plus haut que l'écran débordait
+      sans recours : le document défilait derrière, mais l'en-tête restait épinglé, si
+      bien que ses dernières entrées étaient inatteignables.
+
+      `svh` et non `vh` : sur mobile, `100vh` compte la barre d'adresse *rétractée*, donc
+      dépasse la hauteur réellement visible tant qu'elle est déployée — la borne serait
+      trop haute au moment précis où elle sert. `overscroll-contain` empêche le défilement
+      de se propager à la page une fois le bas du menu atteint.
+  */}
+  <nav
+    id="mobile-nav"
+    aria-label="Navigation principale"
+    class="border-border bg-background absolute inset-x-0 top-full z-50 hidden max-h-[calc(100svh-4.25rem)] overflow-y-auto overscroll-contain border-t shadow-lg md:hidden"
+  >
     <ul class="mx-auto max-w-5xl px-4 py-2 text-base">
-      {nav.map((item) => (
+      {nav.map((item, index) => (
         <li class="py-0.5">
-          {/*
-            Sur mobile, un conteneur devient un simple intitulé au-dessus de ses
-            sous-entrées — jamais une cible tactile qui ne mènerait nulle part. Rien ne
-            s'y perd : ce menu rend déjà les sous-entrées dépliées, elles sont donc
-            sous les yeux sans qu'aucun repli n'ait à être ouvert.
-          */}
-          {isContainer(item) ? (
-            <p class="text-muted-foreground px-2 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide">
-              {item.label}
-            </p>
-          ) : (
+          {item.children.length === 0 ? (
             <a
               href={item.href}
               target={isExternal(item) ? '_blank' : undefined}
@@ -202,26 +228,69 @@ function isActive(item: NavItemView): boolean {
             >
               {item.label}
             </a>
-          )}
-          {item.children.length > 0 && (
-            <ul class="border-border ml-3 border-l pl-2">
-              {item.children.map((child) => (
-                <li>
-                  <a
-                    href={child.href}
-                    target={child.externalUrl !== null ? '_blank' : undefined}
-                    rel={child.externalUrl !== null ? 'noopener noreferrer' : undefined}
-                    aria-current={child.href === current ? 'page' : undefined}
-                    class:list={[
-                      'text-muted-foreground block rounded-md px-2 py-2.5',
-                      child.href === current && 'text-primary font-medium'
-                    ]}
-                  >
-                    {child.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+          ) : (
+            <details name="mobile-nav-section" open={index === openSection}>
+              <summary
+                class:list={[
+                  'flex cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-2.5',
+                  isActive(item) && 'text-primary font-medium'
+                ]}
+              >
+                {item.label}
+                <svg
+                  class="chevron text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </summary>
+              <ul class="border-border ml-3 border-l pl-2">
+                {/*
+                  Une rubrique peut avoir une page à elle *et* des sous-entrées : rien ne
+                  l'interdit à la composition du menu, et la barre de bureau la rend alors
+                  comme un lien surmontant son sous-menu. Ici l'intitulé sert à déplier ;
+                  la page du parent devient donc la première sous-entrée, sans quoi elle
+                  n'aurait plus aucun chemin sur mobile.
+                */}
+                {!isContainer(item) && (
+                  <li>
+                    <a
+                      href={item.href}
+                      target={isExternal(item) ? '_blank' : undefined}
+                      rel={isExternal(item) ? 'noopener noreferrer' : undefined}
+                      aria-current={item.href === current ? 'page' : undefined}
+                      class:list={[
+                        'text-muted-foreground block rounded-md px-2 py-2.5',
+                        item.href === current && 'text-primary font-medium'
+                      ]}
+                    >
+                      {item.label}
+                    </a>
+                  </li>
+                )}
+                {item.children.map((child) => (
+                  <li>
+                    <a
+                      href={child.href}
+                      target={child.externalUrl !== null ? '_blank' : undefined}
+                      rel={child.externalUrl !== null ? 'noopener noreferrer' : undefined}
+                      aria-current={child.href === current ? 'page' : undefined}
+                      class:list={[
+                        'text-muted-foreground block rounded-md px-2 py-2.5',
+                        child.href === current && 'text-primary font-medium'
+                      ]}
+                    >
+                      {child.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </details>
           )}
         </li>
       ))}
@@ -229,15 +298,75 @@ function isActive(item: NavItemView): boolean {
   </nav>
 </header>
 
+<style>
+  /* Le marqueur natif du `<summary>` casserait l'alignement avec les liens voisins. */
+  summary {
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  details[open] > summary .chevron {
+    transform: rotate(180deg);
+  }
+  /* Posée par le script sur `<html>`, donc hors de la portée du style scopé. */
+  :global(html.nav-open) {
+    overflow: hidden;
+  }
+</style>
+
 <script is:inline>
   (() => {
     const burger = document.getElementById('burger');
     const nav = document.getElementById('mobile-nav');
     if (!burger || !nav) return;
-    burger.addEventListener('click', () => {
-      const open = !nav.classList.toggle('hidden');
+
+    /*
+      Défilement de la page gelé tant que le menu est ouvert : sans cela, un geste
+      commencé à côté du panneau fait glisser le contenu derrière lui.
+
+      `overflow: hidden` sur `<html>`, et non la vieille recette du `<body>` mis en
+      `position: fixed` : celle-ci retire le document du flux, or l'en-tête est
+      `sticky` — il retomberait à sa position statique, c'est-à-dire hors de l'écran
+      dès que la page est un peu défilée, emportant le menu avec lui. Geler la racine
+      conserve à la fois la position de défilement et l'en-tête épinglé.
+    */
+    const setOpen = (open) => {
+      nav.classList.toggle('hidden', !open);
+      document.documentElement.classList.toggle('nav-open', open);
       burger.setAttribute('aria-expanded', String(open));
       burger.setAttribute('aria-label', open ? 'Fermer le menu' : 'Ouvrir le menu');
+    };
+
+    burger.addEventListener('click', () => setOpen(nav.classList.contains('hidden')));
+
+    /*
+      Clic hors du menu : on referme.
+
+      `click` et non `pointerdown` : un geste qui commence dans le panneau et se termine
+      ailleurs — un défilement au doigt relâché hors de la liste — ne doit pas compter
+      comme une sortie. Le bouton est exclu de la règle : son propre gestionnaire vient
+      de basculer l'état, et refermer ici annulerait l'ouverture qu'il déclenche.
+    */
+    document.addEventListener('click', (event) => {
+      if (nav.classList.contains('hidden')) return;
+      if (nav.contains(event.target) || burger.contains(event.target)) return;
+      setOpen(false);
+    });
+
+    // Échap referme aussi, et rend le focus au bouton : sans cela il resterait dans un
+    // menu devenu invisible, et la tabulation suivante repartirait de nulle part.
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || nav.classList.contains('hidden')) return;
+      setOpen(false);
+      burger.focus();
+    });
+
+    // Passage en écran large : le menu mobile disparaît par `md:hidden`, mais le gel
+    // du défilement, lui, ne dépend d'aucun point de rupture — il resterait en place
+    // sur une page devenue impossible à faire défiler.
+    matchMedia('(min-width: 768px)').addEventListener('change', (event) => {
+      if (event.matches) setOpen(false);
     });
   })();
 </script>

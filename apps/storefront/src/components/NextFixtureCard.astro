@@ -1,0 +1,106 @@
+---
+import type { MyFixture } from '../lib/my-fixtures';
+
+interface Props {
+  /** `null` quand l'adhérent n'est dans aucune équipe : l'encart disparaît. */
+  fixture: MyFixture | null;
+}
+
+const { fixture } = Astro.props;
+
+/**
+ * La prochaine rencontre d'interclubs de l'adhérent.
+ *
+ * L'encart répond à deux questions, et à elles seules : **quand**, et **est-ce que je
+ * joue ?** Le reste — l'adversaire, la composition ligne à ligne — est à un clic, sur la
+ * fiche de la journée.
+ *
+ * Quand la date exacte manque, on annonce la semaine plutôt que rien, **et on dit qu'elle
+ * manque**. Le comité arrête le calendrier en septembre-octobre et le président le
+ * transmet aux capitaines : la date existe, c'est sa saisie qui n'a pas été faite. Il en
+ * va de même de la composition. Présenter ces absences comme des décisions en attente
+ * laisserait les joueurs patienter là où il suffit de relancer leur capitaine.
+ */
+const french = (iso: string) =>
+  new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC'
+  });
+
+const when = fixture
+  ? fixture.date
+    ? french(fixture.date)
+    : `Semaine du ${french(fixture.weekStart).replace(/^\S+\s/, '')}`
+  : '';
+
+const dayLabel = fixture ? (fixture.dayLabel ?? `Journée ${fixture.dayNumber}`) : '';
+---
+
+{fixture && (
+  <section
+    class="rounded-xl border border-border bg-card shadow-sm"
+    aria-labelledby="prochaine-rencontre-title"
+  >
+    <header class="flex items-center gap-2.5 border-b border-border px-4 py-3 sm:px-5">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-primary" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+      <h2 id="prochaine-rencontre-title" class="text-base font-semibold text-foreground">
+        Prochaine rencontre
+      </h2>
+    </header>
+
+    <div class="px-4 py-3 sm:px-5">
+      <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <p class="font-semibold text-foreground">{fixture.teamName}</p>
+        <p class="text-sm text-muted-foreground">
+          {fixture.championshipLabel} · {fixture.divisionLabel} · {dayLabel}
+        </p>
+      </div>
+
+      <p class="mt-1 text-sm text-foreground first-letter:uppercase">
+        {when}
+        {fixture.opponent && <span> · {fixture.home ? 'contre' : 'chez'} {fixture.opponent}</span>}
+        {fixture.venue && <span class="text-muted-foreground"> · {fixture.venue}</span>}
+      </p>
+
+      {!fixture.date && (
+        <p class="mt-1 text-xs text-muted-foreground">
+          Votre capitaine n'a pas encore renseigné la date exacte.
+        </p>
+      )}
+
+      <div class="mt-3">
+        {fixture.selected ? (
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+            Vous êtes aligné{fixture.slotLabel ? ` en ${fixture.slotLabel}` : ''}
+            {fixture.lineupStatus === 'draft' && (
+              <span class="font-normal text-muted-foreground">(composition provisoire)</span>
+            )}
+          </span>
+        ) : fixture.lineupExists ? (
+          <span class="inline-flex items-center rounded-full bg-muted px-3 py-1 text-sm text-muted-foreground">
+            Vous n'êtes pas aligné sur cette journée
+          </span>
+        ) : (
+          /*
+            Distinguer les deux est tout l'intérêt : « le capitaine ne m'a pas retenu » se
+            constate, « le capitaine n'a rien saisi » se relance.
+          */
+          <span class="inline-flex items-center rounded-full bg-muted px-3 py-1 text-sm text-muted-foreground">
+            Votre capitaine n'a pas encore saisi la composition
+          </span>
+        )}
+      </div>
+    </div>
+
+    <footer class="border-t border-border px-4 py-3 sm:px-5">
+      <a
+        href={`/equipes/${fixture.teamId}/journee/${fixture.dayNumber}`}
+        class="inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-primary hover:underline"
+      >
+        Voir la composition &rarr;
+      </a>
+    </footer>
+  </section>
+)}

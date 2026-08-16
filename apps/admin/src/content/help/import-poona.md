@@ -19,7 +19,9 @@ L'import échoue si l'une de ces colonnes est absente :
 
 `Licence`, `Saison`, `Nom`, `Prénom`, `Sexe`, `Date naissance` (ou `Date de naissance`), et `Tarif` (ou `Type`).
 
-Les colonnes suivantes sont utilisées si elles sont présentes : `Email`, `Téléphone`, `Statut` (ou `Adhérent validé`, `Etat de dossier`), `Montant`, `Montant reçu`, `Montant restant`, `Payé`, et les contacts `Nom / Email / Tél. du contact 1` et `... contact 2`, qui deviennent les représentants légaux.
+Les colonnes suivantes sont utilisées si elles sont présentes : `Email`, `Téléphone`, `Statut` (ou `Adhérent validé`, `Etat de dossier`), `Montant`, `Montant reçu`, `Montant restant`, `Payé`, `Date de paiement`, et les contacts `Nom / Email / Tél. du contact 1` et `... contact 2`, qui deviennent les représentants légaux.
+
+La colonne `Date de paiement` sert de **date d'émission sur l'attestation CSE**. Poona la laisse vide dans la plupart des exports, y compris pour des dossiers marqués payés : dans ce cas l'attestation est datée du **1er septembre de la saison** qu'elle couvre. Un ré-import dont la colonne est vide n'efface pas une date déjà enregistrée.
 
 ## Ce que fait l'import
 

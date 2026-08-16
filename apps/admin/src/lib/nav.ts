@@ -71,6 +71,15 @@ export const NAV_GROUPS: NavGroup[] = [
     ]
   },
   {
+    label: 'Interclubs',
+    items: [
+      { name: 'Équipes', icon: 'Trophy', href: '/admin/teams', permission: 'teams:teams:read' },
+      { name: 'Contrôle des journées', icon: 'ShieldCheck', href: '/admin/teams/journees', permission: 'teams:lineups:read' },
+      { name: 'Classements', icon: 'ChartNoAxesColumn', href: '/admin/teams/classements', permission: 'teams:rankings:read' },
+      { name: 'Règlements', icon: 'FileText', href: '/admin/teams/reglements', permission: 'teams:rankings:read' }
+    ]
+  },
+  {
     label: 'Site public',
     items: [
       { name: 'Pages', icon: 'FileText', href: '/admin/website/pages', permission: 'cms:pages:read' },

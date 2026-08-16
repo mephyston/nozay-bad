@@ -12,6 +12,7 @@ import Schedule from './Schedule.astro';
 import PostsFeed from './PostsFeed.astro';
 import Columns from './Columns.astro';
 import Events from './Events.astro';
+import PersonCards from './PersonCards.astro';
 
 type MediaMap = Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
 
@@ -49,3 +50,4 @@ const {
 {block.type === 'posts_feed' && <PostsFeed block={block} posts={posts} />}
 {block.type === 'columns' && <Columns block={block} media={media} />}
 {block.type === 'events' && <Events block={block} events={events} />}
+{block.type === 'person_cards' && <PersonCards block={block} media={media} />}

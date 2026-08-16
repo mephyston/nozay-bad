@@ -8,8 +8,6 @@ const lastUpdate = 'août 2026';
 // La barre de navigation n'est posée que pour un visiteur connecté : elle pointe
 // vers des écrans authentifiés, qui renverraient un visiteur anonyme vers le login.
 const session = Astro.locals.session;
-const activeMember = session?.members.find((m) => m.id === session.activeMemberId);
-const canExpense = activeMember?.expenseAuthorized ?? false;
 ---
 
 <Layout title="Politique de confidentialité - Nozay Badminton Association" description="Politique de confidentialité de l'association Nozay Badminton, détaillant la collecte et le traitement des données personnelles des adhérents.">
@@ -119,7 +117,7 @@ const canExpense = activeMember?.expenseAuthorized ?? false;
     </div>
   </main>
 
-  {session && <MobileNav currentPath="/confidentialite" canExpense={canExpense} />}
+  {session && <MobileNav currentPath="/confidentialite" />}
 
   <script is:inline>
     // Assemble l'email côté client : l'adresse n'apparaît pas dans le HTML statique

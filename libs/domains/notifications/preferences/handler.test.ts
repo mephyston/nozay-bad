@@ -23,14 +23,16 @@ describe('préférences de notification', () => {
   it('active toutes les catégories tant que rien n\'a été réglé', async () => {
     const prefs = await getPreferences(db, 'a@example.com');
 
-    expect(prefs).toHaveLength(5);
+    expect(prefs).toHaveLength(6);
     expect(prefs.every((p) => p.enabled)).toBe(true);
     expect(prefs.map((p) => p.id)).toEqual([
       'announcement',
       'birthday',
       'expense',
       'order',
-      'reminder'
+      'reminder',
+      // Anomalie signalée par le coach sur une composition d'interclubs.
+      'interclubs'
     ]);
   });
 

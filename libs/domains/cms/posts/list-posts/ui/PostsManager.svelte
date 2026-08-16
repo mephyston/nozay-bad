@@ -390,7 +390,12 @@
       </DropdownMenu.Item>
     {/if}
     {#if row.status === 'published' && row.visibility === 'public'}
-      <DropdownMenu.Item onclick={() => window.open(row.path, '_blank', 'noopener')} class="cursor-pointer">
+      <!-- Même raison que pour les pages : l'adresse est relative au site public, la
+           résoudre sur le domaine de l'administration donne un « Accès refusé ». -->
+      <DropdownMenu.Item
+        onclick={() => window.open(`${websiteOrigin}${row.path}`, '_blank', 'noopener')}
+        class="cursor-pointer"
+      >
         <ExternalLink class="mr-2 h-3.5 w-3.5" />
         Voir sur le site
       </DropdownMenu.Item>

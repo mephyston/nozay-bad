@@ -246,5 +246,51 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // d'administration. C'est toute la différence entre compter et savoir qui.
   { method: 'POST', path: '/events/:id/registrations', permission: 'events:events:read', service: true },
   { method: 'DELETE', path: '/events/:id/registrations', permission: 'events:events:read', service: true },
-  { method: 'GET', path: '/events/:id/registrations', permission: 'events:registrations:read' }
+  { method: 'GET', path: '/events/:id/registrations', permission: 'events:registrations:read' },
+
+  // ── Interclubs ─────────────────────────────────────────────────────────────
+  // Les classements et la date à laquelle ils sont arrêtés : jamais `service`. Le
+  // barème complet du club est une donnée nominative, et l'espace adhérent n'en a
+  // besoin que résolu — sous forme de valeurs d'équipe, avec la composition.
+  { method: 'GET', path: '/teams/rankings', permission: 'teams:rankings:read' },
+  { method: 'POST', path: '/teams/rankings/import', permission: 'teams:rankings:import' },
+  { method: 'PUT', path: '/teams/rankings/:licence', permission: 'teams:rankings:write' },
+  // Épingler la date de référence recalcule toutes les valeurs d'équipe de la saison :
+  // c'est une écriture sur les classements, pas un réglage d'affichage.
+  { method: 'GET', path: '/teams/championship-settings', permission: 'teams:rankings:read' },
+  { method: 'PUT', path: '/teams/championship-settings', permission: 'teams:rankings:write' },
+
+  // Calendrier des journées. Le lire est ouvert au service : l'espace adhérent affiche à
+  // chaque équipe ses prochaines rencontres.
+  { method: 'GET', path: '/teams/days', permission: 'teams:teams:read', service: true },
+  { method: 'PUT', path: '/teams/days', permission: 'teams:teams:write' },
+
+  // Équipes. La lecture est ouverte au service — le menu « Équipes » de l'espace adhérent
+  // montre à tout le club ses équipes et leur staff. L'écriture ne l'est pas : créer une
+  // équipe ou désigner un capitaine relève du coach, depuis l'administration.
+  { method: 'GET', path: '/teams/my-fixtures', permission: 'teams:teams:read', service: true },
+  { method: 'GET', path: '/teams', permission: 'teams:teams:read', service: true },
+  { method: 'POST', path: '/teams', permission: 'teams:teams:write' },
+  { method: 'GET', path: '/teams/:id', permission: 'teams:teams:read', service: true },
+  { method: 'DELETE', path: '/teams/:id', permission: 'teams:teams:delete' },
+  { method: 'PUT', path: '/teams/:id/staff', permission: 'teams:teams:write' },
+  { method: 'PUT', path: '/teams/:id/roster', permission: 'teams:teams:write' },
+  { method: 'PUT', path: '/teams/:id/fixtures', permission: 'teams:teams:write' },
+
+  // Contrôle du coach : les valeurs de toutes les équipes d'un championnat sur une
+  // journée, et les joueurs alignés deux fois dans la semaine. Jamais `service` — c'est
+  // une vue d'ensemble du club, pas ce dont un capitaine a besoin.
+  { method: 'GET', path: '/teams/day-values', permission: 'teams:lineups:read' },
+
+  // Compositions. Ouvertes au service dans les deux sens : ce sont les capitaines qui
+  // composent, depuis l'espace adhérent, sans compte d'administration. Le droit d'écrire
+  // ne vient pas d'ici mais de la désignation dans l'équipe — le handler le vérifie sur
+  // la licence que le storefront tire de la session, jamais du corps de la requête.
+  { method: 'GET', path: '/teams/:id/days/:number/lineup', permission: 'teams:lineups:read', service: true },
+  { method: 'PUT', path: '/teams/:id/days/:number/lineup', permission: 'teams:lineups:write', service: true },
+  // La date réelle de la rencontre, propre à chaque équipe : c'est le capitaine qui la
+  // connaît, pas le coach. Elle ne déplace jamais la journée, qui porte les règles.
+  { method: 'PUT', path: '/teams/:id/days/:number/date', permission: 'teams:lineups:write', service: true },
+  // Prévenir le capitaine d'une anomalie : geste du coach, jamais du storefront.
+  { method: 'POST', path: '/teams/:id/days/:number/notify-captain', permission: 'teams:lineups:write' }
 ];

@@ -1,0 +1,188 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert, SeasonSelector } from '@nba/ui';
+import { TeamsManager } from '@nba/teams-ui';
+import { createAdminApiClient } from '../../../lib/api';
+import { can, guardAction } from '../../../lib/guard';
+
+const canWrite = can(Astro.locals, 'teams:teams:write');
+const canDelete = can(Astro.locals, 'teams:teams:delete');
+const apiService = createAdminApiClient(Astro.locals);
+
+const ACTIONS = {
+  'save-team': 'teams:teams:write',
+  'delete-team': 'teams:teams:delete',
+  'save-team-staff': 'teams:teams:write',
+  'save-team-roster': 'teams:teams:write',
+  'save-championship-days': 'teams:teams:write',
+  'get-team': 'teams:teams:read',
+  'list-days': 'teams:teams:read'
+} as const;
+
+const season = Astro.url.searchParams.get('season') ?? '';
+const championshipParam = Astro.url.searchParams.get('championship') ?? 'icd_mixte';
+
+if (Astro.request.method === 'POST') {
+  const data = (await Astro.request.json()) as any;
+  const denied = guardAction(Astro.locals, data.action, ACTIONS);
+  if (denied) return denied;
+
+  const routes: Record<string, { url: string; method: string; body?: unknown }> = {
+    'save-team': {
+      url: 'http://localhost/teams',
+      method: 'POST',
+      body: {
+        id: data.id,
+        seasonCode: data.seasonCode ?? season,
+        championship: data.championship,
+        division: data.division,
+        number: data.number,
+        poolLabel: data.poolLabel,
+        active: data.active
+      }
+    },
+    'delete-team': { url: `http://localhost/teams/${data.teamId}`, method: 'DELETE' },
+    'save-team-staff': {
+      url: `http://localhost/teams/${data.teamId}/staff`,
+      method: 'PUT',
+      body: { captainLicence: data.captainLicence, viceCaptainLicence: data.viceCaptainLicence }
+    },
+    'save-team-roster': {
+      url: `http://localhost/teams/${data.teamId}/roster`,
+      method: 'PUT',
+      body: { licences: data.licences }
+    },
+    'save-championship-days': {
+      url: 'http://localhost/teams/days',
+      method: 'PUT',
+      body: {
+        seasonCode: data.seasonCode ?? season,
+        championship: data.championship,
+        days: data.days
+      }
+    },
+    'get-team': { url: `http://localhost/teams/${data.teamId}`, method: 'GET' },
+    // La feuille des journées change de championnat sans navigation : elle recharge ici.
+    'list-days': {
+      url: `http://localhost/teams/days?seasonCode=${encodeURIComponent(data.seasonCode ?? season)}&championship=${data.championship}`,
+      method: 'GET'
+    }
+  };
+
+  const route = routes[data.action];
+  if (!route) return new Response(JSON.stringify({ error: 'Action inconnue' }), { status: 400 });
+
+  /*
+   * Une écriture sans saison est refusée, jamais rabattue sur une valeur par défaut.
+   *
+   * La saison n'est résolue que plus bas, pour l'affichage : au moment du POST, seul le
+   * paramètre d'URL est disponible, et il est vide au premier chargement. S'en contenter
+   * créait l'équipe en saison `''` — invisible dans la liste, et surtout hors de la
+   * contrainte d'unicité `(saison, championnat, numéro)` qui porte la hiérarchie du club.
+   * Le client connaît sa saison : on exige qu'il la donne.
+   */
+  const needsSeason = ['save-team', 'save-championship-days'];
+  if (needsSeason.includes(data.action) && !(data.seasonCode ?? season)) {
+    return new Response(
+      JSON.stringify({ error: "Saison indéterminée : rechargez la page avant d'enregistrer." }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const apiRes = await apiService.fetch(route.url, {
+    method: route.method,
+    headers: { 'Content-Type': 'application/json' },
+    ...(route.body ? { body: JSON.stringify(route.body) } : {})
+  });
+  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+  return new Response(JSON.stringify(await apiRes.json()), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+// La saison se déduit des dates, jamais du drapeau comptable `active` : celui-ci bascule
+// à la clôture, à une date sans rapport avec la saison sportive.
+let seasonCode = season;
+let errorMsg: string | null = null;
+let teams: any[] = [];
+let members: any[] = [];
+let days: any[] = [];
+let seasons: any[] = [];
+
+try {
+  // Les saisons sont chargées dans tous les cas : le sélecteur doit les proposer, même
+  // quand l'URL en fixe déjà une.
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
+  const seasonsPayload = (await seasonsRes.json()) as any;
+  seasons = seasonsPayload?.data ?? seasonsPayload ?? [];
+
+  if (!seasonCode) {
+    const today = new Date().toISOString().slice(0, 10);
+    const current = seasons.find((s: any) => s.startDate <= today && today <= s.endDate);
+    seasonCode = current?.code ?? seasons[0]?.code ?? '';
+  }
+
+  if (seasonCode) {
+    const [teamsRes, membersRes, daysRes] = await Promise.all([
+      apiService.fetch(`http://localhost/teams?seasonCode=${seasonCode}`),
+      apiService.fetch(`http://localhost/members?season=${seasonCode}&limit=5000`),
+      apiService.fetch(
+        `http://localhost/teams/days?seasonCode=${seasonCode}&championship=${championshipParam}`
+      )
+    ]);
+
+    if (teamsRes.ok) teams = ((await teamsRes.json()) as any).data?.teams ?? [];
+    if (membersRes.ok) {
+      const payload = (await membersRes.json()) as any;
+      members = (payload?.data?.data ?? payload?.data ?? []).map((m: any) => ({
+        licence: String(m.licence).padStart(8, '0'),
+        firstName: m.firstName,
+        lastName: m.lastName
+      }));
+    }
+    if (daysRes.ok) days = ((await daysRes.json()) as any).data?.days ?? [];
+  }
+} catch (error) {
+  errorMsg = error instanceof Error ? error.message : 'Chargement impossible.';
+}
+---
+
+<Layout title="Équipes - NBA 91">
+  <AdminLayout
+    client:idle
+    realEmail={Astro.locals.realEmail}
+    name={Astro.locals.user?.name}
+    email={Astro.locals.user?.email}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Équipes"
+  >
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader
+        title="Équipes"
+        description="Les équipes engagées en interclubs, leur staff et leur effectif. Le numéro d'équipe porte la hiérarchie que le règlement contrôle."
+      >
+        {/*
+          Le sélecteur est visible, et non déduit : une équipe appartient à une saison,
+          et rien d'autre à l'écran ne dit laquelle on est en train de garnir.
+        */}
+        <Fragment slot="actions">
+          <SeasonSelector client:load seasons={seasons} current={seasonCode} />
+        </Fragment>
+      </PageHeader>
+
+      <TeamsManager
+        client:load
+        {teams}
+        {members}
+        {days}
+        daysChampionship={championshipParam}
+        {seasonCode}
+        {canWrite}
+        {canDelete}
+      />
+    </div>
+  </AdminLayout>
+</Layout>

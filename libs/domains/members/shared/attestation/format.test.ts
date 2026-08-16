@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { numberToFrenchWords, formatFrenchDate, formatSeason, paymentMethodLabel } from './format';
+import { numberToFrenchWords, formatFrenchDate, formatSeason, paymentMethodLabel, seasonIssueDate } from './format';
 
 describe('numberToFrenchWords', () => {
   it.each([
@@ -36,6 +36,19 @@ describe('formatSeason', () => {
   });
   it('laisse une saison déjà complète', () => {
     expect(formatSeason('2024-2025')).toBe('2024-2025');
+  });
+});
+
+describe('seasonIssueDate', () => {
+  it('renvoie le 1er septembre de la saison au format court', () => {
+    expect(seasonIssueDate('24-25')).toBe('2024-09-01');
+  });
+  it('accepte une saison déjà complète', () => {
+    expect(seasonIssueDate('2024-2025')).toBe('2024-09-01');
+  });
+  it('renvoie une chaîne vide si la saison est absente ou illisible', () => {
+    expect(seasonIssueDate('')).toBe('');
+    expect(seasonIssueDate('saison')).toBe('');
   });
 });
 

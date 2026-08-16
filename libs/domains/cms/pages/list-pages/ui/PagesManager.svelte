@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Plus, Edit, Trash2, ExternalLink } from '@lucide/svelte';
+  import { websiteOrigin } from '../../../media/media-url';
   import {
     Button,
     Input,
@@ -208,7 +209,15 @@
             Modifier
           </DropdownMenu.Item>
           {#if page.status === 'published'}
-            <DropdownMenu.Item onclick={() => window.open(page.path, '_blank', 'noopener')} class="cursor-pointer">
+            <!-- L'adresse d'une page est relative au *site public*. L'ouvrir telle
+                 quelle la résolvait sur le domaine de l'administration, où le contrôle
+                 d'accès par page refuse tout chemin non déclaré : « Voir sur le site »
+                 répondait « Accès refusé ». Le cas se voyait surtout pour une page hors
+                 menu, cette entrée étant alors le seul chemin pour l'atteindre. -->
+            <DropdownMenu.Item
+              onclick={() => window.open(`${websiteOrigin}${page.path}`, '_blank', 'noopener')}
+              class="cursor-pointer"
+            >
               <ExternalLink class="mr-2 h-3.5 w-3.5" />
               Voir sur le site
             </DropdownMenu.Item>

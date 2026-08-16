@@ -126,6 +126,10 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'events:events:write',
     'events:events:delete',
     'events:registrations:read',
+    // Interclubs : le président suit les engagements du club sans les tenir.
+    'teams:teams:read',
+    'teams:rankings:read',
+    'teams:lineups:read',
     // Représentation légale : accorde et révoque les accès.
     'iam:users:read',
     'iam:users:write',
@@ -190,6 +194,10 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'events:events:read',
     'events:events:write',
     'events:registrations:read',
+    // Interclubs : le secrétariat consulte, l'entraîneur tient.
+    'teams:teams:read',
+    'teams:rankings:read',
+    'teams:lineups:read',
     // Boutique : catalogue et suivi des commandes, sans encaissement.
     'shop:products:read',
     'shop:products:write',
@@ -219,6 +227,17 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'schedules:slots:read',
     'schedules:slots:write',
     'events:events:read',
+    // Les interclubs sont le métier de l'entraîneur : il engage les équipes, désigne
+    // les capitaines, tient les classements et contrôle les valeurs d'équipe avant
+    // chaque journée. Seul rôle à porter l'écriture.
+    'teams:teams:read',
+    'teams:teams:write',
+    'teams:teams:delete',
+    'teams:rankings:read',
+    'teams:rankings:write',
+    'teams:rankings:import',
+    'teams:lineups:read',
+    'teams:lineups:write',
     // Les catégories de produits vivent dans les réglages : sans cette entrée, l'écran
     // existe mais aucun chemin du menu n'y mène.
     'settings:hub:read'

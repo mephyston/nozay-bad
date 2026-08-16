@@ -23,6 +23,8 @@
     ChevronsUpDown,
     X,
     Trophy,
+    ChartNoAxesColumn,
+    ShieldCheck,
     User,
     LogOut,
     HelpCircle,
@@ -59,6 +61,7 @@
   const ICONS: Record<string, any> = {
     LayoutDashboard, Sparkles, Users, BarChart3, BookOpen, FileCheck, Scale,
     Landmark, Wallet, Coins, Package, ShoppingCart, Bell, Megaphone, Image, FileText, Newspaper, CalendarClock, CalendarDays, PanelBottom, Settings, User, HelpCircle,
+    Trophy, ChartNoAxesColumn, ShieldCheck,
     Menu: MenuIcon
   };
 

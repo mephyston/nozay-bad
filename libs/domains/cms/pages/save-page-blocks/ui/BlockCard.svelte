@@ -69,7 +69,7 @@
     {:else if block.type === 'embed'}
       <EmbedBlockEditor bind:block />
     {:else if block.type === 'person_cards'}
-      <PersonCardsBlockEditor bind:block />
+      <PersonCardsBlockEditor bind:block {media} {canUploadMedia} />
     {:else if block.type === 'schedule'}
       <ScheduleBlockEditor bind:block />
     {:else if block.type === 'pdf_link'}

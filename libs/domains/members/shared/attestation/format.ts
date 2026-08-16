@@ -79,6 +79,17 @@ export function formatSeason(seasonId: string): string {
   return seasonId;
 }
 
+/**
+ * Date d'émission de l'attestation : le 1er septembre de la saison (`24-25` → `2024-09-01`).
+ * Faute de date de règlement fiable de la cotisation, on ancre l'attestation au
+ * début de la saison qu'elle couvre. Renvoie '' si la saison n'est pas exploitable.
+ */
+export function seasonIssueDate(seasonId: string): string {
+  const startYear = formatSeason(seasonId).split('-')[0];
+  if (!/^\d{4}$/.test(startYear)) return '';
+  return `${startYear}-09-01`;
+}
+
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   virement: 'virement bancaire',
   cheque: 'chèque',

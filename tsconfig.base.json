@@ -46,6 +46,9 @@
       "@nba/events/schema": ["libs/domains/events/shared/schema.ts"],
       "@nba/schedules-ui": ["libs/domains/schedules/shared/ui.ts"],
       "@nba/events-ui": ["libs/domains/events/shared/ui.ts"],
+      "@nba/teams-api": ["libs/domains/teams/index.ts"],
+      "@nba/teams/schema": ["libs/domains/teams/shared/schema.ts"],
+      "@nba/teams-ui": ["libs/domains/teams/shared/ui.ts"],
       "@nba/cms/schema": ["libs/domains/cms/shared/schema.ts"]
     }
 

@@ -95,7 +95,8 @@ export default defineConfig({
         '@nba/expenses-ui',
         '@nba/shop-ui',
         '@nba/iam-ui',
-        '@nba/events-ui'
+        '@nba/events-ui',
+        '@nba/teams-ui'
       ]
     },
     ssr: {

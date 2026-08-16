@@ -93,6 +93,19 @@ export default tseslint.config(
               onlyDependOnLibsWithTags: ['scope:events', 'scope:shared']
             },
             {
+              sourceTag: 'scope:teams',
+              // Les équipes lisent le référentiel des adhérents pour alimenter les
+              // sélecteurs de joueurs — mais rien ne dépend d'elles, donc pas de cycle.
+              // Le coach prévient un capitaine d'une anomalie : l'envoi passe par le
+              // domaine notifications, qui ne dépend de personne en retour.
+              onlyDependOnLibsWithTags: [
+                'scope:teams',
+                'scope:members',
+                'scope:notifications',
+                'scope:shared'
+              ]
+            },
+            {
               sourceTag: 'scope:cms',
               // Feuille : le CMS ne dépend d'aucun autre domaine. Les créneaux et
               // l'agenda seront composés par apps/website, pas importés ici — un bloc

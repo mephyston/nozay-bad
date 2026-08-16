@@ -4,7 +4,6 @@ import Header from '../components/Header.astro';
 import MobileNav from '../components/MobileNav.svelte';
 import PostCard from '../components/PostCard.astro';
 import { env } from 'cloudflare:workers';
-import { getActiveMemberStatus } from '../lib/member-status';
 import {
   fetchPosts,
   filterByCategory,
@@ -28,7 +27,6 @@ import { fetchUpcomingEvents } from '../lib/agenda';
  * en évidence quel que soit le filtre actif.
  */
 const session = Astro.locals.session;
-const status = await getActiveMemberStatus(env, session);
 
 // L'agenda est lu en même temps que les actualités, et **au nom du profil actif** :
 // c'est ce qui permet à une actualité rattachée à un événement de porter son encart
@@ -66,7 +64,7 @@ const pillClass = (active: boolean) =>
 ---
 
 <Layout title="Actualités - Nozay Bad">
-  <Header currentPath="/actualites" canExpense={status.canExpense} />
+  <Header currentPath="/actualites" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     <div class="max-w-3xl mx-auto">
@@ -110,5 +108,5 @@ const pillClass = (active: boolean) =>
     </div>
   </main>
 
-  <MobileNav client:idle currentPath="/actualites" canExpense={status.canExpense} />
+  <MobileNav client:idle currentPath="/actualites" />
 </Layout>

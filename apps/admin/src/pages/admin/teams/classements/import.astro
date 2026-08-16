@@ -1,0 +1,104 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import AdminLayout from '../../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert, SeasonSelector } from '@nba/ui';
+import { RankingsImporter } from '@nba/teams-ui';
+import { createAdminApiClient } from '../../../../lib/api';
+import { can, guardAction } from '../../../../lib/guard';
+
+const apiService = createAdminApiClient(Astro.locals);
+const canImport = can(Astro.locals, 'teams:rankings:import');
+
+const ACTIONS = { 'import-rankings': 'teams:rankings:import' } as const;
+
+const season = Astro.url.searchParams.get('season') ?? '';
+
+if (Astro.request.method === 'POST') {
+  const data = (await Astro.request.json()) as any;
+  const denied = guardAction(Astro.locals, data.action, ACTIONS);
+  if (denied) return denied;
+
+  if (!(data.seasonCode ?? season)) {
+    return new Response(
+      JSON.stringify({ error: "Saison indéterminée : rechargez la page avant d'importer." }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const apiRes = await apiService.fetch('http://localhost/teams/rankings/import', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      content: data.content,
+      seasonCode: data.seasonCode ?? season,
+      eloDate: data.eloDate,
+      fileName: data.fileName
+    })
+  });
+  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+  return new Response(JSON.stringify(await apiRes.json()), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+let seasonCode = season;
+let seasons: any[] = [];
+let errorMsg: string | null = null;
+
+try {
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
+  seasons = ((await seasonsRes.json()) as any)?.data ?? [];
+
+  if (!seasonCode) {
+    const today = new Date().toISOString().slice(0, 10);
+    const current = seasons.find((s: any) => s.startDate <= today && today <= s.endDate);
+    seasonCode = current?.code ?? seasons[0]?.code ?? '';
+  }
+} catch (error) {
+  errorMsg = error instanceof Error ? error.message : 'Chargement impossible.';
+}
+---
+
+<Layout title="Importer les classements - NBA 91">
+  <AdminLayout
+    client:idle
+    realEmail={Astro.locals.realEmail}
+    name={Astro.locals.user?.name}
+    email={Astro.locals.user?.email}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Classements / Import"
+  >
+    <div class="space-y-6 max-w-3xl">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <a
+        href={`/admin/teams/classements?season=${seasonCode}`}
+        class="text-sm text-muted-foreground hover:text-foreground"
+      >
+        ← Retour aux classements
+      </a>
+
+      {/*
+        L'import a sa propre page : c'est un geste rare — quelques fois par saison — et
+        volumineux, qui n'a pas à occuper le haut d'un écran que le coach consulte
+        chaque semaine.
+      */}
+      <PageHeader
+        title="Importer les classements"
+        description="Export « compétiteurs » de Poona. La date lue dans le fichier décide quel classement fera foi."
+      >
+        <Fragment slot="actions">
+          <SeasonSelector client:load seasons={seasons} current={seasonCode} />
+        </Fragment>
+      </PageHeader>
+
+      {canImport ? (
+        <RankingsImporter client:load {seasonCode} />
+      ) : (
+        <p class="text-sm text-muted-foreground">
+          Vous n'avez pas le droit d'importer les classements.
+        </p>
+      )}
+    </div>
+  </AdminLayout>
+</Layout>

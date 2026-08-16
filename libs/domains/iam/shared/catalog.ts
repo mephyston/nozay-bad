@@ -69,6 +69,15 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'events:events:delete': 'Supprimer un événement',
   'events:registrations:read': "Voir les inscrits à un événement",
 
+  'teams:teams:read': 'Consulter les équipes interclubs',
+  'teams:teams:write': 'Créer et modifier une équipe, désigner son staff',
+  'teams:teams:delete': 'Supprimer une équipe',
+  'teams:rankings:read': 'Consulter les classements fédéraux',
+  'teams:rankings:write': 'Corriger un classement et fixer la date de référence',
+  'teams:rankings:import': 'Importer les classements depuis Poona',
+  'teams:lineups:read': 'Consulter les compositions et les valeurs d’équipe',
+  'teams:lineups:write': 'Modifier une composition de rencontre',
+
   'ai:assistant:use': "Utiliser l'assistant IA",
 
   'settings:hub:read': 'Accéder aux réglages',
@@ -94,6 +103,7 @@ export const PERMISSION_GROUPS: { domain: string; label: string }[] = [
   { domain: 'cms', label: 'Site public' },
   { domain: 'schedules', label: 'Créneaux' },
   { domain: 'events', label: 'Agenda' },
+  { domain: 'teams', label: 'Interclubs' },
   { domain: 'ai', label: 'Assistant IA' },
   { domain: 'settings', label: 'Réglages' },
   { domain: 'iam', label: 'Accès et rôles' },

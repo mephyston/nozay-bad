@@ -97,6 +97,21 @@ export const ALL_PERMISSIONS = [
   // revanche de `events:events:write` — c'est un champ de l'événement.
   'events:registrations:read',
 
+  // — Interclubs —
+  'teams:teams:read',
+  'teams:teams:write',
+  'teams:teams:delete',
+  // Les classements fédéraux et la date à laquelle ils sont arrêtés. Droit distinct de
+  // la tenue des équipes : déplacer la date de référence recalcule toutes les valeurs
+  // d'équipe de la saison, et donc ce qui est conforme et ce qui ne l'est pas.
+  'teams:rankings:read',
+  'teams:rankings:write',
+  'teams:rankings:import',
+  // Les compositions de rencontre. Les capitaines les saisissent depuis l'espace
+  // adhérent, sans compte d'administration : ce droit sert au contrôle par le coach.
+  'teams:lineups:read',
+  'teams:lineups:write',
+
   // — Assistant IA —
   'ai:assistant:use',
 

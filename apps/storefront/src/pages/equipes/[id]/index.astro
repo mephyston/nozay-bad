@@ -1,0 +1,184 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import Header from '../../../components/Header.astro';
+import MobileNav from '../../../components/MobileNav.svelte';
+import { env as cfEnv } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
+import { resolveEnv } from '../../../lib/request-context';
+
+const session = Astro.locals.session;
+const env = resolveEnv(Astro.locals) ?? cfEnv;
+
+const active = session?.members.find((m) => m.id === session.activeMemberId);
+const viewerLicence = String(active?.licence ?? '').replace(/\D/g, '').padStart(8, '0');
+
+const teamId = Number(Astro.params.id);
+if (!Number.isSafeInteger(teamId) || teamId < 1) return Astro.redirect('/equipes');
+
+const api = createApiClient(env);
+
+let team: any = null;
+let days: any[] = [];
+let errorMsg: string | null = null;
+
+try {
+  const res = await api.fetch(`http://localhost/teams/${teamId}`);
+  if (!res.ok) return Astro.redirect('/equipes');
+  team = ((await res.json()) as any).data;
+
+  days = team.calendar ?? [];
+} catch {
+  errorMsg = "Cette équipe n'est pas consultable pour le moment.";
+}
+
+const canCompose =
+  Boolean(viewerLicence) &&
+  (team?.captain?.licence === viewerLicence || team?.viceCaptain?.licence === viewerLicence);
+
+const name = (p: any) => (p ? `${p.firstName} ${p.lastName}`.trim() : '—');
+const frenchDate = (iso: string) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString('fr-FR', {
+    day: 'numeric', month: 'long', timeZone: 'UTC'
+  });
+---
+
+<Layout title={`${team?.name ?? 'Équipe'} - Nozay Bad`}>
+  <Header currentPath="/equipes" />
+
+  <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6 max-w-4xl mx-auto space-y-6">
+    <a href="/equipes" class="text-sm text-muted-foreground hover:text-foreground">← Toutes les équipes</a>
+
+    {errorMsg && (
+      <div class="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+        {errorMsg}
+      </div>
+    )}
+
+    {team && (
+      <>
+        <div>
+          <h1 class="text-2xl font-bold tracking-tight">{team.name}</h1>
+          <p class="text-muted-foreground text-sm mt-1">
+            {team.championshipLabel} · {team.divisionLabel}
+            {team.poolLabel ? ` · poule ${team.poolLabel}` : ''}
+          </p>
+          <p class="text-xs text-muted-foreground mt-1">
+            Rencontre en {team.matchCount} matchs. {team.eligibilityRule}
+          </p>
+        </div>
+
+        {team.rulesUrl && (
+          <a
+            href={team.rulesUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center justify-between gap-3 rounded-lg border p-4 hover:bg-muted/40 transition-colors"
+          >
+            <div>
+              <p class="font-semibold text-sm">
+                {team.rulesLabel ?? `Règlement — ${team.championshipLabel}`}
+              </p>
+              <p class="text-xs text-muted-foreground">
+                Le texte qui fait foi le soir de la rencontre : composition, ordre des
+                joueurs, valeurs d'équipe.
+              </p>
+            </div>
+            <span class="text-xs rounded-md border px-3 py-1.5 whitespace-nowrap">Télécharger</span>
+          </a>
+        )}
+
+        <section class="rounded-lg border p-4 space-y-2">
+          <h2 class="font-semibold text-sm">Staff</h2>
+          <div class="grid gap-2 sm:grid-cols-2 text-sm">
+            <p><span class="text-muted-foreground">Capitaine :</span> {name(team.captain)}</p>
+            <p><span class="text-muted-foreground">Vice-capitaine :</span> {name(team.viceCaptain)}</p>
+          </div>
+        </section>
+
+        <section class="rounded-lg border p-4 space-y-3">
+          <div class="flex items-baseline justify-between gap-2">
+            <h2 class="font-semibold text-sm">Effectif ({team.roster.length})</h2>
+            {team.referenceEloDate && (
+              <p class="text-xs text-muted-foreground">
+                Classements au {frenchDate(team.referenceEloDate)}
+              </p>
+            )}
+          </div>
+          {team.roster.length === 0 ? (
+            <p class="text-sm text-muted-foreground">Aucun joueur déclaré dans l'effectif.</p>
+          ) : (
+            <ul class="divide-y text-sm">
+              {team.roster.map((p: any) => (
+                <li class="py-2 flex items-center justify-between gap-3">
+                  <span>{p.firstName} {p.lastName}</span>
+                  <span class="text-xs text-muted-foreground">
+                    {p.hasRanking ? `${p.singles ?? '—'} / ${p.doubles ?? '—'} / ${p.mixed ?? '—'}` : 'sans classement'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section class="rounded-lg border p-4 space-y-3">
+          <h2 class="font-semibold text-sm">Calendrier</h2>
+          {days.length === 0 ? (
+            <p class="text-sm text-muted-foreground">Le calendrier n'est pas encore publié.</p>
+          ) : (
+            <ul class="divide-y text-sm">
+              {days.map((day: any) => (
+                <li class="py-2 flex items-center justify-between gap-3">
+                  <div>
+                    <p class="font-medium">
+                      {day.label ?? `Journée ${day.number}`}
+                      {day.kind === 'playoff' && (
+                        <span class="ml-1 text-xs text-muted-foreground">(si qualifié)</span>
+                      )}
+                    </p>
+                    {/*
+                      La date réelle prime à l'affichage : c'est elle qui dit quand se
+                      présenter. La semaine théorique reste rappelée en cas de report,
+                      parce que c'est elle qui porte les règles de composition.
+                    */}
+                    <p class="text-xs text-muted-foreground">
+                      {day.playedAt
+                        ? `${frenchDate(day.playedAt.slice(0, 10))}${day.playedAt.slice(11, 16) !== '00:00' ? ` à ${day.playedAt.slice(11, 16)}` : ''}`
+                        : `semaine du ${frenchDate(day.weekStart)}`}
+                      {day.venue ? ` · ${day.venue}` : ''}
+                      {day.opponent ? ` · ${day.opponent}` : ''}
+                    </p>
+                    {day.outsideTheoreticalWeek && (
+                      <p class="text-xs text-warning">
+                        Reportée — journée du calendrier : semaine du {frenchDate(day.weekStart)}
+                      </p>
+                    )}
+                    {day.filledLines > 0 && (
+                      <p class="text-xs text-muted-foreground">{day.filledLines} ligne(s) composée(s)</p>
+                    )}
+                  </div>
+                  {canCompose ? (
+                    <a
+                      href={`/equipes/${team.id}/journee/${day.number}`}
+                      class="text-xs rounded-md border px-3 py-1.5 hover:bg-muted transition-colors whitespace-nowrap"
+                    >
+                      Composer
+                    </a>
+                  ) : (
+                    <a
+                      href={`/equipes/${team.id}/journee/${day.number}`}
+                      class="text-xs text-muted-foreground hover:text-foreground whitespace-nowrap"
+                    >
+                      Voir
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </>
+    )}
+  </main>
+
+  <MobileNav currentPath="/equipes" client:load />
+</Layout>

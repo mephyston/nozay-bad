@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { eq } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
 import { type Db } from '@nba/db';
 import { resolveRoute } from './handler';
@@ -106,8 +107,16 @@ describe('resolveRoute', () => {
     await resolveRoute(db, { path: '/bureau/' });
     await resolveRoute(db, { path: '/bureau/' });
 
-    const [row] = await db.select().from(cmsRedirectsTable).all();
-    expect(row.hitCount).toBe(2);
+    // Ciblée par son chemin, jamais par sa position : les migrations sèment les
+    // redirections héritées de WordPress, et la première ligne de la table n'est
+    // pas celle que ce test vient d'insérer.
+    const row = await db
+      .select()
+      .from(cmsRedirectsTable)
+      .where(eq(cmsRedirectsTable.fromPath, '/bureau/'))
+      .get();
+
+    expect(row?.hitCount).toBe(2);
   });
 
   it('rend notfound sur un chemin inconnu, jamais une erreur', async () => {

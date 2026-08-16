@@ -1,0 +1,129 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import Header from '../../../../components/Header.astro';
+import MobileNav from '../../../../components/MobileNav.svelte';
+import { LineupComposer, FixtureDateCard } from '@nba/teams-ui';
+import { env as cfEnv } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
+import { resolveEnv } from '../../../../lib/request-context';
+
+const env = resolveEnv(Astro.locals) ?? cfEnv;
+const teamId = Number(Astro.params.id);
+const dayNumber = Number(Astro.params.n);
+
+/**
+ * L'identité vient de la session, jamais du corps de la requête.
+ *
+ * C'est la garde de toute cette page : le droit de composer découle de la désignation
+ * comme capitaine ou vice-capitaine, et c'est cette licence-là que l'API vérifie.
+ */
+function viewerLicenceOf(session: any): string {
+  const active = session?.members.find((m: any) => m.id === session.activeMemberId);
+  return String(active?.licence ?? '').replace(/\D/g, '').padStart(8, '0');
+}
+
+if (Astro.request.method === 'POST') {
+  const postSession = Astro.locals.session;
+  if (!postSession) {
+    return new Response(JSON.stringify({ error: 'Non authentifié.' }), { status: 401 });
+  }
+
+  const body = (await Astro.request.json()) as any;
+  const api = createApiClient(env);
+  const licence = viewerLicenceOf(postSession);
+
+  if (body.action === 'save-lineup') {
+    return api.fetch(`http://localhost/teams/${teamId}/days/${dayNumber}/lineup`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ licence, lines: body.lines ?? [], validate: Boolean(body.validate) })
+    });
+  }
+
+  if (body.action === 'save-fixture-date') {
+    return api.fetch(`http://localhost/teams/${teamId}/days/${dayNumber}/date`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        licence,
+        playedAt: body.playedAt ?? null,
+        venue: body.venue ?? null,
+        confirmOutsideWeek: Boolean(body.confirmOutsideWeek)
+      })
+    });
+  }
+
+  return new Response(JSON.stringify({ error: 'Action inconnue' }), { status: 400 });
+}
+
+const session = Astro.locals.session;
+const viewerLicence = viewerLicenceOf(session);
+
+if (!Number.isSafeInteger(teamId) || !Number.isSafeInteger(dayNumber)) {
+  return Astro.redirect('/equipes');
+}
+
+const api = createApiClient(env);
+let lineup: any = null;
+let errorMsg: string | null = null;
+
+try {
+  const res = await api.fetch(
+    `http://localhost/teams/${teamId}/days/${dayNumber}/lineup?licence=${encodeURIComponent(viewerLicence)}`
+  );
+  if (!res.ok) return Astro.redirect(`/equipes/${teamId}`);
+  lineup = ((await res.json()) as any).data;
+} catch {
+  errorMsg = "Cette composition n'est pas consultable pour le moment.";
+}
+
+const frenchDate = (iso: string) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC'
+  });
+---
+
+<Layout title={`${lineup?.teamName ?? 'Composition'} - Nozay Bad`}>
+  <Header currentPath="/equipes" />
+
+  <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6 max-w-3xl mx-auto space-y-6">
+    <a href={`/equipes/${teamId}`} class="text-sm text-muted-foreground hover:text-foreground">
+      ← Retour à l'équipe
+    </a>
+
+    {errorMsg && (
+      <div class="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+        {errorMsg}
+      </div>
+    )}
+
+    {lineup && (
+      <>
+        <div>
+          <h1 class="text-2xl font-bold tracking-tight">
+            {lineup.teamName} — {lineup.dayLabel ?? `Journée ${lineup.dayNumber}`}
+          </h1>
+          <p class="text-muted-foreground text-sm mt-1">
+            {lineup.championshipLabel} · {lineup.divisionLabel}
+          </p>
+          <p class="text-xs text-muted-foreground mt-1">
+            Semaine du {frenchDate(lineup.weekStart)} au {frenchDate(lineup.weekEnd)}
+            {lineup.opponent ? ` · contre ${lineup.opponent}` : ''}
+            {lineup.home ? ' · à domicile' : ' · à l’extérieur'}
+          </p>
+          {lineup.referenceEloDate && (
+            <p class="text-xs text-muted-foreground">
+              Classements arrêtés au {frenchDate(lineup.referenceEloDate)}.
+            </p>
+          )}
+        </div>
+
+        <FixtureDateCard client:load {lineup} />
+
+        <LineupComposer client:load initial={lineup} />
+      </>
+    )}
+  </main>
+
+  <MobileNav currentPath="/equipes" client:load />
+</Layout>

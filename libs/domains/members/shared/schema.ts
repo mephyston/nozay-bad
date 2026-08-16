@@ -25,6 +25,10 @@ export const membersTable = sqliteTable('members', {
   amountReceivedCents: integer('amount_received_cents').notNull().default(0),
   amountRemainingCents: integer('amount_remaining_cents').notNull().default(0),
   paid: integer('paid', { mode: 'boolean' }).notNull().default(false),
+  // Date de règlement issue de Poona (« Date de paiement »), ISO `YYYY-MM-DD`.
+  // Sert de date d'émission à l'attestation CSE. Poona la laisse vide en pratique :
+  // le repli (1er septembre de la saison) est le cas courant, pas l'exception.
+  paymentDate: text('payment_date'),
   // Autorise l'adhérent à saisir des notes de frais (défaut : non). Piloté depuis l'admin.
   expenseAuthorized: integer('expense_authorized', { mode: 'boolean' }).notNull().default(false),
   parent1Name: text('parent1_name'),

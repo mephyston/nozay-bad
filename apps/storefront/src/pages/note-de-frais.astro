@@ -79,7 +79,7 @@ const activeSeasonId = displaySeason(seasons, session?.seasonCode)?.code ?? '';
 ---
 
 <Layout title="Notes de frais - NBA 91">
-  <Header currentPath="/note-de-frais" canExpense={canExpense} />
+  <Header currentPath="/note-de-frais" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     {errorMsg && (
@@ -108,7 +108,7 @@ const activeSeasonId = displaySeason(seasons, session?.seasonCode)?.code ?? '';
     )}
   </main>
 
-  <MobileNav currentPath="/note-de-frais" canExpense={canExpense} />
+  <MobileNav currentPath="/note-de-frais" />
 
   <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
     <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>

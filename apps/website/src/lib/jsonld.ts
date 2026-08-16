@@ -30,6 +30,9 @@ export function sportsClub(siteUrl: string, sameAs: readonly string[]) {
     name: SITE_NAME,
     sport: 'Badminton',
     url: siteUrl,
+    // `logo-large.webp` et non `logo.webp` : Google écarte un logo sous 112 px, et le
+    // petit fait 108. L'écart est invisible à l'œil et disqualifiant à la lecture.
+    logo: new URL('/logo-large.webp', siteUrl).toString(),
     sameAs: [...sameAs],
     address: {
       '@type': 'PostalAddress',
@@ -37,6 +40,35 @@ export function sportsClub(siteUrl: string, sameAs: readonly string[]) {
       postalCode: '91620',
       addressCountry: 'FR'
     }
+  };
+}
+
+/**
+ * Le site lui-même, distinct du club qui l'édite.
+ *
+ * C'est de ce nœud que Google tire le **nom de site** affiché au-dessus du résultat.
+ * Faute de le trouver, il le déduit du `<title>` — ce qu'il fait aujourd'hui, et qui
+ * marche par chance : la refonte change tout le balisage de la page d'un coup, et
+ * c'est précisément le moment où une déduction peut basculer sur autre chose.
+ *
+ * `alternateName` couvre le sigle, absent du `<title>`. « NBA 91 » et non « NBA » :
+ * c'est la forme que le club écrit lui-même — README, titres des pages de l'espace
+ * adhérent, domaine Cloudflare Access `nba91` — et c'est aussi la seule des deux qui
+ * serve à quelque chose. « NBA » seul est noyé par la ligue de basket, et ne
+ * distinguerait pas non plus Nozay (91) de son homonyme de Loire-Atlantique.
+ *
+ * Ce champ nomme, il ne référence pas : n'y mettre qu'une forme réellement employée.
+ */
+export function webSite(siteUrl: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': new URL('/#site', siteUrl).toString(),
+    name: SITE_NAME,
+    alternateName: 'NBA 91',
+    url: siteUrl,
+    inLanguage: 'fr-FR',
+    publisher: { '@id': clubId(siteUrl) }
   };
 }
 

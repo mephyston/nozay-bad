@@ -18,12 +18,25 @@ interface ParsedMember {
   amountReceivedCents: number;
   amountRemainingCents: number;
   paid: boolean;
+  paymentDate: string | null;
   parent1Name: string | null;
   parent1Email: string | null;
   parent1Phone: string | null;
   parent2Name: string | null;
   parent2Email: string | null;
   parent2Phone: string | null;
+}
+
+/**
+ * `JJ-MM-AAAA` (format des dates Poona) ou `AAAA-MM-JJ` → ISO `AAAA-MM-JJ`.
+ * `null` si la valeur est vide ou dans un format inattendu — au sens strict :
+ * une date mal reconnue vaut mieux ignorée que devinée à l'envers.
+ */
+function toIsoDate(raw: string | undefined): string | null {
+  const value = (raw ?? '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const fr = /^(\d{2})-(\d{2})-(\d{4})$/.exec(value);
+  return fr ? `${fr[3]}-${fr[2]}-${fr[1]}` : null;
 }
 
 export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsvInput): Promise<ImportMembersFromCsvOutput> {
@@ -51,6 +64,7 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
   const amountReceivedIdx = headers.findIndex(h => h === 'Montant reçu');
   const amountRemainingIdx = headers.findIndex(h => h === 'Montant restant');
   const paidIdx = headers.findIndex(h => h === 'Payé');
+  const paymentDateIdx = headers.findIndex(h => h === 'Date de paiement');
   const parent1NameIdx = headers.findIndex(h => h === 'Nom du contact 1');
   const parent1EmailIdx = headers.findIndex(h => h === 'Email du contact 1');
   const parent1PhoneIdx = headers.findIndex(h => h === 'Tél. du contact 1');
@@ -96,11 +110,8 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
       continue;
     }
 
-    let birthDate = rawBirthDate;
-    if (/^\d{2}-\d{2}-\d{4}$/.test(rawBirthDate)) {
-      const parts = rawBirthDate.split('-');
-      birthDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(rawBirthDate)) {
+    const birthDate = toIsoDate(rawBirthDate);
+    if (!birthDate) {
       errorsCount++;
       continue;
     }
@@ -122,6 +133,9 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
     const amountReceivedCents = parseAmount(amountReceivedIdx);
     const amountRemainingCents = parseAmount(amountRemainingIdx);
     const paid = paidIdx !== -1 && columns[paidIdx] === 'Oui';
+    // Contrairement à la date de naissance, une date de paiement absente ou illisible
+    // ne disqualifie pas la ligne : l'attestation retombe alors sur le 1er septembre.
+    const paymentDate = paymentDateIdx !== -1 ? toIsoDate(columns[paymentDateIdx]) : null;
 
     const parent1Name = parent1NameIdx !== -1 ? (columns[parent1NameIdx] || null) : null;
     const parent1Email = parent1EmailIdx !== -1 ? (columns[parent1EmailIdx] || null) : null;
@@ -145,6 +159,7 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
       amountReceivedCents,
       amountRemainingCents,
       paid,
+      paymentDate,
       parent1Name,
       parent1Email,
       parent1Phone,

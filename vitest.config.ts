@@ -46,6 +46,9 @@ export default defineConfig({
       '@nba/schedules-ui': path.resolve(__dirname, './libs/domains/schedules/shared/ui.ts'),
       '@nba/events-ui': path.resolve(__dirname, './libs/domains/events/shared/ui.ts'),
       '@nba/cms/schema': path.resolve(__dirname, './libs/domains/cms/shared/schema.ts'),
+      '@nba/teams-api': path.resolve(__dirname, './libs/domains/teams/index.ts'),
+      '@nba/teams/schema': path.resolve(__dirname, './libs/domains/teams/shared/schema.ts'),
+      '@nba/teams-ui': path.resolve(__dirname, './libs/domains/teams/shared/ui.ts'),
     },
 
   },
@@ -287,6 +290,39 @@ export default defineConfig({
           root: path.resolve(__dirname, 'libs/domains/events'),
           include: ['**/*.test.ts'],
           exclude: ['**/ui/**', '**/node_modules/**'],
+        }
+      },
+      {
+        extends: true,
+        plugins: [cloudflareTest({ wrangler: { configPath: wranglerConfig } })],
+        cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-teams-api'),
+        test: {
+          name: 'features-teams-api',
+          globals: true,
+          root: path.resolve(__dirname, 'libs/domains/teams'),
+          include: ['**/*.test.ts'],
+          exclude: ['**/ui/**', '**/node_modules/**'],
+        }
+      },
+      {
+        // Les composants se testent hors du runtime Workers : `DataTable` confie la
+        // ligne du tableau à l'appelant, et l'oublier ne casse rien — les cellules
+        // s'enfilent simplement toutes sur une seule ligne. Seul un rendu le voit.
+        extends: true,
+        plugins: [svelte()],
+        cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-teams-ui'),
+        // Sans la condition `browser`, Svelte résout sa build serveur et `mount()` échoue.
+        resolve: {
+          conditions: ['browser'],
+        },
+        test: {
+          name: 'features-teams-ui',
+          globals: true,
+          environment: 'jsdom',
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
+          root: path.resolve(__dirname, 'libs/domains/teams'),
+          include: ['**/ui/**/*.test.ts'],
+          exclude: ['**/node_modules/**'],
         }
       },
       {

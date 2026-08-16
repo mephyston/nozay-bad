@@ -1,0 +1,77 @@
+---
+import type { PersonCardsBlock, CmsMediaRow, CmsMediaVariantRow } from '@nba/cms/public';
+import Picture from '../Picture.astro';
+
+interface Props {
+  block: PersonCardsBlock;
+  media?: Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
+}
+
+const { block, media = new Map() } = Astro.props;
+
+/**
+ * Le numéro s'écrit comme on le lit, `tel:` se compose sans séparateur.
+ *
+ * Un `01 23 45 67 89` passé tel quel dans le lien n'est pas composable sur une partie
+ * des téléphones. On garde donc l'affichage tel que la saisie l'a voulu, et on ne
+ * nettoie que la cible.
+ */
+const dial = (phone: string) => phone.replace(/[^+0-9]/g, '');
+
+/** Une carte par personne, jamais deux colonnes de large : la photo réserve 96 px. */
+const PHOTO_SIZES = '96px';
+---
+<section class="mx-auto max-w-5xl px-4 py-8">
+  {block.heading && <h2 class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
+  <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {block.people.map((person) => {
+      const photo = person.mediaId ? media.get(person.mediaId) : undefined;
+      return (
+        <li class="border-border flex h-full flex-col rounded-lg border p-4">
+          <div class="flex items-start gap-3">
+            {photo && (
+              <Picture
+                media={photo.media}
+                variants={photo.variants}
+                sizes={PHOTO_SIZES}
+                class="h-24 w-24 shrink-0 rounded-full object-cover"
+              />
+            )}
+            <div class="min-w-0">
+              <p class="font-medium">{person.name}</p>
+              {person.role && <p class="text-muted-foreground text-sm">{person.role}</p>}
+            </div>
+          </div>
+
+          {person.responsibilities.length > 0 && (
+            <ul class="text-muted-foreground mt-3 list-disc space-y-1 pl-5 text-sm">
+              {person.responsibilities.map((responsibility) => (
+                <li>{responsibility}</li>
+              ))}
+            </ul>
+          )}
+
+          {/*
+            Les contacts ferment la carte et restent collés en bas : sans `mt-auto`, une
+            carte à trois responsabilités poserait son adresse bien plus haut que sa
+            voisine qui n'en porte aucune, et la rangée perdrait sa ligne de lecture.
+          */}
+          {(person.email || person.phone) && (
+            <div class="mt-auto flex flex-col gap-1 pt-3 text-sm">
+              {person.email && (
+                <a href={`mailto:${person.email}`} class="hover:text-primary break-all underline-offset-2 hover:underline">
+                  {person.email}
+                </a>
+              )}
+              {person.phone && (
+                <a href={`tel:${dial(person.phone)}`} class="hover:text-primary underline-offset-2 hover:underline">
+                  {person.phone}
+                </a>
+              )}
+            </div>
+          )}
+        </li>
+      );
+    })}
+  </ul>
+</section>

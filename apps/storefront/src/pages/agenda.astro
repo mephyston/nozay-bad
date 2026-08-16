@@ -8,6 +8,8 @@ import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 import { getActiveMemberStatus } from '../lib/member-status';
 import { fetchUpcomingEvents } from '../lib/agenda';
+import { fetchMyFixtures, normalizeLicence } from '../lib/my-fixtures';
+import { toFixtureEntries } from '../lib/fixture-events';
 
 /**
  * L'agenda du club, et les inscriptions.
@@ -90,12 +92,33 @@ const status = await getActiveMemberStatus(env, session);
 // L'agenda est lu **au nom du profil actif** : chaque événement porte alors l'état de
 // sa propre inscription, ce qui évite un aller-retour par ligne pour savoir quel
 // bouton afficher.
-const events = await fetchUpcomingEvents(env, 50, session?.activeMemberId);
+const active = session?.members.find((m) => m.id === session.activeMemberId);
+
+/*
+ * Les rencontres d'interclubs de l'adhérent rejoignent l'agenda du club.
+ *
+ * Elles ne concernent que les adhérents engagés en équipe — les autres ne voient rien de
+ * plus — et se lisent sur la même ligne, dans la même couleur, que les événements de
+ * catégorie « interclubs » : c'est le même rendez-vous, il n'a pas à s'afficher deux
+ * fois de deux façons.
+ */
+const [events, myFixtures] = await Promise.all([
+  fetchUpcomingEvents(env, 50, session?.activeMemberId),
+  fetchMyFixtures(env, status.seasonCode ?? null, normalizeLicence(active?.licence))
+]);
+
+const fixtures = toFixtureEntries(myFixtures);
+// Fusionnés puis retriés : un agenda qui rangerait les rencontres à part obligerait à
+// lire deux listes pour savoir ce qui vient en premier.
+const timeline = [...events.map((event) => ({ event, entry: null as typeof fixtures[number] | null })),
+  ...fixtures.map((entry) => ({ event: entry.event, entry }))]
+  .sort((a, b) => a.event.startsAt.localeCompare(b.event.startsAt));
+
 const openCount = events.filter((event) => event.registration === 'open').length;
 ---
 
 <Layout title="Agenda - Nozay Bad">
-  <Header currentPath="/agenda" canExpense={status.canExpense} />
+  <Header currentPath="/agenda" />
 
   <main class="w-full flex-1 p-3 pb-24 sm:p-6 md:pb-6">
     <div class="mx-auto max-w-3xl">
@@ -108,13 +131,13 @@ const openCount = events.filter((event) => event.registration === 'open').length
         </p>
       </div>
 
-      {events.length === 0 ? (
+      {timeline.length === 0 ? (
         <p class="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
           Aucun rendez-vous à venir pour le moment.
         </p>
       ) : (
         <ul class="space-y-3">
-          {events.map((event) => (
+          {timeline.map(({ event, entry }) => (
             <li
               id={event.slug}
               class="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5"
@@ -131,6 +154,32 @@ const openCount = events.filter((event) => event.registration === 'open').length
                     />
                   </div>
                 )}
+
+                {entry && (
+                  <p class="mt-2 text-sm text-muted-foreground">
+                    {entry.provisional && (
+                      <span class="block">
+                        Date à préciser par votre capitaine : la rencontre se joue dans la
+                        semaine, pas nécessairement le lundi.
+                      </span>
+                    )}
+                    <span class="block">
+                      {entry.fixture.championshipLabel} · {entry.fixture.divisionLabel} ·
+                      {entry.fixture.selected
+                        ? ` vous êtes aligné${entry.fixture.slotLabel ? ` en ${entry.fixture.slotLabel}` : ''}`
+                        : entry.fixture.lineupExists
+                          ? " vous n'êtes pas aligné sur cette journée"
+                          : " composition pas encore saisie par votre capitaine"}
+                      {' · '}
+                      <a
+                        href={`/equipes/${entry.fixture.teamId}/journee/${entry.fixture.dayNumber}`}
+                        class="font-semibold text-primary hover:underline"
+                      >
+                        voir la composition
+                      </a>
+                    </span>
+                  </p>
+                )}
               </EventRow>
             </li>
           ))}
@@ -139,7 +188,7 @@ const openCount = events.filter((event) => event.registration === 'open').length
     </div>
   </main>
 
-  <MobileNav currentPath="/agenda" canExpense={status.canExpense} />
+  <MobileNav currentPath="/agenda" />
 
   <footer class="mt-12 hidden border-t border-border bg-card/20 py-8 text-center text-xs text-muted-foreground md:block md:pb-8">
     <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>

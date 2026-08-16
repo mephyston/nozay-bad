@@ -8,7 +8,7 @@ const helpCollection = defineCollection({
     description: z.string().optional(),
     // Une catégorie par domaine du menu d'administration : le centre d'aide se lit
     // dans le même ordre que l'application.
-    category: z.enum(['adherents', 'comptabilite', 'boutique', 'communication', 'site', 'admin']),
+    category: z.enum(['adherents', 'interclubs', 'comptabilite', 'boutique', 'communication', 'site', 'admin']),
     order: z.number().default(99),
   }),
 });

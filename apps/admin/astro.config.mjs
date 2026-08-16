@@ -93,6 +93,21 @@ export default defineConfig({
       'import.meta.env.PUBLIC_WEBSITE_URL': JSON.stringify(WEBSITE_URL)
     },
     plugins: [tailwindcss()],
+    /**
+     * Alias explicites des paquets du dépôt.
+     *
+     * Astro sait dériver ces chemins de `compilerOptions.paths`, mais il le fait **au
+     * démarrage du serveur** : ajouter un paquet oblige alors à redémarrer, et l'oubli se
+     * manifeste par un « Cannot find module » qui désigne la page, pas la cause. Les
+     * déclarer ici rend la résolution indépendante de l'ordre des opérations — et le
+     * fichier énumère de toute façon déjà ces paquets un peu plus bas.
+     */
+    resolve: {
+      alias: {
+        '@nba/teams-api': path.resolve(__dirname, '../../libs/domains/teams/index.ts'),
+        '@nba/teams-ui': path.resolve(__dirname, '../../libs/domains/teams/shared/ui.ts')
+      }
+    },
     optimizeDeps: {
       exclude: [
         'astro:transitions',
@@ -105,7 +120,7 @@ export default defineConfig({
         '@nba/notifications-ui',
         '@nba/iam',
         '@nba/iam-ui',
-        '@nba/announcements-ui', '@nba/cms-ui', '@nba/schedules-ui', '@nba/events-ui'
+        '@nba/announcements-ui', '@nba/cms-ui', '@nba/schedules-ui', '@nba/events-ui', '@nba/teams-ui'
       ]
     },
     ssr: {

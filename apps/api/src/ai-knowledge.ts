@@ -76,6 +76,7 @@ Ils remplacent l'agenda Google intégré de l'ancien site, dont le contenu étai
 |---|---|
 | **Titre** | 200 caractères au maximum. « Interclubs D3 — journée 4 » |
 | **Début** | Date et heure. Obligatoire |
+| **Fin** | Facultative. Déplacer le début décale la fin d'autant, en conservant la durée |
 | **Catégorie** | Compétition, Interclubs, Tournoi, Stage, Vie du club, Assemblée |
 | **Lieu** | Texte libre : « Halle des Sports », ou le gymnase du club adverse |
 
@@ -84,7 +85,30 @@ Le **lieu** est volontairement libre, et non choisi parmi les gymnases du club :
 L'événement est créé **en brouillon** : il n'apparaît sur le site qu'une fois publié.
 
 > [!NOTE]
-> Le formulaire ne demande pas d'heure de fin ni de description. Le modèle les prévoit, ainsi qu'un lien vers la fiche FFBaD ou Badnet, mais les champs correspondants ne sont pas encore dans l'écran. Mettez l'essentiel dans le titre en attendant.
+> Le formulaire ne demande pas de description ni de lien vers la fiche FFBaD ou Badnet. Le modèle les prévoit, mais les champs correspondants ne sont pas encore dans l'écran. Mettez l'essentiel dans le titre en attendant.
+
+## Ouvrir les inscriptions
+
+Un stage, une soirée raclette, une assemblée générale : le champ **Inscriptions** — visible à la modification d'un événement, pas à sa création — décide si les adhérents peuvent s'annoncer.
+
+| État | Ce qui se passe |
+|---|---|
+| **Sans inscription** | Rien n'est proposé. C'est le cas par défaut, et celui de la plupart des compétitions |
+| **Inscriptions ouvertes** | L'adhérent s'inscrit depuis son espace, en indiquant s'il vient accompagné et de combien de personnes. Il peut aussi se désinscrire |
+| **Inscriptions closes** | La liste est arrêtée : plus personne ne s'ajoute ni ne se retire. Elle reste consultable ici |
+
+Les inscriptions ne sont proposées que sur un événement **publié** et **à venir**. Un événement en brouillon dont on aurait ouvert les inscriptions par avance ne laisse entrer personne, et le jour même reste ouvert jusqu'à minuit.
+
+Il n'y a **pas de nombre de places** : le club ne joue aucun de ces rendez-vous à la place près, et une jauge imposerait une course à l'inscription puis une liste d'attente pour un problème qui ne se pose pas. Si l'affluence dépasse ce qui était prévu, passez les inscriptions en **closes**.
+
+## Voir les inscrits
+
+Menu **⋯** → **Voir les inscrits**, sur tout événement qui en accepte. Le panneau donne le nom, le prénom et le nombre d'accompagnants de chacun, classés par nom de famille, avec en pied les deux chiffres qui comptent : le nombre d'**inscrits** et le nombre de **personnes** — accompagnants compris. C'est le second qu'on donne au traiteur.
+
+Le bouton **Copier la liste** recopie le tout en texte, prêt à coller dans un message ou un tableur.
+
+> [!IMPORTANT]
+> Cette liste nomme des adhérents : elle demande le droit **Voir les inscrits à un événement**, distinct de la tenue de l'agenda. La fiche d'un événement est publique, la liste de ses inscrits ne l'est pas.
 
 ## Publier, annuler, supprimer
 
@@ -122,9 +146,11 @@ Deux rubriques voisines, à ne pas confondre :
 |---|---|
 | Consulter l'agenda | Consulter l'agenda |
 | Ajouter, modifier, publier, annuler | Créer et modifier un événement |
+| Ouvrir ou fermer les inscriptions | Créer et modifier un événement |
+| Voir les inscrits | Voir les inscrits à un événement |
 | Supprimer | Supprimer un événement |
 
-Les rôles **Communication**, **Président·e** et **Super administrateur** disposent de l'ensemble. Le rôle **Secrétaire** peut créer et modifier, mais pas supprimer. Les droits se règlent depuis [Accès & Rôles](/admin/help/acces-permissions).
+Les rôles **Communication**, **Président·e** et **Super administrateur** disposent de l'ensemble. Le rôle **Secrétaire** peut créer, modifier et voir les inscrits, mais pas supprimer. Les droits se règlent depuis [Accès & Rôles](/admin/help/acces-permissions).
 
 
 --- Article: annonces.md ---
@@ -946,7 +972,9 @@ L'import échoue si l'une de ces colonnes est absente :
 
 \`Licence\`, \`Saison\`, \`Nom\`, \`Prénom\`, \`Sexe\`, \`Date naissance\` (ou \`Date de naissance\`), et \`Tarif\` (ou \`Type\`).
 
-Les colonnes suivantes sont utilisées si elles sont présentes : \`Email\`, \`Téléphone\`, \`Statut\` (ou \`Adhérent validé\`, \`Etat de dossier\`), \`Montant\`, \`Montant reçu\`, \`Montant restant\`, \`Payé\`, et les contacts \`Nom / Email / Tél. du contact 1\` et \`... contact 2\`, qui deviennent les représentants légaux.
+Les colonnes suivantes sont utilisées si elles sont présentes : \`Email\`, \`Téléphone\`, \`Statut\` (ou \`Adhérent validé\`, \`Etat de dossier\`), \`Montant\`, \`Montant reçu\`, \`Montant restant\`, \`Payé\`, \`Date de paiement\`, et les contacts \`Nom / Email / Tél. du contact 1\` et \`... contact 2\`, qui deviennent les représentants légaux.
+
+La colonne \`Date de paiement\` sert de **date d'émission sur l'attestation CSE**. Poona la laisse vide dans la plupart des exports, y compris pour des dossiers marqués payés : dans ce cas l'attestation est datée du **1er septembre de la saison** qu'elle couvre. Un ré-import dont la colonne est vide n'efface pas une date déjà enregistrée.
 
 ## Ce que fait l'import
 
@@ -962,6 +990,387 @@ Les colonnes suivantes sont utilisées si elles sont présentes : \`Email\`, \`T
 
 > [!WARNING]
 > Un réimport **écrase** les montants de cotisation par ceux du fichier. Si des encaissements ont été saisis dans l'application depuis le dernier export Poona, réimportez de préférence un export Poona à jour.
+
+
+--- Article: interclubs-classements.md ---
+---
+title: Classements et date de référence
+description: Importer les classements fédéraux depuis Poona et choisir la date qui fait foi pour chaque championnat.
+category: interclubs
+order: 1
+---
+
+Tout le calcul des valeurs d'équipe repose sur les classements. Cet écran les alimente et
+décide **lesquels font foi**.
+
+## L'écran
+
+Deux zones repliables — **dates de référence** et **classements** — dont l'état de pli est
+conservé d'une navigation à l'autre.
+
+Les dates restent repliées tant qu'elles sont complètes, et **s'ouvrent d'elles-mêmes dès
+qu'une date manque** : sans elle, aucune valeur d'équipe n'est calculable, et la cacher
+serait cacher ce qu'il faut corriger. Les classements, que l'on vient consulter, s'ouvrent
+par défaut.
+
+L'**import** et les **règlements** ont chacun leur page, atteintes par les boutons du haut
+de l'écran. Ce sont des gestes rares — quelques fois par saison — qui n'ont pas à occuper
+un écran consulté chaque semaine.
+
+## Importer les classements
+
+L'import attend l'export **« compétiteurs »** de Poona, celui qui porte les colonnes
+\`ELO simple / double / mixte\`. Glissez le fichier, vérifiez ce que l'écran a lu, puis
+importez.
+
+Trois points méritent votre attention avant de valider.
+
+**La date des classements.** Elle est lue dans le fichier et affichée en grand, modifiable.
+C'est elle qui détermine quel classement fera foi pour toute la saison en départemental :
+ne la validez pas machinalement. La CCA la communique en début de saison — pour 2026-2027,
+c'est le **jeudi 8 octobre 2026**.
+
+**Les non-compétiteurs.** Environ un tiers du fichier n'a aucun classement : ce sont les
+licenciés loisir. Ils sont comptés à part, et ce n'est pas une anomalie.
+
+**Les compétiteurs sans adhérent.** L'import des classements **complète** le fichier des
+adhérents, il ne le remplace pas et n'y ajoute personne. Si un compétiteur n'y figure pas,
+son classement est tout de même enregistré, mais il vous est signalé : demandez au bureau
+de relancer l'import des adhérents, puis rejouez celui-ci. Tant que le rapprochement n'est
+pas fait, ce joueur **n'apparaît dans aucun sélecteur de composition**.
+
+Rejouer un import ne crée jamais de doublon : il corrige les lignes de la même date.
+
+## L'historique
+
+Chaque import est conservé sous sa date, il n'écrase pas le précédent. C'est ce qui permet
+de recalculer une journée passée, et de justifier une valeur d'équipe contestée. Le
+sélecteur de date, au-dessus du tableau, liste les instantanés disponibles avec le nombre
+de joueurs de chacun ; en changer fait relire tout le tableau à cette date.
+
+Un export de début de saison ne contient que quelques licenciés : c'est normal, et les
+autres joueurs conservent leur classement antérieur.
+
+## Les dates de référence
+
+Les règlements ne désignent pas tous la même date, et cet écran suit chacun d'eux.
+
+| Championnat | Comment la date est choisie |
+|---|---|
+| Départemental mixte, masculin, vétérans | **Une date fixe pour toute la saison**, que vous épinglez ici (art. 6.1.3). Un reclassement obtenu en cours de saison ne la déplace pas. |
+| Régional | **Recalculée à chaque journée** : le jeudi précédant la semaine de la rencontre (art. 4.4.2). Rien à épingler. |
+
+Tant qu'un championnat départemental n'a pas de date épinglée, **aucune valeur d'équipe
+n'y est calculable** — l'écran le signale plutôt que de deviner.
+
+## Le règlement de la saison
+
+Le bouton **Règlements** ouvre une page dédiée, où un champ par championnat reçoit le
+**lien du règlement**. Déposez le PDF dans la médiathèque du site, puis collez son adresse
+ici : il apparaîtra en téléchargement sur la fiche de chaque équipe du championnat, dans
+l'espace adhérent.
+
+C'est le texte qui fait foi le soir de la rencontre — composition, ordre des joueurs,
+valeurs d'équipe — et qu'aucun joueur ne retrouve seul sur le site du comité. Le lien vaut
+pour les quatre championnats, y compris le régional, indépendamment de la politique de date.
+
+## Corriger un classement à la main
+
+Les trois classements — simple, double, mixte — se choisissent directement dans le tableau,
+sans quitter l'écran. La ligne passe alors en source **« Saisi à la main »**, ce qui reste
+visible : une valeur d'équipe calculée sur une donnée saisie à la main doit pouvoir être
+questionnée.
+
+La liste distingue **« — non compétiteur »** de **NC**. Le premier décrit un licencié qui
+ne joue pas en compétition ; le second un compétiteur sans résultat, qui vaut zéro point
+mais **peut être aligné**. Les confondre ferait entrer en équipe quelqu'un qui n'y a pas sa
+place.
+
+La correction ne touche que **l'instantané affiché**, celui de la date sélectionnée. Écrire
+sur une date antérieure changerait rétroactivement toutes les journées qui la prennent pour
+référence, et donc la conformité de compositions déjà validées : un instantané est un fait
+daté, on le corrige là où il est faux, jamais ailleurs.
+
+> Le sélecteur de saison, en haut de l'écran, indique à quelle saison s'appliquent l'import
+> et les dates de référence. Vérifiez-le avant d'enregistrer.
+
+
+--- Article: interclubs-compositions.md ---
+---
+title: Compositions et valeurs d'équipe
+description: Comment les capitaines composent depuis l'espace adhérent, et ce que le calcul de valeur contrôle.
+category: interclubs
+order: 3
+---
+
+C'est la raison d'être de la fonctionnalité. Le règlement sanctionne **les deux équipes**
+par rencontre perdue par pénalité dès qu'une équipe présente une valeur inférieure à celle
+de l'équipe qui la suit dans la hiérarchie du club. Le vérifier suppose de croiser les
+compositions de toutes les équipes d'un même championnat, pour une même journée — ce que
+personne ne peut faire de tête le samedi matin.
+
+## Qui compose
+
+Depuis l'espace adhérent, menu **Équipes**, tout le club consulte les équipes, leur staff et
+leur effectif. Seuls le **capitaine** et le **vice-capitaine** d'une équipe peuvent en
+modifier la composition. Ce droit vient de leur désignation dans l'écran *Équipes*, pas d'un
+rôle d'administration.
+
+L'écran masque le bouton aux autres, mais c'est le serveur qui tient la règle : une
+tentative d'écriture par quelqu'un d'autre est refusée.
+
+## Ce que voit le capitaine
+
+Une ligne par match du format de sa division, avec pour chacune le classement lu et les
+points correspondants, puis le total et la **valeur d'équipe**. Le tout se recalcule à
+chaque changement.
+
+Sous le total figure la phrase qui décide de tout : *« NBA91-2 est à 5,20 sur cette journée :
+votre équipe doit rester inférieure ou égale. »* Le capitaine voit sa contrainte **avant**
+d'enregistrer. Si l'équipe du dessus n'a pas encore composé, l'écran le dit plutôt que
+d'afficher une contrainte fausse.
+
+Les sélecteurs ne proposent que des joueurs de genre compatible avec la ligne, l'effectif
+en tête, et grisent ceux qui sont indisponibles en indiquant pourquoi.
+
+## Ce qui bloque, et ce qui avertit
+
+**Bloquant** — objectif et vérifiable :
+
+| | Règle |
+|---|---|
+| Classement | hors des limites de la division, dans la discipline jouée |
+| Nombre de matchs | plus de deux pour un même joueur |
+| Discipline | deux matchs dans la même discipline |
+| Semaine | joueur déjà aligné dans une autre équipe du club cette semaine |
+| Genre | homme en simple dame, et réciproquement |
+| Catégorie | non admise dans le championnat |
+| Mutés | plus de deux sur la rencontre |
+
+**Avertissement** — dépend d'informations encore en mouvement :
+
+- **la valeur dépasse celle de l'équipe du dessus** ;
+- l'ordre des joueurs n'est pas décroissant ;
+- l'équipe est incomplète ;
+- un classement manque à la date de référence.
+
+La hiérarchie des valeurs n'est **jamais bloquante**, et c'est délibéré : la valeur de
+l'équipe supérieure change tant que son capitaine saisit. Bloquer le premier parce que le
+troisième n'a rien rempli rendrait l'outil inutilisable.
+
+### Trois avertissements qui regardent la saison passée
+
+Ceux-là ne se déduisent d'aucune composition du jour — ils lisent l'historique des
+rencontres déjà saisies.
+
+| | Règle |
+|---|---|
+| **Titularisation** | Trois rencontres avec une équipe et le joueur ne peut plus être aligné dans une équipe inférieure du même championnat (art. 6.3.2). Monter reste libre. |
+| **Renforts croisés** | Une équipe ne se renforce pas de plus de deux joueurs dont la **dernière** rencontre était dans l'autre championnat départemental (art. 6.3.2). |
+| **Venus du régional** | Une équipe départementale ne présente qu'un seul joueur ayant déjà disputé le régional cette saison (art. 6.1.7). |
+
+Ils restent des avertissements, et non des refus : l'historique ne connaît que les
+rencontres saisies dans l'outil. Une partie de la saison a pu se jouer avant sa mise en
+service, et bloquer sur une base incomplète refuserait des compositions parfaitement
+régulières.
+
+## Comment la valeur se calcule
+
+Les formules diffèrent d'un championnat à l'autre.
+
+**Départemental.** Chaque ligne vaut les points de son joueur, ou la **moyenne** de la paire
+en double. On additionne, puis on divise par le **nombre de lignes composées** — et non par
+le format. Le règlement est explicite : une équipe incomplète se divise par le nombre de
+matchs joués.
+
+*Exemple, tiré de l'annexe du règlement mixte :* SH1 N3 (10), SH2 R4 (9), SH3 D7 (6),
+SD R6 (7), DH N2-D7 (8,5), DD R6-R6 (7), MX D8-R5 (6,5) → total 54, valeur **54 / 7 = 7,71**.
+
+**Régional.** On ignore les lignes : les **3 meilleurs joueurs et les 3 meilleures joueuses**
+de la feuille, chacun au meilleur de ses trois classements, divisés par 6. Un joueur aligné
+deux fois ne compte qu'une. Les places non pourvues valent zéro.
+
+**Vétérans.** Aucune valeur d'équipe : leur règlement n'en définit pas, et aucune contrainte
+de hiérarchie n'en découle.
+
+Une valeur **non calculable** — classement manquant, date de référence non épinglée — est
+affichée comme telle. Elle n'est jamais remplacée par une estimation.
+
+## La date de la rencontre
+
+Au-dessus de la composition, le capitaine fixe la **date réelle** de sa rencontre et le
+gymnase. C'est une information de logistique, propre à son équipe : elle ne déplace jamais
+la journée, qui reste celle du calendrier du comité et porte les règles.
+
+Une date hors de la semaine théorique est refusée au premier essai, avec l'explication de
+ce qu'elle changerait ; un second envoi la confirme. Le calendrier signale alors la
+rencontre comme reportée, en rappelant la semaine d'origine.
+
+## Enregistrer ou valider
+
+**Enregistrer** conserve la composition en brouillon. **Valider** la fige et la signale au
+coach. Dans les deux cas, une règle bloquante refuse l'écriture, et la composition
+précédente reste intacte — le motif du refus s'affiche sous la composition, avec l'article
+concerné.
+
+## Qui est prévenu, et quand
+
+Rien ne part tant que la composition reste un brouillon : elle se construit en plusieurs
+passes, et une notification par passe apprendrait à l'équipe à les ignorer toutes.
+
+À la **validation** — et à chaque modification d'une composition déjà validée — deux
+messages partent, dans la catégorie *Mes équipes interclubs* que chacun peut couper depuis
+ses préférences de notification :
+
+- aux **joueurs alignés** : l'équipe, l'adversaire, le lieu, et la date si elle est connue
+  — sinon la semaine ;
+- aux **joueurs de l'effectif non retenus** : ils ne sont pas sur la feuille de cette
+  journée. C'est l'information qui manquait le plus : sans elle, un joueur ne sait pas s'il
+  est attendu ou si le capitaine n'a rien saisi, et doit poser la question chaque semaine.
+
+Le capitaine qui enregistre n'est jamais destinataire de son propre envoi.
+
+Sur l'accueil de l'espace adhérent, un encart **Prochaine rencontre** annonce la même chose
+en permanence : l'équipe, la journée, la date, et si l'adhérent figure sur la feuille.
+
+Le calendrier est arrêté par le comité en septembre-octobre et transmis aux capitaines par
+le président : **porter la date exacte sur la rencontre, comme saisir la composition, est
+la responsabilité du capitaine**. Tant que ce n'est pas fait, l'encart annonce la semaine
+théorique et l'écrit sans détour — « votre capitaine n'a pas encore renseigné la date
+exacte », « votre capitaine n'a pas encore saisi la composition ». Présenter ces absences
+comme des décisions en attente laisserait les joueurs patienter là où il suffit de relancer
+leur capitaine. Un adhérent que la composition existante ne retient pas lit, lui, qu'il
+n'est pas aligné : les deux situations ne se confondent jamais.
+
+## Les journées dans l'agenda
+
+Les journées de championnat apparaissent aussi dans l'**agenda de l'espace adhérent**, pour
+les seuls adhérents engagés en équipe, mêlées aux rendez-vous du club et dans la couleur de
+la catégorie *Interclubs* — c'est le même rendez-vous, il n'a pas à s'afficher deux fois de
+deux façons. Chaque ligne rappelle le championnat, la division, et si l'adhérent est aligné.
+
+La date affichée suit trois sources, dans cet ordre :
+
+1. **la date saisie par le capitaine**, heure comprise : elle fait foi ;
+2. à défaut, le **jour commun du calendrier** — le dimanche des vétérans ;
+3. à défaut encore, le **lundi de la semaine théorique**, pour le mixte et le masculin qui
+   se jouent en semaine sans jour commun. La ligne précise alors que la date reste à
+   préciser par le capitaine, et que la rencontre se joue dans la semaine, pas
+   nécessairement le lundi.
+
+On ne s'inscrit pas à une rencontre : ces lignes ne portent aucun bouton d'inscription.
+
+## Signaler une anomalie depuis l'écran de contrôle
+
+Sur *Interclubs → Contrôle des journées*, chaque anomalie porte un bouton de signalement.
+Le message est **construit à partir du constat affiché**, jamais saisi : le coach clique,
+il ne rédige pas.
+
+Un **dépassement de valeur part aux deux capitaines concernés** — celui de l'équipe qui
+dépasse et celui de l'équipe du dessus. Le règlement fait perdre la rencontre aux deux, et
+la correction peut venir de l'une comme de l'autre : renforcer celle du dessus vaut alléger
+celle du dessous. Chaque message nomme l'autre capitaine pour qu'ils se rapprochent.
+
+Une **erreur dure** ne part qu'au capitaine fautif : elle se corrige dans sa seule
+composition. Le vice-capitaine est prévenu avec le capitaine dans les deux cas. Rien n'est
+envoyé si la composition est saine.
+
+
+--- Article: interclubs-equipes.md ---
+---
+title: Équipes, staff et calendrier
+description: Engager les équipes du club, désigner capitaines et vice-capitaines, saisir les journées de championnat.
+category: interclubs
+order: 2
+---
+
+Le club engage des équipes dans quatre championnats aux règlements distincts. Cet écran les
+déclare, leur donne un staff et un effectif, et pose leur calendrier.
+
+## Créer une équipe
+
+Le **championnat** est le premier champ, et il commande tout le reste : les divisions
+proposées, le format de la rencontre et les limites de classement affichées en aide
+changent avec lui.
+
+Le **numéro d'équipe** n'est pas une étiquette. C'est lui qui porte la **hiérarchie du
+club** : le règlement exige que la valeur de l'équipe *n* reste inférieure ou égale à celle
+de l'équipe *n−1*, et sanctionne **les deux équipes** par rencontre perdue si ce n'est pas
+le cas. Le nom en découle — \`NBA91-3\` — et ne se saisit pas, pour qu'il ne puisse jamais
+contredire le numéro.
+
+Deux équipes ne peuvent pas porter le même numéro dans un championnat. Elles le peuvent en
+revanche dans deux championnats différents : \`NBA91-1\` en mixte et \`NBA91-1\` en masculin
+sont deux équipes distinctes.
+
+> Une équipe vit **une saison**. D'une saison à l'autre, elle peut changer de division,
+> d'effectif et de capitaine : ce sont de nouvelles équipes, pas les mêmes modifiées.
+> Le sélecteur de saison, en haut de l'écran, indique celle que vous garnissez.
+
+## Staff et effectif
+
+La désignation du **capitaine** et du **vice-capitaine** n'est pas décorative : c'est elle,
+et rien d'autre, qui ouvre le droit de composer l'équipe depuis l'espace adhérent. Le
+vice-capitaine est une notion interne au club, absente des règlements — il est là pour
+suppléer.
+
+Les deux doivent figurer au fichier des adhérents de la saison. Une licence inconnue est
+refusée : ce serait un droit accordé à personne.
+
+L'**effectif** est indicatif. Le règlement autorise un joueur à évoluer dans n'importe
+quelle équipe de son club ; l'effectif sert à présélectionner dans l'écran de composition,
+pas à interdire. Chaque joueur y est affiché avec ses classements et signalé s'il n'est pas
+éligible à la division.
+
+## Les journées
+
+Le bouton **Journées** ouvre le calendrier du championnat choisi.
+
+Une journée **est une semaine**, du lundi au dimanche. Ce n'est pas un détail : chaque
+championnat numérote ses journées pour lui seul — la J1 du régional et celle du mixte sont
+deux dates sans rapport — et ce sont les **semaines**, jamais les numéros, qui les relient.
+
+Quand deux championnats tombent la même semaine, l'écran l'indique par un badge
+« aussi *Interclubs Départemental Masculin* » en face de la journée. C'est le signal à
+surveiller : un joueur ne tient qu'une seule équipe du club par semaine, mixte, masculin et
+régional confondus. Les vétérans font exception — leur règlement ne cite aucun autre
+championnat.
+
+Vous saisissez n'importe quelle date de la semaine : elle est ramenée au lundi.
+
+**Les jours de jeu diffèrent d'un championnat à l'autre**, ce qui explique que deux équipes
+puissent partager une semaine sans partager un seul jour :
+
+| Championnat | Jour de rencontre |
+|---|---|
+| Départemental mixte et masculin | du **lundi au vendredi**, en soirée (art. 3.4.1) |
+| Départemental vétérans | le **dimanche**, samedi par dérogation (art. 3.3.1) |
+| Régional | **samedi ou dimanche** — deux rencontres par journée |
+
+Les **barrages** sont des journées à part : toutes les équipes ne les disputent pas, seules
+celles que leur classement y envoie. Une équipe sans composition y est donc normale.
+
+## Deux dates à ne pas confondre
+
+C'est le point le plus subtil de la fonctionnalité.
+
+**La semaine théorique de la journée** vient du calendrier du comité. Elle est **figée**,
+commune à toutes les équipes, et porte **toutes les règles** : valeur d'équipe, mouvements
+de joueurs, « un joueur ne tient qu'une seule équipe du club » (art. 6.3.7). Rien ne la
+déplace.
+
+**La date réelle de la rencontre** est **propre à chaque équipe**. C'est le capitaine qui la
+saisit depuis l'espace adhérent, et elle dit simplement quand se présenter. Elle tombe
+normalement dans la semaine théorique, mais un gymnase indisponible ou des intempéries
+peuvent l'en faire sortir (art. 4.2.3).
+
+Dans ce cas, l'écran du capitaine **refuse d'abord** la date — c'est presque toujours une
+faute de frappe — puis l'accepte s'il confirme. Le calendrier affiche alors la date réelle
+en rappelant la journée d'origine.
+
+Les faire porter les mêmes règles reviendrait à laisser un aléa de gymnase changer ce que
+le règlement autorise : la J2 de l'équipe 2 se compare à la J2 de l'équipe 3, reportée ou
+non.
 
 
 --- Article: notes-de-frais.md ---
@@ -2361,6 +2770,10 @@ export const membersTable = sqliteTable('members', {
   amount_received_cents: integer('amount_received_cents').notNull().default(0),
   amount_remaining_cents: integer('amount_remaining_cents').notNull().default(0),
   paid: integer('paid', { mode: 'boolean' }).notNull().default(false),
+  // Date de règlement issue de Poona (« Date de paiement »), ISO \`YYYY-MM-DD\`.
+  // Sert de date d'émission à l'attestation CSE. Poona la laisse vide en pratique :
+  // le repli (1er septembre de la saison) est le cas courant, pas l'exception.
+  payment_date: text('payment_date'),
   // Autorise l'adhérent à saisir des notes de frais (défaut : non). Piloté depuis l'admin.
   expense_authorized: integer('expense_authorized', { mode: 'boolean' }).notNull().default(false),
   parent1_name: text('parent1_name'),
