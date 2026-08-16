@@ -6,9 +6,16 @@ const APP_ENV = import.meta.env.PUBLIC_APP_ENV || 'production';
 const label = APP_ENV === 'development' ? 'DEV' : APP_ENV === 'staging' ? 'TEST' : null;
 // DEV = ambre, TEST = rouge.
 const color = APP_ENV === 'development' ? '#d97706' : '#dc2626';
+// Le ruban se décale sous l'encoche : avec `viewport-fit=cover`, le haut de la page
+// passe derrière l'îlot dynamique, et un bandeau qui dit « TEST » n'a d'utilité que
+// s'il se voit.
 ---
 {label && (
-  <div class="fixed top-0 inset-x-0 z-[10000] pointer-events-none overflow-hidden h-32" aria-hidden="true">
+  <div
+    class="fixed top-0 inset-x-0 z-[10000] pointer-events-none overflow-hidden h-32"
+    style="padding-top: env(safe-area-inset-top, 0px)"
+    aria-hidden="true"
+  >
     <div
       class="absolute top-6 -right-12 w-64 text-white text-center text-xs font-bold py-1 rotate-45 shadow-md border-y border-white/20 tracking-widest"
       style={`background:${color}`}

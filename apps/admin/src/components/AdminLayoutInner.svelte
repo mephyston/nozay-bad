@@ -39,7 +39,7 @@
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
   import ThemeToggle from "./ThemeToggle.svelte";
-  import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, MobileBottomNav, PwaInstallBanner } from "@nba/ui";
+  import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, MobileBottomNav, PwaInstallBanner, toast } from "@nba/ui";
 
   let { children, email, name, permissions = [], realEmail = '', breadcrumb } = $props<{
     children?: import('svelte').Snippet;
@@ -224,7 +224,25 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: target })
     });
-    if (res.ok) window.location.reload();
+    if (!res.ok) {
+      toast.error("Le changement de compte a échoué.");
+      return;
+    }
+
+    /*
+     * Prendre une identité renvoie au tableau de bord, jamais sur la page courante.
+     *
+     * On emprunte un compte depuis l'écran où l'on se trouve — souvent un écran que
+     * ce compte, justement, n'a pas le droit d'ouvrir. Recharger sur place accueillait
+     * donc l'usurpateur par un « Accès refusé » immédiat, et il fallait le bouton
+     * « précédent » pour découvrir que le changement avait bien eu lieu.
+     *
+     * Le tableau de bord est joignable par construction : son droit fait partie du
+     * socle réimposé à tout rôle. Revenir à soi recharge en revanche sur place — on
+     * récupère ses propres droits, donc l'écran qu'on regardait.
+     */
+    if (target) window.location.assign('/');
+    else window.location.reload();
   }
 
   onMount(async () => {
@@ -435,20 +453,34 @@
 <!-- Inset / Main panel -->
 <Sidebar.Inset class="flex flex-col h-screen overflow-hidden">
   {#if isImpersonating}
-    <!-- Bandeau permanent : on n'agit pas sous une autre identité sans le savoir. -->
-    <div class="shrink-0 flex flex-wrap items-center justify-center gap-2 bg-amber-500/15 text-amber-900 dark:text-amber-200 border-b border-amber-500/40 px-4 py-1.5 text-xs font-semibold">
+    <!--
+      Bandeau permanent : on n'agit pas sous une autre identité sans le savoir.
+
+      Il porte le retrait de l'encoche parce qu'il est alors le premier élément de la
+      colonne : sans lui, le bandeau se glissait sous l'îlot dynamique d'un iPhone, et
+      son bouton de retour n'était plus atteignable — le doigt tombait sur le matériel.
+      L'ambre remonte jusqu'en haut de l'écran, ce qui le fait lire comme une barre
+      système, précisément ce qu'il est.
+    -->
+    <div class="pt-safe shrink-0 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 bg-amber-500/15 text-amber-900 dark:text-amber-200 border-b border-amber-500/40 px-4 py-2 text-xs font-semibold">
       <span>Vous consultez l'application en tant que <strong>{email}</strong>.</span>
       <button
         type="button"
-        class="underline underline-offset-2 cursor-pointer bg-transparent border-0 font-semibold text-inherit"
+        class="underline underline-offset-2 cursor-pointer bg-transparent border-0 font-semibold text-inherit rounded px-2 py-1.5 -my-1 hover:bg-amber-500/20"
         onclick={() => setImpersonation(null)}
       >
         Revenir à {realEmail}
       </button>
     </div>
   {/if}
-  <!-- Header -->
-  <header class="flex min-h-14 shrink-0 items-center justify-between px-6 border-b border-border bg-background pt-safe pb-2 md:pb-0 md:h-14">
+  <!--
+    Header. Le retrait de l'encoche ne lui revient que lorsqu'il ouvre la colonne :
+    l'appliquer aux deux ajouterait une seconde fois la hauteur de l'îlot.
+  -->
+  <header
+    class="flex min-h-14 shrink-0 items-center justify-between px-6 border-b border-border bg-background pb-2 md:pb-0 md:h-14"
+    class:pt-safe={!isImpersonating}
+  >
     <div class="flex items-center gap-4 h-full pt-2 md:pt-0">
       <!-- Sidebar Trigger handles mobile/desktop collapse/expand -->
       <Sidebar.Trigger aria-label="Menu" class="cursor-pointer hidden md:flex" />

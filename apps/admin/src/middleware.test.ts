@@ -278,6 +278,23 @@ describe('Astro Auth Middleware', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
+    it('offre une sortie plutôt que deux mots en texte brut', async () => {
+      // On tombe sur un refus sans l'avoir cherché — en empruntant une identité depuis
+      // une page qu'elle n'a pas le droit d'ouvrir, par exemple. Sans lien de retour,
+      // il faut connaître le bouton « précédent » pour s'en tirer.
+      const response = await handleAuth(
+        withToken('https://admin.nozay-bad.fr/admin/members'),
+        vi.fn()
+      );
+      const body = await response.text();
+
+      expect(response.headers.get('Content-Type')).toContain('text/html');
+      expect(body).toContain('href="/"');
+      // Le tableau de bord est joignable par construction : son droit fait partie du
+      // socle réimposé à tout rôle.
+      expect(body).toContain('membre@nozay-bad.fr');
+    });
+
     it('refuse une page non déclarée dans PAGE_PERMISSIONS', async () => {
       // Le vrai filet : une page ajoutée sans y penser est refusée, elle n'hérite
       // pas d'un accès par défaut.

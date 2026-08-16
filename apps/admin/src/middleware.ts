@@ -49,6 +49,39 @@ async function fetchActor(env: Record<string, string>, email: string): Promise<A
   return json.data ?? null;
 }
 
+/**
+ * Refus de page : une impasse, mais avec une porte.
+ *
+ * Le refus rendait un `Response('Accès refusé')` en texte brut, sans rien pour en
+ * sortir. On y tombe pourtant sans l'avoir cherché — en empruntant une identité depuis
+ * une page que celle-ci n'a pas le droit d'ouvrir, par exemple : l'écran se remplaçait
+ * par ces deux mots, et il fallait connaître le bouton « précédent » pour s'en tirer.
+ *
+ * Le tableau de bord est joignable par construction : `dashboard:overview:read` fait
+ * partie du socle réimposé à tout rôle. C'est donc toujours une sortie valable.
+ */
+function refusedPage(email: string): Response {
+  const safeEmail = email.replace(/[<>&"]/g, '');
+  return new Response(
+    `<!doctype html><html lang="fr"><head><meta charset="utf-8">` +
+      `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">` +
+      `<title>Accès refusé</title>` +
+      `<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;` +
+      `font-family:system-ui,sans-serif;background:#faf9f5;color:#3d3929;padding:2rem;text-align:center}` +
+      `main{max-width:32rem}h1{font-size:1.25rem;margin:0 0 .75rem}p{margin:0 0 1.5rem;line-height:1.5;color:#6e6d68}` +
+      `a{display:inline-block;padding:.625rem 1.25rem;border-radius:.5rem;background:#c96442;color:#fff;` +
+      `text-decoration:none;font-weight:600}` +
+      `@media(prefers-color-scheme:dark){body{background:#262624;color:#f1f1ef}p{color:#b7b5a9}}</style>` +
+      `</head><body><main>` +
+      `<h1>Cette page n'est pas accessible à ce compte</h1>` +
+      `<p>Vous la consultez en tant que ${safeEmail}. Ce compte n'a pas le droit ` +
+      `nécessaire à cet écran.</p>` +
+      `<a href="/">Retour au tableau de bord</a>` +
+      `</main></body></html>`,
+    { status: 403, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+  );
+}
+
 /** Acteur de secours en développement, pour exercer un rôle sans compte en base. */
 function devActor(email: string, role: Role): ActorDto {
   return {
@@ -174,11 +207,11 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
     const pattern = matchPagePattern(pathname);
     if (!pattern) {
       console.warn(`[auth] page non déclarée dans PAGE_PERMISSIONS : ${pathname}`);
-      return new Response('Accès refusé', { status: 403 });
+      return refusedPage(actor.email);
     }
     const required = PAGE_PERMISSIONS[pattern];
     if (required !== null && !can(actor.permissions, required)) {
-      return new Response('Accès refusé', { status: 403 });
+      return refusedPage(actor.email);
     }
   }
 
