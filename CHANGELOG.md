@@ -1,3 +1,10 @@
+# [1.0.0-beta.84](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.83...v1.0.0-beta.84) (2026-08-16)
+
+
+### Bug Fixes
+
+* **teams:** décoller du bord les listes mobiles des équipes et des classements ([7df1c55](https://github.com/mephyston/nozay-bad/commit/7df1c55e95d11e3225ea7a25a1f5eb7f4b6c4d3a))
+
 # [1.0.0-beta.83](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.82...v1.0.0-beta.83) (2026-08-16)
 
 
