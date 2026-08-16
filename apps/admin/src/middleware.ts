@@ -1,8 +1,8 @@
 import { defineMiddleware } from 'astro:middleware';
 import type { APIContext, MiddlewareNext } from 'astro';
 import { jwtVerify, createRemoteJWKSet } from 'jose';
-import { env as cfEnv } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
+import { resolveEnv as resolveRuntimeEnv } from '@nba/runtime-env';
 import { can, resolvePermissions, isRole, DEFAULT_ROLE, type ActorDto, type Role } from '@nba/iam-ui';
 import { applySecurityHeaders } from './lib/security-headers';
 import { PAGE_PERMISSIONS, matchPagePattern, isPageRoute } from './lib/page-permissions';
@@ -18,14 +18,9 @@ function getJWKS(teamDomain: string) {
   return jwks;
 }
 
+// Fusion `cloudflare:workers` + env runtime Astro : mécanisme partagé (@nba/runtime-env).
 function resolveEnv(context: APIContext): Record<string, string> {
-  let runtimeEnv: Record<string, string> = {};
-  try {
-    runtimeEnv = ((context.locals as any).runtime?.env || {}) as Record<string, string>;
-  } catch {
-    // Astro v6 : `locals.runtime.env` lève en production.
-  }
-  return { ...cfEnv, ...runtimeEnv } as Record<string, string>;
+  return resolveRuntimeEnv<Record<string, string>>(context.locals);
 }
 
 function readCookie(request: Request, name: string): string | undefined {

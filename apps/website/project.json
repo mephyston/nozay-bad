@@ -4,6 +4,7 @@
   "projectType": "application",
   "sourceRoot": "apps/website/src",
   "implicitDependencies": [
+    "@nba/runtime-env",
     "@nba/security-headers"
   ],
   "targets": {

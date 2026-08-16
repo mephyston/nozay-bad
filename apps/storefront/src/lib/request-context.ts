@@ -1,15 +1,5 @@
-import { env as cfEnv } from 'cloudflare:workers';
-
-// Fusionne l'env `cloudflare:workers` et l'env runtime Astro (même approche que le middleware admin).
-export function resolveEnv(locals: any): any {
-  let runtimeEnv: any = {};
-  try {
-    runtimeEnv = locals?.runtime?.env || {};
-  } catch {
-    // Astro.locals.runtime.env peut throw en prod v6 : on ignore.
-  }
-  return { ...(cfEnv as any), ...runtimeEnv };
-}
+// Fusion de l'env `cloudflare:workers` et de l'env runtime Astro : mécanisme partagé.
+export { resolveEnv } from '@nba/runtime-env';
 
 export function clientIp(request: Request): string {
   return (
