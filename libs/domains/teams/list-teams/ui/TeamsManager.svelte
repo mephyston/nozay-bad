@@ -11,7 +11,7 @@
     toast,
     softNavigate
   } from '@nba/ui';
-  import { Trophy, Plus, CalendarDays } from '@lucide/svelte';
+  import { Trophy, Plus, CalendarDays, ChevronRight } from '@lucide/svelte';
   import TeamFormSheet from '../../save-team/ui/TeamFormSheet.svelte';
   import TeamRosterSheet from '../../get-team/ui/TeamRosterSheet.svelte';
   import ChampionshipDaysSheet from '../../save-championship-days/ui/ChampionshipDaysSheet.svelte';
@@ -206,19 +206,33 @@
   {/snippet}
 
   {#snippet mobileView()}
-    <div class="divide-y">
+    <!--
+      `Card.Root` n'espace que le haut et le bas : le retrait horizontal vient de
+      `Card.Content`, que cette liste ne traverse pas. Sans `px-4` ici, les lignes
+      touchent le bord du cadre.
+    -->
+    <div class="divide-y divide-border">
       {#each filtered as team (team.id)}
-        <button class="w-full text-left py-3 space-y-1" onclick={() => openRoster(team)}>
-          <div class="flex items-center justify-between gap-2">
-            <p class="font-medium">{team.name}</p>
-            <span class="text-xs text-muted-foreground">{team.divisionLabel}</span>
+        <button
+          class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
+          onclick={() => openRoster(team)}
+        >
+          <div class="min-w-0 flex-1 space-y-1">
+            <div class="flex items-center gap-2">
+              <p class="font-medium truncate">{team.name}</p>
+              {#if !team.active}
+                <Badge variant="outline">Inactive</Badge>
+              {/if}
+            </div>
+            <p class="text-xs text-muted-foreground">
+              {team.championshipLabel} · {team.divisionLabel} · {team.rosterCount} joueur(s)
+            </p>
+            <p class="text-xs text-muted-foreground truncate">
+              Capitaine : {staffLabel(team.captain)}
+            </p>
           </div>
-          <p class="text-xs text-muted-foreground">
-            {team.championshipLabel} · {team.rosterCount} joueur(s)
-          </p>
-          <p class="text-xs text-muted-foreground">
-            Capitaine : {staffLabel(team.captain)}
-          </p>
+          <!-- La ligne entière ouvre le staff et l'effectif : le chevron le dit. -->
+          <ChevronRight class="size-4 shrink-0 text-muted-foreground" />
         </button>
       {/each}
     </div>

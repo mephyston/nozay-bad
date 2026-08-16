@@ -149,19 +149,33 @@
   {/snippet}
 
   {#snippet mobileView()}
-    <div class="divide-y">
+    <!--
+      `Card.Root` n'espace que le haut et le bas : le retrait horizontal vient de
+      `Card.Content`, que cette liste ne traverse pas. Sans `px-4` ici, les lignes
+      touchent le bord du cadre.
+    -->
+    <div class="divide-y divide-border">
       {#each filtered as item (item.id)}
-        <div class="py-3 space-y-1">
-          <div class="flex items-center justify-between gap-2">
-            <p class="font-medium">{item.lastName} {item.firstName}</p>
-            {#if !item.isMember}
-              <Badge variant="destructive">Pas adhérent</Badge>
-            {/if}
-          </div>
+        <div class="px-4 py-3 space-y-1">
+          <p class="font-medium">{item.lastName} {item.firstName}</p>
           <p class="text-xs text-muted-foreground">
             {item.category ?? '—'} · {rankingLabel(item.singles)} /
             {rankingLabel(item.doubles)} / {rankingLabel(item.mixed)}
           </p>
+          <!-- Les mêmes signalements que le tableau : ils décident d'une composition. -->
+          {#if !item.isMember || item.mutation !== 'none' || item.source === 'manuel'}
+            <div class="flex flex-wrap gap-1">
+              {#if !item.isMember}
+                <Badge variant="destructive">Pas adhérent</Badge>
+              {/if}
+              {#if item.mutation !== 'none'}
+                <Badge variant="warning">Muté</Badge>
+              {/if}
+              {#if item.source === 'manuel'}
+                <Badge variant="outline">Saisi à la main</Badge>
+              {/if}
+            </div>
+          {/if}
         </div>
       {/each}
     </div>
