@@ -38,7 +38,7 @@
   } from "@lucide/svelte";
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
-  import ThemeToggle from "./ThemeToggle.svelte";
+  import { ThemeToggle } from "@nba/ui";
   import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, MobileBottomNav, PwaInstallBanner } from "@nba/ui";
 
   let { children, email, name, permissions = [], realEmail = '', breadcrumb } = $props<{
