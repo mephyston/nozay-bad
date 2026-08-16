@@ -4,6 +4,7 @@ import AdminLayout from '../../../components/AdminLayout.svelte';
 import { PageHeader, ErrorAlert, SeasonSelector } from '@nba/ui';
 import { ChampionshipRulesPanel } from '@nba/teams-ui';
 import { createAdminApiClient } from '../../../lib/api';
+import { fetchSeasons, currentSeasonCode } from '../../../lib/seasons';
 import { can, guardAction } from '../../../lib/guard';
 
 const apiService = createAdminApiClient(Astro.locals);
@@ -47,19 +48,15 @@ if (Astro.request.method === 'POST') {
 }
 
 let seasonCode = season;
-let seasons: any[] = [];
 let settings: any[] = [];
 let errorMsg: string | null = null;
 
-try {
-  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
-  seasons = ((await seasonsRes.json()) as any)?.data ?? [];
+const seasonsResult = await fetchSeasons(apiService);
+const seasons = seasonsResult.seasons;
+errorMsg = seasonsResult.errorMsg;
 
-  if (!seasonCode) {
-    const today = new Date().toISOString().slice(0, 10);
-    const current = seasons.find((s: any) => s.startDate <= today && today <= s.endDate);
-    seasonCode = current?.code ?? seasons[0]?.code ?? '';
-  }
+try {
+  if (!seasonCode) seasonCode = currentSeasonCode(seasons);
 
   if (seasonCode) {
     const res = await apiService.fetch(

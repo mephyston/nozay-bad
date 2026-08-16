@@ -4,6 +4,7 @@ import AdminLayout from '../../../components/AdminLayout.svelte';
 import { PageHeader, ErrorAlert, SeasonSelector } from '@nba/ui';
 import { TeamsManager } from '@nba/teams-ui';
 import { createAdminApiClient } from '../../../lib/api';
+import { fetchSeasons, currentSeasonCode } from '../../../lib/seasons';
 import { can, guardAction } from '../../../lib/guard';
 
 const canWrite = can(Astro.locals, 'teams:teams:write');
@@ -101,27 +102,20 @@ if (Astro.request.method === 'POST') {
   });
 }
 
-// La saison se déduit des dates, jamais du drapeau comptable `active` : celui-ci bascule
-// à la clôture, à une date sans rapport avec la saison sportive.
 let seasonCode = season;
 let errorMsg: string | null = null;
 let teams: any[] = [];
 let members: any[] = [];
 let days: any[] = [];
-let seasons: any[] = [];
+
+// Les saisons sont chargées dans tous les cas : le sélecteur doit les proposer, même
+// quand l'URL en fixe déjà une.
+const seasonsResult = await fetchSeasons(apiService);
+const seasons = seasonsResult.seasons;
+errorMsg = seasonsResult.errorMsg;
 
 try {
-  // Les saisons sont chargées dans tous les cas : le sélecteur doit les proposer, même
-  // quand l'URL en fixe déjà une.
-  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
-  const seasonsPayload = (await seasonsRes.json()) as any;
-  seasons = seasonsPayload?.data ?? seasonsPayload ?? [];
-
-  if (!seasonCode) {
-    const today = new Date().toISOString().slice(0, 10);
-    const current = seasons.find((s: any) => s.startDate <= today && today <= s.endDate);
-    seasonCode = current?.code ?? seasons[0]?.code ?? '';
-  }
+  if (!seasonCode) seasonCode = currentSeasonCode(seasons);
 
   if (seasonCode) {
     const [teamsRes, membersRes, daysRes] = await Promise.all([

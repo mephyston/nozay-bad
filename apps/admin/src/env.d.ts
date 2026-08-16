@@ -20,6 +20,12 @@ declare namespace App {
     realUser?: {
       email: string;
       name?: string;
+      /**
+       * Droits du compte réellement connecté. Pendant une usurpation, `user.permissions`
+       * sont ceux de l'identité empruntée : s'en servir pour garder l'usurpation
+       * elle-même enferme l'usurpateur dans l'identité qu'il vient de prendre.
+       */
+      permissions?: import('@nba/iam-ui').Permission[];
     };
     runtime: import('@astrojs/cloudflare').Runtime<Env>;
   }

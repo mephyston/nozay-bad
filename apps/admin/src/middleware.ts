@@ -159,7 +159,13 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
     roles: actor.roles.length ? actor.roles : [DEFAULT_ROLE],
     permissions: actor.permissions
   };
-  context.locals.realUser = { email: realActor.email, name: realActor.name };
+  // Les droits *réels* voyagent avec l'identité réelle : c'est sur eux, et jamais sur
+  // ceux de l'identité empruntée, que se décide la prise ou l'abandon d'une usurpation.
+  context.locals.realUser = {
+    email: realActor.email,
+    name: realActor.name,
+    permissions: realActor.permissions
+  };
 
   // Autorisation de page, fermée par défaut : une page non déclarée dans
   // PAGE_PERMISSIONS est refusée, y compris si personne n'a pensé à la garder.

@@ -329,6 +329,10 @@ describe('Astro Auth Middleware', () => {
       expect(context.locals.user.roles).toEqual(['secretaire']);
       // L'identité réelle reste connue, pour le bandeau et la traçabilité.
       expect(context.locals.realUser.email).toBe('prod-user@nozay-bad.fr');
+      // Et ses droits avec elle : c'est sur eux que se décide la prise d'une autre
+      // identité, jamais sur ceux du compte emprunté — qui ne les a pas.
+      expect(context.locals.realUser.permissions).toContain('iam:sessions:impersonate');
+      expect(context.locals.user.permissions).not.toContain('iam:sessions:impersonate');
     });
 
     it("ignore le cookie sans le droit d'usurpation", async () => {
