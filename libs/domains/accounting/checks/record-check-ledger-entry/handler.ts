@@ -4,10 +4,24 @@ import { cleanName } from '../../shared/helpers';
 import { getMemberById, buildApplyPaymentStatement } from '@nba/members-api';
 import type { CreateCheckInput, AnalyzeCheckOutput } from './dto';
 
+/** Liaison Workers AI : seule `run` est utilisée. */
+export interface VisionAi {
+  run(model: string, input: Record<string, unknown>): Promise<unknown>;
+}
+
+/** Champs qu'un modèle de vision peut extraire d'un chèque — tous incertains. */
+interface ExtractedCheckFields {
+  number?: string;
+  amount?: number;
+  emitter?: string;
+  bank?: string;
+  date?: string;
+}
+
 export async function analyzeCheckImage(
   db: Db,
-  ai: any,
-  file: any
+  ai: VisionAi,
+  file: unknown
 ): Promise<AnalyzeCheckOutput> {
   if (!file) {
     throw new AppError('Fichier image manquant.', 400);
@@ -22,8 +36,8 @@ export async function analyzeCheckImage(
       bytes = new TextEncoder().encode(file).buffer;
     }
   } else if (typeof file === 'object' && file !== null) {
-    if ('arrayBuffer' in file && typeof (file as any).arrayBuffer === 'function') {
-      bytes = await (file as any).arrayBuffer();
+    if ('arrayBuffer' in file && typeof (file as { arrayBuffer?: unknown }).arrayBuffer === 'function') {
+      bytes = await (file as { arrayBuffer(): Promise<ArrayBuffer> }).arrayBuffer();
     } else {
       throw new AppError('Format de fichier invalide.', 400);
     }
@@ -31,7 +45,7 @@ export async function analyzeCheckImage(
     throw new AppError('Format de fichier invalide.', 400);
   }
 
-  let aiRes: any;
+  let aiRes: unknown;
   try {
     const model = '@cf/meta/llama-3.2-11b-vision-instruct';
     const systemPrompt = `Analyze this check image. Extract the following fields as a JSON object:
@@ -48,9 +62,10 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
       prompt: systemPrompt,
       image: [...new Uint8Array(bytes)]
     });
-  } catch (llamaErr: any) {
+  } catch (llamaErr: unknown) {
     let agreed = false;
-    if (llamaErr?.message && (llamaErr.message.includes("submit the prompt 'agree'") || llamaErr.message.includes("5016"))) {
+    const llamaMessage = llamaErr instanceof Error ? llamaErr.message : '';
+    if (llamaMessage.includes("submit the prompt 'agree'") || llamaMessage.includes('5016')) {
       try {
         await ai.run('@cf/meta/llama-3.2-11b-vision-instruct', {
           prompt: 'agree',
@@ -85,15 +100,16 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
     }
   }
 
-  let extracted: any = {};
+  let extracted: ExtractedCheckFields = {};
   let textResult = '';
   if (typeof aiRes === 'string') {
     textResult = aiRes;
   } else if (aiRes && typeof aiRes === 'object') {
-    if (typeof (aiRes as any).response === 'string') {
-      textResult = (aiRes as any).response;
-    } else if ((aiRes as any).response !== undefined && (aiRes as any).response !== null) {
-      textResult = JSON.stringify((aiRes as any).response);
+    const { response } = aiRes as { response?: unknown };
+    if (typeof response === 'string') {
+      textResult = response;
+    } else if (response !== undefined && response !== null) {
+      textResult = JSON.stringify(response);
     } else {
       textResult = JSON.stringify(aiRes);
     }
@@ -205,7 +221,7 @@ export async function createCheck(db: Db, body: CreateCheckInput) {
   const repo = new RecordCheckTransactionRepository();
 
   // Phase 1 : Lecture (hors batch)
-  let memberData: any = null;
+  let memberData: Awaited<ReturnType<typeof getMemberById>> | null = null;
   const categoryVal = body.category ? Number(body.category) : 1;
   if (body.memberId && (categoryVal === 1 || String(categoryVal) === '1')) {
     memberData = await getMemberById(db, body.memberId);
@@ -265,8 +281,8 @@ export async function deleteCheck(db: Db, id: number) {
     throw new AppError('Chèque non trouvé.', 404);
   }
 
-  let tx: any = null;
-  let memberData: any = null;
+  let tx: Awaited<ReturnType<typeof repo.getTransactionById>> | null = null;
+  let memberData: Awaited<ReturnType<typeof getMemberById>> | null = null;
 
   if (check.ledgerEntryId) {
     tx = await repo.getTransactionById(db, check.ledgerEntryId);

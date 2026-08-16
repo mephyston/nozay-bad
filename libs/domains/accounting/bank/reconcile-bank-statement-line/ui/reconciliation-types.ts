@@ -3,6 +3,8 @@ export interface BankStatementLine {
   fitid: string;
   accountId: 'current' | 'savings' | 'cash';
   amount: number;
+  /** Certaines réponses portent le montant en centimes sous ce nom ; `amount` sinon. */
+  amountCents?: number;
   date: string;
   name: string;
   memo: string | null;
@@ -15,6 +17,8 @@ export interface GLTransaction {
   type: 'recette' | 'depense' | 'transfert';
   accountId: 'current' | 'savings' | 'cash';
   amount: number;
+  /** Certaines réponses portent le montant en centimes sous ce nom ; `amount` sinon. */
+  amountCents?: number;
   date: string;
   description: string;
   category?: string | null;
@@ -62,6 +66,64 @@ export interface ReconciliationStateProps {
   seasons: Season[];
   members: Member[];
   dbCategories?: any[];
+}
+
+/** Catégorie comptable telle que présentée dans les sélecteurs. */
+export interface CategoryOption {
+  id: string;
+  code?: string;
+  name: string;
+}
+
+/** Ligne d'une ventilation en cours de saisie (montant en euros). */
+export interface SplitRow {
+  category: string;
+  amount: number;
+}
+
+/**
+ * Champs de l'état du rapprochement vus par les modules d'actions.
+ *
+ * L'état réel vit dans `reconciliation.svelte.ts` (runes + proxy) ; les actions ne
+ * peuvent pas référencer son type de retour sans créer un cycle de types, d'où cette
+ * interface structurelle. Elle remplace le `s: any` historique : un champ renommé ou
+ * retypé côté état casse désormais la compilation des actions au lieu de casser
+ * l'écran en production.
+ */
+export interface ReconciliationStateFields {
+  bankStatementLines: BankStatementLine[];
+  glTransactions: GLTransaction[];
+  displayedTransactions: BankStatementLine[];
+  selectedTx: BankStatementLine | null;
+  selectedTxIds: Record<number, boolean>;
+  selectedInvoiceIds: Set<number>;
+  unpaidInvoices: Invoice[];
+  selectedSum: number;
+  remainingAmount: number;
+  splits: SplitRow[];
+  isSplitMode: boolean;
+  isSubmitting: boolean;
+  isAnalyzing: boolean;
+  isAnalyzingSingle: boolean;
+  errorMsg: string;
+  selectedSeason: string;
+  targetSeasonId: string;
+  selectedAccount: string;
+  category: string;
+  paymentMethod: string;
+  accrualType: string;
+  accrualNote: string;
+  amountToLink: number;
+  selectedMemberId: string;
+  memberSearchQuery: string;
+  isMemberDropdownOpen: boolean;
+  memberHighlightedIndex: number;
+  filteredMembers: Member[];
+  categories: CategoryOption[];
+  filteredCategories: CategoryOption[];
+  categorySearchQuery: string;
+  isCategoryDropdownOpen: boolean;
+  categoryHighlightedIndex: number;
 }
 
 export const accountLabels = {
