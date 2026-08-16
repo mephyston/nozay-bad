@@ -19,6 +19,7 @@
       "@nba/db/test-utils": ["libs/shared/db/src/test-utils.ts"],
       "@nba/ui": ["libs/shared/ui/src/index.ts"],
       "@nba/api-client": ["libs/shared/api-client/src/index.ts"],
+      "@nba/security-headers": ["libs/shared/security-headers/src/index.ts"],
       "@nba/members-api": ["libs/domains/members/index.ts"],
       "@nba/members/schema": ["libs/domains/members/shared/schema.ts"],
       "@nba/accounting-api": ["libs/domains/accounting/index.ts"],

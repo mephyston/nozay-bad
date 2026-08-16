@@ -1,11 +1,12 @@
 /**
  * En-têtes de sécurité du site public.
  *
- * Reprise de ceux du storefront, avec une différence de fond : la politique de
- * sécurité du contenu est **appliquée**, et non seulement rapportée. Le storefront
- * doit composer avec Turnstile et un widget d'authentification tiers ; ici nous
- * maîtrisons chaque octet de balisage, donc rien ne justifie de rester en observation.
+ * Le mécanisme vit dans `@nba/security-headers` ; ce fichier ne déclare que la
+ * politique du site. La CSP y est appliquée depuis l'origine : nous maîtrisons
+ * chaque octet de balisage, rien ne justifie l'observation.
  */
+
+import { applySecurityHeaders as applyPolicy } from '@nba/security-headers';
 
 /**
  * Origines autorisées en cadre.
@@ -47,35 +48,11 @@ const CSP = [
   "object-src 'none'"
 ].join('; ');
 
-/**
- * Les réponses issues d'un service binding portent des en-têtes immuables : les
- * modifier lève. On recopie donc la réponse plutôt que de la muter.
- */
-function withMutableHeaders(response: Response): Response {
-  try {
-    response.headers.set('x-headers-probe', '1');
-    response.headers.delete('x-headers-probe');
-    return response;
-  } catch {
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: new Headers(response.headers)
-    });
-  }
-}
-
 export function applySecurityHeaders(input: Response, options: { noindex?: boolean } = {}): Response {
-  const response = withMutableHeaders(input);
-
-  response.headers.set('Content-Security-Policy', CSP);
-  response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
-
-  if (options.noindex) response.headers.set('X-Robots-Tag', 'noindex, nofollow');
-
-  return response;
+  return applyPolicy(input, {
+    csp: CSP,
+    hstsMaxAge: 63072000,
+    permissionsPolicy: 'camera=(), microphone=(), geolocation=(), payment=()',
+    noindex: options.noindex
+  });
 }

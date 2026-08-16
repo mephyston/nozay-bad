@@ -3,6 +3,9 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/website/src",
+  "implicitDependencies": [
+    "@nba/security-headers"
+  ],
   "targets": {
     "lint": {
       "command": "eslint {projectRoot}"
