@@ -1,4 +1,4 @@
-import { type Db } from '@nba/db';
+import { type Db, AppError } from '@nba/db';
 import { CreateExpenseRepository } from './repository';
 import { isSeasonClosed } from '@nba/members-api';
 import { getMemberById } from '@nba/members-api';
@@ -24,9 +24,23 @@ export async function createExpense(
   }
 
   const repo = new CreateExpenseRepository();
+
+  // Aucun repli silencieux : une saison ou une catégorie non résolue imputait la
+  // note à la saison 1 / catégorie 1 (Adhésions) sans que personne ne le voie —
+  // le genre d'écart comptable qu'on découvre des mois plus tard, au bilan.
   const seasonId = await repo.resolveSeasonId(db, body.seasonId);
-  const categoryId = normalizeCategory(body.category) || 1;
-  const amountCents = (body as any).amountCents || body.amount;
+  if (seasonId === undefined) {
+    throw new AppError(`Saison inconnue : « ${body.seasonId} »`, 400);
+  }
+  const categoryId = normalizeCategory(body.category);
+  if (categoryId === null) {
+    throw new AppError(`Catégorie inconnue : « ${body.category} »`, 400);
+  }
+
+  // En centimes de bout en bout : l'UI convertit (expense-form-submit.ts), le
+  // validateur exige un entier ≥ 1. L'ancien `amountCents || amount` acceptait un
+  // champ hors contrat et traitait 0 comme absent.
+  const amountCents = body.amount;
 
   return repo.create(db, {
     seasonId,
