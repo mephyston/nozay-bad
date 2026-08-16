@@ -1,5 +1,6 @@
 import { type Db, AppError } from '@nba/db';
 import { isPermission, type Permission } from '../shared/permissions';
+import { withPrerequisites } from '../shared/prerequisites';
 import { isRole, type Role } from '../shared/roles';
 import { isEditableRole } from '../shared/role-permissions';
 import { UpdateRolePermissionsRepository } from './repository';
@@ -53,7 +54,10 @@ export async function updateRolePermissions(
   const repo = new UpdateRolePermissionsRepository();
   const before = new Set((await repo.listForRole(db, role)).filter(isPermission));
 
-  const after = new Set<Permission>(permissions.filter(isPermission));
+  // Les prérequis suivent les droits qui les supposent : cocher « consulter les
+  // rapports financiers » sans le référentiel des exercices donnait un écran qui
+  // s'ouvre et reste vide, sans rien dire de ce qui manque.
+  const after = withPrerequisites(permissions.filter(isPermission));
   for (const permission of ALWAYS_GRANTED) after.add(permission);
 
   const granted = [...after].filter((p) => !before.has(p)).sort();

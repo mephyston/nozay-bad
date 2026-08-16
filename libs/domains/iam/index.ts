@@ -1,5 +1,6 @@
 export * from './shared/schema';
 export * from './shared/permissions';
+export * from './shared/prerequisites';
 export * from './shared/roles';
 export * from './shared/catalog';
 export * from './shared/role-permissions';

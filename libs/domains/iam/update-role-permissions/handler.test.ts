@@ -47,6 +47,32 @@ describe('updateRolePermissions', () => {
     expect(result.permissions.sort()).toEqual(['dashboard:overview:read', 'help:docs:read']);
   });
 
+  /**
+   * Le défaut fermé ici : cocher « consulter les rapports financiers » ouvrait l'écran
+   * des rapports, qui lit encore les référentiels des exercices, des catégories et des
+   * classes de comptes — chacun derrière son propre droit. Le compte accédait aux
+   * écrans sans voir leurs données, et rien ne disait lequel manquait.
+   */
+  it('tire les référentiels que le droit coché suppose', async () => {
+    const result = await updateRolePermissions(db, 'communication', ['accounting:reports:read'], ACTOR);
+
+    expect(result.permissions).toContain('accounting:seasons:read');
+    expect(result.permissions).toContain('accounting:config:read');
+    // Et ils sont bien écrits, pas seulement rendus : l'écran des droits les montrera
+    // cochés au rechargement, sans laisser croire à un droit accordé en douce.
+    expect(await permissionsOf('communication')).toContain('accounting:config:read');
+    expect(result.granted).toContain('accounting:config:read');
+  });
+
+  it('ne tire rien de plus que les prérequis déclarés', async () => {
+    const result = await updateRolePermissions(db, 'communication', ['teams:teams:read'], ACTOR);
+
+    expect(result.permissions).toContain('accounting:seasons:read');
+    // Le sélecteur de saison, et rien d'autre : les interclubs n'ouvrent pas la compta.
+    expect(result.permissions).not.toContain('accounting:config:read');
+    expect(result.permissions).not.toContain('accounting:ledger:read');
+  });
+
   it('refuse de modifier super_admin', async () => {
     // Figé en base, il n'obtiendrait pas les permissions ajoutées par les
     // fonctionnalités futures, et lui retirer son droit d'édition fermerait la

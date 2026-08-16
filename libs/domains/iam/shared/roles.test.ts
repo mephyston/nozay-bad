@@ -2,6 +2,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { ALL_PERMISSIONS, type Permission } from './permissions';
 import { PERMISSION_LABELS, groupedPermissions } from './catalog';
 import {
+  PERMISSION_PREREQUISITES,
+  withPrerequisites,
+  missingPrerequisites
+} from './prerequisites';
+import {
   ROLES,
   ROLE_LABELS,
   ROLE_DESCRIPTIONS,
@@ -59,6 +64,31 @@ describe('définition des rôles', () => {
       'dashboard:overview:read',
       'help:docs:read'
     ]);
+  });
+
+  /**
+   * Un rôle livré qui ne satisferait pas ses propres prérequis donnerait à sa prise en
+   * main exactement le défaut que la table est censée fermer : des écrans accessibles
+   * et vides. Le test rend cet état impossible à fusionner.
+   */
+  it('livre des rôles qui satisfont leurs propres prérequis', () => {
+    for (const role of ROLES) {
+      expect(missingPrerequisites(ROLE_PERMISSIONS[role]), role).toEqual([]);
+    }
+  });
+
+  it('tire les prérequis avec le droit qui les suppose', () => {
+    const closed = withPrerequisites(['accounting:reports:read']);
+
+    expect(closed).toContain('accounting:seasons:read');
+    expect(closed).toContain('accounting:config:read');
+  });
+
+  it("n'invente aucun prérequis hors du catalogue", () => {
+    for (const [permission, required] of Object.entries(PERMISSION_PREREQUISITES)) {
+      expect(ALL_PERMISSIONS, permission).toContain(permission);
+      for (const one of required ?? []) expect(ALL_PERMISSIONS, one).toContain(one);
+    }
   });
 
   it("n'accorde l'usurpation qu'à super_admin", () => {
