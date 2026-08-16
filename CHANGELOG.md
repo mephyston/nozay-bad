@@ -1,3 +1,10 @@
+# [1.0.0-beta.85](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.84...v1.0.0-beta.85) (2026-08-16)
+
+
+### Bug Fixes
+
+* **admin:** libérer le retour d'usurpation et le sélecteur de saison des interclubs ([b0267a1](https://github.com/mephyston/nozay-bad/commit/b0267a19545d8152e63cfa87d4f5446fa4f5aa4b))
+
 # [1.0.0-beta.84](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.83...v1.0.0-beta.84) (2026-08-16)
 
 
