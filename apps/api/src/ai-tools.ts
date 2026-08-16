@@ -1,3 +1,22 @@
+import type { Permission } from '@nba/iam';
+
+/**
+ * Permission de lecture exercée par chaque outil.
+ *
+ * `ai:assistant:use` n'ouvre que la conversation : les outils exécutent des lectures
+ * réelles (fichier des adhérents, rapports financiers) et doivent donc être bornés
+ * aux droits de l'acteur. Sans cette table, accorder l'assistant à un rôle sans accès
+ * aux finances lui ouvrirait un canal d'exfiltration par simple question.
+ *
+ * Tout outil ajouté à AI_TOOLS doit déclarer sa permission ici : la route refuse
+ * d'exécuter un outil absent de cette table.
+ */
+export const TOOL_PERMISSIONS: Record<string, Permission> = {
+  get_season_reports: 'accounting:reports:read',
+  list_members: 'members:members:read',
+  get_member_stats: 'members:members:read'
+};
+
 export const AI_TOOLS = [
   {
     type: "function",
