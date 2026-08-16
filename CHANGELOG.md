@@ -1,3 +1,10 @@
+# [1.0.0-beta.86](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.85...v1.0.0-beta.86) (2026-08-16)
+
+
+### Bug Fixes
+
+* **iam:** faire suivre les référentiels que chaque droit suppose ([ff2cd64](https://github.com/mephyston/nozay-bad/commit/ff2cd6492ad80318adcf24b2580c9994efdc9d83))
+
 # [1.0.0-beta.85](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.84...v1.0.0-beta.85) (2026-08-16)
 
 
