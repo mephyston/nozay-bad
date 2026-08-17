@@ -465,7 +465,7 @@
       <span>Vous consultez l'application en tant que <strong>{email}</strong>.</span>
       <button
         type="button"
-        class="underline underline-offset-2 cursor-pointer bg-transparent border-0 font-semibold text-inherit rounded px-2 py-1.5 -my-1 hover:bg-amber-500/20"
+        class="underline underline-offset-2 cursor-pointer bg-transparent border-0 font-semibold text-inherit rounded px-2 py-1.5 -my-1 hover:bg-warning/20"
         onclick={() => setImpersonation(null)}
       >
         Revenir à {realEmail}
