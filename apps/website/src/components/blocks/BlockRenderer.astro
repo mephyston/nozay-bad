@@ -22,6 +22,13 @@ interface Props {
   slots?: ScheduleSlotView[];
   posts?: PostRow[];
   events?: ClubEventView[];
+  /**
+   * Actualités par catégorie demandée, transmises au seul bloc « Colonnes ».
+   *
+   * Un bloc imbriqué peut réclamer une autre catégorie que son voisin : la page ne peut
+   * pas aplatir le choix avant l'appel, comme elle le fait pour `posts`.
+   */
+  postsByCategory?: Map<string, PostRow[]>;
   /** Ce bloc ouvre-t-il la page ? Seul le carrousel s'en sert, pour son titre. */
   opensPage?: boolean;
 }
@@ -31,6 +38,7 @@ const {
   slots = [],
   posts = [],
   events = [],
+  postsByCategory = new Map<string, PostRow[]>(),
   opensPage = false
 } = Astro.props;
 ---
@@ -48,6 +56,8 @@ const {
 {block.type === 'embed' && <Embed block={block} />}
 {block.type === 'schedule' && <Schedule block={block} slots={slots} />}
 {block.type === 'posts_feed' && <PostsFeed block={block} posts={posts} />}
-{block.type === 'columns' && <Columns block={block} media={media} />}
+{block.type === 'columns' && (
+  <Columns block={block} media={media} slots={slots} events={events} postsByCategory={postsByCategory} />
+)}
 {block.type === 'events' && <Events block={block} events={events} />}
 {block.type === 'person_cards' && <PersonCards block={block} media={media} />}

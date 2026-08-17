@@ -12,6 +12,15 @@
     canUploadMedia?: boolean;
   }>();
 
+  /**
+   * Préfixe d'identifiants propre à cette instance.
+   *
+   * Un bloc peut désormais apparaître deux fois sur le même écran — au premier niveau
+   * et dans une colonne, ou dans deux colonnes voisines. Des `id` écrits en dur s'y
+   * répéteraient, et cliquer un intitulé donnerait le champ de l'autre bloc.
+   */
+  const uid = $props.id();
+
   let pickerOpen = $state(false);
 
   const document_ = $derived(
@@ -24,8 +33,8 @@
 
 <div class="space-y-3">
   <div class="space-y-1.5">
-    <Label for="pdf-label">Libellé du lien</Label>
-    <Input id="pdf-label" bind:value={block.label} placeholder="Télécharger le livret d'accueil" />
+    <Label for={`${uid}-pdf-label`}>Libellé du lien</Label>
+    <Input id={`${uid}-pdf-label`} bind:value={block.label} placeholder="Télécharger le livret d'accueil" />
   </div>
 
   <div class="space-y-1.5">
@@ -52,8 +61,8 @@
   </div>
 
   <div class="space-y-1.5">
-    <Label for="pdf-description">Description</Label>
-    <Input id="pdf-description" bind:value={block.description} />
+    <Label for={`${uid}-pdf-description`}>Description</Label>
+    <Input id={`${uid}-pdf-description`} bind:value={block.description} />
   </div>
 
   <div class="space-y-1.5">
@@ -80,9 +89,9 @@
 
   {#if block.preview && isPdf}
     <div class="space-y-1.5">
-      <Label for="pdf-height">Hauteur du cadre (px)</Label>
+      <Label for={`${uid}-pdf-height`}>Hauteur du cadre (px)</Label>
       <Input
-        id="pdf-height"
+        id={`${uid}-pdf-height`}
         type="number"
         min="200"
         max="2000"

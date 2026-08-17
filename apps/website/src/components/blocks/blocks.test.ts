@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
-import { BLOCK_TYPES } from '@nba/cms/public';
+import { BLOCK_TYPES, NESTABLE_BLOCK_TYPES } from '@nba/cms/public';
 
 /**
  * Couverture des blocs, dans les deux sens.
@@ -87,5 +87,35 @@ describe('couverture des blocs', () => {
     // deviendrait aveugle à un type ajouté sans y être déclaré.
     const unmapped = BLOCK_TYPES.filter((type) => !COMPONENT_BY_TYPE[type]);
     expect(unmapped, `types absents de la table : ${unmapped.join(', ')}`).toEqual([]);
+  });
+});
+
+/**
+ * Couverture des blocs imbriqués, dans les deux sens.
+ *
+ * `Columns.astro` aiguille lui-même, plutôt que de rappeler `BlockRenderer` — qui le
+ * rend déjà, et fermerait un cycle d'imports. Cet aiguillage a donc besoin du même
+ * garde-fou : un type déclaré imbriquable sans branche ne rendrait rien, et une branche
+ * sans déclaration afficherait un bloc que la validation refuse d'enregistrer.
+ */
+describe('couverture des blocs imbriqués dans une colonne', () => {
+  const source = () => fs.readFileSync(path.join(BLOCKS_DIR, 'Columns.astro'), 'utf-8');
+
+  it('branche dans Columns chaque type déclaré imbriquable', () => {
+    const unwired = NESTABLE_BLOCK_TYPES.filter(
+      (type) => !source().includes(`column.block.type === '${type}'`)
+    );
+    expect(unwired, `types imbriquables non branchés : ${unwired.join(', ')}`).toEqual([]);
+  });
+
+  it("n'aiguille rien que la liste blanche n'autorise", () => {
+    const branched = [...source().matchAll(/column\.block\.type === '([a-z_]+)'/g)].map((m) => m[1]);
+    const forbidden = branched.filter((type) => !NESTABLE_BLOCK_TYPES.includes(type as never));
+    expect(forbidden, `types rendus hors liste blanche : ${forbidden.join(', ')}`).toEqual([]);
+  });
+
+  it('ne déclare imbriquable que des types réellement déclarés', () => {
+    const unknown = NESTABLE_BLOCK_TYPES.filter((type) => !BLOCK_TYPES.includes(type));
+    expect(unknown, `types imbriquables inconnus : ${unknown.join(', ')}`).toEqual([]);
   });
 });

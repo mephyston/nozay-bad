@@ -2,8 +2,20 @@
 import type { EventsBlock } from '@nba/cms/public';
 import type { ClubEventView } from '../../lib/cms';
 
-interface Props { block: EventsBlock; events?: ClubEventView[] }
-const { block, events = [] } = Astro.props;
+interface Props { block: EventsBlock; events?: ClubEventView[]; nested?: boolean }
+const { block, events = [], nested = false } = Astro.props;
+
+/*
+  Imbriqué dans une colonne, le bloc perd son enveloppe et son niveau de titre : la
+  largeur appartient à la colonne, et le titre se range sous celui du bloc parent.
+
+  La liste, elle, ne change pas : une pile de cartes se resserre d'elle-même, et la
+  pastille de date reste lisible jusque dans un tiers de page.
+*/
+const shell = nested ? '' : 'mx-auto max-w-5xl px-4 py-8';
+const Heading = nested ? 'h3' : 'h2';
+/** Le titre d'un rendez-vous reste d'un cran sous celui du bloc, imbriqué ou non. */
+const CardHeading = nested ? 'h4' : 'h3';
 
 const CATEGORIES: Record<string, string> = {
   competition: 'Compétition',
@@ -68,8 +80,8 @@ const time = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digi
 const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' });
 ---
 
-<section class="mx-auto max-w-5xl px-4 py-8">
-  {block.heading && <h2 class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
+<section class:list={[shell]}>
+  {block.heading && <Heading class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</Heading>}
 
   {shown.length === 0 ? (
     <p class="border-border text-muted-foreground rounded-lg border border-dashed px-4 py-6 text-center text-sm">
@@ -111,7 +123,7 @@ const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' });
               </div>
 
               <div class="min-w-0 flex-1">
-                <h3 class="font-semibold leading-snug">
+                <CardHeading class="font-semibold leading-snug">
                   {event.externalUrl ? (
                     <a
                       href={event.externalUrl}
@@ -124,7 +136,7 @@ const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' });
                   ) : (
                     event.title
                   )}
-                </h3>
+                </CardHeading>
 
                 <p class="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                   <span class="sr-only">{fullDate.format(start)}</span>

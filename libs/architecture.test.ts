@@ -235,3 +235,43 @@ describe('Autorisation (RBAC)', () => {
     expect(offenders, `createApiClient appelé directement dans :\n${offenders.join('\n')}`).toEqual([]);
   });
 });
+
+/**
+ * La surface publique d'un domaine suit-elle son vocabulaire ?
+ *
+ * `shared/public.ts` est ce qu'un Worker de rendu importe : le vocabulaire seul, sans
+ * faire entrer Hono ni Drizzle dans son paquet. Un type déclaré dans `shared/blocks.ts`
+ * et oublié dans ce barrel ne casse **rien** au premier abord — `import type` est effacé
+ * à la compilation, `tsc --noEmit` ne relit pas les fichiers `.astro`, et aucun
+ * `astro check` ne tourne en intégration. L'oubli s'est produit deux fois de suite, pour
+ * `ColumnsBlock` puis `EventsBlock`, et n'a été vu qu'à la lecture.
+ *
+ * Le contrôle porte sur les **sources** : un type TypeScript n'existe plus à
+ * l'exécution, il n'y a rien à interroger autrement.
+ */
+describe('surface publique des domaines', () => {
+  const domainsDir = path.resolve(__dirname, './domains');
+  const withPublicBarrel = (fs.existsSync(domainsDir) ? fs.readdirSync(domainsDir) : []).filter(
+    (domain) => fs.existsSync(path.join(domainsDir, domain, 'shared/public.ts'))
+  );
+
+  it('couvre au moins un domaine', () => {
+    // Garde-fou du garde-fou : si la découverte cessait de trouver quoi que ce soit, les
+    // contrôles ci-dessous passeraient sur une liste vide sans rien vérifier.
+    expect(withPublicBarrel.length).toBeGreaterThan(0);
+  });
+
+  it.each(withPublicBarrel)('%s réexporte le type de chaque bloc déclaré', (domain) => {
+    const blocksPath = path.join(domainsDir, domain, 'shared/blocks.ts');
+    if (!fs.existsSync(blocksPath)) return;
+
+    const declared = [
+      ...fs.readFileSync(blocksPath, 'utf-8').matchAll(/^export type ([A-Za-z]+Block) =/gm)
+    ].map((m) => m[1]);
+    expect(declared.length).toBeGreaterThan(0);
+
+    const barrel = fs.readFileSync(path.join(domainsDir, domain, 'shared/public.ts'), 'utf-8');
+    const missing = declared.filter((name) => !new RegExp(`\\b${name}\\b`).test(barrel));
+    expect(missing, `types absents de ${domain}/shared/public.ts : ${missing.join(', ')}`).toEqual([]);
+  });
+});

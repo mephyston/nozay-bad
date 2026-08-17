@@ -13,6 +13,15 @@
     canUploadMedia?: boolean;
   }>();
 
+  /**
+   * Préfixe d'identifiants propre à cette instance.
+   *
+   * Un bloc peut désormais apparaître deux fois sur le même écran — au premier niveau
+   * et dans une colonne, ou dans deux colonnes voisines. Des `id` écrits en dur s'y
+   * répéteraient, et cliquer un intitulé donnerait le champ de l'autre bloc.
+   */
+  const uid = $props.id();
+
   /** Plafond du schéma. Au-delà, ce n'est plus une galerie mais un album. */
   const MAX = 60;
 
@@ -56,13 +65,13 @@
 <div class="space-y-4">
   <div class="grid gap-3 sm:grid-cols-2">
     <div class="space-y-1.5">
-      <Label for="gallery-heading">Titre de section</Label>
-      <Input id="gallery-heading" bind:value={block.heading} placeholder="Le tournoi 2026 en images" />
+      <Label for={`${uid}-gallery-heading`}>Titre de section</Label>
+      <Input id={`${uid}-gallery-heading`} bind:value={block.heading} placeholder="Le tournoi 2026 en images" />
     </div>
     <div class="space-y-1.5">
-      <Label for="gallery-layout">Disposition</Label>
+      <Label for={`${uid}-gallery-layout`}>Disposition</Label>
       <Select
-        id="gallery-layout"
+        id={`${uid}-gallery-layout`}
         value={block.layout ?? 'grid'}
         onchange={(e) =>
           (block.layout = (e.currentTarget as HTMLSelectElement).value as 'grid' | 'carousel')}
@@ -77,9 +86,9 @@
     </div>
 
     <div class="space-y-1.5" class:opacity-50={block.layout === 'carousel'}>
-      <Label for="gallery-columns">Images par rangée</Label>
+      <Label for={`${uid}-gallery-columns`}>Images par rangée</Label>
       <Select
-        id="gallery-columns"
+        id={`${uid}-gallery-columns`}
         value={String(block.columns ?? 3)}
         onchange={(e) =>
           (block.columns = Number((e.currentTarget as HTMLSelectElement).value) as 1 | 2 | 3 | 4)}

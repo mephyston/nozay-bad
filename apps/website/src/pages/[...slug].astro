@@ -1,5 +1,5 @@
 ---
-import { normalisePath, type BlockPayload } from '@nba/cms/public';
+import { normalisePath, flattenBlocks, type BlockPayload } from '@nba/cms/public';
 import { verifyPreviewToken } from '@nba/preview';
 import { obfuscateEmails } from '@nba/html';
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -74,16 +74,25 @@ const blocks = resolved.kind === 'page' ? resolved.blocks : [];
 // disposer des dimensions et des variantes au moment du rendu.
 const media = await loadMedia(env, mediaIdsInBlocks(blocks));
 
+/*
+  Ce que la page doit charger se décide sur les blocs **et ce qu'ils contiennent**.
+
+  Une colonne peut héberger un agenda, des actualités ou des créneaux. Un parcours
+  limité au premier niveau ne verrait rien à charger, et le bloc s'afficherait vide —
+  sans erreur, sans trace, et sans que rien ne le signale au rédacteur.
+*/
+const allBlocks = flattenBlocks(blocks);
+
 // Les créneaux ne sont chargés que si la page en affiche : une page de prose ne doit
 // pas payer un aller-retour inutile.
-const needsSchedule = blocks.some((block) => block.type === 'schedule');
+const needsSchedule = allBlocks.some((block) => block.type === 'schedule');
 const slots = needsSchedule ? await listScheduleSlots(env) : [];
 
 // Même règle pour l'agenda : une seule lecture, quel que soit le nombre de blocs, et
 // aucune si la page n'en porte pas. Le filtrage par catégorie se fait au rendu — la
 // liste tient en quelques dizaines de lignes, la découper par requête coûterait plus
 // d'allers-retours qu'elle n'en économiserait.
-const needsEvents = blocks.some((block) => block.type === 'events');
+const needsEvents = allBlocks.some((block) => block.type === 'events');
 const clubEvents = needsEvents ? await listClubEvents(env) : [];
 
 // Idem pour les actualités : une page qui n'en affiche pas ne paie pas la requête.
@@ -92,7 +101,7 @@ const clubEvents = needsEvents ? await listClubEvents(env) : [];
 // même catégorie se partagent le chargement, à la plus haute des limites qu'ils
 // réclament. La clé vide est le cas « toutes catégories ».
 const feedNeeds = new Map<string, number>();
-for (const block of blocks) {
+for (const block of allBlocks) {
   if (block.type !== 'posts_feed') continue;
   const key = block.categorySlug ?? '';
   feedNeeds.set(key, Math.max(feedNeeds.get(key) ?? 0, block.limit));
@@ -179,7 +188,7 @@ if (page) {
     Google des rendez-vous absents de la page reviendrait à lui promettre un contenu
     qu'il ne trouverait pas.
     */
-  for (const block of blocks) {
+  for (const block of allBlocks) {
     if (block.type !== 'events') continue;
     const today = new Date().toISOString().slice(0, 10);
     const shown = clubEvents
@@ -306,6 +315,7 @@ if (page) {
         slots={slots}
         events={clubEvents}
         posts={postsFor(block)}
+        postsByCategory={feedPosts}
         opensPage={index === 0}
       />
     ))}

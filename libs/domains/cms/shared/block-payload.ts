@@ -1,6 +1,14 @@
 import { Value } from '@sinclair/typebox/value';
 import { sanitizeRichText, isRichTextEmpty, isSafeHref, CMS_PROFILE } from '@nba/html';
-import { BLOCK_SCHEMAS, type BlockPayload, type BlockType, type CtaLinkValue } from './blocks';
+import {
+  BLOCK_SCHEMAS,
+  NESTABLE_BLOCK_TYPES,
+  isBlockColumn,
+  type BlockPayload,
+  type BlockType,
+  type CtaLinkValue,
+  type NestableBlockType
+} from './blocks';
 import { CmsBlockPayloadError } from './errors';
 
 /**
@@ -41,6 +49,41 @@ function keepSafeLinks(items: readonly CtaLinkValue[]): CtaLinkValue[] {
 }
 
 /**
+ * Normalise les blocs hébergés par les colonnes, **avant** le contrôle du bloc parent.
+ *
+ * L'ordre n'est pas un détail. `Value.Clean` ne nettoie une union que par la variante
+ * qui valide déjà : une colonne dont le bloc imbriqué transporte les champs d'état de
+ * l'éditeur ne correspond à aucune variante, échappe donc au nettoyage, et `Value.Check`
+ * refuse ensuite la page entière. Passer chaque bloc imbriqué par la normalisation avant
+ * le contrôle du parent lui rend la même forme exacte que s'il était de premier niveau.
+ *
+ * Le rang affiché reste celui du bloc « Colonnes » : c'est lui que le rédacteur voit
+ * dans sa page, la colonne n'a pas de numéro à l'écran.
+ */
+function normaliseColumnBlocks(raw: unknown, position: number): unknown {
+  const items = (raw as { items?: unknown })?.items;
+  if (!Array.isArray(items)) return raw;
+
+  return {
+    ...(raw as object),
+    items: items.map((column, index) => {
+      if (!column || typeof column !== 'object' || !('block' in column)) return column;
+
+      const nested = (column as { block: { type?: unknown } }).block;
+      const nestedType = nested?.type;
+      if (!NESTABLE_BLOCK_TYPES.includes(nestedType as NestableBlockType)) {
+        throw new CmsBlockPayloadError(
+          position,
+          `colonne ${index + 1} : ce contenu ne peut pas être placé dans une colonne`
+        );
+      }
+
+      return { block: normaliseBlockPayload(nestedType as BlockType, nested, position) };
+    })
+  };
+}
+
+/**
  * Valide et assainit une charge utile déjà associée à son type.
  *
  * @param position Rang du bloc dans la page, pour situer l'erreur à l'écran.
@@ -48,6 +91,8 @@ function keepSafeLinks(items: readonly CtaLinkValue[]): CtaLinkValue[] {
 export function normaliseBlockPayload(type: BlockType, raw: unknown, position: number): BlockPayload {
   const schema = BLOCK_SCHEMAS[type];
   if (!schema) throw new CmsBlockPayloadError(position, `type de bloc inconnu « ${type} »`);
+
+  if (type === 'columns') raw = normaliseColumnBlocks(raw, position);
 
   // `Clean` avant `Check` : l'éditeur transporte des champs d'état qui ne concernent
   // pas la base (identifiant local, pliage). On les retire plutôt que de refuser
@@ -143,6 +188,10 @@ export function normaliseBlockPayload(type: BlockType, raw: unknown, position: n
 
     case 'columns': {
       const items = payload.items.map((column, index) => {
+        // Une colonne qui porte un bloc est pleine par construction, et son contenu a
+        // déjà été assaini par la passe récursive.
+        if (isBlockColumn(column)) return column;
+
         const html = sanitizeRichText(column.html, CMS_PROFILE);
         // Une colonne vide n'est pas anodine : elle occupe sa part de la grille, et
         // les voisines se retrouvent décalées sans que personne ne comprenne pourquoi.
@@ -152,7 +201,10 @@ export function normaliseBlockPayload(type: BlockType, raw: unknown, position: n
         }
         return { ...column, html };
       });
-      return { ...payload, items };
+      // Le réglage de largeur n'a de sens qu'à deux colonnes. Le retenir à trois
+      // laisserait un drapeau sans effet, qu'une lecture rapide croirait actif — même
+      // geste que `editable` hors feuille de calcul.
+      return { ...payload, items, ratio: items.length === 2 ? payload.ratio : undefined };
     }
 
     case 'gallery':

@@ -5,9 +5,17 @@ import Picture from '../Picture.astro';
 interface Props {
   block: GalleryBlock;
   media?: Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
+  nested?: boolean;
 }
 
-const { block, media = new Map() } = Astro.props;
+const { block, media = new Map(), nested = false } = Astro.props;
+
+/*
+  Imbriqué dans une colonne, le bloc perd son enveloppe et son niveau de titre : la
+  largeur appartient à la colonne.
+*/
+const shell = nested ? '' : 'mx-auto max-w-5xl px-4 py-8';
+const Heading = nested ? 'h3' : 'h2';
 const items = block.mediaIds.map((id) => media.get(id)).filter((v): v is NonNullable<typeof v> => !!v);
 
 /** Trois par rangée à défaut : la disposition des galeries d'avant ce réglage. */
@@ -16,12 +24,23 @@ const isRibbon = block.layout === 'carousel';
 
 // Jamais plus de deux sur un téléphone, quel que soit le choix : au-delà, une vignette
 // fait moins de 100 px de large et ne montre plus rien.
-const GRID = {
-  1: 'grid-cols-1',
-  2: 'grid-cols-2',
-  3: 'grid-cols-2 sm:grid-cols-3',
-  4: 'grid-cols-2 sm:grid-cols-4'
-}[columns];
+const GRID = (
+  nested
+    ? // Imbriquée, la grille interroge sa **colonne** et non la fenêtre : `sm:` y
+      // laisserait quatre vignettes côte à côte dans un tiers de page.
+      {
+        1: 'grid-cols-1',
+        2: 'grid-cols-2',
+        3: 'grid-cols-2 @lg:grid-cols-3',
+        4: 'grid-cols-2 @lg:grid-cols-4'
+      }
+    : {
+        1: 'grid-cols-1',
+        2: 'grid-cols-2',
+        3: 'grid-cols-2 sm:grid-cols-3',
+        4: 'grid-cols-2 sm:grid-cols-4'
+      }
+)[columns];
 
 /**
  * Format imposé aux vignettes, **en grille seulement**.
@@ -36,13 +55,29 @@ const GRID = {
  */
 const RATIO = columns === 1 ? 'aspect-[16/9]' : 'aspect-[4/3]';
 
-/** Largeur réelle d'une vignette, pour que le navigateur choisisse la bonne variante. */
-const SIZES = {
-  1: '100vw',
-  2: '50vw',
-  3: '(max-width: 640px) 50vw, 33vw',
-  4: '(max-width: 640px) 50vw, 25vw'
-}[columns];
+/**
+ * Largeur réelle d'une vignette, pour que le navigateur choisisse la bonne variante.
+ *
+ * Imbriquée, la galerie tient dans une colonne — au plus les deux tiers des 1024 px du
+ * conteneur, soit ~660 px. C'est le cas le plus large qui est retenu, et non le cas
+ * moyen : surestimer fait télécharger une variante un cran trop grande, sous-estimer
+ * donne une vignette floue.
+ */
+const SIZES = (
+  nested
+    ? {
+        1: '(min-width: 768px) 660px, 100vw',
+        2: '(min-width: 768px) 330px, 50vw',
+        3: '(min-width: 768px) 220px, 50vw',
+        4: '(min-width: 768px) 165px, 50vw'
+      }
+    : {
+        1: '100vw',
+        2: '50vw',
+        3: '(max-width: 640px) 50vw, 33vw',
+        4: '(max-width: 640px) 50vw, 25vw'
+      }
+)[columns];
 
 /**
  * Le ruban défile-t-il tout seul ?
@@ -58,8 +93,8 @@ const fullSize = (entry: (typeof items)[number]) =>
 
 const dialogId = `gallery-viewer-${block.mediaIds.join('-').slice(0, 40)}`;
 ---
-<section class="mx-auto max-w-5xl px-4 py-8">
-  {block.heading && <h2 class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
+<section class:list={[shell]}>
+  {block.heading && <Heading class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</Heading>}
 
   {items.length > 0 && (
     <div class="nba-gallery relative" data-nba-gallery data-viewer={dialogId}>
