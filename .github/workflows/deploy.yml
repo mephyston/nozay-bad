@@ -146,6 +146,68 @@ jobs:
           echo "Debug outputs → api=$API_AFFECTED storefront=$STOREFRONT_AFFECTED admin=$ADMIN_AFFECTED website=$WEBSITE_AFFECTED ds=$DS_AFFECTED"
 
   # ──────────────────────────────────────────────────────────────
+  # 2a. Vérifications statiques : garde-fous, typecheck, tests d'architecture.
+  #     En PARALLÈLE du job test — le typecheck monorepo entier vivait en série
+  #     devant vitest et allongeait d'autant le chemin critique des déploiements.
+  #     Aucun needs : rien ici ne dépend du calcul d'affected.
+  # ──────────────────────────────────────────────────────────────
+  static-checks:
+    name: Static checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          # Pas d'historique : aucun de ces contrôles n'en a besoin
+          # (check-schema-integrity fait un git log -1, couvert par le commit de tête).
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Cache node_modules
+        id: node-modules
+        uses: actions/cache@v6
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.node-modules.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Verify environment variable & binding declarations
+        run: node scripts/check-env-declarations.js
+
+      # Les migrations D1 sont suivies par nom de fichier : un renommage rejoue la
+      # migration sur les bases existantes (cf. duplication des catégories du 29/07).
+      - name: Verify migrations are append-only
+        run: node scripts/check-migrations-append-only.js
+
+      - name: Verify schema integrity & reference data
+        run: node scripts/check-schema-integrity.js
+
+      # Nx ne lit pas les imports des fichiers .astro/.svelte : les dépendances qui en
+      # découlent sont déclarées à la main dans les project.json. Sans ce contrôle, un
+      # import ajouté sans sa déclaration laisse l'application hors du calcul d'affected,
+      # donc ni testée ni redéployée quand la lib change — et personne ne le voit.
+      - name: Verify Nx dependency graph covers every @nba/* import
+        run: node scripts/check-nx-deps.js
+
+      - name: Run TypeScript typecheck
+        run: npm run typecheck
+
+      # Tests d'architecture (frontières d'import inter-libs) : transverses, donc joués
+      # systématiquement — un --changed pourrait les rater. Config dédiée sans pool
+      # Workers : l'ancienne invocation `--project architecture-tests` évaluait les 30
+      # projets de la config racine et bootait le pool pour 4 fichiers node.
+      - name: Run architecture tests
+        run: npx vitest run --config vitest.architecture.config.ts
+
+  # ──────────────────────────────────────────────────────────────
   # 2. Tests affectés (exécutés sur PR et sur Push)
   # ──────────────────────────────────────────────────────────────
   test:
@@ -175,6 +237,19 @@ jobs:
         if: steps.node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
+      # Cache du transform Vite/Vitest (node_modules/.vite/*). Placé APRÈS npm ci :
+      # npm ci vide node_modules, une restauration antérieure serait perdue. La clé
+      # inclut le SHA — toujours un miss — pour forcer la resauvegarde à chaque run
+      # (actions/cache ne resauvegarde jamais sur hit exact) ; restore-keys restaure
+      # le plus récent du même lockfile.
+      - name: Cache Vite transform cache
+        uses: actions/cache@v6
+        with:
+          path: node_modules/.vite
+          key: vite-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            vite-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+
       - name: Derive appropriate SHAs for affected commands
         uses: nrwl/nx-set-shas@v5
         with:
@@ -186,38 +261,14 @@ jobs:
           # d'origine de la PR : 'main' y reste correct.
           main-branch-name: ${{ github.event_name == 'pull_request' && 'main' || github.ref_name }}
 
-      - name: Verify environment variable & binding declarations
-        run: node scripts/check-env-declarations.js
-
-      # Les migrations D1 sont suivies par nom de fichier : un renommage rejoue la
-      # migration sur les bases existantes (cf. duplication des catégories du 29/07).
-      - name: Verify migrations are append-only
-        run: node scripts/check-migrations-append-only.js
-
-      - name: Verify schema integrity & reference data
-        run: node scripts/check-schema-integrity.js
-
-      # Nx ne lit pas les imports des fichiers .astro/.svelte : les dépendances qui en
-      # découlent sont déclarées à la main dans les project.json. Sans ce contrôle, un
-      # import ajouté sans sa déclaration laisse l'application hors du calcul d'affected,
-      # donc ni testée ni redéployée quand la lib change — et personne ne le voit.
-      - name: Verify Nx dependency graph covers every @nba/* import
-        run: node scripts/check-nx-deps.js
-
-      - name: Run TypeScript typecheck
-        run: npm run typecheck
-
       # Ne teste que les fichiers liés aux changements depuis le dernier vert (NX_BASE).
       # Filet de sécurité : forceRerunTriggers (vitest.config.ts) relance TOUTE la suite si
       # une migration D1, wrangler.json ou une config racine change (deps hors graphe d'imports).
       # Plus de CLOUDFLARE_API_TOKEN : le pool tourne 100 % local (config de test sans binding AI).
+      # Les garde-fous, le typecheck et les tests d'architecture vivent dans static-checks,
+      # en parallèle.
       - name: Run affected tests
         run: npx vitest run --changed "$NX_BASE" --passWithNoTests
-
-      # Tests d'architecture (frontières d'import inter-libs) : transverses, donc joués
-      # systématiquement — un --changed pourrait les rater.
-      - name: Run architecture tests
-        run: npx vitest run --project architecture-tests
 
   # ──────────────────────────────────────────────────────────────
   # 2b. Régression visuelle du design system (Storybook + Playwright)
@@ -262,9 +313,16 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
-      # Cache hit : le navigateur est restauré, seules les deps OS (apt) manquent.
+      # Cache hit : le navigateur est restauré ; les bibliothèques système sont déjà
+      # presque toutes présentes sur ubuntu-latest, cet apt n'est qu'un complément.
+      # Best effort borné : le 17/08, un miroir apt au ralenti a tenu ce step 15 min
+      # et bloqué les déploiements — un apt qui traîne ne doit jamais coûter plus de
+      # 3 min ni faire échouer le job (si une lib manquait vraiment, le lancement de
+      # Chromium échouerait juste après, avec un message explicite).
       - name: Install Playwright OS deps
         if: steps.playwright-cache.outputs.cache-hit == 'true'
+        timeout-minutes: 3
+        continue-on-error: true
         run: npx playwright install-deps chromium
 
       - name: Cache Nx
@@ -299,8 +357,8 @@ jobs:
   deploy-api:
     name: Deploy API Worker
     runs-on: ubuntu-latest
-    needs: [detect-changes, test, visual]
-    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.api == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped')
+    needs: [detect-changes, test, visual, static-checks]
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.api == 'true' && needs.static-checks.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -352,8 +410,8 @@ jobs:
   deploy-storefront:
     name: Deploy Storefront Worker
     runs-on: ubuntu-latest
-    needs: [detect-changes, test, visual, deploy-api]
-    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.storefront == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    needs: [detect-changes, test, visual, deploy-api, static-checks]
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.storefront == 'true' && needs.static-checks.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -429,8 +487,8 @@ jobs:
   deploy-website:
     name: Deploy Website Worker
     runs-on: ubuntu-latest
-    needs: [detect-changes, test, visual, deploy-api]
-    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.website == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    needs: [detect-changes, test, visual, deploy-api, static-checks]
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.website == 'true' && needs.static-checks.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -502,8 +560,8 @@ jobs:
   deploy-admin:
     name: Deploy Admin Worker
     runs-on: ubuntu-latest
-    needs: [detect-changes, test, visual, deploy-api, release]
-    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.admin == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    needs: [detect-changes, test, visual, deploy-api, release, static-checks]
+    if: always() && github.event_name == 'push' && needs.detect-changes.outputs.admin == 'true' && needs.static-checks.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v5

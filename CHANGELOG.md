@@ -1,3 +1,25 @@
+# [1.0.0-beta.90](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.89...v1.0.0-beta.90) (2026-08-17)
+
+
+### Performance Improvements
+
+* **ci:** paralléliser les vérifications statiques et alléger le chemin critique ([ef0ab36](https://github.com/mephyston/nozay-bad/commit/ef0ab3626d30faa83c854b6f7f2f440eeea67633))
+
+# [1.0.0-beta.89](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.88...v1.0.0-beta.89) (2026-08-17)
+
+
+### Performance Improvements
+
+* **test:** rejouer les migrations D1 en batch dans setupMockDb ([8490315](https://github.com/mephyston/nozay-bad/commit/8490315ac17c4e63f7c916091448566c337ef951))
+
+# [1.0.0-beta.88](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.87...v1.0.0-beta.88) (2026-08-17)
+
+
+### Bug Fixes
+
+* **admin:** tokeniser le survol du bandeau d'usurpation ([40898e6](https://github.com/mephyston/nozay-bad/commit/40898e6389c51036cea073e57c0403ebc789a855))
+* **expenses:** refuser saison et catégorie non résolues à la création ([3737fe0](https://github.com/mephyston/nozay-bad/commit/3737fe0567480545a29bffaf79d3aba390b3a579))
+
 # [1.0.0-beta.87](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.86...v1.0.0-beta.87) (2026-08-16)
 
 

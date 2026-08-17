@@ -44,5 +44,11 @@ export default defineConfig({
   test: {
     name: 'api',
     globals: true,
+    // Projet à fichier séparé : il n'hérite PAS du `testTimeout` de la config racine.
+    // Sans ces valeurs, le projet tournait aux 5 s par défaut — et c'est précisément
+    // lui qui fait le plus de setupMockDb : sur un runner GitHub saturé, des tests
+    // sains dépassaient la limite et la CI échouait en timeout (run du 17/08).
+    testTimeout: 20000,
+    hookTimeout: 20000,
   },
 });

@@ -1,8 +1,9 @@
 {
   "name": "nozay-bad",
-  "version": "1.0.0-beta.87",
+  "version": "1.0.0-beta.90",
   "license": "MIT",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks || true",
     "test": "vitest",
     "typecheck": "tsc --noEmit",
     "check:env": "node scripts/check-env-declarations.js",
