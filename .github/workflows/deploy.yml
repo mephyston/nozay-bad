@@ -313,9 +313,16 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
-      # Cache hit : le navigateur est restauré, seules les deps OS (apt) manquent.
+      # Cache hit : le navigateur est restauré ; les bibliothèques système sont déjà
+      # presque toutes présentes sur ubuntu-latest, cet apt n'est qu'un complément.
+      # Best effort borné : le 17/08, un miroir apt au ralenti a tenu ce step 15 min
+      # et bloqué les déploiements — un apt qui traîne ne doit jamais coûter plus de
+      # 3 min ni faire échouer le job (si une lib manquait vraiment, le lancement de
+      # Chromium échouerait juste après, avec un message explicite).
       - name: Install Playwright OS deps
         if: steps.playwright-cache.outputs.cache-hit == 'true'
+        timeout-minutes: 3
+        continue-on-error: true
         run: npx playwright install-deps chromium
 
       - name: Cache Nx
