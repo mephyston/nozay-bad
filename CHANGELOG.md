@@ -1,3 +1,10 @@
+# [1.0.0-beta.89](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.88...v1.0.0-beta.89) (2026-08-17)
+
+
+### Performance Improvements
+
+* **test:** rejouer les migrations D1 en batch dans setupMockDb ([8490315](https://github.com/mephyston/nozay-bad/commit/8490315ac17c4e63f7c916091448566c337ef951))
+
 # [1.0.0-beta.88](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.87...v1.0.0-beta.88) (2026-08-17)
 
 
