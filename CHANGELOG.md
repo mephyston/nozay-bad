@@ -1,3 +1,10 @@
+# [1.0.0-beta.90](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.89...v1.0.0-beta.90) (2026-08-17)
+
+
+### Performance Improvements
+
+* **ci:** paralléliser les vérifications statiques et alléger le chemin critique ([ef0ab36](https://github.com/mephyston/nozay-bad/commit/ef0ab3626d30faa83c854b6f7f2f440eeea67633))
+
 # [1.0.0-beta.89](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.88...v1.0.0-beta.89) (2026-08-17)
 
 
