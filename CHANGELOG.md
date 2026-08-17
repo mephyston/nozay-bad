@@ -1,3 +1,10 @@
+# [1.0.0-beta.91](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.90...v1.0.0-beta.91) (2026-08-17)
+
+
+### Bug Fixes
+
+* **ci:** borner l'installation apt des deps Playwright à 3 min, sans bloquer ([293b190](https://github.com/mephyston/nozay-bad/commit/293b1908288f8e3c4398f6d262bd20c0e7ac97c9))
+
 # [1.0.0-beta.90](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.89...v1.0.0-beta.90) (2026-08-17)
 
 
