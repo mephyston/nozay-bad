@@ -1,3 +1,11 @@
+# [1.0.0-beta.88](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.87...v1.0.0-beta.88) (2026-08-17)
+
+
+### Bug Fixes
+
+* **admin:** tokeniser le survol du bandeau d'usurpation ([40898e6](https://github.com/mephyston/nozay-bad/commit/40898e6389c51036cea073e57c0403ebc789a855))
+* **expenses:** refuser saison et catégorie non résolues à la création ([3737fe0](https://github.com/mephyston/nozay-bad/commit/3737fe0567480545a29bffaf79d3aba390b3a579))
+
 # [1.0.0-beta.87](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.86...v1.0.0-beta.87) (2026-08-16)
 
 
