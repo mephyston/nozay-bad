@@ -2,11 +2,8 @@
 import { env } from 'cloudflare:test';
 import { drizzle } from 'drizzle-orm/d1';
 
-export async function setupMockDb() {
-  const rawDb = env.DB;
-
-  // Topological sorting of tables (child tables dropped/deleted before parent tables to avoid foreign key errors)
-  const tables = [
+// Topological sorting of tables (child tables dropped before parent tables to avoid foreign key errors)
+const tables = [
     'role_permission_log',
     'role_permissions',
     'admin_user_roles',
@@ -55,7 +52,6 @@ export async function setupMockDb() {
     'invoices',
     'check_deposits',
     'bank_statement_lines',
-    'orders',
     'products',
     'product_categories',
     'members',
@@ -69,37 +65,40 @@ export async function setupMockDb() {
     'account_classes'
   ];
 
+// Migrations parsées UNE FOIS au chargement du module (le glob raw est déjà résolu au
+// build par Vite). Chaque fichier est découpé sur `--> statement-breakpoint` (format
+// drizzle) ou, à défaut, sur `;`.
+const migrationFiles = import.meta.glob('../../db/migrations/*.sql', { query: '?raw', import: 'default', eager: true });
+const MIGRATION_STATEMENTS: string[] = Object.keys(migrationFiles)
+  .sort()
+  .flatMap((file) => {
+    const sqlContent = migrationFiles[file] as string;
+    const statements = sqlContent.includes('--> statement-breakpoint')
+      ? sqlContent.split('--> statement-breakpoint')
+      : sqlContent.split(';');
+    return statements.map((s) => s.trim()).filter((s) => s.length > 0);
+  });
 
+/**
+ * Base D1 propre : tables supprimées puis toutes les migrations rejouées.
+ *
+ * Tout part en `batch()` — un batch D1 est un unique aller-retour, là où la version
+ * précédente faisait ~290 `prepare().run()` séquentiels par appel (DELETE + DROP +
+ * chaque statement de migration). Sur un runner GitHub, c'était le poste dominant de
+ * la CI : des tests à 30 ms en local y dépassaient les 5 s.
+ *
+ * Les `PRAGMA foreign_keys` restent hors batch : un batch D1 est une transaction
+ * implicite, et SQLite ignore silencieusement ce pragma en transaction. Les DELETE
+ * préalables ont disparu : sous `foreign_keys = OFF`, les DROP suffisent.
+ */
+export async function setupMockDb() {
+  const rawDb = env.DB;
 
-  // Disable foreign keys temporarily during drop to avoid constraint violations
   await rawDb.prepare('PRAGMA foreign_keys = OFF;').run();
-  for (const table of tables) {
-    try { await rawDb.prepare(`DELETE FROM "${table}";`).run(); } catch {}
-  }
-  for (const table of tables) {
-    await rawDb.prepare(`DROP TABLE IF EXISTS "${table}";`).run();
-  }
+  await rawDb.batch(tables.map((table) => rawDb.prepare(`DROP TABLE IF EXISTS "${table}";`)));
   await rawDb.prepare('PRAGMA foreign_keys = ON;').run();
 
-  // Load migrations sequentially using Vite's static raw glob import (loaded at build time)
-  const migrationFiles = import.meta.glob('../../db/migrations/*.sql', { query: '?raw', import: 'default', eager: true });
-  const sortedFiles = Object.keys(migrationFiles).sort();
-
-  for (const file of sortedFiles) {
-    const sqlContent = migrationFiles[file] as string;
-    let statements: string[];
-    if (sqlContent.includes('--> statement-breakpoint')) {
-      statements = sqlContent.split('--> statement-breakpoint');
-    } else {
-      statements = sqlContent.split(';');
-    }
-    for (const stmt of statements) {
-      const trimmed = stmt.trim();
-      if (trimmed.length > 0) {
-        await rawDb.prepare(trimmed).run();
-      }
-    }
-  }
+  await rawDb.batch(MIGRATION_STATEMENTS.map((stmt) => rawDb.prepare(stmt)));
 
   return { mockD1: rawDb, db: drizzle(rawDb) };
 }
