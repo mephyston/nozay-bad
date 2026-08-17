@@ -6,7 +6,7 @@ import { createCheckSchema } from './validator';
 
 export type Bindings = {
   DB: D1Database;
-  AI: unknown;
+  AI: import('./handler').VisionAi;
 };
 
 export const recordCheckTransactionRoute = new Hono<{ Bindings: Bindings }>();

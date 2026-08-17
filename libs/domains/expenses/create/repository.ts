@@ -4,9 +4,9 @@ import { type DbOrTx } from '@nba/db';
 import { expensesTable } from '../shared/schema';
 
 export class CreateExpenseRepository {
-  async resolveSeasonId(db: DbOrTx, id: string | number): Promise<number> {
-    const sId = await getSeasonId(db, id);
-    return sId !== undefined ? sId : 1;
+  /** `undefined` si le code de saison est inconnu : au handler de refuser. */
+  async resolveSeasonId(db: DbOrTx, id: string | number): Promise<number | undefined> {
+    return getSeasonId(db, id);
   }
 
   async create(db: DbOrTx, values: typeof expensesTable.$inferInsert): Promise<typeof expensesTable.$inferSelect> {

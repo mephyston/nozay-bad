@@ -20,6 +20,13 @@ const scanTargets = [
   ...walkDir(path.join(repoRoot, 'libs/domains')).filter(f => f.endsWith('.svelte')),
   ...walkDir(path.join(repoRoot, 'apps/admin/src/pages')).filter(f => f.endsWith('.astro')),
   ...walkDir(path.join(repoRoot, 'apps/storefront/src/pages')).filter(f => f.endsWith('.astro')),
+  // Les composants et layouts propres aux apps suivent les mêmes règles que leurs
+  // pages : ce sont eux qui portaient les dernières couleurs de palette en dur,
+  // précisément parce qu'ils échappaient au scan.
+  ...walkDir(path.join(repoRoot, 'apps/admin/src/components')).filter(f => /\.(astro|svelte)$/.test(f)),
+  ...walkDir(path.join(repoRoot, 'apps/admin/src/layouts')).filter(f => f.endsWith('.astro')),
+  ...walkDir(path.join(repoRoot, 'apps/storefront/src/components')).filter(f => /\.(astro|svelte)$/.test(f)),
+  ...walkDir(path.join(repoRoot, 'apps/storefront/src/layouts')).filter(f => f.endsWith('.astro')),
   // Le site public passe par les mêmes règles : sans cette entrée il y échapperait
   // en silence, et c'est l'app la plus tentée d'écrire des couleurs en dur.
   ...walkDir(path.join(repoRoot, 'apps/website/src/pages')).filter(f => f.endsWith('.astro')),

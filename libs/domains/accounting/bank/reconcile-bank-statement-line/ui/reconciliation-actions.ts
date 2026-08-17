@@ -1,4 +1,4 @@
-import type { BankStatementLine } from './reconciliation-types';
+import type { BankStatementLine, ReconciliationStateFields, SplitRow } from './reconciliation-types';
 import { toast, uiConfirm, flashAndReload } from '@nba/ui';
 import {
   apiLoadUnpaidInvoices,
@@ -14,7 +14,7 @@ import {
 import { scrollMemberOptionIntoView, scrollCategoryOptionIntoView } from './reconciliation-dropdowns';
 import { createBulkActions } from './reconciliation-actions-bulk';
 
-export function createReconciliationActions(s: any) {
+export function createReconciliationActions(s: ReconciliationStateFields) {
   const bulk = createBulkActions(s);
 
   function prepareNextFocus(currentBtId: number, isFullyReconciled: boolean) {
@@ -22,7 +22,7 @@ export function createReconciliationActions(s: any) {
     if (!isFullyReconciled) {
       sessionStorage.setItem('reconcile_active_bt_id', currentBtId.toString());
     } else {
-      const index = s.displayedTransactions.findIndex((t: any) => t.id === currentBtId);
+      const index = s.displayedTransactions.findIndex((t) => t.id === currentBtId);
       if (index !== -1) {
         if (index + 1 < s.displayedTransactions.length) sessionStorage.setItem('reconcile_active_bt_id', s.displayedTransactions[index + 1].id.toString());
         else if (index - 1 >= 0) sessionStorage.setItem('reconcile_active_bt_id', s.displayedTransactions[index - 1].id.toString());
@@ -43,7 +43,7 @@ export function createReconciliationActions(s: any) {
   }
 
   function addSplitRow() { s.splits = [...s.splits, { category: '1', amount: 0 }]; }
-  function removeSplitRow(index: number) { if (s.splits.length > 2) s.splits = s.splits.filter((_: any, i: number) => i !== index); }
+  function removeSplitRow(index: number) { if (s.splits.length > 2) s.splits = s.splits.filter((_, i) => i !== index); }
 
   async function loadUnpaidInvoices() {
     try { s.unpaidInvoices = await apiLoadUnpaidInvoices(s.selectedSeason); } catch (err) { console.error('Erreur factures:', err); }
@@ -52,7 +52,7 @@ export function createReconciliationActions(s: any) {
   async function handleReconcile(action: 'create', bt: BankStatementLine, invoiceId: number) {
     s.isSubmitting = true;
     try {
-      const invoice = s.unpaidInvoices.find((inv: any) => inv.id === invoiceId);
+      const invoice = s.unpaidInvoices.find((inv) => inv.id === invoiceId);
       if (!invoice) throw new Error('Facture introuvable.');
       prepareNextFocus(bt.id, (s.remainingAmount - invoice.totalAmount) <= 10);
       await apiReconcileInvoice(bt, invoice);
@@ -66,7 +66,7 @@ export function createReconciliationActions(s: any) {
     try {
       const ids = Array.from(s.selectedInvoiceIds) as number[];
       if (ids.length === 0) throw new Error('Aucune facture sélectionnée.');
-      const firstInvoice = s.unpaidInvoices.find((inv: any) => inv.id === ids[0]);
+      const firstInvoice = s.unpaidInvoices.find((inv) => inv.id === ids[0]);
       if (!firstInvoice) throw new Error('Facture introuvable.');
       prepareNextFocus(s.selectedTx.id, Math.abs(s.selectedSum - s.selectedTx.amount) <= 10);
       await apiMultiInvoiceReconcile(s.selectedTx, firstInvoice, ids);
@@ -108,7 +108,7 @@ export function createReconciliationActions(s: any) {
   async function handleMatch(btId: number, ledgerEntryId: number) {
     s.isSubmitting = true;
     try {
-      const matchedTx = s.glTransactions.find((t: any) => t.id === ledgerEntryId);
+      const matchedTx = s.glTransactions.find((t) => t.id === ledgerEntryId);
       prepareNextFocus(btId, (s.remainingAmount - (matchedTx ? Math.abs(matchedTx.amount) : 0)) <= 10);
       await apiMatchLedgerEntry(btId, ledgerEntryId, s.selectedMemberId ? parseInt(s.selectedMemberId) : null);
       flashAndReload('Rapprochement effectué avec succès !');
@@ -118,11 +118,11 @@ export function createReconciliationActions(s: any) {
   async function handleCreateAndMatch(bt?: BankStatementLine) {
     s.isSubmitting = true;
     try {
-      const targetBt = (bt && typeof (bt as any).id === 'number') ? bt : s.selectedTx;
+      const targetBt = bt ?? s.selectedTx;
       if (!targetBt) throw new Error('Aucune transaction bancaire sélectionnée.');
       const memId = s.selectedMemberId ? parseInt(s.selectedMemberId) : null;
       if (s.isSplitMode) {
-        const splitSumCents = s.splits.reduce((acc: number, sp: any) => acc + Math.round((sp.amount || 0) * 100), 0);
+        const splitSumCents = s.splits.reduce((acc: number, sp: SplitRow) => acc + Math.round((sp.amount || 0) * 100), 0);
         if (Math.abs(splitSumCents - s.remainingAmount) > 10) throw new Error("Le montant total ventilé doit être égal au reste à rapprocher.");
         prepareNextFocus(targetBt.id, (s.remainingAmount - splitSumCents) <= 10);
         await apiCreateAndMatchSplit(targetBt, memId, s.targetSeasonId, s.paymentMethod, s.splits, s.accrualType, s.accrualNote);
@@ -143,16 +143,16 @@ export function createReconciliationActions(s: any) {
     s.isSubmitting = true;
     try {
       prepareNextFocus(btId, true);
-      const tx = s.bankStatementLines.find((t: any) => t.id === btId) || s.selectedTx;
+      const tx = s.bankStatementLines.find((t) => t.id === btId) || s.selectedTx;
       if (!tx) throw new Error('Transaction introuvable.');
 
-      const btAmtCents = Math.abs((tx as any).amountCents ?? tx.amount ?? 0);
+      const btAmtCents = Math.abs(tx.amountCents ?? tx.amount ?? 0);
       const amountToLink = s.remainingAmount > 0 ? (s.remainingAmount / 100) : (btAmtCents / 100);
 
       let resolvedCat = String(cat || '1');
       const numCat = parseInt(resolvedCat);
       if (isNaN(numCat) || numCat <= 0) {
-        const found = s.categories.find((c: any) => c.id === resolvedCat || c.code === resolvedCat || c.name.toLowerCase().includes(resolvedCat.toLowerCase()));
+        const found = s.categories.find((c) => c.id === resolvedCat || c.code === resolvedCat || c.name.toLowerCase().includes(resolvedCat.toLowerCase()));
         resolvedCat = found ? found.id : '1';
       }
 

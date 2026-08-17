@@ -1,14 +1,15 @@
 import { toast, uiConfirm, flashAndReload } from '@nba/ui';
 import { apiBulkReconcile, apiBulkIgnore, apiImportOfx, apiAnalyzeAi } from './reconciliation-api';
+import type { ReconciliationStateFields } from './reconciliation-types';
 
-export function createBulkActions(s: any) {
+export function createBulkActions(s: ReconciliationStateFields) {
   async function handleBulkReconcile() {
     const ids = Object.keys(s.selectedTxIds).map(Number).filter(id => s.selectedTxIds[id]);
     if (ids.length === 0) return;
     s.isSubmitting = true; s.errorMsg = '';
     try {
       const requests = ids.map(id => {
-        const bt = s.bankStatementLines.find((t: any) => t.id === id);
+        const bt = s.bankStatementLines.find((t) => t.id === id);
         if (!bt || !bt.aiSuggestions) return null;
         let memberId = null; let cat = '1';
         try { const sug = JSON.parse(bt.aiSuggestions); memberId = sug.memberId ? parseInt(sug.memberId) : null; cat = sug.category || '1'; } catch {}

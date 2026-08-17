@@ -1,9 +1,11 @@
 import { Hono } from 'hono';
 import { HELP_DOCS } from './ai-knowledge';
-import { AI_TOOLS } from './ai-tools';
+import { AI_TOOLS, TOOL_PERMISSIONS } from './ai-tools';
 import { createDb } from '@nba/db';
+import { can } from '@nba/iam';
 import { getSeasonReports } from '@nba/accounting-api';
 import { listMembers, getMemberStats } from '@nba/members-api';
+import { resolveActor } from './authz/actor';
 
 export const aiRouter = new Hono<{ Bindings: { DB: D1Database, AI: any } }>();
 
@@ -26,6 +28,17 @@ aiRouter.post('/chat', async (c) => {
     return c.json({ success: false, error: 'Prompt manquant' }, 400);
   }
 
+  // Les outils sont bornés aux droits de l'acteur : `ai:assistant:use` ouvre la
+  // conversation, pas les données. Un rôle sans `accounting:reports:read` ne doit pas
+  // obtenir le bilan en le demandant à l'assistant. La résolution repasse par le
+  // cache de `resolveActor` (30 s), déjà chaud depuis le middleware d'autorisation.
+  const email = c.req.header('x-user-email') || '';
+  const actor = email ? await resolveActor(createDb(c.env.DB), email) : null;
+  const grantedTools = AI_TOOLS.filter((tool) => {
+    const required = TOOL_PERMISSIONS[tool.function.name];
+    return required !== undefined && actor !== null && can(actor.permissions, required);
+  });
+
   try {
     let messages: any[] = [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -34,7 +47,7 @@ aiRouter.post('/chat', async (c) => {
 
     let response = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct-fp8', {
       messages,
-      tools: AI_TOOLS
+      tools: grantedTools
     });
 
     let aiText = response.response;
@@ -46,7 +59,12 @@ aiRouter.post('/chat', async (c) => {
       let toolResult: any = null;
       const db = createDb(c.env.DB);
 
-      try {
+      // Revérification à l'exécution : le modèle peut réclamer un outil qu'on ne lui
+      // a pas offert. La liste filtrée est une préférence, ce contrôle est la garde.
+      const required = TOOL_PERMISSIONS[toolCall.name];
+      if (required === undefined || actor === null || !can(actor.permissions, required)) {
+        toolResult = { error: "Outil non autorisé pour ce compte." };
+      } else try {
         if (toolCall.name === 'get_season_reports') {
           const args = toolCall.arguments;
           const params = typeof args === 'string' ? JSON.parse(args) : (args || {});
@@ -124,7 +142,7 @@ aiRouter.post('/chat', async (c) => {
 
       const finalResponse = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct-fp8', {
         messages,
-        tools: AI_TOOLS
+        tools: grantedTools
       });
 
       aiText = finalResponse.response;

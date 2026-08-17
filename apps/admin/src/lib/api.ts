@@ -1,5 +1,5 @@
-import { env as cfEnv } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
+import { resolveEnv as resolveRuntimeEnv } from '@nba/runtime-env';
 
 /**
  * Client d'API de l'application admin, porteur de l'identité de l'utilisateur.
@@ -13,19 +13,11 @@ import { createApiClient } from '@nba/api-client';
  * Un test d'architecture interdit `createApiClient(` sous `src/pages/admin/**`.
  */
 /**
- * Environnement d'exécution du Worker.
- *
- * `locals.runtime.env` lève en Astro v6 : `cloudflare:workers` fait autorité, la
- * lecture de `locals` n'est là que par compatibilité, sous try/catch.
+ * Environnement d'exécution du Worker : fusion `cloudflare:workers` + env runtime
+ * Astro, partagée par les trois applications (`@nba/runtime-env`).
  */
 export function resolveEnv(locals: App.Locals): Record<string, unknown> {
-  let runtimeEnv: Record<string, string> = {};
-  try {
-    runtimeEnv = ((locals as any).runtime?.env || {}) as Record<string, string>;
-  } catch {
-    // Astro v6 : `locals.runtime.env` lève en production. cfEnv suffit alors.
-  }
-  return { ...cfEnv, ...runtimeEnv } as Record<string, unknown>;
+  return resolveRuntimeEnv(locals);
 }
 
 export function createAdminApiClient(locals: App.Locals) {

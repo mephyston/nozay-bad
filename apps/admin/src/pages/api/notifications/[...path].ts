@@ -25,6 +25,9 @@ export const ALL: APIRoute = async ({ request, locals, params }) => {
     headers.delete('x-user-email');
     headers.delete('x-user-permissions');
     headers.delete('x-caller');
+    // Les cookies du navigateur (Cloudflare Access, usurpation) ne regardent pas
+    // l'API interne : on ne relaie jamais un secret dont le destinataire n'a pas l'usage.
+    headers.delete('cookie');
 
     return await createAdminApiClient(locals).fetch(targetUrl, {
       method: request.method,

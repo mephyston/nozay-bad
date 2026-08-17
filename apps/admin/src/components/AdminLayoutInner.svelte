@@ -38,8 +38,7 @@
   } from "@lucide/svelte";
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
-  import ThemeToggle from "./ThemeToggle.svelte";
-  import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, MobileBottomNav, PwaInstallBanner, toast } from "@nba/ui";
+  import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, MobileBottomNav, PwaInstallBanner, ThemeToggle, toast } from "@nba/ui";
 
   let { children, email, name, permissions = [], realEmail = '', breadcrumb } = $props<{
     children?: import('svelte').Snippet;
@@ -459,10 +458,10 @@
       Il porte le retrait de l'encoche parce qu'il est alors le premier élément de la
       colonne : sans lui, le bandeau se glissait sous l'îlot dynamique d'un iPhone, et
       son bouton de retour n'était plus atteignable — le doigt tombait sur le matériel.
-      L'ambre remonte jusqu'en haut de l'écran, ce qui le fait lire comme une barre
-      système, précisément ce qu'il est.
+      Le ton `warning` remonte jusqu'en haut de l'écran, ce qui le fait lire comme une
+      barre système, précisément ce qu'il est.
     -->
-    <div class="pt-safe shrink-0 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 bg-amber-500/15 text-amber-900 dark:text-amber-200 border-b border-amber-500/40 px-4 py-2 text-xs font-semibold">
+    <div class="pt-safe shrink-0 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 bg-warning/15 text-warning border-b border-warning/40 px-4 py-2 text-xs font-semibold">
       <span>Vous consultez l'application en tant que <strong>{email}</strong>.</span>
       <button
         type="button"

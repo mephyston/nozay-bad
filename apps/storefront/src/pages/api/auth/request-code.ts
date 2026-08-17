@@ -17,6 +17,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const kv = env.RATE_LIMIT_KV;
   const ip = clientIp(request);
 
+  // Fail-closed, comme le middleware : sans secret, aucun cookie signé ne part —
+  // pas même le leurre, qui serait signé avec une clé vide.
+  const secret = resolveSessionSecret(env, IS_DEV);
+  if (!secret) {
+    console.error('[auth] SESSION_SECRET non configuré');
+    return json({ ok: false, error: 'Erreur de configuration serveur.' }, 500);
+  }
+
   let body: any;
   try {
     body = await request.json();
@@ -77,8 +85,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
   } catch (e) {
     console.error('[auth] lookup-household a échoué:', e);
   }
-
-  const secret = resolveSessionSecret(env, IS_DEV);
 
   // Anti-énumération de comptes : la réponse doit être **indiscernable** qu'un
   // adhérent existe ou non. Ni le corps JSON (pas de `found`, pas d'email masqué),

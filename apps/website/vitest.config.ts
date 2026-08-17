@@ -6,6 +6,8 @@ export default defineConfig({
     alias: {
       'cloudflare:workers': path.resolve(__dirname, '../admin/src/mocks/cloudflare-workers.ts'),
       '@nba/api-client': path.resolve(__dirname, '../../libs/shared/api-client/src/index.ts'),
+      '@nba/security-headers': path.resolve(__dirname, '../../libs/shared/security-headers/src/index.ts'),
+      '@nba/runtime-env': path.resolve(__dirname, '../../libs/shared/runtime-env/src/index.ts'),
       '@nba/html': path.resolve(__dirname, '../../libs/shared/html/src/index.ts'),
       '@nba/preview': path.resolve(__dirname, '../../libs/shared/preview/src/index.ts'),
       '@nba/cms/public': path.resolve(__dirname, '../../libs/domains/cms/shared/public.ts'),

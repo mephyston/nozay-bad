@@ -16,7 +16,7 @@ vi.mock('@nba/members-api', () => ({
 }));
 
 vi.mock('@nba/accounting-api', () => ({
-  normalizeCategory: vi.fn((c) => (typeof c === 'number' ? c : 1))
+  normalizeCategory: vi.fn((c) => (typeof c === 'number' ? c : null))
 }));
 
 describe('createExpense handler', () => {
@@ -51,6 +51,38 @@ describe('createExpense handler', () => {
       emitterName: 'John Doe',
     }));
     expect(result).toEqual({ id: 1, status: 'pending' });
+  });
+
+  it('refuse une saison non résolue plutôt que de se replier sur la saison 1', async () => {
+    vi.mocked(isSeasonClosed).mockResolvedValue(false);
+    const repoProto = CreateExpenseRepository.prototype as any;
+    repoProto.resolveSeasonId.mockResolvedValueOnce(undefined);
+
+    await expect(
+      createExpense(db, {
+        seasonId: 'saison-fantome',
+        description: 'Test',
+        category: 1,
+        amount: 100,
+        emitterName: 'John Doe',
+      })
+    ).rejects.toThrow('Saison inconnue');
+    expect(repoProto.create).not.toHaveBeenCalled();
+  });
+
+  it("refuse une catégorie inconnue plutôt que de l'imputer aux Adhésions", async () => {
+    vi.mocked(isSeasonClosed).mockResolvedValue(false);
+
+    await expect(
+      createExpense(db, {
+        seasonId: 'season-1',
+        description: 'Test',
+        category: 'categorie-fantome',
+        amount: 100,
+        emitterName: 'John Doe',
+      })
+    ).rejects.toThrow('Catégorie inconnue');
+    expect((CreateExpenseRepository.prototype as any).create).not.toHaveBeenCalled();
   });
 
   it('should throw SeasonClosedError if season is closed (business error)', async () => {
