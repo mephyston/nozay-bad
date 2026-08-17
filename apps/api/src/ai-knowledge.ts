@@ -1870,6 +1870,7 @@ Une page du site public se compose en empilant des **blocs**. Cet article décri
 | Ce que vous voulez faire | Le bloc |
 |---|---|
 | Écrire des paragraphes | **Texte** |
+| Poser deux ou trois contenus côte à côte | **Colonnes** |
 | Ouvrir la page par une grande accroche | **Accroche** |
 | Proposer des raccourcis ou afficher des partenaires | **Grille de liens** |
 | Ouvrir par un grand bandeau d'images qui défilent | **Carrousel** |
@@ -1914,6 +1915,46 @@ Quelques points à connaître :
 - Un bloc **Texte vide est refusé** à l'enregistrement. Il occuperait une place dans la page sans que personne comprenne pourquoi elle « saute ».
 - Les tableaux et les images à l'intérieur d'un texte sont **conservés** lorsqu'ils existent — c'est le cas des pages reprises de WordPress — mais la barre d'outils ne permet pas d'en créer. Pour des photos, utilisez un bloc **Galerie** ; pour un PDF, un bloc **Document**.
 - Les images d'un texte doivent pointer la [médiathèque](/admin/help/site-mediatheque). Une image hébergée ailleurs est retirée à l'enregistrement — c'est ce qui écarte d'un geste les pixels de suivi et les images qui disparaissent le jour où le site voisin ferme.
+
+---
+
+## Colonnes
+
+Deux ou trois contenus **côte à côte** sur ordinateur, **empilés** sur téléphone. C'est le bloc qui remplace les tableaux de mise en page de l'ancien site, dont les colonnes restaient côte à côte jusque sur un écran de téléphone — et rendaient ces pages illisibles.
+
+| Réglage | Ce qu'il fait |
+|---|---|
+| **Titre** | Facultatif, affiché au-dessus de l'ensemble des colonnes |
+| **Largeur des colonnes** | À **deux colonnes seulement** : égales, première large, ou dernière large. Une colonne large occupe les deux tiers, l'autre le tiers restant |
+| **Contenu de la colonne** | Texte, ou l'un des blocs listés ci-dessous |
+| **Ajouter / Retirer une colonne** | Deux au minimum, trois au maximum |
+
+### Ce qu'une colonne peut contenir
+
+- **Texte** — une image facultative *au-dessus*, puis des paragraphes. C'est le choix par défaut.
+- **Actualités**, **Agenda**, **Créneaux**, **Galerie**, **Document**, **Grille de liens** — le bloc s'y règle exactement comme au premier niveau.
+
+Les autres blocs ne sont pas proposés : **Accroche** et **Carrousel** ont besoin de toute la largeur de la page, et un bloc **Colonnes** ne s'imbrique pas dans un autre.
+
+### La disposition de la page d'accueil
+
+Pour afficher les actualités sur deux tiers de la page et l'agenda sur le dernier tiers :
+
+1. Ajoutez un bloc **Colonnes** — il arrive avec deux colonnes de texte.
+2. **Largeur des colonnes** : « Première colonne large (deux tiers) ».
+3. **Colonne 1**, contenu : « Actualités ». Réglez le nombre et la catégorie.
+4. **Colonne 2**, contenu : « Agenda ». Réglez le nombre et les catégories.
+
+Sur téléphone, les actualités s'affichent d'abord, l'agenda en dessous.
+
+> [!NOTE]
+> Changer le contenu d'une colonne **efface ce qu'elle contenait**. Le texte remplacé reste consultable dans l'historique des révisions de la page.
+
+**Bon à savoir**
+
+- Trois colonnes sont toujours **de largeur égale** : le réglage disparaît dès qu'on ajoute la troisième.
+- Une colonne de texte **vide est refusée** à l'enregistrement, comme un bloc **Texte** vide : elle occuperait sa part de la grille et décalerait ses voisines. Une image seule suffit à la remplir.
+- Les blocs **Actualités**, **Agenda** et **Créneaux** posés dans une colonne se tiennent à jour tout seuls, exactement comme ailleurs : ils affichent ce qui vient, pas la liste du jour où la page a été composée.
 
 ---
 
@@ -2153,8 +2194,6 @@ Tout ce que vous saisissez est contrôlé par le serveur, jamais seulement par l
 - Les liens dangereux sont refusés — un bouton dont l'adresse ne va nulle part disparaît.
 - Le texte riche est nettoyé : scripts, styles et cadres sont retirés ; les images doivent venir de la médiathèque.
 - Un bloc refusé fait échouer **tout l'enregistrement**, avec un message indiquant le numéro du bloc en cause. La page n'est jamais enregistrée à moitié.
-
-
 --- Article: site-mediatheque.md ---
 ---
 title: "Médiathèque"

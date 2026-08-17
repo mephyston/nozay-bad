@@ -18,9 +18,24 @@ interface Props {
   priority?: boolean;
   showImage?: boolean;
   sizes?: string;
+  /**
+   * Niveau du titre de la carte.
+   *
+   * `h3` sous le `h2` d'un bloc « Actualités » ordinaire. Le bloc posé dans une colonne
+   * descend son propre titre en `h3` : ses cartes doivent suivre, sinon elles
+   * deviendraient les sœurs du titre qui les annonce, et un lecteur d'écran perdrait le
+   * rattachement.
+   */
+  headingLevel?: 'h3' | 'h4';
 }
 
-const { post, priority = false, showImage = true, sizes = DEFAULT_SIZES } = Astro.props;
+const {
+  post,
+  priority = false,
+  showImage = true,
+  sizes = DEFAULT_SIZES,
+  headingLevel: Heading = 'h3'
+} = Astro.props;
 
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' });
 const published = post.publishedAt ? new Date(post.publishedAt) : null;
@@ -82,10 +97,10 @@ const cover = showImage ? post.cover : null;
       </ul>
     )}
 
-    <h3 class="text-lg font-semibold leading-snug tracking-tight">
+    <Heading class="text-lg font-semibold leading-snug tracking-tight">
       {/* `after:absolute inset-0` : la zone cliquable couvre la carte, le lien reste unique. */}
       <a href={post.path} class="after:absolute after:inset-0 hover:underline">{post.title}</a>
-    </h3>
+    </Heading>
 
     {published && (
       <p class="text-muted-foreground mt-1 text-sm">

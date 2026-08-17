@@ -9,7 +9,13 @@
  * d'URL — sans jamais faire entrer Hono ni Drizzle dans le paquet du site.
  */
 
-export { BLOCK_TYPES, BLOCK_SCHEMAS } from './blocks';
+export {
+  BLOCK_TYPES,
+  BLOCK_SCHEMAS,
+  NESTABLE_BLOCK_TYPES,
+  isBlockColumn,
+  flattenBlocks
+} from './blocks';
 export type {
   BlockType,
   BlockPayload,
@@ -23,9 +29,16 @@ export type {
   ScheduleBlock,
   PdfLinkBlock,
   PostsFeedBlock,
+  ColumnsBlock,
+  EventsBlock,
+  NestableBlockType,
+  NestableBlock,
   CtaLinkValue,
   CarouselSlideValue,
-  PersonValue
+  PersonValue,
+  ColumnValue,
+  TextColumnValue,
+  BlockColumnValue
 } from './blocks';
 
 export { normalisePath, slugify, buildPath, ROOT_PATH } from './slug';

@@ -2,8 +2,20 @@
 import type { ScheduleBlock } from '@nba/cms/public';
 import type { ScheduleSlotView } from '../../lib/cms';
 
-interface Props { block: ScheduleBlock; slots?: ScheduleSlotView[] }
-const { block, slots = [] } = Astro.props;
+interface Props { block: ScheduleBlock; slots?: ScheduleSlotView[]; nested?: boolean }
+const { block, slots = [], nested = false } = Astro.props;
+
+/*
+  Imbriqué dans une colonne, le bloc perd son enveloppe et son niveau de titre.
+
+  La grille garde en revanche son point de bascule `md` : elle compte jusqu'à neuf
+  colonnes et son seul mode étroit est la liste par jour, qui n'a rien à gagner à la
+  largeur d'une colonne.
+*/
+const shell = nested ? '' : 'mx-auto max-w-5xl px-4 py-8';
+const Heading = nested ? 'h3' : 'h2';
+/** Le nom du jour reste d'un cran sous le titre du bloc, imbriqué ou non. */
+const DayHeading = nested ? 'h4' : 'h3';
 
 const WEEKDAYS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 const AUDIENCES: Record<string, string> = {
@@ -100,8 +112,8 @@ const cellSlots = (weekday: number, venue: string, range: { startTime: string; e
 
 const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'libre'))];
 ---
-<section class="mx-auto max-w-5xl px-4 py-8">
-  {block.heading && <h2 class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
+<section class:list={[shell]}>
+  {block.heading && <Heading class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</Heading>}
 
   {shown.length === 0 ? (
     <p class="text-muted-foreground">Les créneaux ne sont pas encore renseignés pour cette saison.</p>
@@ -215,7 +227,7 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
       <div class="space-y-5 md:hidden">
         {days.map((day) => (
           <div>
-            <h3 class="mb-2 font-semibold">{day.label}</h3>
+            <DayHeading class="mb-2 font-semibold">{day.label}</DayHeading>
             <ul class="space-y-1.5">
               {shown
                 .filter((slot) => slot.weekday === day.weekday)

@@ -3,8 +3,11 @@ import type { PdfLinkBlock, CmsMediaRow, CmsMediaVariantRow } from '@nba/cms/pub
 import Picture from '../Picture.astro';
 
 type MediaMap = Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
-interface Props { block: PdfLinkBlock; media?: MediaMap }
-const { block, media = new Map() as MediaMap } = Astro.props;
+interface Props { block: PdfLinkBlock; media?: MediaMap; nested?: boolean }
+const { block, media = new Map() as MediaMap, nested = false } = Astro.props;
+
+/** Imbriqué dans une colonne, le bloc perd son enveloppe : la largeur y appartient à la colonne. */
+const shell = nested ? '' : 'mx-auto max-w-5xl px-4 py-6';
 
 const document = media.get(block.mediaId);
 const thumbnail = block.thumbnailMediaId ? media.get(block.thumbnailMediaId) : undefined;
@@ -23,7 +26,7 @@ const showPreview = Boolean(block.preview) && isPdf && href !== null;
 const previewHeight = block.previewHeightPx ?? 720;
 ---
 {href && (
-  <section class="mx-auto max-w-5xl px-4 py-6">
+  <section class:list={[shell]}>
     {/*
       Le lien d'abord, et toujours.
 

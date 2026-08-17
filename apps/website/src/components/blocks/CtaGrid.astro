@@ -5,10 +5,25 @@ import Picture from '../Picture.astro';
 interface Props {
   block: CtaGridBlock;
   media?: Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
+  nested?: boolean;
 }
 
-const { block, media = new Map() } = Astro.props;
-const columns = { 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3', 4: 'sm:grid-cols-2 lg:grid-cols-4' }[block.columns];
+const { block, media = new Map(), nested = false } = Astro.props;
+
+/*
+  Imbriquée dans une colonne, la grille interroge sa **colonne** et non la fenêtre :
+  quatre boutons côte à côte dans un tiers de page ne portent plus leur libellé.
+*/
+const columns = (
+  nested
+    ? { 2: '@md:grid-cols-2', 3: '@md:grid-cols-3', 4: '@md:grid-cols-2 @3xl:grid-cols-4' }
+    : { 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3', 4: 'sm:grid-cols-2 lg:grid-cols-4' }
+)[block.columns];
+
+/** Imbriqué, le bloc perd son enveloppe et son niveau de titre. */
+const shell = nested ? '' : 'mx-auto max-w-5xl px-4 py-8';
+const bannerShell = nested ? 'px-4 py-8' : 'mx-auto max-w-5xl px-4 py-16';
+const Heading = nested ? 'h3' : 'h2';
 // Un lien sortant s'ouvre dans un nouvel onglet ; `rel` est posé ici et jamais lu du contenu.
 const isExternal = (href: string) => /^https?:\/\//i.test(href);
 
@@ -34,9 +49,9 @@ const background = block.backgroundMediaId ? media.get(block.backgroundMediaId) 
       <div class="absolute inset-0 bg-black/45"></div>
     </div>
 
-    <div class="mx-auto max-w-5xl px-4 py-16">
+    <div class={bannerShell}>
       {block.heading && (
-        <h2 class="mb-6 text-3xl font-semibold tracking-tight text-white drop-shadow">{block.heading}</h2>
+        <Heading class="mb-6 text-3xl font-semibold tracking-tight text-white drop-shadow">{block.heading}</Heading>
       )}
       <ul class:list={['grid gap-4', columns]}>
         {block.items.map((item) => (
@@ -56,8 +71,8 @@ const background = block.backgroundMediaId ? media.get(block.backgroundMediaId) 
     </div>
   </section>
 ) : (
-  <section class="mx-auto max-w-5xl px-4 py-8">
-    {block.heading && <h2 class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
+  <section class:list={[shell]}>
+    {block.heading && <Heading class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</Heading>}
     <ul class:list={['grid gap-4', columns]}>
       {block.items.map((item) => (
         <li>

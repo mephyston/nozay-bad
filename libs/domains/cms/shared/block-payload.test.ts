@@ -276,6 +276,143 @@ describe('normaliseBlockPayload — columns', () => {
   });
 });
 
+describe('normaliseBlockPayload — colonnes qui hébergent un bloc', () => {
+  const feed = { type: 'posts_feed', limit: 6, showImages: true, showArchiveLink: true };
+  const agenda = { type: 'events', limit: 6, categories: [], showArchiveLink: true };
+
+  it('accepte un bloc dans une colonne, à côté du texte', () => {
+    const block = normaliseBlockPayload(
+      'columns',
+      { items: [{ block: feed }, { html: '<p>À côté</p>' }] },
+      0
+    );
+    expect(block).toMatchObject({
+      type: 'columns',
+      items: [{ block: { type: 'posts_feed', limit: 6 } }, { html: '<p>À côté</p>' }]
+    });
+  });
+
+  /*
+    La forme demandée pour l'accueil : les actualités sur deux tiers, l'agenda sur le
+    dernier tiers.
+  */
+  it('retient le réglage de largeur à deux colonnes', () => {
+    const block = normaliseBlockPayload(
+      'columns',
+      { items: [{ block: feed }, { block: agenda }], ratio: 'wide-first' },
+      0
+    );
+    expect(block).toMatchObject({ ratio: 'wide-first' });
+  });
+
+  it("efface le réglage de largeur à trois colonnes, où il n'aurait aucun effet", () => {
+    const block = normaliseBlockPayload(
+      'columns',
+      { items: [{ html: '<p>A</p>' }, { html: '<p>B</p>' }, { html: '<p>C</p>' }], ratio: 'wide-first' },
+      0
+    );
+    expect(block).toMatchObject({ ratio: undefined });
+  });
+
+  /*
+    Le point technique le plus délicat du lot : `Value.Clean` ne nettoie une union que
+    par la variante qui valide déjà. Sans la passe récursive, un champ d'état de
+    l'éditeur glissé dans le bloc imbriqué ferait refuser la page entière.
+  */
+  it("retire les champs d'état de l'éditeur jusque dans un bloc imbriqué", () => {
+    const block = normaliseBlockPayload(
+      'columns',
+      { items: [{ block: { ...feed, _localId: 'tmp-2', _collapsed: false } }, { html: '<p>B</p>' }] },
+      0
+    );
+    expect(block).toEqual({
+      type: 'columns',
+      items: [
+        { block: { type: 'posts_feed', limit: 6, showImages: true, showArchiveLink: true } },
+        { html: '<p>B</p>' }
+      ]
+    });
+  });
+
+  it('assainit le contenu du bloc imbriqué comme au premier niveau', () => {
+    const block = normaliseBlockPayload(
+      'columns',
+      {
+        items: [
+          {
+            block: {
+              type: 'cta_grid',
+              columns: 2,
+              items: [
+                { label: 'Adhérer', href: '/adhesion/' },
+                { label: 'Piège', href: 'javascript:alert(1)' }
+              ]
+            }
+          },
+          { html: '<p>B</p>' }
+        ]
+      },
+      0
+    );
+    expect(block).toMatchObject({
+      items: [{ block: { items: [{ label: 'Adhérer', href: '/adhesion/' }] } }, { html: '<p>B</p>' }]
+    });
+  });
+
+  it('refuse un bloc hors de la liste blanche', () => {
+    expect(() =>
+      normaliseBlockPayload(
+        'columns',
+        { items: [{ block: { type: 'hero', title: 'Bienvenue', ctas: [] } }, { html: '<p>B</p>' }] },
+        2
+      )
+    ).toThrow(/colonne 1/);
+    expect(() =>
+      normaliseBlockPayload(
+        'columns',
+        {
+          items: [
+            { block: { type: 'columns', items: [{ html: '<p>A</p>' }, { html: '<p>B</p>' }] } },
+            { html: '<p>B</p>' }
+          ]
+        },
+        0
+      )
+    ).toThrow(CmsBlockPayloadError);
+  });
+
+  it("ne réclame pas de texte à une colonne qui porte un bloc", () => {
+    expect(() =>
+      normaliseBlockPayload('columns', { items: [{ block: agenda }, { block: feed }] }, 0)
+    ).not.toThrow();
+  });
+
+  /*
+    Non-régression : les colonnes de texte enregistrées avant cette évolution ne portent
+    ni `block` ni `ratio`. Si elles cessaient de valider, `parseStoredBlock` rendrait
+    `null` et le bloc disparaîtrait des pages en ligne sans un mot.
+  */
+  it('relit une colonne de texte enregistrée avant les blocs imbriqués', () => {
+    const stored = '{"type":"columns","items":[{"html":"<p>A</p>","mediaId":4},{"html":"<p>B</p>"}]}';
+    expect(parseStoredBlock('columns', stored)).toMatchObject({
+      items: [{ html: '<p>A</p>', mediaId: 4 }, { html: '<p>B</p>' }]
+    });
+  });
+
+  it('relit une colonne qui héberge un bloc, et refuse un bloc hors liste blanche', () => {
+    const ok = JSON.stringify({ type: 'columns', items: [{ block: agenda }, { html: '<p>B</p>' }] });
+    expect(parseStoredBlock('columns', ok)).toMatchObject({
+      items: [{ block: { type: 'events' } }, { html: '<p>B</p>' }]
+    });
+
+    const forbidden = JSON.stringify({
+      type: 'columns',
+      items: [{ block: { type: 'hero', title: 'Bienvenue', ctas: [] } }, { html: '<p>B</p>' }]
+    });
+    expect(parseStoredBlock('columns', forbidden)).toBeNull();
+  });
+});
+
 describe('parseStoredBlock', () => {
   it('relit une ligne saine', () => {
     expect(parseStoredBlock('richtext', '{"type":"richtext","html":"<p>A</p>"}')).toEqual({

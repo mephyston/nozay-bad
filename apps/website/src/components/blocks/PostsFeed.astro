@@ -3,26 +3,57 @@ import type { PostsFeedBlock } from '@nba/cms/public';
 import type { PostRow } from '../../lib/cms';
 import PostCard from '../PostCard.astro';
 
-interface Props { block: PostsFeedBlock; posts?: PostRow[] }
-const { block, posts = [] } = Astro.props;
+interface Props { block: PostsFeedBlock; posts?: PostRow[]; nested?: boolean }
+const { block, posts = [], nested = false } = Astro.props;
 
 // Le bloc ne porte qu'une requête : la page a déjà interrogé le domaine, il ne reste
 // qu'à respecter la limite demandée.
 const shown = posts.slice(0, block.limit);
 const showImages = block.showImages !== false;
 const archiveHref = block.categorySlug ? `/actualites/?categorie=${block.categorySlug}` : '/actualites/';
+
+/*
+  Imbriqué dans une colonne, le bloc perd son enveloppe et son niveau de titre.
+
+  La largeur et les marges appartiennent alors à la colonne — les reposer ici
+  recentrerait le contenu dans son tiers de page et l'y écarterait deux fois.
+
+  La grille passe en **requêtes de conteneur** : `sm:` et `lg:` interrogent la fenêtre,
+  et donneraient trois cartes de 200 px dans une colonne étroite sur un grand écran.
+  `@md` / `@3xl` interrogent la colonne, seule largeur qui décide vraiment.
+*/
+const shell = nested ? '' : 'mx-auto max-w-5xl px-4 py-8';
+const Heading = nested ? 'h3' : 'h2';
+const grid = nested ? '@md:grid-cols-2 @3xl:grid-cols-3' : 'sm:grid-cols-2 lg:grid-cols-3';
+
+/**
+ * Largeur d'une carte imbriquée.
+ *
+ * Le défaut de `PostCard` décrit la grille pleine page ; dans une colonne les cases
+ * sont plus étroites, et le navigateur téléchargerait une déclinaison trop grande. Au
+ * plus large — deux tiers des 1024 px du conteneur, deux cartes par rangée — la case
+ * fait environ 320 px. Sous 768 px les colonnes s'empilent et la carte reprend la
+ * largeur utile.
+ */
+const NESTED_SIZES = '(min-width: 768px) 320px, calc(100vw - 2rem)';
 ---
-<section class="mx-auto max-w-5xl px-4 py-8">
-  {block.heading && <h2 class="mb-6 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
+<section class:list={[shell]}>
+  {block.heading && <Heading class="mb-6 text-2xl font-semibold tracking-tight">{block.heading}</Heading>}
 
   {shown.length === 0 ? (
     <p class="text-muted-foreground">Aucune actualité pour le moment.</p>
   ) : (
-    <ul class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <ul class:list={['grid gap-5', grid]}>
       {shown.map((post, index) => (
         <li class="flex">
           {/* Les deux premières cartes sont visibles d'emblée sur la plupart des écrans. */}
-          <PostCard post={post} priority={index < 2} showImage={showImages} />
+          <PostCard
+            post={post}
+            priority={index < 2}
+            showImage={showImages}
+            headingLevel={nested ? 'h4' : 'h3'}
+            sizes={nested ? NESTED_SIZES : undefined}
+          />
         </li>
       ))}
     </ul>

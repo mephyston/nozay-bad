@@ -11,6 +11,15 @@
    */
   let { block = $bindable() } = $props<{ block: EventsBlock }>();
 
+  /**
+   * Préfixe d'identifiants propre à cette instance.
+   *
+   * Un bloc peut désormais apparaître deux fois sur le même écran — au premier niveau
+   * et dans une colonne, ou dans deux colonnes voisines. Des `id` écrits en dur s'y
+   * répéteraient, et cliquer un intitulé donnerait le champ de l'autre bloc.
+   */
+  const uid = $props.id();
+
   /** Reprises telles quelles du domaine `events` : les deux listes doivent coïncider. */
   const CATEGORIES: { value: string; label: string }[] = [
     { value: 'competition', label: 'Compétition' },
@@ -30,14 +39,14 @@
 <div class="space-y-4">
   <div class="grid gap-3 sm:grid-cols-2">
     <div class="space-y-1.5">
-      <Label for="events-heading">Titre de section</Label>
-      <Input id="events-heading" bind:value={block.heading} placeholder="Prochains rendez-vous" />
+      <Label for={`${uid}-events-heading`}>Titre de section</Label>
+      <Input id={`${uid}-events-heading`} bind:value={block.heading} placeholder="Prochains rendez-vous" />
     </div>
 
     <div class="space-y-1.5">
-      <Label for="events-limit">Nombre affiché</Label>
+      <Label for={`${uid}-events-limit`}>Nombre affiché</Label>
       <Select
-        id="events-limit"
+        id={`${uid}-events-limit`}
         value={String(block.limit ?? 6)}
         onchange={(e) => (block.limit = Number((e.currentTarget as HTMLSelectElement).value))}
       >

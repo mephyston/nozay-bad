@@ -26,7 +26,7 @@ export const BLOCK_KINDS: BlockKind[] = [
   {
     type: 'columns',
     label: 'Colonnes',
-    hint: 'Deux ou trois contenus côte à côte, empilés sur téléphone.',
+    hint: "Deux ou trois contenus côte à côte : texte, actualités, agenda, créneaux… Empilés sur téléphone.",
     create: () => ({ type: 'columns', items: [{ html: '<p></p>' }, { html: '<p></p>' }] })
   },
   {

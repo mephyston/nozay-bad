@@ -79,7 +79,7 @@
     {:else if block.type === 'events'}
       <EventsBlockEditor bind:block />
     {:else if block.type === 'columns'}
-      <ColumnsBlockEditor bind:block {media} {canUploadMedia} {targets} />
+      <ColumnsBlockEditor bind:block {media} {canUploadMedia} {targets} {categories} />
     {/if}
   </div>
 </div>

@@ -20,6 +20,15 @@
     targets?: { path: string; title: string; kind: 'page' | 'post'; status?: 'draft' | 'published' }[];
   }>();
 
+  /**
+   * Préfixe d'identifiants propre à cette instance.
+   *
+   * Un bloc peut désormais apparaître deux fois sur le même écran — au premier niveau
+   * et dans une colonne, ou dans deux colonnes voisines. Des `id` écrits en dur s'y
+   * répéteraient, et cliquer un intitulé donnerait le champ de l'autre bloc.
+   */
+  const uid = $props.id();
+
   let backgroundPickerOpen = $state(false);
 
   const background = $derived(
@@ -75,13 +84,13 @@
 <div class="space-y-4">
   <div class="grid gap-3 sm:grid-cols-2">
     <div class="space-y-1.5">
-      <Label for="grid-heading">Titre de section</Label>
-      <Input id="grid-heading" bind:value={block.heading} />
+      <Label for={`${uid}-grid-heading`}>Titre de section</Label>
+      <Input id={`${uid}-grid-heading`} bind:value={block.heading} />
     </div>
     <div class="space-y-1.5">
-      <Label for="grid-columns">Colonnes</Label>
+      <Label for={`${uid}-grid-columns`}>Colonnes</Label>
       <Select
-        id="grid-columns"
+        id={`${uid}-grid-columns`}
         value={String(block.columns)}
         onchange={(e) => (block.columns = Number((e.currentTarget as HTMLSelectElement).value) as 2 | 3 | 4)}
       >

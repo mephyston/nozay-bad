@@ -1,4 +1,5 @@
 import { createApiClient } from '@nba/api-client';
+import { flattenBlocks, isBlockColumn } from '@nba/cms/public';
 import type { ResolveRouteOutput } from '@nba/cms/public';
 import { withDataCache } from './cache';
 import { markDegraded, renderContextOf } from './render-context';
@@ -150,10 +151,16 @@ export async function loadMedia(env: WebsiteEnv, ids: number[]): Promise<Map<num
   return new Map(entries.filter((e): e is NonNullable<typeof e> => e !== null));
 }
 
-/** Identifiants de médias cités par une liste de blocs. */
+/**
+ * Identifiants de médias cités par une liste de blocs.
+ *
+ * `flattenBlocks` d'abord : les images d'une galerie ou d'une grille de liens posée
+ * dans une colonne se résolvent comme les autres. Sans lui, elles seraient servies
+ * sans dimensions ni variantes — une image qui arrive en retard et décale la page.
+ */
 export function mediaIdsInBlocks(blocks: import('@nba/cms/public').BlockPayload[]): number[] {
   const ids: number[] = [];
-  for (const block of blocks) {
+  for (const block of flattenBlocks(blocks)) {
     if (block.type === 'hero' && block.mediaId) ids.push(block.mediaId);
     if (block.type === 'gallery') ids.push(...block.mediaIds);
     if (block.type === 'cta_grid') {
@@ -171,7 +178,13 @@ export function mediaIdsInBlocks(blocks: import('@nba/cms/public').BlockPayload[
       ids.push(...block.people.map((p) => p.mediaId).filter((v): v is number => !!v));
     }
     if (block.type === 'columns') {
-      ids.push(...block.items.map((c) => c.mediaId).filter((v): v is number => !!v));
+      // Seules les colonnes de texte portent une image en propre ; celles qui hébergent
+      // un bloc sont déjà passées par `flattenBlocks` et traitées comme leur type.
+      ids.push(
+        ...block.items
+          .flatMap((c) => (isBlockColumn(c) ? [] : [c.mediaId]))
+          .filter((v): v is number => !!v)
+      );
     }
   }
   return ids;

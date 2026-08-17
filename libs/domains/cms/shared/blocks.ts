@@ -30,6 +30,36 @@ export const BLOCK_TYPES = [
 export type BlockType = (typeof BLOCK_TYPES)[number];
 
 /**
+ * Types qu'une colonne peut héberger.
+ *
+ * Une liste blanche, et non « tout sauf » : ce qui entre dans une colonne doit
+ * savoir vivre dans le tiers d'une page, et chaque ajout ici demande une branche de
+ * rendu et un éditeur qui suivent.
+ *
+ * Sont volontairement absents :
+ *  - `richtext` — la colonne « texte » **est** ce bloc, en mieux : elle porte une
+ *    image au-dessus. Deux façons de dire la même chose ouvriraient la seule
+ *    incohérence que ce bloc puisse produire ;
+ *  - `hero` — il porte le `h1` de la page, et l'attend en pleine largeur ;
+ *  - `carousel` — ruban pleine largeur, et seul consommateur d'`opensPage` ;
+ *  - `columns` — un niveau d'imbrication, pas deux. Au-delà, ce n'est plus une
+ *    liste de blocs mais un page-builder, et le rendu cesse d'être garanti ;
+ *  - `embed`, `person_cards` — rien ne s'y oppose, ils n'ont simplement pas été
+ *    demandés. Les ajouter tient en une entrée ici et une branche dans
+ *    `Columns.astro`.
+ */
+export const NESTABLE_BLOCK_TYPES = [
+  'posts_feed',
+  'events',
+  'schedule',
+  'gallery',
+  'pdf_link',
+  'cta_grid'
+] as const;
+
+export type NestableBlockType = (typeof NESTABLE_BLOCK_TYPES)[number];
+
+/**
  * Lien d'appel à l'action.
  *
  * `mediaId` est ce qui permet à `cta_grid` de servir aussi bien les quatre boutons de
@@ -313,14 +343,17 @@ export const postsFeedBlockSchema = Type.Object(
 );
 
 /**
- * Colonne d'un bloc « Colonnes » : une image facultative, puis du texte riche.
+ * Colonne de texte : une image facultative, puis du texte riche.
  *
  * L'image est **au-dessus** du texte et non à côté : c'est ce qui permet à la colonne
  * de se replier sans réagencement sous 768 px. La forme observée sur l'ancien site —
  * image à gauche, texte à droite, dans un `td width="45%"` — donne exactement l'inverse,
  * et c'est ce qui rend ces pages illisibles sur téléphone.
+ *
+ * **Forme historique, inchangée** : c'est ce qui permet aux colonnes déjà enregistrées
+ * de continuer à valider sans migration ni réécriture.
  */
-const Column = Type.Object(
+const TextColumn = Type.Object(
   {
     /** Texte riche, assaini au profil du site public comme n'importe quel bloc de texte. */
     html: Type.String({ maxLength: 20000 }),
@@ -328,6 +361,40 @@ const Column = Type.Object(
   },
   { additionalProperties: false }
 );
+
+/**
+ * Colonne qui héberge un bloc.
+ *
+ * Le bloc imbriqué est un bloc ordinaire, décrit par son propre schéma : c'est ce qui
+ * permet à l'agenda posé dans une colonne d'être exactement l'agenda, éditeur et rendu
+ * compris, plutôt qu'une seconde implémentation qui divergerait au premier changement.
+ *
+ * L'union est fermée à `NESTABLE_BLOCK_TYPES`. Les deux listes doivent coïncider — un
+ * test le vérifie.
+ */
+const BlockColumn = Type.Object(
+  {
+    block: Type.Union([
+      postsFeedBlockSchema,
+      eventsBlockSchema,
+      scheduleBlockSchema,
+      galleryBlockSchema,
+      pdfLinkBlockSchema,
+      ctaGridBlockSchema
+    ])
+  },
+  { additionalProperties: false }
+);
+
+/**
+ * Une colonne porte du texte, ou un bloc. Jamais les deux.
+ *
+ * La discrimination ne demande aucun champ inventé : `html` est requis d'un côté,
+ * `block` de l'autre, et `additionalProperties: false` des deux côtés ferme la porte
+ * aux formes hybrides. Une colonne `{ html }` enregistrée avant cette évolution valide
+ * donc toujours, par la première variante.
+ */
+const Column = Type.Union([TextColumn, BlockColumn]);
 
 /**
  * Contenus disposés côte à côte, repliés en pile sur mobile.
@@ -343,7 +410,23 @@ export const columnsBlockSchema = Type.Object(
   {
     type: Type.Literal('columns'),
     heading: Type.Optional(Type.String({ maxLength: 160 })),
-    items: Type.Array(Column, { minItems: 2, maxItems: 3 })
+    items: Type.Array(Column, { minItems: 2, maxItems: 3 }),
+    /**
+     * Répartition de la largeur, **à deux colonnes seulement**.
+     *
+     * C'est la forme demandée pour l'accueil : les actualités sur deux tiers, l'agenda
+     * sur le dernier. À trois colonnes le champ est ramené à `undefined` par la
+     * normalisation — un réglage sans effet qu'une lecture rapide croirait actif est
+     * pire que pas de réglage du tout.
+     *
+     * **Optionnel, et il doit le rester** : les blocs déjà enregistrés ne le portent
+     * pas. Le rendre obligatoire ferait échouer `Value.Check` à la relecture,
+     * `parseStoredBlock` rendrait `null`, et le bloc **disparaîtrait** des pages en
+     * ligne sans un mot. Le rendu retient `equal` à défaut, la valeur d'avant.
+     */
+    ratio: Type.Optional(
+      Type.Union([Type.Literal('equal'), Type.Literal('wide-first'), Type.Literal('wide-last')])
+    )
   },
   { additionalProperties: false }
 );
@@ -395,3 +478,35 @@ export type CtaLinkValue = Static<typeof CtaLink>;
 export type CarouselSlideValue = Static<typeof CarouselSlide>;
 export type PersonValue = Static<typeof Person>;
 export type ColumnValue = Static<typeof Column>;
+export type TextColumnValue = Static<typeof TextColumn>;
+export type BlockColumnValue = Static<typeof BlockColumn>;
+
+/** Le bloc qu'une colonne peut héberger. */
+export type NestableBlock = BlockColumnValue['block'];
+
+/** Une colonne porte-t-elle un bloc, plutôt que du texte ? */
+export function isBlockColumn(column: ColumnValue): column is BlockColumnValue {
+  return 'block' in column;
+}
+
+/**
+ * Les blocs d'une page, blocs imbriqués dans les colonnes compris.
+ *
+ * Tout ce qui parcourt une page pour décider d'un chargement — créneaux, agenda,
+ * actualités, médias, balisage — doit passer par ici. Un parcours qui ne regarde que le
+ * premier niveau laisserait un agenda posé dans une colonne s'afficher vide, sans la
+ * moindre erreur pour le signaler.
+ *
+ * L'ordre est celui de la page : un bloc, puis ce qu'il contient.
+ */
+export function flattenBlocks(blocks: readonly BlockPayload[]): BlockPayload[] {
+  const flat: BlockPayload[] = [];
+  for (const block of blocks) {
+    flat.push(block);
+    if (block.type !== 'columns') continue;
+    for (const column of block.items) {
+      if (isBlockColumn(column)) flat.push(column.block);
+    }
+  }
+  return flat;
+}
