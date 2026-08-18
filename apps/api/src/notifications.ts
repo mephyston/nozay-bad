@@ -13,6 +13,7 @@ import {
   type NotificationTarget,
   type NotificationTargetLabel
 } from '@nba/notifications-api';
+import { listScheduledNotifications, type RegistryEnv } from './scheduled-registry';
 
 /**
  * Émission des notifications et audiences.
@@ -26,9 +27,17 @@ import {
 
 export type NotificationsBindings = {
   DB: D1Database;
-};
+} & RegistryEnv;
 
 export const notificationsSendRouter = new Hono<{ Bindings: NotificationsBindings }>();
+
+/**
+ * Notifications automatiques (cron et événements métier), en consultation seule :
+ * le registre est déclaratif, seuls les drapeaux d'environnement résolvent `enabled`.
+ */
+notificationsSendRouter.get('/scheduled', (c) => {
+  return c.json({ success: true, data: listScheduledNotifications(c.env) });
+});
 
 /** Cibles proposées à l'émetteur : groupes de la saison active et leurs effectifs. */
 notificationsSendRouter.get('/audiences', async (c) => {

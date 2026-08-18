@@ -6,11 +6,22 @@
   import { ArrowLeft, User, FileText } from '@lucide/svelte';
   import { Button, Badge, Tabs, Card } from '@nba/ui';
   import type { Member, GLTransaction } from './member-profile-types';
+  import type { ClubFunction } from '../../shared/club-functions';
   import MemberProfileInfoTab from './MemberProfileInfoTab.svelte';
   import MemberProfileCotisationTab from './MemberProfileCotisationTab.svelte';
   import MemberProfileTransactionsTab from './MemberProfileTransactionsTab.svelte';
 
-  let { member, transactions = [], seasonId = '25-26' }: { member: Member; transactions: GLTransaction[]; seasonId?: string } = $props();
+  let {
+    member,
+    transactions = [],
+    seasonId = '25-26',
+    clubFunctions = []
+  }: {
+    member: Member;
+    transactions: GLTransaction[];
+    seasonId?: string;
+    clubFunctions?: ClubFunction[];
+  } = $props();
 
   let activeTab = $state<'profil' | 'cotisation' | 'transactions'>('profil');
 
@@ -71,7 +82,7 @@
     </Tabs.List>
 
     <Tabs.Content value="profil">
-      <MemberProfileInfoTab {member} />
+      <MemberProfileInfoTab {member} season={seasonId} {clubFunctions} />
     </Tabs.Content>
 
     <Tabs.Content value="cotisation">

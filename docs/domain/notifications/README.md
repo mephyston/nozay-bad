@@ -20,9 +20,10 @@ Il ne dépend d'aucun autre domaine. Les ciblages qui reposent sur des données 
 | **File d'envoi (outbox)** | Ensemble des livraisons `pending`. Drainée par lots par un Cron Trigger. | `push_deliveries` |
 | **Ciblage** | `all` (tous les abonnés), `unpaid` (foyers dont la cotisation reste due), `groups` (types d'adhésion), `emails` (liste explicite). | `Enum` |
 | **Groupe** | Type d'adhésion issu de l'import Poona (« Loisirs 1 (Lundi) », « Compétiteurs adultes »…). Lu en base, jamais figé dans le code. | `members.type` |
-| **Catégorie** | Sujet réglable par l'adhérent : `announcement`, `birthday`, `expense`, `order`, `reminder`. | `Enum` |
+| **Catégorie** | Sujet réglable par l'adhérent : `announcement`, `birthday`, `expense`, `order`, `reminder`, `interclubs`. | `Enum` |
 | **Préférence** | Écart au défaut pour une catégorie. L'absence de ligne vaut « activé ». | `push_preferences` |
-| **Origine (`source`)** | `admin` pour un envoi manuel, sinon l'événement déclencheur (`expense:approved`, `order:rejected`, `reminder:unpaid`, `birthday:daily`). | `string` |
+| **Origine (`source`)** | `admin` pour un envoi manuel, sinon l'événement ou la récurrence déclencheuse (`expense:approved`, `order:rejected`, `reminder:unpaid`, `birthday:daily`, `teams:lineup`, `teams:ranking-reminder:…`, `teams:lineup-reminder:…`, `teams:value-overflow:…`, `teams:day-control`). Sert aussi de clé de dédup (`skipIfSentSince`). | `string` |
+| **Registre des notifications automatiques** | Vue déclarative de tout ce qui part sans envoi manuel — récurrences du cron (avec leur drapeau d'activation) et notifications événementielles. Affiché en consultation seule dans l'admin ; il n'existe aucune table de planification, les envois sont câblés dans le code. | `apps/api/src/scheduled-registry.ts`, `GET /notifications/scheduled` |
 | **VAPID** | Paire de clés identifiant le serveur auprès des services de push (RFC 8292). Une paire par environnement. | `publicKey` / `privateKey` |
 
 ---

@@ -17,12 +17,14 @@ const apiService = createAdminApiClient(Astro.locals);
 let stats = { devices: 0, accounts: 0, pending: 0 };
 let messages: any[] = [];
 let groups: any[] = [];
+let scheduled: any[] = [];
 let errorMsg = '';
 
 try {
-  const [overviewRes, audiencesRes] = await Promise.all([
+  const [overviewRes, audiencesRes, scheduledRes] = await Promise.all([
     apiService.fetch('http://localhost/notifications/overview'),
-    apiService.fetch('http://localhost/notifications/audiences')
+    apiService.fetch('http://localhost/notifications/audiences'),
+    apiService.fetch('http://localhost/notifications/scheduled')
   ]);
 
   if (overviewRes.ok) {
@@ -38,6 +40,12 @@ try {
   if (audiencesRes.ok) {
     const json = (await audiencesRes.json()) as any;
     groups = json.data?.groups ?? [];
+  }
+
+  // Le registre est un confort de consultation : son absence n'empêche rien.
+  if (scheduledRes.ok) {
+    const json = (await scheduledRes.json()) as any;
+    scheduled = json.data ?? [];
   }
 } catch {
   errorMsg = "Impossible de charger l'état des notifications.";
@@ -66,6 +74,7 @@ try {
         messages={messages}
         groups={groups}
         canSend={canSend}
+        scheduled={scheduled}
       />
     </div>
   </AdminLayout>

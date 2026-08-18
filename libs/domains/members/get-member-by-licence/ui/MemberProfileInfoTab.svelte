@@ -1,9 +1,14 @@
 <script lang="ts">
-  import { Shield, Calendar, Tag, Mail, Phone, Receipt, Copy, Check, User, Users } from '@lucide/svelte';
-  import { Card, Button, Badge, uiConfirm, toast } from '@nba/ui';
+  import { Shield, Calendar, Tag, Mail, Phone, Receipt, Copy, Check, User, Users, Landmark } from '@lucide/svelte';
+  import { Card, Button, Badge, Checkbox, uiConfirm, toast } from '@nba/ui';
   import type { Member } from './member-profile-types';
+  import { CLUB_FUNCTIONS, CLUB_FUNCTION_LABELS, type ClubFunction } from '../../shared/club-functions';
 
-  let { member }: { member: Member } = $props();
+  let {
+    member,
+    season = '25-26',
+    clubFunctions = []
+  }: { member: Member; season?: string; clubFunctions?: ClubFunction[] } = $props();
 
   // Représentants légaux réellement renseignés, pour ne pas afficher une section vide.
   const legalGuardians = $derived(
@@ -45,6 +50,52 @@
       toast.error('Erreur réseau : ' + (e?.message ?? String(e)));
     }
     toggling = false;
+  }
+
+  // Fonction au club : une au plus (pas de cumul de mandats) — cliquer une autre
+  // fonction remplace, recliquer la même la retire. Remplacement complet à
+  // l'enregistrement, même contrat que l'API. La règle d'unicité (président…) est
+  // jugée côté serveur ; ici on se contente de relayer son message de refus.
+  let selectedFunctions = $state<ClubFunction[]>([...clubFunctions]);
+  let savedFunctions = $state<ClubFunction[]>([...clubFunctions]);
+  let savingFunctions = $state(false);
+  const functionsDirty = $derived(
+    selectedFunctions.length !== savedFunctions.length ||
+      selectedFunctions.some((fn) => !savedFunctions.includes(fn))
+  );
+
+  function toggleFunction(fn: ClubFunction) {
+    selectedFunctions = selectedFunctions.includes(fn) ? [] : [fn];
+  }
+
+  async function saveFunctions() {
+    if (savingFunctions || !functionsDirty) return;
+    savingFunctions = true;
+    try {
+      const res = await fetch('/admin/api/member-functions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ licence: member.licence, season, functions: selectedFunctions })
+      });
+      const body: any = await res.json().catch(() => null);
+      if (res.ok && body?.success) {
+        savedFunctions = [...selectedFunctions];
+        try {
+          // L'indicateur « fonctions à définir » de la barre latérale met ce statut en
+          // cache : une attribution qui vient d'être faite doit le faire disparaître
+          // sans attendre l'expiration.
+          sessionStorage.removeItem('club_functions_alert');
+        } catch {
+          /* Sans stockage, il n'y avait rien à invalider. */
+        }
+        toast.success('Fonction au club enregistrée.');
+      } else {
+        toast.error(body?.error || `Échec de la mise à jour (HTTP ${res.status}).`);
+      }
+    } catch (e: any) {
+      toast.error('Erreur réseau : ' + (e?.message ?? String(e)));
+    }
+    savingFunctions = false;
   }
 
   let copiedEmail = $state<string | null>(null);
@@ -178,6 +229,39 @@
           {/each}
         </section>
       {/if}
+    </Card.Content>
+  </Card.Root>
+
+  <!-- Fonction au club : bureau, CA, entraîneur — par saison, une au plus. Alimente le
+       ciblage des notifications « gestion du club » (ex. rappel d'import des classements). -->
+  <Card.Root class="md:col-span-2">
+    <Card.Content class="p-6 space-y-4">
+      <h3 class="font-bold text-lg flex items-center gap-2 border-b border-border pb-2 text-foreground">
+        <Landmark class="w-5 h-5 text-primary" />
+        Fonction au club
+        <span class="text-xs font-normal text-muted-foreground">saison {season}</span>
+      </h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        {#each CLUB_FUNCTIONS as fn (fn)}
+          <label class="flex items-center gap-2 rounded-lg border border-border p-2.5 cursor-pointer hover:bg-muted/40">
+            <Checkbox
+              checked={selectedFunctions.includes(fn)}
+              onCheckedChange={() => toggleFunction(fn)}
+              aria-label={CLUB_FUNCTION_LABELS[fn]}
+            />
+            <span class="text-sm">{CLUB_FUNCTION_LABELS[fn]}</span>
+          </label>
+        {/each}
+      </div>
+      <div class="flex items-center justify-between gap-3">
+        <p class="text-[11px] text-muted-foreground">
+          Une fonction au plus par adhérent. Président, trésorier et trésorier adjoint
+          n'ont qu'un titulaire par saison.
+        </p>
+        <Button size="sm" disabled={savingFunctions || !functionsDirty} onclick={saveFunctions}>
+          Enregistrer
+        </Button>
+      </div>
     </Card.Content>
   </Card.Root>
 </div>

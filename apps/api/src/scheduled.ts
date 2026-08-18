@@ -1,10 +1,13 @@
 import { createDb } from '@nba/db';
+import { getSeasonAtDate, type SeasonRow } from '@nba/accounting-api';
 import {
   getBirthdaysForActiveSeason,
+  getContactEmailsForClubFunctions,
   getContactEmailsForMembers,
   getHouseholdEmailsForActiveSeason
 } from '@nba/members-api';
 import { getOrdersAwaitingPaymentSince } from '@nba/shop-api';
+import { findRankingReminderDays, remindMissingLineups } from '@nba/teams-api';
 import {
   dispatchPendingNotifications,
   enqueueNotification,
@@ -27,6 +30,16 @@ export type ScheduledBindings = {
    * raison que les rappels : rien ne doit partir du seul fait d'un déploiement.
    */
   PUSH_BIRTHDAYS_ENABLED?: string;
+  /**
+   * Rappel « classements à mettre à jour » aux fonctions du club, le jeudi précédant
+   * une journée d'interclubs régional. Désactivé par défaut, comme les autres.
+   */
+  PUSH_RANKING_REMINDERS_ENABLED?: string;
+  /**
+   * Relance des capitaines dont la composition n'est pas validée à l'approche d'une
+   * journée d'interclubs. Désactivée par défaut, comme les autres.
+   */
+  PUSH_LINEUP_REMINDERS_ENABLED?: string;
 } & VapidEnv;
 
 /** Doit rester identique aux entrées `triggers.crons` de wrangler.json. */
@@ -111,6 +124,73 @@ export async function sendAwaitingPaymentOrderReminders(
   }
 }
 
+/**
+ * Instant courant en heure de Paris, `YYYY-MM-DDTHH:mm`.
+ *
+ * Le cron tourne en UTC ; les dates du domaine interclubs (`week_start`, `played_at`)
+ * sont des heures locales naïves. `en-CA` rend la date en ISO, un découpage sûr —
+ * même recette que `parisCalendarDay` dans `members/list-birthdays/route.ts`.
+ */
+function parisNow(now: Date): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Paris',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
+  }).formatToParts(now);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '00';
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
+}
+
+/**
+ * Rappelle aux fonctions du club (bureau, CA, entraîneurs) d'importer les classements
+ * le jeudi où se fige le classement de référence d'une journée d'interclubs régional.
+ *
+ * Le ciblage croise deux domaines — les journées viennent de `teams`, les adresses des
+ * fonctions de `members` — et se résout donc ici, comme les autres rappels : le
+ * contexte notifications reste feuille.
+ */
+export async function sendRankingUpdateReminders(
+  db: ReturnType<typeof createDb>,
+  season: SeasonRow,
+  now: Date,
+  parisToday: string
+): Promise<void> {
+  const days = await findRankingReminderDays(db, season.code, parisToday);
+  if (days.length === 0) return;
+
+  const emails = await getContactEmailsForClubFunctions(db, season.id);
+  if (emails.length === 0) {
+    console.log('[push] rappel classements : aucune fonction du club renseignée, rien à envoyer');
+    return;
+  }
+
+  for (const day of days) {
+    const dayLabel = day.dayLabel ?? `J${day.dayNumber}`;
+    const result = await enqueueNotification(
+      db,
+      {
+        title: 'Classements à mettre à jour',
+        body: `${dayLabel} ${day.championshipLabel} la semaine prochaine : le classement de référence est celui publié ce jeudi. Exportez les classements depuis Poona et importez-les dans l'admin (Équipes → Classements → Importer).`,
+        target: { kind: 'emails', emails },
+        targetLabel: 'emails',
+        targetDetail: 'fonctions du club',
+        source: `teams:ranking-reminder:${day.championship}:J${day.dayNumber}`,
+        category: 'interclubs',
+        // Un Cron Trigger peut être invoqué plus d'une fois pour la même échéance.
+        skipIfSentSince: new Date(now.getTime() - 20 * 60 * 60 * 1000)
+      },
+      now
+    );
+    if (!result.skipped) {
+      console.log(`[push] rappel classements ${dayLabel} : ${result.queued} appareil(s) en file`);
+    }
+  }
+}
+
 /** Annonce les anniversaires du jour, si au moins un adhérent est concerné. */
 async function sendBirthdayAnnouncements(db: ReturnType<typeof createDb>, now: Date): Promise<void> {
   const birthdays = await getBirthdaysForActiveSeason(db, now);
@@ -160,8 +240,31 @@ export async function handleScheduled(
   const db = createDb(env.DB);
   const now = new Date(event.scheduledTime || Date.now());
 
-  if (event.cron === DAILY_CRON && env.PUSH_BIRTHDAYS_ENABLED === 'true') {
-    await sendBirthdayAnnouncements(db, now);
+  if (event.cron === DAILY_CRON) {
+    if (env.PUSH_BIRTHDAYS_ENABLED === 'true') {
+      await sendBirthdayAnnouncements(db, now);
+    }
+
+    const paris = parisNow(now);
+    const parisToday = paris.slice(0, 10);
+    // La saison se résout par la date, pas par le drapeau `active` : celui-ci est un
+    // outil comptable, basculé quand la clôture l'arrange (cf. seasons/queries.ts).
+    const season = await getSeasonAtDate(db, parisToday);
+    if (season) {
+      if (env.PUSH_RANKING_REMINDERS_ENABLED === 'true') {
+        await sendRankingUpdateReminders(db, season, now, parisToday);
+      }
+      if (env.PUSH_LINEUP_REMINDERS_ENABLED === 'true') {
+        const { reminded } = await remindMissingLineups(
+          db,
+          { seasonCode: season.code, parisNow: paris },
+          now
+        );
+        if (reminded.length > 0) {
+          console.log(`[push] rappel compo : ${reminded.length} équipe(s) relancée(s)`);
+        }
+      }
+    }
   }
 
   if (event.cron === WEEKLY_CRON) {

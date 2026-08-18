@@ -37,7 +37,7 @@ export const NOTIFICATION_CATEGORIES = [
   {
     id: 'interclubs',
     label: 'Mes équipes interclubs',
-    description: "Anomalie signalée sur une composition dont vous êtes capitaine."
+    description: 'Convocations, rappels de composition et anomalies de valeur de vos équipes.'
   }
 ] as const;
 

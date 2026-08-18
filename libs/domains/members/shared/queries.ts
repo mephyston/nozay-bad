@@ -1,7 +1,8 @@
-import { membersTable } from '@nba/members/schema';
+import { memberClubFunctionsTable, membersTable } from '@nba/members/schema';
 import { getActiveSeasonId, getSeasonId, isSeasonClosed } from '@nba/accounting-api';
 import { and, eq, inArray, or, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
+import type { ClubFunction } from './club-functions';
 
 
 export interface MemberSummary {
@@ -149,6 +150,53 @@ export async function getHouseholdEmailsForActiveSeason(
       parent2Email: membersTable.parent2Email
     })
     .from(membersTable)
+    .where(and(...conditions))
+    .all();
+
+  const emails = new Set<string>();
+  for (const row of rows) {
+    for (const value of [row.email, row.parent1Email, row.parent2Email]) {
+      const normalized = value?.trim().toLowerCase();
+      if (normalized) emails.add(normalized);
+    }
+  }
+  return [...emails];
+}
+
+/**
+ * Emails de contact des titulaires de fonctions au club sur une saison.
+ *
+ * Mêmes règles que `getContactEmailsForMember` : parents inclus (le compte storefront
+ * d'un mineur est celui du représentant légal), minuscules, dédupliqués. Une seule
+ * requête jointe — les appelants sont des traitements programmés où chaque requête D1
+ * compte, et le bureau se compte sur les doigts d'une main.
+ *
+ * `functions` absent = toutes les fonctions ; liste vide = personne (jamais de
+ * dégénérescence en « tout le club », même garde que le ciblage par groupes).
+ */
+export async function getContactEmailsForClubFunctions(
+  db: DbOrTx,
+  season: string | number,
+  functions?: ClubFunction[]
+): Promise<string[]> {
+  const seasonId = await getSeasonId(db, season);
+  if (seasonId === undefined) return [];
+  if (functions && functions.length === 0) return [];
+
+  const conditions = [
+    eq(memberClubFunctionsTable.seasonId, seasonId),
+    eq(membersTable.seasonId, seasonId)
+  ];
+  if (functions) conditions.push(inArray(memberClubFunctionsTable.function, functions));
+
+  const rows = await db
+    .selectDistinct({
+      email: membersTable.email,
+      parent1Email: membersTable.parent1Email,
+      parent2Email: membersTable.parent2Email
+    })
+    .from(memberClubFunctionsTable)
+    .innerJoin(membersTable, eq(membersTable.licence, memberClubFunctionsTable.licence))
     .where(and(...conditions))
     .all();
 
