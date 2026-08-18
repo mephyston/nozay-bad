@@ -1,3 +1,15 @@
+# [1.0.0-beta.93](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.92...v1.0.0-beta.93) (2026-08-18)
+
+
+### Bug Fixes
+
+* **security:** autoriser l'origine des médias dans l'img-src de la CSP ([b157e0f](https://github.com/mephyston/nozay-bad/commit/b157e0ffa7edf7e65ff13561c3ac030b4f750113))
+
+
+### Features
+
+* **cms:** écran d'administration des redirections et CRUD complet ([da14bea](https://github.com/mephyston/nozay-bad/commit/da14bea43d9d6f2e8aa294ffb7912c8919cbd516))
+
 # [1.0.0-beta.92](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.91...v1.0.0-beta.92) (2026-08-17)
 
 
