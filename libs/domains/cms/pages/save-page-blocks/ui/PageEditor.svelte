@@ -224,36 +224,6 @@
     </div>
   {/if}
 
-  {#if redirects.length > 0}
-    <!--
-      Repliée par défaut : c'est une information de contrôle, consultée le jour où l'on
-      se demande si une ancienne adresse sert encore. Dépliée en permanence, elle
-      poussait les blocs — le vrai travail de cet écran — d'autant plus bas que la page
-      traînait d'anciennes adresses derrière elle. Le compteur reste visible replié,
-      ce qui suffit à savoir s'il y a quelque chose à regarder.
-    -->
-    <CollapsibleSection
-      title="Anciennes adresses"
-      description="Elles redirigent vers cette page. Le compteur dit combien de visiteurs les ont empruntées : une redirection encore utilisée ne doit pas être retirée."
-      badge={redirects.length}
-    >
-      <ul class="space-y-1.5">
-        {#each redirects as redirect (redirect.id)}
-          <li class="flex flex-wrap items-center gap-2 text-xs">
-            <code class="text-foreground">{redirect.fromPath}</code>
-            <span class="text-muted-foreground" aria-hidden="true">→</span>
-            <Badge variant="outline" size="xs">{redirect.statusCode}</Badge>
-            <span class="text-muted-foreground">
-              {redirect.hitCount === 0
-                ? 'jamais empruntée'
-                : `${redirect.hitCount} visite${redirect.hitCount > 1 ? 's' : ''}`}
-            </span>
-          </li>
-        {/each}
-      </ul>
-    </CollapsibleSection>
-  {/if}
-
   {#if blocks.length === 0}
     <EmptyState title="Page vide" description="Ajoutez un bloc pour commencer." />
   {:else}
@@ -292,6 +262,35 @@
         {page.status === 'published' ? 'Retirer du site' : 'Publier'}
       </Button>
     </div>
+  {/if}
+
+  {#if redirects.length > 0}
+    <!--
+      Rangée en bas de l'écran, avec l'Historique : deux encarts de contrôle, pas de
+      rédaction. Repliée par défaut — elle n'est consultée que le jour où l'on se
+      demande si une ancienne adresse sert encore, et le compteur du bandeau suffit à
+      savoir s'il y a quelque chose à regarder.
+    -->
+    <CollapsibleSection
+      title="Anciennes adresses"
+      description="Elles redirigent vers cette page. Le compteur dit combien de visiteurs les ont empruntées : une redirection encore utilisée ne doit pas être retirée."
+      badge={redirects.length}
+    >
+      <ul class="space-y-1.5">
+        {#each redirects as redirect (redirect.id)}
+          <li class="flex flex-wrap items-center gap-2 text-xs">
+            <code class="text-foreground">{redirect.fromPath}</code>
+            <span class="text-muted-foreground" aria-hidden="true">→</span>
+            <Badge variant="outline" size="xs">{redirect.statusCode}</Badge>
+            <span class="text-muted-foreground">
+              {redirect.hitCount === 0
+                ? 'jamais empruntée'
+                : `${redirect.hitCount} visite${redirect.hitCount > 1 ? 's' : ''}`}
+            </span>
+          </li>
+        {/each}
+      </ul>
+    </CollapsibleSection>
   {/if}
 
   <RevisionsPanel {revisions} canRestore={canWrite} />

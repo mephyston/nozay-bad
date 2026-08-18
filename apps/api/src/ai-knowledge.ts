@@ -2309,6 +2309,17 @@ Deux niveaux au maximum : une entrée, et son sous-menu. Un troisième niveau se
 
 Une entrée qui pointe une **page du site** suit cette page : son adresse est résolue au moment de l'affichage, et supprimer la page emportera l'entrée de menu avec elle. C'est précisément ce que le menu écrit en dur ne sait pas faire aujourd'hui.
 
+## Les redirections
+
+**Site public → Redirections** liste les anciennes adresses du site — héritées de WordPress ou laissées par le renommage d'une page — avec leur destination et leur **nombre de visites**. Le compteur dit si une adresse sert encore : une redirection jamais empruntée peut être supprimée sans risque, une redirection encore utilisée doit être conservée.
+
+Chaque adresse répond de l'une de ces deux façons :
+
+- **Redirection (301)** : les visiteurs et les moteurs sont envoyés vers l'adresse cible ;
+- **Page supprimée (410)** : l'adresse n'a pas de successeur, et les moteurs la retirent de leur index.
+
+Vous pouvez modifier la destination d'une redirection, en créer une à la main — typiquement après la suppression d'une page dont l'adresse circulait — ou en supprimer une devenue inutile. L'application refuse les montages qui se paient en référencement : une redirection qui pointe sur elle-même, ou vers une adresse elle-même redirigée.
+
 ## Qui pourra le faire
 
 Le droit correspondant s'appelle **Modifier les menus et les redirections**. Il est déjà attribué aux rôles **Communication**, **Président·e** et **Super administrateur**.
@@ -2355,6 +2366,7 @@ Cliquez sur le titre d'une page pour l'ouvrir. L'écran réunit :
 | **Description pour les moteurs** | La phrase sous le lien dans les résultats de recherche. Visez 155 caractères |
 | **Les blocs** | Le contenu proprement dit, dans l'ordre où il s'affichera |
 | **Ajouter un bloc** | Un bouton par type de bloc ; survolez-en un pour lire ce qu'il fait |
+| **Anciennes adresses** | Les adresses qui redirigent vers cette page, avec leur nombre de visites |
 | **Historique** | Les versions précédentes de la page |
 
 Chaque bloc porte son numéro, son type, et trois commandes : **↑** et **↓** pour le déplacer, **Retirer** pour le supprimer. Retirer un bloc ne prend effet qu'à l'enregistrement.
@@ -2393,7 +2405,7 @@ La suppression est **définitive** : la page, ses blocs et son historique dispar
 > [!CAUTION]
 > Si la page était en ligne, son adresse est probablement connue de Google et partagée dans des courriels ou sur les réseaux. La supprimer produit une erreur 404 pour tous ces visiteurs. Pour retirer une page de la vue du public en conservant cette possibilité de retour, préférez **Retirer du site**.
 
-Les redirections d'une ancienne adresse vers une nouvelle existent bien (celles de l'ancien site WordPress sont en place), mais elles ne se règlent pas encore depuis l'application. Signalez le besoin au responsable technique.
+Les redirections d'une ancienne adresse vers une nouvelle se consultent et se règlent depuis **Site public → Redirections** : après une suppression, vous pouvez y rediriger l'ancienne adresse vers une page qui la remplace, ou la déclarer supprimée (410) pour que les moteurs l'oublient. Il faut pour cela le droit *Modifier les menus et les redirections*.
 
 ## Qui peut faire quoi
 

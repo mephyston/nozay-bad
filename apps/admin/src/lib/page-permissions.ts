@@ -52,6 +52,7 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
   '/admin/website/pages/[id]': 'cms:pages:read',
   '/admin/website/posts': 'cms:posts:read',
   '/admin/website/menus': 'cms:pages:read',
+  '/admin/website/redirects': 'cms:nav:read',
   '/admin/website/footer': 'cms:pages:read',
   '/admin/website/schedules': 'schedules:slots:read',
   '/admin/website/events': 'events:events:read',

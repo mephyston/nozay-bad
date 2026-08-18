@@ -213,6 +213,16 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // Les menus font partie de la structure du site : qui peut composer les pages peut
   // les ranger. Pas de permission dédiée pour une poignée d'entrées.
   { method: 'GET', path: '/cms/redirects', permission: 'cms:pages:read' },
+  // L'administration des redirections relève de `cms:nav:*` : le catalogue libelle ces
+  // droits « les menus et les redirections » depuis le début, ils prennent corps ici.
+  // (L'entrée GET ci-dessus reste sous `cms:pages:read` : elle alimente l'encart
+  // « Anciennes adresses » de l'éditeur, visible des simples lecteurs de pages.)
+  // Pas de `cms:nav:delete` au catalogue : la suppression relève du droit d'écriture,
+  // comme pour les entrées de menu.
+  { method: 'GET', path: '/cms/redirects/all', permission: 'cms:nav:read' },
+  { method: 'POST', path: '/cms/redirects', permission: 'cms:nav:write' },
+  { method: 'PUT', path: '/cms/redirects/:id', permission: 'cms:nav:write' },
+  { method: 'DELETE', path: '/cms/redirects/:id', permission: 'cms:nav:write' },
   { method: 'GET', path: '/cms/nav', permission: 'cms:pages:read', service: true },
   { method: 'POST', path: '/cms/nav', permission: 'cms:pages:write' },
   { method: 'PUT', path: '/cms/nav/reorder', permission: 'cms:pages:write' },

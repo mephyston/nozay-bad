@@ -24,6 +24,10 @@ import { deletePostRoute } from './posts/delete-post/route';
 import { notifyPostRoute } from './posts/notify-post/route';
 import { listPostCategoriesRoute } from './categories/list-post-categories/route';
 import { listPageRedirectsRoute } from './redirects/list-page-redirects/route';
+import { listRedirectsRoute } from './redirects/list-redirects/route';
+import { createRedirectRoute } from './redirects/create-redirect/route';
+import { updateRedirectRoute } from './redirects/update-redirect/route';
+import { deleteRedirectRoute } from './redirects/delete-redirect/route';
 import { listNavItemsRoute } from './navigation/list-nav-items/route';
 import { saveNavItemRoute } from './navigation/save-nav-item/route';
 import { deleteNavItemRoute } from './navigation/delete-nav-item/route';
@@ -61,8 +65,13 @@ cmsRouter.route('/', getPostRoute);
 cmsRouter.route('/', updatePostRoute);
 cmsRouter.route('/', deletePostRoute);
 cmsRouter.route('/', notifyPostRoute);
-// `/nav/reorder` avant `/nav/:id` : le segment littéral doit gagner sur le motif.
+// `/redirects/all` avant `/redirects/:id` : le segment littéral doit gagner sur le motif.
+cmsRouter.route('/', listRedirectsRoute);
 cmsRouter.route('/', listPageRedirectsRoute);
+cmsRouter.route('/', createRedirectRoute);
+cmsRouter.route('/', updateRedirectRoute);
+cmsRouter.route('/', deleteRedirectRoute);
+// `/nav/reorder` avant `/nav/:id` : le segment littéral doit gagner sur le motif.
 cmsRouter.route('/', reorderNavItemsRoute);
 cmsRouter.route('/', listNavItemsRoute);
 cmsRouter.route('/', saveNavItemRoute);

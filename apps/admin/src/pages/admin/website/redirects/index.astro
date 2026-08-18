@@ -1,0 +1,87 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import AdminLayout from '../../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { RedirectsManager } from '@nba/cms-ui';
+import { createAdminApiClient } from '../../../../lib/api';
+import { can, guardAction } from '../../../../lib/guard';
+
+const canWrite = can(Astro.locals, 'cms:nav:write');
+
+const apiService = createAdminApiClient(Astro.locals);
+
+const ACTIONS = {
+  create: 'cms:nav:write',
+  update: 'cms:nav:write',
+  delete: 'cms:nav:write'
+} as const;
+
+if (Astro.request.method === 'POST') {
+  const data = (await Astro.request.json()) as any;
+  const denied = guardAction(Astro.locals, data.action, ACTIONS);
+  if (denied) return denied;
+
+  const routes: Record<string, { url: string; method: string; body?: unknown }> = {
+    create: {
+      url: 'http://localhost/cms/redirects',
+      method: 'POST',
+      body: { fromPath: data.fromPath, toPath: data.toPath, note: data.note }
+    },
+    update: {
+      url: `http://localhost/cms/redirects/${data.id}`,
+      method: 'PUT',
+      body: { toPath: data.toPath, note: data.note }
+    },
+    delete: { url: `http://localhost/cms/redirects/${data.id}`, method: 'DELETE' }
+  };
+
+  const route = routes[data.action];
+  const apiRes = await apiService.fetch(route.url, {
+    method: route.method,
+    headers: { 'Content-Type': 'application/json' },
+    ...(route.body ? { body: JSON.stringify(route.body) } : {})
+  });
+
+  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+  return new Response(JSON.stringify(await apiRes.json()), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+let redirects: any[] = [];
+let errorMsg = '';
+
+try {
+  const res = await apiService.fetch('http://localhost/cms/redirects/all');
+  if (res.ok) {
+    const json = (await res.json()) as any;
+    redirects = json.data ?? [];
+  } else {
+    errorMsg = 'Impossible de charger les redirections.';
+  }
+} catch {
+  errorMsg = 'Impossible de charger les redirections.';
+}
+---
+
+<Layout title="Redirections - NBA 91">
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Redirections"
+  >
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader
+        title="Redirections"
+        description="Les anciennes adresses du site et leur destination. Une adresse sans cible répond « page supprimée » (410) : les moteurs la retirent de leur index. Le compteur dit si une adresse sert encore."
+      />
+
+      <RedirectsManager client:load redirects={redirects} canWrite={canWrite} />
+    </div>
+  </AdminLayout>
+</Layout>

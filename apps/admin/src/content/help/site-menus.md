@@ -40,6 +40,17 @@ Deux niveaux au maximum : une entrée, et son sous-menu. Un troisième niveau se
 
 Une entrée qui pointe une **page du site** suit cette page : son adresse est résolue au moment de l'affichage, et supprimer la page emportera l'entrée de menu avec elle. C'est précisément ce que le menu écrit en dur ne sait pas faire aujourd'hui.
 
+## Les redirections
+
+**Site public → Redirections** liste les anciennes adresses du site — héritées de WordPress ou laissées par le renommage d'une page — avec leur destination et leur **nombre de visites**. Le compteur dit si une adresse sert encore : une redirection jamais empruntée peut être supprimée sans risque, une redirection encore utilisée doit être conservée.
+
+Chaque adresse répond de l'une de ces deux façons :
+
+- **Redirection (301)** : les visiteurs et les moteurs sont envoyés vers l'adresse cible ;
+- **Page supprimée (410)** : l'adresse n'a pas de successeur, et les moteurs la retirent de leur index.
+
+Vous pouvez modifier la destination d'une redirection, en créer une à la main — typiquement après la suppression d'une page dont l'adresse circulait — ou en supprimer une devenue inutile. L'application refuse les montages qui se paient en référencement : une redirection qui pointe sur elle-même, ou vers une adresse elle-même redirigée.
+
 ## Qui pourra le faire
 
 Le droit correspondant s'appelle **Modifier les menus et les redirections**. Il est déjà attribué aux rôles **Communication**, **Président·e** et **Super administrateur**.

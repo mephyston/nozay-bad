@@ -85,6 +85,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { name: 'Pages', icon: 'FileText', href: '/admin/website/pages', permission: 'cms:pages:read' },
       { name: 'Médiathèque', icon: 'Image', href: '/admin/website/media', permission: 'cms:media:read' },
       { name: 'Menus', icon: 'Menu', href: '/admin/website/menus', permission: 'cms:pages:read' },
+      { name: 'Redirections', icon: 'Signpost', href: '/admin/website/redirects', permission: 'cms:nav:read' },
       { name: 'Pied de page', icon: 'PanelBottom', href: '/admin/website/footer', permission: 'cms:pages:read' }
     ]
   },

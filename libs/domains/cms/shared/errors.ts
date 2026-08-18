@@ -78,6 +78,62 @@ export class CmsHomePageConflictError extends AppError {
 }
 
 // ---------------------------------------------------------------------------
+// Redirections
+// ---------------------------------------------------------------------------
+
+export class CmsRedirectNotFoundError extends AppError {
+  constructor(message = 'Redirection introuvable') {
+    super(message, 404);
+    this.name = 'CmsRedirectNotFoundError';
+  }
+}
+
+export class CmsRedirectLoopError extends AppError {
+  constructor() {
+    super('Une redirection ne peut pas pointer vers sa propre adresse.', 400);
+    this.name = 'CmsRedirectLoopError';
+  }
+}
+
+/**
+ * Refus plutôt que résolution silencieuse : l'utilisateur qui vise une adresse
+ * elle-même redirigée doit choisir la cible finale en connaissance de cause —
+ * Google suit mal les chaînes, et elles diluent le référencement.
+ */
+export class CmsRedirectChainError extends AppError {
+  constructor(viaPath: string, finalTarget: string | null) {
+    super(
+      finalTarget
+        ? `« ${viaPath} » redirige déjà vers « ${finalTarget} » : pointez directement vers cette adresse.`
+        : `« ${viaPath} » répond déjà « page supprimée » (410) : marquez plutôt cette redirection comme supprimée.`,
+      400
+    );
+    this.name = 'CmsRedirectChainError';
+  }
+}
+
+export class CmsRedirectSourceConflictError extends AppError {
+  constructor(fromPath: string) {
+    super(`Une redirection existe déjà pour « ${fromPath} » : modifiez-la plutôt.`, 409);
+    this.name = 'CmsRedirectSourceConflictError';
+  }
+}
+
+/**
+ * La résolution d'URL sert la page avant de consulter les redirections : une
+ * redirection posée sur l'adresse d'une page existante ne serait jamais empruntée.
+ */
+export class CmsRedirectShadowedError extends AppError {
+  constructor(fromPath: string) {
+    super(
+      `« ${fromPath} » est l'adresse d'une page du site : la redirection ne serait jamais empruntée. Renommez ou supprimez d'abord la page.`,
+      409
+    );
+    this.name = 'CmsRedirectShadowedError';
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Diffusion push d'une actualité
 // ---------------------------------------------------------------------------
 
