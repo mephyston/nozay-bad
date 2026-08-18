@@ -1,3 +1,10 @@
+# [1.0.0-beta.95](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.94...v1.0.0-beta.95) (2026-08-18)
+
+
+### Features
+
+* **notifications:** rappels interclubs programmés, fonctions au club et registre des envois automatiques ([becec66](https://github.com/mephyston/nozay-bad/commit/becec66513f6c8c62cb3b2da0928f4419a1d224a))
+
 # [1.0.0-beta.94](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.93...v1.0.0-beta.94) (2026-08-18)
 
 
