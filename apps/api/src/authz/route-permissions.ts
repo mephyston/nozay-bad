@@ -44,6 +44,10 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // que l'annonce poussée à tout le club chaque matin.
   { method: 'GET', path: '/members/birthdays', permission: 'members:members:read', service: true },
   { method: 'PATCH', path: '/members/:id/expense-authorization', permission: 'members:members:write' },
+  // Fonctions au club (bureau, CA, entraîneurs) : lecture avec la fiche, écriture avec elle.
+  { method: 'GET', path: '/members/club-functions', permission: 'members:members:read' },
+  { method: 'GET', path: '/members/club-functions/status', permission: 'members:members:read' },
+  { method: 'PUT', path: '/members/:licence/club-functions', permission: 'members:members:write' },
   { method: 'GET', path: '/members/attestation/config', permission: 'members:attestations:read' },
   { method: 'PUT', path: '/members/attestation/config', permission: 'members:attestations:write' },
   { method: 'POST', path: '/members/attestation/signature', permission: 'members:attestations:write' },
@@ -168,6 +172,8 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'GET', path: '/notifications/overview', permission: 'notifications:messages:read' },
   { method: 'GET', path: '/notifications/audiences', permission: 'notifications:messages:read' },
   { method: 'GET', path: '/notifications/subscribers', permission: 'notifications:messages:read' },
+  // Registre des notifications automatiques : consultation seule, même droit que l'aperçu.
+  { method: 'GET', path: '/notifications/scheduled', permission: 'notifications:messages:read' },
   // Une notification part vers tous les téléphones du club : le droit d'émission
   // n'est jamais accordé implicitement.
   { method: 'POST', path: '/notifications/messages', permission: 'notifications:messages:send' },

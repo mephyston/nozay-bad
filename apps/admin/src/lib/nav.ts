@@ -37,7 +37,8 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Adhérents',
     items: [
-      { name: 'Liste des adhérents', icon: 'Users', href: '/admin/members', permission: 'members:members:read' }
+      { name: 'Liste des adhérents', icon: 'Users', href: '/admin/members', permission: 'members:members:read' },
+      { name: 'Dirigeants', icon: 'Landmark', href: '/admin/members/dirigeants', permission: 'members:members:read' }
     ]
   },
   {

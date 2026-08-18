@@ -52,6 +52,9 @@ Il dépend du seul domaine `members`, pour peupler les sélecteurs de joueurs. A
 - [RF-TEA-002 : L'import des compétiteurs complète celui des adhérents](./rules/RF-TEA-002-import-competiteurs-complete-adherents.md)
 - [RF-TEA-003 : Valeur d'équipe et hiérarchie du club](./rules/RF-TEA-003-valeur-d-equipe-et-hierarchie.md)
 - [RF-TEA-004 : La semaine relie les championnats, pas le numéro de journée](./rules/RF-TEA-004-la-semaine-relie-les-championnats.md)
+- [RF-TEA-005 : Le rappel des classements du jeudi](./rules/RF-TEA-005-rappel-classements-du-jeudi.md)
+- [RF-TEA-006 : Le rappel de composition avant la journée](./rules/RF-TEA-006-rappel-de-composition.md)
+- [RF-TEA-007 : Le dépassement de valeur se notifie tout seul, des deux côtés](./rules/RF-TEA-007-depassement-de-valeur-notifie.md)
 
 ---
 

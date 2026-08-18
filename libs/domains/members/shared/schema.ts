@@ -1,4 +1,6 @@
+import { sql } from 'drizzle-orm';
 import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { CLUB_FUNCTIONS } from './club-functions';
 
 export const usersTable = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -39,6 +41,34 @@ export const membersTable = sqliteTable('members', {
   parent2Phone: text('parent2_phone')
 }, (table) => ({
   licenceSeasonUnq: uniqueIndex('members_licence_season_idx').on(table.licence, table.seasonId),
+}));
+
+// Fonction au club (bureau, CA, entraîneur) attribuée à un adhérent pour une saison.
+//
+// Table annexe et non colonne de `members` : l'import Poona écrase les lignes adhérents
+// en `onConflictDoUpdate` à chaque ré-import, une colonne y serait perdue. La personne
+// est désignée par sa **licence** (clé naturelle stable d'une saison à l'autre, même
+// convention que `team_staff`) et sans FK : une fonction survit à un ré-import qui
+// recréerait la ligne adhérent. La saison reste `season_id` — on ne quitte pas le
+// domaine members, inutile de recopier le code saison comme le fait le domaine teams.
+export const memberClubFunctionsTable = sqliteTable('member_club_functions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  seasonId: integer('season_id').notNull(),
+  licence: text('licence').notNull(),
+  function: text('function', { enum: CLUB_FUNCTIONS }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+}, (table) => ({
+  // Pas de cumul : un adhérent ne porte qu'une fonction par saison (le président ne
+  // peut pas être aussi trésorier).
+  seasonLicenceUnq: uniqueIndex('member_club_functions_season_licence_idx')
+    .on(table.seasonId, table.licence),
+  // Filet en base pour les fonctions à titulaire unique (statuts du club) : le handler
+  // porte la règle avec un message français, l'index la garantit contre les écritures
+  // concurrentes ou hors application. Les autres fonctions (vice-président, membre du
+  // CA, entraîneur) acceptent plusieurs titulaires.
+  singleHolderUnq: uniqueIndex('member_club_functions_single_holder_idx')
+    .on(table.seasonId, table.function)
+    .where(sql`"function" IN ('president', 'secretary', 'treasurer', 'treasurer_deputy')`)
 }));
 
 // Configuration (singleton, id = 1) du modèle d'attestation CSE : identité du

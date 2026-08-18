@@ -35,7 +35,8 @@
     Newspaper,
     CalendarClock,
     CalendarDays,
-    Signpost
+    Signpost,
+    CircleAlert
   } from "@lucide/svelte";
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
@@ -91,6 +92,56 @@
   const COLLAPSED_KEY = 'sidebar_collapsed_groups';
   const SCROLL_KEY = 'sidebar_scroll';
 
+  /**
+   * « Action à réaliser » sur l'entrée Dirigeants : le président ou le trésorier de la
+   * saison en cours n'est pas désigné (cas normal en début de saison, après l'AG) —
+   * le signal persiste tant que ces deux fonctions ne sont pas pourvues.
+   *
+   * L'île de layout est remontée à chaque navigation : le statut est mis en cache de
+   * session quelques minutes pour ne pas interroger l'API à chaque changement de page.
+   */
+  const FUNCTIONS_ALERT_KEY = 'club_functions_alert';
+  const FUNCTIONS_ALERT_TTL_MS = 5 * 60 * 1000;
+  let dirigeantsAlert = $state(false);
+
+  async function refreshDirigeantsAlert() {
+    const visible = filteredNavGroups.some((group) =>
+      group.items.some((item) => item.href === '/admin/members/dirigeants')
+    );
+    if (!visible) return;
+
+    try {
+      const cached = sessionStorage.getItem(FUNCTIONS_ALERT_KEY);
+      if (cached) {
+        const { t, alert } = JSON.parse(cached);
+        if (Date.now() - t < FUNCTIONS_ALERT_TTL_MS) {
+          dirigeantsAlert = Boolean(alert);
+          return;
+        }
+      }
+    } catch {
+      /* Cache illisible : on interroge simplement l'API. */
+    }
+
+    try {
+      const res = await fetch('/admin/api/member-functions');
+      if (!res.ok) return;
+      const body: any = await res.json();
+      const alert =
+        Boolean(body?.data?.seasonCode) &&
+        Array.isArray(body?.data?.missing) &&
+        body.data.missing.length > 0;
+      dirigeantsAlert = alert;
+      try {
+        sessionStorage.setItem(FUNCTIONS_ALERT_KEY, JSON.stringify({ t: Date.now(), alert }));
+      } catch {
+        /* Sans stockage, le prochain rendu refera la requête. */
+      }
+    } catch {
+      /* Statut indisponible : pas d'indicateur plutôt qu'un faux signal. */
+    }
+  }
+
   let collapsedGroups = $state<string[]>([]);
   let navElement = $state<HTMLElement | null>(null);
 
@@ -123,6 +174,8 @@
     } catch {
       /* Valeur illisible : on repart toutes sections ouvertes. */
     }
+
+    void refreshDirigeantsAlert();
 
     if (!navElement) return;
     try {
@@ -162,7 +215,10 @@
 
     // Adhérents
     if (item.href === "/admin/members") {
-      return primary === "adhérents";
+      return primary === "adhérents" && sub !== "dirigeants";
+    }
+    if (item.href === "/admin/members/dirigeants") {
+      return primary === "adhérents" && sub === "dirigeants";
     }
 
     // Comptabilité
@@ -355,6 +411,12 @@
                     >
                       <item.icon class="h-5 w-5 md:h-4 md:w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
                       <span class="group-data-[collapsible=icon]:hidden">{item.name}</span>
+                      {#if item.href === '/admin/members/dirigeants' && dirigeantsAlert}
+                        <CircleAlert
+                          class="h-3.5 w-3.5 shrink-0 text-warning group-data-[collapsible=icon]:hidden"
+                          aria-label="Président ou trésorier de la saison à désigner"
+                        />
+                      {/if}
                     </a>
                   {/snippet}
                 </Sidebar.MenuButton>

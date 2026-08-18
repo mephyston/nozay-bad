@@ -15,6 +15,7 @@
     "0011_member_payment_date.sql": "a9f1aa452649ed0d",
     "0012_teams_calendar_details.sql": "2a340fa2b914dd5d",
     "0013_drop_effective_week.sql": "31608f9786dd996f",
-    "0014_championship_rules_link.sql": "5e87e49977b1490e"
+    "0014_championship_rules_link.sql": "5e87e49977b1490e",
+    "0015_member_club_functions.sql": "4acd47d50fed0563"
   }
 }

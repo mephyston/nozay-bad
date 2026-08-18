@@ -93,6 +93,14 @@ export type { SaveFixtureDateInput, SaveFixtureDateOutput } from './save-fixture
 export type { NotifyCaptainInput, NotifyCaptainOutput } from './notify-captain/dto';
 export type { ListMyFixturesInput, ListMyFixturesOutput, MyFixture } from './list-my-fixtures/dto';
 export type { NotifyLineupInput, NotifyLineupOutput } from './notify-lineup/dto';
+// Rappels programmés et constat automatique de valeur : consommés par le cron du
+// Worker API (`apps/api/src/scheduled.ts`) et par `save-lineup`.
+export { findRankingReminderDays } from './remind-rankings/handler';
+export type { RankingReminderDay } from './remind-rankings/dto';
+export { remindMissingLineups } from './remind-lineups/handler';
+export type { RemindLineupsInput, RemindLineupsOutput } from './remind-lineups/dto';
+export { notifyValueOverflow } from './notify-value-overflow/handler';
+export type { NotifyValueOverflowInput, NotifyValueOverflowOutput } from './notify-value-overflow/dto';
 export { checkLineup, type LineupIssue, type LineupVerdict } from './shared/lineup-rules';
 
 export { checkEligibility, describeEligibility, eligibleDisciplines } from './shared/eligibility';

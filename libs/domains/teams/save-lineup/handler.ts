@@ -2,6 +2,7 @@ import { type Db, type DbOrTx } from '@nba/db';
 import { normalizeLicence } from '../shared/ranking';
 import { loadLineup } from '../get-lineup/handler';
 import { notifyLineup } from '../notify-lineup/handler';
+import { notifyValueOverflow } from '../notify-value-overflow/handler';
 import {
   ChampionshipDayNotFoundError,
   InvalidLineupError,
@@ -110,6 +111,15 @@ export async function saveLineup(
         authorLicence: licence,
         validated: Boolean(input.validate)
       },
+      now
+    );
+    // Constat de valeur d'équipe, dans les deux directions : la composition qui vient
+    // d'être arrêtée peut dépasser l'équipe du dessus comme passer sous une composition
+    // validée du dessous. Jamais sur brouillon — il bouge encore. Attendu lui aussi :
+    // une promesse détachée est annulée avec la requête sur Workers.
+    await notifyValueOverflow(
+      db as Db,
+      { teamId: team.id, dayNumber: input.dayNumber, slot: fixtureSlot },
       now
     );
   }

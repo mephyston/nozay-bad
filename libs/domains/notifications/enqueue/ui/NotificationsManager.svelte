@@ -14,9 +14,10 @@
     toast,
     uiConfirm
   } from '@nba/ui';
-  import { Bell, Send, ExternalLink } from '@lucide/svelte';
+  import { Bell, Send, ExternalLink, CalendarClock, Zap } from '@lucide/svelte';
   import { NOTIFICATION_CATEGORIES } from '../../shared/categories';
   import { STOREFRONT_PAGES } from '../../shared/storefront-pages';
+  import type { ScheduledNotificationView } from '../../shared/scheduled-registry';
 
   interface Stats {
     devices: number;
@@ -56,13 +57,20 @@
     stats: initialStats,
     messages: initialMessages,
     groups: initialGroups = [],
-    canSend = false
+    canSend = false,
+    scheduled = []
   }: {
     stats: Stats;
     messages: MessageRow[];
     groups?: Group[];
     canSend?: boolean;
+    scheduled?: ScheduledNotificationView[];
   } = $props();
+
+  // Consultation seule : les envois automatiques sont câblés dans le code, seuls les
+  // drapeaux d'environnement les activent — rien n'est actionnable depuis cet écran.
+  const scheduledCron = scheduled.filter((s) => s.trigger === 'cron');
+  const scheduledEvents = scheduled.filter((s) => s.trigger === 'event');
 
   const STOREFRONT_URL = import.meta.env.PUBLIC_STOREFRONT_URL || '';
 
@@ -82,6 +90,8 @@
   let sending = $state(false);
 
   let historyOpen = $state(false);
+  let scheduledCronOpen = $state(false);
+  let scheduledEventsOpen = $state(false);
   let subscribersOpen = $state(false);
   let subscribers = $state<Subscriber[] | null>(null);
   let subscribersError = $state('');
@@ -366,7 +376,8 @@
     </CollapsibleSection>
   </div>
 
-  <Card.Root class="h-fit">
+  <div class="space-y-6 h-fit">
+  <Card.Root>
     <Card.Header>
       <Card.Title>Abonnements</Card.Title>
     </Card.Header>
@@ -398,6 +409,69 @@
       </p>
     </Card.Content>
   </Card.Root>
+
+  <!-- Registre des envois automatiques, en consultation seule : les conditions de
+       déclenchement sont câblées dans le code, on ne peut pas agir dessus ici.
+       Replié par défaut : c'est une documentation, pas un tableau de bord. -->
+  {#if scheduledCron.length > 0}
+    <CollapsibleSection
+      title="Notifications programmées"
+      description="Envois récurrents automatiques et leur fréquence."
+      badge={scheduledCron.length}
+      bind:open={scheduledCronOpen}
+    >
+      <div class="space-y-3">
+        {#each scheduledCron as entry (entry.id)}
+          <div class="rounded-lg border border-border p-3 space-y-1">
+            <div class="flex items-start justify-between gap-2">
+              <div class="text-sm font-medium text-foreground">{entry.title}</div>
+              <Badge variant={entry.enabled ? 'outline' : 'secondary'} size="xs" class="shrink-0">
+                {entry.enabled ? 'Active' : 'Désactivée'}
+              </Badge>
+            </div>
+            <p class="text-xs text-muted-foreground line-clamp-3">{entry.body}</p>
+            <p class="text-[11px] font-medium text-foreground/80 flex items-center gap-1">
+              <CalendarClock class="w-3 h-3 shrink-0" />
+              {entry.schedule}
+            </p>
+            {#if entry.flag && !entry.enabled}
+              <p class="text-[11px] text-muted-foreground">
+                S'active via la variable <code class="font-mono">{entry.flag}</code> du Worker API.
+              </p>
+            {/if}
+          </div>
+        {/each}
+      </div>
+    </CollapsibleSection>
+  {/if}
+
+  {#if scheduledEvents.length > 0}
+    <CollapsibleSection
+      title="Notifications sur événement"
+      description="Envois déclenchés par une action métier."
+      badge={scheduledEvents.length}
+      bind:open={scheduledEventsOpen}
+    >
+      <div class="space-y-3">
+        {#each scheduledEvents as entry (entry.id)}
+          <div class="rounded-lg border border-border p-3 space-y-1">
+            <div class="flex items-start justify-between gap-2">
+              <div class="text-sm font-medium text-foreground">{entry.title}</div>
+              <Badge variant="outline" size="xs" class="shrink-0">
+                {CATEGORY_LABELS[entry.category] ?? entry.category}
+              </Badge>
+            </div>
+            <p class="text-xs text-muted-foreground line-clamp-3">{entry.body}</p>
+            <p class="text-[11px] font-medium text-foreground/80 flex items-center gap-1">
+              <Zap class="w-3 h-3 shrink-0" />
+              {entry.schedule}
+            </p>
+          </div>
+        {/each}
+      </div>
+    </CollapsibleSection>
+  {/if}
+  </div>
 </div>
 
 <Dialog.Root bind:open={subscribersOpen}>

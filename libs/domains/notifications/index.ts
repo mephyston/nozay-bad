@@ -34,6 +34,7 @@ export type { CategoryPreference } from './preferences/dto';
 export { resolveVapid, type VapidEnv } from './shared/vapid';
 export { sendNotificationSchema } from './shared/validators';
 export { STOREFRONT_PAGES, isStorefrontPage, type StorefrontPagePath } from './shared/storefront-pages';
+export type { ScheduledNotificationView } from './shared/scheduled-registry';
 export {
   NOTIFICATION_CATEGORIES,
   NOTIFICATION_CATEGORY_IDS,

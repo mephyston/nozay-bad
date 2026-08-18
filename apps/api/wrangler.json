@@ -43,7 +43,9 @@
     "VAPID_SUBJECT": "mailto:contact@nozaybad.fr",
     "PUSH_REMINDERS_ENABLED": "false",
     "VAPID_PUBLIC_KEY": "BGLR2qQYt7FsbrqkNjx2p9p--tZuvKCBwj7YBZ5Di7Un1uwkiVXY3SWHi33zuZWltVAOJTsBsAZNaz7bRolHXo4",
-    "PUSH_BIRTHDAYS_ENABLED": "false"
+    "PUSH_BIRTHDAYS_ENABLED": "false",
+    "PUSH_RANKING_REMINDERS_ENABLED": "false",
+    "PUSH_LINEUP_REMINDERS_ENABLED": "false"
   },
   "env": {
     "staging": {
@@ -67,7 +69,9 @@
         "VAPID_SUBJECT": "mailto:contact@nozaybad.fr",
         "PUSH_REMINDERS_ENABLED": "false",
         "VAPID_PUBLIC_KEY": "BJiMPuOGVz144IXpSHoh_XthNFdB-uSV0qGEMc2D-FeheQqVaBmfCUIVa2notPKe3AI2Z4cpP3bgb6dlS5jyLUw",
-        "PUSH_BIRTHDAYS_ENABLED": "false"
+        "PUSH_BIRTHDAYS_ENABLED": "false",
+        "PUSH_RANKING_REMINDERS_ENABLED": "false",
+        "PUSH_LINEUP_REMINDERS_ENABLED": "false"
       },
       "d1_databases": [
         {

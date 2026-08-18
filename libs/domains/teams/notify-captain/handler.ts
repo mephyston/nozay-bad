@@ -1,32 +1,15 @@
 import { type Db } from '@nba/db';
-import { getMembersBySeason, getContactEmailsForMember, type MemberSummary } from '@nba/members-api';
-import { notifyContacts } from '@nba/notifications-api';
+import { getMembersBySeason } from '@nba/members-api';
 import { normalizeLicence } from '../shared/ranking';
-import { formatValue } from '../shared/team-value';
+import { staffContacts } from '../shared/staff-contacts';
+import { findUpperTeam } from '../shared/team-hierarchy';
+import { sendValueIssueNotifications } from '../shared/notify-value-issue';
 import { loadLineup } from '../get-lineup/handler';
 import { TeamNotFoundError } from '../shared/errors';
 import { NotifyCaptainRepository } from './repository';
 import type { NotifyCaptainInput, NotifyCaptainOutput } from './dto';
 
 const repo = new NotifyCaptainRepository();
-
-/** Annuaire du staff : licences normalisées, adresses de contact, nom affichable. */
-async function staffContacts(
-  db: Db,
-  byLicence: Map<string, MemberSummary>,
-  licences: Array<string | null>
-): Promise<{ emails: string[]; names: string[] }> {
-  const emails = new Set<string>();
-  const names: string[] = [];
-  for (const raw of licences) {
-    if (!raw) continue;
-    const member = byLicence.get(normalizeLicence(raw));
-    if (!member) continue;
-    names.push(`${member.firstName} ${member.lastName}`.trim());
-    for (const email of await getContactEmailsForMember(db, member.id)) emails.add(email);
-  }
-  return { emails: [...emails], names };
-}
 
 /**
  * Prévient le staff d'une anomalie relevée sur une composition.
@@ -40,11 +23,9 @@ async function staffContacts(
  *
  * Le vice-capitaine est prévenu avec le capitaine : il supplée, encore faut-il qu'il sache.
  *
- * **Le dépassement de valeur se notifie des deux côtés.** Le règlement fait perdre la
- * rencontre aux *deux* équipes (art. 6.3.2), et la correction peut venir de l'une comme de
- * l'autre : renforcer celle du dessus vaut alléger celle du dessous. Prévenir le seul
- * capitaine fautif le laisserait chercher seul un arbitrage qui ne lui appartient pas ; les
- * deux messages se nomment donc mutuellement pour qu'ils se rapprochent.
+ * La construction et l'envoi bilatéral vivent dans `shared/notify-value-issue.ts`,
+ * partagés avec le constat automatique déclenché à la validation d'une composition
+ * (`notify-value-overflow`) : les deux flux doivent dire la même chose.
  */
 export async function notifyCaptain(
   db: Db,
@@ -60,8 +41,6 @@ export async function notifyCaptain(
   const blocking = lineup.errors.map((issue) => issue.message);
   const hierarchy = lineup.warnings.filter((issue) => issue.code === 'W1');
   const problems = [...blocking, ...hierarchy.map((i) => i.message)];
-
-  const dayLabel = lineup.dayLabel ?? `journée ${lineup.dayNumber}`;
 
   if (problems.length === 0) {
     return {
@@ -82,7 +61,7 @@ export async function notifyCaptain(
 
   // L'équipe du dessus n'est concernée que par la hiérarchie : une erreur dure sur la
   // composition d'en dessous ne la regarde pas.
-  const upper = hierarchy.length > 0 ? await repo.findUpperTeam(db, team) : undefined;
+  const upper = hierarchy.length > 0 ? await findUpperTeam(db, team) : undefined;
   const upperLineup = upper
     ? await loadLineup(db, { teamId: upper.id, dayNumber: input.dayNumber })
     : null;
@@ -93,58 +72,28 @@ export async function notifyCaptain(
       ])
     : { emails: [], names: [] };
 
-  const note = input.note?.trim() || null;
-  const value = lineup.value !== null ? `Valeur actuelle : ${formatValue(lineup.value)}.` : null;
-  const together = counterpart.names.length > 0 && upperLineup
-    ? `Rapprochez-vous de ${counterpart.names.join(' ou ')} (${upperLineup.teamName}) : la correction peut venir de l'une ou l'autre équipe.`
-    : null;
-
-  const title = `${lineup.teamName} — ${dayLabel} à revoir`;
-  const body = [problems.join(' '), value, together, note].filter(Boolean).join(' ');
-
-  await notifyContacts(
+  const sent = await sendValueIssueNotifications(
     db,
-    own.emails,
     {
-      title,
-      body,
-      url: `/equipes/${team.id}/journee/${lineup.dayNumber}`,
-      source: 'teams:day-control',
-      category: 'interclubs'
+      team: { id: team.id },
+      lineup,
+      upper: upper && upperLineup ? { id: upper.id, lineup: upperLineup } : null,
+      ownStaff: own,
+      upperStaff: counterpart,
+      problems,
+      note: input.note,
+      source: 'teams:day-control'
     },
     now
   );
 
-  if (upperLineup && counterpart.emails.length > 0) {
-    await notifyContacts(
-      db,
-      counterpart.emails,
-      {
-        title: `${upperLineup.teamName} — ${dayLabel} concernée par une valeur d'équipe`,
-        body: [
-          `${lineup.teamName} présente une valeur supérieure à celle de ${upperLineup.teamName} sur cette ${dayLabel} : les deux équipes perdraient la rencontre.`,
-          own.names.length > 0
-            ? `Rapprochez-vous de ${own.names.join(' ou ')} (${lineup.teamName}) : la correction peut venir de l'une ou l'autre équipe.`
-            : null,
-          note
-        ]
-          .filter(Boolean)
-          .join(' '),
-        url: `/equipes/${upper!.id}/journee/${lineup.dayNumber}`,
-        source: 'teams:day-control',
-        category: 'interclubs'
-      },
-      now
-    );
-  }
-
   return {
     teamName: lineup.teamName,
-    recipients: own.emails.length,
+    recipients: sent.recipients,
     counterpartTeamName: upperLineup?.teamName ?? null,
-    counterpartRecipients: counterpart.emails.length,
-    title,
-    body,
+    counterpartRecipients: sent.counterpartRecipients,
+    title: sent.title,
+    body: sent.body,
     skipped: false
   };
 }

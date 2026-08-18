@@ -54,6 +54,8 @@ const tables = [
     'bank_statement_lines',
     'products',
     'product_categories',
+    // Sans FK vers `members` (attribution par licence), mais fonctionnellement enfant.
+    'member_club_functions',
     'members',
     'season_balances',
     'season_category_budgets',
