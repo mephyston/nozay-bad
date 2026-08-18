@@ -1,3 +1,10 @@
+# [1.0.0-beta.92](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.91...v1.0.0-beta.92) (2026-08-17)
+
+
+### Features
+
+* **cms:** héberger un bloc dans une colonne, et régler leurs largeurs ([31ca342](https://github.com/mephyston/nozay-bad/commit/31ca342839b376f8c03a6e107d8f2102eb9875d6))
+
 # [1.0.0-beta.91](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.90...v1.0.0-beta.91) (2026-08-17)
 
 
