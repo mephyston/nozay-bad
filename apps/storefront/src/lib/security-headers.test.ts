@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applySecurityHeaders } from './security-headers';
+import { applySecurityHeaders, buildCsp } from './security-headers';
 
 /**
  * Simule la réponse d'un service binding : dans workerd, ses en-têtes sont
@@ -48,5 +48,24 @@ describe('applySecurityHeaders', () => {
     expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
     // La régression : le corps était perdu (500 vide) alors que l'écriture avait eu lieu.
     expect(await res.json()).toEqual({ success: true, data: { id: 42 } });
+  });
+});
+
+/**
+ * La régression d'août 2026 : la CSP passe de Report-Only à appliquée, et les images
+ * des actualités disparaissent — elles viennent du site public, seul à servir
+ * `/media/…`, donc d'une origine tierce vue d'ici.
+ */
+describe('buildCsp', () => {
+  it("autorise en image l'origine qui sert les médias", () => {
+    const csp = buildCsp('https://nozaybad.fr');
+
+    expect(csp).toContain("img-src 'self' data: blob: https://nozaybad.fr");
+  });
+
+  it("s'en tient à l'origine propre quand aucune n'est connue", () => {
+    const csp = buildCsp('');
+
+    expect(csp).toContain("img-src 'self' data: blob:;");
   });
 });

@@ -8,19 +8,39 @@
 // en script, cadre et connexion.
 
 import { applySecurityHeaders as applyPolicy, withMutableHeaders } from '@nba/security-headers';
+import { websiteOrigin } from './media';
 
-const CSP = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "frame-ancestors 'none'",
-  "object-src 'none'",
-  "img-src 'self' data: blob:",
-  "font-src 'self' data:",
-  "style-src 'self' 'unsafe-inline'",
-  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
-  "frame-src https://challenges.cloudflare.com",
-  "connect-src 'self' https://challenges.cloudflare.com"
-].join('; ');
+/**
+ * La politique, l'origine des médias passée en argument.
+ *
+ * Les images d'une actualité — vignette de couverture comme images insérées dans le
+ * corps — sont servies par **le site public**, seul porteur de la liaison R2 et de la
+ * route `/media/…` (cf. `lib/media.ts`). C'est donc une origine tierce vue d'ici, et
+ * un `img-src 'self'` la bloque : le passage de Report-Only à l'application stricte a
+ * suffi à les faire disparaître, sans que rien du chargement des actualités ait bougé.
+ *
+ * L'origine est un argument, et non une lecture directe de `websiteOrigin`, pour que
+ * le test puisse l'exercer : `PUBLIC_WEBSITE_URL` n'est inlinée que dans un build
+ * d'application. Même raison que `rewriteMediaPaths` dans `lib/media.ts`.
+ */
+export function buildCsp(mediaOrigin: string): string {
+  const imgSrc = ["'self'", 'data:', 'blob:', ...(mediaOrigin ? [mediaOrigin] : [])].join(' ');
+
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    `img-src ${imgSrc}`,
+    "font-src 'self' data:",
+    "style-src 'self' 'unsafe-inline'",
+    "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+    "frame-src https://challenges.cloudflare.com",
+    "connect-src 'self' https://challenges.cloudflare.com"
+  ].join('; ');
+}
+
+const CSP = buildCsp(websiteOrigin);
 
 export function applySecurityHeaders(response: Response): Response {
   return applyPolicy(response, {
