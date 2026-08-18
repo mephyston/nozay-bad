@@ -1,3 +1,10 @@
+# [1.0.0-beta.94](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.93...v1.0.0-beta.94) (2026-08-18)
+
+
+### Features
+
+* **cms:** pagination et adresses tronquées sur l'écran des redirections ([996147d](https://github.com/mephyston/nozay-bad/commit/996147dd5106919ca186e4dd2a09e4f32f31cae4))
+
 # [1.0.0-beta.93](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.92...v1.0.0-beta.93) (2026-08-18)
 
 
