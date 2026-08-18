@@ -37,6 +37,11 @@
   let showFormSheet = $state(false);
   let errorMsg = $state('');
   let searchTerm = $state('');
+  let page = $state(1);
+  // Adresses dépliées sur mobile : le survol n'existe pas au doigt, on déplie au toucher.
+  let expanded = $state<Set<number>>(new Set());
+
+  const PAGE_SIZE = 20;
 
   // null = création ; sinon la ligne en cours de modification, dont la source est figée.
   let editingId = $state<number | null>(null);
@@ -63,6 +68,29 @@
       );
     })
   );
+
+  // Une recherche redéfinit la liste : rester sur une page lointaine afficherait du vide.
+  $effect(() => {
+    searchTerm;
+    page = 1;
+  });
+
+  const pagination = $derived({
+    page,
+    total: filteredRedirects.length,
+    totalPages: Math.max(1, Math.ceil(filteredRedirects.length / PAGE_SIZE))
+  });
+
+  const pagedRedirects = $derived(
+    filteredRedirects.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  );
+
+  function toggleExpanded(id: number) {
+    const next = new Set(expanded);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    expanded = next;
+  }
 
   async function post(body: unknown, fallback: string) {
     const response = await fetch('', {
@@ -162,7 +190,10 @@
 </script>
 
 <DataTable
-  data={filteredRedirects}
+  data={pagedRedirects}
+  {pagination}
+  onPageChange={(p: number) => (page = p)}
+  itemName="redirection(s)"
   emptyTitle="Aucune redirection"
   emptyDescription={searchTerm.trim()
     ? 'Aucune redirection ne correspond à votre recherche.'
@@ -186,18 +217,33 @@
   {/snippet}
 
   {#snippet mobileView()}
-    {#each filteredRedirects as row (row.id)}
+    {#each pagedRedirects as row (row.id)}
       <Card.Root>
         <Card.Content class="space-y-3 p-4">
           <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0">
-              <code class="block truncate text-sm font-bold text-foreground">{row.fromPath}</code>
+            <!-- Pas de survol au doigt : toucher l'adresse la déplie en entier. -->
+            <button
+              type="button"
+              class="min-w-0 text-left"
+              aria-expanded={expanded.has(row.id)}
+              aria-label="Afficher l'adresse complète"
+              onclick={() => toggleExpanded(row.id)}
+            >
+              <code
+                class={`block text-sm font-bold text-foreground ${expanded.has(row.id) ? 'break-all' : 'truncate'}`}
+              >
+                {row.fromPath}
+              </code>
               {#if row.toPath === null}
                 <Badge variant="destructive" size="xs" class="mt-1">410 — supprimée</Badge>
               {:else}
-                <code class="mt-1 block truncate text-xs text-muted-foreground">→ {row.toPath}</code>
+                <code
+                  class={`mt-1 block text-xs text-muted-foreground ${expanded.has(row.id) ? 'break-all' : 'truncate'}`}
+                >
+                  → {row.toPath}
+                </code>
               {/if}
-            </div>
+            </button>
             <div class="shrink-0 text-right">
               <Badge variant={row.toPath === null ? 'destructive' : 'outline'} size="xs">
                 {row.statusCode}
@@ -249,14 +295,18 @@
 
   {#snippet row(redirect)}
     <Table.Row>
-      <Table.Cell>
-        <code class="text-xs text-foreground">{redirect.fromPath}</code>
+      <Table.Cell class="max-w-[14rem]">
+        <code class="block truncate text-xs text-foreground" title={redirect.fromPath}>
+          {redirect.fromPath}
+        </code>
       </Table.Cell>
-      <Table.Cell>
+      <Table.Cell class="max-w-[14rem]">
         {#if redirect.toPath === null}
           <span class="text-xs text-muted-foreground">—</span>
         {:else}
-          <code class="text-xs text-muted-foreground">{redirect.toPath}</code>
+          <code class="block truncate text-xs text-muted-foreground" title={redirect.toPath}>
+            {redirect.toPath}
+          </code>
         {/if}
       </Table.Cell>
       <Table.Cell>
