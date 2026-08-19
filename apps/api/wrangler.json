@@ -41,11 +41,11 @@
   },
   "vars": {
     "VAPID_SUBJECT": "mailto:contact@nozaybad.fr",
-    "PUSH_REMINDERS_ENABLED": "false",
+    "PUSH_REMINDERS_ENABLED": "true",
     "VAPID_PUBLIC_KEY": "BGLR2qQYt7FsbrqkNjx2p9p--tZuvKCBwj7YBZ5Di7Un1uwkiVXY3SWHi33zuZWltVAOJTsBsAZNaz7bRolHXo4",
-    "PUSH_BIRTHDAYS_ENABLED": "false",
-    "PUSH_RANKING_REMINDERS_ENABLED": "false",
-    "PUSH_LINEUP_REMINDERS_ENABLED": "false"
+    "PUSH_BIRTHDAYS_ENABLED": "true",
+    "PUSH_RANKING_REMINDERS_ENABLED": "true",
+    "PUSH_LINEUP_REMINDERS_ENABLED": "true"
   },
   "env": {
     "staging": {
