@@ -1,3 +1,10 @@
+# [1.0.0-beta.97](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.96...v1.0.0-beta.97) (2026-08-19)
+
+
+### Bug Fixes
+
+* **media:** pointer les images admin/storefront vers prod-www.nozaybad.fr ([5f4046a](https://github.com/mephyston/nozay-bad/commit/5f4046a3664b5aa2c91feb13a5fa794e79b7b552))
+
 # [1.0.0-beta.96](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.95...v1.0.0-beta.96) (2026-08-19)
 
 
