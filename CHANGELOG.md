@@ -1,3 +1,10 @@
+# [1.0.0-beta.96](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.95...v1.0.0-beta.96) (2026-08-19)
+
+
+### Features
+
+* **api:** activer les notifications push programmées en production ([69254cf](https://github.com/mephyston/nozay-bad/commit/69254cf90391961040961f2c6d01640199e080b3))
+
 # [1.0.0-beta.95](https://github.com/mephyston/nozay-bad/compare/v1.0.0-beta.94...v1.0.0-beta.95) (2026-08-18)
 
 
