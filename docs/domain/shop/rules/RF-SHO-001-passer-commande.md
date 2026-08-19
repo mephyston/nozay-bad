@@ -14,7 +14,7 @@ Un adhérent du club peut commander un ou plusieurs articles disponibles dans la
 
 ## 3. Définition de la Règle Métier
 1. Une commande ne peut être passée que si la quantité demandée pour chaque produit est **inférieure ou égale au stock disponible**.
-2. Dès la validation de la commande, le stock de chaque produit commandé est immédiatement décrémenté de la quantité correspondante.
+2. Dès la validation de la commande par le bureau, le stock de chaque produit commandé est immédiatement décrémenté de la quantité correspondante. La suite du cycle de vie est décrite par [RF-SHO-003](./RF-SHO-003-workflow-paiement-commande.md).
 3. Le montant total de la commande est la somme exacte des `(quantité * prix_unitaire)` de chaque ligne.
 4. Une commande vide (0 article) est refusée.
 
@@ -31,8 +31,8 @@ Fonctionnalité: Passage et Validation de Commande
     Étant donné un adhérent "Marc Dupont"
     Et un produit "Boîte Volants Plumes" avec un stock de 10 unités au prix de 20,00 €
     Quand l'adhérent passe commande de 2 unités de "Boîte Volants Plumes"
-    Alors la commande est créée au statut "pending" avec un montant total de 40,00 €
-    Et le stock restant de "Boîte Volants Plumes" devient 8 unités
+    Alors la commande est créée au statut "created" avec un montant total de 40,00 €
+    Et le stock restant de "Boîte Volants Plumes" devient 8 unités dès que le bureau la valide
 
   Scénario: Refus de commande pour stock insuffisant
     Étant donné un produit "Maillot Club Taille M" avec un stock de 1 unité

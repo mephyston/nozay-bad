@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Input } from '@nba/ui';
+  import { Button, Input, FormField } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
 
   interface Props {
@@ -10,9 +10,8 @@
 </script>
 
 <div class="space-y-4">
-  <div class="grid grid-cols-2 gap-4">
-    <div class="space-y-1">
-      <label for="check-num" class="text-xs font-semibold text-muted-foreground uppercase">N° de chèque (7 chiffres)</label>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <FormField id="check-num" label="N° de chèque (7 chiffres)">
       <Input
         id="check-num"
         type="text"
@@ -20,9 +19,8 @@
         placeholder="Ex: 1234567"
         required
       />
-    </div>
-    <div class="space-y-1">
-      <label for="check-amt" class="text-xs font-semibold text-muted-foreground uppercase">Montant (€)</label>
+      </FormField>
+      <FormField id="check-amt" label="Montant (€)">
       <Input
         id="check-amt"
         type="number"
@@ -30,13 +28,13 @@
         bind:value={depositState.checkAmount}
         placeholder="Ex: 150.00"
         required
+        class="font-outfit tabular-nums"
       />
-    </div>
+    </FormField>
   </div>
 
-  <div class="grid grid-cols-2 gap-4">
-    <div class="space-y-1">
-      <label for="check-emitter" class="text-xs font-semibold text-muted-foreground uppercase">Émetteur (Nom sur le chèque)</label>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <FormField id="check-emitter" label="Émetteur (Nom sur le chèque)">
       <Input
         id="check-emitter"
         type="text"
@@ -44,20 +42,18 @@
         placeholder="Ex: Dupont Marc"
         required
       />
-    </div>
-    <div class="space-y-1">
-      <label for="check-bank" class="text-xs font-semibold text-muted-foreground uppercase">Banque (optionnel)</label>
+      </FormField>
+      <FormField id="check-bank" label="Banque (optionnel)">
       <Input
         id="check-bank"
         type="text"
         bind:value={depositState.checkBank}
         placeholder="Ex: LCL, SG..."
       />
-    </div>
+    </FormField>
   </div>
 
-  <div class="space-y-1 relative">
-    <label for="check-member-input" class="text-xs font-semibold text-muted-foreground uppercase">Adhérent concerné (pour rapprochement cotisation)</label>
+    <FormField id="check-member-input" label="Adhérent concerné (pour rapprochement cotisation)">
     <div class="relative">
       <Input
         id="check-member-input"
@@ -92,7 +88,6 @@
           ✕
         </Button>
       {/if}
-    </div>
 
     {#if depositState.isMemberDropdownOpen}
       <div class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-popover border border-border rounded-lg shadow-lg divide-y divide-border">
@@ -115,10 +110,10 @@
       </div>
     {/if}
   </div>
+  </FormField>
 
-  <div class="grid grid-cols-2 gap-4">
-    <div class="space-y-1 relative">
-      <label for="check-cat-input" class="text-xs font-semibold text-muted-foreground uppercase">Affectation / Catégorie</label>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <FormField id="check-cat-input" label="Affectation / Catégorie">
       <div class="relative">
         <Input
           id="check-cat-input"
@@ -139,7 +134,6 @@
           }}
         />
         <span class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none text-[8px]">▼</span>
-      </div>
 
       {#if depositState.isCategoryDropdownOpen}
         <div class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded-lg shadow-lg divide-y divide-border">
@@ -161,15 +155,15 @@
         </div>
       {/if}
     </div>
+    </FormField>
 
-    <div class="space-y-1">
-      <label for="check-date" class="text-xs font-semibold text-muted-foreground uppercase">Date d'émission</label>
+      <FormField id="check-date" label="Date d'émission">
       <Input
         id="check-date"
         type="date"
         bind:value={depositState.checkDate}
         required
       />
-    </div>
+    </FormField>
   </div>
 </div>

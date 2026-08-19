@@ -34,7 +34,7 @@ updateInvoiceRoute.put(
     try {
       await updateInvoice(db, id, body);
       return c.json({ success: true });
-    } catch (err: unknown) {
+    } catch (err: any) {
       return c.json({ success: false, error: err.message }, err.status || 400);
     }
   }

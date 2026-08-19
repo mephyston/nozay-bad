@@ -1,0 +1,279 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import MobileNav from '../components/MobileNav.svelte';
+import PushOptIn from '../components/PushOptIn.svelte';
+import CollapsibleHistory from '../components/CollapsibleHistory.astro';
+import { env } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
+import { listSeasons, displaySeason } from '../lib/season';
+
+const session = Astro.locals.session;
+const active = session?.members.find((m) => m.id === session.activeMemberId);
+// Recalculé plus bas depuis la donnée fraîche (effet immédiat sans reconnexion).
+let canExpense = active?.expenseAuthorized ?? false;
+
+const eur = (cents: number) =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format((cents ?? 0) / 100);
+const dateFr = (v: any) => {
+  const d = v ? new Date(v) : null;
+  return d && !isNaN(d.getTime()) ? d.toLocaleDateString('fr-FR') : '';
+};
+const statusLabel: Record<string, string> = {
+  created: 'En attente de validation',
+  awaiting_payment: 'À régler',
+  paid: 'Payée',
+  rejected: 'Refusée',
+  cancelled: 'Annulée'
+};
+const statusClass: Record<string, string> = {
+  created: 'bg-muted text-muted-foreground border-border',
+  // Seule ligne qui appelle une action de l'adhérent : elle doit se voir.
+  awaiting_payment: 'bg-warning/10 text-warning border-warning/20',
+  paid: 'bg-success/10 text-success border-success/20',
+  rejected: 'bg-destructive/10 text-destructive border-destructive/20',
+  cancelled: 'bg-muted text-muted-foreground border-border'
+};
+
+const apiService = createApiClient(env);
+
+let cotisation: any = null;
+let seasonName = '';
+let orders: any[] = [];
+let expenses: any[] = [];
+// Membres du foyer non réinscrits. Le foyer étant entré, aucun email d'alerte n'est parti :
+// c'est ici, et nulle part ailleurs, qu'un parent apprend qu'il manque une licence.
+let lapsedMembers: Array<{ firstName: string; lastName: string }> = [];
+
+if (active) {
+  try {
+    // Saison de la session (celle du calendrier), pas la saison comptable.
+    const season = displaySeason(await listSeasons(env), session?.seasonCode);
+    const seasonCode = season?.code;
+    seasonName = season?.name || '';
+
+    // Adhérent d'abord → autorisation frais à jour avant de décider de charger les notes de frais.
+    const memberRes = await apiService.fetch(`http://localhost/members/${encodeURIComponent(active.licence)}${seasonCode ? `?season=${encodeURIComponent(seasonCode)}` : ''}`);
+    if (memberRes.ok) cotisation = ((await memberRes.json()) as any).data;
+    canExpense = Boolean(cotisation?.expenseAuthorized ?? canExpense);
+
+    const [ordersRes, expensesRes, householdRes] = await Promise.all([
+      apiService.fetch(`http://localhost/shop/orders?memberId=${active.id}`),
+      canExpense ? apiService.fetch(`http://localhost/expenses?memberId=${active.id}`) : Promise.resolve(null),
+      // État du foyer, relu à chaque affichage : le rappel doit disparaître de lui-même dès
+      // que le bureau importe la licence manquante.
+      apiService.fetch('http://localhost/members/lookup-household', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: session?.email })
+      })
+    ]);
+    if (ordersRes.ok) orders = ((await ordersRes.json()) as any).data || [];
+    if (expensesRes && expensesRes.ok) expenses = ((await expensesRes.json()) as any).data || [];
+    if (householdRes.ok) lapsedMembers = ((await householdRes.json()) as any)?.data?.lapsedMembers || [];
+  } catch {}
+}
+
+const renewUrl = 'https://www.myffbad.fr/adherer/NBA91';
+const lapsedNames = lapsedMembers.map((m) => `${m.firstName} ${m.lastName}`);
+
+const due = cotisation?.amountDueCents ?? 0;
+const received = cotisation?.amountReceivedCents ?? 0;
+const remaining = cotisation?.amountRemainingCents ?? Math.max(0, due - received);
+const isPaid = Boolean(cotisation?.paid);
+---
+
+<Layout title="Mon compte - Nozay Bad">
+  <Header currentPath="/mon-compte" />
+
+  <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
+    <div class="max-w-3xl mx-auto space-y-8">
+      <h1 class="text-xl sm:text-2xl font-bold text-foreground">Mon compte</h1>
+
+      <!-- Foyer mixte : un membre réinscrit, un autre non. Placé tout en haut parce que
+           c'est la seule alerte de cette page qui appelle une action, et qu'aucun email
+           n'a été envoyé pour ce cas — le foyer ayant un accès valide. -->
+      {lapsedNames.length > 0 && (
+        <div class="rounded-xl border border-warning/20 bg-warning/10 px-5 py-4">
+          <p class="text-sm font-semibold text-warning">
+            {lapsedNames.length === 1
+              ? `${lapsedNames[0]} n'a pas de licence pour ${seasonName || 'cette saison'}`
+              : `${lapsedNames.slice(0, -1).join(', ')} et ${lapsedNames[lapsedNames.length - 1]} n'ont pas de licence pour ${seasonName || 'cette saison'}`}
+          </p>
+          <p class="mt-1 text-sm text-muted-foreground">
+            Si la réadhésion est déjà faite, cette information disparaîtra d'elle-même sous
+            quelques jours.
+          </p>
+          <a
+            href={renewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-3 inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 no-underline min-h-[44px]"
+          >
+            Reprendre la licence
+          </a>
+        </div>
+      )}
+
+      <!-- Notifications : ne s'affiche que si l'appareil peut en recevoir. -->
+      <PushOptIn client:idle />
+
+      <!-- Réglage des catégories reçues. L'accès vit ici, avec le reste de ce qui
+           relève du compte : l'accueil est réservé à ce qui change tous les jours. -->
+      <a
+        href="/notifications"
+        class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline group min-h-[44px]"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
+            <p class="text-sm font-semibold text-foreground">Notifications</p>
+          </div>
+          <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Ouvrir &rarr;</span>
+        </div>
+        <p class="text-sm text-muted-foreground">Choisissez les actualités du club que vous souhaitez recevoir.</p>
+      </a>
+
+      <!-- Démarches personnelles. Elles vivent ici et non dans la barre de navigation :
+           celle-ci ne porte que les rubriques du club, identiques pour tout le monde et
+           sur les deux formats d'écran. « Mon compte » est le point d'entrée de tout ce
+           qui ne concerne que l'adhérent connecté — et il est à un geste, depuis le menu
+           en haut à droite comme depuis la barre du bas en mobile. -->
+      <a
+        href="/attestation"
+        class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline group min-h-[44px]"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+            <p class="text-sm font-semibold text-foreground">Mon attestation CSE</p>
+          </div>
+          <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Ouvrir &rarr;</span>
+        </div>
+        <p class="text-sm text-muted-foreground">
+          {(session?.members.length ?? 0) > 1
+            ? "Attestation de paiement à présenter à votre comité d'entreprise, pour chaque adhérent de votre compte."
+            : "Attestation de paiement à présenter à votre comité d'entreprise."}
+        </p>
+      </a>
+
+      {canExpense && (
+        <a
+          href="/note-de-frais"
+          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline group min-h-[44px]"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>
+              <p class="text-sm font-semibold text-foreground">Déposer une note de frais</p>
+            </div>
+            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Ouvrir &rarr;</span>
+          </div>
+          <p class="text-sm text-muted-foreground">Demandez le remboursement d'une dépense engagée pour le club.</p>
+        </a>
+      )}
+
+      <!-- Ma cotisation : repliée comme le reste. Ce qu'on vient vérifier ici, c'est
+           « suis-je à jour ? » — la pastille de statut le dit dans l'en-tête, section
+           fermée ; le détail des montants ne s'ouvre que si on le demande. -->
+      <CollapsibleHistory
+        title={`Ma cotisation${seasonName ? ` — ${seasonName}` : ''}`}
+        description="Montant dû, déjà réglé et restant à payer pour la saison."
+      >
+        <svg slot="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
+
+        <!-- Fragment : un `slot` posé sur un élément produit par une expression n'est
+             pas reconnu par Astro, il doit l'être sur un enfant direct. -->
+        <Fragment slot="badge">
+          {isPaid ? (
+            <span class="inline-flex items-center rounded-md border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">À jour</span>
+          ) : (
+            <span class="inline-flex items-center rounded-md border border-destructive/20 bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">Solde restant</span>
+          )}
+        </Fragment>
+
+        <div class="p-5">
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div>
+              <div class="text-xs text-muted-foreground">Montant dû</div>
+              <div class="text-sm font-semibold text-foreground mt-0.5">{eur(due)}</div>
+            </div>
+            <div>
+              <div class="text-xs text-muted-foreground">Réglé</div>
+              <div class="text-sm font-semibold text-foreground mt-0.5">{eur(received)}</div>
+            </div>
+            <div>
+              <div class="text-xs text-muted-foreground">Restant</div>
+              <div class={`text-sm font-semibold mt-0.5 ${remaining > 0 ? 'text-destructive' : 'text-success'}`}>{eur(remaining)}</div>
+            </div>
+          </div>
+        </div>
+      </CollapsibleHistory>
+
+      <!-- Mes commandes -->
+      <CollapsibleHistory
+        title="Mes commandes"
+        count={orders.length}
+        description="Vos achats à la boutique du club et leur règlement."
+      >
+        <svg slot="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+
+        {orders.length === 0 ? (
+          <p class="text-sm text-muted-foreground p-4">Aucune commande pour le moment.</p>
+        ) : (
+          <div class="divide-y divide-border">
+            {orders.map((o: any) => (
+              <div class="flex items-center justify-between gap-3 p-4">
+                <div class="min-w-0">
+                  <div class="text-sm font-medium text-foreground truncate">{o.product?.name ?? 'Article'} <span class="text-muted-foreground">×{o.order?.quantity ?? 1}</span></div>
+                  <div class="text-xs text-muted-foreground">{dateFr(o.order?.createdAt)}</div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                  <span class="text-sm font-semibold text-foreground">{eur(o.order?.totalAmountCents ?? o.order?.totalAmount ?? 0)}</span>
+                  <span class={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${statusClass[o.order?.status] ?? statusClass.pending}`}>{statusLabel[o.order?.status] ?? o.order?.status}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CollapsibleHistory>
+
+      <!-- Mes notes de frais -->
+      {canExpense && (
+        <CollapsibleHistory
+          title="Mes notes de frais"
+          count={expenses.length}
+          description="Vos demandes de remboursement déposées et leur suivi."
+        >
+          <svg slot="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>
+
+          {expenses.length === 0 ? (
+            <p class="text-sm text-muted-foreground p-4">Aucune note de frais soumise.</p>
+          ) : (
+            <div class="divide-y divide-border">
+              {expenses.map((e: any) => (
+                <div class="flex items-center justify-between gap-3 p-4">
+                  <div class="min-w-0">
+                    <div class="text-sm font-medium text-foreground truncate">{e.description}</div>
+                    <div class="text-xs text-muted-foreground">{dateFr(e.createdAt)}</div>
+                  </div>
+                  <div class="flex items-center gap-3 shrink-0">
+                    <span class="text-sm font-semibold text-foreground">{eur(e.amountCents ?? 0)}</span>
+                    <span class={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${statusClass[e.status] ?? statusClass.pending}`}>{statusLabel[e.status] ?? e.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CollapsibleHistory>
+      )}
+    </div>
+  </main>
+
+  <MobileNav currentPath="/mon-compte" />
+
+  <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
+    <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+    <p class="mt-2"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a> · <a href="/mentions-legales" class="hover:underline">Mentions légales</a></p>
+  </footer>
+</Layout>

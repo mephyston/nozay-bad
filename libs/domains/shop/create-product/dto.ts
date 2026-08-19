@@ -2,9 +2,10 @@ import { productsTable } from '../shared/schema';
 
 export interface CreateProductInput {
   name: string;
-  category: 'shuttlecock' | 'string' | 'other';
-  price: number;
-  stock: number;
+  productCategoryId: number;
+  priceCents: number;
+  stock?: number;
+  trackStock?: boolean;
   active?: boolean;
 }
 

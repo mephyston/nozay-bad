@@ -4,11 +4,5 @@ import { UpdateCategoryId, UpdateCategoryInput, UpdateCategoryOutput } from "./d
 
 export async function updateCategory(db: Db, id: UpdateCategoryId, body: UpdateCategoryInput): Promise<UpdateCategoryOutput> {
   const repo = new UpdateCategoryRepository();
-  return repo.updateCategory(db, id, {
-    adminLabel: body.adminLabel,
-    adherentLabel: body.adherentLabel,
-    hideInExpenses: body.hideInExpenses,
-    receiptCode: body.receiptCode,
-    expenseCode: body.expenseCode
-  });
+  return repo.updateCategory(db, id, body as any);
 }

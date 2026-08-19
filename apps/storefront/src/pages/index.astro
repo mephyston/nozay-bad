@@ -1,0 +1,113 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import MobileNav from '../components/MobileNav.svelte';
+import PushOptIn from '../components/PushOptIn.svelte';
+import PostSummaryCard from '../components/PostSummaryCard.astro';
+import AgendaCard from '../components/AgendaCard.astro';
+import NextFixtureCard from '../components/NextFixtureCard.astro';
+import BirthdayCard from '../components/BirthdayCard.astro';
+import { env } from 'cloudflare:workers';
+import { getActiveMemberStatus } from '../lib/member-status';
+import { fetchPosts } from '../lib/posts';
+import { fetchUpcomingEvents } from '../lib/agenda';
+import { fetchTodayBirthdays } from '../lib/birthdays';
+import { fetchMyFixtures, normalizeLicence } from '../lib/my-fixtures';
+
+const session = Astro.locals.session;
+const active = session?.members.find((m) => m.id === session.activeMemberId);
+const firstName = active?.firstName ?? '';
+
+// Statut lu en direct : autorisation frais effective sans reconnexion.
+const status = await getActiveMemberStatus(env, session);
+
+// Les trois blocs de l'accueil sont indépendants : ils sont donc lus en parallèle, et
+// chacun disparaît seul s'il n'a rien à montrer ou si l'API n'a pas répondu — l'accueil
+// ne doit jamais afficher un cadre vide.
+//
+// Un seul événement est demandé, et **au nom du profil actif** : l'encart n'annonce que
+// le prochain rendez-vous, et son bouton d'inscription doit savoir si l'adhérent s'y
+// est déjà annoncé.
+//
+// L'interclubs vient s'ajouter aux trois : il ne concerne que les adhérents engagés en
+// équipe, et l'encart disparaît pour tous les autres. Une seule rencontre est demandée,
+// la prochaine — l'agenda porte les suivantes.
+const licence = normalizeLicence(active?.licence);
+
+const [{ posts }, events, birthdays, fixtures] = await Promise.all([
+  fetchPosts(env, 3),
+  fetchUpcomingEvents(env, 1, session?.activeMemberId),
+  fetchTodayBirthdays(env),
+  fetchMyFixtures(env, status.seasonCode ?? null, licence, 1)
+]);
+---
+
+<Layout title="Espace adhérent - Nozay Bad">
+  <Header currentPath="/" />
+
+  <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
+    <div class="max-w-3xl mx-auto">
+      <!-- Proposition d'activation, masquée dès que les notifications sont en place :
+           un bandeau permanent finit par ne plus être lu. -->
+      <div class="mb-6 empty:mb-0">
+        <PushOptIn client:idle variant="banner" />
+      </div>
+
+      <div class="mb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold text-foreground">
+          Bonjour{firstName ? ` ${firstName}` : ''}
+        </h1>
+      </div>
+
+      {birthdays.length > 0 && (
+        <div class="mb-6">
+          <BirthdayCard birthdays={birthdays} />
+        </div>
+      )}
+
+      <!--
+        Avant l'agenda du club : une rencontre d'interclubs engage l'adhérent
+        personnellement, là où l'agenda l'invite.
+      -->
+      <div class="mb-6 empty:mb-0">
+        <NextFixtureCard fixture={fixtures[0] ?? null} />
+      </div>
+
+      <div class="mb-6 empty:mb-0">
+        <AgendaCard event={events[0] ?? null} />
+      </div>
+
+      {posts.length > 0 && (
+        <section aria-labelledby="actualites-title">
+          <h2 id="actualites-title" class="mb-3 text-base font-semibold text-foreground">
+            Dernières actualités
+          </h2>
+          {/*
+            Cartes résumées, et non les articles en entier : l'accueil donne un aperçu
+            de ce qui bouge, la lecture se fait dans « Actualités ». Trois articles
+            complets faisaient de l'accueil une seconde page d'actualités, plus longue
+            que l'originale.
+          */}
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {posts.map((post, index) => (
+              <PostSummaryCard post={post} priority={index === 0} />
+            ))}
+          </div>
+          <a
+            href="/actualites"
+            class="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline min-h-[44px]"
+          >
+            Voir toutes les actualités &rarr;
+          </a>
+        </section>
+      )}
+    </div>
+  </main>
+
+  <MobileNav currentPath="/" />
+
+  <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
+    <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+    <p class="mt-2"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a> · <a href="/mentions-legales" class="hover:underline">Mentions légales</a></p>
+  </footer>
+</Layout>

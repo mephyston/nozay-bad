@@ -1,34 +1,72 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert, Badge } from '@nba/ui';
 import { OrdersManager } from '@nba/shop-ui';
 
 import { env } from 'cloudflare:workers';
+import { createAdminApiClient } from '../../../lib/api';
+import { can, guardAction, forbidden } from '../../../lib/guard';
 
-const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
-const apiService = env.API_SERVICE;
+
+const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
+const apiService = createAdminApiClient(Astro.locals);
 
 const season = Astro.url.searchParams.get('season') || '25-26';
+
+// Les quatre transitions du workflow relèvent de la même décision de gestion —
+// accepter, refuser, encaisser, annuler — et donc du même droit.
+const ACTIONS = {
+  validate: 'shop:orders:approve',
+  pay: 'shop:orders:approve',
+  reject: 'shop:orders:approve',
+  cancel: 'shop:orders:approve',
+  update: 'shop:orders:write'
+} as const;
+
+/** Transition → segment d'URL de l'API. */
+const TRANSITION_PATHS: Record<string, string> = {
+  validate: 'validate',
+  pay: 'pay',
+  reject: 'reject',
+  cancel: 'cancel'
+};
 
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
-    if (data.action === 'approve') {
-      const apiRes = await apiService.fetch(`http://localhost/shop/orders/${data.id}/approve`, {
-        method: 'POST'
+    
+    // La création de commande ne porte pas de champ `action` : elle se reconnaît à
+    // sa charge utile, et se garde donc séparément.
+    if (data.productId && data.quantity) {
+      if (!can(Astro.locals, 'shop:orders:write')) return forbidden();
+    } else {
+      const denied = guardAction(Astro.locals, data.action, ACTIONS);
+      if (denied) return denied;
+    }
+
+    const transition = TRANSITION_PATHS[data.action];
+    if (transition) {
+      const apiRes = await apiService.fetch(`http://localhost/shop/orders/${data.id}/${transition}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // `paidAt` n'est porté que par l'encaissement ; les autres l'ignorent.
+        body: JSON.stringify(data.paidAt ? { paidAt: data.paidAt } : {})
       });
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
       return new Response(JSON.stringify(await apiRes.json()));
-    } else if (data.action === 'reject') {
-      const apiRes = await apiService.fetch(`http://localhost/shop/orders/${data.id}/reject`, {
-        method: 'POST'
+    } else if (data.productId && data.quantity) {
+      const apiRes = await apiService.fetch('http://localhost/shop/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
       });
       if (!apiRes.ok) {
-        return new Response(await apiRes.text(), { status: apiRes.status });
+        return new Response(JSON.stringify({ success: false, error: await apiRes.text() }), { status: 400 });
       }
-      return new Response(JSON.stringify(await apiRes.json()));
+      return new Response(JSON.stringify({ success: true }));
     }
     return new Response('Action inconnue', { status: 400 });
   } catch (err: any) {
@@ -38,12 +76,16 @@ if (Astro.request.method === 'POST') {
 
 let ordersList = [];
 let seasonsList = [];
+let productsList = [];
+let membersList = [];
 let errorMsg = '';
 
 try {
-  const [seasonsRes, ordersRes] = await Promise.all([
+  const [seasonsRes, ordersRes, productsRes, membersRes] = await Promise.all([
     apiService.fetch('http://localhost/accounting/seasons'),
-    apiService.fetch(`http://localhost/shop/orders?season=${season}`)
+    apiService.fetch(`http://localhost/shop/orders?season=${season}`),
+    apiService.fetch('http://localhost/shop/products?active=true'),
+    apiService.fetch(`http://localhost/members?limit=1000&season=${season}`)
   ]);
 
   if (seasonsRes.ok) {
@@ -59,63 +101,55 @@ try {
   } else {
     errorMsg = 'Impossible de charger la liste des commandes.';
   }
+
+  if (productsRes.ok) {
+    const json = await productsRes.json() as any;
+    productsList = json.data || [];
+  }
+
+  if (membersRes.ok) {
+    const json = await membersRes.json() as any;
+    membersList = json.data || [];
+  }
 } catch (err: any) {
   errorMsg = 'Une erreur est survenue lors de la récupération des données de la boutique.';
+}
+
+let displaySeasonName = season;
+if (seasonsList.length > 0) {
+  const currentSeason = seasonsList.find((s: any) => s.id === season || s.code === season);
+  if (currentSeason && currentSeason.name) {
+    displaySeasonName = currentSeason.name.replace('Saison ', '');
+  }
 }
 
 const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
 ---
 
 <Layout title="Validation des Commandes - NBA 91">
-  <AdminLayout client:idle email={userEmail} breadcrumb="Boutique / Commandes">
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Boutique / Commandes" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
-      {errorMsg && (
-        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
-          {errorMsg}
-        </div>
-      )}
+      {errorMsg && <ErrorAlert message={errorMsg} />}
 
-      <div class="flex items-center justify-between print:hidden">
-        <div>
-          <h1 class="text-3xl font-bold tracking-tight">Commandes Boutique</h1>
-          <p class="text-muted-foreground mt-2">
-            Validez ou refusez les demandes d'achats boutique des adhérents et consultez l'historique.
-          </p>
-        </div>
-        <div class="flex items-center gap-3">
-          {isClosed && (
-            <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
-              Saison clôturée (Lecture seule)
-            </span>
-          )}
-          <select
-            id="season-selector"
-            class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9"
-          >
-            {seasonsList.map((s: any) => (
-              <option value={s.id} selected={s.id === season}>{s.name}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <PageHeader
+        title="Commandes Boutique"
+        description={`Validez les demandes d'achats, encaissez les commandes en attente de paiement et consultez l'historique pour la saison ${displaySeasonName}.`}
+        class="print:hidden"
+      >
+        <Fragment slot="actions">
+          {isClosed && <Badge variant="outline" size="lg">Saison clôturée (Lecture seule)</Badge>}
+        </Fragment>
+      </PageHeader>
 
       <OrdersManager
         client:load
         seasons={seasonsList}
         orders={ordersList}
+        products={productsList}
+        members={membersList}
         seasonId={season}
+        initialAction={Astro.url.searchParams.get('action')}
       />
     </div>
   </AdminLayout>
-  <script>
-    const selector = document.getElementById('season-selector');
-    if (selector) {
-      selector.addEventListener('change', (e) => {
-        const newSeason = (e.target as HTMLSelectElement).value;
-        const params = new URLSearchParams(window.location.search);
-        params.set('season', newSeason);
-        window.location.href = `/admin/shop/orders?${params.toString()}`;
-      });
-    }
-  </script>
 </Layout>

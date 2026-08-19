@@ -48,7 +48,7 @@ Not injecting D1 Database for 'DB' as this version of Miniflare only supports D1
  ✓  features-accounting-ui  ../seasons/ui/SettingsManager.test.ts (3 tests) 121ms
  ✓  features-accounting-ui  ../transactions/ui/TransactionLedger.test.ts (4 tests) 191ms
  ✓  features-accounting-ui  ../checks/ui/CheckDepositManager.test.ts (3 tests) 156ms
- ✓  features-accounting-ui  ../reconcile-bank-transaction/ui/BankStatementReconciliation.test.ts (12 tests) 562ms
+ ✓  features-accounting-ui  ../reconcile-bank-statement-line/ui/BankStatementReconciliation.test.ts (12 tests) 562ms
  ✓  features-expenses-ui  ../list/ui/ExpensesManager.test.ts (3 tests) 67ms
  ✓  features-members-ui  ../get-member-by-licence/ui/MemberProfile.test.ts (1 test) 56ms
  ✓  features-members-ui  ../list-members/ui/MembersTable.test.ts (1 test) 63ms

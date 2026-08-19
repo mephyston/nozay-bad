@@ -1,15 +1,13 @@
 import { type Db } from '@nba/db';
 import { ChangeInvoiceStatusRepository, ChangeInvoiceStatusRepositoryInterface } from './repository';
 import { InvoiceNotFoundError, SeasonClosedError, InvalidStatusError } from '../../shared/errors';
-import { ChangeInvoiceStatusId, ChangeInvoiceStatusStatus, ChangeInvoiceStatusOutput } from "./dto";
-
 export async function changeInvoiceStatus(
   db: Db,
-  id: ChangeInvoiceStatusId,
-  status: ChangeInvoiceStatusStatus,
+  id: number,
+  status: string,
   repo: ChangeInvoiceStatusRepositoryInterface = new ChangeInvoiceStatusRepository()
-): Promise<ChangeInvoiceStatusOutput> {
-  const validStatuses = ['draft', 'sent', 'paid', 'cancelled'];
+): Promise<any> {
+  const validStatuses = ['draft', 'sent', 'paid', 'cancelled', 'emise', 'payee', 'annulee'];
   if (!validStatuses.includes(status)) {
     throw new InvalidStatusError();
   }
@@ -24,4 +22,5 @@ export async function changeInvoiceStatus(
   }
 
   await repo.updateStatus(db, id, status);
+  return { id, status } as any;
 }

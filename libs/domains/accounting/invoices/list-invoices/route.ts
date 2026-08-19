@@ -23,7 +23,7 @@ listInvoicesRoute.get(
     }
     const { season } = c.req.valid('query');
     const db = createDb(c.env.DB);
-    const data = await listInvoices(db, season);
+    const data = await listInvoices(db, season as any);
     return c.json({ success: true, data });
   }
 );

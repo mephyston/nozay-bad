@@ -1,0 +1,157 @@
+import { describe, it, expect } from 'vitest';
+import { pageTitle, pageDescription, absoluteUrl, SITE_NAME } from './seo';
+import { readFile } from 'node:fs/promises';
+import { serialiseJsonLd, sportsClub, webSite, breadcrumbList } from './jsonld';
+import { socialLinks } from './social';
+import { SITE_SETTINGS_FALLBACK } from './cms';
+import { applySecurityHeaders } from './security-headers';
+import type { BlockPayload } from '@nba/cms/public';
+
+describe('pageTitle', () => {
+  it('suffixe du nom du club quand la place le permet', () => {
+    expect(pageTitle(null, 'Présentation')).toBe(`Présentation — ${SITE_NAME}`);
+  });
+
+  it('abandonne le suffixe plutôt que de le tronquer au milieu', () => {
+    const long = 'Ecole Française de Badminton et dispositif jeunes du club';
+    const out = pageTitle(null, long);
+    expect(out.length).toBeLessThanOrEqual(60);
+    expect(out).not.toContain('Nozay Badminton Associ—');
+  });
+
+  it('respecte un titre de référencement saisi', () => {
+    expect(pageTitle('Créneaux 2026', 'Créneaux')).toBe('Créneaux 2026');
+  });
+});
+
+describe('pageDescription', () => {
+  const richtext = (html: string): BlockPayload => ({ type: 'richtext', html });
+
+  it('se rabat sur le premier texte de la page', () => {
+    // L'ancien site n'avait aucune meta description : ne rien émettre laisserait
+    // Google fabriquer son extrait, souvent à partir du menu.
+    const out = pageDescription(null, [richtext('<p>Le club de Nozay a été créé en 1996.</p>')]);
+    expect(out).toBe('Le club de Nozay a été créé en 1996.');
+  });
+
+  it('ignore un bloc vide et prend le suivant', () => {
+    const out = pageDescription(null, [richtext('<p> </p>'), richtext('<p>Contenu réel.</p>')]);
+    expect(out).toBe('Contenu réel.');
+  });
+
+  it('tronque sur un mot entier', () => {
+    const out = pageDescription(null, [richtext(`<p>${'mot '.repeat(80)}</p>`)]);
+    expect(out.length).toBeLessThanOrEqual(155);
+    expect(out.endsWith('…')).toBe(true);
+  });
+
+  it('a toujours un repli, même sans contenu', () => {
+    expect(pageDescription(null, [])).toContain(SITE_NAME);
+  });
+});
+
+describe('absoluteUrl', () => {
+  it('produit une URL absolue, seule forme acceptée en canonique', () => {
+    expect(absoluteUrl('https://nozaybad.fr', '/presentation/')).toBe('https://nozaybad.fr/presentation/');
+  });
+});
+
+describe('JSON-LD', () => {
+  it('échappe < pour qu’un titre ne puisse pas refermer la balise script', () => {
+    const out = serialiseJsonLd({ name: '</script><img onerror=alert(1)>' });
+    expect(out).not.toContain('</script>');
+    expect(out).toContain('\\u003c');
+  });
+
+  it('ancre le club sur un identifiant stable', () => {
+    expect(sportsClub('https://nozaybad.fr', [])['@id']).toBe('https://nozaybad.fr/#club');
+  });
+
+  it('déclare les comptes du club en sameAs', () => {
+    // Le pied de page et le balisage lisent la même liste : ajouter un réseau à l'un
+    // sans l'autre est l'oubli que ce cas rend impossible.
+    const links = socialLinks(SITE_SETTINGS_FALLBACK);
+    expect(links.length).toBeGreaterThan(0);
+    expect(sportsClub('https://nozaybad.fr', links.map((l) => l.href)).sameAs).toEqual(
+      links.map((l) => l.href)
+    );
+  });
+
+  it('rattache le site au club par le même identifiant', () => {
+    // Les deux nœuds sont émis côte à côte sur l'accueil. Si `publisher` cessait de
+    // viser l'ancre du club, Google verrait deux entités sans lien là où il doit en
+    // voir une seule — exactement ce que le balisage est là pour éviter.
+    expect(webSite('https://nozaybad.fr').publisher['@id']).toBe(
+      sportsClub('https://nozaybad.fr', [])['@id']
+    );
+  });
+
+  it('donne un logo d’au moins 112 px, seuil en deçà duquel Google l’écarte', async () => {
+    const { logo } = sportsClub('https://nozaybad.fr', []);
+    // Le petit `logo.webp` fait 108 px : la seule relecture ne distingue pas les deux
+    // fichiers, la mesure si.
+    const file = new URL(logo).pathname;
+    const bytes = await readFile(new URL(`../../public${file}`, import.meta.url));
+    // Les deux logos sont des WebP étendus (`VP8X`), seul format où les dimensions du
+    // canevas se lisent directement : largeur et hauteur moins un, sur 24 bits, aux
+    // octets 24 et 27. Le format est vérifié plutôt que supposé — la lecture d'un
+    // `VP8 ` simple au même endroit rend un nombre arbitraire, qui passerait le seuil
+    // sans rien mesurer.
+    expect(bytes.subarray(12, 16).toString('latin1')).toBe('VP8X');
+    expect(1 + bytes.readUIntLE(24, 3)).toBeGreaterThanOrEqual(112);
+  });
+
+  it('numérote le fil d’Ariane à partir de 1', () => {
+    const crumbs = breadcrumbList('https://nozaybad.fr', [
+      { name: 'Accueil', path: '/' },
+      { name: 'Présentation', path: '/presentation/' }
+    ]);
+    expect(crumbs.itemListElement[0].position).toBe(1);
+    expect(crumbs.itemListElement[1].item).toBe('https://nozaybad.fr/presentation/');
+  });
+});
+
+describe('comptes sociaux', () => {
+  it('ignore un réseau non renseigné plutôt que de produire un lien mort', () => {
+    const links = socialLinks({ ...SITE_SETTINGS_FALLBACK, instagramUrl: null, facebookUrl: '  ' });
+    expect(links).toEqual([]);
+  });
+
+  it('conserve l’ordre d’affichage, indépendant de l’ordre des réglages', () => {
+    expect(socialLinks(SITE_SETTINGS_FALLBACK).map((l) => l.name)).toEqual(['Instagram', 'Facebook']);
+  });
+
+  it('ne retient que des URL de profil canoniques dans les valeurs de repli', () => {
+    // `?locale=fr_FR` traîne sur toute page Facebook copiée depuis un navigateur :
+    // c'est un réglage d'affichage, et il n'affirme aucune identité.
+    for (const { href } of socialLinks(SITE_SETTINGS_FALLBACK)) {
+      const url = new URL(href);
+      expect(url.protocol).toBe('https:');
+      expect(url.search).toBe('');
+    }
+  });
+});
+
+describe('en-têtes de sécurité', () => {
+  it('applique la CSP au lieu de seulement la rapporter', () => {
+    const headers = applySecurityHeaders(new Response('ok')).headers;
+    expect(headers.get('Content-Security-Policy')).toContain("default-src 'self'");
+    expect(headers.get('Content-Security-Policy-Report-Only')).toBeNull();
+  });
+
+  it('interdit toute image distante', () => {
+    const csp = applySecurityHeaders(new Response('ok')).headers.get('Content-Security-Policy') ?? '';
+    expect(csp).toContain("img-src 'self' data:");
+  });
+
+  it('n’autorise en cadre que les fournisseurs du bloc embed', () => {
+    const csp = applySecurityHeaders(new Response('ok')).headers.get('Content-Security-Policy') ?? '';
+    expect(csp).toContain('youtube-nocookie.com');
+    expect(csp).toContain("frame-ancestors 'none'");
+  });
+
+  it('marque la préproduction hors index', () => {
+    const headers = applySecurityHeaders(new Response('ok'), { noindex: true }).headers;
+    expect(headers.get('X-Robots-Tag')).toBe('noindex, nofollow');
+  });
+});

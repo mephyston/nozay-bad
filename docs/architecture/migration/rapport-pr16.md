@@ -17,7 +17,7 @@ Le renommage des répertoires de `libs/features/` vers `libs/domains/` n'avait p
 Les tests d'UI de comptabilité ont été déplacés de `libs/domains/accounting/ui/src/` vers leurs tranches verticales respectives :
 * `CheckDepositManager.test.ts` -> `libs/domains/accounting/checks/ui/CheckDepositManager.test.ts`
 * `SettingsManager.test.ts` -> `libs/domains/accounting/seasons/ui/SettingsManager.test.ts`
-* `BankStatementReconciliation.test.ts` -> `libs/domains/accounting/reconcile-bank-transaction/ui/BankStatementReconciliation.test.ts`
+* `BankStatementReconciliation.test.ts` -> `libs/domains/accounting/reconcile-bank-statement-line/ui/BankStatementReconciliation.test.ts`
 
 Mise à jour de `libs/domains/accounting/ui/vitest.config.ts` pour supporter la détection de ces tests colocalisés dans les répertoires frères :
 ```ts
@@ -52,7 +52,7 @@ La commande d'exécution locale des tests d'UI s'est terminée avec un succès c
  ✓  features-accounting-ui  ../seasons/ui/SettingsManager.test.ts (3 tests) 109ms
  ✓  features-accounting-ui  src/TransactionLedger.test.ts (4 tests) 167ms
  ✓  features-accounting-ui  ../checks/ui/CheckDepositManager.test.ts (3 tests) 118ms
- ✓  features-accounting-ui  ../reconcile-bank-transaction/ui/BankStatementReconciliation.test.ts (12 tests) 515ms
+ ✓  features-accounting-ui  ../reconcile-bank-statement-line/ui/BankStatementReconciliation.test.ts (12 tests) 515ms
 
  Test Files  8 passed (8)
       Tests  31 passed (31)

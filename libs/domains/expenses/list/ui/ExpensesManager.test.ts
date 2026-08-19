@@ -8,6 +8,11 @@ describe('ExpensesManager Component', () => {
     { id: '24-25', name: 'Saison 2024-2025', active: false }
   ];
 
+  const categories = [
+    { id: '10', code: 'materiel_club', adminLabel: 'Matériel (hors cordages)', adherentLabel: 'Matériel (hors cordages)', hideInExpenses: false }
+  ];
+
+
   const expenses = [
     {
       id: 1,
@@ -19,7 +24,7 @@ describe('ExpensesManager Component', () => {
       status: 'pending' as const,
       emitterName: 'Marie Curie',
       memberId: null,
-      transactionId: null,
+      ledgerEntryId: null,
       createdAt: '2026-07-13T10:00:00.000Z'
     }
   ];
@@ -50,7 +55,8 @@ describe('ExpensesManager Component', () => {
       props: {
         expenses,
         seasonId: '25-26',
-        seasons
+        seasons,
+        categories
       }
     });
     flushSync();
@@ -72,7 +78,8 @@ describe('ExpensesManager Component', () => {
       props: {
         expenses,
         seasonId: '25-26',
-        seasons
+        seasons,
+        categories
       }
     });
     flushSync();
@@ -106,7 +113,9 @@ describe('ExpensesManager Component', () => {
       props: {
         expenses,
         seasonId: '25-26',
-        seasons: closedSeasons
+        seasons: closedSeasons,
+        categories
+
       }
     });
     flushSync();

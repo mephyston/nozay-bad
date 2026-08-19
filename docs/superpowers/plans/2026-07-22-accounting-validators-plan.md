@@ -163,7 +163,7 @@ Run: `git commit -am "chore(eslint): correct routes file patterns and restrict d
       checkIds: Type.Array(Type.Number())
     });
     export const clearCheckDepositSchema = Type.Object({
-      bankTransactionId: Type.Number()
+      bankStatementLineId: Type.Number()
     });
     ```
   - Brancher dans `route.ts` (pour `/check-deposits` et `/check-deposits/:id/clear`).
@@ -181,15 +181,15 @@ Run: `git commit -am "chore(eslint): correct routes file patterns and restrict d
 - Create: `libs/domains/accounting/commands/create-invoice/validator.ts`
 - Modify: `libs/domains/accounting/commands/create-invoice/route.ts`
 - Create: `libs/domains/accounting/commands/create-invoice/route.test.ts`
-- Create: `libs/domains/accounting/commands/create-transaction/validator.ts`
-- Modify: `libs/domains/accounting/commands/create-transaction/route.ts`
-- Create: `libs/domains/accounting/commands/create-transaction/route.test.ts`
-- Create: `libs/domains/accounting/commands/record-check-transaction/validator.ts`
-- Modify: `libs/domains/accounting/commands/record-check-transaction/route.ts`
-- Create: `libs/domains/accounting/commands/record-check-transaction/route.test.ts`
-- Create: `libs/domains/accounting/commands/reconcile-bank-transaction/validator.ts`
-- Modify: `libs/domains/accounting/commands/reconcile-bank-transaction/route.ts`
-- Create: `libs/domains/accounting/commands/reconcile-bank-transaction/route.test.ts`
+- Create: `libs/domains/accounting/commands/create-ledger-entry/validator.ts`
+- Modify: `libs/domains/accounting/commands/create-ledger-entry/route.ts`
+- Create: `libs/domains/accounting/commands/create-ledger-entry/route.test.ts`
+- Create: `libs/domains/accounting/commands/record-check-ledger-entry/validator.ts`
+- Modify: `libs/domains/accounting/commands/record-check-ledger-entry/route.ts`
+- Create: `libs/domains/accounting/commands/record-check-ledger-entry/route.test.ts`
+- Create: `libs/domains/accounting/commands/reconcile-bank-statement-line/validator.ts`
+- Modify: `libs/domains/accounting/commands/reconcile-bank-statement-line/route.ts`
+- Create: `libs/domains/accounting/commands/reconcile-bank-statement-line/route.test.ts`
 
 **Interfaces:**
 - Consumes: DTOs, schemas
@@ -221,7 +221,7 @@ Run: `git commit -am "chore(eslint): correct routes file patterns and restrict d
   - Brancher dans `route.ts`.
   - Fichier `route.test.ts` avec cas d'erreur (400) et succès (200).
 
-- [ ] **Step 2: Implémenter et brancher `create-transaction`**
+- [ ] **Step 2: Implémenter et brancher `create-ledger-entry`**
   - Fichier `validator.ts` :
     ```typescript
     import { Type } from '@sinclair/typebox';
@@ -250,7 +250,7 @@ Run: `git commit -am "chore(eslint): correct routes file patterns and restrict d
   - Brancher dans `route.ts`.
   - Fichier `route.test.ts` avec cas d'erreur (400) et succès (200).
 
-- [ ] **Step 3: Implémenter et brancher `record-check-transaction`**
+- [ ] **Step 3: Implémenter et brancher `record-check-ledger-entry`**
   - Fichier `validator.ts` :
     ```typescript
     import { Type } from '@sinclair/typebox';
@@ -270,7 +270,7 @@ Run: `git commit -am "chore(eslint): correct routes file patterns and restrict d
   - Brancher dans `route.ts` (pour `/checks` endpoint).
   - Fichier `route.test.ts` avec cas d'erreur (400) et succès (200).
 
-- [ ] **Step 4: Implémenter et brancher `reconcile-bank-transaction`**
+- [ ] **Step 4: Implémenter et brancher `reconcile-bank-statement-line`**
   - Fichier `validator.ts` :
     ```typescript
     import { Type } from '@sinclair/typebox';
@@ -294,7 +294,7 @@ Run: `git commit -am "chore(eslint): correct routes file patterns and restrict d
       invoiceId: Type.Optional(Type.Number()),
       invoiceIds: Type.Optional(Type.Array(Type.Number())),
       action: Type.Union([Type.Literal('match'), Type.Literal('create')]),
-      transactionId: Type.Optional(Type.Number()),
+      ledgerEntryId: Type.Optional(Type.Number()),
       transactions: Type.Optional(Type.Array(transactionDetailsSchema)),
       transaction: Type.Optional(transactionDetailsSchema)
     });
@@ -335,9 +335,9 @@ Run: `git commit -am "chore(eslint): correct routes file patterns and restrict d
 - Create: `libs/domains/accounting/commands/update-season-budget/validator.ts`
 - Modify: `libs/domains/accounting/commands/update-season-budget/route.ts`
 - Create: `libs/domains/accounting/commands/update-season-budget/route.test.ts`
-- Create: `libs/domains/accounting/commands/update-transaction/validator.ts`
-- Modify: `libs/domains/accounting/commands/update-transaction/route.ts`
-- Create: `libs/domains/accounting/commands/update-transaction/route.test.ts`
+- Create: `libs/domains/accounting/commands/update-ledger-entry/validator.ts`
+- Modify: `libs/domains/accounting/commands/update-ledger-entry/route.ts`
+- Create: `libs/domains/accounting/commands/update-ledger-entry/route.test.ts`
 
 **Interfaces:**
 - Consumes: DTOs, schemas
@@ -435,7 +435,7 @@ Run: `git commit -am "chore(eslint): correct routes file patterns and restrict d
     ```
   - Brancher et créer `route.test.ts`.
 
-- [ ] **Step 8: Implémenter et brancher `update-transaction`**
+- [ ] **Step 8: Implémenter et brancher `update-ledger-entry`**
   - Fichier `validator.ts` :
     ```typescript
     import { Type } from '@sinclair/typebox';
@@ -463,34 +463,34 @@ Run: `git commit -am "chore(eslint): correct routes file patterns and restrict d
 ### Task 5: Validateurs pour les Requêtes de Lecture et Query Params
 
 **Files:**
-- Create: `libs/domains/accounting/queries/list-bank-transactions/validator.ts`
-- Modify: `libs/domains/accounting/queries/list-bank-transactions/route.ts`
-- Create: `libs/domains/accounting/queries/list-bank-transactions/route.test.ts`
+- Create: `libs/domains/accounting/queries/list-bank-statement-lines/validator.ts`
+- Modify: `libs/domains/accounting/queries/list-bank-statement-lines/route.ts`
+- Create: `libs/domains/accounting/queries/list-bank-statement-lines/route.test.ts`
 - Create: `libs/domains/accounting/queries/list-checks/validator.ts`
 - Modify: `libs/domains/accounting/queries/list-checks/route.ts`
 - Create: `libs/domains/accounting/queries/list-checks/route.test.ts`
 - Create: `libs/domains/accounting/queries/list-invoices/validator.ts`
 - Modify: `libs/domains/accounting/queries/list-invoices/route.ts`
 - Create: `libs/domains/accounting/queries/list-invoices/route.test.ts`
-- Create: `libs/domains/accounting/commands/analyze-bank-transactions/validator.ts`
-- Modify: `libs/domains/accounting/commands/analyze-bank-transactions/route.ts`
-- Create: `libs/domains/accounting/commands/analyze-bank-transactions/route.test.ts`
+- Create: `libs/domains/accounting/commands/analyze-bank-statement-lines/validator.ts`
+- Modify: `libs/domains/accounting/commands/analyze-bank-statement-lines/route.ts`
+- Create: `libs/domains/accounting/commands/analyze-bank-statement-lines/route.test.ts`
 
 **Interfaces:**
 - Consumes: None
 - Produces: TypeBox Query Validation Schemas
 
-- [ ] **Step 1: Implémenter et brancher `list-bank-transactions`**
+- [ ] **Step 1: Implémenter et brancher `list-bank-statement-lines`**
   - Fichier `validator.ts` :
     ```typescript
     import { Type } from '@sinclair/typebox';
-    export const listBankTransactionsQuerySchema = Type.Object({
+    export const listBankStatementLinesQuerySchema = Type.Object({
       season: Type.String({ minLength: 1 }),
       status: Type.Optional(Type.String()),
       accountId: Type.Optional(Type.String())
     });
     ```
-  - Brancher dans `route.ts` avec `tbValidator('query', listBankTransactionsQuerySchema, callback)` et lire via `c.req.valid('query')`.
+  - Brancher dans `route.ts` avec `tbValidator('query', listBankStatementLinesQuerySchema, callback)` et lire via `c.req.valid('query')`.
   - Fichier `route.test.ts` avec cas d'erreur (400) et succès (200).
 
 - [ ] **Step 2: Implémenter et brancher `list-checks`**
@@ -516,11 +516,11 @@ Run: `git commit -am "chore(eslint): correct routes file patterns and restrict d
   - Brancher dans `route.ts`.
   - Fichier `route.test.ts` avec cas d'erreur (400) et succès (200).
 
-- [ ] **Step 4: Implémenter et brancher `analyze-bank-transactions`**
+- [ ] **Step 4: Implémenter et brancher `analyze-bank-statement-lines`**
   - Fichier `validator.ts` :
     ```typescript
     import { Type } from '@sinclair/typebox';
-    export const analyzeBankTransactionsQuerySchema = Type.Object({
+    export const analyzeBankStatementLinesQuerySchema = Type.Object({
       season: Type.String({ minLength: 1 }),
       id: Type.Optional(Type.String())
     });

@@ -4,7 +4,7 @@
 
 **Goal:** Mettre en place l'importation de relevés bancaires au format OFX (Société Générale) et l'interface de rapprochement (pointage) semi-automatique avec les transactions du Grand Livre.
 
-**Architecture:** Approche relationnelle Drizzle ORM avec une nouvelle table `bank_transactions` dans `@nba/db`, un parseur de fichiers OFX dans l'API Hono avec détection automatique du compte courant/livret de l'asso, et une interface en split-screen sous Svelte 5.
+**Architecture:** Approche relationnelle Drizzle ORM avec une nouvelle table `bank_statement_lines` dans `@nba/db`, un parseur de fichiers OFX dans l'API Hono avec détection automatique du compte courant/livret de l'asso, et une interface en split-screen sous Svelte 5.
 
 **Tech Stack:** Astro v7, Svelte v5, Hono (Cloudflare Workers), Drizzle ORM (SQLite / D1), Vitest.
 
@@ -24,12 +24,12 @@
 * Create: `libs/shared/db/migrations/0005_create_bank_transactions_table.sql` (généré par Drizzle-Kit)
 
 **Interfaces:**
-* Produces: `bankTransactionsTable` dans le module `@nba/db` (exposé par index.ts).
+* Produces: `bankStatementLinesTable` dans le module `@nba/db` (exposé par index.ts).
 
 - [ ] **Step 1: Mettre à jour le schéma Drizzle**
-  Ouvrir [schema.ts](file:///Users/david/Lab/nozay-bad/libs/shared/db/src/schema.ts) et ajouter la définition de `bankTransactionsTable` à la fin du fichier :
+  Ouvrir [schema.ts](file:///Users/david/Lab/nozay-bad/libs/shared/db/src/schema.ts) et ajouter la définition de `bankStatementLinesTable` à la fin du fichier :
   ```typescript
-  export const bankTransactionsTable = sqliteTable('bank_transactions', {
+  export const bankStatementLinesTable = sqliteTable('bank_statement_lines', {
     id: integer('id').primaryKey({ autoIncrement: true }),
     fitid: text('fitid').notNull().unique(),
     seasonId: text('season_id').notNull().references(() => seasonsTable.id),
@@ -39,7 +39,7 @@
     name: text('name').notNull(),
     memo: text('memo'),
     status: text('status', { enum: ['pending', 'reconciled', 'ignored'] }).notNull().default('pending'),
-    transactionId: integer('transaction_id').references(() => transactionsTable.id),
+    ledgerEntryId: integer('ledger_entry_id').references(() => ledgerEntriesTable.id),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
   });
   ```
@@ -47,8 +47,8 @@
 - [ ] **Step 2: Écrire les tests unitaires de base de données**
   Ajouter un test dans [db.test.ts](file:///Users/david/Lab/nozay-bad/libs/shared/db/src/db.test.ts) pour valider l'insertion d'opérations bancaires :
   ```typescript
-  // Ajouter l'import de bankTransactionsTable en haut du fichier
-  import { bankTransactionsTable } from './schema';
+  // Ajouter l'import de bankStatementLinesTable en haut du fichier
+  import { bankStatementLinesTable } from './schema';
 
   it('should insert bank transactions correctly', async () => {
     const db = drizzle(mockD1 as any);
@@ -63,7 +63,7 @@
       memo: 'Facture Site Web',
       createdAt: new Date()
     };
-    const [inserted] = await db.insert(bankTransactionsTable).values(op).returning();
+    const [inserted] = await db.insert(bankStatementLinesTable).values(op).returning();
     expect(inserted.fitid).toBe('SG-123456-COURANT');
     expect(inserted.amount).toBe(-1560);
     expect(inserted.status).toBe('pending');
@@ -94,7 +94,7 @@
 - [ ] **Step 6: Valider et commiter**
   ```bash
   git add libs/shared/db
-  git commit -m "chore(db): create bank_transactions table with Drizzle migrations"
+  git commit -m "chore(db): create bank_statement_lines table with Drizzle migrations"
   ```
 
 ---
@@ -106,7 +106,7 @@
 * Modify: `apps/api/src/index.test.ts`
 
 **Interfaces:**
-* Consumes: `bankTransactionsTable` et `transactionsTable` de `@nba/db`.
+* Consumes: `bankStatementLinesTable` et `ledgerEntriesTable` de `@nba/db`.
 * Produces:
   * Parseur OFX interne.
   * Endpoint `POST /bank-transactions/import` (importation sans doublons).
@@ -115,9 +115,9 @@
   * Endpoint `POST /bank-transactions/:id/ignore` (ignorer une opération).
 
 - [ ] **Step 1: Importer le schéma de la table**
-  Dans [index.ts](file:///Users/david/Lab/nozay-bad/apps/api/src/index.ts), ajouter l'import de `bankTransactionsTable` :
+  Dans [index.ts](file:///Users/david/Lab/nozay-bad/apps/api/src/index.ts), ajouter l'import de `bankStatementLinesTable` :
   ```typescript
-  import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable, bankTransactionsTable } from '../../../libs/shared/db/src/schema';
+  import { membersTable, seasonsTable, seasonBalancesTable, ledgerEntriesTable, bankStatementLinesTable } from '../../../libs/shared/db/src/schema';
   ```
 
 - [ ] **Step 2: Écrire le parseur de relevés OFX**
@@ -190,7 +190,7 @@
 
     for (const tx of transactions) {
       try {
-        const res = await db.insert(bankTransactionsTable)
+        const res = await db.insert(bankStatementLinesTable)
           .values({
             fitid: tx.fitid,
             seasonId,
@@ -233,18 +233,18 @@
 
     const db = drizzle(c.env.DB);
     const conditions = [
-      eq(bankTransactionsTable.seasonId, season),
-      eq(bankTransactionsTable.status, status as any)
+      eq(bankStatementLinesTable.seasonId, season),
+      eq(bankStatementLinesTable.status, status as any)
     ];
 
     if (accountId) {
-      conditions.push(eq(bankTransactionsTable.accountId, accountId as any));
+      conditions.push(eq(bankStatementLinesTable.accountId, accountId as any));
     }
 
     const data = await db.select()
-      .from(bankTransactionsTable)
+      .from(bankStatementLinesTable)
       .where(and(...conditions))
-      .orderBy(desc(bankTransactionsTable.date), desc(bankTransactionsTable.id))
+      .orderBy(desc(bankStatementLinesTable.date), desc(bankStatementLinesTable.id))
       .all();
 
     return c.json({ success: true, data });
@@ -263,14 +263,14 @@
     const db = drizzle(c.env.DB);
 
     if (body.action === 'match') {
-      await db.update(bankTransactionsTable)
-        .set({ status: 'reconciled', transactionId: body.transactionId })
-        .where(eq(bankTransactionsTable.id, id))
+      await db.update(bankStatementLinesTable)
+        .set({ status: 'reconciled', ledgerEntryId: body.ledgerEntryId })
+        .where(eq(bankStatementLinesTable.id, id))
         .run();
     } else if (body.action === 'create') {
       const tx = body.transaction;
       // Insérer d'abord la transaction dans le Grand Livre
-      const [newTx] = await db.insert(transactionsTable).values({
+      const [newTx] = await db.insert(ledgerEntriesTable).values({
         seasonId: tx.seasonId,
         type: tx.type,
         accountId: tx.accountId,
@@ -284,9 +284,9 @@
       }).returning();
 
       // Mettre à jour l'écriture bancaire
-      await db.update(bankTransactionsTable)
-        .set({ status: 'reconciled', transactionId: newTx.id })
-        .where(eq(bankTransactionsTable.id, id))
+      await db.update(bankStatementLinesTable)
+        .set({ status: 'reconciled', ledgerEntryId: newTx.id })
+        .where(eq(bankStatementLinesTable.id, id))
         .run();
     } else {
       return c.json({ success: false, error: 'Action invalide.' }, 400);
@@ -302,9 +302,9 @@
     const id = parseInt(c.req.param('id'));
     const db = drizzle(c.env.DB);
 
-    await db.update(bankTransactionsTable)
+    await db.update(bankStatementLinesTable)
       .set({ status: 'ignored' })
-      .where(eq(bankTransactionsTable.id, id))
+      .where(eq(bankStatementLinesTable.id, id))
       .run();
 
     return c.json({ success: true });
@@ -438,7 +438,7 @@ VERSION:102
   <script lang="ts">
     import { Upload, Check, AlertCircle, Trash2, ShieldAlert } from 'lucide-svelte';
 
-    interface BankTransaction {
+    interface BankStatementLine {
       id: number;
       fitid: string;
       accountId: 'current' | 'savings' | 'cash';
@@ -465,19 +465,19 @@ VERSION:102
     }
 
     let {
-      bankTransactions = [],
+      bankStatementLines = [],
       glTransactions = [],
       seasonId,
       seasons = []
     }: {
-      bankTransactions: BankTransaction[];
+      bankStatementLines: BankStatementLine[];
       glTransactions: GLTransaction[];
       seasonId: string;
       seasons: Season[];
     } = $props();
 
     let selectedSeason = $state(seasonId);
-    let selectedTx = $state<BankTransaction | null>(null);
+    let selectedTx = $state<BankStatementLine | null>(null);
     let isSubmitting = $state(false);
     let errorMsg = $state('');
 
@@ -510,7 +510,7 @@ VERSION:102
     ];
 
     // Trouver les suggestions correspondantes du Grand Livre (même montant absolu et +/- 7 jours)
-    function getSuggestions(bt: BankTransaction) {
+    function getSuggestions(bt: BankStatementLine) {
       return glTransactions.filter(gt => {
         // Le montant de la banque peut être négatif (débit). On compare en valeur absolue.
         const matchesAmount = Math.abs(gt.amount) === Math.abs(bt.amount);
@@ -549,13 +549,13 @@ VERSION:102
       }
     }
 
-    async function handleMatch(btId: number, transactionId: number) {
+    async function handleMatch(btId: number, ledgerEntryId: number) {
       isSubmitting = true;
       try {
         const res = await fetch('/admin/compta/import', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'match', btId, transactionId })
+          body: JSON.stringify({ action: 'match', btId, ledgerEntryId })
         });
         if (!res.ok) throw new Error('Erreur association.');
         window.location.reload();
@@ -565,7 +565,7 @@ VERSION:102
       }
     }
 
-    async function handleCreateAndMatch(bt: BankTransaction) {
+    async function handleCreateAndMatch(bt: BankStatementLine) {
       isSubmitting = true;
       try {
         const res = await fetch('/admin/compta/import', {
@@ -614,7 +614,7 @@ VERSION:102
   </script>
 
   <div class="space-y-6">
-    {#if bankTransactions.length === 0}
+    {#if bankStatementLines.length === 0}
       <!-- Zone d'Importation initial -->
       <div class="bg-card border border-border rounded-xl p-8 shadow-sm max-w-xl">
         <h2 class="text-lg font-semibold mb-4">Importer un relevé Société Générale</h2>
@@ -651,10 +651,10 @@ VERSION:102
         <!-- Liste de gauche (8/12) -->
         <div class="md:col-span-7 bg-card border border-border rounded-xl shadow-sm flex flex-col h-full overflow-hidden">
           <div class="p-4 border-b border-border bg-muted flex items-center justify-between">
-            <span class="font-bold text-sm">Opérations bancaires en attente ({bankTransactions.length})</span>
+            <span class="font-bold text-sm">Opérations bancaires en attente ({bankStatementLines.length})</span>
           </div>
           <div class="flex-1 overflow-y-auto divide-y divide-border">
-            {#each bankTransactions as bt}
+            {#each bankStatementLines as bt}
               <button
                 type="button"
                 onclick={() => selectedTx = bt}
@@ -861,7 +861,7 @@ VERSION:102
 
         <BankStatementReconciliation
           client:load
-          bankTransactions={bankTransactionsList}
+          bankStatementLines={bankTransactionsList}
           glTransactions={glTransactionsList}
           seasonId={season}
           seasons={seasonsList}
@@ -886,7 +886,7 @@ VERSION:102
       mount(BankStatementReconciliation, {
         target,
         props: {
-          bankTransactions: [],
+          bankStatementLines: [],
           glTransactions: [],
           seasonId: '25-26',
           seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }]
@@ -904,7 +904,7 @@ VERSION:102
       mount(BankStatementReconciliation, {
         target,
         props: {
-          bankTransactions: [
+          bankStatementLines: [
             {
               id: 1,
               fitid: 'TEST-FITID',

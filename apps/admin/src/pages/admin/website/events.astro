@@ -1,0 +1,106 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { EventsManager } from '@nba/events-ui';
+import { createAdminApiClient } from '../../../lib/api';
+import { can, guardAction } from '../../../lib/guard';
+
+const canWrite = can(Astro.locals, 'events:events:write');
+const canDelete = can(Astro.locals, 'events:events:delete');
+const canReadRegistrations = can(Astro.locals, 'events:registrations:read');
+const apiService = createAdminApiClient(Astro.locals);
+
+const ACTIONS = {
+  create: 'events:events:write',
+  update: 'events:events:write',
+  delete: 'events:events:delete',
+  // Lire les inscrits est un droit distinct de la tenue de l'agenda : la fiche est
+  // publique, la liste de ses inscrits est une donnée personnelle d'adhérents.
+  registrations: 'events:registrations:read'
+} as const;
+
+if (Astro.request.method === 'POST') {
+  const data = (await Astro.request.json()) as any;
+  const denied = guardAction(Astro.locals, data.action, ACTIONS);
+  if (denied) return denied;
+
+  const routes: Record<string, { url: string; method: string; body?: unknown }> = {
+    create: {
+      url: 'http://localhost/events',
+      method: 'POST',
+      body: {
+        title: data.title,
+        startsAt: data.startsAt,
+        endsAt: data.endsAt,
+        category: data.category,
+        venueLabel: data.venueLabel
+      }
+    },
+    // Seules les clés présentes sont transmises : le même point d'entrée sert au
+    // changement de statut depuis la liste (`status` seul) et à l'édition complète
+    // de la fiche, et le validateur traite un champ absent comme « ne rien changer ».
+    update: {
+      url: `http://localhost/events/${data.id}`,
+      method: 'PUT',
+      body: Object.fromEntries(
+        (['title', 'startsAt', 'endsAt', 'category', 'venueLabel', 'status', 'registration'] as const)
+          .filter((key) => data[key] !== undefined)
+          .map((key) => [key, data[key]])
+      )
+    },
+    delete: { url: `http://localhost/events/${data.id}`, method: 'DELETE' },
+    // Lecture à la demande : la liste nominative ne descend pas avec la page, elle
+    // n'est chargée que lorsque le bureau ouvre le panneau d'un événement précis.
+    registrations: { url: `http://localhost/events/${data.id}/registrations`, method: 'GET' }
+  };
+  const route = routes[data.action];
+  const apiRes = await apiService.fetch(route.url, {
+    method: route.method,
+    headers: { 'Content-Type': 'application/json' },
+    ...(route.body ? { body: JSON.stringify(route.body) } : {})
+  });
+  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+  return new Response(JSON.stringify(await apiRes.json()), { headers: { 'Content-Type': 'application/json' } });
+}
+
+let events: any[] = [];
+let errorMsg = '';
+
+try {
+  // `past=1` : l'administration voit aussi l'historique, contrairement au site.
+  const res = await apiService.fetch('http://localhost/events?past=1&limit=100');
+  if (res.ok) events = ((await res.json()) as any).data ?? [];
+  else errorMsg = "Impossible de charger l'agenda.";
+} catch {
+  errorMsg = "Impossible de charger l'agenda.";
+}
+---
+
+<Layout title="Agenda - NBA 91">
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Agenda"
+  >
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader
+        title="Agenda"
+        description="Compétitions, stages et animations. Chaque événement publié devient une fiche indexable, là où l'agenda Google intégré restait invisible."
+      />
+
+      <EventsManager
+        client:load
+        events={events}
+        canWrite={canWrite}
+        canDelete={canDelete}
+        canReadRegistrations={canReadRegistrations}
+      />
+    </div>
+  </AdminLayout>
+</Layout>

@@ -1,18 +1,39 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
+import { ErrorAlert } from '@nba/ui';
 import { ExpensesManager } from '@nba/expenses-ui';
 
 import { env } from 'cloudflare:workers';
+import { createAdminApiClient } from '../../../lib/api';
 
-const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
-const apiService = env.API_SERVICE;
+const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
+const apiService = createAdminApiClient(Astro.locals);
 
-const season = Astro.url.searchParams.get('season') || '25-26';
+let season = Astro.url.searchParams.get('season') || '';
+
+const userPerms = Astro.locals.user?.permissions || [];
+import { can, guardAction } from '../../../lib/guard';
+
+const canValidate = can(Astro.locals, 'expenses:reports:approve');
+const canCreate = can(Astro.locals, 'expenses:reports:write');
+const canUpdate = canCreate;
+
+const ACTIONS = {
+  expense: 'expenses:reports:write',
+  update: 'expenses:reports:write',
+  approve: 'expenses:reports:approve',
+  reject: 'expenses:reports:approve',
+  cancel: 'expenses:reports:approve'
+} as const;
 
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
+
+    const denied = guardAction(Astro.locals, data.action, ACTIONS);
+    if (denied) return denied;
+
     if (data.action === 'approve') {
       const apiRes = await apiService.fetch(`http://localhost/expenses/${data.id}/approve`, {
         method: 'POST'
@@ -43,6 +64,16 @@ if (Astro.request.method === 'POST') {
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
+    } else if (data.action === 'expense') {
+      const apiRes = await apiService.fetch('http://localhost/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data.data)
+      });
+      if (!apiRes.ok) {
+        return new Response(JSON.stringify({ success: false, error: await apiRes.text() }), { status: 400 });
+      }
+      return new Response(JSON.stringify({ success: true }));
     }
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' }
@@ -55,28 +86,47 @@ if (Astro.request.method === 'POST') {
 let expensesList = [];
 let seasonsList = [];
 let categoriesList = [];
+let membersList = [];
 let errorMsg = '';
 
 try {
-  const [expensesRes, seasonsRes, categoriesRes] = await Promise.all([
+  // 1. Fetch seasons first
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasonsList = json.data || [];
+    seasonsList.sort((a: any, b: any) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
+  }
+
+  if (!season) {
+    const activeSeason = seasonsList.find((s: any) => s.active === true || s.active === 1) || seasonsList[seasonsList.length - 1];
+    season = activeSeason ? (activeSeason.code || String(activeSeason.id)) : '25-26';
+  }
+
+  // 2. Fetch expenses for that season
+  const [expensesRes, categoriesRes, membersRes] = await Promise.all([
     apiService.fetch(`http://localhost/expenses?season=${season}`),
-    apiService.fetch('http://localhost/accounting/seasons'),
-    apiService.fetch('http://localhost/accounting/categories')
+    apiService.fetch('http://localhost/accounting/categories'),
+    apiService.fetch(`http://localhost/members?limit=1000&season=${season}`)
   ]);
 
   if (expensesRes.ok) {
     const json = await expensesRes.json() as any;
-    expensesList = json.data || [];
-  }
-
-  if (seasonsRes.ok) {
-    const json = await seasonsRes.json() as any;
-    seasonsList = json.data || [];
+    expensesList = (json.data || []).map((exp: any) => ({
+      ...exp,
+      amount: exp.amountCents,
+      category: exp.categoryId
+    }));
   }
 
   if (categoriesRes.ok) {
     const json = await categoriesRes.json() as any;
     categoriesList = json.data || [];
+  }
+
+  if (membersRes.ok) {
+    const json = await membersRes.json() as any;
+    membersList = json.data || [];
   }
 } catch (err: any) {
   errorMsg = 'Une erreur est survenue lors du chargement des notes de frais.';
@@ -85,37 +135,11 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
 ---
 
 <Layout title="Notes de Frais - NBA 91">
-  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Notes de frais">
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Notes de frais" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
-      {errorMsg && (
-        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
-          {errorMsg}
-        </div>
-      )}
+      {errorMsg && <ErrorAlert message={errorMsg} />}
 
-      <div class="flex items-center justify-between print:hidden">
-        <div>
-          <h1 class="text-3xl font-bold tracking-tight">Notes de Frais</h1>
-          <p class="text-muted-foreground mt-2">
-            Validation, modification et remboursement des notes de frais des membres du club.
-          </p>
-        </div>
-        <div class="flex items-center gap-3">
-          {isClosed && (
-            <span class="px-2.5 py-1 text-xs font-bold rounded bg-muted border border-border text-muted-foreground">
-              Saison clôturée (Lecture seule)
-            </span>
-          )}
-          <select
-            id="season-selector"
-            class="px-3 py-1.5 border border-border bg-background rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer h-9"
-          >
-            {seasonsList.map((s: any) => (
-              <option value={s.id} selected={s.id === season}>{s.name}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+
 
       <ExpensesManager
         client:load
@@ -123,18 +147,9 @@ const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
         seasonId={season}
         seasons={seasonsList}
         categories={categoriesList}
+        members={membersList}
+        initialAction={Astro.url.searchParams.get('action')}
       />
     </div>
   </AdminLayout>
-  <script>
-    const selector = document.getElementById('season-selector');
-    if (selector) {
-      selector.addEventListener('change', (e) => {
-        const newSeason = (e.target as HTMLSelectElement).value;
-        const params = new URLSearchParams(window.location.search);
-        params.set('season', newSeason);
-        window.location.href = `/admin/expenses?${params.toString()}`;
-      });
-    }
-  </script>
 </Layout>

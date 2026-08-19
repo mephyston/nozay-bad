@@ -1,0 +1,257 @@
+import { type DbOrTx } from '@nba/db';
+import { CHAMPIONSHIP_RULES, getDivision, teamName } from '../shared/championship';
+import { loadPlayerDirectory } from '../shared/members-lookup';
+import { normalizeLicence, isDouble, DISCIPLINE_RANKING } from '../shared/ranking';
+import { pickRankingsAt, resolveReferenceDate } from '../shared/ranking-resolution';
+import { mondayOf } from '../shared/week';
+import { checkLineup, type LineupIssue } from '../shared/lineup-rules';
+import { computeTeamValue, lineLabel, type LineupEntry } from '../shared/team-value';
+import { isEligibleInDiscipline, isEligibleByCategory } from '../shared/eligibility';
+import type { PlayerRanking } from '../shared/player';
+import {
+  ChampionshipDayNotFoundError,
+  TeamNotFoundError,
+  UnknownChampionshipError
+} from '../shared/errors';
+import { GetLineupRepository } from './repository';
+import type { GetLineupOutput, LineupCandidate, LineupSlotView } from './dto';
+import type { LineupSlotRow } from '../shared/schema';
+
+const repo = new GetLineupRepository();
+
+/** Une paire `(discipline, position)` avec ses licences, telle que l'écran la soumet. */
+export interface SubmittedSlot {
+  discipline: LineupSlotRow['discipline'];
+  position: number;
+  licence1: string;
+  licence2?: string | null;
+}
+
+function toPlayer(row: {
+  licence: string; lastName: string; firstName: string; gender: 'H' | 'F';
+  category: string | null; mutation: PlayerRanking['mutation'];
+  singles: PlayerRanking['singles']; doubles: PlayerRanking['doubles']; mixed: PlayerRanking['mixed'];
+  cpphSingles: number | null; cpphDoubles: number | null; cpphMixed: number | null;
+}): PlayerRanking {
+  return { ...row };
+}
+
+/**
+ * Rassemble tout ce qu'il faut pour juger une composition.
+ *
+ * Deux lectures différentes du calendrier s'y croisent, et les confondre serait faux :
+ * la **hiérarchie des valeurs** se compare à *journée* égale, la règle **« un joueur, une
+ * seule équipe »** sur la *semaine* réellement jouée. Un report sépare les deux.
+ */
+export async function loadLineup(
+  db: DbOrTx,
+  input: { teamId: number; dayNumber: number; slot?: number; viewerLicence?: string | null; override?: SubmittedSlot[] }
+): Promise<GetLineupOutput> {
+  const team = await repo.findTeam(db, input.teamId);
+  if (!team) throw new TeamNotFoundError();
+
+  const rules = CHAMPIONSHIP_RULES[team.championship];
+  const division = getDivision(team.championship, team.division);
+  if (!division) throw new UnknownChampionshipError();
+
+  const day = await repo.findDay(db, team, input.dayNumber);
+  if (!day) throw new ChampionshipDayNotFoundError();
+
+  const fixtureSlot = input.slot ?? 1;
+  const fixture = await repo.findFixture(db, team.id, day.id, fixtureSlot);
+
+  const [staff, rosterLicences, directory, settingsDate] = await Promise.all([
+    repo.staffLicences(db, team.id),
+    repo.rosterLicences(db, team.id),
+    loadPlayerDirectory(db, team.seasonCode),
+    repo.referenceEloDate(db, team)
+  ]);
+
+  const reference = resolveReferenceDate(
+    rules,
+    { referenceEloDate: settingsDate },
+    { number: day.number, weekStart: day.weekStart, referenceEloDate: day.referenceEloDate }
+  );
+
+  const rankingRows = reference.date ? await repo.rankingsUpTo(db, reference.date) : [];
+  const byLicence = pickRankingsAt(rankingRows, reference.date);
+
+  /** Le classement d'une licence, ou un profil sans classement — jamais rien. */
+  const playerFor = (licence: string): PlayerRanking => {
+    const row = byLicence.get(licence);
+    if (row) return toPlayer(row);
+    const identity = directory.get(licence);
+    return {
+      licence,
+      lastName: identity?.lastName ?? 'Licence inconnue',
+      firstName: identity?.firstName ?? '',
+      gender: identity?.gender === 'F' ? 'F' : 'H',
+      category: null,
+      mutation: 'none',
+      singles: null, doubles: null, mixed: null,
+      cpphSingles: null, cpphDoubles: null, cpphMixed: null
+    };
+  };
+
+  const storedSlots = fixture ? await repo.listSlots(db, fixture.id) : [];
+  const submitted: SubmittedSlot[] =
+    input.override ??
+    storedSlots.map((s) => ({
+      discipline: s.discipline,
+      position: s.position,
+      licence1: s.licence1,
+      licence2: s.licence2
+    }));
+
+  const entries: LineupEntry[] = submitted
+    .filter((s) => s.licence1)
+    .map((s) => ({
+      discipline: s.discipline,
+      position: s.position,
+      players: [playerFor(normalizeLicence(s.licence1)), ...(s.licence2 ? [playerFor(normalizeLicence(s.licence2))] : [])]
+    }));
+
+  // ── Hiérarchie : la valeur de l'équipe immédiatement supérieure, à journée égale ──
+  const siblings = await repo.siblingTeams(db, team);
+  const upper = siblings
+    .filter((s) => s.number < team.number)
+    .sort((a, b) => b.number - a.number)[0];
+
+  let upperTeamValue: number | null = null;
+  if (upper) {
+    const upperFixtures = await repo.fixturesOnDay(db, [upper.id], day.id);
+    const upperSlots = await repo.slotsForFixtures(db, upperFixtures.map((f) => f.id));
+    const upperDivision = getDivision(upper.championship, upper.division);
+    if (upperDivision && upperSlots.length > 0) {
+      const upperEntries: LineupEntry[] = upperSlots.map((s) => ({
+        discipline: s.discipline,
+        position: s.position,
+        players: [playerFor(s.licence1), ...(s.licence2 ? [playerFor(s.licence2)] : [])]
+      }));
+      upperTeamValue = computeTeamValue(rules, upperDivision.format, upperEntries).value;
+    }
+  }
+
+  // ── Doubles alignements : la semaine théorique de la journée, figée ──
+  const weekFixtures = await repo.fixturesInWeek(db, team, day.weekStart, fixture?.id ?? null);
+  const weekSlots = await repo.slotsForFixtures(db, weekFixtures.map((w) => w.fixture.id));
+  const busyThisWeek = new Map<string, string>();
+  for (const s of weekSlots) {
+    const owner = weekFixtures.find((w) => w.fixture.id === s.fixtureId);
+    if (!owner) continue;
+    busyThisWeek.set(s.licence1, teamName(owner.team.number));
+    if (s.licence2) busyThisWeek.set(s.licence2, teamName(owner.team.number));
+  }
+
+  // Les règles d'historique regardent la saison **avant** cette journée.
+  const history = await repo.playerHistory(db, team.seasonCode, day.weekStart);
+
+  const verdict = checkLineup({
+    rules,
+    division,
+    entries,
+    teamNumber: team.number,
+    history,
+    upperTeamValue,
+    upperTeamName: upper ? teamName(upper.number) : null,
+    busyThisWeek
+  });
+
+  // ── Vue des lignes, format en main ──
+  const byKey = new Map(submitted.map((s) => [`${s.discipline}${s.position}`, s]));
+  const lineByKey = new Map(verdict.value.lines.map((l) => [`${l.discipline}${l.position}`, l]));
+
+  const slots: LineupSlotView[] = division.format.map((slot) => {
+    const key = `${slot.discipline}${slot.position}`;
+    const s = byKey.get(key);
+    const line = lineByKey.get(key);
+    return {
+      discipline: slot.discipline,
+      position: slot.position,
+      label: lineLabel(division.format, slot.discipline, slot.position),
+      double: isDouble(slot.discipline),
+      licence1: s?.licence1 ?? null,
+      licence2: s?.licence2 ?? null,
+      rankings: line?.rankings ?? '—',
+      points: line?.points ?? null
+    };
+  });
+
+  // ── Candidats : les adhérents de la saison, l'effectif en tête ──
+  const rosterSet = new Set(rosterLicences.map(normalizeLicence));
+  const candidates: LineupCandidate[] = [...directory.values()]
+    .map((identity) => {
+      const player = playerFor(identity.licence);
+      const busy = busyThisWeek.get(identity.licence);
+      const eligibleSomewhere = ['singles', 'doubles', 'mixed'].some((d) =>
+        isEligibleInDiscipline(division.eligibility, player, d as never)
+      );
+      /*
+       * La catégorie compte autant que le classement.
+       *
+       * Sans elle, un Minibad restait proposé au capitaine, qui le choisissait et voyait
+       * sa composition refusée à l'enregistrement — le motif arrivait après coup, alors
+       * qu'il tenait à une donnée connue d'avance.
+       */
+      const categoryAdmitted = isEligibleByCategory(rules.categories, player);
+      return {
+        licence: identity.licence,
+        firstName: identity.firstName,
+        lastName: identity.lastName,
+        gender: player.gender,
+        category: player.category,
+        mutation: player.mutation,
+        singles: player.singles,
+        doubles: player.doubles,
+        mixed: player.mixed,
+        inRoster: rosterSet.has(identity.licence),
+        unavailableReason: busy
+          ? `Déjà aligné avec ${busy} cette semaine`
+          : !categoryAdmitted
+            ? `Catégorie ${player.category ?? 'inconnue'} non admise`
+            : eligibleSomewhere
+              ? null
+              : 'Classement hors de cette division'
+      };
+    })
+    .sort(
+      (a, b) =>
+        Number(b.inRoster) - Number(a.inRoster) || a.lastName.localeCompare(b.lastName, 'fr')
+    );
+
+  const viewer = input.viewerLicence ? normalizeLicence(input.viewerLicence) : null;
+
+  return {
+    teamId: team.id,
+    teamName: teamName(team.number),
+    championship: team.championship,
+    championshipLabel: rules.label,
+    divisionLabel: division.label,
+    dayNumber: day.number,
+    dayLabel: day.label,
+    weekStart: day.weekStart,
+    weekEnd: day.weekEnd,
+    matchDate: day.matchDate,
+    playedAt: fixture?.playedAt ?? null,
+    outsideTheoreticalWeek: Boolean(
+      fixture?.playedAt && mondayOf(fixture.playedAt.slice(0, 10)) !== day.weekStart
+    ),
+    venue: fixture?.venue ?? null,
+    opponent: fixture?.opponent ?? null,
+    home: fixture?.home ?? true,
+    status: fixture?.status ?? 'scheduled',
+    slots,
+    candidates,
+    total: verdict.value.total,
+    divisor: verdict.value.divisor,
+    value: verdict.value.value,
+    errors: verdict.errors as LineupIssue[],
+    warnings: verdict.warnings as LineupIssue[],
+    upperTeamName: upper ? teamName(upper.number) : null,
+    upperTeamValue,
+    referenceEloDate: reference.date,
+    canEdit: Boolean(viewer && (viewer === staff.captain || viewer === staff.vice)),
+    captainLicence: staff.captain ?? null,
+    viceCaptainLicence: staff.vice ?? null
+  };
+}

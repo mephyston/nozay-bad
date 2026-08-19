@@ -7,7 +7,7 @@ export interface Check {
   emitter: string;
   bank: string | null;
   memberId: number | null;
-  transactionId: number | null;
+  ledgerEntryId: number | null;
   status: 'received' | 'deposited';
   photoUrl: string | null;
   createdAt: string;
@@ -22,7 +22,7 @@ export interface CheckDeposit {
   date: string;
   amount: number;
   status: 'pending' | 'deposited' | 'cleared';
-  bankTransactionId: number | null;
+  bankStatementLineId: number | null;
   createdAt: string;
 }
 
@@ -35,7 +35,7 @@ export interface Member {
   parent2Name: string | null;
 }
 
-export interface BankTransaction {
+export interface BankStatementLine {
   id: number;
   fitid: string;
   amount: number;
@@ -55,11 +55,12 @@ export interface SeasonOption {
 export interface CategoryItem {
   id: string;
   name: string;
+  code?: string;
 }
 
 export const categoriesList: CategoryItem[] = [
-  { id: '1', name: 'Cotisation / Adhésion' },
-  { id: '6', name: 'Recette Buvette' },
-  { id: '7', name: 'Vente Cordage' },
-  { id: '14', name: 'Divers / Recettes annexes' }
+  { id: '1', name: 'Adhésion', code: '70' },
+  { id: '2', name: 'Vente', code: '70' }
 ];
+
+

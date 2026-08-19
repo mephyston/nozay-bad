@@ -8,6 +8,7 @@ export default defineConfig({
     },
   },
   test: {
+    name: 'shared-db',
     globals: true,
   },
 });

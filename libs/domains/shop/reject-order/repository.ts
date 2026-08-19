@@ -10,7 +10,7 @@ export class RejectOrderRepository {
   async rejectWithLock(db: DbOrTx, id: number): Promise<typeof ordersTable.$inferSelect | undefined> {
     return db.update(ordersTable)
       .set({ status: 'rejected' })
-      .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'pending')))
+      .where(and(eq(ordersTable.id, id), eq(ordersTable.status, 'created')))
       .returning().get();
   }
 }

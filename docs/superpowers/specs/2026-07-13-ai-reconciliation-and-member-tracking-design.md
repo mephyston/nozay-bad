@@ -7,12 +7,12 @@ Optimiser le rapprochement des relevés bancaires en intégrant des suggestions 
 
 ## 2. Base de Données
 
-Nous modifions les tables `members` et `transactions` pour intégrer les champs requis par Poona et les liaisons comptables, et ajoutons un champ de stockage des suggestions IA dans `bank_transactions`.
+Nous modifions les tables `members` et `transactions` pour intégrer les champs requis par Poona et les liaisons comptables, et ajoutons un champ de stockage des suggestions IA dans `bank_statement_lines`.
 
 ### Schéma Drizzle (`libs/shared/db/src/schema.ts`)
 ```typescript
 import { sqliteTable, integer, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
-import { seasonsTable, transactionsTable } from './schema';
+import { seasonsTable, ledgerEntriesTable } from './schema';
 
 // 1. Mise à jour de membersTable : ajout des informations financières de Poona et des contacts parents
 export const membersTable = sqliteTable('members', {
@@ -46,8 +46,8 @@ export const membersTable = sqliteTable('members', {
   licenceSeasonUnq: uniqueIndex('members_licence_season_idx').on(table.licence, table.season),
 }));
 
-// 2. Mise à jour de transactionsTable : ajout du lien vers l'adhérent
-export const transactionsTable = sqliteTable('transactions', {
+// 2. Mise à jour de ledgerEntriesTable : ajout du lien vers l'adhérent
+export const ledgerEntriesTable = sqliteTable('transactions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   seasonId: text('season_id').notNull().references(() => seasonsTable.id),
   type: text('type', { enum: ['recette', 'depense', 'transfert'] }).notNull(),
@@ -68,8 +68,8 @@ export const transactionsTable = sqliteTable('transactions', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
-// 3. Mise à jour de bankTransactionsTable : ajout du stockage des suggestions IA
-export const bankTransactionsTable = sqliteTable('bank_transactions', {
+// 3. Mise à jour de bankStatementLinesTable : ajout du stockage des suggestions IA
+export const bankStatementLinesTable = sqliteTable('bank_statement_lines', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   fitid: text('fitid').notNull().unique(),
   seasonId: text('season_id').notNull().references(() => seasonsTable.id),
@@ -79,7 +79,7 @@ export const bankTransactionsTable = sqliteTable('bank_transactions', {
   name: text('name').notNull(),
   memo: text('memo'),
   status: text('status', { enum: ['pending', 'reconciled', 'ignored'] }).notNull().default('pending'),
-  transactionId: integer('transaction_id').references(() => transactionsTable.id),
+  ledgerEntryId: integer('ledger_entry_id').references(() => ledgerEntriesTable.id),
   
   // Nouveau champ JSON stockant les suggestions d'imputation IA
   aiSuggestions: text('ai_suggestions'), // stocke { category: string, memberId: number, memberName: string, confidence: number }
@@ -115,7 +115,7 @@ Pour chaque opération :
    Si au moins un candidat est trouvé, nous interrogeons Workers AI (`@cf/meta/llama-3-8b-instruct`) avec un prompt ciblé :
    * **Entrée** : Le libellé bancaire (ex: *"VIR INST RE 651196118756 DE: MR FABIEN LE BLEVEC"*) et la liste des 5 candidats avec leurs détails (Noms, Prénoms, Parents, Montants attendus).
    * **Sortie attendue** : Un format JSON strict `{ memberId: number | null, category: string, confidence: number, reasoning: string }`.
-3. **Mise à jour** : Les suggestions retournées sont enregistrées dans la colonne `aiSuggestions` de `bank_transactions`.
+3. **Mise à jour** : Les suggestions retournées sont enregistrées dans la colonne `aiSuggestions` de `bank_statement_lines`.
 
 ---
 

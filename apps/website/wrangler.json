@@ -1,0 +1,58 @@
+{
+  "name": "nba-website",
+  "compatibility_date": "2024-09-23",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    },
+    "traces": {
+      "enabled": true,
+      "persist": true,
+      "head_sampling_rate": 1
+    }
+  },
+  "vars": {
+    "SITE_URL": "https://nozaybad.fr",
+    "APP_ENV": "production"
+  },
+  "services": [
+    {
+      "binding": "API_SERVICE",
+      "service": "nba-api"
+    }
+  ],
+  "env": {
+    "staging": {
+      "name": "nba-website-staging",
+      "vars": {
+        "SITE_URL": "https://staging-www.nozaybad.fr",
+        "APP_ENV": "staging"
+      },
+      "services": [
+        {
+          "binding": "API_SERVICE",
+          "service": "nba-api-staging"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "MEDIA",
+          "bucket_name": "nba-media-staging"
+        }
+      ]
+    }
+  },
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "nba-media"
+    }
+  ]
+}

@@ -1,15 +1,15 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
+import MobileNav from '../components/MobileNav.svelte';
+import { ErrorAlert } from '@nba/ui';
 import { ExpenseReportForm } from '@nba/expenses-ui';
 import { env } from 'cloudflare:workers';
-import { verifyTurnstileToken } from '../lib/turnstile';
+import { createApiClient } from '@nba/api-client';
+import { getActiveMemberStatus } from '../lib/member-status';
+import { listSeasons, displaySeason, type Season } from '../lib/season';
 
-interface Season {
-  id: string;
-  name: string;
-  active: boolean;
-}
+const apiService = createApiClient(env);
 
 interface Member {
   id: number;
@@ -18,34 +18,27 @@ interface Member {
   licence: string;
 }
 
-const apiService = env.API_SERVICE;
-
 if (Astro.request.method === 'POST') {
   try {
-    const body = await Astro.request.json();
-    const turnstileToken = body.turnstileToken;
-    const ip = Astro.request.headers.get('CF-Connecting-IP') || Astro.request.headers.get('x-real-ip') || '127.0.0.1';
-    let runtimeEnv: any = {};
-    try {
-      runtimeEnv = (Astro.locals as any).runtime?.env || {};
-    } catch {}
-    const kv = (env as any)?.RATE_LIMIT_KV || runtimeEnv.RATE_LIMIT_KV;
-
-    const verifyResult = await verifyTurnstileToken(turnstileToken, ip, { kv, runtimeEnv });
-    if (!verifyResult.success) {
-      return new Response(JSON.stringify({ success: false, error: verifyResult.error || 'Validation anti-bot échouée.' }), {
-        status: 400,
+    const postSession = Astro.locals.session;
+    if (!postSession) {
+      return new Response(JSON.stringify({ success: false, error: 'Non authentifié.' }), {
+        status: 401,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
+    const body = await Astro.request.json();
+
     if (body.action === 'expense') {
+      // Le demandeur est TOUJOURS le profil actif de la session (jamais une valeur cliente).
+      const data = { ...body.data, memberId: postSession.activeMemberId };
       return apiService.fetch('http://localhost/expenses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(body.data)
+        body: JSON.stringify(data)
       });
     }
   } catch (err: any) {
@@ -56,27 +49,20 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-let members: Member[] = [];
+// Membres = uniquement le foyer de la session (plus de fetch global des adhérents).
+const session = Astro.locals.session;
+const members: Member[] = session?.members ?? [];
+const initialMemberId = session?.activeMemberId ? String(session.activeMemberId) : '';
+// Statut frais lu en direct (effet immédiat après (dé)autorisation, sans reconnexion).
+const canExpense = (await getActiveMemberStatus(env, session)).canExpense;
+
 let seasons: Season[] = [];
 let categories: any[] = [];
 let errorMsg = '';
 
 try {
-  const membersRes = await apiService.fetch('http://localhost/members?limit=1000');
-  if (membersRes.ok) {
-    const json = await membersRes.json() as any;
-    members = json.data || [];
-  } else {
-    errorMsg = 'Impossible de charger les adhérents.';
-  }
-
-  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
-  if (seasonsRes.ok) {
-    const json = await seasonsRes.json() as any;
-    seasons = json.data || [];
-  } else {
-    errorMsg = 'Impossible de charger les saisons.';
-  }
+  seasons = await listSeasons(env);
+  if (seasons.length === 0) errorMsg = 'Impossible de charger les saisons.';
 
   const categoriesRes = await apiService.fetch('http://localhost/accounting/categories');
   if (categoriesRes.ok) {
@@ -87,30 +73,46 @@ try {
   errorMsg = 'Une erreur de connexion est survenue lors du chargement des données.';
 }
 
-const activeSeason = seasons.find((s: Season) => s.active) || seasons[0] || { id: '25-26', name: 'Saison 2025-2026', active: false };
-const activeSeasonId = activeSeason.id;
+// Saison de la session (celle du calendrier), pas la saison comptable : une note de frais
+// doit s'imputer sur la saison que l'adhérent est en train de jouer.
+const activeSeasonId = displaySeason(seasons, session?.seasonCode)?.code ?? '';
 ---
 
 <Layout title="Notes de frais - NBA 91">
-  <Header currentPath="/note-de-frais" activeSeasonName={activeSeason.name || activeSeasonId} />
+  <Header currentPath="/note-de-frais" />
 
-  <main class="flex-1 p-6 w-full">
+  <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
     {errorMsg && (
-      <div class="mb-6 p-4 bg-destructive/15 border border-destructive/20 text-destructive text-sm rounded-xl font-medium flex items-center gap-2">
-        <span>⚠️ {errorMsg}</span>
+      <div class="mb-6">
+        <ErrorAlert message={errorMsg} />
       </div>
     )}
 
-    <ExpenseReportForm
-      client:load
-      activeSeasonId={activeSeasonId}
-      members={members}
-      categories={categories}
-    />
+    {canExpense ? (
+      <ExpenseReportForm
+        client:load
+        activeSeasonId={activeSeasonId}
+        members={members}
+        categories={categories}
+        lockToMembers={true}
+        initialMemberId={initialMemberId}
+      />
+    ) : (
+      <div class="max-w-2xl mx-auto rounded-xl border border-border bg-muted/30 p-6 text-center">
+        <p class="text-sm font-semibold text-foreground">Saisie des notes de frais non autorisée</p>
+        <p class="text-sm text-muted-foreground mt-2">
+          Votre compte n'est pas autorisé à soumettre des notes de frais. Rapprochez-vous du
+          trésorier si vous pensez que c'est une erreur.
+        </p>
+      </div>
+    )}
   </main>
 
-  <footer class="border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground">
-    <p>© {new Date().getFullYear()} Nozay Badminton Associatif. Tous droits réservés.</p>
+  <MobileNav currentPath="/note-de-frais" />
+
+  <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
+    <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+    <p class="mt-2"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a> · <a href="/mentions-legales" class="hover:underline">Mentions légales</a></p>
     <p class="mt-1">Les notes de frais sont soumises à la validation du trésorier.</p>
   </footer>
 </Layout>

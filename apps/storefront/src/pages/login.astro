@@ -1,0 +1,24 @@
+---
+import Layout from '../layouts/Layout.astro';
+import LoginForm from '../components/LoginForm.svelte';
+import { verifySession, readSessionCookie, resolveSessionSecret } from '../lib/auth';
+import { resolveEnv, IS_DEV } from '../lib/request-context';
+
+// Si déjà connecté, on renvoie vers la cible.
+const env = resolveEnv(Astro.locals);
+const secret = resolveSessionSecret(env, IS_DEV);
+const token = readSessionCookie(Astro.request.headers.get('cookie'));
+const session = secret && token ? await verifySession(token, secret) : null;
+if (session) {
+  const redirectParam = Astro.url.searchParams.get('redirect');
+  const isInternal = Boolean(redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//'));
+  return Astro.redirect(isInternal ? (redirectParam as string) : '/', 302);
+}
+---
+
+<Layout title="Connexion - Nozay Bad">
+  <main class="flex-1 flex flex-col items-center justify-center gap-6 p-6">
+    <LoginForm client:load />
+    <div class="flex gap-3 text-xs text-muted-foreground"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a><a href="/mentions-legales" class="hover:underline">Mentions légales</a></div>
+  </main>
+</Layout>

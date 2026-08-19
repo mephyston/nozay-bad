@@ -11,12 +11,14 @@ export async function getMemberCseData(db: Db, id: GetMemberCseDataInput): Promi
     throw new MemberNotFoundError();
   }
 
-  const member = new Member(memberData);
+  const member = new Member(memberData as any);
   if (!member.canReceiveAttestation()) {
     throw new MemberNotFullyPaidError();
   }
 
   const tx = await repo.getLastPaymentTransaction(db, id);
+  // `seasonId` (FK entier) résolu en code de saison via le domaine accounting.
+  const seasonCode = await repo.getSeasonCode(db, memberData.seasonId);
 
   return {
     lastName: member.lastName,
@@ -24,7 +26,10 @@ export async function getMemberCseData(db: Db, id: GetMemberCseDataInput): Promi
     birthDate: member.birthDate,
     amount: member.amountDue,
     paymentMethod: tx ? tx.paymentMethod : 'virement',
-    paymentDate: tx ? tx.date : 'date de validation',
-    season: member.season
+    // Date de règlement Poona uniquement : la date de l'écriture comptable (`tx.date`)
+    // est celle de la saisie du trésorier, pas celle du paiement de l'adhérent.
+    // Vide → l'attestation est datée du 1er septembre de la saison (cf. seasonIssueDate).
+    paymentDate: memberData.paymentDate ?? '',
+    season: seasonCode ?? ''
   };
 }

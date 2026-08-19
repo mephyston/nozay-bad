@@ -1,0 +1,218 @@
+---
+import { resolveEnv } from '../lib/request-context';
+import { listNavItems, getSiteSettings, type NavItemView } from '../lib/cms';
+import { SITE_NAME } from '../lib/seo';
+import { socialLinks } from '../lib/social';
+
+/**
+ * Pied de page.
+ *
+ * Écrit de zéro : celui de WordPress était le contenu de démonstration du thème,
+ * jamais remplacé — « Book Sales », « Rare Book Sourcing », liens morts et mention
+ * « © Sports Association ». Il était en ligne et indexé.
+ *
+ * Bandeau sombre dans les deux thèmes (jetons `--footer-*`), et non une nuance du
+ * fond de page : le pied doit se lire comme une zone à part, pas comme la fin du
+ * contenu. C'est aussi ce qui permet d'y poser le logo en variante sombre une bonne
+ * fois, sans le jeu de bascule clair/sombre de l'en-tête.
+ *
+ * Tout ce qui s'y affiche vient de la base : la phrase, l'adresse et les comptes
+ * sociaux des réglages du site (écran « Pied de page »), les deux colonnes de liens
+ * des menus `footer` et `legal`. Rien ici ne demande un déploiement pour changer.
+ */
+const env = resolveEnv(Astro.locals);
+const year = new Date().getFullYear();
+
+/**
+ * Une seule salve : ces trois lectures sont indépendantes, et le pied de page est
+ * rendu sur toutes les pages du site. Les enchaîner tripleraient la latence du seul
+ * composant que chaque rendu traverse.
+ */
+const [settings, footerNav, legalNav] = await Promise.all([
+  getSiteSettings(env),
+  listNavItems(env, 'footer'),
+  listNavItems(env, 'legal')
+]);
+
+const socials = socialLinks(settings);
+
+/**
+ * Colonne « Le site » : le menu `footer` de l'administration s'il est renseigné.
+ *
+ * À défaut, on retombe sur les quatre pages qu'un visiteur cherche depuis le bas
+ * d'une page. Un repli codé en dur vaut mieux qu'une colonne vide, et il s'efface de
+ * lui-même dès qu'une entrée est créée. Les cibles ne sont pas choisies au hasard :
+ * `/actualites/` est une route de l'application ; `/agenda/`, `/creneaux/` et
+ * `/inscriptions/` sont des pages du CMS — l'agenda depuis qu'il se compose en blocs
+ * plutôt que dans une route dédiée.
+ */
+const FALLBACK_LINKS = [
+  { label: 'Créneaux', href: '/creneaux/' },
+  { label: 'Inscriptions', href: '/inscriptions/' },
+  { label: 'Actualités', href: '/actualites/' },
+  { label: 'Agenda', href: '/agenda/' }
+];
+
+/**
+ * Barre légale : le menu `legal`, à défaut les deux liens dus au visiteur.
+ *
+ * Le repli est maintenu même une fois les pages créées : ce sont les seuls liens du
+ * site dont l'absence est une faute, et non un choix éditorial.
+ */
+const FALLBACK_LEGAL = [
+  { label: 'Mentions légales', href: '/mentions-legales/' },
+  { label: 'Politique de confidentialité', href: '/politique-de-confidentialite/' }
+];
+
+/**
+ * Le menu est mis à plat : deux niveaux ont un sens dans un en-tête, où le survol
+ * déplie ; dans une colonne, ils ne feraient qu'indenter. Un conteneur — sans page à
+ * lui — disparaît donc au profit de ses enfants.
+ */
+function flatten(items: NavItemView[]): { label: string; href: string; external: boolean }[] {
+  const out: { label: string; href: string; external: boolean }[] = [];
+  for (const item of items) {
+    if (item.href) out.push({ label: item.label, href: item.href, external: item.externalUrl !== null });
+    for (const child of item.children) {
+      if (child.href) out.push({ label: child.label, href: child.href, external: child.externalUrl !== null });
+    }
+  }
+  return out;
+}
+
+const withoutExternal = (links: { label: string; href: string }[]) =>
+  links.map((link) => ({ ...link, external: false }));
+
+const composedSite = flatten(footerNav);
+const composedLegal = flatten(legalNav);
+const siteLinks = composedSite.length > 0 ? composedSite : withoutExternal(FALLBACK_LINKS);
+const legalLinks = composedLegal.length > 0 ? composedLegal : withoutExternal(FALLBACK_LEGAL);
+---
+
+<footer class="bg-footer text-footer-foreground border-footer-border mt-16 border-t">
+  <div class="mx-auto max-w-5xl px-4 py-12">
+    <div class="grid gap-10 sm:grid-cols-2 md:grid-cols-3">
+      <div class="flex flex-col gap-3">
+        {/*
+          Variante sombre du logo en dur, sans paire clair/sombre : le fond du pied ne
+          change pas avec le thème, donc l'autre variante ne servirait jamais.
+          `alt` vide — le nom du club le suit immédiatement en toutes lettres.
+        */}
+        <img src="/logo-large-dark.webp" alt="" width="144" height="144" class="h-12 w-12" />
+        <p class="font-semibold">{SITE_NAME}</p>
+        {settings.footerDescription && (
+          <p class="text-footer-muted text-sm">{settings.footerDescription}</p>
+        )}
+        {/* L'adresse postale complète reste par ailleurs en données structurées
+            (`jsonld.ts`), où elle sert le référencement local. */}
+        {settings.footerAddress && (
+          <address class="text-footer-muted text-sm not-italic">{settings.footerAddress}</address>
+        )}
+      </div>
+
+      <nav aria-labelledby="footer-site" class="flex flex-col gap-3">
+        <p id="footer-site" class="text-footer-muted text-xs font-semibold tracking-wider uppercase">
+          Le site
+        </p>
+        {/* Sans écart en mobile : le `py-3` des liens porte chaque cible à 44 px et
+            les rend jointives, un `gap` en plus ne ferait qu'allonger la colonne. */}
+        <ul class="flex flex-col gap-0 text-sm md:gap-2">
+          {siteLinks.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                target={link.external ? '_blank' : undefined}
+                rel={link.external ? 'noopener noreferrer' : undefined}
+                class="hover:text-primary block py-3 transition-colors md:py-0"
+              >
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <div class="flex flex-col gap-3">
+        <p id="footer-follow" class="text-footer-muted text-xs font-semibold tracking-wider uppercase">
+          Nous suivre
+        </p>
+        {/*
+          Icônes au trait, comme le reste du site, plutôt que les logos officiels des
+          marques : elles suivent `currentColor` — donc le survol et le focus — et le
+          club n'a pas à héberger des marques déposées pour signaler deux liens.
+
+          `rel="me"` en plus de `noopener noreferrer` : il déclare que ces comptes sont
+          bien ceux de cette entité, ce que `sameAs` dit déjà aux moteurs.
+        */}
+        {socials.length > 0 && (
+          <ul aria-labelledby="footer-follow" class="flex gap-3">
+            {socials.map((social) => (
+              <li>
+                <a
+                  href={social.href}
+                  target="_blank"
+                  rel="me noopener noreferrer"
+                  aria-label={`Le club sur ${social.name}`}
+                  class="border-footer-border hover:border-primary hover:text-primary inline-flex h-11 w-11 items-center justify-center rounded-full border transition-colors"
+                >
+                  {social.name === 'Instagram' ? (
+                    <svg
+                      class="h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <rect x="2" y="2" width="20" height="20" rx="5" />
+                      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37Z" />
+                      <path d="M17.5 6.5h.01" />
+                    </svg>
+                  ) : (
+                    <svg
+                      class="h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+                    </svg>
+                  )}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+        {/* Lien à part, et non une phrase avec un lien dedans : dans une colonne
+            étroite, la phrase se coupait entre « en » et « flux RSS ». */}
+        <a href="/rss.xml" class="text-footer-muted hover:text-primary inline-block py-3 text-sm transition-colors md:py-0">
+          Flux RSS des actualités
+        </a>
+      </div>
+    </div>
+
+    <div
+      class="border-footer-border text-footer-muted mt-10 flex flex-col gap-2 border-t pt-6 text-sm sm:flex-row sm:items-center sm:justify-between"
+    >
+      <p>© {year} {SITE_NAME}</p>
+      <nav aria-label="Liens de bas de page" class="flex flex-wrap gap-x-4 gap-y-1">
+        {legalLinks.map((link) => (
+          <a
+            href={link.href}
+            target={link.external ? '_blank' : undefined}
+            rel={link.external ? 'noopener noreferrer' : undefined}
+            class="hover:text-footer-foreground transition-colors"
+          >
+            {link.label}
+          </a>
+        ))}
+      </nav>
+    </div>
+  </div>
+</footer>

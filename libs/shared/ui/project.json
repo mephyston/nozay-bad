@@ -6,6 +6,20 @@
   "targets": {
     "lint": {
       "command": "eslint {projectRoot}"
+    },
+    "build-storybook": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "outputs": ["{workspaceRoot}/storybook-static"],
+      "inputs": [
+        "production",
+        "^production",
+        "{workspaceRoot}/.storybook/**/*"
+      ],
+      "options": {
+        "command": "storybook build",
+        "cwd": "."
+      }
     }
   },
   "tags": ["type:ui", "scope:shared"]

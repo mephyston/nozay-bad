@@ -1,0 +1,20 @@
+---
+import Layout from '../layouts/Layout.astro';
+import AdminLayout from '../components/AdminLayout.svelte';
+import { PageHeader } from '@nba/ui';
+import { Content } from '../../../../CHANGELOG.md';
+---
+
+<Layout title="Nouveautés - NBA Admin">
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={Astro.locals.user?.email} breadcrumb="Nouveautés" permissions={Astro.locals.user?.permissions || []}>
+    <div class="space-y-6 pb-20">
+      <PageHeader
+        title="Nouveautés"
+        description="Historique des versions et changements de l'application."
+      />
+      <div class="prose prose-sm dark:prose-invert max-w-4xl bg-card text-card-foreground p-6 md:p-8 rounded-xl border shadow-sm">
+        <Content />
+      </div>
+    </div>
+  </AdminLayout>
+</Layout>

@@ -9,7 +9,7 @@ describe('listSeasonsRoute', () => {
   it('handles GET request for seasons', async () => {
     const res = await listSeasonsRoute.request('/', {}, { DB: {} as any });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
   });
 });

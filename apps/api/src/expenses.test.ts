@@ -21,8 +21,8 @@ describe('Expenses API Endpoints', () => {
 
     // Insert season
     await db.run(sql`
-      INSERT OR IGNORE INTO seasons (id, name, active, created_at)
-      VALUES ('25-26', 'Saison 2025-2026', 1, ${new Date().getTime()})
+      INSERT OR IGNORE INTO seasons (id, code, name, start_date, end_date, active, created_at)
+      VALUES (1, '25-26', 'Saison 2025-2026', '2025-09-01', '2026-08-31', 1, strftime('%s', 'now'))
     `);
 
     // 1. Create a pending expense report
@@ -63,16 +63,16 @@ describe('Expenses API Endpoints', () => {
     const approveJson = await approveRes.json() as any;
     expect(approveJson.success).toBe(true);
     expect(approveJson.data.status).toBe('approved');
-    expect(approveJson.data.transactionId).toBeDefined();
+    expect(approveJson.data.ledgerEntryId).toBeDefined();
 
     // Verify transaction was created in compta
     const tx = await db.get(sql`
-      SELECT type, amount, category, description FROM transactions WHERE id = ${approveJson.data.transactionId}
-    `) as { type: string; amount: number; category: number; description: string };
+      SELECT type, amount_cents as amountCents, category_id as categoryId, description FROM ledger_entries WHERE id = ${approveJson.data.ledgerEntryId}
+    `) as { type: string; amountCents: number; categoryId: number; description: string };
     expect(tx).toBeDefined();
     expect(tx.type).toBe('depense');
-    expect(tx.amount).toBe(4500);
-    expect(tx.category).toBe(10);
+    expect(tx.amountCents).toBe(4500);
+    expect(tx.categoryId).toBe(10);
     expect(tx.description).toContain('Remboursement frais - Marie Curie - Achat de cartons pour tournoi');
 
     // 4. Create another expense to test rejection
@@ -112,7 +112,7 @@ describe('Expenses API Endpoints', () => {
     const updateJson = await updateRes.json() as any;
     expect(updateJson.success).toBe(true);
     expect(updateJson.data.description).toBe('Repas de Noel avec buvette');
-    expect(updateJson.data.amount).toBe(9000);
+    expect(updateJson.data.amountCents ?? updateJson.data.amount).toBe(9000);
 
     // 6. Test cancellation of approved expense
     const cancelRes = await app.request(`http://localhost/expenses/${expenseId}/cancel`, {
@@ -122,11 +122,11 @@ describe('Expenses API Endpoints', () => {
     const cancelJson = await cancelRes.json() as any;
     expect(cancelJson.success).toBe(true);
     expect(cancelJson.data.status).toBe('pending');
-    expect(cancelJson.data.transactionId).toBeNull();
+    expect(cancelJson.data.ledgerEntryId).toBeNull();
 
     // Check associated transaction is deleted
     const txDeleted = await db.get(sql`
-      SELECT id FROM transactions WHERE id = ${approveJson.data.transactionId}
+      SELECT id FROM ledger_entries WHERE id = ${approveJson.data.ledgerEntryId}
     `);
     expect(txDeleted).toBeUndefined();
 

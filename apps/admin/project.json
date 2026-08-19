@@ -3,10 +3,62 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/admin/src",
+  // Nx ne lit pas les imports écrits dans les fichiers .astro et .svelte : l'admin
+  // n'importe pratiquement que ça, et le graphe ne lui voyait qu'une seule dépendance,
+  // @nba/iam, détectée depuis un .ts. Les onze autres sont déclarées ici.
+  // Tenir à jour au même rythme que les imports de src/ — cf. scripts/check-nx-deps.js.
+  "implicitDependencies": [
+    "@nba/accounting-api",
+    "@nba/cms-api",
+    "@nba/events-api",
+    "@nba/expenses-api",
+    "@nba/iam",
+    "@nba/members-api",
+    "@nba/notifications-api",
+    "@nba/preview",
+    "@nba/schedules-api",
+    "@nba/security-headers",
+    "@nba/runtime-env",
+    "@nba/shop-api",
+    "@nba/teams-api",
+    "@nba/ui"
+  ],
   "targets": {
     "lint": {
       "command": "eslint {projectRoot}"
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": [
+        "{projectRoot}/dist"
+      ],
+      "inputs": [
+        "production",
+        "^production",
+        {
+          "env": "PUBLIC_APP_ENV"
+        },
+        {
+          "env": "VITE_APP_VERSION"
+        },
+        "{workspaceRoot}/package.json"
+      ],
+      "options": {
+        "command": "astro build",
+        "cwd": "apps/admin"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "PUBLIC_APP_ENV=development astro dev --port 4321",
+        "cwd": "apps/admin"
+      }
     }
   },
-  "tags": ["type:app", "scope:admin"]
+  "tags": [
+    "type:app",
+    "scope:admin"
+  ]
 }

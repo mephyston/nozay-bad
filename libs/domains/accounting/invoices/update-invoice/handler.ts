@@ -6,31 +6,39 @@ import { isSeasonClosed } from '@nba/members-api';
 import { UpdateInvoiceId, UpdateInvoiceInput, UpdateInvoiceOutput } from "./dto";
 
 export async function updateInvoice(db: Db, id: UpdateInvoiceId, body: UpdateInvoiceInput): Promise<UpdateInvoiceOutput> {
-  return db.transaction(async (txDb: Tx) => {
-    const repo = new UpdateInvoiceRepository();
-    const invoiceData = await repo.getById(txDb, id);
-    if (!invoiceData) {
-      throw new InvoiceNotFoundError();
-    }
+  const repo = new UpdateInvoiceRepository();
 
-    const closed = await isSeasonClosed(txDb, invoiceData.seasonId);
-    const invoice = new Invoice(invoiceData);
-    if (!invoice.canBeEdited(closed)) {
-      if (closed) throw new SeasonClosedError('Saison clôturée');
-      throw new InvoiceNotEditableError();
-    }
+  // Phase 1 : Lecture (hors batch)
+  const invoiceData = await repo.getById(db, id);
+  if (!invoiceData) {
+    throw new InvoiceNotFoundError();
+  }
 
-    await repo.update(txDb, id, {
-      date: body.date,
-      dueDate: body.dueDate,
-      clientName: body.clientName,
-      clientAddress: body.clientAddress || null,
-      clientEmail: body.clientEmail || null,
-      subject: body.subject || null,
-      location: body.location || null,
-      period: body.period || null,
-      attendees: body.attendees || null,
-      totalAmount: body.totalAmount
-    }, body.items || []);
-  });
+  const closed = await isSeasonClosed(db, invoiceData.seasonId);
+
+  // Phase 2 : Décision (en mémoire)
+  const invoice = new Invoice(invoiceData);
+  if (!invoice.canBeEdited(closed)) {
+    if (closed) throw new SeasonClosedError('Saison clôturée');
+    throw new InvoiceNotEditableError();
+  }
+
+  const updateValues = {
+    date: body.date,
+    dueDate: body.dueDate || body.date,
+    clientName: body.clientName,
+    clientAddress: body.clientAddress || null,
+    clientEmail: body.clientEmail || null,
+    subject: body.subject || null,
+    location: body.location || null,
+    period: body.period || null,
+    attendees: body.attendees || null,
+    totalAmountCents: (body as any).totalAmountCents ?? body.totalAmount ?? 0
+  };
+
+  const statements = repo.buildUpdateStatements(db, id, updateValues, body.items || []);
+
+  // Phase 3 : Écriture (db.batch)
+  await db.batch(statements as any);
+  return repo.getById(db, id) as any;
 }

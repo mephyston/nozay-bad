@@ -66,7 +66,7 @@ Ouvrir [BankStatementReconciliation.svelte](file:///Users/david/Lab/nozay-bad/li
    ```
 2. Supprimer la fonction d'aide `isRecurrentTx` :
    ```typescript
-   function isRecurrentTx(bt: BankTransaction) { ... }
+   function isRecurrentTx(bt: BankStatementLine) { ... }
    ```
 3. Simplifier le tracking dans l'effet `$effect` :
    - Supprimer : `const __ = smartFilter;`

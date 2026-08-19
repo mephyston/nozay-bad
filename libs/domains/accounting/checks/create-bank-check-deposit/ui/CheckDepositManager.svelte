@@ -16,7 +16,7 @@
     handleDeleteDeposit,
     handleClearDeposit
   } from './check-deposit-api';
-  import type { Check, CheckDeposit, Member, BankTransaction, SeasonOption } from './check-deposit-types';
+  import type { Check, CheckDeposit, Member, BankStatementLine, SeasonOption } from './check-deposit-types';
 
   interface Props {
     seasonId: string;
@@ -24,17 +24,16 @@
     checks: Check[];
     checkDeposits: CheckDeposit[];
     members: Member[];
-    pendingBankTransactions: BankTransaction[];
+    pendingBankTransactions: BankStatementLine[];
+    initialTab?: 'checks' | 'deposits';
+    hideTabs?: boolean;
   }
 
   let props: Props = $props();
   const depositState = createCheckDepositState(() => props);
 
-  $effect(() => {
-    const handleGlobalClick = () => { depositState.openDropdownId = null; };
-    window.addEventListener('click', handleGlobalClick);
-    return () => window.removeEventListener('click', handleGlobalClick);
-  });
+
+  import { onMount } from 'svelte';
 
   $effect(() => {
     if (depositState.showCreateDepositModal) {
@@ -42,6 +41,22 @@
       const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
       depositState.depositReference = `REMISE-${today}-${count}`;
     }
+  });
+
+  onMount(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'new-cheque' && !depositState.isClosed) {
+      depositState.showAddCheckModal = true;
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('action');
+      window.history.replaceState({}, '', newUrl);
+    }
+
+    const handleCustomEvent = () => {
+      if (!depositState.isClosed) depositState.showAddCheckModal = true;
+    };
+    window.addEventListener('open-new-cheque', handleCustomEvent);
+    return () => window.removeEventListener('open-new-cheque', handleCustomEvent);
   });
 
   const onPhotoSelected = (e: Event) => handlePhotoSelected(e, props.seasonId, depositState);
@@ -53,26 +68,35 @@
 </script>
 
 <div class="space-y-6">
-  <Tabs.Root bind:value={depositState.activeTab} class="space-y-6">
-    <CheckDepositTabsNav
-      {depositState}
-      checksCount={props.checks.filter(c => c.status === 'received').length}
-      checkDepositsCount={props.checkDeposits.length}
-    />
+  <Tabs.Root value={depositState.activeTab} onValueChange={(v) => depositState.activeTab = v as any} class="space-y-6">
+    {#snippet tabsNav()}
+      {#if !props.hideTabs}
+        <CheckDepositTabsNav
+          {depositState}
+          checksCount={props.checks.filter(c => c.status === 'received').length}
+          checkDepositsCount={props.checkDeposits.length}
+        />
+      {/if}
+    {/snippet}
 
     <Tabs.Content value="checks">
       <CheckDepositTable
         {depositState}
         seasonId={props.seasonId}
+        seasons={props.seasons}
         {onDeleteCheck}
+        {tabsNav}
       />
     </Tabs.Content>
 
     <Tabs.Content value="deposits">
       <CheckDepositListTable
         {depositState}
+        seasonId={props.seasonId}
+        seasons={props.seasons}
         checkDeposits={props.checkDeposits}
         {onDeleteDeposit}
+        {tabsNav}
       />
     </Tabs.Content>
   </Tabs.Root>

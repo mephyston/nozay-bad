@@ -55,6 +55,33 @@ Thumbs.db
 *.tsbuildinfo
 graph.json
 
-# Local superpowers brainstorm server state
-.superpowers/brainstorm/
+# Local dev secrets
+.dev.vars
+.dev.vars.*
 
+# Local databases
+*.sqlite
+*.sqlite3
+db.sqlite
+
+# Environment Variables
+.env
+.env.*
+
+# Storybook & régression visuelle Playwright
+storybook-static/
+playwright-report/
+test-results/
+tests/visual/**/*-actual.png
+tests/visual/**/*-diff.png
+
+# Références visuelles macOS locales (la CI Linux fait foi)
+tests/visual/**/*-darwin.png
+
+# Config wrangler de test générée (dérivée de apps/api/wrangler.json sans binding AI)
+apps/api/wrangler.test.json
+
+# Logs des serveurs de dev + dossier de travail temporaire
+dev.log
+**/dev.log
+scratch/

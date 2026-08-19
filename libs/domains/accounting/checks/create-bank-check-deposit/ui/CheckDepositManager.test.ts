@@ -64,7 +64,7 @@ describe('CheckDepositManager Component', () => {
             emitter: 'Dupont Marc',
             bank: 'Société Générale',
             memberId: 10,
-            transactionId: 100,
+            ledgerEntryId: 100,
             status: 'received',
             photoUrl: null,
             createdAt: '2026-07-13T12:00:00Z',
@@ -80,7 +80,7 @@ describe('CheckDepositManager Component', () => {
             date: '2026-07-12',
             amount: 30000,
             status: 'deposited',
-            bankTransactionId: null,
+            bankStatementLineId: null,
             createdAt: '2026-07-12T12:00:00Z'
           }
         ],
@@ -94,10 +94,10 @@ describe('CheckDepositManager Component', () => {
     expect(target.innerHTML).toContain('Chèques reçus');
     expect(target.innerHTML).toContain('1234567');
     expect(target.innerHTML).toContain('Dupont Marc');
-    expect(target.innerHTML).toContain('150.00 €');
+    expect(target.innerHTML).toContain('150,00');
   });
 
-  it('uses standard UI Checkbox components, has no font-mono usages for check reference/numbers, and has no-print class on Tabs.List', () => {
+  it('uses standard UI Checkbox components, has font-mono usages for amounts, and has no-print class on Tabs.List', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
@@ -118,7 +118,7 @@ describe('CheckDepositManager Component', () => {
             emitter: 'Dupont Marc',
             bank: 'Société Générale',
             memberId: 10,
-            transactionId: 100,
+            ledgerEntryId: 100,
             status: 'received',
             photoUrl: null,
             createdAt: '2026-07-13T12:00:00Z',
@@ -134,7 +134,7 @@ describe('CheckDepositManager Component', () => {
             date: '2026-07-12',
             amount: 30000,
             status: 'deposited',
-            bankTransactionId: null,
+            bankStatementLineId: null,
             createdAt: '2026-07-12T12:00:00Z'
           }
         ],
@@ -152,9 +152,9 @@ describe('CheckDepositManager Component', () => {
     const customCheckboxes = target.querySelectorAll('[role="checkbox"]');
     expect(customCheckboxes.length).toBeGreaterThan(0);
 
-    // 2. font-mono should be removed from all numbers, references, and inputs
-    const fontMonoElements = target.querySelectorAll('.font-mono');
-    expect(fontMonoElements.length).toBe(0);
+    // 2. font-outfit should be used on amount elements
+    const fontOutfitElements = target.querySelectorAll('.font-outfit');
+    expect(fontOutfitElements.length).toBeGreaterThan(0);
 
     // 3. no-print should be on the Tabs.List element
     const noPrintElements = target.querySelectorAll('.no-print');
@@ -182,7 +182,7 @@ describe('CheckDepositManager Component', () => {
     });
 
     const buttons = target.querySelectorAll('button');
-    const openButton = Array.from(buttons).find(btn => btn.textContent?.includes('Enregistrer un Chèque'));
+    const openButton = Array.from(buttons).find(btn => btn.textContent?.includes('Enregistrer un chèque'));
     expect(openButton).toBeDefined();
   });
 });

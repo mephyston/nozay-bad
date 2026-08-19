@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Dialog, Button, Table } from '@nba/ui';
+  import { Dialog, Button, Table, Amount } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
 
   interface Props {
@@ -41,7 +41,7 @@
           </div>
           <div>
             <span class="text-muted-foreground font-medium">Compte de dépôt :</span>
-            <span class="font-bold text-foreground block mt-0.5">Société Générale (Compte Courant)</span>
+            <span class="font-bold text-foreground block mt-0.5">Compte Courant</span>
           </div>
         </div>
 
@@ -69,8 +69,8 @@
                   <Table.Cell class="py-2 px-3 border-r border-border">
                     {check.memberName || '—'}
                   </Table.Cell>
-                  <Table.Cell class="py-2 px-3 font-semibold text-right text-foreground">
-                    {(check.amount / 100).toFixed(2)} €
+                  <Table.Cell class="py-2 px-3 text-right font-semibold text-foreground">
+                    <Amount cents={(check as any).amountCents ?? check.amount} />
                   </Table.Cell>
                 </Table.Row>
               {:else}
@@ -92,7 +92,7 @@
             </div>
             <div class="flex justify-between items-center text-sm border-t border-primary/20 pt-2">
               <span class="text-muted-foreground font-bold">MONTANT TOTAL DE LA REMISE :</span>
-              <span class="font-black text-primary text-lg">{(depositState.selectedDepositToView.amount / 100).toFixed(2)} €</span>
+              <Amount cents={(depositState.selectedDepositToView as any).amountCents ?? depositState.selectedDepositToView.amount} class="text-primary text-lg font-black" />
             </div>
           </div>
 

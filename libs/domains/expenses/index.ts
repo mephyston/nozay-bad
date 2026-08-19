@@ -13,3 +13,6 @@ export const expensesRouter = new Hono<{ Bindings: Bindings }>();
 expensesRouter.route('/', listExpensesRoute);
 expensesRouter.route('/', createExpenseRoute);
 expensesRouter.route('/', updateExpenseRoute);
+
+export { listExpenses } from './list/handler';
+export * from './shared/dashboard';

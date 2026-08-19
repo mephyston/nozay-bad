@@ -1,0 +1,21 @@
+{
+  "comment": "Migrations D1 livrées : append-only. Voir scripts/check-migrations-append-only.js",
+  "migrations": {
+    "0000_baseline.sql": "87f74fdad0a33e80",
+    "0001_seed_reference_data.sql": "1c16e4c5de6963b6",
+    "0002_schedules_events.sql": "5d92c21fb7fd397c",
+    "0003_schedules_events_permissions.sql": "e284f913c1f852c7",
+    "0004_order_payment_workflow.sql": "eb6aee1c465502a3",
+    "0005_posts_replace_announcements.sql": "556b78aa57f9b9ec",
+    "0006_canonical_post_categories.sql": "2581172936e777b4",
+    "0007_cms_site_settings.sql": "a45637fc792fccc2",
+    "0008_event_registrations.sql": "fc25e0362a9cf139",
+    "0009_wp_redirects_after_page_renames.sql": "07f7cd6bf7f72883",
+    "0010_teams.sql": "bfad891ee8025fc6",
+    "0011_member_payment_date.sql": "a9f1aa452649ed0d",
+    "0012_teams_calendar_details.sql": "2a340fa2b914dd5d",
+    "0013_drop_effective_week.sql": "31608f9786dd996f",
+    "0014_championship_rules_link.sql": "5e87e49977b1490e",
+    "0015_member_club_functions.sql": "4acd47d50fed0563"
+  }
+}

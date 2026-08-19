@@ -1,0 +1,323 @@
+---
+import { normalisePath, flattenBlocks, type BlockPayload } from '@nba/cms/public';
+import { verifyPreviewToken } from '@nba/preview';
+import { obfuscateEmails } from '@nba/html';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import BlockRenderer from '../components/blocks/BlockRenderer.astro';
+import Picture from '../components/Picture.astro';
+import {
+  resolvePublicRoute,
+  loadMedia,
+  mediaIdsInBlocks,
+  listScheduleSlots,
+  listPublishedPosts,
+  listClubEvents,
+  getSiteSettings,
+  type PostRow
+} from '../lib/cms';
+import { resolveEnv } from '../lib/request-context';
+import { pageTitle, pageDescription, absoluteUrl } from '../lib/seo';
+import { sportsClub, webSite, webPage, breadcrumbList, article, openingHours, sportsEvent } from '../lib/jsonld';
+import { socialLinks } from '../lib/social';
+import { HTML_CACHE_CONTROL } from '../lib/cache';
+
+const env = resolveEnv(Astro.locals);
+const siteUrl = env.SITE_URL ?? import.meta.env.PUBLIC_SITE_URL ?? Astro.url.origin;
+
+const path = normalisePath(Astro.url.pathname);
+
+// Aperçu : le jeton porte le chemin et une échéance. Vérifié ici, dans le Worker du
+// site — le domaine cms ne dépend pas de l'authentification.
+const isPreview = await verifyPreviewToken(
+  Astro.url.searchParams.get('preview'),
+  path,
+  env.PREVIEW_TOKEN_SECRET
+);
+
+const resolved = await resolvePublicRoute(env, path, isPreview);
+
+// Redirections et 410 sortent avant tout rendu : ce sont les ~70 URL héritées de
+// WordPress qui n'ont pas de contenu ici, et elles ne doivent rien coûter.
+if (resolved.kind === 'redirect') {
+  return Astro.redirect(resolved.toPath, resolved.statusCode as 301 | 302);
+}
+
+if (resolved.kind === 'gone') {
+  // 410 plutôt que 404 : la page a existé et n'a pas de successeur. Google la sort de
+  // son index bien plus vite ainsi.
+  return new Response('Cette page a été supprimée.', {
+    status: 410,
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+  });
+}
+
+if (resolved.kind === 'notfound') return new Response(null, { status: 404 });
+
+// Un aperçu n'est ni mis en cache ni indexé. Sans ces deux garde-fous, un lien partagé
+// par erreur ferait entrer un brouillon dans l'index de Google *et* dans le cache
+// partagé de Cloudflare, où il resterait visible de tous.
+if (isPreview) {
+  Astro.response.headers.set('Cache-Control', 'private, no-store');
+  Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+} else {
+  Astro.response.headers.set('Cache-Control', HTML_CACHE_CONTROL);
+}
+
+const post = resolved.kind === 'post' ? resolved.post : null;
+const postCover = resolved.kind === 'post' ? resolved.cover : null;
+const postCoverVariants = resolved.kind === 'post' ? resolved.coverVariants : [];
+const postCategories = resolved.kind === 'post' ? resolved.categories : [];
+const page = resolved.kind === 'page' ? resolved.page : null;
+const blocks = resolved.kind === 'page' ? resolved.blocks : [];
+
+// Les blocs ne portent que des identifiants : on résout les médias en une passe, pour
+// disposer des dimensions et des variantes au moment du rendu.
+const media = await loadMedia(env, mediaIdsInBlocks(blocks));
+
+/*
+  Ce que la page doit charger se décide sur les blocs **et ce qu'ils contiennent**.
+
+  Une colonne peut héberger un agenda, des actualités ou des créneaux. Un parcours
+  limité au premier niveau ne verrait rien à charger, et le bloc s'afficherait vide —
+  sans erreur, sans trace, et sans que rien ne le signale au rédacteur.
+*/
+const allBlocks = flattenBlocks(blocks);
+
+// Les créneaux ne sont chargés que si la page en affiche : une page de prose ne doit
+// pas payer un aller-retour inutile.
+const needsSchedule = allBlocks.some((block) => block.type === 'schedule');
+const slots = needsSchedule ? await listScheduleSlots(env) : [];
+
+// Même règle pour l'agenda : une seule lecture, quel que soit le nombre de blocs, et
+// aucune si la page n'en porte pas. Le filtrage par catégorie se fait au rendu — la
+// liste tient en quelques dizaines de lignes, la découper par requête coûterait plus
+// d'allers-retours qu'elle n'en économiserait.
+const needsEvents = allBlocks.some((block) => block.type === 'events');
+const clubEvents = needsEvents ? await listClubEvents(env) : [];
+
+// Idem pour les actualités : une page qui n'en affiche pas ne paie pas la requête.
+//
+// Une lecture par **catégorie** demandée, et non par bloc : deux blocs qui montrent la
+// même catégorie se partagent le chargement, à la plus haute des limites qu'ils
+// réclament. La clé vide est le cas « toutes catégories ».
+const feedNeeds = new Map<string, number>();
+for (const block of allBlocks) {
+  if (block.type !== 'posts_feed') continue;
+  const key = block.categorySlug ?? '';
+  feedNeeds.set(key, Math.max(feedNeeds.get(key) ?? 0, block.limit));
+}
+
+const feedPosts = new Map<string, PostRow[]>(
+  await Promise.all(
+    [...feedNeeds].map(
+      async ([category, limit]) =>
+        [
+          category,
+          (await listPublishedPosts(env, { limit, category: category || undefined })).posts
+        ] as const
+    )
+  )
+);
+
+const postsFor = (block: BlockPayload): PostRow[] =>
+  block.type === 'posts_feed' ? feedPosts.get(block.categorySlug ?? '') ?? [] : [];
+
+const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' });
+
+// --- Vue « actualité » --------------------------------------------------------
+const postPublished = post?.publishedAt ? new Date(post.publishedAt).toISOString() : null;
+const postDescription = post
+  ? (post.seoDescription ?? post.excerpt ?? `${post.title} — Nozay Badminton Association`)
+  : '';
+const postJsonLd = post
+  ? [
+      article(siteUrl, {
+        title: post.title,
+        description: postDescription,
+        path: post.path,
+        publishedAt: postPublished,
+        updatedAt: post.updatedAt ? new Date(post.updatedAt).toISOString() : null,
+        authorName: post.authorName
+      }),
+      breadcrumbList(siteUrl, [
+        { name: 'Accueil', path: '/' },
+        { name: 'Actualités', path: '/actualites/' },
+        { name: post.title, path: post.path }
+      ])
+    ]
+  : [];
+
+// --- Vue « page » -------------------------------------------------------------
+
+/**
+ * La page s'ouvre-t-elle sur un visuel pleine largeur ?
+ *
+ * Seuls comptent les blocs qui occupent toute la largeur en tête de page : un titre
+ * posé au-dessus y flotte sans rattachement. Une galerie ou une grille de liens sans
+ * bannière restent dans la colonne de texte, où le titre garde tout son sens.
+ */
+const firstBlock = blocks[0];
+const openingIsVisual =
+  firstBlock?.type === 'carousel' ||
+  (firstBlock?.type === 'cta_grid' && Boolean(firstBlock.backgroundMediaId));
+const pageDescriptionText = page ? pageDescription(page.seoDescription, blocks) : '';
+const pageJsonLd: unknown[] = [];
+if (page) {
+  const trail = [{ name: 'Accueil', path: '/' }];
+  if (page.path !== '/') trail.push({ name: page.title, path: page.path });
+  pageJsonLd.push(webPage(siteUrl, { title: page.title, description: pageDescriptionText, path: page.path }));
+  pageJsonLd.push(breadcrumbList(siteUrl, trail));
+  // Fiche du club sur la seule page d'accueil : c'est l'ancre que `organizer` et
+  // `publisher` visent ailleurs, et la répéter sur chaque page n'ajoute rien. Les
+  // comptes sociaux viennent des réglages, comme dans le pied de page.
+  // Le club d'abord, le site ensuite : `webSite.publisher` renvoie à la fiche du club
+  // par son `@id`, et la lire décrite avant d'être citée épargne un aller-retour à qui
+  // relit la source. L'ordre n'a pas de sens pour un analyseur — il en a pour nous.
+  if (page.path === '/') {
+    pageJsonLd.unshift(webSite(siteUrl));
+    pageJsonLd.unshift(sportsClub(siteUrl, socialLinks(await getSiteSettings(env)).map((l) => l.href)));
+  }
+  /*
+    Balisage des événements, repris de la page `/agenda/` supprimée.
+
+    Il vit désormais **avec le bloc** plutôt qu'avec une route : la page d'agenda est
+    composée depuis l'administration, et le balisage doit suivre le bloc partout où on
+    le pose — accueil comprise — et non rester attaché à une adresse.
+
+    Les événements décrits sont ceux que la page **affiche réellement** : décrire à
+    Google des rendez-vous absents de la page reviendrait à lui promettre un contenu
+    qu'il ne trouverait pas.
+    */
+  for (const block of allBlocks) {
+    if (block.type !== 'events') continue;
+    const today = new Date().toISOString().slice(0, 10);
+    const shown = clubEvents
+      .filter((event) => block.categories.length === 0 || block.categories.includes(event.category))
+      .filter((event) => (event.endsAt ?? event.startsAt).slice(0, 10) >= today)
+      .slice(0, block.limit);
+    for (const event of shown) {
+      pageJsonLd.push(
+        sportsEvent(siteUrl, {
+          title: event.title,
+          slug: event.slug,
+          startsAt: event.startsAt,
+          endsAt: event.endsAt,
+          venueLabel: event.venueLabel,
+          status: event.status,
+          description: event.descriptionHtml
+        })
+      );
+    }
+  }
+
+  // Les horaires rendent la page « Créneaux » exploitable par une machine.
+  if (slots.length > 0) {
+    pageJsonLd.push({
+      '@context': 'https://schema.org',
+      '@type': 'SportsClub',
+      name: 'Nozay Badminton Association',
+      openingHoursSpecification: openingHours(slots)
+    });
+  }
+}
+---
+
+{post && (
+  <BaseLayout
+    title={pageTitle(post.seoTitle, post.title)}
+    description={postDescription}
+    canonical={absoluteUrl(siteUrl, post.path)}
+    ogType="article"
+    noindex={isPreview}
+    jsonLd={postJsonLd}
+  >
+    <article class="mx-auto max-w-3xl px-4 py-10">
+      {/*
+        La couverture est l'élément LCP de l'article : pleine largeur, au-dessus de la
+        ligne de flottaison, chargée en priorité. C'est donc l'image du site qui gagne
+        le plus à être déclinée — elle servait jusqu'ici son original, quelle que soit
+        la taille de l'écran.
+
+        `sizes` : l'article tient dans `max-w-3xl`, la case se fige donc à 736 px une
+        fois la fenêtre assez large, et vaut la largeur utile en deçà.
+      */}
+      {postCover && (
+        <Picture
+          media={postCover}
+          variants={postCoverVariants}
+          priority={true}
+          sizes="(min-width: 800px) 736px, calc(100vw - 2rem)"
+          class="mb-6 aspect-[16/9] w-full rounded-lg object-cover"
+        />
+      )}
+      <h1 class="text-3xl font-semibold tracking-tight">{post.title}</h1>
+      {postCategories.length > 0 && (
+        <ul class="mt-3 flex flex-wrap gap-1.5">
+          {postCategories.map((category) => (
+            <li>
+              <a
+                href={`/actualites/?categorie=${category.slug}`}
+                class="bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-medium hover:underline"
+              >
+                {category.name}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p class="text-muted-foreground mt-2 text-sm">
+        {postPublished && (
+          <time datetime={postPublished}>{dateFormatter.format(new Date(postPublished))}</time>
+        )}
+        {postPublished && ' · '}
+        {post.authorName}
+      </p>
+      {/* Le corps a été assaini à l'écriture avec le profil du site public : c'est
+          l'API qui fait autorité, pas ce composant. */}
+      <div class="prose prose-neutral dark:prose-invert mt-6 max-w-none" set:html={obfuscateEmails(post.bodyHtml)} />
+      <p class="mt-10">
+        <a href="/actualites/" class="text-primary hover:underline">← Toutes les actualités</a>
+      </p>
+    </article>
+  </BaseLayout>
+)}
+
+{page && (
+  <BaseLayout
+    title={pageTitle(page.seoTitle, page.title)}
+    description={pageDescriptionText}
+    canonical={absoluteUrl(siteUrl, page.path)}
+    noindex={page.noindex || isPreview}
+    jsonLd={pageJsonLd}
+  >
+    {/*
+      Exactement un h1 par page, toujours — mais pas toujours à l'œil.
+
+      Trois cas, décidés par le premier bloc :
+       - `hero` porte son propre h1 : la page n'en ajoute aucun, sinon il y en aurait
+         deux (le défaut de l'ancien site) ;
+       - un bloc qui ouvre la page en pleine largeur (carrousel, bannière) rend un
+         titre posé au-dessus disgracieux : le h1 reste dans le HTML mais devient
+         invisible. Le retirer serait pire — les lecteurs d'écran naviguent de titre en
+         titre, et une page sans h1 les prive de point d'entrée. Le référencement, lui,
+         s'appuie sur `<title>`, qui est renseigné dans tous les cas ;
+       - partout ailleurs, le titre s'affiche normalement.
+    */}
+    {blocks[0]?.type !== 'hero' && (
+      <div class={openingIsVisual ? 'sr-only' : 'mx-auto max-w-5xl px-4 pt-10'}>
+        <h1 class:list={[!openingIsVisual && 'text-3xl font-semibold tracking-tight']}>{page.title}</h1>
+      </div>
+    )}
+    {blocks.map((block, index) => (
+      <BlockRenderer
+        block={block}
+        media={media}
+        slots={slots}
+        events={clubEvents}
+        posts={postsFor(block)}
+        postsByCategory={feedPosts}
+        opensPage={index === 0}
+      />
+    ))}
+  </BaseLayout>
+)}

@@ -1,128 +1,159 @@
 <script lang="ts">
-  import { Search, Link, MoreVertical, Trash2, FileText } from '@lucide/svelte';
-  import { Button, Table, Input, Card, Checkbox } from '@nba/ui';
+  import { Search, Link, MoreHorizontal, Trash2, FileText, Camera } from '@lucide/svelte';
+  import { Button, Input, Checkbox, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField, SearchableCombobox, softNavigate } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
+
+  import type { Snippet } from 'svelte';
+  import { onMount } from 'svelte';
 
   interface Props {
     depositState: CheckDepositState;
     seasonId: string;
+    seasons: any[];
     onDeleteCheck: (id: number) => Promise<void>;
+    tabsNav?: Snippet;
   }
 
-  let { depositState, seasonId, onDeleteCheck }: Props = $props();
+  let { depositState, seasonId, seasons, onDeleteCheck, tabsNav }: Props = $props();
 </script>
 
-<Card.Root class="overflow-hidden shadow-sm">
-  <Card.Content class="p-0">
-    <div class="p-4 border-b border-border flex items-center gap-3">
-      <Search class="h-4 w-4 text-muted-foreground" />
-      <Input
-        type="text"
-        placeholder="Rechercher par numéro, émetteur, banque, adhérent..."
-        bind:value={depositState.checkSearchQuery}
-        class="border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-none focus-visible:ring-transparent h-auto p-0 placeholder:text-muted-foreground text-foreground"
+<DataTable
+  data={depositState.filteredChecks}
+  emptyTitle="Aucun chèque"
+  emptyDescription="Aucun chèque en attente pour cette saison."
+>
+  {#snippet toolbarStart()}
+    {#if tabsNav}
+      {@render tabsNav()}
+    {/if}
+  {/snippet}
+  {#snippet toolbar()}
+    <DataTableToolbar
+      bind:searchValue={depositState.checkSearchQuery}
+      searchPlaceholder="Rechercher par numéro, émetteur, banque, adhérent..."
+      hasFilters={true}
+      filtersActive={!!seasonId && seasons.length > 0}
+    >
+      {#snippet filters()}
+          <FormField id="filter-season" label="Saison">
+          <SearchableCombobox
+            id="filter-season"
+            items={seasons.length > 0 ? seasons.map((s) => ({ label: s.name, value: String(s.code || s.id) })) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
+            value={seasonId}
+            onValueChange={(v) => { const val = String(v); const params = new URLSearchParams(window.location.search); params.set('season', val); softNavigate(`/admin/accounting/cheques?${params.toString()}`); }}
+          />
+        </FormField>
+      {/snippet}
+      {#snippet actions()}
+        {#if !depositState.isClosed}
+          <div class="flex flex-wrap justify-center sm:justify-end gap-2 w-full sm:w-auto">
+            <Button
+              onclick={() => depositState.showAddCheckModal = true}
+              class="flex items-center justify-center gap-2 h-9 w-full sm:w-auto"
+            >
+              <Camera class="h-4 w-4" />
+              Enregistrer un chèque
+            </Button>
+
+            {#if depositState.selectedChecksList.length > 0}
+              <Button
+                onclick={() => depositState.showCreateDepositModal = true}
+                class="flex items-center justify-center gap-2 h-9 w-full sm:w-auto bg-success/10 hover:bg-success/10 text-white animate-pulse"
+              >
+                <FileText class="h-4 w-4" />
+                Remise de {depositState.selectedChecksList.length} chèque(s) ({(depositState.totalSelectedAmount / 100).toFixed(2)} €)
+              </Button>
+            {/if}
+          </div>
+        {/if}
+      {/snippet}
+    </DataTableToolbar>
+  {/snippet}
+  {#snippet header()}
+    <Table.Head class="w-10">
+      <Checkbox
+        checked={depositState.filteredChecks.length > 0 && depositState.filteredChecks.every(c => depositState.selectedCheckIds[c.id])}
+        onCheckedChange={(val) => {
+          const checked = !!val;
+          depositState.filteredChecks.forEach(c => depositState.selectedCheckIds[c.id] = checked);
+        }}
+        disabled={depositState.isClosed}
       />
-    </div>
+    </Table.Head>
+    <Table.Head class="hidden md:table-cell">Date</Table.Head>
+    <Table.Head>N° Chèque</Table.Head>
+    <Table.Head class="hidden md:table-cell">Banque</Table.Head>
+    <Table.Head>Émetteur</Table.Head>
+    <Table.Head class="hidden lg:table-cell">Adhérent</Table.Head>
+    <Table.Head class="text-right">Montant</Table.Head>
+    <Table.Head class="text-right">Actions</Table.Head>
+  {/snippet}
 
-    <div class="overflow-x-auto min-h-[180px]">
-      <Table.Root class="w-full text-left border-collapse text-sm">
-        <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
-          <Table.Row>
-            <Table.Head class="p-4 w-10">
-              <Checkbox
-                checked={depositState.filteredChecks.length > 0 && depositState.filteredChecks.every(c => depositState.selectedCheckIds[c.id])}
-                onCheckedChange={(val) => {
-                  const checked = !!val;
-                  depositState.filteredChecks.forEach(c => depositState.selectedCheckIds[c.id] = checked);
-                }}
-                disabled={depositState.isClosed}
-              />
-            </Table.Head>
-            <Table.Head class="p-4">Date de réception</Table.Head>
-            <Table.Head class="p-4">N° Chèque</Table.Head>
-            <Table.Head class="p-4">Banque</Table.Head>
-            <Table.Head class="p-4">Émetteur</Table.Head>
-            <Table.Head class="p-4">Adhérent associé</Table.Head>
-            <Table.Head class="p-4 text-right">Montant</Table.Head>
-            <Table.Head class="p-4 text-right">Actions</Table.Head>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body class="divide-y divide-border">
-          {#each depositState.filteredChecks as check}
-            <Table.Row class="hover:bg-muted/50 transition-colors">
-              <Table.Cell class="p-4">
-                <Checkbox
-                  checked={!!depositState.selectedCheckIds[check.id]}
-                  onCheckedChange={(val) => {
-                    depositState.selectedCheckIds[check.id] = !!val;
-                  }}
-                  disabled={depositState.isClosed}
-                />
-              </Table.Cell>
-              <Table.Cell class="p-4 text-muted-foreground">
-                {new Date(check.createdAt).toLocaleDateString('fr-FR')}
-              </Table.Cell>
-              <Table.Cell class="p-4 font-medium">{check.number}</Table.Cell>
-              <Table.Cell class="p-4">{check.bank || '—'}</Table.Cell>
-              <Table.Cell class="p-4 font-medium">{check.emitter}</Table.Cell>
-              <Table.Cell class="p-4">
-                {#if check.memberId && check.memberName}
-                  <a
-                    href={`/admin/members/${check.memberLicence}?season=${seasonId}`}
-                    class="inline-flex items-center gap-1 bg-primary/10 hover:bg-primary/20 text-primary px-2.5 py-1 rounded-md text-xs font-semibold transition-colors"
-                  >
-                    <Link class="h-3 w-3" />
-                    {check.memberName}
-                  </a>
-                {:else}
-                  <span class="text-xs text-muted-foreground italic">Non associé</span>
-                {/if}
-              </Table.Cell>
-              <Table.Cell class="p-4 text-right font-semibold text-foreground">
-                {(check.amount / 100).toFixed(2)} €
-              </Table.Cell>
-              <Table.Cell class="p-4 text-right relative">
-                {#if !depositState.isClosed}
-                  <div class="inline-block text-left">
-                    <Button 
-                      variant="ghost"
-                      size="icon"
-                      onclick={(e) => depositState.toggleDropdown(`check-${check.id}`, e)} 
-                      class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
-                      aria-label="Actions"
-                    >
-                      <MoreVertical class="w-4 h-4" />
-                    </Button>
+  {#snippet row(check)}
+    <Table.Row>
+      <Table.Cell>
+        <Checkbox
+          checked={!!depositState.selectedCheckIds[check.id]}
+          onCheckedChange={(val) => {
+            depositState.selectedCheckIds[check.id] = !!val;
+          }}
+          disabled={depositState.isClosed}
+        />
+      </Table.Cell>
+      <Table.Cell class="hidden md:table-cell text-muted-foreground">
+        {new Date(check.createdAt).toLocaleDateString('fr-FR')}
+      </Table.Cell>
+      <Table.Cell class="font-medium">{check.number}</Table.Cell>
+      <Table.Cell class="hidden md:table-cell">{check.bank || '—'}</Table.Cell>
+      <Table.Cell class="font-medium">{check.emitter}</Table.Cell>
+      <Table.Cell class="hidden lg:table-cell">
+        {#if check.memberId && check.memberName}
+          <a
+            href={`/admin/members/${check.memberLicence}?season=${seasonId}`}
+            class="inline-flex items-center gap-1 bg-primary/10 hover:bg-primary/20 text-primary px-2.5 py-1 rounded-md text-xs font-semibold transition-colors"
+          >
+            <Link class="h-3 w-3" />
+            {check.memberName}
+          </a>
+        {:else}
+          <span class="text-xs text-muted-foreground italic">Non associé</span>
+        {/if}
+      </Table.Cell>
+      <Table.Cell class="text-right font-bold text-foreground">
+        <Amount cents={(check as any).amountCents ?? check.amount} />
+      </Table.Cell>
+      <Table.Cell class="text-right">
+        {#if !depositState.isClosed}
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              {#snippet child({ props })}
+                <Button 
+                  {...props}
+                  aria-haspopup="true"
+                  size="icon"
+                  variant="ghost"
+                >
+                  <MoreHorizontal class="h-4 w-4" />
+                  <span class="sr-only">Toggle menu</span>
+                </Button>
+              {/snippet}
+            </DropdownMenu.Trigger>
 
-                    {#if depositState.openDropdownId === `check-${check.id}`}
-                      <div class="absolute right-4 mt-1 w-32 bg-popover border border-border rounded-lg shadow-lg z-50 py-1 text-left divide-y divide-border animate-in fade-in duration-100">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onclick={() => onDeleteCheck(check.id)}
-                          class="w-full justify-start rounded-none px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 font-semibold flex items-center gap-1.5 cursor-pointer border-0 bg-transparent"
-                        >
-                          <Trash2 class="w-3.5 h-3.5" />
-                          Supprimer
-                        </Button>
-                      </div>
-                    {/if}
-                  </div>
-                {:else}
-                  <span class="text-xs text-muted-foreground italic">Aucune</span>
-                {/if}
-              </Table.Cell>
-            </Table.Row>
-          {:else}
-            <Table.Row>
-              <Table.Cell colspan={8} class="text-center py-12 text-muted-foreground">
-                <FileText class="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
-                Aucun chèque en attente pour cette saison.
-              </Table.Cell>
-            </Table.Row>
-          {/each}
-        </Table.Body>
-      </Table.Root>
-    </div>
-  </Card.Content>
-</Card.Root>
+            <DropdownMenu.Content align="end">
+              <DropdownMenu.Label>Actions</DropdownMenu.Label>
+              <DropdownMenu.Item
+                onclick={() => onDeleteCheck(check.id)}
+                class="text-destructive focus:text-destructive cursor-pointer"
+              >
+                <Trash2 class="w-3.5 h-3.5 mr-2" />
+                Supprimer
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        {:else}
+          <span class="text-xs text-muted-foreground italic">Aucune</span>
+        {/if}
+      </Table.Cell>
+    </Table.Row>
+  {/snippet}
+</DataTable>

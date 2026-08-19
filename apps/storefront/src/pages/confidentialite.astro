@@ -1,0 +1,131 @@
+---
+import Layout from '../layouts/Layout.astro';
+import MobileNav from '../components/MobileNav.svelte';
+
+// Page publique (accessible sans connexion — voir l'allow-list du middleware).
+const lastUpdate = 'août 2026';
+
+// La barre de navigation n'est posée que pour un visiteur connecté : elle pointe
+// vers des écrans authentifiés, qui renverraient un visiteur anonyme vers le login.
+const session = Astro.locals.session;
+---
+
+<Layout title="Politique de confidentialité - Nozay Badminton Association" description="Politique de confidentialité de l'association Nozay Badminton, détaillant la collecte et le traitement des données personnelles des adhérents.">
+  <main class="flex-1 w-full">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 py-10 pb-28 md:pb-10">
+      <a href="/" class="inline-flex items-center gap-2 mb-6">
+        <img src="/logo.png" alt="Logo" class="h-7 w-7 object-contain" />
+        <span class="font-bold text-sm text-foreground tracking-tight">Nozay Badminton Association</span>
+      </a>
+
+      <h1 class="text-2xl font-bold text-foreground">Politique de confidentialité</h1>
+      <p class="text-sm text-muted-foreground mt-1">Dernière mise à jour : {lastUpdate}</p>
+
+      <div class="mt-8 space-y-8 text-sm leading-relaxed text-foreground">
+        <section class="space-y-2">
+          <h2 class="text-lg font-semibold">1. Responsable du traitement</h2>
+          <p class="text-muted-foreground">
+            Le responsable du traitement des données est <strong class="text-foreground">Nozay Badminton Association</strong>,
+            association loi 1901, dont le siège est situé <strong class="text-foreground">Mairie de Nozay, 91620 NOZAY</strong>.
+            Pour toute question relative à vos données : <a class="email-protect text-primary hover:underline" data-u="tresorier" data-d="nozaybad.fr" href="#">notre adresse email</a>.
+          </p>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-semibold">2. Données collectées et finalités</h2>
+          <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
+            <li><strong class="text-foreground">Identité et coordonnées</strong> (nom, prénom, numéro de licence, email, téléphone, date de naissance, coordonnées des représentants légaux pour les mineurs) — gestion de l'adhésion au club.</li>
+            <li><strong class="text-foreground">Adresse email et code à usage unique (OTP)</strong> — authentification à l'espace adhérent (connexion sans mot de passe).</li>
+            <li><strong class="text-foreground">Adresse IP et données techniques de requête</strong> — sécurité, prévention des abus et bon fonctionnement du service.</li>
+            <li><strong class="text-foreground">Commandes boutique et notes de frais</strong> — traitement des demandes soumises via l'espace adhérent.</li>
+          </ul>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-semibold">3. Base légale</h2>
+          <p class="text-muted-foreground">
+            Les traitements reposent sur l'<strong class="text-foreground">exécution du contrat d'adhésion</strong> (gestion des membres, commandes,
+            notes de frais) et sur l'<strong class="text-foreground">intérêt légitime</strong> de l'association (authentification et sécurité de l'espace adhérent).
+          </p>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-semibold">4. Destinataires et sous-traitants</h2>
+          <p class="text-muted-foreground">Vos données sont accessibles aux membres habilités du bureau/CA de l'association et aux prestataires techniques suivants :</p>
+          <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
+            <li><strong class="text-foreground">Cloudflare, Inc.</strong> — hébergement de l'application, exécution serveur (Workers), stockage temporaire (KV) et protection anti-robots (Turnstile). Traite notamment les requêtes et adresses IP.</li>
+            <li>
+              <strong class="text-foreground">Resend (Resend, Inc.)</strong> — envoi des emails de connexion (codes OTP). Ce prestataire est situé
+              <strong class="text-foreground">aux États-Unis</strong> : l'envoi implique un <strong class="text-foreground">transfert de données hors Union européenne</strong>,
+              encadré par les <strong class="text-foreground">clauses contractuelles types</strong> de la Commission européenne (accord de traitement / DPA de Resend).
+            </li>
+          </ul>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-semibold">5. Durées de conservation</h2>
+          <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
+            <li>Codes de connexion (OTP) : quelques minutes (expiration automatique).</li>
+            <li>Données d'adhérent : le temps de l'adhésion et des saisons concernées, puis archivage/suppression selon les obligations de l'association.</li>
+            <li>Journaux techniques et données de sécurité : durée courte, à des fins de diagnostic et de prévention des abus.</li>
+          </ul>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-semibold">6. Cookies et traceurs</h2>
+          <p class="text-muted-foreground">
+            Le site n'utilise que des cookies et stockages <strong class="text-foreground">strictement nécessaires</strong> à son fonctionnement, exemptés de consentement (aucune bannière requise) :
+          </p>
+          <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
+            <li><strong class="text-foreground">Cookie de session</strong> — vous garde connecté à votre espace adhérent.</li>
+            <li><strong class="text-foreground">Cookie temporaire de connexion</strong> — nécessaire à l'envoi et à la vérification du code reçu par email (supprimé après connexion).</li>
+            <li><strong class="text-foreground">Sécurité anti-robots</strong> (Cloudflare Turnstile) — protège les formulaires, sans suivi publicitaire.</li>
+            <li><strong class="text-foreground">Préférence d'affichage</strong> (thème clair/sombre) — enregistrée localement dans votre navigateur.</li>
+          </ul>
+          <p class="text-muted-foreground">
+            Le site <strong class="text-foreground">n'utilise aucun cookie de mesure d'audience, de publicité ou de suivi tiers</strong>. En conséquence, aucune bannière de consentement n'est nécessaire.
+          </p>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-semibold">7. Vos droits</h2>
+          <p class="text-muted-foreground">
+            Conformément au Règlement général sur la protection des données (RGPD), vous disposez d'un droit d'<strong class="text-foreground">accès</strong>,
+            de <strong class="text-foreground">rectification</strong>, d'<strong class="text-foreground">effacement</strong>, de <strong class="text-foreground">limitation</strong>,
+            d'<strong class="text-foreground">opposition</strong> et de <strong class="text-foreground">portabilité</strong> de vos données.
+            Pour les exercer, écrivez à <a class="email-protect text-primary hover:underline" data-u="tresorier" data-d="nozaybad.fr" href="#">notre adresse email</a>.
+          </p>
+          <p class="text-muted-foreground">
+            Vous pouvez également introduire une réclamation auprès de la <strong class="text-foreground">CNIL</strong> (Commission nationale de l'informatique et des libertés) — <a href="https://www.cnil.fr" target="_blank" rel="noopener" class="text-primary hover:underline">www.cnil.fr</a>.
+          </p>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-semibold">8. Modifications</h2>
+          <p class="text-muted-foreground">
+            La présente politique peut être mise à jour. La date de dernière mise à jour figure en haut de page.
+          </p>
+        </section>
+      </div>
+
+      <footer class="border-t border-border mt-12 pt-6 text-center text-xs text-muted-foreground">
+        {!session && (
+          <p class="mb-2"><a href="/" class="text-primary hover:underline">Retour à l'accueil</a></p>
+        )}
+        <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+      </footer>
+    </div>
+  </main>
+
+  {session && <MobileNav currentPath="/confidentialite" />}
+
+  <script is:inline>
+    // Assemble l'email côté client : l'adresse n'apparaît pas dans le HTML statique
+    // (anti-moissonnage par les bots) mais reste cliquable pour les humains.
+    document.querySelectorAll('.email-protect').forEach(function (el) {
+      var addr = el.getAttribute('data-u') + '@' + el.getAttribute('data-d');
+      el.setAttribute('href', 'mailto:' + addr);
+      el.textContent = addr;
+    });
+  </script>
+</Layout>

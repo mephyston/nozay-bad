@@ -1,0 +1,85 @@
+---
+import type { MemberPost } from '../lib/posts';
+import { previewOf } from '../lib/posts';
+import { mediaUrl } from '../lib/media';
+
+interface Props {
+  post: MemberPost;
+  /** Première carte au-dessus de la ligne de flottaison : image chargée sans délai. */
+  priority?: boolean;
+}
+
+const { post, priority = false } = Astro.props;
+
+/**
+ * Une actualité **résumée** : titre, image, date, premiers mots.
+ *
+ * C'est la carte de l'accueil du site public, reprise pour l'accueil de l'espace
+ * adhérent. La différence tient à la destination du lien : le site public renvoie vers
+ * la page de l'article, que l'espace adhérent n'a pas — ses actualités se lisent en
+ * entier dans la liste. Le clic mène donc à l'ancre de l'article dans « Actualités ».
+ *
+ * Cette destination n'est pas un pis-aller : une actualité **réservée** n'existe pas
+ * sur le site public, et pointer vers son chemin public donnerait un lien mort.
+ */
+const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' });
+const published = post.publishedAt
+  ? new Date(typeof post.publishedAt === 'number' ? post.publishedAt * 1000 : post.publishedAt)
+  : null;
+
+const preview = previewOf(post);
+const coverSrc = post.cover ? mediaUrl(post.cover.key) : null;
+---
+
+{/*
+  Toute la carte est cliquable via le lien du titre étendu en overlay : la cible reste
+  un seul lien pour le lecteur d'écran, là où envelopper la carte entière dupliquerait
+  l'annonce du titre, de la date et du texte dans un même intitulé.
+*/}
+<article class="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
+  {coverSrc && (
+    <div class="aspect-[16/9] overflow-hidden bg-muted">
+      <img
+        src={coverSrc}
+        alt={post.cover!.alt}
+        width={post.cover!.width ?? undefined}
+        height={post.cover!.height ?? undefined}
+        loading={priority ? 'eager' : 'lazy'}
+        decoding={priority ? 'sync' : 'async'}
+        fetchpriority={priority ? 'high' : undefined}
+        class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+      />
+    </div>
+  )}
+
+  <div class="flex flex-1 flex-col p-4">
+    {(post.categories ?? []).length > 0 && (
+      <ul class="mb-2 flex flex-wrap gap-1.5">
+        {post.categories!.map((category) => (
+          <li class="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+            {category.name}
+          </li>
+        ))}
+      </ul>
+    )}
+
+    <h3 class="text-base font-semibold leading-snug tracking-tight text-foreground">
+      {/* `after:absolute inset-0` : la zone cliquable couvre la carte, le lien reste unique. */}
+      <a href={`/actualites#${post.slug}`} class="after:absolute after:inset-0 hover:underline">
+        {post.title}
+      </a>
+    </h3>
+
+    {published && (
+      <p class="mt-1 text-sm text-muted-foreground">
+        <time datetime={published.toISOString()}>{dateFormatter.format(published)}</time>
+      </p>
+    )}
+
+    {preview && <p class="mt-2 line-clamp-3 text-sm text-muted-foreground">{preview}</p>}
+
+    <span class="mt-3 inline-block text-sm font-medium text-primary group-hover:underline">
+      Lire la suite <span aria-hidden="true">→</span>
+    </span>
+  </div>
+</article>

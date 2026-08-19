@@ -48,7 +48,14 @@ function getDeclaredVars() {
             if (obj.vars) Object.keys(obj.vars).forEach(k => declared.add(k));
             if (Array.isArray(obj.kv_namespaces)) obj.kv_namespaces.forEach(kv => kv.binding && declared.add(kv.binding));
             if (Array.isArray(obj.d1_databases)) obj.d1_databases.forEach(d1 => d1.binding && declared.add(d1.binding));
+            if (Array.isArray(obj.r2_buckets)) obj.r2_buckets.forEach(r2 => r2.binding && declared.add(r2.binding));
+            if (Array.isArray(obj.queues?.producers)) obj.queues.producers.forEach(q => q.binding && declared.add(q.binding));
             if (Array.isArray(obj.services)) obj.services.forEach(s => s.binding && declared.add(s.binding));
+            // Bindings déclarés en objet et non en tableau : un seul par worker. Sans
+            // eux, `c.env.IMAGES` et `c.env.AI` passent pour des variables oubliées et
+            // la vérification échoue alors que la déclaration est bien là.
+            if (obj.images?.binding) declared.add(obj.images.binding);
+            if (obj.ai?.binding) declared.add(obj.ai.binding);
             if (obj.env) Object.values(obj.env).forEach(envObj => extractFromObj(envObj));
           };
 

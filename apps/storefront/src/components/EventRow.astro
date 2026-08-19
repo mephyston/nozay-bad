@@ -1,0 +1,122 @@
+---
+import type { AgendaEvent } from '../lib/agenda';
+
+interface Props {
+  event: AgendaEvent;
+  /** Contenu ajouté sous l'événement — l'encart d'inscription, en pratique. */
+}
+
+const { event } = Astro.props;
+
+/**
+ * Un événement, tel qu'il se lit partout dans l'espace adhérent.
+ *
+ * Extrait de `AgendaCard` le jour où la page `/agenda` a eu besoin de la même ligne :
+ * une troisième copie de la pastille de date et de ses règles d'accessibilité aurait
+ * fini par diverger des deux autres.
+ */
+const CATEGORY_LABELS: Record<AgendaEvent['category'], string> = {
+  competition: 'Compétition',
+  interclubs: 'Interclubs',
+  tournoi: 'Tournoi',
+  stage: 'Stage',
+  vie_du_club: 'Vie du club',
+  assemblee: 'Assemblée'
+};
+
+/**
+ * Trois familles de couleur, et non une par catégorie — la même règle que l'agenda du
+ * site public, pour que les deux écrans se lisent pareil. La teinte porte la *nature*
+ * du rendez-vous ; la catégorie exacte reste écrite en toutes lettres, donc personne
+ * n'a besoin de la couleur pour lire l'agenda.
+ */
+const FAMILY: Record<AgendaEvent['category'], 'jeu' | 'formation' | 'club'> = {
+  competition: 'jeu',
+  interclubs: 'jeu',
+  tournoi: 'jeu',
+  stage: 'formation',
+  vie_du_club: 'club',
+  assemblee: 'club'
+};
+
+const FAMILY_CLASS: Record<string, string> = {
+  jeu: 'bg-primary/10 text-primary',
+  formation: 'bg-info/10 text-info',
+  club: 'bg-success/10 text-success'
+};
+
+/** Les dates sont stockées en heure locale sans fuseau : les relire telles quelles. */
+const parse = (value: string) => new Date(`${value}:00`);
+
+const dayNumber = new Intl.DateTimeFormat('fr-FR', { day: 'numeric' });
+const monthShort = new Intl.DateTimeFormat('fr-FR', { month: 'short' });
+const weekdayShort = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' });
+const time = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
+const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' });
+
+const start = parse(event.startsAt);
+const end = event.endsAt ? parse(event.endsAt) : null;
+// Un événement qui déborde sur un autre jour affiche ses deux dates ; sinon seule
+// l'heure de fin, qui suffit.
+const sameDay = end !== null && end.toDateString() === start.toDateString();
+---
+
+<div class="flex items-stretch gap-3 sm:gap-4">
+  {/*
+    Pastille de date : le jour et le mois, en gros. C'est ce qu'on cherche dans un
+    agenda — « c'est quand ? » — avant même de lire le titre. La pastille est masquée
+    aux lecteurs d'écran, qui reçoivent la date complète juste après : « 14 févr. »
+    découpé en trois lignes se lit mal à voix haute.
+  */}
+  <div
+    class:list={[
+      'flex w-14 shrink-0 flex-col items-center justify-center self-start rounded-lg py-1.5',
+      FAMILY_CLASS[FAMILY[event.category] ?? 'club']
+    ]}
+    aria-hidden="true"
+  >
+    <span class="text-xs font-medium uppercase leading-none opacity-80">{weekdayShort.format(start)}</span>
+    <span class="text-2xl font-bold leading-tight">{dayNumber.format(start)}</span>
+    <span class="text-xs font-medium uppercase leading-none opacity-80">{monthShort.format(start)}</span>
+  </div>
+
+  <div class="min-w-0 flex-1">
+    <h3 class="text-base font-semibold leading-snug text-foreground">
+      {event.externalUrl ? (
+        <a href={event.externalUrl} target="_blank" rel="noopener noreferrer" class="hover:underline">
+          {event.title}
+        </a>
+      ) : (
+        event.title
+      )}
+    </h3>
+
+    <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+      <span class="sr-only">{fullDate.format(start)}</span>
+      {event.allDay ? <span>Toute la journée</span> : (
+        <span>
+          {time.format(start)}
+          {end && sameDay && ` – ${time.format(end)}`}
+        </span>
+      )}
+      {end && !sameDay && <span>jusqu'au {fullDate.format(end)}</span>}
+      {event.venueLabel && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>{event.venueLabel}</span>
+        </>
+      )}
+    </p>
+
+    <span
+      class:list={[
+        'mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium',
+        FAMILY_CLASS[FAMILY[event.category] ?? 'club']
+      ]}
+    >
+      {CATEGORY_LABELS[event.category] ?? event.category}
+    </span>
+
+    <slot />
+  </div>
+</div>

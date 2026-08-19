@@ -1,9 +1,30 @@
 {
   "name": "nozay-bad",
-  "version": "0.0.0",
+  "version": "1.0.0-beta.96",
   "license": "MIT",
   "scripts": {
-    "test": "vitest"
+    "prepare": "git config core.hooksPath .githooks || true",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit",
+    "check:env": "node scripts/check-env-declarations.js",
+    "check:schema": "node scripts/check-schema-integrity.js",
+    "check:migrations": "node scripts/check-migrations-append-only.js",
+    "check:nx-deps": "node scripts/check-nx-deps.js",
+    "dev:api": "wrangler dev --config apps/api/wrangler.json --port 8787",
+    "dev:admin": "nx dev admin",
+    "dev:storefront": "nx dev storefront",
+    "dev:website": "nx dev website",
+    "logs:admin": "cd apps/admin && astro dev logs --follow",
+    "logs:storefront": "cd apps/storefront && astro dev logs --follow",
+    "logs:website": "cd apps/website && astro dev logs --follow",
+    "gen:pwa-icons": "node scripts/generate-pwa-icons.mjs",
+    "gen:website-logos": "node scripts/generate-website-logos.mjs",
+    "backfill:media-variants": "node scripts/backfill-media-variants.mjs",
+    "storybook": "storybook dev -p 6006 --no-open",
+    "build-storybook": "storybook build",
+    "test:visual": "playwright test",
+    "test:visual:update": "playwright test --update-snapshots",
+    "gen:vapid-keys": "node scripts/generate-vapid-keys.mjs"
   },
   "private": true,
   "type": "module",
@@ -11,38 +32,94 @@
     "@astrojs/check": "^0.9.9",
     "@cloudflare/vitest-pool-workers": "^0.18.7",
     "@cloudflare/workers-types": "^5.20260707.1",
+    "@lucide/svelte": "^1.27.0",
     "@nx/eslint-plugin": "^23.0.1",
     "@nx/js": "23.0.1",
     "@nx/workspace": "23.0.1",
+    "@playwright/test": "^1.62.1",
+    "@semantic-release/changelog": "^7.0.0",
+    "@semantic-release/git": "^11.0.1",
+    "@storybook/addon-svelte-csf": "^5.1.2",
+    "@storybook/addon-themes": "^10.5.5",
+    "@storybook/svelte-vite": "^10.5.5",
+    "@sveltejs/vite-plugin-svelte": "^7.2.0",
+    "@types/node": "^26.1.1",
+    "@vite-pwa/astro": "^1.2.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.10.0",
+    "eslint-plugin-svelte": "^3.22.0",
+    "fast-xml-parser": "^5.10.1",
+    "globals": "^17.7.0",
     "jsdom": "^26.0.0",
     "nx": "23.0.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "semantic-release": "^25.0.8",
+    "sharp": "^0.35.3",
+    "storybook": "^10.5.5",
+    "svelte-eslint-parser": "^1.8.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.63.0",
+    "vite-plugin-pwa": "^1.3.0",
     "vitest": "^4.1.10",
+    "workbox-precaching": "^7.4.1",
+    "workbox-window": "^7.4.1",
     "wrangler": "^4.107.0"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.1.1",
     "@astrojs/svelte": "^9.0.1",
+    "@fontsource-variable/outfit": "^5.3.0",
     "@hono/typebox-validator": "^0.3.3",
     "@internationalized/date": "^3.12.2",
-    "@lucide/svelte": "^1.24.0",
     "@sinclair/typebox": "^0.34.52",
+    "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.2",
     "astro": "^7.0.6",
     "bits-ui": "^2.18.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
+    "fflate": "^0.8.3",
     "hono": "^4.12.28",
     "jose": "^6.2.3",
     "mode-watcher": "^1.1.0",
+    "pdf-lib": "^1.17.1",
     "svelte": "^5.56.4",
+    "svelte-sonner": "^1.1.1",
     "tailwind-merge": "^3.6.0",
     "tailwind-variants": "^3.2.2",
     "tailwindcss": "^4.3.2",
     "tailwindcss-animate": "^1.0.7",
     "vaul-svelte": "^0.3.2"
+  },
+  "release": {
+    "branches": [
+      "main",
+      {
+        "name": "staging",
+        "prerelease": "beta"
+      }
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/changelog",
+      [
+        "@semantic-release/npm",
+        {
+          "npmPublish": false
+        }
+      ],
+      [
+        "@semantic-release/git",
+        {
+          "assets": [
+            "package.json",
+            "CHANGELOG.md"
+          ],
+          "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+        }
+      ]
+    ]
   }
 }

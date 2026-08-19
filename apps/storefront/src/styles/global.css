@@ -3,6 +3,9 @@
 @source "../../../../libs/**/*.ts";
 
 @plugin "tailwindcss-animate";
+/* Corps des actualités : le même rendu typographique que sur le site public, pour un
+   contenu qui est littéralement le même. */
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:where(.dark, .dark *));
 @custom-variant data-open (&[data-state=open]);
@@ -23,12 +26,18 @@
   --muted-foreground: rgb(110, 109, 104);
   --accent: rgb(233, 230, 220);
   --accent-foreground: rgb(40, 38, 27);
-  --destructive: rgb(20, 20, 19);
+  --destructive: rgb(220, 38, 38);
   --destructive-foreground: rgb(255, 255, 255);
+  --success: rgb(16, 185, 129);
+  --success-foreground: rgb(255, 255, 255);
+  --warning: rgb(245, 158, 11);
+  --warning-foreground: rgb(255, 255, 255);
+  --info: rgb(59, 130, 246);
+  --info-foreground: rgb(255, 255, 255);
   --border: rgb(218, 217, 212);
   --input: rgb(180, 178, 167);
   --ring: rgb(201, 100, 66);
-  --font-sans: Outfit, sans-serif;
+  --font-sans: 'Outfit Variable', Outfit, sans-serif;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: Geist Mono, ui-monospace, monospace;
   --radius: 0.75rem;
@@ -51,10 +60,16 @@
   --accent-foreground: rgb(245, 244, 238);
   --destructive: rgb(239, 68, 68);
   --destructive-foreground: rgb(255, 255, 255);
+  --success: rgb(5, 150, 105);
+  --success-foreground: rgb(255, 255, 255);
+  --warning: rgb(217, 119, 6);
+  --warning-foreground: rgb(255, 255, 255);
+  --info: rgb(37, 99, 235);
+  --info-foreground: rgb(255, 255, 255);
   --border: rgb(62, 62, 56);
   --input: rgb(82, 81, 74);
   --ring: rgb(217, 119, 87);
-  --font-sans: Outfit, sans-serif;
+  --font-sans: 'Outfit Variable', Outfit, sans-serif;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: Geist Mono, ui-monospace, monospace;
 }
@@ -76,6 +91,12 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -97,4 +118,26 @@
   body {
     @apply bg-background text-foreground font-sans;
   }
+
+  /* En PWA installée, le pied de page (copyright + liens légaux) fait doublon avec
+     le chrome de l'application. Les liens légaux restent atteignables à tout moment
+     via l'onglet « Plus » de la navigation mobile. */
+  @media (display-mode: standalone) {
+    footer {
+      display: none;
+    }
+  }
+}
+
+/*
+  Centrage d'un bloc de texte riche, posé par l'éditeur d'administration.
+
+  Écrit à la main, et non repris de l'utilitaire Tailwind de même rôle : la classe
+  arrive dans du HTML **stocké**, injecté par `set:html`, que le balayage de Tailwind
+  ne voit jamais. Un `text-center` n'y serait donc pas généré. Règle recopiée du site
+  public — les deux applications affichent le même contenu, et `nba-center` est la
+  seule classe que la liste blanche de `@nba/html` laisse passer.
+*/
+.nba-center {
+  text-align: center;
 }

@@ -31,9 +31,9 @@ describe('InitialBalancesConfig Component', () => {
     const cashInput = target.querySelector('#cash-initial') as HTMLInputElement;
 
     expect(currentInput).not.toBeNull();
-    expect(currentInput.value).toBe('1000.00');
-    expect(savingsInput.value).toBe('2000.00');
-    expect(cashInput.value).toBe('300.00');
+    expect(currentInput.value.replace(/\s/g, '').replace(',', '.')).toBe('1000.00');
+    expect(savingsInput.value.replace(/\s/g, '').replace(',', '.')).toBe('2000.00');
+    expect(cashInput.value.replace(/\s/g, '').replace(',', '.')).toBe('300.00');
   });
 
   it('disables inputs and displays closed alert when season is closed', () => {

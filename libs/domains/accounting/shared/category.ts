@@ -5,6 +5,9 @@ export class Category {
   hideInExpenses: boolean;
   receiptCode?: string | null;
   expenseCode?: string | null;
+  receiptAccountClassId?: number | null;
+  expenseAccountClassId?: number | null;
+  active: boolean;
 
   constructor(data: {
     id: number;
@@ -13,6 +16,9 @@ export class Category {
     hideInExpenses?: boolean;
     receiptCode?: string | null;
     expenseCode?: string | null;
+    receiptAccountClassId?: number | null;
+    expenseAccountClassId?: number | null;
+    active?: boolean;
   }) {
     this.id = data.id;
     this.adminLabel = data.adminLabel;
@@ -20,6 +26,9 @@ export class Category {
     this.hideInExpenses = !!data.hideInExpenses;
     this.receiptCode = data.receiptCode ?? null;
     this.expenseCode = data.expenseCode ?? null;
+    this.receiptAccountClassId = data.receiptAccountClassId ?? null;
+    this.expenseAccountClassId = data.expenseAccountClassId ?? null;
+    this.active = data.active ?? true;
   }
 
   canBeExpense(): boolean {
@@ -34,6 +43,9 @@ export interface CategoryLike {
   hideInExpenses?: boolean;
   receiptCode?: string | null;
   expenseCode?: string | null;
+  receiptAccountClassId?: number | null;
+  expenseAccountClassId?: number | null;
+  active?: boolean;
 }
 
 export interface CategoryMap {
@@ -71,7 +83,7 @@ export function resolveCategoryMap(categories: CategoryLike[]): CategoryMap {
     sponsoring: findId(['sponsoring', 'partenariat'], 'sponsoring'),
     subventions: findId(['subvention'], 'subventions'),
     actionsJeunes: findId(['jeune', 'jeunes', 'activités jeunes'], 'actionsJeunes'),
-    tournoisSenior: findId(['tournois senior', 'tournoi senior', 'tournois'], 'tournoisSenior'),
+    tournoisSenior: findId(['tournois senior', 'tournoi senior', 'tournois', 'tournoi', 'hivers', 'eté', 'dep'], 'tournoisSenior'),
     buvette: findId(['buvette', 'buvettes', 'événement', 'evenement'], 'buvette'),
     cordage: findId(['cordage', 'cordages'], 'cordage'),
     volants: findId(['volant', 'volants'], 'volants'),

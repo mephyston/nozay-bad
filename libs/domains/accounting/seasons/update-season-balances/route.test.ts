@@ -13,21 +13,21 @@ describe('UpdateSeasonBalances Route', () => {
     const res = await updateSeasonBalancesRoute.request('http://localhost/25-26/balances', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify([{ accountId: 'invalid_account', initialBalance: 100 }])
+      body: JSON.stringify([{ accountId: 1, initialBalanceCents: 'not_a_number' }])
     }, { DB: mockD1 as any });
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error).toContain('Validation failed');
   });
 
   it('should return 200 on valid body', async () => {
     const { mockD1 } = await setupMockDb();
-    vi.mocked(updateSeasonBalances).mockResolvedValue(undefined);
+    vi.mocked(updateSeasonBalances).mockResolvedValue(undefined as any);
     
     const payload = [
-      { accountId: 'current' as const, initialBalance: 1500 },
-      { accountId: 'savings' as const, initialBalance: 5000 }
+      { accountId: 1, initialBalanceCents: 150000 },
+      { accountId: 2, initialBalanceCents: 500000 }
     ];
 
     const res = await updateSeasonBalancesRoute.request('http://localhost/25-26/balances', {
@@ -36,8 +36,9 @@ describe('UpdateSeasonBalances Route', () => {
       body: JSON.stringify(payload)
     }, { DB: mockD1 as any });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(updateSeasonBalances).toHaveBeenCalledWith(expect.anything(), '25-26', payload);
   });
 });
+

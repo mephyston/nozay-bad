@@ -18,7 +18,7 @@ describe('CreateAccountClass Route', () => {
     const res = await createAccountClassRoute.request('http://localhost/account-classes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: '60', label: 'Achats', type: 'depense' })
+      body: JSON.stringify({ code: '99', label: 'Achats', type: 'depense' })
     }, { DB: mockD1 as any });
     expect(res.status).toBe(200);
   });

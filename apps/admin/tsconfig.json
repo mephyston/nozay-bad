@@ -6,14 +6,28 @@
       "@nba/db": ["../../libs/shared/db/src/index.ts"],
       "@nba/db/test-utils": ["../../libs/shared/db/src/test-utils.ts"],
       "@nba/ui": ["../../libs/shared/ui/src/index.ts"],
+      "@nba/api-client": ["../../libs/shared/api-client/src/index.ts"],
+      "@nba/security-headers": ["../../libs/shared/security-headers/src/index.ts"],
+      "@nba/runtime-env": ["../../libs/shared/runtime-env/src/index.ts"],
       "@nba/members-api": ["../../libs/domains/members/index.ts"],
       "@nba/accounting-api": ["../../libs/domains/accounting/index.ts"],
       "@nba/expenses-api": ["../../libs/domains/expenses/index.ts"],
       "@nba/shop-api": ["../../libs/domains/shop/index.ts"],
+      "@nba/iam": ["../../libs/domains/iam/index.ts"],
+      "@nba/iam/schema": ["../../libs/domains/iam/shared/schema.ts"],
+      "@nba/iam-ui": ["../../libs/domains/iam/shared/ui.ts"],
       "@nba/members-ui": ["../../libs/domains/members/shared/ui.ts"],
       "@nba/accounting-ui": ["../../libs/domains/accounting/shared/ui.ts"],
       "@nba/expenses-ui": ["../../libs/domains/expenses/shared/ui.ts"],
-      "@nba/shop-ui": ["../../libs/domains/shop/shared/ui.ts"]
+      "@nba/shop-ui": ["../../libs/domains/shop/shared/ui.ts"],
+      "@nba/notifications-api": ["../../libs/domains/notifications/index.ts"],
+      "@nba/notifications-ui": ["../../libs/domains/notifications/shared/ui.ts"],
+      "@nba/cms-ui": ["../../libs/domains/cms/shared/ui.ts"],
+      "@nba/preview": ["../../libs/shared/preview/src/index.ts"],
+      "@nba/schedules-ui": ["../../libs/domains/schedules/shared/ui.ts"],
+      "@nba/events-ui": ["../../libs/domains/events/shared/ui.ts"],
+      "@nba/teams-api": ["../../libs/domains/teams/index.ts"],
+      "@nba/teams-ui": ["../../libs/domains/teams/shared/ui.ts"]
     }
   }
 }

@@ -1,0 +1,169 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+import { resolveEnv } from '../../lib/request-context';
+import { listPublishedPosts, listPostCategories } from '../../lib/cms';
+import { absoluteUrl } from '../../lib/seo';
+import { itemList, breadcrumbList } from '../../lib/jsonld';
+import { HTML_CACHE_CONTROL } from '../../lib/cache';
+
+const env = resolveEnv(Astro.locals);
+const siteUrl = env.SITE_URL ?? import.meta.env.PUBLIC_SITE_URL ?? Astro.url.origin;
+
+const PER_PAGE = 12;
+const requested = Number(Astro.url.searchParams.get('page') ?? '1');
+const currentPage = Number.isSafeInteger(requested) && requested > 0 ? requested : 1;
+const category = Astro.url.searchParams.get('categorie') ?? undefined;
+
+const [{ posts, total }, categories] = await Promise.all([
+  listPublishedPosts(env, { limit: PER_PAGE, offset: (currentPage - 1) * PER_PAGE, category }),
+  listPostCategories(env)
+]);
+
+const lastPage = Math.max(1, Math.ceil(total / PER_PAGE));
+
+/*
+  Au-delà de la dernière page, il n'y a rien à montrer.
+
+  Rendre un 200 vide invitait un robot à énumérer `?page=` sans fin — et chaque essai
+  créait sa propre entrée de cache, pour une page sans contenu. Une 404 arrête
+  l'énumération, et le cache ne retient ces réponses qu'un quart d'heure.
+
+  La première page est exclue de la règle : un site sans aucune actualité publiée doit
+  afficher sa liste vide, pas une erreur.
+*/
+if (currentPage > lastPage && currentPage > 1) return new Response(null, { status: 404 });
+const activeCategory = categories.find((c) => c.slug === category);
+const title = activeCategory ? `Actualités — ${activeCategory.name}` : 'Actualités';
+
+/**
+ * Décompte de ce qui est affiché, sous le titre.
+ *
+ * `total` est celui du filtre courant, et non celui du site : il dit donc combien
+ * d'articles porte la rubrique choisie, ce qu'aucune pastille ne peut dire tant que
+ * l'API ne renvoie pas de décompte par rubrique.
+ */
+const countLabel = (() => {
+  const plural = total > 1 ? 's' : '';
+  if (activeCategory) return `${total} actualité${plural} dans « ${activeCategory.name} »`;
+  return `${total} actualité${plural} publiée${plural}`;
+})();
+
+/** « Toutes » en tête, puis les rubriques : une seule liste, un seul rendu. */
+const chips = [
+  { label: 'Toutes', href: '/actualites/', active: !category },
+  ...categories.map((c) => ({
+    label: c.name,
+    href: `/actualites/?categorie=${c.slug}`,
+    active: category === c.slug
+  }))
+];
+
+const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' });
+const linkTo = (page: number) => {
+  const params = new URLSearchParams();
+  if (category) params.set('categorie', category);
+  if (page > 1) params.set('page', String(page));
+  const query = params.toString();
+  return `/actualites/${query ? `?${query}` : ''}`;
+};
+
+Astro.response.headers.set('Cache-Control', HTML_CACHE_CONTROL);
+
+const jsonLd = [
+  itemList(siteUrl, posts.map((p) => ({ name: p.title, path: p.path }))),
+  breadcrumbList(siteUrl, [{ name: 'Accueil', path: '/' }, { name: 'Actualités', path: '/actualites/' }])
+];
+---
+
+<BaseLayout
+  title={title}
+  description="Les actualités du club : compétitions, animations, vie de l'association."
+  canonical={absoluteUrl(siteUrl, '/actualites/')}
+  jsonLd={jsonLd}
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <h1 class="text-3xl font-semibold tracking-tight">Actualités</h1>
+    <p class="text-muted-foreground mt-2 text-sm">{countLabel}</p>
+
+    {/*
+      Rubriques en pastilles, et non en liste de liens.
+
+      Sept intitulés posés côte à côte en texte courant se lisaient comme une phrase :
+      rien ne disait qu'il s'agissait de filtres, et la rubrique active — un simple
+      changement de couleur — passait inaperçue. La pastille donne une cible tactile
+      franche et fait de l'état actif un aplat, visible d'un coup d'œil.
+
+      `aria-current="page"` porte cet état pour les lecteurs d'écran : la couleur seule
+      ne le dit pas, et le contraste ne suffit jamais à lui seul.
+    */}
+    {categories.length > 0 && (
+      <nav aria-label="Rubriques" class="mt-6">
+        <ul class="flex flex-wrap gap-2">
+          {chips.map((chip) => (
+            <li>
+              <a
+                href={chip.href}
+                aria-current={chip.active ? 'page' : undefined}
+                class:list={[
+                  'inline-flex items-center rounded-full border px-3.5 py-3 text-sm transition-colors md:py-1.5',
+                  chip.active
+                    ? 'border-primary bg-primary text-primary-foreground font-medium'
+                    : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
+                ]}
+              >
+                {chip.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )}
+
+    {posts.length === 0 ? (
+      <div class="mt-8">
+        <p class="text-muted-foreground">
+          {activeCategory
+            ? `Aucune actualité dans « ${activeCategory.name} » pour le moment.`
+            : 'Aucune actualité pour le moment.'}
+        </p>
+        {activeCategory && (
+          <a href="/actualites/" class="text-primary mt-2 inline-flex min-h-11 items-center hover:underline">
+            Voir toutes les actualités
+          </a>
+        )}
+      </div>
+    ) : (
+      <ul class="mt-8 grid gap-5 sm:grid-cols-2">
+        {/*
+          `sizes` explicite : les archives tiennent dans `max-w-3xl` et s'arrêtent à
+          deux colonnes, là où le fil d'accueil dispose de `max-w-5xl` et en tient
+          trois. Passé 800 px de large la case est figée à ~358 px — plus étroite que
+          ce que suppose le défaut de `PostCard`, qui ferait donc télécharger une
+          déclinaison plus lourde que nécessaire.
+        */}
+        {posts.map((post, index) => (
+          <li class="flex">
+            <PostCard
+              post={post}
+              priority={index < 2}
+              sizes="(min-width: 800px) 358px, (min-width: 640px) 50vw, calc(100vw - 2rem)"
+            />
+          </li>
+        ))}
+      </ul>
+    )}
+
+    {lastPage > 1 && (
+      <nav aria-label="Pagination" class="mt-8 flex items-center justify-between text-sm">
+        {currentPage > 1
+          ? <a href={linkTo(currentPage - 1)} class="text-primary -ml-2 inline-flex min-h-11 items-center px-2 hover:underline">← Précédentes</a>
+          : <span></span>}
+        <span class="text-muted-foreground">Page {currentPage} sur {lastPage}</span>
+        {currentPage < lastPage
+          ? <a href={linkTo(currentPage + 1)} class="text-primary -mr-2 inline-flex min-h-11 items-center px-2 hover:underline">Suivantes →</a>
+          : <span></span>}
+      </nav>
+    )}
+  </div>
+</BaseLayout>

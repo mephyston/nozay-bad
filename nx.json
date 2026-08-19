@@ -8,7 +8,10 @@
       "!{projectRoot}/**/*.test.ts",
       "!{projectRoot}/**/*.spec.ts"
     ],
-    "sharedGlobals": []
+    "sharedGlobals": [
+      "{workspaceRoot}/vitest.config.ts",
+      "{workspaceRoot}/vitest.setup.ts"
+    ]
   },
   "targetDefaults": {
     "build": { "cache": true, "inputs": ["production", "^production"] },

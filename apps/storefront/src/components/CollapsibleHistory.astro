@@ -1,0 +1,77 @@
+---
+interface Props {
+  title: string;
+  /** Effectif affiché à côté du titre. Omis pour une section qui n'est pas une liste. */
+  count?: number;
+  /** Ouvert d'emblée. Réservé à l'information qu'on vient consulter en priorité. */
+  open?: boolean;
+  /**
+   * Une phrase disant ce que la section contient. Elle reste lisible section repliée :
+   * c'est ce qui permet de choisir quoi ouvrir sans tout ouvrir. Même rôle et même
+   * rendu que la description des cartes de démarches, au-dessus, pour que les deux
+   * familles de blocs se lisent de la même façon.
+   */
+  description?: string;
+}
+
+const { title, count, open = false, description } = Astro.props;
+---
+
+<!-- `<details>` natif plutôt qu'une île hydratée : cette page est rendue côté
+     serveur, un simple repli n'a pas à embarquer de JavaScript pour fonctionner. -->
+<details class="rounded-xl border border-border bg-card overflow-hidden" open={open}>
+  <summary
+    class="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer hover:bg-accent/50 transition-colors"
+  >
+    <div class="flex items-start gap-2.5 min-w-0">
+      <!-- Pictogramme de la section, aligné sur celui des cartes de démarches. -->
+      <span class="text-primary shrink-0 mt-0.5"><slot name="icon" /></span>
+      <div class="min-w-0">
+        <h2 class="text-sm font-semibold text-foreground">
+          {title}
+          <!-- Espace insécable : Astro mange l'espace entre deux expressions, et un
+               effectif renvoyé à la ligne seul se lirait mal. -->
+          {count !== undefined && <span class="font-medium text-muted-foreground">&nbsp;({count})</span>}
+        </h2>
+        {description && <p class="text-sm text-muted-foreground mt-1">{description}</p>}
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 shrink-0">
+      <!-- Emplacement d'un indicateur qui doit rester lisible section repliée : le repli
+           ne doit pas coûter l'information qu'on venait chercher. -->
+      <slot name="badge" />
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="chevron shrink-0 text-muted-foreground transition-transform duration-200"
+      >
+        <path d="m6 9 6 6 6-6"></path>
+      </svg>
+    </div>
+  </summary>
+
+  <div class="border-t border-border">
+    <slot />
+  </div>
+</details>
+
+<style>
+  /* Le marqueur natif casserait l'alignement de l'en-tête. */
+  summary {
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  details[open] .chevron {
+    transform: rotate(180deg);
+  }
+</style>

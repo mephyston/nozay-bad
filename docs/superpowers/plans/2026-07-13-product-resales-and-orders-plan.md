@@ -48,7 +48,7 @@
       enum: ['virement', 'cheque', 'especes', 'labaz', 'ancv', 'pass_sport', 'ticket_loisir', 'up_loisir'] 
     }).notNull(),
     status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
-    transactionId: integer('transaction_id').references(() => transactionsTable.id),
+    ledgerEntryId: integer('ledger_entry_id').references(() => ledgerEntriesTable.id),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
   });
   ```
@@ -237,7 +237,7 @@
       .set({ stock: product.stock - order.quantity })
       .where(eq(productsTable.id, product.id));
 
-    const tx = await db.insert(transactionsTable).values({
+    const tx = await db.insert(ledgerEntriesTable).values({
       seasonId: order.seasonId,
       type: 'recette',
       accountId: 'current',
@@ -251,7 +251,7 @@
     }).returning().get();
 
     const updatedOrder = await db.update(ordersTable)
-      .set({ status: 'approved', transactionId: tx.id })
+      .set({ status: 'approved', ledgerEntryId: tx.id })
       .where(eq(ordersTable.id, id))
       .returning().get();
 
@@ -288,7 +288,7 @@
     expect(appRes.status).toBe(200);
     const json = await appRes.json() as any;
     expect(json.data.status).toBe('approved');
-    expect(json.data.transactionId).toBeDefined();
+    expect(json.data.ledgerEntryId).toBeDefined();
   });
   ```
 

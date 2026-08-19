@@ -35,9 +35,38 @@ export class MemberNotFoundError extends AppError {
   }
 }
 
+export class InsufficientStockError extends AppError {
+  constructor(productName?: string) {
+    super(
+      productName
+        ? `Stock insuffisant pour ${productName}.`
+        : "Stock insuffisant pour cet article.",
+      400
+    );
+    this.name = 'InsufficientStockError';
+  }
+}
+
 export class ConcurrentModificationError extends AppError {
   constructor(message = 'Commande déjà traitée (conflit concurrent)') {
     super(message, 409);
     this.name = 'ConcurrentModificationError';
+  }
+}
+
+export class ShopCategoryNotConfiguredError extends AppError {
+  constructor(label?: string) {
+    const message = label
+      ? `La famille de produit '${label}' n'est pas rattachée à une catégorie comptable.`
+      : "Famille de produit non rattachée à une catégorie comptable.";
+    super(message, 400);
+    this.name = 'ShopCategoryNotConfiguredError';
+  }
+}
+
+export class MemberNotEligibleError extends AppError {
+  constructor(message = "L'adhérent n'est pas éligible pour commander en boutique (statut non validé ou saison incompatible).") {
+    super(message, 400);
+    this.name = 'MemberNotEligibleError';
   }
 }

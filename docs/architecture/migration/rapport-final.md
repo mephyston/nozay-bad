@@ -54,14 +54,14 @@ Le domaine le plus volumineux, entièrement découpé :
   - **Saisons** : `seasons` (budgets, soldes initiaux, rapports AG).
   - **Transactions** : `transactions` (journal des écritures, suppression logique de pointage).
   - **Chèques & Remises** : `checks` (chèques reçus, OCR vision IA, remises de chèques, encaissement/pointage de remise).
-  - **Banque & Rapprochements** : `bank`, `import-bank-statement` (import OFX), `reconcile-bank-transaction` (pointage IA de relevé avec factures / adhérents).
+  - **Banque & Rapprochements** : `bank`, `import-bank-statement` (import OFX), `reconcile-bank-statement-line` (pointage IA de relevé avec factures / adhérents).
   - **Catégories** : `categories` (administration des catégories et plan comptable, extrait suite à l'audit final de `routes/config.ts`).
 
 ---
 
 ## 3. Découpage de l'UI Svelte
 Les composants volumineux ont été restructurés et déplacés :
-* [`BankStatementReconciliation.svelte`](file:///libs/domains/accounting/reconcile-bank-transaction/ui/BankStatementReconciliation.svelte) est découpé avec 3 composants dans la tranche `reconcile-bank-transaction/ui/` :
+* [`BankStatementReconciliation.svelte`](file:///libs/domains/accounting/reconcile-bank-statement-line/ui/BankStatementReconciliation.svelte) est découpé avec 3 composants dans la tranche `reconcile-bank-statement-line/ui/` :
   - `ReconciliationSummary.svelte`
   - `MatchTransaction.svelte`
   - `CreateTransactionFromBankLine.svelte`

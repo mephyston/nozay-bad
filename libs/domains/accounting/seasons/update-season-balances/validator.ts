@@ -2,7 +2,8 @@ import { Type } from '@sinclair/typebox';
 
 export const updateSeasonBalancesSchema = Type.Array(
   Type.Object({
-    accountId: Type.Union([Type.Literal('current'), Type.Literal('savings'), Type.Literal('cash')]),
-    initialBalance: Type.Number()
+    accountId: Type.Union([Type.Integer({ minimum: 1 }), Type.String()]),
+    initialBalanceCents: Type.Optional(Type.Integer())
   })
 );
+

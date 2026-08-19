@@ -1,4 +1,4 @@
-import { type Db } from '@nba/db';
+import { type Db, AppError } from '@nba/db';
 import { isSeasonClosed } from '@nba/members-api';
 import { SeasonClosedError } from '../../shared/errors';
 import { UpdateSeasonBalancesRepository } from './repository';
@@ -8,6 +8,13 @@ export async function updateSeasonBalances(db: Db, seasonId: UpdateSeasonBalance
   if (await isSeasonClosed(db, seasonId)) {
     throw new SeasonClosedError('La saison est clôturée. Impossible de modifier ses soldes initiaux.');
   }
+
   const repo = new UpdateSeasonBalancesRepository();
-  await repo.updateBalances(db, seasonId, body);
+  const numericSeasonId = await repo.resolveSeasonId(db, seasonId);
+  if (!numericSeasonId) {
+    throw new AppError('Saison introuvable', 404);
+  }
+
+  await repo.updateBalances(db, numericSeasonId, body);
 }
+

@@ -5,7 +5,7 @@ import { UpdateAccountClassCode, UpdateAccountClassInput, UpdateAccountClassOutp
 export async function updateAccountClass(db: Db, code: UpdateAccountClassCode, body: UpdateAccountClassInput): Promise<UpdateAccountClassOutput> {
   const repo = new UpdateAccountClassRepository();
   return repo.updateAccountClass(db, code, {
-    label: body.label?.trim(),
+    label: body.label ? body.label.trim() : undefined,
     type: body.type
-  });
+  } as any);
 }

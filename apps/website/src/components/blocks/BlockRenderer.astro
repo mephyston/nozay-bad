@@ -1,0 +1,63 @@
+---
+import type { BlockPayload, CmsMediaRow, CmsMediaVariantRow } from '@nba/cms/public';
+import type { ScheduleSlotView, PostRow, ClubEventView } from '../../lib/cms';
+import RichText from './RichText.astro';
+import Hero from './Hero.astro';
+import CtaGrid from './CtaGrid.astro';
+import Carousel from './Carousel.astro';
+import Embed from './Embed.astro';
+import PdfLink from './PdfLink.astro';
+import Gallery from './Gallery.astro';
+import Schedule from './Schedule.astro';
+import PostsFeed from './PostsFeed.astro';
+import Columns from './Columns.astro';
+import Events from './Events.astro';
+import PersonCards from './PersonCards.astro';
+
+type MediaMap = Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
+
+interface Props {
+  block: BlockPayload;
+  media?: MediaMap;
+  slots?: ScheduleSlotView[];
+  posts?: PostRow[];
+  events?: ClubEventView[];
+  /**
+   * Actualités par catégorie demandée, transmises au seul bloc « Colonnes ».
+   *
+   * Un bloc imbriqué peut réclamer une autre catégorie que son voisin : la page ne peut
+   * pas aplatir le choix avant l'appel, comme elle le fait pour `posts`.
+   */
+  postsByCategory?: Map<string, PostRow[]>;
+  /** Ce bloc ouvre-t-il la page ? Seul le carrousel s'en sert, pour son titre. */
+  opensPage?: boolean;
+}
+const {
+  block,
+  media = new Map() as MediaMap,
+  slots = [],
+  posts = [],
+  events = [],
+  postsByCategory = new Map<string, PostRow[]>(),
+  opensPage = false
+} = Astro.props;
+---
+{/*
+  Un type sans rendu ne produit rien plutôt que de faire tomber la page : c'est le
+  comportement voulu le jour où un bloc plus récent que le déploiement apparaît en
+  base. Le test de couverture des blocs empêche que ce cas devienne durable.
+*/}
+{block.type === 'richtext' && <RichText block={block} />}
+{block.type === 'hero' && <Hero block={block} media={media} />}
+{block.type === 'cta_grid' && <CtaGrid block={block} media={media} />}
+{block.type === 'carousel' && <Carousel block={block} media={media} {opensPage} />}
+{block.type === 'pdf_link' && <PdfLink block={block} media={media} />}
+{block.type === 'gallery' && <Gallery block={block} media={media} />}
+{block.type === 'embed' && <Embed block={block} />}
+{block.type === 'schedule' && <Schedule block={block} slots={slots} />}
+{block.type === 'posts_feed' && <PostsFeed block={block} posts={posts} />}
+{block.type === 'columns' && (
+  <Columns block={block} media={media} slots={slots} events={events} postsByCategory={postsByCategory} />
+)}
+{block.type === 'events' && <Events block={block} events={events} />}
+{block.type === 'person_cards' && <PersonCards block={block} media={media} />}

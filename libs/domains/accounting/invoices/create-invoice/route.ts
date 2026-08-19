@@ -26,7 +26,7 @@ createInvoiceRoute.post(
     try {
       const data = await createInvoice(db, body);
       return c.json({ success: true, data });
-    } catch (err: unknown) {
+    } catch (err: any) {
       return c.json({ success: false, error: err.message }, 400);
     }
   }

@@ -5,7 +5,7 @@ Ce correctif introduit et intègre les 5 nouveaux agrégats métier d'accounting
 
 1. **Season (`season.ts`)** : modélise une saison. Règle : `isClosed()`, `isActive()`. Utilisé dans `close-season` pour empêcher de fermer une saison déjà close.
 2. **Check (`check.ts`)** : modélise un chèque de règlement. Règle : `canBeDeposited()`, `canBeCleared()`. Utilisé dans `create-bank-check-deposit` pour s'assurer que chaque chèque du lot est dans l'état attendu (`received` ou `pending`).
-3. **BankTransaction (`bank-transaction.ts`)** : modélise une transaction bancaire de relevé. Règle : `canBeReconciled()`. Utilisé dans `reconcile-bank-transaction` pour interdire le rapprochement d'écritures déjà rapprochées.
+3. **BankStatementLine (`bank-transaction.ts`)** : modélise une transaction bancaire de relevé. Règle : `canBeReconciled()`. Utilisé dans `reconcile-bank-statement-line` pour interdire le rapprochement d'écritures déjà rapprochées.
 4. **Category (`category.ts`)** : modélise une catégorie comptable. Utilisé dans `list-categories`.
 5. **AccountClass (`account-class.ts`)** : modélise une classe de compte. Utilisé dans `list-account-classes`.
 

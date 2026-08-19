@@ -1,4 +1,4 @@
-import { Check, CheckDeposit, Member, BankTransaction, SeasonOption, categoriesList } from './check-deposit-types';
+import { Check, CheckDeposit, Member, BankStatementLine, SeasonOption, categoriesList } from './check-deposit-types';
 
 export function createCheckDepositState(props: () => {
   seasonId: string;
@@ -6,23 +6,19 @@ export function createCheckDepositState(props: () => {
   checks: Check[];
   checkDeposits: CheckDeposit[];
   members: Member[];
-  pendingBankTransactions: BankTransaction[];
+  pendingBankTransactions: BankStatementLine[];
+  initialTab?: 'checks' | 'deposits';
+  hideTabs?: boolean;
 }) {
   const p = $derived(props());
 
-  let activeTab = $state<'checks' | 'deposits'>('checks');
+  let activeTab = $state<'checks' | 'deposits'>(p.initialTab || 'checks');
   const isClosed = $derived(p.seasons.find(s => s.id === p.seasonId)?.closed || false);
 
   // View / Print deposit slip states
   let showViewDepositModal = $state(false);
   let selectedDepositToView = $state<CheckDeposit | null>(null);
   const checksInViewDeposit = $derived(selectedDepositToView ? p.checks.filter(c => c.checkDepositId === selectedDepositToView!.id) : []);
-
-  let openDropdownId = $state<string | number | null>(null);
-  function toggleDropdown(id: string | number, e: MouseEvent) {
-    e.stopPropagation();
-    openDropdownId = openDropdownId === id ? null : id;
-  }
 
   // Add Check Form State
   let showAddCheckModal = $state(false);
@@ -55,14 +51,14 @@ export function createCheckDepositState(props: () => {
   });
 
   const categoryDisplayVal = $derived.by(() => {
-    const cat = categoriesList.find(c => c.id === checkCategory);
+    const cat = categoriesList.find((c: any) => c.id === checkCategory);
     return cat ? cat.name : '';
   });
 
   const filteredCategories = $derived.by(() => {
     if (!categorySearchQuery.trim()) return categoriesList;
     const q = categorySearchQuery.toLowerCase();
-    return categoriesList.filter(c => c.name.toLowerCase().includes(q));
+    return categoriesList.filter((c: any) => c.name.toLowerCase().includes(q));
   });
 
   const filteredMembers = $derived.by(() => {
@@ -125,8 +121,6 @@ export function createCheckDepositState(props: () => {
     get showViewDepositModal() { return showViewDepositModal; }, set showViewDepositModal(v) { showViewDepositModal = v; },
     get selectedDepositToView() { return selectedDepositToView; }, set selectedDepositToView(v) { selectedDepositToView = v; },
     get checksInViewDeposit() { return checksInViewDeposit; },
-    get openDropdownId() { return openDropdownId; }, set openDropdownId(v) { openDropdownId = v; },
-    toggleDropdown,
     get showAddCheckModal() { return showAddCheckModal; }, set showAddCheckModal(v) { showAddCheckModal = v; },
     get isAnalyzing() { return isAnalyzing; }, set isAnalyzing(v) { isAnalyzing = v; },
     get isSubmittingCheck() { return isSubmittingCheck; }, set isSubmittingCheck(v) { isSubmittingCheck = v; },

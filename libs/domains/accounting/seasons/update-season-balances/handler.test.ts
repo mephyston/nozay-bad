@@ -16,35 +16,36 @@ describe('updateSeasonBalances', () => {
 
   it('should execute successfully (nominal case)', async () => {
     // Arrange
-    const payload = { seasonId: '23-24', items: [] } as any;
+    const payload = [{ accountId: 1, initialBalanceCents: 150000 }];
     (isSeasonClosed as any).mockResolvedValue(false);
     
     const mockRepoInstance = {
-      updateBalances: vi.fn().mockResolvedValue(true)
+      resolveSeasonId: vi.fn().mockResolvedValue(1),
+      updateBalances: vi.fn().mockResolvedValue(undefined)
     };
     (vi.mocked(UpdateSeasonBalancesRepository) as any).mockImplementation(function() { return mockRepoInstance; });
 
     // Act
-    const args = [db, payload];
-    await (updateSeasonBalances as any)(...args);
+    await updateSeasonBalances(db, '25-26', payload);
 
     // Assert
-    
-    expect(mockRepoInstance.updateBalances).toHaveBeenCalled();
+    expect(mockRepoInstance.resolveSeasonId).toHaveBeenCalledWith(db, '25-26');
+    expect(mockRepoInstance.updateBalances).toHaveBeenCalledWith(db, 1, payload);
   });
 
-  it('should throw a business error', async () => {
+  it('should throw a business error if season is closed', async () => {
     // Arrange
-    const payload = { seasonId: '23-24', items: [] } as any;
+    const payload = [{ accountId: 1, initialBalanceCents: 150000 }];
     (isSeasonClosed as any).mockResolvedValue(true);
 
     const mockRepoInstance = {
-      updateBalances: vi.fn().mockRejectedValue(new Error('Business error'))
+      resolveSeasonId: vi.fn().mockResolvedValue(1),
+      updateBalances: vi.fn()
     };
     (vi.mocked(UpdateSeasonBalancesRepository) as any).mockImplementation(function() { return mockRepoInstance; });
 
     // Act & Assert
-    const args = [db, payload];
-    await expect((updateSeasonBalances as any)(...args)).rejects.toThrow();
+    await expect(updateSeasonBalances(db, '25-26', payload)).rejects.toThrow('La saison est clôturée');
   });
 });
+

@@ -5,7 +5,7 @@ import { env as cfEnv } from 'cloudflare:workers';
  * Compatible with Cloudflare Workers Free Tier (using Workers KV or process-global store).
  */
 
-export const DEFAULT_TURNSTILE_SITEVERIFY_URL = 'https://turnstile.cloudflare.com/turnstile/v0/siteverify';
+export const DEFAULT_TURNSTILE_SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
 export function getTurnstileSiteverifyUrl(): string {
   return (
@@ -53,7 +53,7 @@ export class SharedRateLimiter {
         await kv.put(key, JSON.stringify({ count: newCount, resetTime: stored.resetTime }), { expirationTtl: remainingTtl });
         return newCount > limit;
       } catch (err: any) {
-        console.error('[RateLimiter] Workers KV is rate limited or unavailable, degrading to in-memory store:', err);
+        console.warn('[RateLimiter] Workers KV is rate limited or unavailable, degrading to in-memory store:', err);
       }
     }
 
@@ -72,7 +72,7 @@ export class SharedRateLimiter {
       try {
         await kv.delete(key);
       } catch (err: any) {
-        console.error('[RateLimiter] Workers KV reset failed, degrading to in-memory store:', err);
+        console.warn('[RateLimiter] Workers KV reset failed, degrading to in-memory store:', err);
       }
     }
     this.memoryStore.delete(key);
@@ -85,7 +85,7 @@ export class SharedRateLimiter {
         const seen = await kv.get(key);
         if (seen) return true;
       } catch (err: any) {
-        console.error('[RateLimiter] Workers KV token check failed, degrading to in-memory store:', err);
+        console.warn('[RateLimiter] Workers KV token check failed, degrading to in-memory store:', err);
       }
     }
     const expiry = this.seenTokens.get(token);
@@ -102,7 +102,7 @@ export class SharedRateLimiter {
         const tokenTtl = Math.max(60, ttlSeconds);
         await kv.put(key, 'used', { expirationTtl: tokenTtl });
       } catch (err: any) {
-        console.error('[RateLimiter] Workers KV markTokenUsed failed, degrading to in-memory store:', err);
+        console.warn('[RateLimiter] Workers KV markTokenUsed failed, degrading to in-memory store:', err);
       }
     }
     this.seenTokens.set(token, Date.now() + ttlSeconds * 1000);
@@ -167,6 +167,14 @@ export async function verifyTurnstileToken(
       success: false,
       error: 'Erreur de configuration serveur (clé secrète Turnstile manquante).'
     };
+  }
+
+  // Bypass the network request entirely if using the official Cloudflare test secret key
+  // (dev/offline). On court-circuite AUSSI le contrôle de token à usage unique : le widget
+  // de test réémet un token identique, ce qui déclenchait « Token captcha déjà utilisé »
+  // au moindre retry en développement.
+  if (secretKey === '1x0000000000000000000000000000000AA') {
+    return { success: true };
   }
 
   if (await rateLimiter.hasTokenBeenUsed(token, kv)) {

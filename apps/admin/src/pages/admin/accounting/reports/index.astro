@@ -1,0 +1,87 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import AdminLayout from '../../../../components/AdminLayout.svelte';
+import { PageHeader } from '@nba/ui';
+import { env } from 'cloudflare:workers';
+import { createAdminApiClient } from '../../../../lib/api';
+
+const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
+const apiService = createAdminApiClient(Astro.locals);
+
+const requestedSeason = Astro.url.searchParams.get('season');
+const isExport = Astro.url.searchParams.get('export');
+
+if (isExport && requestedSeason) {
+  try {
+    const exportType = isExport === 'true' ? 'all' : isExport;
+    const exportRes = await apiService.fetch(`http://localhost/accounting/seasons/${requestedSeason}/export?type=${exportType}`);
+    if (exportRes.ok) {
+      return new Response(exportRes.body, {
+        headers: {
+          'Content-Type': exportRes.headers.get('Content-Type') || 'application/zip',
+          'Content-Disposition': exportRes.headers.get('Content-Disposition') || `attachment; filename="export-compta-${requestedSeason}.zip"`
+        }
+      });
+    }
+  } catch (err) {
+    console.error('Export failed', err);
+  }
+}
+---
+
+<Layout title="Rapports financiers - NBA 91">
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Rapports financiers" permissions={Astro.locals.user?.permissions || []}>
+    <div class="space-y-6">
+      <PageHeader
+        title="Rapports financiers"
+        description="Consultez les comptes de résultat, le bilan de trésorerie et gérez les budgets prévisionnels."
+      />
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <a
+          href="/admin/accounting/reports/income-statement"
+          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline relative overflow-hidden group"
+        >
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold text-foreground">Compte de Résultat</p>
+            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Consulter &rarr;</span>
+          </div>
+          <p class="text-xs text-muted-foreground pr-8">Consultez les produits et charges pour la saison.</p>
+        </a>
+        
+        <a
+          href="/admin/accounting/reports/analytics"
+          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline relative overflow-hidden group"
+        >
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold text-foreground">Suivi Analytique</p>
+            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Consulter &rarr;</span>
+          </div>
+          <p class="text-xs text-muted-foreground pr-8">Détail des recettes et dépenses par catégorie analytique.</p>
+        </a>
+
+        <a
+          href="/admin/accounting/reports/cash-flow"
+          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline relative overflow-hidden group"
+        >
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold text-foreground">Bilan de Trésorerie</p>
+            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Consulter &rarr;</span>
+          </div>
+          <p class="text-xs text-muted-foreground pr-8">Consultez les soldes initiaux et finaux des comptes financiers.</p>
+        </a>
+
+        <a
+          href="/admin/accounting/reports/forecast"
+          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline relative overflow-hidden group"
+        >
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold text-foreground">Budget Prévisionnel</p>
+            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Consulter &rarr;</span>
+          </div>
+          <p class="text-xs text-muted-foreground pr-8">Préparez et consultez le budget de la saison.</p>
+        </a>
+      </div>
+    </div>
+  </AdminLayout>
+</Layout>

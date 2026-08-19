@@ -8,6 +8,6 @@ export class CreateAccountClassRepository {
     type: 'recette' | 'depense';
     createdAt?: Date;
   }): Promise<any> {
-    return db.insert(accountClassesTable).values(values).returning().get();
+    return db.insert(accountClassesTable).values(values as any).returning().get();
   }
 }

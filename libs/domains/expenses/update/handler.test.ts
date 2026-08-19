@@ -20,7 +20,7 @@ vi.mock('./repository', () => {
 
 describe('approveExpense handler', () => {
   const db = {
-    transaction: vi.fn(async (cb) => cb(db)),
+    batch: vi.fn().mockResolvedValue([]),
   };
 
   beforeEach(() => {

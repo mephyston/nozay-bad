@@ -72,7 +72,8 @@ describe('Domain Architecture Validation', () => {
       }
 
       // Rule 1: A file outside members/ imports membersTable (except references of FK in schema.ts)
-      if (!isMembersDomain && !isSchemaFile) {
+      const isTestFile = filename.endsWith('.test.ts') || filename.endsWith('.spec.ts');
+      if (!isMembersDomain && !isSchemaFile && !isTestFile) {
         const hasMembersTable = /\bmembersTable\b/.test(content);
         expect(hasMembersTable).toBe(false);
       }
@@ -129,5 +130,148 @@ describe('Domain Architecture Validation', () => {
       }
       expect(isUsed).toBe(true);
     }
+  });
+});
+
+/**
+ * Invariants du modèle d'autorisation.
+ *
+ * Ces règles ne se relisent pas : elles portent sur l'absence de quelque chose, et
+ * une réapparition passerait inaperçue en revue. Chacune correspond à un défaut
+ * réellement constaté avant la bascule RBAC.
+ */
+/**
+ * `Astro.locals.runtime.env` a été retiré en Astro v6 : l'accès se fait par un
+ * accesseur qui **lève**, y compris derrière un `?.`. Le storefront s'y est brûlé une
+ * première fois — d'où `request-context.ts` — et le site public une seconde, avec des
+ * 500 sur toutes les pages qui touchaient l'API.
+ *
+ * La lecture reste tolérée pour compatibilité, mais elle doit être protégée : tout
+ * fichier qui y touche doit porter un `catch` et se rabattre sur `cloudflare:workers`.
+ */
+describe("Environnement d'exécution (Astro v6)", () => {
+  it('ne lit jamais locals.runtime.env sans repli', () => {
+    const violations: string[] = [];
+
+    for (const dir of ['apps/admin/src', 'apps/storefront/src', 'apps/website/src']) {
+      const root = path.resolve(__dirname, '..', dir);
+      if (!fs.existsSync(root)) continue;
+
+      for (const file of walkDir(root)) {
+        if (!/\.(ts|astro|svelte)$/.test(file)) continue;
+        const raw = fs.readFileSync(file, 'utf-8');
+        // Les commentaires mentionnent le piège : ils ne doivent pas le déclencher.
+        const code = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*(\/\/|\*).*$/gm, '');
+        if (!/runtime\??\.env/.test(code)) continue;
+        if (!/\bcatch\b/.test(code)) violations.push(path.relative(path.resolve(__dirname, '..'), file));
+      }
+    }
+
+    expect(
+      violations,
+      `lecture non protégée de locals.runtime.env — passer par resolveEnv() :\n${violations.join('\n')}`
+    ).toEqual([]);
+  });
+});
+
+describe('Autorisation (RBAC)', () => {
+  const ROOT = path.resolve(__dirname, '..');
+  const SEARCH_DIRS = [path.join(ROOT, 'apps'), path.join(ROOT, 'libs')];
+
+  function sourceFiles(): { path: string; content: string }[] {
+    const out: { path: string; content: string }[] = [];
+    for (const dir of SEARCH_DIRS) {
+      for (const file of walkDir(dir)) {
+        if (!/\.(ts|svelte|astro)$/.test(file)) continue;
+        if (file.includes('node_modules') || file.includes('/.wrangler/') || file.includes('/dist/')) continue;
+        out.push({ path: path.relative(ROOT, file), content: fs.readFileSync(file, 'utf-8') });
+      }
+    }
+    return out;
+  }
+
+  const files = sourceFiles();
+  /** Code de production seul : un test a le droit de forger l'en-tête pour prouver
+   *  qu'il n'accorde rien (cf. apps/api/src/authz/middleware.test.ts). */
+  const productionFiles = files.filter((f) => !/\.test\.ts$/.test(f.path));
+
+  it("ne transporte plus de permissions dans un en-tête HTTP", () => {
+    // `x-user-permissions` portait une décision d'autorisation au lieu d'une
+    // identité : l'autorisation vivait alors dans deux bases de code, et un proxy
+    // qui oublie de nettoyer les en-têtes entrants suffisait à escalader. Les seules
+    // occurrences admises sont les suppressions défensives.
+    const offenders = productionFiles
+      .filter((f) => f.content.includes('x-user-permissions'))
+      .filter((f) => !/delete\(['"]x-user-permissions['"]\)/.test(f.content))
+      .map((f) => f.path);
+    expect(offenders, `x-user-permissions réapparu dans :\n${offenders.join('\n')}`).toEqual([]);
+  });
+
+  it('ne réintroduit pas le test de permission à jokers', () => {
+    // `hasPermission` acceptait `accounting:*` mais pas l'inverse : cette asymétrie
+    // imposait des chaînes `A || B || C` à chaque point de contrôle, dont chacune
+    // était un endroit où une permission pouvait être oubliée.
+    const offenders = files.filter((f) => /\bhasPermission\s*\(/.test(f.content)).map((f) => f.path);
+    expect(offenders, `hasPermission réapparu dans :\n${offenders.join('\n')}`).toEqual([]);
+  });
+
+  it("n'autorise aucun domaine métier à dépendre du domaine iam", () => {
+    // Un domaine qui a besoin de savoir qui agit est en train de décider d'une
+    // autorisation, ce qui appartient à la seule table de routes de l'API.
+    const offenders = files
+      .filter((f) => f.path.startsWith('libs/domains/') && !f.path.startsWith('libs/domains/iam/'))
+      .filter((f) => /from ['"][^'"]*iam(\/|-ui|['"])/.test(f.content))
+      .map((f) => f.path);
+    expect(offenders, `dépendance vers iam dans :\n${offenders.join('\n')}`).toEqual([]);
+  });
+
+  it("n'appelle jamais createApiClient directement depuis une page admin", () => {
+    // Un appel sans identité serait refusé par l'API, mais passerait sur les routes
+    // ouvertes à tout compte : les pages doivent passer par createAdminApiClient.
+    const offenders = files
+      .filter((f) => f.path.startsWith('apps/admin/src/pages/'))
+      .filter((f) => /\bcreateApiClient\s*\(/.test(f.content))
+      .map((f) => f.path);
+    expect(offenders, `createApiClient appelé directement dans :\n${offenders.join('\n')}`).toEqual([]);
+  });
+});
+
+/**
+ * La surface publique d'un domaine suit-elle son vocabulaire ?
+ *
+ * `shared/public.ts` est ce qu'un Worker de rendu importe : le vocabulaire seul, sans
+ * faire entrer Hono ni Drizzle dans son paquet. Un type déclaré dans `shared/blocks.ts`
+ * et oublié dans ce barrel ne casse **rien** au premier abord — `import type` est effacé
+ * à la compilation, `tsc --noEmit` ne relit pas les fichiers `.astro`, et aucun
+ * `astro check` ne tourne en intégration. L'oubli s'est produit deux fois de suite, pour
+ * `ColumnsBlock` puis `EventsBlock`, et n'a été vu qu'à la lecture.
+ *
+ * Le contrôle porte sur les **sources** : un type TypeScript n'existe plus à
+ * l'exécution, il n'y a rien à interroger autrement.
+ */
+describe('surface publique des domaines', () => {
+  const domainsDir = path.resolve(__dirname, './domains');
+  const withPublicBarrel = (fs.existsSync(domainsDir) ? fs.readdirSync(domainsDir) : []).filter(
+    (domain) => fs.existsSync(path.join(domainsDir, domain, 'shared/public.ts'))
+  );
+
+  it('couvre au moins un domaine', () => {
+    // Garde-fou du garde-fou : si la découverte cessait de trouver quoi que ce soit, les
+    // contrôles ci-dessous passeraient sur une liste vide sans rien vérifier.
+    expect(withPublicBarrel.length).toBeGreaterThan(0);
+  });
+
+  it.each(withPublicBarrel)('%s réexporte le type de chaque bloc déclaré', (domain) => {
+    const blocksPath = path.join(domainsDir, domain, 'shared/blocks.ts');
+    if (!fs.existsSync(blocksPath)) return;
+
+    const declared = [
+      ...fs.readFileSync(blocksPath, 'utf-8').matchAll(/^export type ([A-Za-z]+Block) =/gm)
+    ].map((m) => m[1]);
+    expect(declared.length).toBeGreaterThan(0);
+
+    const barrel = fs.readFileSync(path.join(domainsDir, domain, 'shared/public.ts'), 'utf-8');
+    const missing = declared.filter((name) => !new RegExp(`\\b${name}\\b`).test(barrel));
+    expect(missing, `types absents de ${domain}/shared/public.ts : ${missing.join(', ')}`).toEqual([]);
   });
 });

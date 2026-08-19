@@ -3,10 +3,58 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/storefront/src",
+  // Nx ne lit pas les imports écrits dans les fichiers .astro et .svelte, et toute la
+  // boutique passe par là : sans cette liste le graphe voyait storefront SANS aucune
+  // dépendance, donc une modification de @nba/ui ou d'un domaine ne le redéployait pas.
+  // Tenir à jour au même rythme que les imports de src/ — cf. scripts/check-nx-deps.js.
+  "implicitDependencies": [
+    "@nba/events-api",
+    "@nba/expenses-api",
+    "@nba/html",
+    "@nba/security-headers",
+    "@nba/runtime-env",
+    "@nba/shop-api",
+    "@nba/teams-api",
+    "@nba/ui"
+  ],
   "targets": {
     "lint": {
       "command": "eslint {projectRoot}"
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": [
+        "{projectRoot}/dist"
+      ],
+      "inputs": [
+        "production",
+        "^production",
+        {
+          "env": "PUBLIC_APP_ENV"
+        },
+        {
+          "env": "PUBLIC_VAPID_PUBLIC_KEY"
+        },
+        {
+          "env": "PUBLIC_TURNSTILE_SITE_KEY"
+        }
+      ],
+      "options": {
+        "command": "astro build",
+        "cwd": "apps/storefront"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "PUBLIC_APP_ENV=development astro dev --port 4322",
+        "cwd": "apps/storefront"
+      }
     }
   },
-  "tags": ["type:app", "scope:storefront"]
+  "tags": [
+    "type:app",
+    "scope:storefront"
+  ]
 }

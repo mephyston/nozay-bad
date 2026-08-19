@@ -1,0 +1,121 @@
+---
+import '../styles/global.css';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { serialiseJsonLd } from '../lib/jsonld';
+import { SITE_NAME } from '../lib/seo';
+
+interface Props {
+  title: string;
+  description: string;
+  canonical: string;
+  ogImage?: string;
+  ogType?: 'website' | 'article';
+  noindex?: boolean;
+  jsonLd?: unknown[];
+}
+
+const {
+  title,
+  description,
+  canonical,
+  ogImage,
+  ogType = 'website',
+  noindex = false,
+  jsonLd = []
+} = Astro.props;
+
+const image = ogImage ?? new URL('/og-default.jpg', Astro.site ?? canonical).toString();
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon.png" />
+
+    {/*
+      Thème appliqué avant le premier rendu.
+
+      En ligne et bloquant, à dessein : le HTML est servi depuis un cache **partagé**
+      et ne peut donc pas porter la préférence d'un visiteur. Différer ce script
+      afficherait une page claire le temps qu'il s'exécute, puis la basculerait en
+      sombre — le « flash » que tout le monde connaît. Trois lignes bloquantes valent
+      mieux ici qu'un rendu correct une frame trop tard.
+    */}
+    <script is:inline>
+      (() => {
+        try {
+          const stored = localStorage.getItem('theme');
+          const dark = stored ? stored === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+          // `toggle` avec second argument : il **retire** aussi la classe. Un simple
+          // `add` conditionnel laisserait un thème sombre en place au retour au clair.
+          document.documentElement.classList.toggle('dark', dark);
+          // Accorde les éléments natifs — barres de défilement, champs de formulaire —
+          // qui ne connaissent pas nos classes.
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        } catch {
+          /* localStorage refusé (navigation privée stricte) : on garde le thème clair. */
+        }
+      })();
+    </script>
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+    {/* Le partage se fait surtout par WhatsApp et Facebook, où l'ancien site
+        n'affichait ni vignette ni description faute de la moindre balise og:. */}
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={image} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="alternate" type="application/rss+xml" title={SITE_NAME} href="/rss.xml" />
+
+    {jsonLd.map((entry) => (
+      <script type="application/ld+json" set:html={serialiseJsonLd(entry)} />
+    ))}
+
+  </head>
+  <body class="bg-background text-foreground min-h-dvh flex flex-col">
+    <SiteHeader />
+    <main class="flex-1">
+      <slot />
+    </main>
+    <SiteFooter />
+
+    {/*
+      Restitution des adresses e-mail dissimulées au rendu (voir `obfuscateEmails`).
+
+      En fin de corps et non dans l'en-tête : le script ne fait que retoucher du texte
+      déjà affiché, et n'a aucune raison de retarder le premier rendu. Avant son
+      exécution, la page montre « contact [arobase] nozaybad.fr » — lisible, et sans
+      rien à moissonner pour un robot qui n'exécute pas de JavaScript.
+    */}
+    <script is:inline>
+      (() => {
+        for (const node of document.querySelectorAll('[data-eml]')) {
+          let address;
+          try {
+            address = atob(node.dataset.eml);
+          } catch {
+            // Attribut abîmé : on laisse la forme lisible en place plutôt que d'écrire
+            // une adresse fausse, sur laquelle personne ne pourrait écrire.
+            continue;
+          }
+          if (node.tagName === 'A') node.setAttribute('href', 'mailto:' + address);
+          // Le libellé n'est remplacé que s'il portait lui-même l'adresse : « Nous
+          // écrire » a été choisi par la rédaction, et doit le rester.
+          if (node.textContent.includes('[arobase]')) node.textContent = address;
+        }
+      })();
+    </script>
+  </body>
+</html>

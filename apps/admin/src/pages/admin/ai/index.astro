@@ -1,0 +1,22 @@
+---
+import AdminLayout from "../../../components/AdminLayout.svelte";
+import Layout from "../../../layouts/Layout.astro";
+import AIChat from "../../../components/AIChat.svelte";
+
+const { user } = Astro.locals as any;
+const permissions = user?.permissions || [];
+---
+
+<Layout title="Assistant IA - Nozay Bad Admin">
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} 
+    client:load 
+    email={user?.email || ""} 
+    name={user?.name || ""} 
+    permissions={permissions} 
+    breadcrumb="Assistant IA"
+  >
+    <div class="h-[calc(100vh-8.5rem)] min-h-[500px] flex flex-col">
+      <AIChat client:load />
+    </div>
+  </AdminLayout>
+</Layout>

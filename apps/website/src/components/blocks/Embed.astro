@@ -1,0 +1,72 @@
+---
+import type { EmbedBlock } from '@nba/cms/public';
+
+interface Props {
+  block: EmbedBlock;
+}
+
+const { block } = Astro.props;
+
+/**
+ * L'URL est **reconstruite**, jamais stockée.
+ *
+ * Le bloc ne retient qu'un fournisseur pris dans une liste fermée et un identifiant de
+ * ressource. C'est ce qui permet à `frame-src` de ne nommer que quatre domaines : si
+ * l'administration pouvait saisir un `src` libre, la politique de sécurité devrait
+ * s'ouvrir à n'importe quel site, et chaque écran d'édition deviendrait un vecteur
+ * d'injection de cadre.
+ *
+ * `encodeURIComponent` malgré la validation à l'écriture : ce chemin relit la base, et
+ * `parseStoredBlock` ne revérifie que la **forme** du schéma, pas le motif plus strict
+ * qu'applique `normaliseBlockPayload`. Une ligne écrite par une version antérieure du
+ * code ne doit pas pouvoir s'échapper de l'attribut.
+ */
+const id = encodeURIComponent(block.resourceId);
+
+const SRC = {
+  // `youtube-nocookie` : pas de traceur tant que le visiteur n'a pas lancé la lecture.
+  youtube: `https://www.youtube-nocookie.com/embed/${id}`,
+  /*
+    Lecture seule par défaut. En modification, `rm=minimal` retire les menus de Google
+    et ne laisse que la grille — le cadre reste une partie de la page, pas une
+    application dans la page.
+  */
+  google_sheet: block.editable
+    ? `https://docs.google.com/spreadsheets/d/${id}/edit?rm=minimal`
+    : `https://docs.google.com/spreadsheets/d/${id}/preview`,
+  // `ctz` évite que l'agenda ne s'affiche dans le fuseau du serveur de Google.
+  google_calendar: `https://calendar.google.com/calendar/embed?src=${id}&ctz=Europe%2FParis`
+}[block.provider];
+
+/**
+ * Le cadre réserve sa place avant de charger.
+ *
+ * Un `<iframe>` sans hauteur connue vaut zéro pixel jusqu'à l'arrivée du contenu, puis
+ * décale tout ce qui suit. `fixed` existe pour les intégrations qui ne tiennent dans
+ * aucun rapport — un agenda mensuel, typiquement ; sa hauteur est alors obligatoire,
+ * ce que la normalisation vérifie déjà à l'écriture.
+ */
+const isFixed = block.aspect === 'fixed';
+const ratioClass = isFixed ? '' : block.aspect === '4/3' ? 'aspect-[4/3]' : 'aspect-video';
+const fixedStyle = isFixed ? `height:${block.heightPx}px` : undefined;
+---
+<section class="mx-auto max-w-5xl px-4 py-8">
+  <div class:list={['bg-muted overflow-hidden rounded-lg', ratioClass]} style={fixedStyle}>
+    {/*
+      `title` est obligatoire dans le schéma, et c'est délibéré : un cadre sans titre
+      est annoncé « iframe » par un lecteur d'écran, sans rien dire de son contenu.
+
+      Pas de `sandbox` : YouTube ne fonctionne pas sous les restrictions utiles, et la
+      protection réelle vient de `frame-src`, qui limite déjà les origines chargeables.
+    */}
+    <iframe
+      src={SRC}
+      title={block.title}
+      loading="lazy"
+      referrerpolicy="strict-origin-when-cross-origin"
+      allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen
+      class="h-full w-full border-0"
+    ></iframe>
+  </div>
+</section>

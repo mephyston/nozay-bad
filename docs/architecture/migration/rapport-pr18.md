@@ -28,7 +28,7 @@ Pour découpler proprement les frontières de chaque Bounded Context, aucun doma
   * Remplacement de la jointure SQL `.leftJoin(membersTable, ...)` dans `list` par une jointure en mémoire par lot via `getMembersByIds`.
   * Remplacement de `getMemberById` par l'appel à la requête publique.
   * Suppression complète de la méthode d'écriture directe `updateMemberPayment` du repository.
-  * Remplacement de l'écriture directe de solde dans `deleteTransaction` (lors de la suppression d'une transaction liée à une adhésion) par un appel à `applyPaymentToMember(db, memberId, -Math.abs(amount))`.
+  * Remplacement de l'écriture directe de solde dans `deleteLedgerEntry` (lors de la suppression d'une transaction liée à une adhésion) par un appel à `applyPaymentToMember(db, memberId, -Math.abs(amount))`.
 
 ### C. Découplage de `shop`
 * **shop/approve-order/repository.ts** :
@@ -76,7 +76,7 @@ Not injecting D1 Database for 'DB' as this version of Miniflare only supports D1
  ✓  features-accounting-ui  ../seasons/ui/SettingsManager.test.ts (3 tests) 101ms
  ✓  features-accounting-ui  src/TransactionLedger.test.ts (4 tests) 188ms
  ✓  features-accounting-ui  ../checks/ui/CheckDepositManager.test.ts (3 tests) 162ms
- ✓  features-accounting-ui  ../reconcile-bank-transaction/ui/BankStatementReconciliation.test.ts (12 tests) 557ms
+ ✓  features-accounting-ui  ../reconcile-bank-statement-line/ui/BankStatementReconciliation.test.ts (12 tests) 557ms
  ✓  features-shop-api  src/routes.test.ts (8 tests) 52ms
  ✓  features-expenses-ui  src/ExpensesManager.test.ts (3 tests) 65ms
  ✓  features-members-ui  src/MembersTable.test.ts (1 test) 43ms

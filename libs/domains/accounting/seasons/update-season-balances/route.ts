@@ -25,9 +25,9 @@ updateSeasonBalancesRoute.post(
     const body = c.req.valid('json');
     const db = createDb(c.env.DB);
     try {
-      await updateSeasonBalances(db, seasonId, body);
+      await updateSeasonBalances(db, seasonId, body as any);
       return c.json({ success: true });
-    } catch (err: unknown) {
+    } catch (err: any) {
       return c.json({ success: false, error: err.message }, 400);
     }
   }

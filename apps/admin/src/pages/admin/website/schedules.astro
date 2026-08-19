@@ -1,0 +1,91 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { SchedulesManager } from '@nba/schedules-ui';
+import { createAdminApiClient } from '../../../lib/api';
+import { can, guardAction } from '../../../lib/guard';
+
+const canWrite = can(Astro.locals, 'schedules:slots:write');
+const apiService = createAdminApiClient(Astro.locals);
+
+const ACTIONS = {
+  create: 'schedules:slots:write',
+  update: 'schedules:slots:write',
+  delete: 'schedules:slots:write'
+} as const;
+
+if (Astro.request.method === 'POST') {
+  const data = (await Astro.request.json()) as any;
+  const denied = guardAction(Astro.locals, data.action, ACTIONS);
+  if (denied) return denied;
+
+  const routes: Record<string, { url: string; method: string; body?: unknown }> = {
+    create: { url: 'http://localhost/schedules', method: 'POST', body: data },
+    // Seules les clés présentes sont transmises : le même point d'entrée sert au
+    // masquage depuis la liste (`active` seul) et à l'édition complète du créneau,
+    // et le validateur traite un champ absent comme « ne rien changer ».
+    update: {
+      url: `http://localhost/schedules/${data.id}`,
+      method: 'PUT',
+      body: Object.fromEntries(
+        (['venueId', 'audience', 'weekday', 'startTime', 'endTime', 'label', 'active'] as const)
+          .filter((key) => data[key] !== undefined)
+          .map((key) => [key, data[key]])
+      )
+    },
+    delete: { url: `http://localhost/schedules/${data.id}`, method: 'DELETE' }
+  };
+  const route = routes[data.action];
+  const apiRes = await apiService.fetch(route.url, {
+    method: route.method,
+    headers: { 'Content-Type': 'application/json' },
+    ...(route.body ? { body: JSON.stringify(route.body) } : {})
+  });
+  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+  return new Response(JSON.stringify(await apiRes.json()), { headers: { 'Content-Type': 'application/json' } });
+}
+
+let slots: any[] = [];
+let venues: any[] = [];
+let errorMsg = '';
+
+try {
+  const [slotsRes, venuesRes] = await Promise.all([
+    apiService.fetch('http://localhost/schedules'),
+    apiService.fetch('http://localhost/schedules/venues')
+  ]);
+  if (slotsRes.ok) slots = ((await slotsRes.json()) as any).data ?? [];
+  else errorMsg = 'Impossible de charger les créneaux.';
+  if (venuesRes.ok) venues = ((await venuesRes.json()) as any).data ?? [];
+} catch {
+  errorMsg = 'Impossible de charger les créneaux.';
+}
+
+// Saison en cours, déduite du calendrier sportif : il bascule à l'été.
+const now = new Date();
+const startYear = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+const seasonCode = `${String(startYear).slice(2)}-${String(startYear + 1).slice(2)}`;
+---
+
+<Layout title="Créneaux - NBA 91">
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Créneaux"
+  >
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader
+        title="Créneaux"
+        description={`Saison ${seasonCode}. Ces créneaux alimentent la page publique : ils remplacent la feuille Google que les moteurs de recherche ne voyaient pas.`}
+      />
+
+      <SchedulesManager client:load slots={slots} venues={venues} seasonCode={seasonCode} canWrite={canWrite} />
+    </div>
+  </AdminLayout>
+</Layout>

@@ -674,6 +674,240 @@
           }
         }
       }
+    },
+    "/notifications/subscriptions": {
+      "post": {
+        "summary": "Register a device push subscription for a member account",
+        "tags": [
+          "Notifications"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscribePushInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored subscription id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "id"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove a device push subscription",
+        "tags": [
+          "Notifications"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnsubscribePushInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Number of removed subscriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "removed"
+                      ],
+                      "properties": {
+                        "removed": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/messages": {
+      "post": {
+        "summary": "Queue a push notification for the selected audience",
+        "tags": [
+          "Notifications"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendNotificationInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Queued message summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "messageId",
+                        "queued"
+                      ],
+                      "properties": {
+                        "messageId": {
+                          "type": "integer"
+                        },
+                        "queued": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/dispatch": {
+      "post": {
+        "summary": "Drain the pending push delivery queue (also run by the cron trigger)",
+        "tags": [
+          "Notifications"
+        ],
+        "responses": {
+          "200": {
+            "description": "Dispatch report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "sent",
+                        "failed",
+                        "pruned",
+                        "remaining"
+                      ],
+                      "properties": {
+                        "sent": {
+                          "type": "integer"
+                        },
+                        "failed": {
+                          "type": "integer"
+                        },
+                        "pruned": {
+                          "type": "integer"
+                        },
+                        "remaining": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/overview": {
+      "get": {
+        "summary": "Subscription counters and recent message history",
+        "tags": [
+          "Notifications"
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification overview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -807,8 +1041,16 @@
         ],
         "properties": {
           "seasonId": {
-            "minLength": 1,
-            "type": "string"
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "minimum": 1,
+                "type": "integer"
+              }
+            ]
           },
           "memberId": {
             "minimum": 1,
@@ -823,40 +1065,12 @@
             "type": "integer"
           },
           "paymentMethod": {
-            "anyOf": [
-              {
-                "const": "virement",
-                "type": "string"
-              },
-              {
-                "const": "cheque",
-                "type": "string"
-              },
-              {
-                "const": "especes",
-                "type": "string"
-              },
-              {
-                "const": "labaz",
-                "type": "string"
-              },
-              {
-                "const": "ancv",
-                "type": "string"
-              },
-              {
-                "const": "pass_sport",
-                "type": "string"
-              },
-              {
-                "const": "ticket_loisir",
-                "type": "string"
-              },
-              {
-                "const": "up_loisir",
-                "type": "string"
-              }
-            ]
+            "minLength": 1,
+            "type": "string"
+          },
+          "paidAt": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
           }
         }
       },
@@ -864,8 +1078,8 @@
         "type": "object",
         "required": [
           "name",
-          "category",
-          "price",
+          "productCategoryId",
+          "priceCents",
           "stock"
         ],
         "properties": {
@@ -873,29 +1087,20 @@
             "minLength": 1,
             "type": "string"
           },
-          "category": {
-            "anyOf": [
-              {
-                "const": "shuttlecock",
-                "type": "string"
-              },
-              {
-                "const": "string",
-                "type": "string"
-              },
-              {
-                "const": "other",
-                "type": "string"
-              }
-            ]
+          "productCategoryId": {
+            "minimum": 1,
+            "type": "integer"
           },
-          "price": {
+          "priceCents": {
             "minimum": 0,
             "type": "integer"
           },
           "stock": {
             "minimum": 0,
             "type": "integer"
+          },
+          "trackStock": {
+            "type": "boolean"
           },
           "active": {
             "type": "boolean"
@@ -909,13 +1114,16 @@
             "minLength": 1,
             "type": "string"
           },
-          "price": {
+          "priceCents": {
             "minimum": 0,
             "type": "integer"
           },
           "stock": {
             "minimum": 0,
             "type": "integer"
+          },
+          "trackStock": {
+            "type": "boolean"
           },
           "active": {
             "type": "boolean"
@@ -1043,6 +1251,149 @@
               },
               {
                 "const": "cancelled",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "SubscribePushInput": {
+        "type": "object",
+        "required": [
+          "email",
+          "endpoint",
+          "keys"
+        ],
+        "properties": {
+          "email": {
+            "minLength": 3,
+            "maxLength": 255,
+            "pattern": "^[^@\\s]+@[^@\\s]+$",
+            "type": "string"
+          },
+          "endpoint": {
+            "minLength": 12,
+            "maxLength": 1024,
+            "pattern": "^https://",
+            "type": "string"
+          },
+          "keys": {
+            "type": "object",
+            "required": [
+              "p256dh",
+              "auth"
+            ],
+            "properties": {
+              "p256dh": {
+                "minLength": 1,
+                "maxLength": 255,
+                "type": "string"
+              },
+              "auth": {
+                "minLength": 1,
+                "maxLength": 255,
+                "type": "string"
+              }
+            }
+          },
+          "userAgent": {
+            "maxLength": 255,
+            "type": "string"
+          }
+        }
+      },
+      "UnsubscribePushInput": {
+        "type": "object",
+        "required": [
+          "email",
+          "endpoint"
+        ],
+        "properties": {
+          "email": {
+            "minLength": 3,
+            "maxLength": 255,
+            "pattern": "^[^@\\s]+@[^@\\s]+$",
+            "type": "string"
+          },
+          "endpoint": {
+            "minLength": 12,
+            "maxLength": 1024,
+            "type": "string"
+          }
+        }
+      },
+      "SendNotificationInput": {
+        "type": "object",
+        "required": [
+          "title",
+          "body",
+          "target"
+        ],
+        "properties": {
+          "title": {
+            "minLength": 1,
+            "maxLength": 80,
+            "type": "string"
+          },
+          "body": {
+            "minLength": 1,
+            "maxLength": 300,
+            "type": "string"
+          },
+          "url": {
+            "maxLength": 300,
+            "pattern": "^/",
+            "type": "string"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "const": "all",
+                "type": "string"
+              },
+              {
+                "const": "unpaid",
+                "type": "string"
+              },
+              {
+                "const": "groups",
+                "type": "string"
+              }
+            ]
+          },
+          "groups": {
+            "maxItems": 40,
+            "type": "array",
+            "items": {
+              "minLength": 1,
+              "maxLength": 120,
+              "type": "string"
+            }
+          },
+          "category": {
+            "anyOf": [
+              {
+                "const": "announcement",
+                "type": "string"
+              },
+              {
+                "const": "birthday",
+                "type": "string"
+              },
+              {
+                "const": "expense",
+                "type": "string"
+              },
+              {
+                "const": "order",
+                "type": "string"
+              },
+              {
+                "const": "reminder",
+                "type": "string"
+              },
+              {
+                "const": "interclubs",
                 "type": "string"
               }
             ]

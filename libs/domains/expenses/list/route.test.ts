@@ -9,14 +9,14 @@ describe('listExpensesRoute', () => {
   it('handles valid query params', async () => {
     const res = await listExpensesRoute.request('/?season=25-26&status=approved', {}, { DB: {} as any });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
   });
 
   it('handles missing optional query params', async () => {
     const res = await listExpensesRoute.request('/', {}, { DB: {} as any });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
   });
 });

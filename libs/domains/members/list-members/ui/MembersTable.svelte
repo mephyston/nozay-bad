@@ -1,41 +1,46 @@
+<script module>
+  export * from './members-table-types';
+</script>
 <script lang="ts">
-  import { Search, ChevronLeft, ChevronRight, User, MoreVertical, Eye, Filter } from '@lucide/svelte';
-  import { Table, Button, Badge, Input, Popover } from '@nba/ui';
-
-  interface Member {
-    id: number;
-    licence: string;
-    lastName: string;
-    firstName: string;
-    gender: 'M' | 'F';
-    birthDate: string;
-    status: string;
-    type: string;
-    paid: boolean;
-  }
-
-  interface Pagination {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  }
-
-  interface Filters {
-    search: string;
-    gender: string;
-    status: string;
-    type: string;
-    season?: string;
-  }
-
-  interface Season {
-    id: string;
-    name: string;
-    active: boolean;
-  }
+  import { User, Eye, ChevronRight, Receipt } from '@lucide/svelte';
+  import { Button, Badge, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions, uiConfirm, toast, flashAndReload, softNavigate } from '@nba/ui';
+  import type { Member, Pagination, Filters, Season } from './members-table-types';
+  import MembersTableFiltersPopover from './MembersTableFiltersPopover.svelte';
 
   let { data = [], pagination, filters, seasons = [] }: { data: Member[]; pagination: Pagination; filters: Filters; seasons?: Season[] } = $props();
+
+  // Bascule l'autorisation de note de frais d'un adhérent (raccourci depuis la liste).
+  let togglingId = $state<number | null>(null);
+  async function toggleExpense(member: Member) {
+    if (togglingId !== null) return;
+    const authorize = !member.expenseAuthorized;
+    const name = `${member.firstName} ${member.lastName}`;
+    const ok = await uiConfirm(
+      authorize
+        ? `Autoriser ${name} à soumettre des notes de frais ?`
+        : `Retirer à ${name} l'autorisation de soumettre des notes de frais ?`
+    );
+    if (!ok) return;
+    togglingId = member.id;
+    try {
+      const res = await fetch('/admin/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: member.id, authorized: !member.expenseAuthorized })
+      });
+      if (res.ok) {
+        flashAndReload(authorize
+          ? `${name} peut désormais soumettre des notes de frais.`
+          : `${name} ne peut plus soumettre de notes de frais.`);
+        return;
+      }
+      const txt = await res.text().catch(() => '');
+      toast.error(txt || `Échec de la mise à jour (HTTP ${res.status}).`);
+    } catch (e: any) {
+      toast.error('Erreur réseau : ' + (e?.message ?? String(e)));
+    }
+    togglingId = null;
+  }
 
   // svelte-ignore state_referenced_locally
   const initialSearch = filters?.search ?? '';
@@ -61,265 +66,206 @@
     if (selectedStatus) params.set('status', selectedStatus);
     if (selectedType) params.set('type', selectedType);
     if (selectedSeason) params.set('season', selectedSeason);
-    params.set('page', '1'); // reset page on filter change
-    window.location.href = `/admin/members?${params.toString()}`;
+    params.set('page', '1');
+    softNavigate(`/admin/members?${params.toString()}`);
+  }
+
+  function resetFilters() {
+    searchInput = '';
+    selectedGender = '';
+    selectedStatus = '';
+    selectedType = '';
+    selectedSeason = '25-26';
+    applyFilters();
   }
 
   function changePage(newPage: number) {
     if (newPage < 1 || newPage > pagination.totalPages) return;
     const params = new URLSearchParams(window.location.search);
     params.set('page', newPage.toString());
-    window.location.href = `/admin/members?${params.toString()}`;
-  }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter') {
-      applyFilters();
-    }
+    softNavigate(`/admin/members?${params.toString()}`);
   }
 </script>
 
 <div class="space-y-4">
-  <div class="flex items-center gap-3 bg-card p-4 rounded-xl border border-border shadow-sm">
-    <div class="relative flex-1">
-      <span class="absolute inset-y-0 left-3 flex items-center text-muted-foreground z-10">
-        <Search class="w-4 h-4" />
-      </span>
-      <Input
-        type="text"
-        placeholder="Rechercher un adhérent (Nom, Licence...)"
-        aria-label="Rechercher un adhérent par nom ou licence"
-        class="pl-9 w-full bg-background"
-        bind:value={searchInput}
-        onkeydown={handleKeydown}
+  <DataTable
+    {data}
+    {pagination}
+    onPageChange={changePage}
+    itemName="adhérent(s)"
+    emptyTitle="Aucun adhérent"
+    emptyDescription="Aucun adhérent ne correspond à ces critères de recherche."
+  >
+    {#snippet toolbar()}
+      <MembersTableFiltersPopover
+        bind:searchInput
+        bind:selectedSeason
+        bind:selectedGender
+        bind:selectedType
+        bind:selectedStatus
+        {seasons}
+        onApply={applyFilters}
+        onReset={resetFilters}
       />
-    </div>
+    {/snippet}
 
-    <Popover.Root>
-      <Popover.Trigger>
-        {#snippet child({ props })}
-          <Button {...props} variant="outline" class="flex items-center gap-2">
-            <Filter class="w-4 h-4" />
-            Filtres
-          </Button>
-        {/snippet}
-      </Popover.Trigger>
-      <Popover.Content class="w-80 p-4 space-y-4" align="end">
-        <h4 class="font-semibold text-sm border-b border-border pb-2">Options de filtrage</h4>
-        
-        <div class="space-y-3">
-          <div class="space-y-1.5">
-            <label for="filter-season" class="text-xs font-semibold text-muted-foreground">Saison</label>
-            <select
-              id="filter-season"
-              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-              bind:value={selectedSeason}
-              onchange={applyFilters}
-            >
-              {#each seasons as season}
-                <option value={season.id}>{season.name}</option>
-              {/each}
-              {#if seasons.length === 0}
-                <option value="25-26">Saison 2025-2026</option>
-              {/if}
-            </select>
-          </div>
+    {#snippet header()}
+      <DataTableColumnHeader title="Adhérent" />
+      <DataTableColumnHeader title="Licence" />
+      <DataTableColumnHeader title="Genre" />
+      <DataTableColumnHeader title="Type" />
+      <DataTableColumnHeader title="Statut" />
+      <DataTableColumnHeader title="Actions" class="text-right" />
+    {/snippet}
 
-          <div class="space-y-1.5">
-            <label for="filter-gender" class="text-xs font-semibold text-muted-foreground">Genre</label>
-            <select
-              id="filter-gender"
-              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              bind:value={selectedGender}
-              onchange={applyFilters}
-            >
-              <option value="">Tous les genres</option>
-              <option value="M">Homme (M)</option>
-              <option value="F">Femme (F)</option>
-            </select>
-          </div>
-
-          <div class="space-y-1.5">
-            <label for="filter-type" class="text-xs font-semibold text-muted-foreground">Type d'adhérent</label>
-            <select
-              id="filter-type"
-              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              bind:value={selectedType}
-              onchange={applyFilters}
-            >
-              <option value="">Tous les types</option>
-              <option value="Competiteur">Compétiteur</option>
-              <option value="Loisir">Loisir</option>
-            </select>
-          </div>
-
-          <div class="space-y-1.5">
-            <label for="filter-status" class="text-xs font-semibold text-muted-foreground">Statut</label>
-            <select
-              id="filter-status"
-              class="w-full h-9 px-3 py-1.5 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              bind:value={selectedStatus}
-              onchange={applyFilters}
-            >
-              <option value="">Tous les statuts</option>
-              <option value="valide">Valide</option>
-              <option value="suspendu">Suspendu</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="pt-2 flex justify-end">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onclick={() => {
-              searchInput = '';
-              selectedGender = '';
-              selectedStatus = '';
-              selectedType = '';
-              selectedSeason = '25-26';
-              applyFilters();
-            }}
-            class="text-xs"
+    {#snippet row(member)}
+      <Table.Row>
+        <Table.Cell class="font-medium">
+          <a
+            href={`/admin/members/${member.licence}?season=${filters?.season || '25-26'}`}
+            class="flex items-center gap-3 no-underline text-foreground hover:text-primary transition-colors group"
           >
-            Réinitialiser
-          </Button>
-        </div>
-      </Popover.Content>
-    </Popover.Root>
-  </div>
-
-  <!-- Table -->
-  <div class="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
-    <div class="overflow-x-auto min-h-[150px]">
-      <Table.Root>
-        <Table.Header>
-          <Table.Row>
-            <Table.Head>Adhérent</Table.Head>
-            <Table.Head>Licence</Table.Head>
-            <Table.Head>Genre</Table.Head>
-            <Table.Head>Type</Table.Head>
-            <Table.Head>Statut</Table.Head>
-            <Table.Head class="text-right">Actions</Table.Head>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>
-          {#each data as member}
-            <Table.Row class="hover:bg-muted/50 transition-colors">
-              <Table.Cell class="font-medium flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <User class="w-4 h-4" />
-                </div>
-                <div>
-                  <div class="font-semibold">{member.lastName} {member.firstName}</div>
-                  <div class="text-xs text-muted-foreground">Né le {member.birthDate}</div>
-                </div>
-              </Table.Cell>
-              <Table.Cell class="text-muted-foreground">{member.licence}</Table.Cell>
-              <Table.Cell>{member.gender}</Table.Cell>
-              <Table.Cell>
-                <Badge variant="secondary">
-                  {member.type}
-                </Badge>
-              </Table.Cell>
-              <Table.Cell>
-                {#if member.status === 'valide'}
-                  <Badge variant="outline" class="bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-semibold">
-                    Valide
-                  </Badge>
-                {:else}
-                  <Badge variant="outline" class="bg-destructive/15 border-destructive/30 text-destructive font-semibold">
-                    Suspendu
-                  </Badge>
-                {/if}
-              </Table.Cell>
-              <Table.Cell class="text-right">
-                <Popover.Root>
-                  <Popover.Trigger>
-                    {#snippet child({ props })}
-                      <Button 
-                        {...props}
-                        variant="ghost"
-                        size="icon-sm"
-                        class="text-muted-foreground hover:text-foreground cursor-pointer" 
-                        aria-label="Actions"
-                      >
-                        <MoreVertical class="w-4 h-4" />
-                      </Button>
-                    {/snippet}
-                  </Popover.Trigger>
-                  <Popover.Content class="w-40 p-1" align="end">
-                    <div class="flex flex-col">
-                       <a
-                        href={`/admin/members/${member.licence}?season=${filters.season || '25-26'}`}
-                        onclick={() => {
-                          window.location.href = `/admin/members/${member.licence}?season=${filters.season || '25-26'}`;
-                        }}
-                        class="px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer no-underline bg-transparent rounded-md"
-                      >
-                        <Eye class="w-3.5 h-3.5" />
-                        Voir profil
-                      </a>
-                      {#if member.paid}
-                        <a
-                          href={`/admin/accounting/attestations/${member.id}`}
-                          target="_blank"
-                          onclick={(e) => {
-                            e.preventDefault();
-                            window.open(`/admin/accounting/attestations/${member.id}`, '_blank');
-                          }}
-                          class="px-3 py-1.5 text-xs text-foreground hover:bg-muted font-semibold flex items-center gap-1.5 cursor-pointer no-underline bg-transparent rounded-md"
-                        >
-                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          Attestation CSE
-                        </a>
-                      {/if}
-                    </div>
-                  </Popover.Content>
-                </Popover.Root>
-              </Table.Cell>
-            </Table.Row>
+            <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/20">
+              <User class="w-4 h-4" />
+            </div>
+            <div>
+              <div class="font-semibold">{member.lastName} {member.firstName}</div>
+              <div class="text-xs text-muted-foreground">Né le {member.birthDate}</div>
+            </div>
+          </a>
+        </Table.Cell>
+        <Table.Cell class="text-muted-foreground">{member.licence}</Table.Cell>
+        <Table.Cell>{member.gender}</Table.Cell>
+        <Table.Cell>
+          <Badge variant="secondary">
+            {member.type}
+          </Badge>
+        </Table.Cell>
+        <Table.Cell>
+          {#if member.status === 'valide'}
+            <Badge variant="success">
+              Valide
+            </Badge>
           {:else}
-            <Table.Row>
-              <Table.Cell colspan={6} class="p-8 text-center text-muted-foreground">
-                Aucun adhérent ne correspond à ces critères de recherche.
-              </Table.Cell>
-            </Table.Row>
-          {/each}
-        </Table.Body>
-      </Table.Root>
-    </div>
+            <Badge variant="destructive">
+              Suspendu
+            </Badge>
+          {/if}
+        </Table.Cell>
+        <Table.Cell class="text-right relative">
+          <div class="flex items-center justify-end gap-1">
+            <DataTableRowActions>
+              <DropdownMenu.Item asChild>
+                <a
+                  href={`/admin/members/${member.licence}?season=${filters?.season || '25-26'}`}
+                  class="cursor-pointer flex items-center w-full"
+                >
+                  <Eye class="w-3.5 h-3.5 mr-2" />
+                  Voir profil
+                </a>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item onclick={() => toggleExpense(member)} class="cursor-pointer flex items-center w-full">
+                <Receipt class="w-3.5 h-3.5 mr-2" />
+                {member.expenseAuthorized ? 'Retirer note de frais' : 'Autoriser note de frais'}
+              </DropdownMenu.Item>
+              {#if member.paid}
+                <DropdownMenu.Item asChild>
+                  <a
+                    href={`/admin/accounting/attestations/${member.id}`}
+                    target="_blank"
+                    onclick={(e) => {
+                      e.preventDefault();
+                      window.open(`/admin/accounting/attestations/${member.id}`, '_blank');
+                    }}
+                    class="cursor-pointer flex items-center w-full"
+                  >
+                    <svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Attestation CSE
+                  </a>
+                </DropdownMenu.Item>
+              {/if}
+            </DataTableRowActions>
+          </div>
+        </Table.Cell>
+      </Table.Row>
+    {/snippet}
 
-    <!-- Pagination Footer -->
-    <div class="p-4 border-t border-border flex items-center justify-between">
-      <div class="text-xs text-muted-foreground">
-        Total : {pagination.total} adhérent(s)
-      </div>
-      <div class="flex items-center gap-4">
-        <span class="text-xs">
-          Page {pagination.page} sur {pagination.totalPages}
-        </span>
-        <div class="flex gap-1">
-          <Button
-            variant="outline"
-            size="icon-sm"
-            onclick={() => changePage(pagination.page - 1)}
-            disabled={pagination.page <= 1}
+    {#snippet mobileView()}
+      {#each data as member}
+        <div class="flex items-center justify-between p-3.5 hover:bg-muted/50 transition-colors">
+          <a
+            href={`/admin/members/${member.licence}?season=${filters?.season || '25-26'}`}
+            class="flex items-center gap-3 min-w-0 flex-1 no-underline text-foreground group"
           >
-            <ChevronLeft class="w-4 h-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            onclick={() => changePage(pagination.page + 1)}
-            disabled={pagination.page >= pagination.totalPages}
-          >
-            <ChevronRight class="w-4 h-4" />
-          </Button>
+            <div class="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+              <User class="w-4 h-4" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="font-bold text-sm truncate group-hover:text-primary transition-colors">
+                {member.lastName} {member.firstName}
+              </div>
+              <div class="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                <span>Licence: {member.licence}</span>
+                {#if member.status === 'valide'}
+                  <span class="inline-flex items-center text-[10px] font-semibold text-success">
+                    • Valide
+                  </span>
+                {:else}
+                  <span class="inline-flex items-center text-[10px] font-semibold text-destructive">
+                    • Suspendu
+                  </span>
+                {/if}
+              </div>
+            </div>
+          </a>
+
+          <div class="flex items-center gap-1 shrink-0 ml-2">
+            <DataTableRowActions>
+              <DropdownMenu.Item asChild>
+                <a
+                  href={`/admin/members/${member.licence}?season=${filters?.season || '25-26'}`}
+                  class="cursor-pointer flex items-center w-full"
+                >
+                  <Eye class="w-4 h-4 text-primary mr-2" />
+                  Voir la fiche
+                </a>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item onclick={() => toggleExpense(member)} class="cursor-pointer flex items-center w-full">
+                <Receipt class="w-3.5 h-3.5 mr-2" />
+                {member.expenseAuthorized ? 'Retirer note de frais' : 'Autoriser note de frais'}
+              </DropdownMenu.Item>
+              {#if member.paid}
+                <DropdownMenu.Item asChild>
+                  <a
+                    href={`/admin/accounting/attestations/${member.id}`}
+                    target="_blank"
+                    onclick={(e) => {
+                      e.preventDefault();
+                      window.open(`/admin/accounting/attestations/${member.id}`, '_blank');
+                    }}
+                    class="cursor-pointer flex items-center w-full"
+                  >
+                    <svg class="w-4 h-4 text-muted-foreground mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Attestation CSE
+                  </a>
+                </DropdownMenu.Item>
+              {/if}
+            </DataTableRowActions>
+
+            <a
+              href={`/admin/members/${member.licence}?season=${filters?.season || '25-26'}`}
+              class="p-1.5 text-muted-foreground hover:text-foreground"
+              aria-label="Voir la fiche"
+            >
+              <ChevronRight class="w-4 h-4" />
+            </a>
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
+      {/each}
+    {/snippet}
+  </DataTable>
 </div>

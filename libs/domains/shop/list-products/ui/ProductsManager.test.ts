@@ -39,8 +39,8 @@ describe('ProductsManager Component', () => {
     expect(target.innerHTML).toContain('Yonex Mavis 300');
     
     // Check price formats
-    expect(target.innerHTML).toContain('25.00 €');
-    expect(target.innerHTML).toContain('15.50 €');
+    expect(target.innerHTML).toContain('25,00');
+    expect(target.innerHTML).toContain('15,50');
     
 
     
@@ -73,7 +73,7 @@ describe('ProductsManager Component', () => {
 
     // Check product details
     expect(target.innerHTML).toContain('Yonex BG65 String');
-    expect(target.innerHTML).toContain('12.00 €');
+    expect(target.innerHTML).toContain('12,00');
   });
 
   it('renders all products with category column correctly', () => {

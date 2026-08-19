@@ -25,9 +25,9 @@ updateSeasonBudgetRoute.post(
     const body = c.req.valid('json');
     const db = createDb(c.env.DB);
     try {
-      const data = await updateSeasonBudget(db, seasonId, body);
+      const data = await updateSeasonBudget(db, seasonId, body as any);
       return c.json({ success: true, data });
-    } catch (err: unknown) {
+    } catch (err: any) {
       return c.json({ success: false, error: err.message }, 400);
     }
   }

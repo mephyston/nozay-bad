@@ -39,7 +39,7 @@ describe('changeInvoiceStatus', () => {
     ]);
 
     // Act
-    await changeInvoiceStatus({}, 1, 'sent', repo);
+    await changeInvoiceStatus({} as any, 1, 'sent', repo);
 
     // Assert
     const invoice = await repo.getById({}, 1);
@@ -51,7 +51,7 @@ describe('changeInvoiceStatus', () => {
     const repo = new InMemoryChangeInvoiceStatusRepository([]);
 
     // Act & Assert
-    await expect(changeInvoiceStatus({}, 1, 'invalid_status' as any, repo)).rejects.toThrow();
+    await expect(changeInvoiceStatus({} as any, 1, 'invalid_status' as any, repo)).rejects.toThrow();
   });
 
   it('should throw if invoice is not found', async () => {
@@ -59,7 +59,7 @@ describe('changeInvoiceStatus', () => {
     const repo = new InMemoryChangeInvoiceStatusRepository([]);
 
     // Act & Assert
-    await expect(changeInvoiceStatus({}, 1, 'sent', repo)).rejects.toThrow();
+    await expect(changeInvoiceStatus({} as any, 1, 'sent', repo)).rejects.toThrow();
   });
 
   it('should throw if season is closed', async () => {
@@ -70,6 +70,6 @@ describe('changeInvoiceStatus', () => {
     );
 
     // Act & Assert
-    await expect(changeInvoiceStatus({}, 1, 'sent', repo)).rejects.toThrow('Saison clôturée');
+    await expect(changeInvoiceStatus({} as any, 1, 'sent', repo)).rejects.toThrow('Saison clôturée');
   });
 });

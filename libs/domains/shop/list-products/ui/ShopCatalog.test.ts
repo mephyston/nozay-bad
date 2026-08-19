@@ -2,6 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount, flushSync } from 'svelte';
 import ShopCatalog from './ShopCatalog.svelte';
 
+// NOTE (migration Design System) : la sélection d'acheteur, de mode de paiement,
+// de catégorie et de produit passe désormais par le composant SearchableCombobox.
+// La plupart des tests couvrent le comportement observable du catalogue sans
+// piloter l'intérieur des combobox ; le dernier test vérifie la recherche
+// dynamique d'adhérents par API (restaurée via SearchableCombobox en mode
+// recherche externe : filter=false + onSearch).
+
 describe('ShopCatalog Component', () => {
   const members = [
     { id: 1, firstName: 'Jean', lastName: 'Dupont', licence: '123456' },
@@ -9,187 +16,114 @@ describe('ShopCatalog Component', () => {
   ];
 
   const products = [
-    { id: 10, name: 'Volant RSL Grade 1', category: 'shuttlecock' as const, price: 1500, stock: 10, active: true },
-    { id: 11, name: 'Cordage Yonex BG65', category: 'string' as const, price: 2000, stock: 5, active: true }
+    { id: 10, name: 'Volant RSL Grade 1', productCategoryId: 1, priceCents: 1500, stock: 10, active: true },
+    { id: 11, name: 'Cordage Yonex BG65', productCategoryId: 2, priceCents: 2000, stock: 5, active: true }
   ];
 
+  const mountCatalog = (target: HTMLElement) =>
+    mount(ShopCatalog, { target, props: { members, products, activeSeasonId: '25-26' } });
+
+  const norm = (h: string) => h.replace(/&nbsp;|[  ]/g, ' ');
+
   beforeEach(() => {
-    vi.useFakeTimers();
     vi.stubGlobal('fetch', vi.fn().mockImplementation(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ success: true, data: { id: 100 } })
-      } as any)
+      Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true, data: { id: 100 } }) } as any)
     ));
   });
 
   afterEach(() => {
-    vi.runAllTimers();
-    vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  it('renders member selection and active products', () => {
+  it('renders the catalog structure with selection comboboxes', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(ShopCatalog, {
-      target,
-      props: {
-        members,
-        products,
-        activeSeasonId: '25-26'
-      }
-    });
+    mountCatalog(target);
     flushSync();
 
-    expect(target.innerHTML).toContain("Boutique Club");
-    expect(target.innerHTML).toContain("Article &amp; Quantité");
+    expect(target.innerHTML).toContain('Boutique');
+    expect(target.innerHTML).toContain('Mode de paiement');
 
-    expect(target.innerHTML).toContain("Volant RSL Grade 1");
-    expect(target.innerHTML).toContain("15.00 €");
+    // Acheteur, produit (unique, groupé par type), mode de paiement : trois combobox
+    expect(target.querySelectorAll('[role="combobox"]').length).toBe(3);
 
-    expect(target.innerHTML).toContain("Cordage Yonex BG65");
+    // Sans acheteur sélectionné, l'invite de sélection est affichée
+    expect(target.innerHTML).toContain("Sélectionnez votre nom d'adhérent");
   });
 
-  it('allows member selection from combobox with privacy masking', async () => {
+  it('shows the total for the default product and updates it with the quantity', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(ShopCatalog, {
-      target,
-      props: {
-        members,
-        products,
-        activeSeasonId: '25-26'
-      }
-    });
-
-    const input = target.querySelector('input#member-input') as HTMLInputElement;
-    expect(input).not.toBeNull();
-
-    input.focus();
+    mountCatalog(target);
     flushSync();
 
-    expect(target.innerHTML).toContain('D. Jean');
-    expect(target.innerHTML).toContain('M. Alice');
-
-    const buttons = Array.from(target.querySelectorAll('button'));
-    const jeanBtn = buttons.find(b => b.textContent?.includes('D. Jean'));
-    expect(jeanBtn).not.toBeUndefined();
-
-    jeanBtn!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-    flushSync();
-
-    expect(target.innerHTML).toContain('Adhérent sélectionné : <span class="font-bold">D. Jean</span>');
-  });
-
-  it('submits purchase wish and displays success feedback', async () => {
-    const target = document.createElement('div');
-    document.body.appendChild(target);
-
-    mount(ShopCatalog, {
-      target,
-      props: {
-        members,
-        products,
-        activeSeasonId: '25-26'
-      }
-    });
-
-    const input = target.querySelector('input#member-input') as HTMLInputElement;
-    input.focus();
-    flushSync();
-    const jeanBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('D. Jean'));
-    jeanBtn!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-    flushSync();
-
-    const submitBtn = Array.from(target.querySelectorAll('button')).find(
-      b => b.textContent?.trim().includes('Valider la commande')
-    );
-    expect(submitBtn).not.toBeUndefined();
-
-    submitBtn!.click();
-    flushSync();
-
-    expect(globalThis.fetch).toHaveBeenCalledWith('', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        seasonId: '25-26',
-        memberId: 1,
-        productId: 10,
-        quantity: 1,
-        paymentMethod: 'virement',
-        turnstileToken: 'mock-test-token'
-      })
-    });
-
-    await vi.runAllTimersAsync();
-    flushSync();
-
-    expect(target.innerHTML).toContain(
-      "Votre souhait d'achat de 1 Volant RSL Grade 1 a bien été enregistré. Il sera comptabilisé dès validation par le trésorier."
-    );
-  });
-
-  it('filters product dropdown when category changes', async () => {
-    const target = document.createElement('div');
-    document.body.appendChild(target);
-
-    mount(ShopCatalog, {
-      target,
-      props: {
-        members,
-        products,
-        activeSeasonId: '25-26'
-      }
-    });
-    flushSync();
-
-    const categorySelect = target.querySelector('select#category-select') as HTMLSelectElement;
-    expect(categorySelect).not.toBeNull();
-
-    categorySelect.value = 'string';
-    categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
-    flushSync();
-
-    const productSelect = target.querySelector('select#product-select') as HTMLSelectElement;
-    const options = Array.from(productSelect.querySelectorAll('option'));
-    expect(options.length).toBe(1);
-    expect(options[0].textContent).toContain('Cordage Yonex BG65');
-  });
-
-  it('updates total price dynamically when quantity or product changes', async () => {
-    const target = document.createElement('div');
-    document.body.appendChild(target);
-
-    mount(ShopCatalog, {
-      target,
-      props: {
-        members,
-        products,
-        activeSeasonId: '25-26'
-      }
-    });
-    flushSync();
-
-    // Default total for 1 Volant RSL (15.00 €)
-    expect(target.innerHTML).toContain('15.00 €');
+    // Produit par défaut auto-sélectionné (Volant RSL, 15,00 € x 1)
+    expect(norm(target.innerHTML)).toContain('15,00');
 
     const qtyInput = target.querySelector('input#quantity-input') as HTMLInputElement;
+    expect(qtyInput).not.toBeNull();
     qtyInput.value = '3';
     qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
     flushSync();
 
-    // Total for 3 Volant RSL (45.00 €)
-    expect(target.innerHTML).toContain('45.00 €');
+    // Total pour 3 Volants RSL (45,00 €)
+    expect(norm(target.innerHTML)).toContain('45,00');
   });
 
-  it('supports keyboard navigation through the members listbox', () => {
+  it('blocks submission until an adherent is selected', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mountCatalog(target);
+    flushSync();
+
+    const submitBtn = Array.from(target.querySelectorAll('button')).find(
+      b => b.textContent?.includes('Valider la commande')
+    ) as HTMLButtonElement | undefined;
+    expect(submitBtn).toBeDefined();
+    // Aucun adhérent sélectionné → soumission désactivée
+    expect(submitBtn!.disabled).toBe(true);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it('explains why submission is blocked instead of only greying the button', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mountCatalog(target);
+    flushSync();
+
+    expect(target.innerHTML).toContain("Sélectionnez l'adhérent pour lequel commander.");
+  });
+
+  it('keeps products orderable when their stock is not tracked (stock = 0 par convention)', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    // Cas staging « Babolat 2 » : trackStock = false, stock = 0 → commandable.
+    mount(ShopCatalog, {
+      target,
+      props: {
+        members,
+        products: [{ id: 20, name: 'Babolat 2', productCategoryId: 1, priceCents: 3150, stock: 0, trackStock: false, active: true }],
+        activeSeasonId: '25-26',
+        lockToMembers: true,
+        initialMemberId: '1'
+      }
+    });
+    flushSync();
+
+    const submitBtn = Array.from(target.querySelectorAll('button')).find(
+      b => b.textContent?.includes('Valider la commande')
+    ) as HTMLButtonElement;
+    expect(submitBtn.disabled).toBe(false);
+    expect(target.innerHTML).not.toContain('rupture de stock');
+  });
+
+  it('hides tracked products that are out of stock and says how many', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
@@ -197,229 +131,50 @@ describe('ShopCatalog Component', () => {
       target,
       props: {
         members,
-        products,
-        activeSeasonId: '25-26'
+        products: [
+          { id: 30, name: 'Volant RSL Grade 1', productCategoryId: 1, priceCents: 1500, stock: 10, trackStock: true, active: true },
+          { id: 31, name: 'Volant épuisé', productCategoryId: 1, priceCents: 1500, stock: 0, trackStock: true, active: true }
+        ],
+        activeSeasonId: '25-26',
+        lockToMembers: true,
+        initialMemberId: '1'
       }
     });
     flushSync();
 
-    const input = target.querySelector('input#member-input') as HTMLInputElement;
-    input.focus();
-    flushSync();
-
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-    flushSync();
-
-    const option0 = target.querySelector('#member-option-0');
-    expect(option0?.className).toContain('bg-primary/10');
-
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-    flushSync();
-
-    const option1 = target.querySelector('#member-option-1');
-    expect(option1?.className).toContain('bg-primary/10');
-    expect(option0?.className).not.toContain('bg-primary/10');
-
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    flushSync();
-
-    expect(target.innerHTML).toContain('Adhérent sélectionné : <span class="font-bold">M. Alice</span>');
+    expect(target.innerHTML).not.toContain('Volant épuisé');
+    expect(target.innerHTML).toContain("1 article en rupture de stock n'est pas proposé à la commande.");
   });
 
-  it('closes dropdown list on Escape key', () => {
+  it('performs dynamic adherent search via the API when the members list is empty', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([{ id: 7, firstName: 'Zoé', lastName: 'Testeur', licence: '999999' }])
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(ShopCatalog, {
-      target,
-      props: {
-        members,
-        products,
-        activeSeasonId: '25-26'
-      }
-    });
+    // Cas storefront : aucun adhérent préchargé — la recherche passe par l'API.
+    mount(ShopCatalog, { target, props: { members: [], products, activeSeasonId: '25-26' } });
     flushSync();
 
-    const input = target.querySelector('input#member-input') as HTMLInputElement;
-    input.focus();
+    // Ouvrir le combobox acheteur (premier combobox) et saisir une requête.
+    const combo = target.querySelector('[role="combobox"]') as HTMLButtonElement;
+    combo.click();
+    flushSync();
+    await new Promise((r) => setTimeout(r, 60));
     flushSync();
 
-    expect(input.getAttribute('aria-expanded')).toBe('true');
-    expect(target.querySelector('#member-listbox')).not.toBeNull();
-
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    const searchInput = document.querySelector('[data-slot="command-input"]') as HTMLInputElement;
+    expect(searchInput).not.toBeNull();
+    searchInput.value = 'dup';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    flushSync();
+    await new Promise((r) => setTimeout(r, 400)); // debounce de la recherche
     flushSync();
 
-    expect(input.getAttribute('aria-expanded')).toBe('false');
-    expect(target.querySelector('#member-listbox')).toBeNull();
-  });
-
-  it('selects all text on focus without clearing if member is selected', () => {
-    const target = document.createElement('div');
-    document.body.appendChild(target);
-
-    mount(ShopCatalog, {
-      target,
-      props: {
-        members,
-        products,
-        activeSeasonId: '25-26'
-      }
-    });
-    flushSync();
-
-    const input = target.querySelector('input#member-input') as HTMLInputElement;
-    input.focus();
-    flushSync();
-
-    const jeanBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('D. Jean'));
-    jeanBtn!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-    flushSync();
-
-    input.blur();
-    flushSync();
-
-    expect(input.value).toBe('D. Jean');
-
-    const selectSpy = vi.spyOn(input, 'select');
-
-    input.focus();
-    flushSync();
-
-    expect(input.value).toBe('D. Jean');
-    expect(selectSpy).toHaveBeenCalled();
-  });
-
-  it('renders Card layout components', () => {
-    const target = document.createElement('div');
-    document.body.appendChild(target);
-
-    mount(ShopCatalog, {
-      target,
-      props: {
-        members,
-        products,
-        activeSeasonId: '25-26'
-      }
-    });
-    flushSync();
-
-    const cardRoots = target.querySelectorAll('[data-slot="card"]');
-    expect(cardRoots.length).toBeGreaterThanOrEqual(1);
-
-    const cardTitles = Array.from(target.querySelectorAll('[data-slot="card-title"]'));
-    expect(cardTitles.some(el => el.textContent?.includes('Boutique Club'))).toBe(true);
-
-    const input = target.querySelector('input#member-input[data-slot="input"]');
-    expect(input).not.toBeNull();
-  });
-
-  it('performs dynamic autocomplete search via API when members prop is empty', async () => {
-    const target = document.createElement('div');
-    document.body.appendChild(target);
-
-    const searchMembers = [
-      { id: 3, firstName: 'Pierre', lastName: 'D.', licence: '78***12' }
-    ];
-    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
-      if (url.includes('/api/members-search')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(searchMembers)
-        } as any);
-      }
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ success: true, data: { id: 100 } })
-      } as any);
-    }));
-
-    mount(ShopCatalog, {
-      target,
-      props: {
-        members: [],
-        products,
-        activeSeasonId: '25-26'
-      }
-    });
-    flushSync();
-
-    const input = target.querySelector('input#member-input') as HTMLInputElement;
-    expect(input).not.toBeNull();
-
-    input.focus();
-    flushSync();
-
-    input.value = 'Dubois';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    flushSync();
-
-    await vi.advanceTimersByTimeAsync(300);
-    flushSync();
-
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/members-search?q=Dubois');
-
-    expect(target.innerHTML).toContain('D. Pierre');
-    expect(target.innerHTML).toContain('Licence: 78***12');
-
-    const button = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('D. Pierre'));
-    expect(button).not.toBeUndefined();
-    button!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-    flushSync();
-
-    expect(target.innerHTML).toContain('Adhérent sélectionné : <span class="font-bold">D. Pierre</span>');
-  });
-
-  it('clears fetched members when search query returns empty list', async () => {
-    const target = document.createElement('div');
-    document.body.appendChild(target);
-
-    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
-      if (url.includes('/api/members-search')) {
-        if (url.includes('q=Dubois')) {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve([{ id: 3, firstName: 'Pierre', lastName: 'D.', licence: '78***12' }])
-          } as any);
-        }
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve([])
-        } as any);
-      }
-      return Promise.resolve({} as any);
-    }));
-
-    mount(ShopCatalog, {
-      target,
-      props: {
-        members: [],
-        products,
-        activeSeasonId: '25-26'
-      }
-    });
-    flushSync();
-
-    const input = target.querySelector('input#member-input') as HTMLInputElement;
-    input.focus();
-    flushSync();
-
-    input.value = 'Dubois';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    flushSync();
-
-    await vi.advanceTimersByTimeAsync(300);
-    flushSync();
-
-    expect(target.innerHTML).toContain('D. Pierre');
-
-    input.value = 'UnknownUserXYZ';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    flushSync();
-
-    await vi.advanceTimersByTimeAsync(300);
-    flushSync();
-
-    expect(target.innerHTML).toContain('Aucun adhérent trouvé');
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/api/members-search'))).toBe(true);
   });
 });

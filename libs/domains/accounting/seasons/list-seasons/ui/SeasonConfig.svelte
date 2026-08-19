@@ -1,115 +1,349 @@
 <script lang="ts">
-  import { Calendar, Plus } from "@lucide/svelte";
-  import { Button, Input, Badge } from "@nba/ui";
+  import { Calendar, Plus, Wallet2 } from "@lucide/svelte";
+  import { Button, Input, Badge, Sheet, AlertDialog, DataTable, DataTableToolbar, Table, DataTableColumnHeader, FormField, Alert, Card , Checkbox } from '@nba/ui';
+  import InitialBalancesConfig from "./InitialBalancesConfig.svelte";
 
   let {
     seasons = [],
     isSubmitting = false,
+    showAddSheet = $bindable(false),
     newSeasonId = $bindable(''),
     newSeasonName = $bindable(''),
     newSeasonActive = $bindable(false),
     onCreateSeason,
     onToggleSeasonActive,
-    onCloseSeason
+    onCloseSeason,
+    onCheckCloseSeason,
+    tabsNav
   }: {
     seasons: any[];
     isSubmitting: boolean;
+    showAddSheet?: boolean;
     newSeasonId: string;
     newSeasonName: string;
     newSeasonActive: boolean;
-    onCreateSeason: (e: Event) => void;
+    onCreateSeason: (e: Event) => Promise<boolean>;
     onToggleSeasonActive: (id: string) => void;
-    onCloseSeason: (id: string) => void;
+    onCloseSeason: (id: string, confirmOverwrite: boolean) => void;
+    onCheckCloseSeason: (id: string) => Promise<any>;
+    tabsNav?: any;
   } = $props();
+
+  async function handleSubmit(e: Event) {
+    // Fermer sans attendre effaçait la saisie même quand le serveur refusait.
+    if (await onCreateSeason(e)) showAddSheet = false;
+  }
+
+  let closingSeasonId = $state<string | null>(null);
+  let showBalancesSheet = $state(false);
+  let balancesSeasonId = $state<string | null>(null);
+
+  function openBalances(id: string) {
+    balancesSeasonId = id;
+    showBalancesSheet = true;
+  }
+
+  let closingSeasonName = $derived(seasons.find(s => String(s.id) === String(closingSeasonId))?.name || closingSeasonId);
+  let confirmOverwrite = $state(false);
+  let checkData = $state<any>(null);
+  let isChecking = $state(false);
+  let checkError = $state<string | null>(null);
+
+  async function handleStartClose(id: string) {
+    closingSeasonId = id;
+    isChecking = true;
+    checkData = null;
+    checkError = null;
+    confirmOverwrite = false;
+    try {
+      checkData = await onCheckCloseSeason(id);
+    } catch (e) {
+      console.error(e);
+      checkError = e instanceof Error ? e.message : String(e);
+    } finally {
+      isChecking = false;
+    }
+  }
+
+  function handleConfirmClose() {
+    if (closingSeasonId) {
+      onCloseSeason(closingSeasonId, confirmOverwrite);
+      closingSeasonId = null;
+    }
+  }
+
+  const sortedSeasons = $derived([...seasons].sort((a, b) => String(b.id).localeCompare(String(a.id))));
 </script>
 
-<div class="space-y-6">
-  <div class="divide-y divide-border border border-border rounded-lg overflow-hidden bg-muted/10">
-    {#each seasons as s}
-      <div class="p-3.5 flex justify-between items-center bg-card">
-        <div>
-          <span class="font-bold text-sm text-foreground">{s.name}</span>
-          <span class="ml-2 text-xs font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">ID: {s.id}</span>
-        </div>
-        <div class="flex items-center gap-3">
+  <DataTable
+    data={sortedSeasons}
+    emptyTitle="Aucune saison"
+    emptyDescription="Aucun exercice comptable n'a encore été créé."
+  >
+    {#snippet toolbarStart()}
+      {#if tabsNav}
+        {@render tabsNav()}
+      {/if}
+    {/snippet}
+
+    {#snippet toolbar()}
+      <DataTableToolbar hasSearch={false}>
+        {#snippet actions()}
+          <Button onclick={() => showAddSheet = true} size="sm" class="font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+            <Plus class="w-4 h-4" />
+            Nouvelle saison
+          </Button>
+        {/snippet}
+      </DataTableToolbar>
+    {/snippet}
+
+    {#snippet mobileView()}
+      <div class="flex flex-col gap-4">
+        {#each sortedSeasons as s}
+          <Card.Root class="flex flex-col gap-3 relative">
+          <Card.Content class="p-4 flex flex-col gap-3">
+            <div class="flex justify-between items-start gap-2">
+              <span class="font-bold text-sm text-foreground">{s.name}</span>
+              <div class="flex items-center gap-3">
+                {#if s.closed}
+                  <Badge variant="secondary">
+                    Clôturée
+                  </Badge>
+                {:else}
+                  {#if s.active}
+                    <Badge variant="primary-soft">
+                      Active
+                    </Badge>
+                  {/if}
+                {/if}
+              </div>
+            </div>
+            {#if !s.closed}
+              <div class="flex justify-end gap-2 pt-2 border-t border-border mt-1 flex-wrap">
+                {#if !s.active}
+                  <Button variant="outline" size="sm" class="flex-1" onclick={() => onToggleSeasonActive(s.id)} disabled={isSubmitting}>
+                    Activer
+                  </Button>
+                {/if}
+                <Button variant="outline" size="sm" class="flex-1" onclick={() => openBalances(s.id)} disabled={isSubmitting}>
+                  Soldes
+                </Button>
+                <Button variant="destructive-outline" size="sm" class="flex-1" onclick={() => handleStartClose(s.id)} disabled={isSubmitting}>
+                  Clôturer
+                </Button>
+              </div>
+            {:else}
+              <div class="flex justify-end gap-2 pt-2 border-t border-border mt-1 flex-wrap">
+                <Button variant="outline" size="sm" class="flex-1" onclick={() => openBalances(s.id)}>
+                  Voir soldes
+                </Button>
+              </div>
+            {/if}
+          </Card.Content>
+          </Card.Root>
+        {/each}
+      </div>
+    {/snippet}
+
+    {#snippet header()}
+      <DataTableColumnHeader title="Saison" />
+      <DataTableColumnHeader title="Statut" />
+      <DataTableColumnHeader title="Actions" class="text-right" />
+    {/snippet}
+
+    {#snippet row(s)}
+      <Table.Row>
+        <Table.Cell class="font-medium">
+          {s.name}
+        </Table.Cell>
+        <Table.Cell>
           {#if s.closed}
-            <Badge variant="outline" class="bg-muted text-muted-foreground border-border font-bold">
+            <Badge variant="secondary">
               Clôturée
             </Badge>
           {:else}
             {#if s.active}
-              <Badge variant="outline" class="bg-primary/10 hover:bg-primary/10 text-primary border-primary/20 font-bold">
+              <Badge variant="primary-soft">
                 Active
               </Badge>
-            {:else}
-              <Button
-                variant="outline"
-                size="xs"
-                onclick={() => onToggleSeasonActive(s.id)}
-                disabled={isSubmitting}
-              >
-                Activer
-              </Button>
+            {/if}
+          {/if}
+        </Table.Cell>
+        <Table.Cell class="text-right">
+          <div class="flex justify-end items-center gap-2">
+            {#if !s.closed}
+              {#if !s.active}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onclick={() => onToggleSeasonActive(s.id)}
+                  disabled={isSubmitting}
+                >
+                  Activer
+                </Button>
+              {/if}
             {/if}
             <Button
-              variant="destructive"
-              size="xs"
-              onclick={() => onCloseSeason(s.id)}
-              disabled={isSubmitting}
+              variant="outline"
+              size="sm"
+              onclick={() => openBalances(s.id)}
             >
-              Clôturer
+              {s.closed ? 'Voir soldes' : 'Soldes'}
             </Button>
+            {#if !s.closed}
+              <Button
+                variant="destructive"
+                size="sm"
+                onclick={() => handleStartClose(s.id)}
+                disabled={isSubmitting}
+              >
+                Clôturer
+              </Button>
+            {/if}
+          </div>
+        </Table.Cell>
+      </Table.Row>
+    {/snippet}
+  </DataTable>
+
+<Sheet.Root bind:open={showAddSheet}>
+    <Sheet.Content size="md" class="overflow-y-auto">
+      <Sheet.Header>
+        <Sheet.Title class="flex items-center gap-2">
+          <Calendar class="w-5 h-5 text-primary" />
+          Nouvelle saison
+        </Sheet.Title>
+        <Sheet.Description>Ajoutez un nouvel exercice comptable pour l'association.</Sheet.Description>
+      </Sheet.Header>
+      <form onsubmit={handleSubmit} class="space-y-4 pt-4">
+          <FormField id="new-season-id" label="ID (ex: 26-27)">
+          <Input
+            type="text"
+            id="new-season-id"
+            bind:value={newSeasonId}
+            placeholder="26-27"
+            required
+          />
+          </FormField>
+          <FormField id="new-season-name" label="Libellé (ex: Saison 2026-2027)">
+          <Input
+            type="text"
+            id="new-season-name"
+            bind:value={newSeasonName}
+            placeholder="Saison 2026-2027"
+            required
+          />
+        </FormField>
+
+        <FormField id="new-season-active" label="Définir comme active immédiatement">
+          <Checkbox id="new-season-active" bind:checked={newSeasonActive} />
+        </FormField>
+
+        <Sheet.Footer class="pt-6">
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            class="w-full font-bold flex items-center justify-center gap-1.5"
+          >
+            <Plus class="w-4 h-4" />
+            Créer la saison
+          </Button>
+        </Sheet.Footer>
+      </form>
+    </Sheet.Content>
+  </Sheet.Root>
+
+<AlertDialog.Root open={!!closingSeasonId} onOpenChange={(o) => { if(!o) closingSeasonId = null; }}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>Clôturer la {closingSeasonName} ?</AlertDialog.Title>
+      <AlertDialog.Description>
+        {#if isChecking}
+          <div class="flex items-center gap-2 text-muted-foreground mt-4">
+            <span class="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></span>
+            Vérification comptable en cours...
+          </div>
+        {:else if checkError}
+          <Alert.Root variant="destructive" class="mt-4 p-3 rounded text-sm">
+          <Alert.Description>
+            <strong class="block mb-2">Erreur lors de la vérification :</strong>
+            {checkError}
+          </Alert.Description>
+          </Alert.Root>
+        {:else if checkData}
+          {#if checkData.canClose === false || (checkData.blockingItems && checkData.blockingItems.length > 0)}
+            <Alert.Root variant="destructive" class="mt-4 p-3 rounded text-sm">
+            <Alert.Description>
+              <strong class="block mb-2">Clôture impossible :</strong>
+              <ul class="list-disc pl-4 space-y-1">
+                {#each checkData.blockingItems as item}
+                  <li>{item.message}</li>
+                {/each}
+              </ul>
+            </Alert.Description>
+            </Alert.Root>
+          {:else}
+            <div class="space-y-4">
+              <p>
+                Êtes-vous sûr de vouloir clôturer définitivement cette saison ?
+                Cette action est irréversible et bloquera toute modification comptable pour cette période.
+              </p>
+
+              {#if checkData.existingInitialBalancesOnNextSeason && checkData.existingInitialBalancesOnNextSeason.some(b => b.discrepancy)}
+                <Alert.Root variant="warning" class="p-3 rounded text-sm space-y-2">
+                <Alert.Description>
+                  <strong>⚠️ Attention : écarts détectés sur la saison suivante ({checkData.nextSeasonCode}) !</strong>
+                  <p>Les soldes de départ actuels de la saison suivante vont être modifiés :</p>
+                  <ul class="list-disc pl-4 space-y-1">
+                    {#each checkData.existingInitialBalancesOnNextSeason.filter(b => b.discrepancy) as b}
+                      <li>
+                        <strong>{b.accountLabel || b.accountCode}</strong> : 
+                        Actuel = <strong>{(b.existingBalanceCents / 100).toFixed(2)} €</strong> 
+                        &rarr; Nouveau = <strong>{(b.newBalanceCents / 100).toFixed(2)} €</strong>
+                      </li>
+                    {/each}
+                  </ul>
+                </Alert.Description>
+                </Alert.Root>
+
+                <FormField id="confirm-overwrite" label={`Je confirme vouloir écraser les soldes initiaux de la saison ${checkData.nextSeasonCode}.`}>
+                  <Checkbox id="confirm-overwrite" bind:checked={confirmOverwrite} class="mt-1" />
+                </FormField>
+              {/if}
+            </div>
           {/if}
-        </div>
-      </div>
-    {/each}
-  </div>
+        {/if}
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel>Annuler</AlertDialog.Cancel>
+      <AlertDialog.Action 
+        onclick={handleConfirmClose} 
+        class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+        disabled={isSubmitting || isChecking || (checkData && !checkData.canClose) || (checkData?.existingInitialBalancesOnNextSeason?.some(b => b.discrepancy) && !confirmOverwrite)}
+      >
+        Clôturer définitivement
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>
 
-  <!-- Add Season Form -->
-  <form onsubmit={onCreateSeason} class="border-t border-border pt-4 space-y-4">
-    <h3 class="text-sm font-bold text-foreground">Ajouter un exercice</h3>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="space-y-1.5">
-        <label for="new-season-id" class="block text-xs font-bold text-muted-foreground uppercase">ID (ex: 26-27)</label>
-        <Input
-          type="text"
-          id="new-season-id"
-          bind:value={newSeasonId}
-          placeholder="26-27"
-          required
-        />
-      </div>
-      <div class="space-y-1.5">
-        <label for="new-season-name" class="block text-xs font-bold text-muted-foreground uppercase">Libellé (ex: Saison 2026-2027)</label>
-        <Input
-          type="text"
-          id="new-season-name"
-          bind:value={newSeasonName}
-          placeholder="Saison 2026-2027"
-          required
-        />
-      </div>
+<Sheet.Root bind:open={showBalancesSheet}>
+  <Sheet.Content size="md" class="overflow-y-auto">
+    <Sheet.Header>
+      <Sheet.Title class="flex items-center gap-2">
+        <Wallet2 class="w-5 h-5 text-primary" />
+        Soldes Initiaux de la Saison
+      </Sheet.Title>
+      <Sheet.Description>
+        Définissez l'état des comptes de l'association au premier jour de la saison comptable (1er septembre).
+      </Sheet.Description>
+    </Sheet.Header>
+    <div class="pt-6">
+      {#if balancesSeasonId}
+        <InitialBalancesConfig {seasons} seasonId={balancesSeasonId} />
+      {/if}
     </div>
+  </Sheet.Content>
+</Sheet.Root>
 
-    <div class="flex items-center gap-2">
-      <input
-        type="checkbox"
-        id="new-season-active"
-        bind:checked={newSeasonActive}
-        class="rounded border-border focus:ring-primary h-4 w-4"
-      />
-      <label for="new-season-active" class="text-xs font-medium text-foreground">Définir comme active immédiatement</label>
-    </div>
-
-    <Button
-      type="submit"
-      disabled={isSubmitting}
-      size="sm"
-      class="font-bold flex items-center gap-1"
-    >
-      <Plus class="w-3.5 h-3.5" />
-      Créer la saison
-    </Button>
-  </form>
-</div>

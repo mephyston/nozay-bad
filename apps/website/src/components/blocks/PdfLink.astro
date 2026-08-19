@@ -1,0 +1,61 @@
+---
+import type { PdfLinkBlock, CmsMediaRow, CmsMediaVariantRow } from '@nba/cms/public';
+import Picture from '../Picture.astro';
+
+type MediaMap = Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
+interface Props { block: PdfLinkBlock; media?: MediaMap; nested?: boolean }
+const { block, media = new Map() as MediaMap, nested = false } = Astro.props;
+
+/** Imbriqué dans une colonne, le bloc perd son enveloppe : la largeur y appartient à la colonne. */
+const shell = nested ? '' : 'mx-auto max-w-5xl px-4 py-6';
+
+const document = media.get(block.mediaId);
+const thumbnail = block.thumbnailMediaId ? media.get(block.thumbnailMediaId) : undefined;
+// Sans la ligne en base, on ne peut pas fabriquer l'URL : mieux vaut ne rien afficher
+// qu'un lien mort.
+const href = document ? `/media/${document.media.key.replace(/^media\//, '')}` : null;
+
+/**
+ * L'aperçu ne s'affiche que pour un vrai PDF.
+ *
+ * Le bloc accepte n'importe quel document de la médiathèque ; encadrer un `.docx`
+ * proposerait au navigateur de le télécharger dans un cadre invisible.
+ */
+const isPdf = document?.media.mimeType === 'application/pdf';
+const showPreview = Boolean(block.preview) && isPdf && href !== null;
+const previewHeight = block.previewHeightPx ?? 720;
+---
+{href && (
+  <section class:list={[shell]}>
+    {/*
+      Le lien d'abord, et toujours.
+
+      C'est le seul chemin qui fonctionne partout : Safari iOS et Chrome Android ne
+      rendent pas un PDF en cadre — selon les versions, un rectangle blanc ou un
+      téléchargement forcé. L'aperçu qui suit est un confort d'écran large, jamais le
+      moyen d'accéder au document.
+    */}
+    <a href={href} class="border-border hover:border-primary flex items-start gap-3 rounded-lg border p-4 transition-colors">
+      {thumbnail
+        ? <Picture media={thumbnail.media} variants={thumbnail.variants} sizes="96px" class="w-24 rounded" />
+        : <span aria-hidden="true" class="text-2xl">📄</span>}
+      <span>
+        <span class="font-medium">{block.label}</span>
+        {block.description && <span class="text-muted-foreground mt-1 block text-sm">{block.description}</span>}
+      </span>
+    </a>
+
+    {showPreview && (
+      // `hidden md:block` : sous 768 px, on n'affiche rien plutôt qu'un cadre dont on
+      // sait qu'il restera vide. La CSP autorise ce cadre par `frame-src 'self'`, le
+      // document étant servi par notre propre origine.
+      <iframe
+        src={href}
+        title={`Aperçu : ${block.label}`}
+        loading="lazy"
+        class="border-border mt-3 hidden w-full rounded-lg border md:block"
+        style={`height: ${previewHeight}px`}
+      ></iframe>
+    )}
+  </section>
+)}

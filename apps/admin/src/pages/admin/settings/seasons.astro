@@ -1,0 +1,189 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { SettingsManager } from '@nba/accounting-ui';
+import { env } from 'cloudflare:workers';
+import { createAdminApiClient } from '../../../lib/api';
+import { guardAction } from '../../../lib/guard';
+
+const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
+const apiService = createAdminApiClient(Astro.locals);
+
+const requestedSeason = Astro.url.searchParams.get('season');
+
+async function handleApiError(res: Response) {
+  let errMsg = await res.text();
+  try {
+    const j = JSON.parse(errMsg);
+    if (j.error) errMsg = j.error;
+  } catch(e){}
+  return new Response(errMsg, { status: res.status });
+}
+
+/** Permission exigée par action d'écriture de cette page. */
+const ACTIONS = {
+  create_season: 'accounting:seasons:write',
+  activate_season: 'accounting:seasons:write',
+  update_balances: 'accounting:seasons:write',
+  check_close_season: 'accounting:seasons:close',
+  close_season: 'accounting:seasons:close'
+} as const;
+
+if (Astro.request.method === 'POST') {
+  try {
+    const data = await Astro.request.json() as any;
+
+    const denied = guardAction(Astro.locals, data.action, ACTIONS);
+    if (denied) return denied;
+    
+    if (data.action === 'create_season') {
+      const apiRes = await apiService.fetch('http://localhost/accounting/seasons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: data.id,
+          name: data.name,
+          active: data.active
+        })
+      });
+      if (!apiRes.ok) return handleApiError(apiRes);
+    } else if (data.action === 'close_season') {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.id}/close`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmOverwriteInitialBalances: !!data.confirmOverwrite })
+      });
+      if (!apiRes.ok) return handleApiError(apiRes);
+    } else if (data.action === 'check_close_season') {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.id}/close-checks`);
+      if (!apiRes.ok) return handleApiError(apiRes);
+      return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
+    } else if (data.action === 'activate_season') {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: true })
+      });
+      if (!apiRes.ok) return handleApiError(apiRes);
+    } else if (data.action === 'update_balances') {
+      const apiRes = await apiService.fetch(`http://localhost/accounting/seasons/${data.seasonId}/balances`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify([
+          { accountId: 'current', initialBalanceCents: data.balances.current },
+          { accountId: 'savings', initialBalanceCents: data.balances.savings },
+          { accountId: 'cash', initialBalanceCents: data.balances.cash }
+        ])
+      });
+      if (!apiRes.ok) return handleApiError(apiRes);
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (err: any) {
+    return new Response(err.message, { status: 500 });
+  }
+}
+
+let seasonsList: any[] = [];
+let errorMsg = '';
+let season = requestedSeason || '25-26';
+
+try {
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
+
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    const rawSeasons: any[] = json.data || [];
+    rawSeasons.sort((a: any, b: any) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
+
+    if (!requestedSeason && rawSeasons.length > 0) {
+      const activeSeasonObj = rawSeasons.find((s: any) => s.active || s.active === 1) || rawSeasons[rawSeasons.length - 1];
+      season = activeSeasonObj.code || String(activeSeasonObj.id);
+    }
+
+    seasonsList = await Promise.all(rawSeasons.map(async (s) => {
+      const balRes = await apiService.fetch(`http://localhost/accounting/seasons/${s.code || s.id}/balances`);
+      let initialCurrentBalance = 0;
+      let initialSavingsBalance = 0;
+      let initialCashBalance = 0;
+      let isAutoFilled = false;
+      if (balRes.ok) {
+        const balJson = await balRes.json() as any;
+        const balList: any[] = balJson.data || [];
+        if (balList.length > 0) {
+          const curr = balList.find(b => b.accountId === 'current' || b.accountId === 1);
+          const sav = balList.find(b => b.accountId === 'savings' || b.accountId === 2);
+          const csh = balList.find(b => b.accountId === 'cash' || b.accountId === 3);
+          if (curr) initialCurrentBalance = curr.initialBalanceCents ?? curr.initialBalance ?? 0;
+          if (sav) initialSavingsBalance = sav.initialBalanceCents ?? sav.initialBalance ?? 0;
+          if (csh) initialCashBalance = csh.initialBalanceCents ?? csh.initialBalance ?? 0;
+        } else {
+          const sCode = s.code || String(s.id);
+          const match = sCode.match(/^(\d+)-(\d+)$/);
+          if (match) {
+            const yy = parseInt(match[1]);
+            const zz = parseInt(match[2]);
+            const prevSeasonId = `${String(yy - 1).padStart(2, '0')}-${String(zz - 1).padStart(2, '0')}`;
+            const prevReportRes = await apiService.fetch(`http://localhost/accounting/seasons/${prevSeasonId}/reports`);
+            if (prevReportRes.ok) {
+              const prevReportJson = await prevReportRes.json() as any;
+              const prevBilan: any[] = prevReportJson.data?.bilanTrésorerie || [];
+              const prevCurr = prevBilan.find((b: any) => b.accountId === 'current');
+              const prevSav = prevBilan.find((b: any) => b.accountId === 'savings');
+              const prevCsh = prevBilan.find((b: any) => b.accountId === 'cash');
+              if (prevCurr) initialCurrentBalance = prevCurr.finalBalance;
+              if (prevSav) initialSavingsBalance = prevSav.finalBalance;
+              if (prevCsh) initialCashBalance = prevCsh.finalBalance;
+              isAutoFilled = true;
+            }
+          }
+        }
+      }
+      return {
+        ...s,
+        initialCurrentBalance,
+        initialSavingsBalance,
+        initialCashBalance,
+        isAutoFilled
+      };
+    }));
+  }
+} catch (err: any) {
+  errorMsg = 'Erreur lors de la récupération des saisons.';
+}
+---
+
+<Layout title="Configuration des saisons - NBA 91">
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Configuration / Saisons" permissions={Astro.locals.user?.permissions || []}>
+    <div class="space-y-6">
+      <div class="no-print">
+        <a
+          href="/admin/settings"
+          class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+          Retour à la configuration
+        </a>
+      </div>
+
+      <PageHeader
+        title="Saisons comptables"
+        description="Gérez les exercices comptables et configurez les soldes initiaux."
+      />
+
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <SettingsManager
+        client:load
+        seasons={seasonsList}
+        categories={[]}
+        seasonId={season}
+        view="seasons"
+        allowedViews={['seasons']}
+      />
+    </div>
+  </AdminLayout>
+</Layout>

@@ -1,0 +1,44 @@
+{
+  "name": "website",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/website/src",
+  "implicitDependencies": [
+    "@nba/runtime-env",
+    "@nba/security-headers"
+  ],
+  "targets": {
+    "lint": {
+      "command": "eslint {projectRoot}"
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": [
+        "{projectRoot}/dist"
+      ],
+      "inputs": [
+        "production",
+        "^production",
+        {
+          "env": "PUBLIC_APP_ENV"
+        }
+      ],
+      "options": {
+        "command": "astro build",
+        "cwd": "apps/website"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "PUBLIC_APP_ENV=development astro dev --port 4323",
+        "cwd": "apps/website"
+      }
+    }
+  },
+  "tags": [
+    "type:app",
+    "scope:website"
+  ]
+}

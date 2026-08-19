@@ -11,13 +11,23 @@ export default defineConfig({
   resolve: {
     alias: {
       'astro:middleware': path.resolve(__dirname, './src/mocks/astro-middleware.ts'),
+      'astro:transitions/client': path.resolve(__dirname, '../../libs/shared/ui/src/mocks/astro-transitions.ts'),
       'cloudflare:workers': path.resolve(__dirname, './src/mocks/cloudflare-workers.ts'),
       '@nba/ui': path.resolve(__dirname, '../../libs/shared/ui/src/index.ts'),
+      '@nba/api-client': path.resolve(__dirname, '../../libs/shared/api-client/src/index.ts'),
+      '@nba/security-headers': path.resolve(__dirname, '../../libs/shared/security-headers/src/index.ts'),
+      '@nba/runtime-env': path.resolve(__dirname, '../../libs/shared/runtime-env/src/index.ts'),
+      '@nba/iam-ui': path.resolve(__dirname, '../../libs/domains/iam/shared/ui.ts'),
+      '@nba/iam': path.resolve(__dirname, '../../libs/domains/iam/index.ts'),
+      // Le barrel @nba/iam expose désormais la résolution d'identité, qui touche la
+      // base : l'alias devient nécessaire ici comme il l'est déjà côté build.
+      '@nba/db': path.resolve(__dirname, '../../libs/shared/db/src/index.ts'),
       'libs/shared/ui': path.resolve(__dirname, '../../libs/shared/ui'),
     },
     conditions: ['browser'],
   },
   test: {
+    name: 'admin',
     globals: true,
     environment: 'jsdom',
   },

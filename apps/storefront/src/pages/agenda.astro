@@ -1,0 +1,197 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import MobileNav from '../components/MobileNav.svelte';
+import EventRow from '../components/EventRow.astro';
+import { EventSignup } from '@nba/events-ui';
+import { env } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
+import { getActiveMemberStatus } from '../lib/member-status';
+import { fetchUpcomingEvents } from '../lib/agenda';
+import { fetchMyFixtures, normalizeLicence } from '../lib/my-fixtures';
+import { toFixtureEntries } from '../lib/fixture-events';
+
+/**
+ * L'agenda du club, et les inscriptions.
+ *
+ * Les écritures passent par la page elle-même plutôt que par un point d'entrée dédié,
+ * comme pour les notes de frais : c'est ce qui garantit que **l'identité de l'inscrit
+ * vient de la session** et non du corps de la requête. Le navigateur choisit un
+ * événement et un nombre d'accompagnants ; il ne choisit jamais qui s'inscrit.
+ */
+if (Astro.request.method === 'POST') {
+  const postSession = Astro.locals.session;
+  if (!postSession) {
+    return new Response(JSON.stringify({ success: false, error: 'Non authentifié.' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  const member = postSession.members.find((m) => m.id === postSession.activeMemberId);
+  if (!member) {
+    return new Response(JSON.stringify({ success: false, error: 'Profil introuvable.' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  try {
+    const body = (await Astro.request.json()) as {
+      action?: string;
+      eventId?: number;
+      guests?: number;
+    };
+    const eventId = Number(body.eventId);
+    if (!Number.isSafeInteger(eventId) || eventId < 1) {
+      return new Response(JSON.stringify({ success: false, error: 'Événement inconnu.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const api = createApiClient(env);
+
+    if (body.action === 'register') {
+      return api.fetch(`http://localhost/events/${eventId}/registrations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          // Imposé depuis la session : c'est la garde de toute cette page.
+          memberId: postSession.activeMemberId,
+          firstName: member.firstName,
+          lastName: member.lastName,
+          email: postSession.email,
+          guests: Number(body.guests) || 0
+        })
+      });
+    }
+
+    if (body.action === 'unregister') {
+      return api.fetch(
+        `http://localhost/events/${eventId}/registrations?memberId=${postSession.activeMemberId}`,
+        { method: 'DELETE' }
+      );
+    }
+
+    return new Response(JSON.stringify({ success: false, error: 'Action inconnue.' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (error: any) {
+    return new Response(JSON.stringify({ success: false, error: error?.message ?? 'Erreur.' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+const session = Astro.locals.session;
+const status = await getActiveMemberStatus(env, session);
+
+// L'agenda est lu **au nom du profil actif** : chaque événement porte alors l'état de
+// sa propre inscription, ce qui évite un aller-retour par ligne pour savoir quel
+// bouton afficher.
+const active = session?.members.find((m) => m.id === session.activeMemberId);
+
+/*
+ * Les rencontres d'interclubs de l'adhérent rejoignent l'agenda du club.
+ *
+ * Elles ne concernent que les adhérents engagés en équipe — les autres ne voient rien de
+ * plus — et se lisent sur la même ligne, dans la même couleur, que les événements de
+ * catégorie « interclubs » : c'est le même rendez-vous, il n'a pas à s'afficher deux
+ * fois de deux façons.
+ */
+const [events, myFixtures] = await Promise.all([
+  fetchUpcomingEvents(env, 50, session?.activeMemberId),
+  fetchMyFixtures(env, status.seasonCode ?? null, normalizeLicence(active?.licence))
+]);
+
+const fixtures = toFixtureEntries(myFixtures);
+// Fusionnés puis retriés : un agenda qui rangerait les rencontres à part obligerait à
+// lire deux listes pour savoir ce qui vient en premier.
+const timeline = [...events.map((event) => ({ event, entry: null as typeof fixtures[number] | null })),
+  ...fixtures.map((entry) => ({ event: entry.event, entry }))]
+  .sort((a, b) => a.event.startsAt.localeCompare(b.event.startsAt));
+
+const openCount = events.filter((event) => event.registration === 'open').length;
+---
+
+<Layout title="Agenda - Nozay Bad">
+  <Header currentPath="/agenda" />
+
+  <main class="w-full flex-1 p-3 pb-24 sm:p-6 md:pb-6">
+    <div class="mx-auto max-w-3xl">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-foreground sm:text-3xl">Agenda</h1>
+        <p class="mt-1 text-sm text-muted-foreground">
+          {openCount > 0
+            ? `Les prochains rendez-vous du club. ${openCount} ${openCount > 1 ? 'sont ouverts' : 'est ouvert'} aux inscriptions.`
+            : 'Les prochains rendez-vous du club.'}
+        </p>
+      </div>
+
+      {timeline.length === 0 ? (
+        <p class="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+          Aucun rendez-vous à venir pour le moment.
+        </p>
+      ) : (
+        <ul class="space-y-3">
+          {timeline.map(({ event, entry }) => (
+            <li
+              id={event.slug}
+              class="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5"
+            >
+              <EventRow event={event}>
+                {event.registration !== 'none' && (
+                  <div class="mt-3">
+                    <EventSignup
+                      client:load
+                      eventId={event.id}
+                      myGuests={event.myGuests}
+                      open={event.registration === 'open'}
+                      attendeeCount={event.attendeeCount}
+                    />
+                  </div>
+                )}
+
+                {entry && (
+                  <p class="mt-2 text-sm text-muted-foreground">
+                    {entry.provisional && (
+                      <span class="block">
+                        Date à préciser par votre capitaine : la rencontre se joue dans la
+                        semaine, pas nécessairement le lundi.
+                      </span>
+                    )}
+                    <span class="block">
+                      {entry.fixture.championshipLabel} · {entry.fixture.divisionLabel} ·
+                      {entry.fixture.selected
+                        ? ` vous êtes aligné${entry.fixture.slotLabel ? ` en ${entry.fixture.slotLabel}` : ''}`
+                        : entry.fixture.lineupExists
+                          ? " vous n'êtes pas aligné sur cette journée"
+                          : " composition pas encore saisie par votre capitaine"}
+                      {' · '}
+                      <a
+                        href={`/equipes/${entry.fixture.teamId}/journee/${entry.fixture.dayNumber}`}
+                        class="font-semibold text-primary hover:underline"
+                      >
+                        voir la composition
+                      </a>
+                    </span>
+                  </p>
+                )}
+              </EventRow>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  </main>
+
+  <MobileNav currentPath="/agenda" />
+
+  <footer class="mt-12 hidden border-t border-border bg-card/20 py-8 text-center text-xs text-muted-foreground md:block md:pb-8">
+    <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+    <p class="mt-2"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a> · <a href="/mentions-legales" class="hover:underline">Mentions légales</a></p>
+  </footer>
+</Layout>

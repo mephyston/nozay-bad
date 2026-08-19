@@ -44,20 +44,20 @@ Dans l'onglet **"Saisir écriture"** du volet de droite :
 
 ### A. Base de données
 Le schéma de la base de données actuel est déjà compatible avec le multi-match et la ventilation :
-* `transactionsTable` (Grand Livre) contient `bankTransactionId` (plusieurs écritures peuvent référencer le même virement).
-* `invoicesTable` contient `bankTransactionId`.
-* `ordersTable` contient `bankTransactionId`.
+* `ledgerEntriesTable` (Grand Livre) contient `bankStatementLineId` (plusieurs écritures peuvent référencer le même virement).
+* `invoicesTable` contient `bankStatementLineId`.
+* `ordersTable` contient `bankStatementLineId`.
 
 ### B. Endpoints API Hono
 Nous allons implémenter ou mettre à jour les routes suivantes dans `apps/api/src/index.ts` :
 
 1. **Rapprochement groupé (Multi-match) :**
    * Mettre à jour `POST /bank-transactions/:id/reconcile` (action `'create'`) pour accepter un tableau de `invoiceIds` et/ou `orderIds` au lieu d'un seul identifiant.
-   * En base, le serveur associera le `bankTransactionId` à toutes les factures et commandes spécifiées, passera leur statut à `'paid'`, et créera autant d'écritures dans le Grand Livre que de commandes/factures associées pour assurer la traçabilité.
+   * En base, le serveur associera le `bankStatementLineId` à toutes les factures et commandes spécifiées, passera leur statut à `'paid'`, et créera autant d'écritures dans le Grand Livre que de commandes/factures associées pour assurer la traçabilité.
 
 2. **Rapprochement en masse (Bulk) :**
    * Créer la route `POST /bank-transactions/reconcile-bulk`.
-   * Reçoit un tableau de requêtes de rapprochement : `[{ btId, action: 'match'|'create', invoiceId?, transactionId?, ... }]`.
+   * Reçoit un tableau de requêtes de rapprochement : `[{ btId, action: 'match'|'create', invoiceId?, ledgerEntryId?, ... }]`.
    * Traite l'ensemble des opérations dans une **transaction de base de données** unique pour garantir l'atomicité.
 
 3. **Ventilation manuelle :**

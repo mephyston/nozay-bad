@@ -5,162 +5,85 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1783417819813,
-      "tag": "0000_easy_falcon",
+      "when": 1786226044622,
+      "tag": "0000_baseline",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "6",
-      "when": 1783443677237,
-      "tag": "0001_special_jigsaw",
+      "when": 1786226044623,
+      "tag": "0001_seed_reference_data",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "6",
-      "when": 1783933870208,
-      "tag": "0002_sour_sharon_ventura",
+      "when": 1786267546737,
+      "tag": "0002_schedules_events",
       "breakpoints": true
     },
     {
       "idx": 3,
       "version": "6",
-      "when": 1783934260859,
-      "tag": "0003_melted_scrambler",
+      "when": 1786281052034,
+      "tag": "0003_order_payment_workflow",
       "breakpoints": true
     },
     {
       "idx": 4,
       "version": "6",
-      "when": 1783936802046,
-      "tag": "0004_create_accounting_tables",
+      "when": 1786798300071,
+      "tag": "0004_cool_omega_sentinel",
       "breakpoints": true
     },
     {
       "idx": 5,
       "version": "6",
-      "when": 1783945181535,
-      "tag": "0005_create_bank_transactions_table",
+      "when": 1786814336928,
+      "tag": "0005_realign_after_manual_migrations",
       "breakpoints": true
     },
     {
       "idx": 6,
       "version": "6",
-      "when": 1783946600907,
-      "tag": "0006_enrich_tables_for_ai_and_members",
+      "when": 1786876012055,
+      "tag": "0006_teams",
       "breakpoints": true
     },
     {
       "idx": 7,
       "version": "6",
-      "when": 1783948081110,
-      "tag": "0007_calm_misty_knight",
+      "when": 1786877108798,
+      "tag": "0011_member_payment_date",
       "breakpoints": true
     },
     {
       "idx": 8,
       "version": "6",
-      "when": 1783951150751,
-      "tag": "0008_curly_yellowjacket",
+      "when": 1786881121754,
+      "tag": "0008_teams_calendar_details",
       "breakpoints": true
     },
     {
       "idx": 9,
       "version": "6",
-      "when": 1783955295714,
-      "tag": "0009_fixed_doctor_doom",
+      "when": 1786885434084,
+      "tag": "0009_drop_effective_week",
       "breakpoints": true
     },
     {
       "idx": 10,
       "version": "6",
-      "when": 1783962226516,
-      "tag": "0010_dashing_ultragirl",
+      "when": 1786886117983,
+      "tag": "0010_championship_rules_link",
       "breakpoints": true
     },
     {
       "idx": 11,
       "version": "6",
-      "when": 1783963382827,
-      "tag": "0011_melted_odin",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "6",
-      "when": 1783964066829,
-      "tag": "0012_fuzzy_mulholland_black",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "6",
-      "when": 1783964790093,
-      "tag": "0013_easy_ricochet",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "6",
-      "when": 1783967570146,
-      "tag": "0014_tidy_vision",
-      "breakpoints": true
-    },
-    {
-      "idx": 15,
-      "version": "6",
-      "when": 1783982519235,
-      "tag": "0015_misty_naoko",
-      "breakpoints": true
-    },
-    {
-      "idx": 16,
-      "version": "6",
-      "when": 1783983420000,
-      "tag": "0016_add_virements_internes_category",
-      "breakpoints": true
-    },
-    {
-      "idx": 17,
-      "version": "6",
-      "when": 1784015513180,
-      "tag": "0017_spotty_cerise",
-      "breakpoints": true
-    },
-    {
-      "idx": 18,
-      "version": "6",
-      "when": 1784039583270,
-      "tag": "0018_fearless_cammi",
-      "breakpoints": true
-    },
-    {
-      "idx": 19,
-      "version": "6",
-      "when": 1784039702328,
-      "tag": "0019_grey_purifiers",
-      "breakpoints": true
-    },
-    {
-      "idx": 20,
-      "version": "6",
-      "when": 1784041218823,
-      "tag": "0020_orange_squirrel_girl",
-      "breakpoints": true
-    },
-    {
-      "idx": 21,
-      "version": "6",
-      "when": 1784152534231,
-      "tag": "0021_modern_the_hand",
-      "breakpoints": true
-    },
-    {
-      "idx": 22,
-      "version": "6",
-      "when": 1784153338073,
-      "tag": "0022_outstanding_gorgon",
+      "when": 1787091650652,
+      "tag": "0011_member_club_functions",
       "breakpoints": true
     }
   ]

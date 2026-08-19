@@ -29,7 +29,7 @@ export const ordersTable = sqliteTable('orders', {
     enum: ['virement', 'cheque', 'especes', 'labaz', 'ancv', 'pass_sport', 'ticket_loisir', 'up_loisir'] 
   }).notNull(),
   status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
-  transactionId: integer('transaction_id').references(() => transactionsTable.id),
+  ledgerEntryId: integer('ledger_entry_id').references(() => ledgerEntriesTable.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 ```

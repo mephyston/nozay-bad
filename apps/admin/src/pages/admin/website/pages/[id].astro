@@ -1,0 +1,200 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import AdminLayout from '../../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { PageEditor } from '@nba/cms-ui';
+import { createAdminApiClient, resolveEnv } from '../../../../lib/api';
+import { can, guardAction } from '../../../../lib/guard';
+import { createPreviewToken } from '@nba/preview';
+
+const canWrite = can(Astro.locals, 'cms:pages:write');
+const canDelete = can(Astro.locals, 'cms:pages:delete');
+
+const pageId = Number(Astro.params.id);
+if (!Number.isSafeInteger(pageId) || pageId < 1) return Astro.redirect('/admin/website/pages');
+
+const apiService = createAdminApiClient(Astro.locals);
+
+const canUploadMedia = can(Astro.locals, 'cms:media:write');
+
+const ACTIONS = {
+  updateMeta: 'cms:pages:write',
+  saveBlocks: 'cms:pages:write',
+  publish: 'cms:pages:write',
+  restore: 'cms:pages:write',
+  upload: 'cms:media:write'
+} as const;
+
+if (Astro.request.method === 'POST') {
+  // Dépôt d'un média depuis un sélecteur de bloc, sans quitter l'éditeur — il arrive en
+  // multipart, là où toutes les autres actions de cet écran parlent JSON. Composer une
+  // page et déposer un fichier restent deux droits distincts.
+  const contentType = Astro.request.headers.get('content-type') ?? '';
+  if (contentType.includes('multipart/form-data')) {
+    const denied = guardAction(Astro.locals, 'upload', ACTIONS);
+    if (denied) return denied;
+
+    const form = await Astro.request.formData();
+    const apiRes = await apiService.fetch('http://localhost/cms/media', { method: 'POST', body: form });
+    if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+    return new Response(JSON.stringify(await apiRes.json()), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  const data = (await Astro.request.json()) as any;
+  const denied = guardAction(Astro.locals, data.action, ACTIONS);
+  if (denied) return denied;
+
+  const routes: Record<string, { url: string; method: string; body?: unknown }> = {
+    updateMeta: {
+      url: `http://localhost/cms/pages/${pageId}`,
+      method: 'PUT',
+      body: {
+        title: data.title,
+        slug: data.slug,
+        template: data.template,
+        // Une chaîne vide veut dire « pas de valeur » : on la ramène à null pour que
+        // le repli en cascade s'applique côté site.
+        seoTitle: data.seoTitle?.trim() ? data.seoTitle : null,
+        seoDescription: data.seoDescription?.trim() ? data.seoDescription : null
+      }
+    },
+    saveBlocks: {
+      url: `http://localhost/cms/pages/${pageId}/blocks`,
+      method: 'PUT',
+      body: { blocks: data.blocks }
+    },
+    publish: {
+      url: `http://localhost/cms/pages/${pageId}/publish`,
+      method: 'POST',
+      body: { published: data.published }
+    },
+    restore: {
+      url: `http://localhost/cms/pages/${pageId}/revisions/${data.revisionId}/restore`,
+      method: 'POST'
+    }
+  };
+
+  const route = routes[data.action];
+  const apiRes = await apiService.fetch(route.url, {
+    method: route.method,
+    headers: { 'Content-Type': 'application/json' },
+    ...(route.body ? { body: JSON.stringify(route.body) } : {})
+  });
+
+  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+  return new Response(JSON.stringify(await apiRes.json()), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+let page: any = null;
+let blocks: any[] = [];
+let revisions: any[] = [];
+let media: any[] = [];
+let targets: { path: string; title: string; kind: 'page' | 'post'; status?: 'draft' | 'published' }[] = [];
+let categories: any[] = [];
+let redirects: any[] = [];
+let errorMsg = '';
+
+try {
+  const res = await apiService.fetch(`http://localhost/cms/pages/${pageId}`);
+  if (res.ok) {
+    const json = (await res.json()) as any;
+    page = json.data?.page ?? null;
+    blocks = json.data?.blocks ?? [];
+  } else {
+    errorMsg = 'Impossible de charger cette page.';
+  }
+
+  const revisionsRes = await apiService.fetch(`http://localhost/cms/pages/${pageId}/revisions`);
+  if (revisionsRes.ok) {
+    const json = (await revisionsRes.json()) as any;
+    revisions = json.data ?? [];
+  }
+
+  // Ressources des éditeurs de blocs : la médiathèque (bannière, documents), les
+  // cibles internes possibles (pages et actualités) et les catégories d'actualités.
+  // L'échec de l'une n'empêche pas d'éditer la page — les champs concernés retombent
+  // simplement sur une saisie libre.
+  const [mediaRes, pagesRes, postsRes, categoriesRes] = await Promise.all([
+    apiService.fetch('http://localhost/cms/media?limit=200'),
+    apiService.fetch('http://localhost/cms/pages'),
+    apiService.fetch('http://localhost/cms/posts?limit=100'),
+    apiService.fetch('http://localhost/cms/post-categories')
+  ]);
+
+  if (mediaRes.ok) media = ((await mediaRes.json()) as any).data ?? [];
+
+  // Les redirections ne sont demandées qu'une fois la page connue : elles se cherchent
+  // par chemin de destination.
+  if (page?.path) {
+    const redirectsRes = await apiService.fetch(
+      `http://localhost/cms/redirects?toPath=${encodeURIComponent(page.path)}`
+    );
+    if (redirectsRes.ok) redirects = ((await redirectsRes.json()) as any).data ?? [];
+  }
+  if (categoriesRes.ok) categories = ((await categoriesRes.json()) as any).data ?? [];
+
+  if (pagesRes.ok) {
+    const rows = ((await pagesRes.json()) as any).data ?? [];
+    targets.push(...rows.map((row: any) => ({ path: row.path, title: row.title, kind: 'page' as const, status: row.status })));
+  }
+  if (postsRes.ok) {
+    const rows = ((await postsRes.json()) as any).data?.posts ?? [];
+    targets.push(...rows.map((row: any) => ({ path: row.path, title: row.title, kind: 'post' as const, status: row.status })));
+  }
+} catch {
+  errorMsg = 'Impossible de charger cette page.';
+}
+
+// Lien d'aperçu.
+//
+// L'administration **signe** le jeton, le site public le vérifie : les deux Workers
+// partagent `PREVIEW_TOKEN_SECRET`, exactement comme ils partagent la clé interne.
+// Sans secret configuré, le lien pointe la page sans jeton — un brouillon y reste
+// donc invisible, ce qui est le comportement sûr.
+const websiteBase = import.meta.env.PUBLIC_WEBSITE_URL ?? '';
+let previewUrl = '';
+if (page && websiteBase) {
+  const secret = (resolveEnv(Astro.locals) as { PREVIEW_TOKEN_SECRET?: string }).PREVIEW_TOKEN_SECRET;
+  previewUrl = secret
+    ? `${websiteBase}${page.path}?preview=${encodeURIComponent(await createPreviewToken(page.path, secret))}`
+    : `${websiteBase}${page.path}`;
+}
+---
+
+<Layout title={`${page?.title ?? 'Page'} - NBA 91`}>
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Pages du site"
+  >
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader title={page?.title ?? 'Page'} description="Composez la page en empilant des blocs." />
+
+      {page && (
+        <PageEditor
+          client:load
+          page={page}
+          blocks={blocks}
+          revisions={revisions}
+          previewUrl={previewUrl}
+          media={media}
+          targets={targets}
+          categories={categories}
+        redirects={redirects}
+          canWrite={canWrite}
+          canDelete={canDelete}
+          canUploadMedia={canUploadMedia}
+        />
+      )}
+    </div>
+  </AdminLayout>
+</Layout>

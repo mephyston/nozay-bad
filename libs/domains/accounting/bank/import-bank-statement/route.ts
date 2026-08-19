@@ -10,42 +10,47 @@ export type Bindings = {
 
 export const importBankStatementRoute = new Hono<{ Bindings: Bindings }>();
 
-importBankStatementRoute.post(
-  '/bank-transactions/import',
-  tbValidator('form', importBankStatementFormSchema, (result, c) => {
-    if (!result.success) {
-      return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
-    }
-  }),
-  async (c) => {
-    if (!c.env || !c.env.DB) {
-      return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-    }
-    const { seasonId, accountId: forcedAccountId, file } = c.req.valid('form');
+const handleImport = async (c: any) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const { accountId: forcedAccountId, file } = c.req.valid('form');
 
-    if (!file) {
-      return c.json({ success: false, error: 'Fichier et saison obligatoires.' }, 400);
-    }
+  if (!file) {
+    return c.json({ success: false, error: 'Fichier obligatoire.' }, 400);
+  }
 
-    let content: string;
-    if (typeof file === 'string') {
-      content = file;
-    } else if (typeof file === 'object' && file !== null) {
-      if ('text' in file && typeof (file as any).text === 'function') {
-        content = await (file as any).text();
-      } else if ('arrayBuffer' in file && typeof (file as any).arrayBuffer === 'function') {
-        const arrayBuffer = await (file as any).arrayBuffer();
-        const utf8Decoder = new TextDecoder('utf-8');
-        content = utf8Decoder.decode(arrayBuffer);
-      } else {
-        return c.json({ success: false, error: 'Format de fichier invalide.' }, 400);
-      }
+  let content: string;
+  if (typeof file === 'string') {
+    content = file;
+  } else if (typeof file === 'object' && file !== null) {
+    if ('text' in file && typeof (file as any).text === 'function') {
+      content = await (file as any).text();
+    } else if ('arrayBuffer' in file && typeof (file as any).arrayBuffer === 'function') {
+      const arrayBuffer = await (file as any).arrayBuffer();
+      const utf8Decoder = new TextDecoder('utf-8');
+      content = utf8Decoder.decode(arrayBuffer);
     } else {
       return c.json({ success: false, error: 'Format de fichier invalide.' }, 400);
     }
-
-    const db = createDb(c.env.DB);
-    const result = await importBankStatement(db, content, seasonId, forcedAccountId as string);
-    return c.json({ success: true, ...result });
+  } else {
+    return c.json({ success: false, error: 'Format de fichier invalide.' }, 400);
   }
-);
+
+  const db = createDb(c.env.DB);
+  try {
+    const result = await importBankStatement(db, content, forcedAccountId as string);
+    return c.json({ success: true, ...result });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+};
+
+const importValidator = tbValidator('form', importBankStatementFormSchema, (result, c) => {
+  if (!result.success) {
+    return c.json({ success: false, error: 'Validation failed: ' + [...result.errors].map(e => `${(e as any).path || (e as any).instancePath?.replace(/^\//, '') || 'field'}: ${e.message}`).join(', ') }, 400);
+  }
+});
+
+importBankStatementRoute.post('/bank-statement-lines/import', importValidator, handleImport);
+importBankStatementRoute.post('/bank-transactions/import', importValidator, handleImport);

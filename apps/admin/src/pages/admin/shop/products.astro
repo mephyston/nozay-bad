@@ -1,25 +1,43 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
 import { ProductsManager } from '@nba/shop-ui';
 
 import { env } from 'cloudflare:workers';
+import { createAdminApiClient } from '../../../lib/api';
+import { guardAction } from '../../../lib/guard';
 
-const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
-const apiService = env.API_SERVICE;
+
+const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
+const apiService = createAdminApiClient(Astro.locals);
+
+/** Permission exigée par action d'écriture de cette page. */
+const ACTIONS = {
+  create: 'shop:products:write',
+  update: 'shop:products:write'
+} as const;
 
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
+
+    const denied = guardAction(Astro.locals, data.action, ACTIONS);
+    if (denied) return denied;
     if (data.action === 'create') {
+      let catId = typeof data.category === 'number' ? data.category : 3;
+      if (data.category === 'shuttlecock') catId = 1;
+      if (data.category === 'string') catId = 2;
+      
       const apiRes = await apiService.fetch('http://localhost/shop/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: data.name,
-          category: data.category,
-          price: data.price,
+          productCategoryId: catId,
+          priceCents: data.priceCents ?? data.price,
           stock: data.stock,
+          trackStock: data.trackStock,
           active: data.active
         })
       });
@@ -33,8 +51,9 @@ if (Astro.request.method === 'POST') {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: data.name,
-          price: data.price,
+          priceCents: data.priceCents ?? data.price,
           stock: data.stock,
+          trackStock: data.trackStock,
           active: data.active
         })
       });
@@ -66,22 +85,14 @@ try {
 ---
 
 <Layout title="Gestion des Produits - NBA 91">
-  <AdminLayout client:idle email={userEmail} breadcrumb="Boutique / Produits">
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Boutique / Produits" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
-      {errorMsg && (
-        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
-          {errorMsg}
-        </div>
-      )}
+      {errorMsg && <ErrorAlert message={errorMsg} />}
 
-      <div class="flex items-center justify-between border-b border-border pb-4">
-        <div>
-          <h1 class="text-3xl font-bold tracking-tight">Gestion des Produits</h1>
-          <p class="text-muted-foreground mt-1">
-            Consultez et modifiez les tarifs, stocks et statuts de la boutique.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Gestion des Produits"
+        description="Consultez et modifiez les tarifs, stocks et statuts de la boutique."
+      />
 
       <ProductsManager
         client:load

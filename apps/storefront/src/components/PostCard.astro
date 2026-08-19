@@ -1,0 +1,115 @@
+---
+import { obfuscateEmails } from '@nba/html';
+import { EventSignup } from '@nba/events-ui';
+import type { MemberPost } from '../lib/posts';
+import type { AgendaEvent } from '../lib/agenda';
+import { mediaUrl, withWebsiteMedia } from '../lib/media';
+
+interface Props {
+  post: MemberPost;
+  /**
+   * Agenda déjà chargé par la page, dans lequel retrouver l'événement annoncé.
+   *
+   * Passé plutôt que lu ici : l'écran charge l'agenda **une fois** pour toutes ses
+   * cartes, là où une lecture par carte multiplierait les allers-retours.
+   */
+  events?: AgendaEvent[];
+}
+
+const { post, events = [] } = Astro.props;
+
+/**
+ * L'événement que l'actualité annonce, s'il est encore à l'agenda.
+ *
+ * Le rattachement est un simple identifiant, sans contrainte en base : un événement
+ * supprimé ou déjà passé ne se retrouve pas ici, et la carte s'affiche alors comme
+ * n'importe quelle autre. Un lien mort ne casse rien, il ne montre rien.
+ */
+const linkedEvent = post.eventId
+  ? events.find((event) => event.id === post.eventId) ?? null
+  : null;
+
+const when = post.publishedAt
+  ? new Date(typeof post.publishedAt === 'number' ? post.publishedAt * 1000 : post.publishedAt)
+  : null;
+
+const dateLabel = when
+  ? when.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+  : '';
+
+/**
+ * Une seule forme de carte, partout.
+ *
+ * L'accueil montrait auparavant une variante réduite au chapô. Elle n'apportait rien :
+ * « Animations » n'est qu'un filtre sur les mêmes actualités, et une actualité n'avait
+ * aucune raison de changer d'allure selon la page qui la porte.
+ */
+const coverSrc = post.cover ? mediaUrl(post.cover.key) : null;
+---
+
+{/*
+  L'ancre porte le slug : c'est la cible des cartes résumées de l'accueil, qui n'ont
+  pas de page d'article vers laquelle pointer. `scroll-mt` dégage la hauteur de
+  l'en-tête collant, sans quoi l'article visé arriverait sous la barre.
+*/}
+<article id={post.slug} class="scroll-mt-20 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+  {coverSrc && (
+    <img
+      src={coverSrc}
+      alt={post.cover!.alt}
+      width={post.cover!.width ?? undefined}
+      height={post.cover!.height ?? undefined}
+      loading="lazy"
+      class="aspect-[16/9] w-full object-cover"
+    />
+  )}
+
+  <div class="px-5 py-4">
+    <header class="mb-2 flex items-start justify-between gap-3">
+      <h2 class="text-base font-semibold text-foreground">{post.title}</h2>
+      {dateLabel && (
+        <time class="shrink-0 pt-0.5 text-xs text-muted-foreground" datetime={when!.toISOString()}>
+          {dateLabel}
+        </time>
+      )}
+    </header>
+
+    {(post.categories ?? []).length > 0 && (
+      <ul class="mb-2 flex flex-wrap gap-1.5">
+        {post.categories!.map((category) => (
+          <li class="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+            {category.name}
+          </li>
+        ))}
+      </ul>
+    )}
+
+    {/*
+      `set:html` est volontaire et sûr : le corps a été réduit par l'API à une liste
+      blanche de balises (`sanitizeRichText`, profil du site public) avant d'être écrit
+      en base. C'est aussi pourquoi l'assainissement vit côté serveur et non ici.
+
+      Deux retouches au rendu, et deux seulement : les adresses e-mail sont dissimulées
+      comme sur le site public — l'espace adhérent est authentifié, mais le même contenu
+      y transite et la règle ne dépend pas de l'écran —, et les médias sont résolus vers
+      le domaine qui les sert, faute de quoi une image insérée dans le corps reste vide.
+    */}
+    <div
+      class="prose prose-sm prose-neutral dark:prose-invert max-w-none"
+      set:html={withWebsiteMedia(obfuscateEmails(post.bodyHtml))}
+    />
+
+    {linkedEvent && linkedEvent.registration !== 'none' && (
+      <div class="mt-4">
+        <EventSignup
+          client:load
+          eventId={linkedEvent.id}
+          myGuests={linkedEvent.myGuests}
+          open={linkedEvent.registration === 'open'}
+          attendeeCount={linkedEvent.attendeeCount}
+          endpoint="/agenda"
+        />
+      </div>
+    )}
+  </div>
+</article>

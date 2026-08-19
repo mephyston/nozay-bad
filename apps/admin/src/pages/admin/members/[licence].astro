@@ -1,16 +1,19 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
+import { ErrorAlert } from '@nba/ui';
 import { MemberProfile } from '@nba/members-ui';
 
 import { env } from 'cloudflare:workers';
+import { createAdminApiClient } from '../../../lib/api';
 
 const { licence } = Astro.params;
 const season = Astro.url.searchParams.get('season') || '25-26';
-const apiService = env.API_SERVICE;
+const apiService = createAdminApiClient(Astro.locals);
 
 let member = null;
 let memberTransactionsList = [];
+let clubFunctions: string[] = [];
 let errorMsg = '';
 
 try {
@@ -25,10 +28,20 @@ try {
   member = body.data;
 
   if (member) {
-    const txRes = await apiService.fetch(`http://localhost/accounting/transactions?season=${season}&memberId=${member.id}&limit=100`);
+    // Transactions et fonctions au club en parallèle ; leurs échecs n'empêchent pas la fiche.
+    const [txRes, fnRes] = await Promise.all([
+      apiService.fetch(`http://localhost/accounting/transactions?season=${season}&memberId=${member.id}&limit=100`),
+      apiService.fetch(`http://localhost/members/club-functions?season=${season}`)
+    ]);
     if (txRes.ok) {
       const txBody = await txRes.json() as any;
       memberTransactionsList = txBody.data || [];
+    }
+    if (fnRes.ok) {
+      const fnBody = await fnRes.json() as any;
+      clubFunctions = (fnBody.data || [])
+        .filter((row: any) => row.licence === member.licence)
+        .map((row: any) => row.function);
     }
   }
 } catch (err: any) {
@@ -37,20 +50,18 @@ try {
 ---
 
 <Layout title={member ? `Profil ${member.lastName} ${member.firstName} - NBA 91` : "Profil Adhérent - NBA 91"}>
-  <AdminLayout client:idle breadcrumb="Adhérents / Fiche Adhérent">
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle breadcrumb="Adhérents / Fiche Adhérent" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       {errorMsg && (
         <div class="max-w-3xl mx-auto space-y-4">
-          <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
-            {errorMsg}
-          </div>
+          <ErrorAlert message={errorMsg} />
           <a href="/admin/members" class="text-sm text-primary hover:underline">
             &larr; Retour à la liste des adhérents
           </a>
         </div>
       )}
 
-      {member && <MemberProfile client:load {member} transactions={memberTransactionsList} seasonId={season} />}
+      {member && <MemberProfile client:load {member} transactions={memberTransactionsList} seasonId={season} clubFunctions={clubFunctions} />}
     </div>
   </AdminLayout>
 </Layout>

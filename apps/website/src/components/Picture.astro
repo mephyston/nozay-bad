@@ -1,0 +1,65 @@
+---
+import type { CmsMediaRow, CmsMediaVariantRow } from '@nba/cms/public';
+
+interface Props {
+  /**
+   * Ce que le rendu lit réellement, et non `CmsMediaRow` entier : une couverture
+   * d'article n'est renvoyée par l'API que sous cette forme réduite, et exiger la
+   * ligne complète obligerait l'appelant à la reconstituer pour rien.
+   */
+  media: Pick<CmsMediaRow, 'key' | 'alt' | 'width' | 'height'>;
+  variants?: CmsMediaVariantRow[];
+  /** Image de première importance : chargée sans délai et signalée au navigateur. */
+  priority?: boolean;
+  sizes?: string;
+  class?: string;
+}
+
+const { media, variants = [], priority = false, sizes = '100vw', class: className } = Astro.props;
+
+const srcsetFor = (format: string) =>
+  variants
+    .filter((v) => v.format === format)
+    .sort((a, b) => a.width - b.width)
+    .map((v) => `/media/${v.key.replace(/^media\//, '')} ${v.width}w`)
+    .join(', ');
+
+const avif = srcsetFor('avif');
+const webp = srcsetFor('webp');
+const fallback = `/media/${media.key.replace(/^media\//, '')}`;
+---
+{/*
+  `width` et `height` viennent de la base et ne sont jamais optionnels pour une image :
+  ce sont eux qui réservent la place et suppriment le décalage de mise en page. C'est
+  précisément ce que l'ancien site ratait, avec son lazy-load en JavaScript qui
+  remplaçait chaque image par un GIF d'attente.
+*/}
+<picture>
+  {avif && <source type="image/avif" srcset={avif} sizes={sizes} />}
+  {webp && <source type="image/webp" srcset={webp} sizes={sizes} />}
+  <img
+    src={fallback}
+    width={media.width ?? undefined}
+    height={media.height ?? undefined}
+    alt={media.alt}
+    loading={priority ? 'eager' : 'lazy'}
+    decoding={priority ? 'sync' : 'async'}
+    fetchpriority={priority ? 'high' : undefined}
+    class={className}
+  />
+</picture>
+
+<style>
+  /*
+    `<picture>` disparaît de l'arbre de mise en page.
+
+    Il n'est qu'un porteur de `<source>` : aucune boîte n'a de raison d'exister entre
+    le conteneur et l'image. Sans cela il s'interpose en `display: inline`, de hauteur
+    automatique, et le `h-full` que l'appelant pose sur l'image se résout contre lui
+    plutôt que contre le conteneur — l'image cesse de remplir sa case dès que celle-ci
+    tient sa hauteur d'un `aspect-[16/9]` ou d'un `inset-0`.
+  */
+  picture {
+    display: contents;
+  }
+</style>

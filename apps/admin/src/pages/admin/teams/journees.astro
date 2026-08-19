@@ -1,0 +1,105 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert, SeasonSelector } from '@nba/ui';
+import { DayValuesBoard } from '@nba/teams-ui';
+import { createAdminApiClient } from '../../../lib/api';
+import { fetchSeasons, currentSeasonCode } from '../../../lib/seasons';
+import { guardAction } from '../../../lib/guard';
+
+const apiService = createAdminApiClient(Astro.locals);
+
+const ACTIONS = { 'notify-captain': 'teams:lineups:write' } as const;
+
+if (Astro.request.method === 'POST') {
+  const data = (await Astro.request.json()) as any;
+  const denied = guardAction(Astro.locals, data.action, ACTIONS);
+  if (denied) return denied;
+
+  const apiRes = await apiService.fetch(
+    `http://localhost/teams/${data.teamId}/days/${data.dayNumber}/notify-captain`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note: data.note ?? null })
+    }
+  );
+  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+  return new Response(JSON.stringify(await apiRes.json()), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+const season = Astro.url.searchParams.get('season') ?? '';
+const championship = Astro.url.searchParams.get('championship') ?? 'icd_mixte';
+const dayParam = Number(Astro.url.searchParams.get('day') ?? '');
+
+let seasonCode = season;
+let errorMsg: string | null = null;
+let days: any[] = [];
+let board: any = null;
+let dayNumber = Number.isSafeInteger(dayParam) && dayParam > 0 ? dayParam : 1;
+
+const seasonsResult = await fetchSeasons(apiService);
+const seasons = seasonsResult.seasons;
+errorMsg = seasonsResult.errorMsg;
+
+try {
+  if (!seasonCode) seasonCode = currentSeasonCode(seasons);
+
+  if (seasonCode) {
+    const daysRes = await apiService.fetch(
+      `http://localhost/teams/days?seasonCode=${seasonCode}&championship=${championship}`
+    );
+    if (daysRes.ok) days = ((await daysRes.json()) as any).data?.days ?? [];
+
+    // La journée demandée peut ne pas exister dans ce championnat : on retombe sur la
+    // première plutôt que d'afficher un tableau vide sans expliquer pourquoi.
+    if (days.length > 0 && !days.some((d: any) => d.number === dayNumber)) {
+      dayNumber = days[0].number;
+    }
+
+    if (days.length > 0) {
+      const boardRes = await apiService.fetch(
+        `http://localhost/teams/day-values?seasonCode=${seasonCode}&championship=${championship}&day=${dayNumber}`
+      );
+      if (boardRes.ok) board = ((await boardRes.json()) as any).data;
+    }
+  }
+} catch (error) {
+  errorMsg = error instanceof Error ? error.message : 'Chargement impossible.';
+}
+---
+
+<Layout title="Contrôle des journées - NBA 91">
+  <AdminLayout
+    client:idle
+    realEmail={Astro.locals.realEmail}
+    name={Astro.locals.user?.name}
+    email={Astro.locals.user?.email}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Contrôle des journées"
+  >
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader
+        title="Contrôle des journées"
+        description="La valeur de chaque équipe sur une journée, et les infractions qu'aucun capitaine ne peut voir seul."
+      >
+        <Fragment slot="actions">
+          <SeasonSelector client:load seasons={seasons} current={seasonCode} />
+        </Fragment>
+      </PageHeader>
+
+      <DayValuesBoard
+        client:load
+        {board}
+        {days}
+        championship={championship as any}
+        {dayNumber}
+        {seasonCode}
+      />
+    </div>
+  </AdminLayout>
+</Layout>

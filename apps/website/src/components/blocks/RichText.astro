@@ -1,0 +1,27 @@
+---
+import type { RichtextBlock } from '@nba/cms/public';
+import { obfuscateEmails } from '@nba/html';
+interface Props { block: RichtextBlock }
+const { block } = Astro.props;
+
+// Les adresses e-mail sont soustraites aux moissonneurs ici, au rendu : le contenu
+// stocké reste lisible, et l'auteur retrouve dans l'éditeur ce qu'il a écrit.
+const html = obfuscateEmails(block.html);
+---
+{/*
+  Seul endroit du site autorisé à poser du HTML brut. Le contenu a été réduit à
+  l'écriture par `sanitizeRichText` avec le profil du site public : c'est l'API qui
+  fait autorité, pas ce composant.
+*/}
+{/*
+  Le bloc porte son conteneur, comme tous les autres.
+
+  Il ne l'avait pas, et il était le seul : le texte se collait alors aux deux bords de
+  l'écran, tandis que le titre de la page et les blocs voisins restaient centrés dans
+  la même colonne. `max-w-none` sur la classe `prose` est conservé pour que la mesure
+  vienne du conteneur, et d'une seule chose — sinon `prose` imposerait sa largeur de
+  65 caractères et le texte serait plus étroit que tout ce qui l'entoure.
+*/}
+<div class="mx-auto max-w-5xl px-4 py-6">
+  <div class="prose prose-neutral dark:prose-invert max-w-none" set:html={html} />
+</div>

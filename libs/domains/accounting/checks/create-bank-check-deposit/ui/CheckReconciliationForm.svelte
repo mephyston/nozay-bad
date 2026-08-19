@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button } from '@nba/ui';
+  import { Button, FormField, SearchableCombobox } from '@nba/ui';
 
   let {
     selectedDepositToClear,
@@ -34,28 +34,17 @@
     </div>
   </div>
 
-  <div class="space-y-1">
-    <label for="bank-tx-select" class="block text-xs font-bold text-gray-500 uppercase tracking-wider">
-      Sélectionner la ligne bancaire correspondante
-    </label>
-    <select
+    <FormField id="bank-tx-select" label="Sélectionner la ligne bancaire correspondante">
+    <SearchableCombobox
       id="bank-tx-select"
+      placeholder="-- Choisir une ligne de relevé bancaire --"
       bind:value={selectedBankTransactionId}
-      class="w-full bg-white border rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-    >
-      <option value="">-- Choisir une ligne de relevé bancaire --</option>
-      {#each matchingBankTxs as bt}
-        <option value={String(bt.id)}>
-          {bt.date} • {bt.name} • {(bt.amount / 100).toFixed(2)} €
-        </option>
-      {/each}
-      {#each pendingBankTransactions.filter(bt => bt.amount !== selectedDepositToClear?.amount) as bt}
-        <option value={String(bt.id)} class="text-gray-400">
-          {bt.date} • {bt.name} • {(bt.amount / 100).toFixed(2)} € (Montant différent)
-        </option>
-      {/each}
-    </select>
-  </div>
+      items={[
+        ...matchingBankTxs.map((bt) => ({ label: `${bt.date} • ${bt.name} • ${(bt.amount / 100).toFixed(2)} €`, value: String(bt.id) })),
+        ...pendingBankTransactions.filter((bt) => bt.amount !== selectedDepositToClear?.amount).map((bt) => ({ label: `${bt.date} • ${bt.name} • ${(bt.amount / 100).toFixed(2)} € (Montant différent)`, value: String(bt.id) }))
+      ]}
+    />
+  </FormField>
 
   <Button
     onclick={onClearDeposit}

@@ -1,0 +1,55 @@
+---
+import pkg from '../../../../package.json';
+---
+
+<!-- Écran de démarrage PWA (même traitement que l'admin). -->
+<div id="pwa-splash" class="fixed inset-0 z-[9999] bg-background flex flex-col items-center justify-center transition-opacity duration-500">
+  <div class="relative z-10 flex flex-col items-center gap-6">
+    <img src="/logo.png" alt="Logo Nozay Bad" class="w-72 h-72 animate-pulse object-contain" />
+  </div>
+  <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 flex gap-1.5">
+    <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: -0.3s"></span>
+    <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: -0.15s"></span>
+    <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0s"></span>
+  </div>
+  <p class="mt-12 text-xs text-muted-foreground/60 font-medium tracking-widest uppercase">v{pkg.version}</p>
+  <div class="mt-8 flex flex-col items-center gap-4 relative z-10 w-full px-6">
+    <button
+      id="pwa-splash-continue"
+      class="w-full max-w-[200px] px-6 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors shadow-md"
+    >
+      Continuer
+    </button>
+  </div>
+</div>
+
+<script is:inline>
+  (function () {
+    const splash = document.getElementById('pwa-splash');
+    if (!splash) return;
+
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    // Le splash n'apparaît qu'au démarrage à froid de la PWA. sessionStorage persiste
+    // tant que l'application tourne et se vide à sa fermeture : les rechargements
+    // internes (soumission de formulaire, changement de page) ne le réaffichent pas.
+    let alreadyShown = false;
+    try {
+      alreadyShown = sessionStorage.getItem('pwa-splash-shown') === '1';
+    } catch (e) {}
+
+    if (!isPWA || alreadyShown) {
+      splash.style.display = 'none';
+      return;
+    }
+
+    try {
+      sessionStorage.setItem('pwa-splash-shown', '1');
+    } catch (e) {}
+
+    document.getElementById('pwa-splash-continue')?.addEventListener('click', () => {
+      splash.style.opacity = '0';
+      setTimeout(() => splash.remove(), 500);
+    });
+  })();
+</script>

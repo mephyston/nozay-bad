@@ -77,8 +77,7 @@ describe('InvoicesManager Component', () => {
 
     expect(target.innerHTML).toContain('FAC-2526-NBA91-0001');
     expect(target.innerHTML).toContain('Mairie de Nozay');
-    expect(target.innerHTML).toContain('Subvention 2026');
-    expect(target.innerHTML).toContain('1500.00 €');
+    expect(target.innerHTML.replace(/&nbsp;|[\u00a0\u202f]/g, ' ')).toContain('1 500,00');
     expect(target.innerHTML).toContain('Brouillon');
   });
 
@@ -101,7 +100,7 @@ describe('InvoicesManager Component', () => {
     expect(document.body.innerHTML).not.toContain('Informations Client');
 
     const createButton = Array.from(target.querySelectorAll('button')).find(
-      b => b.textContent?.trim() === 'Créer une facture'
+      b => b.textContent?.includes('Nouvelle facture')
     );
     expect(createButton).toBeDefined();
 

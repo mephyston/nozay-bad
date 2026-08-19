@@ -26,12 +26,53 @@
     }
   ],
   "ai": {
-    "binding": "AI"
+    "binding": "AI",
+    "remote": true
+  },
+  "images": {
+    "binding": "IMAGES"
+  },
+  "triggers": {
+    "crons": [
+      "* * * * *",
+      "0 7 * * *",
+      "0 8 * * 1"
+    ]
+  },
+  "vars": {
+    "VAPID_SUBJECT": "mailto:contact@nozaybad.fr",
+    "PUSH_REMINDERS_ENABLED": "true",
+    "VAPID_PUBLIC_KEY": "BGLR2qQYt7FsbrqkNjx2p9p--tZuvKCBwj7YBZ5Di7Un1uwkiVXY3SWHi33zuZWltVAOJTsBsAZNaz7bRolHXo4",
+    "PUSH_BIRTHDAYS_ENABLED": "true",
+    "PUSH_RANKING_REMINDERS_ENABLED": "true",
+    "PUSH_LINEUP_REMINDERS_ENABLED": "true"
   },
   "env": {
     "staging": {
       "name": "nba-api-staging",
       "workers_dev": false,
+      "ai": {
+        "binding": "AI",
+        "remote": true
+      },
+      "images": {
+        "binding": "IMAGES"
+      },
+      "triggers": {
+        "crons": [
+          "* * * * *",
+          "0 7 * * *",
+          "0 8 * * 1"
+        ]
+      },
+      "vars": {
+        "VAPID_SUBJECT": "mailto:contact@nozaybad.fr",
+        "PUSH_REMINDERS_ENABLED": "false",
+        "VAPID_PUBLIC_KEY": "BJiMPuOGVz144IXpSHoh_XthNFdB-uSV0qGEMc2D-FeheQqVaBmfCUIVa2notPKe3AI2Z4cpP3bgb6dlS5jyLUw",
+        "PUSH_BIRTHDAYS_ENABLED": "false",
+        "PUSH_RANKING_REMINDERS_ENABLED": "false",
+        "PUSH_LINEUP_REMINDERS_ENABLED": "false"
+      },
       "d1_databases": [
         {
           "binding": "DB",
@@ -39,7 +80,19 @@
           "database_id": "42c30a26-8b8b-4c43-a58c-f16ee80df5a7",
           "migrations_dir": "../../libs/shared/db/migrations"
         }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "MEDIA",
+          "bucket_name": "nba-media-staging"
+        }
       ]
     }
-  }
+  },
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "nba-media"
+    }
+  ]
 }

@@ -44,7 +44,7 @@ DATA:OFXSGML
     expect(result.transactions[0]).toEqual({
       fitid: 'TX12345',
       accountId: 'savings',
-      amount: -1550,
+      amountCents: -1550,
       date: '2026-07-18',
       name: 'Supermarket',
       memo: 'Weekly grocery'
@@ -69,7 +69,7 @@ DATA:OFXSGML
     expect(result.transactions[0]).toEqual({
       fitid: 'TX67890',
       accountId: 'current',
-      amount: 10000,
+      amountCents: 10000,
       date: '2026-07-18',
       name: 'Salary',
       memo: null

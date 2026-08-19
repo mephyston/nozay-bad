@@ -24,10 +24,10 @@
 * Create: `libs/shared/db/migrations/0004_create_accounting_tables.sql` (généré par Drizzle-Kit)
 
 **Interfaces:**
-* Produces: `seasonBalancesTable` et `transactionsTable` dans le module `@nba/db` (exposé par index.ts).
+* Produces: `seasonBalancesTable` et `ledgerEntriesTable` dans le module `@nba/db` (exposé par index.ts).
 
 - [ ] **Step 1: Mettre à jour le schéma Drizzle**
-  Ouvrir [schema.ts](file:///Users/david/Lab/nozay-bad/libs/shared/db/src/schema.ts) et ajouter les définitions des tables `seasonBalancesTable` et `transactionsTable` à la fin du fichier :
+  Ouvrir [schema.ts](file:///Users/david/Lab/nozay-bad/libs/shared/db/src/schema.ts) et ajouter les définitions des tables `seasonBalancesTable` et `ledgerEntriesTable` à la fin du fichier :
   ```typescript
   export const seasonBalancesTable = sqliteTable('season_balances', {
     id: integer('id').primaryKey({ autoIncrement: true }),
@@ -39,7 +39,7 @@
     seasonAccountUnq: uniqueIndex('season_account_idx').on(table.seasonId, table.accountId),
   }));
 
-  export const transactionsTable = sqliteTable('transactions', {
+  export const ledgerEntriesTable = sqliteTable('transactions', {
     id: integer('id').primaryKey({ autoIncrement: true }),
     seasonId: text('season_id').notNull().references(() => seasonsTable.id),
     type: text('type', { enum: ['recette', 'depense', 'transfert'] }).notNull(),
@@ -88,12 +88,12 @@
       description: 'Adhésion Dupont Jean',
       createdAt: new Date()
     };
-    const [insertedTx] = await db.insert(transactionsTable).values(transaction).returning();
+    const [insertedTx] = await db.insert(ledgerEntriesTable).values(transaction).returning();
     expect(insertedTx.amount).toBe(4500);
     expect(insertedTx.category).toBe('adhesions');
   });
   ```
-  *(S'assurer d'importer `seasonBalancesTable` et `transactionsTable` au début du fichier de test.)*
+  *(S'assurer d'importer `seasonBalancesTable` et `ledgerEntriesTable` au début du fichier de test.)*
 
 - [ ] **Step 4: Générer le fichier de migration SQL**
   Depuis la racine ou le répertoire de la lib db, lancer :
@@ -131,13 +131,13 @@
 * Modify: `apps/api/src/index.test.ts`
 
 **Interfaces:**
-* Consumes: `seasonBalancesTable` et `transactionsTable` de `@nba/db`.
-* Produces: Endpoints HTTP `/seasons/:seasonId/balances`, `/transactions`, `/transactions/:id`, et `/seasons/:seasonId/reports`.
+* Consumes: `seasonBalancesTable` et `ledgerEntriesTable` de `@nba/db`.
+* Produces: Endpoints HTTP `/seasons/:seasonId/balances`, `/transactions`, `/ledger/:id`, et `/seasons/:seasonId/reports`.
 
 - [ ] **Step 1: Importer les schémas dans l'API**
   Ouvrir [index.ts](file:///Users/david/Lab/nozay-bad/apps/api/src/index.ts) et mettre à jour l'import de la base de données :
   ```typescript
-  import { membersTable, seasonsTable, seasonBalancesTable, transactionsTable } from '../../../libs/shared/db/src/schema';
+  import { membersTable, seasonsTable, seasonBalancesTable, ledgerEntriesTable } from '../../../libs/shared/db/src/schema';
   ```
 
 - [ ] **Step 2: Implémenter les routes GET et POST pour les soldes initiaux**
@@ -187,33 +187,33 @@
     const offset = (page - 1) * limit;
 
     const db = drizzle(c.env.DB);
-    const conditions = [eq(transactionsTable.seasonId, seasonId)];
+    const conditions = [eq(ledgerEntriesTable.seasonId, seasonId)];
 
     const accountId = c.req.query('accountId');
     if (accountId) {
-      conditions.push(or(eq(transactionsTable.accountId, accountId), eq(transactionsTable.destinationAccountId, accountId)));
+      conditions.push(or(eq(ledgerEntriesTable.accountId, accountId), eq(ledgerEntriesTable.destinationAccountId, accountId)));
     }
 
     const type = c.req.query('type');
     if (type) {
-      conditions.push(eq(transactionsTable.type, type));
+      conditions.push(eq(ledgerEntriesTable.type, type));
     }
 
     const category = c.req.query('category');
     if (category) {
-      conditions.push(eq(transactionsTable.category, category));
+      conditions.push(eq(ledgerEntriesTable.category, category));
     }
 
     const totalRes = await db.select({ count: sql<number>`count(*)` })
-      .from(transactionsTable)
+      .from(ledgerEntriesTable)
       .where(and(...conditions))
       .get();
     const total = totalRes?.count || 0;
 
     const transactions = await db.select()
-      .from(transactionsTable)
+      .from(ledgerEntriesTable)
       .where(and(...conditions))
-      .orderBy(desc(transactionsTable.date), desc(transactionsTable.id))
+      .orderBy(desc(ledgerEntriesTable.date), desc(ledgerEntriesTable.id))
       .limit(limit)
       .offset(offset)
       .all();
@@ -249,7 +249,7 @@
       }
     }
 
-    const [inserted] = await db.insert(transactionsTable).values({
+    const [inserted] = await db.insert(ledgerEntriesTable).values({
       seasonId: body.seasonId,
       type: body.type,
       accountId: body.accountId,
@@ -266,10 +266,10 @@
     return c.json({ success: true, data: inserted });
   });
 
-  app.delete('/transactions/:id', async (c) => {
+  app.delete('/ledger/:id', async (c) => {
     const id = parseInt(c.req.param('id'));
     const db = drizzle(c.env.DB);
-    await db.delete(transactionsTable).where(eq(transactionsTable.id, id)).run();
+    await db.delete(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, id)).run();
     return c.json({ success: true });
   });
   ```
@@ -285,7 +285,7 @@
     const balances = await db.select().from(seasonBalancesTable).where(eq(seasonBalancesTable.seasonId, seasonId)).all();
     
     // Récupérer toutes les transactions de la saison
-    const allTxs = await db.select().from(transactionsTable).where(eq(transactionsTable.seasonId, seasonId)).all();
+    const allTxs = await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.seasonId, seasonId)).all();
 
     // 1. Calcul du compte de résultat (ventilé par catégorie)
     const categoryTotals: Record<string, { type: 'recette' | 'depense', total: number }> = {};

@@ -1,0 +1,102 @@
+import { type Db } from '@nba/db';
+import { isSafeHref } from '@nba/html';
+import {
+  CmsNavItemNotFoundError,
+  CmsNavTargetError,
+  CmsNavDepthError,
+  CmsPageNotFoundError
+} from '../../shared/errors';
+import { bumpContentVersion } from '../../shared/cache-version';
+import { SaveNavItemRepository } from './repository';
+import type { SaveNavItemInput, SaveNavItemOutput } from './dto';
+
+/**
+ * Crée ou modifie une entrée de menu.
+ *
+ * Écriture entrée par entrée, et non remplacement de l'arbre entier : les entrées se
+ * référencent par `parentId`, et un lot D1 ne peut pas relire l'identifiant qu'il
+ * vient de générer pour plusieurs enfants à la fois. Un enregistrement par entrée
+ * garde chaque écriture atomique sans détour.
+ */
+export async function saveNavItem(db: Db, input: SaveNavItemInput): Promise<SaveNavItemOutput> {
+  const repo = new SaveNavItemRepository();
+
+  const pageId = input.pageId ?? null;
+  const externalUrl = input.externalUrl?.trim() ? input.externalUrl.trim() : null;
+  const parentId = input.parentId ?? null;
+
+  // Jamais deux cibles : elles se serviraient l'une au détriment de l'autre selon le
+  // code de rendu.
+  if (pageId !== null && externalUrl !== null) throw new CmsNavTargetError();
+
+  /*
+    Aucune cible : c'est un **conteneur**, une entrée qui ne fait que regrouper — la
+    forme qu'avait le menu WordPress, où « Le club » n'était pas une page mais un
+    chapeau au-dessus de « Présentation », « Notre équipe » et « Partenaires ».
+
+    Réservé au premier niveau : une sous-entrée est une feuille, la profondeur étant
+    bornée à deux. Sans cible ni descendance possible, elle ne mènerait nulle part.
+  */
+  if (pageId === null && externalUrl === null && parentId !== null) {
+    throw new CmsNavTargetError(
+      'Une sous-entrée doit mener quelque part : choisissez une page ou une adresse extérieure.'
+    );
+  }
+
+  if (pageId !== null && !(await repo.pageExists(db, pageId))) throw new CmsPageNotFoundError();
+  if (externalUrl !== null && !isSafeHref(externalUrl)) {
+    throw new CmsNavTargetError("L'adresse extérieure doit commencer par http:// ou https://.");
+  }
+
+  if (parentId !== null) {
+    const parent = await repo.findById(db, parentId);
+    if (!parent) throw new CmsNavItemNotFoundError('Le menu parent est introuvable.');
+    // Deux niveaux au plus : un sous-sous-menu est inatteignable au survol sur écran
+    // large, et illisible une fois replié dans le menu mobile.
+    if (parent.parentId !== null) throw new CmsNavDepthError();
+    if (parent.location !== input.location) {
+      throw new CmsNavTargetError("Le menu parent appartient à un autre emplacement.");
+    }
+    if (input.navItemId !== undefined && parentId === input.navItemId) {
+      throw new CmsNavTargetError("Une entrée ne peut pas être son propre parent.");
+    }
+  }
+
+  if (input.navItemId === undefined) {
+    const created = await repo.insert(db, {
+      location: input.location,
+      parentId,
+      label: input.label,
+      pageId,
+      externalUrl,
+      position: input.position ?? (await repo.nextPosition(db, input.location, parentId))
+    });
+
+  // Les menus sont rendus sur **toutes** les pages : sans invalidation, une entrée
+  // ajoutée ou renommée resterait invisible jusqu'à expiration du cache du bord — une
+  // heure — et l'on croirait l'enregistrement perdu.
+    await bumpContentVersion(db);
+    return created;
+  }
+
+  const existing = await repo.findById(db, input.navItemId);
+  if (!existing) throw new CmsNavItemNotFoundError();
+
+  // Une entrée qui devient sous-menu ne doit pas emporter d'enfants avec elle : le
+  // contrôle de profondeur ci-dessus ne voit que le parent, pas la descendance.
+  if (parentId !== null && existing.parentId === null) {
+    const children = await repo.hasChildren(db, existing.id);
+    if (children) throw new CmsNavDepthError('Cette entrée porte un sous-menu : videz-le avant de la déplacer.');
+  }
+
+  const updated = await repo.update(db, existing.id, {
+    location: input.location,
+    parentId,
+    label: input.label,
+    pageId,
+    externalUrl,
+    position: input.position ?? existing.position
+  });
+  await bumpContentVersion(db);
+  return updated;
+}

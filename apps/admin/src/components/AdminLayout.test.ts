@@ -1,6 +1,8 @@
 import { mount, unmount, flushSync } from 'svelte';
 import { describe, it, expect, beforeAll, vi } from 'vitest';
 import AdminLayout from './AdminLayout.svelte';
+// Le modèle n'a plus de joker : un compte à tous les droits porte le catalogue complet.
+import { ALL_PERMISSIONS } from '@nba/iam-ui';
 
 describe('AdminLayout Component', () => {
   let isMobileViewport = false;
@@ -34,19 +36,20 @@ describe('AdminLayout Component', () => {
     const component = mount(AdminLayout, {
       target,
       props: {
-        email: 'test@nozay-bad.fr'
+        email: 'test@nozay-bad.fr',
+        permissions: ALL_PERMISSIONS
       }
     });
     flushSync();
 
     // Verify desktop title and navigation items are rendered
-    expect(target.textContent).toContain('Nozay Bad Association');
-    expect(target.textContent).toContain("Vue d'ensemble");
+    expect(target.textContent).toContain('Nozay Bad Admin');
+    expect(target.textContent).toContain("Tableau de bord");
     expect(target.textContent).toContain("Adhérents");
     expect(target.textContent).toContain("Comptabilité");
     expect(target.textContent).toContain("Caisse");
     expect(target.textContent).toContain("Boutique");
-    expect(target.textContent).toContain("Note de frais");
+    expect(target.textContent).toContain("Notes de frais");
 
     // Clean up
     unmount(component);
@@ -63,6 +66,7 @@ describe('AdminLayout Component', () => {
       target,
       props: {
         email: 'test@nozay-bad.fr',
+        permissions: ALL_PERMISSIONS,
         breadcrumb: 'Réglages / Saisons'
       }
     });
@@ -77,7 +81,7 @@ describe('AdminLayout Component', () => {
     expect(navLinks).not.toContain('Classes de comptes');
 
     // Find the settings link
-    const settingsLink = target.querySelector('a[href="/admin/accounting/settings"]');
+    const settingsLink = target.querySelector('a[href="/admin/settings"]');
     expect(settingsLink).not.toBeNull();
     
     // Check that it is marked as active
@@ -90,12 +94,13 @@ describe('AdminLayout Component', () => {
       target,
       props: {
         email: 'test@nozay-bad.fr',
+        permissions: ALL_PERMISSIONS,
         breadcrumb: 'settings'
       }
     });
     flushSync();
 
-    const settingsLink2 = target.querySelector('a[href="/admin/accounting/settings"]');
+    const settingsLink2 = target.querySelector('a[href="/admin/settings"]');
     expect(settingsLink2?.getAttribute('data-active')).toBe('true');
 
     unmount(component2);

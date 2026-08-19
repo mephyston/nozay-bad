@@ -9,7 +9,7 @@ describe('listCategoriesRoute', () => {
   it('handles GET request for categories', async () => {
     const res = await listCategoriesRoute.request('/categories', {}, { DB: {} as any });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
   });
 });

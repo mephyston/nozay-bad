@@ -5,20 +5,27 @@ import { AppError } from '@nba/db';
 vi.mock('./repository', () => {
   return {
     CreateBankCheckDepositRepository: class {
+      resolveSeasonId = vi.fn().mockResolvedValue(1);
       getChecksByIds = vi.fn().mockResolvedValue([{ id: 1, amount: 100, number: '123', seasonId: '23-24', status: 'pending' }]);
       createCheckDeposit = vi.fn().mockResolvedValue({ id: 2 });
       updateChecksDeposit = vi.fn();
-      getCheckDepositById = vi.fn().mockResolvedValue({ id: 2, bankTransactionId: 3 });
+      getCheckDepositById = vi.fn().mockResolvedValue({ id: 2, bankStatementLineId: 3 });
       updateCheckDeposit = vi.fn();
-      updateBankTransactionStatus = vi.fn();
+      updateBankStatementLineStatus = vi.fn();
       unlinkChecksForDeposit = vi.fn();
       deleteCheckDeposit = vi.fn();
+      buildCreateCheckDepositStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) });
+      buildUpdateChecksDepositStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) });
+      buildUpdateCheckDepositStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) });
+      buildUpdateBankStatementLineStatusStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) });
+      buildUnlinkChecksForDepositStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) });
+      buildDeleteCheckDepositStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) });
     }
   };
 });
 
 const mockDb = {
-  transaction: async (cb: any) => cb(mockDb)
+  batch: vi.fn().mockResolvedValue([{ meta: { last_row_id: 2 } }])
 };
 
 describe('create-bank-check-deposit handler', () => {
@@ -42,7 +49,7 @@ describe('create-bank-check-deposit handler', () => {
   });
 
   it('should clear deposit', async () => {
-    await expect(clearCheckDeposit(mockDb as any, 2, { bankTransactionId: 3 })).resolves.toBeUndefined();
+    await expect(clearCheckDeposit(mockDb as any, 2, { bankStatementLineId: 3 })).resolves.toBeUndefined();
   });
 
   it('should delete deposit', async () => {

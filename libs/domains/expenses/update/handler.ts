@@ -1,7 +1,16 @@
 import { type Db, type Tx } from '@nba/db';
 import { UpdateExpenseRepository } from './repository';
-import { isSeasonClosed } from '@nba/members-api';
-import { normalizeCategory } from '@nba/accounting-api';
+import { getContactEmailsForMember, isSeasonClosed } from '@nba/members-api';
+import { notifyContacts } from '@nba/notifications-api';
+import {
+  normalizeCategory,
+  buildInsertExpenseTransactionStatement,
+  getTransactionDetails,
+  getBankTransactionDetails,
+  getRemainingTransactionsForBankTx,
+  buildResetBankStatementLineStatement,
+  buildDeleteLedgerEntryStatement
+} from '@nba/accounting-api';
 import { Expense } from '../shared/expense';
 import {
   SeasonClosedError,
@@ -14,32 +23,45 @@ import { ApproveExpenseInput, ApproveExpenseOutput } from "./dto";
 export async function approveExpense(db: Db, id: ApproveExpenseInput): Promise<ApproveExpenseOutput> {
   const repo = new UpdateExpenseRepository();
 
-  return db.transaction(async (txDb: Tx) => {
-    const expenseData = await repo.getById(txDb, id);
-    if (!expenseData) {
-      throw new ExpenseNotFoundError();
-    }
-    const expense = new Expense(expenseData);
-    if (await isSeasonClosed(txDb, expense.seasonId)) {
-      throw new SeasonClosedError('La saison est clôturée. Impossible d\'approuver cette note de frais.');
-    }
-    if (!expense.canBeApproved()) {
-      throw new ExpenseAlreadyProcessedError();
-    }
+  // Phase 1 : Lecture (hors batch)
+  const expenseData = await repo.getById(db, id);
+  if (!expenseData) {
+    throw new ExpenseNotFoundError();
+  }
+  const expense = new Expense(expenseData as any);
+  if (await isSeasonClosed(db, expense.seasonId)) {
+    throw new SeasonClosedError('La saison est clôturée. Impossible d\'approuver cette note de frais.');
+  }
+  if (!expense.canBeApproved()) {
+    throw new ExpenseAlreadyProcessedError();
+  }
 
-    // Créer la transaction de dépense via le repository
-    const tx = await repo.insertTransaction(txDb, {
-      seasonId: expenseData.seasonId,
-      category: expenseData.category,
-      amount: expenseData.amount,
-      emitterName: expenseData.emitterName,
-      description: expenseData.description,
-      memberId: expenseData.memberId,
-    });
-
-    // Mettre à jour le statut et lier la transaction
-    return repo.approve(txDb, id, tx.id);
+  // Phase 2 : Décision (en mémoire)
+  const stmt1 = buildInsertExpenseTransactionStatement(db, {
+    seasonId: expenseData.seasonId,
+    categoryId: expenseData.categoryId,
+    amountCents: expenseData.amountCents,
+    emitterName: expenseData.emitterName,
+    description: expenseData.description,
+    memberId: expenseData.memberId,
   });
+
+  const stmt2 = repo.buildApproveExpenseStatement(db, id);
+
+  // Phase 3 : Écriture (db.batch)
+  await db.batch([stmt1, stmt2]);
+
+  if (expenseData.memberId) {
+    await notifyContacts(db, await getContactEmailsForMember(db, expenseData.memberId), {
+      title: 'Note de frais validée',
+      body: `Votre note de frais de ${(expenseData.amountCents / 100).toFixed(2)} € a été validée.`,
+      url: '/note-de-frais',
+      source: 'expense:approved',
+      category: 'expense'
+    });
+  }
+
+  return (await repo.getById(db, id)) as any;
 }
 
 export async function rejectExpense(db: Db, id: number) {
@@ -48,7 +70,7 @@ export async function rejectExpense(db: Db, id: number) {
   if (!expenseData) {
     throw new ExpenseNotFoundError();
   }
-  const expense = new Expense(expenseData);
+  const expense = new Expense(expenseData as any);
   if (await isSeasonClosed(db, expense.seasonId)) {
     throw new SeasonClosedError('La saison est clôturée. Impossible de rejeter cette note de frais.');
   }
@@ -56,56 +78,70 @@ export async function rejectExpense(db: Db, id: number) {
     throw new ExpenseAlreadyProcessedError();
   }
 
-  return repo.reject(db, id);
+  const rejected = await repo.reject(db, id);
+
+  if (expenseData.memberId) {
+    await notifyContacts(db, await getContactEmailsForMember(db, expenseData.memberId), {
+      title: 'Note de frais refusée',
+      body: 'Votre note de frais a été refusée. Rapprochez-vous du bureau pour en connaître le motif.',
+      url: '/note-de-frais',
+      source: 'expense:rejected',
+      category: 'expense'
+    });
+  }
+
+  return rejected;
 }
 
 export async function cancelExpenseApproval(db: Db, id: number) {
   const repo = new UpdateExpenseRepository();
 
-  return db.transaction(async (txDb: Tx) => {
-    const expenseData = await repo.getById(txDb, id);
-    if (!expenseData) {
-      throw new ExpenseNotFoundError();
-    }
-    const expense = new Expense(expenseData);
-    if (await isSeasonClosed(txDb, expense.seasonId)) {
-      throw new SeasonClosedError('La saison est clôturée. Impossible d\'annuler la validation de cette note de frais.');
-    }
-    if (!expense.canBeCancelled()) {
-      throw new ExpenseAlreadyPendingError();
-    }
+  // Phase 1 : Lecture (hors batch)
+  const expenseData = await repo.getById(db, id);
+  if (!expenseData) {
+    throw new ExpenseNotFoundError();
+  }
+  const expense = new Expense(expenseData as any);
+  if (await isSeasonClosed(db, expense.seasonId)) {
+    throw new SeasonClosedError('La saison est clôturée. Impossible d\'annuler la validation de cette note de frais.');
+  }
+  if (!expense.canBeCancelled()) {
+    throw new ExpenseAlreadyPendingError();
+  }
 
-    const txId = expenseData.transactionId;
+  const txId = expenseData.ledgerEntryId;
+  let resetBankTxNeeded = false;
+  let bankTxId: number | null = null;
 
-    // 1. Mettre à jour la note de frais d'abord pour couper la clé étrangère
-    const updatedExpense = await repo.cancelApproval(txDb, id);
-
-    // 2. Si approuvée, supprimer la transaction associée
-    if (expenseData.status === 'approved' && txId) {
-      // 1. Récupérer la transaction via le repository
-      const tx = await repo.getTransactionDetails(txDb, txId);
-
-      if (tx) {
-        // Rapprochement bancaire : si la transaction est pointée, libérer l'écriture bancaire
-        if (tx.bankTransactionId) {
-          const bankTx = await repo.getBankTransactionDetails(txDb, tx.bankTransactionId);
-
-          if (bankTx) {
-            const remainingTxs = await repo.getRemainingTransactionsForBankTx(txDb, tx.bankTransactionId, tx.id);
-            const totalRemaining = remainingTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
-            if (totalRemaining < Math.abs(bankTx.amount)) {
-              await repo.resetBankTransactionStatus(txDb, tx.bankTransactionId);
-            }
-          }
+  if (expenseData.status === 'approved' && txId) {
+    const tx = await getTransactionDetails(db, txId);
+    if (tx && tx.bankStatementLineId) {
+      bankTxId = tx.bankStatementLineId;
+      const bankTx = await getBankTransactionDetails(db, tx.bankStatementLineId);
+      if (bankTx) {
+        const remainingTxs = await getRemainingTransactionsForBankTx(db, tx.bankStatementLineId, tx.id);
+        const totalRemaining = remainingTxs.reduce((sum, t) => sum + Math.abs(t.amountCents), 0);
+        if (totalRemaining < Math.abs(bankTx.amountCents)) {
+          resetBankTxNeeded = true;
         }
-
-        // Supprimer la transaction du Grand Livre
-        await repo.deleteTransaction(txDb, tx.id);
       }
     }
+  }
 
-    return updatedExpense;
-  });
+  // Phase 2 : Décision (en mémoire)
+  const statements: any[] = [repo.buildCancelApprovalExpenseStatement(db, id)];
+
+  if (expenseData.status === 'approved' && txId) {
+    if (resetBankTxNeeded && bankTxId) {
+      statements.push(buildResetBankStatementLineStatement(db, bankTxId));
+    }
+    statements.push(buildDeleteLedgerEntryStatement(db, txId));
+  }
+
+  // Phase 3 : Écriture (db.batch)
+  await db.batch(statements as any);
+
+  return repo.getById(db, id);
 }
 
 export async function updateExpense(
@@ -126,7 +162,7 @@ export async function updateExpense(
   if (!existingData) {
     throw new ExpenseNotFoundError();
   }
-  const existing = new Expense(existingData);
+  const existing = new Expense(existingData as any);
   if (await isSeasonClosed(db, existing.seasonId)) {
     throw new SeasonClosedError('La saison d\'origine est clôturée. Impossible de modifier cette note de frais.');
   }
@@ -136,9 +172,9 @@ export async function updateExpense(
 
   const updated = await repo.update(db, id, {
     description: body.description,
-    category: body.category !== undefined ? (normalizeCategory(body.category) || 1) : undefined,
-    amount: body.amount,
-    seasonId: body.seasonId,
+    categoryId: body.category !== undefined ? (normalizeCategory(body.category) || 1) : undefined,
+    amountCents: body.amount,
+    seasonId: body.seasonId ? await repo.resolveSeasonId(db, body.seasonId) : undefined,
     photoUrl: body.photoUrl !== undefined ? body.photoUrl : undefined,
     emitterName: body.emitterName,
     memberId: body.memberId !== undefined ? body.memberId : undefined

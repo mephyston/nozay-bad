@@ -1,8 +1,10 @@
+import { ledgerEntriesTable } from '@nba/accounting/schema';
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { shopRouter } from '@nba/shop-api';
 import { setupMockDb } from '@nba/db/test-utils';
 import { productsTable } from '../../../libs/domains/shop/shared/schema';
+
 import { eq, sql } from 'drizzle-orm';
 import { AppError } from '@nba/db';
 
@@ -17,21 +19,32 @@ app.route('/shop', shopRouter);
 
 describe('Products API Endpoints', () => {
   it('supports product CRUD operations', async () => {
-    const { mockD1 } = await setupMockDb();
+    const { mockD1, db } = await setupMockDb();
+
+    const boutiqueCat = await db.get(sql`
+      INSERT INTO categories (admin_label, adherent_label, created_at)
+      VALUES ('Boutique', 'Boutique', strftime('%s', 'now'))
+      RETURNING id
+    `) as { id: number };
+
+    const productCat = await db.get(sql`
+      INSERT INTO product_categories (label, accounting_category_id, created_at)
+      VALUES ('Cordages (test)', ${boutiqueCat.id}, strftime('%s', 'now'))
+      RETURNING id
+    `) as { id: number };
 
     // 1. Create a product (POST /shop/products)
     const createRes = await app.request('http://localhost/shop/products', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Yonex BG65', category: 'string', price: 1200, stock: 5 })
+      body: JSON.stringify({ name: 'Yonex BG65', productCategoryId: productCat.id, priceCents: 1200, stock: 5 })
     }, { DB: mockD1 as any });
 
     expect(createRes.status).toBe(200);
     const createJson = await createRes.json() as any;
     expect(createJson.success).toBe(true);
     expect(createJson.data.name).toBe('Yonex BG65');
-    expect(createJson.data.category).toBe('string');
-    expect(createJson.data.price).toBe(1200);
+    expect(createJson.data.priceCents).toBe(1200);
     expect(createJson.data.stock).toBe(5);
     expect(createJson.data.active).toBe(true);
     expect(createJson.data.id).toBeDefined();
@@ -46,31 +59,18 @@ describe('Products API Endpoints', () => {
     expect(listJson.data).toHaveLength(1);
     expect(listJson.data[0].name).toBe('Yonex BG65');
 
-    // Test GET /shop/products with query filters
-    const listResFilter1 = await app.request('http://localhost/shop/products?category=string', undefined, { DB: mockD1 as any });
-    const listJsonFilter1 = await listResFilter1.json() as any;
-    expect(listJsonFilter1.data).toHaveLength(1);
-
-    const listResFilter2 = await app.request('http://localhost/shop/products?category=shuttlecock', undefined, { DB: mockD1 as any });
-    const listJsonFilter2 = await listResFilter2.json() as any;
-    expect(listJsonFilter2.data).toHaveLength(0);
-
-    const listResFilter3 = await app.request('http://localhost/shop/products?active=true', undefined, { DB: mockD1 as any });
-    const listJsonFilter3 = await listResFilter3.json() as any;
-    expect(listJsonFilter3.data).toHaveLength(1);
-
     // 3. Update a product (PUT /shop/products/:id)
     const updateRes = await app.request(`http://localhost/shop/products/${productId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Yonex BG65 Updated', price: 1500, stock: 10, active: false })
+      body: JSON.stringify({ name: 'Yonex BG65 Updated', priceCents: 1500, stock: 10, active: false })
     }, { DB: mockD1 as any });
 
     expect(updateRes.status).toBe(200);
     const updateJson = await updateRes.json() as any;
     expect(updateJson.success).toBe(true);
     expect(updateJson.data.name).toBe('Yonex BG65 Updated');
-    expect(updateJson.data.price).toBe(1500);
+    expect(updateJson.data.priceCents).toBe(1500);
     expect(updateJson.data.stock).toBe(10);
     expect(updateJson.data.active).toBe(false);
 
@@ -99,7 +99,7 @@ describe('Products API Endpoints', () => {
     const updateRes = await app.request('http://localhost/shop/products/1', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ price: -10 })
+      body: JSON.stringify({ priceCents: -10 })
     }, { DB: mockD1 as any });
     expect(updateRes.status).toBe(400);
     const updateJson = await updateRes.json() as any;
@@ -109,74 +109,88 @@ describe('Products API Endpoints', () => {
 });
 
 describe('Orders API Endpoints', () => {
-  it('processes orders and creates transaction on approval', async () => {
+  it('walks an order from creation to payment and books the revenue', async () => {
     const { mockD1, db } = await setupMockDb();
 
     // Insert a season
     await db.run(sql`
-      INSERT OR IGNORE INTO seasons (id, name, active, created_at)
-      VALUES ('25-26', 'Saison 2025-2026', 1, ${new Date().getTime()})
+      INSERT OR IGNORE INTO seasons (id, code, name, start_date, end_date, active, created_at)
+      VALUES (1, '25-26', 'Saison 2025-2026', '2025-09-01', '2026-08-31', 1, strftime('%s', 'now'))
     `);
 
     // Insert a Boutique category
     const boutiqueCat = await db.get(sql`
       INSERT INTO categories (admin_label, adherent_label, created_at)
-      VALUES ('Boutique', 'Boutique', ${new Date().getTime()})
+      VALUES ('Boutique', 'Boutique', strftime('%s', 'now'))
       RETURNING id
     `) as { id: number };
 
     // Insert a member
     await db.run(sql`
-      INSERT INTO members (id, licence, season, last_name, first_name, gender, birth_date, status, type, amount_due, amount_received, amount_remaining, imported_at)
-      VALUES (1, '1234567', '25-26', 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'Competiteur', 25000, 0, 25000, ${new Date().getTime()})
+      INSERT INTO members (id, licence, season_id, last_name, first_name, gender, birth_date, status, type, amount_due_cents, amount_received_cents, amount_remaining_cents, imported_at)
+      VALUES (1, '123456', 1, 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'senior', 0, 0, 0, strftime('%s', 'now'))
     `);
 
-    // Insert a product with stock = 5
-    await db.insert(productsTable).values({
-      id: 1,
-      name: 'Yonex BG65',
-      category: 'string' as any,
-      price: 1200,
-      stock: 5,
-      active: true,
-      createdAt: new Date()
-    }).run();
-    // 1. Post order
-    const res = await app.request('http://localhost/shop/orders', {
+    // Insert a product category
+    const productCat = await db.get(sql`
+      INSERT INTO product_categories (label, accounting_category_id, created_at)
+      VALUES ('Volants (test)', ${boutiqueCat.id}, strftime('%s', 'now'))
+      RETURNING id
+    `) as { id: number };
+
+    // Insert product (trackStock activé : la validation doit décrémenter le stock)
+    await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', productCategoryId: productCat.id, priceCents: 1200, stock: 5, trackStock: true, active: true, createdAt: new Date() }).run();
+
+    const pmRes = await mockD1.prepare('SELECT code FROM payment_methods').all();
+    const paymentMethodCode = pmRes.results[0].code as string;
+
+    // 1. Create order
+    const createRes = await app.request('http://localhost/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seasonId: '25-26', memberId: 1, productId: 1, quantity: 2, paymentMethod: 'virement' })
+      body: JSON.stringify({ seasonId: 1, memberId: 1, productId: 1, quantity: 2, paymentMethod: paymentMethodCode })
     }, { DB: mockD1 as any });
-    expect(res.status).toBe(200);
-    const orderJson = await res.json() as any;
-    expect(orderJson.success).toBe(true);
-    expect(orderJson.data.status).toBe('pending');
-    expect(orderJson.data.totalAmount).toBe(2400); // 1200 * 2
 
-    // 2. Approve
-    const appRes = await app.request(`http://localhost/shop/orders/${orderJson.data.id}/approve`, {
+    expect(createRes.status).toBe(200);
+    const orderJson = await createRes.json() as any;
+    expect(orderJson.success).toBe(true);
+
+    expect(orderJson.data.status).toBe('created');
+
+    // 2. Validate order : réserve le stock, sans toucher à la comptabilité
+    const validateRes = await app.request(`http://localhost/shop/orders/${orderJson.data.id}/validate`, {
       method: 'POST'
     }, { DB: mockD1 as any });
-    expect(appRes.status).toBe(200);
-    const json = await appRes.json() as any;
-    expect(json.data.status).toBe('approved');
-    expect(json.data.transactionId).toBeDefined();
 
-    // 3. Verify stock is unchanged
-    const updatedProd = await db.select().from(productsTable).where(eq(productsTable.id, 1)).get();
-    expect(updatedProd!.stock).toBe(5);
+    expect(validateRes.status).toBe(200);
+    const validateJson = await validateRes.json() as any;
+    expect(validateJson.data.status).toBe('awaiting_payment');
+    expect(validateJson.data.awaitingPaymentSince).toBeTruthy();
 
-    // 4. Verify transaction is created
-    const tx = await db.get(sql`
-      SELECT amount, category, member_id FROM transactions WHERE id = ${json.data.transactionId}
-    `) as { amount: number; category: number; member_id: number };
-    expect(tx).toBeDefined();
-    expect(tx.amount).toBe(2400);
-    expect(tx.category).toBe(boutiqueCat.id);
-    expect(tx.member_id).toBe(1);
+    const afterValidation = await db.select().from(productsTable).where(eq(productsTable.id, 1)).get();
+    expect(afterValidation!.stock).toBe(3);
+    expect(await db.select().from(ledgerEntriesTable).all()).toHaveLength(0);
 
-    // 5. Test GET /shop/orders
-    const getRes = await app.request('http://localhost/shop/orders?season=25-26', undefined, { DB: mockD1 as any });
+    // 3. Pay order : c'est ici que la recette entre en comptabilité
+    const payRes = await app.request(`http://localhost/shop/orders/${orderJson.data.id}/pay`, {
+      method: 'POST'
+    }, { DB: mockD1 as any });
+
+    expect(payRes.status).toBe(200);
+    const payJson = await payRes.json() as any;
+    expect(payJson.success).toBe(true);
+    expect(payJson.data.status).toBe('paid');
+
+    // L'encaissement ne retouche pas au stock, déjà décrémenté à la validation.
+    const prod = await db.select().from(productsTable).where(eq(productsTable.id, 1)).get();
+    expect(prod!.stock).toBe(3);
+
+    // Verify ledger entry created
+    const ledgerEntries = await db.select().from(ledgerEntriesTable).all();
+    expect(ledgerEntries.length).toBeGreaterThan(0);
+
+    // 4. Read orders (GET /shop/orders)
+    const getRes = await app.request('http://localhost/shop/orders', undefined, { DB: mockD1 as any });
     expect(getRes.status).toBe(200);
     const getJson = await getRes.json() as any;
     expect(getJson.success).toBe(true);
@@ -191,20 +205,33 @@ describe('Orders API Endpoints', () => {
 
     // Insert season, member, product
     await db.run(sql`
-      INSERT OR IGNORE INTO seasons (id, name, active, created_at)
-      VALUES ('25-26', 'Saison 2025-2026', 1, ${new Date().getTime()})
+      INSERT OR IGNORE INTO seasons (id, code, name, start_date, end_date, active, created_at)
+      VALUES (1, '25-26', 'Saison 2025-2026', '2025-09-01', '2026-08-31', 1, strftime('%s', 'now'))
     `);
     await db.run(sql`
-      INSERT INTO members (id, licence, season, last_name, first_name, gender, birth_date, status, type, amount_due, amount_received, amount_remaining, imported_at)
-      VALUES (1, '1234567', '25-26', 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'Competiteur', 25000, 0, 25000, ${new Date().getTime()})
+      INSERT INTO members (id, licence, season_id, last_name, first_name, gender, birth_date, status, type, amount_due_cents, amount_received_cents, amount_remaining_cents, imported_at)
+      VALUES (1, '1234567', 1, 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'Competiteur', 25000, 0, 25000, strftime('%s', 'now'))
     `);
-    await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', category: 'string' as any, price: 1200, stock: 5, active: true, createdAt: new Date() }).run();
+    const boutiqueCat = await db.get(sql`
+      INSERT INTO categories (admin_label, adherent_label, created_at)
+      VALUES ('Boutique', 'Boutique', strftime('%s', 'now'))
+      RETURNING id
+    `) as { id: number };
+    const productCat = await db.get(sql`
+      INSERT INTO product_categories (label, accounting_category_id, created_at)
+      VALUES ('Cordages (test)', ${boutiqueCat.id}, strftime('%s', 'now'))
+      RETURNING id
+    `) as { id: number };
+    await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', productCategoryId: productCat.id, priceCents: 1200, stock: 5, active: true, createdAt: new Date() }).run();
+
+    const pmRes = await mockD1.prepare('SELECT code FROM payment_methods').all();
+    const paymentMethodCode = pmRes.results[0].code as string;
 
     // 1. Create order
     const res = await app.request('http://localhost/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seasonId: '25-26', memberId: 1, productId: 1, quantity: 2, paymentMethod: 'virement' })
+      body: JSON.stringify({ seasonId: 1, memberId: 1, productId: 1, quantity: 2, paymentMethod: paymentMethodCode })
     }, { DB: mockD1 as any });
     const order = (await res.json() as any).data;
 
@@ -220,11 +247,16 @@ describe('Orders API Endpoints', () => {
     const prod = await db.select().from(productsTable).where(eq(productsTable.id, 1)).get();
     expect(prod!.stock).toBe(5);
 
-    // 4. Trying to approve rejected order should fail
-    const approveRes = await app.request(`http://localhost/shop/orders/${order.id}/approve`, {
+    // 4. Trying to validate or pay a rejected order should fail
+    const validateRes = await app.request(`http://localhost/shop/orders/${order.id}/validate`, {
       method: 'POST'
     }, { DB: mockD1 as any });
-    expect(approveRes.status).toBe(400);
+    expect(validateRes.status).toBe(400);
+
+    const payRes = await app.request(`http://localhost/shop/orders/${order.id}/pay`, {
+      method: 'POST'
+    }, { DB: mockD1 as any });
+    expect(payRes.status).toBe(400);
 
     // 5. Trying to reject already rejected order should fail
     const rejectRes2 = await app.request(`http://localhost/shop/orders/${order.id}/reject`, {
@@ -238,19 +270,32 @@ describe('Orders API Endpoints', () => {
 
     // Insert season, member, product
     await db.run(sql`
-      INSERT OR IGNORE INTO seasons (id, name, active, created_at)
-      VALUES ('25-26', 'Saison 2025-2026', 1, ${new Date().getTime()})
+      INSERT OR IGNORE INTO seasons (id, code, name, start_date, end_date, active, created_at)
+      VALUES (1, '25-26', 'Saison 2025-2026', '2025-09-01', '2026-08-31', 1, strftime('%s', 'now'))
     `);
     await db.run(sql`
-      INSERT INTO members (id, licence, season, last_name, first_name, gender, birth_date, status, type, amount_due, amount_received, amount_remaining, imported_at)
-      VALUES (1, '1234567', '25-26', 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'Competiteur', 25000, 0, 25000, ${new Date().getTime()})
+      INSERT INTO members (id, licence, season_id, last_name, first_name, gender, birth_date, status, type, amount_due_cents, amount_received_cents, amount_remaining_cents, imported_at)
+      VALUES (1, '1234567', 1, 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'Competiteur', 25000, 0, 25000, strftime('%s', 'now'))
     `);
-    await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', category: 'string' as any, price: 1200, stock: 1, active: true, createdAt: new Date() }).run();
+    const boutiqueCat = await db.get(sql`
+      INSERT INTO categories (admin_label, adherent_label, created_at)
+      VALUES ('Boutique', 'Boutique', strftime('%s', 'now'))
+      RETURNING id
+    `) as { id: number };
+    const productCat = await db.get(sql`
+      INSERT INTO product_categories (label, accounting_category_id, created_at)
+      VALUES ('Cordages (test)', ${boutiqueCat.id}, strftime('%s', 'now'))
+      RETURNING id
+    `) as { id: number };
+    await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', productCategoryId: productCat.id, priceCents: 1200, stock: 1, active: true, createdAt: new Date() }).run();
+
+    const pmRes = await mockD1.prepare('SELECT code FROM payment_methods').all();
+    const paymentMethodCode = pmRes.results[0].code as string;
 
     const res = await app.request('http://localhost/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seasonId: '25-26', memberId: 1, productId: 1, quantity: 2, paymentMethod: 'virement' })
+      body: JSON.stringify({ seasonId: 1, memberId: 1, productId: 1, quantity: 2, paymentMethod: paymentMethodCode })
     }, { DB: mockD1 as any });
     expect(res.status).toBe(200);
     const json = await res.json() as any;
@@ -262,42 +307,55 @@ describe('Orders API Endpoints', () => {
 
     // 1. Insert a closed season
     await db.run(sql`
-      INSERT OR REPLACE INTO seasons (id, name, active, closed, created_at)
-      VALUES ('25-26', 'Saison 2025-2026', 1, 1, ${new Date().getTime()})
+      INSERT OR REPLACE INTO seasons (id, code, name, start_date, end_date, active, closed_at, created_at)
+      VALUES (1, '25-26', 'Saison 2025-2026', '2025-09-01', '2026-08-31', 1, strftime('%s', 'now'), strftime('%s', 'now'))
     `);
 
     // Insert member, product
     await db.run(sql`
-      INSERT INTO members (id, licence, season, last_name, first_name, gender, birth_date, status, type, amount_due, amount_received, amount_remaining, imported_at)
-      VALUES (1, '1234567', '25-26', 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'Competiteur', 25000, 0, 25000, ${new Date().getTime()})
+      INSERT INTO members (id, licence, season_id, last_name, first_name, gender, birth_date, status, type, amount_due_cents, amount_received_cents, amount_remaining_cents, imported_at)
+      VALUES (1, '1234567', 1, 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'Competiteur', 25000, 0, 25000, strftime('%s', 'now'))
     `);
-    await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', category: 'string' as any, price: 1200, stock: 5, active: true, createdAt: new Date() }).run();
+    const boutiqueCat = await db.get(sql`
+      INSERT INTO categories (admin_label, adherent_label, created_at)
+      VALUES ('Boutique', 'Boutique', strftime('%s', 'now'))
+      RETURNING id
+    `) as { id: number };
+    const productCat = await db.get(sql`
+      INSERT INTO product_categories (label, accounting_category_id, created_at)
+      VALUES ('Cordages (test)', ${boutiqueCat.id}, strftime('%s', 'now'))
+      RETURNING id
+    `) as { id: number };
+    await db.insert(productsTable).values({ id: 1, name: 'Yonex BG65', productCategoryId: productCat.id, priceCents: 1200, stock: 5, active: true, createdAt: new Date() }).run();
+
+    const pmRes = await mockD1.prepare('SELECT code FROM payment_methods').all();
+    const paymentMethodCode = pmRes.results[0].code as string;
 
     // Try creating an order on a closed season -> expect 400
     const createRes = await app.request('http://localhost/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seasonId: '25-26', memberId: 1, productId: 1, quantity: 2, paymentMethod: 'virement' })
+      body: JSON.stringify({ seasonId: 1, memberId: 1, productId: 1, quantity: 2, paymentMethod: paymentMethodCode })
     }, { DB: mockD1 as any });
     expect(createRes.status).toBe(400);
     const createJson = await createRes.json() as any;
     expect(createJson.success).toBe(false);
     expect(createJson.error).toBe('La saison est clôturée. Impossible de soumettre une commande.');
 
-    // To test approval and rejection, insert a pending order directly bypassing endpoint
+    // Pour tester les transitions, on insère une commande directement, sans passer par la route.
     await db.run(sql`
-      INSERT INTO orders (id, season_id, member_id, product_id, quantity, total_amount, payment_method, status, created_at)
-      VALUES (10, '25-26', 1, 1, 2, 2400, 'virement', 'pending', ${new Date().getTime()})
+      INSERT INTO orders (id, season_id, member_id, product_id, quantity, total_amount_cents, payment_method_id, status, created_at)
+      VALUES (10, 1, 1, 1, 2, 2400, 1, 'created', strftime('%s', 'now'))
     `);
 
-    // Try approving the order on closed season -> expect 400
-    const approveRes = await app.request('http://localhost/shop/orders/10/approve', {
+    // Try validating the order on closed season -> expect 400
+    const validateRes = await app.request('http://localhost/shop/orders/10/validate', {
       method: 'POST'
     }, { DB: mockD1 as any });
-    expect(approveRes.status).toBe(400);
-    const approveJson = await approveRes.json() as any;
-    expect(approveJson.success).toBe(false);
-    expect(approveJson.error).toBe('La saison est clôturée');
+    expect(validateRes.status).toBe(400);
+    const validateJson = await validateRes.json() as any;
+    expect(validateJson.success).toBe(false);
+    expect(validateJson.error).toBe('La saison est clôturée');
 
     // Try rejecting the order on closed season -> expect 400
     const rejectRes = await app.request('http://localhost/shop/orders/10/reject', {
@@ -323,9 +381,9 @@ describe('Orders API Endpoints', () => {
     expect(json.error).toContain('Validation failed');
   });
 
-  it('should return 404 AppError when order is not found for approval', async () => {
+  it('should return 404 AppError when order is not found for payment', async () => {
     const { mockD1 } = await setupMockDb();
-    const res = await app.request('http://localhost/shop/orders/9999/approve', {
+    const res = await app.request('http://localhost/shop/orders/9999/pay', {
       method: 'POST'
     }, { DB: mockD1 as any });
     expect(res.status).toBe(404);

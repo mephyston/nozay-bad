@@ -23,14 +23,14 @@ describe('CreateInvoice Route', () => {
     }, { DB: mockD1 as any });
 
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error).toContain('Validation failed');
   });
 
   it('should return 200 on valid body', async () => {
     const { mockD1 } = await setupMockDb();
-    vi.mocked(createInvoice).mockResolvedValue({ id: 1 });
+    vi.mocked(createInvoice).mockResolvedValue({ id: 1 } as any);
 
     const res = await createInvoiceRoute.request('http://localhost/invoices', {
       method: 'POST',
@@ -48,7 +48,7 @@ describe('CreateInvoice Route', () => {
     }, { DB: mockD1 as any });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(body.data).toEqual({ id: 1 });
   });
@@ -70,7 +70,7 @@ describe('CreateInvoice Route', () => {
     }, { DB: mockD1 as any });
 
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error).toBe('Saison clôturée');
   });

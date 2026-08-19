@@ -1,20 +1,19 @@
 import { type DbOrTx } from '@nba/db';
-import { bankTransactionsTable } from '../../shared/schema';
+import { bankStatementLinesTable } from '../../shared/schema';
 
 export class ImportBankStatementRepository {
-  async insertBankTransaction(db: DbOrTx, values: {
-    fitid: string;
-    seasonId: string;
-    accountId: 'current' | 'savings';
-    amount: number;
-    date: string;
-    name: string;
-    memo: string | null;
-    status: 'pending';
-    createdAt: Date;
-  }): Promise<{ changes: number }> {
-    const res = await db.insert(bankTransactionsTable)
-      .values(values)
+  async insertBankStatementLine(db: DbOrTx, values: any): Promise<{ changes: number }> {
+    const res = await db.insert(bankStatementLinesTable)
+      .values({
+        fitid: values.fitid,
+        accountId: typeof values.accountId === 'number' ? values.accountId : 1,
+        amountCents: values.amountCents ?? 0,
+        date: values.date,
+        name: values.name,
+        memo: values.memo || null,
+        status: values.status || 'pending',
+        createdAt: values.createdAt || new Date()
+      })
       .onConflictDoNothing()
       .run();
     const changes = res?.meta?.changes ?? 0;

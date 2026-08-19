@@ -224,7 +224,7 @@
     ```typescript
     export * from './schema';
     ```
-  - `libs/features/accounting/data-access/src/schema.ts` (write `seasonsTable`, `seasonBalancesTable`, `transactionsTable`, `bankTransactionsTable`, `checkDepositsTable`, `checksTable`, `categoriesTable`, `accountClassesTable`, `seasonCategoryBudgetsTable`, `invoicesTable`, `invoiceItemsTable` declarations, importing `membersTable` from members schema for foreign keys)
+  - `libs/features/accounting/data-access/src/schema.ts` (write `seasonsTable`, `seasonBalancesTable`, `ledgerEntriesTable`, `bankStatementLinesTable`, `checkDepositsTable`, `checksTable`, `categoriesTable`, `accountClassesTable`, `seasonCategoryBudgetsTable`, `invoicesTable`, `invoiceItemsTable` declarations, importing `membersTable` from members schema for foreign keys)
   - `libs/features/accounting/data-access/src/index.ts`:
     ```typescript
     export * from './schema';

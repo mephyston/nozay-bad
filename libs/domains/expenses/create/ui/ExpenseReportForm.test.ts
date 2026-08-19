@@ -69,7 +69,10 @@ describe('ExpenseReportForm Component', () => {
 
     // Check for Input component (data-slot="input")
     const inputs = target.querySelectorAll('[data-slot="input"]');
-    expect(inputs.length).toBeGreaterThanOrEqual(2);
+    expect(inputs.length).toBeGreaterThanOrEqual(1);
+
+    // Les listes de sélection utilisent désormais SearchableCombobox (role=combobox)
+    expect(target.querySelector('[role="combobox"]')).not.toBeNull();
 
     // Check for Label component (data-slot="label")
     expect(target.querySelector('[data-slot="label"]')).not.toBeNull();

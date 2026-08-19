@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Loader2 } from '@lucide/svelte';
   import { Button, Badge, Sheet, Alert } from '@nba/ui';
-  import AnalyzeCheck from '../../record-check-transaction/ui/AnalyzeCheck.svelte';
+  import AnalyzeCheck from '../../record-check-ledger-entry/ui/AnalyzeCheck.svelte';
   import CheckManualForm from './CheckManualForm.svelte';
   import type { CheckDepositState } from './check-deposit-state.svelte';
 
@@ -18,7 +18,7 @@
 </script>
 
 <Sheet.Root bind:open={depositState.showAddCheckModal}>
-  <Sheet.Content class="w-full sm:max-w-md p-0 flex flex-col h-full bg-card border-border overflow-hidden">
+  <Sheet.Content size="md" class="p-0 flex flex-col h-full overflow-hidden">
     <Sheet.Header class="p-6 border-b border-border">
       <Sheet.Title>Enregistrer un Chèque</Sheet.Title>
       <Sheet.Description class="hidden">Enregistrement d'un chèque physique avec assistance IA optionnelle par photo.</Sheet.Description>
@@ -43,7 +43,7 @@
           <Alert.Root class="bg-primary/10 border-primary/20 text-primary">
             <Alert.Description class="flex justify-between items-center text-xs w-full">
               <span>Adhérent détecté : <strong>{depositState.matchedMemberName}</strong></span>
-              <Badge variant="secondary" class="bg-primary/20 hover:bg-primary/20 text-primary border-transparent">Automatiquement sélectionné</Badge>
+              <Badge variant="primary-soft">Automatiquement sélectionné</Badge>
             </Alert.Description>
           </Alert.Root>
         {/if}

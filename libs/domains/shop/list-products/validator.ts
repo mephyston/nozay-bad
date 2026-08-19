@@ -1,6 +1,6 @@
 import { Type } from '@sinclair/typebox';
 
 export const listProductsQuerySchema = Type.Object({
-  category: Type.Optional(Type.String()),
+  productCategoryId: Type.Optional(Type.Integer({ minimum: 1 })),
   active: Type.Optional(Type.Union([Type.Literal('true'), Type.Literal('false')]))
 });

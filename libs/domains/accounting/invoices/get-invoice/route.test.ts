@@ -9,14 +9,14 @@ describe('getInvoiceRoute', () => {
   it('handles valid numeric id param', async () => {
     const res = await getInvoiceRoute.request('/invoices/1', {}, { DB: {} as any });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
   });
 
   it('returns 400 for non-numeric id param', async () => {
     const res = await getInvoiceRoute.request('/invoices/abc', {}, { DB: {} as any });
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
   });
 });

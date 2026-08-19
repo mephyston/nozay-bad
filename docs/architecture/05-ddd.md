@@ -32,9 +32,9 @@ export class Invoice {
     return this.status === 'draft' || this.status === 'cancelled';
   }
 
-  markAsPaid(bankTransactionId: number): void {
+  markAsPaid(bankStatementLineId: number): void {
     this.status = 'paid';
-    this.bankTransactionId = bankTransactionId;
+    this.bankStatementLineId = bankStatementLineId;
   }
 }
 ```
@@ -44,7 +44,7 @@ appelle ces méthodes plutôt que de réécrire la condition. Bénéfice direct 
 la règle "une facture non-brouillon n'est pas modifiable" n'existe plus qu'à
 un seul endroit.
 
-## Exemple concret : l'agrégat `BankTransaction`
+## Exemple concret : l'agrégat `BankStatementLine`
 
 La fonction `reconcileBankTxInternal()` (`accounting/api/src/helpers.ts`,
 ~200 lignes) mélange aujourd'hui : validation, plusieurs règles métier
@@ -52,7 +52,7 @@ La fonction `reconcileBankTxInternal()` (`accounting/api/src/helpers.ts`,
 (`match`/`create`), et mutation d'un domaine voisin (`membersTable`). À
 éclater en :
 
-- `BankTransaction.reconcile(...)` (agrégat `accounting`, décide si un
+- `BankStatementLine.reconcile(...)` (agrégat `accounting`, décide si un
   rapprochement est possible et calcule le nouveau statut)
 - appel à `members.applyPaymentToMember(tx, memberId, amount)` (API publique
   du domaine `members`, cf. `01-principles.md` règle 5) pour la partie qui

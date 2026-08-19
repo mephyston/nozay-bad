@@ -1,23 +1,39 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
 import { TransactionLedger } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
+import { createAdminApiClient } from '../../../lib/api';
+import { guardAction } from '../../../lib/guard';
 
-const userEmail = Astro.locals.user?.email || "admin@nozay-bad.fr";
-const apiService = env.API_SERVICE;
+const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
+const apiService = createAdminApiClient(Astro.locals);
 
-const season = Astro.url.searchParams.get('season') || '25-26';
+const requestedSeason = Astro.url.searchParams.get('season');
 const page = Astro.url.searchParams.get('page') || '1';
 const category = Astro.url.searchParams.get('category') || '';
 const classCode = Astro.url.searchParams.get('classCode') || '';
 const unreconciledChequesOnly = Astro.url.searchParams.get('unreconciledCheques') === 'true';
-const accountId = Astro.url.searchParams.get('accountId') || '';
+const accountId = Astro.url.searchParams.get('accountId') || 'current';
+const search = Astro.url.searchParams.get('search') || '';
+const month = Astro.url.searchParams.get('month') || '';
+const limit = Astro.url.searchParams.get('limit') || '20';
 
 // Si requête POST, intercepter pour les actions d'écriture (proxying vers Hono)
+/** Permission exigée par action d'écriture de cette page. */
+const ACTIONS = {
+  create: 'accounting:ledger:write',
+  update: 'accounting:ledger:write',
+  delete: 'accounting:ledger:delete'
+} as const;
+
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.json() as any;
+
+    const denied = guardAction(Astro.locals, data.action, ACTIONS);
+    if (denied) return denied;
     if (data.action === 'create') {
       const apiRes = await apiService.fetch('http://localhost/accounting/transactions', {
         method: 'POST',
@@ -27,6 +43,7 @@ if (Astro.request.method === 'POST') {
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
+      return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
     } else if (data.action === 'update') {
       const apiRes = await apiService.fetch(`http://localhost/accounting/transactions/${data.id}`, {
         method: 'PUT',
@@ -36,6 +53,7 @@ if (Astro.request.method === 'POST') {
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
+      return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
     } else if (data.action === 'delete') {
       const apiRes = await apiService.fetch(`http://localhost/accounting/transactions/${data.id}`, {
         method: 'DELETE'
@@ -43,6 +61,7 @@ if (Astro.request.method === 'POST') {
       if (!apiRes.ok) {
         return new Response('Erreur suppression', { status: apiRes.status });
       }
+      return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
     }
     return new Response(JSON.stringify({ success: true }));
   } catch (err: any) {
@@ -53,22 +72,35 @@ if (Astro.request.method === 'POST') {
 let transactionsList = [];
 let pagination = { total: 0, page: 1, limit: 20, totalPages: 1 };
 let balances = [];
-let seasonsList = [];
+let seasonsList: any[] = [];
 let categoriesList = [];
 let accountClassesList = [];
 let errorMsg = '';
+let season = requestedSeason || '25-26';
 
 try {
-  const queryParams = new URLSearchParams({ season, page, limit: '20' });
+  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
+  if (seasonsRes.ok) {
+    const json = await seasonsRes.json() as any;
+    seasonsList = json.data || [];
+    seasonsList.sort((a: any, b: any) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
+    if (!requestedSeason && seasonsList.length > 0) {
+      const activeSeasonObj = seasonsList.find((s: any) => s.active || s.active === 1) || seasonsList[seasonsList.length - 1];
+      season = activeSeasonObj.code || String(activeSeasonObj.id);
+    }
+  }
+
+  const queryParams = new URLSearchParams({ season, page, limit });
   if (category) queryParams.set('category', category);
   if (classCode) queryParams.set('classCode', classCode);
   if (unreconciledChequesOnly) queryParams.set('unreconciledCheques', 'true');
-  if (accountId) queryParams.set('accountId', accountId);
+  queryParams.set('accountId', accountId);
+  if (search) queryParams.set('search', search);
+  if (month) queryParams.set('month', month);
 
-  const [txRes, reportRes, seasonsRes, categoriesRes, classesRes] = await Promise.all([
+  const [txRes, reportRes, categoriesRes, classesRes] = await Promise.all([
     apiService.fetch(`http://localhost/accounting/transactions?${queryParams.toString()}`),
     apiService.fetch(`http://localhost/accounting/seasons/${season}/reports`),
-    apiService.fetch('http://localhost/accounting/seasons'),
     apiService.fetch('http://localhost/accounting/categories'),
     apiService.fetch('http://localhost/accounting/account-classes')
   ]);
@@ -84,11 +116,6 @@ try {
     balances = json.data?.bilanTrésorerie || [];
   }
 
-  if (seasonsRes.ok) {
-    const json = await seasonsRes.json() as any;
-    seasonsList = json.data || [];
-  }
-
   if (categoriesRes.ok) {
     const json = await categoriesRes.json() as any;
     categoriesList = json.data || [];
@@ -101,25 +128,26 @@ try {
 } catch (err: any) {
   errorMsg = 'Une erreur est survenue lors de la communication avec le serveur comptable.';
 }
+
+let displaySeasonName = season;
+if (seasonsList.length > 0) {
+  const currentSeason = seasonsList.find((s: any) => s.code === season || String(s.id) === season);
+  if (currentSeason && currentSeason.name) {
+    displaySeasonName = currentSeason.name.replace('Saison ', '');
+  }
+}
 ---
 
 <Layout title="Comptabilité - NBA 91">
-  <AdminLayout client:idle email={userEmail} breadcrumb="Comptabilité / Grand Livre">
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Grand Livre" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-3xl font-bold tracking-tight">Comptabilité</h1>
-          <p class="text-muted-foreground mt-2">
-            Consultez le grand livre comptable et suivez les mouvements de fonds de l'association.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Comptabilité"
+        description={`Consultez le grand livre comptable et suivez les mouvements de fonds de l'association pour la saison ${displaySeasonName}.`}
+        class="print:hidden"
+      />
 
-      {errorMsg && (
-        <div class="p-4 bg-destructive/15 border border-destructive text-destructive rounded-lg">
-          {errorMsg}
-        </div>
-      )}
+      {errorMsg && <ErrorAlert message={errorMsg} />}
 
       <TransactionLedger
         client:load
@@ -132,6 +160,9 @@ try {
         accountClasses={accountClassesList}
         unreconciledChequesOnly={unreconciledChequesOnly}
         accountId={accountId}
+        searchQuery={search}
+        month={month}
+        limit={limit}
       />
     </div>
   </AdminLayout>

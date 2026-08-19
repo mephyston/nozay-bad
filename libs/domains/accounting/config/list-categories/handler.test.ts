@@ -33,8 +33,8 @@ describe('listCategories', () => {
 
     expect(mockRepoInstance.listCategories).toHaveBeenCalled();
     expect(result).toHaveLength(1);
-    expect(result[0].receiptCode).toBe('75');
-    expect(result[0].expenseCode).toBe('67');
+    expect((result[0] as any).receiptCode).toBe('75');
+    expect((result[0] as any).expenseCode).toBe('67');
   });
 
   it('should throw a business error', async () => {

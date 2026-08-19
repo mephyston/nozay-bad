@@ -1,0 +1,44 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import AdminLayout from '../../../../components/AdminLayout.svelte';
+import { PageHeader } from '@nba/ui';
+import { env } from 'cloudflare:workers';
+import { createAdminApiClient } from '../../../../lib/api';
+
+const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
+---
+
+<Layout title="Remises de chèques - NBA 91">
+  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Remises de chèques" permissions={Astro.locals.user?.permissions || []}>
+    <div class="space-y-6">
+      <PageHeader
+        title="Remises de chèques"
+        description="Gérez les chèques physiques reçus et les bordereaux de remise bancaire."
+      />
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <a
+          href="/admin/accounting/cheques/list"
+          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline relative overflow-hidden group"
+        >
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold text-foreground">Gestion des chèques</p>
+            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Gérer &rarr;</span>
+          </div>
+          <p class="text-xs text-muted-foreground pr-8">Enregistrement, suivi et gestion des chèques reçus.</p>
+        </a>
+        
+        <a
+          href="/admin/accounting/cheques/deposits"
+          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline relative overflow-hidden group"
+        >
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold text-foreground">Gestion de remise de bordereaux</p>
+            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Gérer &rarr;</span>
+          </div>
+          <p class="text-xs text-muted-foreground pr-8">Création des bordereaux et rapprochement bancaire.</p>
+        </a>
+      </div>
+    </div>
+  </AdminLayout>
+</Layout>

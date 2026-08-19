@@ -24,12 +24,20 @@
       "id": "281c9992dd914501a709ef8f03fe2ab8"
     }
   ],
+  "vars": {
+    "EMAIL_FROM": "Nozay Badminton Association <contact@nozaybad.fr>",
+    "EMAIL_MODE": "live"
+  },
   "services": [
     { "binding": "API_SERVICE", "service": "nba-api" }
   ],
   "env": {
     "staging": {
       "name": "nba-storefront-staging",
+      "vars": {
+        "EMAIL_FROM": "Nozay Badminton Association <contact@nozaybad.fr>",
+        "EMAIL_MODE": "dry-run"
+      },
       "kv_namespaces": [
         {
           "binding": "RATE_LIMIT_KV",

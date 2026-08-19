@@ -4,6 +4,7 @@ export interface CreateExpenseInput {
   seasonId: string;
   description: string;
   category: string | number;
+  /** Montant en **centimes** — l'UI convertit avant l'envoi (expense-form-submit.ts). */
   amount: number;
   photoUrl?: string | null;
   emitterName: string;

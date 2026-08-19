@@ -1,0 +1,52 @@
+name: Update Visual Baselines
+
+# Régénère les références PNG (-linux) de la régression visuelle et les commite
+# sur la branche. À déclencher manuellement après un changement visuel assumé
+# du design system. Tourne sur Linux (×1) pour matcher le job `visual` du
+# pipeline de déploiement.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-baselines:
+    name: Regenerate & commit baselines
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Storybook
+        run: npm run build-storybook
+        env:
+          STORYBOOK_DISABLE_TELEMETRY: "1"
+
+      - name: Regenerate references
+        run: npm run test:visual:update
+
+      - name: Commit updated baselines
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tests/visual
+          # --cached voit aussi les fichiers nouvellement ajoutés (non suivis).
+          if git diff --cached --quiet -- tests/visual; then
+            echo "Aucune référence à mettre à jour."
+            exit 0
+          fi
+          git commit -m "test(visual): update Linux baselines [skip ci]"
+          git push

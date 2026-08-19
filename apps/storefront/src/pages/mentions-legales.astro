@@ -1,0 +1,94 @@
+---
+import Layout from '../layouts/Layout.astro';
+import MobileNav from '../components/MobileNav.svelte';
+
+// Page publique (accessible sans connexion — voir l'allow-list du middleware).
+const lastUpdate = 'août 2026';
+
+// La barre de navigation n'est posée que pour un visiteur connecté : elle pointe
+// vers des écrans authentifiés, qui renverraient un visiteur anonyme vers le login.
+const session = Astro.locals.session;
+---
+
+<Layout
+  title="Mentions légales - Nozay Badminton Association"
+  description="Mentions légales de l'espace adhérent de l'association Nozay Badminton : éditeur, directeur de la publication et hébergeur."
+>
+  <main class="flex-1 w-full">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 py-10 pb-28 md:pb-10">
+      <a href="/" class="inline-flex items-center gap-2 mb-6">
+        <img src="/logo.png" alt="Logo" class="h-7 w-7 object-contain" />
+        <span class="font-bold text-sm text-foreground tracking-tight">Nozay Badminton Association</span>
+      </a>
+
+      <h1 class="text-2xl font-bold text-foreground">Mentions légales</h1>
+      <p class="text-sm text-muted-foreground mt-1">Dernière mise à jour : {lastUpdate}</p>
+
+      <div class="mt-8 space-y-8 text-sm leading-relaxed text-foreground">
+        <section class="space-y-2">
+          <h2 class="text-lg font-semibold">1. Éditeur du site</h2>
+          <p class="text-muted-foreground">
+            Le présent espace adhérent est édité par <strong class="text-foreground">Nozay Badminton Association</strong>,
+            association sportive régie par la loi du 1<sup>er</sup> juillet 1901, affiliée à la Fédération Française de Badminton (FFBaD).
+          </p>
+          <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
+            <li>Siège social : <strong class="text-foreground">Mairie de Nozay, 91620 NOZAY</strong></li>
+            <li>Association déclarée n° <strong class="text-foreground">0913011863</strong></li>
+            <li>SIRET : <strong class="text-foreground">433 218 716 00010</strong></li>
+            <li>Agrément DDJS : 91 S 744 — Affiliation FFBaD : LIFB.91.96.018</li>
+            <li>Contact : <a class="email-protect text-primary hover:underline" data-u="contact" data-d="nozaybad.fr" href="#">notre adresse email</a></li>
+          </ul>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-semibold">2. Directeur de la publication</h2>
+          <p class="text-muted-foreground">
+            <strong class="text-foreground">Fabien LE BLEVEC</strong>, en qualité de président de l'association et représentant légal.
+          </p>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-semibold">3. Hébergeur</h2>
+          <p class="text-muted-foreground">
+            Le site est hébergé par <strong class="text-foreground">Cloudflare, Inc.</strong>, 101 Townsend Street,
+            San Francisco, CA 94107, États-Unis — <a href="https://www.cloudflare.com" target="_blank" rel="noopener" class="text-primary hover:underline">www.cloudflare.com</a>.
+          </p>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-semibold">4. Nature du service</h2>
+          <p class="text-muted-foreground">
+            Cet espace est un <strong class="text-foreground">outil de gestion réservé aux adhérents</strong> de l'association
+            (boutique interne, notes de frais, attestations). Il ne diffuse aucun contenu éditorial au public.
+          </p>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-semibold">5. Données personnelles</h2>
+          <p class="text-muted-foreground">
+            Le traitement des données personnelles est décrit dans notre
+            <a href="/confidentialite" class="text-primary hover:underline"> politique de confidentialité</a>.
+          </p>
+        </section>
+      </div>
+
+      <footer class="border-t border-border mt-12 pt-6 text-center text-xs text-muted-foreground">
+        {!session && (
+          <p class="mb-2"><a href="/" class="text-primary hover:underline">Retour à l'accueil</a></p>
+        )}
+        <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+      </footer>
+    </div>
+  </main>
+
+  {session && <MobileNav currentPath="/mentions-legales" />}
+
+  <script is:inline>
+    // Assemble l'email côté client (anti-moissonnage bots).
+    document.querySelectorAll('.email-protect').forEach(function (el) {
+      var addr = el.getAttribute('data-u') + '@' + el.getAttribute('data-d');
+      el.setAttribute('href', 'mailto:' + addr);
+      el.textContent = addr;
+    });
+  </script>
+</Layout>

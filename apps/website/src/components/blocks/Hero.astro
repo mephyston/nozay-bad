@@ -1,0 +1,45 @@
+---
+import type { HeroBlock, CmsMediaRow, CmsMediaVariantRow } from '@nba/cms/public';
+import Picture from '../Picture.astro';
+
+type MediaMap = Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
+interface Props { block: HeroBlock; media?: MediaMap }
+const { block, media = new Map() as MediaMap } = Astro.props;
+const illustration = block.mediaId ? media.get(block.mediaId) : undefined;
+---
+<section class="bg-muted/40 border-border border-b">
+  <div class="mx-auto max-w-5xl px-4 py-12 text-center">
+    {illustration && (
+      /* Image d'accroche : c'est presque toujours le plus grand élément affiché,
+         donc le LCP. Elle est chargée sans délai et annoncée comme prioritaire. */
+      <Picture
+        media={illustration.media}
+        variants={illustration.variants}
+        priority={true}
+        sizes="(max-width: 1024px) 100vw, 1024px"
+        class="mx-auto mb-6 max-h-80 w-auto rounded-lg object-cover"
+      />
+    )}
+    <h1 class="text-4xl font-semibold tracking-tight">{block.title}</h1>
+    {block.subtitle && <p class="text-muted-foreground mx-auto mt-3 max-w-2xl">{block.subtitle}</p>}
+    {block.ctas.length > 0 && (
+      <div class="mt-6 flex flex-wrap justify-center gap-3">
+        {block.ctas.map((cta) => (
+          <a
+            href={cta.href}
+            class:list={[
+              'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+              cta.variant === 'secondary'
+                ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                : cta.variant === 'ghost'
+                  ? 'hover:bg-accent'
+                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
+            ]}
+          >
+            {cta.label}
+          </a>
+        ))}
+      </div>
+    )}
+  </div>
+</section>

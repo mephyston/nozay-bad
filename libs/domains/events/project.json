@@ -1,0 +1,12 @@
+{
+  "name": "@nba/events-api",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/domains/events",
+  // Les composants Svelte du domaine importent @nba/ui, mais Nx ne lit pas les
+  // imports des fichiers .svelte : sans cette ligne, une modification du design
+  // system ne marque pas ce domaine affecté et ses tests ne sont pas rejoués.
+  "implicitDependencies": ["@nba/ui"],
+  "targets": { "lint": { "command": "eslint {projectRoot}" } },
+  "tags": ["type:api", "scope:events"]
+}

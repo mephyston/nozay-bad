@@ -1,0 +1,85 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { MenusManager } from '@nba/cms-ui';
+import { createAdminApiClient } from '../../../lib/api';
+import { can, guardAction } from '../../../lib/guard';
+
+const canWrite = can(Astro.locals, 'cms:pages:write');
+const apiService = createAdminApiClient(Astro.locals);
+
+const ACTIONS = { proxy: 'cms:pages:write' } as const;
+
+if (Astro.request.method === 'POST') {
+  const data = (await Astro.request.json()) as any;
+  const denied = guardAction(Astro.locals, data.action, ACTIONS);
+  if (denied) return denied;
+
+  // Le chemin est reconstruit à partir d'une liste fermée : relayer tel quel celui
+  // reçu du navigateur ferait de cet écran un proxy ouvert vers toute l'API interne.
+  const allowed = /^\/cms\/nav(\/reorder|\/\d+)?$/;
+  if (typeof data.path !== 'string' || !allowed.test(data.path)) {
+    return new Response(JSON.stringify({ error: 'Chemin non autorisé.' }), { status: 400 });
+  }
+  if (!['POST', 'PUT', 'DELETE'].includes(data.method)) {
+    return new Response(JSON.stringify({ error: 'Méthode non autorisée.' }), { status: 400 });
+  }
+
+  const apiRes = await apiService.fetch(`http://localhost${data.path}`, {
+    method: data.method,
+    headers: { 'Content-Type': 'application/json' },
+    ...(data.payload ? { body: JSON.stringify(data.payload) } : {})
+  });
+
+  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+  return new Response(JSON.stringify(await apiRes.json()), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+let header: any[] = [];
+let footer: any[] = [];
+let legal: any[] = [];
+let pages: any[] = [];
+let errorMsg = '';
+
+try {
+  const [headerRes, footerRes, legalRes, pagesRes] = await Promise.all([
+    apiService.fetch('http://localhost/cms/nav?location=header'),
+    apiService.fetch('http://localhost/cms/nav?location=footer'),
+    apiService.fetch('http://localhost/cms/nav?location=legal'),
+    apiService.fetch('http://localhost/cms/pages')
+  ]);
+
+  if (headerRes.ok) header = ((await headerRes.json()) as any).data ?? [];
+  else errorMsg = 'Impossible de charger les menus.';
+  if (footerRes.ok) footer = ((await footerRes.json()) as any).data ?? [];
+  if (legalRes.ok) legal = ((await legalRes.json()) as any).data ?? [];
+  if (pagesRes.ok) pages = ((await pagesRes.json()) as any).data ?? [];
+} catch {
+  errorMsg = 'Impossible de charger les menus.';
+}
+---
+
+<Layout title="Menus du site - NBA 91">
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Menus du site"
+  >
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader
+        title="Menus du site"
+        description="La barre de navigation, la colonne de liens du pied de page et la barre légale du site public. Une entrée principale peut porter un sous-menu, qui s'affiche au survol sur ordinateur et dans le menu déroulant sur mobile."
+      />
+
+      <MenusManager client:load header={header} footer={footer} legal={legal} pages={pages} canWrite={canWrite} />
+    </div>
+  </AdminLayout>
+</Layout>

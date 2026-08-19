@@ -1,0 +1,33 @@
+#!/bin/sh
+# Joue en local, AVANT que le push ne parte, ce que la CI jouerait côté runner :
+# garde-fous, typecheck, tests d'architecture, puis les tests affectés par rapport
+# à la branche distante. Un échec ici coûte quelques minutes de poste de travail ;
+# le même échec côté runner coûte des minutes Actions facturées et bloque staging.
+#
+# Contournement ponctuel (hotfix urgent, CI assumée) : git push --no-verify
+set -e
+
+echo "[pre-push] garde-fous…"
+node scripts/check-env-declarations.js
+node scripts/check-migrations-append-only.js
+node scripts/check-schema-integrity.js
+node scripts/check-nx-deps.js
+
+echo "[pre-push] typecheck…"
+npm run typecheck
+
+echo "[pre-push] tests d'architecture…"
+npx vitest run --config vitest.architecture.config.ts
+
+# Base de comparaison : le point de divergence avec la branche amont si elle existe,
+# sinon le commit précédent (première poussée d'une branche).
+BASE=$(git merge-base HEAD "@{upstream}" 2>/dev/null || git rev-parse HEAD~1 2>/dev/null || echo "")
+if [ -n "$BASE" ]; then
+  echo "[pre-push] tests affectés depuis ${BASE}…"
+  npx vitest run --changed "$BASE" --passWithNoTests
+else
+  echo "[pre-push] pas de base de comparaison : suite complète…"
+  npx vitest run
+fi
+
+echo "[pre-push] OK — push autorisé."

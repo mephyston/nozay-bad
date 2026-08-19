@@ -5,14 +5,19 @@ import { setupMockDb } from '@nba/db/test-utils';
 vi.mock('./repository', () => {
   return {
     CreateBankCheckDepositRepository: class {
-      getChecksByIds = vi.fn().mockResolvedValue([{ id: 1, amount: 100, number: '123', seasonId: '23-24', status: 'pending' }]);
+      resolveSeasonId = vi.fn().mockResolvedValue(1);
+      getChecksByIds = vi.fn().mockResolvedValue([{ id: 1, amount: 100, number: '123', seasonId: '23-24', status: 'received' }]);
       createCheckDeposit = vi.fn().mockResolvedValue({ id: 2 });
       updateChecksDeposit = vi.fn();
-      getCheckDepositById = vi.fn().mockResolvedValue({ id: 2, bankTransactionId: 3 });
+      getCheckDepositById = vi.fn().mockResolvedValue({ id: 2, bankStatementLineId: 3 });
       updateCheckDeposit = vi.fn();
-      updateBankTransactionStatus = vi.fn();
+      updateBankStatementLineStatus = vi.fn();
       unlinkChecksForDeposit = vi.fn();
       deleteCheckDeposit = vi.fn();
+      buildCreateCheckDepositStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (res: any) => res, run: () => Promise.resolve({ meta: { last_row_id: 2 } }) }) });
+      buildUpdateChecksDepositStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (res: any) => res, run: () => Promise.resolve({}) }) });
+      buildUpdateCheckDepositStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (res: any) => res, run: () => Promise.resolve({}) }) });
+      buildUpdateBankStatementLineStatusStatement = vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (res: any) => res, run: () => Promise.resolve({}) }) });
     }
   };
 });
@@ -43,7 +48,7 @@ describe('CreateBankCheckDeposit Route', () => {
     const res = await createBankCheckDepositRoute.request('http://localhost/check-deposits/2/clear', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bankTransactionId: 'invalid' }) // Should be a number
+      body: JSON.stringify({ bankStatementLineId: 'invalid' }) // Should be a number
     }, { DB: mockD1 as any });
     expect(res.status).toBe(400);
   });
@@ -53,7 +58,7 @@ describe('CreateBankCheckDeposit Route', () => {
     const res = await createBankCheckDepositRoute.request('http://localhost/check-deposits/2/clear', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bankTransactionId: 3 })
+      body: JSON.stringify({ bankStatementLineId: 3 })
     }, { DB: mockD1 as any });
     expect(res.status).toBe(200);
   });

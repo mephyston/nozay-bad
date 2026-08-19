@@ -1,0 +1,14 @@
+import type { ClubEventRow } from '../shared/schema';
+
+export interface UpdateEventInput {
+  eventId: number;
+  category?: ClubEventRow['category'];
+  title?: string;
+  startsAt?: string;
+  endsAt?: string | null;
+  venueLabel?: string | null;
+  descriptionHtml?: string;
+  status?: ClubEventRow['status'];
+  registration?: ClubEventRow['registration'];
+}
+export type UpdateEventOutput = ClubEventRow;

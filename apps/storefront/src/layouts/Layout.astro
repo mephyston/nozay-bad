@@ -1,25 +1,49 @@
 ---
+import { pwaInfo } from 'virtual:pwa-info';
 import { ModeWatcher } from 'mode-watcher';
+import { PwaInstallBanner } from '@nba/ui';
+import { EnvBanner } from '@nba/ui';
+import PwaSplash from '../components/PwaSplash.astro';
+import '@fontsource-variable/outfit';
 import '../styles/global.css';
 
 interface Props {
   title: string;
+  description?: string;
 }
 
-const { title } = Astro.props;
+const { title, description } = Astro.props;
+// Suffixe d'icône selon l'environnement (inliné au build) : bandeau DEV / TEST.
+const APP_ENV = import.meta.env.PUBLIC_APP_ENV || 'production';
+const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ? '-test' : '';
 ---
 
 <!doctype html>
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Nozay Bad" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href={`/apple-touch-icon${ICON_SUFFIX}.png`} />
+    {pwaInfo && <Fragment set:html={pwaInfo.webManifest.linkTag} />}
+    {description && <meta name="description" content={description} />}
     <title>{title}</title>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" is:inline async defer></script>
+    <script>
+      import { registerSW } from 'virtual:pwa-register'
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        const updateSW = registerSW({
+          onNeedRefresh() {
+            if (confirm('Nouvelle version disponible. Mettre à jour ?')) {
+              updateSW(true)
+            }
+          }
+        });
+      }
+    </script>
     <script is:inline>
       (function() {
         try {
@@ -85,7 +109,11 @@ const { title } = Astro.props;
     </style>
   </head>
   <body class="bg-background text-foreground min-h-screen flex flex-col antialiased font-sans">
+    <EnvBanner />
     <ModeWatcher client:load />
+    <!-- L'installation sur l'écran d'accueil est un prérequis du push sur iOS. -->
+    <PwaInstallBanner client:idle />
+    <PwaSplash />
     <slot />
   </body>
 </html>

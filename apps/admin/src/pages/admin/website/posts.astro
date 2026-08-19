@@ -1,0 +1,206 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { PostsManager } from '@nba/cms-ui';
+import { createAdminApiClient } from '../../../lib/api';
+import { can, guardAction } from '../../../lib/guard';
+
+const canWrite = can(Astro.locals, 'cms:posts:write');
+const canDelete = can(Astro.locals, 'cms:posts:delete');
+
+const apiService = createAdminApiClient(Astro.locals);
+
+const canUploadMedia = can(Astro.locals, 'cms:media:write');
+// Faire sonner les téléphones du club relève du même droit que l'envoi depuis l'écran
+// Notifications, et non de la rédaction.
+const canNotify = can(Astro.locals, 'notifications:messages:send');
+
+const ACTIONS = {
+  create: 'cms:posts:write',
+  update: 'cms:posts:write',
+  publish: 'cms:posts:write',
+  delete: 'cms:posts:delete',
+  upload: 'cms:media:write',
+  notify: 'notifications:messages:send'
+} as const;
+
+if (Astro.request.method === 'POST') {
+  // Dépôt d'un média depuis le sélecteur, sans quitter le formulaire — il arrive en
+  // multipart, là où toutes les autres actions de cet écran parlent JSON. Rédiger une
+  // actualité et déposer un fichier restent deux droits distincts.
+  const contentType = Astro.request.headers.get('content-type') ?? '';
+  if (contentType.includes('multipart/form-data')) {
+    const denied = guardAction(Astro.locals, 'upload', ACTIONS);
+    if (denied) return denied;
+
+    const form = await Astro.request.formData();
+    const apiRes = await apiService.fetch('http://localhost/cms/media', { method: 'POST', body: form });
+    if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+    return new Response(JSON.stringify(await apiRes.json()), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  const data = (await Astro.request.json()) as any;
+  const denied = guardAction(Astro.locals, data.action, ACTIONS);
+  if (denied) return denied;
+
+  const routes: Record<string, { url: string; method: string; body?: unknown }> = {
+    create: {
+      url: 'http://localhost/cms/posts',
+      method: 'POST',
+      body: {
+        title: data.title,
+        excerpt: data.excerpt || undefined,
+        bodyHtml: data.bodyHtml,
+        coverMediaId: data.coverMediaId,
+        categoryIds: data.categoryIds,
+        visibility: data.visibility,
+        // Même règle que `coverMediaId` : le formulaire envoie toujours la valeur,
+        // `null` détachant l'événement.
+        eventId: data.eventId
+      }
+    },
+    update: {
+      url: `http://localhost/cms/posts/${data.id}`,
+      method: 'PUT',
+      // `excerpt` vidé doit effacer le chapô : on envoie `null`, pas `undefined`,
+      // que le validateur traiterait comme « champ absent, ne rien changer ».
+      //
+      // Même raison pour `coverMediaId`, que le formulaire envoie toujours : `null`
+      // quand la couverture a été retirée, un identifiant sinon. Ces deux champs, avec
+      // `categoryIds`, étaient jusqu'ici **absents du corps transmis** — le formulaire
+      // les envoyait, ce pont les jetait, et ni la couverture ni les rubriques n'étaient
+      // jamais enregistrées.
+      body: {
+        title: data.title,
+        excerpt: data.excerpt || null,
+        bodyHtml: data.bodyHtml,
+        coverMediaId: data.coverMediaId,
+        categoryIds: data.categoryIds,
+        visibility: data.visibility,
+        // Même règle que `coverMediaId` : le formulaire envoie toujours la valeur,
+        // `null` détachant l'événement.
+        eventId: data.eventId
+      }
+    },
+    publish: {
+      url: `http://localhost/cms/posts/${data.id}/publish`,
+      method: 'POST',
+      body: { published: data.published }
+    },
+    delete: { url: `http://localhost/cms/posts/${data.id}`, method: 'DELETE' },
+    notify: { url: `http://localhost/cms/posts/${data.id}/notify`, method: 'POST' }
+  };
+
+  const route = routes[data.action];
+  const apiRes = await apiService.fetch(route.url, {
+    method: route.method,
+    headers: { 'Content-Type': 'application/json' },
+    ...(route.body ? { body: JSON.stringify(route.body) } : {})
+  });
+
+  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+  return new Response(JSON.stringify(await apiRes.json()), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+let posts: any[] = [];
+let media: any[] = [];
+let categories: any[] = [];
+let events: any[] = [];
+let targets: { path: string; title: string; kind: 'page' | 'post'; status?: 'draft' | 'published' }[] = [];
+let errorMsg = '';
+
+// La médiathèque, les catégories et les cibles de liens alimentent le formulaire
+// (couverture, insertion de fichier, rattachement, lien interne). Chargées avec la
+// liste et non à l'ouverture du sheet : le formulaire s'ouvre alors sans attente, et
+// l'échec de l'une n'empêche pas d'écrire.
+try {
+  const [postsRes, mediaRes, categoriesRes, pagesRes, eventsRes] = await Promise.all([
+    apiService.fetch('http://localhost/cms/posts?limit=100'),
+    apiService.fetch('http://localhost/cms/media?limit=200'),
+    apiService.fetch('http://localhost/cms/post-categories'),
+    apiService.fetch('http://localhost/cms/pages'),
+    // Seulement les rendez-vous à venir : rattacher une actualité au stage de l'an
+    // dernier n'a pas de sens, et la liste déroulante reste lisible.
+    apiService.fetch('http://localhost/events?limit=50')
+  ]);
+
+  if (postsRes.ok) {
+    posts = ((await postsRes.json()) as any).data?.posts ?? [];
+    // Un article peut renvoyer vers un autre : la liste déjà chargée sert deux fois.
+    targets.push(
+      ...posts.map((row: any) => ({
+        path: row.path,
+        title: row.title,
+        kind: 'post' as const,
+        status: row.status
+      }))
+    );
+  } else {
+    errorMsg = 'Impossible de charger les actualités.';
+  }
+
+  if (pagesRes.ok) {
+    const rows = ((await pagesRes.json()) as any).data ?? [];
+    targets.unshift(
+      ...rows.map((row: any) => ({
+        path: row.path,
+        title: row.title,
+        kind: 'page' as const,
+        status: row.status
+      }))
+    );
+  }
+
+  if (mediaRes.ok) {
+    media = ((await mediaRes.json()) as any).data ?? [];
+  }
+  if (categoriesRes.ok) {
+    const payload = (await categoriesRes.json()) as any;
+    categories = payload.data ?? [];
+  }
+  // L'agenda muet n'empêche pas d'écrire une actualité : le champ disparaît, c'est tout.
+  if (eventsRes.ok) {
+    events = ((await eventsRes.json()) as any).data ?? [];
+  }
+} catch {
+  errorMsg = 'Impossible de charger les actualités.';
+}
+---
+
+<Layout title="Actualités - NBA 91">
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Actualités"
+  >
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader
+        title="Actualités"
+        description="Les communications du club. Publiques, elles paraissent sur le site et dans l'espace adhérent ; réservées, dans l'espace adhérent seul — et peuvent alors déclencher une notification."
+      />
+
+      <PostsManager
+        client:load
+        posts={posts}
+        media={media}
+        categories={categories}
+        canWrite={canWrite}
+        canDelete={canDelete}
+        canUploadMedia={canUploadMedia}
+        canNotify={canNotify}
+        targets={targets}
+        events={events}
+      />
+    </div>
+  </AdminLayout>
+</Layout>

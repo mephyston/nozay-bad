@@ -1,6 +1,6 @@
 import { type Db } from '@nba/db';
 import { ListAccountClassesRepository } from './repository';
-import { ListAccountClassesInput, ListAccountClassesOutput } from "./dto";
+import { ListAccountClassesOutput } from "./dto";
 import { AccountClass } from '../../shared/account-class';
 
 export async function listAccountClasses(db: Db): Promise<ListAccountClassesOutput> {

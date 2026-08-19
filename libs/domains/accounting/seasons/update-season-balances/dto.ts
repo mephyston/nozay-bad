@@ -1,3 +1,10 @@
-export type UpdateSeasonBalancesSeasonId = string;
-export interface UpdateSeasonBalancesInput { balances: { accountId: 'current' | 'savings' | 'cash'; initialBalance: number }[] }
-export type UpdateSeasonBalancesOutput = { success: boolean };
+export type UpdateSeasonBalancesSeasonId = string | number;
+
+export interface UpdateSeasonBalancesItem {
+  accountId: number;
+  initialBalanceCents: number;
+}
+
+export type UpdateSeasonBalancesInput = UpdateSeasonBalancesItem[];
+export type UpdateSeasonBalancesOutput = { success: boolean } | void;
+

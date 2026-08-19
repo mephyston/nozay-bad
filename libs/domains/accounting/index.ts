@@ -1,3 +1,4 @@
+import { paymentMethodsTable } from '@nba/accounting/schema';
 import { Hono } from 'hono';
 
 // Seasons Routes
@@ -11,6 +12,7 @@ import { updateSeasonRoute } from './seasons/update-season/route';
 import { closeSeasonRoute } from './seasons/close-season/route';
 import { updateSeasonBudgetRoute } from './seasons/update-season-budget/route';
 import { updateSeasonBalancesRoute } from './seasons/update-season-balances/route';
+import { exportSeasonRoute } from './seasons/export-season/route';
 
 // Config Routes
 import { listCategoriesRoute } from './config/list-categories/route';
@@ -29,24 +31,29 @@ import { createInvoiceRoute } from './invoices/create-invoice/route';
 import { updateInvoiceRoute } from './invoices/update-invoice/route';
 import { deleteInvoiceRoute } from './invoices/delete-invoice/route';
 import { changeInvoiceStatusRoute } from './invoices/change-invoice-status/route';
+import { generateInvoiceRoute } from './invoices/generate-invoice/route';
 
 // Bank Transactions Routes
-import { listBankTransactionsRoute } from './bank/list-bank-transactions/route';
+import { listBankStatementLinesRoute } from './bank/list-bank-statement-lines/route';
 import { importBankStatementRoute } from './bank/import-bank-statement/route';
-import { analyzeBankTransactionsRoute } from './bank/analyze-bank-transactions/route';
-import { reconcileBankTransactionRoute } from './bank/reconcile-bank-transaction/route';
-import { updateBankTransactionStatusRoute } from './bank/update-bank-transaction-status/route';
+import { analyzeBankStatementLinesRoute } from './bank/analyze-bank-statement-lines/route';
+import { reconcileBankStatementLineRoute } from './bank/reconcile-bank-statement-line/route';
+import { updateBankStatementLineStatusRoute } from './bank/update-bank-statement-line-status/route';
 
 // Transactions Routes
-import { listTransactionsRoute } from './transactions/list-transactions/route';
-import { createTransactionRoute } from './transactions/create-transaction/route';
-import { updateTransactionRoute } from './transactions/update-transaction/route';
-import { deleteTransactionRoute } from './transactions/delete-transaction/route';
+import { listTransactionsRoute } from './ledger/list-ledger-entries/route';
+import { createTransactionRoute } from './ledger/create-ledger-entry/route';
+import { updateTransactionRoute } from './ledger/update-ledger-entry/route';
+import { deleteTransactionRoute } from './ledger/delete-ledger-entry/route';
 
 // Checks Routes
 import { listChecksRoute } from './checks/list-checks/route';
-import { recordCheckTransactionRoute } from './checks/record-check-transaction/route';
+import { recordCheckTransactionRoute } from './checks/record-check-ledger-entry/route';
 import { createBankCheckDepositRoute } from './checks/create-bank-check-deposit/route';
+
+// AI Routes
+import { generateAiAnalysisRoute } from './ai/generate-analysis/route';
+import { suggestBudgetRoute } from './ai/suggest-budget/route';
 
 export type Bindings = {
   DB: D1Database;
@@ -54,6 +61,10 @@ export type Bindings = {
 };
 
 export const accountingRouter = new Hono<{ Bindings: Bindings }>();
+
+// Mount AI Routes
+accountingRouter.route('/seasons', generateAiAnalysisRoute);
+accountingRouter.route('/seasons', suggestBudgetRoute);
 
 // 1. SEASONS ROUTES (mounted with /seasons prefix)
 accountingRouter.route('/seasons', listSeasonsRoute);
@@ -66,6 +77,7 @@ accountingRouter.route('/seasons', updateSeasonRoute);
 accountingRouter.route('/seasons', closeSeasonRoute);
 accountingRouter.route('/seasons', updateSeasonBudgetRoute);
 accountingRouter.route('/seasons', updateSeasonBalancesRoute);
+accountingRouter.route('/', exportSeasonRoute);
 
 // 2. CONFIG ROUTES
 accountingRouter.route('/', listCategoriesRoute);
@@ -84,13 +96,14 @@ accountingRouter.route('/', createInvoiceRoute);
 accountingRouter.route('/', updateInvoiceRoute);
 accountingRouter.route('/', deleteInvoiceRoute);
 accountingRouter.route('/', changeInvoiceStatusRoute);
+accountingRouter.route('/', generateInvoiceRoute);
 
 // 4. BANK TRANSACTIONS ROUTES
-accountingRouter.route('/', listBankTransactionsRoute);
+accountingRouter.route('/', listBankStatementLinesRoute);
 accountingRouter.route('/', importBankStatementRoute);
-accountingRouter.route('/', analyzeBankTransactionsRoute);
-accountingRouter.route('/', reconcileBankTransactionRoute);
-accountingRouter.route('/', updateBankTransactionStatusRoute);
+accountingRouter.route('/', analyzeBankStatementLinesRoute);
+accountingRouter.route('/', reconcileBankStatementLineRoute);
+accountingRouter.route('/', updateBankStatementLineStatusRoute);
 
 // 5. TRANSACTIONS ROUTES
 accountingRouter.route('/', listTransactionsRoute);
@@ -104,3 +117,88 @@ accountingRouter.route('/', recordCheckTransactionRoute);
 accountingRouter.route('/', createBankCheckDepositRoute);
 
 export { normalizeCategory, cleanName } from './shared/helpers';
+export { getSeasonReports } from './seasons/get-season-reports/handler';
+
+import { CreateLedgerEntryRepository } from './ledger/create-ledger-entry/repository';
+export { CreateLedgerEntryRepository };
+
+import { sql, eq } from 'drizzle-orm';
+
+
+export interface CreateRevenueTransactionParams {
+  seasonId: number;
+  paymentMethodId: number;
+  amountCents: number;
+  description: string;
+  date: string;
+  categoryId?: number | null;
+  memberId?: number | null;
+  reference?: string | null;
+  accrualType?: string | null;
+  accrualNote?: string | null;
+}
+
+export function buildCreateRevenueLedgerEntryStatement(db: any, params: CreateRevenueTransactionParams): any {
+  const repository = new CreateLedgerEntryRepository();
+  return repository.buildCreateStatement(db, {
+    seasonId: params.seasonId,
+    type: 'recette',
+    accountId: sql`(SELECT default_account_id FROM payment_methods WHERE id = ${params.paymentMethodId})` as any,
+    paymentMethodId: params.paymentMethodId,
+    amountCents: params.amountCents,
+    description: params.description,
+    date: params.date,
+    categoryId: params.categoryId ?? null,
+    memberId: params.memberId ?? null,
+    reference: params.reference ?? null,
+    accrualType: params.accrualType ?? 'normal',
+    accrualNote: params.accrualNote ?? null,
+    status: sql`(SELECT default_entry_status FROM payment_methods WHERE id = ${params.paymentMethodId})` as any,
+    createdAt: new Date()
+  });
+}
+
+export async function createRevenueLedgerEntry(db: any, params: CreateRevenueTransactionParams): Promise<{ id: number }> {
+  const method = await db.select({
+    accountId: paymentMethodsTable.defaultAccountId,
+    status: paymentMethodsTable.defaultEntryStatus
+  }).from(paymentMethodsTable).where(eq(paymentMethodsTable.id, params.paymentMethodId)).get();
+
+  const accountId = method?.accountId ?? 1;
+  const status = (method?.status as any) || 'cleared';
+
+  const repository = new CreateLedgerEntryRepository();
+  return repository.create(db, {
+    seasonId: params.seasonId,
+    type: 'recette',
+    accountId,
+    paymentMethodId: params.paymentMethodId,
+    amountCents: params.amountCents,
+    description: params.description,
+    date: params.date,
+    categoryId: params.categoryId ?? null,
+    memberId: params.memberId ?? null,
+    reference: params.reference ?? null,
+    accrualType: params.accrualType ?? 'normal',
+    accrualNote: params.accrualNote ?? null,
+    status,
+    createdAt: new Date()
+  });
+}
+
+
+export { 
+  buildDeleteLedgerEntryStatement,
+  buildResetBankStatementLineStatement,
+  getTransactionDetails,
+  getBankTransactionDetails,
+  getRemainingTransactionsForBankTx,
+  buildInsertExpenseTransactionStatement,
+  insertExpenseTransaction,
+  resetBankTransactionStatus,
+  deleteLedgerEntry
+} from './ledger/expenses';
+export { getMemberLastPaymentTransaction, getMemberTotalPayments } from './ledger/members-queries';
+export { getAccountByCode, getPaymentMethodById, getPaymentMethodByCode } from './config/queries';
+export { getSeasonId, isSeasonClosed, insertSeasons, getSeasonsByCodes, getSeasonByCode, getAllSeasons, getSeasonById, getActiveSeasonId, getSeasonAtDate, getAdjacentSeason, type SeasonRow } from './seasons/queries';
+export * from './shared/dashboard';

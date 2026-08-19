@@ -5,7 +5,7 @@ Standards et bonnes pratiques pour concevoir des APIs Hono légères et performa
 ## Rules
 
 * Utiliser les Service Bindings (liaisons de services privées) pour faire communiquer les microservices entre eux à latence réseau nulle.
-* Authentifier les APIs d'écriture (PUT, POST, DELETE) avec une clé d'API secrète partagée (`CATALOG_API_KEY`) définie dans les secrets ou `.dev.vars` locaux.
+* Authentifier les APIs avec une clé d'API secrète partagée (`INTERNAL_API_KEY`) définie dans les secrets ou l'environnement du Worker.
 * Configurer les variables d'environnement locales de développement dans un fichier `.dev.vars` à la racine de chaque Worker (ne jamais committer de secrets).
 * Déclarer les schémas de validation des requêtes (headers, query parameters, body) avec TypeBox pour un typage strict et une validation automatique à l'entrée.
 * Structurer les interactions D1 avec du SQL paramétré ou des ORM légers sécurisés contre les injections SQL.
