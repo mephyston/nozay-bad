@@ -18,6 +18,7 @@
 
   let playedAt = $state(lineup.playedAt ?? '');
   let venue = $state(lineup.venue ?? '');
+  let opponent = $state(lineup.opponent ?? '');
   let saving = $state(false);
   let feedback = $state<{ kind: 'success' | 'error' | 'warning'; message: string } | null>(null);
   /** Devient vrai quand le serveur a refusé une date hors semaine : le second envoi confirme. */
@@ -37,13 +38,23 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'save-fixture-date',
+          // La rencontre visée suit la composition affichée : une journée régionale en
+          // compte deux, et la date de l'une n'est pas celle de l'autre.
+          slot: lineup.slot,
           playedAt: playedAt || null,
           venue: venue.trim() || null,
+          opponent: opponent.trim() || null,
           confirmOutsideWeek
         })
       });
       const payload = (await response.json()) as {
-        data?: { playedAt: string | null; venue: string | null; outsideTheoreticalWeek: boolean; matchDay: string };
+        data?: {
+          playedAt: string | null;
+          venue: string | null;
+          opponent: string | null;
+          outsideTheoreticalWeek: boolean;
+          matchDay: string;
+        };
         error?: string;
       };
 
@@ -100,11 +111,20 @@
         <label for="venue" class="text-xs font-medium">Gymnase</label>
         <Input id="venue" bind:value={venue} disabled={saving} placeholder="Facultatif" />
       </div>
+      <!--
+        L'adversaire distingue les deux rencontres d'une journée régionale : « contre
+        Massy 2 » dit laquelle on compose, là où « Rencontre 2 » ne désigne qu'un rang.
+      -->
+      <div class="min-w-0 space-y-1 sm:col-span-2">
+        <label for="opponent" class="text-xs font-medium">Équipe adverse</label>
+        <Input id="opponent" bind:value={opponent} disabled={saving} placeholder="Facultatif" />
+      </div>
     </div>
   {:else if lineup.playedAt}
     <p class="text-sm">
       {frenchDate(lineup.playedAt.slice(0, 10))} à {lineup.playedAt.slice(11, 16)}
       {lineup.venue ? ` — ${lineup.venue}` : ''}
+      {lineup.opponent ? ` — contre ${lineup.opponent}` : ''}
     </p>
   {:else}
     <p class="text-sm text-muted-foreground">Le capitaine n'a pas encore fixé la date.</p>

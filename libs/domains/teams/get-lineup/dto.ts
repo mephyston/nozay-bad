@@ -70,6 +70,16 @@ export interface GetLineupOutput {
   venue: string | null;
   opponent: string | null;
   home: boolean;
+  /**
+   * Rang de la rencontre dans la journée, 1 partout et 1 ou 2 en régional (art. 1.6.3).
+   *
+   * Renvoyé pour que l'écran sache **laquelle** des deux compositions il modifie et le
+   * répercute à l'enregistrement : sans lui, une saisie faite sur la seconde rencontre
+   * serait écrite sur la première.
+   */
+  slot: number;
+  /** Nombre de rencontres que la journée compte dans ce championnat. */
+  fixturesPerDay: number;
   status: 'scheduled' | 'bye' | 'forfeit';
   slots: LineupSlotView[];
   candidates: LineupCandidate[];

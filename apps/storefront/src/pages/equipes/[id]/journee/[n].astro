@@ -10,6 +10,15 @@ import { resolveEnv } from '../../../../lib/request-context';
 const env = resolveEnv(Astro.locals) ?? cfEnv;
 const teamId = Number(Astro.params.id);
 const dayNumber = Number(Astro.params.n);
+/**
+ * Rang de la rencontre dans la journée, `?r=2` pour la seconde.
+ *
+ * Le régional en dispute deux par journée (art. 1.6.3), donc deux compositions
+ * distinctes. Absent ou invalide, on retombe sur la première — le cas de tous les
+ * championnats départementaux.
+ */
+const slotParam = Number(Astro.url.searchParams.get('r') ?? '1');
+const slot = Number.isSafeInteger(slotParam) && slotParam > 0 ? slotParam : 1;
 
 /**
  * L'identité vient de la session, jamais du corps de la requête.
@@ -36,7 +45,12 @@ if (Astro.request.method === 'POST') {
     return api.fetch(`http://localhost/teams/${teamId}/days/${dayNumber}/lineup`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ licence, lines: body.lines ?? [], validate: Boolean(body.validate) })
+      body: JSON.stringify({
+        licence,
+        slot: body.slot ?? 1,
+        lines: body.lines ?? [],
+        validate: Boolean(body.validate)
+      })
     });
   }
 
@@ -46,8 +60,10 @@ if (Astro.request.method === 'POST') {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         licence,
+        slot: body.slot ?? 1,
         playedAt: body.playedAt ?? null,
         venue: body.venue ?? null,
+        opponent: body.opponent ?? null,
         confirmOutsideWeek: Boolean(body.confirmOutsideWeek)
       })
     });
@@ -69,7 +85,7 @@ let errorMsg: string | null = null;
 
 try {
   const res = await api.fetch(
-    `http://localhost/teams/${teamId}/days/${dayNumber}/lineup?licence=${encodeURIComponent(viewerLicence)}`
+    `http://localhost/teams/${teamId}/days/${dayNumber}/lineup?licence=${encodeURIComponent(viewerLicence)}&slot=${slot}`
   );
   if (!res.ok) {
     /*
@@ -120,6 +136,13 @@ const frenchDate = (iso: string) =>
           </h1>
           <p class="text-muted-foreground text-sm mt-1">
             {lineup.championshipLabel} · {lineup.divisionLabel}
+            {/*
+              Une journée régionale compte deux rencontres, donc deux compositions : sans
+              ce rappel, rien à l'écran ne dirait laquelle est ouverte.
+            */}
+            {lineup.fixturesPerDay > 1 && (
+              <span> · {lineup.opponent ? `contre ${lineup.opponent}` : `Rencontre ${lineup.slot}`}</span>
+            )}
           </p>
           <p class="text-xs text-muted-foreground mt-1">
             Semaine du {frenchDate(lineup.weekStart)} au {frenchDate(lineup.weekEnd)}

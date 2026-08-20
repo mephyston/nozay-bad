@@ -302,6 +302,8 @@ export async function loadLineup(
     ),
     venue: fixture?.venue ?? null,
     opponent: fixture?.opponent ?? null,
+    slot: fixtureSlot,
+    fixturesPerDay: rules.fixturesPerDay,
     home: fixture?.home ?? true,
     status: fixture?.status ?? 'scheduled',
     slots,

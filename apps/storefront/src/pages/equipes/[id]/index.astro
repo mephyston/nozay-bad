@@ -131,6 +131,14 @@ const frenchDate = (iso: string) =>
                   <div>
                     <p class="font-medium">
                       {day.label ?? `Journée ${day.number}`}
+                      {/*
+                        Le régional dispute deux rencontres par journée, donc deux
+                        compositions : l'adversaire les distingue bien mieux qu'un rang,
+                        et « Rencontre n » prend le relais tant qu'il n'est pas saisi.
+                      */}
+                      {day.fixtureLabel && (
+                        <span class="ml-1 text-muted-foreground">· {day.fixtureLabel}</span>
+                      )}
                       {day.kind === 'playoff' && (
                         <span class="ml-1 text-xs text-muted-foreground">(si qualifié)</span>
                       )}
@@ -145,7 +153,7 @@ const frenchDate = (iso: string) =>
                         ? `${frenchDate(day.playedAt.slice(0, 10))}${day.playedAt.slice(11, 16) !== '00:00' ? ` à ${day.playedAt.slice(11, 16)}` : ''}`
                         : `semaine du ${frenchDate(day.weekStart)}`}
                       {day.venue ? ` · ${day.venue}` : ''}
-                      {day.opponent ? ` · ${day.opponent}` : ''}
+                      {!day.fixtureLabel && day.opponent ? ` · ${day.opponent}` : ''}
                     </p>
                     {day.outsideTheoreticalWeek && (
                       <p class="text-xs text-warning">
@@ -158,14 +166,14 @@ const frenchDate = (iso: string) =>
                   </div>
                   {canCompose ? (
                     <a
-                      href={`/equipes/${team.id}/journee/${day.number}`}
+                      href={`/equipes/${team.id}/journee/${day.number}${day.slot > 1 ? `?r=${day.slot}` : ''}`}
                       class="text-xs rounded-md border px-3 py-1.5 hover:bg-muted transition-colors whitespace-nowrap"
                     >
                       Composer
                     </a>
                   ) : (
                     <a
-                      href={`/equipes/${team.id}/journee/${day.number}`}
+                      href={`/equipes/${team.id}/journee/${day.number}${day.slot > 1 ? `?r=${day.slot}` : ''}`}
                       class="text-xs text-muted-foreground hover:text-foreground whitespace-nowrap"
                     >
                       Voir

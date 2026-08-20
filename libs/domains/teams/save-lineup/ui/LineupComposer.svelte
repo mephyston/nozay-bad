@@ -124,7 +124,9 @@
       const response = await fetch('', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'save-lineup', lines: lines(), validate })
+        // `slot` suit la rencontre affichée : sans lui, une saisie faite sur la seconde
+        // rencontre d'une journée régionale serait écrite sur la première.
+        body: JSON.stringify({ action: 'save-lineup', slot: view.slot, lines: lines(), validate })
       });
       const payload = (await response.json()) as { data?: GetLineupOutput; error?: string };
       if (!response.ok) throw new Error(payload.error || "L'enregistrement a échoué.");
