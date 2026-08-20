@@ -157,6 +157,7 @@ jobs:
           app: ${{ matrix.app }}
           env: production
           app-version: ${{ matrix.app == 'admin' && needs.guard.outputs.version || '' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           node-version: ${{ env.NODE_VERSION }}

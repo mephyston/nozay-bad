@@ -438,6 +438,7 @@ jobs:
           # Seul l'admin affiche la version. Le job `release` a pu être ignoré (PR,
           # commit sans incrément) : la chaîne vide est alors correcte.
           app-version: ${{ matrix.app == 'admin' && needs.release.outputs.version || '' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           node-version: ${{ env.NODE_VERSION }}

@@ -139,14 +139,35 @@ Seul `apps/api` conserve `--env staging` natif : sa configuration n'est pas redi
 
 `@semantic-release/git` a été retiré : **la CI ne pousse plus aucun commit**. Il ne reste que le tag et la GitHub Release, qui porte les notes de version. En conséquence, `package.json` est figé à `0.0.0-semantically-released` et n'est plus la source de la version — celle-ci est transmise aux builds par `VITE_APP_VERSION`. Quand aucune version n'est publiée (un commit `ci:` ou `chore:` n'incrémente rien), le badge retombe sur le SHA court du commit déployé.
 
+**L'écran « Nouveautés » et le splash screen.** `apps/admin/src/pages/changelog.astro` importe `CHANGELOG.md`, et le splash de `apps/admin/src/layouts/Layout.astro` affiche la version. Tous deux étaient alimentés par le commit de release ; sans lui, `scripts/generate-changelog.mjs` reconstitue `CHANGELOG.md` depuis les Releases GitHub avant chaque build de l'admin, et le splash lit `PUBLIC_APP_VERSION` comme le badge de la barre latérale. Le fichier reste versionné pour servir de repli en développement local, où aucun jeton n'est disponible. `docs/changelog-archive.md` porte l'historique antérieur : les versions v1.0.0 à v1.0.2 ont un tag mais aucune Release — le plugin qui les crée n'existait pas encore — donc l'API ne les renverra jamais.
+
 `@semantic-release/github` tourne avec `successComment`, `failComment`, `failTitle` et `releasedLabels` **tous désactivés** : ces fonctions commentent et étiquettent les issues et les PR, ce qui exigerait `issues: write` et `pull-requests: write` sur le workflow. Le `GITHUB_TOKEN` n'a que `contents: write`, suffisant pour créer la Release — les activer échouerait sur « Resource not accessible by integration ». C'est un choix de moindre privilège, pas un oubli.
 
 Pour revenir en arrière, lancer **Rollback production**. Chaque `wrangler deploy` crée une version : le rollback est immédiat et ne reconstruit rien. Deux limites — rétention des **100 dernières versions**, et rollback **refusé si un binding a changé** entre les deux versions (KV, R2, D1, queues), ce qui protège contre les incohérences de schéma. Dans ce cas, relancer `promote.yml` sur le tag précédent.
 
-### 8.6 Couplage implicite à connaître
+### 8.6 Ce qu'un rollback ne fait pas : la base
+
+**`wrangler rollback` ne revient que sur le code du Worker. Il ne touche jamais D1.** Le schéma reste en avant pendant que le code recule.
+
+C'est sans danger tant que les migrations sont **additives** — nouvelle table, nouvelle colonne : l'ancien code les ignore. C'est cassant dès qu'une migration est destructive : colonne supprimée ou renommée, contrainte `NOT NULL` ajoutée. L'ancien code interroge alors une colonne absente et renvoie des 500.
+
+Piège à connaître : Cloudflare refuse un rollback quand un **binding** a changé, mais un changement de **schéma D1 n'en est pas un**. Cette protection ne couvre donc pas la dérive de schéma.
+
+**Règle : une version contenant une migration destructive n'est pas rollbackable.** Appliquer le motif *expand/contract* — ajouter dans une version, déployer le code, supprimer dans une version ultérieure — et corriger par une migration en avant plutôt que par un retour arrière.
+
+Pour la base elle-même, le mécanisme est **D1 Time Travel** (30 jours de rétention) :
+
+```bash
+npx wrangler d1 time-travel info nba-db
+npx wrangler d1 time-travel restore nba-db --timestamp=<ISO8601>
+```
+
+Il ramène **toute** la base à l'instant choisi : les écritures des adhérents entre-temps sont perdues. C'est un dernier recours en cas de corruption, jamais une manœuvre de routine.
+
+### 8.7 Couplage implicite à connaître
 
 Le déclenchement des migrations D1 n'a **aucun mécanisme dédié** : il repose sur le fait que `libs/shared/db/migrations/` se trouve sous le `projectRoot` du projet Nx `@nba/db`, dont `api` dépend. Déplacer ce répertoire romprait le lien en silence. Le test `couplage migrations ↔ déploiement` de `libs/migrations.test.ts` verrouille cette propriété.
 
-### 8.7 Limites d'exploitation
+### 8.8 Limites d'exploitation
 
 **5 cron triggers maximum par compte** (plan Workers Free, erreur API 10072). La production en consomme 3 ; `apps/api/wrangler.json` porte donc `env.staging.triggers.crons: []` — **le tableau vide est obligatoire**, sans lui l'environnement hérite des crons de la racine.

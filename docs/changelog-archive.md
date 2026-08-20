@@ -1,19 +1,3 @@
-<!-- Généré par scripts/generate-changelog.mjs depuis les Releases GitHub. Ne pas éditer à la main. -->
-
-# Nouveautés
-
-## v1.0.4 — 2026-08-20
-
-### Bug Fixes
-
-* **ci:** ne plus faire commenter les issues par semantic-release ([c02ce36](https://github.com/mephyston/nozay-bad/commit/c02ce362a6fc0ee6d2c02024ebe171f504022a6c))
-
-## v1.0.3 — 2026-08-20
-
-### Bug Fixes
-
-* **ci:** corriger le faux positif du contrôle de bundle et durcir les garde-fous ([f435dc8](https://github.com/mephyston/nozay-bad/commit/f435dc89f18c7ca59c135daf207ade2856a6a775))
-
 ## [1.0.2](https://github.com/mephyston/nozay-bad/compare/v1.0.1...v1.0.2) (2026-08-20)
 
 

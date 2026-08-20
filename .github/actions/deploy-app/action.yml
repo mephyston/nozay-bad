@@ -17,6 +17,10 @@ inputs:
     description: "VITE_APP_VERSION (admin uniquement) ; vide ailleurs"
     required: false
     default: ""
+  github-token:
+    description: "Jeton GitHub, pour régénérer CHANGELOG.md depuis les Releases"
+    required: false
+    default: ""
   api-token:
     description: "CLOUDFLARE_API_TOKEN"
     required: true
@@ -71,6 +75,16 @@ runs:
         VERSION="${{ inputs.app-version }}"
         if [ -z "$VERSION" ]; then VERSION="0.0.0-${GITHUB_SHA:0:7}"; fi
         echo "VITE_APP_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+    # L'écran « Nouveautés » de l'admin importe CHANGELOG.md. Depuis le retrait de
+    # @semantic-release/git, plus rien ne le met à jour dans le dépôt : on le
+    # reconstitue ici depuis les Releases GitHub, qui en sont la source.
+    - name: Régénérer le changelog
+      if: inputs.app == 'admin'
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: node scripts/generate-changelog.mjs
 
     - name: Construire ${{ inputs.app }}
       shell: bash
