@@ -1,3 +1,10 @@
+## [1.0.1-beta.2](https://github.com/mephyston/nozay-bad/compare/v1.0.1-beta.1...v1.0.1-beta.2) (2026-08-20)
+
+
+### Bug Fixes
+
+* **website:** SITE_URL prod temporaire sur prod-www.nozaybad.fr ([d0c24fc](https://github.com/mephyston/nozay-bad/commit/d0c24fccffa36da758ac0dcac52f712cd0a4370b))
+
 ## [1.0.1-beta.1](https://github.com/mephyston/nozay-bad/compare/v1.0.0...v1.0.1-beta.1) (2026-08-19)
 
 
