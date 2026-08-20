@@ -270,9 +270,17 @@
 
   let impersonateUsers = $state<any[]>([]);
 
-  // Le cookie d'usurpation est HttpOnly : il est posé et retiré par le serveur, et
-  // le navigateur ne peut plus le lire. L'état vient donc de `realEmail`.
-  const isImpersonating = $derived(Boolean(realEmail) && realEmail !== email);
+  /*
+   * Le cookie d'usurpation est HttpOnly : il est posé et retiré par le serveur, et le
+   * navigateur ne peut plus le lire. L'état vient donc de la comparaison des deux
+   * identités.
+   *
+   * Les deux doivent être renseignées. Une seule des deux ne dit rien d'une usurpation
+   * en cours : elle dit qu'une page a oublié de passer sa prop. C'est ce qui levait le
+   * bandeau chez des comptes qui n'avaient jamais emprunté personne — et son bouton de
+   * retour ne pouvait alors rien retirer, puisqu'il n'y avait pas de cookie.
+   */
+  const isImpersonating = $derived(Boolean(realEmail) && Boolean(email) && realEmail !== email);
 
   async function setImpersonation(target: string | null) {
     const res = await fetch('/admin/api/impersonate', {

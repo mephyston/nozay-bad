@@ -3,7 +3,7 @@
   import { DropdownMenu } from "bits-ui";
 
   // Reçoit l'email de l'utilisateur connecté via Astro.locals.user
-  let { email = "admin@nozaybad.fr" } = $props<{ email?: string }>();
+  let { email = "" } = $props<{ email?: string }>();
 </script>
 
 <DropdownMenu.Root>

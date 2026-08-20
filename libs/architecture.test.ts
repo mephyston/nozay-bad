@@ -275,3 +275,44 @@ describe('surface publique des domaines', () => {
     expect(missing, `types absents de ${domain}/shared/public.ts : ${missing.join(', ')}`).toEqual([]);
   });
 });
+
+/**
+ * L'identité affichée est celle de la requête, jamais une adresse écrite dans le code.
+ *
+ * Le bandeau d'usurpation se lève sur `realEmail !== email` : il suffit qu'une page
+ * oublie une des deux props pour que la comparaison porte sur un repli codé en dur et
+ * que le bandeau s'affiche à des comptes qui n'ont emprunté personne — ce qu'il a fait
+ * en production, en proposant de « revenir » vers le compte du jeu d'essai.
+ */
+describe("Identité affichée (admin)", () => {
+  const ROOT = path.resolve(__dirname, '..');
+  const ADMIN = path.join(ROOT, 'apps/admin/src');
+
+  const adminViews = walkDir(ADMIN)
+    .filter((f) => /\.(astro|svelte)$/.test(f))
+    .filter((f) => !f.includes('/dist/'))
+    .map((f) => ({ path: path.relative(ROOT, f), content: fs.readFileSync(f, 'utf-8') }));
+
+  it('passe email ET realEmail à chaque AdminLayout', () => {
+    const offenders: string[] = [];
+    for (const file of adminViews) {
+      for (const match of file.content.matchAll(/<AdminLayout\b[^>]*>/g)) {
+        const tag = match[0];
+        const missing = ['email', 'realEmail'].filter(
+          (prop) => !new RegExp(`(^|\\s)${prop}=`).test(tag)
+        );
+        if (missing.length) offenders.push(`${file.path} (manque ${missing.join(', ')})`);
+      }
+    }
+    expect(offenders, `AdminLayout sans identité complète :\n${offenders.join('\n')}`).toEqual([]);
+  });
+
+  it("ne code en dur aucune adresse du jeu d'essai dans une vue", () => {
+    // Le repli d'authentification en développement (middleware.ts) reste légitime :
+    // il choisit *qui* fait la requête. Une vue, elle, ne fait qu'afficher ce choix.
+    const offenders = adminViews
+      .filter((f) => /@nozaybad\.fr/.test(f.content))
+      .map((f) => f.path);
+    expect(offenders, `adresse en dur dans :\n${offenders.join('\n')}`).toEqual([]);
+  });
+});

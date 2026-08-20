@@ -7,7 +7,7 @@ import { ExpensesManager } from '@nba/expenses-ui';
 import { env } from 'cloudflare:workers';
 import { createAdminApiClient } from '../../../lib/api';
 
-const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
+const userEmail = Astro.locals.user?.email || "";
 const apiService = createAdminApiClient(Astro.locals);
 
 let season = Astro.url.searchParams.get('season') || '';

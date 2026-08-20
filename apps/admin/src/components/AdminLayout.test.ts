@@ -107,6 +107,45 @@ describe('AdminLayout Component', () => {
     target.remove();
   });
 
+  /*
+   * Le bandeau d'usurpation ne se lève que sur deux identités réellement différentes.
+   *
+   * Il s'est affiché en production à des comptes qui n'avaient emprunté personne : la
+   * prop `email` avait une valeur par défaut — l'adresse d'administration du jeu
+   * d'essai — et les pages qui oubliaient de la passer comparaient donc `realEmail` à
+   * cette valeur. Le bouton « Revenir à … » restait alors sans effet, puisqu'il n'y
+   * avait aucun cookie d'usurpation à retirer.
+   */
+  describe("bandeau d'usurpation", () => {
+    function textFor(props: Record<string, unknown>): string {
+      isMobileViewport = false;
+      const target = document.createElement('div');
+      document.body.appendChild(target);
+      const component = mount(AdminLayout, { target, props: { permissions: ALL_PERMISSIONS, ...props } });
+      flushSync();
+      const text = target.textContent ?? '';
+      unmount(component);
+      target.remove();
+      return text;
+    }
+
+    it("se lève quand les deux identités diffèrent", () => {
+      const text = textFor({ email: 'emprunte@nozay-bad.fr', realEmail: 'moi@nozay-bad.fr' });
+      expect(text).toContain("Vous consultez l'application en tant que");
+      expect(text).toContain('Revenir à moi@nozay-bad.fr');
+    });
+
+    it("reste absent hors usurpation", () => {
+      const text = textFor({ email: 'moi@nozay-bad.fr', realEmail: 'moi@nozay-bad.fr' });
+      expect(text).not.toContain("Vous consultez l'application en tant que");
+    });
+
+    it("reste absent quand la page oublie de passer l'identité affichée", () => {
+      const text = textFor({ realEmail: 'moi@nozay-bad.fr' });
+      expect(text).not.toContain("Vous consultez l'application en tant que");
+    });
+  });
+
   it('should toggle the mobile sidebar on hamburger click in mobile mode', () => {
     vi.useFakeTimers();
     isMobileViewport = true;

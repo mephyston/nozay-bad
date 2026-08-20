@@ -5,7 +5,7 @@ import { PageHeader } from '@nba/ui';
 import { env } from 'cloudflare:workers';
 import { createAdminApiClient } from '../../../../lib/api';
 
-const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
+const userEmail = Astro.locals.user?.email || "";
 const apiService = createAdminApiClient(Astro.locals);
 
 const requestedSeason = Astro.url.searchParams.get('season');

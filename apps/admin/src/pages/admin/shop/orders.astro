@@ -9,7 +9,7 @@ import { createAdminApiClient } from '../../../lib/api';
 import { can, guardAction, forbidden } from '../../../lib/guard';
 
 
-const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
+const userEmail = Astro.locals.user?.email || "";
 const apiService = createAdminApiClient(Astro.locals);
 
 const season = Astro.url.searchParams.get('season') || '25-26';

@@ -3,7 +3,17 @@
   import AdminLayoutInner from "./AdminLayoutInner.svelte";
   import { onMount } from "svelte";
 
-  let { children, email = "admin@nozaybad.fr", name, permissions = [], realEmail = "", breadcrumb = "Tableau de Bord" } = $props<{
+  /*
+   * `email` n'a **pas** de valeur par défaut, et n'en aura pas.
+   *
+   * Elle valait l'adresse du compte d'administration du jeu d'essai : toute page qui
+   * oubliait de passer la prop affichait donc ce compte à la place de l'utilisateur,
+   * et le bandeau d'usurpation — qui se déclenche sur `realEmail !== email` — se
+   * levait pour tout le monde, en développement comme en production, en proposant de
+   * « revenir » à un compte qu'on n'avait jamais quitté. Un défaut vide fait mieux :
+   * l'oubli se voit dans l'interface au lieu d'inventer une identité.
+   */
+  let { children, email = "", name, permissions = [], realEmail = "", breadcrumb = "Tableau de Bord" } = $props<{
     children?: import('svelte').Snippet;
     email?: string;
     name?: string;

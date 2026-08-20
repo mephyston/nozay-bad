@@ -8,7 +8,7 @@ import { env } from 'cloudflare:workers';
 import { createAdminApiClient } from '../../../../lib/api';
 import { guardAction } from '../../../../lib/guard';
 
-const userEmail = Astro.locals.user?.email || "admin@nozaybad.fr";
+const userEmail = Astro.locals.user?.email || "";
 const apiService = createAdminApiClient(Astro.locals);
 
 const requestedSeason = Astro.url.searchParams.get('season');

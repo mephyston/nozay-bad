@@ -42,6 +42,7 @@ try {
 
 <Layout title="Dirigeants - NBA 91">
   <AdminLayout
+    email={Astro.locals.user?.email || ''}
     realEmail={Astro.locals.realUser?.email || ''}
     name={Astro.locals.user?.name}
     client:idle
