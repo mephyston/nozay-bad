@@ -125,6 +125,11 @@ function verify(app, env) {
         walk(full);
         continue;
       }
+      // `wrangler.json` est la configuration générée par l'adaptateur, pas le bundle :
+      // elle porte encore l'environnement par défaut aplati à ce stade, et c'est
+      // patch-wrangler.mjs — exécuté juste après — qui la corrige puis l'asserte.
+      // L'inclure ici produisait un faux positif systématique sur le site public.
+      if (entry.name === 'wrangler.json') continue;
       if (!/\.(m?js|html|json|webmanifest)$/.test(entry.name)) continue;
       const content = fs.readFileSync(full, 'utf8');
       for (const needle of forbidden) {

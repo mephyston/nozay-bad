@@ -61,10 +61,19 @@ runs:
       shell: bash
       run: node scripts/build-env.mjs --app "${{ inputs.app }}" --env "${{ inputs.env }}" >> "$GITHUB_ENV"
 
+    # Version affichée par le badge de pied de page. `app-version` est vide quand
+    # semantic-release n'a rien publié — un commit `ci:` ou `chore:` n'incrémente
+    # rien. On retombe alors sur le SHA court : moins joli qu'un numéro, mais il
+    # désigne exactement ce qui tourne, ce qu'un « dev » générique ne fait pas.
+    - name: Résoudre la version affichée
+      shell: bash
+      run: |
+        VERSION="${{ inputs.app-version }}"
+        if [ -z "$VERSION" ]; then VERSION="0.0.0-${GITHUB_SHA:0:7}"; fi
+        echo "VITE_APP_VERSION=$VERSION" >> "$GITHUB_ENV"
+
     - name: Construire ${{ inputs.app }}
       shell: bash
-      env:
-        VITE_APP_VERSION: ${{ inputs.app-version }}
       run: npx nx build "${{ inputs.app }}"
 
     # Garde-fou anti-promotion-contaminée : le bundle ne doit contenir aucun marqueur de

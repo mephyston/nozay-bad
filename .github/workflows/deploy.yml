@@ -209,6 +209,12 @@ jobs:
       - name: Verify Nx dependency graph covers every @nba/* import
         run: node scripts/check-nx-deps.js
 
+      # Racine et env.staging doivent déclarer les mêmes clés : une ressource définie
+      # d'un seul côté devient une ressource de production utilisée en préproduction.
+      # C'est ainsi que la préproduction avait hérité du compartiment R2 de production.
+      - name: Verify wrangler env parity
+        run: node scripts/patch-wrangler.mjs --check
+
       - name: Run TypeScript typecheck
         run: npm run typecheck
 
