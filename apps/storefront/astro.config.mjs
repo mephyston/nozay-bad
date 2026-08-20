@@ -81,6 +81,9 @@ export default defineConfig({
   ],
   vite: {
     define: {
+      // Version publiée, transmise par la CI. Pas de repli sur package.json : depuis le
+      // retrait de @semantic-release/git, la version du dépôt est figée.
+      'import.meta.env.PUBLIC_APP_VERSION': JSON.stringify(process.env.VITE_APP_VERSION || 'dev'),
       'import.meta.env.PUBLIC_APP_ENV': JSON.stringify(APP_ENV),
       'import.meta.env.PUBLIC_VAPID_PUBLIC_KEY': JSON.stringify(VAPID_PUBLIC_KEY),
       'import.meta.env.PUBLIC_WEBSITE_URL': JSON.stringify(WEBSITE_URL)

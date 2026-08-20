@@ -9,20 +9,30 @@ name: Rollback production
 #   - rollback REFUSÉ si un binding a changé entre les deux versions (KV, R2, D1,
 #     queues). C'est une protection contre les incohérences de schéma. Dans ce cas, le
 #     repli est de relancer promote.yml sur le tag précédent.
+#
+# Pourquoi 'tous' est le défaut. Les versions Cloudflare sont propres à chaque Worker et
+# ne s'alignent pas sur les tags : en préproduction, `nx affected` saute les applications
+# non touchées, donc leurs historiques sont clairsemés et décalés. En production en
+# revanche, promote.yml redéploie les 4 sans condition — leurs historiques restent donc
+# alignés promotion par promotion, et les ramener ensemble d'un cran repose la flotte sur
+# la promotion précédente de façon cohérente. Ne ramener qu'un seul Worker recrée
+# exactement l'écart de version entre libs partagées que la promotion évite.
 on:
   workflow_dispatch:
     inputs:
       worker:
-        description: "Worker à ramener en arrière"
+        description: "Worker à ramener en arrière ('tous' préserve la cohérence de la flotte)"
         required: true
         type: choice
+        default: tous
         options:
+          - tous
           - nba-api
           - nba-storefront
           - nba-website
           - nba-admin
       version_id:
-        description: "Identifiant de version (vide = version précédente)"
+        description: "Identifiant de version (vide = précédente ; ignoré si worker = tous)"
         required: false
         type: string
       reason:
@@ -88,7 +98,13 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx wrangler deployments list --name "${{ inputs.worker }}"
+        run: |
+          for w in nba-api nba-storefront nba-website nba-admin; do
+            if [ "${{ inputs.worker }}" = "tous" ] || [ "${{ inputs.worker }}" = "$w" ]; then
+              echo "--- $w ---"
+              npx wrangler deployments list --name "$w" | tail -8
+            fi
+          done
 
       - name: Rollback
         env:
@@ -98,10 +114,25 @@ jobs:
           echo "### Rollback de \`${{ inputs.worker }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "Motif : ${{ inputs.reason }}" >> "$GITHUB_STEP_SUMMARY"
           # --yes : la commande est interactive par défaut et bloquerait le runner.
-          npx wrangler rollback --name "${{ inputs.worker }}" ${{ inputs.version_id }} --message "${{ inputs.reason }}" --yes
+          if [ "${{ inputs.worker }}" = "tous" ]; then
+            # L'API en dernier : les trois autres l'appellent par service binding, on
+            # préfère qu'elles reculent avant lui plutôt que l'inverse.
+            for w in nba-storefront nba-website nba-admin nba-api; do
+              echo "--- $w ---"
+              npx wrangler rollback --name "$w" --message "${{ inputs.reason }}" --yes
+            done
+          else
+            npx wrangler rollback --name "${{ inputs.worker }}" ${{ inputs.version_id }} --message "${{ inputs.reason }}" --yes
+          fi
 
       - name: Déploiement résultant
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx wrangler deployments list --name "${{ inputs.worker }}"
+        run: |
+          for w in nba-api nba-storefront nba-website nba-admin; do
+            if [ "${{ inputs.worker }}" = "tous" ] || [ "${{ inputs.worker }}" = "$w" ]; then
+              echo "--- $w ---"
+              npx wrangler deployments list --name "$w" | tail -8
+            fi
+          done

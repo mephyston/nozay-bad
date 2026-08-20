@@ -435,9 +435,10 @@ jobs:
         with:
           app: ${{ matrix.app }}
           env: staging
-          # Seul l'admin affiche la version. Le job `release` a pu être ignoré (PR,
-          # commit sans incrément) : la chaîne vide est alors correcte.
-          app-version: ${{ matrix.app == 'admin' && needs.release.outputs.version || '' }}
+          # L'admin et la boutique affichent la version (badge, écran de démarrage PWA).
+          # Le job `release` a pu être ignoré — un commit `ci:` ou `chore:` n'incrémente
+          # rien : l'action retombe alors sur le SHA court.
+          app-version: ${{ matrix.app != 'website' && needs.release.outputs.version || '' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

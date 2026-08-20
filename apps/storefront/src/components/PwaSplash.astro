@@ -1,5 +1,4 @@
 ---
-import pkg from '../../../../package.json';
 ---
 
 <!-- Écran de démarrage PWA (même traitement que l'admin). -->
@@ -12,7 +11,7 @@ import pkg from '../../../../package.json';
     <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: -0.15s"></span>
     <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0s"></span>
   </div>
-  <p class="mt-12 text-xs text-muted-foreground/60 font-medium tracking-widest uppercase">v{pkg.version}</p>
+  <p class="mt-12 text-xs text-muted-foreground/60 font-medium tracking-widest uppercase">v{import.meta.env.PUBLIC_APP_VERSION}</p>
   <div class="mt-8 flex flex-col items-center gap-4 relative z-10 w-full px-6">
     <button
       id="pwa-splash-continue"
