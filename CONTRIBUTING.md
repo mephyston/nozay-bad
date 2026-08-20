@@ -98,3 +98,53 @@ Le script `node scripts/check-schema-integrity.js` valide automatiquement 5 règ
 4. **Conservation des contraintes (FK, UNIQUE, CHECK)** : Détection automatique de toute suppression non intentionnelle de contraintes. Toute suppression volontaire exige la dérogation `[allow-constraint-loss]` dans le message de commit.
 5. **Alignement des données de référence** : Tous les codes métiers requis (`categories`, `account_classes`, `accounts`, `payment_methods`) sont présents dans `0001_seed_reference_data.sql`.
 
+
+---
+
+## 8. Modèle de Branches et Déploiement (Trunk-Based)
+
+### 8.1 Une seule branche durable
+
+`main` est la seule branche de long terme. Les branches `feat/*` sont **locales et courtes** — moins d'une journée. Une fonctionnalité inachevée est fusionnée dans `main` **éteinte derrière un drapeau** (`vars` du `wrangler.json` concerné, comme `PUSH_REMINDERS_ENABLED`), jamais laissée à mûrir sur une branche.
+
+Le modèle précédent couplait une branche à un environnement : promouvoir demandait un merge, donc se remettait à plus tard, et `main` avait fini par accuser 601 commits de retard. Ici, l'écart entre préproduction et production s'exprime en **numéro de version**, pas en divergence de branches.
+
+### 8.2 Les trois workflows
+
+| Workflow | Déclencheur | Effet |
+|---|---|---|
+| `deploy.yml` | push sur `main`, PR vers `main` | Tests, puis déploiement **staging** des applications affectées |
+| `promote.yml` | manuel (`workflow_dispatch`) | Reconstruit un tag et déploie les **4 Workers de production** |
+| `rollback.yml` | manuel | `wrangler rollback` sur un Worker de production |
+
+`promote.yml` redéploie **les 4 Workers sans exception**. Pas de `nx affected` : on promeut un tag dont on ignore l'écart avec ce qui tourne réellement, une promotion doit être rejouable, et les Workers sont couplés par service bindings — une promotion partielle produirait une flotte mélangeant deux versions de `@nba/db`.
+
+Le job `guard` refuse tout ref qui n'est pas un ancêtre de `main` ou qui n'a pas de run vert de `deploy.yml`. **On ne promeut que des tags postérieurs à l'adoption de ce modèle** : `promote.yml` charge l'action composite depuis l'arbre du ref promu, absente des tags antérieurs.
+
+### 8.3 On promeut un commit, pas un binaire
+
+Astro/Vite **inline** `PUBLIC_APP_ENV`, la clé VAPID publique et les URL croisées au build : un bundle est cuit pour un environnement. Les versions Cloudflare, elles, sont propres à un Worker — on ne promeut pas une version de `nba-api-staging` vers `nba-api`. L'unité de promotion est donc le **commit SHA**, reconstruit avec les valeurs de production.
+
+`scripts/build-env.mjs` dérive ces valeurs plutôt que de les recopier — la clé VAPID est lue dans `apps/api/wrangler.json`, ce qui garantit qu'elle reste identique à celle du Worker qui signe les envois. Son mode `--verify` relit `dist/` après le build et échoue si un marqueur de l'autre environnement s'y trouve : `astro.config.mjs` retombe sur `'production'` quand `PUBLIC_APP_ENV` est absent, donc un oubli ne se verrait pas autrement.
+
+### 8.4 Configuration par environnement
+
+Les trois applications Astro se déploient depuis `dist/server/wrangler.json`, généré par l'adaptateur, qui **aplatit l'environnement par défaut** : `wrangler deploy --env staging` n'a aucun effet sur elles. `scripts/patch-wrangler.mjs` applique le bloc `env.<nom>` du `wrangler.json` source sur cette configuration générée, avec les sémantiques de wrangler (**remplacement**, pas fusion — d'où la répétition de `EMAIL_FROM` et `SITE_URL` dans les blocs).
+
+Les blocs `env.staging` sont donc la **source unique** : ce qui est déployé est ce qui est écrit dans le dépôt. `node scripts/patch-wrangler.mjs --check` vérifie que racine et `env.staging` déclarent les mêmes clés — sans quoi une ressource définie d'un seul côté devient une ressource de production utilisée en préproduction. Ce contrôle tourne en CI et en pre-push.
+
+Seul `apps/api` conserve `--env staging` natif : sa configuration n'est pas redirigée par l'adaptateur.
+
+### 8.5 Versions et retour arrière
+
+`@semantic-release/git` a été retiré : **la CI ne pousse plus aucun commit**. Il ne reste que le tag et la GitHub Release, qui porte les notes de version. En conséquence, `package.json` est figé à `0.0.0-semantically-released` et n'est plus la source de la version — celle-ci est transmise aux builds par `VITE_APP_VERSION`.
+
+Pour revenir en arrière, lancer **Rollback production**. Chaque `wrangler deploy` crée une version : le rollback est immédiat et ne reconstruit rien. Deux limites — rétention des **100 dernières versions**, et rollback **refusé si un binding a changé** entre les deux versions (KV, R2, D1, queues), ce qui protège contre les incohérences de schéma. Dans ce cas, relancer `promote.yml` sur le tag précédent.
+
+### 8.6 Couplage implicite à connaître
+
+Le déclenchement des migrations D1 n'a **aucun mécanisme dédié** : il repose sur le fait que `libs/shared/db/migrations/` se trouve sous le `projectRoot` du projet Nx `@nba/db`, dont `api` dépend. Déplacer ce répertoire romprait le lien en silence. Le test `couplage migrations ↔ déploiement` de `libs/migrations.test.ts` verrouille cette propriété.
+
+### 8.7 Limites d'exploitation
+
+**5 cron triggers maximum par compte** (plan Workers Free, erreur API 10072). La production en consomme 3 ; `apps/api/wrangler.json` porte donc `env.staging.triggers.crons: []` — **le tableau vide est obligatoire**, sans lui l'environnement hérite des crons de la racine.

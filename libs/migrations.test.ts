@@ -144,3 +144,46 @@ describe('données de référence', () => {
     expect(rows.some((r) => r.admin_label.startsWith('Virements Internes'))).toBe(true);
   });
 });
+
+/**
+ * Le déclenchement des migrations D1 en CI n'a **aucun mécanisme dédié**. Il repose
+ * entièrement sur une adjacence de chemins : `migrations/` se trouve sous le
+ * `projectRoot` du projet Nx `@nba/db`, dont `api` dépend — donc toute modification
+ * d'un `.sql` marque `api` comme affecté, et le job `deploy-api` joue
+ * `wrangler d1 migrations apply`.
+ *
+ * Déplacer `migrations/` ailleurs (à la racine, par exemple, le jour où drizzle-kit est
+ * reconfiguré) romprait ce lien **en silence** : la CI resterait verte, les migrations
+ * ne partiraient plus, et on ne s'en apercevrait qu'au premier 500 en production.
+ */
+describe('couplage migrations ↔ déploiement', () => {
+  const DB_LIB_DIR = path.resolve(__dirname, './shared/db');
+
+  it('les migrations vivent sous le projectRoot du projet Nx @nba/db', () => {
+    expect(fs.existsSync(path.join(DB_LIB_DIR, 'project.json'))).toBe(true);
+
+    const relative = path.relative(DB_LIB_DIR, MIGRATIONS_DIR);
+    expect(relative.startsWith('..')).toBe(false);
+    expect(path.isAbsolute(relative)).toBe(false);
+  });
+
+  it('api importe @nba/db hors tests, et hérite donc de son affectation', () => {
+    const apiSrc = path.resolve(__dirname, '../apps/api/src');
+    const sources: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (entry.name.endsWith('.ts') && !entry.name.includes('.test.')) {
+          sources.push(full);
+        }
+      }
+    };
+    walk(apiSrc);
+
+    const importsDb = sources.some((file) =>
+      /from ['"]@nba\/db['"]/.test(fs.readFileSync(file, 'utf-8'))
+    );
+    expect(importsDb).toBe(true);
+  });
+});

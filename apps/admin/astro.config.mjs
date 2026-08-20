@@ -6,14 +6,11 @@ import tailwindcss from '@tailwindcss/vite';
 import { satteri } from '@astrojs/markdown-satteri';
 import { satteriAlerts } from './plugins/markdown-alerts.mjs';
 
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf-8'));
 
 // Environnement inliné au build (chaque branche est buildée séparément) :
 //  - 'development' via les scripts `dev:*`
@@ -88,7 +85,10 @@ export default defineConfig({
   ],
   vite: {
     define: {
-      'import.meta.env.PUBLIC_APP_VERSION': JSON.stringify(process.env.VITE_APP_VERSION || pkg.version),
+      // Version publiée, transmise par la CI (semantic-release en préproduction, tag
+      // promu en production). Plus de repli sur package.json : depuis la suppression de
+      // @semantic-release/git, la version du dépôt est figée et serait donc fausse.
+      'import.meta.env.PUBLIC_APP_VERSION': JSON.stringify(process.env.VITE_APP_VERSION || 'dev'),
       'import.meta.env.PUBLIC_APP_ENV': JSON.stringify(APP_ENV),
       'import.meta.env.PUBLIC_STOREFRONT_URL': JSON.stringify(STOREFRONT_URL),
       'import.meta.env.PUBLIC_WEBSITE_URL': JSON.stringify(WEBSITE_URL)
