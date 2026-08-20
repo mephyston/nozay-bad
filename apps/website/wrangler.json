@@ -19,7 +19,7 @@
     }
   },
   "vars": {
-    "SITE_URL": "https://nozaybad.fr",
+    "SITE_URL": "https://prod-www.nozaybad.fr",
     "APP_ENV": "production"
   },
   "services": [
