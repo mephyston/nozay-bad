@@ -44,11 +44,18 @@
   let totalPriceCents = $derived(selectedProduct ? (selectedProduct.priceCents ?? (selectedProduct as any).price ?? 0) * selectedQuantity : 0);
   let maxQuantity = $derived(maxOrderableQuantity(selectedProduct));
 
+  /*
+   * Aucun article n'est présélectionné.
+   *
+   * Le premier du catalogue l'était, ce qui choisissait à la place de l'adhérent : le
+   * formulaire s'ouvrait prêt à commander un article que personne n'avait demandé, et
+   * l'ordre du catalogue décidait lequel. L'effet ne fait plus que retirer une
+   * sélection devenue impossible — article filtré par un changement de catégorie, ou
+   * passé en rupture — pour ne pas commander ce qui n'est plus proposé.
+   */
   $effect(() => {
-    if (filteredProducts.length > 0) {
-      const currentId = selectedProductId !== null ? Number(selectedProductId) : null;
-      if (currentId === null || !filteredProducts.some(p => p.id === currentId)) selectedProductId = filteredProducts[0].id;
-    } else selectedProductId = null;
+    const currentId = selectedProductId !== null ? Number(selectedProductId) : null;
+    if (currentId !== null && !filteredProducts.some(p => p.id === currentId)) selectedProductId = null;
   });
 
   $effect(() => {
@@ -166,8 +173,8 @@
    *
    * L'adhérent n'est pas touché : dans la boutique il vient de la session et serait
    * aussitôt resélectionné ; ailleurs, on enchaîne d'ordinaire pour la même personne.
-   * `selectedProductId = null` laisse l'effet de sélection reposer le premier article
-   * du catalogue, exactement comme au chargement de la page.
+   * Tout le reste retrouve l'état d'ouverture de la page, article compris — c'est-à-dire
+   * aucun.
    */
   function resetOrderForm() {
     selectedQuantity = 1;

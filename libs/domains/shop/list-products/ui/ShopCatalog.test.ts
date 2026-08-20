@@ -25,6 +25,22 @@ describe('ShopCatalog Component', () => {
 
   const norm = (h: string) => h.replace(/&nbsp;|[  ]/g, ' ');
 
+  /** Choisit une option dans le n-ième combobox de la carte (0 = premier affiché). */
+  const selectInCombobox = async (target: HTMLElement, index: number, label: string) => {
+    const combo = target.querySelectorAll('[role="combobox"]')[index] as HTMLButtonElement;
+    combo.click();
+    flushSync();
+    await vi.waitFor(() => {
+      expect(document.querySelector('[data-slot="command-item"]')).not.toBeNull();
+    });
+    const option = Array.from(document.querySelectorAll('[data-slot="command-item"]')).find((el) =>
+      el.textContent?.includes(label)
+    ) as HTMLElement | undefined;
+    expect(option, `option « ${label} » absente du combobox ${index}`).toBeDefined();
+    option!.click();
+    flushSync();
+  };
+
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn().mockImplementation(() =>
       Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true, data: { id: 100 } }) } as any)
@@ -57,14 +73,31 @@ describe('ShopCatalog Component', () => {
     expect(target.innerHTML).toContain("Sélectionnez votre nom d'adhérent");
   });
 
-  it('shows the total for the default product and updates it with the quantity', () => {
+  /*
+   * Aucun article présélectionné : le premier du catalogue l'était, et choisissait à
+   * la place de l'adhérent — l'ordre du catalogue décidait de ce qu'on s'apprêtait à
+   * commander.
+   */
+  it('ouvre le formulaire sans article choisi', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
     mountCatalog(target);
     flushSync();
 
-    // Produit par défaut auto-sélectionné (Volant RSL, 15,00 € x 1)
+    expect(target.innerHTML).toContain('Sélectionner un produit...');
+    expect(norm(target.innerHTML)).not.toContain('15,00');
+  });
+
+  it("affiche le total de l'article choisi et le suit à la quantité", async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mountCatalog(target);
+    flushSync();
+
+    // Acheteur (0), produit (1), mode de paiement (2).
+    await selectInCombobox(target, 1, 'Volant RSL Grade 1');
     expect(norm(target.innerHTML)).toContain('15,00');
 
     const qtyInput = target.querySelector('input#quantity-input') as HTMLInputElement;
@@ -103,7 +136,7 @@ describe('ShopCatalog Component', () => {
     expect(target.innerHTML).toContain("Sélectionnez l'adhérent pour lequel commander.");
   });
 
-  it('keeps products orderable when their stock is not tracked (stock = 0 par convention)', () => {
+  it('keeps products orderable when their stock is not tracked (stock = 0 par convention)', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
@@ -119,6 +152,9 @@ describe('ShopCatalog Component', () => {
       }
     });
     flushSync();
+
+    // Adhérent verrouillé : le produit est le premier combobox.
+    await selectInCombobox(target, 0, 'Babolat 2');
 
     const submitBtn = Array.from(target.querySelectorAll('button')).find(
       b => b.textContent?.includes('Valider la commande')
@@ -158,16 +194,22 @@ describe('ShopCatalog Component', () => {
    * formulaire simplement rempli.
    */
   describe('confirmation de commande', () => {
-    const mountOrderable = (target: HTMLElement) =>
+    /** Monte le catalogue prêt à commander : adhérent verrouillé, article choisi. */
+    const mountOrderable = async (target: HTMLElement) => {
       mount(ShopCatalog, {
         target,
         props: { members, products, activeSeasonId: '25-26', lockToMembers: true, initialMemberId: '1' }
       });
+      flushSync();
+      // Adhérent verrouillé : produit (0) puis mode de paiement (1).
+      await selectInCombobox(target, 0, 'Volant RSL Grade 1');
+    };
 
     const submit = async (target: HTMLElement) => {
       const btn = Array.from(target.querySelectorAll('button')).find((b) =>
         b.textContent?.includes('Valider la commande')
       ) as HTMLButtonElement;
+      expect(btn.disabled).toBe(false);
       btn.click();
       await vi.waitFor(() => {
         expect(document.querySelector('[data-testid="order-confirmation"]')).not.toBeNull();
@@ -183,8 +225,7 @@ describe('ShopCatalog Component', () => {
       const target = document.createElement('div');
       document.body.appendChild(target);
 
-      mountOrderable(target);
-      flushSync();
+      await mountOrderable(target);
       const dialog = await submit(target);
 
       expect(dialog.textContent).toContain('Commande enregistrée');
@@ -196,22 +237,9 @@ describe('ShopCatalog Component', () => {
       const target = document.createElement('div');
       document.body.appendChild(target);
 
-      mountOrderable(target);
-      flushSync();
+      await mountOrderable(target);
 
-      // Mode de paiement = espèces (troisième combobox).
-      const paymentCombo = target.querySelectorAll('[role="combobox"]')[1] as HTMLButtonElement;
-      paymentCombo.click();
-      flushSync();
-      await vi.waitFor(() => {
-        expect(document.querySelector('[data-slot="command-input"]')).not.toBeNull();
-      });
-      const especes = Array.from(document.querySelectorAll('[data-slot="command-item"]')).find(
-        (el) => el.textContent?.trim() === 'Espèces'
-      ) as HTMLElement;
-      expect(especes).toBeDefined();
-      especes.click();
-      flushSync();
+      await selectInCombobox(target, 1, 'Espèces');
 
       const dialog = await submit(target);
       expect(dialog.textContent).toContain('à votre entraîneur ou au trésorier');
@@ -221,8 +249,7 @@ describe('ShopCatalog Component', () => {
       const target = document.createElement('div');
       document.body.appendChild(target);
 
-      mountOrderable(target);
-      flushSync();
+      await mountOrderable(target);
       const dialog = await submit(target);
 
       expect(dialog.textContent).not.toContain('à votre entraîneur ou au trésorier');
@@ -232,8 +259,7 @@ describe('ShopCatalog Component', () => {
       const target = document.createElement('div');
       document.body.appendChild(target);
 
-      mountOrderable(target);
-      flushSync();
+      await mountOrderable(target);
 
       const qtyInput = target.querySelector('input#quantity-input') as HTMLInputElement;
       qtyInput.value = '3';
@@ -250,7 +276,9 @@ describe('ShopCatalog Component', () => {
 
       const qtyAfter = target.querySelector('input#quantity-input') as HTMLInputElement;
       expect(qtyAfter.value).toBe('1');
-      expect(norm(target.innerHTML)).toContain('15,00');
+      // Ni article retenu, ni total : le formulaire est revenu à son état d'ouverture.
+      expect(target.innerHTML).toContain('Sélectionner un produit...');
+      expect(norm(target.innerHTML)).not.toContain('45,00');
     });
   });
 
