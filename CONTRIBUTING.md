@@ -137,7 +137,9 @@ Seul `apps/api` conserve `--env staging` natif : sa configuration n'est pas redi
 
 ### 8.5 Versions et retour arrière
 
-`@semantic-release/git` a été retiré : **la CI ne pousse plus aucun commit**. Il ne reste que le tag et la GitHub Release, qui porte les notes de version. En conséquence, `package.json` est figé à `0.0.0-semantically-released` et n'est plus la source de la version — celle-ci est transmise aux builds par `VITE_APP_VERSION`.
+`@semantic-release/git` a été retiré : **la CI ne pousse plus aucun commit**. Il ne reste que le tag et la GitHub Release, qui porte les notes de version. En conséquence, `package.json` est figé à `0.0.0-semantically-released` et n'est plus la source de la version — celle-ci est transmise aux builds par `VITE_APP_VERSION`. Quand aucune version n'est publiée (un commit `ci:` ou `chore:` n'incrémente rien), le badge retombe sur le SHA court du commit déployé.
+
+`@semantic-release/github` tourne avec `successComment`, `failComment`, `failTitle` et `releasedLabels` **tous désactivés** : ces fonctions commentent et étiquettent les issues et les PR, ce qui exigerait `issues: write` et `pull-requests: write` sur le workflow. Le `GITHUB_TOKEN` n'a que `contents: write`, suffisant pour créer la Release — les activer échouerait sur « Resource not accessible by integration ». C'est un choix de moindre privilège, pas un oubli.
 
 Pour revenir en arrière, lancer **Rollback production**. Chaque `wrangler deploy` crée une version : le rollback est immédiat et ne reconstruit rien. Deux limites — rétention des **100 dernières versions**, et rollback **refusé si un binding a changé** entre les deux versions (KV, R2, D1, queues), ce qui protège contre les incohérences de schéma. Dans ce cas, relancer `promote.yml` sur le tag précédent.
 
