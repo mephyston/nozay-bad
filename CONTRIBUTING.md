@@ -153,7 +153,18 @@ C'est sans danger tant que les migrations sont **additives** — nouvelle table,
 
 Piège à connaître : Cloudflare refuse un rollback quand un **binding** a changé, mais un changement de **schéma D1 n'en est pas un**. Cette protection ne couvre donc pas la dérive de schéma.
 
-**Règle : une version contenant une migration destructive n'est pas rollbackable.** Appliquer le motif *expand/contract* — ajouter dans une version, déployer le code, supprimer dans une version ultérieure — et corriger par une migration en avant plutôt que par un retour arrière.
+**Règle : une version contenant une migration destructive n'est pas rollbackable.** Appliquer le motif *expand/contract* — ajouter dans une version, déployer le code, supprimer dans une version ultérieure.
+
+**L'expand/contract ne supprime pas le risque, il le borne.** Il rend sûr le retour d'*une* version, pas de deux : si `v1` ajoute, `v2` bascule le code et `v3` supprime, alors `v3 → v2` passe mais `v3 → v1` casse — le code de `v1` interroge ce que `v3` a supprimé. La distance de retour sûre s'arrête à la version qui a publié le dernier *contract*.
+
+Cette limite était invisible ; `scripts/rollback-horizon.mjs` la calcule et `rollback.yml` l'affiche dans le résumé du run avant toute bascule :
+
+```bash
+node scripts/rollback-horizon.mjs          # texte
+node scripts/rollback-horizon.mjs --json   # exploitable en CI
+```
+
+Au-delà de cet horizon, le retour arrière n'est plus la bonne manœuvre : **corriger en avant** (une migration de plus, une version de plus) est plus rapide et plus sûr que de reconstruire un état passé cohérent, d'autant que les adhérents continuent d'écrire pendant l'incident.
 
 Pour la base elle-même, le mécanisme est **D1 Time Travel** (30 jours de rétention) :
 

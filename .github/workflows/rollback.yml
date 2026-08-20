@@ -48,6 +48,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          # Historique et tags complets : l'horizon de rollback se calcule en reliant
+          # la dernière migration destructive au tag qui l'a publiée.
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -65,6 +69,19 @@ jobs:
       - name: Install dependencies
         if: steps.node-modules.outputs.cache-hit != 'true'
         run: npm ci
+
+      # `wrangler rollback` ne revient que sur le code : la base reste en avant. Une
+      # migration destructive franchie ressuscite du code qui interroge un schéma amputé.
+      # L'expand/contract borne ce risque à une version — au-delà, il faut le savoir.
+      - name: Horizon de retour arrière
+        run: |
+          node scripts/rollback-horizon.mjs | tee /tmp/horizon.txt
+          {
+            echo '### Horizon de retour arrière'
+            echo '```'
+            cat /tmp/horizon.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # Journalisé avant bascule : sans cette liste, on ne sait pas vers quoi on revient.
       - name: Déploiements actuels
