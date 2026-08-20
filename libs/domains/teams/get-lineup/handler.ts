@@ -6,7 +6,7 @@ import { pickRankingsAt, resolveReferenceDate } from '../shared/ranking-resoluti
 import { mondayOf } from '../shared/week';
 import { checkLineup, type LineupIssue } from '../shared/lineup-rules';
 import { computeTeamValue, lineLabel, type LineupEntry } from '../shared/team-value';
-import { isEligibleInDiscipline, isEligibleByCategory } from '../shared/eligibility';
+import { eligibleDisciplines, isEligibleByCategory } from '../shared/eligibility';
 import type { PlayerRanking } from '../shared/player';
 import {
   ChampionshipDayNotFoundError,
@@ -223,15 +223,33 @@ export async function loadLineup(
     };
   });
 
-  // ── Candidats : les adhérents de la saison, l'effectif en tête ──
+  /*
+   * ── Candidats : l'effectif déclaré de l'équipe, et lui seul ──
+   *
+   * La liste partait auparavant de l'annuaire de la saison entière — près de trois cents
+   * personnes — l'effectif n'étant qu'un critère de tri. Un capitaine y cherchait ses
+   * joueurs parmi tout le club. L'effectif est la déclaration qui fait foi : aligner
+   * quelqu'un qui n'y figure pas suppose de l'y ajouter d'abord, ce qui est un acte
+   * délibéré et tracé.
+   */
   const rosterSet = new Set(rosterLicences.map(normalizeLicence));
-  const candidates: LineupCandidate[] = [...directory.values()]
-    .map((identity) => {
-      const player = playerFor(identity.licence);
-      const busy = busyThisWeek.get(identity.licence);
-      const eligibleSomewhere = ['singles', 'doubles', 'mixed'].some((d) =>
-        isEligibleInDiscipline(division.eligibility, player, d as never)
-      );
+  const candidates: LineupCandidate[] = [...rosterSet]
+    .map((licence) => {
+      const identity = directory.get(licence);
+      const player = playerFor(licence);
+      const busy = busyThisWeek.get(licence);
+
+      /*
+       * L'éligibilité se juge **par discipline**, jamais globalement.
+       *
+       * En régional, PN à R2 exigent un classement minimum *dans la discipline jouée* :
+       * un joueur classé en simple mais sans classement en double est admis sur les
+       * simples et refusé sur les doubles. Le modèle précédent ne transportait qu'un
+       * booléen « éligible quelque part », qui se trompait dans les deux sens — il
+       * proposait ce joueur en double, et aurait écarté des simples quelqu'un dont seul
+       * le double était insuffisant.
+       */
+      const eligible = eligibleDisciplines(division.eligibility, player);
       /*
        * La catégorie compte autant que le classement.
        *
@@ -241,29 +259,29 @@ export async function loadLineup(
        */
       const categoryAdmitted = isEligibleByCategory(rules.categories, player);
       return {
-        licence: identity.licence,
-        firstName: identity.firstName,
-        lastName: identity.lastName,
+        licence,
+        firstName: identity?.firstName ?? '',
+        lastName: identity?.lastName ?? `Licence ${licence}`,
         gender: player.gender,
         category: player.category,
         mutation: player.mutation,
         singles: player.singles,
         doubles: player.doubles,
         mixed: player.mixed,
-        inRoster: rosterSet.has(identity.licence),
+        inRoster: true,
+        eligibleDisciplines: categoryAdmitted ? eligible : [],
+        // Ne portent ici que les motifs valables sur **toutes** les lignes ; le refus
+        // propre à un tableau se lit dans `eligibleDisciplines`.
         unavailableReason: busy
           ? `Déjà aligné avec ${busy} cette semaine`
           : !categoryAdmitted
             ? `Catégorie ${player.category ?? 'inconnue'} non admise`
-            : eligibleSomewhere
-              ? null
-              : 'Classement hors de cette division'
+            : eligible.length === 0
+              ? 'Classement hors de cette division'
+              : null
       };
     })
-    .sort(
-      (a, b) =>
-        Number(b.inRoster) - Number(a.inRoster) || a.lastName.localeCompare(b.lastName, 'fr')
-    );
+    .sort((a, b) => a.lastName.localeCompare(b.lastName, 'fr'));
 
   const viewer = input.viewerLicence ? normalizeLicence(input.viewerLicence) : null;
 
@@ -296,6 +314,21 @@ export async function loadLineup(
     upperTeamName: upper ? teamName(upper.number) : null,
     upperTeamValue,
     referenceEloDate: reference.date,
+    /*
+     * Diagnostic explicite plutôt que cul-de-sac muet.
+     *
+     * Le régional lit les cotes d'une mise à jour propre à chaque journée
+     * (`rankingPolicy: 'per_day'`). Quand aucun classement n'existe à cette date — cotes
+     * non importées pour la période —, tous les joueurs sont lus comme non classés, et
+     * une division à plancher les déclare tous inéligibles. Le capitaine voyait alors
+     * toutes les lignes grisées sans la moindre explication.
+     */
+    rankingsUnavailableReason:
+      reference.date === null
+        ? "Aucune date de référence des classements n'est définie pour ce championnat."
+        : byLicence.size === 0
+          ? `Aucun classement n'est disponible à la date de référence du ${reference.date}. Les cotes de cette période n'ont pas été importées.`
+          : null,
     canEdit: Boolean(viewer && (viewer === staff.captain || viewer === staff.vice)),
     captainLicence: staff.captain ?? null,
     viceCaptainLicence: staff.vice ?? null

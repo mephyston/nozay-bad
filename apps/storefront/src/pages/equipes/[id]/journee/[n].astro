@@ -71,8 +71,23 @@ try {
   const res = await api.fetch(
     `http://localhost/teams/${teamId}/days/${dayNumber}/lineup?licence=${encodeURIComponent(viewerLicence)}`
   );
-  if (!res.ok) return Astro.redirect(`/equipes/${teamId}`);
-  lineup = ((await res.json()) as any).data;
+  if (!res.ok) {
+    /*
+     * Le motif est affiché, jamais escamoté.
+     *
+     * Une redirection muette vers la page de l'équipe renvoyait le capitaine en arrière
+     * sans rien lui dire : une journée absente du calendrier et une panne de l'API
+     * produisaient le même écran, et le diagnostic n'était possible qu'en lisant les
+     * journaux du Worker.
+     */
+    const detail = ((await res.json().catch(() => null)) as any)?.error;
+    errorMsg =
+      res.status === 404
+        ? "Cette journée n'existe pas pour ce championnat. Le calendrier n'est peut-être pas encore saisi."
+        : (detail ?? "Cette composition n'est pas consultable pour le moment.");
+  } else {
+    lineup = ((await res.json()) as any).data;
+  }
 } catch {
   errorMsg = "Cette composition n'est pas consultable pour le moment.";
 }

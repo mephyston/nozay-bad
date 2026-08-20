@@ -2,6 +2,7 @@
   import { Button, SearchableCombobox, Alert } from '@nba/ui';
   import { TriangleAlert, CircleCheck, Info } from '@lucide/svelte';
   import type { GetLineupOutput, LineupSlotView, LineupCandidate } from '../../get-lineup/dto';
+  import { DISCIPLINE_RANKING } from '../../shared/ranking';
 
   let { initial }: { initial: GetLineupOutput } = $props();
 
@@ -61,6 +62,10 @@
       ? picks[`${slot.discipline}${slot.position}`]?.l1
       : picks[`${slot.discipline}${slot.position}`]?.l2;
 
+    // Le classement qui compte sur cette ligne : simple pour SH/SD, double pour DH/DD,
+    // mixte pour MX. Un joueur peut être admis sur l'un et pas sur l'autre.
+    const ranked = DISCIPLINE_RANKING[slot.discipline];
+
     const matching = view.candidates.filter((c) => {
       if (c.gender !== wanted) return false;
       if (!needle) return true;
@@ -71,12 +76,16 @@
       );
     });
 
-    const items = matching.slice(0, MAX_SUGGESTIONS).map((c) => ({
-      label: c.inRoster ? label(c) : `${label(c)} (hors effectif)`,
-      value: c.licence,
-      // Le motif est porté par la donnée : déjà aligné cette semaine, ou hors division.
-      disabled: Boolean(c.unavailableReason)
-    }));
+    const items = matching.slice(0, MAX_SUGGESTIONS).map((c) => {
+      // Un refus propre à ce tableau, distinct des motifs valables sur toutes les lignes.
+      const admittedHere = c.eligibleDisciplines.includes(ranked);
+      const reason = c.unavailableReason ?? (admittedHere ? null : 'Classement hors division sur ce tableau');
+      return {
+        label: reason ? `${label(c)} — ${reason}` : label(c),
+        value: c.licence,
+        disabled: Boolean(reason)
+      };
+    });
 
     // La sélection courante reste visible, sinon son libellé retomberait au placeholder.
     if (selected && !items.some((i) => i.value === selected)) {
@@ -140,6 +149,18 @@
 </script>
 
 <div class="space-y-4">
+  <!--
+    Sans classement à la date de référence, chaque joueur est lu comme non classé et une
+    division à plancher déclare tout l'effectif inéligible : toutes les lignes seraient
+    grisées sans motif. On dit pourquoi.
+  -->
+  {#if view.rankingsUnavailableReason}
+    <Alert.Root variant="warning">
+      <TriangleAlert class="w-4 h-4" />
+      <Alert.Description>{view.rankingsUnavailableReason}</Alert.Description>
+    </Alert.Root>
+  {/if}
+
   {#each view.slots as slot (slot.discipline + slot.position)}
     {@const key = `${slot.discipline}${slot.position}`}
     <div class="rounded-lg border p-3 space-y-2">

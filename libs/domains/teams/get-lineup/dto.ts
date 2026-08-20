@@ -1,5 +1,5 @@
 import type { Championship } from '../shared/championship';
-import type { Discipline, Ranking, Mutation } from '../shared/ranking';
+import type { Discipline, Ranking, Mutation, RankedDiscipline } from '../shared/ranking';
 import type { LineupIssue } from '../shared/lineup-rules';
 
 /** Une ligne de la rencontre, telle que l'écran la présente. */
@@ -27,9 +27,23 @@ export interface LineupCandidate {
   singles: Ranking | null;
   doubles: Ranking | null;
   mixed: Ranking | null;
-  /** Fait partie de l'effectif déclaré : proposé en premier. */
+  /** Fait partie de l'effectif déclaré. */
   inRoster: boolean;
-  /** Motif qui empêche de l'aligner, prêt à afficher. `null` s'il est disponible. */
+  /**
+   * Les disciplines de classement où ce joueur est admis dans cette division.
+   *
+   * L'éligibilité se juge **tableau par tableau** : en régional, PN à R2 exigent un
+   * classement minimum *dans la discipline jouée* (art. 4.4). Un joueur classé en simple
+   * mais sans classement en double est donc admis sur les simples et refusé sur les
+   * doubles. Un unique booléen d'éligibilité — le précédent modèle — se trompait dans les
+   * deux sens : il proposait ce joueur en double, et aurait pu l'écarter des simples.
+   */
+  eligibleDisciplines: RankedDiscipline[];
+  /**
+   * Motif qui empêche de l'aligner **quel que soit le tableau** : déjà aligné cette
+   * semaine, catégorie non admise, ou éligible dans aucune discipline. `null` s'il est
+   * alignable quelque part — l'écran croise alors `eligibleDisciplines` avec la ligne.
+   */
   unavailableReason: string | null;
 }
 
@@ -69,6 +83,16 @@ export interface GetLineupOutput {
   upperTeamName: string | null;
   upperTeamValue: number | null;
   referenceEloDate: string | null;
+  /**
+   * Pourquoi aucun classement n'est exploitable, `null` si tout va bien.
+   *
+   * Sans classement à la date de référence, chaque joueur est lu comme non classé — et
+   * une division à plancher (le régional exige P10 minimum) déclare alors *tout*
+   * l'effectif inéligible. L'écran devenait un cul-de-sac muet : toutes les lignes
+   * désactivées, aucun motif. On ne devine pas un classement de remplacement — ce serait
+   * une erreur invisible — mais on doit dire pourquoi on ne peut pas composer.
+   */
+  rankingsUnavailableReason: string | null;
   /** L'adhérent qui consulte peut-il modifier cette composition ? */
   canEdit: boolean;
   captainLicence: string | null;
