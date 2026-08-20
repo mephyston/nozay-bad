@@ -11,6 +11,14 @@ export interface SaveFixtureDateInput {
   playedAt: string | null;
   venue?: string | null;
   /**
+   * Nom de l'équipe adverse.
+   *
+   * C'est lui qui distingue les deux rencontres d'une journée régionale (art. 1.6.3) :
+   * « contre Massy 2 » dit au capitaine laquelle il compose, là où « Rencontre 2 » ne
+   * désigne qu'un rang.
+   */
+  opponent?: string | null;
+  /**
    * Confirme une date hors de la semaine théorique.
    *
    * Sans cet aveu explicite, une date hors semaine est refusée : c'est presque toujours
@@ -24,6 +32,7 @@ export interface SaveFixtureDateOutput {
   dayNumber: number;
   playedAt: string | null;
   venue: string | null;
+  opponent: string | null;
   /** La date retenue sort de la semaine théorique de la journée. */
   outsideTheoreticalWeek: boolean;
   /**

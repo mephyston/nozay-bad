@@ -18,9 +18,24 @@ export interface RosterPlayer extends PlayerIdentity {
   hasRanking: boolean;
 }
 
-/** Une journée du calendrier, vue depuis l'équipe. */
+/**
+ * Une **rencontre** du calendrier, vue depuis l'équipe.
+ *
+ * Une entrée par rencontre, et non par journée : le régional en dispute **deux par
+ * journée** (art. 1.6.3), donc deux compositions distinctes. Le calendrier les indexait
+ * auparavant par journée, si bien que la seconde écrasait silencieusement la première —
+ * elle était invisible, et inatteignable.
+ */
 export interface TeamCalendarDay {
   number: number;
+  /** 1 partout, 1 ou 2 en régional. Identifie la rencontre au sein de la journée. */
+  slot: number;
+  /**
+   * Comment nommer cette rencontre quand la journée en compte plusieurs : l'adversaire
+   * s'il est saisi, « Rencontre n » sinon. `null` quand la journée n'en compte qu'une —
+   * l'écran s'en tient alors au libellé de la journée.
+   */
+  fixtureLabel: string | null;
   label: string | null;
   kind: 'regular' | 'playoff';
   weekStart: string;

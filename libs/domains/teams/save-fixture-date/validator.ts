@@ -8,5 +8,6 @@ export const saveFixtureDateSchema = Type.Object({
     Type.Null()
   ]),
   venue: Type.Optional(Type.Union([Type.String({ maxLength: 120 }), Type.Null()])),
+  opponent: Type.Optional(Type.Union([Type.String({ maxLength: 120 }), Type.Null()])),
   confirmOutsideWeek: Type.Optional(Type.Boolean())
 });

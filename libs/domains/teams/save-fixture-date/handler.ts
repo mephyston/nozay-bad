@@ -68,7 +68,7 @@ export async function saveFixtureDate(
   const fixture = await repo.upsertDate(
     db,
     { teamId: team.id, dayId: day.id, slot },
-    { playedAt: input.playedAt ?? null, venue: input.venue ?? null },
+    { playedAt: input.playedAt ?? null, venue: input.venue ?? null, opponent: input.opponent ?? null },
     now
   );
 
@@ -77,6 +77,7 @@ export async function saveFixtureDate(
     dayNumber: day.number,
     playedAt: fixture.playedAt,
     venue: fixture.venue,
+    opponent: fixture.opponent,
     outsideTheoreticalWeek,
     matchDay
   };

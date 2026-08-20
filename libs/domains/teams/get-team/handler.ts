@@ -121,30 +121,59 @@ export async function getTeam(db: DbOrTx, id: number): Promise<GetTeamOutput> {
    * théorique sinon. Les deux sont distinctes : la semaine porte les règles, la date dit
    * seulement quand se présenter — un report ne déplace jamais la journée.
    */
-  const fixtureByDay = new Map(calendarRows.fixtures.map((f) => [f.dayId, f]));
+  /*
+   * Une entrée par **rencontre**, et non par journée.
+   *
+   * Le régional dispute deux rencontres par journée (art. 1.6.3), donc deux compositions
+   * distinctes. Indexer les rencontres par journée — ce que faisait une `Map` sur
+   * `dayId` — faisait écraser la première par la seconde : elle n'apparaissait nulle
+   * part et aucune URL ne permettait de l'atteindre.
+   */
+  const fixturesByDay = new Map<number, typeof calendarRows.fixtures>();
+  for (const fixture of calendarRows.fixtures) {
+    const list = fixturesByDay.get(fixture.dayId) ?? [];
+    list.push(fixture);
+    fixturesByDay.set(fixture.dayId, list);
+  }
+
   const linesByFixture = new Map<number, number>();
   for (const slot of calendarRows.slots) {
     linesByFixture.set(slot.fixtureId, (linesByFixture.get(slot.fixtureId) ?? 0) + 1);
   }
 
-  const calendar = calendarRows.days.map((day) => {
-    const fixture = fixtureByDay.get(day.id);
-    const playedAt = fixture?.playedAt ?? (day.matchDate ? `${day.matchDate}T00:00` : null);
-    return {
-      number: day.number,
-      label: day.label,
-      kind: day.kind,
-      weekStart: day.weekStart,
-      weekEnd: day.weekEnd,
-      playedAt,
-      venue: fixture?.venue ?? null,
-      opponent: fixture?.opponent ?? null,
-      home: fixture?.home ?? true,
-      outsideTheoreticalWeek: Boolean(
-        fixture?.playedAt && mondayOf(fixture.playedAt.slice(0, 10)) !== day.weekStart
-      ),
-      filledLines: fixture ? (linesByFixture.get(fixture.id) ?? 0) : 0
-    };
+  const calendar = calendarRows.days.flatMap((day) => {
+    const existing = (fixturesByDay.get(day.id) ?? []).sort((a, b) => a.slot - b.slot);
+
+    /*
+     * Les rangs attendus, même sans rencontre créée : le capitaine doit pouvoir composer
+     * la seconde rencontre avant que quiconque en ait saisi la date ou l'adversaire.
+     */
+    const expected = Array.from({ length: rules.fixturesPerDay }, (_, i) => i + 1);
+    const multiple = expected.length > 1;
+
+    return expected.map((slot) => {
+      const fixture = existing.find((f) => f.slot === slot);
+      const playedAt = fixture?.playedAt ?? (day.matchDate ? `${day.matchDate}T00:00` : null);
+      return {
+        number: day.number,
+        slot,
+        // L'adversaire nomme la rencontre bien mieux qu'un rang ; le rang reste le repli
+        // tant que personne ne l'a saisi.
+        fixtureLabel: multiple ? (fixture?.opponent ?? `Rencontre ${slot}`) : null,
+        label: day.label,
+        kind: day.kind,
+        weekStart: day.weekStart,
+        weekEnd: day.weekEnd,
+        playedAt,
+        venue: fixture?.venue ?? null,
+        opponent: fixture?.opponent ?? null,
+        home: fixture?.home ?? true,
+        outsideTheoreticalWeek: Boolean(
+          fixture?.playedAt && mondayOf(fixture.playedAt.slice(0, 10)) !== day.weekStart
+        ),
+        filledLines: fixture ? (linesByFixture.get(fixture.id) ?? 0) : 0
+      };
+    });
   });
 
   const captainLicence = staff.find((s) => s.role === 'captain')?.licence ?? null;

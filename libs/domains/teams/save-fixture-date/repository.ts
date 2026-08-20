@@ -53,7 +53,7 @@ export class SaveFixtureDateRepository {
   async upsertDate(
     db: DbOrTx,
     key: { teamId: number; dayId: number; slot: number },
-    values: { playedAt: string | null; venue: string | null },
+    values: { playedAt: string | null; venue: string | null; opponent: string | null },
     now: Date
   ): Promise<TeamFixtureRow> {
     const [row] = await db
@@ -61,7 +61,7 @@ export class SaveFixtureDateRepository {
       .values({ ...key, status: 'scheduled', ...values, createdAt: now })
       .onConflictDoUpdate({
         target: [teamFixturesTable.teamId, teamFixturesTable.dayId, teamFixturesTable.slot],
-        set: { playedAt: values.playedAt, venue: values.venue }
+        set: { playedAt: values.playedAt, venue: values.venue, opponent: values.opponent }
       })
       .returning();
     return row;
