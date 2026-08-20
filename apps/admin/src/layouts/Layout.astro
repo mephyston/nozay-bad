@@ -44,8 +44,20 @@ const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ?
       }
     </script>
     <script is:inline>
+      /*
+       * Thème appliqué avant le premier rendu, **et réappliqué après chaque échange de
+       * DOM**.
+       *
+       * L'admin monte le `<ClientRouter />` d'Astro, dont l'échange recopie les attributs
+       * de `<html>` depuis le document reçu. La classe `dark` étant posée côté client, elle
+       * n'y figure pas : chaque navigation la perdait, l'écran repassait en clair, puis
+       * `ModeWatcher` la remettait — un clignotement blanc à chaque changement de page.
+       *
+       * `astro:after-swap` se déclenche après l'insertion du nouveau DOM mais **avant que
+       * le navigateur ne peigne**, ce qui est précisément la fenêtre où corriger.
+       */
       (function() {
-        try {
+        function applyTheme() {
           let theme = 'light';
           if (typeof localStorage !== 'undefined') {
             let rawMode = localStorage.getItem('mode-watcher-mode') || localStorage.getItem('mode-watcher-user-preference');
@@ -69,7 +81,12 @@ const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ?
             document.documentElement.classList.remove('dark');
             document.documentElement.style.colorScheme = 'light';
           }
-        } catch (e) {}
+        }
+
+        try { applyTheme(); } catch (e) {}
+        document.addEventListener('astro:after-swap', () => {
+          try { applyTheme(); } catch (e) {}
+        });
       })();
     </script>
     <style is:inline>
