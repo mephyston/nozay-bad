@@ -1,4 +1,4 @@
-import { and, eq, inArray, lte, ne } from 'drizzle-orm';
+import { and, eq, inArray, lte } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import {
   clubTeamsTable,
@@ -114,16 +114,26 @@ export class GetLineupRepository {
       .all();
   }
 
-  /** Les autres équipes du club dans le même championnat, pour la hiérarchie. */
-  async siblingTeams(db: DbOrTx, team: ClubTeamRow): Promise<ClubTeamRow[]> {
+  /**
+   * Toutes les équipes du club dans un championnat, **sans exclusion**.
+   *
+   * Remplace un `siblingTeams` qui écartait l'équipe appelante : cette exclusion
+   * rendait le résultat propre à chaque équipe, donc impossible à mutualiser entre les
+   * six chargements de l'écran de contrôle. L'appelant filtre lui-même — et le filtre
+   * `number < team.number` écarte de toute façon l'équipe elle-même.
+   */
+  async championshipTeams(
+    db: DbOrTx,
+    seasonCode: string,
+    championship: ClubTeamRow['championship']
+  ): Promise<ClubTeamRow[]> {
     return db
       .select()
       .from(clubTeamsTable)
       .where(
         and(
-          eq(clubTeamsTable.seasonCode, team.seasonCode),
-          eq(clubTeamsTable.championship, team.championship),
-          ne(clubTeamsTable.id, team.id)
+          eq(clubTeamsTable.seasonCode, seasonCode),
+          eq(clubTeamsTable.championship, championship)
         )
       )
       .all();
