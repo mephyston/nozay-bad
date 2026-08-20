@@ -1,0 +1,162 @@
+name: Promote to production
+
+# Développement sur tronc unique : `main` déploie la préproduction en continu, et la
+# production n'est déployée que par ce workflow, sur action volontaire.
+#
+# On promeut un COMMIT, pas un binaire. Astro/Vite inline PUBLIC_APP_ENV, la clé VAPID
+# et les URL croisées au build : un bundle est cuit pour un environnement. Les versions
+# Cloudflare, elles, sont propres à un Worker — on ne promeut pas une version de
+# nba-api-staging vers nba-api. Le ref est donc reconstruit avec les valeurs de prod.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Tag (ex. v1.2.3) ou SHA complet à promouvoir"
+        required: true
+        type: string
+      skip_migrations:
+        description: "Ne pas appliquer les migrations D1 (reprise après échec partiel)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read # nécessaire à `gh run list`
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  # 1. Le ref promu doit être sur le tronc ET avoir été vert en préproduction.
+  #    Aucune suite de tests n'est rejouée : elle l'a déjà été sur ce SHA.
+  # ──────────────────────────────────────────────────────────────
+  guard:
+    name: Contrôle du ref promu
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.ref }}
+
+      - name: Résoudre et contrôler
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SHA=$(git rev-parse HEAD)
+          VERSION=$(git describe --tags --exact-match "$SHA" 2>/dev/null || echo "$SHA")
+
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$SHA" origin/main; then
+            echo "::error::$SHA n'est pas un ancêtre de main — on ne promeut que du tronc."
+            exit 1
+          fi
+
+          GREEN=$(gh run list --workflow deploy.yml --commit "$SHA" --status success --json databaseId --jq 'length')
+          if [ "$GREEN" -eq 0 ]; then
+            echo "::error::aucun run vert de deploy.yml sur $SHA : ce commit n'est jamais passé par la préproduction."
+            exit 1
+          fi
+
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "### Promotion de \`${{ inputs.ref }}\` → \`$SHA\` ($VERSION)" >> "$GITHUB_STEP_SUMMARY"
+
+  # ──────────────────────────────────────────────────────────────
+  # 2. Migrations D1 puis API (les 3 autres Workers en dépendent).
+  # ──────────────────────────────────────────────────────────────
+  api:
+    name: Migrations D1 + API (production)
+    needs: guard
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          # Le SHA figé, jamais le tag : un tag peut être déplacé entre les deux jobs.
+          ref: ${{ needs.guard.outputs.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Cache node_modules
+        id: node-modules
+        uses: actions/cache@v6
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.node-modules.outputs.cache-hit != 'true'
+        run: npm ci
+
+      # Journalisé avant application : la liste des migrations en attente est la
+      # dernière chose lisible avant un changement irréversible.
+      - name: Migrations D1 en attente (production)
+        working-directory: apps/api
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler d1 migrations list nba-db --remote
+
+      - name: Appliquer les migrations D1 (production)
+        if: ${{ !inputs.skip_migrations }}
+        working-directory: apps/api
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler d1 migrations apply nba-db --remote
+
+      - name: Déployer le Worker API (production)
+        working-directory: apps/api
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy
+
+  # ──────────────────────────────────────────────────────────────
+  # 3. Les 3 applications Astro, inconditionnellement, en parallèle.
+  #
+  #    Pas de `nx affected` ici : on promeut un tag arbitraire dont on ignore l'écart
+  #    avec ce qui tourne réellement en production. Une promotion doit être rejouable
+  #    et ne dépendre que du ref promu. Les 4 Workers étant couplés par service
+  #    bindings et libs partagées, une promotion partielle produirait une flotte
+  #    mélangeant deux versions de @nba/db.
+  # ──────────────────────────────────────────────────────────────
+  apps:
+    name: Deploy ${{ matrix.app }} (production)
+    needs: [guard, api]
+    runs-on: ubuntu-latest
+    environment: production
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [storefront, website, admin]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.guard.outputs.sha }}
+
+      - uses: ./.github/actions/deploy-app
+        with:
+          app: ${{ matrix.app }}
+          env: production
+          app-version: ${{ matrix.app == 'admin' && needs.guard.outputs.version || '' }}
+          api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          node-version: ${{ env.NODE_VERSION }}

@@ -1,0 +1,87 @@
+name: Construire et déployer un Worker Astro
+description: >
+  Construit une application Astro avec les variables de build de l'environnement visé,
+  applique le bloc env correspondant sur la configuration générée par l'adaptateur, puis
+  déploie. Chemin de code unique partagé par deploy.yml (staging) et promote.yml
+  (production) : c'est ce qui rend impossible qu'une promotion soit construite avec des
+  valeurs de préproduction.
+
+inputs:
+  app:
+    description: "storefront | website | admin"
+    required: true
+  env:
+    description: "staging | production"
+    required: true
+  app-version:
+    description: "VITE_APP_VERSION (admin uniquement) ; vide ailleurs"
+    required: false
+    default: ""
+  api-token:
+    description: "CLOUDFLARE_API_TOKEN"
+    required: true
+  account-id:
+    description: "CLOUDFLARE_ACCOUNT_ID"
+    required: true
+  node-version:
+    description: "Version de Node.js"
+    required: false
+    default: "22"
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v5
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+
+    - id: node-modules
+      uses: actions/cache@v6
+      with:
+        path: node_modules
+        key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+    - if: steps.node-modules.outputs.cache-hit != 'true'
+      shell: bash
+      run: npm ci
+
+    - uses: actions/cache@v6
+      with:
+        path: .nx/cache
+        key: nx-${{ runner.os }}-deploy-${{ inputs.app }}-${{ github.sha }}
+        restore-keys: |
+          nx-${{ runner.os }}-deploy-${{ inputs.app }}-
+
+    # Les variables PUBLIC_* sont inlinées par Vite : elles doivent exister AVANT le
+    # build, donc elles ne peuvent pas venir de dist/server/wrangler.json. Elles sont
+    # dérivées plutôt que recopiées — la clé VAPID est lue dans apps/api/wrangler.json,
+    # ce qui garantit qu'elle reste identique à celle du Worker qui signe les envois.
+    - name: Résoudre les variables de build
+      shell: bash
+      run: node scripts/build-env.mjs --app "${{ inputs.app }}" --env "${{ inputs.env }}" >> "$GITHUB_ENV"
+
+    - name: Construire ${{ inputs.app }}
+      shell: bash
+      env:
+        VITE_APP_VERSION: ${{ inputs.app-version }}
+      run: npx nx build "${{ inputs.app }}"
+
+    # Garde-fou anti-promotion-contaminée : le bundle ne doit contenir aucun marqueur de
+    # l'autre environnement. astro.config.mjs retombe sur 'production' quand
+    # PUBLIC_APP_ENV est absent, donc un oubli ne se voit pas autrement.
+    - name: Vérifier le bundle
+      shell: bash
+      run: node scripts/build-env.mjs --app "${{ inputs.app }}" --env "${{ inputs.env }}" --verify
+
+    - name: Appliquer la configuration d'environnement
+      shell: bash
+      run: node scripts/patch-wrangler.mjs --app "${{ inputs.app }}" --env "${{ inputs.env }}"
+
+    - name: Déployer
+      shell: bash
+      working-directory: apps/${{ inputs.app }}
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.account-id }}
+      run: npx wrangler deploy

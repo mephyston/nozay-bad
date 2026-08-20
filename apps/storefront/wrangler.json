@@ -26,17 +26,22 @@
   ],
   "vars": {
     "EMAIL_FROM": "Nozay Badminton Association <contact@nozaybad.fr>",
-    "EMAIL_MODE": "live"
+    "EMAIL_MODE": "live",
+    "EMAIL_ALLOWLIST": ""
   },
   "services": [
-    { "binding": "API_SERVICE", "service": "nba-api" }
+    {
+      "binding": "API_SERVICE",
+      "service": "nba-api"
+    }
   ],
   "env": {
     "staging": {
       "name": "nba-storefront-staging",
       "vars": {
         "EMAIL_FROM": "Nozay Badminton Association <contact@nozaybad.fr>",
-        "EMAIL_MODE": "dry-run"
+        "EMAIL_MODE": "allowlist",
+        "EMAIL_ALLOWLIST": "david.pagnacco@gmail.com,meyharts@gmail.com,rouxjuliee@gmail.com,justine.couvidat@gmail.com"
       },
       "kv_namespaces": [
         {
@@ -45,7 +50,10 @@
         }
       ],
       "services": [
-        { "binding": "API_SERVICE", "service": "nba-api-staging" }
+        {
+          "binding": "API_SERVICE",
+          "service": "nba-api-staging"
+        }
       ]
     }
   }

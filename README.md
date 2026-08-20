@@ -61,7 +61,11 @@ npx astro build --root apps/admin
 npx astro build --root apps/storefront
 ```
 
-Le déploiement continu (CD) vers Cloudflare est automatisé via GitHub Actions sur la branche `staging` (les déploiements peuvent être forcés en incluant `force deploy` dans le message de commit).
+Le dépôt suit un **développement sur tronc unique** : `main` est la seule branche durable.
+
+- **Préproduction** — chaque push sur `main` déploie automatiquement les applications affectées (`.github/workflows/deploy.yml`). Le calcul par `nx affected` peut être court-circuité en incluant `force deploy` dans le message de commit.
+- **Production** — déployée uniquement par le workflow manuel **Promote to production**, qui reconstruit un tag donné avec les valeurs de production. Voir CONTRIBUTING.md §8.
+- **Retour arrière** — workflow manuel **Rollback production** (`wrangler rollback`), immédiat et sans reconstruction.
 
 ## 📚 Documentation & Architecture
 

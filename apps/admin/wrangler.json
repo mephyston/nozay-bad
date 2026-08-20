@@ -18,8 +18,14 @@
       "head_sampling_rate": 1
     }
   },
+  "vars": {
+    "APP_ENV": "production"
+  },
   "services": [
-    { "binding": "API_SERVICE", "service": "nba-api" }
+    {
+      "binding": "API_SERVICE",
+      "service": "nba-api"
+    }
   ],
   "env": {
     "staging": {
@@ -28,7 +34,10 @@
         "APP_ENV": "staging"
       },
       "services": [
-        { "binding": "API_SERVICE", "service": "nba-api-staging" }
+        {
+          "binding": "API_SERVICE",
+          "service": "nba-api-staging"
+        }
       ]
     }
   }

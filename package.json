@@ -1,6 +1,6 @@
 {
   "name": "nozay-bad",
-  "version": "1.0.2",
+  "version": "0.0.0-semantically-released",
   "license": "MIT",
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
@@ -37,8 +37,6 @@
     "@nx/js": "23.0.1",
     "@nx/workspace": "23.0.1",
     "@playwright/test": "^1.62.1",
-    "@semantic-release/changelog": "^7.0.0",
-    "@semantic-release/git": "^11.0.1",
     "@storybook/addon-svelte-csf": "^5.1.2",
     "@storybook/addon-themes": "^10.5.5",
     "@storybook/svelte-vite": "^10.5.5",
@@ -94,16 +92,11 @@
   },
   "release": {
     "branches": [
-      "main",
-      {
-        "name": "staging",
-        "prerelease": "beta"
-      }
+      "main"
     ],
     "plugins": [
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
-      "@semantic-release/changelog",
       [
         "@semantic-release/npm",
         {
@@ -111,13 +104,9 @@
         }
       ],
       [
-        "@semantic-release/git",
+        "@semantic-release/github",
         {
-          "assets": [
-            "package.json",
-            "CHANGELOG.md"
-          ],
-          "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+          "successComment": false
         }
       ]
     ]
