@@ -33,35 +33,49 @@ export async function listDayValues(
   const teams = await repo.teamsOf(db, input.seasonCode, input.championship);
   const directory = await loadPlayerDirectory(db, input.seasonCode);
 
-  const rows: DayTeamValue[] = [];
-  for (const team of teams) {
-    const lineup = await loadLineup(db, { teamId: team.id, dayNumber: input.dayNumber });
+  /*
+   * Les équipes sont chargées **de front**, et non l'une après l'autre.
+   *
+   * `loadLineup` enchaîne à lui seul une douzaine de requêtes D1 ; en série sur six
+   * équipes, l'écran attendait quelque quatre-vingts allers-retours avant de s'afficher —
+   * de loin la page la plus lente de l'administration, alors que les tables concernées
+   * tiennent en quelques centaines de lignes. Le coût n'était pas le volume mais la
+   * latence cumulée.
+   *
+   * C'est sans risque : `loadLineup` est strictement en lecture et la route n'ouvre
+   * aucune transaction, donc rien n'impose un ordre entre les équipes. `Promise.all`
+   * préserve par ailleurs l'ordre du tableau, et `teamsOf` le trie déjà par numéro.
+   */
+  const rows: DayTeamValue[] = await Promise.all(
+    teams.map(async (team): Promise<DayTeamValue> => {
+      const lineup = await loadLineup(db, { teamId: team.id, dayNumber: input.dayNumber });
 
-    const delta =
-      lineup.value !== null && lineup.upperTeamValue !== null
-        ? Number((lineup.value - lineup.upperTeamValue).toFixed(4))
-        : null;
+      const delta =
+        lineup.value !== null && lineup.upperTeamValue !== null
+          ? Number((lineup.value - lineup.upperTeamValue).toFixed(4))
+          : null;
 
-    const captain = lineup.captainLicence ? directory.get(lineup.captainLicence) : undefined;
+      const captain = lineup.captainLicence ? directory.get(lineup.captainLicence) : undefined;
 
-    rows.push({
-      teamId: team.id,
-      name: teamName(team.number),
-      number: team.number,
-      divisionLabel: lineup.divisionLabel,
-      value: lineup.value,
-      filledLines: lineup.slots.filter((s) => s.licence1).length,
-      expectedLines: lineup.slots.length,
-      upperTeamName: lineup.upperTeamName,
-      upperTeamValue: lineup.upperTeamValue,
-      delta,
-      // `null` = pas de réponse, et non « tout va bien » : l'écran doit distinguer les deux.
-      conform: delta === null ? null : delta <= 0,
-      captainName: captain ? `${captain.firstName} ${captain.lastName}`.trim() : null,
-      captainLicence: lineup.captainLicence,
-      issues: [...lineup.errors, ...lineup.warnings]
-    });
-  }
+      return {
+        teamId: team.id,
+        name: teamName(team.number),
+        number: team.number,
+        divisionLabel: lineup.divisionLabel,
+        value: lineup.value,
+        filledLines: lineup.slots.filter((s) => s.licence1).length,
+        expectedLines: lineup.slots.length,
+        upperTeamName: lineup.upperTeamName,
+        upperTeamValue: lineup.upperTeamValue,
+        delta,
+        // `null` = pas de réponse, et non « tout va bien » : l'écran doit distinguer les deux.
+        conform: delta === null ? null : delta <= 0,
+        captainName: captain ? `${captain.firstName} ${captain.lastName}`.trim() : null,
+        captainLicence: lineup.captainLicence,
+        issues: [...lineup.errors, ...lineup.warnings]
+      };
+    })
+  );
 
   // ── Joueurs alignés deux fois dans la semaine ──
   const alignments = await repo.alignmentsInWeek(

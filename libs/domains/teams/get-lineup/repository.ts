@@ -1,4 +1,4 @@
-import { and, eq, inArray, ne } from 'drizzle-orm';
+import { and, eq, inArray, lte, ne } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import {
   clubTeamsTable,
@@ -99,10 +99,19 @@ export class GetLineupRepository {
   }
 
   /** Tous les classements publiés à cette date ou avant : la résolution se fait ensuite. */
+  /**
+   * Filtre en SQL, et non après coup : la table entière traversait le réseau à chaque
+   * appel pour n'en garder qu'une partie, et cet appel a lieu une fois par équipe. Les
+   * dates sont stockées en ISO, donc la comparaison lexicographique de SQLite est
+   * exactement celle qu'appliquait le filtre JavaScript — et l'index
+   * `player_rankings_date_idx` sert enfin à quelque chose.
+   */
   async rankingsUpTo(db: DbOrTx, atDate: string): Promise<PlayerRankingRow[]> {
-    return db.select().from(playerRankingsTable).all().then((rows) =>
-      rows.filter((row) => row.eloDate <= atDate)
-    );
+    return db
+      .select()
+      .from(playerRankingsTable)
+      .where(lte(playerRankingsTable.eloDate, atDate))
+      .all();
   }
 
   /** Les autres équipes du club dans le même championnat, pour la hiérarchie. */
