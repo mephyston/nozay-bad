@@ -2,6 +2,7 @@ import { type DbOrTx } from '@nba/db';
 import { CHAMPIONSHIP_RULES, teamName, type Championship } from '../shared/championship';
 import { loadPlayerDirectory } from '../shared/members-lookup';
 import { loadLineup } from '../get-lineup/handler';
+import { createQueryCache, memo } from '../shared/query-cache';
 import { ChampionshipDayNotFoundError, UnknownChampionshipError } from '../shared/errors';
 import { ListDayValuesRepository } from './repository';
 import type { DayTeamValue, DuplicatePlayer, ListDayValuesOutput } from './dto';
@@ -31,7 +32,23 @@ export async function listDayValues(
   if (!day) throw new ChampionshipDayNotFoundError();
 
   const teams = await repo.teamsOf(db, input.seasonCode, input.championship);
-  const directory = await loadPlayerDirectory(db, input.seasonCode);
+
+  /*
+   * Un cache par requête, partagé par les six chargements d'équipe.
+   *
+   * Cinq des douze lectures de `loadLineup` ne dépendent pas de l'équipe mais de la
+   * saison, du championnat ou de la journée — dont `playerHistory`, qui en fait quatre à
+   * lui seul. Elles étaient donc refaites à l'identique une fois par équipe :
+   * quarante-huit requêtes là où huit suffisent. Le cache est jeté avec la requête HTTP,
+   * rien n'est partagé entre deux appels.
+   */
+  const cache = createQueryCache();
+
+  // Même clé que celle employée dans `loadLineup` : ce chargement-ci sert les six
+  // suivants au lieu d'en constituer un septième.
+  const directory = await memo(cache, `directory:${input.seasonCode}`, () =>
+    loadPlayerDirectory(db, input.seasonCode)
+  );
 
   /*
    * Les équipes sont chargées **de front**, et non l'une après l'autre.
@@ -48,7 +65,7 @@ export async function listDayValues(
    */
   const rows: DayTeamValue[] = await Promise.all(
     teams.map(async (team): Promise<DayTeamValue> => {
-      const lineup = await loadLineup(db, { teamId: team.id, dayNumber: input.dayNumber });
+      const lineup = await loadLineup(db, { teamId: team.id, dayNumber: input.dayNumber }, cache);
 
       const delta =
         lineup.value !== null && lineup.upperTeamValue !== null

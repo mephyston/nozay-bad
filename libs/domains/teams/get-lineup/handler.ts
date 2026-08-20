@@ -13,6 +13,7 @@ import {
   TeamNotFoundError,
   UnknownChampionshipError
 } from '../shared/errors';
+import { memo, type QueryCache } from '../shared/query-cache';
 import { GetLineupRepository } from './repository';
 import type { GetLineupOutput, LineupCandidate, LineupSlotView } from './dto';
 import type { LineupSlotRow } from '../shared/schema';
@@ -45,7 +46,13 @@ function toPlayer(row: {
  */
 export async function loadLineup(
   db: DbOrTx,
-  input: { teamId: number; dayNumber: number; slot?: number; viewerLicence?: string | null; override?: SubmittedSlot[] }
+  input: { teamId: number; dayNumber: number; slot?: number; viewerLicence?: string | null; override?: SubmittedSlot[] },
+  /**
+   * Déduplication des lectures qui ne dépendent pas de l'équipe (annuaire, classements,
+   * historique, journée, date de référence). Optionnel : sans lui le comportement est
+   * inchangé. `listDayValues` en passe un, partagé par les six équipes qu'il charge.
+   */
+  cache?: QueryCache
 ): Promise<GetLineupOutput> {
   const team = await repo.findTeam(db, input.teamId);
   if (!team) throw new TeamNotFoundError();
@@ -54,7 +61,9 @@ export async function loadLineup(
   const division = getDivision(team.championship, team.division);
   if (!division) throw new UnknownChampionshipError();
 
-  const day = await repo.findDay(db, team, input.dayNumber);
+  const day = await memo(cache, `day:${team.seasonCode}:${team.championship}:${input.dayNumber}`, () =>
+    repo.findDay(db, team, input.dayNumber)
+  );
   if (!day) throw new ChampionshipDayNotFoundError();
 
   const fixtureSlot = input.slot ?? 1;
@@ -63,8 +72,10 @@ export async function loadLineup(
   const [staff, rosterLicences, directory, settingsDate] = await Promise.all([
     repo.staffLicences(db, team.id),
     repo.rosterLicences(db, team.id),
-    loadPlayerDirectory(db, team.seasonCode),
-    repo.referenceEloDate(db, team)
+    memo(cache, `directory:${team.seasonCode}`, () => loadPlayerDirectory(db, team.seasonCode)),
+    memo(cache, `eloDate:${team.seasonCode}:${team.championship}`, () =>
+      repo.referenceEloDate(db, team)
+    )
   ]);
 
   const reference = resolveReferenceDate(
@@ -73,7 +84,9 @@ export async function loadLineup(
     { number: day.number, weekStart: day.weekStart, referenceEloDate: day.referenceEloDate }
   );
 
-  const rankingRows = reference.date ? await repo.rankingsUpTo(db, reference.date) : [];
+  const rankingRows = reference.date
+    ? await memo(cache, `rankings:${reference.date}`, () => repo.rankingsUpTo(db, reference.date!))
+    : [];
   const byLicence = pickRankingsAt(rankingRows, reference.date);
 
   /** Le classement d'une licence, ou un profil sans classement — jamais rien. */
@@ -144,7 +157,9 @@ export async function loadLineup(
   }
 
   // Les règles d'historique regardent la saison **avant** cette journée.
-  const history = await repo.playerHistory(db, team.seasonCode, day.weekStart);
+  const history = await memo(cache, `history:${team.seasonCode}:${day.weekStart}`, () =>
+    repo.playerHistory(db, team.seasonCode, day.weekStart)
+  );
 
   const verdict = checkLineup({
     rules,
