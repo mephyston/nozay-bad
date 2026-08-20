@@ -45,3 +45,22 @@ export const categoriesList = [
   { value: 2, label: 'Cordages' },
   { value: 3, label: 'Textile & Accessoires' }
 ];
+
+/**
+ * Ce qu'une commande enregistrée rappelle à son auteur.
+ *
+ * Figé au moment de l'envoi, et pas dérivé du formulaire : la boîte de confirmation
+ * survit à la remise à zéro qu'elle déclenche en se fermant, et doit continuer
+ * d'afficher ce qui vient d'être commandé, pas ce qui est de nouveau sélectionné.
+ */
+export interface OrderConfirmation {
+  memberName: string;
+  productName: string;
+  quantity: number;
+  totalCents: number;
+  /** Valeur brute (`especes`, `virement`, …), traduite à l'affichage. */
+  paymentMethod: string;
+}
+
+/** Modes de paiement qui laissent de l'argent à remettre en main propre. */
+export const CASH_PAYMENT_METHODS = ['especes'];

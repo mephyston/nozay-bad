@@ -4,15 +4,16 @@
   export * from './catalog-order-action';
 </script>
 <script lang="ts">
-  import { ShoppingBag, Info, AlertCircle, Check } from "@lucide/svelte";
+  import { ShoppingBag, Info, AlertCircle } from "@lucide/svelte";
   import { Card, Button, Alert } from '@nba/ui';
-  import type { Member, Product } from './catalog-types';
+  import type { Member, OrderConfirmation, Product } from './catalog-types';
   import { isOutOfStock, maxOrderableQuantity } from './catalog-types';
   import { formatMemberName } from './catalog-utils';
   import { handleMemberKeyDown, submitOrder } from './catalog-order-action';
   import ShopCatalogMemberSelect from './ShopCatalogMemberSelect.svelte';
   import ShopCatalogProductSelect from './ShopCatalogProductSelect.svelte';
   import ShopCatalogSummary from './ShopCatalogSummary.svelte';
+  import ShopCatalogConfirmation from './ShopCatalogConfirmation.svelte';
 
   let { products = [], members = [], activeSeasonId = '', lockToMembers = false, initialMemberId = '' }: { products: Product[]; members: Member[]; activeSeasonId: string; lockToMembers?: boolean; initialMemberId?: string } = $props();
 
@@ -34,8 +35,9 @@
   let selectedQuantity = $state<number>(1);
   let selectedPaymentMethod = $state<string>('virement');
   let submitting = $state<boolean>(false);
-  let successMessage = $state<string | null>(null);
   let errorMessage = $state<string | null>(null);
+  /** Commande venant d'être enregistrée ; non nulle, elle ouvre la boîte de confirmation. */
+  let confirmation = $state<OrderConfirmation | null>(null);
 
   let filteredProducts = $derived(selectedCategory === 0 ? productsList : productsList.filter(p => p.productCategoryId === selectedCategory));
   let selectedProduct = $derived(selectedProductId !== null ? productsList.find(p => p.id === Number(selectedProductId)) || null : null);
@@ -143,11 +145,36 @@
   function decrementQty() { if (selectedQuantity > 1) selectedQuantity -= 1; }
 
   async function handleOrder() {
-    errorMessage = null; successMessage = null; submitting = true;
+    errorMessage = null; submitting = true;
+    // Le récapitulatif est figé avant l'appel : la remise à zéro qui suivra la
+    // fermeture de la boîte ne doit pas en réécrire le contenu sous les yeux.
+    const ordered: OrderConfirmation = {
+      memberName: selectedMember ? formatMemberName(selectedMember) : '',
+      productName: selectedProduct?.name ?? '',
+      quantity: selectedQuantity,
+      totalCents: totalPriceCents,
+      paymentMethod: selectedPaymentMethod
+    };
     const res = await submitOrder({ selectedMemberId, selectedProduct, selectedQuantity, selectedPaymentMethod, activeSeasonId });
     submitting = false;
-    if (res.success) { successMessage = res.message || null; selectedQuantity = 1; }
+    if (res.success) confirmation = ordered;
     else errorMessage = res.error || null;
+  }
+
+  /**
+   * Remise à zéro de la commande, déclenchée par la fermeture de la confirmation.
+   *
+   * L'adhérent n'est pas touché : dans la boutique il vient de la session et serait
+   * aussitôt resélectionné ; ailleurs, on enchaîne d'ordinaire pour la même personne.
+   * `selectedProductId = null` laisse l'effet de sélection reposer le premier article
+   * du catalogue, exactement comme au chargement de la page.
+   */
+  function resetOrderForm() {
+    selectedQuantity = 1;
+    selectedCategory = 0;
+    selectedProductId = null;
+    selectedPaymentMethod = 'virement';
+    errorMessage = null;
   }
 </script>
 
@@ -219,13 +246,13 @@
       </p>
     {/if}
 
-    <!-- Feedback Messages -->
-    {#if successMessage}
-      <Alert.Root variant="success">
-        <Check class="w-4 h-4 shrink-0 mt-0.5" />
-      <Alert.Description>{successMessage}</Alert.Description>
-      </Alert.Root>
-    {/if}
+    <!--
+      La confirmation n'est plus un encart sous le bouton : elle passait sous la ligne
+      de flottaison sur mobile, et ne disait rien de ce qui restait à faire — remettre
+      les espèces, notamment. Seul l'échec reste annoncé sur place, à côté du bouton
+      qu'il faudra presser de nouveau.
+    -->
+    <ShopCatalogConfirmation bind:confirmation onAcknowledge={resetOrderForm} />
 
     {#if errorMessage}
       <Alert.Root variant="destructive">

@@ -68,7 +68,7 @@ export async function submitOrder(params: {
   selectedQuantity: number;
   selectedPaymentMethod: string;
   activeSeasonId: string;
-}): Promise<{ success: boolean; message?: string; error?: string }> {
+}): Promise<{ success: boolean; error?: string }> {
   if (!params.selectedMemberId) {
     return { success: false, error: "Veuillez sélectionner un adhérent pour commander." };
   }
@@ -105,10 +105,10 @@ export async function submitOrder(params: {
       return { success: false, error: data.error || "Une erreur est survenue lors de l'enregistrement de la commande." };
     }
 
-    return {
-      success: true,
-      message: `Votre souhait d'achat de ${params.selectedQuantity} ${params.selectedProduct.name} a bien été enregistré. Il sera comptabilisé dès validation par le trésorier.`
-    };
+    // Pas de message de succès à rapporter : la confirmation est une boîte modale,
+    // construite à partir de la commande elle-même (article, quantité, montant, mode
+    // de paiement) plutôt que d'une phrase toute faite que l'appelant afficherait.
+    return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || "Une erreur est survenue." };
   }

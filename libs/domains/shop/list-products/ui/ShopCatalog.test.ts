@@ -34,6 +34,10 @@ describe('ShopCatalog Component', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    // Les boîtes modales sortent du conteneur monté (portail) : sans ce nettoyage,
+    // celle d'un test précédent reste dans le document et se fait interroger à la
+    // place de celle du test courant.
+    document.body.innerHTML = '';
   });
 
   it('renders the catalog structure with selection comboboxes', () => {
@@ -144,6 +148,110 @@ describe('ShopCatalog Component', () => {
 
     expect(target.innerHTML).not.toContain('Volant épuisé');
     expect(target.innerHTML).toContain("1 article en rupture de stock n'est pas proposé à la commande.");
+  });
+
+  /*
+   * La commande enregistrée se confirme en boîte modale.
+   *
+   * L'encart vert sous le bouton passait sous la ligne de flottaison sur mobile, et
+   * laissait le formulaire tel quel : rien ne distinguait une commande partie d'un
+   * formulaire simplement rempli.
+   */
+  describe('confirmation de commande', () => {
+    const mountOrderable = (target: HTMLElement) =>
+      mount(ShopCatalog, {
+        target,
+        props: { members, products, activeSeasonId: '25-26', lockToMembers: true, initialMemberId: '1' }
+      });
+
+    const submit = async (target: HTMLElement) => {
+      const btn = Array.from(target.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Valider la commande')
+      ) as HTMLButtonElement;
+      btn.click();
+      await vi.waitFor(() => {
+        expect(document.querySelector('[data-testid="order-confirmation"]')).not.toBeNull();
+      });
+      flushSync();
+      return document.querySelector('[data-testid="order-confirmation"]') as HTMLElement;
+    };
+
+    const okButton = (dialog: HTMLElement) =>
+      Array.from(dialog.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'OK') as HTMLButtonElement;
+
+    it("récapitule la commande dans une boîte modale plutôt qu'un encart", async () => {
+      const target = document.createElement('div');
+      document.body.appendChild(target);
+
+      mountOrderable(target);
+      flushSync();
+      const dialog = await submit(target);
+
+      expect(dialog.textContent).toContain('Commande enregistrée');
+      expect(dialog.textContent).toContain('Volant RSL Grade 1');
+      expect(norm(dialog.innerHTML)).toContain('15,00');
+    });
+
+    it("dit où remettre l'argent quand le paiement est en espèces", async () => {
+      const target = document.createElement('div');
+      document.body.appendChild(target);
+
+      mountOrderable(target);
+      flushSync();
+
+      // Mode de paiement = espèces (troisième combobox).
+      const paymentCombo = target.querySelectorAll('[role="combobox"]')[1] as HTMLButtonElement;
+      paymentCombo.click();
+      flushSync();
+      await vi.waitFor(() => {
+        expect(document.querySelector('[data-slot="command-input"]')).not.toBeNull();
+      });
+      const especes = Array.from(document.querySelectorAll('[data-slot="command-item"]')).find(
+        (el) => el.textContent?.trim() === 'Espèces'
+      ) as HTMLElement;
+      expect(especes).toBeDefined();
+      especes.click();
+      flushSync();
+
+      const dialog = await submit(target);
+      expect(dialog.textContent).toContain('à votre entraîneur ou au trésorier');
+    });
+
+    it("ne parle d'espèces que pour un paiement en espèces", async () => {
+      const target = document.createElement('div');
+      document.body.appendChild(target);
+
+      mountOrderable(target);
+      flushSync();
+      const dialog = await submit(target);
+
+      expect(dialog.textContent).not.toContain('à votre entraîneur ou au trésorier');
+    });
+
+    it('remet le formulaire à zéro quand la confirmation est acquittée', async () => {
+      const target = document.createElement('div');
+      document.body.appendChild(target);
+
+      mountOrderable(target);
+      flushSync();
+
+      const qtyInput = target.querySelector('input#quantity-input') as HTMLInputElement;
+      qtyInput.value = '3';
+      qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
+      flushSync();
+      expect(norm(target.innerHTML)).toContain('45,00');
+
+      const dialog = await submit(target);
+      okButton(dialog).click();
+      await vi.waitFor(() => {
+        expect(document.querySelector('[data-testid="order-confirmation"]')).toBeNull();
+      });
+      flushSync();
+
+      const qtyAfter = target.querySelector('input#quantity-input') as HTMLInputElement;
+      expect(qtyAfter.value).toBe('1');
+      expect(norm(target.innerHTML)).toContain('15,00');
+    });
   });
 
   it('performs dynamic adherent search via the API when the members list is empty', async () => {
