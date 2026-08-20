@@ -49,7 +49,7 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
-      includeAssets: ['favicon.png', `apple-touch-icon${ICON_SUFFIX}.png`],
+      includeAssets: ['pwa/favicon.png', `pwa/apple-touch-icon${ICON_SUFFIX}.png`],
       manifest: {
         name: 'Nozay Bad' + ENV_LABEL,
         short_name: 'Nozay Bad' + ENV_LABEL,

@@ -57,7 +57,14 @@ export default defineConfig({
     svelte(),
     AstroPWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', `apple-touch-icon${ICON_SUFFIX}.png`],
+      // L'admin est derrière Cloudflare Access. Par spécification, un manifest est
+      // récupéré **sans cookies** : la requête arrivait donc à Access sans jeton et
+      // recevait la page de connexion en HTML au lieu du JSON. `useCredentials` ajoute
+      // crossorigin="use-credentials" à la balise, ce qui joint le cookie de session.
+      // Les icônes, elles, restent à débloquer côté Access (politique Bypass) : iOS les
+      // récupère hors du contexte authentifié lors de « Ajouter à l'écran d'accueil ».
+      useCredentials: true,
+      includeAssets: ['pwa/favicon.png', `pwa/apple-touch-icon${ICON_SUFFIX}.png`],
       manifest: {
         name: 'Nozay Bad Admin' + ENV_LABEL,
         short_name: 'NBA Admin' + ENV_LABEL,

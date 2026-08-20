@@ -4,11 +4,20 @@
  * l'image utilisée comme logo dans le menu (`public/logo.png`, 1024×1024).
  *
  * Pour chaque app on écrit, à l'identique, dans `public/` :
- *   - pwa/icon-192.png, pwa/icon-512.png, apple-touch-icon.png   (production, sans bandeau)
+ *   - pwa/icon-192.png, pwa/icon-512.png, pwa/apple-touch-icon.png (production, sans bandeau)
  *   - les mêmes suffixés `-dev`  avec un bandeau "DEV"  (ambre)
  *   - les mêmes suffixés `-test` avec un bandeau "TEST" (rouge)
  *
  * Le manifest (astro.config.mjs) choisit la variante selon PUBLIC_APP_ENV au build.
+ *
+ * Pourquoi tout vit sous `pwa/`, y compris apple-touch-icon et favicon. L'admin est
+ * derrière Cloudflare Access, qui intercepte **toutes** les requêtes du domaine : lors
+ * d'un « Ajouter à l'écran d'accueil », iOS récupère l'icône hors du contexte
+ * authentifié et recevait la page de connexion en HTML au lieu du PNG — d'où une icône
+ * absente sur iPad. Les regrouper sous un seul préfixe permet de n'ouvrir qu'une seule
+ * règle Access (Bypass sur `admin.nozaybad.fr/pwa/*`) au lieu d'une par fichier.
+ * La boutique n'est pas protégée par Access mais suit la même arborescence : deux
+ * traitements divergents pour un même besoin finissent toujours par diverger davantage.
  *
  * Régénérer après avoir changé le logo :  node scripts/generate-pwa-icons.mjs
  */
@@ -43,7 +52,7 @@ const VARIANTS = [
 const ICONS = [
   { dir: 'pwa', base: 'icon-192', size: 192 },
   { dir: 'pwa', base: 'icon-512', size: 512 },
-  { dir: '.', base: 'apple-touch-icon', size: 180 }
+  { dir: 'pwa', base: 'apple-touch-icon', size: 180 }
 ];
 
 // Chaque app a un libellé propre affiché dans le bandeau de l'icône.
