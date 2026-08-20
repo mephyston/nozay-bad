@@ -2,7 +2,7 @@
 import { ClientRouter } from 'astro:transitions';
 import { pwaInfo } from 'virtual:pwa-info';
 import { ModeWatcher } from 'mode-watcher';
-import { EnvBanner } from '@nba/ui';
+import { EnvBanner, formatAppVersion } from '@nba/ui';
 import '../styles/global.css';
 
 interface Props {
@@ -138,7 +138,7 @@ const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ?
           <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: -0.15s"></span>
           <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0s"></span>
         </div>
-      <p class="mt-12 text-xs text-muted-foreground/60 font-medium tracking-widest uppercase">v{import.meta.env.PUBLIC_APP_VERSION}</p>
+      <p class="mt-12 text-xs text-muted-foreground/60 font-medium tracking-widest uppercase">{formatAppVersion(import.meta.env.PUBLIC_APP_VERSION)}</p>
       <div class="mt-8 flex flex-col items-center gap-4 relative z-10 w-full px-6">
         <button onclick="document.getElementById('pwa-splash').style.opacity = '0'; setTimeout(() => document.getElementById('pwa-splash').remove(), 500)" class="w-full max-w-[200px] px-6 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors shadow-md">
           Continuer
