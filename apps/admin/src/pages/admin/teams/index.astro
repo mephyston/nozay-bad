@@ -17,6 +17,7 @@ const ACTIONS = {
   'save-team-staff': 'teams:teams:write',
   'save-team-roster': 'teams:teams:write',
   'save-championship-days': 'teams:teams:write',
+  'save-fixture': 'teams:teams:write',
   'get-team': 'teams:teams:read',
   'list-days': 'teams:teams:read'
 } as const;
@@ -61,6 +62,27 @@ if (Astro.request.method === 'POST') {
         seasonCode: data.seasonCode ?? season,
         championship: data.championship,
         days: data.days
+      }
+    },
+    /*
+     * Date, gymnase et adversaire d'une rencontre, côté bureau.
+     *
+     * Distinct de `save-fixture-date`, qu'emploie l'espace adhérent : celui-ci réserve
+     * l'écriture au capitaine et à son adjoint, alors qu'ici le droit vient de
+     * `teams:teams:write`. `home` et `status` sont réécrits à l'identique par le client,
+     * l'API réécrivant la rencontre entière.
+     */
+    'save-fixture': {
+      url: `http://localhost/teams/${data.teamId}/fixtures`,
+      method: 'PUT',
+      body: {
+        dayId: data.dayId,
+        slot: data.slot,
+        playedAt: data.playedAt,
+        venue: data.venue,
+        opponent: data.opponent,
+        home: data.home,
+        status: data.status
       }
     },
     'get-team': { url: `http://localhost/teams/${data.teamId}`, method: 'GET' },

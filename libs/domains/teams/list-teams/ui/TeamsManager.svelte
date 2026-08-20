@@ -14,6 +14,7 @@
   import { Trophy, Plus, CalendarDays, ChevronRight } from '@lucide/svelte';
   import TeamFormSheet from '../../save-team/ui/TeamFormSheet.svelte';
   import TeamRosterSheet from '../../get-team/ui/TeamRosterSheet.svelte';
+  import TeamFixturesSheet from '../../save-fixture/ui/TeamFixturesSheet.svelte';
   import ChampionshipDaysSheet from '../../save-championship-days/ui/ChampionshipDaysSheet.svelte';
   import type { TeamListItem } from '../dto';
   import type { GetTeamOutput } from '../../get-team/dto';
@@ -42,6 +43,7 @@
   let formOpen = $state(false);
   let editing = $state<TeamListItem | null>(null);
   let rosterOpen = $state(false);
+  let fixturesOpen = $state(false);
   let detail = $state<GetTeamOutput | null>(null);
   let daysOpen = $state(false);
 
@@ -78,7 +80,8 @@
     formOpen = true;
   }
 
-  async function openRoster(team: TeamListItem) {
+  /** Charge le détail d'une équipe, dont vivent les deux feuilles. */
+  async function loadDetail(team: TeamListItem): Promise<boolean> {
     try {
       const response = await fetch('', {
         method: 'POST',
@@ -89,10 +92,19 @@
       if (!response.ok) throw new Error(payload.error || 'Chargement impossible.');
 
       detail = payload.data ?? null;
-      rosterOpen = true;
+      return detail !== null;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Chargement impossible.');
+      return false;
     }
+  }
+
+  async function openRoster(team: TeamListItem) {
+    if (await loadDetail(team)) rosterOpen = true;
+  }
+
+  async function openFixtures(team: TeamListItem) {
+    if (await loadDetail(team)) fixturesOpen = true;
   }
 
   async function remove(team: TeamListItem) {
@@ -192,6 +204,7 @@
       <Table.Cell>
         <DataTableRowActions>
           <DropdownMenu.Item onclick={() => openRoster(team)}>Staff et effectif</DropdownMenu.Item>
+          <DropdownMenu.Item onclick={() => openFixtures(team)}>Rencontres</DropdownMenu.Item>
           {#if canWrite}
             <DropdownMenu.Item onclick={() => openEdit(team)}>Modifier</DropdownMenu.Item>
           {/if}
@@ -241,6 +254,7 @@
 
 <TeamFormSheet bind:open={formOpen} team={editing} {seasonCode} onSaved={() => reload()} />
 <TeamRosterSheet bind:open={rosterOpen} {detail} {members} canWrite={canWrite} onSaved={() => reload()} />
+<TeamFixturesSheet bind:open={fixturesOpen} {detail} canWrite={canWrite} onSaved={() => reload()} />
 <ChampionshipDaysSheet
   bind:open={daysOpen}
   championship={daysChampionship}

@@ -28,6 +28,12 @@ export interface RosterPlayer extends PlayerIdentity {
  */
 export interface TeamCalendarDay {
   number: number;
+  /**
+   * Identifiant de la journée, nécessaire pour écrire la rencontre côté administration.
+   * `PUT /teams/:id/fixtures` désigne la journée par son identifiant, là où l'espace
+   * adhérent la désigne par son numéro.
+   */
+  dayId: number;
   /** 1 partout, 1 ou 2 en régional. Identifie la rencontre au sein de la journée. */
   slot: number;
   /**
@@ -45,6 +51,12 @@ export interface TeamCalendarDay {
   venue: string | null;
   opponent: string | null;
   home: boolean;
+  /**
+   * `bye` = équipe au repos, `forfeit` = forfait. Renvoyé pour que l'écran d'écriture le
+   * fasse transiter inchangé : `saveFixture` réécrit la rencontre entière, si bien
+   * qu'omettre ce champ ramènerait silencieusement la rencontre à « programmée ».
+   */
+  status: 'scheduled' | 'bye' | 'forfeit';
   /** La rencontre est reportée hors de la semaine théorique. */
   outsideTheoreticalWeek: boolean;
   /** Nombre de lignes déjà composées. */
