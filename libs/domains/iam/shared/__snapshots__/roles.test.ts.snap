@@ -94,6 +94,7 @@ exports[`matrice des droits > correspond à l’instantané validé 1`] = `
     "iam:users:write",
     "members:attestations:read",
     "members:members:read",
+    "members:members:write",
     "notifications:messages:read",
     "notifications:messages:send",
     "schedules:slots:read",

@@ -1,9 +1,14 @@
 import { ALL_PERMISSIONS, type Permission } from './permissions';
 
 /**
- * Rôles métier de l'association. Le mapping rôle→permissions vit ici, en TypeScript :
- * il est versionné, typé, et toute modification passe par une revue de code. La base
- * ne stocke que la liaison compte↔rôle (`admin_user_roles`).
+ * Rôles métier de l'association, et la **définition d'origine** de leurs droits.
+ *
+ * Ce qui fait autorité à l'exécution, c'est la table `role_permissions` : les droits
+ * d'un rôle s'éditent depuis l'application (voir `role-permissions.ts`). `ROLE_PERMISSIONS`
+ * en reste la référence — valeurs de départ des migrations, repli quand l'API est
+ * injoignable en développement, et étalon auquel l'écran compare chaque rôle pour
+ * signaler ceux qui s'en écartent. Y ajouter un droit ne l'accorde donc pas aux bases
+ * existantes : il faut la migration `INSERT OR IGNORE INTO role_permissions` qui va avec.
  *
  * Deny-by-default : un compte sans rôle n'a aucune permission. `membre` est le socle —
  * le rôle attribué à tout compte créé sans rôle explicite — et ne donne accès qu'au
@@ -98,7 +103,11 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'shop:products:read',
     'shop:orders:read',
     'notifications:messages:read',
-    // Actes de gouvernance : ouverture et clôture d'exercice, vote du budget.
+    // Actes de gouvernance : ouverture et clôture d'exercice, vote du budget, et
+    // désignation du bureau — nommer un président ou un trésorier est une décision
+    // d'assemblée générale, pas une édition de fiche adhérent. Le droit est le même
+    // que celui du secrétariat faute d'une permission dédiée aux fonctions au club.
+    'members:members:write',
     'accounting:seasons:write',
     'accounting:seasons:close',
     'accounting:budget:write',
