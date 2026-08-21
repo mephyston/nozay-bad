@@ -1,5 +1,20 @@
 ---
 import '../styles/global.css';
+/*
+  Polices de la charte, servies depuis notre propre origine.
+
+  Auto-hébergées et non tirées de Google Fonts : la CSP du site pose `font-src 'self'`
+  et bloquerait la requête (voir `lib/security-headers.ts`). Astro embarque ces
+  `.woff2` sous `/_astro/`, donc la règle est satisfaite sans y toucher — et le
+  visiteur n'est pas annoncé à un tiers à chaque page.
+
+  `wght.css` plutôt que `index.css` : Montserrat est chargée en fonte variable, un
+  seul fichier par alphabet couvre le 400 du corps et le 900 des titres. La variante
+  italique, que rien ne demande ici, n'est pas embarquée.
+*/
+import '@fontsource-variable/montserrat/wght.css';
+/* Yellowtail n'existe qu'en 400 : ni gras, ni italique, ni autre alphabet que le latin. */
+import '@fontsource/yellowtail/latin-400.css';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import { serialiseJsonLd } from '../lib/jsonld';

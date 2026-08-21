@@ -20,8 +20,18 @@ const illustration = block.mediaId ? media.get(block.mediaId) : undefined;
         class="mx-auto mb-6 max-h-80 w-auto rounded-lg object-cover"
       />
     )}
-    <h1 class="text-4xl font-semibold tracking-tight">{block.title}</h1>
-    {block.subtitle && <p class="text-muted-foreground mx-auto mt-3 max-w-2xl">{block.subtitle}</p>}
+    <h1 class="text-4xl font-display">{block.title}</h1>
+    {/*
+      Sous-titre en Yellowtail, comme la charte le demande — mais à cette taille et
+      nulle part ailleurs. C'est une écriture manuscrite : sous 24 px ses déliés se
+      referment et le mot devient une tache, et elle n'a ni gras ni italique à opposer
+      au reste. Elle sert donc l'accroche, jamais le texte courant ni la navigation.
+    */}
+    {block.subtitle && (
+      <p class="font-script text-muted-foreground mx-auto mt-4 max-w-2xl text-2xl leading-relaxed sm:text-3xl">
+        {block.subtitle}
+      </p>
+    )}
     {block.ctas.length > 0 && (
       <div class="mt-6 flex flex-wrap justify-center gap-3">
         {block.ctas.map((cta) => (

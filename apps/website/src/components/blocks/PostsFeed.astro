@@ -38,7 +38,7 @@ const grid = nested ? '@md:grid-cols-2 @3xl:grid-cols-3' : 'sm:grid-cols-2 lg:gr
 const NESTED_SIZES = '(min-width: 768px) 320px, calc(100vw - 2rem)';
 ---
 <section class:list={[shell]}>
-  {block.heading && <Heading class="mb-6 text-2xl font-semibold tracking-tight">{block.heading}</Heading>}
+  {block.heading && <Heading class="mb-6 text-2xl font-display">{block.heading}</Heading>}
 
   {shown.length === 0 ? (
     <p class="text-muted-foreground">Aucune actualité pour le moment.</p>

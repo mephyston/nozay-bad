@@ -94,7 +94,7 @@ const fullSize = (entry: (typeof items)[number]) =>
 const dialogId = `gallery-viewer-${block.mediaIds.join('-').slice(0, 40)}`;
 ---
 <section class:list={[shell]}>
-  {block.heading && <Heading class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</Heading>}
+  {block.heading && <Heading class="mb-4 text-2xl font-display">{block.heading}</Heading>}
 
   {items.length > 0 && (
     <div class="nba-gallery relative" data-nba-gallery data-viewer={dialogId}>

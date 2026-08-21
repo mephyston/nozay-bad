@@ -113,7 +113,7 @@ const cellSlots = (weekday: number, venue: string, range: { startTime: string; e
 const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'libre'))];
 ---
 <section class:list={[shell]}>
-  {block.heading && <Heading class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</Heading>}
+  {block.heading && <Heading class="mb-4 text-2xl font-display">{block.heading}</Heading>}
 
   {shown.length === 0 ? (
     <p class="text-muted-foreground">Les créneaux ne sont pas encore renseignés pour cette saison.</p>

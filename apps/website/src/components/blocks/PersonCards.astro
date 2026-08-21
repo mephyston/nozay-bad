@@ -22,7 +22,7 @@ const dial = (phone: string) => phone.replace(/[^+0-9]/g, '');
 const PHOTO_SIZES = '96px';
 ---
 <section class="mx-auto max-w-5xl px-4 py-8">
-  {block.heading && <h2 class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</h2>}
+  {block.heading && <h2 class="mb-4 text-2xl font-display">{block.heading}</h2>}
   <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {block.people.map((person) => {
       const photo = person.mediaId ? media.get(person.mediaId) : undefined;

@@ -51,7 +51,7 @@ const background = block.backgroundMediaId ? media.get(block.backgroundMediaId) 
 
     <div class={bannerShell}>
       {block.heading && (
-        <Heading class="mb-6 text-3xl font-semibold tracking-tight text-white drop-shadow">{block.heading}</Heading>
+        <Heading class="mb-6 text-3xl font-display text-white drop-shadow">{block.heading}</Heading>
       )}
       <ul class:list={['grid gap-4', columns]}>
         {block.items.map((item) => (
@@ -72,7 +72,7 @@ const background = block.backgroundMediaId ? media.get(block.backgroundMediaId) 
   </section>
 ) : (
   <section class:list={[shell]}>
-    {block.heading && <Heading class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</Heading>}
+    {block.heading && <Heading class="mb-4 text-2xl font-display">{block.heading}</Heading>}
     <ul class:list={['grid gap-4', columns]}>
       {block.items.map((item) => (
         <li>

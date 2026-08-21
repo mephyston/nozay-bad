@@ -97,7 +97,7 @@ const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' });
 ---
 
 <section class:list={[shell]}>
-  {block.heading && <Heading class="mb-4 text-2xl font-semibold tracking-tight">{block.heading}</Heading>}
+  {block.heading && <Heading class="mb-4 text-2xl font-display">{block.heading}</Heading>}
 
   {shown.length === 0 ? (
     <p class="border-border text-muted-foreground rounded-lg border border-dashed px-4 py-6 text-center text-sm">
@@ -133,7 +133,7 @@ const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' });
                 <span class="text-[11px] font-medium uppercase leading-none opacity-80">
                   {weekdayShort.format(start)}
                 </span>
-                <span class="text-2xl font-bold leading-tight">{dayNumber.format(start)}</span>
+                <span class="text-2xl font-display leading-tight">{dayNumber.format(start)}</span>
                 <span class="text-[11px] font-medium uppercase leading-none opacity-80">
                   {monthShort.format(start)}
                 </span>
@@ -145,7 +145,7 @@ const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' });
                   externe sinon. Dans cet ordre : l'article est chez nous et dit ce que
                   le club a à en dire ; la fiche FFBaD reste joignable juste en dessous.
                 */}
-                <CardHeading class="font-semibold leading-snug">
+                <CardHeading class="font-display leading-snug">
                   {announcement ? (
                     <a href={announcement.href} class="hover:underline">{event.title}</a>
                   ) : event.externalUrl ? (

@@ -56,7 +56,7 @@ const SlideHeading = block.heading ? 'h3' : 'h2';
     {block.heading && (
       <h2
         class:list={[
-          opensPage ? 'sr-only' : 'mx-auto mb-4 max-w-5xl px-4 text-2xl font-semibold tracking-tight'
+          opensPage ? 'sr-only' : 'mx-auto mb-4 max-w-5xl px-4 text-2xl font-display'
         ]}
       >
         {block.heading}
@@ -100,19 +100,31 @@ const SlideHeading = block.heading ? 'h3' : 'h2';
             Voile dégradé plutôt qu'uniforme : le texte est posé en bas, c'est donc en
             bas qu'il faut assombrir. Un voile plat sur toute la hauteur ternirait
             l'image entière pour ne servir qu'un quart de sa surface.
+
+            Le palier médian est monté de 40 à 55 % avec l'arrivée du sous-titre en
+            Yellowtail : les déliés d'une écriture manuscrite sont bien plus fins que
+            les fûts d'un Montserrat Black, et ils disparaissaient dans les clairs
+            d'une photo de gymnase. Le voile est calé sur la moitié la moins lisible
+            des deux, pas sur le titre.
           */}
           <div
-            class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/5"
+            class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/55 to-black/10"
             aria-hidden="true"
           ></div>
 
           <div class="absolute inset-0 flex flex-col justify-end">
             <div class="mx-auto w-full max-w-5xl px-4 pb-20">
-              <SlideHeading class="text-3xl font-semibold tracking-tight text-white drop-shadow-lg sm:text-4xl">
+              <SlideHeading class="text-3xl font-display text-white drop-shadow-lg sm:text-4xl">
                 {slide.title}
               </SlideHeading>
+              {/*
+                Même règle qu'au bloc d'accroche : Yellowtail porte la ligne de
+                sous-titre, et rien d'autre. L'ombre portée est ici indispensable et
+                non décorative — les déliés d'une écriture manuscrite sont fins, et
+                sans elle ils se perdraient dans les clairs de la photo.
+              */}
               {slide.description && (
-                <p class="mt-2 max-w-2xl text-base text-white/90 drop-shadow sm:text-lg">
+                <p class="font-script mt-2 max-w-2xl text-2xl leading-relaxed text-white drop-shadow-lg sm:text-3xl">
                   {slide.description}
                 </p>
               )}

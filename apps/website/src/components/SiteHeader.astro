@@ -38,7 +38,16 @@ function isActive(item: NavItemView): boolean {
  */
 const openSection = nav.findIndex((item) => item.children.length > 0 && isActive(item));
 ---
-<header class="border-border bg-background sticky top-0 z-40 border-b">
+{/*
+  Liseré de marque sous l'en-tête, dans le rouge exact de la charte.
+
+  C'est le seul endroit du gabarit où la couleur du maillot est posée en aplat, et
+  c'est assez : deux pixels sur toute la largeur suffisent à signer la page, là où
+  teinter l'en-tête entier obligerait à repeindre le menu, le sélecteur de thème et
+  le nom du club pour tenir le contraste. `--brand-red` et non `--primary` : rien
+  n'est écrit dessus, la valeur de la charte peut donc rester intacte.
+*/}
+<header class="border-brand-red bg-background sticky top-0 z-40 border-b-2">
   <div class="mx-auto flex max-w-5xl items-center gap-4 px-4 py-3">
     {/*
       Deux marques selon la largeur, et non une seule redimensionnée : l'écusson tient
@@ -49,7 +58,7 @@ const openSection = nav.findIndex((item) => item.children.length > 0 && isActive
       dupliquer ferait annoncer « Nozay Badminton Association » deux fois de suite au
       lecteur d'écran.
     */}
-    <a href="/" class="flex shrink-0 items-center gap-2 font-semibold">
+    <a href="/" class="font-display flex shrink-0 items-center gap-2">
       {/*
         Deux enveloppes en `display: contents` plutôt que quatre images à variantes
         croisées `dark:md:` : le passage clair/sombre se lit d'un coup, et la règle

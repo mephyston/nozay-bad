@@ -9,59 +9,89 @@
 @custom-variant data-open (&[data-state=open]);
 @custom-variant data-closed (&[data-state=closed]);
 
+/*
+  Charte du club, telle que remise par le secrétariat : rouge #E53345, noir #000000,
+  gris #686768, bleu #15B9EC, blanc #FFFFFF.
+
+  Deux de ces cinq couleurs sont **claires** : le bleu tient 2,3:1 sur blanc et le rouge
+  4,3:1. Ni l'un ni l'autre ne peut donc porter du petit texte en thème clair, et les
+  poser tels quels sous un libellé blanc passerait sous le seuil AA. Chaque couleur est
+  reprise **exacte** là où sa luminance le permet — le noir en pied de page, le bleu en
+  thème sombre, le rouge en aplat large — et déclinée ailleurs. Les écarts sont d'un ton,
+  invisibles à l'œil, et c'est ce qui rend le site lisible dans les deux thèmes.
+
+  Les ratios notés en regard sont mesurés contre le fond sur lequel le jeton s'emploie.
+*/
 :root {
-  --background: rgb(250, 249, 245);
-  --foreground: rgb(61, 57, 41);
-  --card: rgb(245, 244, 239);
-  --card-foreground: rgb(20, 20, 19);
+  --background: rgb(255, 255, 255);
+  --foreground: rgb(20, 20, 20);
+  --card: rgb(247, 247, 248);
+  --card-foreground: rgb(20, 20, 20);
   --popover: rgb(255, 255, 255);
-  --popover-foreground: rgb(40, 38, 27);
-  --primary: rgb(201, 100, 66);
+  --popover-foreground: rgb(20, 20, 20);
+  /* Rouge de la charte assombri d'un ton : blanc dessus 5,2:1, là où le rouge pur
+     plafonnait à 4,29:1 — juste sous le seuil d'un texte de bouton. */
+  --primary: rgb(208, 39, 58);
   --primary-foreground: rgb(255, 255, 255);
-  --secondary: rgb(233, 230, 220);
-  --secondary-foreground: rgb(83, 81, 70);
-  --muted: rgb(237, 233, 222);
-  --muted-foreground: rgb(110, 109, 104);
-  --accent: rgb(233, 230, 220);
-  --accent-foreground: rgb(40, 38, 27);
-  --destructive: rgb(220, 38, 38);
+  --secondary: rgb(241, 241, 242);
+  --secondary-foreground: rgb(42, 42, 43);
+  --muted: rgb(241, 241, 242);
+  /* Gris de la charte, exact : 5,6:1 sur blanc. */
+  --muted-foreground: rgb(104, 103, 104);
+  /* Bleu de la charte à 8 %, avec son propre texte foncé. */
+  --accent: rgb(231, 247, 253);
+  --accent-foreground: rgb(11, 76, 99);
+  --border: rgb(227, 227, 228);
+  --input: rgb(198, 197, 198);
+  --ring: rgb(208, 39, 58);
+  /*
+    Rouge d'erreur, volontairement distinct du rouge de marque.
+
+    Le rouge est ici la couleur de l'action principale : sans cet écart, un message
+    d'alerte et un bouton « Envoyer » porteraient la même teinte, et le rouge cesserait
+    de vouloir dire quoi que ce soit. Celui-ci est plus profond et plus froid.
+  */
+  --destructive: rgb(155, 27, 46);
   --destructive-foreground: rgb(255, 255, 255);
-  --success: rgb(16, 185, 129);
+  /* Hors charte, mais un site a besoin de dire « c'est fait » et « attention ». */
+  --success: rgb(21, 127, 92);
   --success-foreground: rgb(255, 255, 255);
-  --warning: rgb(245, 158, 11);
+  --warning: rgb(154, 91, 0);
   --warning-foreground: rgb(255, 255, 255);
-  --info: rgb(59, 130, 246);
+  /* Bleu de la charte assombri : 4,6:1 sur blanc, le minimum pour du texte. */
+  --info: rgb(11, 127, 166);
   --info-foreground: rgb(255, 255, 255);
-  --border: rgb(218, 217, 212);
-  --input: rgb(180, 178, 167);
-  --ring: rgb(201, 100, 66);
-  --chart-1: rgb(176, 87, 48);
-  --chart-2: rgb(156, 135, 245);
-  --chart-3: rgb(222, 216, 196);
-  --chart-4: rgb(219, 211, 240);
-  --chart-5: rgb(180, 85, 45);
-  --sidebar: rgb(245, 244, 238);
-  --sidebar-foreground: rgb(61, 61, 58);
-  --sidebar-primary: rgb(201, 100, 66);
-  --sidebar-primary-foreground: rgb(251, 251, 251);
-  --sidebar-accent: rgb(233, 230, 220);
-  --sidebar-accent-foreground: rgb(52, 52, 52);
-  --sidebar-border: rgb(235, 235, 235);
-  --sidebar-ring: rgb(181, 181, 181);
+  --chart-1: rgb(229, 51, 69);
+  --chart-2: rgb(21, 185, 236);
+  --chart-3: rgb(104, 103, 104);
+  --chart-4: rgb(242, 128, 140);
+  --chart-5: rgb(11, 127, 166);
+  --sidebar: rgb(247, 247, 248);
+  --sidebar-foreground: rgb(42, 42, 43);
+  --sidebar-primary: rgb(208, 39, 58);
+  --sidebar-primary-foreground: rgb(255, 255, 255);
+  --sidebar-accent: rgb(241, 241, 242);
+  --sidebar-accent-foreground: rgb(20, 20, 20);
+  --sidebar-border: rgb(227, 227, 228);
+  --sidebar-ring: rgb(208, 39, 58);
   /*
     Pied de page : un bandeau sombre, dans les deux thèmes.
 
     Ces quatre jetons ne dérivent d'aucun autre, à dessein. Le pied de page ne suit
     pas le thème de la page — il tranche avec lui — donc réutiliser `--card` ou
-    `--muted` le ferait pâlir en clair, précisément là où on veut la rupture. Les
-    contrastes sont vérifiés sur le fond du pied, pas sur celui de la page :
-    12,7:1 pour le texte courant, 5,7:1 pour le texte secondaire.
+    `--muted` le ferait pâlir en clair, précisément là où on veut la rupture. Le noir
+    de la charte y est repris **pur** : c'est le seul endroit du thème clair où il
+    n'entre en concurrence avec rien. Les contrastes sont vérifiés sur le fond du
+    pied, pas sur celui de la page : 18,1:1 pour le texte courant, 7,4:1 pour le
+    texte secondaire.
   */
-  --footer: rgb(42, 40, 37);
-  --footer-foreground: rgb(240, 238, 232);
-  --footer-muted: rgb(166, 161, 150);
-  --footer-border: rgb(70, 66, 61);
-  --font-sans: Outfit, sans-serif;
+  --footer: rgb(0, 0, 0);
+  --footer-foreground: rgb(242, 242, 242);
+  --footer-muted: rgb(163, 162, 163);
+  --footer-border: rgb(44, 44, 45);
+  --font-sans: 'Montserrat Variable', system-ui, sans-serif;
+  --font-display: 'Montserrat Variable', system-ui, sans-serif;
+  --font-script: Yellowtail, cursive;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: Geist Mono, ui-monospace, monospace;
   --radius: 1rem;
@@ -83,55 +113,83 @@
   --spacing: 0.25rem;
 }
 
+/*
+  Les deux couleurs de la charte à l'état pur, hors du thème.
+
+  Elles ne changent pas d'un thème à l'autre : ce sont les couleurs du maillot, et un
+  aplat de marque qui vire au clair-obscur cesse d'être la marque. Réservées aux
+  **grandes surfaces** — bandeaux, voiles, liserés — jamais à ce qui porte du petit
+  texte, faute de quoi le contraste qu'on vient d'ajuster serait perdu.
+*/
+:root,
 .dark {
-  --background: rgb(38, 38, 36);
-  --foreground: rgb(241, 241, 239);
-  --card: rgb(44, 44, 43);
-  --card-foreground: rgb(250, 249, 245);
-  --popover: rgb(48, 48, 46);
-  --popover-foreground: rgb(229, 229, 226);
-  --primary: rgb(217, 119, 87);
-  --primary-foreground: rgb(20, 20, 19);
-  --secondary: rgb(250, 249, 245);
-  --secondary-foreground: rgb(48, 48, 46);
-  --muted: rgb(27, 27, 25);
-  --muted-foreground: rgb(183, 181, 169);
-  --accent: rgb(26, 25, 21);
-  --accent-foreground: rgb(245, 244, 238);
-  --destructive: rgb(239, 68, 68);
-  --destructive-foreground: rgb(255, 255, 255);
-  --success: rgb(5, 150, 105);
-  --success-foreground: rgb(255, 255, 255);
-  --warning: rgb(217, 119, 6);
-  --warning-foreground: rgb(255, 255, 255);
-  --info: rgb(37, 99, 235);
-  --info-foreground: rgb(255, 255, 255);
-  --border: rgb(62, 62, 56);
-  --input: rgb(82, 81, 74);
-  --ring: rgb(217, 119, 87);
-  --chart-1: rgb(176, 87, 48);
-  --chart-2: rgb(156, 135, 245);
-  --chart-3: rgb(26, 25, 21);
-  --chart-4: rgb(47, 43, 72);
-  --chart-5: rgb(180, 85, 45);
-  --sidebar: rgb(31, 30, 29);
-  --sidebar-foreground: rgb(195, 192, 182);
-  --sidebar-primary: rgb(52, 52, 52);
-  --sidebar-primary-foreground: rgb(251, 251, 251);
-  --sidebar-accent: rgb(15, 15, 14);
-  --sidebar-accent-foreground: rgb(195, 192, 182);
-  --sidebar-border: rgb(235, 235, 235);
-  --sidebar-ring: rgb(181, 181, 181);
+  --brand-red: rgb(229, 51, 69);
+  --brand-blue: rgb(21, 185, 236);
+}
+
+.dark {
+  /*
+    Noir de la charte, remonté de quelques points.
+
+    Le noir pur en fond de page provoque de la halation sur les écrans OLED — le texte
+    clair bave sur le fond — et rend toute ombre invisible, donc toute élévation
+    indistincte. Il reste pur là où il tranche : le pied de page, ci-dessous.
+  */
+  --background: rgb(18, 18, 18);
+  --foreground: rgb(244, 244, 245);
+  --card: rgb(28, 28, 29);
+  --card-foreground: rgb(244, 244, 245);
+  --popover: rgb(31, 31, 32);
+  --popover-foreground: rgb(244, 244, 245);
+  /* Rouge de la charte éclairci : 6,4:1 sur le fond, contre 4,4:1 pour le rouge pur. */
+  --primary: rgb(255, 96, 112);
+  --primary-foreground: rgb(26, 5, 8);
+  --secondary: rgb(38, 38, 39);
+  --secondary-foreground: rgb(237, 237, 238);
+  --muted: rgb(30, 30, 31);
+  /* Gris de la charte éclairci : 7,4:1. Le gris pur n'y tiendrait que 3,7:1. */
+  --muted-foreground: rgb(163, 162, 163);
+  --accent: rgb(16, 51, 63);
+  --accent-foreground: rgb(127, 221, 247);
+  --border: rgb(46, 46, 47);
+  --input: rgb(74, 74, 75);
+  --ring: rgb(255, 96, 112);
+  /* Saumon plutôt que rouge : à distinguer du rose-rouge de `--primary`. */
+  --destructive: rgb(255, 138, 122);
+  --destructive-foreground: rgb(26, 5, 5);
+  --success: rgb(78, 203, 156);
+  --success-foreground: rgb(5, 26, 19);
+  --warning: rgb(240, 180, 41);
+  --warning-foreground: rgb(26, 18, 5);
+  /* Bleu de la charte, exact : 9,2:1 sur le fond sombre. C'est son emploi idéal. */
+  --info: rgb(21, 185, 236);
+  --info-foreground: rgb(5, 20, 26);
+  --chart-1: rgb(255, 96, 112);
+  --chart-2: rgb(21, 185, 236);
+  --chart-3: rgb(163, 162, 163);
+  --chart-4: rgb(242, 128, 140);
+  --chart-5: rgb(127, 221, 247);
+  --sidebar: rgb(28, 28, 29);
+  --sidebar-foreground: rgb(237, 237, 238);
+  --sidebar-primary: rgb(255, 96, 112);
+  --sidebar-primary-foreground: rgb(26, 5, 8);
+  --sidebar-accent: rgb(38, 38, 39);
+  --sidebar-accent-foreground: rgb(244, 244, 245);
+  --sidebar-border: rgb(46, 46, 47);
+  --sidebar-ring: rgb(255, 96, 112);
   /*
     Un cran plus sombre que la page, et non plus clair : le pied reste le socle sur
-    lequel le contenu repose. Le liseré `--footer-border` fait le reste du travail de
-    séparation, que l'écart de fond seul ne suffirait pas à porter en thème sombre.
+    lequel le contenu repose. C'est ici que le noir de la charte est repris pur. Le
+    liseré `--footer-border` fait le reste du travail de séparation, que l'écart de
+    fond seul ne suffirait pas à porter en thème sombre.
   */
-  --footer: rgb(23, 23, 21);
-  --footer-foreground: rgb(236, 234, 228);
-  --footer-muted: rgb(160, 156, 146);
-  --footer-border: rgb(56, 54, 50);
-  --font-sans: Outfit, sans-serif;
+  --footer: rgb(0, 0, 0);
+  --footer-foreground: rgb(237, 237, 238);
+  --footer-muted: rgb(158, 157, 158);
+  --footer-border: rgb(38, 38, 39);
+  --font-sans: 'Montserrat Variable', system-ui, sans-serif;
+  --font-display: 'Montserrat Variable', system-ui, sans-serif;
+  --font-script: Yellowtail, cursive;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: Geist Mono, ui-monospace, monospace;
   --radius: 1rem;
@@ -194,10 +252,19 @@
   --color-footer-foreground: var(--footer-foreground);
   --color-footer-muted: var(--footer-muted);
   --color-footer-border: var(--footer-border);
+  --color-brand-red: var(--brand-red);
+  --color-brand-blue: var(--brand-blue);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
+  /*
+    `--font-display` n'est volontairement pas exposé ici : l'utilitaire `font-display`
+    est écrit à la main plus bas, parce qu'il porte aussi la graisse et l'approche.
+    Le déclarer au thème ferait générer par Tailwind un `font-display` concurrent, qui
+    ne poserait que la famille.
+  */
+  --font-script: var(--font-script);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -221,24 +288,36 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /*
+    Titres du corps d'article, posés par le plugin `typography`.
+
+    Sans cette règle, les `h2` et `h3` écrits par la rédaction resteraient en graisse
+    semi-grasse pendant que ceux de la page seraient en Black : la même hiérarchie
+    rendue de deux façons selon qu'elle vient du gabarit ou du texte.
+  */
+  .prose :is(h1, h2, h3, h4) {
+    font-family: var(--font-display);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+  }
 }
 
-@utility font-outfit {
-  font-family: 'Outfit', sans-serif;
-}
+/*
+  Titres : Montserrat Black, tel que la charte le demande.
 
-@utility font-amount {
-  font-family: 'Outfit', sans-serif;
-  font-variant-numeric: tabular-nums;
-}
+  Écrit à la main plutôt que dérivé d'un `--font-display` au thème : l'utilitaire porte
+  la graisse et l'approche autant que la famille. Montserrat est chargée en fonte
+  variable, donc le 900 des titres et le 400 du corps sortent du même fichier.
 
-.font-outfit {
-  font-family: 'Outfit', sans-serif;
-}
-
-.font-amount {
-  font-family: 'Outfit', sans-serif;
-  font-variant-numeric: tabular-nums;
+  L'approche resserrée n'est pas une coquetterie : à 900, les contreformes de Montserrat
+  se referment et les lettres se touchent presque d'elles-mêmes ; sans ce -0,02em, un
+  titre en capitales paraît lâche.
+*/
+@utility font-display {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: -0.02em;
 }
 
 /* --------------------------------------------------------------------------
