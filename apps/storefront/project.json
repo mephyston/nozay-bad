@@ -8,6 +8,7 @@
   // dépendance, donc une modification de @nba/ui ou d'un domaine ne le redéployait pas.
   // Tenir à jour au même rythme que les imports de src/ — cf. scripts/check-nx-deps.js.
   "implicitDependencies": [
+    "@nba/cms-api",
     "@nba/events-api",
     "@nba/expenses-api",
     "@nba/html",
