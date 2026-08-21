@@ -1,9 +1,25 @@
 ---
-import type { EventsBlock } from '@nba/cms/public';
+import type { EventsBlock, EventAnnouncement } from '@nba/cms/public';
 import type { ClubEventView } from '../../lib/cms';
 
-interface Props { block: EventsBlock; events?: ClubEventView[]; nested?: boolean }
-const { block, events = [], nested = false } = Astro.props;
+interface Props {
+  block: EventsBlock;
+  events?: ClubEventView[];
+  /**
+   * Actualité qui annonce chaque rendez-vous, par identifiant d'événement.
+   *
+   * Rapprochée par la page, qui lit les deux listes : le bloc ne fait que rendre le
+   * lien quand il en existe un.
+   */
+  announcements?: Map<number, EventAnnouncement>;
+  nested?: boolean;
+}
+const {
+  block,
+  events = [],
+  announcements = new Map<number, EventAnnouncement>(),
+  nested = false
+} = Astro.props;
 
 /*
   Imbriqué dans une colonne, le bloc perd son enveloppe et son niveau de titre : la
@@ -95,6 +111,7 @@ const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' });
         // Un événement qui déborde sur un autre jour affiche ses deux dates ; sinon
         // seule l'heure de fin, qui suffit.
         const sameDay = end !== null && end.toDateString() === start.toDateString();
+        const announcement = announcements.get(event.id) ?? null;
         return (
           <li>
             <article class="border-border hover:border-primary/40 flex items-stretch gap-4 rounded-xl border p-3 transition-colors sm:gap-5 sm:p-4">
@@ -123,8 +140,15 @@ const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' });
               </div>
 
               <div class="min-w-0 flex-1">
+                {/*
+                  Le titre mène à l'actualité du club quand il y en a une, à la fiche
+                  externe sinon. Dans cet ordre : l'article est chez nous et dit ce que
+                  le club a à en dire ; la fiche FFBaD reste joignable juste en dessous.
+                */}
                 <CardHeading class="font-semibold leading-snug">
-                  {event.externalUrl ? (
+                  {announcement ? (
+                    <a href={announcement.href} class="hover:underline">{event.title}</a>
+                  ) : event.externalUrl ? (
                     <a
                       href={event.externalUrl}
                       target="_blank"
@@ -164,6 +188,30 @@ const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' });
                 >
                   {CATEGORIES[event.category] ?? event.category}
                 </span>
+
+                {/*
+                  Un titre souligné au survol ne se voit pas sur un écran tactile : sans
+                  cette ligne, rien n'annonce qu'un article raconte le rendez-vous.
+                */}
+                {announcement && (
+                  <a
+                    href={announcement.href}
+                    class="text-primary mt-2 flex min-h-11 items-center gap-1 text-sm font-medium hover:underline"
+                  >
+                    Lire l'actualité : {announcement.title} <span aria-hidden="true">→</span>
+                  </a>
+                )}
+
+                {announcement && event.externalUrl && (
+                  <a
+                    href={event.externalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-muted-foreground flex min-h-11 items-center gap-1 text-sm hover:underline"
+                  >
+                    Fiche de la compétition <span aria-hidden="true">↗</span>
+                  </a>
+                )}
               </div>
             </article>
           </li>

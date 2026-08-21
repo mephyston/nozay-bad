@@ -1,12 +1,20 @@
 ---
+import type { EventAnnouncement } from '@nba/cms/public';
 import type { AgendaEvent } from '../lib/agenda';
 
 interface Props {
   event: AgendaEvent;
+  /**
+   * Actualité qui annonce ce rendez-vous, si l'écran a su la retrouver.
+   *
+   * Passée plutôt que lue ici : la page rapproche l'agenda et les actualités **une
+   * fois**, pour toutes ses lignes.
+   */
+  announcement?: EventAnnouncement | null;
   /** Contenu ajouté sous l'événement — l'encart d'inscription, en pratique. */
 }
 
-const { event } = Astro.props;
+const { event, announcement = null } = Astro.props;
 
 /**
  * Un événement, tel qu'il se lit partout dans l'espace adhérent.
@@ -81,8 +89,15 @@ const sameDay = end !== null && end.toDateString() === start.toDateString();
   </div>
 
   <div class="min-w-0 flex-1">
+    {/*
+      Le titre mène à l'actualité du club quand il y en a une, à la fiche externe
+      sinon. Dans cet ordre : l'article est chez nous, il dit ce que le club a à en
+      dire, et la fiche FFBaD reste joignable juste en dessous.
+    */}
     <h3 class="text-base font-semibold leading-snug text-foreground">
-      {event.externalUrl ? (
+      {announcement ? (
+        <a href={announcement.href} class="hover:underline">{event.title}</a>
+      ) : event.externalUrl ? (
         <a href={event.externalUrl} target="_blank" rel="noopener noreferrer" class="hover:underline">
           {event.title}
         </a>
@@ -116,6 +131,31 @@ const sameDay = end !== null && end.toDateString() === start.toDateString();
     >
       {CATEGORY_LABELS[event.category] ?? event.category}
     </span>
+
+    {/*
+      Un titre souligné au survol ne se voit pas sur un écran tactile : sans cette
+      ligne, rien n'annonce qu'il y a un article derrière le rendez-vous. Elle porte
+      le titre de l'actualité, qui dit ce qu'on va lire.
+    */}
+    {announcement && (
+      <a
+        href={announcement.href}
+        class="mt-2 flex min-h-[44px] items-center gap-1 text-sm font-semibold text-primary hover:underline"
+      >
+        Lire l'actualité : {announcement.title} <span aria-hidden="true">&rarr;</span>
+      </a>
+    )}
+
+    {announcement && event.externalUrl && (
+      <a
+        href={event.externalUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex min-h-[44px] items-center gap-1 text-sm text-muted-foreground hover:underline"
+      >
+        Fiche de la compétition <span aria-hidden="true">&#8599;</span>
+      </a>
+    )}
 
     <slot />
   </div>

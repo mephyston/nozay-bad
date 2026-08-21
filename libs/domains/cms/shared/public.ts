@@ -43,6 +43,9 @@ export type {
 
 export { normalisePath, slugify, buildPath, ROOT_PATH } from './slug';
 
+export { announcementsByEvent } from './announcements';
+export type { EventAnnouncement } from './announcements';
+
 export {
   isSafeMediaKey,
   MEDIA_KEY_PREFIX,

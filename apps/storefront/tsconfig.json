@@ -14,6 +14,7 @@
       "@nba/accounting-api": ["../../libs/domains/accounting/index.ts"],
       "@nba/expenses-api": ["../../libs/domains/expenses/index.ts"],
       "@nba/shop-api": ["../../libs/domains/shop/index.ts"],
+      "@nba/cms/public": ["../../libs/domains/cms/shared/public.ts"],
       "@nba/iam": ["../../libs/domains/iam/index.ts"],
       "@nba/iam/schema": ["../../libs/domains/iam/shared/schema.ts"],
       "@nba/iam-ui": ["../../libs/domains/iam/shared/ui.ts"],

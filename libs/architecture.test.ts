@@ -316,3 +316,45 @@ describe("Identité affichée (admin)", () => {
     expect(offenders, `adresse en dur dans :\n${offenders.join('\n')}`).toEqual([]);
   });
 });
+
+/**
+ * Le lien de l'agenda vers l'actualité qui annonce un rendez-vous.
+ *
+ * Il ne tient qu'à une prop transmise de la page jusqu'à la ligne d'événement : un
+ * écran qui oublie de la passer n'affiche pas de lien, sans rien casser ni rien dire.
+ * Le rapprochement lui-même est couvert par `announcementsByEvent` ; ce test ne
+ * surveille que la plomberie, qui traverse quatre composants dans deux applications.
+ */
+describe("Lien agenda → actualité", () => {
+  const ROOT = path.resolve(__dirname, '..');
+
+  /** Usages d'un composant dans un dossier, avec la balise ouvrante complète. */
+  function usages(dir: string, component: string): { path: string; tag: string }[] {
+    const found: { path: string; tag: string }[] = [];
+    for (const file of walkDir(path.join(ROOT, dir))) {
+      if (!/\.astro$/.test(file) || file.includes('/dist/')) continue;
+      const content = fs.readFileSync(file, 'utf-8');
+      for (const match of content.matchAll(new RegExp(`<${component}\\b[^>]*>`, 'g'))) {
+        found.push({ path: path.relative(ROOT, file), tag: match[0] });
+      }
+    }
+    return found;
+  }
+
+  it("transmet l'annonce à chaque ligne d'événement de l'espace adhérent", () => {
+    const offenders = [
+      ...usages('apps/storefront/src', 'EventRow'),
+      ...usages('apps/storefront/src', 'AgendaCard')
+    ]
+      .filter(({ tag }) => !/announcement[=}]/.test(tag))
+      .map(({ path: file }) => file);
+    expect(offenders, `ligne d'agenda sans annonce dans :\n${offenders.join('\n')}`).toEqual([]);
+  });
+
+  it("transmet les annonces au bloc agenda du site public", () => {
+    const offenders = usages('apps/website/src', 'Events')
+      .filter(({ tag }) => !/announcements[=}]/.test(tag))
+      .map(({ path: file }) => file);
+    expect(offenders, `bloc agenda sans annonces dans :\n${offenders.join('\n')}`).toEqual([]);
+  });
+});

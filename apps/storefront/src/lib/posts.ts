@@ -45,6 +45,27 @@ export interface FetchedPosts {
 export const CATEGORY_PARAM = 'filtre';
 
 /**
+ * Adresse d'une actualité dans l'espace adhérent.
+ *
+ * Il n'y a pas de page par article ici : la liste les rend tous, et chaque carte porte
+ * son slug en ancre (`PostCard`). Viser cette ancre est donc la façon d'« ouvrir » une
+ * actualité — le navigateur y descend, et `scroll-mt` dégage l'en-tête collant.
+ */
+export function postAnchor(post: Pick<MemberPost, 'slug'>): string {
+  return `/actualites#${post.slug}`;
+}
+
+/**
+ * Combien d'actualités lire pour retrouver celle qui annonce un rendez-vous.
+ *
+ * Plus large que ce qu'un écran affiche : l'article qui annonce une compétition de
+ * mars peut dater de janvier. Au-delà de cette fenêtre le lien ne se fait pas, et
+ * c'est acceptable — c'est un raccourci vers l'article, jamais le seul chemin qui y
+ * mène.
+ */
+export const ANNOUNCEMENT_LOOKUP_LIMIT = 50;
+
+/**
  * Lit les actualités destinées aux adhérents, sans jamais faire échouer la page.
  *
  * L'espace adhérent voit **tout** — publiques et réservées —, là où le site public ne

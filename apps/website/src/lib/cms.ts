@@ -227,12 +227,29 @@ export interface PostRow {
    */
   coverVariants?: import('@nba/cms/public').CmsMediaVariantRow[];
   categories?: PostCategoryRow[];
+  /**
+   * Rendez-vous de l'agenda que l'actualité annonce, s'il y en a un.
+   *
+   * Un simple identifiant, rapproché au rendu par l'écran qui affiche les deux — c'est
+   * ce qui permet à l'agenda de renvoyer vers l'article, sans que le domaine `events`
+   * ait à connaître le CMS.
+   */
+  eventId?: number | null;
 }
 
 export interface PostList {
   posts: PostRow[];
   total: number;
 }
+
+/**
+ * Combien d'actualités lire pour retrouver celle qui annonce un rendez-vous.
+ *
+ * Plus large que ce qu'une page affiche : l'article qui annonce une compétition de mars
+ * peut dater de janvier. Au-delà de cette fenêtre le lien ne se fait pas — c'est un
+ * raccourci vers l'article, jamais le seul chemin qui y mène.
+ */
+export const ANNOUNCEMENT_LOOKUP_LIMIT = 50;
 
 export async function listPublishedPosts(
   env: WebsiteEnv,

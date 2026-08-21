@@ -8,6 +8,8 @@ import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 import { getActiveMemberStatus } from '../lib/member-status';
 import { fetchUpcomingEvents } from '../lib/agenda';
+import { fetchPosts, ANNOUNCEMENT_LOOKUP_LIMIT, postAnchor } from '../lib/posts';
+import { announcementsByEvent } from '@nba/cms/public';
 import { fetchMyFixtures, normalizeLicence } from '../lib/my-fixtures';
 import { toFixtureEntries } from '../lib/fixture-events';
 
@@ -102,10 +104,21 @@ const active = session?.members.find((m) => m.id === session.activeMemberId);
  * catégorie « interclubs » : c'est le même rendez-vous, il n'a pas à s'afficher deux
  * fois de deux façons.
  */
-const [events, myFixtures] = await Promise.all([
+const [events, myFixtures, { posts }] = await Promise.all([
   fetchUpcomingEvents(env, 50, session?.activeMemberId),
-  fetchMyFixtures(env, status.seasonCode ?? null, normalizeLicence(active?.licence))
+  fetchMyFixtures(env, status.seasonCode ?? null, normalizeLicence(active?.licence)),
+  fetchPosts(env, ANNOUNCEMENT_LOOKUP_LIMIT)
 ]);
+
+/*
+ * Le chemin inverse de celui des cartes d'actualité.
+ *
+ * Une actualité qui annonce un rendez-vous porte déjà son encart d'inscription ; il
+ * manquait le retour — depuis l'agenda, rien ne disait qu'un article racontait le
+ * rendez-vous. L'espace adhérent n'ayant pas de page par article, le lien vise l'ancre
+ * de la carte dans la liste des actualités.
+ */
+const announcements = announcementsByEvent(posts, (post) => postAnchor(post));
 
 const fixtures = toFixtureEntries(myFixtures);
 // Fusionnés puis retriés : un agenda qui rangerait les rencontres à part obligerait à
@@ -142,7 +155,7 @@ const openCount = events.filter((event) => event.registration === 'open').length
               id={event.slug}
               class="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5"
             >
-              <EventRow event={event}>
+              <EventRow event={event} announcement={announcements.get(event.id) ?? null}>
                 {event.registration !== 'none' && (
                   <div class="mt-3">
                     <EventSignup

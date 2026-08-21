@@ -9,7 +9,8 @@ import NextFixtureCard from '../components/NextFixtureCard.astro';
 import BirthdayCard from '../components/BirthdayCard.astro';
 import { env } from 'cloudflare:workers';
 import { getActiveMemberStatus } from '../lib/member-status';
-import { fetchPosts } from '../lib/posts';
+import { fetchPosts, ANNOUNCEMENT_LOOKUP_LIMIT, postAnchor } from '../lib/posts';
+import { announcementsByEvent } from '@nba/cms/public';
 import { fetchUpcomingEvents } from '../lib/agenda';
 import { fetchTodayBirthdays } from '../lib/birthdays';
 import { fetchMyFixtures, normalizeLicence } from '../lib/my-fixtures';
@@ -34,12 +35,23 @@ const status = await getActiveMemberStatus(env, session);
 // la prochaine — l'agenda porte les suivantes.
 const licence = normalizeLicence(active?.licence);
 
-const [{ posts }, events, birthdays, fixtures] = await Promise.all([
-  fetchPosts(env, 3),
+const [{ posts: latestPosts }, events, birthdays, fixtures] = await Promise.all([
+  fetchPosts(env, ANNOUNCEMENT_LOOKUP_LIMIT),
   fetchUpcomingEvents(env, 1, session?.activeMemberId),
   fetchTodayBirthdays(env),
   fetchMyFixtures(env, status.seasonCode ?? null, licence, 1)
 ]);
+
+/*
+ * Trois actualités à l'écran, une fenêtre plus large en mémoire.
+ *
+ * L'accueil n'en montre que trois, mais l'encart du prochain rendez-vous doit pouvoir
+ * pointer vers l'article qui l'annonce — écrit, lui, il y a peut-être deux mois. La
+ * lecture est déjà faite, l'élargir ne coûte pas d'aller-retour de plus ; c'est la
+ * même liste qui sert aux deux.
+ */
+const posts = latestPosts.slice(0, 3);
+const announcements = announcementsByEvent(latestPosts, (post) => postAnchor(post));
 ---
 
 <Layout title="Espace adhérent - Nozay Bad">
@@ -74,7 +86,10 @@ const [{ posts }, events, birthdays, fixtures] = await Promise.all([
       </div>
 
       <div class="mb-6 empty:mb-0">
-        <AgendaCard event={events[0] ?? null} />
+        <AgendaCard
+          event={events[0] ?? null}
+          announcement={events[0] ? announcements.get(events[0].id) ?? null : null}
+        />
       </div>
 
       {posts.length > 0 && (

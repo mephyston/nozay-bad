@@ -1,5 +1,10 @@
 ---
-import { normalisePath, flattenBlocks, type BlockPayload } from '@nba/cms/public';
+import {
+  normalisePath,
+  flattenBlocks,
+  announcementsByEvent,
+  type BlockPayload
+} from '@nba/cms/public';
 import { verifyPreviewToken } from '@nba/preview';
 import { obfuscateEmails } from '@nba/html';
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -12,6 +17,7 @@ import {
   listScheduleSlots,
   listPublishedPosts,
   listClubEvents,
+  ANNOUNCEMENT_LOOKUP_LIMIT,
   getSiteSettings,
   type PostRow
 } from '../lib/cms';
@@ -94,6 +100,22 @@ const slots = needsSchedule ? await listScheduleSlots(env) : [];
 // d'allers-retours qu'elle n'en économiserait.
 const needsEvents = allBlocks.some((block) => block.type === 'events');
 const clubEvents = needsEvents ? await listClubEvents(env) : [];
+
+/*
+ * Le chemin de l'agenda vers l'actualité qui annonce un rendez-vous.
+ *
+ * Le rattachement est porté par l'article (`eventId`) : il se lit donc à l'envers, en
+ * rapprochant les deux listes au rendu. Une seule lecture, et seulement pour une page
+ * qui affiche l'agenda — les actualités des blocs « fil » sont filtrées par rubrique et
+ * ne couvriraient pas forcément l'article cherché.
+ *
+ * Seules les actualités *publiques* remontent ici : une annonce réservée aux adhérents
+ * ne doit pas se laisser deviner depuis le site public par le lien qui y mène.
+ */
+const announcementPosts = needsEvents
+  ? (await listPublishedPosts(env, { limit: ANNOUNCEMENT_LOOKUP_LIMIT })).posts
+  : [];
+const announcements = announcementsByEvent(announcementPosts, (post) => post.path);
 
 // Idem pour les actualités : une page qui n'en affiche pas ne paie pas la requête.
 //
@@ -314,6 +336,7 @@ if (page) {
         media={media}
         slots={slots}
         events={clubEvents}
+        announcements={announcements}
         posts={postsFor(block)}
         postsByCategory={feedPosts}
         opensPage={index === 0}

@@ -1,4 +1,5 @@
 ---
+import type { EventAnnouncement } from '@nba/cms/public';
 import type { AgendaEvent } from '../lib/agenda';
 import EventRow from './EventRow.astro';
 import { EventSignup } from '@nba/events-ui';
@@ -6,9 +7,11 @@ import { EventSignup } from '@nba/events-ui';
 interface Props {
   /** Le prochain rendez-vous. `null` quand l'agenda est vide : l'encart disparaît. */
   event: AgendaEvent | null;
+  /** Actualité qui l'annonce, si la page a su la retrouver. */
+  announcement?: EventAnnouncement | null;
 }
 
-const { event } = Astro.props;
+const { event, announcement = null } = Astro.props;
 
 /**
  * Le prochain rendez-vous du club, sur l'accueil de l'espace adhérent.
@@ -31,7 +34,7 @@ const { event } = Astro.props;
     </header>
 
     <div class="px-4 py-3 sm:px-5">
-      <EventRow event={event}>
+      <EventRow event={event} {announcement}>
         {event.registration !== 'none' && (
           <div class="mt-3">
             <EventSignup
