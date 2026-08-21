@@ -47,9 +47,11 @@ const CATEGORIES: Record<string, string> = {
  *
  * Même raisonnement que la grille des créneaux : six aplats distincts ne tiennent pas
  * le contraste entre eux, en vision normale comme en protanopie. La teinte ne porte
- * donc que la **nature** du rendez-vous — on joue, on apprend, on se retrouve — et la
- * catégorie exacte reste écrite en toutes lettres sur chaque carte. Personne n'a
- * besoin de la couleur pour lire l'agenda.
+ * donc que la **nature** du rendez-vous — on joue, on apprend, on se retrouve.
+ *
+ * Depuis que la catégorie a quitté l'écran, cette teinte n'y code plus rien qu'il
+ * faille lire : c'est un repère, pas une information, et rien ne se perd à ne pas la
+ * distinguer. La catégorie exacte, elle, reste annoncée en `sr-only` sur chaque carte.
  */
 const FAMILY: Record<string, 'jeu' | 'formation' | 'club'> = {
   competition: 'jeu',
@@ -200,36 +202,43 @@ const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' });
                 </p>
 
                 {/*
-                  Étiquette de catégorie, masquée en petite largeur.
+                  Catégorie : retirée de l'écran, conservée pour le lecteur d'écran.
 
-                  Elle y était redondante : la pastille de date porte déjà la couleur de
-                  la famille, à deux centimètres de là. Ce que le libellé ajoutait — le
-                  nom exact de la catégorie — ne valait pas les vingt-quatre pixels de
-                  hauteur qu'il coûtait sur chaque carte d'un agenda qui en aligne cinq.
+                  À l'œil elle était redondante — la pastille de date porte déjà la
+                  couleur de la famille, à deux centimètres de là — et son étiquette
+                  coûtait vingt-quatre pixels de hauteur sur chaque carte d'un agenda
+                  qui en aligne cinq.
+
+                  `sr-only` plutôt qu'une suppression : la pastille de date est
+                  `aria-hidden`, ce libellé est donc le **seul** endroit où la catégorie
+                  soit annoncée. La retirer tout à fait la réserverait à qui distingue
+                  les couleurs, et ferait de la teinte le seul porteur d'une information
+                  — ce que la règle 1.4.1 interdit précisément.
                 */}
-                <span
-                  class:list={[
-                    'mt-2 hidden rounded-full px-2 py-0.5 text-xs font-medium sm:inline-block',
-                    FAMILY_CLASS[FAMILY[event.category] ?? 'club']
-                  ]}
-                >
-                  {CATEGORIES[event.category] ?? event.category}
-                </span>
+                <span class="sr-only">{CATEGORIES[event.category] ?? event.category}</span>
 
                 {/*
                   Un titre souligné au survol ne se voit pas sur un écran tactile : sans
                   cette ligne, rien n'annonce qu'un article raconte le rendez-vous.
                 */}
                 {/*
-                  Le libellé complet reste sur grand écran, où la place ne manque pas et
-                  où le titre de l'article annonce ce qu'on va lire avant le clic.
+                  Renvoi vers l'actualité, sur grand écran seulement — en petite largeur
+                  c'est la carte entière qui se clique, et le chevron plus bas le dit.
+
+                  Le titre de l'article est passé en complément masqué. À l'écran il
+                  faisait doublon avec celui du rendez-vous, souvent au mot près, et
+                  allongeait la carte d'une ligne pour le répéter. Mais un lecteur
+                  d'écran qui égrène les liens d'une page n'annoncerait sinon que trois
+                  « En savoir plus » indiscernables : c'est ce que la règle 2.4.4
+                  demande d'éviter, et le complément suffit à les distinguer.
                 */}
                 {announcement && (
                   <a
                     href={announcement.href}
                     class="text-primary mt-2 hidden min-h-11 items-center gap-1 text-sm font-medium hover:underline sm:flex"
                   >
-                    Lire l'actualité : {announcement.title} <span aria-hidden="true">→</span>
+                    En savoir plus<span class="sr-only"> : {announcement.title}</span>
+                    <span aria-hidden="true">→</span>
                   </a>
                 )}
 
