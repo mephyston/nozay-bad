@@ -19,11 +19,11 @@ Un compte n'a accès qu'à ce qu'on lui a explicitement accordé. Créer un comp
 Un rôle correspond à une fonction réelle dans l'association. Vous pouvez en attribuer plusieurs à la même personne — une secrétaire qui assure aussi la trésorerie reçoit les deux rôles.
 
 - **Accès minimal** — Tableau de bord et centre d'aide uniquement, aucun droit métier. C'est ce qu'on attribue à un compte créé sans rôle : il peut se connecter, rien de plus.
-- **Communication** — Les annonces du club, les notifications aux adhérents et **le site public dans son ensemble** : pages, actualités, médiathèque, créneaux, agenda et menus. Ni finances, ni fichier des adhérents : c'est le rôle à donner au bénévole qui anime la communication, sans lui ouvrir le secrétariat.
-- **Entraîneur·e** — Le catalogue de la boutique et les commandes passées pour les adhérents, dont il consulte le fichier. Il tient également **les créneaux** à jour : ce sont les encadrants qui vivent les horaires au quotidien. Il ne valide pas les commandes : l'encaissement relève de la trésorerie.
-- **Secrétaire** — Le fichier des adhérents (consultation, modification, import Poona), les attestations CSE, la communication (annonces et notifications), le catalogue de la boutique, et la **rédaction** sur le site public (pages, actualités, médiathèque, agenda) sans la main sur l'arborescence ni les suppressions. Consultation seule côté finances.
-- **Trésorier·ère** — La comptabilité complète : grand livre, factures, rapprochement bancaire, chèques, exercices, budget et rapports. Les notes de frais, de la saisie au remboursement. L'encaissement des commandes. Consultation seule des pages, actualités, créneaux et agenda du site public.
-- **Président·e** — La consultation de l'ensemble du club, les actes de gouvernance (ouverture et clôture d'exercice, vote du budget), la validation des notes de frais et des commandes, la communication, le site public dans son ensemble, et la gestion des accès.
+- **Communication** — Les notifications aux adhérents et **le site public dans son ensemble** : pages, actualités, médiathèque, créneaux, agenda, menus et **redirections**. Ni finances, ni fichier des adhérents : c'est le rôle à donner au bénévole qui anime la communication, sans lui ouvrir le secrétariat.
+- **Entraîneur·e** — **Les interclubs dans leur totalité** : engager les équipes, désigner les capitaines, importer les classements et contrôler les compositions avant chaque journée. C'est le seul rôle à porter l'écriture sur les interclubs. Également le catalogue de la boutique et les commandes passées pour les adhérents, dont il consulte le fichier, et **les créneaux** qu'il tient à jour — ce sont les encadrants qui vivent les horaires au quotidien. Il ne valide pas les commandes : l'encaissement relève de la trésorerie.
+- **Secrétaire** — Le fichier des adhérents (consultation, modification, import Poona, **fonctions au club**), les attestations CSE, la communication (actualités et notifications), le catalogue de la boutique, et la **rédaction** sur le site public (pages, actualités, médiathèque, agenda, menus) sans la main sur les redirections ni les suppressions. Consultation seule côté finances et interclubs.
+- **Trésorier·ère** — La comptabilité complète : grand livre, factures, rapprochement bancaire, chèques, exercices, budget et rapports. Les notes de frais, de la saisie au remboursement. L'encaissement des commandes. Consultation seule des pages, actualités, créneaux et agenda du site public, et du fichier des adhérents.
+- **Président·e** — La consultation de l'ensemble du club, les actes de gouvernance (ouverture et clôture d'exercice, vote du budget, **désignation du bureau**), la validation des notes de frais et des commandes, la communication, le site public dans son ensemble, et la gestion des accès.
 - **Super administrateur** — Tous les droits, y compris la configuration technique.
 
 > [!NOTE]
@@ -36,9 +36,14 @@ Depuis **Réglages → Accès & Rôles**, ajoutez la personne avec l'adresse e-m
 > [!CAUTION]
 > Ne donnez le rôle **Super administrateur** qu'aux personnes qui en ont réellement besoin. Il ouvre la configuration technique et permet de consulter l'application sous l'identité d'un autre compte.
 
+> [!NOTE]
+> Un rôle ne se confond pas avec une **fonction au club**. Le rôle dit ce qu'une personne peut faire dans l'application ; la fonction dit quel mandat elle exerce dans l'association. Un président sans compte d'administration est un cas normal, et attribuer le rôle « Président·e » ne l'inscrit pas au bureau. Voir [Dirigeants](/admin/help/dirigeants).
+
 ## Ajuster ce qu'un rôle permet
 
 Depuis le panneau **Que permet chaque rôle ?**, un super administrateur peut cocher ou décocher les droits d'un rôle. La modification s'applique immédiatement à tous les comptes qui le portent — comptez quelques secondes de propagation.
+
+L'édition se fait **rôle par rôle, dans une liste** : on choisit le rôle, puis on déplie les rubriques de droits qui l'intéressent. La **matrice** — tous les droits en lignes, tous les rôles en colonnes — reste affichée sur grand écran pour la lecture d'ensemble et la recherche du navigateur, mais on n'y coche rien : on n'édite jamais qu'un rôle à la fois, et la comparaison entre colonnes ne sert pas pendant la saisie.
 
 Trois points à connaître :
 
@@ -121,7 +126,7 @@ Le statut se change **depuis la liste**, par le menu **⋯**.
 | **Annulé** | Retiré de l'agenda |
 
 > [!IMPORTANT]
-> **Annuler retire l'événement du site**, il ne l'y laisse pas barré. Si l'annulation doit être portée à la connaissance de ceux qui comptaient s'y rendre, publiez une [annonce](/admin/help/annonces) ou une [actualité](/admin/help/site-actualites) : l'agenda, lui, ne montre que ce qui aura bien lieu.
+> **Annuler retire l'événement du site**, il ne l'y laisse pas barré. Si l'annulation doit être portée à la connaissance de ceux qui comptaient s'y rendre, publiez une [actualité](/admin/help/site-actualites) — réservée aux adhérents si elle ne concerne qu'eux : l'agenda, lui, ne montre que ce qui aura bien lieu.
 
 Le statut **Annulé** garde une trace côté administration : l'événement reste dans la liste, marqué en rouge, plutôt que d'être effacé. C'est ce qui le distingue de la **suppression**, définitive, réservée à un événement saisi par erreur.
 
@@ -151,81 +156,6 @@ Deux rubriques voisines, à ne pas confondre :
 | Supprimer | Supprimer un événement |
 
 Les rôles **Communication**, **Président·e** et **Super administrateur** disposent de l'ensemble. Le rôle **Secrétaire** peut créer, modifier et voir les inscrits, mais pas supprimer. Les droits se règlent depuis [Accès & Rôles](/admin/help/acces-permissions).
-
-
---- Article: annonces.md ---
----
-title: "Annonces"
-description: "Publier les informations du club sur l'accueil de l'espace adhérent."
-category: "communication"
-order: 1
----
-
-**Communication → Annonces** sert à publier les informations du club : tournois, assemblée générale, fermeture des créneaux, changement d'horaire.
-
-À ne pas confondre avec les [actualités du site](/admin/help/site-actualites), qui sont publiques et lisibles par n'importe qui : une annonce s'adresse aux **adhérents connectés**, et peut faire sonner leur téléphone.
-
-Une annonce publiée apparaît **sur l'accueil de l'espace adhérent** (les 3 plus récentes) et **sur la page « Annonces du club »**, qui en conserve l'historique complet. Contrairement à une notification, elle reste consultable indéfiniment : un adhérent qui n'a pas activé les notifications, ou qui a balayé la notification sur son téléphone, retrouve l'information.
-
-## Rédiger une annonce
-
-| Champ | Détail |
-|---|---|
-| **Titre** | Ce que l'adhérent lit en premier. 200 caractères au maximum |
-| **Texte** | Le corps de l'annonce, avec sa mise en forme |
-| **Statut** | **Brouillon** (invisible des adhérents) ou **Publiée** (visible) |
-
-La barre d'outils au-dessus du texte permet de mettre en **gras**, en *italique*, de souligner, d'insérer un lien et de créer des listes à puces ou numérotées. C'est volontairement limité : une annonce doit rester lisible sur un téléphone.
-
-> [!TIP]
-> Vous pouvez coller du texte depuis un traitement de texte ou un e-mail : seul le texte est repris, sans les polices ni les couleurs d'origine. Vous remettez ensuite la mise en forme voulue avec la barre d'outils.
-
-Pour un lien, sélectionnez d'abord le texte à transformer en lien, puis cliquez sur l'icône de chaîne. Les adresses acceptées commencent par \`https://\`, \`http://\`, \`mailto:\` ou \`/\` (une page de l'espace adhérent, par exemple \`/boutique\`).
-
-## Brouillon ou publiée
-
-Une annonce est créée **en brouillon** par défaut : vous pouvez la préparer, la relire, la faire valider, et ne la publier qu'au bon moment. Tant qu'elle est en brouillon, aucun adhérent ne la voit.
-
-Passez le statut à **Publiée** pour la rendre visible. La date de publication est alors enregistrée — c'est elle qui détermine l'ordre d'affichage.
-
-Depuis la liste, le menu **⋯** permet de basculer une annonce d'un statut à l'autre sans rouvrir le formulaire : **Publier** pour un brouillon, **Repasser en brouillon** pour une annonce publiée. C'est le geste à retenir en cas d'urgence — un tournoi annulé, une date erronée : deux clics et l'annonce disparaît de l'espace adhérent.
-
-> [!NOTE]
-> Repasser une annonce en brouillon puis la republier **ne change pas** sa date de publication d'origine. Corriger une faute de frappe dans une vieille annonce ne la fait donc pas remonter en tête de l'accueil.
-
-## Prévenir les adhérents
-
-Publier une annonce ne prévient personne : elle attend d'être lue. Pour faire sonner les téléphones, cochez **« Prévenir les adhérents »** au moment de la publication. Une notification part alors vers tous les adhérents qui ont activé les notifications, et les renvoie vers la page des annonces.
-
-La notification reprend le **titre de l'annonce** et le **début de son texte** (environ 300 caractères, sans la mise en forme). Un aperçu de ce que recevront les adhérents s'affiche sous la case une fois celle-ci cochée.
-
-La case n'est activable que lorsque le statut est **Publiée** : tant que l'annonce est un brouillon, elle reste visible mais grisée.
-
-Vous pouvez aussi diffuser après coup : dans la liste, ouvrez le menu **⋯** d'une annonce publiée et choisissez **Prévenir les adhérents**.
-
-> [!IMPORTANT]
-> Une annonce n'est diffusée **qu'une seule fois**. Une fois l'envoi effectué, l'option disparaît, et modifier l'annonce ne déclenche aucun nouvel envoi. C'est ce qui évite de notifier tout le club à chaque correction.
-
-La colonne **Diffusion** de la liste indique la date d'envoi, ou un tiret si l'annonce n'a jamais été diffusée.
-
-## Qui peut faire quoi
-
-| Action | Droit requis |
-|---|---|
-| Consulter les annonces | Consulter les annonces |
-| Créer, modifier, publier | Rédiger et publier une annonce |
-| Supprimer | Supprimer une annonce |
-| Prévenir les adhérents | **Envoyer une notification au club** |
-
-La diffusion relève du même droit que l'envoi depuis l'écran [Notifications](/admin/help/notifications) : une annonce diffusée atteint tous les téléphones du club, ce qui n'est pas du même ordre que la rédaction. Un compte qui peut rédiger sans pouvoir diffuser ne voit simplement pas la case à cocher.
-
-Le rôle **Communication** réunit exactement ces droits — annonces et notifications, sans accès aux finances ni au fichier des adhérents. C'est celui à attribuer au bénévole qui anime la communication du club.
-
-Les droits se règlent depuis [Accès & Rôles](/admin/help/acces-permissions), rubrique **Annonces**.
-
-## Supprimer une annonce
-
-La suppression est **définitive** : l'annonce disparaît de l'accueil et de l'historique. Si vous souhaitez seulement la retirer de la vue des adhérents en la conservant, repassez-la en **brouillon**.
 
 
 --- Article: assistant-ia.md ---
@@ -274,7 +204,7 @@ Lors de l'enregistrement d'un chèque, la photo peut être analysée pour pré-r
 title: "Attestation CSE"
 description: "Générer l'attestation de paiement d'un adhérent et personnaliser le modèle."
 category: "adherents"
-order: 4
+order: 5
 ---
 
 L'**attestation CSE** est le document que l'adhérent transmet à son comité d'entreprise pour se faire rembourser sa cotisation. C'est le seul document généré par l'application à destination des adhérents.
@@ -636,12 +566,72 @@ Une page peut n'afficher qu'une partie des créneaux — ceux des jeunes sur la 
 Le rôle **Entraîneur·e** porte le droit d'écriture : ce sont les encadrants qui vivent les créneaux au quotidien, et qui savent le premier soir qu'un horaire a changé. Les rôles **Communication**, **Président·e** et **Super administrateur** l'ont également. Les droits se règlent depuis [Accès & Rôles](/admin/help/acces-permissions).
 
 
+--- Article: dirigeants.md ---
+---
+title: "Dirigeants"
+description: "Enregistrer les fonctions au club de la saison : bureau, comité d'administration et entraîneurs."
+category: "adherents"
+order: 3
+---
+
+**Adhérents → Dirigeants** enregistre qui fait tourner le club cette saison. C'est la traduction dans l'application des décisions prises en assemblée générale.
+
+Ces fonctions ne viennent pas de Poona : la fédération connaît des licenciés, pas un bureau. Elles se saisissent donc à la main, et elles sont **rattachées à une saison** — une nouvelle assemblée générale, une nouvelle saisie.
+
+## Les fonctions
+
+| Fonction | Titulaires |
+|---|---|
+| **Président** | Un seul par saison |
+| **Secrétaire** | Un seul par saison |
+| **Trésorier** | Un seul par saison |
+| **Trésorier adjoint** | Un seul par saison |
+| **Vice-président** | Plusieurs possibles |
+| **Membre du comité d'administration** | Plusieurs possibles |
+| **Entraîneur** | Plusieurs possibles |
+
+Les quatre premières n'ont qu'un titulaire par saison : ce sont les statuts du club. Si vous attribuez la présidence à quelqu'un alors qu'elle est déjà tenue, l'enregistrement est refusé et le refus **nomme le titulaire actuel** — c'est lui qu'il faut d'abord relever de sa fonction.
+
+> [!IMPORTANT]
+> **Pas de cumul** : un adhérent ne porte **qu'une** fonction par saison. Le président ne peut pas être aussi trésorier. Cocher une autre fonction remplace la précédente ; recocher la même la retire.
+
+## À quoi ça sert
+
+Le club a besoin de joindre « le bureau ». Les rappels de gestion — l'import des classements avant une journée d'interclubs régionale, par exemple — sont adressés aux dirigeants de la saison. Sans fonction saisie, ces rappels ne partent à personne.
+
+> [!CAUTION]
+> **Une fonction au club n'est pas un droit d'accès.** Elle dit qui gère le club, pas qui peut ouvrir l'administration. Nommer quelqu'un président ici ne lui donne aucun accès supplémentaire ; inversement, un président sans compte d'administration est un cas parfaitement normal. Les accès se règlent depuis [Accès & Rôles](/admin/help/acces-permissions).
+
+C'est la même logique que la capitainerie côté interclubs : désigner un capitaine dit qui compose l'équipe, pas qui administre le club.
+
+## L'écran
+
+Le tableau liste les fonctions de la saison choisie, et **signale les titulaires manquants**. Tant que le président ou le trésorier n'est pas renseigné, un point d'alerte s'affiche à côté de **Dirigeants** dans le menu de gauche : ce sont les deux fonctions sans lesquelles le club ne tourne pas.
+
+Le sélecteur de saison en haut de l'écran permet de consulter les bureaux précédents. La saison proposée par défaut est celle en cours **par ses dates**, indépendamment de l'exercice comptable ouvert.
+
+Un dirigeant dont le dossier a disparu d'un ré-import Poona reste affiché, marqué **sans dossier**. Sa fonction n'est pas retirée automatiquement : le faire serait un effet de bord d'import, pas une décision. À vous de trancher.
+
+## Depuis la fiche adhérent
+
+La [fiche d'un adhérent](/admin/help/fiche-adherent) porte le même bloc **Fonction au club** : c'est le même enregistrement, à l'échelle d'une personne. Utilisez la page Dirigeants pour composer le bureau après une assemblée générale, la fiche pour corriger un cas isolé.
+
+## Qui peut le faire
+
+| Action | Droit requis |
+|---|---|
+| Consulter les dirigeants | Consulter les adhérents |
+| Attribuer, changer, retirer une fonction | Modifier une fiche adhérent |
+
+Le droit d'écriture est celui du fichier des adhérents : les rôles **Secrétaire**, **Président·e** et **Super administrateur** en disposent. Les rôles **Entraîneur·e** et **Trésorier·ère** consultent la page sans pouvoir la modifier.
+
+
 --- Article: espace-adherent.md ---
 ---
 title: "L'espace adhérent"
 description: "Ce que les adhérents voient et peuvent faire de leur côté, et ce que cela déclenche pour le bureau."
 category: "adherents"
-order: 5
+order: 6
 ---
 
 L'application comporte un second site, destiné aux adhérents. Le bureau n'y intervient pas, mais plusieurs tâches administratives y prennent leur source : les notes de frais et les commandes boutique y sont déposées, les notifications y sont reçues.
@@ -654,6 +644,30 @@ C'est le **foyer** qui se connecte, pas l'individu : une adresse rattachée à p
 
 > [!NOTE]
 > Un adhérent qui ne reçoit pas son code a le plus souvent une adresse absente ou erronée dans Poona. Vérifiez sa fiche : l'e-mail de l'adhérent et ceux des deux contacts y sont affichés.
+
+Le code est valable **10 minutes** et accepte **5 tentatives**. Une fois entré, la connexion vaut **30 jours** sur l'appareil.
+
+## « Je n'arrive plus à me connecter »
+
+C'est le motif d'appel le plus fréquent, et il a presque toujours la même cause : **l'accès suit la licence de la saison en cours**, au sens des dates de la saison — pas de l'exercice comptable ouvert dans l'administration.
+
+Concrètement, au 1ᵉʳ septembre, un adhérent qui n'a pas renouvelé perd l'accès. Y compris s'il était connecté la veille : sa session est revalidée et **révoquée** dès que sa saison est close. À l'inverse, celui dont la licence a été enregistrée ne voit rien passer — sa session est renouvelée silencieusement.
+
+Quatre situations, et le message reçu par e-mail :
+
+| Situation | Ce qu'il reçoit |
+|---|---|
+| **Licence en cours** | Son code de connexion |
+| **Licence prise pour la saison suivante seulement** | Un e-mail lui indiquant **la date d'ouverture** de son accès. D'ici là, l'application n'aurait aucune de ses données à lui montrer |
+| **Licencié l'an dernier, pas cette année** | Une invitation à réadhérer |
+| **Inconnu au fichier depuis plus d'une saison** | Rien |
+
+> [!IMPORTANT]
+> Dans les trois derniers cas, l'écran affiche **exactement la même chose** que pour une connexion réussie : « un code vous a été envoyé ». C'est volontaire — répondre « adresse inconnue » permettrait à n'importe qui de tester des adresses pour savoir qui est au club. Ce qu'il y a à dire part par e-mail, le seul canal dont l'adhérent a prouvé la propriété.
+>
+> Conséquence pratique : un adhérent qui vous dit « je ne reçois rien » n'a pas forcément un problème d'adresse. **Vérifiez d'abord sa licence pour la saison en cours** dans [la liste des adhérents](/admin/help/gestion-adherents).
+
+Si l'API est injoignable, personne n'est déconnecté : la licence est revérifiée à la requête suivante.
 
 ## Ce qu'il peut faire
 
@@ -669,7 +683,7 @@ Le site comporte également les pages *Politique de confidentialité* et *Mentio
 
 - La **validation ou le refus** de sa note de frais ;
 - La **validation ou le refus** de sa commande boutique ;
-- Les annonces envoyées par le bureau et, si elles sont activées, les relances de cotisation et de commande à régler, ainsi que les anniversaires.
+- Les actualités réservées aux adhérents que le bureau diffuse et, si elles sont activées, les relances de cotisation et de commande à régler, les échéances d'interclubs, ainsi que les anniversaires.
 
 Ces messages ne partent que vers les appareils réellement abonnés aux notifications.
 
@@ -955,7 +969,7 @@ Lorsque la saison consultée est clôturée, un bandeau **« Saison clôturée (
 title: "Import Poona"
 description: "Charger l'extraction CSV de Poona pour créer ou mettre à jour les dossiers d'adhérents."
 category: "adherents"
-order: 3
+order: 4
 ---
 
 Les adhérents entrent dans l'application par un **fichier CSV extrait de Poona**. C'est le seul moyen de créer un dossier.
@@ -1130,8 +1144,24 @@ votre équipe doit rester inférieure ou égale. »* Le capitaine voit sa contra
 d'enregistrer. Si l'équipe du dessus n'a pas encore composé, l'écran le dit plutôt que
 d'afficher une contrainte fausse.
 
-Les sélecteurs ne proposent que des joueurs de genre compatible avec la ligne, l'effectif
-en tête, et grisent ceux qui sont indisponibles en indiquant pourquoi.
+Les sélecteurs ne proposent que **l'effectif déclaré de l'équipe**, restreint aux joueurs de
+genre compatible avec la ligne, et grisent ceux qui sont indisponibles en indiquant pourquoi.
+
+Aligner quelqu'un qui n'est pas à l'effectif suppose de **l'y ajouter d'abord** depuis
+l'administration : c'est un geste du coach, et il laisse une trace. Auparavant la liste
+partait de l'annuaire de la saison entière — près de trois cents personnes.
+
+> [!IMPORTANT]
+> L'éligibilité est jugée **discipline par discipline**. En régional, les divisions PN à R2
+> exigent un classement minimum *dans la discipline jouée* : un joueur classé en simple mais
+> pas en double est proposé en simple et grisé en double. Une ligne grisée ne veut donc pas
+> dire que le joueur est indisponible pour toute la rencontre.
+
+Si les classements de la journée ne sont pas disponibles — la mise à jour fédérale n'a pas
+encore été importée — l'écran l'annonce **en tête du composeur** plutôt que de griser
+silencieusement toutes les lignes. Aucun classement de remplacement n'est deviné : il
+produirait des valeurs d'équipe apparemment normales sur une base que le règlement rejette.
+Voir [Classements](/admin/help/interclubs-classements).
 
 ## Ce qui bloque, et ce qui avertit
 
@@ -1196,11 +1226,35 @@ de hiérarchie n'en découle.
 Une valeur **non calculable** — classement manquant, date de référence non épinglée — est
 affichée comme telle. Elle n'est jamais remplacée par une estimation.
 
+## Les deux rencontres d'une journée régionale
+
+En régional, une journée compte **deux rencontres**, disputées le même week-end contre deux
+adversaires différents. Elles se composent **séparément** : l'écran de composition en ouvre
+une à la fois, et son en-tête rappelle laquelle dès que la journée en compte plusieurs.
+
+La page de l'équipe liste donc une entrée par rencontre. Chacune est nommée par son
+**adversaire** quand il est saisi, et par son rang sinon — d'où l'intérêt de renseigner le
+nom de l'équipe adverse : c'est lui qui rend les deux rencontres discernables partout
+ailleurs.
+
+> [!CAUTION]
+> Vérifiez l'en-tête avant de composer. Les deux rencontres ont le même numéro de journée,
+> et une composition saisie sur la mauvaise laisse l'autre vide.
+
+Les autres championnats n'ont qu'une rencontre par journée : l'écran ne dit alors rien de
+particulier.
+
 ## La date de la rencontre
 
-Au-dessus de la composition, le capitaine fixe la **date réelle** de sa rencontre et le
-gymnase. C'est une information de logistique, propre à son équipe : elle ne déplace jamais
-la journée, qui reste celle du calendrier du comité et porte les règles.
+Au-dessus de la composition, le capitaine fixe la **date réelle** de sa rencontre, le
+gymnase et l'**équipe adverse**. C'est une information de logistique, propre à son équipe :
+elle ne déplace jamais la journée, qui reste celle du calendrier du comité et porte les
+règles.
+
+Le bureau peut saisir les mêmes informations sans passer par le capitaine, depuis la feuille
+**Rencontres** d'une équipe — voir [Équipes](/admin/help/interclubs-equipes). Le capitaine
+connaît son calendrier, le bureau a le calendrier du comité : les deux chemins écrivent au
+même endroit.
 
 Une date hors de la semaine théorique est refusée au premier essai, avec l'explication de
 ce qu'elle changerait ; un second envoi la confirme. Le calendrier signale alors la
@@ -1347,6 +1401,27 @@ puissent partager une semaine sans partager un seul jour :
 | Départemental vétérans | le **dimanche**, samedi par dérogation (art. 3.3.1) |
 | Régional | **samedi ou dimanche** — deux rencontres par journée |
 
+En régional, les **deux rencontres d'une même journée** se composent séparément, contre
+deux adversaires différents : voir [Compositions](/admin/help/interclubs-compositions).
+
+## Les rencontres d'une équipe
+
+L'entrée **Rencontres** du menu **⋯** d'une équipe ouvre son calendrier, **une ligne par
+rencontre** — donc deux par journée en régional. Pour chacune, vous saisissez la **date**,
+le **gymnase** et l'**équipe adverse**.
+
+C'est le même enregistrement que celui du capitaine depuis son espace : le capitaine
+connaît son calendrier, le bureau a celui du comité. La différence est le droit — ici il
+faut **Modifier les équipes**, là-bas il faut être capitaine ou capitaine adjoint.
+
+Seules les lignes réellement modifiées sont envoyées à l'enregistrement. Les rencontres au
+**repos** ou perdues par **forfait** conservent leur état : les rouvrir est un geste
+explicite, jamais un effet de bord d'une saisie de date.
+
+Renseigner le nom de l'adversaire n'est pas cosmétique : c'est lui qui nomme les deux
+rencontres d'une journée régionale et les rend discernables partout ailleurs dans
+l'application.
+
 Les **barrages** sont des journées à part : toutes les équipes ne les disputent pas, seules
 celles que leur classement y envoie. Une équipe sans composition y est donc normale.
 
@@ -1419,9 +1494,9 @@ Toute action — dépôt, modification, validation, refus, annulation — est re
 --- Article: notifications.md ---
 ---
 title: "Notifications push"
-description: "Diffuser une annonce aux adhérents, suivre les envois et les abonnés."
+description: "Diffuser un message aux adhérents, suivre les envois automatiques et les abonnés."
 category: "communication"
-order: 1
+order: 2
 ---
 
 La rubrique **Communication → Notifications** envoie des messages sur le téléphone des adhérents. Ils ne les reçoivent que s'ils ont **activé les notifications** depuis leur espace, appareil par appareil.
@@ -1430,7 +1505,7 @@ La rubrique **Communication → Notifications** envoie des messages sur le tél�
 
 Trois indicateurs : le nombre d'**appareils** abonnés, le nombre de **comptes** distincts, et le nombre de notifications **en attente d'envoi**.
 
-## Envoyer une annonce
+## Envoyer un message
 
 | Champ | Détail |
 |---|---|
@@ -1455,15 +1530,38 @@ L'application demande confirmation en rappelant l'audience visée, puis met les 
 
 ## Les envois automatiques
 
-Trois messages partent sans intervention, chacun dans sa catégorie :
+Beaucoup de messages partent sans intervention. Le **registre des envois automatiques**, en bas de l'écran, en donne la liste complète : c'est la seule vue exhaustive de ce qui part tout seul. Il est replié par défaut et **en consultation seule** — les conditions de déclenchement sont câblées dans le code.
 
-- **Note de frais validée ou refusée** — au dépositaire ;
-- **Commande boutique validée ou refusée** — au commanditaire ;
-- **Relance de cotisation** (hebdomadaire) et **anniversaires du jour** (quotidien) — ces deux-là sont **désactivés par défaut** et s'activent dans la configuration technique du service.
+Deux sections l'organisent.
+
+**Notifications programmées** — les envois récurrents, avec leur fréquence et une pastille *Active* / *Désactivée* :
+
+| Message | Quand |
+|---|---|
+| **Anniversaire(s) du jour** | Tous les jours vers 8-9h, si au moins un adhérent est concerné |
+| **Cotisation en attente** | Le lundi vers 9-10h, aux foyers dont la cotisation reste due |
+| **Commande à régler** | Le lundi vers 9-10h, pour les commandes validées depuis plus de 7 jours |
+| **Classements à mettre à jour** | Le jeudi précédant chaque journée d'interclubs régionale, **aux dirigeants du club** |
+| **Composition à valider** | Chaque jour de la veille de la journée jusqu'à la première rencontre, aux capitaines |
+
+Une notification désactivée indique la variable du Worker API qui l'active. C'est un réglage technique, hors de cet écran.
+
+> [!NOTE]
+> Le rappel « Classements à mettre à jour » est adressé aux **fonctions au club** de la saison — bureau, comité d'administration, entraîneurs. Si aucune n'est saisie, le message ne part à personne : voir [Dirigeants](/admin/help/dirigeants).
+
+**Notifications sur événement** — déclenchées par une action métier, et toujours actives :
+
+- **Note de frais** validée ou refusée — au dépositaire ;
+- **Commande boutique** validée, payée, refusée ou annulée — au commanditaire ;
+- **Interclubs** : convocation ou non-sélection à la validation d'une composition, alerte de **dépassement de valeur d'équipe**, et demande de reprise envoyée depuis *Interclubs → Contrôle des journées* ;
+- **Actualité réservée aux adhérents** diffusée manuellement depuis l'écran Actualités.
+
+> [!IMPORTANT]
+> Toute nouvelle notification automatique doit apparaître dans ce registre — un test le vérifie. Si un message part sans y figurer, c'est un défaut à signaler.
 
 ## Ce que règle l'adhérent
 
-Depuis son espace, chaque adhérent active les notifications sur son appareil, puis choisit les catégories qu'il souhaite recevoir : *Communications du bureau*, *Anniversaires*, *Mes notes de frais*, *Mes commandes boutique*, *Relances*. Tout est actif par défaut ; il décoche ce qu'il ne veut plus.
+Depuis son espace, chaque adhérent active les notifications sur son appareil, puis choisit les catégories qu'il souhaite recevoir : *Communications du bureau*, *Anniversaires*, *Mes notes de frais*, *Mes commandes boutique*, *Relances* et *Mes équipes interclubs*. Tout est actif par défaut ; il décoche ce qu'il ne veut plus.
 
 > [!NOTE]
 > Sur iPhone et iPad, les notifications ne fonctionnent **que si l'espace adhérent a été ajouté à l'écran d'accueil** depuis Safari. C'est une contrainte d'iOS. Un adhérent qui consulte le site dans un onglet classique voit la marche à suivre à la place du bouton d'activation.
@@ -1780,16 +1878,16 @@ Supprimer un bordereau **libère les chèques qu'il contenait** — ils redevien
 
 --- Article: site-actualites.md ---
 ---
-title: "Actualités du site"
-description: "Rédiger et publier les actualités publiques du club."
-category: "site"
-order: 3
+title: "Actualités"
+description: "Rédiger et publier les actualités du club, pour le site public ou pour les seuls adhérents."
+category: "communication"
+order: 1
 ---
 
-**Site public → Actualités du site** publie les nouvelles du club sur le site public : compétitions, résultats, animations, vie de l'association.
+**Communication → Actualités** publie les nouvelles du club : compétitions, résultats, animations, vie de l'association, mais aussi les informations réservées aux adhérents — assemblée générale, fermeture de créneaux, changement d'horaire.
 
 > [!IMPORTANT]
-> À ne pas confondre avec les [Annonces](/admin/help/annonces). Une **actualité** est publique, lisible par n'importe qui, indexée par Google, et ne prévient personne. Une **annonce** s'adresse aux adhérents connectés à leur espace, et peut déclencher une notification sur leur téléphone. Une soirée du club se raconte en actualité ; un changement d'horaire de dernière minute se diffuse en annonce.
+> Les **Annonces** n'existent plus comme module distinct : elles ont été absorbées ici. Une actualité porte désormais une **visibilité** qui décide de son public, et une actualité réservée aux adhérents peut être diffusée en notification. Un seul écran, un seul texte à rédiger, deux publics possibles.
 
 ## Rédiger une actualité
 
@@ -1803,7 +1901,31 @@ Le bouton **Nouvelle actualité** ouvre le formulaire.
 | **Catégories** | À cocher, si des catégories existent. Elles servent de filtre sur la page d'archives |
 | **Texte** | Le corps de l'article |
 
-L'actualité est créée **en brouillon** : elle n'apparaît sur le site qu'une fois publiée.
+L'actualité est créée **en brouillon** : elle n'apparaît qu'une fois publiée.
+
+## Qui la voit : la visibilité
+
+Le formulaire pose la question au moment de la rédaction, et c'est le choix le plus structurant de l'écran.
+
+| Visibilité | Public |
+|---|---|
+| **Tout le monde** | Publiée sur le site public **et** dans l'espace adhérent. Lisible par n'importe qui, indexée par Google, reprise dans le flux RSS |
+| **Adhérents seulement** | Visible dans le seul espace adhérent. Ni sur le site public, ni dans le flux, ni pour les moteurs |
+
+Une soirée du club se raconte pour tout le monde ; un changement d'horaire de dernière minute se réserve aux adhérents.
+
+Le cloisonnement est appliqué par l'API selon l'appelant, jamais par l'affichage : une actualité réservée n'est pas simplement masquée sur le site public, elle ne lui est pas transmise.
+
+## Diffuser sur les téléphones
+
+Une actualité **réservée aux adhérents** et **publiée** peut être diffusée en notification depuis le menu **⋯** de la liste. Tous les adhérents abonnés la reçoivent sur leur téléphone, immédiatement.
+
+> [!CAUTION]
+> L'envoi est **définitif et unique**. Il ne s'annule pas, et l'application refuse un second envoi pour la même actualité — modifier le texte ensuite ne renotifie personne. Relisez avant de diffuser : un adhérent réveillé pour rien ne se dé-réveille pas.
+
+Contrairement à la notification, l'actualité elle-même reste consultable indéfiniment : un adhérent qui n'a pas activé les notifications, ou qui a balayé la notification sur son téléphone, retrouve l'information dans son espace.
+
+Rédiger et diffuser sont deux droits distincts : la diffusion relève de **Envoyer une notification**, voir [Notifications](/admin/help/notifications).
 
 Le **chapô** mérite qu'on s'y arrête : c'est lui qui s'affiche sous le titre dans la liste des actualités, dans les cartes de la page d'accueil, dans les résultats Google et dans l'aperçu quand quelqu'un partage le lien. Sans chapô, c'est le début du texte qui sert, souvent maladroitement.
 
@@ -1821,7 +1943,7 @@ Le statut se change **depuis la liste**, par le menu **⋯** : **Publier**, ou *
 
 La **date de publication** est posée à la première mise en ligne, et ne bouge plus ensuite. Corriger une faute dans un vieil article ne le fait donc pas remonter en tête du flux.
 
-Une actualité publiée apparaît :
+Une actualité publiée **pour tout le monde** apparaît :
 
 - sur la page **Actualités** du site, paginée par douze, avec ses filtres par catégorie ;
 - dans les blocs **Actualités** des pages qui en portent un (voir [Les blocs de contenu](/admin/help/site-blocs)) ;
@@ -1852,7 +1974,9 @@ La suppression est **définitive** et l'adresse de l'article ne répond plus.
 | Créer, modifier, publier | Rédiger et publier une actualité |
 | Supprimer | Supprimer une actualité |
 
-Les rôles **Communication** et **Président·e** disposent de l'ensemble. Le rôle **Secrétaire** peut rédiger et publier, mais pas supprimer. Les droits se règlent depuis [Accès & Rôles](/admin/help/acces-permissions).
+| Diffuser sur les téléphones | Envoyer une notification |
+
+Les rôles **Communication** et **Président·e** disposent de l'ensemble. Le rôle **Secrétaire** peut rédiger, publier et diffuser, mais pas supprimer. Les droits se règlent depuis [Accès & Rôles](/admin/help/acces-permissions).
 
 
 --- Article: site-blocs.md ---
@@ -2194,6 +2318,8 @@ Tout ce que vous saisissez est contrôlé par le serveur, jamais seulement par l
 - Les liens dangereux sont refusés — un bouton dont l'adresse ne va nulle part disparaît.
 - Le texte riche est nettoyé : scripts, styles et cadres sont retirés ; les images doivent venir de la médiathèque.
 - Un bloc refusé fait échouer **tout l'enregistrement**, avec un message indiquant le numéro du bloc en cause. La page n'est jamais enregistrée à moitié.
+
+
 --- Article: site-mediatheque.md ---
 ---
 title: "Médiathèque"
@@ -2268,63 +2394,48 @@ Déposer et supprimer sont deux droits distincts : ajouter un fichier est sans c
 
 --- Article: site-menus.md ---
 ---
-title: "Menus du site (à venir)"
-description: "Ce que permettra la gestion des menus du site public, et comment faire en attendant."
+title: "Menus du site"
+description: "Composer la navigation du site public : barre de navigation, pied de page et barre légale."
 category: "site"
 order: 5
 ---
 
-> [!IMPORTANT]
-> **Cette fonctionnalité est en cours de développement.** Aucun écran ne lui correspond encore dans le menu d'administration. Cet article décrit ce qu'elle permettra, pour que vous sachiez ce qui vous attend — et surtout comment faire d'ici là.
+**Site public → Menus** compose la navigation du site public. Créer une page ne l'ajoute pas au menu, et la retirer du menu ne la supprime pas : ce sont deux gestes distincts.
 
-## Comment se règle le menu aujourd'hui
+## Trois emplacements
 
-Le menu de l'en-tête du site public et les liens du pied de page sont **écrits dans le code**. Créer une page ne l'y ajoute pas, et la retirer du site ne l'en enlève pas.
+L'écran présente un onglet par emplacement, et chacun a son menu :
 
-Pour faire figurer une nouvelle page dans le menu du site, demandez la modification au responsable technique. Prévoyez le délai d'une mise en production.
+| Emplacement | Où il s'affiche |
+|---|---|
+| **En-tête** | La barre de navigation principale, en haut de chaque page |
+| **Pied de page** | La colonne « Le site » du pied de page |
+| **Barre légale** | Tout en bas, sous le pied de page : mentions légales, confidentialité |
 
-> [!CAUTION]
-> Conséquence à connaître : si vous **supprimez** une page qui figure dans le menu, le lien reste affiché sur le site et mène à une erreur 404 jusqu'à la prochaine mise en production. Prévenez avant de supprimer une page référencée par le menu — voir [Pages du site](/admin/help/site-pages).
-
-En attendant, une page peut parfaitement être atteinte sans figurer au menu : depuis un bloc **Grille de liens** ou **Accroche** posé sur une page qui, elle, est au menu. C'est souvent suffisant pour une page saisonnière — inscriptions, tournoi annuel.
-
-## Ce que permettra l'écran à venir
-
-Deux menus distincts seront administrables :
-
-- l'**en-tête**, la navigation principale du site ;
-- le **pied de page**, réservé aux liens de bas de page.
-
-Chaque entrée portera :
+## Une entrée de menu
 
 | Champ | Détail |
 |---|---|
-| **Libellé** | Le texte affiché, 80 caractères au maximum. Il est indépendant du titre de la page : une page « Présentation du club et de ses activités » peut s'appeler « Le club » dans le menu |
-| **Cible** | **Soit** une page du site, **soit** une adresse extérieure — jamais les deux |
-| **Emplacement** | En-tête ou pied de page |
-| **Position** | L'ordre dans le menu ; une nouvelle entrée se pose à la fin |
-| **Sous-menu** | Une entrée peut être rangée sous une autre |
+| **Intitulé** | Le texte affiché. Il est indépendant du titre de la page : une page « Présentation du club et de ses activités » peut s'appeler « Le club » dans le menu |
+| **Cible** | Une **page du site**, une **adresse extérieure**, ou **aucune** |
+| **Rangée sous** | L'entrée de premier niveau qui l'accueille, pour former un sous-menu |
+
+L'ordre se règle en déplaçant les entrées dans la liste ; il est enregistré aussitôt.
 
 Deux niveaux au maximum : une entrée, et son sous-menu. Un troisième niveau serait inatteignable au survol sur grand écran et illisible une fois replié sur téléphone.
 
-Une entrée qui pointe une **page du site** suit cette page : son adresse est résolue au moment de l'affichage, et supprimer la page emportera l'entrée de menu avec elle. C'est précisément ce que le menu écrit en dur ne sait pas faire aujourd'hui.
+Une entrée **sans cible** ne sert qu'à regrouper : elle ouvre son sous-menu sans mener nulle part. Réservée au premier niveau — une sous-entrée qui ne mène nulle part n'est qu'une ligne morte, et l'application la refuse.
 
-## Les redirections
+Une entrée qui pointe une **page du site** suit cette page : son adresse est résolue au moment de l'affichage, et renommer la page ne casse pas le lien. La liste des pages proposées signale les brouillons — les choisir est possible, mais l'entrée mènera à une page invisible tant qu'elle n'est pas publiée.
 
-**Site public → Redirections** liste les anciennes adresses du site — héritées de WordPress ou laissées par le renommage d'une page — avec leur destination et leur **nombre de visites**. Le compteur dit si une adresse sert encore : une redirection jamais empruntée peut être supprimée sans risque, une redirection encore utilisée doit être conservée.
+> [!CAUTION]
+> Supprimer une page qui figure au menu retire l'entrée avec elle. Si l'adresse de cette page circulait, pensez à créer la redirection correspondante — voir [Redirections](/admin/help/site-redirections).
 
-Chaque adresse répond de l'une de ces deux façons :
+## Qui peut le faire
 
-- **Redirection (301)** : les visiteurs et les moteurs sont envoyés vers l'adresse cible ;
-- **Page supprimée (410)** : l'adresse n'a pas de successeur, et les moteurs la retirent de leur index.
+Le droit est **Modifier les pages du site** (\`cms:pages:write\`), le même que celui de la rédaction : les rôles **Secrétaire**, **Communication**, **Président·e** et **Super administrateur** composent donc les menus.
 
-Vous pouvez modifier la destination d'une redirection, en créer une à la main — typiquement après la suppression d'une page dont l'adresse circulait — ou en supprimer une devenue inutile. L'application refuse les montages qui se paient en référencement : une redirection qui pointe sur elle-même, ou vers une adresse elle-même redirigée.
-
-## Qui pourra le faire
-
-Le droit correspondant s'appelle **Modifier les menus et les redirections**. Il est déjà attribué aux rôles **Communication**, **Président·e** et **Super administrateur**.
-
-Il n'est **pas** accordé au rôle **Secrétaire**, qui peut rédiger des pages mais pas toucher à l'arborescence : modifier un menu ou une redirection se paie en référencement, et cela relève de la commission Communication et de la présidence. Voir [Accès & Rôles](/admin/help/acces-permissions).
+Les **redirections**, elles, relèvent d'un droit distinct — modifier une adresse se paie en référencement. Voir [Accès & Rôles](/admin/help/acces-permissions).
 
 
 --- Article: site-pages.md ---
@@ -2416,6 +2527,82 @@ Les redirections d'une ancienne adresse vers une nouvelle se consultent et se r�
 | Supprimer | Supprimer une page du site |
 
 Les rôles **Communication** et **Président·e** disposent de l'ensemble. Le rôle **Secrétaire** peut créer et modifier, mais pas supprimer. Les droits se règlent depuis [Accès & Rôles](/admin/help/acces-permissions).
+
+
+--- Article: site-pied-de-page.md ---
+---
+title: "Pied de page"
+description: "Régler la présentation, l'adresse et les réseaux sociaux affichés en bas du site public."
+category: "site"
+order: 7
+---
+
+**Site public → Pied de page** règle le bloc affiché en bas de chaque page du site.
+
+| Champ | Détail |
+|---|---|
+| **Phrase de présentation** | La devise ou l'accroche du club, sous le logo. 200 caractères au maximum |
+| **Adresse** | L'adresse du club, telle qu'elle doit apparaître. 200 caractères |
+| **Instagram** | L'adresse complète du compte. Laissée vide, l'icône ne s'affiche pas |
+| **Facebook** | Idem |
+
+Une adresse de réseau social vide **retire simplement l'icône** : c'est ainsi qu'on cesse d'afficher un compte fermé, sans passer par le responsable technique.
+
+> [!NOTE]
+> Les **liens** du pied de page ne se règlent pas ici : ce sont des menus. Ils vivent dans [Menus du site](/admin/help/site-menus), emplacements « Pied de page » et « Barre légale ». Deux éditeurs de liens pour la même chose auraient fini par diverger, et un seul aurait été tenu à jour.
+
+Un enregistrement renouvelle le cache du site : comptez quelques secondes avant de voir le changement en ligne.
+
+## Qui peut le faire
+
+Le droit est **Modifier les pages du site** (\`cms:pages:write\`) : les rôles **Secrétaire**, **Communication**, **Président·e** et **Super administrateur**. Voir [Accès & Rôles](/admin/help/acces-permissions).
+
+
+--- Article: site-redirections.md ---
+---
+title: "Redirections"
+description: "Rattraper les anciennes adresses du site public pour ne perdre ni visiteurs ni référencement."
+category: "site"
+order: 6
+---
+
+**Site public → Redirections** liste les anciennes adresses du site — héritées de WordPress, ou laissées par le renommage d'une page — avec leur destination et leur **nombre de visites**.
+
+Une adresse qui a circulé ne disparaît jamais vraiment : elle reste dans les favoris, dans l'index des moteurs et dans les liens d'autres sites. La redirection est ce qui évite qu'elle mène à une impasse.
+
+## Que répond une adresse
+
+| Réponse | Effet |
+|---|---|
+| **Redirection (301)** | Visiteurs et moteurs sont envoyés vers l'adresse cible. Les moteurs reportent le référencement de l'ancienne adresse sur la nouvelle |
+| **Page supprimée (410)** | L'adresse n'a pas de successeur. Les moteurs la retirent de leur index |
+
+Une redirection sans cible répond donc « page supprimée ». C'est le bon choix quand la page n'a pas d'équivalent : renvoyer vers l'accueil faute de mieux dessert le visiteur, qui ne comprend pas où il a atterri.
+
+## Le compteur de visites
+
+Le compteur dit si une adresse sert encore : une redirection jamais empruntée peut être supprimée sans risque, une redirection encore utilisée doit être conservée.
+
+> [!NOTE]
+> Le compteur des adresses **supprimées (410)** est en dessous de la réalité : le site public garde leur réponse en cache un quart d'heure, et ces passages-là ne sont pas comptés. Ne purgez pas une 410 « jamais empruntée » sur ce seul argument.
+
+## Créer et modifier
+
+Vous pouvez créer une redirection à la main — typiquement après la suppression d'une page dont l'adresse circulait — en modifier la destination, ou en supprimer une devenue inutile. Une **note** facultative dit pourquoi elle existe : dans deux ans, c'est elle qui permettra de trancher.
+
+L'application refuse les montages qui se paient en référencement :
+
+- une redirection qui **pointe sur elle-même** ;
+- une **chaîne** : viser une adresse elle-même redirigée, ce qui ferait suivre deux sauts au visiteur ;
+- une **source déjà redirigée** : il faut alors modifier la ligne existante, et non en ajouter une seconde.
+
+Renommer une page **publiée** depuis [Pages du site](/admin/help/site-pages) pose automatiquement la redirection correspondante — et repointe au passage celles qui visaient l'ancienne adresse, pour ne pas créer de chaîne. Un brouillon n'ayant jamais eu d'adresse publique, son renommage ne pose rien. Cet écran sert donc aux cas que l'application ne peut pas deviner.
+
+## Qui peut le faire
+
+Le droit s'appelle **Modifier les redirections** (\`cms:nav:write\`). Il est attribué aux rôles **Communication**, **Président·e** et **Super administrateur**.
+
+Il n'est **pas** accordé au rôle **Secrétaire**, qui peut rédiger des pages et composer les menus, mais qui ne consulte les redirections qu'en lecture : modifier une adresse se paie en référencement, et cela relève de la commission Communication et de la présidence. Voir [Accès & Rôles](/admin/help/acces-permissions).
 
 
 --- Article: soldes-initiaux.md ---
@@ -2649,47 +2836,579 @@ export const seasonCategoryBudgetsTable = sqliteTable('season_category_budgets',
   season_category_idx: uniqueIndex('season_category_idx').on(table.seasonId, table.categoryId, table.type),
 }));
 
-// Schema: shop
-export const productCategoriesTable = sqliteTable('product_categories', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  // Unique : rend \`INSERT OR IGNORE\` du seed de référence réellement idempotent
-  // (un rejeu de migration avait dupliqué toutes les catégories, cf. 0008).
-  label: text('label').notNull().unique(),
-  accounting_category_id: integer('accounting_category_id').notNull(),
-  active: integer('active', { mode: 'boolean' }).notNull().default(true),
-  created_at: integer('created_at', { mode: 'timestamp' }).notNull()
-});
+// Schema: cms
+sqliteTable,
+  text,
+  integer,
+  index,
+  uniqueIndex,
+  type AnySQLiteColumn
+} from 'drizzle-orm/sqlite-core';
 
-export const productsTable = sqliteTable('products', {
+/**
+ * Contenu du site public.
+ *
+ * **Toutes** les tables du domaine vivent dans ce fichier, y compris celles dont la
+ * tranche n'est pas encore écrite. \`libs/shared/db/drizzle.config.ts\` résout
+ * \`libs/domains/<domaine>/shared/schema.ts\` avec un glob à **un seul niveau** de
+ * profondeur. Un \`schema.ts\` rangé sous une capacité (\`cms/pages/shared/\`) serait
+ * invisible de
+ * drizzle-kit — et \`check-schema-integrity.js\` le signalerait pourtant comme résolu,
+ * puisqu'il cherche par nom de fichier et non via le glob. La panne serait silencieuse
+ * jusqu'à la prochaine régénération des migrations.
+ *
+ * Préfixe \`cms_\` sur toutes les tables : \`pages\`, \`posts\`, \`media\` et \`redirects\` sont
+ * des génériques d'un seul mot dans une base D1 **unique**, partagée avec la
+ * comptabilité, la boutique et les adhérents.
+ */
+
+// ---------------------------------------------------------------------------
+// Pages et blocs
+// ---------------------------------------------------------------------------
+
+export const cmsPagesTable = sqliteTable(
+  'cms_pages',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    /** Dernier segment d'URL, sans barre oblique : « presentation ». */
+    slug: text('slug').notNull(),
+    /**
+     * Chemin complet servi au public, barres obliques encadrantes comprises :
+     * « /presentation/ ».
+     *
+     * Dénormalisé volontairement. Résoudre une URL est le chemin chaud du site : on ne
+     * remonte pas l'arbre des parents à chaque requête. Le handler le recalcule à
+     * chaque changement de slug ou de parent, pour la page et sa descendance.
+     */
+    path: text('path').notNull(),
+    parent_id: integer('parent_id').references((): AnySQLiteColumn => cmsPagesTable.id, {
+      onDelete: 'set null'
+    }),
+    title: text('title').notNull(),
+    status: text('status', { enum: ['draft', 'published'] })
+      .notNull()
+      .default('draft'),
+    /**
+     * Rôle de la page.
+     *
+     * \`home\` **désigne la racine** : la page qui le porte est servie à « / » (cf.
+     * \`buildPagePath\`). C'est aujourd'hui le seul effet de cette colonne — le rendu,
+     * lui, découle entièrement des blocs de la page, jamais de son gabarit.
+     *
+     * \`landing\` n'est lu par aucun code : hérité d'une intention de découpage par
+     * gabarit qui n'a pas eu lieu, il est conservé pour ne pas réécrire l'énumération
+     * sans besoin, mais l'administration ne le propose pas.
+     */
+    template: text('template', { enum: ['default', 'home', 'landing'] })
+      .notNull()
+      .default('default'),
+    seo_title: text('seo_title'),
+    seo_description: text('seo_description'),
+    og_image_media_id: integer('og_image_media_id').references(() => cmsMediaTable.id, {
+      onDelete: 'set null'
+    }),
+    /** Page volontairement hors index (remerciements, page technique). */
+    noindex: integer('noindex', { mode: 'boolean' }).notNull().default(false),
+    nav_order: integer('nav_order').notNull().default(0),
+    /**
+     * Date de première publication, et non de création : un brouillon rédigé la
+     * semaine dernière puis publié aujourd'hui doit dater d'aujourd'hui. Nulle tant
+     * que la page est un brouillon.
+     */
+    published_at: integer('published_at', { mode: 'timestamp' }),
+    updated_by_email: text('updated_by_email').notNull(),
+    created_at: integer('created_at', { mode: 'timestamp' }).notNull(),
+    updated_at: integer('updated_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    // Unique : deux pages ne peuvent pas répondre à la même URL, brouillon compris.
+    // Un brouillon réserve donc son chemin — c'est voulu, sans quoi publier pourrait
+    // échouer sur un conflit découvert au dernier moment.
+    cms_pages_path_idx: uniqueIndex('cms_pages_path_idx').on(table.path),
+    cms_pages_parent_nav_idx: index('cms_pages_parent_nav_idx').on(table.parentId, table.navOrder)
+  })
+);
+
+export const cmsPageBlocksTable = sqliteTable(
+  'cms_page_blocks',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    page_id: integer('page_id')
+      .notNull()
+      .references(() => cmsPagesTable.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    /**
+     * Discriminant de l'union TypeScript.
+     *
+     * Repris de \`BLOCK_TYPES\` et non recopié : la liste était écrite deux fois, et
+     * ajouter un type de bloc échouait au \`typecheck\` sur cette ligne, loin de la
+     * modification. \`enum\` ne produit ici aucune contrainte SQL — c'est du typage —
+     * donc l'alignement ne demande aucune migration.
+     */
+    type: text('type', { enum: BLOCK_TYPES }).notNull(),
+    /** Charge utile JSON, validée **et assainie** par l'API avant écriture. */
+    payload: text('payload').notNull()
+  },
+  (table) => ({
+    // Unique (page, position) : l'enregistrement remplace TOUS les blocs d'une page en
+    // un seul \`db.batch()\`. D1 n'a pas de transaction interactive (ADR-0002), mais un
+    // batch est atomique : aucune position en double n'est jamais observable.
+    cms_page_blocks_page_position_idx: uniqueIndex('cms_page_blocks_page_position_idx').on(table.pageId, table.position)
+  })
+);
+
+export const cmsPageRevisionsTable = sqliteTable(
+  'cms_page_revisions',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    page_id: integer('page_id')
+      .notNull()
+      .references(() => cmsPagesTable.id, { onDelete: 'cascade' }),
+    /** Numéro croissant par page, calculé à l'écriture (MAX + 1). */
+    revision: integer('revision').notNull(),
+    /** Instantané complet : métadonnées **et** blocs sérialisés. Restaurer = réécrire. */
+    snapshot: text('snapshot').notNull(),
+    author_email: text('author_email').notNull(),
+    /** Motif court, saisi ou déduit (« publication », « restauration de la v4 »). */
+    reason: text('reason'),
+    created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    cms_page_revisions_page_revision_idx: uniqueIndex('cms_page_revisions_page_revision_idx').on(table.pageId, table.revision),
+    cms_page_revisions_page_created_idx: index('cms_page_revisions_page_created_idx').on(table.pageId, table.createdAt)
+  })
+);
+
+// ---------------------------------------------------------------------------
+// Actualités
+// ---------------------------------------------------------------------------
+
+export const cmsPostCategoriesTable = sqliteTable('cms_post_categories', {
   id: integer('id').primaryKey({ autoIncrement: true }),
+  slug: text('slug').notNull().unique(),
   name: text('name').notNull(),
-  product_category_id: integer('product_category_id').notNull().references(() => productCategoriesTable.id),
-  price_cents: integer('price_cents').notNull(),
-  stock: integer('stock').notNull().default(0),
-  track_stock: integer('track_stock', { mode: 'boolean' }).notNull().default(false),
-  active: integer('active', { mode: 'boolean' }).notNull().default(true),
+  description: text('description'),
+  nav_order: integer('nav_order').notNull().default(0),
   created_at: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
-export const ordersTable = sqliteTable('orders', {
+export const cmsPostsTable = sqliteTable(
+  'cms_posts',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    slug: text('slug').notNull(),
+    /** Chemin public complet. Les articles WordPress sont à plat, sans préfixe. */
+    path: text('path').notNull(),
+    title: text('title').notNull(),
+    /** Chapô affiché en liste, et repris comme meta description à défaut de mieux. */
+    excerpt: text('excerpt'),
+    /** Corps en texte riche, assaini avec le profil \`CMS_PROFILE\` de \`@nba/html\`. */
+    body_html: text('body_html').notNull(),
+    cover_media_id: integer('cover_media_id').references(() => cmsMediaTable.id, {
+      onDelete: 'set null'
+    }),
+    status: text('status', { enum: ['draft', 'published'] })
+      .notNull()
+      .default('draft'),
+    /**
+     * Qui peut lire l'actualité.
+     *
+     * \`public\` : le site public **et** l'espace adhérent. \`private\` : l'espace adhérent
+     * seul — une information de vie interne, qui n'a pas à être indexée ni lue par un
+     * visiteur de passage.
+     *
+     * Le défaut est \`public\` parce que c'est le sens de la reprise WordPress : les 99
+     * articles importés étaient tous en ligne. Une nouveauté restreinte se déclare ;
+     * l'inverse aurait rendu invisible tout l'existant à la migration.
+     *
+     * Le cloisonnement est appliqué **côté API selon l'appelant**, jamais par le
+     * client : le site public et l'espace adhérent interrogent la même route.
+     */
+    visibility: text('visibility', { enum: ['public', 'private'] })
+      .notNull()
+      .default('public'),
+    /**
+     * Horodatage de la diffusion push. Non nul = déjà notifié.
+     *
+     * Repris tel quel des annonces, dont ce champ portait la garde d'idempotence : on
+     * ne renotifie jamais, quelles que soient les modifications ultérieures. C'est ce
+     * qui rend l'action de diffusion rejouable sans risque depuis l'administration.
+     */
+    notified_at: integer('notified_at', { mode: 'timestamp' }),
+    seo_title: text('seo_title'),
+    seo_description: text('seo_description'),
+    /**
+     * Nom affiché du rédacteur, recopié et non lié.
+     *
+     * Pas de clé étrangère vers \`admin_users\` : un article survit au départ de son
+     * auteur, et un domaine métier ne dépend pas de \`iam\`.
+     */
+    author_name: text('author_name').notNull(),
+    author_email: text('author_email').notNull(),
+    published_at: integer('published_at', { mode: 'timestamp' }),
+    /**
+     * Événement de l'agenda que l'actualité annonce, s'il y en a un.
+     *
+     * Sert à porter l'appel à l'inscription au bout de l'article : « la soirée raclette
+     * a lieu le 14 février » et le bouton juste en dessous, plutôt qu'un lecteur qu'on
+     * renvoie chercher l'agenda.
+     *
+     * Entier nu, **sans clé étrangère** : la déclarer obligerait ce schéma à importer
+     * celui du domaine \`events\`, et le CMS n'a pas à en dépendre pour stocker un
+     * numéro. Le lien est résolu à la lecture, par l'écran qui affiche l'actualité, et
+     * un identifiant devenu orphelin est simplement ignoré au rendu — le cas est de
+     * toute façon rare, un événement s'annule (\`cancelled\`) bien plus qu'il ne se
+     * supprime.
+     */
+    event_id: integer('event_id'),
+    /** Identifiant d'origine WordPress : rejouer l'    legacy_wp_id: integer('legacy_wp_id'),
+    created_at: integer('created_at', { mode: 'timestamp' }).notNull(),
+    updated_at: integer('updated_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    cms_posts_path_idx: uniqueIndex('cms_posts_path_idx').on(table.path),
+    // Le seul accès chaud : « les N dernières publiées », sur l'accueil et le flux.
+    cms_posts_status_published_idx: index('cms_posts_status_published_idx').on(table.status, table.publishedAt),
+    // Même accès, mais restreint au public : c'est la requête du site, la plus servie.
+    cms_posts_visibility_status_published_idx: index('cms_posts_visibility_status_published_idx').on(
+      table.visibility,
+      table.status,
+      table.publishedAt
+    ),
+    cms_posts_legacy_wp_id_idx: uniqueIndex('cms_posts_legacy_wp_id_idx').on(table.legacyWpId)
+  })
+);
+
+export const cmsPostCategoryLinksTable = sqliteTable(
+  'cms_post_category_links',
+  {
+    post_id: integer('post_id')
+      .notNull()
+      .references(() => cmsPostsTable.id, { onDelete: 'cascade' }),
+    category_id: integer('category_id')
+      .notNull()
+      .references(() => cmsPostCategoriesTable.id, { onDelete: 'cascade' })
+  },
+  (table) => ({
+    cms_post_category_links_pk: uniqueIndex('cms_post_category_links_pk').on(table.postId, table.categoryId),
+    cms_post_category_links_category_idx: index('cms_post_category_links_category_idx').on(table.categoryId)
+  })
+);
+
+// ---------------------------------------------------------------------------
+// Médiathèque
+// ---------------------------------------------------------------------------
+
+export const cmsMediaTable = sqliteTable(
+  'cms_media',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    /** Clé R2 de l'original : « media/{empreinte}/original.{ext} ». Immuable. */
+    key: text('key').notNull().unique(),
+    mime_type: text('mime_type').notNull(),
+    size_bytes: integer('size_bytes').notNull(),
+    /**
+     * Dimensions de l'original. Nulles pour un PDF.
+     *
+     * Ce ne sont pas des informations décoratives : elles alimentent les attributs
+     * \`width\` et \`height\` de chaque \`<img>\`, et c'est **ce qui supprime le décalage de
+     * mise en page**. L'     * pour une image.
+     */
+    width: integer('width'),
+    height: integer('height'),
+    /** Texte alternatif. Vide = image décorative, ce qui doit rester un choix explicite. */
+    alt: text('alt').notNull().default(''),
+    title: text('title'),
+    credit: text('credit'),
+    /** Empreinte du contenu : déduplique l'    content_hash: text('content_hash').notNull(),
+    legacy_wp_id: integer('legacy_wp_id'),
+    created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    cms_media_content_hash_idx: index('cms_media_content_hash_idx').on(table.contentHash)
+  })
+);
+
+export const cmsMediaVariantsTable = sqliteTable(
+  'cms_media_variants',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    media_id: integer('media_id')
+      .notNull()
+      .references(() => cmsMediaTable.id, { onDelete: 'cascade' }),
+    format: text('format', { enum: ['avif', 'webp', 'jpeg', 'png'] }).notNull(),
+    width: integer('width').notNull(),
+    height: integer('height').notNull(),
+    size_bytes: integer('size_bytes').notNull(),
+    key: text('key').notNull().unique()
+  },
+  (table) => ({
+    cms_media_variants_media_idx: index('cms_media_variants_media_idx').on(table.mediaId, table.format, table.width)
+  })
+);
+
+// ---------------------------------------------------------------------------
+// Routage : menus et redirections
+// ---------------------------------------------------------------------------
+
+export const cmsNavItemsTable = sqliteTable(
+  'cms_nav_items',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    /**
+     * \`legal\` est la barre basse du pied de page — mentions légales, confidentialité.
+     * Un emplacement à part et non une rubrique du menu \`footer\` : ces liens ne sont
+     * pas de la navigation éditoriale, ils sont dus au visiteur, et les mêler à la
+     * colonne « Le site » reviendrait à les faire disparaître au premier remaniement.
+     *
+     * L'énumération ne produit aucune contrainte SQL — c'est du typage — donc ajouter
+     * un emplacement ne demande pas de migration.
+     */
+    location: text('location', { enum: ['header', 'footer', 'legal'] }).notNull(),
+    parent_id: integer('parent_id').references((): AnySQLiteColumn => cmsNavItemsTable.id, {
+      onDelete: 'cascade'
+    }),
+    label: text('label').notNull(),
+    /** Soit une page interne, soit une URL externe — jamais les deux. */
+    page_id: integer('page_id').references(() => cmsPagesTable.id, { onDelete: 'cascade' }),
+    external_url: text('external_url'),
+    position: integer('position').notNull().default(0)
+  },
+  (table) => ({
+    cms_nav_items_location_idx: index('cms_nav_items_location_idx').on(table.location, table.parentId, table.position)
+  })
+);
+
+export const cmsRedirectsTable = sqliteTable('cms_redirects', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  /** Chemin source normalisé, barres obliques comprises : « /forum-2/ ». */
+  from_path: text('from_path').notNull().unique(),
+  /**
+   * Cible. **Nulle = 410 Gone**, pour une page qui a existé et n'a pas de successeur.
+   *
+   * Rediriger vers une page sans rapport serait pire : Google traite une 301 sans
+   * équivalence de contenu comme une 404 déguisée.
+   */
+  to_path: text('to_path'),
+  status_code: integer('status_code').notNull().default(301),
+  /** Compteur d'usage : sert à purger les redirections devenues inutiles. */
+  hit_count: integer('hit_count').notNull().default(0),
+  note: text('note'),
+  created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+// ---------------------------------------------------------------------------
+// Publication
+// ---------------------------------------------------------------------------
+
+/**
+ * Version du contenu publié. Ligne unique, \`id = 1\`.
+ *
+ * Elle entre dans la clé du cache du site public : publier l'incrémente, ce qui rend
+ * d'un coup toutes les entrées précédentes inatteignables. C'est la seule invalidation
+ * possible sans la purge par étiquette, réservée à l'offre Entreprise de Cloudflare.
+ *
+ * Le rayon d'action est volontairement large — une publication invalide tout le site.
+ * Pour ~130 URL c'est sans conséquence, et cela supprime toute une classe de « la page
+ * ne s'est pas mise à jour ».
+ */
+export const cmsContentVersionTable = sqliteTable('cms_content_version', {
+  id: integer('id').primaryKey(),
+  version: integer('version').notNull().default(1),
+  updated_at: integer('updated_at', { mode: 'timestamp' }).notNull()
+});
+
+/**
+ * Réglages du site public. Ligne unique, \`id = 1\`, comme la version de contenu.
+ *
+ * Une ligne à colonnes nommées plutôt qu'une table clé/valeur : ces réglages sont peu
+ * nombreux, connus à l'avance et typés. Le format clé/valeur aurait rendu chaque
+ * lecture optionnelle et chaque valeur \`string | undefined\`, pour ne gagner que la
+ * possibilité d'ajouter un réglage sans migration — ce qui n'est pas un besoin ici.
+ *
+ * Toute écriture incrémente la version de contenu : ces valeurs sont rendues sur
+ * **toutes** les pages, donc dans toutes les entrées du cache.
+ */
+export const cmsSiteSettingsTable = sqliteTable('cms_site_settings', {
+  id: integer('id').primaryKey(),
+  /** Phrase sous le nom du club, dans le pied de page. */
+  footer_description: text('footer_description').notNull().default(''),
+  /** Adresse affichée, sur une ou deux lignes. Vide = rien n'est affiché. */
+  footer_address: text('footer_address').notNull().default(''),
+  /** Nul = le réseau n'est pas affiché. Une chaîne vide serait un lien mort. */
+  instagram_url: text('instagram_url'),
+  facebook_url: text('facebook_url'),
+  updated_by_email: text('updated_by_email').notNull().default(''),
+  updated_at: integer('updated_at', { mode: 'timestamp' }).notNull()
+});
+
+export type CmsPageRow = typeof cmsPagesTable.\$inferSelect;
+export type CmsPageBlockRow = typeof cmsPageBlocksTable.\$inferSelect;
+export type CmsPageRevisionRow = typeof cmsPageRevisionsTable.\$inferSelect;
+export type CmsPostRow = typeof cmsPostsTable.\$inferSelect;
+export type CmsPostCategoryRow = typeof cmsPostCategoriesTable.\$inferSelect;
+export type CmsMediaRow = typeof cmsMediaTable.\$inferSelect;
+export type CmsMediaVariantRow = typeof cmsMediaVariantsTable.\$inferSelect;
+export type CmsNavItemRow = typeof cmsNavItemsTable.\$inferSelect;
+export type CmsSiteSettingsRow = typeof cmsSiteSettingsTable.\$inferSelect;
+export type CmsRedirectRow = typeof cmsRedirectsTable.\$inferSelect;
+
+// Schema: events
+/**
+ * Agenda du club.
+ *
+ * Remplace l'iframe Google Calendar de l'ancien site, dont le contenu était
+ * entièrement invisible pour les moteurs : une compétition annoncée n'existait que
+ * pour qui ouvrait la page. Ici chaque événement est du HTML indexable, avec ses
+ * données structurées.
+ */
+
+export const clubEventsTable = sqliteTable(
+  'club_events',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    slug: text('slug').notNull().unique(),
+    title: text('title').notNull(),
+    /**
+     * Date et heure locales en texte ISO (« 2026-11-14T09:00 »).
+     *
+     * D1 n'a pas de type horodaté avec fuseau, et tout se passe à l'heure de Paris.
+     * Stocker un instant UTC obligerait à reconvertir partout pour afficher « 9 h ».
+     */
+    starts_at: text('starts_at').notNull(),
+    ends_at: text('ends_at'),
+    all_day: integer('all_day', { mode: 'boolean' }).notNull().default(false),
+    category: text('category', {
+      enum: ['competition', 'interclubs', 'tournoi', 'stage', 'vie_du_club', 'assemblee']
+    }).notNull(),
+    /**
+     * Lieu libre plutôt qu'une clé étrangère vers \`venues\` : la moitié des événements
+     * se déroulent en déplacement, dans des gymnases que le club ne référence pas.
+     */
+    venue_label: text('venue_label'),
+    description_html: text('description_html'),
+    /** Fiche FFBaD ou Badnet, quand elle existe. */
+    external_url: text('external_url'),
+    status: text('status', { enum: ['draft', 'published', 'cancelled'] })
+      .notNull()
+      .default('draft'),
+    /**
+     * État des inscriptions.
+     *
+     * Trois valeurs et non un booléen, parce que « fermé » et « sans objet » ne disent
+     * pas la même chose au lecteur. Une compétition n'a jamais d'inscription au club
+     * (\`none\`) ; une soirée raclette dont les inscriptions sont closes doit l'annoncer
+     * (\`closed\`) plutôt que voir son bouton disparaître sans explication. Le bureau
+     * garde sa liste dans les deux cas.
+     *
+     * Le défaut \`none\` est ce qui rend la migration muette : les événements déjà en
+     * base ne proposent rien tant qu'on ne l'a pas demandé.
+     */
+    registration: text('registration', { enum: ['none', 'open', 'closed'] })
+      .notNull()
+      .default('none'),
+    created_at: integer('created_at', { mode: 'timestamp' }).notNull(),
+    updated_at: integer('updated_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    club_events_status_starts_idx: index('club_events_status_starts_idx').on(table.status, table.startsAt)
+  })
+);
+
+export type ClubEventRow = typeof clubEventsTable.\$inferSelect;
+
+/**
+ * Inscriptions des adhérents à un événement.
+ *
+ * Le club ouvre régulièrement des inscriptions — un stage, une soirée raclette, une
+ * assemblée générale. Elles se prenaient jusqu'ici par SMS et de bouche à oreille, et
+ * personne ne savait combien de couverts prévoir.
+ *
+ * Pas de capacité maximale ici, délibérément : aucun de ces rendez-vous ne se joue à
+ * la place près, et une limite imposerait une course à l'inscription, une liste
+ * d'attente et un repêchage pour un problème que le club n'a pas.
+ */
+export const clubEventRegistrationsTable = sqliteTable(
+  'club_event_registrations',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    event_id: integer('event_id')
+      .notNull()
+      .references(() => clubEventsTable.id, { onDelete: 'cascade' }),
+    /**
+     * Identifiant de l'adhérent, **sans clé étrangère vers \`members\`**.
+     *
+     * \`members\` porte une ligne par licence *et par saison* : l'identifiant d'un même
+     * adhérent change au renouvellement. Une clé étrangère ferait donc pointer une
+     * inscription de novembre vers une ligne périmée dès la saison suivante. Le domaine
+     * n'a par ailleurs pas à dépendre de \`members\` pour compter des présents.
+     */
+    member_id: integer('member_id').notNull(),
+    /**
+     * Identité **recopiée** au moment de l'inscription, sur le modèle de
+     * \`cms_posts.author_name\` — un article survit au départ de son auteur, une liste de
+     * convives survit à la bascule de saison. C'est aussi, très concrètement, la seule
+     * chose que le bureau vient lire : autant qu'elle ne demande aucune jointure.
+     */
+    first_name: text('first_name').notNull(),
+    last_name: text('last_name').notNull(),
+    email: text('email').notNull(),
+    /** Accompagnants. 0 = vient seul ; le total des présents vaut \`1 + guests\`. */
+    guests: integer('guests').notNull().default(0),
+    created_at: integer('created_at', { mode: 'timestamp' }).notNull(),
+    updated_at: integer('updated_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    /**
+     * Une inscription par adhérent et par événement.
+     *
+     * C'est cette contrainte qui rend l'inscription idempotente : se réinscrire met à
+     * jour le nombre d'accompagnants au lieu de créer une seconde ligne. Un double-clic
+     * sur « Je m'inscris » ne fausse donc jamais le compte.
+     */
+    club_event_registrations_event_member_idx: uniqueIndex('club_event_registrations_event_member_idx').on(
+      table.eventId,
+      table.memberId
+    )
+  })
+);
+
+export type ClubEventRegistrationRow = typeof clubEventRegistrationsTable.\$inferSelect;
+
+export const EVENT_REGISTRATION_STATES = ['none', 'open', 'closed'] as const;
+export type EventRegistrationState = (typeof EVENT_REGISTRATION_STATES)[number];
+
+export const EVENT_REGISTRATION_LABELS: Record<EventRegistrationState, string> = {
+  none: 'Sans inscription',
+  open: 'Inscriptions ouvertes',
+  closed: 'Inscriptions closes'
+};
+
+export const EVENT_CATEGORY_LABELS: Record<ClubEventRow['category'], string> = {
+  competition: 'Compétition',
+  interclubs: 'Interclubs',
+  tournoi: 'Tournoi',
+  stage: 'Stage',
+  vie_du_club: 'Vie du club',
+  assemblee: 'Assemblée'
+};
+
+// Schema: expenses
+export const expensesTable = sqliteTable('expenses', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   season_id: integer('season_id').notNull(),
-  member_id: integer('member_id').notNull(),
-  product_id: integer('product_id').notNull().references(() => productsTable.id),
-  quantity: integer('quantity').notNull().default(1),
-  total_amount_cents: integer('total_amount_cents').notNull(),
-  payment_method_id: integer('payment_method_id').notNull(),
-  // created → awaiting_payment → paid. \`rejected\` ferme une demande non validée,
-  // \`cancelled\` une commande validée que le règlement n'a jamais suivie.
-  status: text('status', {
-    enum: ['created', 'awaiting_payment', 'paid', 'rejected', 'cancelled']
-  }).notNull().default('created'),
-  /** Date de mise en attente de règlement : point de départ des relances. */
-  awaiting_payment_since: text('awaiting_payment_since'),
-  paid_at: text('paid_at'),
+  description: text('description').notNull(),
+  category_id: integer('category_id').notNull(),
+  amount_cents: integer('amount_cents').notNull(),
+  photo_url: text('photo_url'),
+  status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
+  emitter_name: text('emitter_name').notNull(),
+  member_id: integer('member_id'),
   ledger_entry_id: integer('ledger_entry_id'),
   created_at: integer('created_at', { mode: 'timestamp' }).notNull()
-});
+}, (table) => ({
+  expenses_amount_cents_check: check('expenses_amount_cents_check', sql\`\${table.amountCents} > 0\`)
+}));
 
 // Schema: iam
 export const adminUsersTable = sqliteTable('admin_users', {
@@ -2837,6 +3556,32 @@ export const membersTable = sqliteTable('members', {
   members_licence_season_idx: uniqueIndex('members_licence_season_idx').on(table.licence, table.seasonId),
 }));
 
+// Fonction au club (bureau, CA, entraîneur) attribuée à un adhérent pour une saison.
+//
+// Table annexe et non colonne de \`members\` : l'// en \`onConflictDoUpdate\` à chaque ré-import, une colonne y serait perdue. La personne
+// est désignée par sa **licence** (clé naturelle stable d'une saison à l'autre, même
+// convention que \`team_staff\`) et sans FK : une fonction survit à un ré-// recréerait la ligne adhérent. La saison reste \`season_id\` — on ne quitte pas le
+// domaine members, inutile de recopier le code saison comme le fait le domaine teams.
+export const memberClubFunctionsTable = sqliteTable('member_club_functions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  season_id: integer('season_id').notNull(),
+  licence: text('licence').notNull(),
+  function: text('function', { enum: CLUB_FUNCTIONS }).notNull(),
+  created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+}, (table) => ({
+  // Pas de cumul : un adhérent ne porte qu'une fonction par saison (le président ne
+  // peut pas être aussi trésorier).
+  member_club_functions_season_licence_idx: uniqueIndex('member_club_functions_season_licence_idx')
+    .on(table.seasonId, table.licence),
+  // Filet en base pour les fonctions à titulaire unique (statuts du club) : le handler
+  // porte la règle avec un message français, l'index la garantit contre les écritures
+  // concurrentes ou hors application. Les autres fonctions (vice-président, membre du
+  // CA, entraîneur) acceptent plusieurs titulaires.
+  member_club_functions_single_holder_idx: uniqueIndex('member_club_functions_single_holder_idx')
+    .on(table.seasonId, table.function)
+    .where(sql\`"function" IN ('president', 'secretary', 'treasurer', 'treasurer_deputy')\`)
+}));
+
 // Configuration (singleton, id = 1) du modèle d'attestation CSE : identité du
 // signataire et signature. La signature est stockée en base64 (TEXT) car le
 // worker n'a pas \`nodejs_compat\` (pas de Buffer) et \`pdf-lib\` accepte le base64
@@ -2849,4 +3594,560 @@ export const attestationConfigTable = sqliteTable('attestation_config', {
   signature_base64: text('signature_base64'),
   updated_at: integer('updated_at', { mode: 'timestamp' }).notNull()
 });
+
+// Ce que la personne est, par opposition à ce que la saison lui attribue.
+//
+// Table annexe **sans \`season_id\`** : \`members\` porte une ligne par (licence, saison),
+// donc une photo rattachée à un \`member.id\` serait à redéposer à chaque réinscription,
+// et une colonne posée sur \`members\` serait écrasée par l'// (\`onConflictDoUpdate\`). La clé est la licence — clé naturelle stable d'une saison à
+// l'autre, sans clé étrangère, même convention que \`member_club_functions\`. Un adhérent
+// qui revient après une saison blanche retrouve son portrait.
+//
+// C'est ici qu'iront les prochaines données durables d'un adhérent (surnom, présentation,
+// préférences d'affichage) ; la cotisation, l'autorisation de notes de frais et la
+// fonction au club restent saisonnières et n'y ont pas leur place.
+export const memberProfilesTable = sqliteTable('member_profiles', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  licence: text('licence').notNull(),
+  // Préfixe R2 du portrait, sans la taille : \`member-photos/<empreinte>\`. Les objets
+  // déposés sont \`<préfixe>/512\` et \`<préfixe>/128\` — sans extension, le type réel
+  // étant porté par les métadonnées R2 (voir \`shared/photo.ts\`).
+  photo_key: text('photo_key'),
+  photo_updated_at: integer('photo_updated_at', { mode: 'timestamp' }),
+  created_at: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updated_at: integer('updated_at', { mode: 'timestamp' }).notNull()
+}, (table) => ({
+  member_profiles_licence_idx: uniqueIndex('member_profiles_licence_idx').on(table.licence)
+}));
+
+// Schema: notifications
+/**
+ * Abonnement push d'un appareil.
+ *
+ * La clé fonctionnelle est l'email du foyer, pas \`members.id\` : les identifiants
+ * d'adhérent sont liés à une saison et changent à chaque  * qu'un abonnement doit survivre au renouvellement. C'est aussi l'identité portée
+ * par la session OTP.
+ */
+export const pushSubscriptionsTable = sqliteTable(
+  'push_subscriptions',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    email: text('email').notNull(),
+    // Fourni par le service de push du navigateur ; identifie l'appareil de façon unique.
+    endpoint: text('endpoint').notNull().unique(),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    user_agent: text('user_agent'),
+    created_at: integer('created_at', { mode: 'timestamp' }).notNull(),
+    last_success_at: integer('last_success_at', { mode: 'timestamp' })
+  },
+  (table) => ({
+    push_subscriptions_email_idx: index('push_subscriptions_email_idx').on(table.email)
+  })
+);
+
+/**
+ * Message à diffuser. Conservé après envoi : il sert d'historique consultable
+ * depuis l'admin et évite de redemander à l'émetteur ce qui a déjà été envoyé.
+ */
+export const pushMessagesTable = sqliteTable('push_messages', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(),
+  body: text('body').notNull(),
+  // Chemin ouvert au clic sur la notification (relatif au storefront).
+  url: text('url'),
+  target: text('target', { enum: ['all', 'unpaid', 'groups', 'emails'] })
+    .notNull()
+    .default('all'),
+  // Précision lisible du ciblage, telle qu'affichée dans l'historique : la liste des
+  // groupes visés par exemple. On ne stocke pas les emails résolus, qui n'ont pas
+  // d'intérêt rétrospectif et alourdiraient inutilement la table.
+  target_detail: text('target_detail'),
+  // Origine du message : 'admin' pour un envoi manuel, sinon l'événement métier.
+  source: text('source').notNull().default('admin'),
+  // Catégorie réglable par l'adhérent (cf. shared/categories.ts). Stockée en texte
+  // libre plutôt qu'en enum figé : une catégorie retirée du code ne doit pas rendre
+  // illisible l'historique déjà écrit.
+  category: text('category').notNull().default('announcement'),
+  created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+/**
+ * Préférence d'un compte pour une catégorie.
+ *
+ * Seuls les écarts au défaut sont stockés : l'absence de ligne vaut « activé ».
+ * Une nouvelle catégorie ajoutée au code est donc active pour tout le monde sans
+ * migration de données.
+ */
+export const pushPreferencesTable = sqliteTable(
+  'push_preferences',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    email: text('email').notNull(),
+    category: text('category').notNull(),
+    enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+    updated_at: integer('updated_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    push_preferences_email_category_idx: uniqueIndex('push_preferences_email_category_idx').on(table.email, table.category)
+  })
+);
+
+/**
+ * File d'attente d'envoi (outbox), une ligne par appareil destinataire.
+ *
+ * L'envoi n'est jamais fait dans la requête qui déclenche la notification : un
+ * Worker du plan gratuit est plafonné à 50 sous-requêtes par invocation, et une
+ * diffusion à tout le club dépasse largement ce seuil. Un Cron Trigger draine la
+ * file par lots, ce qui apporte au passage les réessais.
+ */
+export const pushDeliveriesTable = sqliteTable(
+  'push_deliveries',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    message_id: integer('message_id').notNull(),
+    subscription_id: integer('subscription_id').notNull(),
+    status: text('status', { enum: ['pending', 'sent', 'failed'] })
+      .notNull()
+      .default('pending'),
+    attempts: integer('attempts').notNull().default(0),
+    last_error: text('last_error'),
+    updated_at: integer('updated_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    push_deliveries_status_idx: index('push_deliveries_status_idx').on(table.status),
+    push_deliveries_message_idx: index('push_deliveries_message_idx').on(table.messageId)
+  })
+);
+
+export type PushPreferenceRow = typeof pushPreferencesTable.\$inferSelect;
+export type PushSubscriptionRow = typeof pushSubscriptionsTable.\$inferSelect;
+export type PushMessageRow = typeof pushMessagesTable.\$inferSelect;
+export type PushDeliveryRow = typeof pushDeliveriesTable.\$inferSelect;
+
+// Schema: schedules
+/**
+ * Créneaux d'entraînement et gymnases.
+ *
+ * Domaine distinct du CMS, délibérément : un créneau change quand la mairie
+ * réattribue un gymnase, pas quand quelqu'un modifie une page. Ce sont des faits du
+ * club, que le site se contente d'afficher — et que l'espace adhérent voudra afficher
+ * à son tour. Le bloc \`schedule\` d'une page ne porte donc qu'une requête, jamais des
+ * lignes, et le domaine \`cms\` n'importe rien d'ici.
+ */
+
+export const venuesTable = sqliteTable('venues', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  /** Identifiant stable, repris dans les URL et les imports : « pierre-dupuis ». */
+  code: text('code').notNull().unique(),
+  name: text('name').notNull(),
+  street_address: text('street_address'),
+  postal_code: text('postal_code'),
+  city: text('city'),
+  /**
+   * Coordonnées en texte.
+   *
+   * Elles ne servent qu'au JSON-LD, qui les veut en chaîne : les stocker en réel
+   * introduirait une imprécision de virgule flottante sans le moindre bénéfice, on ne
+   * calcule aucune distance.
+   */
+  latitude: text('latitude'),
+  longitude: text('longitude'),
+  created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+export const scheduleSlotsTable = sqliteTable(
+  'schedule_slots',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    /**
+     * Code de saison, recopié et non lié.
+     *
+     * \`seasons\` appartient au domaine comptable, et la VSA proscrit le SQL traversant
+     * les frontières de domaine. Le code est stable et lisible (« 25-26 »), il suffit.
+     */
+    season_code: text('season_code').notNull(),
+    venue_id: integer('venue_id')
+      .notNull()
+      .references(() => venuesTable.id),
+    /** 1 = lundi … 7 = dimanche, comme ISO-8601 et comme le JSON-LD. */
+    weekday: integer('weekday').notNull(),
+    /** « 18:30 », en heure locale : le club n'a jamais qu'un fuseau. */
+    start_time: text('start_time').notNull(),
+    end_time: text('end_time').notNull(),
+    audience: text('audience', {
+      enum: [
+        'minibad',
+        'poussins',
+        'jeunes',
+        'elite_jeunes',
+        'adultes_loisir',
+        'adultes_competition',
+        'jeu_libre'
+      ]
+    }).notNull(),
+    label: text('label'),
+    coach_name: text('coach_name'),
+    /** Retire le créneau du site sans effacer son historique. */
+    active: integer('active', { mode: 'boolean' }).notNull().default(true),
+    created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    schedule_slots_season_weekday_idx: index('schedule_slots_season_weekday_idx').on(table.seasonCode, table.weekday, table.startTime),
+    schedule_slots_audience_idx: index('schedule_slots_audience_idx').on(table.audience)
+  })
+);
+
+export type VenueRow = typeof venuesTable.\$inferSelect;
+export type ScheduleSlotRow = typeof scheduleSlotsTable.\$inferSelect;
+
+/** Libellés affichables des publics, dans l'ordre où le club les présente. */
+export const AUDIENCE_LABELS: Record<ScheduleSlotRow['audience'], string> = {
+  minibad: 'Minibad (U9)',
+  poussins: 'Poussins (U11)',
+  jeunes: 'Jeunes',
+  elite_jeunes: 'Élite Jeunes',
+  adultes_loisir: 'Adultes loisirs',
+  adultes_competition: 'Adultes compétition',
+  jeu_libre: 'Jeu libre'
+};
+
+export const WEEKDAY_LABELS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
+// Schema: shop
+export const productCategoriesTable = sqliteTable('product_categories', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  // Unique : rend \`INSERT OR IGNORE\` du seed de référence réellement idempotent
+  // (un rejeu de migration avait dupliqué toutes les catégories, cf. 0008).
+  label: text('label').notNull().unique(),
+  accounting_category_id: integer('accounting_category_id').notNull(),
+  active: integer('active', { mode: 'boolean' }).notNull().default(true),
+  created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+export const productsTable = sqliteTable('products', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  product_category_id: integer('product_category_id').notNull().references(() => productCategoriesTable.id),
+  price_cents: integer('price_cents').notNull(),
+  stock: integer('stock').notNull().default(0),
+  track_stock: integer('track_stock', { mode: 'boolean' }).notNull().default(false),
+  active: integer('active', { mode: 'boolean' }).notNull().default(true),
+  created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+export const ordersTable = sqliteTable('orders', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  season_id: integer('season_id').notNull(),
+  member_id: integer('member_id').notNull(),
+  product_id: integer('product_id').notNull().references(() => productsTable.id),
+  quantity: integer('quantity').notNull().default(1),
+  total_amount_cents: integer('total_amount_cents').notNull(),
+  payment_method_id: integer('payment_method_id').notNull(),
+  // created → awaiting_payment → paid. \`rejected\` ferme une demande non validée,
+  // \`cancelled\` une commande validée que le règlement n'a jamais suivie.
+  status: text('status', {
+    enum: ['created', 'awaiting_payment', 'paid', 'rejected', 'cancelled']
+  }).notNull().default('created'),
+  /** Date de mise en attente de règlement : point de départ des relances. */
+  awaiting_payment_since: text('awaiting_payment_since'),
+  paid_at: text('paid_at'),
+  ledger_entry_id: integer('ledger_entry_id'),
+  created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+// Schema: teams
+/**
+ * Équipes d'interclubs, calendrier des journées et compositions de rencontre.
+ *
+ * Deux conventions du dépôt structurent tout ce schéma :
+ *
+ * - **\`seasonCode\` recopié, jamais lié.** \`seasons\` appartient au domaine comptable et la
+ *   VSA proscrit le SQL traversant les frontières de domaine — même choix que
+ *   \`schedule_slots.seasonCode\`.
+ * - **Un joueur est désigné par sa licence, jamais par \`members.id\`.** \`members\` porte une
+ *   ligne par licence *et par saison* : l'identifiant change à chaque renouvellement,
+ *   alors qu'une équipe doit survivre à l'été. La licence est la seule clé naturelle
+ *   stable, et la session de l'espace adhérent la porte déjà.
+ */
+
+const championshipEnum = { enum: CHAMPIONSHIPS } as const;
+
+/**
+ * Classements fédéraux, historisés par date ELO.
+ *
+ * Une ligne par joueur **et par date de publication** : les règlements ne lisent pas le
+ * classement courant mais celui d'une date arrêtée, fixe pour la saison en départemental
+ * et glissante en régional. Écraser la ligne à chaque  * une journée passée, et de justifier une valeur d'équipe contestée.
+ *
+ * Alimentée par l'export ELO Poona, qui **ne crée aucun adhérent** : le rapprochement
+ * avec \`members\` se fait sur la licence, et un compétiteur sans adhérent correspondant est
+ * signalé à l' */
+export const playerRankingsTable = sqliteTable(
+  'player_rankings',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    licence: text('licence').notNull(),
+    /** Date de publication du classement, en ISO. C'est la clé de l'historisation. */
+    elo_date: text('elo_date').notNull(),
+    season_code: text('season_code').notNull(),
+    last_name: text('last_name').notNull(),
+    first_name: text('first_name').notNull(),
+    gender: text('gender', { enum: ['H', 'F'] }).notNull(),
+    /** Libellé Poona brut (« Veteran 5 ») : la liste évolue, on ne la fige pas en enum. */
+    category: text('category'),
+    mutation: text('mutation', { enum: ['none', 'normal', 'dossier'] }).notNull().default('none'),
+    /**
+     * \`NULL\` = licencié non compétiteur (cellule vide dans l'export).
+     * \`'NC'\` = compétiteur sans classement, qui vaut 0 point mais peut être aligné.
+     * Confondre les deux ferait entrer en équipe quelqu'un qui n'y a pas sa place.
+     */
+    singles: text('singles', { enum: RANKINGS }),
+    doubles: text('doubles', { enum: RANKINGS }),
+    mixed: text('mixed', { enum: RANKINGS }),
+    singles_rank: integer('singles_rank'),
+    doubles_rank: integer('doubles_rank'),
+    mixed_rank: integer('mixed_rank'),
+    /** Cote CPPH : départage les paliers N1 du barème fédéral et ordonne les joueurs en ICR. */
+    cpph_singles: integer('cpph_singles'),
+    cpph_doubles: integer('cpph_doubles'),
+    cpph_mixed: integer('cpph_mixed'),
+    source: text('source', { enum: ['import', 'manuel'] }).notNull().default('import'),
+    updated_at: integer('updated_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    player_rankings_licence_date_idx: uniqueIndex('player_rankings_licence_date_idx').on(table.licence, table.eloDate),
+    player_rankings_date_idx: index('player_rankings_date_idx').on(table.eloDate)
+  })
+);
+
+/** Journal des imports de classements : sert l'écran, jamais le calcul. */
+export const rankingImportsTable = sqliteTable('ranking_imports', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  elo_date: text('elo_date').notNull(),
+  season_code: text('season_code').notNull(),
+  file_name: text('file_name'),
+  rows_imported: integer('rows_imported').notNull().default(0),
+  non_competitors: integer('non_competitors').notNull().default(0),
+  /** Compétiteurs absents du référentiel adhérents : c'est le signal donné au bureau. */
+  unmatched_members: integer('unmatched_members').notNull().default(0),
+  imported_at: integer('imported_at', { mode: 'timestamp' }).notNull()
+});
+
+/**
+ * Date de classement épinglée par championnat.
+ *
+ * N'existe que pour les championnats départementaux, dont le règlement fige la référence
+ * pour toute la saison. Le régional la recalcule à chaque journée et n'a rien à stocker —
+ * la politique elle-même vit dans \`championship.ts\`, parce qu'elle relève du règlement et
+ * non d'un choix du club.
+ */
+export const championshipSettingsTable = sqliteTable(
+  'championship_settings',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    season_code: text('season_code').notNull(),
+    championship: text('championship', championshipEnum).notNull(),
+    reference_elo_date: text('reference_elo_date'),
+    /**
+     * Lien vers le règlement de la saison, publié aux joueurs.
+     *
+     * Une URL et non un fichier : le document est déposé dans la médiathèque du site,
+     * qui sait déjà stocker, servir et remplacer un PDF. Reconstruire un dépôt de
+     * fichiers ici dupliquerait cette mécanique pour un seul document par championnat.
+     */
+    rules_url: text('rules_url'),
+    /** Libellé du lien, « Règlement ICD Mixte 2026-2027 ». */
+    rules_label: text('rules_label'),
+    updated_at: integer('updated_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    championship_settings_idx: uniqueIndex('championship_settings_idx').on(table.seasonCode, table.championship)
+  })
+);
+
+/**
+ * Une équipe du club, dans un championnat et une division.
+ *
+ * \`number\` **est** la hiérarchie : c'est lui que lit la règle « l'équipe n doit avoir une
+ * valeur inférieure ou égale à l'équipe n−1 ». Le nom affiché en est dérivé (\`NBA91-3\`) et
+ * n'est pas stocké : un champ libre finirait par diverger du numéro qui fait foi.
+ */
+export const clubTeamsTable = sqliteTable(
+  'club_teams',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    season_code: text('season_code').notNull(),
+    championship: text('championship', championshipEnum).notNull(),
+    /** Code de division (« D1 », « PN »), tel que le connaît \`championship.ts\`. */
+    division: text('division').notNull(),
+    number: integer('number').notNull(),
+    pool_label: text('pool_label'),
+    active: integer('active', { mode: 'boolean' }).notNull().default(true),
+    created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    club_teams_season_championship_number_idx: uniqueIndex('club_teams_season_championship_number_idx').on(
+      table.seasonCode, table.championship, table.number
+    )
+  })
+);
+
+/** Capitaine et vice-capitaine. Le vice-capitaine est une notion interne au club. */
+export const teamStaffTable = sqliteTable(
+  'team_staff',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    team_id: integer('team_id').notNull().references(() => clubTeamsTable.id, { onDelete: 'cascade' }),
+    licence: text('licence').notNull(),
+    role: text('role', { enum: ['captain', 'vice_captain'] }).notNull(),
+    created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    team_staff_team_role_idx: uniqueIndex('team_staff_team_role_idx').on(table.teamId, table.role)
+  })
+);
+
+/**
+ * Effectif déclaré. Indicatif : le règlement autorise un joueur à évoluer dans n'importe
+ * quelle équipe de son club, sous réserve des règles de valeur et de titularisation.
+ * L'effectif sert à présélectionner, pas à interdire.
+ */
+export const teamRosterTable = sqliteTable(
+  'team_roster',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    team_id: integer('team_id').notNull().references(() => clubTeamsTable.id, { onDelete: 'cascade' }),
+    licence: text('licence').notNull(),
+    created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    team_roster_team_licence_idx: uniqueIndex('team_roster_team_licence_idx').on(table.teamId, table.licence)
+  })
+);
+
+/**
+ * Une journée de championnat.
+ *
+ * Une journée **est une semaine** — « les rencontres disputées du lundi au dimanche d'une
+ * même semaine ». C'est cette semaine, et non une date de match, qui borne la règle
+ * « un joueur ne joue que pour une seule équipe du club par journée ».
+ */
+export const championshipDaysTable = sqliteTable(
+  'championship_days',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    season_code: text('season_code').notNull(),
+    championship: text('championship', championshipEnum).notNull(),
+    number: integer('number').notNull(),
+    /**
+     * \`playoff\` = barrages et finales : une journée que **toutes les équipes ne disputent
+     * pas**, seules celles que leur classement y envoie.
+     *
+     * Distinguée du calendrier régulier parce qu'une équipe sans rencontre y est normale,
+     * là où une journée régulière sans composition est un oubli à signaler. Les règles de
+     * valeur et d'alignement s'y appliquent à l'identique.
+     */
+    kind: text('kind', { enum: ['regular', 'playoff'] }).notNull().default('regular'),
+    /** Nom d'affichage quand « J14 » ne dit rien : « Barrages aller ». */
+    label: text('label'),
+    week_start: text('week_start').notNull(),
+    week_end: text('week_end').notNull(),
+    /**
+     * Jour de jeu, quand le calendrier du comité le fixe.
+     *
+     * Renseigné pour les **vétérans**, dont les cinq journées tombent un dimanche précis.
+     * \`NULL\` pour le mixte et le masculin : leur calendrier ne fixe pas un jour commun à
+     * tout le championnat, chaque rencontre ayant le sien. La date se porte alors sur la
+     * rencontre (\`team_fixtures.played_at\`), et c'est au capitaine de le faire.
+     */
+    match_date: text('match_date'),
+    /** Force la date de classement sur cette seule journée. Rare, mais indispensable. */
+    reference_elo_date: text('reference_elo_date'),
+    created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    championship_days_idx: uniqueIndex('championship_days_idx').on(table.seasonCode, table.championship, table.number)
+  })
+);
+
+/**
+ * La rencontre d'une équipe sur une journée.
+ *
+ * \`slot\` existe pour le régional seul, qui fait disputer **deux rencontres par journée**
+ * (art. 1.6.3). Ailleurs il vaut toujours 1.
+ */
+export const teamFixturesTable = sqliteTable(
+  'team_fixtures',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    team_id: integer('team_id').notNull().references(() => clubTeamsTable.id, { onDelete: 'cascade' }),
+    day_id: integer('day_id').notNull().references(() => championshipDaysTable.id, { onDelete: 'cascade' }),
+    slot: integer('slot').notNull().default(1),
+    /** \`bye\` = équipe au repos : le règlement y attache ses propres restrictions. */
+    status: text('status', { enum: ['scheduled', 'bye', 'forfeit'] }).notNull().default('scheduled'),
+    /**
+     * Date et heure réelles de la rencontre, **propres à cette équipe**.
+     *
+     * À distinguer soigneusement de \`championship_days.week_start\`, la semaine
+     * **théorique** fixée par le comité :
+     *
+     *   * la semaine théorique est **figée** et porte toutes les règles transverses —
+     *     valeur d'équipe, mouvements de joueurs, « un joueur ne tient qu'une seule
+     *     équipe du club par journée » (art. 6.3.7). Un report ne la déplace jamais.
+     *   * cette date-ci relève de la **logistique** : elle dit aux joueurs quand se
+     *     présenter. Elle tombe normalement dans la semaine théorique, mais un gymnase
+     *     indisponible ou des intempéries peuvent l'en faire sortir (art. 4.2.3).
+     *
+     * Les faire porter les mêmes règles reviendrait à laisser un aléa de gymnase changer
+     * ce que le règlement autorise — c'est pourquoi il n'existe plus de « semaine réelle »
+     * en base : rien ne doit pouvoir s'y adosser.
+     */
+    played_at: text('played_at'),
+    home: integer('home', { mode: 'boolean' }).notNull().default(true),
+    opponent: text('opponent'),
+    venue: text('venue'),
+    created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    team_fixtures_team_day_slot_idx: uniqueIndex('team_fixtures_team_day_slot_idx').on(table.teamId, table.dayId, table.slot)
+  })
+);
+
+/**
+ * Une ligne composée de la rencontre.
+ *
+ * Les lignes vides ne sont pas insérées : leur nombre donne directement le diviseur
+ * « nombre de matchs joués » qu'impose le règlement à une équipe incomplète (art. 6.3.5).
+ */
+export const lineupSlotsTable = sqliteTable(
+  'lineup_slots',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    fixture_id: integer('fixture_id').notNull().references(() => teamFixturesTable.id, { onDelete: 'cascade' }),
+    discipline: text('discipline', { enum: DISCIPLINES }).notNull(),
+    position: integer('position').notNull(),
+    licence1: text('licence1').notNull(),
+    /** \`NULL\` en simple. */
+    licence2: text('licence2'),
+    status: text('status', { enum: ['draft', 'validated'] }).notNull().default('draft'),
+    updated_by_licence: text('updated_by_licence'),
+    updated_at: integer('updated_at', { mode: 'timestamp' }).notNull()
+  },
+  (table) => ({
+    lineup_slots_fixture_discipline_position_idx: uniqueIndex('lineup_slots_fixture_discipline_position_idx').on(
+      table.fixtureId, table.discipline, table.position
+    )
+  })
+);
+
+export type PlayerRankingRow = typeof playerRankingsTable.\$inferSelect;
+export type RankingImportRow = typeof rankingImportsTable.\$inferSelect;
+export type ChampionshipSettingsRow = typeof championshipSettingsTable.\$inferSelect;
+export type ClubTeamRow = typeof clubTeamsTable.\$inferSelect;
+export type TeamStaffRow = typeof teamStaffTable.\$inferSelect;
+export type TeamRosterRow = typeof teamRosterTable.\$inferSelect;
+export type ChampionshipDayRow = typeof championshipDaysTable.\$inferSelect;
+export type TeamFixtureRow = typeof teamFixturesTable.\$inferSelect;
+export type LineupSlotRow = typeof lineupSlotsTable.\$inferSelect;
 `;

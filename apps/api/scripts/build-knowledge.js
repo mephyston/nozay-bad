@@ -8,11 +8,27 @@ const __dirname = path.dirname(__filename);
 const helpDir = path.join(__dirname, '../../../apps/admin/src/content/help');
 const outputFilePath = path.join(__dirname, '../src/ai-knowledge.ts');
 
+/**
+ * Les dix schémas de domaine, tous sans exception.
+ *
+ * L'assistant écrit du SQL : un schéma absent d'ici est une table qu'il ne sait pas
+ * interroger, sans le savoir — il répond alors à côté au lieu de dire qu'il ne peut
+ * pas. Les six derniers ont longtemps manqué, dont `expenses`, alors même que
+ * `notes-de-frais.md` était dans sa base d'aide.
+ *
+ * Toute création de domaine ajoute sa ligne ici.
+ */
 const schemaPaths = [
   '../../../libs/domains/accounting/shared/schema.ts',
-  '../../../libs/domains/shop/shared/schema.ts',
+  '../../../libs/domains/cms/shared/schema.ts',
+  '../../../libs/domains/events/shared/schema.ts',
+  '../../../libs/domains/expenses/shared/schema.ts',
   '../../../libs/domains/iam/shared/schema.ts',
   '../../../libs/domains/members/shared/schema.ts',
+  '../../../libs/domains/notifications/shared/schema.ts',
+  '../../../libs/domains/schedules/shared/schema.ts',
+  '../../../libs/domains/shop/shared/schema.ts',
+  '../../../libs/domains/teams/shared/schema.ts',
 ];
 
 // 1. Read Help Docs
