@@ -7,8 +7,14 @@
   let {
     member,
     season = '25-26',
-    clubFunctions = []
-  }: { member: Member; season?: string; clubFunctions?: ClubFunction[] } = $props();
+    clubFunctions = [],
+    canWrite = false
+  }: {
+    member: Member;
+    season?: string;
+    clubFunctions?: ClubFunction[];
+    canWrite?: boolean;
+  } = $props();
 
   // Représentants légaux réellement renseignés, pour ne pas afficher une section vide.
   const legalGuardians = $derived(
@@ -186,9 +192,11 @@
               <div class="text-sm font-medium">{authorized ? 'Autorisées' : 'Non autorisées'}</div>
             </div>
           </div>
-          <Button variant={authorized ? 'outline' : 'default'} size="sm" disabled={toggling} onclick={toggleExpense}>
-            {authorized ? 'Retirer' : 'Autoriser'}
-          </Button>
+          {#if canWrite}
+            <Button variant={authorized ? 'outline' : 'default'} size="sm" disabled={toggling} onclick={toggleExpense}>
+              {authorized ? 'Retirer' : 'Autoriser'}
+            </Button>
+          {/if}
         </div>
       </div>
     </Card.Content>
@@ -241,27 +249,41 @@
         Fonction au club
         <span class="text-xs font-normal text-muted-foreground">saison {season}</span>
       </h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-        {#each CLUB_FUNCTIONS as fn (fn)}
-          <label class="flex items-center gap-2 rounded-lg border border-border p-2.5 cursor-pointer hover:bg-muted/40">
-            <Checkbox
-              checked={selectedFunctions.includes(fn)}
-              onCheckedChange={() => toggleFunction(fn)}
-              aria-label={CLUB_FUNCTION_LABELS[fn]}
-            />
-            <span class="text-sm">{CLUB_FUNCTION_LABELS[fn]}</span>
-          </label>
-        {/each}
-      </div>
-      <div class="flex items-center justify-between gap-3">
-        <p class="text-[11px] text-muted-foreground">
-          Une fonction au plus par adhérent. Président, trésorier et trésorier adjoint
-          n'ont qu'un titulaire par saison.
-        </p>
-        <Button size="sm" disabled={savingFunctions || !functionsDirty} onclick={saveFunctions}>
-          Enregistrer
-        </Button>
-      </div>
+      {#if canWrite}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          {#each CLUB_FUNCTIONS as fn (fn)}
+            <label class="flex items-center gap-2 rounded-lg border border-border p-2.5 cursor-pointer hover:bg-muted/40">
+              <Checkbox
+                checked={selectedFunctions.includes(fn)}
+                onCheckedChange={() => toggleFunction(fn)}
+                aria-label={CLUB_FUNCTION_LABELS[fn]}
+              />
+              <span class="text-sm">{CLUB_FUNCTION_LABELS[fn]}</span>
+            </label>
+          {/each}
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-[11px] text-muted-foreground">
+            Une fonction au plus par adhérent. Président, trésorier et trésorier adjoint
+            n'ont qu'un titulaire par saison.
+          </p>
+          <Button size="sm" disabled={savingFunctions || !functionsDirty} onclick={saveFunctions}>
+            Enregistrer
+          </Button>
+        </div>
+      {:else}
+        <!-- Sans le droit d'écriture, la fonction se lit : une grille de cases inertes
+             ressemblerait à une commande en panne. -->
+        {#if savedFunctions.length > 0}
+          <div class="flex flex-wrap gap-2">
+            {#each savedFunctions as fn (fn)}
+              <Badge variant="secondary" size="lg" shape="pill">{CLUB_FUNCTION_LABELS[fn]}</Badge>
+            {/each}
+          </div>
+        {:else}
+          <p class="text-sm text-muted-foreground">Aucune fonction au club cette saison.</p>
+        {/if}
+      {/if}
     </Card.Content>
   </Card.Root>
 </div>

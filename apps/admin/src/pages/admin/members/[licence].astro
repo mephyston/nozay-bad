@@ -6,10 +6,14 @@ import { MemberProfile } from '@nba/members-ui';
 
 import { env } from 'cloudflare:workers';
 import { createAdminApiClient } from '../../../lib/api';
+import { can } from '../../../lib/guard';
 
 const { licence } = Astro.params;
 const season = Astro.url.searchParams.get('season') || '25-26';
 const apiService = createAdminApiClient(Astro.locals);
+// La fiche s'ouvre sur `members:members:read` : sans le droit d'écriture, elle se
+// consulte sans offrir de commande qui finirait en 403.
+const canWrite = can(Astro.locals, 'members:members:write');
 
 let member = null;
 let memberTransactionsList = [];
@@ -61,7 +65,7 @@ try {
         </div>
       )}
 
-      {member && <MemberProfile client:load {member} transactions={memberTransactionsList} seasonId={season} clubFunctions={clubFunctions} />}
+      {member && <MemberProfile client:load {member} transactions={memberTransactionsList} seasonId={season} clubFunctions={clubFunctions} canWrite={canWrite} />}
     </div>
   </AdminLayout>
 </Layout>

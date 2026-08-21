@@ -16,12 +16,14 @@
     member,
     transactions = [],
     seasonId = '25-26',
-    clubFunctions = []
+    clubFunctions = [],
+    canWrite = false
   }: {
     member: Member;
     transactions: GLTransaction[];
     seasonId?: string;
     clubFunctions?: ClubFunction[];
+    canWrite?: boolean;
   } = $props();
 
   let activeTab = $state<'profil' | 'cotisation' | 'transactions'>('profil');
@@ -53,16 +55,17 @@
   <Card.Content class="p-6 w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
     <div class="min-w-0 w-full sm:w-auto">
       <!--
-        Pas de garde de permission ici : comme l'autorisation de notes de frais de
-        l'onglet « Profil & Contacts », c'est le pont `/admin/api/**` qui refuse, et
-        l'API derrière lui qui fait autorité.
+        La fiche s'ouvre sur `members:members:read` : un compte qui n'a pas l'écriture
+        (entraîneur, trésorerie) ne doit pas se voir proposer un envoi de portrait qui
+        finira en 403. Le pont `/admin/api/**` refuse toujours, et l'API derrière lui
+        fait toujours autorité — masquer la commande est du confort, pas la garde.
       -->
       <MemberPhotoField
         baseSrc={photoEndpoint}
         endpoint={photoEndpoint}
         version={member.photoUpdatedAt ?? null}
         {initials}
-        canEdit
+        canEdit={canWrite}
         size={64}
       >
         {#snippet identity()}
@@ -104,7 +107,7 @@
     </Tabs.List>
 
     <Tabs.Content value="profil">
-      <MemberProfileInfoTab {member} season={seasonId} {clubFunctions} />
+      <MemberProfileInfoTab {member} season={seasonId} {clubFunctions} {canWrite} />
     </Tabs.Content>
 
     <Tabs.Content value="cotisation">
