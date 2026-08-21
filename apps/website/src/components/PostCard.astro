@@ -67,7 +67,7 @@ const cover = showImage ? post.cover : null;
   un seul lien pour le lecteur d'écran, là où envelopper la carte entière dupliquerait
   l'annonce du titre, de la date et du texte dans un même intitulé.
 */}
-<article class="group border-border relative flex flex-col overflow-hidden rounded-lg border transition-shadow hover:shadow-md">
+<article class="group border-border relative flex w-full min-w-0 flex-col overflow-hidden rounded-lg border transition-shadow hover:shadow-md">
   {cover && (
     <div class="bg-muted aspect-[16/9] overflow-hidden">
       {/*

@@ -45,7 +45,21 @@ const NESTED_SIZES = '(min-width: 768px) 320px, calc(100vw - 2rem)';
   ) : (
     <ul class:list={['grid gap-5', grid]}>
       {shown.map((post, index) => (
-        <li class="flex">
+        /*
+          `min-w-0` : sans lui, la carte déborde de l'écran en petite largeur.
+
+          Une case de grille vaut `minmax(auto, …)`, et cet `auto` se résout en
+          *largeur minimale de contenu* — la piste s'élargit alors jusqu'à ce que le
+          contenu tienne, au lieu de contraindre le contenu à tenir dans la piste. Une
+          carte réclamait ainsi 448 px dans une colonne qui n'en offrait que 358, et
+          la page prenait un défilement horizontal.
+
+          Le défaut ne se voyait qu'imbriqué dans une colonne : en pleine largeur la
+          case est assez large pour absorber la demande, et rien ne dépasse. Il ne
+          tient pas au contenu de telle ou telle actualité — remettre à zéro la largeur
+          minimale le referme quelle que soit la carte.
+        */
+        <li class="flex min-w-0">
           {/* Les deux premières cartes sont visibles d'emblée sur la plupart des écrans. */}
           <PostCard
             post={post}

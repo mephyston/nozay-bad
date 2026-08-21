@@ -114,7 +114,7 @@ const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' });
         const announcement = announcements.get(event.id) ?? null;
         return (
           <li>
-            <article class="border-border hover:border-primary/40 flex items-stretch gap-4 rounded-xl border p-3 transition-colors sm:gap-5 sm:p-4">
+            <article class="border-border hover:border-primary/40 relative flex items-stretch gap-4 rounded-xl border p-3 transition-colors sm:gap-5 sm:p-4">
               {/*
                 Pastille de date : le jour et le mois, en gros.
 
@@ -147,7 +147,26 @@ const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' });
                 */}
                 <CardHeading class="font-display leading-snug">
                   {announcement ? (
-                    <a href={announcement.href} class="hover:underline">{event.title}</a>
+                    /*
+                      En petite largeur, ce lien couvre la carte entière : `after:inset-0`
+                      l'étend jusqu'aux bords de l'`<article>` posé en `relative`. C'est ce
+                      qui remplace la ligne « Lire l'actualité » d'autrefois — la cible
+                      grandit au lieu de rétrécir, et la carte cesse de s'allonger pour
+                      loger un lien que le doigt vise mal.
+
+                      `sm:after:content-none` retire l'overlay dès que la place revient :
+                      sur grand écran les liens explicites reprennent la main, et une
+                      surface cliquable qui déborde du texte y serait une surprise.
+
+                      Un seul lien pour le lecteur d'écran, comme dans `PostCard` : le
+                      chevron ajouté plus bas est décoratif, il ne double pas l'annonce.
+                    */
+                    <a
+                      href={announcement.href}
+                      class="after:absolute after:inset-0 hover:underline sm:after:content-none"
+                    >
+                      {event.title}
+                    </a>
                   ) : event.externalUrl ? (
                     <a
                       href={event.externalUrl}
@@ -180,9 +199,17 @@ const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' });
                   )}
                 </p>
 
+                {/*
+                  Étiquette de catégorie, masquée en petite largeur.
+
+                  Elle y était redondante : la pastille de date porte déjà la couleur de
+                  la famille, à deux centimètres de là. Ce que le libellé ajoutait — le
+                  nom exact de la catégorie — ne valait pas les vingt-quatre pixels de
+                  hauteur qu'il coûtait sur chaque carte d'un agenda qui en aligne cinq.
+                */}
                 <span
                   class:list={[
-                    'mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium',
+                    'mt-2 hidden rounded-full px-2 py-0.5 text-xs font-medium sm:inline-block',
                     FAMILY_CLASS[FAMILY[event.category] ?? 'club']
                   ]}
                 >
@@ -193,26 +220,67 @@ const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' });
                   Un titre souligné au survol ne se voit pas sur un écran tactile : sans
                   cette ligne, rien n'annonce qu'un article raconte le rendez-vous.
                 */}
+                {/*
+                  Le libellé complet reste sur grand écran, où la place ne manque pas et
+                  où le titre de l'article annonce ce qu'on va lire avant le clic.
+                */}
                 {announcement && (
                   <a
                     href={announcement.href}
-                    class="text-primary mt-2 flex min-h-11 items-center gap-1 text-sm font-medium hover:underline"
+                    class="text-primary mt-2 hidden min-h-11 items-center gap-1 text-sm font-medium hover:underline sm:flex"
                   >
                     Lire l'actualité : {announcement.title} <span aria-hidden="true">→</span>
                   </a>
                 )}
 
+                {/*
+                  `relative z-10` et `w-fit` : ce lien est le seul à devoir passer
+                  **au-dessus** de l'overlay du titre, sinon il deviendrait inatteignable
+                  en petite largeur — un clic dessus mènerait à l'actualité. La largeur
+                  ajustée au texte évite qu'il ne capte aussi le vide à sa droite.
+                */}
                 {announcement && event.externalUrl && (
                   <a
                     href={event.externalUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="text-muted-foreground flex min-h-11 items-center gap-1 text-sm hover:underline"
+                    class="text-muted-foreground relative z-10 flex min-h-11 w-fit items-center gap-1 text-sm hover:underline"
                   >
                     Fiche de la compétition <span aria-hidden="true">↗</span>
                   </a>
                 )}
               </div>
+
+              {/*
+                Chevron d'invitation, en petite largeur seulement.
+
+                Purement décoratif — `aria-hidden`, et ce n'est pas un lien : la carte
+                est déjà cliquable dans son entier par l'overlay du titre. Il ne dit
+                rien de plus au lecteur d'écran, il dit à l'œil que quelque chose se
+                trouve derrière.
+
+                Posé dans la rangée plutôt que sous le texte : il ne coûte aucune
+                hauteur, là où la ligne « Lire l'actualité » en prenait quarante-quatre
+                sur une carte qui n'en fait que cent.
+              */}
+              {announcement && (
+                <div
+                  class="text-muted-foreground flex shrink-0 items-center sm:hidden"
+                  aria-hidden="true"
+                >
+                  <svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </div>
+              )}
             </article>
           </li>
         );
