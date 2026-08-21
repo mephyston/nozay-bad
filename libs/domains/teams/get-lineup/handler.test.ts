@@ -2,13 +2,13 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { sql } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
 import { type Db } from '@nba/db';
-import { membersTable } from '@nba/members/schema';
 import { loadLineup } from './handler';
 import { saveTeam } from '../save-team/handler';
 import { saveTeamStaff } from '../save-team-staff/handler';
 import { saveTeamRoster } from '../save-team-roster/handler';
 import { saveChampionshipDays } from '../save-championship-days/handler';
 import { playerRankingsTable } from '../shared/schema';
+import { insertMemberFixture } from '@nba/members/test-fixtures';
 
 const NOW = new Date('2026-10-01T10:00:00Z');
 const SEASON = '26-27';
@@ -35,7 +35,7 @@ describe('composition — candidats et éligibilité', () => {
     rankings: { singles?: string | null; doubles?: string | null; mixed?: string | null } = {},
     eloDate: string = ELO
   ) {
-    await db.insert(membersTable).values({
+    await insertMemberFixture(db, {
       licence, seasonId, lastName: `N${licence}`, firstName: 'Test',
       gender, birthDate: '1990-01-01', type: 'Adulte', importedAt: NOW
     });

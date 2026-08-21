@@ -92,6 +92,20 @@
       "when": 1787335546360,
       "tag": "0012_member_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1787346988206,
+      "tag": "0013_persons_and_memberships",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1787347069803,
+      "tag": "0014_drop_members_and_profiles",
+      "breakpoints": true
     }
   ]
 }

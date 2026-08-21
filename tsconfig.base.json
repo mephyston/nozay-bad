@@ -23,6 +23,7 @@
       "@nba/runtime-env": ["libs/shared/runtime-env/src/index.ts"],
       "@nba/members-api": ["libs/domains/members/index.ts"],
       "@nba/members/schema": ["libs/domains/members/shared/schema.ts"],
+      "@nba/members/test-fixtures": ["libs/domains/members/shared/test-fixtures.ts"],
       "@nba/accounting-api": ["libs/domains/accounting/index.ts"],
       "@nba/accounting/schema": ["libs/domains/accounting/shared/schema.ts"],
       "@nba/expenses-api": ["libs/domains/expenses/index.ts"],

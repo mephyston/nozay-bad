@@ -1,4 +1,4 @@
-import { membersTable } from '@nba/members/schema';
+import { membershipsTable, personsTable } from '@nba/members/schema';
 import { and, eq, or, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { getSeasonAtDate, getAdjacentSeason, type SeasonRow } from '@nba/accounting-api';
@@ -68,41 +68,48 @@ export function parisToday(now: Date = new Date()): string {
 export class LookupHouseholdRepository {
   // Tous les adhérents d'une saison dont l'email OU un email de parent/contact correspond
   // (insensible à la casse).
+  //
+  // L'adresse est désormais celle de la **personne**, pas de son dossier de l'année :
+  // c'est elle qui identifie le foyer. La saison n'intervient plus que pour décider qui,
+  // parmi les personnes trouvées, est adhérent — ce qui est exactement la question posée.
   private async membersByEmail(db: DbOrTx, email: string, seasonId: number): Promise<HouseholdMember[]> {
     const rows = await db
       .select({
-        id: membersTable.id,
-        firstName: membersTable.firstName,
-        lastName: membersTable.lastName,
-        licence: membersTable.licence,
-        paid: membersTable.paid,
-        expenseAuthorized: membersTable.expenseAuthorized
+        id: membershipsTable.id,
+        firstName: personsTable.firstName,
+        lastName: personsTable.lastName,
+        licence: personsTable.licence,
+        paid: membershipsTable.paid,
+        expenseAuthorized: membershipsTable.expenseAuthorized
       })
-      .from(membersTable)
+      .from(membershipsTable)
+      .innerJoin(personsTable, eq(personsTable.id, membershipsTable.personId))
       .where(
         and(
           or(
-            sql`lower(${membersTable.email}) = ${email}`,
-            sql`lower(${membersTable.parent1Email}) = ${email}`,
-            sql`lower(${membersTable.parent2Email}) = ${email}`
+            sql`lower(${personsTable.email}) = ${email}`,
+            sql`lower(${personsTable.parent1Email}) = ${email}`,
+            sql`lower(${personsTable.parent2Email}) = ${email}`
           ),
-          eq(membersTable.seasonId, seasonId)
+          eq(membershipsTable.seasonId, seasonId)
         )
       )
       .all();
     return rows as HouseholdMember[];
   }
 
-  // Email au dossier d'une licence, cherchée sur une saison précise.
+  // Email au dossier d'une licence, la saison servant à vérifier qu'elle a bien adhéré
+  // cette année-là — l'adresse, elle, ne dépend plus de la saison.
   private async emailByLicence(db: DbOrTx, licence: string, seasonId: number): Promise<string | null> {
     const member = await db
       .select({
-        email: membersTable.email,
-        parent1Email: membersTable.parent1Email,
-        parent2Email: membersTable.parent2Email
+        email: personsTable.email,
+        parent1Email: personsTable.parent1Email,
+        parent2Email: personsTable.parent2Email
       })
-      .from(membersTable)
-      .where(and(eq(membersTable.licence, licence), eq(membersTable.seasonId, seasonId)))
+      .from(membershipsTable)
+      .innerJoin(personsTable, eq(personsTable.id, membershipsTable.personId))
+      .where(and(eq(personsTable.licence, licence), eq(membershipsTable.seasonId, seasonId)))
       .get();
     const found = member?.email || member?.parent1Email || member?.parent2Email || null;
     return found ? normalizeEmail(found) : null;

@@ -2,12 +2,13 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { sql } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
 import { type Db } from '@nba/db';
-import { membersTable } from '@nba/members/schema';
 import { playerRankingsTable } from '../shared/schema';
 import { importRankings } from './handler';
 import { saveTeam } from '../save-team/handler';
 import { saveTeamRoster } from '../save-team-roster/handler';
 import { InvalidRankingFileError, RankingDateMissingError } from '../shared/errors';
+import { personsTable } from '@nba/members/schema';
+import { insertMemberFixture } from '@nba/members/test-fixtures';
 
 const NOW = new Date('2026-08-20T12:00:00Z');
 const SEASON = '26-27';
@@ -52,7 +53,7 @@ describe('import des classements', () => {
 
   /** Inscrit un adhérent au référentiel de la saison. */
   async function member(licence: string, lastName: string) {
-    await db.insert(membersTable).values({
+    await insertMemberFixture(db, {
       licence,
       seasonId,
       lastName,
@@ -100,7 +101,7 @@ describe('import des classements', () => {
         { licence: '07469928', lastName: 'INCONNU', firstName: 'Test' }
       ]);
       // Aucun adhérent créé : c'est au bureau de relancer l'import des adhérents.
-      const members = await db.select().from(membersTable).all();
+      const members = await db.select().from(personsTable).all();
       expect(members.map((m) => m.licence)).toEqual(['00210759']);
     });
 

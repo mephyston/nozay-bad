@@ -89,6 +89,10 @@ export const clubEventRegistrationsTable = sqliteTable(
      * inscription de novembre vers une ligne périmée dès la saison suivante. Le domaine
      * n'a par ailleurs pas à dépendre de `members` pour compter des présents.
      */
+    // Adhésion (`memberships.id`), et non personne : une commande, une dépense, une écriture
+    // ou une inscription appartient à la saison où elle a eu lieu. La colonne garde son nom
+    // `member_id` — la renommer aurait imposé deux migrations de plus et la réécriture de
+    // cinq tables, pour un gain de vocabulaire.
     memberId: integer('member_id').notNull(),
     /**
      * Identité **recopiée** au moment de l'inscription, sur le modèle de

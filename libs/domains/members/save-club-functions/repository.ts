@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { memberClubFunctionsTable, membersTable } from '@nba/members/schema';
+import { memberClubFunctionsTable, membershipsTable, personsTable } from '@nba/members/schema';
 import type { ClubFunction } from '../shared/club-functions';
 
 export async function findMemberBySeasonLicence(
@@ -10,12 +10,13 @@ export async function findMemberBySeasonLicence(
 ): Promise<{ id: number; firstName: string; lastName: string } | undefined> {
   return db
     .select({
-      id: membersTable.id,
-      firstName: membersTable.firstName,
-      lastName: membersTable.lastName
+      id: membershipsTable.id,
+      firstName: personsTable.firstName,
+      lastName: personsTable.lastName
     })
-    .from(membersTable)
-    .where(and(eq(membersTable.seasonId, seasonId), eq(membersTable.licence, licence)))
+    .from(membershipsTable)
+    .innerJoin(personsTable, eq(personsTable.id, membershipsTable.personId))
+    .where(and(eq(membershipsTable.seasonId, seasonId), eq(personsTable.licence, licence)))
     .get();
 }
 
@@ -30,17 +31,11 @@ export async function findHolders(
     .select({
       licence: memberClubFunctionsTable.licence,
       function: memberClubFunctionsTable.function,
-      firstName: membersTable.firstName,
-      lastName: membersTable.lastName
+      firstName: personsTable.firstName,
+      lastName: personsTable.lastName
     })
     .from(memberClubFunctionsTable)
-    .leftJoin(
-      membersTable,
-      and(
-        eq(membersTable.licence, memberClubFunctionsTable.licence),
-        eq(membersTable.seasonId, memberClubFunctionsTable.seasonId)
-      )
-    )
+    .leftJoin(personsTable, eq(personsTable.licence, memberClubFunctionsTable.licence))
     .where(
       and(
         eq(memberClubFunctionsTable.seasonId, seasonId),

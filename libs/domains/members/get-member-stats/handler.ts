@@ -1,28 +1,46 @@
 import { type Db } from '@nba/db';
-import { membersTable } from '@nba/members/schema';
-import { eq, sql, and } from 'drizzle-orm';
+import { membershipsTable, personsTable } from '@nba/members/schema';
+import { eq, sql } from 'drizzle-orm';
 import { getSeasonId } from '@nba/accounting-api';
 
+/**
+ * Statistiques de population du club.
+ *
+ * Avec une saison : les **adhérents de cette saison**. Sans saison : les **personnes
+ * connues du club**, chacune comptée une fois.
+ *
+ * La distinction n'existait pas : la requête portait sur `members`, une ligne par
+ * (licence, saison), si bien qu'une personne inscrite trois saisons pesait trois fois dans
+ * l'effectif, trois fois dans la répartition par sexe, et trois fois son âge dans la
+ * moyenne. C'est précisément ce que la séparation de la personne et de l'adhésion répare.
+ */
 export async function getMemberStats(db: Db, filters: { season?: string | number } = {}) {
   let sId: number | undefined;
   if (filters.season) {
     sId = await getSeasonId(db, filters.season);
   }
 
-  const whereClause = sId !== undefined ? eq(membersTable.seasonId, sId) : undefined;
+  // Âge en années civiles, sans tenir compte du jour anniversaire — comportement inchangé.
+  const age = sql`(cast(strftime('%Y', 'now') as integer) - cast(strftime('%Y', ${personsTable.birthDate}) as integer))`;
 
-  const result = await db.select({
+  const columns = {
     totalMembers: sql<number>`count(*)`,
-    maleCount: sql<number>`sum(case when gender = 'M' then 1 else 0 end)`,
-    femaleCount: sql<number>`sum(case when gender = 'F' then 1 else 0 end)`,
-    averageAge: sql<number>`avg(cast(strftime('%Y', 'now') as integer) - cast(strftime('%Y', birth_date) as integer))`,
-    under18Count: sql<number>`sum(case when (cast(strftime('%Y', 'now') as integer) - cast(strftime('%Y', birth_date) as integer)) < 18 then 1 else 0 end)`,
-    between18And30Count: sql<number>`sum(case when (cast(strftime('%Y', 'now') as integer) - cast(strftime('%Y', birth_date) as integer)) >= 18 and (cast(strftime('%Y', 'now') as integer) - cast(strftime('%Y', birth_date) as integer)) <= 30 then 1 else 0 end)`,
-    over30Count: sql<number>`sum(case when (cast(strftime('%Y', 'now') as integer) - cast(strftime('%Y', birth_date) as integer)) > 30 then 1 else 0 end)`
-  })
-  .from(membersTable)
-  .where(whereClause)
-  .get();
+    maleCount: sql<number>`sum(case when ${personsTable.gender} = 'M' then 1 else 0 end)`,
+    femaleCount: sql<number>`sum(case when ${personsTable.gender} = 'F' then 1 else 0 end)`,
+    averageAge: sql<number>`avg(${age})`,
+    under18Count: sql<number>`sum(case when ${age} < 18 then 1 else 0 end)`,
+    between18And30Count: sql<number>`sum(case when ${age} >= 18 and ${age} <= 30 then 1 else 0 end)`,
+    over30Count: sql<number>`sum(case when ${age} > 30 then 1 else 0 end)`
+  };
+
+  const result = sId !== undefined
+    ? await db
+        .select(columns)
+        .from(membershipsTable)
+        .innerJoin(personsTable, eq(personsTable.id, membershipsTable.personId))
+        .where(eq(membershipsTable.seasonId, sId))
+        .get()
+    : await db.select(columns).from(personsTable).get();
 
   return {
     totalMembers: result?.totalMembers || 0,

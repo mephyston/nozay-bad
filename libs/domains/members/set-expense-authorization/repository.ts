@@ -1,7 +1,8 @@
-import { membersTable } from '@nba/members/schema';
+import { membershipsTable } from '@nba/members/schema';
 import { eq } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 
+/** Le droit se donne pour une saison : il porte sur l'adhésion, pas sur la personne. */
 export async function updateExpenseAuthorization(db: DbOrTx, id: number, authorized: boolean): Promise<void> {
-  await db.update(membersTable).set({ expenseAuthorized: authorized }).where(eq(membersTable.id, id)).run();
+  await db.update(membershipsTable).set({ expenseAuthorized: authorized }).where(eq(membershipsTable.id, id)).run();
 }

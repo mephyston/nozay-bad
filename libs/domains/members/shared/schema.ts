@@ -10,17 +10,77 @@ export const usersTable = sqliteTable('users', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
-export const membersTable = sqliteTable('members', {
+/**
+ * La personne : le licencié, tel qu'il traverse les saisons.
+ *
+ * Une ligne par **licence**, et une seule. Tout ce qui reste vrai d'une rentrée à l'autre
+ * vit ici — identité, coordonnées, portrait — par opposition à `memberships`, qui porte ce
+ * que la saison attribue.
+ *
+ * Pourquoi cette table existe : `members` (devenue `memberships`) portait une ligne par
+ * (licence, saison), si bien que l'identité était recopiée à chaque adhésion et réécrite
+ * par l'import Poona. Toute donnée durable devait alors se réfugier dans une table annexe
+ * à clé `licence` sans clé étrangère — `member_club_functions`, puis `member_profiles` —
+ * en contradiction avec la règle 2.2 de l'ADR-0004. `persons` est la cible que ces deux
+ * tables contournaient.
+ *
+ * `licence` est la clé naturelle **externe**, au sens de la règle 2.3 de l'ADR-0004 : elle
+ * est définie hors du système (fédération), et c'est elle que portent les exports Poona et
+ * les classements ELO. Les FK, elles, pointent `id` comme partout ailleurs.
+ */
+export const personsTable = sqliteTable('persons', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   licence: text('licence').notNull(),
-  seasonId: integer('season_id').notNull(),
   lastName: text('last_name').notNull(),
   firstName: text('first_name').notNull(),
   gender: text('gender', { enum: ['M', 'F'] }).notNull(),
   birthDate: text('birth_date').notNull(),
+  /*
+    Coordonnées en « dernier connu », et non en instantané de la saison.
+
+    Mesuré sur la production avant la bascule : sur 226 personnes, l'email ne diverge
+    jamais d'une saison à l'autre, le téléphone et le contact parental divergent pour deux
+    personnes. L'essentiel des écarts apparents était du vide comblé au fil des exports.
+    Une adresse au dossier sert à joindre quelqu'un aujourd'hui — pas à savoir qui était
+    joignable en 2024.
+  */
   email: text('email'),
   phone: text('phone'),
+  parent1Name: text('parent1_name'),
+  parent1Email: text('parent1_email'),
+  parent1Phone: text('parent1_phone'),
+  parent2Name: text('parent2_name'),
+  parent2Email: text('parent2_email'),
+  parent2Phone: text('parent2_phone'),
+  // Préfixe R2 du portrait, sans la taille : `member-photos/<empreinte>`. Les objets
+  // déposés sont `<préfixe>/512` et `<préfixe>/128` — sans extension, le type réel étant
+  // porté par les métadonnées R2 (voir `shared/photo.ts`).
+  photoKey: text('photo_key'),
+  photoUpdatedAt: integer('photo_updated_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
+}, (table) => ({
+  licenceUnq: uniqueIndex('persons_licence_idx').on(table.licence)
+}));
+
+/**
+ * L'adhésion d'une personne à une saison — l'ancienne table `members`.
+ *
+ * Elle garde ses `id` : cinq tables les stockent durablement (`orders`, `expenses`,
+ * `ledger_entries`, `checks`, `club_event_registrations`) sans jamais avoir déclaré de clé
+ * étrangère, et une cotisation s'impute bien à l'adhésion d'une saison, pas à la personne.
+ * Les faire changer de sens aurait rattaché des écritures comptables à quelqu'un d'autre.
+ *
+ * `season_id` reste un entier nu, sans FK : les saisons appartiennent au domaine
+ * `accounting`, et les clés étrangères de ce dépôt sont volontairement intra-domaine.
+ */
+export const membershipsTable = sqliteTable('memberships', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  personId: integer('person_id').notNull().references(() => personsTable.id),
+  seasonId: integer('season_id').notNull(),
   status: text('status', { enum: ['valide', 'suspendu', 'incomplet', 'en_attente'] }).notNull().default('valide'),
+  // Libellé de tarif Poona (« Adulte », « Jeune »…). Saisonnier pour de bon : un jeune
+  // devient adulte, et six licences changeaient déjà de type d'une saison à l'autre.
   type: text('type').notNull(),
   importedAt: integer('imported_at', { mode: 'timestamp' }).notNull(),
   amountDueCents: integer('amount_due_cents').notNull().default(0),
@@ -32,15 +92,10 @@ export const membersTable = sqliteTable('members', {
   // le repli (1er septembre de la saison) est le cas courant, pas l'exception.
   paymentDate: text('payment_date'),
   // Autorise l'adhérent à saisir des notes de frais (défaut : non). Piloté depuis l'admin.
-  expenseAuthorized: integer('expense_authorized', { mode: 'boolean' }).notNull().default(false),
-  parent1Name: text('parent1_name'),
-  parent1Email: text('parent1_email'),
-  parent1Phone: text('parent1_phone'),
-  parent2Name: text('parent2_name'),
-  parent2Email: text('parent2_email'),
-  parent2Phone: text('parent2_phone')
+  // Saisonnier par nature : le droit se redonne à chaque réinscription.
+  expenseAuthorized: integer('expense_authorized', { mode: 'boolean' }).notNull().default(false)
 }, (table) => ({
-  licenceSeasonUnq: uniqueIndex('members_licence_season_idx').on(table.licence, table.seasonId),
+  personSeasonUnq: uniqueIndex('memberships_person_season_idx').on(table.personId, table.seasonId),
 }));
 
 // Fonction au club (bureau, CA, entraîneur) attribuée à un adhérent pour une saison.
@@ -84,28 +139,4 @@ export const attestationConfigTable = sqliteTable('attestation_config', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
 });
 
-// Ce que la personne est, par opposition à ce que la saison lui attribue.
-//
-// Table annexe **sans `season_id`** : `members` porte une ligne par (licence, saison),
-// donc une photo rattachée à un `member.id` serait à redéposer à chaque réinscription,
-// et une colonne posée sur `members` serait écrasée par l'import Poona
-// (`onConflictDoUpdate`). La clé est la licence — clé naturelle stable d'une saison à
-// l'autre, sans clé étrangère, même convention que `member_club_functions`. Un adhérent
-// qui revient après une saison blanche retrouve son portrait.
-//
-// C'est ici qu'iront les prochaines données durables d'un adhérent (surnom, présentation,
-// préférences d'affichage) ; la cotisation, l'autorisation de notes de frais et la
-// fonction au club restent saisonnières et n'y ont pas leur place.
-export const memberProfilesTable = sqliteTable('member_profiles', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  licence: text('licence').notNull(),
-  // Préfixe R2 du portrait, sans la taille : `member-photos/<empreinte>`. Les objets
-  // déposés sont `<préfixe>/512` et `<préfixe>/128` — sans extension, le type réel
-  // étant porté par les métadonnées R2 (voir `shared/photo.ts`).
-  photoKey: text('photo_key'),
-  photoUpdatedAt: integer('photo_updated_at', { mode: 'timestamp' }),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
-}, (table) => ({
-  licenceUnq: uniqueIndex('member_profiles_licence_idx').on(table.licence)
-}));
+

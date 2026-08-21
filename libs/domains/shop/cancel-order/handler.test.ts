@@ -4,11 +4,11 @@ import { setupMockDb } from '@nba/db/test-utils';
 import { cancelOrder } from './handler';
 import { ordersTable, productsTable, productCategoriesTable } from '../shared/schema';
 // eslint-disable-next-line no-restricted-imports
-import { membersTable } from '@nba/members/schema';
 // eslint-disable-next-line no-restricted-imports
 import { seasonsTable } from '@nba/accounting/schema';
 import { OrderInvalidOrProcessedError } from '../shared/errors';
 import type { OrderStatus } from '../shared/order';
+import { insertMemberFixture } from '@nba/members/test-fixtures';
 
 describe('cancelOrder (annulation faute de règlement)', () => {
   let db: any;
@@ -60,7 +60,7 @@ describe('cancelOrder (annulation faute de règlement)', () => {
     }).returning().get();
     seasonId = season.id;
 
-    const member = await db.insert(membersTable).values({
+    const member = await insertMemberFixture(db, {
       licence: '12345678',
       seasonId,
       lastName: 'Dupont',
@@ -70,9 +70,8 @@ describe('cancelOrder (annulation faute de règlement)', () => {
       email: 'jean.dupont@example.com',
       status: 'valide',
       type: 'senior',
-      importedAt: new Date(),
-      createdAt: new Date()
-    }).returning().get();
+      importedAt: new Date()
+    });
     memberId = member.id;
 
     const pmRes = await mockD1.prepare('SELECT id FROM payment_methods').all();

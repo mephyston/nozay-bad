@@ -1,4 +1,3 @@
-import { membersTable } from '@nba/members/schema';
 import { seasonsTable } from '@nba/accounting/schema';
 import { ledgerEntriesTable, categoriesTable } from '@nba/accounting/schema';
 import { describe, it, expect } from 'vitest';
@@ -7,6 +6,8 @@ import { seasonBalancesTable, bankStatementLinesTable, checkDepositsTable, check
 import { productsTable, productCategoriesTable, ordersTable } from '../../../libs/domains/shop/shared/schema';
 import { setupMockDb } from '@nba/db/test-utils';
 import { eq } from 'drizzle-orm';
+import { insertMemberFixture, readMemberFixtures } from '@nba/members/test-fixtures';
+import { membershipsTable } from '@nba/members/schema';
 
 describe('Database Tests', () => {
   it('should run migrations and insert/retrieve a member and a user', async () => {
@@ -50,11 +51,11 @@ describe('Database Tests', () => {
       importedAt: new Date('2026-07-07T12:00:00Z'),
     };
 
-    const insertResult = await db.insert(membersTable).values(newMember).run();
-    expect(insertResult.success).toBe(true);
+    const inserted = await insertMemberFixture(db, newMember);
+    expect(inserted.id).toBeGreaterThan(0);
 
     // Retrieve the member
-    const members = await db.select().from(membersTable).all();
+    const members = await readMemberFixtures(db).all();
     expect(members).toHaveLength(1);
     expect(members[0].licence).toBe('1234567');
     expect(members[0].seasonId).toBe(season.id);
@@ -135,7 +136,7 @@ describe('Database Tests', () => {
       }).returning().get();
     }
 
-    const [member] = await db.insert(membersTable).values({
+    const member = await insertMemberFixture(db, {
       seasonId: season.id,
       licence: '7778889',
       lastName: 'Dupont',
@@ -149,10 +150,11 @@ describe('Database Tests', () => {
       parent1Name: 'Dupont Marc',
       type: 'Competiteur',
       importedAt: new Date()
-    }).returning();
+    });
 
-    expect(member.amountDueCents).toBe(25000);
-    expect(member.parent1Name).toBe('Dupont Marc');
+    const stored = (await readMemberFixtures(db).where(eq(membershipsTable.id, member.id)).get())!;
+    expect(stored.amountDueCents).toBe(25000);
+    expect(stored.parent1Name).toBe('Dupont Marc');
 
     const [bt] = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-RECONCILE-TEST',
@@ -267,7 +269,7 @@ describe('Database Tests', () => {
     }
 
     // Insert dependency tables for order referencing
-    const [member] = await db.insert(membersTable).values({
+    const member = await insertMemberFixture(db, {
       seasonId: season.id,
       licence: '1122334',
       lastName: 'Martin',
@@ -276,7 +278,7 @@ describe('Database Tests', () => {
       birthDate: '1995-04-12',
       type: 'Loisir',
       importedAt: new Date()
-    }).returning();
+    });
 
     const order = await db.insert(ordersTable).values({
       seasonId: season.id,

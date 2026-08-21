@@ -1,28 +1,30 @@
+/**
+ * Les règles portées par une adhésion : ce qu'elle doit, ce qu'elle a reçu, ce qu'elle
+ * autorise. L'identité vient de la personne et n'est ici que de passage, pour l'attestation.
+ *
+ * Les repli `?? 0` ont disparu avec le type qui les rendait nécessaires : `MemberSummary`
+ * promettait `amountDue` / `amountReceived`, que les requêtes n'ont jamais renvoyés — elles
+ * rendaient `amountDueCents` et `amountReceivedCents`. Les deux formes cohabitaient donc
+ * ici, et l'on ne savait plus laquelle faisait foi.
+ */
+export interface MemberData {
+  lastName: string;
+  firstName: string;
+  birthDate: string;
+  amountDueCents: number;
+  amountReceivedCents: number;
+  paid: boolean;
+}
+
 export class Member {
-  constructor(private readonly data: {
-    id: number;
-    licence: string;
-    season: string;
-    lastName: string;
-    firstName: string;
-    gender: 'M' | 'F';
-    birthDate: string;
-    email: string | null;
-    phone: string | null;
-    status: string;
-    type: string;
-    amountDue: number;
-    amountReceived: number;
-    amountRemaining: number;
-    paid: boolean;
-  }) {}
+  constructor(private readonly data: MemberData) {}
 
   get amountReceived(): number {
-    return (this.data as any).amountReceivedCents ?? this.data.amountReceived;
+    return this.data.amountReceivedCents;
   }
 
   get amountDue(): number {
-    return (this.data as any).amountDueCents ?? this.data.amountDue;
+    return this.data.amountDueCents;
   }
 
   get paid(): boolean {
@@ -41,24 +43,17 @@ export class Member {
     return this.data.birthDate;
   }
 
-  get season(): string {
-    return this.data.season;
-  }
-
   canReceiveAttestation(): boolean {
     return this.data.paid;
   }
 
   calculatePayment(amountCents: number): { amountReceivedCents: number; amountRemainingCents: number; paid: boolean } {
-    const currentReceived = (this.data as any).amountReceivedCents ?? this.data.amountReceived ?? 0;
-    const currentDue = (this.data as any).amountDueCents ?? this.data.amountDue ?? 0;
-    const newReceived = currentReceived + amountCents;
-    const newRemaining = Math.max(0, currentDue - newReceived);
-    const isPaid = newRemaining === 0;
+    const newReceived = this.data.amountReceivedCents + amountCents;
+    const newRemaining = Math.max(0, this.data.amountDueCents - newReceived);
     return {
       amountReceivedCents: newReceived,
       amountRemainingCents: newRemaining,
-      paid: isPaid
+      paid: newRemaining === 0
     };
   }
 }

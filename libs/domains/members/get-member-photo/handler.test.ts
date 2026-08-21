@@ -4,6 +4,7 @@ import { type Db } from '@nba/db';
 import { getMemberPhoto } from './handler';
 import { uploadMemberPhoto } from '../upload-member-photo/handler';
 import type { PhotoStore } from '../upload-member-photo/dto';
+import { insertMemberFixture } from '@nba/members/test-fixtures';
 
 const noopStore: PhotoStore = {
   async put() {},
@@ -17,6 +18,7 @@ describe('getMemberPhoto', () => {
 
   beforeEach(async () => {
     ({ db } = await setupMockDb());
+    await insertMemberFixture(db, { licence: '06123456', seasonId: 1 });
     await uploadMemberPhoto(db, noopStore, {
       licence: '06123456',
       bytes: image(),

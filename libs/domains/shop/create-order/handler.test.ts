@@ -3,10 +3,10 @@ import { setupMockDb } from '@nba/db/test-utils';
 import { createOrder } from './handler';
 import { productsTable, productCategoriesTable } from '../shared/schema';
 // eslint-disable-next-line no-restricted-imports
-import { membersTable } from '@nba/members/schema';
 // eslint-disable-next-line no-restricted-imports
 import { seasonsTable } from '@nba/accounting/schema';
 import { MemberNotEligibleError } from '../shared/errors';
+import { insertMemberFixture } from '@nba/members/test-fixtures';
 
 describe('createOrder handler (Eligibility & Validation)', () => {
   let db: any;
@@ -24,10 +24,10 @@ describe('createOrder handler (Eligibility & Validation)', () => {
     }).returning().get();
     seasonId = season.id;
 
-    const member = await db.insert(membersTable).values({
+    const member = await insertMemberFixture(db, {
       licence: '111222', seasonId, lastName: 'Durand', firstName: 'Marie', gender: 'F', birthDate: '1995-03-20',
       status: 'valide', type: 'senior', paid: false, amountRemainingCents: 5000, importedAt: new Date()
-    }).returning().get();
+    });
     memberId = member.id;
 
     const catRes = await mock.mockD1.prepare('SELECT id FROM categories').all();
@@ -67,10 +67,10 @@ describe('createOrder handler (Eligibility & Validation)', () => {
   });
 
   it('3. Rejects order creation if member status is not valide (e.g. suspendu)', async () => {
-    const suspendedMember = await db.insert(membersTable).values({
+    const suspendedMember = await insertMemberFixture(db, {
       licence: '333444', seasonId, lastName: 'Martin', firstName: 'Paul', gender: 'M', birthDate: '1992-01-01',
       status: 'suspendu', type: 'senior', importedAt: new Date()
-    }).returning().get();
+    });
 
     await expect(createOrder(db, {
       seasonId, memberId: suspendedMember.id, productId, quantity: 1, paymentMethod: paymentMethodCode

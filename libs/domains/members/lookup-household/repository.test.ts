@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { seasonsTable } from '@nba/accounting/schema';
-import { membersTable } from '@nba/members/schema';
 import { LookupHouseholdRepository, parisToday } from './repository';
+import { insertMemberFixture, insertMemberFixtures } from '@nba/members/test-fixtures';
 
 // Date figée à l'intérieur de la saison 25-26 : les tests ne doivent rien devoir à
 // l'horloge de la machine qui les exécute.
@@ -46,13 +46,13 @@ describe('LookupHouseholdRepository', () => {
     nextId = seasons.find((s: any) => s.code === '26-27').id;
 
     // Foyer sur la saison en cours : deux enfants (email du parent en contact) + le parent.
-    await db.insert(membersTable).values([
+    await insertMemberFixtures(db, [
       { ...baseMember, seasonId: currentId, licence: '1000001', lastName: 'Martin', firstName: 'Léa', gender: 'F', email: null, parent1Email: 'parent@ex.fr' },
       { ...baseMember, seasonId: currentId, licence: '1000002', lastName: 'Martin', firstName: 'Tom', email: null, parent1Email: 'parent@ex.fr' },
       { ...baseMember, seasonId: currentId, licence: '1000003', lastName: 'Martin', firstName: 'Papa', email: 'Parent@Ex.fr', type: 'adulte', birthDate: '1980-01-01', paid: true },
       // Adhérent sans lien, saison en cours.
       { ...baseMember, seasonId: currentId, licence: '2000001', lastName: 'Durand', firstName: 'Zoé', gender: 'F', email: 'autre@ex.fr' }
-    ]).run();
+    ]);
   });
 
   const lookup = (identifier: string) => repo.lookup(db, identifier, TODAY);
@@ -97,10 +97,10 @@ describe('LookupHouseholdRepository', () => {
     });
 
     it('retient la saison en cours quand le foyer est aussi inscrit pour la suivante', async () => {
-      await db.insert(membersTable).values({
+      await insertMemberFixture(db, {
         ...baseMember, seasonId: nextId, licence: '1000003', lastName: 'Martin', firstName: 'Papa',
         email: 'parent@ex.fr', type: 'adulte', birthDate: '1980-01-01'
-      }).run();
+      });
 
       const res = await lookup('parent@ex.fr');
       expect(res.status).toBe('granted');
@@ -114,10 +114,10 @@ describe('LookupHouseholdRepository', () => {
     // Un enfant réinscrit, l'autre pas : le cas se présentera à chaque rentrée, dès qu'une
     // famille échelonne ses licences.
     beforeEach(async () => {
-      await db.insert(membersTable).values([
+      await insertMemberFixtures(db, [
         { ...baseMember, seasonId: currentId, licence: '6000001', lastName: 'Mixte', firstName: 'Réinscrit', email: null, parent1Email: 'mixte@ex.fr' },
         { ...baseMember, seasonId: previousId, licence: '6000002', lastName: 'Mixte', firstName: 'Pas réinscrit', email: null, parent1Email: 'mixte@ex.fr' }
-      ]).run();
+      ]);
     });
 
     it('ouvre l’accès au foyer dès qu’UN membre est licencié', async () => {
@@ -154,10 +154,10 @@ describe('LookupHouseholdRepository', () => {
 
   describe('sans licence en cours', () => {
     it('inscription anticipée : `upcoming`, sans aucun dossier en session', async () => {
-      await db.insert(membersTable).values({
+      await insertMemberFixture(db, {
         ...baseMember, seasonId: nextId, licence: '3000001', lastName: 'Nouveau', firstName: 'Alex',
         email: 'alex@ex.fr', type: 'adulte', birthDate: '1990-01-01'
-      }).run();
+      });
 
       const res = await lookup('alex@ex.fr');
       expect(res.status).toBe('upcoming');
@@ -168,10 +168,10 @@ describe('LookupHouseholdRepository', () => {
     });
 
     it('licence non renouvelée : `lapsed`, sans aucun dossier en session', async () => {
-      await db.insert(membersTable).values({
+      await insertMemberFixture(db, {
         ...baseMember, seasonId: previousId, licence: '4000001', lastName: 'Parti', firstName: 'Sam',
         email: 'sam@ex.fr', type: 'adulte', birthDate: '1990-01-01'
-      }).run();
+      });
 
       const res = await lookup('sam@ex.fr');
       expect(res.status).toBe('lapsed');
@@ -184,10 +184,10 @@ describe('LookupHouseholdRepository', () => {
     });
 
     it('retrouve l’ex-adhérent par son numéro de licence, pas seulement par email', async () => {
-      await db.insert(membersTable).values({
+      await insertMemberFixture(db, {
         ...baseMember, seasonId: previousId, licence: '4000001', lastName: 'Parti', firstName: 'Sam',
         email: 'sam@ex.fr', type: 'adulte', birthDate: '1990-01-01'
-      }).run();
+      });
 
       const res = await lookup('4000001');
       expect(res.status).toBe('lapsed');
@@ -195,10 +195,10 @@ describe('LookupHouseholdRepository', () => {
     });
 
     it('parti depuis deux saisons : indiscernable d’un inconnu', async () => {
-      await db.insert(membersTable).values({
+      await insertMemberFixture(db, {
         ...baseMember, seasonId: oldestId, licence: '5000001', lastName: 'Ancien', firstName: 'Max',
         email: 'max@ex.fr', type: 'adulte', birthDate: '1990-01-01'
-      }).run();
+      });
 
       const res = await lookup('max@ex.fr');
       expect(res.status).toBe('unknown');
@@ -224,10 +224,10 @@ describe('LookupHouseholdRepository', () => {
       // Octobre 2027 : la saison 27-28 n'a pas encore été créée en base. On retombe sur la
       // dernière saison commencée (26-27) plutôt que de verrouiller tout le club — un
       // oubli du bureau ne doit pas se traduire par une panne d'accès générale.
-      await db.insert(membersTable).values({
+      await insertMemberFixture(db, {
         ...baseMember, seasonId: nextId, licence: '1000003', lastName: 'Martin', firstName: 'Papa',
         email: 'parent@ex.fr', type: 'adulte', birthDate: '1980-01-01'
-      }).run();
+      });
 
       const res = await repo.lookup(db, 'parent@ex.fr', '2027-10-01');
       expect(res.status).toBe('granted');

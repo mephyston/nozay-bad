@@ -54,12 +54,11 @@ const tables = [
     'bank_statement_lines',
     'products',
     'product_categories',
-    // Sans FK vers `members` (attribution par licence), mais fonctionnellement enfant.
+    // Sans FK vers `persons` (attribution par licence), mais fonctionnellement enfant.
     'member_club_functions',
-    // Rattaché à la licence et non à l'adhésion de l'année : la ligne survit aux
-    // saisons, mais se purge avec le reste entre deux tests.
-    'member_profiles',
-    'members',
+    // L'adhésion avant la personne : c'est elle qui porte la clé étrangère.
+    'memberships',
+    'persons',
     'season_balances',
     'season_category_budgets',
     'categories',

@@ -25,6 +25,10 @@ export const productsTable = sqliteTable('products', {
 export const ordersTable = sqliteTable('orders', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   seasonId: integer('season_id').notNull(),
+  // Adhésion (`memberships.id`), et non personne : une commande, une dépense, une écriture
+  // ou une inscription appartient à la saison où elle a eu lieu. La colonne garde son nom
+  // `member_id` — la renommer aurait imposé deux migrations de plus et la réécriture de
+  // cinq tables, pour un gain de vocabulaire.
   memberId: integer('member_id').notNull(),
   productId: integer('product_id').notNull().references(() => productsTable.id),
   quantity: integer('quantity').notNull().default(1),

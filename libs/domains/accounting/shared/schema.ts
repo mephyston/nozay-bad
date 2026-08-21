@@ -130,6 +130,10 @@ export const ledgerEntriesTable = sqliteTable('ledger_entries', {
     enum: ['normal', 'produit_constate_avance', 'charge_constatee_avance', 'charge_a_payer', 'produit_a_recevoir']
   }).notNull().default('normal'),
   accrualNote: text('accrual_note'),
+  // Adhésion (`memberships.id`), et non personne : une commande, une dépense, une écriture
+  // ou une inscription appartient à la saison où elle a eu lieu. La colonne garde son nom
+  // `member_id` — la renommer aurait imposé deux migrations de plus et la réécriture de
+  // cinq tables, pour un gain de vocabulaire.
   memberId: integer('member_id'),
   bankStatementLineId: integer('bank_statement_line_id').references(() => bankStatementLinesTable.id),
   invoiceId: integer('invoice_id').references(() => invoicesTable.id),

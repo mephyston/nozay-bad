@@ -71,11 +71,16 @@ describe('Domain Architecture Validation', () => {
         declaredRepoInterfaces.push({ name: match[1], file: filePath });
       }
 
-      // Rule 1: A file outside members/ imports membersTable (except references of FK in schema.ts)
+      // Rule 1 : hors du domaine members, personne ne touche à ses tables.
+      //
+      // La règle ne visait que `membersTable`. Cette table s'appelle désormais
+      // `membershipsTable` et s'accompagne de `personsTable` : n'avoir renommé que la
+      // première aurait laissé le garde-fou vert tout en ne couvrant plus rien — le
+      // contrôle est une recherche textuelle, il ne connaît que les noms qu'on lui donne.
       const isTestFile = filename.endsWith('.test.ts') || filename.endsWith('.spec.ts');
       if (!isMembersDomain && !isSchemaFile && !isTestFile) {
-        const hasMembersTable = /\bmembersTable\b/.test(content);
-        expect(hasMembersTable).toBe(false);
+        const hasMembersTable = /\b(membersTable|membershipsTable|personsTable)\b/.test(content);
+        expect(hasMembersTable, `${relativePath} référence une table du domaine members`).toBe(false);
       }
 
       // Rule 2: A handler.ts under queries/ contains db.transaction

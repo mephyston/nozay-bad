@@ -232,11 +232,11 @@ describe('closeSeason (Pre-closure Checks, Rollover & Reopen - PROMPT 13)', () =
     const { paymentMethodsTable } = await import('@nba/accounting/schema');
     const { sql } = await import('drizzle-orm');
 
-    const member = await db.get(sql`
-      INSERT INTO members (licence, season_id, last_name, first_name, gender, birth_date, status, type, imported_at)
-      VALUES ('999111', 1, 'Valentin', 'Luc', 'M', '1990-01-01', 'valide', 'senior', strftime('%s', 'now'))
-      RETURNING id
-    `) as { id: number };
+    const { insertMemberFixture } = await import('@nba/members/test-fixtures');
+    const member = await insertMemberFixture(db, {
+      licence: '999111', seasonId: 1, lastName: 'Valentin', firstName: 'Luc',
+      gender: 'M', birthDate: '1990-01-01', status: 'valide', type: 'senior'
+    });
 
     const pCat = await db.insert(productCategoriesTable).values({
       // `product_categories.label` est unique : le seed a déjà une famille « Cordages ».

@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
-import { membersTable } from '@nba/members/schema';
 import { seasonsTable } from '@nba/accounting/schema';
 import { setupMockDb } from '@nba/db/test-utils';
 import { notificationsRouter } from '@nba/notifications-api';
@@ -9,6 +8,7 @@ import {
   pushMessagesTable
 } from '../../../libs/domains/notifications/shared/schema';
 import { notificationsSendRouter } from './notifications';
+import { insertMemberFixtures } from '@nba/members/test-fixtures';
 
 const app = new Hono<{ Bindings: { DB: any } }>();
 app.route('/notifications', notificationsRouter);
@@ -55,9 +55,7 @@ async function seed(db: any) {
     type: 'Jeune',
     importedAt: new Date()
   };
-  await db
-    .insert(membersTable)
-    .values([
+  await insertMemberFixtures(db, [
       {
         ...base,
         id: 1,
@@ -78,8 +76,7 @@ async function seed(db: any) {
         paid: false,
         type: 'Loisirs 1 (Lundi)'
       }
-    ])
-    .run();
+    ]);
 }
 
 describe('POST /notifications/messages', () => {

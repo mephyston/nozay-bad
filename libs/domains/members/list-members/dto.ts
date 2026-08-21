@@ -1,4 +1,4 @@
-import { membersTable } from '@nba/members/schema';
+import type { MemberSummary } from '../shared/queries';
 
 
 export interface ListMembersFilters {
@@ -12,7 +12,7 @@ export interface ListMembersFilters {
 export interface ListMembersPagination { page: number; limit: number }
 
 export type ListMembersOutput = {
-  data: (typeof membersTable.$inferSelect)[];
+  data: MemberSummary[];
   pagination: {
     total: number;
     page: number;

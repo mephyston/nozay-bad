@@ -31,6 +31,7 @@ export default defineConfig({
       '@nba/teams/schema': path.resolve(__dirname, '../../libs/domains/teams/shared/schema.ts'),
       '@nba/members-api': path.resolve(__dirname, '../../libs/domains/members/index.ts'),
       '@nba/members/schema': path.resolve(__dirname, '../../libs/domains/members/shared/schema.ts'),
+      '@nba/members/test-fixtures': path.resolve(__dirname, '../../libs/domains/members/shared/test-fixtures.ts'),
       '@nba/iam': path.resolve(__dirname, '../../libs/domains/iam/index.ts'),
       '@nba/iam/schema': path.resolve(__dirname, '../../libs/domains/iam/shared/schema.ts'),
       '@nba/accounting-api': path.resolve(__dirname, '../../libs/domains/accounting/index.ts'),

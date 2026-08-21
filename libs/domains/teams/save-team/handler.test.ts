@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { sql } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
 import { type Db } from '@nba/db';
-import { membersTable } from '@nba/members/schema';
 import { saveTeam } from './handler';
 import { listTeams } from '../list-teams/handler';
 import { getTeam } from '../get-team/handler';
@@ -10,6 +9,7 @@ import { deleteTeam } from '../delete-team/handler';
 import { saveTeamStaff } from '../save-team-staff/handler';
 import { saveTeamRoster } from '../save-team-roster/handler';
 import { playerRankingsTable } from '../shared/schema';
+import { insertMemberFixture } from '@nba/members/test-fixtures';
 import {
   InvalidLineupError,
   TeamNotFoundError,
@@ -36,7 +36,7 @@ describe('équipes du club', () => {
   });
 
   async function member(licence: string, lastName: string, gender: 'M' | 'F' = 'M') {
-    await db.insert(membersTable).values({
+    await insertMemberFixture(db, {
       licence,
       seasonId,
       lastName,

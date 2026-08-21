@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { sql } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
 import { type Db } from '@nba/db';
-import { membersTable } from '@nba/members/schema';
 import { saveFixtureDate } from './handler';
 import { saveTeam } from '../save-team/handler';
 import { saveTeamStaff } from '../save-team-staff/handler';
@@ -11,6 +10,7 @@ import { listChampionshipDays } from '../list-championship-days/handler';
 import { loadLineup } from '../get-lineup/handler';
 import { teamFixturesTable } from '../shared/schema';
 import { InvalidLineupError, NotTeamCaptainError } from '../shared/errors';
+import { insertMemberFixture } from '@nba/members/test-fixtures';
 
 const NOW = new Date('2026-10-01T10:00:00Z');
 const SEASON = '26-27';
@@ -28,7 +28,7 @@ describe('date réelle d’une rencontre', () => {
     `);
     const seasonId = (await db.get<{ id: number }>(sql`SELECT id FROM seasons WHERE code=${SEASON}`))!.id;
     for (const licence of [CAPTAIN, OTHER]) {
-      await db.insert(membersTable).values({
+      await insertMemberFixture(db, {
         licence, seasonId, lastName: `N${licence}`, firstName: 'Test',
         gender: 'M', birthDate: '1990-01-01', type: 'Adulte', importedAt: NOW
       });

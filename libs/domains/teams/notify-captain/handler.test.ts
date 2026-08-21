@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { sql } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
 import { type Db } from '@nba/db';
-import { membersTable } from '@nba/members/schema';
 import { pushMessagesTable } from '@nba/notifications/schema';
 import { notifyCaptain } from './handler';
 import { saveTeam } from '../save-team/handler';
@@ -11,6 +10,7 @@ import { saveChampionshipDays } from '../save-championship-days/handler';
 import { saveLineup } from '../save-lineup/handler';
 import { playerRankingsTable } from '../shared/schema';
 import type { SaveLineupSlot } from '../save-lineup/dto';
+import { insertMemberFixture } from '@nba/members/test-fixtures';
 
 const NOW = new Date('2026-10-01T10:00:00Z');
 const SEASON = '26-27';
@@ -39,7 +39,7 @@ describe('prévenir le capitaine', () => {
   });
 
   async function player(licence: string, gender: 'M' | 'F', ranking: string, email: string | null = null) {
-    await db.insert(membersTable).values({
+    await insertMemberFixture(db, {
       licence, seasonId, lastName: `N${licence}`, firstName: 'Test',
       gender, birthDate: '1990-01-01', type: 'Adulte', importedAt: NOW, email
     });
@@ -119,7 +119,7 @@ describe('prévenir le capitaine', () => {
   it('prévient aussi l’équipe du dessus et met les deux capitaines en relation', async () => {
     const { one, two } = await seedBreach();
     // Le capitaine de l'équipe 1 est joignable : le dépassement le concerne autant.
-    await db.run(sql`UPDATE members SET email = 'cap1@club.fr' WHERE licence = ${men('1')[0]}`);
+    await db.run(sql`UPDATE persons SET email = 'cap1@club.fr' WHERE licence = ${men('1')[0]}`);
 
     const result = await notifyCaptain(db, { teamId: two.id, dayNumber: 1 }, NOW);
 
@@ -189,7 +189,7 @@ describe('prévenir le capitaine', () => {
   it('n’échoue pas quand le staff n’a aucune adresse connue', async () => {
     const { two } = await seedBreach();
     // On efface les adresses : l'envoi doit rester sans effet, pas lever.
-    await db.run(sql`UPDATE members SET email = NULL`);
+    await db.run(sql`UPDATE persons SET email = NULL`);
 
     const result = await notifyCaptain(db, { teamId: two.id, dayNumber: 1 }, NOW);
 

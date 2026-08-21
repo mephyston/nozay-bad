@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { sql } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
 import { type Db } from '@nba/db';
-import { membersTable } from '@nba/members/schema';
 import { listDayValues } from './handler';
 import { saveTeam } from '../save-team/handler';
 import { saveTeamStaff } from '../save-team-staff/handler';
@@ -10,6 +9,7 @@ import { saveChampionshipDays } from '../save-championship-days/handler';
 import { saveLineup } from '../save-lineup/handler';
 import { playerRankingsTable } from '../shared/schema';
 import type { SaveLineupSlot } from '../save-lineup/dto';
+import { insertMemberFixture } from '@nba/members/test-fixtures';
 
 const NOW = new Date('2026-10-01T10:00:00Z');
 const SEASON = '26-27';
@@ -35,7 +35,7 @@ describe('contrôle des valeurs par journée', () => {
   });
 
   async function player(licence: string, gender: 'M' | 'F', ranking: string) {
-    await db.insert(membersTable).values({
+    await insertMemberFixture(db, {
       licence, seasonId, lastName: `N${licence}`, firstName: 'Test',
       gender, birthDate: '1990-01-01', type: 'Adulte', importedAt: NOW
     });

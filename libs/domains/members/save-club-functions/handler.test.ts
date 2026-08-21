@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
-import { memberClubFunctionsTable, membersTable } from '@nba/members/schema';
+import { memberClubFunctionsTable } from '@nba/members/schema';
 import { seasonsTable } from '@nba/accounting/schema';
 import { saveClubFunctions } from './handler';
 import { getClubFunctionsStatus, listClubFunctions } from '../list-club-functions/handler';
 import { getContactEmailsForClubFunctions } from '../shared/queries';
+import { insertMemberFixture, insertMemberFixtures } from '@nba/members/test-fixtures';
 
 function member(id: number, licence: string, extra: Record<string, unknown> = {}) {
   return {
@@ -32,10 +33,7 @@ describe('saveClubFunctions', () => {
       .insert(seasonsTable)
       .values({ id: 1, code: '25-26', name: 'Saison 25-26', startDate: '2025-09-01', endDate: '2026-08-31', active: true, createdAt: new Date() })
       .run();
-    await db
-      .insert(membersTable)
-      .values([member(1, '07000001'), member(2, '07000002'), member(3, '07000003')])
-      .run();
+    await insertMemberFixtures(db, [member(1, '07000001'), member(2, '07000002'), member(3, '07000003')]);
   });
 
   it('attribue une fonction, la remplace, puis la retire', async () => {
@@ -129,10 +127,7 @@ describe('saveClubFunctions', () => {
   });
 
   it('cible les emails de contact des titulaires, parents inclus, sans doublon', async () => {
-    await db
-      .insert(membersTable)
-      .values(member(4, '07000004', { email: null, parent1Email: 'Parent@Example.org' }))
-      .run();
+    await insertMemberFixture(db, member(4, '07000004', { email: null, parent1Email: 'Parent@Example.org' }));
     await saveClubFunctions(db, { licence: '07000001', season: '25-26', functions: ['coach'] });
     await saveClubFunctions(db, { licence: '07000004', season: '25-26', functions: ['committee_member'] });
 

@@ -11,6 +11,10 @@ export const expensesTable = sqliteTable('expenses', {
   photoUrl: text('photo_url'),
   status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
   emitterName: text('emitter_name').notNull(),
+  // Adhésion (`memberships.id`), et non personne : une commande, une dépense, une écriture
+  // ou une inscription appartient à la saison où elle a eu lieu. La colonne garde son nom
+  // `member_id` — la renommer aurait imposé deux migrations de plus et la réécriture de
+  // cinq tables, pour un gain de vocabulaire.
   memberId: integer('member_id'),
   ledgerEntryId: integer('ledger_entry_id'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()

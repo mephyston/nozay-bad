@@ -1,27 +1,25 @@
-import { membersTable, memberProfilesTable } from '@nba/members/schema';
+import { membershipsTable, personsTable } from '@nba/members/schema';
 import { eq, and } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { getSeasonId } from '@nba/accounting-api';
+import { selectMembers } from '../shared/queries';
 import type { GetMemberByLicenceOutput } from './dto';
 
 
 export class GetMemberRepository {
+  /**
+   * Sans saison, la fiche rend une adhésion quelconque de cette licence — comportement
+   * hérité, que tous les appelants évitent en passant la saison affichée.
+   */
   async getByLicence(db: DbOrTx, licence: string, season?: string): Promise<GetMemberByLicenceOutput | undefined> {
-    const conditions = [eq(membersTable.licence, licence)];
+    const conditions = [eq(personsTable.licence, licence)];
     if (season) {
       const sId = await getSeasonId(db, season);
-      if (sId !== undefined) conditions.push(eq(membersTable.seasonId, sId));
+      if (sId !== undefined) conditions.push(eq(membershipsTable.seasonId, sId));
     }
-    // Jointure et non seconde requête : le profil se rattache à la licence, la même
-    // dont on part, et la fiche est lue à chaque affichage d'adhérent.
-    const row = await db
-      .select({ member: membersTable, photoUpdatedAt: memberProfilesTable.photoUpdatedAt })
-      .from(membersTable)
-      .leftJoin(memberProfilesTable, eq(memberProfilesTable.licence, membersTable.licence))
-      .where(and(...conditions))
-      .get();
 
+    const row = await selectMembers(db).where(and(...conditions)).get();
     if (!row) return undefined;
-    return { ...row.member, photoUpdatedAt: row.photoUpdatedAt?.getTime() ?? null };
+    return { ...row, photoUpdatedAt: row.photoUpdatedAt?.getTime() ?? null };
   }
 }

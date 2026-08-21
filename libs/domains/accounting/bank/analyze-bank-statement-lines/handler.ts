@@ -203,7 +203,7 @@ Tarifs des produits de la boutique (si le montant correspond exactement, sers-to
 ${productsPrompt}
 
 Liste des candidats adhérents possibles :
-${candidates.map(c => `- ID: ${c.id}, Nom: ${c.lastName} ${c.firstName}, Parent 1: ${c.parent1Name || 'Aucun'}, Montant Restant Dû Adhésion: ${(c.amountRemaining / 100).toFixed(2)} EUR`).join('\n')}
+${candidates.map(c => `- ID: ${c.id}, Nom: ${c.lastName} ${c.firstName}, Parent 1: ${c.parent1Name || 'Aucun'}, Montant Restant Dû Adhésion: ${((c.amountRemainingCents ?? 0) / 100).toFixed(2)} EUR`).join('\n')}
 
 Instructions :
 1. Associe l'adhérent (memberId et memberName) si son nom ou prénom (ou celui d'un de ses parents) apparaît clairement dans le libellé ou memo de l'opération, même si son "Montant Restant Dû Adhésion" est de 0.00 EUR.

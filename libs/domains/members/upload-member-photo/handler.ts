@@ -7,7 +7,7 @@ import {
   photoObjectKey,
   photoPrefix
 } from '../shared/photo';
-import { EmptyPhotoError, InvalidPhotoTypeError, PhotoTooLargeError } from '../shared/errors';
+import { EmptyPhotoError, InvalidPhotoTypeError, MemberNotFoundError, PhotoTooLargeError } from '../shared/errors';
 import { MemberPhotoRepository } from './repository';
 import type { PhotoStore, PhotoTranscoder, UploadMemberPhotoInput, UploadMemberPhotoOutput } from './dto';
 
@@ -18,8 +18,8 @@ const PHOTO_FORMAT = 'image/webp';
 /**
  * Dépose le portrait d'un adhérent.
  *
- * Le portrait est rattaché à la **licence**, pas à l'adhésion de l'année : il traverse
- * les réinscriptions (voir `member_profiles`). Un second dépôt remplace le premier —
+ * Le portrait est rattaché à la **personne**, désignée par sa licence, et non à son
+ * adhésion de l'année : il traverse les réinscriptions. Un second dépôt remplace le premier —
  * pas d'historique, pas de déduplication contrairement à la médiathèque : une photo de
  * profil n'est pas une ressource partagée, et deux adhérents n'ont pas à se retrouver
  * sur le même objet parce qu'ils ont envoyé le même fichier.
@@ -43,6 +43,10 @@ export async function uploadMemberPhoto(
 
   const repo = new MemberPhotoRepository();
   const previous = await repo.findByLicence(db, input.licence);
+  // Le portrait est une colonne de la personne : sans personne, il n'y a rien à écrire.
+  // Auparavant une ligne de profil se créait pour n'importe quelle licence, et l'objet R2
+  // partait avec — un fichier déposé sur un numéro inventé restait dans le bucket.
+  if (!previous) throw new MemberNotFoundError();
 
   const prefix = photoPrefix(await photoHashOf(input.bytes));
   await storeSizes(store, transcoder, prefix, input);

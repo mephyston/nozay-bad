@@ -5,11 +5,11 @@ import { payOrder } from './handler';
 import { PayOrderRepository } from './repository';
 import { ordersTable, productsTable, productCategoriesTable } from '../shared/schema';
 // eslint-disable-next-line no-restricted-imports
-import { membersTable } from '@nba/members/schema';
 // eslint-disable-next-line no-restricted-imports
 import { seasonsTable } from '@nba/accounting/schema';
 import { ShopCategoryNotConfiguredError } from '../shared/errors';
 import { getSeasonReports } from '@nba/accounting-api';
+import { insertMemberFixture } from '@nba/members/test-fixtures';
 
 describe("payOrder (encaissement d'une commande boutique et écriture comptable)", () => {
   let db: any;
@@ -51,7 +51,7 @@ describe("payOrder (encaissement d'une commande boutique et écriture comptable)
     seasonId = seasonRes.id;
 
     // 2. Seed member
-    const memberRes = await db.insert(membersTable).values({
+    const memberRes = await insertMemberFixture(db, {
       licence: '12345678',
       seasonId: seasonId,
       lastName: 'Dupont',
@@ -59,11 +59,10 @@ describe("payOrder (encaissement d'une commande boutique et écriture comptable)
       gender: 'M',
       birthDate: '1990-05-15',
       email: 'jean.dupont@example.com',
-      status: 'active',
+      status: 'valide',
       type: 'senior',
-      importedAt: new Date(),
-      createdAt: new Date()
-    }).returning().get();
+      importedAt: new Date()
+    });
     memberId = memberRes.id;
 
     // 3. Retrieve or seed accounting categories

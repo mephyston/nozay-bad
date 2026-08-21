@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
-import { membersTable, memberClubFunctionsTable } from '@nba/members/schema';
+import { memberClubFunctionsTable } from '@nba/members/schema';
 import { seasonsTable } from '@nba/accounting/schema';
 import { ordersTable, productsTable, productCategoriesTable } from '../../../libs/domains/shop/shared/schema';
 import { pushMessagesTable } from '../../../libs/domains/notifications/shared/schema';
 import { clubTeamsTable, championshipDaysTable } from '../../../libs/domains/teams/shared/schema';
 import { sendAwaitingPaymentOrderReminders, sendRankingUpdateReminders } from './scheduled';
+import { insertMemberFixture } from '@nba/members/test-fixtures';
 
 /** Le cron hebdomadaire tourne un lundi matin ; les dates du test s'y rapportent. */
 const NOW = new Date('2026-03-16T08:00:00.000Z');
@@ -18,7 +19,7 @@ describe('relance des commandes en attente de paiement', () => {
   let paymentMethodId: number;
 
   async function seedMember(values: { licence: string; email: string; parent1Email?: string }) {
-    return db.insert(membersTable).values({
+    return insertMemberFixture(db, {
       licence: values.licence,
       seasonId,
       lastName: 'Dupont',
@@ -29,9 +30,8 @@ describe('relance des commandes en attente de paiement', () => {
       parent1Email: values.parent1Email ?? null,
       status: 'valide',
       type: 'senior',
-      importedAt: new Date(),
-      createdAt: new Date()
-    }).returning().get();
+      importedAt: new Date()
+    });
   }
 
   async function seedOrder(memberId: number, values: { status: string; awaitingPaymentSince: string | null }) {
@@ -135,7 +135,7 @@ describe('relance des commandes en attente de paiement', () => {
   });
 
   it("n'envoie rien quand aucun contact n'est joignable", async () => {
-    const member = await db.insert(membersTable).values({
+    const member = await insertMemberFixture(db, {
       licence: '55555555',
       seasonId,
       lastName: 'Sans',
@@ -145,9 +145,8 @@ describe('relance des commandes en attente de paiement', () => {
       email: null,
       status: 'valide',
       type: 'jeune',
-      importedAt: new Date(),
-      createdAt: new Date()
-    }).returning().get();
+      importedAt: new Date()
+    });
     await seedOrder(member.id, { status: 'awaiting_payment', awaitingPaymentSince: '2026-03-01' });
 
     await sendAwaitingPaymentOrderReminders(db, NOW);
@@ -199,7 +198,7 @@ describe('rappel des classements du jeudi', () => {
       seasonCode: '26-27', championship: 'icr_seniors', number: 3, kind: 'regular',
       weekStart: '2026-11-02', weekEnd: '2026-11-08', createdAt: NOW
     });
-    await db.insert(membersTable).values({
+    await insertMemberFixture(db, {
       licence: '07000001', seasonId: season.id, lastName: 'Bureau', firstName: 'Anne',
       gender: 'F', birthDate: '1980-01-01', email: 'tresorerie@club.fr',
       status: 'valide', type: 'senior', importedAt: new Date()

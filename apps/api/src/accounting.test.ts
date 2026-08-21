@@ -1,4 +1,3 @@
-import { membersTable } from '@nba/members/schema';
 import { seasonsTable } from '@nba/accounting/schema';
 import { ledgerEntriesTable, categoriesTable } from '@nba/accounting/schema';
 import { describe, it, expect } from 'vitest';
@@ -10,6 +9,8 @@ import { seasonBalancesTable, bankStatementLinesTable, checksTable, checkDeposit
 import { drizzle } from 'drizzle-orm/d1';
 import { eq, sql } from 'drizzle-orm';
 import { AppError } from '@nba/db';
+import { insertMemberFixture } from '@nba/members/test-fixtures';
+import { membershipsTable } from '@nba/members/schema';
 
 const app = new Hono<{ Bindings: { DB: any; AI: any } }>();
 app.onError((err, c) => {
@@ -716,7 +717,7 @@ VERSION:102
     }).onConflictDoNothing().run();
 
     // Mock adhérent et opération
-    const [m] = await db.insert(membersTable).values({
+    const m = await insertMemberFixture(db, {
       licence: '1234567',
       seasonId: 1,
       lastName: 'PIGNON',
@@ -729,7 +730,7 @@ VERSION:102
       amountRemainingCents: 25000,
       parent1Name: 'Sébastien PIGNON',
       importedAt: new Date()
-    }).returning();
+    });
 
     const [bt] = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-PIGNON-TEST',
@@ -795,7 +796,7 @@ VERSION:102
     expect(reconRes.status).toBe(200);
 
     // 4. Vérifier que l'adhérent a son solde mis à jour à payé = true
-    const updatedMember = (await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get())!;
+    const updatedMember = (await db.select().from(membershipsTable).where(eq(membershipsTable.id, m.id)).get())!;
     expect(updatedMember.amountReceivedCents).toBe(25000);
     expect(updatedMember.amountRemainingCents).toBe(0);
     expect(updatedMember.paid).toBe(true);
@@ -815,7 +816,7 @@ VERSION:102
     expect(resetBt.status).toBe('pending');
 
     // 8. Vérifier que l'adhérent a son solde rétabli
-    const resetMember = (await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get())!;
+    const resetMember = (await db.select().from(membershipsTable).where(eq(membershipsTable.id, m.id)).get())!;
     expect(resetMember.amountReceivedCents).toBe(0);
     expect(resetMember.amountRemainingCents).toBe(25000);
     expect(resetMember.paid).toBe(false);
@@ -834,7 +835,7 @@ VERSION:102
       createdAt: new Date()
     }).onConflictDoNothing().run();
 
-    const m = await db.insert(membersTable).values({
+    const m = await insertMemberFixture(db, {
       licence: '12345678',
       seasonId: 1,
       lastName: 'PIGNON',
@@ -849,7 +850,7 @@ VERSION:102
       amountRemainingCents: 25000,
       paid: false,
       importedAt: new Date()
-    }).returning().then(r => r[0]);
+    });
 
     const bt1 = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-SINGLE-1',
@@ -993,7 +994,7 @@ VERSION:102
       createdAt: new Date()
     } as any).returning().then(r => r[0]);
 
-    const member = await db.insert(membersTable).values({
+    const member = await insertMemberFixture(db, {
       licence: '1234567',
       seasonId: 1,
       firstName: 'Laetitia',
@@ -1007,7 +1008,7 @@ VERSION:102
       amountRemainingCents: 0,
       paid: true,
       importedAt: new Date()
-    }).returning().then(r => r[0]);
+    });
 
     const aiMock = {
       run: async (model: string, options: any) => {
@@ -1070,7 +1071,7 @@ VERSION:102
       createdAt: new Date()
     } as any).returning().then(r => r[0]);
 
-    const member = await db.insert(membersTable).values({
+    const member = await insertMemberFixture(db, {
       licence: '7654321',
       seasonId: 1,
       firstName: 'Wolfgang',
@@ -1084,7 +1085,7 @@ VERSION:102
       amountRemainingCents: 0,
       paid: true,
       importedAt: new Date()
-    }).returning().then(r => r[0]);
+    });
 
     const aiMock = {
       run: async (model: string, options: any) => {
@@ -1127,7 +1128,7 @@ VERSION:102
     }).onConflictDoNothing().run();
 
     // Ajouter trois membres de la famille MADRANGE
-    const mLaurence = await db.insert(membersTable).values({
+    const mLaurence = await insertMemberFixture(db, {
       licence: '06654740',
       seasonId: 1,
       lastName: 'MADRANGE',
@@ -1142,9 +1143,9 @@ VERSION:102
       amountRemainingCents: 0,
       paid: true,
       importedAt: new Date()
-    }).returning().then(r => r[0]);
+    });
 
-    await db.insert(membersTable).values({
+    await insertMemberFixture(db, {
       licence: '00491827',
       seasonId: 1,
       lastName: 'MADRANGE',
@@ -1159,7 +1160,7 @@ VERSION:102
       amountRemainingCents: 0,
       paid: true,
       importedAt: new Date()
-    }).run();
+    });
 
     // Insérer la transaction de Laurence Madrange pour du cordage
     const bt = await db.insert(bankStatementLinesTable).values({
@@ -1212,7 +1213,7 @@ VERSION:102
     }).onConflictDoNothing().run();
 
     // Ajouter Lubin LEFEBVRE avec sa mère ARTICO Lucie
-    const mLubin = await db.insert(membersTable).values({
+    const mLubin = await insertMemberFixture(db, {
       licence: '07355187',
       seasonId: 1,
       lastName: 'LEFEBVRE',
@@ -1228,7 +1229,7 @@ VERSION:102
       amountRemainingCents: 0,
       paid: true,
       importedAt: new Date()
-    }).returning().then(r => r[0]);
+    });
 
     // Insérer la transaction
     const bt = await db.insert(bankStatementLinesTable).values({
@@ -1279,7 +1280,7 @@ VERSION:102
       createdAt: new Date()
     }).onConflictDoNothing().run();
 
-    const coach = await db.insert(membersTable).values({
+    const coach = await insertMemberFixture(db, {
       licence: '99887766',
       seasonId: 1,
       lastName: 'TETEVUIDE',
@@ -1294,7 +1295,7 @@ VERSION:102
       amountRemainingCents: 0,
       paid: true,
       importedAt: new Date()
-    }).returning().then(r => r[0]);
+    });
 
     const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '58441093000300846000500078472020260511',
@@ -1598,7 +1599,7 @@ VERSION:102
       createdAt: new Date()
     }).onConflictDoNothing().run();
 
-    const minor = await db.insert(membersTable).values({
+    const minor = await insertMemberFixture(db, {
       licence: '07507281',
       seasonId: 1,
       lastName: 'BRIER',
@@ -1612,7 +1613,7 @@ VERSION:102
       amountRemainingCents: 0,
       paid: true,
       importedAt: new Date()
-    }).returning().then(r => r[0]);
+    });
 
     const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '48510893000300846000500078472020260302',
@@ -1658,7 +1659,7 @@ VERSION:102
       createdAt: new Date()
     }).onConflictDoNothing().run();
 
-    const junior = await db.insert(membersTable).values({
+    const junior = await insertMemberFixture(db, {
       licence: '06944909',
       seasonId: 1,
       lastName: 'DOMASZEWICZ',
@@ -1672,7 +1673,7 @@ VERSION:102
       amountRemainingCents: 0,
       paid: true,
       importedAt: new Date()
-    }).returning().then(r => r[0]);
+    });
 
     const bt = await db.insert(bankStatementLinesTable).values({
       fitid: '12345678901234567890',
@@ -2060,7 +2061,7 @@ VERSION:102
     }).onConflictDoNothing().run();
 
     // 1. Ajouter un adhérent
-    const m = await db.insert(membersTable).values({
+    const m = await insertMemberFixture(db, {
       licence: '1234567',
       seasonId: 1,
       lastName: 'PIGNON',
@@ -2073,7 +2074,7 @@ VERSION:102
       amountReceivedCents: 0,
       amountRemainingCents: 25000,
       importedAt: new Date()
-    }).returning().then(r => r[0]);
+    });
 
     // 2. Insérer une transaction bancaire de cordage (15.00 €)
     const bt = await db.insert(bankStatementLinesTable).values({
@@ -2113,7 +2114,7 @@ VERSION:102
     expect(reconRes.status).toBe(200);
 
     // 4. Vérifier que l'adhérent a son solde d'adhésion inchangé (toujours 250.00 € restant, amountReceived à 0)
-    const updatedMember = (await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get())!;
+    const updatedMember = (await db.select().from(membershipsTable).where(eq(membershipsTable.id, m.id)).get())!;
     expect(updatedMember.amountReceivedCents).toBe(0);
     expect(updatedMember.amountRemainingCents).toBe(25000);
     expect(updatedMember.paid).toBe(false);
@@ -2129,7 +2130,7 @@ VERSION:102
     expect(deleteRes.status).toBe(200);
 
     // 7. Vérifier que le solde de l'adhérent est toujours inchangé et n'a pas été déduit négativement
-    const finalMember = (await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get())!;
+    const finalMember = (await db.select().from(membershipsTable).where(eq(membershipsTable.id, m.id)).get())!;
     expect(finalMember.amountReceivedCents).toBe(0);
     expect(finalMember.amountRemainingCents).toBe(25000);
   });
@@ -2148,7 +2149,7 @@ VERSION:102
     }).onConflictDoNothing().run();
 
     // 1. Ajouter un adhérent
-    const m = await db.insert(membersTable).values({
+    const m = await insertMemberFixture(db, {
       licence: '7766554',
       seasonId: 1,
       lastName: 'DUPONT',
@@ -2161,7 +2162,7 @@ VERSION:102
       amountReceivedCents: 0,
       amountRemainingCents: 26000,
       importedAt: new Date()
-    }).returning().then(r => r[0]);
+    });
 
     // 2. Insérer un chèque via POST /accounting/checks (Catégorie adhésion)
     const checkPostRes = await app.request('http://localhost/accounting/checks', {
@@ -2181,7 +2182,7 @@ VERSION:102
     expect(checkPostRes.status).toBe(200);
 
     // 3. Vérifier que la fiche de l'adhérent a été mise à jour (réglée)
-    const updatedMember = (await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get())!;
+    const updatedMember = (await db.select().from(membershipsTable).where(eq(membershipsTable.id, m.id)).get())!;
     expect(updatedMember.amountReceivedCents).toBe(26000);
     expect(updatedMember.amountRemainingCents).toBe(0);
     expect(updatedMember.paid).toBe(true);
@@ -2259,7 +2260,7 @@ VERSION:102
     const deletedCheck = (await db.select().from(checksTable).where(eq(checksTable.id, checkId)).get())!;
     expect(deletedCheck).toBeUndefined();
 
-    const resetMember = (await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get())!;
+    const resetMember = (await db.select().from(membershipsTable).where(eq(membershipsTable.id, m.id)).get())!;
     expect(resetMember.amountReceivedCents).toBe(0);
     expect(resetMember.amountRemainingCents).toBe(26000);
     expect(resetMember.paid).toBe(false);
@@ -2279,7 +2280,7 @@ VERSION:102
     }).onConflictDoNothing().run();
 
     // Ajouter un adhérent potentiel
-    await db.insert(membersTable).values({
+    await insertMemberFixture(db, {
       licence: '7766554',
       seasonId: 1,
       lastName: 'DUPONT',
@@ -2292,7 +2293,7 @@ VERSION:102
       amountReceivedCents: 0,
       amountRemainingCents: 26000,
       importedAt: new Date()
-    }).run();
+    });
 
     const mockAI = {
       run: async (model: string, input: any) => {
@@ -3322,7 +3323,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     }).onConflictDoNothing().run();
 
     // Create a member who has NOT paid fully
-    const m = await db.insert(membersTable).values({
+    const m = await insertMemberFixture(db, {
       id: 30,
       licence: '1234599',
       seasonId: 1,
@@ -3337,7 +3338,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
       amountRemainingCents: 25000,
       paid: false,
       importedAt: new Date()
-    }).returning().then(r => r[0]);
+    });
 
     const bt = await db.insert(bankStatementLinesTable).values({
       fitid: 'FITID-SPLIT-MEMBER',
@@ -3387,7 +3388,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     expect(res.status).toBe(200);
 
     // Verify member amountReceived has only been incremented by the category 1 amount (10000)
-    const updatedMember = (await db.select().from(membersTable).where(eq(membersTable.id, m.id)).get())!;
+    const updatedMember = (await db.select().from(membershipsTable).where(eq(membershipsTable.id, m.id)).get())!;
     expect(updatedMember!.amountReceivedCents).toBe(10000);
     expect(updatedMember!.amountRemainingCents).toBe(15000);
     expect(updatedMember!.paid).toBe(false);

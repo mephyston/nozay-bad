@@ -7,6 +7,7 @@ import { productsTable } from '../../../libs/domains/shop/shared/schema';
 
 import { eq, sql } from 'drizzle-orm';
 import { AppError } from '@nba/db';
+import { insertMemberFixture } from '@nba/members/test-fixtures';
 
 const app = new Hono<{ Bindings: { DB: any } }>();
 app.onError((err, c) => {
@@ -126,10 +127,12 @@ describe('Orders API Endpoints', () => {
     `) as { id: number };
 
     // Insert a member
-    await db.run(sql`
-      INSERT INTO members (id, licence, season_id, last_name, first_name, gender, birth_date, status, type, amount_due_cents, amount_received_cents, amount_remaining_cents, imported_at)
-      VALUES (1, '123456', 1, 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'senior', 0, 0, 0, strftime('%s', 'now'))
-    `);
+    await insertMemberFixture(db, {
+      id: 1, licence: '123456', seasonId: 1,
+      lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01',
+      status: 'valide', type: 'senior',
+      amountDueCents: 0, amountReceivedCents: 0, amountRemainingCents: 0
+    });
 
     // Insert a product category
     const productCat = await db.get(sql`
@@ -208,10 +211,12 @@ describe('Orders API Endpoints', () => {
       INSERT OR IGNORE INTO seasons (id, code, name, start_date, end_date, active, created_at)
       VALUES (1, '25-26', 'Saison 2025-2026', '2025-09-01', '2026-08-31', 1, strftime('%s', 'now'))
     `);
-    await db.run(sql`
-      INSERT INTO members (id, licence, season_id, last_name, first_name, gender, birth_date, status, type, amount_due_cents, amount_received_cents, amount_remaining_cents, imported_at)
-      VALUES (1, '1234567', 1, 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'Competiteur', 25000, 0, 25000, strftime('%s', 'now'))
-    `);
+    await insertMemberFixture(db, {
+      id: 1, licence: '1234567', seasonId: 1,
+      lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01',
+      status: 'valide', type: 'Competiteur',
+      amountDueCents: 25000, amountReceivedCents: 0, amountRemainingCents: 25000
+    });
     const boutiqueCat = await db.get(sql`
       INSERT INTO categories (admin_label, adherent_label, created_at)
       VALUES ('Boutique', 'Boutique', strftime('%s', 'now'))
@@ -273,10 +278,12 @@ describe('Orders API Endpoints', () => {
       INSERT OR IGNORE INTO seasons (id, code, name, start_date, end_date, active, created_at)
       VALUES (1, '25-26', 'Saison 2025-2026', '2025-09-01', '2026-08-31', 1, strftime('%s', 'now'))
     `);
-    await db.run(sql`
-      INSERT INTO members (id, licence, season_id, last_name, first_name, gender, birth_date, status, type, amount_due_cents, amount_received_cents, amount_remaining_cents, imported_at)
-      VALUES (1, '1234567', 1, 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'Competiteur', 25000, 0, 25000, strftime('%s', 'now'))
-    `);
+    await insertMemberFixture(db, {
+      id: 1, licence: '1234567', seasonId: 1,
+      lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01',
+      status: 'valide', type: 'Competiteur',
+      amountDueCents: 25000, amountReceivedCents: 0, amountRemainingCents: 25000
+    });
     const boutiqueCat = await db.get(sql`
       INSERT INTO categories (admin_label, adherent_label, created_at)
       VALUES ('Boutique', 'Boutique', strftime('%s', 'now'))
@@ -312,10 +319,12 @@ describe('Orders API Endpoints', () => {
     `);
 
     // Insert member, product
-    await db.run(sql`
-      INSERT INTO members (id, licence, season_id, last_name, first_name, gender, birth_date, status, type, amount_due_cents, amount_received_cents, amount_remaining_cents, imported_at)
-      VALUES (1, '1234567', 1, 'Dupont', 'Jean', 'M', '1990-01-01', 'valide', 'Competiteur', 25000, 0, 25000, strftime('%s', 'now'))
-    `);
+    await insertMemberFixture(db, {
+      id: 1, licence: '1234567', seasonId: 1,
+      lastName: 'Dupont', firstName: 'Jean', gender: 'M', birthDate: '1990-01-01',
+      status: 'valide', type: 'Competiteur',
+      amountDueCents: 25000, amountReceivedCents: 0, amountRemainingCents: 25000
+    });
     const boutiqueCat = await db.get(sql`
       INSERT INTO categories (admin_label, adherent_label, created_at)
       VALUES ('Boutique', 'Boutique', strftime('%s', 'now'))

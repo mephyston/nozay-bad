@@ -25,6 +25,7 @@ export const workspaceAliases: Record<string, string> = {
   '@nba/runtime-env': path.resolve(__dirname, './libs/shared/runtime-env/src/index.ts'),
   '@nba/members-api': path.resolve(__dirname, './libs/domains/members/index.ts'),
   '@nba/members/schema': path.resolve(__dirname, './libs/domains/members/shared/schema.ts'),
+  '@nba/members/test-fixtures': path.resolve(__dirname, './libs/domains/members/shared/test-fixtures.ts'),
   '@nba/members-ui': path.resolve(__dirname, './libs/domains/members/shared/ui.ts'),
   '@nba/accounting-api': path.resolve(__dirname, './libs/domains/accounting/index.ts'),
   '@nba/accounting/schema': path.resolve(__dirname, './libs/domains/accounting/shared/schema.ts'),

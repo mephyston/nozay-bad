@@ -1,11 +1,15 @@
-import { membersTable } from '@nba/members/schema';
-import { eq } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { getMemberLastPaymentTransaction, getSeasonById } from '@nba/accounting-api';
+import { getMemberById, type MemberSummary } from '../shared/queries';
 
 export class MemberCseDataRepository {
-  async getById(db: DbOrTx, id: number): Promise<typeof membersTable.$inferSelect | undefined> {
-    return db.select().from(membersTable).where(eq(membersTable.id, id)).get();
+  /**
+   * L'attestation imprime l'identité de la **personne** et le montant de l'**adhésion** :
+   * la lecture jointe de `shared/queries` rend exactement les deux, il n'y a pas de
+   * seconde requête à écrire ici.
+   */
+  async getById(db: DbOrTx, id: number): Promise<MemberSummary | undefined> {
+    return getMemberById(db, id);
   }
 
   async getLastPaymentTransaction(db: DbOrTx, memberId: number): Promise<{ paymentMethod: string; date: string } | undefined> {

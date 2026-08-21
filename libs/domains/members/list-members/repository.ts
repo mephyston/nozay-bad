@@ -1,41 +1,48 @@
-import { membersTable } from '@nba/members/schema';
+import { membershipsTable, personsTable } from '@nba/members/schema';
 import { getSeasonId } from '@nba/accounting-api';
-import { eq, and, or, like, sql, inArray } from 'drizzle-orm';
+import { eq, and, or, like, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
+import { selectMembers, type MemberSummary } from '../shared/queries';
 
 import { ListMembersFilters } from './dto';
 
+/**
+ * La liste porte sur les **adhésions** : on cherche qui est adhérent d'une saison, pas qui
+ * est connu du club. Les critères se répartissent donc entre les deux tables — l'identité
+ * et la licence côté personne, le tarif, l'état du dossier et le règlement côté adhésion.
+ */
 export class ListMembersRepository {
   async buildConditions(db: DbOrTx, filters: ListMembersFilters) {
     const conditions = [];
     if (filters.search) {
       conditions.push(
         or(
-          like(membersTable.firstName, `%${filters.search}%`),
-          like(membersTable.lastName, `%${filters.search}%`),
-          like(membersTable.licence, `%${filters.search}%`)
+          like(personsTable.firstName, `%${filters.search}%`),
+          like(personsTable.lastName, `%${filters.search}%`),
+          like(personsTable.licence, `%${filters.search}%`)
         )
       );
     }
     if (filters.gender) {
-      conditions.push(eq(membersTable.gender, filters.gender));
+      conditions.push(eq(personsTable.gender, filters.gender));
     }
     if (filters.type) {
-      conditions.push(eq(membersTable.type, filters.type));
+      conditions.push(eq(membershipsTable.type, filters.type));
     }
     if (filters.status) {
-      conditions.push(eq(membersTable.status, filters.status as any));
+      conditions.push(eq(membershipsTable.status, filters.status as any));
     }
     if (filters.season) {
       const sId = await getSeasonId(db, filters.season);
       if (sId !== undefined) {
-        conditions.push(eq(membersTable.seasonId, sId));
+        conditions.push(eq(membershipsTable.seasonId, sId));
       } else {
-        conditions.push(eq(membersTable.seasonId, -1)); // Not found
+        // Saison inconnue : aucune adhésion, plutôt que toutes.
+        conditions.push(eq(membershipsTable.seasonId, -1));
       }
     }
     if (filters.paid !== undefined) {
-      conditions.push(eq(membersTable.paid, filters.paid));
+      conditions.push(eq(membershipsTable.paid, filters.paid));
     }
     return conditions;
   }
@@ -44,17 +51,17 @@ export class ListMembersRepository {
     const conditions = await this.buildConditions(db, filters);
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     const countRes = await db.select({ count: sql<number>`count(*)` })
-      .from(membersTable)
+      .from(membershipsTable)
+      .innerJoin(personsTable, eq(personsTable.id, membershipsTable.personId))
       .where(whereClause)
       .all();
     return countRes[0]?.count || 0;
   }
 
-  async list(db: DbOrTx, filters: ListMembersFilters, pagination: { limit: number; offset: number }): Promise<(typeof membersTable.$inferSelect)[]> {
+  async list(db: DbOrTx, filters: ListMembersFilters, pagination: { limit: number; offset: number }): Promise<MemberSummary[]> {
     const conditions = await this.buildConditions(db, filters);
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-    return db.select()
-      .from(membersTable)
+    return selectMembers(db)
       .where(whereClause)
       .limit(pagination.limit)
       .offset(pagination.offset)

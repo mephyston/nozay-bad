@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { type Db } from '@nba/db';
-import { memberProfilesTable } from '../shared/schema';
+import { personsTable } from '../shared/schema';
+import { insertMemberFixture } from '@nba/members/test-fixtures';
 import { uploadMemberPhoto } from './handler';
 import { deleteMemberPhoto } from '../delete-member-photo/handler';
 import type { PhotoStore, PhotoTranscoder } from './dto';
@@ -36,13 +37,16 @@ function fakeTranscoder(): PhotoTranscoder & { calls: number[] } {
 
 const image = (fill: number, size = 64) => new Uint8Array(size).fill(fill).buffer;
 const profileOf = (db: Db, licence: string) =>
-  db.select().from(memberProfilesTable).all().then((rows) => rows.find((r) => r.licence === licence));
+  db.select().from(personsTable).all().then((rows) => rows.find((r) => r.licence === licence));
 
 describe('uploadMemberPhoto', () => {
   let db: Db;
 
   beforeEach(async () => {
     ({ db } = await setupMockDb());
+    // Le portrait est une colonne de la personne : il faut donc qu'elle existe.
+    await insertMemberFixture(db, { licence: '06123456', seasonId: 1 });
+    await insertMemberFixture(db, { licence: '06999999', seasonId: 1 });
   });
 
   it('dépose les deux tailles et enregistre le préfixe sur la licence', async () => {
@@ -154,9 +158,10 @@ describe('uploadMemberPhoto', () => {
 
     expect(objects.has(firstKey)).toBe(false);
     expect([...objects.keys()]).toHaveLength(1);
-    // Une seule ligne par licence : l'index unique et l'upsert.
-    const rows = await db.select().from(memberProfilesTable).all();
-    expect(rows).toHaveLength(1);
+    // Une seule ligne par licence, et un seul portrait dessus : la personne n'est pas
+    // dupliquée par un second dépôt.
+    const rows = await db.select().from(personsTable).all();
+    expect(rows.filter((r) => r.licence === '06123456')).toHaveLength(1);
   });
 
   it('conserve le portrait de la licence quand un autre adhérent dépose le sien', async () => {
@@ -202,6 +207,9 @@ describe('deleteMemberPhoto', () => {
 
   beforeEach(async () => {
     ({ db } = await setupMockDb());
+    // Le portrait est une colonne de la personne : il faut donc qu'elle existe.
+    await insertMemberFixture(db, { licence: '06123456', seasonId: 1 });
+    await insertMemberFixture(db, { licence: '06999999', seasonId: 1 });
   });
 
   it('efface les objets et vide la clé, sans supprimer le profil', async () => {
