@@ -32,6 +32,24 @@ function isActive(item: NavItemView): boolean {
 }
 
 /**
+ * Un sous-menu s'ouvre-t-il vers la gauche ?
+ *
+ * Aligné sur le bord **gauche** de son entrée, un sous-menu de 14 rem sort de l'écran
+ * dès que l'entrée est loin dans la barre : « Adultes » débordait de 57 px entre 768 et
+ * 825 px de large — la plage exacte où le menu horizontal apparaît sans que la fenêtre
+ * ne soit encore large. La page y prenait un défilement horizontal, et le sous-menu
+ * ouvert y aurait été tronqué.
+ *
+ * Les entrées de la seconde moitié s'alignent donc sur leur bord **droit** et se
+ * déploient vers l'intérieur. C'est le comportement des barres de menus depuis toujours,
+ * et il se calcule au rendu : pas de mesure, pas de JavaScript, rien à recalculer au
+ * redimensionnement. Le repère est l'index et non la position réelle — celle-ci dépend
+ * de la longueur des libellés, que le rendu ne connaît pas — mais l'approximation ne
+ * peut se tromper que sur l'entrée médiane, celle qui a de la place des deux côtés.
+ */
+const opensLeft = (index: number) => index >= Math.ceil(nav.length / 2);
+
+/**
  * Rubrique dépliée à l'ouverture du menu mobile : celle où l'on se trouve, et elle
  * seule — l'accordéon étant exclusif, une seule peut l'être. Le lecteur retrouve ainsi
  * sa position dans le menu sans avoir à la rechercher ; ailleurs, tout est replié.
@@ -94,7 +112,7 @@ const openSection = nav.findIndex((item) => item.children.length > 0 && isActive
         rendrait les sous-entrées inatteignables sans souris. */}
     <nav aria-label="Navigation principale" class="hidden flex-1 md:block">
       <ul class="flex flex-wrap items-center gap-x-1 text-sm">
-        {nav.map((item) => (
+        {nav.map((item, index) => (
           <li class="group relative">
             {/*
               Un conteneur est un `<button>`, jamais un `<span>`.
@@ -143,7 +161,12 @@ const openSection = nav.findIndex((item) => item.children.length > 0 && isActive
             )}
 
             {item.children.length > 0 && (
-              <ul class="border-border bg-background invisible absolute left-0 top-full z-50 min-w-56 rounded-md border p-1 opacity-0 shadow-lg transition-[opacity,visibility] group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+              <ul
+                class:list={[
+                  'border-border bg-background invisible absolute top-full z-50 min-w-56 rounded-md border p-1 opacity-0 shadow-lg transition-[opacity,visibility] group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100',
+                  opensLeft(index) ? 'right-0' : 'left-0'
+                ]}
+              >
                 {item.children.map((child) => (
                   <li>
                     <a
