@@ -9,6 +9,7 @@ import { saveChampionshipDaysRoute } from './save-championship-days/route';
 import { listTeamsRoute } from './list-teams/route';
 import { saveTeamRoute } from './save-team/route';
 import { getTeamRoute } from './get-team/route';
+import { getPlayerCardRoute } from './get-player-card/route';
 import { deleteTeamRoute } from './delete-team/route';
 import { saveTeamStaffRoute } from './save-team-staff/route';
 import { saveTeamRosterRoute } from './save-team-roster/route';
@@ -47,6 +48,9 @@ teamsRouter.route('/', getLineupRoute);
 teamsRouter.route('/', saveLineupRoute);
 teamsRouter.route('/', saveFixtureDateRoute);
 teamsRouter.route('/', notifyCaptainRoute);
+// `/players/:licence` avant `/:id` : deux segments, mais on garde l'usage du domaine
+// — les routes qui portent un littéral passent devant le paramètre nu.
+teamsRouter.route('/', getPlayerCardRoute);
 teamsRouter.route('/', getTeamRoute);
 teamsRouter.route('/', deleteTeamRoute);
 

@@ -115,6 +115,36 @@ const isPaid = Boolean(cotisation?.paid);
         </div>
       )}
 
+      <!-- La fiche est la seule page où l'adhérent se voit tel que les autres le voient :
+           elle ouvre la liste, avant les démarches, et porte sa photo en guise d'icône. -->
+      {active && (
+        <a
+          href={`/adherents/${String(active.licence ?? '').replace(/\D/g, '').padStart(8, '0')}`}
+          class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline group min-h-[44px]"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              {cotisation?.photoUpdatedAt ? (
+                <img
+                  src={`/api/adherents/photo/${String(active.licence ?? '').replace(/\D/g, '').padStart(8, '0')}?size=128&v=${cotisation.photoUpdatedAt}`}
+                  alt=""
+                  width="24"
+                  height="24"
+                  class="h-6 w-6 rounded-full object-cover"
+                />
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              )}
+              <p class="text-sm font-semibold text-foreground">Ma fiche</p>
+            </div>
+            <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Ouvrir &rarr;</span>
+          </div>
+          <p class="text-sm text-muted-foreground">
+            Votre photo, vos équipes et vos classements, tels que les voient les autres adhérents.
+          </p>
+        </a>
+      )}
+
       <!-- Notifications : ne s'affiche que si l'appareil peut en recevoir. -->
       <PushOptIn client:idle />
 

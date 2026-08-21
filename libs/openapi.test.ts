@@ -153,6 +153,74 @@ describe('OpenAPI Spec Generator', () => {
             }
           }
         },
+        '/members/{licence}/photo': {
+          get: {
+            summary: 'Get member portrait bytes',
+            description:
+              'Served from a private R2 prefix: no public route exposes it. Falls back to the large size when the requested thumbnail is missing.',
+            tags: ['Members'],
+            parameters: [
+              { name: 'licence', in: 'path', required: true, schema: { type: 'string' } },
+              { name: 'size', in: 'query', required: false, schema: { type: 'integer', enum: [512, 128], default: 512 } }
+            ],
+            responses: {
+              200: { description: 'Image bytes', content: { 'image/webp': {} } },
+              404: { description: 'No portrait for this licence' }
+            }
+          },
+          post: {
+            summary: 'Upload a member portrait',
+            description:
+              'Attached to the licence, not to the season membership: it survives re-registration.',
+            tags: ['Members'],
+            parameters: [
+              { name: 'licence', in: 'path', required: true, schema: { type: 'string' } }
+            ],
+            requestBody: {
+              required: true,
+              content: {
+                'multipart/form-data': {
+                  schema: Type.Object({ file: Type.Any({ description: 'JPEG, PNG, WebP or AVIF, 2 MB max' }) })
+                }
+              }
+            },
+            responses: {
+              200: {
+                description: 'Portrait stored',
+                content: {
+                  'application/json': {
+                    schema: Type.Object({
+                      success: Type.Boolean(),
+                      data: Type.Object({ photoUpdatedAt: Type.Integer() })
+                    })
+                  }
+                }
+              },
+              413: { description: 'File larger than 2 MB' },
+              415: { description: 'Unsupported image type' }
+            }
+          },
+          delete: {
+            summary: 'Remove a member portrait',
+            tags: ['Members'],
+            parameters: [
+              { name: 'licence', in: 'path', required: true, schema: { type: 'string' } }
+            ],
+            responses: {
+              200: {
+                description: 'Portrait removed (idempotent)',
+                content: {
+                  'application/json': {
+                    schema: Type.Object({
+                      success: Type.Boolean(),
+                      data: Type.Object({ deleted: Type.Boolean() })
+                    })
+                  }
+                }
+              }
+            }
+          }
+        },
         '/members/cse': {
           get: {
             summary: 'Get CSE attestation details',

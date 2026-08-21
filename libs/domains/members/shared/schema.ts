@@ -83,3 +83,29 @@ export const attestationConfigTable = sqliteTable('attestation_config', {
   signatureBase64: text('signature_base64'),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
 });
+
+// Ce que la personne est, par opposition à ce que la saison lui attribue.
+//
+// Table annexe **sans `season_id`** : `members` porte une ligne par (licence, saison),
+// donc une photo rattachée à un `member.id` serait à redéposer à chaque réinscription,
+// et une colonne posée sur `members` serait écrasée par l'import Poona
+// (`onConflictDoUpdate`). La clé est la licence — clé naturelle stable d'une saison à
+// l'autre, sans clé étrangère, même convention que `member_club_functions`. Un adhérent
+// qui revient après une saison blanche retrouve son portrait.
+//
+// C'est ici qu'iront les prochaines données durables d'un adhérent (surnom, présentation,
+// préférences d'affichage) ; la cotisation, l'autorisation de notes de frais et la
+// fonction au club restent saisonnières et n'y ont pas leur place.
+export const memberProfilesTable = sqliteTable('member_profiles', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  licence: text('licence').notNull(),
+  // Préfixe R2 du portrait, sans la taille : `member-photos/<empreinte>`. Les objets
+  // déposés sont `<préfixe>/512` et `<préfixe>/128` — sans extension, le type réel
+  // étant porté par les métadonnées R2 (voir `shared/photo.ts`).
+  photoKey: text('photo_key'),
+  photoUpdatedAt: integer('photo_updated_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
+}, (table) => ({
+  licenceUnq: uniqueIndex('member_profiles_licence_idx').on(table.licence)
+}));

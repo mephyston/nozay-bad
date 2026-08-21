@@ -38,6 +38,12 @@ const session = Astro.locals.session;
             <li><strong class="text-foreground">Adresse email et code à usage unique (OTP)</strong> — authentification à l'espace adhérent (connexion sans mot de passe).</li>
             <li><strong class="text-foreground">Adresse IP et données techniques de requête</strong> — sécurité, prévention des abus et bon fonctionnement du service.</li>
             <li><strong class="text-foreground">Commandes boutique et notes de frais</strong> — traitement des demandes soumises via l'espace adhérent.</li>
+            <li>
+              <strong class="text-foreground">Photo de profil</strong> — facultative, déposée par l'adhérent depuis sa fiche ou, à sa demande, par un membre du bureau.
+              Elle sert à l'identifier au sein du club : elle est visible des <strong class="text-foreground">autres adhérents connectés</strong> à l'espace adhérent,
+              et n'est <strong class="text-foreground">jamais publiée sur le site public</strong> ni accessible sans connexion. Pour un mineur, le dépôt se fait depuis le compte
+              du représentant légal, à qui il revient d'y consentir.
+            </li>
           </ul>
         </section>
 
@@ -46,6 +52,10 @@ const session = Astro.locals.session;
           <p class="text-muted-foreground">
             Les traitements reposent sur l'<strong class="text-foreground">exécution du contrat d'adhésion</strong> (gestion des membres, commandes,
             notes de frais) et sur l'<strong class="text-foreground">intérêt légitime</strong> de l'association (authentification et sécurité de l'espace adhérent).
+          </p>
+          <p class="text-muted-foreground">
+            La <strong class="text-foreground">photo de profil</strong> repose sur le <strong class="text-foreground">consentement</strong> : elle est facultative,
+            et se retire à tout moment depuis votre fiche, d'un geste et sans justification.
           </p>
         </section>
 
@@ -67,6 +77,7 @@ const session = Astro.locals.session;
           <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
             <li>Codes de connexion (OTP) : quelques minutes (expiration automatique).</li>
             <li>Données d'adhérent : le temps de l'adhésion et des saisons concernées, puis archivage/suppression selon les obligations de l'association.</li>
+            <li>Photo de profil : jusqu'à son retrait par l'adhérent ou par le bureau. Le retrait efface l'image, et pas seulement son affichage.</li>
             <li>Journaux techniques et données de sécurité : durée courte, à des fins de diagnostic et de prévention des abus.</li>
           </ul>
         </section>

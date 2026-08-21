@@ -85,6 +85,13 @@
       "when": 1787091650652,
       "tag": "0011_member_club_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1787335546360,
+      "tag": "0012_member_profiles",
+      "breakpoints": true
     }
   ]
 }

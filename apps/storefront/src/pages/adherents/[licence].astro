@@ -1,0 +1,229 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import MobileNav from '../../components/MobileNav.svelte';
+import { MemberPhotoField } from '@nba/members-ui';
+import { env as cfEnv } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
+import { resolveEnv } from '../../lib/request-context';
+import { listSeasons, displaySeason } from '../../lib/season';
+
+const session = Astro.locals.session;
+const env = resolveEnv(Astro.locals) ?? cfEnv;
+const api = createApiClient(env);
+
+/** Licence normalisée sur 8 chiffres, comme partout où le storefront en manipule une. */
+const normalise = (value: unknown) => String(value ?? '').replace(/\D/g, '').padStart(8, '0');
+
+const active = session?.members.find((m) => m.id === session.activeMemberId);
+const myLicence = normalise(active?.licence);
+const licence = normalise(Astro.params.licence);
+const isMe = Boolean(myLicence) && licence === myLicence;
+
+/*
+  Écriture posée sur la page plutôt que sur un point d'entrée dédié, comme la note de
+  frais et l'agenda : c'est ce qui garantit que la licence écrite est celle de la
+  session. Celle de l'URL n'est jamais reprise — sans quoi un adhérent changerait la
+  photo d'un autre en modifiant l'adresse.
+*/
+if (Astro.request.method === 'POST') {
+  const postSession = Astro.locals.session;
+  const postLicence = normalise(
+    postSession?.members.find((m) => m.id === postSession.activeMemberId)?.licence
+  );
+  if (!postSession || !postLicence) {
+    return new Response(JSON.stringify({ success: false, error: 'Non authentifié.' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  const form = await Astro.request.formData();
+  const action = form.get('action');
+  const path = `http://localhost/members/${postLicence}/photo`;
+
+  if (action === 'delete-photo') {
+    return api.fetch(path, { method: 'DELETE' });
+  }
+
+  if (action === 'photo') {
+    const file = form.get('file');
+    if (!(file instanceof File)) {
+      return new Response(JSON.stringify({ success: false, error: 'Aucun fichier reçu' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    const forwarded = new FormData();
+    forwarded.set('file', file, file.name);
+    // Aucun en-tête `Content-Type` à la main : `fetch` compose la frontière du multipart.
+    return api.fetch(path, { method: 'POST', body: forwarded });
+  }
+
+  return new Response(JSON.stringify({ success: false, error: 'Action inconnue.' }), {
+    status: 400,
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+const season = displaySeason(await listSeasons(env), session?.seasonCode);
+
+let member: any = null;
+let card: { teams: any[]; rankings: any; referenceEloDate: string | null } | null = null;
+
+try {
+  const memberRes = await api.fetch(
+    `http://localhost/members/${licence}${season?.code ? `?season=${encodeURIComponent(season.code)}` : ''}`
+  );
+  if (memberRes.ok) member = ((await memberRes.json()) as any).data;
+
+  if (member && season?.code) {
+    const cardRes = await api.fetch(
+      `http://localhost/teams/players/${licence}?seasonCode=${encodeURIComponent(season.code)}`
+    );
+    if (cardRes.ok) card = ((await cardRes.json()) as any).data;
+  }
+} catch {
+  member = null;
+}
+
+// Une licence qui n'adhère pas cette saison n'a pas de fiche, même si son portrait
+// dort encore en base : la fiche parle de la saison en cours.
+if (!member) Astro.response.status = 404;
+
+/*
+  Provenance : l'équipe d'où l'on a cliqué, si l'on vient d'un effectif.
+
+  Un identifiant, pas une adresse de retour. Reprendre une URL fournie par l'appelant
+  ouvrirait une redirection arbitraire depuis un lien envoyé par n'importe qui ; un entier
+  ne peut désigner qu'une page d'équipe.
+
+  Le **nom** de l'équipe, lui, ne vient jamais du paramètre : on ne le reprend que si
+  l'adhérent y figure vraiment. Sinon le lien s'annonce sans nom — le retour reste possible
+  depuis l'effectif d'une saison autre que celle de la session, où la fiche ne connaît pas
+  l'équipe d'où l'on vient.
+*/
+const fromTeamId = Number(Astro.url.searchParams.get('equipe'));
+const fromTeam = Number.isSafeInteger(fromTeamId) && fromTeamId > 0
+  ? { id: fromTeamId, name: (card?.teams ?? []).find((t: any) => t.teamId === fromTeamId)?.name }
+  : undefined;
+
+const fullName = member ? `${member.firstName} ${member.lastName}`.trim() : '';
+const initials = member
+  ? `${member.firstName?.[0] ?? ''}${member.lastName?.[0] ?? ''}`.toUpperCase()
+  : '??';
+const ranking = (value: string | null) => value ?? '—';
+const frenchDate = (iso: string) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC'
+  });
+---
+
+<Layout title={member ? `${fullName} - Nozay Bad` : 'Fiche adhérent - Nozay Bad'}>
+  <Header currentPath="/adherents" />
+
+  <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
+    <div class="max-w-3xl mx-auto space-y-6">
+      {fromTeam && (
+        <a href={`/equipes/${fromTeam.id}`} class="text-sm text-muted-foreground hover:text-foreground no-underline">
+          ← Retour à {fromTeam.name ?? "l'équipe"}
+        </a>
+      )}
+
+      {!member && (
+        <div class="rounded-xl border border-border bg-card px-5 py-8 text-center">
+          <p class="text-sm font-semibold text-foreground">Fiche introuvable</p>
+          <p class="mt-1 text-sm text-muted-foreground">
+            Cette licence ne figure pas parmi les adhérents de {season?.name || 'la saison'}.
+          </p>
+          <a href="/equipes" class="mt-4 inline-block text-sm text-primary no-underline hover:underline">
+            Retour aux équipes
+          </a>
+        </div>
+      )}
+
+      {member && (
+        <>
+          <section class="rounded-xl border border-border bg-card px-5 py-5 shadow-sm">
+            <MemberPhotoField client:load
+              baseSrc={`/api/adherents/photo/${licence}`}
+              endpoint=""
+              version={member.photoUpdatedAt ?? null}
+              {initials}
+              canEdit={isMe}
+              size={96}
+            >
+              <Fragment slot="identity">
+                <h1 class="text-xl sm:text-2xl font-bold text-foreground break-words">{fullName}</h1>
+                <p class="mt-1 text-sm text-muted-foreground">
+                  Licence {member.licence}{member.type ? ` · ${member.type}` : ''}
+                </p>
+              </Fragment>
+            </MemberPhotoField>
+          </section>
+
+          <section class="rounded-xl border border-border bg-card px-5 py-4 space-y-3">
+            <h2 class="text-sm font-semibold text-foreground">Équipes interclubs</h2>
+            {(card?.teams?.length ?? 0) === 0 ? (
+              <p class="text-sm text-muted-foreground">
+                {isMe ? "Vous n'êtes dans aucune équipe cette saison." : "Aucune équipe cette saison."}
+              </p>
+            ) : (
+              <ul class="divide-y text-sm">
+                {card!.teams.map((team: any) => (
+                  <li class="py-2 flex items-center justify-between gap-3">
+                    <a href={`/equipes/${team.teamId}`} class="font-medium text-foreground no-underline hover:underline">
+                      {team.name}
+                    </a>
+                    <span class="text-xs text-muted-foreground text-right">
+                      {team.championshipLabel} · {team.divisionLabel}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section class="rounded-xl border border-border bg-card px-5 py-4 space-y-3">
+            <div class="flex items-baseline justify-between gap-2">
+              <h2 class="text-sm font-semibold text-foreground">Classements</h2>
+              {card?.referenceEloDate && (
+                <p class="text-xs text-muted-foreground">Au {frenchDate(card.referenceEloDate)}</p>
+              )}
+            </div>
+            {card?.rankings?.hasRanking ? (
+              <dl class="grid grid-cols-3 gap-3 text-center">
+                <div>
+                  <dt class="text-xs text-muted-foreground">Simple</dt>
+                  <dd class="text-lg font-semibold text-foreground">{ranking(card.rankings.singles)}</dd>
+                </div>
+                <div>
+                  <dt class="text-xs text-muted-foreground">Double</dt>
+                  <dd class="text-lg font-semibold text-foreground">{ranking(card.rankings.doubles)}</dd>
+                </div>
+                <div>
+                  <dt class="text-xs text-muted-foreground">Mixte</dt>
+                  <dd class="text-lg font-semibold text-foreground">{ranking(card.rankings.mixed)}</dd>
+                </div>
+              </dl>
+            ) : (
+              <p class="text-sm text-muted-foreground">
+                Aucun classement connu — licencié non compétiteur, ou classements pas encore importés.
+              </p>
+            )}
+          </section>
+        </>
+      )}
+    </div>
+  </main>
+
+  <MobileNav currentPath="/adherents" client:load />
+
+  <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
+    <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+    <p class="mt-2"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a> · <a href="/mentions-legales" class="hover:underline">Mentions légales</a></p>
+  </footer>
+</Layout>

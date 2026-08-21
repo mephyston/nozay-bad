@@ -7,6 +7,9 @@ import { listClubFunctionsRoute } from './list-club-functions/route';
 import { saveClubFunctionsRoute } from './save-club-functions/route';
 import { listBirthdaysRoute } from './list-birthdays/route';
 import { getMemberByLicenceRoute } from './get-member-by-licence/route';
+import { uploadMemberPhotoRoute } from './upload-member-photo/route';
+import { getMemberPhotoRoute } from './get-member-photo/route';
+import { deleteMemberPhotoRoute } from './delete-member-photo/route';
 import { getMemberCseDataRoute } from './get-member-cse-data/route';
 import { getAttestationConfigRoute } from './get-attestation-config/route';
 import { updateAttestationConfigRoute } from './update-attestation-config/route';
@@ -16,6 +19,9 @@ import { generateCseAttestationRoute } from './generate-cse-attestation/route';
 export type Bindings = {
   DB: D1Database;
   AI: unknown;
+  /** Portraits des adhérents, sous le préfixe `member-photos/` (voir `shared/photo.ts`). */
+  MEDIA: R2Bucket;
+  IMAGES?: ImagesBinding;
 };
 
 export const membersRouter = new Hono<{ Bindings: Bindings }>();
@@ -30,6 +36,11 @@ membersRouter.route('/', setExpenseAuthorizationRoute);
 // `/club-functions` est littérale : avant `/:licence` pour ne pas être lue comme une licence.
 membersRouter.route('/', listClubFunctionsRoute);
 membersRouter.route('/', saveClubFunctionsRoute);
+// `/:licence/photo` avant `/:licence` : deux segments, donc aucune capture possible,
+// mais l'ordre reste celui du domaine — les routes les plus spécifiques d'abord.
+membersRouter.route('/', uploadMemberPhotoRoute);
+membersRouter.route('/', getMemberPhotoRoute);
+membersRouter.route('/', deleteMemberPhotoRoute);
 membersRouter.route('/', getMemberByLicenceRoute);
 membersRouter.route('/', getMemberCseDataRoute);
 // Attestation CSE : configuration du modèle (routes littérales) puis génération PDF (:id).

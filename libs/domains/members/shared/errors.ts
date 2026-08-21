@@ -48,3 +48,31 @@ export class SignatureTooLargeError extends AppError {
     this.name = 'SignatureTooLargeError';
   }
 }
+
+export class InvalidPhotoTypeError extends AppError {
+  constructor(message = 'Format de photo non accepté : une image JPEG, PNG, WebP ou AVIF est attendue.') {
+    super(message, 415);
+    this.name = 'InvalidPhotoTypeError';
+  }
+}
+
+export class PhotoTooLargeError extends AppError {
+  constructor(message = 'Photo trop volumineuse : 2 Mo maximum.') {
+    super(message, 413);
+    this.name = 'PhotoTooLargeError';
+  }
+}
+
+export class EmptyPhotoError extends AppError {
+  constructor(message = 'Fichier vide.') {
+    super(message, 400);
+    this.name = 'EmptyPhotoError';
+  }
+}
+
+export class PhotoNotFoundError extends AppError {
+  constructor(message = 'Aucune photo pour cet adhérent.') {
+    super(message, 404);
+    this.name = 'PhotoNotFoundError';
+  }
+}

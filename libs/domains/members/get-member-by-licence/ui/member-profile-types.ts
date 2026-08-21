@@ -20,6 +20,9 @@ export interface Member {
   paid: boolean;
   expenseAuthorized?: boolean;
 
+  /** Version du portrait, pour l'adresse d'affichage. `null` : aucune photo. */
+  photoUpdatedAt?: number | null;
+
   parent1Name?: string | null;
   parent1Email?: string | null;
   parent1Phone?: string | null;

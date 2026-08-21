@@ -94,7 +94,9 @@ export default defineConfig({
           environment: 'jsdom',
           setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
           root: path.resolve(__dirname, 'libs/domains/members'),
-          include: ['get-member-by-licence/ui/**/*.test.ts', 'import-members-csv/ui/**/*.test.ts', 'list-members/ui/**/*.test.ts'],
+          // Liste littérale : un test d'interface posé dans une tranche absente d'ici ne
+          // serait jamais exécuté, sans que rien ne le signale.
+          include: ['get-member-by-licence/ui/**/*.test.ts', 'import-members-csv/ui/**/*.test.ts', 'list-members/ui/**/*.test.ts', 'upload-member-photo/ui/**/*.test.ts'],
         }
       },
       

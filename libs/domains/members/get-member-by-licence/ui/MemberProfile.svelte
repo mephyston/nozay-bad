@@ -3,10 +3,11 @@
 </script>
 
 <script lang="ts">
-  import { ArrowLeft, User, FileText } from '@lucide/svelte';
+  import { ArrowLeft, FileText } from '@lucide/svelte';
   import { Button, Badge, Tabs, Card } from '@nba/ui';
   import type { Member, GLTransaction } from './member-profile-types';
   import type { ClubFunction } from '../../shared/club-functions';
+  import MemberPhotoField from '../../upload-member-photo/ui/MemberPhotoField.svelte';
   import MemberProfileInfoTab from './MemberProfileInfoTab.svelte';
   import MemberProfileCotisationTab from './MemberProfileCotisationTab.svelte';
   import MemberProfileTransactionsTab from './MemberProfileTransactionsTab.svelte';
@@ -25,6 +26,14 @@
 
   let activeTab = $state<'profil' | 'cotisation' | 'transactions'>('profil');
 
+  // Pont de l'administration, et non l'adresse du site public : les portraits ne sont
+  // servis par aucune route publique, et la CSP de l'admin n'accepte les images que
+  // depuis sa propre origine.
+  const photoEndpoint = $derived(`/admin/api/member-photo?licence=${encodeURIComponent(member.licence)}`);
+  const initials = $derived(
+    `${member.firstName?.[0] ?? ''}${member.lastName?.[0] ?? ''}`.toUpperCase() || '??'
+  );
+
   function handleTabChange(newTab: string) {
     activeTab = newTab as 'profil' | 'cotisation' | 'transactions';
   }
@@ -42,14 +51,27 @@
   <!-- Profile Header Card -->
   <Card.Root class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
   <Card.Content class="p-6 w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
-    <div class="flex items-center gap-4 w-full sm:w-auto">
-      <div class="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-        <User class="w-8 h-8" />
-      </div>
-      <div class="min-w-0 flex-1">
-        <h2 class="text-2xl font-bold text-foreground break-words">{member.lastName} {member.firstName}</h2>
-        <p class="text-sm text-muted-foreground mt-1 font-medium">Licence : {member.licence}</p>
-      </div>
+    <div class="min-w-0 w-full sm:w-auto">
+      <!--
+        Pas de garde de permission ici : comme l'autorisation de notes de frais de
+        l'onglet « Profil & Contacts », c'est le pont `/admin/api/**` qui refuse, et
+        l'API derrière lui qui fait autorité.
+      -->
+      <MemberPhotoField
+        baseSrc={photoEndpoint}
+        endpoint={photoEndpoint}
+        version={member.photoUpdatedAt ?? null}
+        {initials}
+        canEdit
+        size={64}
+      >
+        {#snippet identity()}
+          <h2 class="text-xl sm:text-2xl font-bold text-foreground break-words">
+            {member.lastName} {member.firstName}
+          </h2>
+          <p class="text-sm text-muted-foreground mt-1 font-medium">Licence : {member.licence}</p>
+        {/snippet}
+      </MemberPhotoField>
     </div>
     <div class="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
       {#if member.paid}

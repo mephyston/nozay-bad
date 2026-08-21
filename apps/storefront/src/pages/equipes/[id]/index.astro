@@ -110,7 +110,13 @@ const frenchDate = (iso: string) =>
             <ul class="divide-y text-sm">
               {team.roster.map((p: any) => (
                 <li class="py-2 flex items-center justify-between gap-3">
-                  <span>{p.firstName} {p.lastName}</span>
+                  {/*
+                    Seule porte d'entrée vers la fiche d'un autre adhérent : il n'existe
+                    aucun annuaire, et `GET /members` reste fermé à l'espace adhérent.
+                  */}
+                  <a href={`/adherents/${p.licence}?equipe=${teamId}`} class="text-foreground no-underline hover:underline">
+                    {p.firstName} {p.lastName}
+                  </a>
                   <span class="text-xs text-muted-foreground">
                     {p.hasRanking ? `${p.singles ?? '—'} / ${p.doubles ?? '—'} / ${p.mixed ?? '—'}` : 'sans classement'}
                   </span>

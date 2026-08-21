@@ -55,6 +55,13 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // L'adhérent télécharge sa propre attestation ; le storefront impose l'identifiant
   // de la session, il n'est jamais repris de l'URL.
   { method: 'GET', path: '/members/:id/cse-attestation.pdf', permission: 'members:attestations:read', service: true },
+  // Portrait de l'adhérent. `service: true` des trois côtés : l'espace adhérent gère la
+  // sienne et lit celle des autres, l'administration gère celle de n'importe qui. C'est
+  // la couche appelante qui impose l'identité — le storefront force la licence de la
+  // session et ne reprend jamais celle de l'URL, comme pour l'attestation CSE.
+  { method: 'GET', path: '/members/:licence/photo', permission: 'members:members:read', service: true },
+  { method: 'POST', path: '/members/:licence/photo', permission: 'members:members:write', service: true },
+  { method: 'DELETE', path: '/members/:licence/photo', permission: 'members:members:write', service: true },
   { method: 'GET', path: '/members/:licence', permission: 'members:members:read', service: true },
 
   // ── Comptabilité : exercices, budget, rapports ─────────────────────────────
@@ -287,6 +294,9 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'GET', path: '/teams/my-fixtures', permission: 'teams:teams:read', service: true },
   { method: 'GET', path: '/teams', permission: 'teams:teams:read', service: true },
   { method: 'POST', path: '/teams', permission: 'teams:teams:write' },
+  // Fiche adhérent de l'espace adhérent : les équipes et les classements d'UNE licence.
+  // `GET /teams/rankings`, qui rend le barème nominatif de tout le club, reste fermé.
+  { method: 'GET', path: '/teams/players/:licence', permission: 'teams:teams:read', service: true },
   { method: 'GET', path: '/teams/:id', permission: 'teams:teams:read', service: true },
   { method: 'DELETE', path: '/teams/:id', permission: 'teams:teams:delete' },
   { method: 'PUT', path: '/teams/:id/staff', permission: 'teams:teams:write' },

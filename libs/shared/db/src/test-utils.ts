@@ -56,6 +56,9 @@ const tables = [
     'product_categories',
     // Sans FK vers `members` (attribution par licence), mais fonctionnellement enfant.
     'member_club_functions',
+    // Rattaché à la licence et non à l'adhésion de l'année : la ligne survit aux
+    // saisons, mais se purge avec le reste entre deux tests.
+    'member_profiles',
     'members',
     'season_balances',
     'season_category_budgets',
