@@ -32,8 +32,24 @@ votre équipe doit rester inférieure ou égale. »* Le capitaine voit sa contra
 d'enregistrer. Si l'équipe du dessus n'a pas encore composé, l'écran le dit plutôt que
 d'afficher une contrainte fausse.
 
-Les sélecteurs ne proposent que des joueurs de genre compatible avec la ligne, l'effectif
-en tête, et grisent ceux qui sont indisponibles en indiquant pourquoi.
+Les sélecteurs ne proposent que **l'effectif déclaré de l'équipe**, restreint aux joueurs de
+genre compatible avec la ligne, et grisent ceux qui sont indisponibles en indiquant pourquoi.
+
+Aligner quelqu'un qui n'est pas à l'effectif suppose de **l'y ajouter d'abord** depuis
+l'administration : c'est un geste du coach, et il laisse une trace. Auparavant la liste
+partait de l'annuaire de la saison entière — près de trois cents personnes.
+
+> [!IMPORTANT]
+> L'éligibilité est jugée **discipline par discipline**. En régional, les divisions PN à R2
+> exigent un classement minimum *dans la discipline jouée* : un joueur classé en simple mais
+> pas en double est proposé en simple et grisé en double. Une ligne grisée ne veut donc pas
+> dire que le joueur est indisponible pour toute la rencontre.
+
+Si les classements de la journée ne sont pas disponibles — la mise à jour fédérale n'a pas
+encore été importée — l'écran l'annonce **en tête du composeur** plutôt que de griser
+silencieusement toutes les lignes. Aucun classement de remplacement n'est deviné : il
+produirait des valeurs d'équipe apparemment normales sur une base que le règlement rejette.
+Voir [Classements](/admin/help/interclubs-classements).
 
 ## Ce qui bloque, et ce qui avertit
 
@@ -98,11 +114,35 @@ de hiérarchie n'en découle.
 Une valeur **non calculable** — classement manquant, date de référence non épinglée — est
 affichée comme telle. Elle n'est jamais remplacée par une estimation.
 
+## Les deux rencontres d'une journée régionale
+
+En régional, une journée compte **deux rencontres**, disputées le même week-end contre deux
+adversaires différents. Elles se composent **séparément** : l'écran de composition en ouvre
+une à la fois, et son en-tête rappelle laquelle dès que la journée en compte plusieurs.
+
+La page de l'équipe liste donc une entrée par rencontre. Chacune est nommée par son
+**adversaire** quand il est saisi, et par son rang sinon — d'où l'intérêt de renseigner le
+nom de l'équipe adverse : c'est lui qui rend les deux rencontres discernables partout
+ailleurs.
+
+> [!CAUTION]
+> Vérifiez l'en-tête avant de composer. Les deux rencontres ont le même numéro de journée,
+> et une composition saisie sur la mauvaise laisse l'autre vide.
+
+Les autres championnats n'ont qu'une rencontre par journée : l'écran ne dit alors rien de
+particulier.
+
 ## La date de la rencontre
 
-Au-dessus de la composition, le capitaine fixe la **date réelle** de sa rencontre et le
-gymnase. C'est une information de logistique, propre à son équipe : elle ne déplace jamais
-la journée, qui reste celle du calendrier du comité et porte les règles.
+Au-dessus de la composition, le capitaine fixe la **date réelle** de sa rencontre, le
+gymnase et l'**équipe adverse**. C'est une information de logistique, propre à son équipe :
+elle ne déplace jamais la journée, qui reste celle du calendrier du comité et porte les
+règles.
+
+Le bureau peut saisir les mêmes informations sans passer par le capitaine, depuis la feuille
+**Rencontres** d'une équipe — voir [Équipes](/admin/help/interclubs-equipes). Le capitaine
+connaît son calendrier, le bureau a le calendrier du comité : les deux chemins écrivent au
+même endroit.
 
 Une date hors de la semaine théorique est refusée au premier essai, avec l'explication de
 ce qu'elle changerait ; un second envoi la confirme. Le calendrier signale alors la

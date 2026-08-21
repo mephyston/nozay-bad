@@ -16,11 +16,11 @@ Un compte n'a accès qu'à ce qu'on lui a explicitement accordé. Créer un comp
 Un rôle correspond à une fonction réelle dans l'association. Vous pouvez en attribuer plusieurs à la même personne — une secrétaire qui assure aussi la trésorerie reçoit les deux rôles.
 
 - **Accès minimal** — Tableau de bord et centre d'aide uniquement, aucun droit métier. C'est ce qu'on attribue à un compte créé sans rôle : il peut se connecter, rien de plus.
-- **Communication** — Les annonces du club, les notifications aux adhérents et **le site public dans son ensemble** : pages, actualités, médiathèque, créneaux, agenda et menus. Ni finances, ni fichier des adhérents : c'est le rôle à donner au bénévole qui anime la communication, sans lui ouvrir le secrétariat.
-- **Entraîneur·e** — Le catalogue de la boutique et les commandes passées pour les adhérents, dont il consulte le fichier. Il tient également **les créneaux** à jour : ce sont les encadrants qui vivent les horaires au quotidien. Il ne valide pas les commandes : l'encaissement relève de la trésorerie.
-- **Secrétaire** — Le fichier des adhérents (consultation, modification, import Poona), les attestations CSE, la communication (annonces et notifications), le catalogue de la boutique, et la **rédaction** sur le site public (pages, actualités, médiathèque, agenda) sans la main sur l'arborescence ni les suppressions. Consultation seule côté finances.
-- **Trésorier·ère** — La comptabilité complète : grand livre, factures, rapprochement bancaire, chèques, exercices, budget et rapports. Les notes de frais, de la saisie au remboursement. L'encaissement des commandes. Consultation seule des pages, actualités, créneaux et agenda du site public.
-- **Président·e** — La consultation de l'ensemble du club, les actes de gouvernance (ouverture et clôture d'exercice, vote du budget), la validation des notes de frais et des commandes, la communication, le site public dans son ensemble, et la gestion des accès.
+- **Communication** — Les notifications aux adhérents et **le site public dans son ensemble** : pages, actualités, médiathèque, créneaux, agenda, menus et **redirections**. Ni finances, ni fichier des adhérents : c'est le rôle à donner au bénévole qui anime la communication, sans lui ouvrir le secrétariat.
+- **Entraîneur·e** — **Les interclubs dans leur totalité** : engager les équipes, désigner les capitaines, importer les classements et contrôler les compositions avant chaque journée. C'est le seul rôle à porter l'écriture sur les interclubs. Également le catalogue de la boutique et les commandes passées pour les adhérents, dont il consulte le fichier, et **les créneaux** qu'il tient à jour — ce sont les encadrants qui vivent les horaires au quotidien. Il ne valide pas les commandes : l'encaissement relève de la trésorerie.
+- **Secrétaire** — Le fichier des adhérents (consultation, modification, import Poona, **fonctions au club**), les attestations CSE, la communication (actualités et notifications), le catalogue de la boutique, et la **rédaction** sur le site public (pages, actualités, médiathèque, agenda, menus) sans la main sur les redirections ni les suppressions. Consultation seule côté finances et interclubs.
+- **Trésorier·ère** — La comptabilité complète : grand livre, factures, rapprochement bancaire, chèques, exercices, budget et rapports. Les notes de frais, de la saisie au remboursement. L'encaissement des commandes. Consultation seule des pages, actualités, créneaux et agenda du site public, et du fichier des adhérents.
+- **Président·e** — La consultation de l'ensemble du club, les actes de gouvernance (ouverture et clôture d'exercice, vote du budget, **désignation du bureau**), la validation des notes de frais et des commandes, la communication, le site public dans son ensemble, et la gestion des accès.
 - **Super administrateur** — Tous les droits, y compris la configuration technique.
 
 > [!NOTE]
@@ -33,9 +33,14 @@ Depuis **Réglages → Accès & Rôles**, ajoutez la personne avec l'adresse e-m
 > [!CAUTION]
 > Ne donnez le rôle **Super administrateur** qu'aux personnes qui en ont réellement besoin. Il ouvre la configuration technique et permet de consulter l'application sous l'identité d'un autre compte.
 
+> [!NOTE]
+> Un rôle ne se confond pas avec une **fonction au club**. Le rôle dit ce qu'une personne peut faire dans l'application ; la fonction dit quel mandat elle exerce dans l'association. Un président sans compte d'administration est un cas normal, et attribuer le rôle « Président·e » ne l'inscrit pas au bureau. Voir [Dirigeants](/admin/help/dirigeants).
+
 ## Ajuster ce qu'un rôle permet
 
 Depuis le panneau **Que permet chaque rôle ?**, un super administrateur peut cocher ou décocher les droits d'un rôle. La modification s'applique immédiatement à tous les comptes qui le portent — comptez quelques secondes de propagation.
+
+L'édition se fait **rôle par rôle, dans une liste** : on choisit le rôle, puis on déplie les rubriques de droits qui l'intéressent. La **matrice** — tous les droits en lignes, tous les rôles en colonnes — reste affichée sur grand écran pour la lecture d'ensemble et la recherche du navigateur, mais on n'y coche rien : on n'édite jamais qu'un rôle à la fois, et la comparaison entre colonnes ne sert pas pendant la saisie.
 
 Trois points à connaître :
 

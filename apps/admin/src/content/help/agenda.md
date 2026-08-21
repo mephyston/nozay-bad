@@ -60,7 +60,7 @@ Le statut se change **depuis la liste**, par le menu **⋯**.
 | **Annulé** | Retiré de l'agenda |
 
 > [!IMPORTANT]
-> **Annuler retire l'événement du site**, il ne l'y laisse pas barré. Si l'annulation doit être portée à la connaissance de ceux qui comptaient s'y rendre, publiez une [annonce](/admin/help/annonces) ou une [actualité](/admin/help/site-actualites) : l'agenda, lui, ne montre que ce qui aura bien lieu.
+> **Annuler retire l'événement du site**, il ne l'y laisse pas barré. Si l'annulation doit être portée à la connaissance de ceux qui comptaient s'y rendre, publiez une [actualité](/admin/help/site-actualites) — réservée aux adhérents si elle ne concerne qu'eux : l'agenda, lui, ne montre que ce qui aura bien lieu.
 
 Le statut **Annulé** garde une trace côté administration : l'événement reste dans la liste, marqué en rouge, plutôt que d'être effacé. C'est ce qui le distingue de la **suppression**, définitive, réservée à un événement saisi par erreur.
 

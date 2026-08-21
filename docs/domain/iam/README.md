@@ -4,7 +4,7 @@ Le domaine **IAM** répond à deux questions, et à elles seules : *qui agit* et
 
 Il ne dépend d'aucun autre domaine, et **aucun domaine métier ne dépend de lui** : un domaine qui aurait besoin de savoir qui agit serait en train de décider d'une autorisation, ce qui appartient à la seule table de routes de l'API (`apps/api/src/authz/route-permissions.ts`).
 
-Le storefront est hors de ce périmètre. Un adhérent s'y authentifie par code à usage unique et n'a pas de compte d'administration ; ses droits relèvent de règles métier (`expenseAuthorized`, propriété du profil), pas de rôles.
+Le storefront et le site public sont hors de ce périmètre. Un adhérent s'y authentifie par code à usage unique et n'a pas de compte d'administration ; ses droits relèvent de règles métier (`expenseAuthorized`, propriété du profil), pas de rôles.
 
 ---
 
@@ -14,12 +14,14 @@ Le storefront est hors de ce périmètre. Un adhérent s'y authentifie par code 
 |---|---|---|
 | **Compte d'administration** | Une personne autorisée à ouvrir la console d'administration. Identifiée par son adresse e-mail, celle que Cloudflare Access authentifie. | `Entity` (`admin_users`) |
 | **Permission** | Le droit d'accomplir une opération précise, nommée `<domaine>:<ressource>:<action>`. Accordée ou non : il n'existe pas de joker. | `string` (`accounting:ledger:write`) |
-| **Rôle** | Un métier de l'association, auquel est attaché un ensemble de permissions. Un compte peut en cumuler plusieurs. | `Enum` (`super_admin`, `president`, `tresorier`, `secretaire`, `coach`, `membre`) |
+| **Rôle** | Un métier de l'association, auquel est attaché un ensemble de permissions. Un compte peut en cumuler plusieurs. | `Enum` (`super_admin`, `president`, `tresorier`, `secretaire`, `coach`, `communication`, `membre`) |
 | **Acteur** | Une identité résolue en droits effectifs : le compte, ses rôles, et l'union de leurs permissions. | `Actor` (`get-actor`) |
 | **Définition d'origine** | Les droits qu'un rôle porte dans le code. L'écran signale les rôles qui s'en écartent, pour que la dérive reste visible. | `ROLE_PERMISSIONS` |
+| **Prérequis d'une permission** | Les lectures de référentiel sans lesquelles l'écran ouvert par un droit resterait vide — un sélecteur de saison, un libellé de catégorie. Accordées avec le droit qui les suppose. | `PERMISSION_PREREQUISITES` |
+| **Libellé de permission** | « Supprimer une écriture » plutôt que `accounting:ledger:delete` : ce qu'un bénévole doit pouvoir juger au moment d'attribuer un rôle. Un test vérifie qu'aucune permission n'en manque. | `PERMISSION_LABELS` |
 | **Rôle par défaut** | `membre`, affiché « Accès minimal » : tableau de bord et centre d'aide, aucun droit métier. Attribué à tout compte créé sans rôle explicite. | `DEFAULT_ROLE` |
 | **Usurpation** | Emprunt temporaire de l'identité d'un autre compte, pour reproduire ce qu'il voit. Réservée au droit `iam:sessions:impersonate`. | Cookie `impersonate_email` (HttpOnly) |
-| **Appelant** | Le Worker qui s'adresse à l'API : `admin` (agit pour un compte d'administration) ou `storefront` (agit pour un adhérent). | En-tête `x-caller` |
+| **Appelant** | Le Worker qui s'adresse à l'API : `admin` (agit pour un compte d'administration), `storefront` (agit pour un adhérent) ou `website` (sert le site public, sans identité). | En-tête `x-caller` |
 | **Route de service** | Route que le storefront peut appeler sans compte d'administration, parce qu'elle sert un adhérent connecté. | `service: true` |
 
 ---
@@ -38,16 +40,21 @@ Le storefront est hors de ce périmètre. Un adhérent s'y authentifie par code 
 | Sujet | Emplacement |
 |---|---|
 | Catalogue des permissions | `libs/domains/iam/shared/permissions.ts` |
+| Libellés lisibles des permissions | `libs/domains/iam/shared/catalog.ts` |
+| Référentiels qu'une permission suppose | `libs/domains/iam/shared/prerequisites.ts` |
 | Rôles et leur définition d'origine | `libs/domains/iam/shared/roles.ts` |
-| Droits appliqués par rôle (modifiables) | Table `role_permissions` (migration `0013`) |
+| Résolution des droits édités en base | `libs/domains/iam/shared/role-permissions.ts` |
+| Droits appliqués par rôle (modifiables) | Table `role_permissions` (`0000_baseline.sql`) |
 | Journal des modifications de droits | Table `role_permission_log` |
-| Liaison compte ↔ rôle | Table `admin_user_roles` (migration `0012`) |
+| Liaison compte ↔ rôle | Table `admin_user_roles` (`0000_baseline.sql`) |
 | Résolution identité → droits | `libs/domains/iam/get-actor/` |
 | Table d'autorisation des routes de l'API | `apps/api/src/authz/route-permissions.ts` |
 | Autorisation des pages d'administration | `apps/admin/src/lib/page-permissions.ts` |
 | Garde des actions d'écriture | `apps/admin/src/lib/guard.ts` |
 
-Le mapping rôle → permissions est **modifiable depuis l'application**, par le seul `super_admin`. Le code (`roles.ts`) en garde la **définition d'origine** : elle sert de valeurs de départ à la migration `0013`, de repli quand l'API est injoignable en développement, et de référence à laquelle l'écran compare les rôles pour signaler ceux qui s'en écartent.
+Ajouter une permission à `ROLE_PERMISSIONS` **ne l'accorde pas aux bases existantes** : la table `role_permissions` fait autorité à l'exécution. Toute évolution des droits d'un rôle se livre donc en deux morceaux — la définition d'origine dans `roles.ts`, et une migration `INSERT OR IGNORE INTO role_permissions` pour les environnements déjà déployés.
+
+Le mapping rôle → permissions est **modifiable depuis l'application**, par le seul `super_admin`. Le code (`roles.ts`) en garde la **définition d'origine** : elle sert de valeurs de départ aux migrations, de repli quand l'API est injoignable en développement, et de référence à laquelle l'écran compare les rôles pour signaler ceux qui s'en écartent.
 
 `super_admin` fait exception : il vaut toujours la totalité du catalogue, **calculée en code**. Figé en base, il n'obtiendrait pas les permissions ajoutées par les fonctionnalités futures — on livrerait un écran que le super administrateur ne peut pas ouvrir — et lui retirer par mégarde son droit d'édition fermerait la gestion des rôles sans recours.
 

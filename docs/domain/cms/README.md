@@ -26,6 +26,10 @@ Aucune dépendance à `members` : le ciblage « tous les abonnés » est résolu
 | **Couverture** | Image affichée en carte et en tête d'article. | `cover_media_id` |
 | **Événement lié** | Rendez-vous de l'[agenda](../events/README.md) que l'actualité annonce. Simple identifiant, sans clé étrangère : le CMS n'a pas à dépendre du domaine agenda pour stocker un numéro, et un lien devenu orphelin est ignoré au rendu. Quand ses inscriptions sont ouvertes, l'espace adhérent affiche l'encart d'inscription au bout de l'article. | `event_id` (nullable) |
 | **Page** | Contenu composé de blocs typés, à une adresse fixe. | `cms_pages` + `cms_page_blocks` |
+| **Bloc imbricable** | Bloc qu'une colonne peut accueillir. Six types seulement : les autres portent le `h1`, ou attendent la pleine largeur. | `NESTABLE_BLOCK_TYPES` |
+| **Colonnes** | Bloc qui pose 2, 3 ou 4 colonnes de largeurs réglables et héberge un bloc imbricable dans chacune. **Un niveau d'imbrication, pas deux** : au-delà, ce n'est plus une liste de blocs mais un page-builder, et le rendu cesse d'être garanti. | Bloc `columns` |
+| **Entrée de menu** | Un lien de navigation, rangé sous l'un des trois emplacements — en-tête, pied de page, barre légale — et éventuellement sous une autre entrée. Deux niveaux au maximum. | `cms_nav_items` |
+| **Redirection** | Une ancienne adresse et ce qu'elle répond : une cible (**301**) ou rien (**410 Gone**, page sans successeur). Compte ses passages, pour savoir laquelle purger. | `cms_redirects` |
 
 ---
 
@@ -45,3 +49,20 @@ Aucune dépendance à `members` : le ciblage « tous les abonnés » est résolu
 | Demander une diffusion push | Choisir les destinataires, gérer les abonnements (`notifications`) |
 | Assainir le texte riche à l'écriture | Faire confiance à l'éditeur du navigateur |
 | Servir le contenu à trois appelants | Laisser l'appelant décider de ce qu'il voit |
+| Tenir l'arborescence des URL : menus, redirections | Décider du référencement d'une page |
+
+---
+
+## L'arborescence des URL est un sujet à part
+
+Rédiger une page et décider de son adresse ne se paient pas de la même façon. Un texte maladroit se corrige ; une adresse déplacée sans redirection perd son référencement, et le lien qui circulait mène à une impasse.
+
+D'où deux droits distincts dans le catalogue : `cms:pages:*` pour la rédaction — **les menus compris**, qui ne font que désigner des pages existantes — et `cms:nav:*` pour les redirections. Le secrétariat rédige et compose les menus ; les redirections restent à la commission Communication et à la présidence.
+
+Trois automatismes accompagnent le renommage d'une page **publiée**, et n'existent que pour éviter les chaînes et les boucles que Google suit mal :
+
+- une redirection est posée de l'ancienne adresse vers la nouvelle ;
+- les redirections qui visaient l'ancienne adresse sont repointées vers la nouvelle, sinon un second renommage produirait `A → B → C` ;
+- une redirection dont la source devient la cible est supprimée, sinon revenir à une adresse précédente créerait une boucle.
+
+Un brouillon n'a jamais eu d'adresse publique : son renommage ne pose rien. L'écran d'administration (`/admin/website/redirects`) sert aux cas que l'application ne peut pas deviner, et affiche le compteur de passages — sous-estimé pour les 410, dont la réponse est mise en cache un quart d'heure par le site public.

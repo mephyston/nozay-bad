@@ -44,7 +44,8 @@ Les droits s'attribuent par fonction dans l'association, pas permission par perm
 |---|---|---|---|---|---|---|---|
 | Tableau de bord, aide | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Adhérents (lecture) | | | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Adhérents (écriture, import) | | | | ✓ | | | ✓ |
+| Adhérents (écriture, fonctions au club) | | | | ✓ | | ✓ | ✓ |
+| Adhérents (import Poona) | | | | ✓ | | | ✓ |
 | Attestations CSE | | | | ✓ | ✓ | lecture | ✓ |
 | Comptabilité (lecture) | | | | rapports | ✓ | ✓ | ✓ |
 | Comptabilité (écriture) | | | | | ✓ | | ✓ |
@@ -54,8 +55,27 @@ Les droits s'attribuent par fonction dans l'association, pas permission par perm
 | Commandes (création) | | | ✓ | lecture | ✓ | lecture | ✓ |
 | Commandes (encaissement) | | | | | ✓ | ✓ | ✓ |
 | Notifications (émission) | | ✓ | | ✓ | lecture | ✓ | ✓ |
+| Site public — pages, actualités | | ✓ | lecture | rédaction | lecture | ✓ | ✓ |
+| Site public — médiathèque | | ✓ | | rédaction | | ✓ | ✓ |
+| Site public — menus | | ✓ | lecture | ✓ | lecture | ✓ | ✓ |
+| Site public — redirections | | ✓ | | lecture | | ✓ | ✓ |
+| Créneaux | | ✓ | ✓ | lecture | lecture | ✓ | ✓ |
+| Agenda | | ✓ | lecture | ✓ (sans suppression) | lecture | ✓ | ✓ |
+| Agenda — liste des inscrits | | ✓ | | ✓ | | ✓ | ✓ |
+| Interclubs — équipes | | | ✓ | lecture | | lecture | ✓ |
+| Interclubs — classements, import | | | ✓ | lecture | | lecture | ✓ |
+| Interclubs — compositions | | | ✓ | lecture | | lecture | ✓ |
 | Assistant IA | | | | | ✓ | ✓ | ✓ |
+| Réglages (accueil) | | | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Gestion des accès | | | | | | ✓ | ✓ |
 | Usurpation | | | | | | | ✓ |
+
+Trois lectures de ce tableau méritent d'être dites.
+
+**Les menus relèvent de la rédaction, les redirections de l'arborescence.** Composer un menu suppose `cms:pages:write` — le secrétariat le fait donc. Modifier une redirection suppose `cms:nav:write`, qui lui est refusé : une adresse mal redirigée se paie en référencement, et cela reste à la commission Communication et à la présidence.
+
+**L'entraîneur est le seul à écrire sur les interclubs.** Engager les équipes, désigner les capitaines, importer les classements et contrôler les compositions sont son métier. Le secrétariat et la présidence consultent ; la trésorerie n'a rien à y faire.
+
+**La présidence désigne le bureau.** `members:members:write` lui est accordé pour les fonctions au club — nommer un président ou un trésorier est une décision d'assemblée générale. Faute d'une permission dédiée aux fonctions au club, ce droit ouvre aussi l'édition d'une fiche adhérent : contrepartie assumée, à revoir le jour où `members:functions:write` existera.
 
 Cette répartition est la **définition d'origine**, figée par un instantané dans `libs/domains/iam/shared/roles.test.ts` : toute modification du code y apparaît comme un diff explicite. Les droits réellement appliqués sont modifiables depuis l'application (voir RF-IAM-004), et l'écran signale les rôles qui se sont écartés de cette définition.

@@ -1,14 +1,13 @@
-# Structure de dossiers cible
+# Structure de dossiers
+
+Le découpage est par **cas d'usage**, pas par couche technique : une tranche verticale porte sa route, sa validation, son handler, son repository, son DTO, ses tests et son interface, côte à côte.
 
 ```
 libs/
-  domains/
-    accounting/                    # domaine au-dessus du seuil de 10 tranches (ADR-0003)
-      shared/                      # partagé entre toutes les tranches du domaine
-        invoice.ts
-        bank-transaction.ts
-        season.ts
-      invoices/                    # capacité métier
+  domains/                         # un dossier par bounded context
+    accounting/                    # au-dessus du seuil de 10 tranches : regroupé
+      shared/                      #   partagé entre toutes les tranches du domaine
+      invoices/                    #   capacité métier
         create-invoice/
           route.ts
           validator.ts
@@ -19,70 +18,42 @@ libs/
           ui/
             InvoiceForm.svelte
         update-invoice/
-        delete-invoice/
         list-invoices/
-      seasons/                     # capacité métier
-      config/                      # capacité métier
-      bank/                        # capacité métier
-      transactions/                # capacité métier
-      checks/                      # capacité métier
+      seasons/  config/  bank/  ledger/  checks/  ai/
+      index.ts                     #   API publique du domaine
 
-    expenses/
-      shared/
-      create-expense/
-      approve-expense/
-      list-expenses/
-      ...
+    cms/                           # pages, actualités, médias, menus, redirections
+      pages/  posts/  media/  navigation/  redirects/  categories/
+      publishing/  revisions/  shared/  index.ts
 
-    members/
-      shared/
-        member.ts
-        season.ts                  # si members est bien propriétaire de "season"
-      register-member/
-      apply-payment/                # remplace l'accès direct fait depuis accounting
-      import-members/                # PoonaImporter
-      list-members/
-      ...
+    teams/                         # sous le seuil : les tranches sont à plat
+      get-lineup/  save-lineup/  get-team/  import-rankings/ …
+      shared/  index.ts
 
-    shop/
-      shared/
-      create-order/
-      approve-order/
-      list-products/
-      ...
+    events/  expenses/  iam/  members/  notifications/  schedules/  shop/
 
-  infrastructure/
-    database/                       # client Drizzle, migrations, helper de transaction
-
-  shared/                           # strictement technique
-    errors.ts                       # AppError générique
-    bindings.ts                     # type Bindings (DB, AI)
-
-  ui/                                # design system générique uniquement
-    button/
-    modal/
-    table/
-    ...
+  shared/                          # strictement technique, aucun métier
+    api-client/                    # client typé vers le Worker API
+    db/                            # client Drizzle, migrations, helper de transaction
+    html/                          # assainissement du texte riche
+    pdf/  preview/  push/  runtime-env/  security-headers/
+    ui/                            # design system générique : bouton, table, modale…
 
 apps/
-  api/
-    src/index.ts                    # compose app.route(...) par domaine, comme aujourd'hui
-  admin/
-    src/pages/                      # importe uniquement des composants ui de domaine
-  storefront/
-    src/pages/
+  api/                             # Worker Hono : compose app.route(...) par domaine
+  admin/                           # console d'administration (Astro + Svelte)
+  storefront/                      # espace adhérent (Astro + Svelte)
+  website/                         # site public, rendu depuis le CMS
 ```
 
-## Différence avec la structure actuelle
+## Deux formes selon la taille du domaine
 
-Structure actuelle (`libs/features/<domaine>/{api,data-access,ui}`) :
-découpage par **couche technique** à l'intérieur de chaque domaine.
+**Tranches à plat** tant que le domaine reste sous une dizaine de cas d'usage : `teams/get-lineup/`, `teams/save-lineup/`. C'est la forme par défaut.
 
-Structure cible (`libs/domains/<domaine>/<cas-usage>/`) : découpage par
-**cas d'usage**, avec un `shared/` par domaine pour l'agrégat et les
-interfaces de repository.
+**Regroupement par capacité** au-delà : `accounting/invoices/create-invoice/`. Le seuil et son motif sont dans [ADR-0003](./ADR-0003-organisation-des-domaines.md) — un domaine à trente tranches à plat cesse de se lire.
 
-Le renommage `features` → `domains` est optionnel et cosmétique — l'essentiel
-est le découpage interne. Si vous préférez limiter le bruit dans les diffs,
-gardez `libs/features/` comme nom de dossier racine et appliquez uniquement le
-découpage interne décrit ci-dessus.
+## Ce qui ne vit pas dans un domaine
+
+`libs/shared/` est **strictement technique** : rien de ce qui s'y trouve ne connaît le badminton. C'est ce qui rend sa contrainte de dépendance tenable — il ne dépend que de lui-même.
+
+`libs/shared/ui/` n'accueille que les composants réellement génériques. Un composant lié à un cas d'usage vit dans `<domaine>/<cas-usage>/ui/` : voir [07-ui](./07-ui.md).

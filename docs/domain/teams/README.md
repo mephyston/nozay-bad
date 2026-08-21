@@ -68,8 +68,13 @@ Il dépend du seul domaine `members`, pour peupler les sélecteurs de joueurs. A
 | Date de référence et historisation | `libs/domains/teams/shared/ranking-resolution.ts` |
 | Lecture de l'export ELO Poona | `libs/domains/teams/shared/ranking-csv.ts` |
 | Vocabulaire fédéral (classements, catégories, mutations) | `libs/domains/teams/shared/ranking.ts` |
-| Tables | `libs/domains/teams/shared/schema.ts`, migration `0010_teams.sql` |
-| Écran des classements | `apps/admin/src/pages/admin/teams/classements.astro` |
+| Tables | `libs/domains/teams/shared/schema.ts`, migrations `0010_teams.sql`, `0012_teams_calendar_details.sql`, `0014_championship_rules_link.sql` |
+| Calendriers de comité livrés en seed | `scripts/seed-ic-calendar-*.sql`, `scripts/seed-icr-calendar-*.sql` |
+| Écran des équipes (engagement, staff, effectif, rencontres) | `apps/admin/src/pages/admin/teams/index.astro` |
+| Écran de contrôle des journées | `apps/admin/src/pages/admin/teams/journees.astro` |
+| Écran des classements et son import | `apps/admin/src/pages/admin/teams/classements.astro`, `classements/import.astro` |
+| Écran des règlements | `apps/admin/src/pages/admin/teams/reglements.astro` |
+| Espace adhérent : équipe et composition | `apps/storefront/src/pages/equipes/[id]/index.astro`, `equipes/[id]/journee/[n].astro` |
 
 ---
 

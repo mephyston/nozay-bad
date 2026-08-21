@@ -2,7 +2,7 @@
 title: "Import Poona"
 description: "Charger l'extraction CSV de Poona pour créer ou mettre à jour les dossiers d'adhérents."
 category: "adherents"
-order: 3
+order: 4
 ---
 
 Les adhérents entrent dans l'application par un **fichier CSV extrait de Poona**. C'est le seul moyen de créer un dossier.

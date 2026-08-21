@@ -1,5 +1,7 @@
 # Vision
 
+> **Note de lecture.** Ce document a été écrit pendant la migration de juillet 2026. Les chemins `libs/features/**` et les alias `@metacult/*` qu'il cite en **contre-exemples** décrivent le code d'alors ; ils n'existent plus. La structure livrée est décrite dans [02-folder-structure](./02-folder-structure.md), les dépendances effectives dans [03-dependencies](./03-dependencies.md). Le raisonnement, lui, reste la référence.
+
 ## Contexte
 
 `nba-api` (monorepo Nx) sert 3 applications déployées sur Cloudflare Workers :

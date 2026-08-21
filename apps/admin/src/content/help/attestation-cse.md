@@ -2,7 +2,7 @@
 title: "Attestation CSE"
 description: "Générer l'attestation de paiement d'un adhérent et personnaliser le modèle."
 category: "adherents"
-order: 4
+order: 5
 ---
 
 L'**attestation CSE** est le document que l'adhérent transmet à son comité d'entreprise pour se faire rembourser sa cotisation. C'est le seul document généré par l'application à destination des adhérents.

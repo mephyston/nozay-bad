@@ -1,5 +1,7 @@
 # Principes
 
+> **Note de lecture.** Ce document a été écrit pendant la migration de juillet 2026. Les chemins `libs/features/**` et les alias `@metacult/*` qu'il cite en **contre-exemples** décrivent le code d'alors ; ils n'existent plus. La structure livrée est décrite dans [02-folder-structure](./02-folder-structure.md), les dépendances effectives dans [03-dependencies](./03-dependencies.md). Le raisonnement, lui, reste la référence.
+
 Ces règles sont non négociables et s'appliquent à chaque PR de la migration.
 
 1. **Une responsabilité = un dossier. Un cas d'usage = un dossier.**

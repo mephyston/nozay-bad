@@ -68,6 +68,27 @@ puissent partager une semaine sans partager un seul jour :
 | Départemental vétérans | le **dimanche**, samedi par dérogation (art. 3.3.1) |
 | Régional | **samedi ou dimanche** — deux rencontres par journée |
 
+En régional, les **deux rencontres d'une même journée** se composent séparément, contre
+deux adversaires différents : voir [Compositions](/admin/help/interclubs-compositions).
+
+## Les rencontres d'une équipe
+
+L'entrée **Rencontres** du menu **⋯** d'une équipe ouvre son calendrier, **une ligne par
+rencontre** — donc deux par journée en régional. Pour chacune, vous saisissez la **date**,
+le **gymnase** et l'**équipe adverse**.
+
+C'est le même enregistrement que celui du capitaine depuis son espace : le capitaine
+connaît son calendrier, le bureau a celui du comité. La différence est le droit — ici il
+faut **Modifier les équipes**, là-bas il faut être capitaine ou capitaine adjoint.
+
+Seules les lignes réellement modifiées sont envoyées à l'enregistrement. Les rencontres au
+**repos** ou perdues par **forfait** conservent leur état : les rouvrir est un geste
+explicite, jamais un effet de bord d'une saisie de date.
+
+Renseigner le nom de l'adversaire n'est pas cosmétique : c'est lui qui nomme les deux
+rencontres d'une journée régionale et les rend discernables partout ailleurs dans
+l'application.
+
 Les **barrages** sont des journées à part : toutes les équipes ne les disputent pas, seules
 celles que leur classement y envoie. Une équipe sans composition y est donc normale.
 

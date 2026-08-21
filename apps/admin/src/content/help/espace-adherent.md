@@ -2,7 +2,7 @@
 title: "L'espace adhérent"
 description: "Ce que les adhérents voient et peuvent faire de leur côté, et ce que cela déclenche pour le bureau."
 category: "adherents"
-order: 5
+order: 6
 ---
 
 L'application comporte un second site, destiné aux adhérents. Le bureau n'y intervient pas, mais plusieurs tâches administratives y prennent leur source : les notes de frais et les commandes boutique y sont déposées, les notifications y sont reçues.
@@ -15,6 +15,30 @@ C'est le **foyer** qui se connecte, pas l'individu : une adresse rattachée à p
 
 > [!NOTE]
 > Un adhérent qui ne reçoit pas son code a le plus souvent une adresse absente ou erronée dans Poona. Vérifiez sa fiche : l'e-mail de l'adhérent et ceux des deux contacts y sont affichés.
+
+Le code est valable **10 minutes** et accepte **5 tentatives**. Une fois entré, la connexion vaut **30 jours** sur l'appareil.
+
+## « Je n'arrive plus à me connecter »
+
+C'est le motif d'appel le plus fréquent, et il a presque toujours la même cause : **l'accès suit la licence de la saison en cours**, au sens des dates de la saison — pas de l'exercice comptable ouvert dans l'administration.
+
+Concrètement, au 1ᵉʳ septembre, un adhérent qui n'a pas renouvelé perd l'accès. Y compris s'il était connecté la veille : sa session est revalidée et **révoquée** dès que sa saison est close. À l'inverse, celui dont la licence a été enregistrée ne voit rien passer — sa session est renouvelée silencieusement.
+
+Quatre situations, et le message reçu par e-mail :
+
+| Situation | Ce qu'il reçoit |
+|---|---|
+| **Licence en cours** | Son code de connexion |
+| **Licence prise pour la saison suivante seulement** | Un e-mail lui indiquant **la date d'ouverture** de son accès. D'ici là, l'application n'aurait aucune de ses données à lui montrer |
+| **Licencié l'an dernier, pas cette année** | Une invitation à réadhérer |
+| **Inconnu au fichier depuis plus d'une saison** | Rien |
+
+> [!IMPORTANT]
+> Dans les trois derniers cas, l'écran affiche **exactement la même chose** que pour une connexion réussie : « un code vous a été envoyé ». C'est volontaire — répondre « adresse inconnue » permettrait à n'importe qui de tester des adresses pour savoir qui est au club. Ce qu'il y a à dire part par e-mail, le seul canal dont l'adhérent a prouvé la propriété.
+>
+> Conséquence pratique : un adhérent qui vous dit « je ne reçois rien » n'a pas forcément un problème d'adresse. **Vérifiez d'abord sa licence pour la saison en cours** dans [la liste des adhérents](/admin/help/gestion-adherents).
+
+Si l'API est injoignable, personne n'est déconnecté : la licence est revérifiée à la requête suivante.
 
 ## Ce qu'il peut faire
 
@@ -30,6 +54,6 @@ Le site comporte également les pages *Politique de confidentialité* et *Mentio
 
 - La **validation ou le refus** de sa note de frais ;
 - La **validation ou le refus** de sa commande boutique ;
-- Les annonces envoyées par le bureau et, si elles sont activées, les relances de cotisation et de commande à régler, ainsi que les anniversaires.
+- Les actualités réservées aux adhérents que le bureau diffuse et, si elles sont activées, les relances de cotisation et de commande à régler, les échéances d'interclubs, ainsi que les anniversaires.
 
 Ces messages ne partent que vers les appareils réellement abonnés aux notifications.

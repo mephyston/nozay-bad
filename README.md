@@ -12,8 +12,9 @@ Plateforme de gestion complète pour le club de badminton de Nozay (NBA 91). Ce 
 ## 📱 Applications (`apps/`)
 
 - **`apps/api`** : API REST Hono déployée sur Cloudflare Workers (`nba-api`). Gère le domaine comptabilité, la gestion des adhérents, la boutique et les notes de frais.
-- **`apps/admin`** : Portail d'administration développé avec Astro & Svelte (`nba-admin`). Permet aux membres du bureau de gérer la comptabilité, le rapprochement bancaire IA, les adhésions et la boutique.
-- **`apps/storefront`** : Site public et espace adhérents (`nba-storefront`). Propose la boutique en ligne du club, la soumission des notes de frais et les services adhérents.
+- **`apps/admin`** : Portail d'administration développé avec Astro & Svelte (`nba-admin`). Permet aux membres du bureau de gérer la comptabilité, le rapprochement bancaire IA, les adhésions, la boutique, les équipes interclubs, les notifications et le contenu du site public. L'accès est gouverné par des rôles (voir `docs/domain/iam/`).
+- **`apps/storefront`** : Espace adhérents (`nba-storefront`). Authentification par code à usage unique, boutique en ligne du club, soumission des notes de frais, compositions d'interclubs pour les capitaines et services adhérents.
+- **`apps/website`** : Site public du club (`nba-website`). Site vitrine rendu depuis le CMS maison administré dans `apps/admin` : pages, actualités, agenda, créneaux, médiathèque, menus et redirections.
 
 ## 🚀 Commandes Essentielles
 
@@ -28,9 +29,10 @@ terminaux** :
 # Terminal 1 — API (à lancer EN PREMIER), port fixe 8787
 npm run dev:api
 
-# Terminal 2 — une fois l'API prête, l'app admin (4321) ou le storefront (4322)
+# Terminal 2 — une fois l'API prête, l'application voulue
 npm run dev:admin        # → http://localhost:4321
 npm run dev:storefront   # → http://localhost:4322
+npm run dev:website      # → http://localhost:4323
 ```
 
 > Sans API démarrée d'abord, le binding `API_SERVICE` ne se résout pas et les
@@ -59,6 +61,7 @@ npx eslint .
 # Build des applications
 npx astro build --root apps/admin
 npx astro build --root apps/storefront
+npx astro build --root apps/website
 ```
 
 Le dépôt suit un **développement sur tronc unique** : `main` est la seule branche durable.
@@ -70,5 +73,6 @@ Le dépôt suit un **développement sur tronc unique** : `main` est la seule bra
 ## 📚 Documentation & Architecture
 
 Pour approfondir la structure du projet, les règles d'architecture et la documentation fonctionnelle :
-- [Documentation Architecture](docs/architecture/README.md)
+- [Principes et règles d'architecture](docs/architecture/01-principles.md) — VSA, DDD, frontières de domaine et ADR
+- [Documentation fonctionnelle par domaine](docs/domain/) — glossaire métier et règles fonctionnelles (RF)
 - [Standards d'Agent & Directives](AGENTS.md)
