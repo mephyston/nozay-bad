@@ -25,6 +25,13 @@ const tables = [
     'cms_content_version',
     'cms_site_settings',
     // Créneaux et agenda : enfants avant parents, comme le reste de la liste.
+    // Jeu libre : les invités pendent des inscriptions, qui pendent des séances, qui
+    // pendent des gymnases et des créneaux — d'où cet ordre-là exactement.
+    'open_play_guests',
+    'open_play_registrations',
+    'open_play_sessions',
+    // Sans clé étrangère, mais rangée avec les siennes : c'est la liste des ouvreurs.
+    'open_play_openers',
     'schedule_slots',
     'club_event_registrations',
     'club_events',

@@ -87,3 +87,14 @@ export const AUDIENCE_LABELS: Record<ScheduleSlotRow['audience'], string> = {
 };
 
 export const WEEKDAY_LABELS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
+/**
+ * Séances de jeu libre, ré-exportées depuis `open-play-schema.ts`.
+ *
+ * Le glob de drizzle-kit ne résout que ce fichier-ci : sans cette ligne, les tables du
+ * jeu libre seraient absentes du modèle vu par `drizzle-kit generate`, et la prochaine
+ * migration générée les recréerait — ou pire, ne les verrait pas du tout. Le contenu vit
+ * à côté pour ne pas doubler la taille de ce fichier.
+ */
+export * from './open-play-schema';
+
