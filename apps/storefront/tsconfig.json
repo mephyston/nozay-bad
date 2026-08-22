@@ -24,7 +24,9 @@
       "@nba/shop-ui": ["../../libs/domains/shop/shared/ui.ts"],
       "@nba/events-ui": ["../../libs/domains/events/shared/ui.ts"],
       "@nba/teams-api": ["../../libs/domains/teams/index.ts"],
-      "@nba/teams-ui": ["../../libs/domains/teams/shared/ui.ts"]
+      "@nba/teams-ui": ["../../libs/domains/teams/shared/ui.ts"],
+      "@nba/schedules-api": ["../../libs/domains/schedules/index.ts"],
+      "@nba/schedules-ui": ["../../libs/domains/schedules/shared/ui.ts"]
     }
   }
 }

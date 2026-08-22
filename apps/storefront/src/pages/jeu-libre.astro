@@ -1,0 +1,202 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import MobileNav from '../components/MobileNav.svelte';
+import { OpenPlaySignup } from '@nba/schedules-ui';
+import { createApiClient } from '@nba/api-client';
+import { resolveEnv } from '../lib/request-context';
+import { normalizeLicence } from '../lib/my-fixtures';
+import { fetchOpenPlaySessions, formatSessionDate, sessionStatusLabel } from '../lib/open-play';
+
+/**
+ * Le jeu libre, et les inscriptions.
+ *
+ * Remplace le Google Sheet où le club posait une colonne par jour d'ouverture. Les
+ * écritures passent par la page elle-même plutôt que par un point d'entrée dédié, comme
+ * pour l'agenda et les notes de frais : c'est ce qui garantit que **l'identité de
+ * l'inscrit vient de la session** et non du corps de la requête. Le navigateur choisit une
+ * séance et des invités ; il ne choisit jamais qui s'inscrit.
+ */
+
+const env = resolveEnv<{ OPEN_PLAY_ENABLED?: string }>(Astro.locals);
+
+// Drapeau de fonctionnalité : 404 et non 403, une fonctionnalité qui n'est pas encore
+// livrée ne doit pas s'annoncer. Il retombe sur `false` par défaut, y compris si la
+// variable n'est pas déclarée.
+if (env.OPEN_PLAY_ENABLED !== 'true') {
+  return new Response('Not Found', { status: 404 });
+}
+
+if (Astro.request.method === 'POST') {
+  const postSession = Astro.locals.session;
+  if (!postSession) {
+    return new Response(JSON.stringify({ success: false, error: 'Non authentifié.' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  const member = postSession.members.find((m) => m.id === postSession.activeMemberId);
+  if (!member) {
+    return new Response(JSON.stringify({ success: false, error: 'Profil introuvable.' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  try {
+    const body = (await Astro.request.json()) as {
+      action?: string;
+      sessionId?: number;
+      guests?: { firstName?: string; lastName?: string }[];
+    };
+    const sessionId = Number(body.sessionId);
+    if (!Number.isSafeInteger(sessionId) || sessionId < 1) {
+      return new Response(JSON.stringify({ success: false, error: 'Séance inconnue.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const api = createApiClient(env);
+
+    if (body.action === 'register') {
+      return api.fetch(`http://localhost/schedules/open-play/${sessionId}/registrations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          // Imposés depuis la session : c'est la garde de toute cette page.
+          memberId: postSession.activeMemberId,
+          licence: normalizeLicence(member.licence) ?? member.licence,
+          firstName: member.firstName,
+          lastName: member.lastName,
+          email: postSession.email,
+          // Seul champ que le navigateur choisit. Le plafond est appliqué par l'API ;
+          // on ne recopie pas la règle ici pour ne pas avoir à la maintenir en double.
+          guests: Array.isArray(body.guests)
+            ? body.guests.map((guest) => ({
+                firstName: String(guest?.firstName ?? ''),
+                lastName: String(guest?.lastName ?? '')
+              }))
+            : []
+        })
+      });
+    }
+
+    if (body.action === 'unregister') {
+      return api.fetch(
+        `http://localhost/schedules/open-play/${sessionId}/registrations?memberId=${postSession.activeMemberId}`,
+        { method: 'DELETE' }
+      );
+    }
+
+    return new Response(JSON.stringify({ success: false, error: 'Action inconnue.' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (error: any) {
+    return new Response(JSON.stringify({ success: false, error: error?.message ?? 'Erreur.' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+const session = Astro.locals.session;
+const active = session?.members.find((m) => m.id === session.activeMemberId);
+
+const { sessions } = await fetchOpenPlaySessions(env, {
+  memberId: session?.activeMemberId,
+  licence: normalizeLicence(active?.licence) ?? undefined
+});
+
+const today = new Date().toISOString().slice(0, 10);
+const toStaff = sessions.filter((s) => s.needsOpener).length;
+---
+
+<Layout title="Jeu libre - Nozay Bad">
+  <Header currentPath="/jeu-libre" />
+
+  <main class="w-full flex-1 p-3 pb-24 sm:p-6 md:pb-6">
+    <div class="mx-auto max-w-3xl">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-foreground sm:text-3xl">Jeu libre</h1>
+        <p class="mt-1 text-sm text-muted-foreground">
+          {toStaff > 0
+            ? `Inscrivez-vous aux prochaines séances. ${toStaff} ${toStaff > 1 ? 'cherchent' : 'cherche'} encore un bénévole pour ouvrir.`
+            : 'Inscrivez-vous aux prochaines séances, et annoncez qui vous amenez.'}
+        </p>
+      </div>
+
+      {sessions.length === 0 ? (
+        <p class="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+          Aucune séance de jeu libre programmée pour le moment.
+        </p>
+      ) : (
+        <ul class="space-y-3">
+          {sessions.map((openPlay) => {
+            const status = sessionStatusLabel(openPlay);
+            const closed = openPlay.status === 'cancelled' || openPlay.date < today;
+            return (
+              <li class="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+                <div class="flex flex-wrap items-baseline justify-between gap-2">
+                  <h2 class="text-base font-semibold text-foreground first-letter:uppercase">
+                    {formatSessionDate(openPlay.date)}
+                  </h2>
+                  <p class="text-sm text-muted-foreground">
+                    {openPlay.startTime} – {openPlay.endTime}
+                    {openPlay.venue && ` · ${openPlay.venue.name}`}
+                  </p>
+                </div>
+
+                <p
+                  class:list={[
+                    'mt-1 text-sm font-medium',
+                    status.tone === 'ok' && 'text-primary',
+                    status.tone === 'pending' && 'text-muted-foreground',
+                    status.tone === 'off' && 'text-destructive'
+                  ]}
+                >
+                  {openPlay.status === 'cancelled' ? `Annulée — ${status.text}` : status.text}
+                </p>
+
+                {openPlay.label && (
+                  <p class="mt-1 text-sm text-foreground">{openPlay.label}</p>
+                )}
+                {openPlay.notes && (
+                  <p class="mt-1 text-sm text-muted-foreground">{openPlay.notes}</p>
+                )}
+
+                <div class="mt-3">
+                  <OpenPlaySignup
+                    client:load
+                    sessionId={openPlay.id}
+                    myGuests={openPlay.myGuests}
+                    open={!closed}
+                    playerCount={openPlay.playerCount}
+                    minPlayers={openPlay.minPlayers}
+                  />
+                </div>
+
+                {openPlay.guestCount > 0 && (
+                  <p class="mt-2 text-xs text-muted-foreground">
+                    {openPlay.registrationCount} adhérent{openPlay.registrationCount > 1 ? 's' : ''}
+                    {' · '}
+                    {openPlay.guestCount} invité{openPlay.guestCount > 1 ? 's' : ''}
+                  </p>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  </main>
+
+  <MobileNav currentPath="/jeu-libre" />
+
+  <footer class="mt-12 hidden border-t border-border bg-card/20 py-8 text-center text-xs text-muted-foreground md:block md:pb-8">
+    <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+    <p class="mt-2"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a> · <a href="/mentions-legales" class="hover:underline">Mentions légales</a></p>
+  </footer>
+</Layout>

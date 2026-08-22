@@ -247,6 +247,28 @@ export default defineConfig({
         }
       },
       {
+        // Le pendant `-ui` manquait au domaine des créneaux : tout test de composant y
+        // était donc **silencieusement ignoré**, `exclude: ['**/ui/**']` ci-dessus les
+        // écartant du projet API sans que rien ne les reprenne. `SchedulesManager` n'a
+        // jamais été couvert pour cette raison.
+        extends: true,
+        plugins: [svelte()],
+        cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-schedules-ui'),
+        // Sans la condition `browser`, Svelte résout sa build serveur et `mount()` échoue.
+        resolve: {
+          conditions: ['browser'],
+        },
+        test: {
+          name: 'features-schedules-ui',
+          globals: true,
+          environment: 'jsdom',
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
+          root: path.resolve(__dirname, 'libs/domains/schedules'),
+          include: ['**/ui/**/*.test.ts'],
+          exclude: ['**/node_modules/**'],
+        }
+      },
+      {
         extends: true,
         plugins: [cloudflareTest({ wrangler: { configPath: wranglerConfig } })],
         cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-events-api'),

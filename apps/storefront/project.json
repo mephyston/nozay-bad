@@ -13,6 +13,7 @@
     "@nba/expenses-api",
     "@nba/html",
     "@nba/members-api",
+    "@nba/schedules-api",
     "@nba/security-headers",
     "@nba/runtime-env",
     "@nba/shop-api",
