@@ -19,7 +19,8 @@
     }
   },
   "vars": {
-    "APP_ENV": "production"
+    "APP_ENV": "production",
+    "OPEN_PLAY_ENABLED": "false"
   },
   "services": [
     {
@@ -31,7 +32,8 @@
     "staging": {
       "name": "nba-admin-staging",
       "vars": {
-        "APP_ENV": "staging"
+        "APP_ENV": "staging",
+        "OPEN_PLAY_ENABLED": "true"
       },
       "services": [
         {

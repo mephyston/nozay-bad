@@ -27,7 +27,8 @@
   "vars": {
     "EMAIL_FROM": "Nozay Badminton Association <contact@nozaybad.fr>",
     "EMAIL_MODE": "live",
-    "EMAIL_ALLOWLIST": ""
+    "EMAIL_ALLOWLIST": "",
+    "OPEN_PLAY_ENABLED": "false"
   },
   "services": [
     {
@@ -41,7 +42,8 @@
       "vars": {
         "EMAIL_FROM": "Nozay Badminton Association <contact@nozaybad.fr>",
         "EMAIL_MODE": "allowlist",
-        "EMAIL_ALLOWLIST": "david.pagnacco@gmail.com,meyharts@gmail.com,rouxjuliee@gmail.com,justine.couvidat@gmail.com"
+        "EMAIL_ALLOWLIST": "david.pagnacco@gmail.com,meyharts@gmail.com,rouxjuliee@gmail.com,justine.couvidat@gmail.com",
+        "OPEN_PLAY_ENABLED": "true"
       },
       "kv_namespaces": [
         {
