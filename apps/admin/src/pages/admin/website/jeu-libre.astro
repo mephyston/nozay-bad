@@ -1,0 +1,154 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { OpenPlayManager } from '@nba/schedules-ui';
+import { createAdminApiClient } from '../../../lib/api';
+import { can, guardAction } from '../../../lib/guard';
+import { resolveEnv } from '@nba/runtime-env';
+
+/**
+ * Les séances de jeu libre, tenues par le bureau.
+ *
+ * Remplace le Google Sheet : ici on ouvre des séances datées, on lit qui vient — invités
+ * compris — et on annule avec un motif que l'adhérent inscrit pourra lire.
+ */
+
+const env = resolveEnv<{ OPEN_PLAY_ENABLED?: string }>(Astro.locals);
+
+// Drapeau de fonctionnalité, comme côté adhérent : 404, une fonctionnalité pas encore
+// livrée ne s'annonce pas. L'entrée de menu, elle, n'apparaît qu'au super-administrateur
+// tant que les permissions ne sont accordées à aucun rôle.
+if (env.OPEN_PLAY_ENABLED !== 'true') {
+  return new Response('Not Found', { status: 404 });
+}
+
+const canWrite = can(Astro.locals, 'schedules:open-play:write');
+const canReadRegistrations = can(Astro.locals, 'schedules:registrations:read');
+const apiService = createAdminApiClient(Astro.locals);
+
+const ACTIONS = {
+  create: 'schedules:open-play:write',
+  update: 'schedules:open-play:write',
+  // Lire les inscrits est un droit distinct de la tenue des séances : la séance est une
+  // information de club, la liste de ses inscrits — et de leurs invités non licenciés —
+  // une donnée personnelle.
+  registrations: 'schedules:registrations:read'
+} as const;
+
+if (Astro.request.method === 'POST') {
+  const data = (await Astro.request.json()) as any;
+  const denied = guardAction(Astro.locals, data.action, ACTIONS);
+  if (denied) return denied;
+
+  const routes: Record<string, { url: string; method: string; body?: unknown }> = {
+    create: {
+      url: 'http://localhost/schedules/open-play',
+      method: 'POST',
+      body: {
+        seasonCode: data.seasonCode,
+        venueId: data.venueId,
+        date: data.date,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        minPlayers: data.minPlayers,
+        label: data.label ?? undefined,
+        notes: data.notes ?? undefined
+      }
+    },
+    // Seules les clés présentes sont transmises : le même point d'entrée sert à la
+    // correction complète d'une séance et au seul changement de statut depuis la liste,
+    // le validateur traitant un champ absent comme « ne rien changer ».
+    update: {
+      url: `http://localhost/schedules/open-play/${data.id}`,
+      method: 'PUT',
+      body: Object.fromEntries(
+        (
+          [
+            'venueId', 'date', 'startTime', 'endTime', 'minPlayers',
+            'label', 'notes', 'status', 'cancelledReason',
+            'openerLicence', 'openerFirstName', 'openerLastName'
+          ] as const
+        )
+          .filter((key) => data[key] !== undefined)
+          .map((key) => [key, data[key]])
+      )
+    },
+    // Lecture à la demande : la liste nominative ne descend pas avec la page, elle n'est
+    // chargée que lorsque le bureau ouvre le panneau d'une séance précise.
+    registrations: {
+      url: `http://localhost/schedules/open-play/${data.id}/registrations`,
+      method: 'GET'
+    }
+  };
+
+  const route = routes[data.action];
+  const apiRes = await apiService.fetch(route.url, {
+    method: route.method,
+    headers: { 'Content-Type': 'application/json' },
+    ...(route.body ? { body: JSON.stringify(route.body) } : {})
+  });
+  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+  return new Response(JSON.stringify(await apiRes.json()), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+let sessions: any[] = [];
+let venues: any[] = [];
+let seasonCode = '';
+let errorMsg = '';
+
+try {
+  // `from` très bas : l'administration voit aussi l'historique, contrairement à l'espace
+  // adhérent, qui ne lit que ce qui vient.
+  const [sessionsRes, venuesRes, slotsRes] = await Promise.all([
+    apiService.fetch('http://localhost/schedules/open-play?from=2000-01-01&limit=300'),
+    apiService.fetch('http://localhost/schedules/venues'),
+    apiService.fetch('http://localhost/schedules')
+  ]);
+
+  if (sessionsRes.ok) sessions = ((await sessionsRes.json()) as any).data?.sessions ?? [];
+  else errorMsg = 'Impossible de charger les séances.';
+
+  if (venuesRes.ok) venues = ((await venuesRes.json()) as any).data ?? [];
+
+  // La saison n'a pas d'écran propre ici : on la reprend des créneaux, qui la portent
+  // déjà, plutôt que d'interroger la comptabilité pour une chaîne de caractères.
+  if (slotsRes.ok) {
+    const slots = ((await slotsRes.json()) as any).data ?? [];
+    seasonCode = slots[0]?.seasonCode ?? sessions[0]?.seasonCode ?? '';
+  }
+} catch {
+  errorMsg = 'Impossible de charger les séances.';
+}
+---
+
+<Layout title="Jeu libre - NBA 91">
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Jeu libre"
+  >
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader
+        title="Jeu libre"
+        description="Les séances datées auxquelles les adhérents s'inscrivent depuis leur espace, avec les invités qu'ils annoncent. Remplace le tableur partagé, où personne ne savait qui s'était réellement inscrit."
+      />
+
+      <OpenPlayManager
+        client:load
+        sessions={sessions}
+        venues={venues}
+        seasonCode={seasonCode}
+        canWrite={canWrite}
+        canReadRegistrations={canReadRegistrations}
+      />
+    </div>
+  </AdminLayout>
+</Layout>

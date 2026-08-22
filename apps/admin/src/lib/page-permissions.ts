@@ -56,6 +56,7 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
   '/admin/website/redirects': 'cms:nav:read',
   '/admin/website/footer': 'cms:pages:read',
   '/admin/website/schedules': 'schedules:slots:read',
+  '/admin/website/jeu-libre': 'schedules:open-play:read',
   '/admin/website/events': 'events:events:read',
   '/admin/teams': 'teams:teams:read',
   '/admin/teams/classements': 'teams:rankings:read',

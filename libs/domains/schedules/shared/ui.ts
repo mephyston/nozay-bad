@@ -9,3 +9,6 @@ export { default as SchedulesManager } from '../list-schedule-slots/ui/Schedules
 
 /** Îlot d'inscription à une séance de jeu libre, posé par l'espace adhérent. */
 export { default as OpenPlaySignup } from '../open-play/register-to-open-play/ui/OpenPlaySignup.svelte';
+
+/** Écran du bureau : les séances de jeu libre, leurs inscrits, leur ouvreur. */
+export { default as OpenPlayManager } from '../open-play/list-open-play-sessions/ui/OpenPlayManager.svelte';

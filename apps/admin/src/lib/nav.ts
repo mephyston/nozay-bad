@@ -68,6 +68,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { name: 'Actualités', icon: 'Newspaper', href: '/admin/website/posts', permission: 'cms:posts:read' },
       { name: 'Notifications', icon: 'Bell', href: '/admin/notifications', permission: 'notifications:messages:read' },
       { name: 'Créneaux', icon: 'CalendarClock', href: '/admin/website/schedules', permission: 'schedules:slots:read' },
+      { name: 'Jeu libre', icon: 'Users', href: '/admin/website/jeu-libre', permission: 'schedules:open-play:read' },
       { name: 'Agenda', icon: 'CalendarDays', href: '/admin/website/events', permission: 'events:events:read' }
     ]
   },
