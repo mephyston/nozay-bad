@@ -161,8 +161,20 @@ try {
   // L'annuaire n'est chargé que si le compte a le droit de le lire : `communication`
   // tient les séances sans porter `members:members:read`, et un champ de recherche muet
   // vaut moins qu'une saisie manuelle assumée.
-  if (can(Astro.locals, 'members:members:read')) {
-    const membersRes = await apiService.fetch('http://localhost/members?limit=500');
+  if (seasonCode && can(Astro.locals, 'members:members:read')) {
+    /*
+     * `season` n'est pas facultatif ici : `/members` rend des ADHÉSIONS, pas des personnes
+     * — une ligne par licence **et par saison** (ADR-0006). Sans le filtre, un adhérent de
+     * trois ans revient trois fois avec la même licence, et la liste de suggestions, keyée
+     * dessus, faisait planter l'îlot entier : le champ restait affiché, rendu côté serveur,
+     * mais plus rien ne réagissait.
+     *
+     * Le filtre est de toute façon le bon comportement : un badge se confie à un adhérent
+     * de la saison en cours.
+     */
+    const membersRes = await apiService.fetch(
+      `http://localhost/members?season=${encodeURIComponent(seasonCode)}&limit=1000`
+    );
     if (membersRes.ok) {
       members = (((await membersRes.json()) as any).data ?? []).map((m: any) => ({
         licence: m.licence,

@@ -73,6 +73,29 @@ describe('OpenPlayOpenersCard', () => {
     expect(host.textContent).toContain('Pierre Leroy');
   });
 
+  it('survit à une même licence répétée', () => {
+    /*
+     * `/members` rend une ligne par licence ET par saison : un adhérent de trois ans y
+     * figure trois fois. Une liste keyée sur la licence explosait alors en
+     * `each_key_duplicate` — et une erreur d'hydratation ne se voit pas : le champ reste
+     * affiché, rendu côté serveur, mais plus rien ne réagit. C'est le test qui manquait.
+     */
+    render({
+      members: [
+        { licence: '07051876', firstName: 'David', lastName: 'PAGNACCO' },
+        { licence: '07051876', firstName: 'David', lastName: 'PAGNACCO' }
+      ]
+    });
+    search('PAGNACCO');
+
+    expect(host.textContent).toContain('David PAGNACCO');
+    // Une seule proposition, et surtout : l'îlot est toujours vivant.
+    const suggestions = [...host.querySelectorAll('button')].filter((b) =>
+      b.textContent?.includes('PAGNACCO')
+    );
+    expect(suggestions).toHaveLength(1);
+  });
+
   it('ne propose pas quelqu’un qui a déjà un badge', () => {
     render();
     search('Marie');

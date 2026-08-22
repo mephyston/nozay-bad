@@ -38,11 +38,22 @@
     // Trois caractères avant de proposer quoi que ce soit : en deçà, la liste entière
     // défilerait et n'aiderait personne.
     if (term.length < 3) return [];
+
+    // Dédoublonné par licence, et pas seulement par prudence : une liste keyée sur une
+    // clé en double fait *planter l'îlot entier* — le champ reste affiché, rendu côté
+    // serveur, mais plus rien ne réagit et l'erreur ne se voit qu'en console. Un composant
+    // d'affichage ne doit pas mourir d'un doublon dans ses données.
+    const seen = new Set<string>();
     return members
       .filter((m: MemberOption) => !known.has(m.licence))
       .filter((m: MemberOption) =>
         `${m.firstName} ${m.lastName} ${m.licence}`.toLowerCase().includes(term)
       )
+      .filter((m: MemberOption) => {
+        if (seen.has(m.licence)) return false;
+        seen.add(m.licence);
+        return true;
+      })
       .slice(0, 8);
   });
 
