@@ -257,6 +257,21 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'PUT', path: '/schedules/:id', permission: 'schedules:slots:write' },
   { method: 'DELETE', path: '/schedules/:id', permission: 'schedules:slots:write' },
 
+  // Séances de jeu libre. La lecture est ouverte au service : c'est l'espace adhérent
+  // qui appelle, au nom de la session qu'il détient, et il n'obtient que des compteurs.
+  // S'inscrire et se désinscrire le sont pour la même raison — la page impose l'identité
+  // depuis la session, le navigateur ne choisit que ses invités.
+  //
+  // Lire la liste nominative ne l'est pas : des noms d'adhérents, et surtout d'invités
+  // non licenciés, ne sortent qu'auprès d'une identité d'administration. C'est toute la
+  // différence entre compter et savoir qui.
+  { method: 'GET', path: '/schedules/open-play', permission: 'schedules:open-play:read', service: true },
+  { method: 'POST', path: '/schedules/open-play', permission: 'schedules:open-play:write' },
+  { method: 'PUT', path: '/schedules/open-play/:id', permission: 'schedules:open-play:write' },
+  { method: 'POST', path: '/schedules/open-play/:id/registrations', permission: 'schedules:open-play:read', service: true },
+  { method: 'DELETE', path: '/schedules/open-play/:id/registrations', permission: 'schedules:open-play:read', service: true },
+  { method: 'GET', path: '/schedules/open-play/:id/registrations', permission: 'schedules:registrations:read' },
+
   // Agenda. Remplace l'iframe Google Calendar : chaque événement devient indexable.
   { method: 'GET', path: '/events', permission: 'events:events:read', service: true },
   { method: 'POST', path: '/events', permission: 'events:events:write' },

@@ -88,6 +88,16 @@ export const ALL_PERMISSIONS = [
   // gymnase. D'où des droits distincts de ceux du site, qui ne fait que les afficher.
   'schedules:slots:read',
   'schedules:slots:write',
+  // Séances de jeu libre : des dates, là où les créneaux ne disent qu'une habitude.
+  // Droits distincts de la grille hebdomadaire — celle-ci suit la mairie, celles-là
+  // suivent les vacances scolaires et l'affluence.
+  'schedules:open-play:read',
+  'schedules:open-play:write',
+  // Lire qui s'est inscrit à une séance, nom par nom, invités compris. Droit distinct
+  // de la tenue des séances, sur le modèle d'`events:registrations:read` : une séance
+  // est une information de club, la liste de ses inscrits une donnée personnelle — et
+  // un invité non licencié n'a jamais rien signé au club.
+  'schedules:registrations:read',
   'events:events:read',
   'events:events:write',
   'events:events:delete',
