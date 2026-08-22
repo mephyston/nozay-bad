@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import MobileNav from '../components/MobileNav.svelte';
-import { OpenPlaySignup } from '@nba/schedules-ui';
+import { OpenPlaySignup, OpenPlayOpenerButton } from '@nba/schedules-ui';
 import { createApiClient } from '@nba/api-client';
 import { resolveEnv } from '../lib/request-context';
 import { normalizeLicence } from '../lib/my-fixtures';
@@ -90,6 +90,30 @@ if (Astro.request.method === 'POST') {
       );
     }
 
+    // La licence vient de la SESSION, jamais du corps : c'est ce qui rend le contrôle
+    // « êtes-vous ouvreur ? » incontournable. Le navigateur ne peut pas en prétendre
+    // une autre, et le serveur refuse de toute façon une licence hors de la liste.
+    const licence = normalizeLicence(member.licence) ?? member.licence;
+
+    if (body.action === 'claim') {
+      return api.fetch(`http://localhost/schedules/open-play/${sessionId}/opener`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          licence,
+          firstName: member.firstName,
+          lastName: member.lastName
+        })
+      });
+    }
+
+    if (body.action === 'release') {
+      return api.fetch(
+        `http://localhost/schedules/open-play/${sessionId}/opener?licence=${encodeURIComponent(licence)}`,
+        { method: 'DELETE' }
+      );
+    }
+
     return new Response(JSON.stringify({ success: false, error: 'Action inconnue.' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' }
@@ -105,7 +129,7 @@ if (Astro.request.method === 'POST') {
 const session = Astro.locals.session;
 const active = session?.members.find((m) => m.id === session.activeMemberId);
 
-const { sessions } = await fetchOpenPlaySessions(env, {
+const { sessions, canOpen } = await fetchOpenPlaySessions(env, {
   memberId: session?.activeMemberId,
   licence: normalizeLicence(active?.licence) ?? undefined
 });
@@ -177,6 +201,18 @@ const toStaff = sessions.filter((s) => s.needsOpener).length;
                     minPlayers={openPlay.minPlayers}
                   />
                 </div>
+
+                {canOpen && !closed && (
+                  <OpenPlayOpenerButton
+                    client:load
+                    sessionId={openPlay.id}
+                    openerName={openPlay.openerFirstName
+                      ? `${openPlay.openerFirstName} ${(openPlay.openerLastName ?? '').charAt(0)}.`
+                      : null}
+                    iAmOpener={openPlay.iAmOpener}
+                    needsOpener={openPlay.needsOpener}
+                  />
+                )}
 
                 {openPlay.guestCount > 0 && (
                   <p class="mt-2 text-xs text-muted-foreground">

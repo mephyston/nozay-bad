@@ -13,6 +13,11 @@ import { updateOpenPlaySessionRoute } from './open-play/update-open-play-session
 import { registerToOpenPlayRoute } from './open-play/register-to-open-play/route';
 import { unregisterFromOpenPlayRoute } from './open-play/unregister-from-open-play/route';
 import { listOpenPlayRegistrationsRoute } from './open-play/list-open-play-registrations/route';
+import { listOpenPlayOpenersRoute } from './open-play/list-open-play-openers/route';
+import { saveOpenPlayOpenerRoute } from './open-play/save-open-play-opener/route';
+import { deleteOpenPlayOpenerRoute } from './open-play/delete-open-play-opener/route';
+import { claimOpenPlaySessionRoute } from './open-play/claim-open-play-session/route';
+import { releaseOpenPlaySessionRoute } from './open-play/release-open-play-session/route';
 
 export type Bindings = { DB: D1Database };
 
@@ -27,8 +32,14 @@ schedulesRouter.route('/', createScheduleSlotRoute);
 // Jeu libre AVANT les motifs à paramètre pour la même raison que `/venues` : `PUT /:id`
 // capterait `/open-play`. À l'intérieur du bloc, `/open-play/:id/registrations` et
 // `/open-play/:id` ne se recouvrent pas — les deux segments finaux diffèrent.
+// `/open-play/openers` avant `/open-play/:id` : le segment littéral serait capté.
+schedulesRouter.route('/', listOpenPlayOpenersRoute);
+schedulesRouter.route('/', saveOpenPlayOpenerRoute);
+schedulesRouter.route('/', deleteOpenPlayOpenerRoute);
 schedulesRouter.route('/', listOpenPlaySessionsRoute);
 schedulesRouter.route('/', createOpenPlaySessionRoute);
+schedulesRouter.route('/', claimOpenPlaySessionRoute);
+schedulesRouter.route('/', releaseOpenPlaySessionRoute);
 schedulesRouter.route('/', listOpenPlayRegistrationsRoute);
 schedulesRouter.route('/', registerToOpenPlayRoute);
 schedulesRouter.route('/', unregisterFromOpenPlayRoute);
@@ -39,6 +50,7 @@ schedulesRouter.route('/', deleteScheduleSlotRoute);
 
 export { listOpenPlaySessions } from './open-play/list-open-play-sessions/handler';
 export { listOpenPlayRegistrations } from './open-play/list-open-play-registrations/handler';
+export { listOpenPlayOpeners } from './open-play/list-open-play-openers/handler';
 export type {
   ListOpenPlaySessionsInput,
   OpenPlaySessionListItem

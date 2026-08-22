@@ -2,7 +2,7 @@
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
 import { PageHeader, ErrorAlert } from '@nba/ui';
-import { OpenPlayManager } from '@nba/schedules-ui';
+import { OpenPlayManager, OpenPlayOpenersCard } from '@nba/schedules-ui';
 import { createAdminApiClient } from '../../../lib/api';
 import { can, guardAction } from '../../../lib/guard';
 import { resolveEnv } from '@nba/runtime-env';
@@ -33,7 +33,9 @@ const ACTIONS = {
   // Lire les inscrits est un droit distinct de la tenue des séances : la séance est une
   // information de club, la liste de ses inscrits — et de leurs invités non licenciés —
   // une donnée personnelle.
-  registrations: 'schedules:registrations:read'
+  registrations: 'schedules:registrations:read',
+  addOpener: 'schedules:open-play:write',
+  removeOpener: 'schedules:open-play:write'
 } as const;
 
 if (Astro.request.method === 'POST') {
@@ -79,6 +81,15 @@ if (Astro.request.method === 'POST') {
     registrations: {
       url: `http://localhost/schedules/open-play/${data.id}/registrations`,
       method: 'GET'
+    },
+    addOpener: {
+      url: 'http://localhost/schedules/open-play/openers',
+      method: 'POST',
+      body: { seasonCode: data.seasonCode, licence: data.licence }
+    },
+    removeOpener: {
+      url: `http://localhost/schedules/open-play/openers/${data.id}`,
+      method: 'DELETE'
     }
   };
 
@@ -96,6 +107,8 @@ if (Astro.request.method === 'POST') {
 
 let sessions: any[] = [];
 let venues: any[] = [];
+let openers: any[] = [];
+let members: any[] = [];
 let seasonCode = '';
 let errorMsg = '';
 
@@ -109,7 +122,17 @@ try {
   ]);
 
   if (sessionsRes.ok) sessions = ((await sessionsRes.json()) as any).data?.sessions ?? [];
-  else errorMsg = 'Impossible de charger les séances.';
+  // Le code de retour est repris tel quel : « impossible de charger » ne distingue pas
+  // une API éteinte d'un droit manquant ou d'une fonctionnalité désactivée, et fait
+  // perdre un aller-retour de diagnostic à chaque fois.
+  else if (sessionsRes.status === 404) {
+    errorMsg =
+      "Les séances de jeu libre sont désactivées sur cet environnement (OPEN_PLAY_ENABLED).";
+  } else if (sessionsRes.status === 403) {
+    errorMsg = "Votre compte n'a pas le droit de consulter les séances de jeu libre.";
+  } else {
+    errorMsg = `Impossible de charger les séances (erreur ${sessionsRes.status}).`;
+  }
 
   if (venuesRes.ok) venues = ((await venuesRes.json()) as any).data ?? [];
 
@@ -119,6 +142,41 @@ try {
     const slots = ((await slotsRes.json()) as any).data ?? [];
     seasonCode = slots[0]?.seasonCode ?? sessions[0]?.seasonCode ?? '';
   }
+  /*
+   * Les ouvreurs, et les noms qui vont avec.
+   *
+   * `open_play_openers` ne stocke que des licences : la liste est courante, pas
+   * historique, et y recopier un prénom le laisserait diverger de l'annuaire. C'est donc
+   * ici — la seule page qui les affiche — que la composition se fait, en rapprochant les
+   * licences de l'annuaire de la saison. Une licence sans correspondance reste affichée
+   * telle quelle : un ouvreur qui n'a pas repris sa licence doit se voir.
+   */
+  if (seasonCode) {
+    const openersRes = await apiService.fetch(
+      `http://localhost/schedules/open-play/openers?season=${encodeURIComponent(seasonCode)}`
+    );
+    if (openersRes.ok) openers = ((await openersRes.json()) as any).data ?? [];
+  }
+
+  // L'annuaire n'est chargé que si le compte a le droit de le lire : `communication`
+  // tient les séances sans porter `members:members:read`, et un champ de recherche muet
+  // vaut moins qu'une saisie manuelle assumée.
+  if (can(Astro.locals, 'members:members:read')) {
+    const membersRes = await apiService.fetch('http://localhost/members?limit=500');
+    if (membersRes.ok) {
+      members = (((await membersRes.json()) as any).data ?? []).map((m: any) => ({
+        licence: m.licence,
+        firstName: m.firstName,
+        lastName: m.lastName
+      }));
+    }
+  }
+
+  const byLicence = new Map(members.map((m: any) => [m.licence, `${m.firstName} ${m.lastName}`]));
+  openers = openers.map((opener: any) => ({
+    ...opener,
+    name: byLicence.get(opener.licence) ?? null
+  }));
 } catch {
   errorMsg = 'Impossible de charger les séances.';
 }
@@ -148,6 +206,14 @@ try {
         seasonCode={seasonCode}
         canWrite={canWrite}
         canReadRegistrations={canReadRegistrations}
+      />
+
+      <OpenPlayOpenersCard
+        client:load
+        openers={openers}
+        members={members}
+        seasonCode={seasonCode}
+        canWrite={canWrite}
       />
     </div>
   </AdminLayout>

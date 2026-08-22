@@ -48,3 +48,4 @@ Le domaine est **feuille** : il ne dépend d'aucun autre. Il ne connaît donc pa
 | [RF-SCH-001](./rules/RF-SCH-001-seances-de-jeu-libre.md) | Ouverture d'une séance de jeu libre |
 | [RF-SCH-002](./rules/RF-SCH-002-inscription-a-une-seance.md) | Inscription d'un adhérent |
 | [RF-SCH-003](./rules/RF-SCH-003-invites-nommes.md) | Invités nommés |
+| [RF-SCH-004](./rules/RF-SCH-004-benevole-ouvreur.md) | Ouvreurs désignés et confirmation d'une séance |

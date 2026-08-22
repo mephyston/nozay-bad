@@ -12,3 +12,9 @@ export { default as OpenPlaySignup } from '../open-play/register-to-open-play/ui
 
 /** Écran du bureau : les séances de jeu libre, leurs inscrits, leur ouvreur. */
 export { default as OpenPlayManager } from '../open-play/list-open-play-sessions/ui/OpenPlayManager.svelte';
+
+/** Bouton « J'ouvre ce créneau », réservé aux détenteurs de badge. */
+export { default as OpenPlayOpenerButton } from '../open-play/claim-open-play-session/ui/OpenPlayOpenerButton.svelte';
+
+/** Carte du bureau : les détenteurs de badge de la saison. */
+export { default as OpenPlayOpenersCard } from '../open-play/list-open-play-openers/ui/OpenPlayOpenersCard.svelte';

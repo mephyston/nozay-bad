@@ -272,6 +272,17 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'DELETE', path: '/schedules/open-play/:id/registrations', permission: 'schedules:open-play:read', service: true },
   { method: 'GET', path: '/schedules/open-play/:id/registrations', permission: 'schedules:registrations:read' },
 
+  // Ouvreurs. Prendre et rendre une séance sont ouverts au service : c'est l'espace
+  // adhérent qui appelle, avec la licence de la session — le navigateur ne peut pas
+  // prétendre à une autre, et le refus « vous n'êtes pas ouvreur » est de toute façon
+  // rendu par le handler. La liste des détenteurs de badge, elle, ne l'est pas : elle
+  // n'a aucune raison de descendre dans un navigateur d'adhérent.
+  { method: 'GET', path: '/schedules/open-play/openers', permission: 'schedules:open-play:read' },
+  { method: 'POST', path: '/schedules/open-play/openers', permission: 'schedules:open-play:write' },
+  { method: 'DELETE', path: '/schedules/open-play/openers/:id', permission: 'schedules:open-play:write' },
+  { method: 'POST', path: '/schedules/open-play/:id/opener', permission: 'schedules:open-play:read', service: true },
+  { method: 'DELETE', path: '/schedules/open-play/:id/opener', permission: 'schedules:open-play:read', service: true },
+
   // Agenda. Remplace l'iframe Google Calendar : chaque événement devient indexable.
   { method: 'GET', path: '/events', permission: 'events:events:read', service: true },
   { method: 'POST', path: '/events', permission: 'events:events:write' },
