@@ -82,3 +82,10 @@ export {
   isClubFunction,
   type ClubFunction
 } from './shared/club-functions';
+
+/**
+ * Plafond de la signature d'attestation, exporté pour que l'écran d'administration
+ * n'en tienne pas une copie : deux chiffres à maintenir en accord divergent toujours,
+ * et celui de l'écran ne se serait vu qu'au refus du serveur.
+ */
+export { MAX_SIGNATURE_BYTES } from './shared/attestation/config';
