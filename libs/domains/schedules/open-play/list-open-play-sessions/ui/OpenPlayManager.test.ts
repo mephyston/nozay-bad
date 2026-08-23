@@ -114,10 +114,10 @@ describe('OpenPlayManager', () => {
     expect(create).toBeUndefined();
   });
 
-  it('n’offre la génération que s’il existe un créneau récurrent', () => {
+  it('n’offre la programmation récurrente que s’il existe un créneau', () => {
     render({ slots: [] });
     expect(
-      [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Générer'))
+      [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Programmer'))
     ).toBeUndefined();
 
     document.body.innerHTML = '';
@@ -129,7 +129,7 @@ describe('OpenPlayManager', () => {
       ]
     });
     expect(
-      [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Générer'))
+      [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Programmer'))
     ).toBeDefined();
   });
 

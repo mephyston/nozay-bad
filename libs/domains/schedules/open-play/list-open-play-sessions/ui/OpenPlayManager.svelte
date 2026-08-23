@@ -317,7 +317,7 @@
         {#if canWrite && slots.length > 0}
           <Button variant="outline" onclick={openGenerateForm} class="h-9 shrink-0 gap-1.5 font-semibold">
             <CalendarPlus class="h-4 w-4" />
-            <span>Générer une période</span>
+            <span>Programmer les séances récurrentes</span>
           </Button>
         {/if}
         {#if canWrite && venues.length > 0}
@@ -470,13 +470,13 @@
 
 <FormSheet
   bind:open={showGenerateSheet}
-  title="Générer une période"
-  description="Déroule les créneaux de jeu libre de la saison sur l'intervalle choisi. L'opération est rejouable : les séances déjà créées sont laissées telles quelles, ouvreur compris."
+  title="Programmer les séances récurrentes"
+  description="Transforme les créneaux hebdomadaires de jeu libre en séances datées. Rejouable sans risque : les séances déjà créées sont laissées telles quelles, ouvreur compris."
   icon={CalendarPlus}
   error={errorMsg}
   isSubmitting={busy}
-  submitLabel="Générer"
-  submittingLabel="Génération…"
+  submitLabel="Programmer"
+  submittingLabel="Programmation…"
   onSubmit={generate}
 >
   <div class="grid grid-cols-2 gap-3">
@@ -493,7 +493,10 @@
   </FormField>
 
   <div class="space-y-2">
-    <p class="text-sm font-medium text-foreground">Créneaux à dérouler</p>
+    <p class="text-sm font-medium text-foreground">Créneaux hebdomadaires à répéter</p>
+    <p class="text-xs text-muted-foreground">
+      Chaque créneau coché devient une séance à chacune de ses dates dans la période.
+    </p>
     {#each slots as slot (slot.id)}
       <label class="flex items-center gap-2 text-sm">
         <input
