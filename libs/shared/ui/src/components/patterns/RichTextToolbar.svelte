@@ -9,7 +9,8 @@
     onCommand,
     disabled = false,
     canInsertFile = false,
-    canInsertImage = false
+    canInsertImage = false,
+    canResizeImage = false
   }: {
     /** Commandes actuellement actives sous le curseur, pour l'état enfoncé des boutons. */
     activeCommands?: string[];
@@ -19,6 +20,13 @@
     canInsertFile?: boolean;
     /** Affiche « Image » : seuls les écrans reliés à la médiathèque savent la servir. */
     canInsertImage?: boolean;
+    /**
+     * Affiche les tailles d'image — seulement quand une image est sélectionnée.
+     *
+     * Contextuel plutôt que permanent : la barre est déjà pleine, et trois boutons
+     * inertes les trois quarts du temps se lisent comme des boutons cassés.
+     */
+    canResizeImage?: boolean;
   } = $props();
 
   // Dérivé et non figé : `canInsertFile` dépend de l'écran appelant, qui peut le
@@ -45,6 +53,17 @@
       { command: 'createLink', label: 'Insérer un lien', icon: Link2 },
       { command: 'unlink', label: 'Retirer le lien', icon: Link2Off }
     ],
+    // Le libellé est écrit, pas dessiné : aucune icône ne dit « 400 px » sans ambiguïté,
+    // et le bénévole qui redimensionne une photo a besoin de savoir ce qu'il choisit.
+    ...(canResizeImage
+      ? [
+          [
+            { command: 'imageSizeSmall', label: 'Image en petit (400 px de large)', text: 'Petite' },
+            { command: 'imageSizeMedium', label: 'Image en moyen (800 px de large)', text: 'Moyenne' },
+            { command: 'imageSizeFull', label: "Image à sa taille d'origine", text: 'Pleine' }
+          ]
+        ]
+      : []),
     ...(canInsertFile || canInsertImage
       ? [
           [
@@ -87,7 +106,7 @@
         aria-label={item.label}
         title={item.label}
         aria-pressed={active}
-        class="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-pressed:bg-accent aria-pressed:text-accent-foreground"
+        class="inline-flex h-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-pressed:bg-accent aria-pressed:text-accent-foreground {item.text ? 'px-2 text-xs font-medium' : 'w-9'}"
         onmousedown={(e) => {
           // `mousedown` et non `click` : cliquer déplacerait le focus hors de la zone
           // d'édition, et la sélection sur laquelle porte la commande serait perdue.
@@ -95,7 +114,11 @@
           onCommand(item.command);
         }}
       >
-        <Icon class="h-4 w-4" />
+        {#if item.text}
+          {item.text}
+        {:else if Icon}
+          <Icon class="h-4 w-4" />
+        {/if}
       </button>
     {/each}
   {/each}

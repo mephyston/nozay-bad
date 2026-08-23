@@ -27,6 +27,7 @@ function render(value: string, mediaOrigin?: string) {
 
   const editor = target.querySelector('[contenteditable]') as HTMLElement;
   return {
+    target,
     editor,
     /** Ce que le formulaire enregistrerait. */
     get value() {
@@ -68,5 +69,89 @@ describe('RichTextEditor, origine des médias', () => {
     const view = render('', ORIGIN);
     view.type('<p><a href="/media/abc/livret.pdf">Livret</a></p>');
     expect(view.value).toBe('<p><a href="/media/abc/livret.pdf">Livret</a></p>');
+  });
+
+});
+
+/**
+ * Redimensionner une image insérée dans le texte.
+ *
+ * La taille s'écrit en `width`/`height` — les deux seuls attributs de dimension que
+ * l'assainisseur du site accepte sur une image. Un `style` serait retiré à
+ * l'enregistrement et l'auteur verrait sa mise en forme disparaître entre l'aperçu et
+ * la page publiée.
+ */
+describe("taille d'une image", () => {
+  function selectImage(view: ReturnType<typeof render>, natural?: { width: number; height: number }) {
+    const image = view.editor.querySelector('img') as HTMLImageElement;
+    if (natural) {
+      // jsdom ne charge aucune image : on simule le fichier derrière le `src`, seule
+      // source qui dise la taille d'origine une fois les attributs modifiés.
+      Object.defineProperty(image, 'naturalWidth', { value: natural.width, configurable: true });
+      Object.defineProperty(image, 'naturalHeight', { value: natural.height, configurable: true });
+    }
+    image.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    flushSync();
+    return image;
+  }
+
+  // Cherché dans **cet** éditeur, et non dans le document : les montages des tests
+  // précédents y restent, et un libellé identique désignerait leur barre d'outils.
+  function press(view: ReturnType<typeof render>, label: string) {
+    const button = Array.from(view.target.querySelectorAll('button')).find(
+      (b) => b.getAttribute('aria-label') === label
+    ) as HTMLButtonElement;
+    expect(button, `bouton « ${label} » absent`).toBeTruthy();
+    button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    flushSync();
+  }
+
+  it('ne propose les tailles que lorsqu’une image est sélectionnée', () => {
+    const view = render('<p>Texte</p><img src="/media/a1b2c3.jpg" alt="Équipe" width="1600" height="1200">');
+    expect(view.target.querySelector('[aria-label="Image en petit (400 px de large)"]')).toBeNull();
+
+    selectImage(view, { width: 1600, height: 1200 });
+    expect(view.target.querySelector('[aria-label="Image en petit (400 px de large)"]')).not.toBeNull();
+  });
+
+  it('réduit en gardant les proportions', () => {
+    const view = render('<img src="/media/a1b2c3.jpg" alt="Équipe" width="1600" height="1200">');
+    selectImage(view, { width: 1600, height: 1200 });
+
+    press(view, 'Image en petit (400 px de large)');
+    expect(view.value).toContain('width="400"');
+    expect(view.value).toContain('height="300"');
+  });
+
+  it("revient aux dimensions d'origine", () => {
+    const view = render('<img src="/media/a1b2c3.jpg" alt="Équipe" width="1600" height="1200">');
+    selectImage(view, { width: 1600, height: 1200 });
+
+    press(view, 'Image en moyen (800 px de large)');
+    expect(view.value).toContain('width="800"');
+
+    press(view, "Image à sa taille d'origine");
+    expect(view.value).toContain('width="1600"');
+    expect(view.value).toContain('height="1200"');
+  });
+
+  it("n'agrandit jamais au-delà du fichier", () => {
+    // Étirer un logo de 300 px à 800 le rend flou sans lui ajouter le moindre détail.
+    // Le logo part réduit à 200 px : la commande doit agir — et s'arrêter à 300.
+    const view = render('<img src="/media/logo.png" alt="Logo" width="200" height="100">');
+    selectImage(view, { width: 300, height: 150 });
+
+    press(view, 'Image en moyen (800 px de large)');
+    expect(view.value).toContain('width="300"');
+    expect(view.value).toContain('height="150"');
+  });
+
+  it("enregistre le chemin relatif malgré le redimensionnement", () => {
+    const view = render('<img src="/media/a1b2c3.jpg" alt="Équipe" width="1600" height="1200">', ORIGIN);
+    selectImage(view, { width: 1600, height: 1200 });
+
+    press(view, 'Image en petit (400 px de large)');
+    expect(view.value).toContain('src="/media/a1b2c3.jpg"');
+    expect(view.value).not.toContain(ORIGIN);
   });
 });

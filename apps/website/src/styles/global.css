@@ -381,6 +381,17 @@
   text-align: center;
 }
 
+/*
+  Une image redimensionnée est un bloc, pas du texte.
+
+  `text-align` ne déplace pas une boîte de bloc, et la préflight de Tailwind rend les
+  images en `display: block` : une photo réduite à 400 px restait donc collée à gauche
+  dans un paragraphe pourtant centré. Ce sont les marges automatiques qui la centrent.
+*/
+.nba-center img {
+  margin-inline: auto;
+}
+
 /* Les marges de `prose` sur le premier et le dernier bloc décaleraient l'encart. */
 .md-alert > :first-child {
   margin-top: 0;

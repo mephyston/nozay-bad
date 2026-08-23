@@ -102,6 +102,26 @@
   const CENTERABLE = new Set(['p', 'h2', 'h3', 'h4', 'blockquote', 'figure']);
 
   /**
+   * Tailles proposées pour une image insérée dans le texte.
+   *
+   * Trois paliers plutôt qu'une poignée de glissement : celle-ci produit des largeurs
+   * arbitraires — 437 px ici, 512 là — et la mise en page finit bancale d'un article à
+   * l'autre. Elle est par ailleurs pénible au doigt, et Chrome n'offre plus de poignée
+   * native en zone d'édition, ce qui obligerait à la réécrire entièrement.
+   *
+   * Les deux largeurs reprennent l'échelle de déclinaisons de la médiathèque
+   * (400 / 800), pour que le jour où le corps d'article servira ces déclinaisons, les
+   * tailles déjà choisies tombent juste. `null` restitue les dimensions natives.
+   */
+  const IMAGE_SIZES: Record<string, number | null> = {
+    imageSizeSmall: 400,
+    imageSizeMedium: 800,
+    imageSizeFull: null
+  };
+
+  let selectedImage = $state<HTMLImageElement | null>(null);
+
+  /**
    * Zone d'édition pilotée par `document.execCommand`.
    *
    * L'API est officiellement dépréciée, mais reste le seul chemin universellement
@@ -185,6 +205,10 @@
       toggleCenter();
       return;
     }
+    if (IMAGE_SIZES[command] !== undefined) {
+      applyImageSize(command);
+      return;
+    }
     if (HEADINGS[command]) {
       toggleHeading(command);
       return;
@@ -200,6 +224,81 @@
       node = node.parentNode;
     }
     return null;
+  }
+
+  /**
+   * L'image que désigne la sélection, s'il y en a une.
+   *
+   * Les navigateurs ne s'accordent pas : Chrome pose une plage **autour** de l'image
+   * cliquée, Firefox y place le curseur en la donnant pour conteneur. Les deux formes
+   * sont donc lues, faute de quoi la barre d'outils n'apparaîtrait que sur l'un d'eux.
+   */
+  function imageAtSelection(): HTMLImageElement | null {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
+    const range = selection.getRangeAt(0);
+    if (!editor || !editor.contains(range.commonAncestorContainer)) return null;
+
+    const { startContainer, startOffset } = range;
+    if (startContainer instanceof HTMLElement) {
+      const node = startContainer.childNodes[startOffset];
+      if (node instanceof HTMLImageElement) return node;
+    }
+
+    let node: Node | null = range.commonAncestorContainer;
+    while (node && node !== editor) {
+      if (node instanceof HTMLImageElement) return node;
+      node = node.parentNode;
+    }
+    return null;
+  }
+
+  /**
+   * Cliquer une image la sélectionne explicitement.
+   *
+   * Sans cela, le clic laisse selon le navigateur un simple curseur à côté de l'image,
+   * et les boutons de taille ne savent pas sur quoi porter — l'auteur clique sur son
+   * image, rien n'apparaît, et il conclut que la fonction n'existe pas.
+   */
+  function handleEditorClick(event: MouseEvent): void {
+    if (!(event.target instanceof HTMLImageElement)) return;
+    const range = document.createRange();
+    range.selectNode(event.target);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    refreshActiveCommands();
+  }
+
+  /**
+   * Applique une taille à l'image sélectionnée, en `width`/`height`.
+   *
+   * Ce sont les deux seuls attributs de dimension que l'assainisseur du site accepte —
+   * un `style` serait retiré à l'enregistrement, et l'auteur verrait sa mise en forme
+   * disparaître entre l'aperçu et la page. Ils réservent au passage la place de
+   * l'image, ce qui évite le décalage de la page au chargement.
+   */
+  function applyImageSize(command: string): void {
+    if (disabled) return;
+    const image = selectedImage;
+    if (!image) return;
+
+    const naturalWidth = image.naturalWidth || Number(image.getAttribute('width')) || 0;
+    const naturalHeight = image.naturalHeight || Number(image.getAttribute('height')) || 0;
+    if (naturalWidth <= 0 || naturalHeight <= 0) return;
+
+    // Jamais d'agrandissement : étirer un logo de 300 px à 800 le rend flou sans que le
+    // fichier ait le moindre détail de plus à donner. Même règle qu'à la production des
+    // déclinaisons, qui ne monte pas non plus au-dessus de l'original.
+    const requested = IMAGE_SIZES[command];
+    const width = requested === null ? naturalWidth : Math.min(requested, naturalWidth);
+    const height = Math.round((width * naturalHeight) / naturalWidth);
+
+    image.setAttribute('width', String(width));
+    image.setAttribute('height', String(height));
+
+    syncFromEditor();
+    refreshActiveCommands();
   }
 
   function toggleCenter(): void {
@@ -306,7 +405,14 @@
   }
 
   function refreshActiveCommands(): void {
-    if (!editor || typeof document.queryCommandState !== 'function') return;
+    if (!editor) return;
+
+    // Avant la garde qui suit : les tailles d'image ne dépendent pas de
+    // `queryCommandState`, et les faire disparaître parce qu'un navigateur ne connaît
+    // pas cette API-là serait une panne pour une raison sans rapport.
+    selectedImage = imageAtSelection();
+
+    if (typeof document.queryCommandState !== 'function') return;
     const active = TRACKED.filter((command) => {
       try {
         return document.queryCommandState(command);
@@ -320,6 +426,18 @@
       if (tag === heading) active.push(command);
     }
     if (currentBlock()?.classList.contains(CENTER_CLASS)) active.push('alignCenter');
+
+    if (selectedImage) {
+      const current = Number(selectedImage.getAttribute('width')) || 0;
+      const natural = selectedImage.naturalWidth || current;
+      // Le premier palier qui correspond, et lui seul : sur une image plus petite que
+      // 400 px, les trois se résolvent à la même largeur et s'allumeraient ensemble.
+      const match = Object.entries(IMAGE_SIZES).find(
+        ([, size]) => current === (size === null ? natural : Math.min(size, natural))
+      );
+      if (match) active.push(match[0]);
+    }
+
     activeCommands = active;
   }
 
@@ -369,7 +487,7 @@
 </script>
 
 <div class={`rounded-md border border-input bg-background focus-within:ring-1 focus-within:ring-ring ${className}`}>
-  <RichTextToolbar {activeCommands} {disabled} onCommand={handleCommand} canInsertFile={Boolean(onPickFile)} canInsertImage={Boolean(onPickImage)} />
+  <RichTextToolbar {activeCommands} {disabled} onCommand={handleCommand} canInsertFile={Boolean(onPickFile)} canInsertImage={Boolean(onPickImage)} canResizeImage={Boolean(selectedImage)} />
 
   {#if linkOpen}
     <div class="space-y-2 border-b border-input px-2 py-2">
@@ -474,6 +592,7 @@
       onpaste={handlePaste}
       onkeyup={refreshActiveCommands}
       onmouseup={refreshActiveCommands}
+      onclick={handleEditorClick}
     ></div>
   </div>
 </div>
@@ -528,5 +647,12 @@
   */
   .nba-rich-text :global(.nba-center) {
     text-align: center;
+  }
+  /*
+    Une image réduite est un bloc : `text-align` ne la déplace pas. Sans cette règle,
+    l'éditeur et le site divergeraient — et c'est l'éditeur qui aurait tort.
+  */
+  .nba-rich-text :global(.nba-center img) {
+    margin-inline: auto;
   }
 </style>
