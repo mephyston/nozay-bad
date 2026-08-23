@@ -186,13 +186,20 @@
         </Tabs.Content>
 
         <Tabs.Content value="ledger">
+          <!--
+            La prop s'appelle `onMatch`, pas `handleMatch` : c'est le nom que
+            `MatchTransaction` déclare. Une prop mal nommée n'échoue pas — elle arrive
+            `undefined`, et le bouton « Associer » ne fait rien sans que rien ne le
+            signale. Elle reçoit ici les deux identifiants que `handleMatch` attend,
+            là où le composant n'en connaît qu'un.
+          -->
           <MatchTransaction
             selectedTx={state.selectedTx}
             isClosed={state.isClosed}
             isSubmitting={state.isSubmitting}
             suggestions={state.suggestions}
             glTransactions={state.glTransactions}
-            handleMatch={state.handleMatch}
+            onMatch={(glTxId) => state.handleMatch(state.selectedTx?.id, glTxId)}
           />
         </Tabs.Content>
 

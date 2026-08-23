@@ -59,6 +59,25 @@ if (Astro.request.method === 'POST') {
         });
       } else if (data.action === 'create' || data.action === 'match' || data.action === 'reconcile') {
         const btId = data.btId || (data.match && data.match.btId);
+        /*
+         * Sans identifiant, on refuse ici plutôt que d'appeler l'API.
+         *
+         * Le gabarit d'URL acceptait `undefined` sans broncher et produisait
+         * `/bank-transactions/undefined/reconcile`, que l'API rejetait en 400 — un
+         * message qui ne disait ni quelle ligne, ni pourquoi, et envoyait chercher la
+         * panne du mauvais côté. Le refus nomme désormais la cause.
+         */
+        if (btId === undefined || btId === null || btId === '') {
+          console.error('RECONCILE sans identifiant de ligne bancaire. PAYLOAD:', JSON.stringify(data));
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error:
+                "Aucune ligne bancaire n'est sélectionnée : rechargez la page et resélectionnez l'opération à rapprocher."
+            }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
         const apiRes = await apiService.fetch(`http://localhost/accounting/bank-transactions/${btId}/reconcile`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
