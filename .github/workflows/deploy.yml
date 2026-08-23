@@ -134,9 +134,24 @@ jobs:
             if echo "$AFFECTED" | grep -qx 'storefront'; then STOREFRONT_AFFECTED="true"; else STOREFRONT_AFFECTED="false"; fi
             if echo "$AFFECTED" | grep -qx 'website'; then WEBSITE_AFFECTED="true"; else WEBSITE_AFFECTED="false"; fi
             if echo "$AFFECTED" | grep -qx 'admin'; then ADMIN_AFFECTED="true"; else ADMIN_AFFECTED="false"; fi
-            # Le visual regression ne couvre que le design system (@nba/ui) : inutile
-            # de le jouer quand seuls admin/storefront changent sans toucher le DS.
-            if echo "$AFFECTED" | grep -qx '@nba/ui'; then DS_AFFECTED="true"; else DS_AFFECTED="false"; fi
+            # Le visual regression ne couvre que le design system : inutile de le jouer
+            # quand seuls admin/storefront changent sans y toucher.
+            #
+            # Le déclencheur suit les CHEMINS modifiés et non le graphe Nx, qui répondait
+            # trop souvent oui : toute modification d'un fichier racine — `package.json`,
+            # `tsconfig.base.json`, `nx.json` — marque l'intégralité des projets comme
+            # affectés, `@nba/ui` compris. Ajouter un script npm suffisait donc à faire
+            # installer Playwright et rejouer toutes les captures, pour rien.
+            #
+            # La liste couvre ce dont le harnais dépend réellement : les composants et
+            # leurs stories, la configuration Storybook, les tests eux-mêmes et celle de
+            # Playwright.
+            DS_PATHS='^(libs/shared/ui/|\.storybook/|tests/visual/|playwright\.config\.ts)'
+            if git diff --name-only "$NX_BASE" "$NX_HEAD" | grep -qE "$DS_PATHS"; then
+              DS_AFFECTED="true"
+            else
+              DS_AFFECTED="false"
+            fi
           fi
 
           # Tableau JSON pour la matrice de `deploy-apps`. Formulé en `if` plutôt qu'en
