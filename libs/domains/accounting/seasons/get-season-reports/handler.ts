@@ -162,33 +162,47 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
   // 3. Trésorerie Disponible & Repartition des Accruals (Deferred Revenues / Expenses)
   const deferredTxs = await repo.getDeferredTransactions(db, season.startDate, effectiveEndDate);
 
-  const deferredRevenues: DeferredCashBreakdown[] = [];
-  const deferredExpenses: DeferredCashBreakdown[] = [];
+  /*
+   * Regroupé par catégorie, et non ligne à ligne.
+   *
+   * Une rentrée de cotisations encaissées d'avance compte cinquante écritures : les
+   * dérouler donnait cinquante fois le même libellé, et un total à faire de tête dans un
+   * encart dont c'est justement le seul intérêt. Le détail se lit au grand livre.
+   */
+  const revenuesByCategory = new Map<number, DeferredCashBreakdown>();
+  const expensesByCategory = new Map<number, DeferredCashBreakdown>();
   let totalDeferredRevenueCents = 0;
   let totalDeferredExpensesCents = 0;
 
+  const accumulate = (into: Map<number, DeferredCashBreakdown>, catId: number, catName: string, amount: number) => {
+    const known = into.get(catId);
+    if (known) {
+      known.amountCents += amount;
+      known.count += 1;
+    } else {
+      into.set(catId, { categoryId: catId, categoryName: catName, amountCents: amount, count: 1 });
+    }
+  };
+
   for (const tx of deferredTxs) {
     const amount = tx.amountCents ?? 0;
-    const catId = normalizeCategory(tx.categoryId ?? tx.category);
+    const catId = normalizeCategory(tx.categoryId ?? tx.category) ?? 0;
     const catObj = dbCategories.find(c => c.id === catId);
     const catName = catObj ? catObj.adminLabel : 'Non catégorisé';
 
     if (tx.accrualType === 'produit_constate_avance' && tx.type === 'recette') {
       totalDeferredRevenueCents += amount;
-      deferredRevenues.push({
-        categoryId: catId ?? 0,
-        categoryName: catName,
-        amountCents: amount
-      });
+      accumulate(revenuesByCategory, catId, catName, amount);
     } else if (tx.accrualType === 'charge_constatee_avance' && tx.type === 'depense') {
       totalDeferredExpensesCents += amount;
-      deferredExpenses.push({
-        categoryId: catId ?? 0,
-        categoryName: catName,
-        amountCents: amount
-      });
+      accumulate(expensesByCategory, catId, catName, amount);
     }
   }
+
+  // Du plus lourd au plus léger : c'est l'ordre dans lequel on lit une régularisation.
+  const byAmount = (a: DeferredCashBreakdown, b: DeferredCashBreakdown) => b.amountCents - a.amountCents;
+  const deferredRevenues: DeferredCashBreakdown[] = [...revenuesByCategory.values()].sort(byAmount);
+  const deferredExpenses: DeferredCashBreakdown[] = [...expensesByCategory.values()].sort(byAmount);
 
   let inVaultCents = 0;
   let pendingDebitCents = 0;

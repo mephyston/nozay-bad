@@ -413,7 +413,8 @@ export async function generateSeasonReportPdf(
         y -= 14;
         for (const d of dispo.deferredRevenues) {
           ensureSpace(13);
-          page.drawText(clip(d.categoryName, font, 9.5, CONTENT_W - 130), { x: MARGIN + 14, y, size: 9.5, font, color: GREY });
+          const label = d.count > 1 ? `${d.categoryName} (${d.count} écritures)` : d.categoryName;
+          page.drawText(clip(label, font, 9.5, CONTENT_W - 130), { x: MARGIN + 14, y, size: 9.5, font, color: GREY });
           drawRight(`- ${formatEuros(d.amountCents)}`, rightEdge, 9.5, font, GREY);
           y -= 13;
         }
@@ -425,7 +426,8 @@ export async function generateSeasonReportPdf(
         y -= 14;
         for (const d of dispo.deferredExpenses) {
           ensureSpace(13);
-          page.drawText(clip(d.categoryName, font, 9.5, CONTENT_W - 130), { x: MARGIN + 14, y, size: 9.5, font, color: GREY });
+          const label = d.count > 1 ? `${d.categoryName} (${d.count} écritures)` : d.categoryName;
+          page.drawText(clip(label, font, 9.5, CONTENT_W - 130), { x: MARGIN + 14, y, size: 9.5, font, color: GREY });
           drawRight(`+ ${formatEuros(d.amountCents)}`, rightEdge, 9.5, font, GREY);
           y -= 13;
         }

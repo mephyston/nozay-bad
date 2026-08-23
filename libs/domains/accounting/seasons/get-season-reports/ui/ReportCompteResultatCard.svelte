@@ -178,7 +178,10 @@
               <span class="font-medium text-warning block">• Produits encaissés d'avance (à déduire du résultat) :</span>
               {#each report.tresorerieDisponible.deferredRevenues as defRev}
                 <div class="flex justify-between pl-4">
-                  <span>{defRev.categoryName}</span>
+                  <span>
+                    {defRev.categoryName}
+                    {#if defRev.count > 1}<span class="opacity-70">({defRev.count} écritures)</span>{/if}
+                  </span>
                   <span>- {formatAmount(defRev.amountCents)}</span>
                 </div>
               {/each}
@@ -190,7 +193,10 @@
               <span class="font-medium text-info block">• Charges décaissées d'avance (à réintégrer au résultat) :</span>
               {#each report.tresorerieDisponible.deferredExpenses as defExp}
                 <div class="flex justify-between pl-4">
-                  <span>{defExp.categoryName}</span>
+                  <span>
+                    {defExp.categoryName}
+                    {#if defExp.count > 1}<span class="opacity-70">({defExp.count} écritures)</span>{/if}
+                  </span>
                   <span>+ {formatAmount(defExp.amountCents)}</span>
                 </div>
               {/each}

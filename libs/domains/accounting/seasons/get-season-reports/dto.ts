@@ -3,10 +3,20 @@ export type GetSeasonReportsInput = string | {
   arretedAu?: string | null;
 };
 
+/**
+ * Une **catégorie** de régularisation, et non une écriture.
+ *
+ * L'encart listait une ligne par écriture : une rentrée de cotisations payées d'avance
+ * y déroulait cinquante fois « Adhésions & Inscriptions », pour un total qu'il fallait
+ * faire de tête. Le lecteur d'un compte de résultat veut le montant par catégorie ;
+ * le détail, c'est le grand livre qui le donne.
+ */
 export interface DeferredCashBreakdown {
   categoryId: number;
   categoryName: string;
   amountCents: number;
+  /** Nombre d'écritures regroupées, pour que le total reste vérifiable. */
+  count: number;
 }
 
 export interface ForecastDataPoint {

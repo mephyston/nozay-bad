@@ -193,4 +193,34 @@ describe('getSeasonReports (As-of Cut-off Date & Projections - PROMPT 12)', () =
     expect(res.compteResultat.totalRecettes).toBe(0);
     expect(res.arretedAu).toBe('2025-08-15');
   });
+
+  it("regroupe les régularisations par catégorie plutôt que ligne à ligne", async () => {
+    // Une rentrée de cotisations encaissées d'avance compte des dizaines d'écritures :
+    // les dérouler donnait autant de fois le même libellé, et un total à faire de tête
+    // dans un encart dont c'est justement le seul intérêt.
+    await db.insert(ledgerEntriesTable).values([
+      {
+        id: 20, seasonId: 2, type: 'recette', accountId: 1, categoryId: adhCatId,
+        amountCents: 26000, date: '2026-06-10', paymentMethodId: 1,
+        description: 'Cotisation 26-27 (1)', accrualType: 'produit_constate_avance',
+        accrualNote: 'Saison 26-27', createdAt: new Date()
+      },
+      {
+        id: 21, seasonId: 2, type: 'recette', accountId: 1, categoryId: adhCatId,
+        amountCents: 23000, date: '2026-06-11', paymentMethodId: 1,
+        description: 'Cotisation 26-27 (2)', accrualType: 'produit_constate_avance',
+        accrualNote: 'Saison 26-27', createdAt: new Date()
+      }
+    ]).run();
+
+    const res = await getSeasonReports(db, { seasonId: '25-26', arretedAu: '2026-06-30' });
+    const revenues = res.tresorerieDisponible!.deferredRevenues;
+
+    // Une seule ligne pour la catégorie, malgré trois écritures (les deux ci-dessus et
+    // celle du jeu d'essai), et le total additionné.
+    const adhesions = revenues.filter((r) => r.categoryName === 'Adhésions & Inscriptions');
+    expect(adhesions).toHaveLength(1);
+    expect(adhesions[0].count).toBe(3);
+    expect(adhesions[0].amountCents).toBe(390000 + 26000 + 23000);
+  });
 });
