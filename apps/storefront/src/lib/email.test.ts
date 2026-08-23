@@ -143,3 +143,68 @@ describe('emails d’adhésion — mêmes garde-fous que l’OTP', () => {
     expect(body.html).not.toContain(FFBAD_MEMBERSHIP_URL);
   });
 });
+
+/**
+ * Trois `429` différents chez Resend, trois conduites différentes : le débit se
+ * réessaie dans la seconde, le quota quotidien attend demain, le mensuel attend la
+ * facture. Confondus, l'adhérent réessaie en boucle et personne n'apprend que le club a
+ * atteint sa limite.
+ */
+describe('plafonds d’envoi Resend', () => {
+  let fetchMock: any;
+
+  const failWith = (name: string, status = 429) =>
+    vi.fn(
+      async () =>
+        new Response(JSON.stringify({ statusCode: status, name, message: name }), { status })
+    );
+
+  beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  const live = { RESEND_API_KEY: KEY, EMAIL_MODE: 'live' };
+
+  it('signale le quota quotidien et dit d’attendre demain', async () => {
+    fetchMock = failWith('daily_quota_exceeded');
+    vi.stubGlobal('fetch', fetchMock);
+
+    const res = await sendOtpEmail(live, 'adherent@club.fr', '123456');
+
+    expect(res.ok).toBe(false);
+    expect(res.quotaReached).toBe(true);
+    expect(res.error).toContain('demain');
+  });
+
+  it('traite le plafond mensuel comme un quota atteint', async () => {
+    vi.stubGlobal('fetch', failWith('monthly_quota_exceeded'));
+
+    const res = await sendOtpEmail(live, 'adherent@club.fr', '123456');
+    expect(res.quotaReached).toBe(true);
+  });
+
+  it('distingue le débit par seconde, qui se réessaie tout de suite', async () => {
+    vi.stubGlobal('fetch', failWith('rate_limit_exceeded'));
+
+    const res = await sendOtpEmail(live, 'adherent@club.fr', '123456');
+
+    expect(res.ok).toBe(false);
+    // Réessayer a du sens ici, contrairement au quota : ne pas le confondre.
+    expect(res.quotaReached).toBeUndefined();
+    expect(res.error).toContain('quelques secondes');
+  });
+
+  it('garde un message générique pour le reste', async () => {
+    vi.stubGlobal('fetch', failWith('application_error', 500));
+
+    const res = await sendOtpEmail(live, 'adherent@club.fr', '123456');
+
+    expect(res.ok).toBe(false);
+    expect(res.quotaReached).toBeUndefined();
+    expect(res.error).toBe("Échec de l'envoi de l'email.");
+  });
+});

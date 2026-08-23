@@ -40,12 +40,19 @@ interface Mail {
  * en local c'est la seule trace disponible, elle doit donc porter l'information utile
  * (le code OTP, notamment).
  */
+export interface DeliveryResult {
+  ok: boolean;
+  error?: string;
+  /** Le plafond d'envoi du club est atteint : réessayer plus tard n'y changera rien. */
+  quotaReached?: boolean;
+}
+
 async function deliver(
   env: EmailEnv,
   to: string,
   mail: Mail,
   logSkip: (mode: string) => void
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<DeliveryResult> {
   const mode = (env.EMAIL_MODE || 'dry-run').toLowerCase();
 
   // Dry-run : pas de clé, mode dry-run, ou mode inconnu → on logue, on n'envoie rien.
@@ -99,8 +106,40 @@ async function deliver(
 
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
-      console.error('[auth] Resend a renvoyé une erreur:', res.status, detail);
-      return { ok: false, error: "Échec de l'envoi de l'email." };
+      /*
+       * Le quota quotidien mérite son propre message.
+       *
+       * Resend le distingue nettement du débit par seconde et du plafond mensuel — trois
+       * codes `429` différents — et les trois n'appellent pas la même conduite : le
+       * débit se réessaie dans la seconde, le quota quotidien attend demain, le mensuel
+       * attend la facture. Confondus dans un « échec de l'envoi », l'adhérent réessaie en
+       * boucle et le bureau ne sait pas que le club a atteint sa limite.
+       *
+       * Lecture sur le corps et non sur le statut seul : c'est le champ `name` qui
+       * tranche entre les trois.
+       */
+      const quotaReached = /daily_quota_exceeded|monthly_quota_exceeded/.test(detail);
+      const throttled = /rate_limit_exceeded/.test(detail);
+
+      if (quotaReached) {
+        console.error(
+          `[auth][quota] Plafond d'envoi Resend atteint — aucun email ne partira avant sa remise à zéro. ${detail}`
+        );
+        return {
+          ok: false,
+          quotaReached: true,
+          error:
+            "Le club a atteint sa limite d'envois pour aujourd'hui. Réessayez demain, ou contactez le bureau."
+        };
+      }
+
+      console.error(`[auth] Resend a renvoyé une erreur: ${res.status} ${detail}`);
+      return {
+        ok: false,
+        error: throttled
+          ? 'Trop de demandes en même temps. Patientez quelques secondes et réessayez.'
+          : "Échec de l'envoi de l'email."
+      };
     }
     return { ok: true };
   } catch (err) {
@@ -109,7 +148,7 @@ async function deliver(
   }
 }
 
-export async function sendOtpEmail(env: EmailEnv, to: string, code: string): Promise<{ ok: boolean; error?: string }> {
+export async function sendOtpEmail(env: EmailEnv, to: string, code: string): Promise<DeliveryResult> {
   return deliver(
     env,
     to,
@@ -133,7 +172,7 @@ export async function sendRenewalEmail(
   env: EmailEnv,
   to: string,
   seasonName: string
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<DeliveryResult> {
   const season = seasonName || 'la nouvelle saison';
   return deliver(
     env,
@@ -163,7 +202,7 @@ export async function sendUpcomingAccessEmail(
   to: string,
   seasonName: string,
   opensOn: string
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<DeliveryResult> {
   const season = seasonName || 'la nouvelle saison';
   const date = formatFrenchDate(opensOn);
   return deliver(

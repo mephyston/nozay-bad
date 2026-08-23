@@ -7,6 +7,8 @@ import {
   signSession,
   buildSessionCookie,
   buildLogoutCookie,
+  SESSION_TTL_SECONDS,
+  SESSION_REFRESH_AFTER_SECONDS,
   type SessionPayload,
   type SessionMember
 } from './lib/auth';
@@ -124,6 +126,27 @@ const handleRequest = async (
   let refreshedCookie: string | null = null;
   // Session valide mais révoquée faute de licence : son cookie doit être purgé.
   let revoked = false;
+
+  /*
+   * Session glissante : prolongée dès qu'elle a dix jours.
+   *
+   * Une session fixe déconnecte le même jour tous ceux qui se sont connectés le même
+   * jour — et fait redemander un code à tout le club en même temps, ce qu'un plafond
+   * d'envoi quotidien ne laisse pas passer. Ici, seul un adhérent resté trente jours
+   * sans venir doit se reconnecter, et ces retours-là se répartissent d'eux-mêmes.
+   *
+   * Il n'y a volontairement pas de durée de vie absolue au-delà de laquelle une
+   * reconnexion serait imposée : elle recréerait exactement le pic qu'on évite, six mois
+   * plus tard et pour tout le monde à la fois. Le contrôle qui compte reste celui de la
+   * saison, juste en dessous — une licence non renouvelée révoque la session, quelle que
+   * soit son ancienneté.
+   */
+  if (session?.expiresAt !== undefined) {
+    const remaining = session.expiresAt - Math.floor(Date.now() / 1000);
+    if (remaining < SESSION_TTL_SECONDS - SESSION_REFRESH_AFTER_SECONDS) {
+      refreshedCookie = buildSessionCookie(await signSession(session, secret), COOKIE_SECURE);
+    }
+  }
 
   if (session) {
     const today = parisToday();

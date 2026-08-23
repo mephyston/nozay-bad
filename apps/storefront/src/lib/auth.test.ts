@@ -5,6 +5,8 @@ import { describe, it, expect } from 'vitest';
 import {
   signSession,
   verifySession,
+  SESSION_TTL_SECONDS,
+  SESSION_REFRESH_AFTER_SECONDS,
   storeOtp,
   verifyOtp,
   generateOtpCode,
@@ -95,5 +97,48 @@ describe('otp', () => {
 describe('maskEmail', () => {
   it('masque le local et le domaine en gardant le TLD', () => {
     expect(maskEmail('parent@example.fr')).toBe('p***@***.fr');
+  });
+});
+
+/**
+ * Session glissante.
+ *
+ * Le vrai enjeu n'est pas la durée mais la SYNCHRONISATION : une session fixe déconnecte
+ * le même jour tous ceux qui se sont connectés le même jour, et fait redemander un code
+ * à tout le club en même temps — ce qu'un plafond d'envoi quotidien ne laisse pas passer.
+ */
+describe('prolongation de session', () => {
+  const members = [
+    { id: 1, firstName: 'Camille', lastName: 'Durand', licence: '00000001', paid: true, expenseAuthorized: false }
+  ];
+  const payload = { email: 'parent@ex.fr', members, activeMemberId: 1, seasonCode: '25-26' };
+
+  it('rend l’expiration du jeton, pour que le middleware puisse décider', async () => {
+    const token = await signSession(payload, SECRET);
+    const session = await verifySession(token, SECRET);
+
+    const now = Math.floor(Date.now() / 1000);
+    expect(session!.expiresAt).toBeGreaterThan(now + SESSION_TTL_SECONDS - 60);
+    expect(session!.expiresAt).toBeLessThanOrEqual(now + SESSION_TTL_SECONDS);
+  });
+
+  it('resigne une session sans emporter son ancienne expiration', async () => {
+    const token = await signSession(payload, SECRET);
+    const read = await verifySession(token, SECRET);
+
+    // Le middleware repasse la session lue à `signSession` : si `expiresAt` était
+    // recopié tel quel, prolonger ne prolongerait rien.
+    const renewed = await signSession(read!, SECRET);
+    const again = await verifySession(renewed, SECRET);
+
+    expect(again!.expiresAt).toBeGreaterThanOrEqual(read!.expiresAt!);
+    expect(again).toMatchObject({ email: 'parent@ex.fr', activeMemberId: 1, seasonCode: '25-26' });
+  });
+
+  it('laisse dix jours avant de prolonger, et vingt jours de marge ensuite', () => {
+    // Prolonger à chaque requête coûterait une signature et un `Set-Cookie` par réponse.
+    expect(SESSION_REFRESH_AFTER_SECONDS).toBeLessThan(SESSION_TTL_SECONDS);
+    // La marge restante après le seuil est ce qui absorbe une absence : vingt jours.
+    expect(SESSION_TTL_SECONDS - SESSION_REFRESH_AFTER_SECONDS).toBe(60 * 60 * 24 * 20);
   });
 });

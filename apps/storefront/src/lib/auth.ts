@@ -13,6 +13,21 @@ export const SESSION_COOKIE = 'nba_session';
 // (le client ne connaît jamais l'email réel, seulement une version masquée).
 export const PENDING_COOKIE = 'nba_otp';
 export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 jours
+
+/**
+ * Ancienneté à partir de laquelle une session active est prolongée.
+ *
+ * Sans cela, la session est **fixe** : tous ceux qui se connectent le jour de
+ * l'ouverture sont déconnectés le même jour, trente jours plus tard — et redemandent
+ * tous un code le même jour. Avec 220 adhérents et un plafond d'envoi quotidien à trois
+ * chiffres, ce pic ne passe pas.
+ *
+ * Prolonger à chaque requête coûterait une signature et un `Set-Cookie` par réponse,
+ * pour rien. Dix jours suffisent : un adhérent qui revient au moins une fois par mois ne
+ * redemande jamais de code, et les rares déconnexions — trente jours sans venir — se
+ * répartissent d'elles-mêmes sur le calendrier.
+ */
+export const SESSION_REFRESH_AFTER_SECONDS = 60 * 60 * 24 * 10; // 10 jours
 export const OTP_TTL_SECONDS = 600; // 10 minutes
 export const OTP_MAX_ATTEMPTS = 5;
 
@@ -38,6 +53,11 @@ export interface SessionPayload {
   // détecter qu'une saison s'est achevée et re-vérifier la licence — sans lui, une
   // session survivrait 30 jours à la fin de l'adhésion.
   seasonCode: string;
+  /**
+   * Expiration du jeton lu, en secondes. Absente d'une session qu'on vient de composer :
+   * elle ne prend son sens qu'après vérification, et n'est jamais resignée telle quelle.
+   */
+  expiresAt?: number;
 }
 
 interface OtpRecord {
@@ -88,7 +108,10 @@ export async function verifySession(token: string, secret: string): Promise<Sess
     // correspondra à aucune saison ouverte, donc le middleware la re-vérifiera une fois
     // puis la régénérera. La migration se fait d'elle-même.
     const seasonCode = typeof payload.seasonCode === 'string' ? payload.seasonCode : '';
-    return { email, members, activeMemberId, seasonCode };
+    // `exp` est rendu au middleware, qui décide de prolonger ou non. Il n'est pas
+    // resigné : `signSession` ne reprend que les quatre champs métier.
+    const expiresAt = typeof payload.exp === 'number' ? payload.exp : undefined;
+    return { email, members, activeMemberId, seasonCode, expiresAt };
   } catch {
     return null;
   }
