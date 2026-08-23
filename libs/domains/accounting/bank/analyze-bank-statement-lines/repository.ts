@@ -14,6 +14,13 @@ export class AnalyzeBankStatementLinesRepository {
     return row?.id || 1;
   }
 
+  /** Code de la saison analysée (« 25-26 »), pour le comparer à celle citée dans un libellé. */
+  async getSeasonCode(db: DbOrTx, seasonIdOrCode: string | number): Promise<string | null> {
+    const id = await this.resolveSeasonId(db, seasonIdOrCode);
+    const row = await db.select({ code: seasonsTable.code }).from(seasonsTable).where(eq(seasonsTable.id, id)).get();
+    return row?.code ?? null;
+  }
+
   async getCategories(db: DbOrTx): Promise<(typeof categoriesTable.$inferSelect)[]> {
     return db.select().from(categoriesTable).all();
   }

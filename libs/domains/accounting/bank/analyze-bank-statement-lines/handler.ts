@@ -2,7 +2,13 @@ import { type Db } from '@nba/db';
 import { AnalyzeBankStatementLinesRepository } from './repository';
 import { cleanName } from '../../shared/helpers';
 import { resolveCategoryMap, resolveProductAccountingCategory } from '../../shared/category';
-import type { AnalyzeBankStatementLinesInput, AnalyzeBankStatementLinesOutput } from './dto';
+import { pickMemberCandidate } from './member-match';
+import { isFutureSeason, seasonInText } from './season-reference';
+import type {
+  AnalyzeBankStatementLinesInput,
+  AnalyzeBankStatementLinesOutput,
+  BankStatementLineSuggestion
+} from './dto';
 
 export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeBankStatementLinesInput): Promise<AnalyzeBankStatementLinesOutput> {
   const repo = new AnalyzeBankStatementLinesRepository();
@@ -10,6 +16,7 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
   const members = await repo.getMembersBySeason(db, input.seasonId);
   const pastReconciled = await repo.getPastReconciledTransactions(db);
   const categories = await repo.getCategories(db);
+  const seasonCode = await repo.getSeasonCode(db, input.seasonId);
   const catMap = resolveCategoryMap(categories);
 
   let examplesPrompt = "";
@@ -162,30 +169,40 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
       return matchesLastName || matchesFirstName || matchesParent1 || matchesParent2 || matchesAmount;
     }).slice(0, 5);
 
-    let exactCandidate: any = null;
     const textNormalized = textToLower.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const { candidate: exactCandidate, certain: certainMember } = pickMemberCandidate(candidates as any[], textNormalized);
 
-    for (const m of candidates) {
-      const firstNorm = cleanName(m.firstName);
-      const lastNorm = cleanName(m.lastName);
-      const p1Norm = cleanName(m.parent1Name);
-      const p2Norm = cleanName(m.parent2Name);
-      
-      const hasFirstAndLast = firstNorm && lastNorm && textNormalized.includes(firstNorm) && textNormalized.includes(lastNorm);
-      const hasParent1 = p1Norm && textNormalized.includes(p1Norm);
-      const hasParent2 = p2Norm && textNormalized.includes(p2Norm);
+    /*
+     * Cotisation encaissée pour la saison suivante : produit constaté d'avance.
+     *
+     * L'adhérent qui règle en juin pour la rentrée écrit très souvent la saison dans le
+     * motif de son virement. L'encaissement appartient alors à l'exercice suivant, pas à
+     * celui qui le reçoit — c'est la définition même du rattachement, et l'oublier gonfle
+     * le résultat de l'année qui se clôture.
+     *
+     * La détection est déterministe et ne passe pas par le modèle : comparer deux
+     * millésimes est une lecture, pas un jugement, et un rattachement d'exercice mal posé
+     * se paie à la clôture. Elle ne s'applique qu'aux encaissements d'adhésion — une
+     * dépense ou un achat de volants portant une saison dans son libellé n'est pas un
+     * produit constaté d'avance.
+     */
+    const citedSeason = seasonCode ? seasonInText(textToLower) : null;
+    const isAdvanceMembership =
+      citedSeason !== null &&
+      seasonCode !== null &&
+      txAmount > 0 &&
+      suggestedCategory === catMap.adhesions &&
+      isFutureSeason(citedSeason, seasonCode);
 
-      if (hasFirstAndLast || hasParent1 || hasParent2) {
-        exactCandidate = m;
-        break;
-      }
-    }
-
-    let suggestionResult = {
+    let suggestionResult: BankStatementLineSuggestion = {
       category: suggestedCategory,
       memberId: exactCandidate ? exactCandidate.id : null,
       memberName: exactCandidate ? `${exactCandidate.lastName} ${exactCandidate.firstName}` : null,
-      confidence: exactCandidate ? 0.9 : 0.5
+      confidence: exactCandidate ? 0.9 : 0.5,
+      accrualType: isAdvanceMembership ? 'produit_constate_avance' : 'normal',
+      accrualNote: isAdvanceMembership
+        ? `Cotisation encaissée d'avance pour la saison ${citedSeason}, à rattacher à cet exercice.`
+        : null
     };
 
     if (candidates.length > 0) {
@@ -206,7 +223,7 @@ Liste des candidats adhérents possibles :
 ${candidates.map(c => `- ID: ${c.id}, Nom: ${c.lastName} ${c.firstName}, Parent 1: ${c.parent1Name || 'Aucun'}, Montant Restant Dû Adhésion: ${((c.amountRemainingCents ?? 0) / 100).toFixed(2)} EUR`).join('\n')}
 
 Instructions :
-1. Associe l'adhérent (memberId et memberName) si son nom ou prénom (ou celui d'un de ses parents) apparaît clairement dans le libellé ou memo de l'opération, même si son "Montant Restant Dû Adhésion" est de 0.00 EUR.
+1. Associe l'adhérent (memberId et memberName) si son nom ou prénom (ou celui d'un de ses parents) apparaît clairement dans le libellé ou memo de l'opération, même si son "Montant Restant Dû Adhésion" est de 0.00 EUR. Si les prénom ET nom d'un adhérent figurent dans le texte, associe-le lui, et non un autre adhérent dont il serait seulement le parent : un parent qui règle sa propre licence porte le même nom que son enfant.
 2. Choisis la catégorie la plus adaptée parmi la liste des catégories valides ci-dessus.
 3. Si le libellé bancaire ou le mémo est composé principalement d'une longue suite de chiffres (plus de 20 chiffres d'affilée), il s'agit d'un virement interne de compte à compte. Associe impérativement la catégorie ${catMap.virementsInternes} et aucun adhérent.
 4. Si le montant correspond exactement au tarif d'un produit (par exemple 31.50 EUR pour les volants) ou à un multiple entier de celui-ci (comme 63.00 EUR pour 2 boîtes de volants, ou 30.00 EUR pour 2 cordages), et qu'il n'y a pas d'autre indication de catégorie dans le texte, choisis la catégorie associée à ce produit. Si le texte mentionne explicitement "adhesion", "cotisation" ou "inscription", choisis impérativement la catégorie ${catMap.adhesions}.
@@ -232,9 +249,19 @@ Renvoie STRICTEMENT un objet JSON sous la forme suivante :
           const parsed = JSON.parse(jsonMatch[0]);
           suggestionResult = {
             category: parsed.category ? Number(parsed.category) : suggestedCategory,
-            memberId: parsed.memberId || null,
-            memberName: parsed.memberName || null,
-            confidence: parsed.confidence || 0.5
+            // Un adhérent, et un seul, nommé par ses propres prénom et nom : c'est une
+            // lecture, pas une hypothèse, et le modèle n'a pas à la défaire. Dès que
+            // deux adhérents sont nommés, il reprend la main — le motif se lit mieux
+            // qu'il ne se déduit.
+            memberId: certainMember ? certainMember.id : parsed.memberId || null,
+            memberName: certainMember
+              ? `${certainMember.lastName} ${certainMember.firstName}`
+              : parsed.memberName || null,
+            confidence: certainMember ? 0.95 : parsed.confidence || 0.5,
+            // Le rattachement reste celui qu'on a déduit : le modèle peut changer d'avis
+            // sur la catégorie, pas sur l'exercice auquel l'encaissement appartient.
+            accrualType: suggestionResult.accrualType,
+            accrualNote: suggestionResult.accrualNote
           };
         }
       } catch (e) {

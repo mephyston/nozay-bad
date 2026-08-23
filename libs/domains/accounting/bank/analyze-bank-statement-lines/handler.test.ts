@@ -116,4 +116,140 @@ describe('analyzeBankStatementLines', () => {
     const suggestions = JSON.parse(updatedTx[0].aiSuggestions);
     expect(suggestions.category).toBe(101);
   });
+
+  it("flags a membership paid for next season as a produit constaté d'avance", async () => {
+    await db.insert(bankStatementLinesTable).values({
+      id: 2,
+      fitid: 'TX1002',
+      accountId: 1,
+      amountCents: 15000,
+      date: '2026-06-18',
+      name: 'VIR RENARD SYLVAIN',
+      memo: 'Cotisation 26-27',
+      status: 'pending',
+      createdAt: new Date()
+    }).run();
+
+    vi.spyOn(AnalyzeBankStatementLinesRepository.prototype, 'getMembersBySeason').mockResolvedValue([]);
+
+    const aiMock = { run: vi.fn() };
+    await analyzeBankStatementLines(db, aiMock, { seasonId: '25-26' });
+
+    const row = await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, 2)).all();
+    const suggestions = JSON.parse(row[0].aiSuggestions);
+    expect(suggestions.accrualType).toBe('produit_constate_avance');
+    expect(suggestions.accrualNote).toContain('26-27');
+  });
+
+  it('leaves a membership paid for the current season as a normal entry', async () => {
+    await db.insert(bankStatementLinesTable).values({
+      id: 3,
+      fitid: 'TX1003',
+      accountId: 1,
+      amountCents: 15000,
+      date: '2025-10-02',
+      name: 'VIR RENARD SYLVAIN',
+      memo: 'Cotisation 25-26',
+      status: 'pending',
+      createdAt: new Date()
+    }).run();
+
+    vi.spyOn(AnalyzeBankStatementLinesRepository.prototype, 'getMembersBySeason').mockResolvedValue([]);
+
+    const aiMock = { run: vi.fn() };
+    await analyzeBankStatementLines(db, aiMock, { seasonId: '25-26' });
+
+    const row = await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, 3)).all();
+    const suggestions = JSON.parse(row[0].aiSuggestions);
+    expect(suggestions.accrualType).toBe('normal');
+    expect(suggestions.accrualNote).toBeNull();
+  });
+
+  it('does not flag an expense that merely cites a future season', async () => {
+    await db.insert(bankStatementLinesTable).values({
+      id: 4,
+      fitid: 'TX1004',
+      accountId: 1,
+      amountCents: -8000,
+      date: '2026-06-18',
+      name: 'ACHAT VOLANTS',
+      memo: 'Provision 26-27',
+      status: 'pending',
+      createdAt: new Date()
+    }).run();
+
+    vi.spyOn(AnalyzeBankStatementLinesRepository.prototype, 'getMembersBySeason').mockResolvedValue([]);
+
+    const aiMock = { run: vi.fn() };
+    await analyzeBankStatementLines(db, aiMock, { seasonId: '25-26' });
+
+    const row = await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, 4)).all();
+    const suggestions = JSON.parse(row[0].aiSuggestions);
+    expect(suggestions.accrualType).toBe('normal');
+  });
+
+  it('associates the parent who pays his own licence, not the child he is parent of', async () => {
+    // Cas réel : « DE: M RENARD SYLVAIN ... MOTIF: paiement Licence Sylvain Renard ».
+    // L'enfant porte le nom du parent dans `parent1Name` et précède le parent en base :
+    // le premier candidat trouvé gagnait, c'est-à-dire l'ordre des lignes.
+    await db.insert(bankStatementLinesTable).values({
+      id: 5,
+      fitid: 'TX1005',
+      accountId: 1,
+      amountCents: 25000,
+      date: '2026-08-21',
+      name: 'VIR INST RE 673390599511',
+      memo: 'DE: M RENARD SYLVAIN DATE: 21/08/2026 18:09 MOTIF: paiement Licence Sylvain Renard',
+      status: 'pending',
+      createdAt: new Date()
+    }).run();
+
+    const base = {
+      seasonId: 1, gender: 'M', birthDate: '1980-01-01', type: 'Adulte', importedAt: new Date(),
+      amountDue: 25000, amountReceived: 0, amountRemaining: 0,
+      amountDueCents: 25000, amountReceivedCents: 25000, amountRemainingCents: 0
+    };
+    vi.spyOn(AnalyzeBankStatementLinesRepository.prototype, 'getMembersBySeason').mockResolvedValue([
+      { ...base, id: 623, licence: '0000623', lastName: 'RENARD', firstName: 'Morgane', parent1Name: 'RENARD Sylvain (Parent)', parent2Name: 'RENARD Sylvain (Parent)' },
+      { ...base, id: 624, licence: '0000624', lastName: 'RENARD', firstName: 'Sylvain', parent1Name: null, parent2Name: null }
+    ] as any);
+
+    // Le modèle se trompe d'adhérent : la désignation lue dans le texte tient.
+    const aiMock = {
+      run: vi.fn().mockResolvedValue({
+        response: JSON.stringify({ memberId: 623, memberName: 'RENARD Morgane', category: 101, confidence: 0.9 })
+      })
+    };
+    await analyzeBankStatementLines(db, aiMock, { seasonId: '25-26' });
+
+    const row = await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, 5)).all();
+    const suggestions = JSON.parse(row[0].aiSuggestions);
+    expect(suggestions.memberId).toBe(624);
+    expect(suggestions.memberName).toContain('Sylvain');
+  });
+
+  it('reads the season glued to the wording of a transfer motive', async () => {
+    // Cas réel : « MOTIF: FOSSE-JULES-ADHESION2026-2027 ».
+    await db.insert(bankStatementLinesTable).values({
+      id: 6,
+      fitid: 'TX1006',
+      accountId: 1,
+      amountCents: 22000,
+      date: '2026-08-21',
+      name: 'VIR RECU 5281304281S',
+      memo: 'DE: MR FOSSE JULES MOTIF: FOSSE-JULES-ADHESION2026-2027 REF: NOT PROVIDED',
+      status: 'pending',
+      createdAt: new Date()
+    }).run();
+
+    vi.spyOn(AnalyzeBankStatementLinesRepository.prototype, 'getMembersBySeason').mockResolvedValue([]);
+
+    const aiMock = { run: vi.fn() };
+    await analyzeBankStatementLines(db, aiMock, { seasonId: '25-26' });
+
+    const row = await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, 6)).all();
+    const suggestions = JSON.parse(row[0].aiSuggestions);
+    expect(suggestions.accrualType).toBe('produit_constate_avance');
+    expect(suggestions.accrualNote).toContain('26-27');
+  });
 });
