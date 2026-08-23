@@ -59,7 +59,11 @@ if (Astro.request.method === 'POST') {
         visibility: data.visibility,
         // Même règle que `coverMediaId` : le formulaire envoie toujours la valeur,
         // `null` détachant l'événement.
-        eventId: data.eventId
+        eventId: data.eventId,
+        // Date de publication saisie à la main. Le formulaire l'omet à la création
+        // quand elle est vide — c'est l'absence qui fait naître un brouillon — et
+        // l'envoie toujours en modification, `null` la retirant.
+        publishedAt: data.publishedAt
       }
     },
     update: {
@@ -82,7 +86,11 @@ if (Astro.request.method === 'POST') {
         visibility: data.visibility,
         // Même règle que `coverMediaId` : le formulaire envoie toujours la valeur,
         // `null` détachant l'événement.
-        eventId: data.eventId
+        eventId: data.eventId,
+        // Date de publication saisie à la main. Le formulaire l'omet à la création
+        // quand elle est vide — c'est l'absence qui fait naître un brouillon — et
+        // l'envoie toujours en modification, `null` la retirant.
+        publishedAt: data.publishedAt
       }
     },
     publish: {

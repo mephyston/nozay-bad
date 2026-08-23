@@ -22,6 +22,18 @@ updatePostRoute.put(
       return c.json({ success: false, error: "Identifiant d'actualité invalide" }, 400);
     }
     const db = createDb(c.env.DB);
-    return c.json({ success: true, data: await updatePost(db, { postId, ...c.req.valid('json') }) });
+    const { publishedAt, ...body } = c.req.valid('json');
+    return c.json({
+      success: true,
+      data: await updatePost(db, {
+        postId,
+        ...body,
+        // Texte local sans fuseau côté HTTP, `Date` côté domaine : la conversion
+        // appartient à la frontière. `null` reste `null` — il retire la date.
+        ...(publishedAt === undefined
+          ? {}
+          : { publishedAt: publishedAt === null ? null : new Date(`${publishedAt}:00`) })
+      })
+    });
   }
 );

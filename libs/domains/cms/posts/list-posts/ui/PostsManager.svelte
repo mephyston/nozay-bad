@@ -101,6 +101,8 @@
   let selectedCategoryIds = $state<number[]>([]);
   /** `0` vaut « aucun » : une liste déroulante ne transporte que des chaînes. */
   let eventId = $state<number>(0);
+  /** Date de publication, au format d'un champ `datetime-local` : « 2026-03-14T18:30 ». */
+  let publishedAt = $state('');
   let coverPickerOpen = $state(false);
   let filePickerOpen = $state(false);
   let inlineImagePickerOpen = $state(false);
@@ -201,6 +203,21 @@
   const when = (v: number | string | null) =>
     v ? formatter.format(new Date(typeof v === 'number' ? v * 1000 : v)) : '—';
 
+  /**
+   * La même date, mais telle qu'un champ `datetime-local` la veut.
+   *
+   * Découpée sur l'heure **locale** et non sur l'ISO : `toISOString()` rendrait l'heure
+   * UTC, et un article publié à 00 h 30 se présenterait daté de la veille — exactement le
+   * décalage d'un jour qu'on cherche à éviter en offrant ce champ.
+   */
+  const asLocalInput = (v: number | string | null): string => {
+    if (!v) return '';
+    const d = new Date(typeof v === 'number' ? v * 1000 : v);
+    if (Number.isNaN(d.getTime())) return '';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   // Pas d'extrait du corps dans la liste : quatre-vingt-dix caractères de texte sous
   // chaque titre étiraient les lignes sur toute la largeur de l'écran et noyaient ce
   // qu'on vient y chercher — quel article, en ligne ou non, publié quand. Le chapô et
@@ -271,6 +288,7 @@
     visibility = 'public';
     selectedCategoryIds = [];
     eventId = 0;
+    publishedAt = '';
     errorMsg = '';
   }
 
@@ -288,6 +306,7 @@
     visibility = row.visibility ?? 'public';
     selectedCategoryIds = (row.categories ?? []).map((c) => c.id);
     eventId = row.eventId ?? 0;
+    publishedAt = asLocalInput(row.publishedAt);
     errorMsg = '';
     showFormSheet = true;
   }
@@ -307,6 +326,9 @@
             ? {
                 action: 'update', id, title: title.trim(), excerpt: excerpt.trim(), bodyHtml,
                 coverMediaId, categoryIds: selectedCategoryIds, visibility,
+                // Toujours transmise : vidée, `null` retire la date et l'actualité
+                // retombe au rang que lui donne sa date de création.
+                publishedAt: publishedAt || null,
                 // `null` détache l'événement, un entier le rattache. Jamais `undefined`
                 // en modification : ce serait « ne rien changer », et détacher
                 // deviendrait impossible depuis l'écran.
@@ -315,6 +337,9 @@
             : {
                 action: 'create', title: title.trim(), excerpt: excerpt.trim(), bodyHtml,
                 coverMediaId, categoryIds: selectedCategoryIds, visibility,
+                // Omise si vide : à la création, une date renseignée publie d'emblée,
+                // et l'absence de date est ce qui fait naître un brouillon.
+                publishedAt: publishedAt || undefined,
                 eventId: Number(eventId) || null
               },
           id ? 'La modification a échoué.' : 'La création a échoué.'
@@ -613,6 +638,15 @@
     Le masquer laissait croire que la fonctionnalité n'existait pas, là où il n'y avait
     simplement rien à l'agenda — un écran muet ne se distingue pas d'un écran cassé.
   -->
+  <FormField id="post-published-at" label="Date de publication">
+    <Input id="post-published-at" type="datetime-local" bind:value={publishedAt} />
+    <p class="mt-1 text-xs text-muted-foreground">
+      {editingId === null
+        ? "Laissez vide pour créer un brouillon. Renseignée, l'actualité est publiée d'emblée à cette date."
+        : "C'est elle qui range l'actualité dans le fil. Reculez-la pour qu'un article ressaisi se place à la date des faits qu'il raconte."}
+    </p>
+  </FormField>
+
   <FormField id="post-event" label="Événement lié (facultatif)">
     <Select id="post-event" bind:value={eventId} disabled={events.length === 0}>
       <option value={0}>Aucun</option>

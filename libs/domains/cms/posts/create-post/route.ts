@@ -17,9 +17,18 @@ createPostRoute.post(
   }),
   async (c) => {
     if (!c.env?.DB) return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-    const body = c.req.valid('json');
+    const { publishedAt, ...body } = c.req.valid('json');
     const db = createDb(c.env.DB);
     const email = c.req.header('x-user-email') || '';
-    return c.json({ success: true, data: await createPost(db, body, { email, name: email }) });
+    return c.json({
+      success: true,
+      // La date arrive en texte local sans fuseau, comme partout dans l'agenda ; le
+      // domaine, lui, raisonne en `Date`. La conversion appartient à la frontière HTTP.
+      data: await createPost(
+        db,
+        { ...body, publishedAt: publishedAt ? new Date(`${publishedAt}:00`) : undefined },
+        { email, name: email }
+      )
+    });
   }
 );

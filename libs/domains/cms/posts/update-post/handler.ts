@@ -30,6 +30,9 @@ export async function updatePost(
     seoDescription: input.seoDescription === undefined ? post.seoDescription : input.seoDescription,
     visibility: input.visibility ?? post.visibility,
     eventId: input.eventId === undefined ? post.eventId : input.eventId,
+    // C'est ce champ qui range l'actualité dans le fil : le reculer fait remonter un
+    // article ressaisi à la place des faits qu'il raconte, et non à celle de sa saisie.
+    publishedAt: input.publishedAt === undefined ? post.publishedAt : input.publishedAt,
     updatedAt: now
   };
 

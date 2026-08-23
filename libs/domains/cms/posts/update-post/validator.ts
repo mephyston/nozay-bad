@@ -13,5 +13,15 @@ export const updatePostSchema = Type.Object({
    * Événement de l'agenda annoncé par l'actualité. `null` détache, absent laisse
    * inchangé — même idiome que `excerpt` et `coverMediaId` juste au-dessus.
    */
-  eventId: Type.Optional(Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]))
+  eventId: Type.Optional(Type.Union([Type.Integer({ minimum: 1 }), Type.Null()])),
+  /**
+   * Date de publication, en date-heure locale (« 2026-03-14T18:30 »). `null` la retire,
+   * absente la laisse inchangée — même idiome que les champs ci-dessus.
+   */
+  publishedAt: Type.Optional(
+    Type.Union([
+      Type.String({ pattern: '^\\d{4}-\\d{2}-\\d{2}T([01][0-9]|2[0-3]):[0-5][0-9]$' }),
+      Type.Null()
+    ])
+  )
 });

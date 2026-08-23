@@ -9,5 +9,14 @@ export const createPostSchema = Type.Object({
   categoryIds: Type.Optional(Type.Array(Type.Integer({ minimum: 1 }), { maxItems: 10 })),
   visibility: Type.Optional(Type.Union([Type.Literal('public'), Type.Literal('private')])),
   /** Événement de l'agenda que l'actualité annonce, s'il y en a un. */
-  eventId: Type.Optional(Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]))
+  eventId: Type.Optional(Type.Union([Type.Integer({ minimum: 1 }), Type.Null()])),
+  /**
+   * Date de publication, en date-heure locale (« 2026-03-14T18:30 »).
+   *
+   * Renseignée, l'actualité naît **publiée** à cette date au lieu de démarrer en
+   * brouillon : c'est la règle que la reprise WordPress suivait déjà, désormais offerte à
+   * la saisie manuelle. Elle sert à ressaisir un article ancien pour qu'il se range dans
+   * le fil au moment où les faits ont eu lieu, et non au moment où on les écrit.
+   */
+  publishedAt: Type.Optional(Type.String({ pattern: '^\\d{4}-\\d{2}-\\d{2}T([01][0-9]|2[0-3]):[0-5][0-9]$' }))
 });
