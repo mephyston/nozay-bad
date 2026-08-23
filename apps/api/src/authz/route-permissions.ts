@@ -267,6 +267,7 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // différence entre compter et savoir qui.
   { method: 'GET', path: '/schedules/open-play', permission: 'schedules:open-play:read', service: true },
   { method: 'POST', path: '/schedules/open-play', permission: 'schedules:open-play:write' },
+  { method: 'POST', path: '/schedules/open-play/generate', permission: 'schedules:open-play:write' },
   { method: 'PUT', path: '/schedules/open-play/:id', permission: 'schedules:open-play:write' },
   { method: 'POST', path: '/schedules/open-play/:id/registrations', permission: 'schedules:open-play:read', service: true },
   { method: 'DELETE', path: '/schedules/open-play/:id/registrations', permission: 'schedules:open-play:read', service: true },

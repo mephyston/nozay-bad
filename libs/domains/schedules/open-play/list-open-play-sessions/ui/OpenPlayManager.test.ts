@@ -114,6 +114,25 @@ describe('OpenPlayManager', () => {
     expect(create).toBeUndefined();
   });
 
+  it('n’offre la génération que s’il existe un créneau récurrent', () => {
+    render({ slots: [] });
+    expect(
+      [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Générer'))
+    ).toBeUndefined();
+
+    document.body.innerHTML = '';
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    render({
+      slots: [
+        { id: 1, weekday: 6, startTime: '14:00', endTime: '17:00', venue: { name: 'Pierre Dupuis' } }
+      ]
+    });
+    expect(
+      [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Générer'))
+    ).toBeDefined();
+  });
+
   it('filtre sur les séances à pourvoir', () => {
     render({
       sessions: [

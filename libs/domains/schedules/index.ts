@@ -9,6 +9,7 @@ import { deleteScheduleSlotRoute } from './delete-schedule-slot/route';
 
 import { listOpenPlaySessionsRoute } from './open-play/list-open-play-sessions/route';
 import { createOpenPlaySessionRoute } from './open-play/create-open-play-session/route';
+import { generateOpenPlaySessionsRoute } from './open-play/generate-open-play-sessions/route';
 import { updateOpenPlaySessionRoute } from './open-play/update-open-play-session/route';
 import { registerToOpenPlayRoute } from './open-play/register-to-open-play/route';
 import { unregisterFromOpenPlayRoute } from './open-play/unregister-from-open-play/route';
@@ -38,6 +39,8 @@ schedulesRouter.route('/', saveOpenPlayOpenerRoute);
 schedulesRouter.route('/', deleteOpenPlayOpenerRoute);
 schedulesRouter.route('/', listOpenPlaySessionsRoute);
 schedulesRouter.route('/', createOpenPlaySessionRoute);
+// `/open-play/generate` avant `/open-play/:id` : littéral d'abord, comme partout ici.
+schedulesRouter.route('/', generateOpenPlaySessionsRoute);
 schedulesRouter.route('/', claimOpenPlaySessionRoute);
 schedulesRouter.route('/', releaseOpenPlaySessionRoute);
 schedulesRouter.route('/', listOpenPlayRegistrationsRoute);

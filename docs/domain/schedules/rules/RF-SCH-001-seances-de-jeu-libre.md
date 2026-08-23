@@ -38,6 +38,20 @@ Une **séance** est une occurrence **datée** : une date, un horaire, un gymnase
 
 **L'annulation exige un motif.** Contrairement à un événement annulé, que le site masque, la séance reste affichée à l'adhérent : celui qui s'était inscrit n'apprendrait rien d'une ligne disparue, il doit lire pourquoi il ne joue pas. Rouvrir efface le motif.
 
+### Génération en lot
+
+Les séances peuvent être **déroulées** depuis les créneaux hebdomadaires de la saison dont le public est « jeu libre ». Chaque occurrence garde le lien vers le créneau dont elle découle, ses horaires et son gymnase.
+
+Ne sont déroulés que les créneaux **actifs** : masquer un créneau est justement la façon dont le bureau retire un horaire qu'il ne tient plus.
+
+**L'opération est rejouable.** La clé naturelle rend chaque insertion sans effet si la séance existe déjà — le bureau peut donc étendre la période au fil de la saison sans se souvenir de ce qu'il a généré. Et surtout : une séance déjà pourvue n'est **jamais** défaite. Remettre son statut à « ouverte » et effacer son ouvreur ferait venir des gens devant une porte close.
+
+Le résultat annonce ce qui a été créé **et** ce qui existait déjà. Sans ce second chiffre, une génération rejouée passerait pour une panne.
+
+**La période est bornée à un an.** Sans borne, une faute de frappe sur l'année produirait des milliers d'insertions.
+
+**Une saison sans créneau de jeu libre est un refus**, pas un silence : générer zéro séance sans rien dire laisserait croire que l'opération a fonctionné.
+
 **Une séance passée** sort des listes par simple filtrage au rendu. Il n'existe pas de statut « passée » : un statut qui se déduit de l'horloge est un statut qui périme et qu'il faudrait maintenir.
 
 ---
@@ -92,6 +106,36 @@ Fonctionnalité: Ouverture d'une séance de jeu libre
     Quand le bureau l'annule avec le motif « Gymnase fermé »
     Alors la séance reste affichée à l'adhérent, barrée, avec son motif
     Et les inscriptions déjà prises sont conservées
+
+  Scénario: Dérouler un créneau récurrent sur une période
+    Étant donné un créneau de jeu libre le samedi de 14 h à 17 h
+    Quand le bureau génère la période du 16 au 29 mars
+    Alors deux séances sont créées, les samedis 21 et 28 mars
+    Et chacune garde le lien vers le créneau dont elle découle
+
+  Scénario: Rejouer une génération ne crée rien
+    Étant donné une période déjà générée
+    Quand le bureau la génère de nouveau
+    Alors aucune séance n'est créée
+    Et le bureau lit combien existaient déjà
+
+  Scénario: Rejouer ne défait pas une séance pourvue
+    Étant donné une séance générée, qu'un bénévole s'est engagé à ouvrir
+    Quand le bureau génère de nouveau une période qui l'englobe
+    Alors la séance reste confirmée
+    Et elle garde le nom de son ouvreur
+
+  Scénario: Un créneau masqué n'est pas déroulé
+    Étant donné un créneau de jeu libre masqué du site
+    Quand le bureau génère une période
+    Alors l'opération est refusée
+    Et le refus indique qu'aucun créneau de jeu libre n'est actif
+
+  Scénario: Une période trop large est refusée
+    Étant donné un créneau de jeu libre actif
+    Quand le bureau génère une période de dix ans
+    Alors l'opération est refusée
+    Et le refus indique que la période ne peut pas dépasser un an
 
   Scénario: Rouvrir efface le motif
     Étant donné une séance annulée pour « Gymnase fermé »

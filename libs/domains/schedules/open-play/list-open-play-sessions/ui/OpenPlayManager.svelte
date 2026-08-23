@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Plus, Edit, Ban, Users, RotateCcw } from '@lucide/svelte';
+  import { Plus, Edit, Ban, Users, RotateCcw, CalendarPlus } from '@lucide/svelte';
   import {
     Button,
     Input,
@@ -43,11 +43,17 @@
     email: string; guests: GuestName[];
   }
 
-  let { sessions = [], venues = [], seasonCode = '', canWrite = false, canReadRegistrations = false } =
-    $props<{
-      sessions: SessionRow[]; venues: VenueRow[]; seasonCode?: string;
-      canWrite?: boolean; canReadRegistrations?: boolean;
-    }>();
+  interface SlotRow { id: number; weekday: number; startTime: string; endTime: string; venue: { name: string } | null }
+
+  let {
+    sessions = [], venues = [], slots = [], seasonCode = '',
+    canWrite = false, canReadRegistrations = false
+  } = $props<{
+    sessions: SessionRow[]; venues: VenueRow[]; slots?: SlotRow[]; seasonCode?: string;
+    canWrite?: boolean; canReadRegistrations?: boolean;
+  }>();
+
+  const WEEKDAYS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
   let editingId = $state<number | null>(null);
   let date = $state('');
@@ -63,6 +69,12 @@
   let errorMsg = $state('');
   let searchTerm = $state('');
   let onlyToStaff = $state(false);
+
+  let showGenerateSheet = $state(false);
+  let genFrom = $state('');
+  let genTo = $state('');
+  let genMinPlayers = $state(String(DEFAULT_MIN_PLAYERS));
+  let genSlotIds = $state<number[]>([]);
 
   /** Panneau des inscrits, chargé à la demande. */
   let openedSession = $state<SessionRow | null>(null);
@@ -160,6 +172,69 @@
     busy = false;
   }
 
+  function openGenerateForm() {
+    // Par défaut, tous les créneaux de jeu libre de la saison : le cas courant est
+    // « déroule-moi la période », pas « choisis-m'en un ».
+    genSlotIds = slots.map((slot: SlotRow) => slot.id);
+    genFrom = '';
+    genTo = '';
+    genMinPlayers = String(DEFAULT_MIN_PLAYERS);
+    errorMsg = '';
+    showGenerateSheet = true;
+  }
+
+  function toggleSlot(id: number) {
+    genSlotIds = genSlotIds.includes(id)
+      ? genSlotIds.filter((slotId) => slotId !== id)
+      : [...genSlotIds, id];
+  }
+
+  async function generate(event: Event) {
+    event.preventDefault();
+    errorMsg = '';
+    busy = true;
+
+    await submitForm({
+      validate: () => {
+        if (!genFrom || !genTo) return 'Choisissez une période.';
+        if (genTo < genFrom) return 'La fin de période doit suivre son début.';
+        if (genSlotIds.length === 0) return 'Choisissez au moins un créneau.';
+        return null;
+      },
+      submit: async () => {
+        const payload = await post(
+          {
+            action: 'generate',
+            seasonCode,
+            from: genFrom,
+            to: genTo,
+            slotIds: genSlotIds,
+            minPlayers: Number(genMinPlayers)
+          },
+          'La génération a échoué.'
+        );
+        const data = payload.data as { created: number; skipped: number };
+        // Le décompte compte : sans lui, le bureau rejouerait la génération en croyant
+        // qu'elle n'a rien fait, alors qu'elle est simplement rejouable.
+        generated = data;
+      },
+      success: '',
+      close: () => { showGenerateSheet = false; },
+      onError: (message) => { errorMsg = message; }
+    });
+
+    busy = false;
+    if (generated) {
+      flashAndReload(
+        generated.created === 0
+          ? `Aucune nouvelle séance : les ${generated.skipped} de la période existaient déjà.`
+          : `${generated.created} séance${generated.created > 1 ? 's' : ''} créée${generated.created > 1 ? 's' : ''}${generated.skipped > 0 ? `, ${generated.skipped} existaient déjà` : ''}.`
+      );
+    }
+  }
+
+  let generated = $state<{ created: number; skipped: number } | null>(null);
+
   async function cancel(row: SessionRow) {
     const reason = window.prompt(
       "Pourquoi la séance est-elle annulée ? L'adhérent inscrit lira ce motif.",
@@ -239,6 +314,12 @@
         >
           À pourvoir
         </Button>
+        {#if canWrite && slots.length > 0}
+          <Button variant="outline" onclick={openGenerateForm} class="h-9 shrink-0 gap-1.5 font-semibold">
+            <CalendarPlus class="h-4 w-4" />
+            <span>Générer une période</span>
+          </Button>
+        {/if}
         {#if canWrite && venues.length > 0}
           <Button onclick={openAddForm} class="h-9 shrink-0 gap-1.5 font-bold">
             <Plus class="h-4 w-4" />
@@ -386,6 +467,50 @@
     </Card.Content>
   </Card.Root>
 {/if}
+
+<FormSheet
+  bind:open={showGenerateSheet}
+  title="Générer une période"
+  description="Déroule les créneaux de jeu libre de la saison sur l'intervalle choisi. L'opération est rejouable : les séances déjà créées sont laissées telles quelles, ouvreur compris."
+  icon={CalendarPlus}
+  error={errorMsg}
+  isSubmitting={busy}
+  submitLabel="Générer"
+  submittingLabel="Génération…"
+  onSubmit={generate}
+>
+  <div class="grid grid-cols-2 gap-3">
+    <FormField id="gen-from" label="Du">
+      <Input id="gen-from" type="date" bind:value={genFrom} />
+    </FormField>
+    <FormField id="gen-to" label="Au">
+      <Input id="gen-to" type="date" bind:value={genTo} />
+    </FormField>
+  </div>
+
+  <FormField id="gen-min" label="Joueurs nécessaires pour ouvrir">
+    <Input id="gen-min" type="number" min="1" max="40" bind:value={genMinPlayers} />
+  </FormField>
+
+  <div class="space-y-2">
+    <p class="text-sm font-medium text-foreground">Créneaux à dérouler</p>
+    {#each slots as slot (slot.id)}
+      <label class="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={genSlotIds.includes(slot.id)}
+          onchange={() => toggleSlot(slot.id)}
+          aria-label={`${WEEKDAYS[slot.weekday]} ${slot.startTime}`}
+          class="h-4 w-4 rounded border-border"
+        />
+        <span class="text-foreground">
+          {WEEKDAYS[slot.weekday]} {slot.startTime}–{slot.endTime}
+        </span>
+        <span class="text-xs text-muted-foreground">{slot.venue?.name ?? '—'}</span>
+      </label>
+    {/each}
+  </div>
+</FormSheet>
 
 <FormSheet
   bind:open={showFormSheet}

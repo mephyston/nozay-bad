@@ -33,6 +33,7 @@ const ACTIONS = {
   // Lire les inscrits est un droit distinct de la tenue des séances : la séance est une
   // information de club, la liste de ses inscrits — et de leurs invités non licenciés —
   // une donnée personnelle.
+  generate: 'schedules:open-play:write',
   registrations: 'schedules:registrations:read',
   addOpener: 'schedules:open-play:write',
   removeOpener: 'schedules:open-play:write'
@@ -56,6 +57,17 @@ if (Astro.request.method === 'POST') {
         minPlayers: data.minPlayers,
         label: data.label ?? undefined,
         notes: data.notes ?? undefined
+      }
+    },
+    generate: {
+      url: 'http://localhost/schedules/open-play/generate',
+      method: 'POST',
+      body: {
+        seasonCode: data.seasonCode,
+        from: data.from,
+        to: data.to,
+        slotIds: data.slotIds,
+        minPlayers: data.minPlayers
       }
     },
     // Seules les clés présentes sont transmises : le même point d'entrée sert à la
@@ -107,6 +119,7 @@ if (Astro.request.method === 'POST') {
 
 let sessions: any[] = [];
 let venues: any[] = [];
+let openPlaySlots: any[] = [];
 let openers: any[] = [];
 let members: any[] = [];
 let seasonCode = '';
@@ -139,8 +152,10 @@ try {
   // La saison n'a pas d'écran propre ici : on la reprend des créneaux, qui la portent
   // déjà, plutôt que d'interroger la comptabilité pour une chaîne de caractères.
   if (slotsRes.ok) {
-    const slots = ((await slotsRes.json()) as any).data ?? [];
-    seasonCode = slots[0]?.seasonCode ?? sessions[0]?.seasonCode ?? '';
+    const allSlots = ((await slotsRes.json()) as any).data ?? [];
+    seasonCode = allSlots[0]?.seasonCode ?? sessions[0]?.seasonCode ?? '';
+    // Seuls les créneaux de jeu libre peuvent être déroulés en séances.
+    openPlaySlots = allSlots.filter((slot: any) => slot.audience === 'jeu_libre');
   }
   /*
    * Les ouvreurs, et les noms qui vont avec.
@@ -215,6 +230,7 @@ try {
         client:load
         sessions={sessions}
         venues={venues}
+        slots={openPlaySlots}
         seasonCode={seasonCode}
         canWrite={canWrite}
         canReadRegistrations={canReadRegistrations}
