@@ -4,6 +4,7 @@ export { default as LineupComposer } from '../save-lineup/ui/LineupComposer.svel
 export { default as TeamsManager } from '../list-teams/ui/TeamsManager.svelte';
 export { default as TeamFormSheet } from '../save-team/ui/TeamFormSheet.svelte';
 export { default as TeamRosterSheet } from '../get-team/ui/TeamRosterSheet.svelte';
+export { default as ClubDirectory } from '../list-club-players/ui/ClubDirectory.svelte';
 export { default as ChampionshipDaysSheet } from '../save-championship-days/ui/ChampionshipDaysSheet.svelte';
 export { default as RankingsManager } from '../list-rankings/ui/RankingsManager.svelte';
 export { default as RankingsTable } from '../list-rankings/ui/RankingsTable.svelte';

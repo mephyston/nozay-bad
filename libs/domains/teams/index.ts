@@ -10,6 +10,7 @@ import { listTeamsRoute } from './list-teams/route';
 import { saveTeamRoute } from './save-team/route';
 import { getTeamRoute } from './get-team/route';
 import { getPlayerCardRoute } from './get-player-card/route';
+import { listClubPlayersRoute } from './list-club-players/route';
 import { deleteTeamRoute } from './delete-team/route';
 import { saveTeamStaffRoute } from './save-team-staff/route';
 import { saveTeamRosterRoute } from './save-team-roster/route';
@@ -49,7 +50,10 @@ teamsRouter.route('/', saveLineupRoute);
 teamsRouter.route('/', saveFixtureDateRoute);
 teamsRouter.route('/', notifyCaptainRoute);
 // `/players/:licence` avant `/:id` : deux segments, mais on garde l'usage du domaine
-// — les routes qui portent un littéral passent devant le paramètre nu.
+// — les routes qui portent un littéral passent devant le paramètre nu. `/players` nu
+// ne recouvre ni l'un ni l'autre : un segment de moins que la fiche, un littéral de
+// plus que `/:id`.
+teamsRouter.route('/', listClubPlayersRoute);
 teamsRouter.route('/', getPlayerCardRoute);
 teamsRouter.route('/', getTeamRoute);
 teamsRouter.route('/', deleteTeamRoute);
@@ -57,6 +61,7 @@ teamsRouter.route('/', deleteTeamRoute);
 // ── API publique du domaine ──────────────────────────────────────────────────
 export { importRankings } from './import-rankings/handler';
 export { listRankings } from './list-rankings/handler';
+export { listClubPlayers } from './list-club-players/handler';
 export { saveRanking } from './save-ranking/handler';
 export { listChampionshipSettings } from './list-championship-settings/handler';
 export { saveChampionshipSettings } from './save-championship-settings/handler';
@@ -84,6 +89,7 @@ export type { ListChampionshipSettingsOutput, ChampionshipSettingsItem } from '.
 export type { SaveChampionshipSettingsInput } from './save-championship-settings/dto';
 export type { ListTeamsOutput, TeamListItem, TeamViewerRole } from './list-teams/dto';
 export type { GetTeamOutput, RosterPlayer } from './get-team/dto';
+export type { ListClubPlayersOutput, ClubPlayer } from './list-club-players/dto';
 export type { SaveTeamInput } from './save-team/dto';
 export type { SaveTeamStaffInput } from './save-team-staff/dto';
 export type { SaveTeamRosterInput, SaveTeamRosterOutput } from './save-team-roster/dto';

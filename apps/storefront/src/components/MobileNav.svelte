@@ -20,7 +20,7 @@
     { href: '/actualites', label: 'Actualités', icon: Newspaper },
     { href: '/agenda', label: 'Calendrier', icon: CalendarDays },
     { href: '/boutique', label: 'Boutique', icon: ShoppingCart },
-    { href: '/equipes', label: 'Équipes', icon: ShuttlecockIcon }
+    { href: '/equipes', label: 'Mon club', icon: ShuttlecockIcon }
   ];
 </script>
 

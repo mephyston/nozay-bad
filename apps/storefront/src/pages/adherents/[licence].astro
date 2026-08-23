@@ -108,6 +108,21 @@ const fromTeam = Number.isSafeInteger(fromTeamId) && fromTeamId > 0
   ? { id: fromTeamId, name: (card?.teams ?? []).find((t: any) => t.teamId === fromTeamId)?.name }
   : undefined;
 
+/**
+ * L'autre chemin qui mène ici : l'annuaire du club.
+ *
+ * On y retourne **avec la recherche en cours**. Sans elle, revenir d'un résultat
+ * rouvrirait la liste entière et il faudrait retaper ce qu'on venait de taper — le
+ * paramètre `q` est précisément ce qui fait de ce lien un retour plutôt qu'un départ.
+ */
+const fromDirectory = Astro.url.searchParams.get('de') === 'joueurs';
+const directoryHref = (() => {
+  const params = new URLSearchParams({ vue: 'joueurs' });
+  const term = Astro.url.searchParams.get('q')?.trim();
+  if (term) params.set('q', term);
+  return `/equipes?${params}`;
+})();
+
 const fullName = member ? `${member.firstName} ${member.lastName}`.trim() : '';
 const initials = member
   ? `${member.firstName?.[0] ?? ''}${member.lastName?.[0] ?? ''}`.toUpperCase()
@@ -130,6 +145,12 @@ const frenchDate = (iso: string) =>
       {fromTeam && (
         <a href={`/equipes/${fromTeam.id}`} class="text-sm text-muted-foreground hover:text-foreground no-underline">
           ← Retour à {fromTeam.name ?? "l'équipe"}
+        </a>
+      )}
+
+      {fromDirectory && !fromTeam && (
+        <a href={directoryHref} class="text-sm text-muted-foreground hover:text-foreground no-underline">
+          ← Retour aux joueurs
         </a>
       )}
 

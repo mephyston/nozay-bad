@@ -328,6 +328,11 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/teams', permission: 'teams:teams:write' },
   // Fiche adhérent de l'espace adhérent : les équipes et les classements d'UNE licence.
   // `GET /teams/rankings`, qui rend le barème nominatif de tout le club, reste fermé.
+  // L'annuaire du club — nom, portrait, trois classements — est ouvert à l'espace
+  // adhérent : c'est ce qu'un adhérent lit déjà sur la fiche de chaque coéquipier.
+  // `GET /teams/rankings` reste fermé pour autant : historique par date, mutations et
+  // détail d'import n'ont rien d'un annuaire.
+  { method: 'GET', path: '/teams/players', permission: 'teams:teams:read', service: true },
   { method: 'GET', path: '/teams/players/:licence', permission: 'teams:teams:read', service: true },
   { method: 'GET', path: '/teams/:id', permission: 'teams:teams:read', service: true },
   { method: 'DELETE', path: '/teams/:id', permission: 'teams:teams:delete' },

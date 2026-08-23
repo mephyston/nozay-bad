@@ -7,6 +7,7 @@ import { env as cfEnv } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 import { getActiveMemberStatus } from '../../lib/member-status';
 import { resolveEnv } from '../../lib/request-context';
+import { ClubDirectory } from '@nba/teams-ui';
 
 const session = Astro.locals.session;
 const env = resolveEnv(Astro.locals) ?? cfEnv;
@@ -24,7 +25,23 @@ const viewerLicence = digits ? digits.padStart(8, '0') : '';
 
 const api = createApiClient(env);
 
+/**
+ * Deux volets sous un même toit, choisis par l'adresse et non par un état de composant.
+ *
+ * Même parti que le filtre du calendrier : des liens, pas des boutons. L'adresse se
+ * partage, le retour arrière fonctionne, et l'écran reste utilisable sans JavaScript —
+ * ce qui, pour une page qui ne fait que lire, est la forme la plus simple.
+ */
+const VIEWS = [
+  { id: 'equipes', label: 'Équipes' },
+  { id: 'joueurs', label: 'Joueurs' }
+] as const;
+
+const requested = Astro.url.searchParams.get('vue');
+const view = VIEWS.some((v) => v.id === requested) ? (requested as 'equipes' | 'joueurs') : 'equipes';
+
 let teams: any[] = [];
+let players: any[] = [];
 let errorMsg: string | null = null;
 
 try {
@@ -36,8 +53,17 @@ try {
 
   const res = await api.fetch(`http://localhost/teams?${query}`);
   if (res.ok) teams = ((await res.json()) as any).data?.teams ?? [];
+
+  // L'annuaire n'est demandé que si on le regarde : deux cents adhérents et leurs
+  // classements n'ont pas à être lus pour afficher six cartes d'équipe.
+  if (view === 'joueurs') {
+    const roster = await api.fetch(
+      `http://localhost/teams/players?seasonCode=${encodeURIComponent(status.seasonCode ?? '')}`
+    );
+    if (roster.ok) players = ((await roster.json()) as any).data?.players ?? [];
+  }
 } catch {
-  errorMsg = 'Les équipes ne sont pas consultables pour le moment.';
+  errorMsg = 'Le club n’est pas consultable pour le moment.';
 }
 
 /** Regroupées par championnat, dans l'ordre du domaine, puis par numéro. */
@@ -77,18 +103,50 @@ const ROLES: Record<string, { label: string; card: string; badge: string }> = {
 };
 
 const roleOf = (team: any) => (team.viewerRole ? ROLES[team.viewerRole] : null);
+
+/**
+ * L'adresse du portrait est calculée ici, et non dans l'îlot : elle diffère d'une
+ * application à l'autre (voir `equipes/[id]`), et les portraits ne sortent du bucket
+ * privé que sous `/api/`.
+ */
+const directory = players.map((p: any) => ({
+  ...p,
+  photoSrc: p.photoUpdatedAt
+    ? `/api/adherents/photo/${String(p.licence).replace(/\D/g, '').padStart(8, '0')}?size=128&v=${p.photoUpdatedAt}`
+    : null
+}));
+
 ---
 
-<Layout title="Équipes - Nozay Bad">
+<Layout title="Mon club - Nozay Bad">
   <Header currentPath="/equipes" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6 max-w-5xl mx-auto space-y-6">
     <div>
-      <h1 class="text-2xl font-bold tracking-tight">Équipes</h1>
+      <h1 class="text-2xl font-bold tracking-tight">Mon club</h1>
       <p class="text-muted-foreground text-sm mt-1">
-        Les équipes du club engagées en interclubs cette saison, leur staff et leur effectif.
+        {view === 'joueurs'
+          ? 'Les adhérents du club cette saison, et leurs classements.'
+          : 'Les équipes du club engagées en interclubs cette saison, leur staff et leur effectif.'}
       </p>
     </div>
+
+    <nav class="flex flex-wrap gap-2" aria-label="Choisir ce qu’affiche la page">
+      {VIEWS.map((v) => (
+        <a
+          href={v.id === 'equipes' ? '/equipes' : `/equipes?vue=${v.id}`}
+          aria-current={view === v.id ? 'page' : undefined}
+          class:list={[
+            'inline-flex min-h-[36px] items-center rounded-full border px-3 text-sm font-medium transition-colors no-underline',
+            view === v.id
+              ? 'border-primary bg-primary/10 text-primary'
+              : 'border-border text-muted-foreground hover:text-foreground'
+          ]}
+        >
+          {v.label}
+        </a>
+      ))}
+    </nav>
 
     {errorMsg && (
       <div class="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
@@ -96,13 +154,23 @@ const roleOf = (team: any) => (team.viewerRole ? ROLES[team.viewerRole] : null);
       </div>
     )}
 
-    {teams.length === 0 && !errorMsg && (
+    {view === 'joueurs' && (
+      <section class="space-y-3">
+        <ClubDirectory
+          client:load
+          players={directory}
+          initialQuery={Astro.url.searchParams.get('q') ?? ''}
+        />
+      </section>
+    )}
+
+    {view === 'equipes' && teams.length === 0 && !errorMsg && (
       <div class="rounded-lg border p-6 text-center text-sm text-muted-foreground">
         Aucune équipe engagée pour le moment.
       </div>
     )}
 
-    {groups.map((group) => (
+    {view === 'equipes' && groups.map((group) => (
       <section class="space-y-3">
         <h2 class="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
           {group.label}
