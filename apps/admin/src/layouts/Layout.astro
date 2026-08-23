@@ -32,15 +32,23 @@ const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ?
     <title>{title}</title>
     <ClientRouter />
     <script>
+      /*
+       * Mise à jour silencieuse, et c'est voulu.
+       *
+       * L'administration est configurée en `registerType: 'autoUpdate'` : le nouveau
+       * service worker prend la main de lui-même au prochain chargement. Rien à demander
+       * au bénévole, qui n'a pas à arbitrer une question technique au milieu d'une saisie
+       * comptable.
+       *
+       * Un `onNeedRefresh` traînait ici, avec sa boîte de dialogue. Il n'a jamais pu être
+       * appelé — `autoUpdate` ne le déclenche pas — et laissait croire, à la relecture, à
+       * un comportement qui n'existait pas. L'espace adhérent, lui, a bien une invite :
+       * son service worker porte les notifications push, il ne doit donc pas être
+       * remplacé sous les pieds de quelqu'un.
+       */
       import { registerSW } from 'virtual:pwa-register'
       if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-        const updateSW = registerSW({
-          onNeedRefresh() {
-            if (confirm('Nouvelle version disponible. Mettre à jour ?')) {
-              updateSW(true)
-            }
-          }
-        });
+        registerSW();
       }
     </script>
     <script is:inline>
