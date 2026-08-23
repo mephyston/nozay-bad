@@ -642,7 +642,7 @@
     <Input id="post-published-at" type="datetime-local" bind:value={publishedAt} />
     <p class="mt-1 text-xs text-muted-foreground">
       {editingId === null
-        ? "Laissez vide pour créer un brouillon. Renseignée, l'actualité est publiée d'emblée à cette date."
+        ? "C'est la date à laquelle l'actualité se rangera dans le fil : reculez-la pour un article ressaisi après coup. Elle ne publie pas — l'actualité reste en brouillon."
         : "C'est elle qui range l'actualité dans le fil. Reculez-la pour qu'un article ressaisi se place à la date des faits qu'il raconte."}
     </p>
   </FormField>

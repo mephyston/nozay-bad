@@ -13,10 +13,9 @@ export const createPostSchema = Type.Object({
   /**
    * Date de publication, en date-heure locale (« 2026-03-14T18:30 »).
    *
-   * Renseignée, l'actualité naît **publiée** à cette date au lieu de démarrer en
-   * brouillon : c'est la règle que la reprise WordPress suivait déjà, désormais offerte à
-   * la saisie manuelle. Elle sert à ressaisir un article ancien pour qu'il se range dans
-   * le fil au moment où les faits ont eu lieu, et non au moment où on les écrit.
+   * Elle sert à ressaisir un article ancien pour qu'il se range dans le fil au moment où
+   * les faits ont eu lieu, et non au moment où on les écrit. Elle ne **publie pas** :
+   * l'actualité reste en brouillon jusqu'à ce que quelqu'un décide de la montrer.
    */
   publishedAt: Type.Optional(Type.String({ pattern: '^\\d{4}-\\d{2}-\\d{2}T([01][0-9]|2[0-3]):[0-5][0-9]$' }))
 });

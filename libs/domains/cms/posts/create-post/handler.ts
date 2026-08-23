@@ -36,8 +36,19 @@ export async function createPost(
     excerpt: input.excerpt ?? null,
     bodyHtml,
     coverMediaId: input.coverMediaId ?? null,
-    // L'import fournit sa propre date ; une saisie manuelle démarre en brouillon.
-    status: input.publishedAt ? 'published' : 'draft',
+    /*
+     * Une actualité naît **toujours** en brouillon, date ou pas.
+     *
+     * Le statut se déduisait de la présence d'une date de publication — règle héritée de
+     * la reprise WordPress, où la date signalait un article déjà en ligne. Depuis que le
+     * formulaire permet d'antidater, saisir cette date mettait l'actualité en ligne sur-
+     * le-champ : on relit à peine ce qu'on vient d'écrire que le club l'a déjà reçu.
+     *
+     * La date répond à « quand cela s'est passé », la publication à « qui décide de la
+     * montrer ». `publishPost` conserve la date déjà posée (`post.publishedAt ?? now`),
+     * l'antidatage survit donc intact à la mise en ligne.
+     */
+    status: 'draft',
     visibility: input.visibility ?? 'public',
     eventId: input.eventId ?? null,
     notifiedAt: null,

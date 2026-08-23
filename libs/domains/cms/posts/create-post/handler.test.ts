@@ -40,11 +40,23 @@ describe('createPost', () => {
     expect(post.bodyHtml).toBe('<h2>Titre</h2><p>Texte</p>');
   });
 
-  it('publie d’emblée quand l’import fournit une date', async () => {
+  it('reste en brouillon même avec une date de publication', async () => {
+    // Antidater dit quand les faits ont eu lieu, pas qu'il faut les diffuser : la date
+    // mettait l'actualité en ligne avant même qu'on ait pu la relire.
     const published = new Date('2025-12-20T10:00:00Z');
-    const post = await createPost(db, { title: 'Import', publishedAt: published }, AUTHOR);
-    expect(post.status).toBe('published');
+    const post = await createPost(db, { title: 'Assemblée de décembre', publishedAt: published }, AUTHOR);
+    expect(post.status).toBe('draft');
     expect(post.publishedAt).toEqual(published);
+  });
+
+  it("conserve la date antidatée lors de la mise en ligne", async () => {
+    const published = new Date('2025-12-20T10:00:00Z');
+    const post = await createPost(db, { title: 'Stage de Noël', publishedAt: published }, AUTHOR);
+
+    const online = await publishPost(db, { postId: post.id, published: true }, new Date('2026-08-23T09:00:00Z'));
+
+    expect(online.status).toBe('published');
+    expect(online.publishedAt).toEqual(published);
   });
 
   it('rattache les catégories', async () => {

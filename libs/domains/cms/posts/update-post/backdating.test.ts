@@ -64,16 +64,16 @@ describe('date de publication', () => {
     expect(cleared.publishedAt).toBeNull();
   });
 
-  it('naît publiée à la date fournie, brouillon sans elle', async () => {
-    // C'est la règle que la reprise WordPress suivait déjà, désormais offerte à la
-    // saisie manuelle : une date renseignée vaut mise en ligne.
+  it('naît en brouillon, avec ou sans date de publication', async () => {
+    // Antidater situe l'actualité dans le fil ; publier reste une décision distincte.
+    // Confondre les deux mettait l'article en ligne avant qu'on ait pu le relire.
     const dated = await createPost(
       db,
       { title: 'Article ressaisi', publishedAt: new Date('2025-10-01T12:00:00Z') },
       AUTHOR,
       NOW
     );
-    expect(dated.status).toBe('published');
+    expect(dated.status).toBe('draft');
     expect(dated.publishedAt?.toISOString()).toBe('2025-10-01T12:00:00.000Z');
 
     const draft = await createPost(db, { title: 'Article en cours' }, AUTHOR, NOW);
