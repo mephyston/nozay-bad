@@ -3,7 +3,11 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import MobileNav from '../components/MobileNav.svelte';
 import EventRow from '../components/EventRow.astro';
+import OpenPlayRow from '../components/OpenPlayRow.astro';
 import { EventSignup } from '@nba/events-ui';
+import { OpenPlaySignup, OpenPlayOpenerButton, OpenPlayAttendees } from '@nba/schedules-ui';
+import { resolveEnv } from '../lib/request-context';
+import { fetchOpenPlaySessions, OPEN_PLAY_HORIZON_DAYS } from '../lib/open-play';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 import { getActiveMemberStatus } from '../lib/member-status';
@@ -44,6 +48,73 @@ if (Astro.request.method === 'POST') {
       eventId?: number;
       guests?: number;
     };
+
+    const api = createApiClient(env);
+
+    /*
+     * Actions des séances de jeu libre, qui partagent désormais cette page.
+     *
+     * Elles suivent la même garde que les inscriptions aux rendez-vous : l'identité
+     * vient de la session, jamais du corps de la requête. Le navigateur ne choisit
+     * qu'une séance, des invités, et le fait de s'engager à ouvrir.
+     */
+    // Les deux familles d'îlots se distinguent par ce qu'elles désignent : un
+    // `eventId` pour un rendez-vous, un `sessionId` pour une séance. Aucun n'a eu à
+    // renommer ses actions pour cohabiter ici.
+    if (body.sessionId !== undefined) {
+      const openPlayId = Number(body.sessionId);
+      if (!Number.isSafeInteger(openPlayId) || openPlayId < 1) {
+        return new Response(JSON.stringify({ success: false, error: 'Séance inconnue.' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      const licence = normalizeLicence(member.licence) ?? member.licence;
+      const base = `http://localhost/schedules/open-play/${openPlayId}`;
+
+      if (body.action === 'attendees') return api.fetch(`${base}/attendees`);
+
+      if (body.action === 'register') {
+        return api.fetch(`${base}/registrations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            memberId: postSession.activeMemberId,
+            licence,
+            firstName: member.firstName,
+            lastName: member.lastName,
+            email: postSession.email,
+            guests: Array.isArray(body.guests)
+              ? body.guests.map((guest: any) => ({
+                  firstName: String(guest?.firstName ?? ''),
+                  lastName: String(guest?.lastName ?? '')
+                }))
+              : []
+          })
+        });
+      }
+
+      if (body.action === 'unregister') {
+        return api.fetch(`${base}/registrations?memberId=${postSession.activeMemberId}`, {
+          method: 'DELETE'
+        });
+      }
+
+      if (body.action === 'claim') {
+        return api.fetch(`${base}/opener`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ licence, firstName: member.firstName, lastName: member.lastName })
+        });
+      }
+
+      if (body.action === 'release') {
+        return api.fetch(`${base}/opener?licence=${encodeURIComponent(licence)}`, {
+          method: 'DELETE'
+        });
+      }
+    }
+
     const eventId = Number(body.eventId);
     if (!Number.isSafeInteger(eventId) || eventId < 1) {
       return new Response(JSON.stringify({ success: false, error: 'Événement inconnu.' }), {
@@ -51,8 +122,6 @@ if (Astro.request.method === 'POST') {
         headers: { 'Content-Type': 'application/json' }
       });
     }
-
-    const api = createApiClient(env);
 
     if (body.action === 'register') {
       return api.fetch(`http://localhost/events/${eventId}/registrations`, {
@@ -104,10 +173,22 @@ const active = session?.members.find((m) => m.id === session.activeMemberId);
  * catégorie « interclubs » : c'est le même rendez-vous, il n'a pas à s'afficher deux
  * fois de deux façons.
  */
-const [events, myFixtures, { posts }] = await Promise.all([
+const runtimeEnv = resolveEnv<{ OPEN_PLAY_ENABLED?: string }>(Astro.locals);
+const openPlayEnabled = runtimeEnv.OPEN_PLAY_ENABLED === 'true';
+
+const [events, myFixtures, { posts }, openPlay] = await Promise.all([
   fetchUpcomingEvents(env, 50, session?.activeMemberId),
   fetchMyFixtures(env, status.seasonCode ?? null, normalizeLicence(active?.licence)),
-  fetchPosts(env, ANNOUNCEMENT_LOOKUP_LIMIT)
+  fetchPosts(env, ANNOUNCEMENT_LOOKUP_LIMIT),
+  // Quinze jours seulement : une séance par semaine sur une saison noierait les
+  // rendez-vous du club, et personne ne s'inscrit à un jeu libre du mois prochain.
+  openPlayEnabled
+    ? fetchOpenPlaySessions(env, {
+        memberId: session?.activeMemberId,
+        licence: normalizeLicence(active?.licence) ?? undefined,
+        withinDays: OPEN_PLAY_HORIZON_DAYS
+      })
+    : Promise.resolve({ sessions: [], canOpen: false })
 ]);
 
 /*
@@ -121,36 +202,129 @@ const [events, myFixtures, { posts }] = await Promise.all([
 const announcements = announcementsByEvent(posts, (post) => postAnchor(post));
 
 const fixtures = toFixtureEntries(myFixtures);
-// Fusionnés puis retriés : un agenda qui rangerait les rencontres à part obligerait à
-// lire deux listes pour savoir ce qui vient en premier.
-const timeline = [...events.map((event) => ({ event, entry: null as typeof fixtures[number] | null })),
-  ...fixtures.map((entry) => ({ event: entry.event, entry }))]
-  .sort((a, b) => a.event.startsAt.localeCompare(b.event.startsAt));
+
+/*
+ * Une seule frise, trois natures de ligne.
+ *
+ * Rendez-vous du club, rencontres d'interclubs de l'adhérent et séances de jeu libre se
+ * lisent au même endroit, dans l'ordre du temps : l'adhérent pose une seule question —
+ * que se passe-t-il au club bientôt ? — et n'a pas à la reposer trois fois.
+ *
+ * Les clés de tri partagent le même format à largeur fixe (« 2026-03-21T14:00 »), donc
+ * la comparaison lexicographique suffit et aucune date n'est fabriquée pour trier.
+ */
+type Row =
+  | { kind: 'event'; at: string; event: (typeof events)[number]; entry: (typeof fixtures)[number] | null }
+  | { kind: 'openPlay'; at: string; session: (typeof openPlay.sessions)[number] };
+
+const VIEWS = [
+  { id: 'tout', label: 'Tout' },
+  { id: 'rendez-vous', label: 'Rendez-vous' },
+  { id: 'jeu-libre', label: 'Jeu libre' }
+] as const;
+
+const requested = Astro.url.searchParams.get('vue');
+const view = VIEWS.some((v) => v.id === requested) ? requested : 'tout';
+
+const rows: Row[] = [
+  ...events.map((event) => ({ kind: 'event' as const, at: event.startsAt, event, entry: null })),
+  ...fixtures.map((entry) => ({ kind: 'event' as const, at: entry.event.startsAt, event: entry.event, entry })),
+  ...openPlay.sessions.map((session) => ({
+    kind: 'openPlay' as const,
+    at: `${session.date}T${session.startTime}`,
+    session
+  }))
+]
+  .filter((row) => (view === 'tout' ? true : view === 'jeu-libre' ? row.kind === 'openPlay' : row.kind === 'event'))
+  .sort((a, b) => a.at.localeCompare(b.at));
 
 const openCount = events.filter((event) => event.registration === 'open').length;
+const toStaff = openPlay.sessions.filter((s) => s.needsOpener).length;
+const today = new Date().toISOString().slice(0, 10);
 ---
 
-<Layout title="Agenda - Nozay Bad">
+<Layout title="Calendrier - Nozay Bad">
   <Header currentPath="/agenda" />
 
   <main class="w-full flex-1 p-3 pb-24 sm:p-6 md:pb-6">
     <div class="mx-auto max-w-3xl">
-      <div class="mb-6">
-        <h1 class="text-2xl font-bold text-foreground sm:text-3xl">Agenda</h1>
+      <div class="mb-4">
+        <h1 class="text-2xl font-bold text-foreground sm:text-3xl">Calendrier</h1>
         <p class="mt-1 text-sm text-muted-foreground">
-          {openCount > 0
-            ? `Les prochains rendez-vous du club. ${openCount} ${openCount > 1 ? 'sont ouverts' : 'est ouvert'} aux inscriptions.`
-            : 'Les prochains rendez-vous du club.'}
+          {toStaff > 0
+            ? `Tout ce qui vient au club. ${toStaff} séance${toStaff > 1 ? 's' : ''} de jeu libre cherche${toStaff > 1 ? 'nt' : ''} encore un bénévole pour ouvrir.`
+            : openCount > 0
+              ? `Tout ce qui vient au club. ${openCount} rendez-vous ${openCount > 1 ? 'sont ouverts' : 'est ouvert'} aux inscriptions.`
+              : 'Tout ce qui vient au club.'}
         </p>
       </div>
 
-      {timeline.length === 0 ? (
+      {/*
+        Filtres en liens et non en boutons : ils changent ce que la page montre, donc
+        l'adresse doit pouvoir se partager et le retour arrière fonctionner. C'est aussi
+        ce qui les rend utilisables sans JavaScript.
+      */}
+      {openPlayEnabled && (
+        <nav class="mb-4 flex flex-wrap gap-2" aria-label="Filtrer le calendrier">
+          {VIEWS.map((v) => (
+            <a
+              href={v.id === 'tout' ? '/agenda' : `/agenda?vue=${v.id}`}
+              aria-current={view === v.id ? 'page' : undefined}
+              class:list={[
+                'inline-flex min-h-[36px] items-center rounded-full border px-3 text-sm font-medium transition-colors',
+                view === v.id
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border text-muted-foreground hover:text-foreground'
+              ]}
+            >
+              {v.label}
+            </a>
+          ))}
+        </nav>
+      )}
+
+      {rows.length === 0 ? (
         <p class="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-          Aucun rendez-vous à venir pour le moment.
+          {view === 'jeu-libre'
+            ? 'Aucune séance de jeu libre dans les quinze prochains jours.'
+            : 'Aucun rendez-vous à venir pour le moment.'}
         </p>
       ) : (
         <ul class="space-y-3">
-          {timeline.map(({ event, entry }) => (
+          {rows.map((row) => row.kind === 'openPlay' ? (
+            <li class="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+              <OpenPlayRow session={row.session}>
+                <div class="mt-3">
+                  <OpenPlaySignup
+                    client:load
+                    sessionId={row.session.id}
+                    myGuests={row.session.myGuests}
+                    open={row.session.status !== 'cancelled' && row.session.date >= today}
+                    playerCount={row.session.playerCount}
+                    minPlayers={row.session.minPlayers}
+                  />
+                </div>
+
+                <OpenPlayAttendees
+                  client:visible
+                  sessionId={row.session.id}
+                  playerCount={row.session.playerCount}
+                />
+
+                {openPlay.canOpen && row.session.status !== 'cancelled' && row.session.date >= today && (
+                  <OpenPlayOpenerButton
+                    client:load
+                    sessionId={row.session.id}
+                    openerName={row.session.openerFirstName
+                      ? `${row.session.openerFirstName} ${(row.session.openerLastName ?? '').charAt(0)}.`
+                      : null}
+                    iAmOpener={row.session.iAmOpener}
+                    needsOpener={row.session.needsOpener}
+                  />
+                )}
+              </OpenPlayRow>
+            </li>
+          ) : (() => { const { event, entry } = row; return (
             <li
               id={event.slug}
               class="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5"
@@ -195,7 +369,7 @@ const openCount = events.filter((event) => event.registration === 'open').length
                 )}
               </EventRow>
             </li>
-          ))}
+          ); })())}
         </ul>
       )}
     </div>

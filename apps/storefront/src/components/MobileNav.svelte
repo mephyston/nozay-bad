@@ -18,7 +18,7 @@
   const items = [
     { href: '/', label: 'Accueil', icon: Home },
     { href: '/actualites', label: 'Actualités', icon: Newspaper },
-    { href: '/agenda', label: 'Agenda', icon: CalendarDays },
+    { href: '/agenda', label: 'Calendrier', icon: CalendarDays },
     { href: '/boutique', label: 'Boutique', icon: ShoppingCart },
     { href: '/equipes', label: 'Équipes', icon: ShuttlecockIcon }
   ];

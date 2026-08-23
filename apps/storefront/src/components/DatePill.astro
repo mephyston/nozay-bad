@@ -1,0 +1,49 @@
+---
+interface Props {
+  /** Date à afficher, déjà résolue en heure locale. */
+  date: Date;
+  /**
+   * Nature du rendez-vous, qui décide de la teinte.
+   *
+   * Trois familles et non une couleur par catégorie : la teinte dit *de quoi il s'agit*,
+   * pas *quoi exactement*. Le libellé exact reste annoncé au lecteur d'écran, personne
+   * n'a donc besoin de la couleur pour lire l'agenda.
+   */
+  family?: 'jeu' | 'formation' | 'club';
+}
+
+/**
+ * La pastille de date de l'agenda : le jour et le mois, en gros.
+ *
+ * C'est ce qu'on cherche dans un agenda — « c'est quand ? » — avant même de lire le
+ * titre. Extraite le jour où les séances de jeu libre ont rejoint la même frise : une
+ * troisième copie de ces règles d'affichage et d'accessibilité aurait fini par diverger
+ * des deux autres, ce que le commentaire d'`EventRow` annonçait déjà.
+ *
+ * Masquée aux lecteurs d'écran, qui reçoivent la date complète juste après : « 14 févr. »
+ * découpé en trois lignes se lit mal à voix haute.
+ */
+const { date, family = 'club' } = Astro.props;
+
+const FAMILY_CLASS: Record<string, string> = {
+  jeu: 'bg-primary/10 text-primary',
+  formation: 'bg-info/10 text-info',
+  club: 'bg-success/10 text-success'
+};
+
+const dayNumber = new Intl.DateTimeFormat('fr-FR', { day: 'numeric' });
+const monthShort = new Intl.DateTimeFormat('fr-FR', { month: 'short' });
+const weekdayShort = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' });
+---
+
+<div
+  class:list={[
+    'flex w-14 shrink-0 flex-col items-center justify-center self-start rounded-lg py-1.5',
+    FAMILY_CLASS[family] ?? FAMILY_CLASS.club
+  ]}
+  aria-hidden="true"
+>
+  <span class="text-xs font-medium uppercase leading-none opacity-80">{weekdayShort.format(date)}</span>
+  <span class="text-2xl font-bold leading-tight">{dayNumber.format(date)}</span>
+  <span class="text-xs font-medium uppercase leading-none opacity-80">{monthShort.format(date)}</span>
+</div>

@@ -1,0 +1,64 @@
+---
+import DatePill from './DatePill.astro';
+import { formatSessionDate, sessionStatusLabel, type OpenPlaySession } from '../lib/open-play';
+
+interface Props {
+  session: OpenPlaySession;
+}
+
+/**
+ * Une séance de jeu libre, dans la même frise que les rendez-vous du club.
+ *
+ * Elle emprunte la pastille de date et la mise en page d'`EventRow` : pour l'adhérent
+ * qui regarde son calendrier, un samedi de jeu libre et un tournoi sont deux choses qui
+ * se passent à une date — la différence tient à ce qu'on y fait, pas à la façon de les
+ * lire.
+ *
+ * Teinte « jeu », comme les compétitions : la couleur porte la nature du rendez-vous, et
+ * le jeu libre en est du jeu. Ce que c'est exactement se lit en toutes lettres juste
+ * en dessous.
+ */
+const { session } = Astro.props;
+
+const status = sessionStatusLabel(session);
+const today = new Date().toISOString().slice(0, 10);
+const closed = session.status === 'cancelled' || session.date < today;
+---
+
+<div class="flex items-stretch gap-3 sm:gap-4">
+  <DatePill date={new Date(`${session.date}T12:00:00Z`)} family="jeu" />
+
+  <div class="min-w-0 flex-1">
+    <h3 class="text-base font-semibold leading-snug text-foreground">
+      {session.label ?? 'Jeu libre'}
+    </h3>
+
+    <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+      <span class="sr-only">{formatSessionDate(session.date)}</span>
+      <span>{session.startTime} – {session.endTime}</span>
+      {session.venue && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>{session.venue.name}</span>
+        </>
+      )}
+    </p>
+
+    {/* Même raison que la catégorie d'un rendez-vous : la teinte ne doit pas être seule
+        à porter l'information. Ici l'état est de toute façon écrit à l'écran. */}
+    <p
+      class:list={[
+        'mt-1 text-sm font-medium',
+        status.tone === 'ok' && 'text-primary',
+        status.tone === 'pending' && 'text-muted-foreground',
+        status.tone === 'off' && 'text-destructive'
+      ]}
+    >
+      {closed && session.status === 'cancelled' ? `Annulée — ${status.text}` : status.text}
+    </p>
+
+    {session.notes && <p class="mt-1 text-sm text-muted-foreground">{session.notes}</p>}
+
+    <slot />
+  </div>
+</div>

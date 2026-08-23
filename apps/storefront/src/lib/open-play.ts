@@ -1,5 +1,15 @@
 import { createApiClient } from '@nba/api-client';
 
+/**
+ * Fenêtre des séances de jeu libre affichées dans le calendrier.
+ *
+ * Quinze jours : au-delà, les séances noieraient les rendez-vous du club — une saison
+ * en compte une par semaine, quand l'agenda ne compte qu'une poignée de compétitions.
+ * C'est aussi l'horizon auquel on décide de venir jouer un samedi ; personne ne
+ * s'inscrit à un jeu libre du mois prochain.
+ */
+export const OPEN_PLAY_HORIZON_DAYS = 15;
+
 export interface OpenPlayGuest {
   firstName: string;
   lastName: string;
@@ -52,13 +62,18 @@ export interface OpenPlayView {
  */
 export async function fetchOpenPlaySessions(
   env: unknown,
-  options: { memberId?: number; licence?: string } = {}
+  options: { memberId?: number; licence?: string; withinDays?: number } = {}
 ): Promise<OpenPlayView> {
   try {
     const api = createApiClient(env as never);
     const params = new URLSearchParams();
     if (options.memberId) params.set('memberId', String(options.memberId));
     if (options.licence) params.set('licence', options.licence);
+    if (options.withinDays) {
+      // Borne haute seulement : l'API commence déjà aujourd'hui par défaut.
+      const to = new Date(Date.now() + options.withinDays * 86_400_000);
+      params.set('to', to.toISOString().slice(0, 10));
+    }
 
     const res = await api.fetch(`http://localhost/schedules/open-play?${params}`);
     if (!res.ok) return { sessions: [], canOpen: false };
