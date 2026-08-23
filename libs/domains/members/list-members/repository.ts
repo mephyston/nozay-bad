@@ -11,17 +11,36 @@ import { ListMembersFilters } from './dto';
  * est connu du club. Les critères se répartissent donc entre les deux tables — l'identité
  * et la licence côté personne, le tarif, l'état du dossier et le règlement côté adhésion.
  */
+/** Au-delà, la saisie n'est plus une recherche : on borne la requête plutôt que la subir. */
+const MAX_SEARCH_TERMS = 6;
+
 export class ListMembersRepository {
   async buildConditions(db: DbOrTx, filters: ListMembersFilters) {
     const conditions = [];
     if (filters.search) {
-      conditions.push(
-        or(
-          like(personsTable.firstName, `%${filters.search}%`),
-          like(personsTable.lastName, `%${filters.search}%`),
-          like(personsTable.licence, `%${filters.search}%`)
-        )
-      );
+      /*
+       * Recherche par **termes**, chacun devant se retrouver quelque part.
+       *
+       * La saisie entière était comparée telle quelle à chaque colonne prise isolément :
+       * « Chloé Gautier » ne correspondait donc à rien, le prénom et le nom vivant dans
+       * deux colonnes. Et les noms à particule de Poona s'écrivent comme ils s'écrivent
+       * — « GAUTIER DE LAHAUT » — de sorte que qui tape « Gautier de la haut » ne
+       * trouvait rien non plus, sans comprendre pourquoi : l'adhérente était bien là.
+       *
+       * Chaque terme doit correspondre à l'une des colonnes ; l'ensemble des termes doit
+       * correspondre. « de la haut » retrouve ainsi « DE LAHAUT », et « Gautier 0773 »
+       * mêle sans peine le nom et la licence.
+       */
+      const terms = filters.search.trim().split(/\s+/).filter(Boolean).slice(0, MAX_SEARCH_TERMS);
+      for (const term of terms) {
+        conditions.push(
+          or(
+            like(personsTable.firstName, `%${term}%`),
+            like(personsTable.lastName, `%${term}%`),
+            like(personsTable.licence, `%${term}%`)
+          )
+        );
+      }
     }
     if (filters.gender) {
       conditions.push(eq(personsTable.gender, filters.gender));
