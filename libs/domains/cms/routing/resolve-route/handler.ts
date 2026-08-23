@@ -1,6 +1,9 @@
 import { type Db } from '@nba/db';
 import { parseStoredBlock } from '../../shared/block-payload';
+import { flattenBlocks } from '../../shared/blocks';
+import { enhanceBodyImages, mediaHashesInHtml } from '../../shared/body-images';
 import { normalisePath } from '../../shared/slug';
+import type { BlockPayload } from '../../shared/blocks';
 import { ResolveRouteRepository } from './repository';
 import type { ResolveRouteInput, ResolveRouteOutput } from './dto';
 
@@ -15,6 +18,25 @@ import type { ResolveRouteInput, ResolveRouteOutput } from './dto';
  * `/forum-2/` comme vraie page, elle doit servir, et non rediriger vers la cible
  * héritée de WordPress.
  */
+/**
+ * Sert les images des textes riches à la bonne taille.
+ *
+ * Posé ici, sur le chemin de **rendu**, et non à l'enregistrement : le HTML stocké
+ * reste ce que l'auteur a écrit, et tous les articles déjà publiés en profitent sans
+ * qu'on les rouvre. `/cms/route` n'est appelée que par le site public — l'écran
+ * d'administration passe par `/cms/posts`, qui rend le texte brut, comme il le doit.
+ */
+async function withSizedImages(
+  db: Db,
+  repo: ResolveRouteRepository,
+  documents: string[]
+): Promise<(html: string) => string> {
+  const hashes = [...new Set(documents.flatMap((html) => mediaHashesInHtml(html)))];
+  if (hashes.length === 0) return (html) => html;
+  const variants = await repo.variantsForHashes(db, hashes);
+  return (html) => enhanceBodyImages(html, variants);
+}
+
 export async function resolveRoute(db: Db, input: ResolveRouteInput): Promise<ResolveRouteOutput> {
   const repo = new ResolveRouteRepository();
   const path = normalisePath(input.path);
@@ -29,6 +51,15 @@ export async function resolveRoute(db: Db, input: ResolveRouteInput): Promise<Re
     const blocks = rows
       .map((row) => parseStoredBlock(row.type, row.payload))
       .filter((block): block is NonNullable<typeof block> => block !== null);
+
+    // Les blocs de texte, y compris ceux nichés dans une colonne : une image ne pèse
+    // pas moins parce qu'elle est dans une demi-largeur.
+    const richtexts = flattenBlocks(blocks).filter(
+      (block): block is Extract<BlockPayload, { type: 'richtext' }> => block.type === 'richtext'
+    );
+    const size = await withSizedImages(db, repo, richtexts.map((block) => block.html));
+    for (const block of richtexts) block.html = size(block.html);
+
     return { kind: 'page', page, blocks };
   }
 
@@ -42,7 +73,14 @@ export async function resolveRoute(db: Db, input: ResolveRouteInput): Promise<Re
       post.coverMediaId === null ? Promise.resolve([]) : repo.findMediaVariants(db, post.coverMediaId),
       repo.categoriesOf(db, post.id)
     ]);
-    return { kind: 'post', post, cover: cover ?? null, coverVariants, categories };
+    const size = await withSizedImages(db, repo, [post.bodyHtml]);
+    return {
+      kind: 'post',
+      post: { ...post, bodyHtml: size(post.bodyHtml) },
+      cover: cover ?? null,
+      coverVariants,
+      categories
+    };
   }
 
   const redirect = await repo.findRedirect(db, path);

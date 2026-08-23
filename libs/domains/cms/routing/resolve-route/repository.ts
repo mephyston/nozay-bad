@@ -70,6 +70,32 @@ export class ResolveRouteRepository {
       .all();
   }
 
+  /**
+   * Déclinaisons des images citées dans un texte, retrouvées par empreinte.
+   *
+   * L'empreinte est déjà dans l'adresse écrite par l'éditeur
+   * (`/media/<empreinte>/original.webp`) : il n'y a donc rien à deviner, et une seule
+   * requête suffit pour tout le corps d'un article ou toute une page.
+   */
+  async variantsForHashes(db: DbOrTx, hashes: string[]): Promise<CmsMediaVariantRow[]> {
+    if (hashes.length === 0) return [];
+    return db
+      .select({
+        id: cmsMediaVariantsTable.id,
+        mediaId: cmsMediaVariantsTable.mediaId,
+        format: cmsMediaVariantsTable.format,
+        width: cmsMediaVariantsTable.width,
+        height: cmsMediaVariantsTable.height,
+        sizeBytes: cmsMediaVariantsTable.sizeBytes,
+        key: cmsMediaVariantsTable.key
+      })
+      .from(cmsMediaVariantsTable)
+      .innerJoin(cmsMediaTable, eq(cmsMediaTable.id, cmsMediaVariantsTable.mediaId))
+      .where(inArray(cmsMediaTable.contentHash, hashes))
+      .orderBy(asc(cmsMediaVariantsTable.width))
+      .all();
+  }
+
   async categoriesOf(db: DbOrTx, postId: number): Promise<CmsPostCategoryRow[]> {
     const links = await db
       .select()

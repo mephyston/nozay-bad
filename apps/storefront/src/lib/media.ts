@@ -24,10 +24,11 @@ export function mediaUrl(key: string): string {
 /**
  * Réécrit les médias d'un corps de texte vers le domaine du site public.
  *
- * Ne vise que les attributs `src` et `href` valant exactement un chemin `/media/…` :
- * ce sont les seules formes que l'assainisseur laisse passer, donc les seules à
- * résoudre. C'est ce qui manquait pour les images **insérées dans le corps** d'une
- * actualité — la vignette de couverture, elle, était déjà résolue de son côté.
+ * Vise `src`, `href` et `srcset`. Les deux premiers sont les seules formes que
+ * l'assainisseur laisse passer dans le contenu stocké ; le troisième est posé **au
+ * rendu**, quand les images du corps sont servies à leur taille utile. L'oublier serait
+ * pire que de ne rien faire : une `<source>` qui correspond l'emporte sur l'`<img>` de
+ * repli, et l'image ne s'afficherait pas du tout dans l'espace adhérent.
  *
  * Sans origine (tests de composants, Storybook), le texte est rendu inchangé : aucune
  * image n'y est réellement chargée.
@@ -42,5 +43,11 @@ export function withWebsiteMedia(html: string): string {
  */
 export function rewriteMediaPaths(html: string, origin: string): string {
   if (!origin) return html;
-  return html.replace(/(\s(?:src|href)=")\/media\//g, `$1${origin}/media/`);
+  return html
+    .replace(/(\s(?:src|href)=")\/media\//g, `$1${origin}/media/`)
+    // `srcset` porte plusieurs adresses séparées par des virgules : c'est la valeur
+    // entière qu'il faut parcourir, et non son seul début.
+    .replace(/\ssrcset="([^"]*)"/g, (attribute, value: string) =>
+      attribute.replace(value, value.replaceAll('/media/', `${origin}/media/`))
+    );
 }

@@ -1,5 +1,6 @@
 ---
 import { obfuscateEmails } from '@nba/html';
+import { enhanceBodyImages } from '@nba/cms/public';
 import { EventSignup } from '@nba/events-ui';
 import type { MemberPost } from '../lib/posts';
 import type { AgendaEvent } from '../lib/agenda';
@@ -89,14 +90,20 @@ const coverSrc = post.cover ? mediaUrl(post.cover.key) : null;
       blanche de balises (`sanitizeRichText`, profil du site public) avant d'être écrit
       en base. C'est aussi pourquoi l'assainissement vit côté serveur et non ici.
 
-      Deux retouches au rendu, et deux seulement : les adresses e-mail sont dissimulées
+      Trois retouches au rendu, et trois seulement : les adresses e-mail sont dissimulées
       comme sur le site public — l'espace adhérent est authentifié, mais le même contenu
-      y transite et la règle ne dépend pas de l'écran —, et les médias sont résolus vers
-      le domaine qui les sert, faute de quoi une image insérée dans le corps reste vide.
+      y transite et la règle ne dépend pas de l'écran —, les images du corps sont servies
+      à leur taille utile plutôt qu'à leur poids d'origine, et les médias sont résolus
+      vers le domaine qui les sert, faute de quoi une image insérée reste vide.
+
+      L'ordre compte : la résolution du domaine vient en dernier, parce qu'elle doit
+      aussi porter sur les `srcset` que l'étape précédente vient d'écrire.
     */}
     <div
       class="prose prose-sm prose-neutral dark:prose-invert max-w-none"
-      set:html={withWebsiteMedia(obfuscateEmails(post.bodyHtml))}
+      set:html={withWebsiteMedia(
+        enhanceBodyImages(obfuscateEmails(post.bodyHtml), post.bodyVariants ?? [])
+      )}
     />
 
     {linkedEvent && linkedEvent.registration !== 'none' && (

@@ -1,4 +1,5 @@
 import { createApiClient } from '@nba/api-client';
+import type { CmsMediaVariantRow } from '@nba/cms/public';
 
 export interface PostCategory {
   id: number;
@@ -33,6 +34,14 @@ export interface MemberPost {
    * orphelin ne trouve rien et n'affiche rien.
    */
   eventId?: number | null;
+  /**
+   * Déclinaisons des images du corps, jointes par l'API pour cet appelant.
+   *
+   * Elles servent à rendre chaque image à sa taille utile plutôt qu'à son poids
+   * d'origine — une photo de téléphone se télécharge entière pour s'afficher en 400 px
+   * sinon, ce qui se sent sur le réseau d'un gymnase.
+   */
+  bodyVariants?: CmsMediaVariantRow[];
 }
 
 export interface FetchedPosts {

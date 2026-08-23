@@ -26,4 +26,17 @@ describe('rewriteMediaPaths', () => {
     const html = '<img src="/media/a.jpg" alt="">';
     expect(rewriteMediaPaths(html, '')).toBe(html);
   });
+
+  it('résout toutes les adresses d’un srcset', () => {
+    // Une `<source>` qui correspond l'emporte sur l'`<img>` de repli : un srcset laissé
+    // en relatif ne dégraderait pas l'image, il la ferait disparaître.
+    const html =
+      '<picture><source type="image/webp" srcset="/media/a1/400.webp 400w, /media/a1/800.webp 800w" sizes="400px">' +
+      '<img src="/media/a1/original.webp" alt="Équipe" width="400" height="300"></picture>';
+
+    const rewritten = rewriteMediaPaths(html, ORIGIN);
+
+    expect(rewritten).toContain(`srcset="${ORIGIN}/media/a1/400.webp 400w, ${ORIGIN}/media/a1/800.webp 800w"`);
+    expect(rewritten).toContain(`src="${ORIGIN}/media/a1/original.webp"`);
+  });
 });

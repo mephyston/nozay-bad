@@ -156,4 +156,79 @@ describe('resolveRoute', () => {
     expect(resolved.cover).toBeNull();
     expect(resolved.coverVariants).toEqual([]);
   });
+
+  /**
+   * Les images du corps servies à leur taille utile.
+   *
+   * L'éditeur écrit le chemin de l'**original** : sans cette étape, une photo de
+   * plusieurs mégaoctets est téléchargée entière pour s'afficher en 400 px. La
+   * transformation vit sur le chemin de rendu, jamais dans le HTML enregistré.
+   */
+  async function mediaWithVariants(width: number) {
+    const store = { async has() { return false; }, async put() {} };
+    return uploadMedia(
+      db,
+      store,
+      { bytes: new Uint8Array(64).fill(2).buffer, mimeType: 'image/webp', width, height: Math.round(width * 0.75) },
+      { async resize(_b, { width: w, format }) { return { bytes: new Uint8Array(w).buffer, contentType: format }; } }
+    );
+  }
+
+  it("sert les images du corps d'un article en plusieurs largeurs", async () => {
+    const media = await mediaWithVariants(1600);
+    const post = await createPost(db, { title: 'Blackminton' }, POST_AUTHOR);
+    await updatePost(db, {
+      postId: post.id,
+      bodyHtml: `<p>Avant</p><img src="/media/${media.contentHash}/original.webp" alt="Blackminton" width="400" height="300">`
+    });
+    await publishPost(db, { postId: post.id, published: true });
+
+    const resolved = await resolveRoute(db, { path: post.path });
+
+    expect(resolved.kind).toBe('post');
+    if (resolved.kind !== 'post') return;
+    expect(resolved.post.bodyHtml).toContain('<picture>');
+    expect(resolved.post.bodyHtml).toContain(`/media/${media.contentHash}/400.webp 400w`);
+    // Le repli reste l'image d'origine : un défaut ici doit peser, pas effacer.
+    expect(resolved.post.bodyHtml).toContain(`src="/media/${media.contentHash}/original.webp"`);
+    // Et la largeur affichée gouverne le choix du navigateur.
+    expect(resolved.post.bodyHtml).toContain('sizes="(max-width: 400px) 100vw, 400px"');
+  });
+
+  it('en fait autant pour un bloc de texte de page', async () => {
+    const media = await mediaWithVariants(1600);
+    const page = await publishedPage(db, 'Le club', 'le-club');
+    await savePageBlocks(db, {
+      pageId: page.id,
+      blocks: [
+        {
+          type: 'richtext',
+          payload: { html: `<img src="/media/${media.contentHash}/original.webp" alt="Salle" width="800" height="600">` }
+        }
+      ]
+    });
+
+    const resolved = await resolveRoute(db, { path: '/le-club/' });
+
+    expect(resolved.kind).toBe('page');
+    if (resolved.kind !== 'page') return;
+    const richtext = resolved.blocks[0];
+    expect(richtext.type).toBe('richtext');
+    if (richtext.type !== 'richtext') return;
+    expect(richtext.html).toContain('<source type="image/avif"');
+  });
+
+  it("laisse le texte intact quand l'image n'a aucune déclinaison", async () => {
+    const post = await createPost(db, { title: 'Vieux billet' }, POST_AUTHOR);
+    const body = '<img src="/media/ffffffffffffffff/original.jpg" alt="Ancienne" width="600" height="400">';
+    await updatePost(db, { postId: post.id, bodyHtml: body });
+    await publishPost(db, { postId: post.id, published: true });
+
+    const resolved = await resolveRoute(db, { path: post.path });
+
+    expect(resolved.kind).toBe('post');
+    if (resolved.kind !== 'post') return;
+    expect(resolved.post.bodyHtml).not.toContain('<picture>');
+    expect(resolved.post.bodyHtml).toContain('src="/media/ffffffffffffffff/original.jpg"');
+  });
 });

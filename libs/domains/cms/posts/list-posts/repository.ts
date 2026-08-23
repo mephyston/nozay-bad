@@ -82,6 +82,31 @@ export class ListPostsRepository {
    * WordPress ont des variantes, l'envoi depuis l'administration n'en produit pas
    * encore. Le rendu retombe alors sur l'original, comme avant.
    */
+  /**
+   * Déclinaisons des images citées dans un corps d'article, retrouvées par empreinte.
+   *
+   * L'empreinte est déjà dans l'adresse écrite par l'éditeur
+   * (`/media/<empreinte>/original.webp`) : une seule requête couvre toute la page.
+   */
+  async variantsForHashes(db: DbOrTx, hashes: string[]): Promise<CmsMediaVariantRow[]> {
+    if (hashes.length === 0) return [];
+    return db
+      .select({
+        id: cmsMediaVariantsTable.id,
+        mediaId: cmsMediaVariantsTable.mediaId,
+        format: cmsMediaVariantsTable.format,
+        width: cmsMediaVariantsTable.width,
+        height: cmsMediaVariantsTable.height,
+        sizeBytes: cmsMediaVariantsTable.sizeBytes,
+        key: cmsMediaVariantsTable.key
+      })
+      .from(cmsMediaVariantsTable)
+      .innerJoin(cmsMediaTable, eq(cmsMediaTable.id, cmsMediaVariantsTable.mediaId))
+      .where(inArray(cmsMediaTable.contentHash, hashes))
+      .orderBy(asc(cmsMediaVariantsTable.width))
+      .all();
+  }
+
   async coverVariantsFor(db: DbOrTx, mediaIds: number[]): Promise<Map<number, CmsMediaVariantRow[]>> {
     const byMedia = new Map<number, CmsMediaVariantRow[]>();
     if (mediaIds.length === 0) return byMedia;

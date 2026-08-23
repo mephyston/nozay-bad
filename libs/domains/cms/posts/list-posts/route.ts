@@ -42,6 +42,15 @@ listPostsRoute.get(
         status: effectiveStatus,
         visibility: seesPrivate ? undefined : 'public',
         categorySlug: category,
+        /*
+          Décidé d'après l'appelant, comme le cloisonnement ci-dessus, et non demandé
+          par le client.
+
+          Seul l'espace adhérent rend le corps des articles depuis cette liste : le site
+          public passe par `/cms/route` pour ses articles et n'en tire ici qu'un extrait
+          textuel, et l'administration a besoin du texte brut pour l'éditer.
+        */
+        withBodyMedia: caller === 'storefront',
         limit: limit ? Number(limit) : undefined,
         offset: offset ? Number(offset) : undefined
       })

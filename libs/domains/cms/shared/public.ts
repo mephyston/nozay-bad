@@ -43,6 +43,8 @@ export type {
 
 export { normalisePath, slugify, buildPath, ROOT_PATH } from './slug';
 
+export { enhanceBodyImages, mediaHashesInHtml } from './body-images';
+
 export { announcementsByEvent } from './announcements';
 export type { EventAnnouncement } from './announcements';
 
