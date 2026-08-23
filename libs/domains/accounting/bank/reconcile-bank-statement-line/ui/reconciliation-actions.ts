@@ -139,11 +139,11 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
         const splitSumCents = s.splits.reduce((acc: number, sp: SplitRow) => acc + Math.round((sp.amount || 0) * 100), 0);
         if (Math.abs(splitSumCents - s.remainingAmount) > 10) throw new Error("Le montant total ventilé doit être égal au reste à rapprocher.");
         prepareNextFocus(targetBt.id, (s.remainingAmount - splitSumCents) <= 10);
-        await apiCreateAndMatchSplit(targetBt, memId, s.targetSeasonId, s.paymentMethod, s.splits, s.accrualType, s.accrualNote);
+        await apiCreateAndMatchSplit(targetBt, memId, s.paymentMethod, s.splits, s.accrualType, s.accrualNote);
       } else {
         const linkedAmount = Math.round(s.amountToLink * 100);
         prepareNextFocus(targetBt.id, (s.remainingAmount - linkedAmount) <= 10);
-        await apiCreateAndMatchSingle(targetBt, memId, s.targetSeasonId, s.category, s.amountToLink, s.paymentMethod, s.accrualType, s.accrualNote);
+        await apiCreateAndMatchSingle(targetBt, memId, s.category, s.amountToLink, s.paymentMethod, s.accrualType, s.accrualNote);
       }
       flashAndReload('Écriture créée et rapprochée avec succès !');
     } catch (err: any) { 
@@ -151,28 +151,6 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
       s.errorMsg = err.message || 'Erreur lors de la création.';
       s.isSubmitting = false; 
     }
-  }
-
-  async function handleMatchWithAI(btId: number, memberId: number | null, cat: string) {
-    s.isSubmitting = true;
-    try {
-      prepareNextFocus(btId, true);
-      const tx = s.bankStatementLines.find((t) => t.id === btId) || s.selectedTx;
-      if (!tx) throw new Error('Transaction introuvable.');
-
-      const btAmtCents = Math.abs(tx.amountCents ?? tx.amount ?? 0);
-      const amountToLink = s.remainingAmount > 0 ? (s.remainingAmount / 100) : (btAmtCents / 100);
-
-      let resolvedCat = String(cat || '1');
-      const numCat = parseInt(resolvedCat);
-      if (isNaN(numCat) || numCat <= 0) {
-        const found = s.categories.find((c) => c.id === resolvedCat || c.code === resolvedCat || c.name.toLowerCase().includes(resolvedCat.toLowerCase()));
-        resolvedCat = found ? found.id : '1';
-      }
-
-      await apiCreateAndMatchSingle(tx, memberId, s.selectedSeason, resolvedCat, amountToLink, 'virement', 'normal', '');
-      flashAndReload('Rapprochement IA appliqué !');
-    } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
   async function handleDeletePart(txId: number) {
@@ -208,6 +186,6 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
     toggleSelectAll, toggleInvoiceSelection, addSplitRow, removeSplitRow, prepareNextFocus,
     loadUnpaidInvoices, handleReconcile, handleMultiInvoiceReconcile,
     selectMember, handleMemberKeyDown, selectCategory, handleCategoryKeyDown,
-    handleMatch, handleCreateAndMatch, handleMatchWithAI, handleDeletePart, handleUnignore, handleIgnore
+    handleMatch, handleCreateAndMatch, handleDeletePart, handleUnignore, handleIgnore
   };
 }

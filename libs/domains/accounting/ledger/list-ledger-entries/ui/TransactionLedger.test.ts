@@ -176,4 +176,43 @@ describe('TransactionLedger Component', () => {
     unmount(component);
     document.body.removeChild(target);
   });
+
+  it("affiche le rattachement d'exercice d'une écriture, et pas seulement dans son formulaire", () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    const component = mount(TransactionLedger, {
+      target,
+      props: {
+        transactions: [
+          {
+            id: 2,
+            seasonId: '25-26',
+            type: 'recette',
+            accountId: 'current',
+            destinationAccountId: null,
+            category: 'adhesions',
+            amount: 25000,
+            date: '2026-08-21',
+            paymentMethod: 'virement',
+            description: 'VIR INST RE 673390599511',
+            reference: null,
+            accrualType: 'produit_constate_avance',
+            accrualNote: 'Saison 26-27'
+          }
+        ],
+        pagination: { total: 1, page: 1, limit: 20, totalPages: 1 },
+        seasonId: '25-26',
+        balances: [{ accountId: 'current', initialBalance: 0, finalBalance: 25000 }],
+        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }]
+      }
+    });
+
+    flushSync();
+    expect(target.innerHTML).toContain("Produit constaté d'avance");
+    expect(target.innerHTML).toContain('Saison 26-27');
+
+    unmount(component);
+    document.body.removeChild(target);
+  });
 });

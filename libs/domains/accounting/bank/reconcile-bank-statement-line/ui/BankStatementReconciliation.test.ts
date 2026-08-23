@@ -741,6 +741,168 @@ describe('BankStatementReconciliation Component', () => {
     // The member search combobox should show the selected member name 'Dupont Jean'
   });
 
+  it('validates the AI card with the corrections made in the form, not the frozen suggestion', async () => {
+    // La comptable corrige l'adhérent proposé par le modèle, puis clique sur le bouton de
+    // la carte IA. Ce bouton rejouait les valeurs du modèle : la correction et le
+    // rattachement d'exercice repartaient à la poubelle sans un mot.
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    component = mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankStatementLines: [
+          {
+            id: 42,
+            fitid: 'TX-AI-CUTOFF',
+            accountId: 'current',
+            amount: 15000,
+            amountCents: 15000,
+            date: '2026-06-16',
+            name: 'VIR RENARD SYLVAIN 26-27',
+            memo: 'Cotisation 26-27',
+            status: 'pending',
+            aiSuggestions: JSON.stringify({
+              category: 1,
+              memberId: 99,
+              memberName: 'Morgane Dupont',
+              confidence: 0.6,
+              accrualType: 'produit_constate_avance',
+              accrualNote: "Cotisation encaissée d'avance pour la saison 26-27, à rattacher à cet exercice."
+            })
+          }
+        ],
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }],
+        members: [
+          { id: 99, licence: '0102030', lastName: 'Dupont', firstName: 'Morgane', amountRemaining: 15000 },
+          { id: 77, licence: '0405060', lastName: 'Renard', firstName: 'Sylvain', amountRemaining: 15000 }
+        ],
+        dbCategories: [{ id: 1, code: 'adhesions_inscriptions', adminLabel: 'Adhésions' }]
+      }
+    });
+
+    flushSync();
+
+    const line = Array.from(target.querySelectorAll('button')).find(b =>
+      b.textContent?.includes('VIR RENARD SYLVAIN')
+    ) as HTMLButtonElement;
+    expect(line).not.toBeNull();
+    line.click();
+    flushSync();
+
+    // Le rattachement suggéré préremplit le formulaire, note comprise.
+    const note = target.querySelector('input[placeholder="Détail de la régularisation..."]') as HTMLInputElement;
+    expect(note).not.toBeNull();
+    expect(note.value).toContain('26-27');
+
+    // La comptable corrige l'adhérent.
+    const memberInput = target.querySelector('#member-search-input') as HTMLInputElement;
+    expect(memberInput).not.toBeNull();
+    memberInput.dispatchEvent(new FocusEvent('focus'));
+    flushSync();
+    const option = Array.from(target.querySelectorAll('[role="option"]')).find(o =>
+      o.textContent?.includes('Renard Sylvain')
+    ) as HTMLElement;
+    expect(option).not.toBeNull();
+    option.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    flushSync();
+
+    const validate = Array.from(target.querySelectorAll('button')).find(b =>
+      b.textContent?.includes('Valider avec vos corrections')
+    ) as HTMLButtonElement;
+    expect(validate).not.toBeNull();
+    validate.click();
+    await tick();
+    await tick();
+
+    const call = (globalThis.fetch as any).mock.calls.find((c: any[]) => {
+      if (!c[1]?.body) return false;
+      try {
+        return JSON.parse(c[1].body).action === 'create';
+      } catch {
+        return false;
+      }
+    });
+    expect(call).toBeDefined();
+    const body = JSON.parse(call[1].body);
+    expect(body.memberId).toBe(77);
+    expect(body.transaction.accrualType).toBe('produit_constate_avance');
+    expect(body.transaction.accrualNote).toContain('26-27');
+  });
+
+  it('shows what was recorded on a reconciled line, and no creation form', async () => {
+    // Onglet « Rapprochées » : le panneau affichait un formulaire de création prérempli
+    // par la suggestion du modèle, jamais par l'écriture enregistrée — le cut-off y
+    // revenait à « Normal », ce qui se lit comme une saisie perdue.
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    component = mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankStatementLines: [
+          {
+            id: 1162,
+            fitid: 'TX-DONE',
+            accountId: 'current',
+            amount: 25000,
+            amountCents: 25000,
+            date: '2026-08-21',
+            name: 'VIR INST RE 673390599511',
+            memo: 'DE: M RENARD SYLVAIN',
+            status: 'reconciled',
+            aiSuggestions: JSON.stringify({ category: 1, memberId: 623, memberName: 'RENARD Morgane', accrualType: 'normal', accrualNote: null })
+          }
+        ],
+        glTransactions: [
+          {
+            id: 669,
+            type: 'recette',
+            accountId: 'current',
+            amount: 25000,
+            amountCents: 25000,
+            date: '2026-08-21',
+            description: 'VIR INST RE 673390599511',
+            bankStatementLineId: 1162,
+            memberName: 'RENARD Sylvain',
+            accrualType: 'produit_constate_avance',
+            accrualNote: 'Saison 26-27'
+          }
+        ],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }],
+        members: [],
+        dbCategories: [{ id: 1, code: 'adhesions_inscriptions', adminLabel: 'Adhésions' }]
+      }
+    });
+
+    flushSync();
+
+    const reconciledTab = Array.from(target.querySelectorAll('button')).find(b =>
+      b.textContent?.includes('Rapprochées')
+    ) as HTMLButtonElement;
+    expect(reconciledTab).not.toBeNull();
+    reconciledTab.click();
+    flushSync();
+
+    const line = Array.from(target.querySelectorAll('button')).find(b =>
+      b.textContent?.includes('VIR INST RE 673390599511')
+    ) as HTMLButtonElement;
+    expect(line).not.toBeNull();
+    line.click();
+    flushSync();
+
+    // Ce qui a été enregistré est lisible…
+    expect(target.innerHTML).toContain('RENARD Sylvain');
+    expect(target.innerHTML).toContain("Produit constaté d'avance");
+    expect(target.innerHTML).toContain('Saison 26-27');
+
+    // …et le formulaire de création n'est plus proposé.
+    expect(target.innerHTML).not.toContain('Créer et rapprocher une nouvelle écriture');
+  });
+
   it('opens import modal when open-bank-import window event is dispatched and season is not closed', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);

@@ -2,6 +2,7 @@
 <script lang="ts">
   import { Check, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, SplitSquareVertical } from '@lucide/svelte';
   import { Button, Badge, Popover, Amount, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions } from '@nba/ui';
+  import { accrualLabel, isAccrual } from '../../../shared/accrual-labels';
   import type { Transaction, Pagination } from './ledger-types';
   import { accountLabels } from './ledger-types';
 
@@ -109,6 +110,7 @@
 
 {#snippet desktopTxRow(tx: Transaction, isChild: boolean)}
   {@const isOtherSeason = selectedSeasonId && String(tx.seasonId) !== String(selectedSeasonId)}
+  {@const accrual = accrualLabel(tx.accrualType)}
   <Table.Row id="tx-desktop-{tx.id}" class="{isChild ? 'bg-muted/5 relative border-l-4 border-l-primary/30' : ''} {isOtherSeason ? 'opacity-50 border-y border-dashed border-muted-foreground/40' : ''}">
     <Table.Cell class={isChild ? "pl-6 text-muted-foreground" : ""}>{tx.date}</Table.Cell>
     <Table.Cell>
@@ -119,8 +121,19 @@
       {:else}
         <Badge variant="info" size="lg" shape="pill">Transfert</Badge>
       {/if}
+      <!--
+        « Cut-off » désigne le rattachement d'exercice de l'écriture, et rien d'autre.
+
+        Ce badge se déclenchait sur `seasonId !== saison consultée` : il signalait une
+        écriture d'un autre exercice ramenée par le filtre de dates, ce qui n'est pas un
+        cut-off. Une écriture correctement marquée en produit constaté d'avance, elle,
+        n'affichait rien — la comptable n'avait aucun moyen de vérifier sa saisie.
+      -->
+      {#if accrual}
+        <Badge variant="warning" size="xs" class="ml-1" title={tx.accrualNote || accrual}>{accrual}</Badge>
+      {/if}
       {#if isOtherSeason}
-        <Badge variant="secondary" size="xs" class="ml-1" title="Écriture rattachée à une autre saison">Cut-off</Badge>
+        <Badge variant="secondary" size="xs" class="ml-1" title="Écriture d'un exercice autre que celui consulté">Autre exercice</Badge>
       {/if}
     </Table.Cell>
     <Table.Cell>{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</Table.Cell>
@@ -178,6 +191,7 @@
 
 {#snippet mobileTxRow(item: Transaction, isChild: boolean)}
   {@const isOtherSeason = selectedSeasonId && String(item.seasonId) !== String(selectedSeasonId)}
+  {@const accrual = accrualLabel(item.accrualType)}
   <div id="tx-mobile-{item.id}" class="flex flex-col gap-2 p-4 border-b border-border/50 bg-card hover:bg-muted/20 transition-colors cursor-pointer group {isOtherSeason ? 'opacity-50 border-y border-dashed border-muted-foreground/40' : ''}" onclick={(e) => onStartEdit(item, e)}>
     <div class="flex items-start justify-between gap-2">
       <div>
@@ -192,8 +206,13 @@
           <span class="text-xs text-muted-foreground">{item.date}</span>
         </div>
         <h4 class="font-bold text-sm text-foreground">{item.description}</h4>
+        {#if accrual}
+          <div class="text-[10px] font-semibold mt-1 text-warning bg-warning/10 px-1.5 py-0.5 rounded inline-block w-max">
+            {accrual}{item.accrualNote ? ` — ${item.accrualNote}` : ''}
+          </div>
+        {/if}
         {#if isOtherSeason}
-          <div class="text-[10px] font-semibold text-muted-foreground mt-1 bg-muted px-1.5 py-0.5 rounded inline-block w-max">Écriture d'une autre saison (Cut-off)</div>
+          <div class="text-[10px] font-semibold text-muted-foreground mt-1 bg-muted px-1.5 py-0.5 rounded inline-block w-max">Écriture d'un autre exercice</div>
         {/if}
       </div>
       <div class="text-right shrink-0">

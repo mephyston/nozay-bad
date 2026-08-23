@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Trash2 } from '@lucide/svelte';
-  import { Amount, AlertDialog, Button, Alert } from '@nba/ui';
+  import { Amount, AlertDialog, Badge, Button, Alert } from '@nba/ui';
+  import { accrualLabel } from '../../../shared/accrual-labels';
   import type { ReconciliationState, BankStatementLine } from './reconciliation.svelte';
 
   let { state: reconState = $bindable(), selectedTx }: { state: ReconciliationState; selectedTx: BankStatementLine } = $props();
@@ -38,9 +39,23 @@
     <div class="rounded-lg border border-border divide-y divide-border bg-card">
       {#each reconState.linkedGlTxs as gt}
         <div class="p-2.5 flex items-center justify-between text-xs">
+          <!--
+            Ce panneau est le seul retour dont dispose la comptable après un rapprochement.
+            Il ne montrait que le libellé, la date, le type et le montant : ni l'adhérent
+            rattaché, ni le cut-off. Une saisie correcte était indiscernable d'une saisie
+            perdue, ce qui revient à ne pas l'avoir enregistrée.
+          -->
           <div>
             <div class="font-medium">{gt.description}</div>
             <div class="text-[11px] text-muted-foreground">{gt.date} • {gt.type}</div>
+            {#if gt.memberName}
+              <div class="text-[11px] text-muted-foreground">Adhérent : {gt.memberName}</div>
+            {/if}
+            {#if accrualLabel(gt.accrualType)}
+              <Badge variant="warning" size="xs" class="mt-1">
+                {accrualLabel(gt.accrualType)}{gt.accrualNote ? ` — ${gt.accrualNote}` : ''}
+              </Badge>
+            {/if}
           </div>
 
           <div class="flex items-center gap-3">

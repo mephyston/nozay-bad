@@ -149,6 +149,22 @@
 
       <ReconciliationLinkedEntries {state} selectedTx={state.selectedTx} />
 
+      <!--
+        Les outils de rapprochement ne s'affichent que sur une ligne qui en attend un.
+
+        Sur une ligne déjà rapprochée, ce bloc montrait un formulaire de **création**
+        prérempli par la suggestion du modèle — pas par l'écriture enregistrée, qu'il ne
+        lit pas et n'a jamais lue. Le rattachement d'exercice y revenait donc à « Normal »,
+        ce qui se lit comme une saisie perdue alors que rien ne l'était. Ce qui a été
+        enregistré se lit au-dessus, dans les écritures liées.
+      -->
+      {#if state.selectedTx.status !== 'pending'}
+        <p class="text-xs text-muted-foreground">
+          {state.selectedTx.status === 'reconciled'
+            ? "Cette ligne est rapprochée : les écritures ci-dessus font foi. Pour la modifier, dissociez l'écriture concernée."
+            : 'Cette ligne est ignorée. Rétablissez-la pour la rapprocher.'}
+        </p>
+      {:else}
       <!-- Onglets de rapprochement -->
       <Tabs.Root value={state.activeRightTab} onValueChange={(v) => state.activeRightTab = v as any} class="w-full">
         <Tabs.List class="flex w-full justify-start sm:justify-center overflow-x-auto no-scrollbar mb-4">
@@ -207,6 +223,7 @@
           <ReconciliationInvoicesTab {state} selectedTx={state.selectedTx} />
         </Tabs.Content>
       </Tabs.Root>
+      {/if}
     </div>
   </Card.Root>
 {/if}

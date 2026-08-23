@@ -16,6 +16,9 @@ export interface Transaction {
   memberName?: string | null;
   memberLicence?: string | null;
   runningBalanceCents?: number;
+  /** Rattachement d'exercice : `normal`, ou l'un des quatre cut-off. */
+  accrualType?: string | null;
+  accrualNote?: string | null;
 }
 
 export interface Pagination {

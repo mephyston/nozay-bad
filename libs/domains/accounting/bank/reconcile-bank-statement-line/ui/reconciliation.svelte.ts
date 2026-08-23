@@ -49,7 +49,6 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
   let isCategoryDropdownOpen = $state(false);
   let memberSearchQuery = $state('');
   let categorySearchQuery = $state('');
-  let targetSeasonId = $state(getProps().seasonId);
 
   let selectedTxIds = $state<Record<number, boolean>>({});
   let searchQuery = $state('');
@@ -126,7 +125,7 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
   safeEffect(() => {
     if (selectedTx) {
       amountToLink = parseFloat((remainingAmount / 100).toFixed(2));
-      memberSearchQuery = ''; categorySearchQuery = ''; targetSeasonId = selectedSeason; selectedInvoiceIds = new Set(); isSplitMode = false; splits = [];
+      memberSearchQuery = ''; categorySearchQuery = ''; selectedInvoiceIds = new Set(); isSplitMode = false; splits = [];
     }
   });
   safeEffect(() => { if (selectedSeason) actions.loadUnpaidInvoices(); });
@@ -151,9 +150,13 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
           const sug = JSON.parse(selectedTx.aiSuggestions);
           selectedMemberId = sug.memberId ? sug.memberId.toString() : '';
           if (sug.category) category = sug.category.toString();
-        } catch (e) { selectedMemberId = ''; }
-      } else selectedMemberId = '';
-    } else if (!selectedTx) { lastProcessedTxId = null; selectedMemberId = ''; }
+          // Rattachement d'exercice déduit du libellé (cotisation encaissée d'avance) :
+          // il se préremplit comme le reste, et reste modifiable.
+          accrualType = sug.accrualType || 'normal';
+          accrualNote = sug.accrualNote || '';
+        } catch (e) { selectedMemberId = ''; accrualType = 'normal'; accrualNote = ''; }
+      } else { selectedMemberId = ''; accrualType = 'normal'; accrualNote = ''; }
+    } else if (!selectedTx) { lastProcessedTxId = null; selectedMemberId = ''; accrualType = 'normal'; accrualNote = ''; }
   });
   safeEffect(() => { if (!isMemberDropdownOpen) memberHighlightedIndex = -1; });
   safeEffect(() => { if (!isCategoryDropdownOpen) categoryHighlightedIndex = -1; });
@@ -168,7 +171,7 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
       selectedMemberId: () => selectedMemberId, accrualType: () => accrualType, accrualNote: () => accrualNote, amountToLink: () => amountToLink, lastProcessedTxId: () => lastProcessedTxId,
       selectedInvoiceIds: () => selectedInvoiceIds, isSplitMode: () => isSplitMode, splits: () => splits,
       isMemberDropdownOpen: () => isMemberDropdownOpen, isCategoryDropdownOpen: () => isCategoryDropdownOpen,
-      memberSearchQuery: () => memberSearchQuery, categorySearchQuery: () => categorySearchQuery, targetSeasonId: () => targetSeasonId,
+      memberSearchQuery: () => memberSearchQuery, categorySearchQuery: () => categorySearchQuery,
       selectedTxIds: () => selectedTxIds, searchQuery: () => searchQuery, monthFilter: () => monthFilter, memberHighlightedIndex: () => memberHighlightedIndex,
       categoryHighlightedIndex: () => categoryHighlightedIndex, isClosed: () => isClosed, categories: () => categories,
       sortedMembers: () => sortedMembers, suggestions: () => suggestions, linkedGlTxs: () => linkedGlTxs, totalLinked: () => totalLinked,
@@ -187,7 +190,7 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
       selectedMemberId: v => selectedMemberId = v, accrualType: v => accrualType = v, accrualNote: v => accrualNote = v, amountToLink: v => amountToLink = v, lastProcessedTxId: v => lastProcessedTxId = v,
       selectedInvoiceIds: v => selectedInvoiceIds = v, isSplitMode: v => isSplitMode = v, splits: v => splits = v,
       isMemberDropdownOpen: v => isMemberDropdownOpen = v, isCategoryDropdownOpen: v => isCategoryDropdownOpen = v,
-      memberSearchQuery: v => memberSearchQuery = v, categorySearchQuery: v => categorySearchQuery = v, targetSeasonId: v => targetSeasonId = v,
+      memberSearchQuery: v => memberSearchQuery = v, categorySearchQuery: v => categorySearchQuery = v,
       selectedTxIds: v => selectedTxIds = v, searchQuery: v => searchQuery = v, monthFilter: v => monthFilter = v, memberHighlightedIndex: v => memberHighlightedIndex = v,
       categoryHighlightedIndex: v => categoryHighlightedIndex = v
     }

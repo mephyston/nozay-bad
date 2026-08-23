@@ -1,7 +1,13 @@
 import { Type } from '@sinclair/typebox';
 
 const transactionDetailsSchema = Type.Object({
-  seasonId: Type.String({ minLength: 1 }),
+  /**
+   * Facultatif, et le plus souvent absent.
+   *
+   * L'exercice se déduit de la date de l'écriture — une saison est un intervalle. Seul le
+   * rapprochement de facture le transmet encore, parce que la facture porte le sien.
+   */
+  seasonId: Type.Optional(Type.Union([Type.String({ minLength: 1 }), Type.Number()])),
   type: Type.Union([Type.Literal('recette'), Type.Literal('depense'), Type.Literal('transfert')]),
   accountId: Type.Union([Type.String(), Type.Number()]),
   destinationAccountId: Type.Optional(Type.Union([Type.String(), Type.Number(), Type.Null()])),

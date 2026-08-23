@@ -140,6 +140,17 @@ export class ListTransactionsRepository {
       reference: sql<string>`COALESCE(${bankStatementLinesTable.memo}, ${bankStatementLinesTable.name}, ${ledgerEntriesTable.reference})`,
       memberId: ledgerEntriesTable.memberId,
       bankStatementLineId: ledgerEntriesTable.bankStatementLineId,
+      /*
+       * Le rattachement d'exercice fait partie de l'écriture, pas de sa saisie.
+       *
+       * La projection l'omettait : le grand livre affichait « Normal » sur une écriture
+       * pourtant marquée en produit constaté d'avance, et — bien pire — rouvrir puis
+       * réenregistrer cette écriture renvoyait `accrualType: 'normal'` au serveur, qui
+       * l'écrivait. Un cut-off correctement saisi disparaissait à la première
+       * modification, sans message et sans trace.
+       */
+      accrualType: ledgerEntriesTable.accrualType,
+      accrualNote: ledgerEntriesTable.accrualNote,
       runningBalanceCents: sql<number>`CAST(${trueInitialBalance} + COALESCE((
         SELECT SUM(
           CASE

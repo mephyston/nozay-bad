@@ -15,6 +15,26 @@
   }
 
   const sug = $derived(renderAiSuggestions(selectedTx));
+
+  /**
+   * Le formulaire porte-t-il encore la suggestion telle quelle ?
+   *
+   * Il en est prérempli à la sélection de la ligne ; l'écart signale donc une correction
+   * de la comptable — un autre adhérent, une autre catégorie, un rattachement d'exercice.
+   */
+  const untouched = $derived(
+    sug !== null &&
+      state.selectedMemberId === (sug.memberId ? String(sug.memberId) : '') &&
+      (!sug.category || state.category === String(sug.category)) &&
+      state.accrualType === (sug.accrualType || 'normal')
+  );
+
+  const accrualLabel: Record<string, string> = {
+    produit_constate_avance: "Produit constaté d'avance",
+    charge_constatee_avance: "Charge constatée d'avance",
+    produit_a_recevoir: 'Produit à recevoir',
+    charge_a_payer: 'Charge à payer'
+  };
 </script>
 
 {#if sug}
@@ -48,26 +68,41 @@
       </div>
     </div>
 
+    {#if sug.accrualType && sug.accrualType !== 'normal'}
+      <div class="text-xs">
+        <span class="text-muted-foreground opacity-80 block">Rattachement d'exercice :</span>
+        <span class="font-medium text-foreground">{accrualLabel[sug.accrualType] ?? sug.accrualType}</span>
+        {#if sug.accrualNote}
+          <span class="block text-muted-foreground">{sug.accrualNote}</span>
+        {/if}
+      </div>
+    {/if}
+
     {#if sug.reason}
       <p class="text-xs italic border-t border-purple-500/20 pt-2 mt-2">
         « {sug.reason} »
       </p>
     {/if}
 
+    <!--
+      Ce bouton valide le formulaire, pas la suggestion figée.
+
+      Il rejouait auparavant les seules valeurs proposées par le modèle : corriger
+      l'adhérent puis cliquer ici réécrivait celui de l'IA, et le rattachement d'exercice
+      comme son commentaire partaient à la poubelle sans un mot. Une suggestion se
+      corrige — c'est même sa raison d'être — et le raccourci ne doit pas punir la
+      correction. Le libellé dit donc ce qui va réellement être enregistré.
+    -->
     <div class="pt-1 flex justify-end">
       <Button
         size="sm"
         variant="ai"
         class="text-xs gap-1.5"
         disabled={state.isClosed || state.isSubmitting}
-        onclick={() => state.handleMatchWithAI(
-          selectedTx.id,
-          sug.memberId ? parseInt(sug.memberId) : null,
-          String(sug.category || '1')
-        )}
+        onclick={() => state.handleCreateAndMatch()}
       >
         <Check class="h-3.5 w-3.5" />
-        <span>Valider cette suggestion</span>
+        <span>{untouched ? 'Valider cette suggestion' : 'Valider avec vos corrections'}</span>
       </Button>
     </div>
   </Alert.Description>

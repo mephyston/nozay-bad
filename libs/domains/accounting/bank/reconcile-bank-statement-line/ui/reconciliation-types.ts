@@ -23,6 +23,10 @@ export interface GLTransaction {
   description: string;
   category?: string | null;
   bankStatementLineId?: number | null;
+  memberName?: string | null;
+  /** Rattachement d'exercice : `normal`, ou l'un des quatre cut-off. */
+  accrualType?: string | null;
+  accrualNote?: string | null;
 }
 
 export interface Season {
@@ -107,7 +111,6 @@ export interface ReconciliationStateFields {
   isAnalyzingSingle: boolean;
   errorMsg: string;
   selectedSeason: string;
-  targetSeasonId: string;
   selectedAccount: string;
   category: string;
   paymentMethod: string;
