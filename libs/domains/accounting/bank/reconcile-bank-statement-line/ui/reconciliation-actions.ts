@@ -115,11 +115,25 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
+  /**
+   * Crée l'écriture et la rapproche de la ligne bancaire sélectionnée.
+   *
+   * `bt` n'est là que pour les appels qui désignent une autre ligne que la sélection
+   * courante. Le formulaire unitaire, lui, n'en passe aucun — il lui envoyait
+   * auparavant l'identifiant de l'adhérent, qui écrasait silencieusement la ligne et
+   * produisait une requête vers `/bank-transactions/undefined/reconcile`.
+   *
+   * Le garde-fou refuse donc tout ce qui n'est pas une ligne bancaire, plutôt que de se
+   * fier à la seule présence d'une valeur : une divergence de contrat entre deux
+   * composants ne doit pas se rattraper au fond d'une URL.
+   */
   async function handleCreateAndMatch(bt?: BankStatementLine) {
     s.isSubmitting = true;
     try {
       const targetBt = bt ?? s.selectedTx;
-      if (!targetBt) throw new Error('Aucune transaction bancaire sélectionnée.');
+      if (!targetBt || typeof targetBt !== 'object' || typeof (targetBt as any).id !== 'number') {
+        throw new Error('Aucune transaction bancaire sélectionnée.');
+      }
       const memId = s.selectedMemberId ? parseInt(s.selectedMemberId) : null;
       if (s.isSplitMode) {
         const splitSumCents = s.splits.reduce((acc: number, sp: SplitRow) => acc + Math.round((sp.amount || 0) * 100), 0);

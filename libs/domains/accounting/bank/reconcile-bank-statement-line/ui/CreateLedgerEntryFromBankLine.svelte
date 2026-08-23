@@ -31,7 +31,15 @@
     accrualType: string;
     accrualNote: string;
     isSubmitting: boolean;
-    handleCreateAndMatch: (memId: number | null) => void;
+    /**
+     * Déclenche la création et le rapprochement. **Sans argument** : le gestionnaire lit
+     * lui-même la ligne bancaire et l'adhérent dans l'état partagé.
+     *
+     * Ce composant lui passait auparavant l'identifiant de l'adhérent, alors qu'il
+     * attend une ligne bancaire. Les deux contrats avaient divergé sans que rien ne le
+     * signale, et l'argument — un nombre — écrasait la ligne sélectionnée.
+     */
+    handleCreateAndMatch: () => void;
     isSplitMode: boolean;
     splits: { category: string; amount: number }[];
     addSplitRow: () => void;
@@ -154,7 +162,7 @@
 
   <div class="pt-2">
     <Button 
-      onclick={() => handleCreateAndMatch(selectedMemberId ? parseInt(selectedMemberId) : null)}
+      onclick={() => handleCreateAndMatch()}
       disabled={isSubmitting || (isSplitMode && splitSum !== remainingAmount)}
       class="w-full font-bold"
     >

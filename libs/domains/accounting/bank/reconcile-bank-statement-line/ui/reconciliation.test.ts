@@ -243,4 +243,54 @@ describe('createReconciliationState logic unit tests', () => {
       body: expect.stringContaining('"action":"bulk"')
     }));
   });
+
+  /**
+   * Le formulaire unitaire passait à `handleCreateAndMatch` l'identifiant de l'adhérent,
+   * alors qu'il attend une ligne bancaire. Un nombre étant « truthy », il écrasait
+   * silencieusement la sélection : la requête partait vers
+   * `/bank-transactions/undefined/reconcile` et revenait en 400, sans que rien ne
+   * désigne la vraie cause.
+   */
+  it('rapproche la ligne sélectionnée, sans argument à passer', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true })
+    } as Response);
+
+    const state = createReconciliationState({
+      bankStatementLines: mockBankTransactions,
+      glTransactions: mockGlTransactions,
+      seasonId: '25-26',
+      seasons: [{ id: '25-26', name: '2025-2026', active: true }],
+      members: []
+    });
+
+    state.selectedTx = mockBankTransactions[1];
+    state.amountToLink = 150;
+    await state.handleCreateAndMatch();
+
+    const body = vi.mocked(globalThis.fetch).mock.calls.at(-1)?.[1]?.body as string;
+    expect(body).toContain('"btId":2');
+    expect(body).not.toContain('"btId":null');
+  });
+
+  it('refuse un argument qui n’est pas une ligne bancaire', async () => {
+    const state = createReconciliationState({
+      bankStatementLines: mockBankTransactions,
+      glTransactions: mockGlTransactions,
+      seasonId: '25-26',
+      seasons: [{ id: '25-26', name: '2025-2026', active: true }],
+      members: []
+    });
+
+    state.selectedTx = mockBankTransactions[1];
+    vi.mocked(globalThis.fetch).mockClear();
+
+    // Un identifiant d'adhérent, tel que le formulaire l'envoyait par erreur.
+    await (state.handleCreateAndMatch as (bt?: unknown) => Promise<void>)(42);
+
+    // Rien ne part : mieux vaut un refus lisible qu'une URL malformée.
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(state.errorMsg).toContain('Aucune transaction bancaire');
+  });
 });
