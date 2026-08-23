@@ -46,7 +46,7 @@
     "PUSH_BIRTHDAYS_ENABLED": "true",
     "PUSH_RANKING_REMINDERS_ENABLED": "true",
     "PUSH_LINEUP_REMINDERS_ENABLED": "true",
-    "OPEN_PLAY_ENABLED": "false",
+    "OPEN_PLAY_ENABLED": "true",
     "PUSH_OPEN_PLAY_ENABLED": "false"
   },
   "env": {

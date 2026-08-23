@@ -28,7 +28,7 @@
     "EMAIL_FROM": "Nozay Badminton Association <contact@nozaybad.fr>",
     "EMAIL_MODE": "live",
     "EMAIL_ALLOWLIST": "",
-    "OPEN_PLAY_ENABLED": "false"
+    "OPEN_PLAY_ENABLED": "true"
   },
   "services": [
     {

@@ -20,7 +20,7 @@
   },
   "vars": {
     "APP_ENV": "production",
-    "OPEN_PLAY_ENABLED": "false"
+    "OPEN_PLAY_ENABLED": "true"
   },
   "services": [
     {
