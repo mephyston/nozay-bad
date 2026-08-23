@@ -238,8 +238,6 @@ const rows: Row[] = [
   .filter((row) => (view === 'tout' ? true : view === 'jeu-libre' ? row.kind === 'openPlay' : row.kind === 'event'))
   .sort((a, b) => a.at.localeCompare(b.at));
 
-const openCount = events.filter((event) => event.registration === 'open').length;
-const toStaff = openPlay.sessions.filter((s) => s.needsOpener).length;
 const today = new Date().toISOString().slice(0, 10);
 ---
 
@@ -250,13 +248,6 @@ const today = new Date().toISOString().slice(0, 10);
     <div class="mx-auto max-w-3xl">
       <div class="mb-4">
         <h1 class="text-2xl font-bold text-foreground sm:text-3xl">Calendrier</h1>
-        <p class="mt-1 text-sm text-muted-foreground">
-          {toStaff > 0
-            ? `Tout ce qui vient au club. ${toStaff} séance${toStaff > 1 ? 's' : ''} de jeu libre cherche${toStaff > 1 ? 'nt' : ''} encore un bénévole pour ouvrir.`
-            : openCount > 0
-              ? `Tout ce qui vient au club. ${openCount} rendez-vous ${openCount > 1 ? 'sont ouverts' : 'est ouvert'} aux inscriptions.`
-              : 'Tout ce qui vient au club.'}
-        </p>
       </div>
 
       {/*
