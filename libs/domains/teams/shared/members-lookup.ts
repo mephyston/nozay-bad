@@ -16,6 +16,14 @@ export interface PlayerIdentity {
   /** `M` / `F` du référentiel adhérents — à ne pas confondre avec le `H` / `F` de Poona. */
   gender: 'M' | 'F';
   birthDate: string;
+  /**
+   * Version du portrait, en millisecondes. `null` : aucune photo.
+   *
+   * En millisecondes et non en `Date`, comme la fiche d'adhérent : c'est un horodatage
+   * qui ne sert qu'à faire varier une URL, et une `Date` traverserait le JSON en chaîne
+   * ISO — donc en un troisième format pour la même chose.
+   */
+  photoUpdatedAt: number | null;
 }
 
 export type PlayerDirectory = Map<string, PlayerIdentity>;
@@ -38,7 +46,8 @@ export async function loadPlayerDirectory(db: DbOrTx, seasonCode: string): Promi
         firstName: member.firstName,
         lastName: member.lastName,
         gender: member.gender,
-        birthDate: member.birthDate
+        birthDate: member.birthDate,
+        photoUpdatedAt: member.photoUpdatedAt?.getTime() ?? null
       }
     ])
   );
@@ -60,7 +69,8 @@ export function identityOf(directory: PlayerDirectory, licence: string | null | 
       firstName: '',
       lastName: 'Licence inconnue',
       gender: 'M',
-      birthDate: ''
+      birthDate: '',
+      photoUpdatedAt: null
     }
   );
 }

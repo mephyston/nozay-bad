@@ -5,6 +5,7 @@ import MobileNav from '../../../components/MobileNav.svelte';
 import { env as cfEnv } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 import { resolveEnv } from '../../../lib/request-context';
+import { MemberAvatar } from '@nba/ui';
 
 const session = Astro.locals.session;
 const env = resolveEnv(Astro.locals) ?? cfEnv;
@@ -36,6 +37,18 @@ const canCompose =
   (team?.captain?.licence === viewerLicence || team?.viceCaptain?.licence === viewerLicence);
 
 const name = (p: any) => (p ? `${p.firstName} ${p.lastName}`.trim() : '—');
+
+/**
+ * Portrait d'un joueur de l'effectif, ou `null` s'il n'en a pas.
+ *
+ * `/api/adherents/photo/…` et non une adresse de fichier : le middleware laisse passer
+ * sans session tout ce qui ressemble à une image, sauf sous `/api/`. Les portraits ne
+ * sortent du bucket privé que pour un adhérent connecté, et c'est ce préfixe qui le tient.
+ */
+const photoSrc = (p: any): string | null =>
+  p?.photoUpdatedAt
+    ? `/api/adherents/photo/${String(p.licence).replace(/\D/g, '').padStart(8, '0')}?size=128&v=${p.photoUpdatedAt}`
+    : null;
 const frenchDate = (iso: string) =>
   new Date(`${iso}T00:00:00Z`).toLocaleDateString('fr-FR', {
     day: 'numeric', month: 'long', timeZone: 'UTC'
@@ -114,8 +127,17 @@ const frenchDate = (iso: string) =>
                     Seule porte d'entrée vers la fiche d'un autre adhérent : il n'existe
                     aucun annuaire, et `GET /members` reste fermé à l'espace adhérent.
                   */}
-                  <a href={`/adherents/${p.licence}?equipe=${teamId}`} class="text-foreground no-underline hover:underline">
-                    {p.firstName} {p.lastName}
+                  <a
+                    href={`/adherents/${p.licence}?equipe=${teamId}`}
+                    class="flex min-w-0 items-center gap-2.5 text-foreground no-underline hover:underline"
+                  >
+                    <MemberAvatar
+                      src={photoSrc(p)}
+                      name={name(p)}
+                      size="sm"
+                      class="shrink-0"
+                    />
+                    <span class="truncate">{p.firstName} {p.lastName}</span>
                   </a>
                   <span class="text-xs text-muted-foreground">
                     {p.hasRanking ? `${p.singles ?? '—'} / ${p.doubles ?? '—'} / ${p.mixed ?? '—'}` : 'sans classement'}

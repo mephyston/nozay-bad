@@ -31,7 +31,7 @@
     canDelete = false
   }: {
     teams: TeamListItem[];
-    members: Array<{ licence: string; firstName: string; lastName: string }>;
+    members: Array<{ licence: string; firstName: string; lastName: string; photoUpdatedAt?: number | null }>;
     days: ChampionshipDayItem[];
     daysChampionship: Championship;
     seasonCode: string;

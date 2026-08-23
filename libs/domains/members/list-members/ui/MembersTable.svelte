@@ -2,12 +2,30 @@
   export * from './members-table-types';
 </script>
 <script lang="ts">
-  import { User, Eye, ChevronRight, Receipt } from '@lucide/svelte';
-  import { Button, Badge, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions, uiConfirm, toast, flashAndReload, softNavigate } from '@nba/ui';
+  import { Eye, ChevronRight, Receipt } from '@lucide/svelte';
+  import { Button, Badge, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions, MemberAvatar, uiConfirm, toast, flashAndReload, softNavigate } from '@nba/ui';
   import type { Member, Pagination, Filters, Season } from './members-table-types';
   import MembersTableFiltersPopover from './MembersTableFiltersPopover.svelte';
 
   let { data = [], pagination, filters, seasons = [] }: { data: Member[]; pagination: Pagination; filters: Filters; seasons?: Season[] } = $props();
+
+  /**
+   * Adresse du portrait, ou `null` : la silhouette prend alors le relais.
+   *
+   * `size=128` et non 512 : la vignette fait 32 px, et deux cents portraits en pleine
+   * résolution feraient de la liste la page la plus lourde de l'administration.
+   *
+   * La version est convertie en millisecondes plutôt que reprise telle quelle : c'est la
+   * forme qu'emploie la fiche, et deux formes pour la même image feraient deux entrées
+   * de cache pour un seul portrait.
+   */
+  function photoSrc(member: Member): string | null {
+    const raw = member.photoUpdatedAt;
+    if (raw === null || raw === undefined) return null;
+    const version = typeof raw === 'number' ? raw : Date.parse(raw);
+    if (!Number.isFinite(version)) return null;
+    return `/admin/api/member-photo?licence=${encodeURIComponent(member.licence)}&size=128&v=${version}`;
+  }
 
   // Bascule l'autorisation de note de frais d'un adhérent (raccourci depuis la liste).
   let togglingId = $state<number | null>(null);
@@ -125,9 +143,11 @@
             href={`/admin/members/${member.licence}?season=${filters?.season || '25-26'}`}
             class="flex items-center gap-3 no-underline text-foreground hover:text-primary transition-colors group"
           >
-            <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/20">
-              <User class="w-4 h-4" />
-            </div>
+            <MemberAvatar
+              src={photoSrc(member)}
+              name={`${member.lastName} ${member.firstName}`}
+              class="shrink-0 group-hover:bg-primary/20"
+            />
             <div>
               <div class="font-semibold">{member.lastName} {member.firstName}</div>
               <div class="text-xs text-muted-foreground">Né le {member.birthDate}</div>
@@ -199,9 +219,11 @@
             href={`/admin/members/${member.licence}?season=${filters?.season || '25-26'}`}
             class="flex items-center gap-3 min-w-0 flex-1 no-underline text-foreground group"
           >
-            <div class="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-              <User class="w-4 h-4" />
-            </div>
+            <MemberAvatar
+              src={photoSrc(member)}
+              name={`${member.lastName} ${member.firstName}`}
+              class="size-9 shrink-0 transition-colors group-hover:bg-primary/20"
+            />
             <div class="min-w-0 flex-1">
               <div class="font-bold text-sm truncate group-hover:text-primary transition-colors">
                 {member.lastName} {member.firstName}

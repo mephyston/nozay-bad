@@ -154,7 +154,11 @@ try {
       members = (payload?.data?.data ?? payload?.data ?? []).map((m: any) => ({
         licence: String(m.licence).padStart(8, '0'),
         firstName: m.firstName,
-        lastName: m.lastName
+        lastName: m.lastName,
+        // L'API rend un horodatage, qui traverse le JSON en chaîne ISO. Converti ici en
+        // millisecondes, la forme qu'emploient la fiche et l'effectif pour la version
+        // d'URL du portrait.
+        photoUpdatedAt: m.photoUpdatedAt ? Date.parse(m.photoUpdatedAt) : null
       }));
     }
     if (daysRes.ok) days = ((await daysRes.json()) as any).data?.days ?? [];

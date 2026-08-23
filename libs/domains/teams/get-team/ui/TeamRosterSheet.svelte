@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Sheet, Button, Badge, SearchableCombobox, Alert, toast, Separator } from '@nba/ui';
+  import { Sheet, Button, Badge, SearchableCombobox, Alert, MemberAvatar, toast, Separator } from '@nba/ui';
   import { UserRoundX, TriangleAlert, Plus, X } from '@lucide/svelte';
   import type { GetTeamOutput } from '../dto';
 
@@ -13,7 +13,7 @@
     open: boolean;
     detail: GetTeamOutput | null;
     /** Adhérents de la saison, source unique des sélecteurs. */
-    members: Array<{ licence: string; firstName: string; lastName: string }>;
+    members: Array<{ licence: string; firstName: string; lastName: string; photoUpdatedAt?: number | null }>;
     canWrite: boolean;
     onSaved: () => void;
   } = $props();
@@ -78,6 +78,19 @@
   function label(licence: string): string {
     const member = byLicence.get(licence);
     return member ? `${member.lastName} ${member.firstName}` : `Licence ${licence}`;
+  }
+
+  /**
+   * Portrait d'un joueur de l'effectif, ou `null`.
+   *
+   * Lu dans l'annuaire de la saison plutôt que dans `detail.roster` : un joueur qu'on
+   * vient d'ajouter au sélecteur n'est pas encore dans l'effectif enregistré, et sa
+   * ligne se serait affichée sans visage jusqu'au premier enregistrement.
+   */
+  function photoSrc(licence: string): string | null {
+    const version = byLicence.get(licence)?.photoUpdatedAt;
+    if (!version) return null;
+    return `/admin/api/member-photo?licence=${encodeURIComponent(licence)}&size=128&v=${version}`;
   }
 
   function addToRoster(value: string | number) {
@@ -228,16 +241,19 @@
             {#each roster as licence (licence)}
               {@const player = detail.roster.find((p) => p.licence === licence)}
               <li class="flex items-center justify-between gap-3 p-2.5">
-                <div class="min-w-0">
-                  <p class="text-sm font-medium truncate">{label(licence)}</p>
-                  <p class="text-xs text-muted-foreground">
-                    {#if player?.hasRanking}
-                      {player.singles ?? '—'} / {player.doubles ?? '—'} / {player.mixed ?? '—'}
-                      {#if player.category}· {player.category}{/if}
-                    {:else}
-                      Aucun classement à cette date
-                    {/if}
-                  </p>
+                <div class="flex min-w-0 items-center gap-2.5">
+                  <MemberAvatar src={photoSrc(licence)} name={label(licence)} size="sm" class="shrink-0" />
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium truncate">{label(licence)}</p>
+                    <p class="text-xs text-muted-foreground">
+                      {#if player?.hasRanking}
+                        {player.singles ?? '—'} / {player.doubles ?? '—'} / {player.mixed ?? '—'}
+                        {#if player.category}· {player.category}{/if}
+                      {:else}
+                        Aucun classement à cette date
+                      {/if}
+                    </p>
+                  </div>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                   {#if player && !player.eligible}

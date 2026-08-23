@@ -52,6 +52,7 @@ export { default as FormField } from "./components/patterns/FormField.svelte";
 export { default as ThemeToggle } from "./components/patterns/ThemeToggle.svelte";
 export { default as EnvBanner } from "./components/patterns/EnvBanner.svelte";
 export { default as FormSheet } from "./components/patterns/FormSheet.svelte";
+export { default as MemberAvatar } from "./components/patterns/MemberAvatar.svelte";
 export { default as RichTextEditor } from './components/patterns/RichTextEditor.svelte';
 export { default as RichTextToolbar } from './components/patterns/RichTextToolbar.svelte';
 export { default as PageHeader } from './components/patterns/PageHeader.svelte';
