@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, uiConfirm } from '@nba/ui';
+  import { Button } from '@nba/ui';
 
   /**
    * Le geste qui remplace la recherche de bénévole par SMS.
@@ -29,19 +29,16 @@
 
   let busy = $state(false);
   let errorMsg = $state('');
+  /**
+   * Confirmation posée dans le composant, et non par `uiConfirm` : l'espace adhérent ne
+   * monte pas `GlobalConfirm`, l'hôte qui répond à ce store. La promesse rendue par
+   * `uiConfirm` n'y était donc jamais résolue, et le bouton « Je ne peux plus ouvrir »
+   * restait sans effet — sans dialogue, sans requête, et sans même une erreur à lire.
+   * Même parade que `MemberPhotoField`, pour la même raison.
+   */
+  let confirmingRelease = $state(false);
 
   async function send(action: 'claim' | 'release') {
-    if (action === 'release') {
-      const confirmed = await uiConfirm({
-        title: 'Ne plus ouvrir cette séance ?',
-        description:
-          'Des adhérents comptent sur vous. La séance repartira à la recherche d’un bénévole.',
-        confirmLabel: 'Je ne peux plus',
-        destructive: true
-      });
-      if (!confirmed) return;
-    }
-
     busy = true;
     errorMsg = '';
 
@@ -69,6 +66,7 @@
     } catch (error) {
       errorMsg = error instanceof Error ? error.message : "L'opération a échoué.";
       busy = false;
+      confirmingRelease = false;
     }
   }
 </script>
@@ -77,10 +75,41 @@
   {#if iAmOpener}
     <div class="flex flex-wrap items-center justify-between gap-2">
       <p class="text-sm font-medium text-primary">C'est vous qui ouvrez cette séance.</p>
-      <Button variant="outline" onclick={() => send('release')} disabled={busy} class="min-h-[44px]">
-        {busy ? 'Un instant…' : 'Je ne peux plus ouvrir'}
-      </Button>
+      {#if !confirmingRelease}
+        <Button
+          variant="outline"
+          onclick={() => (confirmingRelease = true)}
+          disabled={busy}
+          class="min-h-[44px]"
+        >
+          {busy ? 'Un instant…' : 'Je ne peux plus ouvrir'}
+        </Button>
+      {/if}
     </div>
+
+    {#if confirmingRelease}
+      <div class="mt-2 flex flex-wrap items-center gap-2">
+        <p class="text-sm text-muted-foreground">
+          Des adhérents comptent sur vous. La séance repartira à la recherche d’un bénévole.
+        </p>
+        <Button
+          variant="destructive"
+          onclick={() => send('release')}
+          disabled={busy}
+          class="min-h-[44px]"
+        >
+          {busy ? 'Un instant…' : 'Je ne peux plus'}
+        </Button>
+        <Button
+          variant="ghost"
+          onclick={() => (confirmingRelease = false)}
+          disabled={busy}
+          class="min-h-[44px]"
+        >
+          Annuler
+        </Button>
+      </div>
+    {/if}
   {:else if openerName}
     <p class="text-sm text-muted-foreground">{openerName} ouvre cette séance.</p>
   {:else}
