@@ -56,6 +56,53 @@ describe('AdminLayout Component', () => {
     target.remove();
   });
 
+  it('signale les rubriques en rodage, et elles seules', () => {
+    isMobileViewport = false;
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    const component = mount(AdminLayout, {
+      target,
+      props: { email: 'test@nozay-bad.fr', permissions: ALL_PERMISSIONS }
+    });
+    flushSync();
+
+    const badges = [...target.querySelectorAll('span')].filter(
+      (span) => span.textContent?.trim() === 'bêta'
+    );
+    // Deux rubriques marquées : « Jeu libre » et « Interclubs ». Le marqueur est porté
+    // par le libellé de rubrique, pas par chaque entrée — c'est la section qui est jeune.
+    expect(badges).toHaveLength(2);
+
+    const labelled = badges.map((badge) => badge.parentElement?.textContent?.trim());
+    expect(labelled.some((text) => text?.startsWith('Jeu libre'))).toBe(true);
+    expect(labelled.some((text) => text?.startsWith('Interclubs'))).toBe(true);
+
+    unmount(component);
+    target.remove();
+  });
+
+  it('range le jeu libre hors de la communication', () => {
+    isMobileViewport = false;
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    const component = mount(AdminLayout, {
+      target,
+      props: { email: 'test@nozay-bad.fr', permissions: ALL_PERMISSIONS }
+    });
+    flushSync();
+
+    // Tenir les séances et lire qui vient n'est pas communiquer : la rubrique est à part,
+    // et son entrée s'appelle « Séances ».
+    expect(target.textContent).toContain('Jeu libre');
+    expect(target.textContent).toContain('Séances');
+    expect(target.querySelector('a[href="/admin/website/jeu-libre"]')).not.toBeNull();
+
+    unmount(component);
+    target.remove();
+  });
+
   it('should render the consolidated settings menu item and highlight it when active', () => {
     isMobileViewport = false;
     const target = document.createElement('div');

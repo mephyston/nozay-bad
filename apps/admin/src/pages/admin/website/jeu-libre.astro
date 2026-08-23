@@ -2,7 +2,7 @@
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
 import { PageHeader, ErrorAlert } from '@nba/ui';
-import { OpenPlayManager, OpenPlayOpenersCard } from '@nba/schedules-ui';
+import { OpenPlayManager } from '@nba/schedules-ui';
 import { createAdminApiClient } from '../../../lib/api';
 import { can, guardAction } from '../../../lib/guard';
 import { resolveEnv } from '@nba/runtime-env';
@@ -34,9 +34,7 @@ const ACTIONS = {
   // information de club, la liste de ses inscrits — et de leurs invités non licenciés —
   // une donnée personnelle.
   generate: 'schedules:open-play:write',
-  registrations: 'schedules:registrations:read',
-  addOpener: 'schedules:open-play:write',
-  removeOpener: 'schedules:open-play:write'
+  registrations: 'schedules:registrations:read'
 } as const;
 
 if (Astro.request.method === 'POST') {
@@ -94,15 +92,6 @@ if (Astro.request.method === 'POST') {
       url: `http://localhost/schedules/open-play/${data.id}/registrations`,
       method: 'GET'
     },
-    addOpener: {
-      url: 'http://localhost/schedules/open-play/openers',
-      method: 'POST',
-      body: { seasonCode: data.seasonCode, licence: data.licence }
-    },
-    removeOpener: {
-      url: `http://localhost/schedules/open-play/openers/${data.id}`,
-      method: 'DELETE'
-    }
   };
 
   const route = routes[data.action];
@@ -120,8 +109,6 @@ if (Astro.request.method === 'POST') {
 let sessions: any[] = [];
 let venues: any[] = [];
 let openPlaySlots: any[] = [];
-let openers: any[] = [];
-let members: any[] = [];
 let seasonCode = '';
 let errorMsg = '';
 
@@ -157,53 +144,6 @@ try {
     // Seuls les créneaux de jeu libre peuvent être déroulés en séances.
     openPlaySlots = allSlots.filter((slot: any) => slot.audience === 'jeu_libre');
   }
-  /*
-   * Les ouvreurs, et les noms qui vont avec.
-   *
-   * `open_play_openers` ne stocke que des licences : la liste est courante, pas
-   * historique, et y recopier un prénom le laisserait diverger de l'annuaire. C'est donc
-   * ici — la seule page qui les affiche — que la composition se fait, en rapprochant les
-   * licences de l'annuaire de la saison. Une licence sans correspondance reste affichée
-   * telle quelle : un ouvreur qui n'a pas repris sa licence doit se voir.
-   */
-  if (seasonCode) {
-    const openersRes = await apiService.fetch(
-      `http://localhost/schedules/open-play/openers?season=${encodeURIComponent(seasonCode)}`
-    );
-    if (openersRes.ok) openers = ((await openersRes.json()) as any).data ?? [];
-  }
-
-  // L'annuaire n'est chargé que si le compte a le droit de le lire : `communication`
-  // tient les séances sans porter `members:members:read`, et un champ de recherche muet
-  // vaut moins qu'une saisie manuelle assumée.
-  if (seasonCode && can(Astro.locals, 'members:members:read')) {
-    /*
-     * `season` n'est pas facultatif ici : `/members` rend des ADHÉSIONS, pas des personnes
-     * — une ligne par licence **et par saison** (ADR-0006). Sans le filtre, un adhérent de
-     * trois ans revient trois fois avec la même licence, et la liste de suggestions, keyée
-     * dessus, faisait planter l'îlot entier : le champ restait affiché, rendu côté serveur,
-     * mais plus rien ne réagissait.
-     *
-     * Le filtre est de toute façon le bon comportement : un badge se confie à un adhérent
-     * de la saison en cours.
-     */
-    const membersRes = await apiService.fetch(
-      `http://localhost/members?season=${encodeURIComponent(seasonCode)}&limit=1000`
-    );
-    if (membersRes.ok) {
-      members = (((await membersRes.json()) as any).data ?? []).map((m: any) => ({
-        licence: m.licence,
-        firstName: m.firstName,
-        lastName: m.lastName
-      }));
-    }
-  }
-
-  const byLicence = new Map(members.map((m: any) => [m.licence, `${m.firstName} ${m.lastName}`]));
-  openers = openers.map((opener: any) => ({
-    ...opener,
-    name: byLicence.get(opener.licence) ?? null
-  }));
 } catch {
   errorMsg = 'Impossible de charger les séances.';
 }
@@ -236,13 +176,6 @@ try {
         canReadRegistrations={canReadRegistrations}
       />
 
-      <OpenPlayOpenersCard
-        client:load
-        openers={openers}
-        members={members}
-        seasonCode={seasonCode}
-        canWrite={canWrite}
-      />
     </div>
   </AdminLayout>
 </Layout>

@@ -1,0 +1,146 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import AdminLayout from '../../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { OpenPlayOpenersCard } from '@nba/schedules-ui';
+import { createAdminApiClient } from '../../../../lib/api';
+import { can, guardAction } from '../../../../lib/guard';
+import { resolveEnv } from '@nba/runtime-env';
+
+/**
+ * Les détenteurs de badge, sur leur propre page.
+ *
+ * Séparés des séances, parce qu'ils ne se tiennent pas au même rythme : on ouvre des
+ * séances toutes les semaines, on confie un badge une fois l'an. Les mêler obligeait à
+ * faire défiler la liste des séances pour atteindre la carte, et laissait croire que la
+ * liste des ouvreurs dépendait de la période affichée.
+ */
+
+const env = resolveEnv<{ OPEN_PLAY_ENABLED?: string }>(Astro.locals);
+
+if (env.OPEN_PLAY_ENABLED !== 'true') {
+  return new Response('Not Found', { status: 404 });
+}
+
+const canWrite = can(Astro.locals, 'schedules:open-play:write');
+const apiService = createAdminApiClient(Astro.locals);
+
+const ACTIONS = {
+  addOpener: 'schedules:open-play:write',
+  removeOpener: 'schedules:open-play:write'
+} as const;
+
+if (Astro.request.method === 'POST') {
+  const data = (await Astro.request.json()) as any;
+  const denied = guardAction(Astro.locals, data.action, ACTIONS);
+  if (denied) return denied;
+
+  const routes: Record<string, { url: string; method: string; body?: unknown }> = {
+    addOpener: {
+      url: 'http://localhost/schedules/open-play/openers',
+      method: 'POST',
+      body: { seasonCode: data.seasonCode, licence: data.licence }
+    },
+    removeOpener: {
+      url: `http://localhost/schedules/open-play/openers/${data.id}`,
+      method: 'DELETE'
+    }
+  };
+
+  const route = routes[data.action];
+  const apiRes = await apiService.fetch(route.url, {
+    method: route.method,
+    headers: { 'Content-Type': 'application/json' },
+    ...(route.body ? { body: JSON.stringify(route.body) } : {})
+  });
+  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
+  return new Response(JSON.stringify(await apiRes.json()), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+let openers: any[] = [];
+let members: any[] = [];
+let seasonCode = '';
+let errorMsg = '';
+
+try {
+  // La saison vient des créneaux, qui la portent déjà : ce domaine ne franchit pas la
+  // frontière de la comptabilité pour une chaîne de caractères.
+  const slotsRes = await apiService.fetch('http://localhost/schedules');
+  if (slotsRes.ok) {
+    const slots = ((await slotsRes.json()) as any).data ?? [];
+    seasonCode = slots[0]?.seasonCode ?? '';
+  }
+
+  if (!seasonCode) {
+    errorMsg = "Aucun créneau n'est enregistré : la saison des ouvreurs ne peut pas être déterminée.";
+  } else {
+    const openersRes = await apiService.fetch(
+      `http://localhost/schedules/open-play/openers?season=${encodeURIComponent(seasonCode)}`
+    );
+    if (openersRes.ok) openers = ((await openersRes.json()) as any).data ?? [];
+    else if (openersRes.status === 404) {
+      errorMsg = 'Les séances de jeu libre sont désactivées sur cet environnement (OPEN_PLAY_ENABLED).';
+    } else {
+      errorMsg = `Impossible de charger les ouvreurs (erreur ${openersRes.status}).`;
+    }
+
+    // `season` n'est pas facultatif : `/members` rend des ADHÉSIONS, une ligne par licence
+    // ET par saison (ADR-0006). Sans le filtre, un adhérent de trois ans revient trois
+    // fois avec la même licence — et une liste keyée dessus meurt à l'hydratation.
+    //
+    // L'annuaire n'est lu que si le compte en a le droit : `communication` tient les
+    // séances sans porter `members:members:read`, et un champ de recherche muet vaut
+    // moins qu'une saisie manuelle assumée.
+    if (can(Astro.locals, 'members:members:read')) {
+      const membersRes = await apiService.fetch(
+        `http://localhost/members?season=${encodeURIComponent(seasonCode)}&limit=1000`
+      );
+      if (membersRes.ok) {
+        members = (((await membersRes.json()) as any).data ?? []).map((m: any) => ({
+          licence: m.licence,
+          firstName: m.firstName,
+          lastName: m.lastName
+        }));
+      }
+    }
+
+    const byLicence = new Map(members.map((m: any) => [m.licence, `${m.firstName} ${m.lastName}`]));
+    openers = openers.map((opener: any) => ({
+      ...opener,
+      name: byLicence.get(opener.licence) ?? null
+    }));
+  }
+} catch {
+  errorMsg = 'Impossible de charger les ouvreurs.';
+}
+---
+
+<Layout title="Ouvreurs - NBA 91">
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Ouvreurs"
+  >
+    <div class="space-y-6">
+      {errorMsg && <ErrorAlert message={errorMsg} />}
+
+      <PageHeader
+        title="Ouvreurs"
+        description="Les adhérents à qui le club confie un badge d'accès. Eux seuls peuvent confirmer une séance de jeu libre depuis leur espace — sans eux, aucune séance ne s'ouvre."
+      />
+
+      <OpenPlayOpenersCard
+        client:load
+        openers={openers}
+        members={members}
+        seasonCode={seasonCode}
+        canWrite={canWrite}
+      />
+    </div>
+  </AdminLayout>
+</Layout>

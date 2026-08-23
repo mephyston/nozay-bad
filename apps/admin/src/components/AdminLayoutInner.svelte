@@ -36,6 +36,8 @@
     CalendarClock,
     CalendarDays,
     Signpost,
+    DoorOpen,
+    KeyRound,
     CircleAlert
   } from "@lucide/svelte";
   import { DropdownMenu } from "bits-ui";
@@ -62,7 +64,7 @@
   const ICONS: Record<string, any> = {
     LayoutDashboard, Sparkles, Users, BarChart3, BookOpen, FileCheck, Scale,
     Landmark, Wallet, Coins, Package, ShoppingCart, Bell, Megaphone, Image, FileText, Newspaper, CalendarClock, CalendarDays, PanelBottom, Settings, User, HelpCircle,
-    Trophy, ChartNoAxesColumn, ShieldCheck, Signpost,
+    Trophy, ChartNoAxesColumn, ShieldCheck, Signpost, DoorOpen, KeyRound,
     Menu: MenuIcon
   };
 
@@ -72,6 +74,9 @@
     NAV_GROUPS
       .map(g => ({
         label: g.label,
+        // Recopié explicitement : cette projection reconstruit chaque groupe, et tout
+        // champ non listé ici disparaît en silence.
+        beta: g.beta ?? false,
         items: g.items
           .filter(i => i.permission === null || can(permissions, i.permission))
           .map(i => ({ name: i.name, href: i.href, icon: ICONS[i.icon] }))
@@ -402,6 +407,20 @@
               aria-hidden="true"
             />
             <span>{group.label}</span>
+            {#if group.beta}
+              <!--
+                Marqueur discret, à côté du libellé et non sur chaque entrée : c'est la
+                rubrique entière qui est jeune, pas telle ou telle page. Un `<span>`
+                plutôt que le composant `Badge`, dont la taille est pensée pour du
+                contenu, là où ce libellé fait déjà 10 pixels.
+              -->
+              <span
+                class="rounded-sm bg-primary/10 px-1 py-px text-[9px] font-semibold leading-none tracking-wide text-primary"
+                title="Rubrique récente : signalez au bureau ce qui vous paraît de travers."
+              >
+                bêta
+              </span>
+            {/if}
           </button>
         {/if}
         <Sidebar.GroupContent class={group.label && !isGroupOpen(group.label) ? 'hidden group-data-[collapsible=icon]:block' : ''}>

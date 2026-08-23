@@ -12,6 +12,14 @@ export interface NavItem {
 export interface NavGroup {
   label: string;
   items: NavItem[];
+  /**
+   * Rubrique encore en rodage, signalée comme telle dans le menu.
+   *
+   * Le bureau n'est pas le seul à ouvrir cette administration : dire qu'une section
+   * vient d'arriver évite qu'un comportement inattendu passe pour une panne, et invite
+   * à la signaler plutôt qu'à la contourner.
+   */
+  beta?: boolean;
 }
 
 /**
@@ -68,12 +76,23 @@ export const NAV_GROUPS: NavGroup[] = [
       { name: 'Actualités', icon: 'Newspaper', href: '/admin/website/posts', permission: 'cms:posts:read' },
       { name: 'Notifications', icon: 'Bell', href: '/admin/notifications', permission: 'notifications:messages:read' },
       { name: 'Créneaux', icon: 'CalendarClock', href: '/admin/website/schedules', permission: 'schedules:slots:read' },
-      { name: 'Jeu libre', icon: 'Users', href: '/admin/website/jeu-libre', permission: 'schedules:open-play:read' },
       { name: 'Agenda', icon: 'CalendarDays', href: '/admin/website/events', permission: 'events:events:read' }
     ]
   },
   {
+    // Rubrique à part, et non sous « Communication » : tenir les séances et lire qui
+    // vient n'est pas communiquer. La grille hebdomadaire, elle, reste là-bas — c'est
+    // bien ce que le site affiche.
+    label: 'Jeu libre',
+    beta: true,
+    items: [
+      { name: 'Séances', icon: 'DoorOpen', href: '/admin/website/jeu-libre', permission: 'schedules:open-play:read' },
+      { name: 'Ouvreurs', icon: 'KeyRound', href: '/admin/website/jeu-libre/ouvreurs', permission: 'schedules:open-play:read' }
+    ]
+  },
+  {
     label: 'Interclubs',
+    beta: true,
     items: [
       { name: 'Équipes', icon: 'Trophy', href: '/admin/teams', permission: 'teams:teams:read' },
       { name: 'Contrôle des journées', icon: 'ShieldCheck', href: '/admin/teams/journees', permission: 'teams:lineups:read' },
