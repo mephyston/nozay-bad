@@ -3,7 +3,7 @@ import { ListOpenPlayOpenersRepository } from './repository';
 import type { ListOpenPlayOpenersInput, ListOpenPlayOpenersOutput } from './dto';
 
 /**
- * Les détenteurs de badge de la saison.
+ * Les détenteurs de clé de la saison.
  *
  * La liste ne porte que des licences : les noms sont résolus par l'écran qui les affiche,
  * seul à connaître l'annuaire. C'est ce qui empêche cette liste — courante, pas

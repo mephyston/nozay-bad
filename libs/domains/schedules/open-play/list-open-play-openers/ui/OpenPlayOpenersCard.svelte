@@ -3,7 +3,7 @@
   import { Button, Input, Card, Badge, uiConfirm, toast, flashAndReload } from '@nba/ui';
 
   /**
-   * Les détenteurs de badge de la saison.
+   * Les détenteurs de clé de la saison.
    *
    * La table ne stocke que des licences — c'est une liste **courante**, pas une trace, et
    * y recopier un prénom le laisserait diverger de l'annuaire. Les noms sont donc résolus
@@ -81,7 +81,7 @@
 
   async function remove(opener: OpenerRow) {
     const confirmed = await uiConfirm({
-      title: 'Reprendre ce badge ?',
+      title: 'Reprendre cette clé ?',
       description:
         'Les séances que cette personne a déjà acceptées d’ouvrir ne sont pas annulées : elle ne pourra simplement plus s’en engager de nouvelles.',
       confirmLabel: 'Reprendre',
@@ -90,7 +90,7 @@
     if (!confirmed) return;
     try {
       await post({ action: 'removeOpener', id: opener.id }, 'Le retrait a échoué.');
-      flashAndReload('Badge repris.');
+      flashAndReload('Clé reprise.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Le retrait a échoué.');
     }
@@ -102,7 +102,7 @@
     <div>
       <h3 class="text-sm font-bold text-foreground">Ouvreurs de la saison</h3>
       <p class="mt-1 text-xs text-muted-foreground">
-        Les adhérents à qui le club confie un badge. Eux seuls voient « J'ouvre ce créneau »
+        Les adhérents à qui le club confie une clé. Eux seuls voient « J'ouvre ce créneau »
         depuis leur espace.
       </p>
     </div>
@@ -149,7 +149,7 @@
       <div class="space-y-2 border-t border-border/50 pt-3">
         <Input
           bind:value={search}
-          placeholder="Chercher un adhérent à qui confier un badge…"
+          placeholder="Chercher un adhérent à qui confier une clé…"
           aria-label="Chercher un adhérent"
           class="min-h-[40px]"
         />

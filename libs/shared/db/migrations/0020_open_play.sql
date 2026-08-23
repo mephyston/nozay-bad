@@ -108,16 +108,16 @@ CREATE TABLE `open_play_guests` (
 --> statement-breakpoint
 CREATE INDEX `open_play_guests_registration_idx` ON `open_play_guests` (`registration_id`);
 --> statement-breakpoint
--- Détenteurs de badge autorisés à ouvrir une séance, par saison. AUCUNE identité recopiée
+-- Détenteurs de clé autorisés à ouvrir une séance, par saison. AUCUNE identité recopiée
 -- ici, à la différence de `open_play_sessions.opener_*` : c'est une liste courante, pas une
 -- trace, et y recopier un prénom réintroduirait la divergence que l'ADR-0006 vient de
 -- supprimer. Le précédent d'une liste de personnes désignées par le bureau,
 -- `member_club_functions`, ne stocke lui non plus que (saison, licence).
 --
 -- Pourquoi pas une valeur de CLUB_FUNCTIONS : l'unique (season_id, licence) de cette
--- table-là interdit le cumul, or les détenteurs de badge SONT les gens du bureau — il
+-- table-là interdit le cumul, or les détenteurs de clé SONT les gens du bureau — il
 -- faudrait choisir entre « président » et « ouvreur ». Et une fonction se décide en
--- assemblée générale, un badge change quand la mairie les refait.
+-- assemblée générale, un trousseau change quand la mairie refait les serrures.
 --
 -- La liste vit dans ce domaine, et non dans `members`, pour que le refus « vous n'êtes pas
 -- ouvreur » soit rendu par le handler ; ailleurs il remonterait dans l'application et

@@ -174,7 +174,7 @@ describe('liste des ouvreurs', () => {
     expect(openers.find((o) => o.licence === PIERRE.licence)?.sessionsOpened).toBe(0);
   });
 
-  it('reprendre un badge ne défait pas les séances déjà tenues', async () => {
+  it('reprendre une clé ne défait pas les séances déjà tenues', async () => {
     await claimOpenPlaySession(db, { sessionId, ...MARIE }, NOW);
     const [opener] = (await listOpenPlayOpeners(db, { seasonCode: '25-26' })).filter(
       (o) => o.licence === MARIE.licence

@@ -41,7 +41,7 @@ export async function updateOpenPlaySession(
   }
 
   // Désigner quelqu'un hors de la liste des ouvreurs ferait de cette liste une
-  // décoration : le bureau désigne PARMI ses détenteurs de badge.
+  // décoration : le bureau désigne PARMI ses détenteurs de clé.
   if (input.openerLicence) {
     const eligible = await repo.isOpener(db, session.seasonCode, input.openerLicence);
     if (!eligible) throw new NotAnOpenerError();

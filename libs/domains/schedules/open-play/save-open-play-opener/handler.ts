@@ -3,7 +3,7 @@ import { SaveOpenPlayOpenerRepository } from './repository';
 import type { SaveOpenPlayOpenerInput, SaveOpenPlayOpenerOutput } from './dto';
 
 /**
- * Confie un badge à un adhérent, pour la saison.
+ * Confie une clé de gymnase à un adhérent, pour la saison.
  *
  * Le domaine ne vérifie pas que la licence existe : il est feuille, il ne connaît pas les
  * adhérents. C'est l'écran du bureau qui choisit dans l'annuaire — et une licence saisie

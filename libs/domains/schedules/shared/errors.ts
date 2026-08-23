@@ -26,7 +26,7 @@ export class InvalidSlotTimesError extends AppError {
  *
  * Tous en 409 sauf un : « rien ne manque au demandeur, c'est l'état qui s'oppose à sa
  * demande ». `NotAnOpenerError` fait exception et vaut 403 — là, il manque bien quelque
- * chose au demandeur : il n'est pas de ceux à qui le bureau a confié un badge.
+ * chose au demandeur : il n'est pas de ceux à qui le bureau a confié une clé.
  */
 
 export class OpenPlaySessionNotFoundError extends AppError {
@@ -78,7 +78,7 @@ export class TooManyGuestsError extends AppError {
   }
 }
 
-/** Le seul 403 du domaine : le demandeur n'a pas de badge. */
+/** Le seul 403 du domaine : le demandeur n'a pas de clé. */
 export class NotAnOpenerError extends AppError {
   constructor(message = 'Vous ne faites pas partie des ouvreurs désignés.') {
     super(message, 403);

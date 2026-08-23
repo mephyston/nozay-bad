@@ -555,6 +555,6 @@
   </FormField>
 
   <FormField id="op-notes" label="Consigne (facultatif)">
-    <Input id="op-notes" bind:value={notes} placeholder="Badge à récupérer chez Robert" maxlength={500} />
+    <Input id="op-notes" bind:value={notes} placeholder="Clé à récupérer chez Robert" maxlength={500} />
   </FormField>
 </FormSheet>

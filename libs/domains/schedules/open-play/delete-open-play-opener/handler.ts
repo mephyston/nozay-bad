@@ -3,7 +3,7 @@ import { DeleteOpenPlayOpenerRepository } from './repository';
 import type { DeleteOpenPlayOpenerInput, DeleteOpenPlayOpenerOutput } from './dto';
 
 /**
- * Reprend le badge d'un adhérent.
+ * Reprend la clé d'un adhérent.
  *
  * Ne défait **rien du passé** : les séances qu'il a ouvertes gardent son nom, recopié au
  * moment où il s'est engagé. C'est toute la raison pour laquelle l'identité est recopiée

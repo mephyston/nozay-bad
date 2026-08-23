@@ -69,7 +69,7 @@ Fonctionnalité: Alerte « créneau à pourvoir »
 
   Scénario: Aucun ouvreur désigné
     Étant donné une séance au seuil et sans ouvreur
-    Et aucun adhérent porteur d'un badge
+    Et aucun adhérent porteur d'une clé
     Quand l'alerte quotidienne s'exécute
     Alors aucune notification n'est émise
     Et le fait est journalisé

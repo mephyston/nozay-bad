@@ -105,7 +105,7 @@ export const openPlaySessionsTable = sqliteTable(
     openerLastName: text('opener_last_name'),
     openedAt: integer('opened_at', { mode: 'timestamp' }),
     label: text('label'),
-    /** Consigne du bureau : « badge à récupérer chez Robert », « entrée côté parking ». */
+    /** Consigne du bureau : « clé à récupérer chez Robert », « entrée côté parking ». */
     notes: text('notes'),
     /**
      * Motif d'annulation, obligatoire à l'annulation côté handler.
@@ -224,7 +224,7 @@ export const openPlayGuestsTable = sqliteTable(
 );
 
 /**
- * Détenteurs de badge autorisés à ouvrir une séance, par saison.
+ * Détenteurs de clé autorisés à ouvrir une séance, par saison.
  *
  * **Aucune identité recopiée ici**, à la différence de `open_play_sessions.opener_*` :
  * c'est une liste *courante*, pas une trace. Y recopier un prénom réintroduirait
@@ -235,9 +235,10 @@ export const openPlayGuestsTable = sqliteTable(
  *
  * Pourquoi pas une valeur de `CLUB_FUNCTIONS` : l'unique `(season_id, licence)` de
  * `member_club_functions` **interdit le cumul** — un adhérent ne porte qu'une fonction
- * par saison. Or les détenteurs de badge *sont* les gens du bureau : il faudrait choisir
+ * par saison. Or les détenteurs de clé *sont* les gens du bureau : il faudrait choisir
  * entre « président » et « ouvreur ». Et ce n'est pas la même nature de chose — une
- * fonction se décide en assemblée générale, un badge change quand la mairie les refait.
+ * fonction se décide en assemblée générale, un trousseau change quand la mairie refait
+ * les serrures.
  *
  * La liste vit ici, et non dans `members`, pour que le refus « vous n'êtes pas ouvreur »
  * soit rendu **par le handler**. Ailleurs, il remonterait dans l'application et

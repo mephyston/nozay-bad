@@ -8,10 +8,10 @@ import { can, guardAction } from '../../../../lib/guard';
 import { resolveEnv } from '@nba/runtime-env';
 
 /**
- * Les détenteurs de badge, sur leur propre page.
+ * Les détenteurs de clé, sur leur propre page.
  *
  * Séparés des séances, parce qu'ils ne se tiennent pas au même rythme : on ouvre des
- * séances toutes les semaines, on confie un badge une fois l'an. Les mêler obligeait à
+ * séances toutes les semaines, on confie une clé une fois l'an. Les mêler obligeait à
  * faire défiler la liste des séances pour atteindre la carte, et laissait croire que la
  * liste des ouvreurs dépendait de la période affichée.
  */
@@ -131,7 +131,7 @@ try {
 
       <PageHeader
         title="Ouvreurs"
-        description="Les adhérents à qui le club confie un badge d'accès. Eux seuls peuvent confirmer une séance de jeu libre depuis leur espace — sans eux, aucune séance ne s'ouvre."
+        description="Les adhérents à qui le club confie une clé de gymnase. Eux seuls peuvent confirmer une séance de jeu libre depuis leur espace — sans eux, aucune séance ne s'ouvre."
       />
 
       <OpenPlayOpenersCard

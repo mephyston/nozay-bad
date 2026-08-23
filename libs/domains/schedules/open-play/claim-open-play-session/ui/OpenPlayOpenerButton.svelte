@@ -4,7 +4,7 @@
   /**
    * Le geste qui remplace la recherche de bénévole par SMS.
    *
-   * Rendu seulement aux détenteurs de badge — mais ce n'est qu'un confort d'affichage :
+   * Rendu seulement aux détenteurs de clé — mais ce n'est qu'un confort d'affichage :
    * le refus qui compte est celui du serveur, qui vérifie la licence de la session contre
    * la liste des ouvreurs. Un navigateur qui forgerait la requête se ferait refuser.
    *

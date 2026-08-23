@@ -47,12 +47,12 @@ describe('création d’une séance', () => {
   it('accepte un seuil et une consigne propres à la séance', async () => {
     const session = await createOpenPlaySession(
       db,
-      { venueId, ...SATURDAY, minPlayers: 6, notes: '  Badge chez Robert  ' },
+      { venueId, ...SATURDAY, minPlayers: 6, notes: '  Clé chez Robert  ' },
       NOW
     );
 
     expect(session.minPlayers).toBe(6);
-    expect(session.notes).toBe('Badge chez Robert');
+    expect(session.notes).toBe('Clé chez Robert');
   });
 
   it('rend nulle une consigne vide plutôt qu’une chaîne vide', async () => {

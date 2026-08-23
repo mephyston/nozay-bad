@@ -24,7 +24,7 @@ Le domaine est **feuille** : il ne dépend d'aucun autre. Il ne connaît donc pa
 | **Seuil d'ouverture** | Nombre de **joueurs** — pas de licences — en dessous duquel le club ne mobilise pas de bénévole. Porté par la séance, et figé au moment de la décision. | `min_players` (défaut `4`) |
 | **Joueurs attendus** | Inscrits **et** invités. Le seul chiffre qui décide de l'ouverture. | `playerCount` |
 | **À pourvoir** | Le seuil est atteint et personne ne s'est déclaré ouvreur. **État dérivé**, jamais stocké. | `needsOpener` |
-| **Ouvreur** | Détenteur de badge désigné par le bureau, qui s'engage à ouvrir le gymnase. | `Entity` (`open_play_openers`) |
+| **Ouvreur** | Détenteur de clé désigné par le bureau, qui s'engage à ouvrir le gymnase. | `Entity` (`open_play_openers`) |
 | **Séance confirmée** | Un ouvreur s'est engagé. Équivaut exactement à « `opener_licence` n'est pas nul ». | `status = 'confirmed'` |
 | **Séance annulée** | Retirée du jeu, **avec son motif** — que l'adhérent inscrit doit pouvoir lire. Reste visible, barrée. | `status = 'cancelled'` |
 | **Inscription** | Engagement d'un adhérent à venir, avec les personnes qu'il amène. | `Entity` (`open_play_registrations`) |

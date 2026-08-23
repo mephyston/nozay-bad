@@ -96,7 +96,7 @@ describe('OpenPlayOpenersCard', () => {
     expect(suggestions).toHaveLength(1);
   });
 
-  it('ne propose pas quelqu’un qui a déjà un badge', () => {
+  it('ne propose pas quelqu’un qui a déjà une clé', () => {
     render();
     search('Marie');
     expect(host.textContent).toContain('Aucun adhérent ne correspond');

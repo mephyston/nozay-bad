@@ -2,7 +2,7 @@ import type { OpenPlayOpenerRow } from '../../shared/open-play-schema';
 
 export interface SaveOpenPlayOpenerInput {
   seasonCode: string;
-  /** Licence de l'adhérent à qui le bureau confie un badge. */
+  /** Licence de l'adhérent à qui le bureau confie une clé. */
   licence: string;
 }
 
