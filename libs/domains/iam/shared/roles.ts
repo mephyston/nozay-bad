@@ -130,11 +130,14 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'cms:nav:read',
     'cms:nav:write',
     'schedules:slots:read',
+    'schedules:open-play:read',
     'schedules:slots:write',
+    'schedules:open-play:write',
     'events:events:read',
     'events:events:write',
     'events:events:delete',
     'events:registrations:read',
+    'schedules:registrations:read',
     // Interclubs : le président suit les engagements du club sans les tenir.
     'teams:teams:read',
     'teams:rankings:read',
@@ -172,6 +175,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'cms:pages:read',
     'cms:posts:read',
     'schedules:slots:read',
+    'schedules:open-play:read',
     'events:events:read',
     'settings:hub:read',
     'ai:assistant:use'
@@ -200,9 +204,11 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'cms:media:write',
     'cms:nav:read',
     'schedules:slots:read',
+    'schedules:open-play:read',
     'events:events:read',
     'events:events:write',
     'events:registrations:read',
+    'schedules:registrations:read',
     // Interclubs : le secrétariat consulte, l'entraîneur tient.
     'teams:teams:read',
     'teams:rankings:read',
@@ -234,7 +240,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'cms:posts:read',
     // L'entraîneur vit les créneaux au quotidien : il les tient à jour.
     'schedules:slots:read',
+    'schedules:open-play:read',
     'schedules:slots:write',
+    'schedules:open-play:write',
     'events:events:read',
     // Les interclubs sont le métier de l'entraîneur : il engage les équipes, désigne
     // les capitaines, tient les classements et contrôle les valeurs d'équipe avant
@@ -283,13 +291,16 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'cms:nav:read',
     'cms:nav:write',
     'schedules:slots:read',
+    'schedules:open-play:read',
     'schedules:slots:write',
+    'schedules:open-play:write',
     'events:events:read',
     'events:events:write',
     'events:events:delete',
     // Qui tient l'agenda relève les inscriptions : c'est la même personne qui annonce
     // la soirée et qui compte les couverts.
-    'events:registrations:read'
+    'events:registrations:read',
+    'schedules:registrations:read'
   ],
 
   // Socle du deny-by-default : aucun droit métier. Attribué à un compte créé sans
