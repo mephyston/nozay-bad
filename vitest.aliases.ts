@@ -46,6 +46,7 @@ export const workspaceAliases: Record<string, string> = {
   '@nba/cms/public': path.resolve(__dirname, './libs/domains/cms/shared/public.ts'),
   '@nba/cms-ui': path.resolve(__dirname, './libs/domains/cms/shared/ui.ts'),
   '@nba/schedules-api': path.resolve(__dirname, './libs/domains/schedules/index.ts'),
+  '@nba/schedules/schema': path.resolve(__dirname, './libs/domains/schedules/shared/schema.ts'),
   '@nba/events-api': path.resolve(__dirname, './libs/domains/events/index.ts'),
   '@nba/schedules-ui': path.resolve(__dirname, './libs/domains/schedules/shared/ui.ts'),
   '@nba/events-ui': path.resolve(__dirname, './libs/domains/events/shared/ui.ts'),

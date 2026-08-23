@@ -59,6 +59,7 @@ export {
   getContactEmailsForMember,
   getContactEmailsForMembers,
   getContactEmailsForClubFunctions,
+  getContactEmailsForLicences,
   getMemberGroupsForActiveSeason,
   getMemberContactsByEmails,
   getBirthdaysForActiveSeason,

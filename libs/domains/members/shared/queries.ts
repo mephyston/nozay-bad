@@ -262,6 +262,48 @@ export async function getContactEmailsForClubFunctions(
   return collectEmails(rows);
 }
 
+/**
+ * Emails de contact d'une liste de licences, sur une saison.
+ *
+ * Mêmes règles que `getContactEmailsForClubFunctions` : parents inclus (le compte
+ * storefront d'un mineur est celui du représentant légal), minuscules, dédupliqués. La
+ * licence rejoint la personne, l'adhésion de la saison n'étant là que pour écarter
+ * quelqu'un qui n'aurait pas repris sa licence.
+ *
+ * Liste vide = personne. Jamais de dégénérescence en « tout le club » : c'est la même
+ * garde que le ciblage par groupes, et elle compte double ici — l'appelant est un
+ * traitement programmé, personne ne relit ce qu'il envoie.
+ *
+ * Découpée en paquets : D1 plafonne le nombre de paramètres liés d'une requête, et rien
+ * n'interdit au bureau de confier un badge à trente personnes.
+ */
+export async function getContactEmailsForLicences(
+  db: DbOrTx,
+  season: string | number,
+  licences: string[]
+): Promise<string[]> {
+  if (licences.length === 0) return [];
+  const seasonId = await getSeasonId(db, season);
+  if (seasonId === undefined) return [];
+
+  const emails = new Set<string>();
+  for (let start = 0; start < licences.length; start += 90) {
+    const rows = await db
+      .selectDistinct(contactColumns)
+      .from(personsTable)
+      .innerJoin(membershipsTable, eq(membershipsTable.personId, personsTable.id))
+      .where(
+        and(
+          inArray(personsTable.licence, licences.slice(start, start + 90)),
+          eq(membershipsTable.seasonId, seasonId)
+        )
+      )
+      .all();
+    for (const email of collectEmails(rows)) emails.add(email);
+  }
+  return [...emails];
+}
+
 export interface MemberGroup {
   /** Libellé du type d'adhésion, tel qu'importé de Poona. */
   type: string;

@@ -18,7 +18,8 @@ describe('registre des notifications automatiques', () => {
         'reminder:unpaid',
         'reminder:order-awaiting-payment',
         'teams:ranking-reminder',
-        'teams:lineup-reminder'
+        'teams:lineup-reminder',
+        'schedules:open-play-opener-reminder'
       ].sort()
     );
     for (const entry of entries.filter((e) => e.trigger === 'cron')) {
@@ -41,7 +42,8 @@ describe('registre des notifications automatiques', () => {
       PUSH_REMINDERS_ENABLED: 'true',
       PUSH_BIRTHDAYS_ENABLED: 'true',
       PUSH_RANKING_REMINDERS_ENABLED: 'true',
-      PUSH_LINEUP_REMINDERS_ENABLED: 'true'
+      PUSH_LINEUP_REMINDERS_ENABLED: 'true',
+      PUSH_OPEN_PLAY_ENABLED: 'true'
     });
     expect(on.every((e) => e.enabled)).toBe(true);
   });

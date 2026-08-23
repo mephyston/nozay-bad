@@ -3,10 +3,12 @@ import { getSeasonAtDate, type SeasonRow } from '@nba/accounting-api';
 import {
   getBirthdaysForActiveSeason,
   getContactEmailsForClubFunctions,
+  getContactEmailsForLicences,
   getContactEmailsForMembers,
   getHouseholdEmailsForActiveSeason
 } from '@nba/members-api';
 import { getOrdersAwaitingPaymentSince } from '@nba/shop-api';
+import { listOpenPlayOpeners, listOpenPlaySessions } from '@nba/schedules-api';
 import { findRankingReminderDays, remindMissingLineups } from '@nba/teams-api';
 import {
   dispatchPendingNotifications,
@@ -36,6 +38,13 @@ export type ScheduledBindings = {
    */
   PUSH_RANKING_REMINDERS_ENABLED?: string;
   /**
+   * Appel aux ouvreurs pour les séances de jeu libre qui ont assez de joueurs mais
+   * personne pour ouvrir. Distinct d'`OPEN_PLAY_ENABLED` : celui-là dit si la
+   * fonctionnalité existe, celui-ci si elle a le droit de réveiller les gens. Les deux
+   * ne s'allument pas le même jour.
+   */
+  PUSH_OPEN_PLAY_ENABLED?: string;
+  /**
    * Relance des capitaines dont la composition n'est pas validée à l'approche d'une
    * journée d'interclubs. Désactivée par défaut, comme les autres.
    */
@@ -57,6 +66,15 @@ const HISTORY_RETENTION_DAYS = 90;
  * le temps de passer au club régler son achat.
  */
 const ORDER_REMINDER_AFTER_DAYS = 7;
+
+/**
+ * Horizon de l'appel aux ouvreurs, en jours.
+ *
+ * Une semaine : assez tôt pour qu'un bénévole s'organise, assez tard pour que l'affluence
+ * soit connue. Au-delà, l'alerte partirait sur des séances encore vides qui trouveront
+ * preneur d'elles-mêmes.
+ */
+const OPEN_PLAY_HORIZON_DAYS = 7;
 
 async function sendUnpaidReminders(db: ReturnType<typeof createDb>, now: Date): Promise<void> {
   const result = await enqueueNotification(
@@ -191,6 +209,76 @@ export async function sendRankingUpdateReminders(
   }
 }
 
+/**
+ * Appelle les ouvreurs pour les séances qui cherchent encore preneur.
+ *
+ * La composition se fait ici, et non dans le domaine des créneaux : celui-ci est feuille
+ * — il ne connaît ni les adhérents ni les notifications, et ne sait donc résoudre ni une
+ * adresse ni un envoi. Il expose deux lectures, `apps/api` les croise. Même montage que
+ * le rappel des classements.
+ *
+ * **Un seul message agrégé**, pas un par séance : trois notifications à sept heures du
+ * matin font désinstaller l'application. Le détail se lit sur la page, que le message
+ * ouvre.
+ */
+export async function sendOpenPlayOpenerReminders(
+  db: ReturnType<typeof createDb>,
+  season: SeasonRow,
+  now: Date,
+  parisToday: string
+): Promise<void> {
+  const { sessions } = await listOpenPlaySessions(
+    db,
+    { seasonCode: season.code, from: parisToday, needsOpenerWithinDays: OPEN_PLAY_HORIZON_DAYS },
+    now
+  );
+  if (sessions.length === 0) return;
+
+  const openers = await listOpenPlayOpeners(db, { seasonCode: season.code });
+  if (openers.length === 0) {
+    console.log('[push] jeu libre : aucun ouvreur désigné, rien à envoyer');
+    return;
+  }
+
+  const emails = await getContactEmailsForLicences(
+    db,
+    season.id,
+    openers.map((opener) => opener.licence)
+  );
+  if (emails.length === 0) {
+    console.log('[push] jeu libre : ouvreurs désignés sans adresse joignable');
+    return;
+  }
+
+  // Deux séances au plus dans le corps : au-delà, l'écran verrouillé tronque et
+  // n'apprend plus rien.
+  const detail = sessions
+    .slice(0, 2)
+    .map((s) => `${s.date} ${s.startTime} (${s.playerCount} joueurs)`)
+    .join(', ');
+
+  const result = await enqueueNotification(
+    db,
+    {
+      title: sessions.length > 1 ? 'Créneaux de jeu libre à pourvoir' : 'Créneau de jeu libre à pourvoir',
+      body: `${sessions.length} séance${sessions.length > 1 ? 's ont' : ' a'} assez de joueurs mais personne pour ouvrir : ${detail}${sessions.length > 2 ? '…' : ''}.`,
+      url: '/jeu-libre',
+      target: { kind: 'emails', emails },
+      targetLabel: 'emails',
+      targetDetail: 'ouvreurs désignés',
+      source: 'schedules:open-play-opener-reminder',
+      category: 'open_play',
+      // Un Cron Trigger peut être invoqué plus d'une fois pour la même échéance.
+      skipIfSentSince: new Date(now.getTime() - 20 * 60 * 60 * 1000)
+    },
+    now
+  );
+
+  if (!result.skipped) {
+    console.log(`[push] jeu libre : ${result.queued} appareil(s) en file pour ${sessions.length} séance(s)`);
+  }
+}
+
 /** Annonce les anniversaires du jour, si au moins un adhérent est concerné. */
 async function sendBirthdayAnnouncements(db: ReturnType<typeof createDb>, now: Date): Promise<void> {
   const birthdays = await getBirthdaysForActiveSeason(db, now);
@@ -253,6 +341,9 @@ export async function handleScheduled(
     if (season) {
       if (env.PUSH_RANKING_REMINDERS_ENABLED === 'true') {
         await sendRankingUpdateReminders(db, season, now, parisToday);
+      }
+      if (env.PUSH_OPEN_PLAY_ENABLED === 'true') {
+        await sendOpenPlayOpenerReminders(db, season, now, parisToday);
       }
       if (env.PUSH_LINEUP_REMINDERS_ENABLED === 'true') {
         const { reminded } = await remindMissingLineups(

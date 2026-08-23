@@ -35,6 +35,11 @@ export const NOTIFICATION_CATEGORIES = [
     description: 'Cotisation à régler, commande en attente.'
   },
   {
+    id: 'open_play',
+    label: 'Jeu libre',
+    description: 'Créneaux de jeu libre qui cherchent un bénévole pour ouvrir.'
+  },
+  {
     id: 'interclubs',
     label: 'Mes équipes interclubs',
     description: 'Convocations, rappels de composition et anomalies de valeur de vos équipes.'

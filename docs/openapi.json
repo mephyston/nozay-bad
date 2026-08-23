@@ -1557,6 +1557,10 @@
                 "type": "string"
               },
               {
+                "const": "open_play",
+                "type": "string"
+              },
+              {
                 "const": "interclubs",
                 "type": "string"
               }

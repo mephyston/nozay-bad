@@ -20,6 +20,7 @@ export type RegistryEnv = {
   PUSH_BIRTHDAYS_ENABLED?: string;
   PUSH_RANKING_REMINDERS_ENABLED?: string;
   PUSH_LINEUP_REMINDERS_ENABLED?: string;
+  PUSH_OPEN_PLAY_ENABLED?: string;
 };
 
 export function listScheduledNotifications(env: RegistryEnv): ScheduledNotificationView[] {
@@ -66,6 +67,16 @@ export function listScheduledNotifications(env: RegistryEnv): ScheduledNotificat
       category: 'interclubs',
       enabled: on('PUSH_RANKING_REMINDERS_ENABLED'),
       flag: 'PUSH_RANKING_REMINDERS_ENABLED'
+    },
+    {
+      id: 'schedules:open-play-opener-reminder',
+      title: 'Créneaux de jeu libre à pourvoir',
+      body: "Séances des sept prochains jours qui ont assez de joueurs mais personne pour ouvrir. Envoyée aux ouvreurs désignés, en un seul message agrégé.",
+      schedule: 'Chaque jour à 7 h, si au moins une séance cherche un ouvreur',
+      trigger: 'cron',
+      category: 'open_play',
+      enabled: on('PUSH_OPEN_PLAY_ENABLED'),
+      flag: 'PUSH_OPEN_PLAY_ENABLED'
     },
     {
       id: 'teams:lineup-reminder',

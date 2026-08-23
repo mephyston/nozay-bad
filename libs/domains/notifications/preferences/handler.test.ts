@@ -23,7 +23,7 @@ describe('préférences de notification', () => {
   it('active toutes les catégories tant que rien n\'a été réglé', async () => {
     const prefs = await getPreferences(db, 'a@example.com');
 
-    expect(prefs).toHaveLength(6);
+    expect(prefs).toHaveLength(7);
     expect(prefs.every((p) => p.enabled)).toBe(true);
     expect(prefs.map((p) => p.id)).toEqual([
       'announcement',
@@ -31,6 +31,8 @@ describe('préférences de notification', () => {
       'expense',
       'order',
       'reminder',
+      // Créneau de jeu libre qui cherche un bénévole pour ouvrir.
+      'open_play',
       // Anomalie signalée par le coach sur une composition d'interclubs.
       'interclubs'
     ]);
