@@ -1,17 +1,32 @@
 ---
 import type { EventAnnouncement } from '@nba/cms/public';
 import type { AgendaEvent } from '../lib/agenda';
+import type { OpenPlaySession } from '../lib/open-play';
 import EventRow from './EventRow.astro';
+import OpenPlayRow from './OpenPlayRow.astro';
 import { EventSignup } from '@nba/events-ui';
+import { OpenPlaySignup, OpenPlayOpenerButton, OpenPlayAttendees } from '@nba/schedules-ui';
 
 interface Props {
-  /** Le prochain rendez-vous. `null` quand l'agenda est vide : l'encart disparaît. */
+  /** Le prochain rendez-vous. `null` quand l'agenda est vide. */
   event: AgendaEvent | null;
   /** Actualité qui l'annonce, si la page a su la retrouver. */
   announcement?: EventAnnouncement | null;
+  /**
+   * La prochaine séance de jeu libre, quand elle précède le rendez-vous.
+   *
+   * Renseignée par la page, qui compare les deux : l'accueil doit annoncer ce que le
+   * calendrier annoncerait en premier, faute de quoi il désignerait comme « prochain »
+   * un rendez-vous que trois séances précèdent.
+   */
+  session?: OpenPlaySession | null;
+  /** L'adhérent est-il ouvreur ? Décide du bouton « J'ouvre ce créneau ». */
+  canOpen?: boolean;
 }
 
-const { event, announcement = null } = Astro.props;
+const { event, announcement = null, session = null, canOpen = false } = Astro.props;
+
+const today = new Date().toISOString().slice(0, 10);
 
 /**
  * Le prochain rendez-vous du club, sur l'accueil de l'espace adhérent.
@@ -26,7 +41,7 @@ const { event, announcement = null } = Astro.props;
  */
 ---
 
-{event && (
+{(session || event) && (
   <section class="rounded-xl border border-border bg-card shadow-sm" aria-labelledby="agenda-title">
     <header class="flex items-center gap-2.5 border-b border-border px-4 py-3 sm:px-5">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-primary" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
@@ -34,7 +49,42 @@ const { event, announcement = null } = Astro.props;
     </header>
 
     <div class="px-4 py-3 sm:px-5">
-      <EventRow event={event} {announcement}>
+      {session ? (
+        <OpenPlayRow session={session}>
+          <div class="mt-3">
+            <OpenPlaySignup
+              client:load
+              sessionId={session.id}
+              myGuests={session.myGuests}
+              open={session.status !== 'cancelled' && session.date >= today}
+              playerCount={session.playerCount}
+              minPlayers={session.minPlayers}
+              endpoint="/agenda"
+            />
+          </div>
+
+          <OpenPlayAttendees
+            client:visible
+            sessionId={session.id}
+            playerCount={session.playerCount}
+            endpoint="/agenda"
+          />
+
+          {canOpen && session.status !== 'cancelled' && session.date >= today && (
+            <OpenPlayOpenerButton
+              client:load
+              sessionId={session.id}
+              openerName={session.openerFirstName
+                ? `${session.openerFirstName} ${(session.openerLastName ?? '').charAt(0)}.`
+                : null}
+              iAmOpener={session.iAmOpener}
+              needsOpener={session.needsOpener}
+              endpoint="/agenda"
+            />
+          )}
+        </OpenPlayRow>
+      ) : (
+      <EventRow event={event!} {announcement}>
         {event.registration !== 'none' && (
           <div class="mt-3">
             <EventSignup
@@ -48,6 +98,7 @@ const { event, announcement = null } = Astro.props;
           </div>
         )}
       </EventRow>
+      )}
     </div>
 
     <footer class="border-t border-border px-4 py-3 sm:px-5">
@@ -55,7 +106,7 @@ const { event, announcement = null } = Astro.props;
         href="/agenda"
         class="inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-primary hover:underline"
       >
-        Tout l'agenda &rarr;
+        Voir tout le calendrier &rarr;
       </a>
     </footer>
   </section>

@@ -12,6 +12,8 @@ import { getActiveMemberStatus } from '../lib/member-status';
 import { fetchPosts, ANNOUNCEMENT_LOOKUP_LIMIT, postAnchor } from '../lib/posts';
 import { announcementsByEvent } from '@nba/cms/public';
 import { fetchUpcomingEvents } from '../lib/agenda';
+import { fetchOpenPlaySessions, OPEN_PLAY_HORIZON_DAYS } from '../lib/open-play';
+import { resolveEnv } from '../lib/request-context';
 import { fetchTodayBirthdays } from '../lib/birthdays';
 import { fetchMyFixtures, normalizeLicence } from '../lib/my-fixtures';
 
@@ -35,11 +37,20 @@ const status = await getActiveMemberStatus(env, session);
 // la prochaine — l'agenda porte les suivantes.
 const licence = normalizeLicence(active?.licence);
 
-const [{ posts: latestPosts }, events, birthdays, fixtures] = await Promise.all([
+const runtimeEnv = resolveEnv<{ OPEN_PLAY_ENABLED?: string }>(Astro.locals);
+
+const [{ posts: latestPosts }, events, birthdays, fixtures, openPlay] = await Promise.all([
   fetchPosts(env, ANNOUNCEMENT_LOOKUP_LIMIT),
   fetchUpcomingEvents(env, 1, session?.activeMemberId),
   fetchTodayBirthdays(env),
-  fetchMyFixtures(env, status.seasonCode ?? null, licence, 1)
+  fetchMyFixtures(env, status.seasonCode ?? null, licence, 1),
+  runtimeEnv.OPEN_PLAY_ENABLED === 'true'
+    ? fetchOpenPlaySessions(env, {
+        memberId: session?.activeMemberId,
+        licence: licence ?? undefined,
+        withinDays: OPEN_PLAY_HORIZON_DAYS
+      })
+    : Promise.resolve({ sessions: [], canOpen: false })
 ]);
 
 /*
@@ -52,6 +63,26 @@ const [{ posts: latestPosts }, events, birthdays, fixtures] = await Promise.all(
  */
 const posts = latestPosts.slice(0, 3);
 const announcements = announcementsByEvent(latestPosts, (post) => postAnchor(post));
+
+/*
+ * Le prochain rendez-vous, au sens du calendrier.
+ *
+ * L'accueil doit annoncer ce que le calendrier annoncerait en premier : désigner un
+ * tournoi comme « prochain » alors que trois séances de jeu libre le précèdent serait
+ * doublement faux — l'information est inexacte, et les deux écrans se contrediraient.
+ *
+ * Les deux clés partagent le format à largeur fixe des dates locales, la comparaison
+ * lexicographique suffit donc à les départager sans fabriquer de date.
+ */
+const firstEvent = events[0] ?? null;
+const firstSession = openPlay.sessions[0] ?? null;
+const sessionComesFirst =
+  firstSession !== null &&
+  (firstEvent === null ||
+    `${firstSession.date}T${firstSession.startTime}` < firstEvent.startsAt);
+
+const nextEvent = sessionComesFirst ? null : firstEvent;
+const nextSession = sessionComesFirst ? firstSession : null;
 ---
 
 <Layout title="Espace adhérent - Nozay Bad">
@@ -87,8 +118,10 @@ const announcements = announcementsByEvent(latestPosts, (post) => postAnchor(pos
 
       <div class="mb-6 empty:mb-0">
         <AgendaCard
-          event={events[0] ?? null}
-          announcement={events[0] ? announcements.get(events[0].id) ?? null : null}
+          event={nextEvent}
+          announcement={nextEvent ? announcements.get(nextEvent.id) ?? null : null}
+          session={nextSession}
+          canOpen={openPlay.canOpen}
         />
       </div>
 
