@@ -14,6 +14,7 @@ import { updateOpenPlaySessionRoute } from './open-play/update-open-play-session
 import { registerToOpenPlayRoute } from './open-play/register-to-open-play/route';
 import { unregisterFromOpenPlayRoute } from './open-play/unregister-from-open-play/route';
 import { listOpenPlayRegistrationsRoute } from './open-play/list-open-play-registrations/route';
+import { listOpenPlayAttendeesRoute } from './open-play/list-open-play-attendees/route';
 import { listOpenPlayOpenersRoute } from './open-play/list-open-play-openers/route';
 import { saveOpenPlayOpenerRoute } from './open-play/save-open-play-opener/route';
 import { deleteOpenPlayOpenerRoute } from './open-play/delete-open-play-opener/route';
@@ -44,6 +45,7 @@ schedulesRouter.route('/', generateOpenPlaySessionsRoute);
 schedulesRouter.route('/', claimOpenPlaySessionRoute);
 schedulesRouter.route('/', releaseOpenPlaySessionRoute);
 schedulesRouter.route('/', listOpenPlayRegistrationsRoute);
+schedulesRouter.route('/', listOpenPlayAttendeesRoute);
 schedulesRouter.route('/', registerToOpenPlayRoute);
 schedulesRouter.route('/', unregisterFromOpenPlayRoute);
 schedulesRouter.route('/', updateOpenPlaySessionRoute);

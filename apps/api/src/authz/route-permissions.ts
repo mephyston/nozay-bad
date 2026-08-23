@@ -272,6 +272,11 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/schedules/open-play/:id/registrations', permission: 'schedules:open-play:read', service: true },
   { method: 'DELETE', path: '/schedules/open-play/:id/registrations', permission: 'schedules:open-play:read', service: true },
   { method: 'GET', path: '/schedules/open-play/:id/registrations', permission: 'schedules:registrations:read' },
+  // Qui vient jouer, tel que l'espace adhérent l'affiche : des prénoms et des noms, et
+  // rien d'autre. Ouvert au service, contrairement à la liste d'appel ci-dessus, parce
+  // que la projection elle-même écarte licence, adresse et identifiant d'adhésion — un
+  // adhérent choisit de venir parce que ses partenaires viennent, pas pour l'annuaire.
+  { method: 'GET', path: '/schedules/open-play/:id/attendees', permission: 'schedules:open-play:read', service: true },
 
   // Ouvreurs. Prendre et rendre une séance sont ouverts au service : c'est l'espace
   // adhérent qui appelle, avec la licence de la session — le navigateur ne peut pas

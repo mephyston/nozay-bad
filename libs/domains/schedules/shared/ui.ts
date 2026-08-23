@@ -18,3 +18,6 @@ export { default as OpenPlayOpenerButton } from '../open-play/claim-open-play-se
 
 /** Carte du bureau : les détenteurs de clé de la saison. */
 export { default as OpenPlayOpenersCard } from '../open-play/list-open-play-openers/ui/OpenPlayOpenersCard.svelte';
+
+/** « Qui vient ? » : la liste des inscrits d'une séance, dépliée à la demande. */
+export { default as OpenPlayAttendees } from '../open-play/list-open-play-attendees/ui/OpenPlayAttendees.svelte';

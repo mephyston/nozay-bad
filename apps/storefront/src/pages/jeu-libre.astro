@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import MobileNav from '../components/MobileNav.svelte';
-import { OpenPlaySignup, OpenPlayOpenerButton } from '@nba/schedules-ui';
+import { OpenPlaySignup, OpenPlayOpenerButton, OpenPlayAttendees } from '@nba/schedules-ui';
 import { createApiClient } from '@nba/api-client';
 import { resolveEnv } from '../lib/request-context';
 import { normalizeLicence } from '../lib/my-fixtures';
@@ -59,6 +59,14 @@ if (Astro.request.method === 'POST') {
     }
 
     const api = createApiClient(env);
+
+    // Lecture seule, et volontairement en POST comme les autres actions de la page : le
+    // navigateur ne fournit qu'un identifiant de séance, et la réponse ne porte que des
+    // prénoms et des noms — la projection du domaine écarte licence, adresse et
+    // identifiant d'adhésion.
+    if (body.action === 'attendees') {
+      return api.fetch(`http://localhost/schedules/open-play/${sessionId}/attendees`);
+    }
 
     if (body.action === 'register') {
       return api.fetch(`http://localhost/schedules/open-play/${sessionId}/registrations`, {
@@ -201,6 +209,12 @@ const toStaff = sessions.filter((s) => s.needsOpener).length;
                     minPlayers={openPlay.minPlayers}
                   />
                 </div>
+
+                <OpenPlayAttendees
+                  client:visible
+                  sessionId={openPlay.id}
+                  playerCount={openPlay.playerCount}
+                />
 
                 {canOpen && !closed && (
                   <OpenPlayOpenerButton
