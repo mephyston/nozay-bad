@@ -13,6 +13,7 @@
     DropdownMenu,
     FormField,
     FormSheet,
+    Sheet,
     submitForm,
     toast,
     uiConfirm,
@@ -76,7 +77,16 @@
   let genMinPlayers = $state(String(DEFAULT_MIN_PLAYERS));
   let genSlotIds = $state<number[]>([]);
 
-  /** Panneau des inscrits, chargé à la demande. */
+  /**
+   * Panneau des inscrits, chargé à la demande.
+   *
+   * Rendu dans un `Sheet` et non plus en pied de page : la liste s'ouvrait sous le
+   * tableau, c'est-à-dire hors de l'écran dès que la saison comptait quelques séances.
+   * Sur téléphone, appuyer sur « Inscrits » ne semblait rien faire. Même parade que le
+   * panneau des inscrits d'un rendez-vous, et pour la même raison : rien à soumettre
+   * ici, donc un `Sheet` nu plutôt qu'un `FormSheet` détourné.
+   */
+  let showRegistrationsSheet = $state(false);
   let openedSession = $state<SessionRow | null>(null);
   let registrations = $state<RegistrationRow[] | null>(null);
   let totals = $state<{ members: number; guests: number; players: number } | null>(null);
@@ -268,6 +278,7 @@
 
   async function showRegistrations(row: SessionRow) {
     openedSession = row;
+    showRegistrationsSheet = true;
     registrations = null;
     totals = null;
     try {
@@ -277,6 +288,7 @@
       totals = data.totals;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Lecture impossible.');
+      showRegistrationsSheet = false;
       openedSession = null;
     }
   }
@@ -299,6 +311,7 @@
 
 <DataTable
   data={filtered}
+  mobileSpacing="spaced"
   emptyTitle="Aucune séance"
   emptyDescription={searchTerm.trim() || onlyToStaff
     ? 'Aucune séance ne correspond à votre recherche.'
@@ -425,22 +438,27 @@
   {/snippet}
 </DataTable>
 
-{#if openedSession}
-  <Card.Root class="mt-6">
-    <Card.Content class="p-4">
-      <div class="flex items-start justify-between gap-2">
-        <h3 class="text-sm font-bold text-foreground">
-          Inscrits du {openedSession.date} · {openedSession.startTime}–{openedSession.endTime}
-        </h3>
-        <Button variant="ghost" size="sm" onclick={() => (openedSession = null)} class="h-8">Fermer</Button>
-      </div>
+<Sheet.Root bind:open={showRegistrationsSheet}>
+  <Sheet.Content size="md" class="overflow-y-auto">
+    <Sheet.Header>
+      <Sheet.Title class="flex items-center gap-2">
+        <Users class="h-5 w-5 text-primary" />
+        Inscrits
+      </Sheet.Title>
+      <Sheet.Description>
+        {openedSession
+          ? `${openedSession.date} · ${openedSession.startTime}–${openedSession.endTime}`
+          : ''}
+      </Sheet.Description>
+    </Sheet.Header>
 
+    <div class="px-4 py-4">
       {#if registrations === null}
-        <p class="mt-3 text-sm text-muted-foreground">Chargement…</p>
+        <p class="text-sm text-muted-foreground">Chargement…</p>
       {:else if registrations.length === 0}
-        <p class="mt-3 text-sm text-muted-foreground">Personne pour l'instant.</p>
+        <p class="text-sm text-muted-foreground">Personne pour l'instant.</p>
       {:else}
-        <ul class="mt-3 space-y-2">
+        <ul class="space-y-2">
           {#each registrations as registration (registration.id)}
             <li class="border-b border-border/50 pb-2 last:border-0">
               <p class="text-sm font-medium text-foreground">
@@ -464,100 +482,6 @@
           </p>
         {/if}
       {/if}
-    </Card.Content>
-  </Card.Root>
-{/if}
-
-<FormSheet
-  bind:open={showGenerateSheet}
-  title="Programmer les séances récurrentes"
-  description="Transforme les créneaux hebdomadaires de jeu libre en séances datées. Rejouable sans risque : les séances déjà créées sont laissées telles quelles, ouvreur compris."
-  icon={CalendarPlus}
-  error={errorMsg}
-  isSubmitting={busy}
-  submitLabel="Programmer"
-  submittingLabel="Programmation…"
-  onSubmit={generate}
->
-  <div class="grid grid-cols-2 gap-3">
-    <FormField id="gen-from" label="Du">
-      <Input id="gen-from" type="date" bind:value={genFrom} />
-    </FormField>
-    <FormField id="gen-to" label="Au">
-      <Input id="gen-to" type="date" bind:value={genTo} />
-    </FormField>
-  </div>
-
-  <FormField id="gen-min" label="Joueurs nécessaires pour ouvrir">
-    <Input id="gen-min" type="number" min="1" max="40" bind:value={genMinPlayers} />
-  </FormField>
-
-  <div class="space-y-2">
-    <p class="text-sm font-medium text-foreground">Créneaux hebdomadaires à répéter</p>
-    <p class="text-xs text-muted-foreground">
-      Chaque créneau coché devient une séance à chacune de ses dates dans la période.
-    </p>
-    {#each slots as slot (slot.id)}
-      <label class="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={genSlotIds.includes(slot.id)}
-          onchange={() => toggleSlot(slot.id)}
-          aria-label={`${WEEKDAYS[slot.weekday]} ${slot.startTime}`}
-          class="h-4 w-4 rounded border-border"
-        />
-        <span class="text-foreground">
-          {WEEKDAYS[slot.weekday]} {slot.startTime}–{slot.endTime}
-        </span>
-        <span class="text-xs text-muted-foreground">{slot.venue?.name ?? '—'}</span>
-      </label>
-    {/each}
-  </div>
-</FormSheet>
-
-<FormSheet
-  bind:open={showFormSheet}
-  title={editingId ? 'Modifier la séance' : 'Nouvelle séance'}
-  description={editingId
-    ? 'Les inscriptions déjà prises sont conservées.'
-    : 'La séance est ouverte aux inscriptions dès son ajout.'}
-  icon={editingId ? Edit : Plus}
-  error={errorMsg}
-  isSubmitting={busy}
-  submitLabel={editingId ? 'Enregistrer' : 'Ajouter'}
-  submittingLabel="Enregistrement…"
-  onSubmit={save}
->
-  <FormField id="op-date" label="Date">
-    <Input id="op-date" type="date" bind:value={date} />
-  </FormField>
-
-  <div class="grid grid-cols-2 gap-3">
-    <FormField id="op-start" label="Début">
-      <Input id="op-start" type="time" bind:value={startTime} />
-    </FormField>
-    <FormField id="op-end" label="Fin">
-      <Input id="op-end" type="time" bind:value={endTime} />
-    </FormField>
-  </div>
-
-  <FormField id="op-venue" label="Gymnase">
-    <Select id="op-venue" bind:value={venueId}>
-      {#each venues as venue}
-        <option value={String(venue.id)}>{venue.name}</option>
-      {/each}
-    </Select>
-  </FormField>
-
-  <FormField id="op-min" label="Joueurs nécessaires pour ouvrir">
-    <Input id="op-min" type="number" min="1" max="40" bind:value={minPlayers} />
-  </FormField>
-
-  <FormField id="op-label" label="Intitulé (facultatif)">
-    <Input id="op-label" bind:value={label} placeholder="Jeu libre des vacances" maxlength={120} />
-  </FormField>
-
-  <FormField id="op-notes" label="Consigne (facultatif)">
-    <Input id="op-notes" bind:value={notes} placeholder="Clé à récupérer chez Robert" maxlength={500} />
-  </FormField>
-</FormSheet>
+    </div>
+  </Sheet.Content>
+</Sheet.Root>

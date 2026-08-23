@@ -13,6 +13,7 @@
     header,
     row,
     mobileView,
+    mobileSpacing = 'divided',
     pagination,
     onPageChange,
     limitOptions,
@@ -28,6 +29,17 @@
     header: Snippet;
     row: Snippet<[T, number]>;
     mobileView?: Snippet;
+    /**
+     * Comment les cartes de la vue mobile se suivent.
+     *
+     * `divided` — le défaut, et ce que faisaient toutes les listes : des cartes jointives
+     * séparées d'un filet. Compact, lisible tant que chaque carte tient sur deux lignes.
+     *
+     * `spaced` — des cartes détachées. À réserver aux listes dont chaque carte porte ses
+     * propres actions : jointives, les zones cliquables de deux voisines se touchent, et
+     * le pouce vise mal.
+     */
+    mobileSpacing?: 'divided' | 'spaced';
     pagination?: any;
     onPageChange?: (page: number) => void;
     limitOptions?: number[];
@@ -111,7 +123,7 @@
             />
           </div>
         {:else}
-          <div class="divide-y divide-border">
+          <div class={mobileSpacing === 'spaced' ? 'space-y-3 p-3' : 'divide-y divide-border'}>
             {@render mobileView()}
           </div>
         {/if}
