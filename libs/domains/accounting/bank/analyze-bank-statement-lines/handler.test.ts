@@ -252,4 +252,70 @@ describe('analyzeBankStatementLines', () => {
     expect(suggestions.accrualType).toBe('produit_constate_avance');
     expect(suggestions.accrualNote).toContain('26-27');
   });
+
+  it('associates a member who only exists in the season named by the reference', async () => {
+    // Cas réel : « MOTIF: MAILLARD-DAVID-ADHESION2026-2027 ». Nouvel adhérent, absent
+    // de la saison en cours : l'analyse ne pouvait proposer personne.
+    await db.insert(seasonsTable).values({
+      code: '26-27', name: 'Saison 26-27', startDate: '2026-09-01', endDate: '2027-08-31',
+      active: false, closedAt: null, createdAt: new Date()
+    }).run();
+
+    await db.insert(bankStatementLinesTable).values({
+      id: 7,
+      fitid: 'TX1007',
+      accountId: 1,
+      amountCents: 26000,
+      date: '2026-08-17',
+      name: 'VIR INST RE 672885352540',
+      memo: 'DE: M D MAILLARD MOTIF: MAILLARD-DAVID-ADHESION2026-2027',
+      status: 'pending',
+      createdAt: new Date()
+    }).run();
+
+    const base = {
+      gender: 'M', birthDate: '1985-01-01', type: 'Adulte', importedAt: new Date(),
+      amountDue: 26000, amountReceived: 0, amountRemaining: 26000,
+      amountDueCents: 26000, amountReceivedCents: 0, amountRemainingCents: 26000,
+      parent1Name: null, parent2Name: null
+    };
+    vi.spyOn(AnalyzeBankStatementLinesRepository.prototype, 'getMembersBySeason').mockImplementation(
+      async (_db: any, season: any) =>
+        (season === '26-27'
+          ? [{ ...base, id: 1134, licence: '0001134', seasonId: 2, lastName: 'MAILLARD', firstName: 'David' }]
+          : []) as any
+    );
+
+    const aiMock = { run: vi.fn() };
+    await analyzeBankStatementLines(db, aiMock, { seasonId: '25-26' });
+
+    const row = await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, 7)).all();
+    const suggestions = JSON.parse(row[0].aiSuggestions);
+    expect(suggestions.memberId).toBe(1134);
+    expect(suggestions.accrualType).toBe('produit_constate_avance');
+  });
+
+  it('ne va chercher une autre saison que pour une cotisation payée d’avance', async () => {
+    await db.insert(bankStatementLinesTable).values({
+      id: 8,
+      fitid: 'TX1008',
+      accountId: 1,
+      amountCents: 15000,
+      date: '2025-10-02',
+      name: 'VIR DUPONT',
+      memo: 'Cotisation 25-26',
+      status: 'pending',
+      createdAt: new Date()
+    }).run();
+
+    // `vi.spyOn` rend l'espion **déjà posé** par les tests précédents, historique
+    // compris : sans cette remise à zéro, on compterait leurs appels avec les nôtres.
+    const spy = vi.spyOn(AnalyzeBankStatementLinesRepository.prototype, 'getMembersBySeason').mockResolvedValue([]);
+    spy.mockClear();
+
+    const aiMock = { run: vi.fn() };
+    await analyzeBankStatementLines(db, aiMock, { seasonId: '25-26' });
+
+    expect(spy.mock.calls.map((c) => c[1])).toEqual(['25-26']);
+  });
 });

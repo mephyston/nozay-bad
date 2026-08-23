@@ -42,6 +42,29 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
     `- ID: ${c.id} (${c.adminLabel} / ${c.adherentLabel})`
   ).join('\n');
 
+  /*
+   * Annuaire d'une autre saison, lu au plus une fois par saison citée.
+   *
+   * La lecture est rare — seules les cotisations payées d'avance la déclenchent — mais
+   * un relevé de rentrée en compte plusieurs, et la refaire ligne à ligne multiplierait
+   * les requêtes sans rien apporter.
+   */
+  const otherSeasons = new Map<string, Awaited<ReturnType<typeof repo.getMembersBySeason>>>();
+  async function membersOfSeason(code: string) {
+    const known = otherSeasons.get(code);
+    if (known) return known;
+    let loaded: Awaited<ReturnType<typeof repo.getMembersBySeason>> = [];
+    try {
+      loaded = await repo.getMembersBySeason(db, code);
+    } catch {
+      // Saison absente de la base : l'analyse continue sans elle, elle ne s'arrête pas
+      // pour un millésime cité par erreur dans un libellé.
+      loaded = [];
+    }
+    otherSeasons.set(code, loaded);
+    return loaded;
+  }
+
   let analyzedCount = 0;
 
   for (const tx of pendingTxs) {
@@ -153,25 +176,6 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
       suggestedCategory = catMap.adhesions;
     }
 
-    const candidates = members.filter(m => {
-      const cleanLast = cleanName(m.lastName);
-      const cleanFirst = cleanName(m.firstName);
-      const cleanP1 = cleanName(m.parent1Name);
-      const cleanP2 = cleanName(m.parent2Name);
-
-      const matchesLastName = cleanLast && textToLower.includes(cleanLast);
-      const matchesFirstName = cleanFirst && textToLower.includes(cleanFirst);
-      const matchesParent1 = cleanP1 && textToLower.includes(cleanP1);
-      const matchesParent2 = cleanP2 && textToLower.includes(cleanP2);
-      const memberRem = m.amountRemainingCents ?? 0;
-      const matchesAmount = Math.abs(memberRem) === Math.abs(txAmount);
-      
-      return matchesLastName || matchesFirstName || matchesParent1 || matchesParent2 || matchesAmount;
-    }).slice(0, 5);
-
-    const textNormalized = textToLower.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    const { candidate: exactCandidate, certain: certainMember } = pickMemberCandidate(candidates as any[], textNormalized);
-
     /*
      * Cotisation encaissée pour la saison suivante : produit constaté d'avance.
      *
@@ -193,6 +197,36 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
       txAmount > 0 &&
       suggestedCategory === catMap.adhesions &&
       isFutureSeason(citedSeason, seasonCode);
+
+    /*
+     * Les adhérents de la saison citée entrent aussi dans le vivier.
+     *
+     * Un adhérent qui rejoint le club en août n'existe pas encore dans la saison en
+     * cours : son virement de rentrée ne pouvait se rattacher à personne, et l'analyse
+     * rendait « aucun adhérent » sans que rien n'explique pourquoi. Le libellé, lui,
+     * nomme la saison — autant s'en servir.
+     */
+    const pool = isAdvanceMembership ? [...members, ...(await membersOfSeason(citedSeason!))] : members;
+
+    const candidates = pool.filter(m => {
+      const cleanLast = cleanName(m.lastName);
+      const cleanFirst = cleanName(m.firstName);
+      const cleanP1 = cleanName(m.parent1Name);
+      const cleanP2 = cleanName(m.parent2Name);
+
+      const matchesLastName = cleanLast && textToLower.includes(cleanLast);
+      const matchesFirstName = cleanFirst && textToLower.includes(cleanFirst);
+      const matchesParent1 = cleanP1 && textToLower.includes(cleanP1);
+      const matchesParent2 = cleanP2 && textToLower.includes(cleanP2);
+      const memberRem = m.amountRemainingCents ?? 0;
+      const matchesAmount = Math.abs(memberRem) === Math.abs(txAmount);
+      
+      return matchesLastName || matchesFirstName || matchesParent1 || matchesParent2 || matchesAmount;
+    }).slice(0, 5);
+
+    const textNormalized = textToLower.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const { candidate: exactCandidate, certain: certainMember } = pickMemberCandidate(candidates as any[], textNormalized);
+
 
     let suggestionResult: BankStatementLineSuggestion = {
       category: suggestedCategory,
