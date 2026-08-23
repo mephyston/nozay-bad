@@ -161,10 +161,25 @@ try {
     }
   }
 
-  const [btRes, glRes, membersRes, categoriesRes] = await Promise.all([
+  /*
+    L'annuaire de la saison consultée, **et** celui de la suivante.
+
+    Un adhérent qui rejoint le club en août règle sa cotisation de la rentrée : le
+    virement tombe dans l'exercice en cours, mais son adhésion n'existe que dans la
+    saison suivante. Il était alors introuvable dans la liste, et l'encaissement ne
+    pouvait se rattacher à personne — précisément le cas que le cut-off « produit
+    constaté d'avance » est là pour traiter.
+  */
+  const nextSeason = seasonsList[seasonsList.findIndex((s: any) => (s.code || String(s.id)) === season) + 1];
+  const nextSeasonCode = nextSeason ? nextSeason.code || String(nextSeason.id) : null;
+
+  const [btRes, glRes, membersRes, nextMembersRes, categoriesRes] = await Promise.all([
     apiService.fetch(`http://localhost/accounting/bank-transactions?season=${season}`),
     apiService.fetch(`http://localhost/accounting/transactions?season=${season}&page=1&limit=2000`),
     apiService.fetch(`http://localhost/members?season=${season}&limit=500`),
+    nextSeasonCode
+      ? apiService.fetch(`http://localhost/members?season=${nextSeasonCode}&limit=500`)
+      : Promise.resolve(null),
     apiService.fetch('http://localhost/accounting/categories')
   ]);
 
@@ -181,6 +196,16 @@ try {
   if (membersRes.ok) {
     const json = await membersRes.json() as any;
     membersList = json.data || [];
+  }
+
+  if (nextMembersRes?.ok && nextSeasonCode) {
+    const json = await nextMembersRes.json() as any;
+    // `seasonCode` n'est posé que sur ceux de l'autre saison : c'est lui qui les
+    // signale à l'écran, et son absence vaut « saison consultée ».
+    const known = new Set(membersList.map((m: any) => m.id));
+    for (const member of (json.data || []) as any[]) {
+      if (!known.has(member.id)) membersList.push({ ...member, seasonCode: nextSeasonCode });
+    }
   }
 
   if (categoriesRes.ok) {

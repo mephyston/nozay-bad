@@ -6,14 +6,15 @@ import { bankStatementLinesTable, accountsTable } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
 
 /**
- * L'exercice d'une écriture se déduit de sa date, jamais de l'écran.
+ * Repli sur la date quand aucun exercice n'est transmis.
  *
- * Le client transmettait la saison affichée dans le sélecteur de l'en-tête — qui ne filtre
- * rien et sert surtout à l'analyse. Une cotisation encaissée le 21 août appartient à
- * l'exercice qui contient ce jour-là ; si l'argent revient économiquement à la saison
- * suivante, c'est le cut-off qui le dit, pas le millésime de l'écriture.
+ * L'écran de rapprochement, lui, transmet toujours l'exercice de rattachement : le compte
+ * de résultat le lit dans `season_id`, tandis que la trésorerie raisonne sur la date — une
+ * cotisation encaissée en août pour la rentrée porte la saison suivante et une date d'août.
+ * Ce repli existe pour les appelants qui n'ont pas d'exercice à donner, et il doit rester
+ * juste : sans lui, une écriture partirait sans exercice du tout.
  */
-describe("exercice déduit de la date de l'écriture", () => {
+describe("exercice déduit de la date quand aucun n'est transmis", () => {
   let db: any;
 
   beforeEach(async () => {
@@ -41,7 +42,7 @@ describe("exercice déduit de la date de l'écriture", () => {
     await reconcileBankStatementLine(db, btx.id, {
       action: 'create',
       transaction: {
-        // Aucun `seasonId` : c'est tout l'objet du test.
+        // Aucun `seasonId` transmis : c'est tout l'objet du test.
         type: 'recette',
         accountId: acc.id,
         category: 1,

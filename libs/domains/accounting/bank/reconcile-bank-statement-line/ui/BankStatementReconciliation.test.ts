@@ -903,6 +903,69 @@ describe('BankStatementReconciliation Component', () => {
     expect(target.innerHTML).not.toContain('Créer et rapprocher une nouvelle écriture');
   });
 
+  it("transmet l'exercice de rattachement de l'écriture", async () => {
+    // Sans lui, l'API retombe sur la date et une cotisation encaissée en août pour la
+    // rentrée compte dans le résultat de l'exercice qui se clôture — soit l'inverse de
+    // ce que le cut-off décrit.
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    component = mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankStatementLines: [
+          {
+            id: 55,
+            fitid: 'TX-SEASON',
+            accountId: 'current',
+            amount: 26000,
+            amountCents: 26000,
+            date: '2026-08-17',
+            name: 'VIR INST RE 672885352540',
+            memo: 'MAILLARD-DAVID-ADHESION2026-2027',
+            status: 'pending',
+            aiSuggestions: null
+          }
+        ],
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [
+          { id: '25-26', code: '25-26', name: 'Saison 2025-2026', active: true },
+          { id: '26-27', code: '26-27', name: 'Saison 2026-2027', active: false }
+        ],
+        members: [],
+        dbCategories: [{ id: 1, code: 'adhesions_inscriptions', adminLabel: 'Adhésions' }]
+      }
+    });
+
+    flushSync();
+
+    const line = Array.from(target.querySelectorAll('button')).find(b =>
+      b.textContent?.includes('VIR INST RE 672885352540')
+    ) as HTMLButtonElement;
+    line.click();
+    flushSync();
+
+    const validate = Array.from(target.querySelectorAll('button')).find(b =>
+      b.textContent?.includes('Créer et rapprocher')
+    ) as HTMLButtonElement;
+    expect(validate).not.toBeNull();
+    validate.click();
+    await tick();
+    await tick();
+
+    const call = (globalThis.fetch as any).mock.calls.find((c: any[]) => {
+      if (!c[1]?.body) return false;
+      try {
+        return JSON.parse(c[1].body).action === 'create';
+      } catch {
+        return false;
+      }
+    });
+    expect(call).toBeDefined();
+    expect(JSON.parse(call[1].body).transaction.seasonId).toBe('25-26');
+  });
+
   it('opens import modal when open-bank-import window event is dispatched and season is not closed', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);

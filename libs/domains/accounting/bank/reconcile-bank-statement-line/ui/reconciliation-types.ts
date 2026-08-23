@@ -61,6 +61,15 @@ export interface Member {
   lastName: string;
   firstName: string;
   amountRemaining: number;
+  /**
+   * Renseigné uniquement pour un adhérent d'une **autre** saison que celle consultée.
+   *
+   * L'écran propose aussi l'annuaire de la saison suivante, pour rattacher une
+   * cotisation encaissée d'avance. Sans ce repère, deux homonymes de deux saisons
+   * seraient indiscernables dans la liste — et `id` désigne une adhésion, pas une
+   * personne : se tromper de saison rattache l'argent au mauvais exercice.
+   */
+  seasonCode?: string;
 }
 
 export interface ReconciliationStateProps {
@@ -125,6 +134,15 @@ export interface ReconciliationStateFields {
   categories: CategoryOption[];
   filteredCategories: CategoryOption[];
   categorySearchQuery: string;
+  /**
+   * Exercice auquel l'écriture est rattachée — pas celui où l'argent est arrivé.
+   *
+   * Le compte de résultat lit `season_id` pour dire ce qui appartient à l'exercice, et
+   * la trésorerie lit la **date** pour dire ce qui est sur le compte. Une cotisation
+   * encaissée en août pour la rentrée porte donc la saison suivante et une date d'août :
+   * c'est cet écart, et lui seul, que le cut-off « produit constaté d'avance » décrit.
+   */
+  targetSeasonId: string;
   isCategoryDropdownOpen: boolean;
   categoryHighlightedIndex: number;
 }

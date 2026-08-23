@@ -139,11 +139,11 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
         const splitSumCents = s.splits.reduce((acc: number, sp: SplitRow) => acc + Math.round((sp.amount || 0) * 100), 0);
         if (Math.abs(splitSumCents - s.remainingAmount) > 10) throw new Error("Le montant total ventilé doit être égal au reste à rapprocher.");
         prepareNextFocus(targetBt.id, (s.remainingAmount - splitSumCents) <= 10);
-        await apiCreateAndMatchSplit(targetBt, memId, s.paymentMethod, s.splits, s.accrualType, s.accrualNote);
+        await apiCreateAndMatchSplit(targetBt, memId, s.targetSeasonId, s.paymentMethod, s.splits, s.accrualType, s.accrualNote);
       } else {
         const linkedAmount = Math.round(s.amountToLink * 100);
         prepareNextFocus(targetBt.id, (s.remainingAmount - linkedAmount) <= 10);
-        await apiCreateAndMatchSingle(targetBt, memId, s.category, s.amountToLink, s.paymentMethod, s.accrualType, s.accrualNote);
+        await apiCreateAndMatchSingle(targetBt, memId, s.targetSeasonId, s.category, s.amountToLink, s.paymentMethod, s.accrualType, s.accrualNote);
       }
       flashAndReload('Écriture créée et rapprochée avec succès !');
     } catch (err: any) { 

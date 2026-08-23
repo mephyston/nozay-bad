@@ -18,6 +18,9 @@
     removeSplitRow,
     categories = [],
     sortedMembers = [],
+    seasons = [],
+    targetSeasonId = $bindable(''),
+    browsedSeason = '',
     isMemberDropdownOpen = $bindable(false),
     isCategoryDropdownOpen = $bindable(false),
     memberSearchQuery = $bindable(''),
@@ -46,6 +49,11 @@
     removeSplitRow: (idx: number) => void;
     categories: any[];
     sortedMembers: any[];
+    seasons: any[];
+    /** Exercice auquel l'écriture est rattachée — pas celui qu'on consulte. */
+    targetSeasonId: string;
+    /** Exercice consulté, pour signaler l'écart sans avoir à le deviner. */
+    browsedSeason: string;
     isMemberDropdownOpen: boolean;
     isCategoryDropdownOpen: boolean;
     memberSearchQuery: string;
@@ -72,11 +80,21 @@
     }))
   );
 
+  // `seasonCode` n'est posé que sur les adhérents d'une autre saison que celle
+  // consultée : le montrer évite de rattacher une cotisation au mauvais exercice, deux
+  // adhésions d'un même adhérent étant sinon indiscernables dans la liste.
   let memberItems = $derived<ComboboxItem[]>(
     sortedMembers.map(m => ({
       value: String(m.id),
-      label: `${m.lastName} ${m.firstName}`,
+      label: m.seasonCode ? `${m.lastName} ${m.firstName} (${m.seasonCode})` : `${m.lastName} ${m.firstName}`,
       detail: m.licence
+    }))
+  );
+
+  let seasonItems = $derived(
+    seasons.map((s: any) => ({
+      value: String(s.code || s.id),
+      label: `${s.name || s.code}${s.active ? ' (active)' : ''}${s.closed ? ' — clôturée' : ''}`
     }))
   );
 
@@ -121,6 +139,27 @@
       {removeSplitRow}
     />
   {/if}
+
+  <!--
+    L'exercice de rattachement se choisit ici, et non dans l'en-tête.
+
+    Celui de l'en-tête filtre l'écran et provoque une navigation : s'en servir pour
+    changer l'exercice de l'écriture remontait le formulaire à zéro et réappliquait la
+    suggestion du modèle, effaçant la correction qu'on venait de saisir. Une cotisation
+    encaissée en août pour la rentrée doit pouvoir partir sur l'exercice suivant sans
+    quitter la ligne qu'on rapproche — c'est ce que le compte de résultat attend, lui
+    qui lit `season_id` là où la trésorerie lit la date.
+  -->
+  <div class="mt-4">
+    <FormField label="Exercice de rattachement">
+      <SearchableCombobox bind:value={targetSeasonId} items={seasonItems} />
+    </FormField>
+    {#if browsedSeason && targetSeasonId && targetSeasonId !== browsedSeason}
+      <p class="mt-1 text-xs text-muted-foreground">
+        L'écriture comptera dans l'exercice {targetSeasonId}, alors que vous consultez {browsedSeason}.
+      </p>
+    {/if}
+  </div>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
     <div>

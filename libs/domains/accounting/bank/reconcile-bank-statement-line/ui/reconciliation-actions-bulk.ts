@@ -13,7 +13,7 @@ export function createBulkActions(s: ReconciliationStateFields) {
         if (!bt || !bt.aiSuggestions) return null;
         let memberId = null; let cat = '1';
         try { const sug = JSON.parse(bt.aiSuggestions); memberId = sug.memberId ? parseInt(sug.memberId) : null; cat = sug.category || '1'; } catch {}
-        return { btId: bt.id, action: 'create', memberId, transaction: { type: bt.amount < 0 ? 'depense' : 'recette', accountId: bt.accountId, category: cat, amount: Math.abs(bt.amount), date: bt.date, paymentMethod: 'virement', description: bt.name, reference: bt.fitid } };
+        return { btId: bt.id, action: 'create', memberId, transaction: { seasonId: s.selectedSeason, type: bt.amount < 0 ? 'depense' : 'recette', accountId: bt.accountId, category: cat, amount: Math.abs(bt.amount), date: bt.date, paymentMethod: 'virement', description: bt.name, reference: bt.fitid } };
       }).filter(Boolean);
       if (requests.length === 0) throw new Error('Aucune suggestion valide.');
       await apiBulkReconcile(requests);

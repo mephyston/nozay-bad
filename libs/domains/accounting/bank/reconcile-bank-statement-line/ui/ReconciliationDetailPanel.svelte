@@ -194,6 +194,9 @@
             removeSplitRow={state.removeSplitRow}
             categories={state.categories}
             sortedMembers={state.sortedMembers}
+            seasons={state.seasons}
+            bind:targetSeasonId={state.targetSeasonId}
+            browsedSeason={state.selectedSeason}
             bind:isMemberDropdownOpen={state.isMemberDropdownOpen}
             bind:isCategoryDropdownOpen={state.isCategoryDropdownOpen}
             bind:memberSearchQuery={state.memberSearchQuery}

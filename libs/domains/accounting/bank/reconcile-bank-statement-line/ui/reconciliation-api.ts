@@ -115,15 +115,17 @@ export async function apiMatchLedgerEntry(btId: number, ledgerEntryId: number, m
 }
 
 /**
- * L'exercice n'est **pas** transmis : il se déduit de la date de l'écriture.
+ * L'exercice de rattachement est transmis, et il ne se déduit pas de la date.
  *
- * Une saison est un intervalle de dates, et une écriture datée du 21 août appartient à
- * l'exercice qui contient ce jour-là — ce n'est pas une préférence d'écran. L'imposer
- * depuis le client faisait du sélecteur de l'en-tête, qui ne filtre rien, l'arbitre d'un
- * rattachement comptable. Quand l'argent appartient économiquement à une autre saison,
- * c'est le cut-off qui le dit, pas le millésime de l'écriture.
+ * `get-season-reports` bâtit le compte de résultat sur `season_id` et la trésorerie sur
+ * la **date** : une cotisation encaissée en août pour la rentrée porte la saison
+ * suivante et une date d'août, et c'est ce que le cut-off décrit. Le déduire de la date
+ * la faisait compter dans le résultat de l'exercice qui se clôture — soit précisément
+ * l'erreur que le rattachement est censé empêcher.
+ *
+ * L'API garde son repli sur la date pour un appelant qui n'en transmet aucun.
  */
-export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: number | null, paymentMethod: string, splits: { category: string; amount: number }[], accrualType: string, accrualNote: string): Promise<void> {
+export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: number | null, targetSeasonId: string, paymentMethod: string, splits: { category: string; amount: number }[], accrualType: string, accrualNote: string): Promise<void> {
   const res = await fetch('/admin/accounting/import', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -132,6 +134,7 @@ export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: nu
       btId: bt.id,
       memberId,
       transactions: splits.map((s, index) => ({
+        seasonId: targetSeasonId,
         type: (((bt as any).amountCents ?? bt.amount ?? 0) < 0)
           ? (s.amount >= 0 ? 'depense' : 'recette')
           : (s.amount >= 0 ? 'recette' : 'depense'),
@@ -156,6 +159,7 @@ export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: nu
 export async function apiCreateAndMatchSingle(
   bt: BankStatementLine,
   memberId: number | null,
+  targetSeasonId: string,
   category: string,
   amountToLink: number,
   paymentMethod: string,
@@ -172,6 +176,7 @@ export async function apiCreateAndMatchSingle(
       btId: bt.id,
       memberId,
       transaction: {
+        seasonId: targetSeasonId,
         type: btAmt < 0 ? 'depense' : 'recette',
         accountId: rawAccountId,
         category,
