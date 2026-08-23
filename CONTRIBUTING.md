@@ -89,6 +89,16 @@ Chaque cas d'usage doit contenir la structure suivante :
 
 ---
 
+## 6 bis. Tables d'Alias (`@nba/*`)
+
+Un alias ne se déclare pas à un seul endroit. `tsconfig.base.json` sert la vérification de types ; **chaque application Astro tient sa propre liste de `paths`**, parce qu'elle étend la configuration d'Astro et non la nôtre ; et **chaque configuration de test rejoue la sienne**, Vite ne lisant pas les `paths` de TypeScript.
+
+Un même import doit donc figurer dans plusieurs tables, et l'oubli ne se voit qu'en exécutant la bonne chose — la build d'une application, ou la suite d'un projet précis — donc souvent après coup, le reste étant vert.
+
+`node scripts/check-aliases.js` (CI et hook `pre-push`) vérifie que chaque table couvre ce que ses fichiers importent. Les applications Astro n'y sont contrôlées que sur leurs **fichiers de test** : Vitest n'exécute jamais une page `.astro`.
+
+---
+
 ## 7. Contrôles d'Intégrité de Schéma (CI / Pre-commit)
 
 Le script `node scripts/check-schema-integrity.js` valide automatiquement 5 règles d'intégrité de schéma avant chaque déploiement :

@@ -209,6 +209,14 @@ jobs:
       - name: Verify Nx dependency graph covers every @nba/* import
         run: node scripts/check-nx-deps.js
 
+      # Un alias @nba/* se déclare dans plusieurs tables : tsconfig.base.json pour les
+      # types, les paths de chaque application Astro pour sa build, et la configuration de
+      # test de chaque projet pour Vite, qui ne lit pas les paths de TypeScript. L'oubli
+      # ne se voit qu'en exécutant la bonne chose — la build d'une application, ou la
+      # suite d'un projet précis — donc souvent après coup, le reste étant vert.
+      - name: Verify alias tables cover every @nba/* import
+        run: node scripts/check-aliases.js
+
       # Racine et env.staging doivent déclarer les mêmes clés : une ressource définie
       # d'un seul côté devient une ressource de production utilisée en préproduction.
       # C'est ainsi que la préproduction avait hérité du compartiment R2 de production.

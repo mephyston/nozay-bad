@@ -10,6 +10,7 @@
     "check:schema": "node scripts/check-schema-integrity.js",
     "check:migrations": "node scripts/check-migrations-append-only.js",
     "check:nx-deps": "node scripts/check-nx-deps.js",
+    "check:aliases": "node scripts/check-aliases.js",
     "dev:api": "wrangler dev --config apps/api/wrangler.json --port 8787",
     "dev:admin": "nx dev admin",
     "dev:storefront": "nx dev storefront",

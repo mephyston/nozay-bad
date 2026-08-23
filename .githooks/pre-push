@@ -12,6 +12,7 @@ node scripts/check-env-declarations.js
 node scripts/check-migrations-append-only.js
 node scripts/check-schema-integrity.js
 node scripts/check-nx-deps.js
+node scripts/check-aliases.js
 node scripts/patch-wrangler.mjs --check
 
 echo "[pre-push] typecheck…"
