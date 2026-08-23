@@ -133,14 +133,14 @@ try {
             <div>
               <h2 class="text-base font-semibold text-foreground">Signature</h2>
               <p class="text-xs text-muted-foreground mt-1">
-                Image JPEG, max {MAX_SIGNATURE_KB} Ko. {config.signature.isDefault ? 'Signature d\'origine (modèle) actuellement utilisée.' : 'Signature personnalisée active.'}
+                Image PNG ou JPEG, max {MAX_SIGNATURE_KB} Ko. Le PNG est préférable : il conserve la transparence.
               </p>
             </div>
             <div class="flex items-center gap-6">
               <img id="signature-preview" src={config.signature.dataUrl} alt="Signature"
                 class="h-20 w-auto max-w-[220px] object-contain border border-border rounded bg-background p-2" />
               <div class="space-y-3">
-                <input id="signature-file" type="file" accept="image/jpeg"
+                <input id="signature-file" type="file" accept="image/png,image/jpeg"
                   class="block text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-muted file:px-3 file:py-2 file:text-sm file:font-semibold file:text-foreground hover:file:bg-muted/80 file:cursor-pointer" />
                 <div class="flex items-center gap-3">
                   <button id="signature-upload" disabled
@@ -203,8 +203,10 @@ try {
   fileInput?.addEventListener('change', () => {
     const file = fileInput.files?.[0];
     if (!file) return;
-    if (file.type !== 'image/jpeg') {
-      setStatus(sigStatus, 'Format JPEG requis.', false);
+    // Le PNG est même préférable : il garde la transparence, là où le JPEG pose un
+    // rectangle blanc sur le document et bave autour des traits fins.
+    if (file.type !== 'image/png' && file.type !== 'image/jpeg') {
+      setStatus(sigStatus, 'Format PNG ou JPEG requis.', false);
       uploadBtn.disabled = true;
       return;
     }

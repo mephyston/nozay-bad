@@ -1,4 +1,5 @@
 import { type Db } from '@nba/db';
+import { signatureMimeType } from '../shared/attestation/config';
 import { getEffectiveConfig } from '../shared/attestation/repository';
 import { assets } from '@nba/pdf';
 
@@ -23,7 +24,8 @@ export async function getAttestationConfig(db: Db): Promise<GetAttestationConfig
     websiteUrl: config.websiteUrl,
     signature: {
       isDefault: config.signatureBase64 === null,
-      dataUrl: `data:image/jpeg;base64,${base64}`
+      // Le type suit l'image : un PNG servi en `image/jpeg` ne s'affiche pas.
+      dataUrl: `data:${signatureMimeType(base64)};base64,${base64}`
     }
   };
 }

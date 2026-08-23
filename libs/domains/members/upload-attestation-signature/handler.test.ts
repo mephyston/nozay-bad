@@ -34,8 +34,18 @@ describe('uploadAttestationSignature handler', () => {
     expect(updateSignature).toHaveBeenCalledWith(db, jpegBase64);
   });
 
-  it('rejette un fichier non-JPEG (ex: PNG)', async () => {
-    await expect(uploadAttestationSignature(db, { signature: pngBase64 })).rejects.toBeInstanceOf(InvalidSignatureError);
+  it('accepte désormais un PNG, refusé jusque-là sans raison', async () => {
+    // `libs/shared/pdf` savait déjà intégrer les deux formats ; seul ce chemin-ci les
+    // distinguait. Le PNG est même préférable pour une signature — il garde la
+    // transparence.
+    await uploadAttestationSignature(db, { signature: pngBase64 });
+    expect(updateSignature).toHaveBeenCalledWith(db, pngBase64);
+  });
+
+  it('rejette un format qui n’est ni PNG ni JPEG (ex: GIF)', async () => {
+    await expect(
+      uploadAttestationSignature(db, { signature: 'R0lGODlhAQABAAAAACw=' })
+    ).rejects.toBeInstanceOf(InvalidSignatureError);
     expect(updateSignature).not.toHaveBeenCalled();
   });
 
@@ -47,6 +57,43 @@ describe('uploadAttestationSignature handler', () => {
     const bigBase64 = '/9j/' + 'A'.repeat(70000); // ~52 Ko décodés > MAX_SIGNATURE_BYTES
     expect(Math.floor((bigBase64.length * 3) / 4)).toBeGreaterThan(MAX_SIGNATURE_BYTES);
     await expect(uploadAttestationSignature(db, { signature: bigBase64 })).rejects.toBeInstanceOf(SignatureTooLargeError);
+    expect(updateSignature).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * PNG accepté au même titre que le JPEG.
+ *
+ * Il était refusé sans autre raison que l'ordre dans lequel les choses ont été écrites —
+ * `libs/shared/pdf` savait déjà intégrer les deux. C'est même le format qu'on préfère
+ * pour une signature : il garde la transparence, là où le JPEG pose un rectangle blanc
+ * sur le document et bave autour des traits fins.
+ */
+describe('signature au format PNG', () => {
+  /** Un PNG minimal : ses octets commencent par 89 50 4E 47, soit « iVBORw0KGgo ». */
+  const pngBase64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+  beforeEach(() => updateSignature.mockClear());
+
+  it('accepte un PNG préfixé par sa data URL', async () => {
+    await uploadAttestationSignature({} as never, { signature: `data:image/png;base64,${pngBase64}` });
+    expect(updateSignature).toHaveBeenCalledWith(expect.anything(), pngBase64);
+  });
+
+  it('accepte un PNG brut', async () => {
+    await uploadAttestationSignature({} as never, { signature: pngBase64 });
+    expect(updateSignature).toHaveBeenCalledWith(expect.anything(), pngBase64);
+  });
+
+  it('refuse ce qui n’est ni PNG ni JPEG, quel que soit le préfixe annoncé', async () => {
+    // Le format est lu dans les octets — ici un GIF — et non dans le type que le
+    // navigateur déclare, qui vient du client et ne prouve rien.
+    await expect(
+      uploadAttestationSignature({} as never, {
+        signature: 'data:image/png;base64,R0lGODlhAQABAAAAACw='
+      })
+    ).rejects.toThrow(InvalidSignatureError);
     expect(updateSignature).not.toHaveBeenCalled();
   });
 });

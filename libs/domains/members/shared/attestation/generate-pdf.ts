@@ -14,6 +14,7 @@ import {
   embed
 } from '@nba/pdf';
 import type { AttestationConfig } from './config';
+import { signatureKind } from './config';
 import { formatFrenchDate, formatSeason, numberToFrenchWords, paymentMethodLabel, seasonIssueDate } from './format';
 
 // Données dynamiques issues de la fiche adhérent (cf. get-member-cse-data).
@@ -37,7 +38,18 @@ export async function generateCseAttestationPdf(data: AttestationData, config: A
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
   const stamp = await embed(doc, assets.stamp);
-  const signature = await doc.embedJpg(config.signatureBase64 ?? assets.defaultSignature.base64);
+  /*
+   * La signature configurée peut être un PNG ou un JPEG : on choisit l'intégration
+   * d'après ses octets. `embedJpg` sur un PNG ne dégrade pas l'image, il lève — la
+   * génération entière échouait donc, pour un format que rien n'obligeait à refuser.
+   *
+   * Sans signature configurée, celle qui est empaquetée avec l'application sert de
+   * repli, avec son propre format.
+   */
+  const configured = config.signatureBase64;
+  const signature = configured
+    ? await (signatureKind(configured) === 'png' ? doc.embedPng(configured) : doc.embedJpg(configured))
+    : await embed(doc, assets.defaultSignature);
 
   // ---------- EN-TÊTE (club, partagé) ----------
   const ruleY = await drawClubHeader(doc, page, { font, bold });
