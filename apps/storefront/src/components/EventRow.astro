@@ -123,26 +123,44 @@ const sameDay = end !== null && end.toDateString() === start.toDateString();
       )}
     </p>
 
-    <span
-      class:list={[
-        'mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium',
-        FAMILY_CLASS[FAMILY[event.category] ?? 'club']
-      ]}
-    >
-      {CATEGORY_LABELS[event.category] ?? event.category}
-    </span>
+    {/*
+      Catégorie : retirée de l'écran, conservée pour le lecteur d'écran — exactement
+      comme sur l'agenda du site public, pour que les deux se lisent pareil.
+
+      À l'œil elle était redondante : la pastille de date porte déjà la couleur de la
+      famille, à deux centimètres de là. Son étiquette coûtait vingt-quatre pixels de
+      hauteur sur chaque ligne d'un agenda qui en aligne dix.
+
+      `sr-only` plutôt qu'une suppression : la pastille est `aria-hidden`, ce libellé
+      est donc le **seul** endroit où la catégorie soit annoncée. La retirer tout à fait
+      la réserverait à qui distingue les couleurs, et ferait de la teinte le seul
+      porteur d'une information — ce que la règle 1.4.1 interdit précisément.
+    */}
+    <span class="sr-only">{CATEGORY_LABELS[event.category] ?? event.category}</span>
 
     {/*
-      Un titre souligné au survol ne se voit pas sur un écran tactile : sans cette
-      ligne, rien n'annonce qu'il y a un article derrière le rendez-vous. Elle porte
-      le titre de l'actualité, qui dit ce qu'on va lire.
+      Renvoi vers l'actualité. Un titre souligné au survol ne se voit pas sur un écran
+      tactile : sans cette ligne, rien n'annoncerait qu'un article raconte le rendez-vous.
+
+      Le titre de l'article passe en complément masqué, comme sur le site public : à
+      l'écran il faisait doublon avec celui du rendez-vous, souvent au mot près, et
+      allongeait la ligne pour le répéter. Mais un lecteur d'écran qui égrène les liens
+      d'une page n'annoncerait sinon que trois « En savoir plus » indiscernables — ce
+      que la règle 2.4.4 demande d'éviter.
+
+      Le lien reste visible à toutes les largeurs, contrairement au site public qui rend
+      la carte entière cliquable en petite largeur. Ici la carte porte le formulaire
+      d'inscription, ses champs d'invités et le dépliage des inscrits : une surface
+      cliquable posée par-dessus détournerait le premier appui sur « Je viens » vers
+      l'article.
     */}
     {announcement && (
       <a
         href={announcement.href}
         class="mt-2 flex min-h-[44px] items-center gap-1 text-sm font-semibold text-primary hover:underline"
       >
-        Lire l'actualité : {announcement.title} <span aria-hidden="true">&rarr;</span>
+        En savoir plus<span class="sr-only"> : {announcement.title}</span>
+        <span aria-hidden="true">&rarr;</span>
       </a>
     )}
 
