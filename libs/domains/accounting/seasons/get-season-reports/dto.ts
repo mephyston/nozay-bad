@@ -60,9 +60,17 @@ export type GetSeasonReportsOutput = {
     categories: Record<string, { type: 'recette' | 'depense'; total: number; categoryName?: string }>;
   };
   bilanTrésorerie: {
-    accountId: 'current' | 'savings' | 'cash';
+    /** Code du compte, lu de `accounts` : plus une union figée depuis que les comptes sont des données. */
+    accountId: string;
     initialBalance: number;
+    /** Solde COMPTABLE de fin de période. C'est lui qui se reporte à-nouveau. */
     finalBalance: number;
+    /** Recettes saisies mais encore en coffre, sur ce compte. */
+    inVaultCents: number;
+    /** Dépenses saisies mais pas encore débitées, sur ce compte. */
+    pendingDebitCents: number;
+    /** Ce que le relevé de ce compte devrait afficher. */
+    bankTheoreticalCents: number;
   }[];
   tresorerieDisponible?: {
     totalGrossCashCents: number;

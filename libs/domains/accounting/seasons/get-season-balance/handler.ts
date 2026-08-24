@@ -1,6 +1,7 @@
 import { AppError, type Db } from '@nba/db';
 import { GetSeasonBalanceRepository } from './repository';
 import { GetSeasonBalanceInput, GetSeasonBalanceOutput } from "./dto";
+import { computeAccountBalances, sumAccountBalances } from '../../shared/balances';
 
 export async function getSeasonBalance(db: Db, seasonId: GetSeasonBalanceInput): Promise<GetSeasonBalanceOutput> {
   const repo = new GetSeasonBalanceRepository();
@@ -16,32 +17,22 @@ export async function getSeasonBalance(db: Db, seasonId: GetSeasonBalanceInput):
 
   const balances = await repo.getBalances(db, seasonId);
   const cashFlowTxs = await repo.getTransactionsForPeriod(db, startDateStr, endDateStr);
+  const accounts = await repo.getTreasuryAccounts(db);
 
-  const accounts = ['current', 'savings', 'cash'] as const;
-  const accountIdMap: Record<string, number> = { current: 1, savings: 2, cash: 3 };
-  let totalBalance = 0;
+  const perAccount = computeAccountBalances(accounts, balances, cashFlowTxs);
+  const totals = sumAccountBalances(perAccount);
 
-  for (const acc of accounts) {
-    const numericAccId = accountIdMap[acc];
-    const initBalRow = balances.find(b => b.accountId === acc || b.accountId === numericAccId);
-    const initBal = initBalRow ? (initBalRow.initialBalanceCents ?? 0) : 0;
-    let finalBal = initBal;
-    for (const tx of cashFlowTxs) {
-      const txAmount = tx.amountCents ?? 0;
-      const isTargetAcc = tx.accountId === acc || tx.accountId === numericAccId;
-      const isDestAcc = tx.destinationAccountId === acc || tx.destinationAccountId === numericAccId;
-
-      if (tx.type === 'recette' && isTargetAcc) {
-        finalBal += txAmount;
-      } else if (tx.type === 'depense' && isTargetAcc) {
-        finalBal -= txAmount;
-      } else if (tx.type === 'transfert') {
-        if (isTargetAcc) finalBal -= txAmount;
-        if (isDestAcc) finalBal += txAmount;
-      }
-    }
-    totalBalance += finalBal;
-  }
-
-  return { balance: totalBalance };
+  /*
+   * `balance` reste le solde COMPTABLE, et garde son nom : c'est ce que le tableau de bord
+   * affiche depuis toujours. Les trois autres nombres l'accompagnent désormais, pour que
+   * l'appelant puisse dire lequel des soldes il montre au lieu d'avoir à le deviner.
+   */
+  return {
+    balance: totals.grossCents,
+    grossCents: totals.grossCents,
+    inVaultCents: totals.inVaultCents,
+    pendingDebitCents: totals.pendingDebitCents,
+    bankTheoreticalCents: totals.bankTheoreticalCents,
+    accounts: perAccount
+  };
 }

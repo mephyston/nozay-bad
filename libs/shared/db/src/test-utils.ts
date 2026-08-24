@@ -59,6 +59,8 @@ const tables = [
     'invoices',
     'check_deposits',
     'bank_statement_lines',
+    // Le solde arrêté par la banque : enfant d'`accounts`, comme les lignes de relevé.
+    'bank_statement_balances',
     'products',
     'product_categories',
     // Sans FK vers `persons` (attribution par licence), mais fonctionnellement enfant.

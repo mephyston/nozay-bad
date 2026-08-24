@@ -8,7 +8,7 @@ export type CloseSeasonInput = string | {
 };
 
 export type CloseSeasonCheckItem = {
-  code: 'ALREADY_CLOSED' | 'BEFORE_END_DATE' | 'PENDING_BANK_TRANSACTIONS' | 'UNRESOLVED_CHECK_DEPOSITS' | 'UNCLAIMED_IN_VAULT_CHECKS' | 'UNVALIDATED_PAID_ORDERS' | 'PENDING_DEBIT_TRANSACTIONS' | 'CASH_DISCREPANCY';
+  code: 'ALREADY_CLOSED' | 'BEFORE_END_DATE' | 'PENDING_BANK_TRANSACTIONS' | 'UNRESOLVED_CHECK_DEPOSITS' | 'UNCLAIMED_IN_VAULT_CHECKS' | 'UNVALIDATED_PAID_ORDERS' | 'PENDING_DEBIT_TRANSACTIONS' | 'CASH_DISCREPANCY' | 'BANK_STATEMENT_DISCREPANCY';
   message: string;
   details?: any;
 };
@@ -21,7 +21,11 @@ export type CloseSeasonCheckResult = {
     accountId: number;
     accountCode: string;
     accountLabel: string;
+    /** Solde COMPTABLE de clôture : c'est celui-ci, et non le bancaire, qui se reporte. */
     finalBalanceCents: number;
+    inVaultCents: number;
+    pendingDebitCents: number;
+    bankTheoreticalCents: number;
   }[];
   nextSeasonId?: number | null;
   nextSeasonCode?: string | null;

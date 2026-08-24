@@ -74,6 +74,28 @@ export const bankStatementLinesTable = sqliteTable('bank_statement_lines', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
+/*
+ * Le solde que la banque, elle, annonce — la seule chose qu'une écriture ne peut pas
+ * bouger.
+ *
+ * `bank_statement_lines` porte les mouvements du relevé ; il y manquait le `<LEDGERBAL>`
+ * du fichier OFX, c'est-à-dire le solde arrêté par la banque à une date. Sans lui on
+ * pouvait pointer les opérations une à une, mais jamais boucler un état de rapprochement :
+ * il n'y avait aucun nombre extérieur auquel confronter le solde des livres.
+ *
+ * Une ligne par compte et par arrêté (`account_id`, `date`) : réimporter deux fois le même
+ * relevé écrase la ligne au lieu d'en empiler une seconde.
+ */
+export const bankStatementBalancesTable = sqliteTable('bank_statement_balances', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  accountId: integer('account_id').notNull().references(() => accountsTable.id),
+  date: text('date').notNull(),
+  balanceCents: integer('balance_cents').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+}, (table) => ({
+  accountDateIdx: uniqueIndex('bank_statement_balance_account_date_idx').on(table.accountId, table.date),
+}));
+
 export const checkDepositsTable = sqliteTable('check_deposits', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   seasonId: integer('season_id').notNull().references(() => seasonsTable.id),

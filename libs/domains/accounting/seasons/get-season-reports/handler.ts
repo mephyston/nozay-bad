@@ -4,6 +4,7 @@ import { GetSeasonReportsRepository } from './repository';
 import { GetSeasonReportsInput, GetSeasonReportsOutput, CategoryProjection, DeferredCashBreakdown } from "./dto";
 import { getSeasonFromDb } from '../../shared/accruals';
 import { generateTreasuryForecast } from './forecast-engine';
+import { computeAccountBalance, computeAccountBalances, sumAccountBalances, type AccountRef } from '../../shared/balances';
 
 export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Promise<GetSeasonReportsOutput> {
   const seasonId = typeof input === 'string' ? input : input.seasonId;
@@ -74,6 +75,16 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
   const accountTypes: ('current' | 'savings' | 'cash')[] = ['current', 'savings', 'cash'];
   const periodTxs = await repo.getTransactionsForPeriod(db, season.startDate, effectiveEndDate);
 
+  /*
+   * Les comptes du bilan de trésorerie, lus de la base quand elle en porte, repliés sur les
+   * trois codes historiques sinon. Repartir de `accounts` fait entrer dans le rapport un
+   * compte ajouté depuis l'écran de configuration, que la liste en dur laissait de côté ;
+   * le repli garde un tableau à trois lignes là où la base n'a pas encore été semée.
+   */
+  const treasuryAccounts: AccountRef[] = dbAccounts.length > 0
+    ? dbAccounts.map((a: any) => ({ id: a.id, code: a.code, label: a.label }))
+    : accountTypes.map((code) => ({ id: code as any, code }));
+
   let dynamicInitBalances: Record<string, number> = {};
   if (balances.length === 0 || balances.every(b => (b.initialBalanceCents ?? 0) === 0)) {
     const pastSeasons = await repo.getPastSeasons(db, season.startDate);
@@ -84,80 +95,65 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
       pastSeasons.sort((a, b) => a.startDate.localeCompare(b.startDate));
       const oldestSeason = pastSeasons[0];
       
-      for (const accCode of accountTypes) {
-        const accObj = dbAccounts.find(a => a.code === accCode);
-        const accId = accObj ? accObj.id : accCode;
-        
+      for (const account of treasuryAccounts) {
         // Find the earliest initial balance for this account across all past seasons
         let earliestBal = 0;
         let earliestDate = "1970-01-01";
-        
+
         const pastSeasonsForAcc = pastSeasons.map(ps => {
-          const balRow = allBalances.find(b => b.seasonId === ps.id && (b.accountId === accId || b.accountId === accCode));
+          const balRow = allBalances.find(b => b.seasonId === ps.id && (b.accountId === account.id || b.accountId === account.code));
           return { date: ps.startDate, bal: balRow ? (balRow.initialBalanceCents ?? 0) : 0 };
         }).filter(s => s.bal !== 0);
-        
+
         if (pastSeasonsForAcc.length > 0) {
            pastSeasonsForAcc.sort((a, b) => a.date.localeCompare(b.date));
            earliestBal = pastSeasonsForAcc[0].bal;
            earliestDate = pastSeasonsForAcc[0].date;
         }
-        
-        let computedBal = earliestBal;
-        
-        for (const tx of pastTransactions) {
-          if (tx.date < earliestDate) continue;
-          
-          const amount = tx.amountCents ?? 0;
-          const isTargetAcc = tx.accountId === accId || tx.accountId === accCode;
-          const isTargetDestAcc = tx.destinationAccountId === accId || tx.destinationAccountId === accCode;
-          
-          if (tx.type === 'recette' && isTargetAcc) computedBal += amount;
-          else if (tx.type === 'depense' && isTargetAcc) computedBal -= amount;
-          else if (tx.type === 'transfert') {
-            if (isTargetAcc) computedBal -= amount;
-            if (isTargetDestAcc) computedBal += amount;
-          }
-        }
-        dynamicInitBalances[accCode] = computedBal;
+
+        dynamicInitBalances[account.code] = computeAccountBalance(
+          account,
+          earliestBal,
+          pastTransactions.filter((tx: any) => tx.date >= earliestDate)
+        ).grossCents;
       }
     }
   }
 
-  const reportBalances = accountTypes.map(accCode => {
-    const accObj = dbAccounts.find(a => a.code === accCode);
-    const accId = accObj ? accObj.id : null;
+  const accountBalances = computeAccountBalances(
+    treasuryAccounts,
+    /*
+     * L'à-nouveau de la saison, ou celui reconstitué depuis les exercices passés quand la
+     * saison n'en porte pas. Le repli ne vaut que pour un à-nouveau absent OU nul : un solde
+     * initial délibérément mis à zéro se reconstitue donc lui aussi, ce qui est le
+     * comportement d'origine et le seul possible — la base ne distingue pas les deux.
+     */
+    treasuryAccounts.map((account) => {
+      const row = balances.find((b) => b.accountId === account.id || b.accountId === account.code);
+      const initBal = row ? (row.initialBalanceCents ?? 0) : 0;
+      return {
+        accountId: account.id,
+        initialBalanceCents: initBal === 0 && dynamicInitBalances[account.code] !== undefined
+          ? dynamicInitBalances[account.code]
+          : initBal
+      };
+    }),
+    periodTxs
+  );
 
-    const initBalRow = balances.find(b => b.accountId === accId || b.accountId === accCode);
-    let initBal = initBalRow ? (initBalRow.initialBalanceCents ?? 0) : 0;
-    if (initBal === 0 && dynamicInitBalances[accCode] !== undefined) {
-      initBal = dynamicInitBalances[accCode];
-    }
+  const reportBalances = accountBalances.map((b) => ({
+    accountId: b.accountCode,
+    initialBalance: b.initialBalanceCents,
+    /** Solde COMPTABLE de fin de période : à-nouveau + écritures, sans correction. */
+    finalBalance: b.grossCents,
+    inVaultCents: b.inVaultCents,
+    pendingDebitCents: b.pendingDebitCents,
+    /** Ce que le relevé de ce compte devrait afficher. */
+    bankTheoreticalCents: b.bankTheoreticalCents
+  }));
 
-    let finalBal = initBal;
-    for (const tx of periodTxs) {
-      const amount = tx.amountCents ?? 0;
-      const isTargetAcc = (accId !== null && tx.accountId === accId) || tx.accountId === accCode;
-      const isTargetDestAcc = (accId !== null && tx.destinationAccountId === accId) || tx.destinationAccountId === accCode;
-
-      if (tx.type === 'recette' && isTargetAcc) {
-        finalBal += amount;
-      } else if (tx.type === 'depense' && isTargetAcc) {
-        finalBal -= amount;
-      } else if (tx.type === 'transfert') {
-        if (isTargetAcc) finalBal -= amount;
-        if (isTargetDestAcc) finalBal += amount;
-      }
-    }
-
-    return {
-      accountId: accCode,
-      initialBalance: initBal,
-      finalBalance: finalBal
-    };
-  });
-
-  const totalGrossCashCents = reportBalances.reduce((sum, b) => sum + b.finalBalance, 0);
+  const cashTotals = sumAccountBalances(accountBalances);
+  const totalGrossCashCents = cashTotals.grossCents;
 
   // 3. Trésorerie Disponible & Repartition des Accruals (Deferred Revenues / Expenses)
   const deferredTxs = await repo.getDeferredTransactions(db, season.startDate, effectiveEndDate);
@@ -204,19 +200,9 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
   const deferredRevenues: DeferredCashBreakdown[] = [...revenuesByCategory.values()].sort(byAmount);
   const deferredExpenses: DeferredCashBreakdown[] = [...expensesByCategory.values()].sort(byAmount);
 
-  let inVaultCents = 0;
-  let pendingDebitCents = 0;
-  for (const tx of periodTxs) {
-    if (tx.status === 'in_vault' && tx.type === 'recette') {
-      inVaultCents += (tx.amountCents ?? 0);
-    } else if (tx.status === 'pending_debit' && tx.type === 'depense') {
-      pendingDebitCents += (tx.amountCents ?? 0);
-    }
-  }
-
-  // Trésorerie réellement disponible sur les relevés bancaires : 
+  // Trésorerie réellement disponible sur les relevés bancaires :
   // on ajuste les chèques en coffre (non déposés) et les débits différés (CB).
-  const netAvailableCashCents = totalGrossCashCents - inVaultCents + pendingDebitCents;
+  const { inVaultCents, pendingDebitCents, bankTheoreticalCents: netAvailableCashCents } = cashTotals;
 
   const tresorerieDisponible = {
     totalGrossCashCents,

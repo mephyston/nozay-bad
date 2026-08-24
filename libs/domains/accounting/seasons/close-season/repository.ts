@@ -3,7 +3,7 @@ import { ledgerEntriesTable } from '@nba/accounting/schema';
 import { type DbOrTx, type Db } from '@nba/db';
 import { eq, and, gte, lte, or, inArray, isNotNull } from 'drizzle-orm';
 import { getUnvalidatedPaidOrders as getShopUnvalidatedPaidOrders } from '@nba/shop-api';
-import { bankStatementLinesTable, checkDepositsTable, checksTable, seasonBalancesTable, accountsTable, seasonCategoryBudgetsTable } from '../../shared/schema';
+import { bankStatementLinesTable, bankStatementBalancesTable, checkDepositsTable, checksTable, seasonBalancesTable, accountsTable, seasonCategoryBudgetsTable } from '../../shared/schema';
 
 export interface CloseSeasonRepositoryInterface {
   getSeasonById(db: DbOrTx, id: string | number): Promise<any | undefined>;
@@ -16,7 +16,7 @@ export interface CloseSeasonRepositoryInterface {
   getSeasonBalances(db: DbOrTx, seasonId: number | string): Promise<any[]>;
   getTransactionsForSeason(db: DbOrTx, seasonId: number | string): Promise<any[]>;
   getAccounts(db: DbOrTx): Promise<any[]>;
-  getLatestReconciledBankTransaction(db: DbOrTx, seasonId: number | string, accountId: number): Promise<any | undefined>;
+  getLatestBankStatementBalance(db: DbOrTx, accountId: number, asOfDate: string): Promise<{ date: string; balanceCents: number } | undefined>;
   getCategoryBudgets(db: DbOrTx, seasonId: number | string): Promise<any[]>;
   closeSeasonWithRollover(db: Db, seasonId: number | string, nextSeasonId: number | null, balancesToRollover: { accountId: number; finalBalanceCents: number }[], copyBudgets: boolean): Promise<any>;
   reopenSeason(db: Db, seasonId: number | string, nextSeasonId: number | null): Promise<any>;
@@ -122,20 +122,27 @@ export class CloseSeasonRepository implements CloseSeasonRepositoryInterface {
     return db.select().from(accountsTable).all();
   }
 
-  async getLatestReconciledBankTransaction(db: DbOrTx, seasonId: number | string, accountId: number): Promise<any | undefined> {
-    const season = await this.getSeasonById(db, seasonId);
-    if (!season) return undefined;
-    const txs = await db.select()
-      .from(bankStatementLinesTable)
+  /**
+   * Le dernier solde annoncé par la banque à la date d'arrêté, ou avant.
+   *
+   * Remplace `getLatestReconciledBankTransaction`, qui rendait la dernière *opération*
+   * rapprochée : un mouvement, jamais un solde. Son unique appelant portait un `if` vide et
+   * le commentaire « In full bank reconciliation, final bank balance is tracked » — le
+   * contrôle était prévu, la donnée manquait.
+   */
+  async getLatestBankStatementBalance(db: DbOrTx, accountId: number, asOfDate: string): Promise<{ date: string; balanceCents: number } | undefined> {
+    const rows = await db.select({
+        date: bankStatementBalancesTable.date,
+        balanceCents: bankStatementBalancesTable.balanceCents
+      })
+      .from(bankStatementBalancesTable)
       .where(and(
-        gte(bankStatementLinesTable.date, season.startDate),
-        lte(bankStatementLinesTable.date, season.endDate),
-        eq(bankStatementLinesTable.accountId, accountId),
-        eq(bankStatementLinesTable.status, 'reconciled')
+        eq(bankStatementBalancesTable.accountId, accountId),
+        lte(bankStatementBalancesTable.date, asOfDate)
       ))
       .all();
-    if (txs.length === 0) return undefined;
-    return txs.sort((a, b) => b.date.localeCompare(a.date))[0];
+    if (rows.length === 0) return undefined;
+    return rows.sort((a, b) => b.date.localeCompare(a.date))[0];
   }
 
   async getCategoryBudgets(db: DbOrTx, seasonId: number | string): Promise<any[]> {

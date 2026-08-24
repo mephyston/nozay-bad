@@ -8,6 +8,7 @@ import {
   ReopenSeasonInput,
   ReopenSeasonOutput
 } from "./dto";
+import { computeAccountBalances } from '../../shared/balances';
 
 export async function getCloseSeasonChecks(
   db: Db,
@@ -95,38 +96,55 @@ export async function getCloseSeasonChecks(
 
   const balancesToRollover: CloseSeasonCheckResult['balancesToRollover'] = [];
 
-  for (const acc of dbAccounts) {
-    const initBalRow = balances.find(b => Number(b.accountId) === Number(acc.id) || b.accountId === acc.code);
-    const initBal = initBalRow ? (initBalRow.initialBalanceCents ?? 0) : 0;
+  const accountBalances = computeAccountBalances(
+    dbAccounts.map((acc: any) => ({ id: acc.id, code: acc.code, label: acc.label })),
+    balances,
+    seasonTxs
+  );
 
-    let finalBal = initBal;
-    for (const tx of seasonTxs) {
-      const amount = tx.amountCents ?? 0;
-      const isTargetAcc = Number(tx.accountId) === Number(acc.id) || tx.accountId === acc.code;
-      const isTargetDestAcc = Number(tx.destinationAccountId) === Number(acc.id) || tx.destinationAccountId === acc.code;
-
-      if (tx.type === 'recette' && isTargetAcc) {
-        finalBal += amount;
-      } else if (tx.type === 'depense' && isTargetAcc) {
-        finalBal -= amount;
-      } else if (tx.type === 'transfert') {
-        if (isTargetAcc) finalBal -= amount;
-        if (isTargetDestAcc) finalBal += amount;
-      }
-    }
-
-
+  for (const balance of accountBalances) {
+    /*
+     * C'est le solde COMPTABLE qui se reporte à-nouveau, pas le bancaire.
+     *
+     * Un chèque encaissé au 20 août et déposé en septembre reste une recette de l'exercice
+     * clos : reporter le solde bancaire théorique le ferait disparaître des livres, et la
+     * saison suivante s'ouvrirait amputée du montant du chèque. La correction `in_vault` sert
+     * à confronter les livres au relevé, jamais à rectifier les livres.
+     */
     balancesToRollover.push({
-      accountId: acc.id,
-      accountCode: acc.code,
-      accountLabel: acc.label,
-      finalBalanceCents: finalBal
+      accountId: balance.accountId,
+      accountCode: balance.accountCode,
+      accountLabel: balance.accountLabel ?? balance.accountCode,
+      finalBalanceCents: balance.grossCents,
+      inVaultCents: balance.inVaultCents,
+      pendingDebitCents: balance.pendingDebitCents,
+      bankTheoreticalCents: balance.bankTheoreticalCents
     });
 
-    // Check discrepancy against latest reconciled bank transaction
-    const latestBankTx = await repo.getLatestReconciledBankTransaction(db, season.id, acc.id);
-    if (latestBankTx && latestBankTx.amountCents !== undefined) {
-      // In full bank reconciliation, final bank balance is tracked. Compare if diff exists
+    /*
+     * Le contrôle que le `if` vide de la version précédente annonçait : le solde bancaire
+     * théorique de clôture, confronté au dernier solde que la banque a elle-même annoncé.
+     * Un écart ne bloque pas la clôture — il peut n'être qu'un relevé pas encore importé —
+     * mais il doit se voir, parce qu'il ne se verra plus jamais après.
+     */
+    const bankBalance = await repo.getLatestBankStatementBalance(db, balance.accountId, season.endDate);
+    if (bankBalance) {
+      const gapCents = bankBalance.balanceCents - balance.bankTheoreticalCents;
+      if (gapCents !== 0) {
+        warnings.push({
+          code: 'BANK_STATEMENT_DISCREPANCY',
+          message: `Le relevé du compte ${balance.accountLabel ?? balance.accountCode} au ${bankBalance.date} annonce ${(bankBalance.balanceCents / 100).toFixed(2)} €, alors que le solde bancaire théorique de clôture est de ${(balance.bankTheoreticalCents / 100).toFixed(2)} € (écart : ${(gapCents / 100).toFixed(2)} €).`,
+          details: {
+            accountId: balance.accountId,
+            accountCode: balance.accountCode,
+            statementDate: bankBalance.date,
+            statementBalanceCents: bankBalance.balanceCents,
+            bookGrossCents: balance.grossCents,
+            bankTheoreticalCents: balance.bankTheoreticalCents,
+            gapCents
+          }
+        });
+      }
     }
   }
 

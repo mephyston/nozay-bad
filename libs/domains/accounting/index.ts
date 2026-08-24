@@ -39,6 +39,7 @@ import { importBankStatementRoute } from './bank/import-bank-statement/route';
 import { analyzeBankStatementLinesRoute } from './bank/analyze-bank-statement-lines/route';
 import { reconcileBankStatementLineRoute } from './bank/reconcile-bank-statement-line/route';
 import { updateBankStatementLineStatusRoute } from './bank/update-bank-statement-line-status/route';
+import { getReconciliationStatementRoute } from './bank/get-reconciliation-statement/route';
 
 // Transactions Routes
 import { listTransactionsRoute } from './ledger/list-ledger-entries/route';
@@ -104,6 +105,7 @@ accountingRouter.route('/', importBankStatementRoute);
 accountingRouter.route('/', analyzeBankStatementLinesRoute);
 accountingRouter.route('/', reconcileBankStatementLineRoute);
 accountingRouter.route('/', updateBankStatementLineStatusRoute);
+accountingRouter.route('/', getReconciliationStatementRoute);
 
 // 5. TRANSACTIONS ROUTES
 accountingRouter.route('/', listTransactionsRoute);

@@ -107,6 +107,8 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // sont déclarés explicitement plutôt que fusionnés : le test de couverture
   // signalerait aussi bien un alias oublié qu'un alias retiré du code.
   { method: 'GET', path: '/accounting/bank-statement-lines', permission: 'accounting:bank:read' },
+  { method: 'GET', path: '/accounting/accounts/:accountCode/reconciliation-statement', permission: 'accounting:bank:read' },
+  { method: 'GET', path: '/accounting/reconciliation-statements', permission: 'accounting:bank:read' },
   { method: 'POST', path: '/accounting/bank-statement-lines/import', permission: 'accounting:bank:import' },
   { method: 'POST', path: '/accounting/bank-statement-lines/analyze', permission: 'accounting:bank:reconcile' },
   { method: 'POST', path: '/accounting/bank-statement-lines/reconcile-bulk', permission: 'accounting:bank:reconcile' },

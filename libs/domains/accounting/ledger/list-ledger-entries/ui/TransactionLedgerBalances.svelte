@@ -5,22 +5,63 @@
 
   let { balances = [] }: { balances: BalanceReport[] } = $props();
 
-  function getAccountBalanceCents(acc: 'current' | 'savings' | 'cash') {
-    const match = balances.find(b => b.accountId === acc);
-    return match ? ((match as any).finalBalanceCents ?? match.finalBalance ?? 0) : 0;
+  /*
+   * Ces encarts affichaient le solde COMPTABLE sous le seul nom du compte. Le trésorier le
+   * comparait à son relevé, ne tombait pas juste, et en concluait que le logiciel comptait mal
+   * — alors que l'écart n'est rien d'autre qu'un chèque encore dans le coffre.
+   *
+   * D'où la règle : ne jamais afficher un solde sans dire lequel des trois c'est, et montrer le
+   * solde bancaire à côté dès qu'il diverge.
+   */
+  function balanceFor(acc: 'current' | 'savings' | 'cash'): BalanceReport | undefined {
+    return balances.find(b => b.accountId === acc);
+  }
+
+  function grossCentsOf(balance: BalanceReport | undefined): number {
+    if (!balance) return 0;
+    return (balance as any).finalBalanceCents ?? balance.finalBalance ?? 0;
+  }
+
+  function bankCentsOf(balance: BalanceReport | undefined): number {
+    if (!balance) return 0;
+    return balance.bankTheoreticalCents ?? grossCentsOf(balance);
   }
 </script>
 
 <div class="grid gap-4 md:grid-cols-3">
   {#each formAccountOptions as { value, label }}
+    {@const balance = balanceFor(value as any)}
+    {@const gross = grossCentsOf(balance)}
+    {@const bank = bankCentsOf(balance)}
+    {@const decale = bank !== gross}
     <Card.Root>
       <Card.Header class="pb-2">
         <Card.Title class="text-sm font-medium text-muted-foreground">{label}</Card.Title>
       </Card.Header>
       <Card.Content>
         <div class="text-3xl font-bold text-foreground">
-          <Amount cents={getAccountBalanceCents(value as any)} />
+          <Amount cents={gross} />
         </div>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Solde comptable
+          {#if decale}
+            · en banque <Amount cents={bank} class="font-medium text-foreground" />
+          {/if}
+        </p>
+        {#if decale}
+          <p class="mt-1 text-xs text-muted-foreground">
+            {#if (balance?.inVaultCents ?? 0) > 0}
+              <span class="block">
+                dont <Amount cents={balance?.inVaultCents ?? 0} /> de chèques encore en coffre
+              </span>
+            {/if}
+            {#if (balance?.pendingDebitCents ?? 0) > 0}
+              <span class="block">
+                dont <Amount cents={balance?.pendingDebitCents ?? 0} /> en attente de débit
+              </span>
+            {/if}
+          </p>
+        {/if}
       </Card.Content>
     </Card.Root>
   {/each}

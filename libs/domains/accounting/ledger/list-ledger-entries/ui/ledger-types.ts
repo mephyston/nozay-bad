@@ -29,9 +29,15 @@ export interface Pagination {
 }
 
 export interface BalanceReport {
-  accountId: 'current' | 'savings' | 'cash';
+  /** Code du compte, lu de `accounts` : plus une union figée depuis que les comptes sont des données. */
+  accountId: string;
   initialBalance: number;
+  /** Solde COMPTABLE : à-nouveau + écritures. Ce n'est pas le solde du relevé. */
   finalBalance: number;
+  inVaultCents?: number;
+  pendingDebitCents?: number;
+  /** Ce que le relevé devrait afficher : comptable − chèques en coffre + débits différés. */
+  bankTheoreticalCents?: number;
 }
 
 export interface Season {
