@@ -3,6 +3,7 @@ import { AppError, type Db } from '@nba/db';
 import { normalizeCategory } from '../../shared/helpers';
 import type { CreateTransactionDTO } from './dto';
 import { validateAccrualAndFiscalPhase } from '../../shared/accruals';
+import { resolveAccountId, resolvePaymentMethod } from '../../config/queries';
 
 export async function createLedgerEntry(db: Db, body: CreateTransactionDTO & { accrualType?: string; accrualNote?: string }) {
   if (!body.seasonId || !body.type || !body.accountId || !body.amount || !body.date || !body.paymentMethod || !body.description) {
@@ -30,12 +31,11 @@ export async function createLedgerEntry(db: Db, body: CreateTransactionDTO & { a
   const repo = new CreateLedgerEntryRepository();
   const seasonIdInt = await repo.resolveSeasonId(db, body.seasonId);
 
-  const accountIdMap: Record<string, number> = { current: 1, savings: 2, cash: 3 };
-  const accountIdInt = typeof body.accountId === 'number' ? body.accountId : accountIdMap[body.accountId] || 1;
-  const destAccountIdInt = body.destinationAccountId ? (typeof body.destinationAccountId === 'number' ? body.destinationAccountId : accountIdMap[body.destinationAccountId] || 2) : null;
+  const accountIdInt = await resolveAccountId(db, body.accountId);
+  const destAccountIdInt = body.destinationAccountId ? await resolveAccountId(db, body.destinationAccountId, 'savings') : null;
 
-  const paymentMethodMap: Record<string, number> = { virement: 1, cheque: 2, especes: 3, labaz: 4, ancv: 5, pass_sport: 6, ticket_loisir: 7, up_loisir: 8 };
-  const paymentMethodIdInt = typeof body.paymentMethod === 'number' ? body.paymentMethod : paymentMethodMap[body.paymentMethod] || 1;
+  const paymentMethod = await resolvePaymentMethod(db, body.paymentMethod);
+  const paymentMethodIdInt = paymentMethod.id;
 
   const categoryIdInt = body.category ? (typeof body.category === 'number' ? body.category : Number(body.category) || 1) : null;
 
@@ -52,7 +52,16 @@ export async function createLedgerEntry(db: Db, body: CreateTransactionDTO & { a
     reference: body.reference || null,
     accrualType: body.accrualType || 'normal',
     accrualNote: body.accrualNote || null,
-    status: 'cleared',
+    /*
+     * Le statut vient du mode de règlement, il n'est plus forcé à `cleared`.
+     *
+     * `payment_methods.default_entry_status` dit depuis toujours qu'un chèque naît `in_vault` :
+     * encaissé dans les livres, encore dans le coffre. Le forçage écrasait cette réponse, si
+     * bien qu'aucune écriture n'a jamais porté d'autre statut que `cleared` — et que le solde
+     * bancaire théorique, qui se déduit précisément de ce statut, ne pouvait jamais différer du
+     * solde comptable. Le mécanisme existait ; rien ne l'alimentait.
+     */
+    status: paymentMethod.defaultEntryStatus,
     createdAt: new Date()
   });
 }

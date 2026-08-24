@@ -17,17 +17,33 @@ export class GetReconciliationStatementRepository {
   }
 
   /**
-   * Les comptes pour lesquels un relevé a déjà été importé.
+   * Les comptes pour lesquels un relevé a déjà été importé — lignes OU solde.
    *
    * La caisse d'une buvette n'a pas de banque : elle n'a donc rien à rapprocher, et la faire
-   * figurer dans l'état afficherait un écart permanent égal à son solde. Plutôt que de coder
-   * en dur « tout sauf la caisse », on part de ce qui a réellement été importé.
+   * figurer afficherait un écart permanent égal à son solde. Plutôt que de coder en dur « tout
+   * sauf la caisse », on part de ce qui a réellement été importé.
+   *
+   * Les DEUX tables comptent, et c'est le point : n'exiger qu'un solde rendait l'état invisible
+   * sur toute base alimentée avant que le `<LEDGERBAL>` ne soit capté. Les comptes déjà chargés
+   * de centaines de lignes n'avaient aucun solde, donc aucun état — et l'écran, qui savait
+   * pourtant dire « aucun solde de relevé importé », ne s'affichait tout simplement pas.
    */
   async getAccountsWithStatements(db: DbOrTx): Promise<{ id: number; code: string; label: string }[]> {
-    return db.selectDistinct({ id: accountsTable.id, code: accountsTable.code, label: accountsTable.label })
+    const columns = { id: accountsTable.id, code: accountsTable.code, label: accountsTable.label };
+
+    const withBalances = await db.selectDistinct(columns)
       .from(accountsTable)
       .innerJoin(bankStatementBalancesTable, eq(bankStatementBalancesTable.accountId, accountsTable.id))
       .all();
+
+    const withLines = await db.selectDistinct(columns)
+      .from(accountsTable)
+      .innerJoin(bankStatementLinesTable, eq(bankStatementLinesTable.accountId, accountsTable.id))
+      .all();
+
+    const byId = new Map<number, { id: number; code: string; label: string }>();
+    for (const account of [...withBalances, ...withLines]) byId.set(account.id, account);
+    return [...byId.values()].sort((a, b) => a.id - b.id);
   }
 
   async getInitialBalanceCents(db: DbOrTx, seasonId: number, accountId: number): Promise<number> {

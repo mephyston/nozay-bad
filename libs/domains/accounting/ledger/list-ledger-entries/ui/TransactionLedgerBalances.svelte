@@ -42,11 +42,15 @@
         <div class="text-3xl font-bold text-foreground">
           <Amount cents={gross} />
         </div>
-        <p class="mt-1 text-xs text-muted-foreground">
-          Solde comptable
-          {#if decale}
-            · en banque <Amount cents={bank} class="font-medium text-foreground" />
-          {/if}
+        <p class="mt-1 text-xs text-muted-foreground">Solde comptable</p>
+        <!--
+          Le solde bancaire s'affiche TOUJOURS, même identique au comptable. Ne le montrer qu'en
+          cas d'écart laissait croire qu'il n'existait pas : l'égalité des deux nombres est une
+          information, pas une raison de n'en montrer qu'un.
+        -->
+        <p class="mt-2 text-sm {decale ? 'font-semibold text-foreground' : 'text-muted-foreground'}">
+          <Amount cents={bank} />
+          <span class="text-xs font-normal text-muted-foreground">en banque</span>
         </p>
         {#if decale}
           <p class="mt-1 text-xs text-muted-foreground">

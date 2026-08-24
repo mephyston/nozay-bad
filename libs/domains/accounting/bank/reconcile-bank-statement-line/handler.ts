@@ -5,6 +5,7 @@ import { normalizeCategory } from '../../shared/helpers';
 import { ReconcileBankTxInternalId, ReconcileBankTxInternalInput, ReconcileBankTxInternalOutput } from "./dto";
 import { BankStatementLine } from '../../shared/bank-statement-line';
 import { validateAccrualAndFiscalPhase } from '../../shared/accruals';
+import { resolveAccountId, resolvePaymentMethod } from '../../config/queries';
 
 export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxInternalId, body: ReconcileBankTxInternalInput): Promise<{ statements: any[]; error?: string; status?: number }> {
   const repo = new ReconcileBankStatementLineRepository();
@@ -82,12 +83,12 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
         statements.push(repo.buildCreateLedgerEntryStatement(db, {
           seasonId,
           type: txItem.type,
-          accountId: txItem.accountId,
-          destinationAccountId: txItem.destinationAccountId || null,
+          accountId: await resolveAccountId(db, txItem.accountId),
+          destinationAccountId: txItem.destinationAccountId ? await resolveAccountId(db, txItem.destinationAccountId, 'savings') : null,
           category: normalizeCategory(txItem.category),
           amount: Math.round(txItem.amount),
           date: txItem.date,
-          paymentMethod: txItem.paymentMethod,
+          paymentMethod: (await resolvePaymentMethod(db, txItem.paymentMethod)).id,
           description: txItem.description,
           reference: txItem.reference || null,
           accrualType: txItem.accrualType || txItem.accrual_type || 'normal',
@@ -121,12 +122,12 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
       statements.push(repo.buildCreateLedgerEntryStatement(db, {
         seasonId,
         type: tx.type,
-        accountId: tx.accountId,
-        destinationAccountId: tx.destinationAccountId || null,
+        accountId: await resolveAccountId(db, tx.accountId),
+        destinationAccountId: tx.destinationAccountId ? await resolveAccountId(db, tx.destinationAccountId, 'savings') : null,
         category: normalizeCategory(tx.category),
         amount: Math.round(tx.amount),
         date: tx.date,
-        paymentMethod: tx.paymentMethod,
+        paymentMethod: (await resolvePaymentMethod(db, tx.paymentMethod)).id,
         description: tx.description,
         reference: tx.reference || null,
         accrualType: tx.accrualType || tx.accrual_type || 'normal',

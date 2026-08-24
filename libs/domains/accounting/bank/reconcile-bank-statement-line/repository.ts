@@ -35,25 +35,38 @@ export class ReconcileBankStatementLineRepository {
 
   buildLinkTransactionToBankStatement(db: DbOrTx, ledgerEntryId: number, bankStatementLineId: number, memberId?: number): any {
     return db.update(ledgerEntriesTable)
-      .set({ 
+      .set({
         bankStatementLineId,
-        memberId: memberId || undefined
+        memberId: memberId || undefined,
+        /*
+         * Pointer une écriture contre une ligne de relevé prouve que l'argent est arrivé en
+         * banque : son statut d'attente n'a plus d'objet.
+         *
+         * Sans cette ligne, un chèque saisi `in_vault` puis rapproché gardait son statut pour
+         * toujours, et le solde bancaire théorique aurait retranché son montant indéfiniment —
+         * un écart qui se serait creusé chèque après chèque, sans que rien ne le signale.
+         */
+        status: 'cleared'
       })
       .where(eq(ledgerEntriesTable.id, ledgerEntryId));
   }
 
+  /*
+   * Les identifiants arrivent déjà résolus : le bâtisseur est synchrone parce qu'il alimente un
+   * `db.batch()`, et ne peut donc pas interroger la base. C'est `buildReconciliationStatements`
+   * qui appelle `resolveAccountId` / `resolvePaymentMethod` avant de l'appeler — les tables de
+   * correspondance codées en dur qui vivaient ici étaient décalées d'un cran à partir de
+   * `labaz`, le seed intercalant `cb` en quatrième position.
+   */
   buildCreateLedgerEntryStatement(db: DbOrTx, values: any): any {
-    const accountMap: Record<string, number> = { current: 1, savings: 2, cash: 3 };
-    const paymentMap: Record<string, number> = { virement: 1, cheque: 2, especes: 3, labaz: 4, ancv: 5, pass_sport: 6, ticket_loisir: 7, up_loisir: 8 };
-
     const rawAcc = values.accountId;
-    const accountIdNum = typeof rawAcc === 'number' ? rawAcc : (accountMap[rawAcc] || (isNaN(Number(rawAcc)) ? 1 : Number(rawAcc)));
+    const accountIdNum = typeof rawAcc === 'number' ? rawAcc : (isNaN(Number(rawAcc)) ? 1 : Number(rawAcc));
 
     const rawDestAcc = values.destinationAccountId;
-    const destAccountIdNum = rawDestAcc ? (typeof rawDestAcc === 'number' ? rawDestAcc : (accountMap[rawDestAcc] || (isNaN(Number(rawDestAcc)) ? null : Number(rawDestAcc)))) : null;
+    const destAccountIdNum = rawDestAcc ? (typeof rawDestAcc === 'number' ? rawDestAcc : (isNaN(Number(rawDestAcc)) ? null : Number(rawDestAcc))) : null;
 
     const rawPay = values.paymentMethodId ?? values.paymentMethod;
-    const paymentMethodIdNum = typeof rawPay === 'number' ? rawPay : (paymentMap[rawPay] || (isNaN(Number(rawPay)) ? 1 : Number(rawPay)));
+    const paymentMethodIdNum = typeof rawPay === 'number' ? rawPay : (isNaN(Number(rawPay)) ? 1 : Number(rawPay));
 
     const rawCat = values.categoryId ?? values.category;
     const categoryIdNum = rawCat !== undefined && rawCat !== null ? (typeof rawCat === 'number' ? rawCat : (isNaN(Number(rawCat)) ? 1 : Number(rawCat))) : null;
