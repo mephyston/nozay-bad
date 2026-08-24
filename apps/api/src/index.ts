@@ -14,6 +14,7 @@ import { dashboardRouter } from './dashboard';
 import { handleScheduled, type ScheduledBindings } from './scheduled';
 import { notificationsSendRouter } from './notifications';
 import { openPlayFeatureFlag } from './open-play';
+import { invalidatePublicContent } from './content-version';
 import { AppError } from '@nba/db';
 import { authorize } from './authz/middleware';
 
@@ -83,6 +84,10 @@ app.use('*', openPlayFeatureFlag());
 // la clé prouve que l'appelant est un Worker de confiance, ce qui est la condition
 // pour croire l'identité qu'il affirme.
 app.use('*', authorize());
+
+// Après l'autorisation, et après le handler : une écriture réussie sur les créneaux
+// périme les pages du site public, qui les met en cache sous la version de contenu.
+app.use('*', invalidatePublicContent());
 
 app.get('/health', (c) => {
   return c.json({ status: 'ok' });
