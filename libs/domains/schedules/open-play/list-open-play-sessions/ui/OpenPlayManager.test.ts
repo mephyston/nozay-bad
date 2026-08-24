@@ -150,4 +150,43 @@ describe('OpenPlayManager', () => {
 
     expect(host.querySelectorAll('tbody tr')).toHaveLength(1);
   });
+  /*
+    Le bouton ouvre-t-il vraiment quelque chose ?
+
+    Les contrôles ci-dessus ne regardaient que la *présence* du bouton. Un correctif
+    d'affichage a supprimé les deux `<FormSheet>` de fin de fichier en même temps qu'il
+    déplaçait le panneau des inscrits : les booléens `showGenerateSheet` et
+    `showFormSheet` continuaient d'être basculés par le clic, mais plus rien ne les
+    lisait. Toute la suite restait verte, et les deux boutons ne faisaient plus rien.
+
+    On vise donc un champ que seul le panneau porte, et non son titre — repris mot pour
+    mot du bouton, il serait déjà là sans le panneau.
+  */
+  function clickButton(label: string) {
+    const button = [...host.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes(label)
+    );
+    expect(button, `bouton « ${label} » absent`).toBeDefined();
+    button!.click();
+    flushSync();
+  }
+
+  it('ouvre le panneau de programmation récurrente au clic', () => {
+    render({
+      slots: [
+        { id: 1, weekday: 6, startTime: '14:00', endTime: '17:00', venue: { name: 'Pierre Dupuis' } }
+      ]
+    });
+    clickButton('Programmer les séances récurrentes');
+    // Le panneau sort du conteneur : il est porté dans `document.body`.
+    expect(document.querySelector('#gen-from')).not.toBeNull();
+    expect(document.querySelector('#gen-to')).not.toBeNull();
+  });
+
+  it('ouvre le panneau de nouvelle séance au clic', () => {
+    render();
+    clickButton('Nouvelle séance');
+    expect(document.querySelector('#op-date')).not.toBeNull();
+    expect(document.querySelector('#op-venue')).not.toBeNull();
+  });
 });

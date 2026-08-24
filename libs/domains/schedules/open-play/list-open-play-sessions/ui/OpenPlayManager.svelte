@@ -485,3 +485,97 @@
     </div>
   </Sheet.Content>
 </Sheet.Root>
+
+<FormSheet
+  bind:open={showGenerateSheet}
+  title="Programmer les séances récurrentes"
+  description="Transforme les créneaux hebdomadaires de jeu libre en séances datées. Rejouable sans risque : les séances déjà créées sont laissées telles quelles, ouvreur compris."
+  icon={CalendarPlus}
+  error={errorMsg}
+  isSubmitting={busy}
+  submitLabel="Programmer"
+  submittingLabel="Programmation…"
+  onSubmit={generate}
+>
+  <div class="grid grid-cols-2 gap-3">
+    <FormField id="gen-from" label="Du">
+      <Input id="gen-from" type="date" bind:value={genFrom} />
+    </FormField>
+    <FormField id="gen-to" label="Au">
+      <Input id="gen-to" type="date" bind:value={genTo} />
+    </FormField>
+  </div>
+
+  <FormField id="gen-min" label="Joueurs nécessaires pour ouvrir">
+    <Input id="gen-min" type="number" min="1" max="40" bind:value={genMinPlayers} />
+  </FormField>
+
+  <div class="space-y-2">
+    <p class="text-sm font-medium text-foreground">Créneaux hebdomadaires à répéter</p>
+    <p class="text-xs text-muted-foreground">
+      Chaque créneau coché devient une séance à chacune de ses dates dans la période.
+    </p>
+    {#each slots as slot (slot.id)}
+      <label class="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={genSlotIds.includes(slot.id)}
+          onchange={() => toggleSlot(slot.id)}
+          aria-label={`${WEEKDAYS[slot.weekday]} ${slot.startTime}`}
+          class="h-4 w-4 rounded border-border"
+        />
+        <span class="text-foreground">
+          {WEEKDAYS[slot.weekday]} {slot.startTime}–{slot.endTime}
+        </span>
+        <span class="text-xs text-muted-foreground">{slot.venue?.name ?? '—'}</span>
+      </label>
+    {/each}
+  </div>
+</FormSheet>
+
+<FormSheet
+  bind:open={showFormSheet}
+  title={editingId ? 'Modifier la séance' : 'Nouvelle séance'}
+  description={editingId
+    ? 'Les inscriptions déjà prises sont conservées.'
+    : 'La séance est ouverte aux inscriptions dès son ajout.'}
+  icon={editingId ? Edit : Plus}
+  error={errorMsg}
+  isSubmitting={busy}
+  submitLabel={editingId ? 'Enregistrer' : 'Ajouter'}
+  submittingLabel="Enregistrement…"
+  onSubmit={save}
+>
+  <FormField id="op-date" label="Date">
+    <Input id="op-date" type="date" bind:value={date} />
+  </FormField>
+
+  <div class="grid grid-cols-2 gap-3">
+    <FormField id="op-start" label="Début">
+      <Input id="op-start" type="time" bind:value={startTime} />
+    </FormField>
+    <FormField id="op-end" label="Fin">
+      <Input id="op-end" type="time" bind:value={endTime} />
+    </FormField>
+  </div>
+
+  <FormField id="op-venue" label="Gymnase">
+    <Select id="op-venue" bind:value={venueId}>
+      {#each venues as venue}
+        <option value={String(venue.id)}>{venue.name}</option>
+      {/each}
+    </Select>
+  </FormField>
+
+  <FormField id="op-min" label="Joueurs nécessaires pour ouvrir">
+    <Input id="op-min" type="number" min="1" max="40" bind:value={minPlayers} />
+  </FormField>
+
+  <FormField id="op-label" label="Intitulé (facultatif)">
+    <Input id="op-label" bind:value={label} placeholder="Jeu libre des vacances" maxlength={120} />
+  </FormField>
+
+  <FormField id="op-notes" label="Consigne (facultatif)">
+    <Input id="op-notes" bind:value={notes} placeholder="Clé à récupérer chez Robert" maxlength={500} />
+  </FormField>
+</FormSheet>
