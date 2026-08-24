@@ -139,6 +139,9 @@ describe('analyzeBankStatementLines', () => {
     const suggestions = JSON.parse(row[0].aiSuggestions);
     expect(suggestions.accrualType).toBe('produit_constate_avance');
     expect(suggestions.accrualNote).toContain('26-27');
+    // L'exercice de rattachement, et pas seulement la phrase qui le nomme : c'est ce
+    // champ que l'écran reprend et que le compte de résultat lit.
+    expect(suggestions.targetSeason).toBe('26-27');
   });
 
   it('leaves a membership paid for the current season as a normal entry', async () => {
@@ -163,6 +166,8 @@ describe('analyzeBankStatementLines', () => {
     const suggestions = JSON.parse(row[0].aiSuggestions);
     expect(suggestions.accrualType).toBe('normal');
     expect(suggestions.accrualNote).toBeNull();
+    // Aucun rattachement à imposer : l'écran garde l'exercice consulté.
+    expect(suggestions.targetSeason).toBeNull();
   });
 
   it('does not flag an expense that merely cites a future season', async () => {

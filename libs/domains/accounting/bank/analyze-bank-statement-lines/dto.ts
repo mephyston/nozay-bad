@@ -21,4 +21,13 @@ export interface BankStatementLineSuggestion {
   accrualType: 'normal' | 'produit_constate_avance';
   /** Phrase à reprendre telle quelle dans l'écriture, quand le rattachement n'est pas `normal`. */
   accrualNote: string | null;
+  /**
+   * Exercice de rattachement, au format court « 26-27 », ou `null` pour celui qu'on consulte.
+   *
+   * Le motif du virement le nomme, et l'analyse le lit déjà pour décider du produit
+   * constaté d'avance — c'est le même millésime. Ne pas le transmettre laissait l'écran
+   * rattacher l'encaissement à l'exercice affiché : la note disait « à rattacher à 26-27 »
+   * et `season_id` valait 25-26, sans que rien ne signale la contradiction.
+   */
+  targetSeason: string | null;
 }

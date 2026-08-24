@@ -56,6 +56,37 @@ export async function validateAccrualAndFiscalPhase(db: DbOrTx, params: AccrualV
     }
   }
 
+  /*
+   * Cohérence du cut-off avec la date : c'est elle qui définit chacun des quatre motifs.
+   *
+   * Un « constaté d'avance » désigne de l'argent passé **avant** que l'exercice de
+   * rattachement ne commence ; un « à recevoir » ou « à payer », de l'argent qui passera
+   * **après** qu'il se soit terminé. Le motif ne décrit rien d'autre que cet écart, et
+   * sans écart il n'y a pas de régularisation — l'écriture est simplement `normal`.
+   *
+   * Le contrôle manquait, et son absence ne se voyait nulle part : un produit constaté
+   * d'avance posé sur l'exercice qui l'encaisse était accepté sans un mot, puis compté
+   * dans le résultat de l'année qui se clôture — exactement l'erreur que le rattachement
+   * est là pour empêcher. Le compte de résultat lit `season_id`, la note explicative ne
+   * dit rien à personne, et l'écart entre les deux ne remontait qu'à la clôture.
+   */
+  const isDeferral = accrualType === 'produit_constate_avance' || accrualType === 'charge_constatee_avance';
+  const isPending = accrualType === 'produit_a_recevoir' || accrualType === 'charge_a_payer';
+
+  if (isDeferral && params.date >= season.startDate) {
+    throw new AppError(
+      `Un « constaté d'avance » se rattache à l'exercice qui suit l'encaissement : la date ${params.date} tombe déjà dans l'exercice ${season.code}, qui débute le ${season.startDate}. Choisissez l'exercice suivant comme rattachement, ou une écriture normale.`,
+      400
+    );
+  }
+
+  if (isPending && params.date <= season.endDate) {
+    throw new AppError(
+      `Un « à recevoir » ou « à payer » se rattache à l'exercice déjà terminé : la date ${params.date} tombe encore dans l'exercice ${season.code}, qui s'achève le ${season.endDate}. Une écriture normale convient.`,
+      400
+    );
+  }
+
   // Coherence of accrual type vs transaction type
   if (params.type === 'transfert') {
     if (accrualType !== 'normal') {

@@ -966,6 +966,86 @@ describe('BankStatementReconciliation Component', () => {
     expect(JSON.parse(call[1].body).transaction.seasonId).toBe('25-26');
   });
 
+  it("rattache l'écriture à l'exercice que la suggestion IA désigne", async () => {
+    /*
+      Le geste réel : sélectionner la ligne, puis valider la suggestion — sans toucher au
+      formulaire. Le bouton de l'encart enregistre le formulaire tel qu'il est affiché ;
+      tant que l'exercice y restait celui qu'on consulte, une cotisation de rentrée
+      encaissée en août partait sur l'exercice qui se clôture, avec un produit constaté
+      d'avance et une note annonçant l'autre exercice. Rien ne le signalait.
+    */
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    component = mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankStatementLines: [
+          {
+            id: 1151,
+            fitid: 'TX-PCA',
+            accountId: 'current',
+            amount: 26000,
+            amountCents: 26000,
+            date: '2026-08-17',
+            name: 'VIR INST RE 672885352540',
+            memo: 'MOTIF: MAILLARD-DAVID-ADHESION2026-2027',
+            status: 'pending',
+            aiSuggestions: JSON.stringify({
+              category: 1,
+              memberId: 715,
+              memberName: 'MAILLARD David',
+              confidence: 0.95,
+              accrualType: 'produit_constate_avance',
+              accrualNote: "Cotisation encaissée d'avance pour la saison 26-27, à rattacher à cet exercice.",
+              targetSeason: '26-27'
+            })
+          }
+        ],
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [
+          { id: '25-26', code: '25-26', name: 'Saison 2025-2026', active: true },
+          { id: '26-27', code: '26-27', name: 'Saison 2026-2027', active: false }
+        ],
+        members: [],
+        dbCategories: [{ id: 1, code: 'adhesions_inscriptions', adminLabel: 'Adhésions' }]
+      }
+    });
+
+    flushSync();
+
+    const line = Array.from(target.querySelectorAll('button')).find(b =>
+      b.textContent?.includes('VIR INST RE 672885352540')
+    ) as HTMLButtonElement;
+    line.click();
+    flushSync();
+
+    // L'exercice visé s'affiche dans l'encart : c'est ce qu'on s'apprête à enregistrer.
+    expect(target.textContent).toContain('exercice 26-27');
+
+    const validate = Array.from(target.querySelectorAll('button')).find(b =>
+      b.textContent?.includes('Valider cette suggestion')
+    ) as HTMLButtonElement;
+    expect(validate).not.toBeNull();
+    validate.click();
+    await tick();
+    await tick();
+
+    const call = (globalThis.fetch as any).mock.calls.find((c: any[]) => {
+      if (!c[1]?.body) return false;
+      try {
+        return JSON.parse(c[1].body).action === 'create';
+      } catch {
+        return false;
+      }
+    });
+    expect(call).toBeDefined();
+    const sent = JSON.parse(call[1].body).transaction;
+    expect(sent.seasonId).toBe('26-27');
+    expect(sent.accrualType).toBe('produit_constate_avance');
+  });
+
   it('opens import modal when open-bank-import window event is dispatched and season is not closed', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);

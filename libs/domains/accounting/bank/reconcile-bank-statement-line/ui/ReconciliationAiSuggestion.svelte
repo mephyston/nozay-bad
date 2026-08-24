@@ -26,7 +26,8 @@
     sug !== null &&
       state.selectedMemberId === (sug.memberId ? String(sug.memberId) : '') &&
       (!sug.category || state.category === String(sug.category)) &&
-      state.accrualType === (sug.accrualType || 'normal')
+      state.accrualType === (sug.accrualType || 'normal') &&
+      state.targetSeasonId === (sug.targetSeason || state.selectedSeason)
   );
 
   const accrualLabel: Record<string, string> = {
@@ -68,10 +69,20 @@
       </div>
     </div>
 
+    <!--
+      L'exercice se montre à côté du motif, et non dans la seule note.
+
+      C'est lui que le compte de résultat lit. Le laisser hors de l'encart revenait à
+      faire valider en aveugle un rattachement qui n'était affiché nulle part : la note
+      annonçait « à rattacher à 26-27 » pendant que l'écriture partait sur 25-26.
+    -->
     {#if sug.accrualType && sug.accrualType !== 'normal'}
       <div class="text-xs">
         <span class="text-muted-foreground opacity-80 block">Rattachement d'exercice :</span>
-        <span class="font-medium text-foreground">{accrualLabel[sug.accrualType] ?? sug.accrualType}</span>
+        <span class="font-medium text-foreground">
+          {accrualLabel[sug.accrualType] ?? sug.accrualType}
+          {#if sug.targetSeason}<span> — exercice {sug.targetSeason}</span>{/if}
+        </span>
         {#if sug.accrualNote}
           <span class="block text-muted-foreground">{sug.accrualNote}</span>
         {/if}

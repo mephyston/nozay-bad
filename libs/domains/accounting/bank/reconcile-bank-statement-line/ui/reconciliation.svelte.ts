@@ -123,10 +123,16 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
   function safeEffect(fn: () => void) { try { $effect(fn); } catch (e) {} }
 
   safeEffect(() => { const _ = activeTab; selectedTxIds = {}; searchQuery = ''; monthFilter = ''; });
+  /*
+    L'exercice de rattachement n'est **pas** remis à zéro ici, mais avec le reste du
+    préremplissage, plus bas : cet effet-ci suit aussi le montant restant, et se rejoue
+    donc à chaque rechargement des écritures liées. Il aurait effacé en silence l'exercice
+    que la suggestion — ou la comptable — venait de poser.
+  */
   safeEffect(() => {
     if (selectedTx) {
       amountToLink = parseFloat((remainingAmount / 100).toFixed(2));
-      memberSearchQuery = ''; categorySearchQuery = ''; targetSeasonId = selectedSeason; selectedInvoiceIds = new Set(); isSplitMode = false; splits = [];
+      memberSearchQuery = ''; categorySearchQuery = ''; selectedInvoiceIds = new Set(); isSplitMode = false; splits = [];
     }
   });
   safeEffect(() => { if (selectedSeason) actions.loadUnpaidInvoices(); });
@@ -155,9 +161,21 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
           // il se préremplit comme le reste, et reste modifiable.
           accrualType = sug.accrualType || 'normal';
           accrualNote = sug.accrualNote || '';
-        } catch (e) { selectedMemberId = ''; accrualType = 'normal'; accrualNote = ''; }
-      } else { selectedMemberId = ''; accrualType = 'normal'; accrualNote = ''; }
-    } else if (!selectedTx) { lastProcessedTxId = null; selectedMemberId = ''; accrualType = 'normal'; accrualNote = ''; }
+          /*
+            L'exercice de rattachement fait partie de la suggestion, et pas seulement de
+            sa note.
+
+            « Valider cette suggestion » enregistre le formulaire tel qu'il est affiché.
+            Tant que ce champ restait sur l'exercice consulté, le raccourci produisait une
+            écriture qui se contredisait : un produit constaté d'avance, une note disant
+            « à rattacher à 26-27 », et un `season_id` valant 25-26 — donc un encaissement
+            compté dans le résultat de l'exercice qui se clôture. Personne ne pouvait le
+            voir : c'est le seul champ de la suggestion qui ne s'affichait pas.
+          */
+          targetSeasonId = sug.targetSeason || selectedSeason;
+        } catch (e) { selectedMemberId = ''; accrualType = 'normal'; accrualNote = ''; targetSeasonId = selectedSeason; }
+      } else { selectedMemberId = ''; accrualType = 'normal'; accrualNote = ''; targetSeasonId = selectedSeason; }
+    } else if (!selectedTx) { lastProcessedTxId = null; selectedMemberId = ''; accrualType = 'normal'; accrualNote = ''; targetSeasonId = selectedSeason; }
   });
   safeEffect(() => { if (!isMemberDropdownOpen) memberHighlightedIndex = -1; });
   safeEffect(() => { if (!isCategoryDropdownOpen) categoryHighlightedIndex = -1; });

@@ -13,6 +13,10 @@ import { eq } from 'drizzle-orm';
  * cotisation encaissée en août pour la rentrée porte la saison suivante et une date d'août.
  * Ce repli existe pour les appelants qui n'ont pas d'exercice à donner, et il doit rester
  * juste : sans lui, une écriture partirait sans exercice du tout.
+ *
+ * Il ne convient qu'aux écritures ordinaires. Une régularisation se définit par l'écart
+ * entre sa date et son exercice — déduire le second de la première le supprime, et
+ * produit une écriture qui se contredit. Le dernier cas ci-dessous le fixe.
  */
 describe("exercice déduit de la date quand aucun n'est transmis", () => {
   let db: any;
@@ -26,7 +30,7 @@ describe("exercice déduit de la date quand aucun n'est transmis", () => {
     ]).run();
   });
 
-  async function reconcileAt(date: string) {
+  async function reconcileAt(date: string, accrual?: { accrualType: string; accrualNote: string }) {
     const acc = await db.select().from(accountsTable).limit(1).get();
     const pm = await db.select().from(paymentMethodsTable).limit(1).get();
     const btx = await db.insert(bankStatementLinesTable).values({
@@ -50,8 +54,7 @@ describe("exercice déduit de la date quand aucun n'est transmis", () => {
         date,
         paymentMethod: pm.id,
         description: 'Cotisation',
-        accrualType: 'produit_constate_avance',
-        accrualNote: "Cotisation encaissée d'avance pour la saison 26-27."
+        ...(accrual ?? {})
       }
     });
 
@@ -70,9 +73,19 @@ describe("exercice déduit de la date quand aucun n'est transmis", () => {
     expect(season.code).toBe('26-27');
   });
 
-  it('conserve le cut-off qui, lui, désigne la saison suivante', async () => {
-    const entry = await reconcileAt('2026-08-21');
-    expect(entry.accrualType).toBe('produit_constate_avance');
-    expect(entry.accrualNote).toContain('26-27');
+  it("refuse une régularisation, que ce repli ne sait pas rattacher", async () => {
+    /*
+      Un produit constaté d'avance encaissé le 21 août appartient à l'exercice suivant.
+      Le repli, lui, ne connaît que la date et rend celui qui la contient : il rattacherait
+      donc l'encaissement à l'exercice qui se clôture, avec un motif qui affirme le
+      contraire. Les deux ne peuvent pas être justes en même temps, et c'est l'appelant qui
+      doit nommer l'exercice — l'écran de rapprochement le transmet toujours.
+    */
+    await expect(
+      reconcileAt('2026-08-21', {
+        accrualType: 'produit_constate_avance',
+        accrualNote: "Cotisation encaissée d'avance pour la saison 26-27."
+      })
+    ).rejects.toThrow("constaté d'avance");
   });
 });

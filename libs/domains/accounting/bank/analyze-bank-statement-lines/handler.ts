@@ -236,7 +236,10 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
       accrualType: isAdvanceMembership ? 'produit_constate_avance' : 'normal',
       accrualNote: isAdvanceMembership
         ? `Cotisation encaissée d'avance pour la saison ${citedSeason}, à rattacher à cet exercice.`
-        : null
+        : null,
+      // « cet exercice », c'est celui-là — et il faut le dire, pas seulement l'écrire dans
+      // la note. Sans lui, l'écran retombe sur l'exercice consulté.
+      targetSeason: isAdvanceMembership ? citedSeason : null
     };
 
     if (candidates.length > 0) {
@@ -295,7 +298,8 @@ Renvoie STRICTEMENT un objet JSON sous la forme suivante :
             // Le rattachement reste celui qu'on a déduit : le modèle peut changer d'avis
             // sur la catégorie, pas sur l'exercice auquel l'encaissement appartient.
             accrualType: suggestionResult.accrualType,
-            accrualNote: suggestionResult.accrualNote
+            accrualNote: suggestionResult.accrualNote,
+            targetSeason: suggestionResult.targetSeason
           };
         }
       } catch (e) {

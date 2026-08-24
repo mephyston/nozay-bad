@@ -68,6 +68,53 @@ describe('validateAccrualAndFiscalPhase', () => {
     })).rejects.toThrow('note explicative');
   });
 
+  /*
+    Le motif de régularisation décrit un écart entre la date et l'exercice. Sans écart, il
+    n'y a rien à régulariser — et un « constaté d'avance » posé sur l'exercice qui encaisse
+    comptait dans le résultat de l'année qui se clôture, soit l'inverse de son objet.
+  */
+  it("refuse un produit constaté d'avance daté dans l'exercice de rattachement", async () => {
+    await expect(validateAccrualAndFiscalPhase(db, {
+      seasonId: '25-26',
+      type: 'recette',
+      date: '2026-08-17', // dans les bornes du 25-26 : rien n'est constaté d'avance
+      accrualType: 'produit_constate_avance',
+      accrualNote: 'Cotisation 26-27'
+    })).rejects.toThrow("constaté d'avance");
+  });
+
+  it("accepte le même encaissement rattaché à l'exercice suivant", async () => {
+    await db.insert(seasonsTable).values({
+      id: 3,
+      code: '26-27',
+      name: 'Saison 2026-2027',
+      startDate: '2026-09-01',
+      endDate: '2027-08-31',
+      active: false,
+      closedAt: null,
+      createdAt: new Date()
+    });
+
+    const res = await validateAccrualAndFiscalPhase(db, {
+      seasonId: '26-27',
+      type: 'recette',
+      date: '2026-08-17',
+      accrualType: 'produit_constate_avance',
+      accrualNote: 'Cotisation 26-27'
+    });
+    expect(res.code).toBe('26-27');
+  });
+
+  it("refuse un produit à recevoir daté dans l'exercice de rattachement", async () => {
+    await expect(validateAccrualAndFiscalPhase(db, {
+      seasonId: '25-26',
+      type: 'recette',
+      date: '2026-06-01',
+      accrualType: 'produit_a_recevoir',
+      accrualNote: 'Subvention 25-26'
+    })).rejects.toThrow('à recevoir');
+  });
+
   it('rejects charge accrual types on a recette transaction', async () => {
     await expect(validateAccrualAndFiscalPhase(db, {
       seasonId: '25-26',
