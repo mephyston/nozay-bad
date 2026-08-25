@@ -1,5 +1,5 @@
 import { toast, uiConfirm, flashAndReload } from '@nba/ui';
-import { apiBulkReconcile, apiBulkIgnore, apiImportOfx, apiAnalyzeAi } from './reconciliation-api';
+import { apiBulkReconcile, apiBulkIgnore, apiImportOfx, apiAnalyzeAi, type ImportSummary } from './reconciliation-api';
 import type { ReconciliationStateFields } from './reconciliation-types';
 
 export function createBulkActions(s: ReconciliationStateFields) {
@@ -34,14 +34,32 @@ export function createBulkActions(s: ReconciliationStateFields) {
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
+  /**
+   * Le compte rendu de l'import, en toutes lettres.
+   *
+   * « Importé avec succès » ne disait rien de ce qui était entré. Un identifiant réutilisé a
+   * ainsi fait disparaître une dépense de 120 € sans laisser de trace, et personne ne s'en est
+   * aperçu avant qu'un rapprochement ne la réclame, huit mois plus tard.
+   */
+  function resumeImport(r: ImportSummary): string {
+    if (typeof r.read !== 'number') return 'Relevé bancaire importé avec succès !';
+
+    const parts = [`${r.read} opération${r.read > 1 ? 's' : ''} lue${r.read > 1 ? 's' : ''}`];
+    parts.push(`${r.inserted ?? 0} importée${(r.inserted ?? 0) > 1 ? 's' : ''}`);
+    if (r.skipped) parts.push(`${r.skipped} déjà connue${r.skipped > 1 ? 's' : ''}`);
+    if (r.balanceRecorded && r.balanceDate) parts.push(`solde du relevé au ${r.balanceDate.split('-').reverse().join('/')} enregistré`);
+
+    return parts.join(', ') + '.';
+  }
+
   async function handleImport(e: Event) {
     e.preventDefault();
     const fileInput = (e.target as HTMLFormElement).querySelector('input[type="file"]') as HTMLInputElement;
     if (!fileInput.files || fileInput.files.length === 0) return;
     s.isSubmitting = true; s.errorMsg = '';
     try {
-      await apiImportOfx(fileInput.files[0], s.selectedAccount);
-      flashAndReload('Relevé bancaire importé avec succès !');
+      const summary = await apiImportOfx(fileInput.files[0], s.selectedAccount);
+      flashAndReload(resumeImport(summary));
     } catch (err: any) { s.errorMsg = err.message || 'Erreur.'; toast.error(s.errorMsg); s.isSubmitting = false; }
   }
 

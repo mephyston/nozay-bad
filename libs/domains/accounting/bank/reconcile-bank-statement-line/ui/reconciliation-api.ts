@@ -87,12 +87,28 @@ export async function apiMultiInvoiceReconcile(bt: BankStatementLine, firstInvoi
   if (!res.ok) throw new Error('Erreur association factures.');
 }
 
-export async function apiImportOfx(file: File, selectedAccount: string): Promise<void> {
+export interface ImportSummary {
+  read?: number;
+  inserted?: number;
+  skipped?: number;
+  accountCode?: string;
+  balanceRecorded?: boolean;
+  balanceDate?: string | null;
+}
+
+export async function apiImportOfx(file: File, selectedAccount: string): Promise<ImportSummary> {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('accountId', selectedAccount);
   const res = await fetch('/admin/accounting/import', { method: 'POST', body: formData });
   if (!res.ok) throw new Error((await res.text()) || 'Erreur importation.');
+  try {
+    const json = await res.json();
+    return (json && typeof json === 'object' ? json : {}) as ImportSummary;
+  } catch {
+    // Une réponse sans corps exploitable ne doit pas faire échouer un import réussi.
+    return {};
+  }
 }
 
 export async function apiAnalyzeAi(season: string, btId?: number): Promise<void> {

@@ -1,6 +1,6 @@
-import { type Db } from '@nba/db';
+import { type Db, AppError } from '@nba/db';
 import { ImportBankStatementRepository } from './repository';
-import { ParseOFXInput, ParseOFXOutput, ParsedStatementBalance } from "./dto";
+import { ParseOFXInput, ParseOFXOutput, ParsedStatementBalance, ParsedStatementIssue, ImportBankStatementOutput } from "./dto";
 
 /** `YYYYMMDD…` → `YYYY-MM-DD`. Le fichier suffixe parfois l'heure et le fuseau : on les jette. */
 function toIsoDate(rawDate: string): string {
@@ -36,15 +36,42 @@ export function parseLedgerBalance(ofxContent: string): ParsedStatementBalance |
   return { date: toIsoDate(rawDate), balanceCents: Math.round(rawAmount * 100) };
 }
 
+/**
+ * Ce qui suit la fermeture d'un bloc et ressemble encore à une opération.
+ *
+ * Le découpage sur `<STMTTRN>` ne retient que le PREMIER jeu de champs de chaque morceau. Une
+ * opération dont la balise ouvrante manque se retrouve donc accolée à la fin de la précédente
+ * et n'est jamais lue — sans erreur, sans compteur, sans rien. On la nomme ici pour que
+ * l'import puisse refuser le fichier au lieu de l'avaler.
+ */
+function detectSwallowedOperation(tail: string): ParsedStatementIssue | null {
+  if (!/<TRNAMT>/.test(tail) && !/<FITID>/.test(tail)) return null;
+
+  const amount = tail.match(/<TRNAMT>(-?[\d.]+)/);
+  const date = tail.match(/<DTPOSTED>(\d{8})/);
+  const fitid = tail.match(/<FITID>([^\r\n<]+)/);
+  const name = tail.match(/<NAME>([^\r\n<]+)/);
+
+  return {
+    date: date ? toIsoDate(date[1]) : null,
+    amountCents: amount ? Math.round(parseFloat(amount[1]) * 100) : null,
+    fitid: fitid ? fitid[1].trim() : null,
+    name: name ? name[1].trim() : null
+  };
+}
+
 export function parseOFX(ofxContent: string): ParseOFXOutput {
   const acctIdMatch = ofxContent.match(/<ACCTID>([^\r\n<]+)/);
   const acctId = acctIdMatch ? acctIdMatch[1].trim() : '';
   const accountId: 'current' | 'savings' = acctId === '00070007847' ? 'savings' : 'current';
 
   const transactions: any[] = [];
+  const issues: ParsedStatementIssue[] = [];
   const blocks = ofxContent.split('<STMTTRN>');
   for (let i = 1; i < blocks.length; i++) {
-    const block = blocks[i].split('</STMTTRN>')[0];
+    const [block, ...rest] = blocks[i].split('</STMTTRN>');
+    const swallowed = detectSwallowedOperation(rest.join('</STMTTRN>'));
+    if (swallowed) issues.push(swallowed);
 
     const fitidMatch = block.match(/<FITID>([^\r\n<]+)/);
     const trnamtMatch = block.match(/<TRNAMT>([^\r\n<]+)/);
@@ -70,11 +97,40 @@ export function parseOFX(ofxContent: string): ParseOFXOutput {
     });
   }
 
-  return { transactions, balance: parseLedgerBalance(ofxContent) };
+  return { transactions, balance: parseLedgerBalance(ofxContent), issues };
 }
 
-export async function importBankStatement(db: Db, fileContent: string, forcedAccountId?: string) {
-  const { transactions, balance } = parseOFX(fileContent);
+/** « le 16/09/2025, 60,07 € (GEN-2526-067) » — de quoi retrouver la ligne dans le fichier. */
+function describeIssue(issue: ParsedStatementIssue): string {
+  const parts: string[] = [];
+  if (issue.date) parts.push(`le ${issue.date.split('-').reverse().join('/')}`);
+  if (issue.amountCents !== null) parts.push(`${(issue.amountCents / 100).toFixed(2)} €`);
+  if (issue.name) parts.push(`« ${issue.name} »`);
+  if (issue.fitid) parts.push(`(${issue.fitid})`);
+  return parts.join(' ') || 'opération non identifiable';
+}
+
+export async function importBankStatement(db: Db, fileContent: string, forcedAccountId?: string): Promise<ImportBankStatementOutput> {
+  const { transactions, balance, issues } = parseOFX(fileContent);
+
+  /*
+   * Un fichier dont un bloc ne s'ouvre pas est refusé EN ENTIER, et nommément.
+   *
+   * L'import pourrait charger les opérations lisibles et se taire sur les autres. C'est
+   * exactement ce qu'il faisait, et une dépense de 120 € a manqué aux comptes pendant huit mois
+   * sans que rien ne le signale. Un relevé partiellement lu n'est pas un relevé : mieux vaut
+   * rendre la main en disant quoi corriger. Le fichier réparé se réimporte sans risque, les
+   * lignes déjà connues étant reconnues à leur identifiant.
+   */
+  if (issues.length > 0) {
+    const details = issues.slice(0, 5).map(describeIssue).join(' ; ');
+    const reste = issues.length > 5 ? ` (et ${issues.length - 5} autre(s))` : '';
+    throw new AppError(
+      `Fichier illisible : ${issues.length} opération(s) hors de tout bloc <STMTTRN>, donc invisibles à l'import — ${details}${reste}. ` +
+      `Corrigez la balise ouvrante manquante puis réimportez : aucune opération n'a été chargée.`,
+      400
+    );
+  }
 
   const repo = new ImportBankStatementRepository();
 
@@ -130,6 +186,14 @@ export async function importBankStatement(db: Db, fileContent: string, forcedAcc
 
   return {
     count: insertedCount,
+    read: transactions.length,
+    inserted: insertedCount,
+    /*
+     * Ce que l'import a délibérément laissé de côté. Le silence sur ce nombre est ce qui a
+     * permis à un identifiant réutilisé de faire disparaître une opération sans trace :
+     * `onConflictDoNothing` ne distingue pas « déjà connue » de « perdue ».
+     */
+    skipped: transactions.length - insertedCount,
     accountId: account.id,
     accountCode: account.code,
     balanceRecorded,

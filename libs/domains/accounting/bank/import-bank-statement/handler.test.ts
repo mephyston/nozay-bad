@@ -129,3 +129,76 @@ describe('importBankStatement', () => {
     expect(result.balanceRecorded).toBe(false);
   });
 });
+
+/*
+ * Deux mécanismes distincts faisaient disparaître des opérations sans un mot : un bloc dont la
+ * balise ouvrante manque, et un identifiant déjà connu. Le premier fait maintenant refuser le
+ * fichier, le second est compté et rendu à l'appelant.
+ */
+describe("l'import ne perd plus d'opération en silence", () => {
+  let db: any;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    db = {};
+  });
+
+  const OFX_BLOC_NON_OUVERT = `<ACCTID>123
+<STMTTRN>
+<TRNTYPE>CREDIT
+<DTPOSTED>20250915
+<TRNAMT>210.00
+<FITID>GEN-001</FITID>
+<NAME>VIR INST RE 575886323034</NAME>
+<MEMO>DE: ANTOINE JUSTINE</MEM></STMTTRN>
+<TRNTYPE>CREDIT
+<DTPOSTED>20250915
+<TRNAMT>60.07
+<FITID>GEN-002</FITID>
+<NAME>VIR RECU 9525858309767</NAME>
+<MEMO>DE: PAUL MADRANGE</MEM></STMTTRN>
+<STMTTRN>
+<TRNTYPE>DEBIT
+<DTPOSTED>20250917
+<TRNAMT>-8.40
+<FITID>GEN-003</FITID>
+<NAME>PRLV IONOS SARL</NAME>
+</STMTTRN>`;
+
+  it("repère l'opération qu'un bloc non ouvert rend invisible", () => {
+    const parsed = parseOFX(OFX_BLOC_NON_OUVERT);
+
+    // Le découpage ne voit que 2 opérations là où le fichier en porte 3.
+    expect(parsed.transactions.map((t) => t.fitid)).toEqual(['GEN-001', 'GEN-003']);
+    expect(parsed.issues).toHaveLength(1);
+    expect(parsed.issues[0]).toMatchObject({ fitid: 'GEN-002', amountCents: 6007, date: '2025-09-15' });
+  });
+
+  it('refuse le fichier entier et nomme la ligne fautive', async () => {
+    const repo = mockRepo();
+    await expect(importBankStatement(db, OFX_BLOC_NON_OUVERT, 'auto'))
+      .rejects.toThrow(/GEN-002/);
+    expect(repo.insertBankStatementLine).not.toHaveBeenCalled();
+  });
+
+  it("ne crie pas au loup sur un relevé bien formé", () => {
+    expect(parseOFX(OFX_WITH_BALANCE).issues).toEqual([]);
+  });
+
+  it('rend le compte des lignes lues, insérées et déjà connues', async () => {
+    let appel = 0;
+    mockRepo({
+      insertBankStatementLine: vi.fn().mockImplementation(async () => ({ changes: ++appel === 1 ? 1 : 0 }))
+    });
+
+    const ofx = OFX_WITH_BALANCE.replace('</STMTTRN>', `</STMTTRN>
+<STMTTRN>
+<FITID>456
+<TRNAMT>5.0
+<DTPOSTED>20230102
+<NAME>Autre
+</STMTTRN>`);
+
+    const result = await importBankStatement(db, ofx, 'auto');
+    expect(result).toMatchObject({ read: 2, inserted: 1, skipped: 1, count: 1 });
+  });
+});

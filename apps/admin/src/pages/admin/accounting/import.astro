@@ -40,7 +40,12 @@ if (Astro.request.method === 'POST') {
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });
       }
-      return new Response(JSON.stringify({ success: true }));
+      /*
+        On relaie le compte rendu de l'API au lieu d'un `{ success: true }` muet : c'est lui qui
+        porte le nombre de lignes lues, insérées et déjà connues, et l'écran n'a rien à dire
+        sans lui.
+      */
+      return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
     } else {
       const data = await Astro.request.json() as any;
 
