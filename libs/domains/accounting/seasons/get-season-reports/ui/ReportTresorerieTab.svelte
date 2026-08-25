@@ -16,7 +16,23 @@ import ReportAIAnalysis from './ReportAIAnalysis.svelte';
    */
   const totalFinal = $derived(report.bilanTrésorerie.reduce((sum, item) => sum + item.finalBalance, 0));
   const totalInitial = $derived(report.bilanTrésorerie.reduce((sum, item) => sum + item.initialBalance, 0));
-  const totalBanque = $derived(report.bilanTrésorerie.reduce((sum, item) => sum + (item.bankTheoreticalCents ?? item.finalBalance), 0));
+  /*
+   * La colonne montre le solde du RELEVÉ, pas un solde bancaire calculé.
+   *
+   * Un nombre déduit des statuts se déplaçait à chaque saisie, sous un libellé qui promettait
+   * la banque : deux écrans, deux définitions de « en banque ». Le relevé, lui, ne bouge sur
+   * aucune écriture — et un compte sans relevé n'affiche rien plutôt qu'un ersatz.
+   */
+  const totalReleve = $derived(
+    report.bilanTrésorerie.reduce((sum, item) => sum + (item.statementBalanceCents ?? 0), 0)
+  );
+  const auMoinsUnReleve = $derived(report.bilanTrésorerie.some((item) => item.statementBalanceCents !== null));
+
+  function formatDay(iso: string | null | undefined): string {
+    if (!iso) return '';
+    const [, month, day] = iso.split('-');
+    return `${day}/${month}`;
+  }
 </script>
 
 <Card.Root>
@@ -36,13 +52,13 @@ import ReportAIAnalysis from './ReportAIAnalysis.svelte';
             <Table.Head class="hidden sm:table-cell px-2 py-3 sm:p-4 text-right">Solde Initial (1er sept.)</Table.Head>
             <Table.Head class="hidden sm:table-cell px-2 py-3 sm:p-4 text-right">Mouvements de saison</Table.Head>
             <Table.Head class="px-2 py-3 sm:p-4 text-right font-bold text-foreground">Solde comptable</Table.Head>
-            <Table.Head class="hidden md:table-cell px-2 py-3 sm:p-4 text-right">Disponible en banque</Table.Head>
+            <Table.Head class="hidden md:table-cell px-2 py-3 sm:p-4 text-right">Solde du relevé</Table.Head>
           </Table.Row>
         </Table.Header>
         <Table.Body class="divide-y divide-border">
           {#each report.bilanTrésorerie as item}
-            {@const banque = item.bankTheoreticalCents ?? item.finalBalance}
-            {@const decale = banque !== item.finalBalance}
+            {@const releve = item.statementBalanceCents}
+            {@const decale = releve !== null && releve !== undefined && releve !== item.finalBalance}
             <Table.Row>
               <Table.Cell class="px-2 py-3 sm:p-4 font-semibold align-top sm:align-middle">
                 <div>{accountLabels[item.accountId] || item.accountId}</div>
@@ -51,8 +67,8 @@ import ReportAIAnalysis from './ReportAIAnalysis.svelte';
                   <span class="{item.finalBalance - item.initialBalance >= 0 ? 'text-success' : 'text-destructive'}">
                     Mvmt: {formatDelta(item.finalBalance - item.initialBalance)}
                   </span>
-                  {#if decale}
-                    <span>En banque: {formatAmount(banque)}</span>
+                  {#if releve !== null && releve !== undefined}
+                    <span>Relevé au {formatDay(item.statementDate)}: {formatAmount(releve)}</span>
                   {/if}
                 </div>
               </Table.Cell>
@@ -63,11 +79,16 @@ import ReportAIAnalysis from './ReportAIAnalysis.svelte';
               <Table.Cell class="px-2 py-3 sm:p-4 text-right font-bold align-top sm:align-middle">
                 {formatAmount(item.finalBalance)}
                 {#if decale}
-                  <div class="md:hidden text-xs font-normal text-muted-foreground">en banque {formatAmount(banque)}</div>
+                  <div class="md:hidden text-xs font-normal text-muted-foreground">relevé {formatAmount(releve ?? 0)}</div>
                 {/if}
               </Table.Cell>
               <Table.Cell class="hidden md:table-cell px-2 py-3 sm:p-4 text-right {decale ? 'font-medium' : 'text-muted-foreground'}">
-                {formatAmount(banque)}
+                {#if releve !== null && releve !== undefined}
+                  {formatAmount(releve)}
+                  <div class="text-xs font-normal text-muted-foreground">au {formatDay(item.statementDate)}</div>
+                {:else}
+                  <span class="text-muted-foreground">—</span>
+                {/if}
               </Table.Cell>
             </Table.Row>
           {/each}
@@ -85,7 +106,7 @@ import ReportAIAnalysis from './ReportAIAnalysis.svelte';
               {formatAmount(totalFinal)}
             </Table.Cell>
             <Table.Cell class="hidden md:table-cell px-2 py-3 sm:p-4 text-right text-foreground">
-              {formatAmount(totalBanque)}
+              {auMoinsUnReleve ? formatAmount(totalReleve) : '—'}
             </Table.Cell>
           </Table.Row>
         </Table.Footer>

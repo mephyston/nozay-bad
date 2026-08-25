@@ -38,6 +38,9 @@ export interface BalanceReport {
   pendingDebitCents?: number;
   /** Ce que le relevé devrait afficher : comptable − chèques en coffre + débits différés. */
   bankTheoreticalCents?: number;
+  /** Ce que le relevé affiche vraiment. Absent tant qu'aucun n'a été importé. */
+  statementBalanceCents?: number | null;
+  statementDate?: string | null;
 }
 
 export interface Season {

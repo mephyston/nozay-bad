@@ -1,7 +1,7 @@
 import { ledgerEntriesTable, categoriesTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq, and, gte, lte, or, inArray, lt } from 'drizzle-orm';
-import { seasonBalancesTable, seasonCategoryBudgetsTable, accountsTable, seasonsTable } from '../../shared/schema';
+import { seasonBalancesTable, seasonCategoryBudgetsTable, accountsTable, seasonsTable, bankStatementBalancesTable } from '../../shared/schema';
 
 
 export class GetSeasonReportsRepository {
@@ -60,6 +60,36 @@ export class GetSeasonReportsRepository {
 
   async getAllCategories(db: DbOrTx): Promise<any[]> {
     return db.select().from(categoriesTable).all();
+  }
+
+  /**
+   * Le dernier solde annoncé par la banque pour chaque compte, à la date d'arrêté.
+   *
+   * C'est le seul des trois soldes que la comptabilité ne fabrique pas : il vient du
+   * `<LEDGERBAL>` du relevé. Aucune écriture ne le déplace — d'où son intérêt à côté du solde
+   * comptable, qu'une saisie déplace toujours.
+   *
+   * Le tri se fait en mémoire : un club a trois comptes et un arrêté par relevé, et une
+   * fonction de fenêtrage coûterait ici plus de lecture qu'elle n'en économise.
+   */
+  async getLatestStatementBalances(db: DbOrTx, asOfDate: string): Promise<Map<number, { date: string; balanceCents: number }>> {
+    const rows = await db.select({
+        accountId: bankStatementBalancesTable.accountId,
+        date: bankStatementBalancesTable.date,
+        balanceCents: bankStatementBalancesTable.balanceCents
+      })
+      .from(bankStatementBalancesTable)
+      .where(lte(bankStatementBalancesTable.date, asOfDate))
+      .all();
+
+    const latest = new Map<number, { date: string; balanceCents: number }>();
+    for (const row of rows) {
+      const known = latest.get(row.accountId);
+      if (!known || row.date > known.date) {
+        latest.set(row.accountId, { date: row.date, balanceCents: row.balanceCents });
+      }
+    }
+    return latest;
   }
 
   async getAccounts(db: DbOrTx): Promise<any[]> {

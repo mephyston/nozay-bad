@@ -141,16 +141,33 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     periodTxs
   );
 
-  const reportBalances = accountBalances.map((b) => ({
-    accountId: b.accountCode,
-    initialBalance: b.initialBalanceCents,
-    /** Solde COMPTABLE de fin de période : à-nouveau + écritures, sans correction. */
-    finalBalance: b.grossCents,
-    inVaultCents: b.inVaultCents,
-    pendingDebitCents: b.pendingDebitCents,
-    /** Ce que le relevé de ce compte devrait afficher. */
-    bankTheoreticalCents: b.bankTheoreticalCents
-  }));
+  /*
+   * Le solde du relevé accompagne désormais chaque compte.
+   *
+   * Les écrans affichaient jusqu'ici un solde bancaire *calculé* (comptable moins les chèques
+   * en coffre) sous le libellé « en banque ». Le libellé promettait une confirmation de la
+   * banque que le nombre ne livrait pas : une recette saisie par virement naît `cleared` et le
+   * déplaçait, alors que rien ne prouvait que l'argent fût arrivé. Le solde du relevé, lui, ne
+   * bouge sur aucune saisie — c'est exactement la propriété qu'on cherchait à montrer.
+   */
+  const statementBalances = await repo.getLatestStatementBalances(db, effectiveEndDate);
+
+  const reportBalances = accountBalances.map((b) => {
+    const statement = statementBalances.get(b.accountId);
+    return {
+      accountId: b.accountCode,
+      initialBalance: b.initialBalanceCents,
+      /** Solde COMPTABLE de fin de période : à-nouveau + écritures, sans correction. */
+      finalBalance: b.grossCents,
+      inVaultCents: b.inVaultCents,
+      pendingDebitCents: b.pendingDebitCents,
+      /** Ce que le relevé de ce compte devrait afficher, déduit des seuls statuts. */
+      bankTheoreticalCents: b.bankTheoreticalCents,
+      /** Ce que le relevé affiche vraiment. `null` tant qu'aucun n'a été importé. */
+      statementBalanceCents: statement ? statement.balanceCents : null,
+      statementDate: statement ? statement.date : null
+    };
+  });
 
   const cashTotals = sumAccountBalances(accountBalances);
   const totalGrossCashCents = cashTotals.grossCents;

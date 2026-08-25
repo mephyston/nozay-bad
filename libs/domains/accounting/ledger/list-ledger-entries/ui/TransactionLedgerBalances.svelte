@@ -6,14 +6,23 @@
   let { balances = [] }: { balances: BalanceReport[] } = $props();
 
   /*
-   * Ces encarts affichaient le solde COMPTABLE sous le seul nom du compte. Le trésorier le
-   * comparait à son relevé, ne tombait pas juste, et en concluait que le logiciel comptait mal
-   * — alors que l'écart n'est rien d'autre qu'un chèque encore dans le coffre.
+   * Deux nombres, et un seul est calculé.
    *
-   * D'où la règle : ne jamais afficher un solde sans dire lequel des trois c'est, et montrer le
-   * solde bancaire à côté dès qu'il diverge.
+   * Ces encarts affichaient le solde comptable, puis un solde « en banque » déduit des statuts
+   * (comptable − chèques en coffre + débits différés). Le libellé promettait une confirmation
+   * de la banque que le nombre ne livrait pas : une recette saisie par virement naît `cleared`,
+   * donc le déplaçait — alors que rien ne prouvait que l'argent fût arrivé. Saisir une écriture
+   * bougeait les deux soldes, ce qui est exactement ce qu'on cherchait à rendre impossible.
+   *
+   * On affiche donc le solde du dernier relevé importé. Il ne bouge sur aucune saisie, et sa
+   * date rappelle que les deux soldes ne sont pas arrêtés au même jour. Le nombre déduit des
+   * statuts n'a pas disparu : il vit dans l'état de rapprochement, où le détail des décalages
+   * l'explique au lieu de le laisser sans justification.
+   *
+   * Un compte sans relevé — la caisse — n'affiche rien de plus. Mieux vaut un vide qu'un
+   * pseudo-solde bancaire pour un compte qui n'a pas de banque.
    */
-  function balanceFor(acc: 'current' | 'savings' | 'cash'): BalanceReport | undefined {
+  function balanceFor(acc: string): BalanceReport | undefined {
     return balances.find(b => b.accountId === acc);
   }
 
@@ -22,18 +31,19 @@
     return (balance as any).finalBalanceCents ?? balance.finalBalance ?? 0;
   }
 
-  function bankCentsOf(balance: BalanceReport | undefined): number {
-    if (!balance) return 0;
-    return balance.bankTheoreticalCents ?? grossCentsOf(balance);
+  function formatDay(iso: string | null | undefined): string {
+    if (!iso) return '';
+    const [, month, day] = iso.split('-');
+    return `${day}/${month}`;
   }
 </script>
 
 <div class="grid gap-4 md:grid-cols-3">
   {#each formAccountOptions as { value, label }}
-    {@const balance = balanceFor(value as any)}
+    {@const balance = balanceFor(value)}
     {@const gross = grossCentsOf(balance)}
-    {@const bank = bankCentsOf(balance)}
-    {@const decale = bank !== gross}
+    {@const releve = balance?.statementBalanceCents ?? null}
+    {@const ecart = releve === null ? 0 : releve - gross}
     <Card.Root>
       <Card.Header class="pb-2">
         <Card.Title class="text-sm font-medium text-muted-foreground">{label}</Card.Title>
@@ -43,17 +53,21 @@
           <Amount cents={gross} />
         </div>
         <p class="mt-1 text-xs text-muted-foreground">Solde comptable</p>
-        <!--
-          Le solde bancaire s'affiche TOUJOURS, même identique au comptable. Ne le montrer qu'en
-          cas d'écart laissait croire qu'il n'existait pas : l'égalité des deux nombres est une
-          information, pas une raison de n'en montrer qu'un.
-        -->
-        <p class="mt-2 text-sm {decale ? 'font-semibold text-foreground' : 'text-muted-foreground'}">
-          <Amount cents={bank} />
-          <span class="text-xs font-normal text-muted-foreground">en banque</span>
-        </p>
-        {#if decale}
-          <p class="mt-1 text-xs text-muted-foreground">
+
+        {#if releve !== null}
+          <p class="mt-3 text-lg font-semibold text-foreground">
+            <Amount cents={releve} />
+          </p>
+          <p class="text-xs text-muted-foreground">
+            Relevé au {formatDay(balance?.statementDate)}
+            {#if ecart !== 0}
+              · écart <Amount cents={ecart} showSign />
+            {/if}
+          </p>
+        {/if}
+
+        {#if (balance?.inVaultCents ?? 0) > 0 || (balance?.pendingDebitCents ?? 0) > 0}
+          <p class="mt-2 text-xs text-muted-foreground">
             {#if (balance?.inVaultCents ?? 0) > 0}
               <span class="block">
                 dont <Amount cents={balance?.inVaultCents ?? 0} /> de chèques encore en coffre

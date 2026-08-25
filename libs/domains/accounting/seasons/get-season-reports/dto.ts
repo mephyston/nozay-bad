@@ -69,8 +69,12 @@ export type GetSeasonReportsOutput = {
     inVaultCents: number;
     /** Dépenses saisies mais pas encore débitées, sur ce compte. */
     pendingDebitCents: number;
-    /** Ce que le relevé de ce compte devrait afficher. */
+    /** Ce que le relevé de ce compte devrait afficher, déduit des seuls statuts. */
     bankTheoreticalCents: number;
+    /** Ce que le relevé affiche vraiment. `null` tant qu'aucun n'a été importé. */
+    statementBalanceCents: number | null;
+    /** Date d'arrêté de ce relevé. Les deux soldes ne sont pas arrêtés au même jour. */
+    statementDate: string | null;
   }[];
   tresorerieDisponible?: {
     totalGrossCashCents: number;
