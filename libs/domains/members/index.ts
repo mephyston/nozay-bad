@@ -49,7 +49,6 @@ membersRouter.route('/', updateAttestationConfigRoute);
 membersRouter.route('/', uploadAttestationSignatureRoute);
 membersRouter.route('/', generateCseAttestationRoute);
 
-export { applyPaymentToMember, buildApplyPaymentStatement } from './apply-payment/handler';
 export {
   getMemberById,
   getMembersByIds,

@@ -795,11 +795,17 @@ VERSION:102
     }, { DB: mockD1 as any });
     expect(reconRes.status).toBe(200);
 
-    // 4. Vérifier que l'adhérent a son solde mis à jour à payé = true
+    /*
+      4. Le règlement de l'adhérent ne bouge pas : il appartient à l'export Poona.
+
+      Le rapprochement l'incrémentait, alors que l'import l'écrase — un même règlement,
+      présent des deux côtés, comptait deux fois. Cf. `members/shared/schema.ts` et
+      `membership-payment-authority.test.ts`.
+    */
     const updatedMember = (await db.select().from(membershipsTable).where(eq(membershipsTable.id, m.id)).get())!;
-    expect(updatedMember.amountReceivedCents).toBe(25000);
-    expect(updatedMember.amountRemainingCents).toBe(0);
-    expect(updatedMember.paid).toBe(true);
+    expect(updatedMember.amountReceivedCents).toBe(0);
+    expect(updatedMember.amountRemainingCents).toBe(25000);
+    expect(updatedMember.paid).toBe(false);
 
     // 5. Récupérer la transaction créée
     const createdTx = (await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.bankStatementLineId, bt.id)).get())!;
@@ -815,7 +821,7 @@ VERSION:102
     const resetBt = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
     expect(resetBt.status).toBe('pending');
 
-    // 8. Vérifier que l'adhérent a son solde rétabli
+    // 8. Et il n'a pas davantage bougé à la suppression, dans un sens ou dans l'autre.
     const resetMember = (await db.select().from(membershipsTable).where(eq(membershipsTable.id, m.id)).get())!;
     expect(resetMember.amountReceivedCents).toBe(0);
     expect(resetMember.amountRemainingCents).toBe(25000);
@@ -2181,11 +2187,13 @@ VERSION:102
     }, { DB: mockD1 as any });
     expect(checkPostRes.status).toBe(200);
 
-    // 3. Vérifier que la fiche de l'adhérent a été mise à jour (réglée)
+    // 3. La fiche de l'adhérent ne bouge pas : son règlement vient de Poona, pas de la
+    //    comptabilité. Le chèque porte son `member_id`, et cela suffit à dire à quelle
+    //    adhésion il se rapporte.
     const updatedMember = (await db.select().from(membershipsTable).where(eq(membershipsTable.id, m.id)).get())!;
-    expect(updatedMember.amountReceivedCents).toBe(26000);
-    expect(updatedMember.amountRemainingCents).toBe(0);
-    expect(updatedMember.paid).toBe(true);
+    expect(updatedMember.amountReceivedCents).toBe(0);
+    expect(updatedMember.amountRemainingCents).toBe(26000);
+    expect(updatedMember.paid).toBe(false);
 
     // 4. Récupérer le chèque via GET /accounting/checks
     const getRes = await app.request('http://localhost/accounting/checks?season=25-26&status=received', undefined, { DB: mockD1 as any });
@@ -2256,7 +2264,7 @@ VERSION:102
     }, { DB: mockD1 as any });
     expect(delCheckRes.status).toBe(200);
 
-    // Vérifier que le chèque est supprimé et la fiche membre remise à zéro
+    // Le chèque est supprimé ; la fiche de l'adhérent, elle, n'a jamais bougé.
     const deletedCheck = (await db.select().from(checksTable).where(eq(checksTable.id, checkId)).get())!;
     expect(deletedCheck).toBeUndefined();
 
@@ -3309,7 +3317,7 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     expect(updatedBt!.status).toBe('reconciled');
   });
 
-  it('POST /accounting/bank-statement-lines/:id/reconcile filters and sums only split transaction items that belong to the membership category', async () => {
+  it("POST /accounting/bank-statement-lines/:id/reconcile ventile une ligne en deux écritures sans toucher au règlement de l'adhérent", async () => {
     const { mockD1, db } = await setupMockDb();
 
     await db.insert(seasonsTable).values({
@@ -3387,10 +3395,16 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
 
     expect(res.status).toBe(200);
 
-    // Verify member amountReceived has only been incremented by the category 1 amount (10000)
+    /*
+      La part « Adhésions » de la ventilation était ajoutée au règlement de l'adhérent.
+
+      Elle ne l'est plus : `memberships` vient de l'export Poona, qui l'écrase à chaque
+      import. Ce chemin-ci est celui de la ventilation, que le contrôle de règle
+      (`membership-payment-authority.test.ts`) ne couvre pas — il vaut donc d'être fixé ici.
+    */
     const updatedMember = (await db.select().from(membershipsTable).where(eq(membershipsTable.id, m.id)).get())!;
-    expect(updatedMember!.amountReceivedCents).toBe(10000);
-    expect(updatedMember!.amountRemainingCents).toBe(15000);
+    expect(updatedMember!.amountReceivedCents).toBe(0);
+    expect(updatedMember!.amountRemainingCents).toBe(25000);
     expect(updatedMember!.paid).toBe(false);
 
     // Verify bank transaction is reconciled

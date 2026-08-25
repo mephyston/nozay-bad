@@ -2,12 +2,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { reconcileBankStatementLine } from './handler';
 import { ReconcileBankStatementLineRepository } from './repository';
-import { isSeasonClosed, applyPaymentToMember } from '@nba/members-api';
+import { isSeasonClosed } from '@nba/members-api';
 vi.mock('@nba/members-api', () => ({
-  isSeasonClosed: vi.fn(),
-  applyPaymentToMember: vi.fn(),
-  getMemberById: vi.fn().mockResolvedValue({ id: 1 }),
-  buildApplyPaymentStatement: vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) })
+  isSeasonClosed: vi.fn()
 }));
 vi.mock('./repository');
 vi.mock('@nba/accounting-api', () => ({ normalizeCategory: vi.fn().mockReturnValue(1) }));

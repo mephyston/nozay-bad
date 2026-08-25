@@ -47,13 +47,4 @@ export class Member {
     return this.data.paid;
   }
 
-  calculatePayment(amountCents: number): { amountReceivedCents: number; amountRemainingCents: number; paid: boolean } {
-    const newReceived = this.data.amountReceivedCents + amountCents;
-    const newRemaining = Math.max(0, this.data.amountDueCents - newReceived);
-    return {
-      amountReceivedCents: newReceived,
-      amountRemainingCents: newRemaining,
-      paid: newRemaining === 0
-    };
-  }
 }

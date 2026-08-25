@@ -26,12 +26,6 @@ vi.mock('../../shared/helpers', () => ({
   cleanName: vi.fn((s) => s)
 }));
 
-vi.mock('@nba/members-api', () => ({
-  applyPaymentToMember: vi.fn(),
-  getMemberById: vi.fn().mockResolvedValue({ id: 1 }),
-  buildApplyPaymentStatement: vi.fn().mockReturnValue({ _prepare: () => ({ getQuery: () => ({ sql: 'SELECT 1', params: [] }), mapResult: (r: any) => r }) })
-}));
-
 const mockDb = {
   batch: vi.fn().mockResolvedValue([{ meta: { last_row_id: 10 } }, { meta: { last_row_id: 1 } }])
 };

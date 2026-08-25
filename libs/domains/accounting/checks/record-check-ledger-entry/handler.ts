@@ -1,7 +1,6 @@
 import { RecordCheckTransactionRepository } from './repository';
 import { AppError, type Db, type Tx } from '@nba/db';
 import { cleanName } from '../../shared/helpers';
-import { getMemberById, buildApplyPaymentStatement } from '@nba/members-api';
 import type { CreateCheckInput, AnalyzeCheckOutput } from './dto';
 
 /** Liaison Workers AI : seule `run` est utilisée. */
@@ -221,11 +220,7 @@ export async function createCheck(db: Db, body: CreateCheckInput) {
   const repo = new RecordCheckTransactionRepository();
 
   // Phase 1 : Lecture (hors batch)
-  let memberData: Awaited<ReturnType<typeof getMemberById>> | null = null;
   const categoryVal = body.category ? Number(body.category) : 1;
-  if (body.memberId && (categoryVal === 1 || String(categoryVal) === '1')) {
-    memberData = await getMemberById(db, body.memberId);
-  }
 
   const seasonIdInt = await repo.resolveSeasonId(db, body.seasonId);
 
@@ -258,12 +253,12 @@ export async function createCheck(db: Db, body: CreateCheckInput) {
     createdAt: new Date()
   });
 
+  /*
+   * Le règlement de l'adhérent n'est pas mis à jour : `memberships` vient de l'export Poona,
+   * qui écrase à chaque import ce qu'on aurait ajouté ici. Le chèque porte déjà son
+   * `member_id`, et l'écriture le sien — c'est cela qui dit à quelle adhésion il se rapporte.
+   */
   const statements: any[] = [stmtLedgerEntry, stmtCheck];
-
-  if (memberData) {
-    const stmtMember = buildApplyPaymentStatement(db, memberData, body.amount);
-    statements.push(stmtMember);
-  }
 
   // Phase 3 : Écriture (db.batch)
   const results = await db.batch(statements as any);
@@ -281,27 +276,11 @@ export async function deleteCheck(db: Db, id: number) {
     throw new AppError('Chèque non trouvé.', 404);
   }
 
-  let tx: Awaited<ReturnType<typeof repo.getTransactionById>> | null = null;
-  let memberData: Awaited<ReturnType<typeof getMemberById>> | null = null;
-
-  if (check.ledgerEntryId) {
-    tx = await repo.getTransactionById(db, check.ledgerEntryId);
-    if (tx && tx.memberId && (tx.category === 1 || String(tx.category) === '1' || tx.categoryId === 1)) {
-      memberData = await getMemberById(db, tx.memberId);
-    }
-  }
-
   // Phase 2 : Décision (en mémoire)
   const statements: any[] = [repo.buildDeleteCheckStatement(db, id)];
 
   if (check.ledgerEntryId) {
     statements.push(repo.buildDeleteLedgerEntryStatement(db, check.ledgerEntryId));
-  }
-
-  if (tx && memberData) {
-    const txAmt = tx.amountCents ?? 0;
-    const stmtMember = buildApplyPaymentStatement(db, memberData, -Math.abs(txAmt));
-    statements.push(stmtMember);
   }
 
   // Phase 3 : Écriture (db.batch)

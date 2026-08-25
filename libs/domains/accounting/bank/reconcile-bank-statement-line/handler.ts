@@ -1,5 +1,5 @@
 import { ReconcileBankStatementLineRepository } from './repository';
-import { isSeasonClosed, getMemberById, buildApplyPaymentStatement } from '@nba/members-api';
+import { isSeasonClosed } from '@nba/members-api';
 import { AppError, type Db } from '@nba/db';
 import { normalizeCategory } from '../../shared/helpers';
 import { ReconcileBankTxInternalId, ReconcileBankTxInternalInput, ReconcileBankTxInternalOutput } from "./dto";
@@ -169,45 +169,19 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
     statements.push(repo.buildMarkBankStatementLineReconciledStatement(db, id));
   }
 
-  if (memberId) {
-    const isMembershipCategory = (cat: any) => {
-      const norm = normalizeCategory(cat);
-      return norm === 1 || cat === 'adhesions_inscriptions' || String(cat) === '1';
-    };
-
-    let amountToApply = 0;
-    let hasMembershipTx = false;
-
-    if (body.action === 'create') {
-      if (body.transactions && Array.isArray(body.transactions)) {
-        const membershipTxs = body.transactions.filter((t) => isMembershipCategory(t.category));
-        if (membershipTxs.length > 0) {
-          hasMembershipTx = true;
-          amountToApply = membershipTxs.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
-        }
-      } else {
-        const categoryStr = body.transaction?.category;
-        if (isMembershipCategory(categoryStr)) {
-          hasMembershipTx = true;
-          amountToApply = Math.abs(body.transaction?.amount ?? bankTx.amount);
-        }
-      }
-    } else if (body.action === 'match') {
-      const matchedTx = await repo.getTransactionById(db, body.ledgerEntryId);
-      const categoryStr = matchedTx ? matchedTx.category : null;
-      if (isMembershipCategory(categoryStr)) {
-        hasMembershipTx = true;
-        amountToApply = Math.abs(bankTx.amount);
-      }
-    }
-
-    if (hasMembershipTx) {
-      const memberData = await getMemberById(db, memberId);
-      if (memberData) {
-        statements.push(buildApplyPaymentStatement(db, memberData, amountToApply));
-      }
-    }
-  }
+  /*
+   * Le règlement de l'adhérent n'est **pas** mis à jour ici.
+   *
+   * `memberships.amount_received_cents` vient de l'export Poona, et de lui seul. Ce bloc y
+   * ajoutait le montant rapproché, alors que l'import l'écrase : un même règlement, présent
+   * des deux côtés, comptait deux fois — et le résultat dépendait de l'ordre des deux
+   * opérations, donc changeait tout seul au prochain import. Il additionnait par ailleurs un
+   * `Math.abs()` sans regarder le `type`, si bien qu'un remboursement d'adhésion gonflait le
+   * montant reçu au lieu de le réduire.
+   *
+   * Le rattachement, lui, reste : `ledger_entries.member_id` dit à quelle adhésion l'argent
+   * se rapporte, et c'est le rôle du rapprochement. Cf. `members/shared/schema.ts`.
+   */
 
   return { statements };
 }

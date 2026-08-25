@@ -83,6 +83,26 @@ export const membershipsTable = sqliteTable('memberships', {
   // devient adulte, et six licences changeaient déjà de type d'une saison à l'autre.
   type: text('type').notNull(),
   importedAt: integer('imported_at', { mode: 'timestamp' }).notNull(),
+  /*
+    Le règlement de la cotisation vient de l'export Poona, et de lui seul.
+
+    Ces quatre colonnes n'ont qu'un écrivain : `import-members-csv/repository.ts`, qui les
+    écrase à chaque import. Rien d'autre ne doit y toucher — surtout pas la comptabilité.
+
+    Le rapprochement bancaire et la saisie des chèques l'ont fait pendant un temps, en
+    ajoutant le montant encaissé. Comme un même règlement figure des deux côtés, il comptait
+    deux fois, et le total dépendait de l'ordre entre le rapprochement et l'import : il
+    changeait tout seul, sans que rien ne le signale. Ces chemins additionnaient de surcroît
+    une valeur absolue sans regarder le `type`, si bien qu'un remboursement d'adhésion
+    gonflait le montant reçu — 547,94 € d'écart en production sur la saison 25-26.
+
+    Poona voit ce que la banque ne montre pas : un chèque sport regroupé sur un bordereau non
+    ventilé, des espèces, un règlement d'une saison antérieure non reprise. C'est pourquoi
+    c'est lui qui fait foi, et non l'inverse.
+
+    Ce que la comptabilité dit, elle, c'est à quelle adhésion l'argent se rapporte :
+    `ledger_entries.member_id`. Ce rattachement-là lui appartient.
+  */
   amountDueCents: integer('amount_due_cents').notNull().default(0),
   amountReceivedCents: integer('amount_received_cents').notNull().default(0),
   amountRemainingCents: integer('amount_remaining_cents').notNull().default(0),

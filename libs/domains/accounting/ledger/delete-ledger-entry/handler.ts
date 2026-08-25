@@ -1,5 +1,5 @@
 import { DeleteTransactionRepository } from './repository';
-import { isSeasonClosed, getMemberById, buildApplyPaymentStatement } from '@nba/members-api';
+import { isSeasonClosed } from '@nba/members-api';
 import { AppError, type Db } from '@nba/db';
 import { SeasonClosedError } from '../../shared/errors';
 
@@ -30,11 +30,6 @@ export async function deleteLedgerEntry(db: Db, id: number) {
     }
   }
 
-  let memberData: any = null;
-  if (tx.memberId && (tx.category === 1 || String(tx.category) === '1' || tx.categoryId === 1)) {
-    memberData = await getMemberById(db, tx.memberId);
-  }
-
   // Phase 2 : Décision (en mémoire)
   const statements: any[] = [];
 
@@ -42,11 +37,11 @@ export async function deleteLedgerEntry(db: Db, id: number) {
     statements.push(repo.buildUpdateBankStatementLineStatusStatement(db, tx.bankStatementLineId, 'pending'));
   }
 
-  if (memberData) {
-    const txAmt = tx.amountCents ?? 0;
-    statements.push(buildApplyPaymentStatement(db, memberData, -Math.abs(txAmt)));
-  }
-
+  /*
+   * Le règlement de l'adhérent n'est pas retouché : `memberships` vient de l'export Poona,
+   * qui écrase de toute façon ce que la comptabilité y aurait écrit. Retirer le montant ici
+   * n'annulait rien de fiable — cela creusait un second écart en sens inverse.
+   */
   statements.push(repo.buildDeleteLedgerEntryStatement(db, id));
 
   // Reset expense status if linked
