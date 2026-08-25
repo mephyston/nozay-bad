@@ -52,9 +52,14 @@ const tables = [
     'push_preferences',
     'push_subscriptions',
     'expenses',
+    // `checks` avant `ledger_entries` : c'est lui l'enfant (`check_deposit_id`,
+    // `season_id`, `ledger_entry_id`). L'ordre inverse ne cassait que le jour où un
+    // chèque pointait réellement une écriture — le `PRAGMA foreign_keys = OFF` ne
+    // survit pas au batch qui suit, et la purge échouait alors dans le `beforeEach`
+    // du test *suivant*, loin de sa cause.
+    'checks',
     'ledger_entries',
     'orders',
-    'checks',
     'invoice_items',
     'invoices',
     'check_deposits',
