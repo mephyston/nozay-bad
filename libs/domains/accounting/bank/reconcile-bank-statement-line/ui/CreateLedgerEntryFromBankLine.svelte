@@ -185,6 +185,7 @@
       {remainingAmount}
       {splitSum}
       {categories}
+      {memberItems}
       {addSplitRow}
       {removeSplitRow}
     />

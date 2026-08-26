@@ -216,3 +216,56 @@ describe('bascule de la ligne de relevé', () => {
     expect(repo.buildMarkBankStatementLineReconciledStatement).toHaveBeenCalled();
   });
 });
+
+/*
+  Une ligne peut se pointer contre plusieurs écritures existantes.
+
+  `match` ajoutait le montant de la **ligne bancaire** à la somme comparée, si bien que le premier
+  pointage la marquait rapprochée quel qu'ait été le montant de l'écriture. Une ligne de 300 €
+  pointée contre une écriture de 100 € se refermait sur 200 € manquants — et l'écran n'offrait
+  donc jamais d'en pointer une seconde.
+*/
+describe('pointage de plusieurs écritures', () => {
+  let db: any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    db = {};
+    (isSeasonClosed as any).mockResolvedValue(false);
+  });
+
+  it('laisse la ligne ouverte quand l\'écriture pointée ne la couvre pas', async () => {
+    const repo = mockRepo({
+      getTransactionById: vi.fn().mockResolvedValue({ id: 5, seasonId: 1, amountCents: 10000 }),
+      buildLinkTransactionToBankStatement: vi.fn(() => 'link')
+    });
+
+    await buildReconciliationStatements(db, 1, { action: 'match', ledgerEntryId: 5 });
+
+    expect(repo.buildMarkBankStatementLineReconciledStatement).not.toHaveBeenCalled();
+  });
+
+  it('solde la ligne au pointage qui la couvre enfin', async () => {
+    const repo = mockRepo({
+      getTransactionById: vi.fn().mockResolvedValue({ id: 6, seasonId: 1, amountCents: 10000 }),
+      buildLinkTransactionToBankStatement: vi.fn(() => 'link'),
+      // 20 000 déjà rattachés ; la ligne vaut 30 000.
+      getLedgerEntriesForBankStatementLine: vi.fn().mockResolvedValue([{ amount: 20000 }])
+    });
+
+    await buildReconciliationStatements(db, 1, { action: 'match', ledgerEntryId: 6 });
+
+    expect(repo.buildMarkBankStatementLineReconciledStatement).toHaveBeenCalled();
+  });
+
+  it("solde la ligne d'un seul pointage quand l'écriture la couvre entièrement", async () => {
+    const repo = mockRepo({
+      getTransactionById: vi.fn().mockResolvedValue({ id: 7, seasonId: 1, amountCents: 30000 }),
+      buildLinkTransactionToBankStatement: vi.fn(() => 'link')
+    });
+
+    await buildReconciliationStatements(db, 1, { action: 'match', ledgerEntryId: 7 });
+
+    expect(repo.buildMarkBankStatementLineReconciledStatement).toHaveBeenCalled();
+  });
+});

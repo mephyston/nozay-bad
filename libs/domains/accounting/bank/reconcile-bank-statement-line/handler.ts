@@ -73,6 +73,8 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
   }
 
   const statements: any[] = [];
+  /* Le montant de l'écriture pointée, retenu pour décider si la ligne est soldée. */
+  let matchedAmountCents = 0;
 
   if (body.action === 'match') {
     const existingTx = await repo.getTransactionById(db, body.ledgerEntryId);
@@ -83,6 +85,7 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
       return { statements: [], error: 'La saison de la transaction est clôturée. Rapprochement impossible.', status: 400 };
     }
 
+    matchedAmountCents = Math.abs(existingTx.amountCents ?? existingTx.amount ?? 0);
     statements.push(repo.buildLinkTransactionToBankStatement(db, body.ledgerEntryId, id, memberId));
   } else if (body.action === 'create') {
     if (body.transactions && Array.isArray(body.transactions)) {
@@ -176,7 +179,16 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
       newTxAmount = Math.abs(body.transaction.amount);
     }
   } else if (body.action === 'match') {
-    newTxAmount = Math.abs(bankTx.amount);
+    /*
+     * Le montant de l'écriture pointée, et non celui de la ligne bancaire.
+     *
+     * En prenant le second, la somme comparée valait toujours au moins le montant de la ligne :
+     * le tout premier pointage la marquait rapprochée, quel qu'ait été le montant de l'écriture.
+     * Une ligne de 150 € pointée contre une écriture de 50 € se refermait sur 100 € manquants —
+     * et l'écran n'offrait donc jamais d'en pointer une seconde, alors que le modèle sait
+     * parfaitement rattacher plusieurs écritures à une même ligne.
+     */
+    newTxAmount = matchedAmountCents;
   }
 
   if (existingLinkedTotal + newTxAmount >= Math.abs(bankTx.amount)) {
