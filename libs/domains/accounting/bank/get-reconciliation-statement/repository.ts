@@ -1,5 +1,5 @@
 import { type DbOrTx } from '@nba/db';
-import { and, eq, gte, lte, ne } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lte, ne, sql } from 'drizzle-orm';
 import {
   accountsTable,
   bankStatementBalancesTable,
@@ -54,6 +54,18 @@ export class GetReconciliationStatementRepository {
     return row?.initialBalanceCents ?? 0;
   }
 
+  /** Les à-nouveaux de tous les comptes de l'exercice, en une lecture. */
+  async getInitialBalancesBySeason(db: DbOrTx, seasonId: number): Promise<Map<number, number>> {
+    const rows = await db.select({
+        accountId: seasonBalancesTable.accountId,
+        initialBalanceCents: seasonBalancesTable.initialBalanceCents
+      })
+      .from(seasonBalancesTable)
+      .where(eq(seasonBalancesTable.seasonId, seasonId))
+      .all();
+    return new Map(rows.map((r) => [r.accountId, r.initialBalanceCents]));
+  }
+
   /**
    * Toutes les écritures de la période, pas seulement celles du compte : un virement interne
    * n'est rattaché qu'à son compte d'origine, et le lire depuis le compte de destination
@@ -83,8 +95,37 @@ export class GetReconciliationStatementRepository {
       .all();
   }
 
+  /**
+   * Les mêmes lignes, pour plusieurs comptes à la fois et jusqu'à la plus tardive des dates
+   * d'arrêté. Chaque compte resserre ensuite sur la sienne : le tri par date est déjà fait ici,
+   * et la borne haute d'un compte ne peut que retirer des lignes, jamais en ajouter.
+   */
+  async getUnreconciledBankLinesForAccounts(db: DbOrTx, accountIds: number[], startDate: string, maxAsOfDate: string): Promise<Map<number, any[]>> {
+    const byAccount = new Map<number, any[]>();
+    if (accountIds.length === 0) return byAccount;
+
+    const rows = await db.select()
+      .from(bankStatementLinesTable)
+      .where(and(
+        inArray(bankStatementLinesTable.accountId, accountIds),
+        gte(bankStatementLinesTable.date, startDate),
+        lte(bankStatementLinesTable.date, maxAsOfDate),
+        ne(bankStatementLinesTable.status, 'reconciled')
+      ))
+      .all();
+
+    for (const accountId of accountIds) byAccount.set(accountId, []);
+    for (const row of rows) {
+      const bucket = byAccount.get((row as any).accountId);
+      if (bucket) bucket.push(row);
+    }
+    return byAccount;
+  }
+
+  /* Le tri et la coupe reviennent à SQLite : charger tous les arrêtés pour n'en garder qu'un
+     faisait faire au Worker un travail que l'index fait mieux. */
   async getLatestBankStatementBalance(db: DbOrTx, accountId: number, asOfDate: string): Promise<{ date: string; balanceCents: number } | undefined> {
-    const rows = await db.select({
+    return db.select({
         date: bankStatementBalancesTable.date,
         balanceCents: bankStatementBalancesTable.balanceCents
       })
@@ -93,18 +134,58 @@ export class GetReconciliationStatementRepository {
         eq(bankStatementBalancesTable.accountId, accountId),
         lte(bankStatementBalancesTable.date, asOfDate)
       ))
-      .all();
-    if (rows.length === 0) return undefined;
-    return rows.sort((a, b) => b.date.localeCompare(a.date))[0];
+      .orderBy(desc(bankStatementBalancesTable.date))
+      .limit(1)
+      .get();
   }
 
   /** Le dernier arrêté connu du compte, toutes dates confondues : la date d'arrêté par défaut. */
   async getLatestBankStatementDate(db: DbOrTx, accountId: number): Promise<string | undefined> {
-    const rows = await db.select({ date: bankStatementBalancesTable.date })
+    const row = await db.select({ date: bankStatementBalancesTable.date })
       .from(bankStatementBalancesTable)
       .where(eq(bankStatementBalancesTable.accountId, accountId))
+      .orderBy(desc(bankStatementBalancesTable.date))
+      .limit(1)
+      .get();
+    return row?.date;
+  }
+
+  /** La dernière date d'arrêté de chaque compte, en une lecture. */
+  async getLatestBankStatementDates(db: DbOrTx): Promise<Map<number, string>> {
+    const rows = await db.select({
+        accountId: bankStatementBalancesTable.accountId,
+        date: sql<string>`MAX(${bankStatementBalancesTable.date})`
+      })
+      .from(bankStatementBalancesTable)
+      .groupBy(bankStatementBalancesTable.accountId)
       .all();
-    if (rows.length === 0) return undefined;
-    return rows.sort((a, b) => b.date.localeCompare(a.date))[0].date;
+    return new Map(rows.map((r) => [r.accountId, r.date]));
+  }
+
+  /**
+   * Tous les arrêtés des comptes demandés. Chaque compte y choisit ensuite le dernier qui
+   * précède sa propre date d'arrêté : il y a une ligne par compte et par import de relevé,
+   * soit quelques dizaines — les charger d'un bloc coûte moins qu'une requête par compte.
+   */
+  async getBankStatementBalancesForAccounts(db: DbOrTx, accountIds: number[]): Promise<Map<number, { date: string; balanceCents: number }[]>> {
+    const byAccount = new Map<number, { date: string; balanceCents: number }[]>();
+    if (accountIds.length === 0) return byAccount;
+
+    const rows = await db.select({
+        accountId: bankStatementBalancesTable.accountId,
+        date: bankStatementBalancesTable.date,
+        balanceCents: bankStatementBalancesTable.balanceCents
+      })
+      .from(bankStatementBalancesTable)
+      .where(inArray(bankStatementBalancesTable.accountId, accountIds))
+      .orderBy(desc(bankStatementBalancesTable.date))
+      .all();
+
+    for (const accountId of accountIds) byAccount.set(accountId, []);
+    for (const row of rows) {
+      const bucket = byAccount.get(row.accountId);
+      if (bucket) bucket.push({ date: row.date, balanceCents: row.balanceCents });
+    }
+    return byAccount;
   }
 }

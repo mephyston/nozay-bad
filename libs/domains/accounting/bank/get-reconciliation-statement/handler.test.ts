@@ -42,6 +42,10 @@ function mockRepo(over: Record<string, any> = {}) {
     getLatestBankStatementBalance: vi.fn().mockResolvedValue(undefined),
     getLatestBankStatementDate: vi.fn().mockResolvedValue(undefined),
     getAccountsWithStatements: vi.fn().mockResolvedValue([]),
+    getInitialBalancesBySeason: vi.fn().mockResolvedValue(new Map()),
+    getUnreconciledBankLinesForAccounts: vi.fn().mockResolvedValue(new Map()),
+    getLatestBankStatementDates: vi.fn().mockResolvedValue(new Map()),
+    getBankStatementBalancesForAccounts: vi.fn().mockResolvedValue(new Map()),
     ...over
   };
   (vi.mocked(GetReconciliationStatementRepository) as any).mockImplementation(function () { return instance; });
@@ -263,5 +267,104 @@ describe('getReconciliationStatements', () => {
   it("rend une liste vide quand aucun relevé n'a jamais été importé", async () => {
     mockRepo({ getAccountsWithStatements: vi.fn().mockResolvedValue([]) });
     expect(await getReconciliationStatements(db, { seasonId: '25-26' })).toEqual([]);
+  });
+
+  /*
+   * Le cœur du dénouage : le grand livre se lit **une** fois, pas une fois par compte. Le test
+   * porte sur le compte d'appels parce que c'est exactement ce qui régressait — le résultat,
+   * lui, était déjà juste quand chaque compte relisait tout.
+   */
+  it('ne lit le grand livre et la saison qu\'une seule fois pour tous les comptes', async () => {
+    const repo = mockRepo({
+      getAccountsWithStatements: vi.fn().mockResolvedValue([
+        { id: 1, code: 'current', label: 'Compte Courant' },
+        { id: 2, code: 'savings', label: 'Compte Livret' },
+        { id: 3, code: 'cash', label: 'Caisse' }
+      ])
+    });
+
+    await getReconciliationStatements(db, { seasonId: '25-26' });
+
+    expect(repo.getEntriesForPeriod).toHaveBeenCalledTimes(1);
+    expect(getSeasonFromDb).toHaveBeenCalledTimes(1);
+    expect(repo.getInitialBalancesBySeason).toHaveBeenCalledTimes(1);
+    expect(repo.getUnreconciledBankLinesForAccounts).toHaveBeenCalledTimes(1);
+    expect(repo.getBankStatementBalancesForAccounts).toHaveBeenCalledTimes(1);
+
+    // Les lectures par compte de l'ancienne boucle ne doivent plus servir du tout.
+    expect(repo.getEntriesForPeriod).not.toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), expect.anything());
+    expect(repo.getUnreconciledBankLines).not.toHaveBeenCalled();
+    expect(repo.getInitialBalanceCents).not.toHaveBeenCalled();
+    expect(repo.getLatestBankStatementBalance).not.toHaveBeenCalled();
+    expect(repo.getLatestBankStatementDate).not.toHaveBeenCalled();
+  });
+
+  /*
+   * Chaque compte garde sa propre date d'arrêté — celle de son dernier relevé. La lecture
+   * commune va jusqu'à la plus tardive ; le resserrement se fait ensuite compte par compte, et
+   * ce qui déborde ne doit pas entrer dans le calcul.
+   */
+  it("resserre chaque compte sur sa propre date d'arrêté", async () => {
+    const repo = mockRepo({
+      getAccountsWithStatements: vi.fn().mockResolvedValue([
+        { id: 1, code: 'current', label: 'Compte Courant' },
+        { id: 2, code: 'savings', label: 'Compte Livret' }
+      ]),
+      getLatestBankStatementDates: vi.fn().mockResolvedValue(new Map([[1, '2025-10-31'], [2, '2025-12-31']])),
+      getInitialBalancesBySeason: vi.fn().mockResolvedValue(new Map([[1, 0], [2, 0]])),
+      getEntriesForPeriod: vi.fn().mockResolvedValue([
+        entry({ id: 1, accountId: 1, type: 'recette', amountCents: 1000, date: '2025-10-01' }),
+        // Postérieure à l'arrêté du compte courant : elle ne doit pas peser sur son état.
+        entry({ id: 2, accountId: 1, type: 'recette', amountCents: 5000, date: '2025-12-01' })
+      ]),
+      getUnreconciledBankLinesForAccounts: vi.fn().mockResolvedValue(new Map([
+        [1, [bankLine({ id: 10, date: '2025-10-05', amountCents: 300 }), bankLine({ id: 11, date: '2025-12-05', amountCents: 900 })]],
+        [2, []]
+      ])),
+      getBankStatementBalancesForAccounts: vi.fn().mockResolvedValue(new Map([
+        [1, [{ date: '2025-12-31', balanceCents: 99999 }, { date: '2025-10-31', balanceCents: 300 }]],
+        [2, []]
+      ]))
+    });
+
+    const [current, savings] = await getReconciliationStatements(db, { seasonId: '25-26' });
+
+    // La lecture commune porte jusqu'à la plus tardive des deux dates.
+    expect(repo.getEntriesForPeriod).toHaveBeenCalledWith(db, '2025-09-01', '2025-12-31');
+
+    expect(current.asOfDate).toBe('2025-10-31');
+    expect(current.book.grossCents).toBe(1000);
+    expect(current.unpointedEntries.map((e) => e.id)).toEqual([1]);
+    expect(current.unrecordedBankLines.map((l) => l.id)).toEqual([10]);
+    // L'arrêté retenu est le dernier qui précède la date du compte, pas le plus récent connu.
+    expect(current.statement).toEqual({ date: '2025-10-31', balanceCents: 300 });
+    // 1000 de solde − 1000 non pointé + 300 non comptabilisé = 300, soit le solde du relevé.
+    expect(current.expectedBankBalanceCents).toBe(300);
+    expect(current.gapCents).toBe(0);
+    expect(current.reconciled).toBe(true);
+
+    expect(savings.asOfDate).toBe('2025-12-31');
+    expect(savings.statement).toBeNull();
+  });
+
+  it("impose la date d'arrêté demandée à tous les comptes", async () => {
+    const repo = mockRepo({
+      getAccountsWithStatements: vi.fn().mockResolvedValue([{ id: 1, code: 'current', label: 'Compte Courant' }])
+    });
+
+    const [statement] = await getReconciliationStatements(db, { seasonId: '25-26', date: '2025-11-30' });
+
+    expect(statement.asOfDate).toBe('2025-11-30');
+    // Inutile d'aller chercher les derniers arrêtés : la date est imposée.
+    expect(repo.getLatestBankStatementDates).not.toHaveBeenCalled();
+  });
+
+  it("refuse un exercice introuvable", async () => {
+    mockRepo({
+      getAccountsWithStatements: vi.fn().mockResolvedValue([{ id: 1, code: 'current', label: 'Compte Courant' }])
+    });
+    vi.mocked(getSeasonFromDb).mockResolvedValue(undefined as any);
+
+    await expect(getReconciliationStatements(db, { seasonId: 'inconnue' })).rejects.toThrow('Saison introuvable.');
   });
 });

@@ -70,6 +70,31 @@ export async function getReconciliationStatement(
   const bankLines = await repo.getUnreconciledBankLines(db, account.id, season.startDate, asOfDate);
   const statement = (await repo.getLatestBankStatementBalance(db, account.id, asOfDate)) ?? null;
 
+  return buildStatement({ account, season, asOfDate, initialBalanceCents, entries, bankLines, statement });
+}
+
+interface StatementInputs {
+  account: AccountRef;
+  season: { id: number; code: string; startDate: string; endDate: string };
+  asOfDate: string;
+  initialBalanceCents: number;
+  /** Toutes les écritures de la période — le tri par compte est l'affaire du calcul. */
+  entries: any[];
+  bankLines: any[];
+  statement: { date: string; balanceCents: number } | null;
+}
+
+/**
+ * Le calcul proprement dit, sans base de données.
+ *
+ * Il est séparé de la lecture parce que la vue agrégée lit **une** fois pour tous les comptes :
+ * `getEntriesForPeriod` ne filtre pas par compte — le calcul le fait, écriture par écriture, via
+ * `signedEntryAmountCents` — et la relire une fois par compte revenait à parcourir le grand livre
+ * entier trois fois pour en tirer trois nombres différents.
+ */
+function buildStatement(inputs: StatementInputs): GetReconciliationStatementOutput {
+  const { account, season, asOfDate, initialBalanceCents, entries, bankLines, statement } = inputs;
+
   const balance = computeAccountBalance(account, initialBalanceCents, entries);
 
   const unpointedEntries: UnpointedEntry[] = [];
@@ -125,7 +150,7 @@ export async function getReconciliationStatement(
   unrecordedBankLines.sort((a, b) => a.date.localeCompare(b.date));
 
   return {
-    account: { id: account.id, code: account.code, label: accountRow.label },
+    account: { id: account.id, code: account.code, label: account.label! },
     seasonCode: season.code,
     seasonStartDate: season.startDate,
     asOfDate,
@@ -155,21 +180,69 @@ export async function getReconciliationStatement(
  *
  * Rien n'est codé en dur : un compte sans relevé — la caisse de la buvette — n'a pas de banque
  * à qui se comparer, et l'y faire figurer afficherait un écart permanent égal à son solde.
+ *
+ * Tout se lit en bloc, avant la boucle. La version précédente rappelait `getReconciliationStatement`
+ * par compte, soit sept à huit requêtes chacune — dont la saison et **le grand livre entier**,
+ * identiques d'un compte à l'autre. Trois comptes valaient donc une vingtaine d'aller-retours D1
+ * séquentiels pour lire trois fois les mêmes écritures.
  */
 export async function getReconciliationStatements(
   db: Db,
   input: { seasonId: string; date?: string }
 ): Promise<GetReconciliationStatementOutput[]> {
   const repo = new GetReconciliationStatementRepository();
-  const accounts = await repo.getAccountsWithStatements(db);
 
-  const statements: GetReconciliationStatementOutput[] = [];
-  for (const account of accounts) {
-    statements.push(await getReconciliationStatement(db, {
-      accountCode: account.code,
-      seasonId: input.seasonId,
-      date: input.date
-    }));
+  const accounts = await repo.getAccountsWithStatements(db);
+  if (accounts.length === 0) return [];
+
+  const season = await getSeasonFromDb(db, input.seasonId);
+  if (!season) {
+    throw new AppError('Saison introuvable.', 404);
   }
-  return statements;
+
+  const accountIds = accounts.map((a) => a.id);
+  const latestDates = input.date ? new Map<number, string>() : await repo.getLatestBankStatementDates(db);
+
+  const asOfDates = new Map<number, string>(
+    accounts.map((a) => [a.id, input.date ?? latestDates.get(a.id) ?? season.endDate])
+  );
+  /*
+   * La borne haute commune est la plus tardive des dates d'arrêté : chaque compte resserre
+   * ensuite sur la sienne. Une borne trop large ne fausse rien — elle ajoute des lignes que le
+   * filtre par compte écarte — alors qu'une borne trop courte en perdrait.
+   */
+  const maxAsOfDate = [...asOfDates.values()].reduce((max, d) => (d > max ? d : max), season.startDate);
+
+  const [initialBalances, allEntries, bankLinesByAccount, balancesByAccount] = await Promise.all([
+    repo.getInitialBalancesBySeason(db, season.id),
+    repo.getEntriesForPeriod(db, season.startDate, maxAsOfDate),
+    repo.getUnreconciledBankLinesForAccounts(db, accountIds, season.startDate, maxAsOfDate),
+    repo.getBankStatementBalancesForAccounts(db, accountIds)
+  ]);
+
+  return accounts.map((accountRow) => {
+    const account: AccountRef = { id: accountRow.id, code: accountRow.code, label: accountRow.label };
+    const asOfDate = asOfDates.get(account.id)!;
+
+    const entries = maxAsOfDate === asOfDate
+      ? allEntries
+      : allEntries.filter((e: any) => e.date <= asOfDate);
+
+    const bankLines = (bankLinesByAccount.get(account.id) ?? [])
+      .filter((line: any) => line.date <= asOfDate);
+
+    // Les arrêtés arrivent déjà du plus récent au plus ancien : le premier qui précède la date
+    // d'arrêté est le bon.
+    const statement = (balancesByAccount.get(account.id) ?? []).find((b) => b.date <= asOfDate) ?? null;
+
+    return buildStatement({
+      account,
+      season,
+      asOfDate,
+      initialBalanceCents: initialBalances.get(account.id) ?? 0,
+      entries,
+      bankLines,
+      statement
+    });
+  });
 }
