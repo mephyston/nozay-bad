@@ -11,6 +11,7 @@
     line,
     isExpanded = false,
     isFocused = false,
+    isDimmed = false,
     accountLabel = null,
     children
   }: {
@@ -19,6 +20,8 @@
     isExpanded?: boolean;
     /** Ligne visée par le clavier : elle doit se voir, sans se confondre avec une ligne ouverte. */
     isFocused?: boolean;
+    /** Une autre ligne est ouverte : celle-ci s'efface et cesse de répondre. */
+    isDimmed?: boolean;
     /** Le compte de la ligne, quand la file en mélange plusieurs. */
     accountLabel?: string | null;
     children?: import('svelte').Snippet;
@@ -61,8 +64,19 @@
   }
 </script>
 
+<!--
+  Une ligne ouverte porte un formulaire dense ; les voisines s'effacent le temps qu'on le lise.
+
+  On estompe plutôt qu'on ne floute : `backdrop-filter` sur une liste de plusieurs dizaines de
+  lignes coûte cher au défilement, pour un résultat inhabituel dans un outil de saisie. Les lignes
+  effacées cessent aussi de répondre au clic — sans quoi on refermerait par mégarde ce qu'on est
+  en train de remplir.
+-->
 <div
-  class="border-b border-border last:border-b-0 transition-colors {isExpanded ? 'bg-primary/5' : isFocused ? 'bg-muted/60' : 'hover:bg-muted/40'} {isFocused && !isExpanded ? 'ring-1 ring-inset ring-primary/40' : ''}"
+  class="border-b border-border last:border-b-0 transition-all duration-200
+    {isExpanded ? 'bg-primary/5 ring-1 ring-inset ring-primary/30' : isFocused ? 'bg-muted/60' : 'hover:bg-muted/40'}
+    {isFocused && !isExpanded ? 'ring-1 ring-inset ring-primary/40' : ''}
+    {isDimmed ? 'pointer-events-none opacity-35' : ''}"
   data-line-id={line.id}
   data-focused={isFocused ? 'true' : undefined}
 >

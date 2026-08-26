@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Sparkles } from '@lucide/svelte';
   import { Button, Amount, Combobox, type ComboboxItem, FormField, SearchableCombobox, toSeasonOptions } from '@nba/ui';
   import CreateLedgerEntrySplitRows from './CreateLedgerEntrySplitRows.svelte';
 
@@ -21,6 +22,8 @@
     seasons = [],
     targetSeasonId = $bindable(''),
     browsedSeason = '',
+    aiHint = null,
+    aiFields = {},
     isMemberDropdownOpen = $bindable(false),
     isCategoryDropdownOpen = $bindable(false),
     memberSearchQuery = $bindable(''),
@@ -54,6 +57,10 @@
     targetSeasonId: string;
     /** Exercice consulté, pour signaler l'écart sans avoir à le deviner. */
     browsedSeason: string;
+    /** Résumé de la proposition du modèle : confiance et motif, en une ligne. */
+    aiHint?: { confidence?: number; reason?: string | null } | null;
+    /** Quels champs portent encore la valeur proposée — ceux-là seuls se signalent. */
+    aiFields?: { category?: boolean; member?: boolean; accrual?: boolean; season?: boolean };
     isMemberDropdownOpen: boolean;
     isCategoryDropdownOpen: boolean;
     memberSearchQuery: string;
@@ -94,6 +101,20 @@
   /* Clôturée reste signalé : on ne peut pas y écrire. « Active » ne se choisit pas. */
   let seasonItems = $derived(toSeasonOptions(seasons as any, { markClosed: true }));
 
+  /*
+    Le liseré remplace l'encart violet.
+
+    Celui-ci répétait sous forme de pavé ce que les champs affichent déjà — catégorie, adhérent,
+    rattachement — et occupait le tiers du formulaire. Ne subsiste que ce que les champs ne
+    peuvent pas dire : la confiance et le motif, en une ligne. Le liseré, lui, désigne les champs
+    qui portent **encore** la valeur proposée : corriger un champ l'éteint, ce qui rend visible
+    d'un coup d'œil ce qui vient du modèle et ce qui vient de la comptable.
+  */
+  /* La bordure du champ lui-même, et non un cadre autour du bloc : c'est le contrôle qui porte
+     la valeur proposée, pas son étiquette. Le sélecteur descendant atteint l'`<input>` que
+     `Combobox` et `SearchableCombobox` rendent tous deux. */
+  const AI_RING = '[&_input]:!border-purple-500 [&_input]:!ring-1 [&_input]:!ring-purple-500/30 [&_button]:!border-purple-500';
+
   let splitSum = $derived(splits.reduce((sum, s) => sum + Math.round((s.amount || 0) * 100), 0));
 </script>
 
@@ -114,8 +135,22 @@
     </Button>
   </div>
 
+  {#if aiHint}
+    <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+      <span class="inline-flex items-center gap-1 font-medium text-purple-600 dark:text-purple-400">
+        <Sparkles class="h-3 w-3" />
+        Proposition IA
+      </span>
+      {#if aiHint.confidence}<span>· {Math.round(aiHint.confidence * 100)} %</span>{/if}
+      {#if aiHint.reason}<span class="italic">· « {aiHint.reason} »</span>{/if}
+    </p>
+  {/if}
+
+  <!-- Catégorie et exercice de rattachement tiennent sur une ligne : ce sont deux imputations,
+       on les décide ensemble. La ventilation, elle, prend toute la largeur. -->
+  <div class="grid grid-cols-1 {isSplitMode ? '' : 'md:grid-cols-2'} gap-4">
   {#if !isSplitMode}
-    <div>
+    <div class={aiFields.category ? AI_RING : ''}>
       <Combobox
         id="category-search-input"
         label="Catégorie Comptable"
@@ -146,7 +181,7 @@
     quitter la ligne qu'on rapproche — c'est ce que le compte de résultat attend, lui
     qui lit `season_id` là où la trésorerie lit la date.
   -->
-  <div class="mt-4">
+  <div class="{aiFields.season ? AI_RING : ''}">
     <FormField label="Exercice de rattachement">
       <SearchableCombobox bind:value={targetSeasonId} items={seasonItems} />
     </FormField>
@@ -155,6 +190,7 @@
         L'écriture comptera dans l'exercice {targetSeasonId}, alors que vous consultez {browsedSeason}.
       </p>
     {/if}
+  </div>
   </div>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
@@ -168,7 +204,7 @@
         allowClear={false}
       />
     </div>
-    <div>
+    <div class={aiFields.member ? AI_RING : ''}>
       <Combobox
         id="member-search-input"
         label="Adhérent Associé (Optionnel)"
@@ -182,12 +218,15 @@
   </div>
 
   <div class="grid grid-cols-1 gap-4 mt-4">
+      <!-- `FormField` n'accepte pas de `class` : un attribut inconnu serait ignoré sans un mot. -->
+      <div class={aiFields.accrual ? AI_RING : ''}>
       <FormField label="Régularisation (Cut-off)">
       <SearchableCombobox
         bind:value={accrualType}
         items={[{ label: 'Normal', value: 'normal' }, ...(selectedTx && selectedTx.amount > 0 ? [{ label: "Produit constaté d'avance (Ex: Cotisation en avance)", value: 'produit_constate_avance' }, { label: 'Produit à recevoir (Ex: Subvention)', value: 'produit_a_recevoir' }] : [{ label: "Charge constatée d'avance (Ex: Assurance en avance)", value: 'charge_constatee_avance' }, { label: 'Charge à payer (Ex: Facture non parvenue)', value: 'charge_a_payer' }])]}
       />
     </FormField>
+    </div>
     {#if accrualType !== 'normal'}
         <FormField label="Note justificative *">
         <input type="text" class="w-full px-3 py-2 border border-destructive/50 bg-background rounded-md text-sm focus:ring-1 focus:ring-destructive" placeholder="Détail de la régularisation..." bind:value={accrualNote} required />

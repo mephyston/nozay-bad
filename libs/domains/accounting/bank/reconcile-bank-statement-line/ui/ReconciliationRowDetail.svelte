@@ -6,6 +6,7 @@
   import ReconciliationAiSuggestion from './ReconciliationAiSuggestion.svelte';
   import ReconciliationLinkedEntries from './ReconciliationLinkedEntries.svelte';
   import ReconciliationInvoicesTab from './ReconciliationInvoicesTab.svelte';
+  import { parseSuggestion } from './reconciliation-suggestion';
   import type { ReconciliationState, BankStatementLine } from './reconciliation.svelte';
 
   /* Prop renommée : déclarée `state`, elle capturerait la rune `$state`. */
@@ -17,10 +18,40 @@
   /* Mémoïsé : ce décompte vivait dans un libellé d'onglet, donc rebalayait tout le grand livre à
      chaque invalidation du panneau. */
   const unpointedCount = $derived(reconState.glTransactions.filter((gt) => !gt.bankStatementLineId).length);
+
+  const sug = $derived(line.status === 'pending' ? parseSuggestion(line) : null);
+
+  /*
+    Quels champs portent **encore** la valeur proposée.
+
+    C'est la comparaison, et non la simple présence d'une suggestion, qui fait sens : corriger un
+    champ doit en éteindre le liseré. L'encart violet ne savait pas le dire — il répétait la
+    proposition figée, quoi qu'on ait saisi.
+  */
+  const aiFields = $derived({
+    category: !!sug && sug.category != null && reconState.category === String(sug.category),
+    member: !!sug && sug.memberId != null && reconState.selectedMemberId === String(sug.memberId),
+    accrual: !!sug && !!sug.accrualType && sug.accrualType !== 'normal' && reconState.accrualType === sug.accrualType,
+    season: !!sug && !!sug.targetSeason && reconState.targetSeasonId === sug.targetSeason
+  });
+
+  const aiHint = $derived(
+    sug && sug.kind !== 'internal-transfer' && (sug.confidence || sug.reason)
+      ? { confidence: sug.confidence, reason: sug.reason }
+      : null
+  );
 </script>
 
 <div class="space-y-5">
-  {#if line.aiSuggestions && line.status === 'pending'}
+  <!--
+    L'encart ne subsiste que pour le virement interne.
+
+    Ce n'est pas une proposition mais un refus : cet écran ne sait écrire qu'une jambe là où il en
+    faut deux, et l'explication ne peut donc pas se réduire à un liseré sur un champ. Le reste de
+    la proposition se lit désormais dans les champs eux-mêmes, cerclés de violet tant qu'ils la
+    portent.
+  -->
+  {#if sug?.kind === 'internal-transfer'}
     <ReconciliationAiSuggestion state={reconState} selectedTx={line} />
   {/if}
 
@@ -85,6 +116,8 @@
           seasons={reconState.seasons}
           bind:targetSeasonId={reconState.targetSeasonId}
           browsedSeason={reconState.selectedSeason}
+          {aiHint}
+          {aiFields}
           bind:isMemberDropdownOpen={reconState.isMemberDropdownOpen}
           bind:isCategoryDropdownOpen={reconState.isCategoryDropdownOpen}
           bind:memberSearchQuery={reconState.memberSearchQuery}

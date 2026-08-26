@@ -770,8 +770,10 @@ describe('BankStatementReconciliation Component', () => {
     option.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     flushSync();
 
+    /* L'encart violet a disparu : c'est le bouton du formulaire qui enregistre, et il enregistre
+       par définition ce que le formulaire affiche — corrections comprises. */
     const validate = Array.from(target.querySelectorAll('button')).find(b =>
-      b.textContent?.includes('Valider avec vos corrections')
+      b.textContent?.includes('Créer et rapprocher')
     ) as HTMLButtonElement;
     expect(validate).not.toBeNull();
     validate.click();
@@ -977,11 +979,11 @@ describe('BankStatementReconciliation Component', () => {
 
     expandRow(target, 'VIR INST RE 672885352540');
 
-    // L'exercice visé s'affiche dans l'encart : c'est ce qu'on s'apprête à enregistrer.
-    expect(target.textContent).toContain('exercice 26-27');
+    // L'exercice visé se lit dans le champ, et l'écart avec l'exercice consulté est annoncé.
+    expect(target.textContent).toContain("L'écriture comptera dans l'exercice 26-27");
 
     const validate = Array.from(target.querySelectorAll('button')).find(b =>
-      b.textContent?.includes('Valider cette suggestion')
+      b.textContent?.includes('Créer et rapprocher')
     ) as HTMLButtonElement;
     expect(validate).not.toBeNull();
     validate.click();
