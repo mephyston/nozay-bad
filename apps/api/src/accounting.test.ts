@@ -662,7 +662,23 @@ VERSION:102
   });
 
   it('should ignore a bank transaction', async () => {
-    const { mockD1 } = await setupMockDb();
+    const { mockD1, db } = await setupMockDb();
+
+    /*
+      L'exercice est semé parce que la liste le filtre désormais réellement.
+      Il ne l'était pas : `season=25-26` traversait le handler sans jamais atteindre la
+      requête, si bien que le test passait sur une base qui n'avait aucune saison. L'opération
+      importée porte la date du 17/02/2026, que cet exercice doit couvrir.
+    */
+    await db.insert(seasonsTable).values({
+      id: 1,
+      code: '25-26',
+      name: 'Saison 2025-2026',
+      startDate: '2025-09-01',
+      endDate: '2026-08-31',
+      active: true,
+      createdAt: new Date(),
+    }).onConflictDoNothing().run();
 
     // Mock fichier OFX
     const ofxContent = `OFXHEADER:100
