@@ -25,7 +25,6 @@ const ACTIONS = {
   create: 'accounting:ledger:write',
   'delete-ledger-entry': 'accounting:ledger:delete',
   'delete-transaction': 'accounting:ledger:delete',
-  'status-bulk': 'accounting:bank:reconcile',
   'get-unpaid-invoices': 'accounting:invoices:read',
   'get-reconciliation-statements': 'accounting:bank:read'
 } as const;
@@ -130,16 +129,6 @@ if (Astro.request.method === 'POST') {
         });
         if (!apiRes.ok) {
           return new Response('Erreur suppression transaction', { status: apiRes.status });
-        }
-        return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
-      } else if (data.action === 'status-bulk') {
-        const apiRes = await apiService.fetch('http://localhost/accounting/bank-transactions/status-bulk', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ids: data.ids, status: data.status })
-        });
-        if (!apiRes.ok) {
-          return new Response(await apiRes.text(), { status: apiRes.status });
         }
         return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
       } else if (data.action === 'get-reconciliation-statements') {

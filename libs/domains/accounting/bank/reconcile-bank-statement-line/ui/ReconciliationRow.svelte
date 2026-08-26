@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Check, ChevronDown, Sparkles, Trash2, RefreshCw, Pencil } from '@lucide/svelte';
-  import { Amount, Badge, Button, Checkbox } from '@nba/ui';
+  import { Check, ChevronDown, Sparkles, RefreshCw, Pencil } from '@lucide/svelte';
+  import { Amount, Badge, Button } from '@nba/ui';
   import { accrualLabel } from '../../../shared/accrual-labels';
   import { parseSuggestion, isOneClickValidatable } from './reconciliation-suggestion';
   import type { ReconciliationState, BankStatementLine } from './reconciliation.svelte';
@@ -12,7 +12,6 @@
     isExpanded = false,
     isFocused = false,
     accountLabel = null,
-    showCheckbox = false,
     children
   }: {
     state: ReconciliationState;
@@ -22,7 +21,6 @@
     isFocused?: boolean;
     /** Le compte de la ligne, quand la file en mélange plusieurs. */
     accountLabel?: string | null;
-    showCheckbox?: boolean;
     children?: import('svelte').Snippet;
   } = $props();
 
@@ -45,17 +43,6 @@
   data-focused={isFocused ? 'true' : undefined}
 >
   <div class="flex items-stretch gap-0">
-    {#if showCheckbox}
-      <div class="pl-3 pr-1 py-3 flex items-center">
-        <Checkbox
-          checked={!!reconState.selectedTxIds[line.id]}
-          onCheckedChange={() => {
-            reconState.selectedTxIds[line.id] = !reconState.selectedTxIds[line.id];
-            reconState.selectedTxIds = { ...reconState.selectedTxIds };
-          }}
-        />
-      </div>
-    {/if}
 
     <!-- Volet gauche : le fait bancaire. Il ne se modifie pas, il se lit. -->
     <div class="flex-1 min-w-0 p-3 flex flex-col justify-center">
@@ -136,16 +123,6 @@
           <span class="hidden lg:inline">{isExpanded ? 'Replier' : 'Modifier'}</span>
         </Button>
 
-        <Button
-          size="sm"
-          variant="ghost"
-          class="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-          title="Ignorer cette ligne"
-          disabled={reconState.isClosed || reconState.isSubmitting}
-          onclick={() => reconState.handleIgnore(line.id)}
-        >
-          <Trash2 class="h-3.5 w-3.5" />
-        </Button>
       {:else if line.status === 'ignored'}
         <Button
           size="sm"

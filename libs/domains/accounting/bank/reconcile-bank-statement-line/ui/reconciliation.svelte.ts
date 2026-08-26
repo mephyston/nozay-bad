@@ -49,7 +49,6 @@ export class ReconciliationStore {
   */
   view = $state<'queue' | 'history'>('queue');
   activeTab = $state<'reconciled' | 'ignored'>('reconciled');
-  isMultiSelect = $state(false);
   unpaidInvoices = $state<Invoice[]>([]);
   activeRightTab = $state<'manual' | 'ledger'>('manual');
 
@@ -71,7 +70,6 @@ export class ReconciliationStore {
   categorySearchQuery = $state('');
   targetSeasonId = $state('');
 
-  selectedTxIds = $state<Record<number, boolean>>({});
   searchQuery = $state('');
   monthFilter = $state('');
   /**
@@ -108,7 +106,6 @@ export class ReconciliationStore {
   pendingCount = $derived(this.bankStatementLines.filter((t) => t.status === 'pending').length);
   reconciledCount = $derived(this.bankStatementLines.filter((t) => t.status === 'reconciled').length);
   ignoredCount = $derived(this.bankStatementLines.filter((t) => t.status === 'ignored').length);
-  selectedCount = $derived(Object.keys(this.selectedTxIds).map(Number).filter((id) => this.selectedTxIds[id]).length);
   selectedSum = $derived(
     this.unpaidInvoices.filter((i) => this.selectedInvoiceIds.has(i.id)).reduce((acc, i) => acc + i.totalAmount, 0)
   );
@@ -266,7 +263,7 @@ export class ReconciliationStore {
 
     safeEffect(() => {
       const _ = `${this.view}:${this.activeTab}`;
-      this.selectedTxIds = {}; this.searchQuery = ''; this.monthFilter = '';
+      this.searchQuery = ''; this.monthFilter = '';
     });
 
     /*

@@ -129,23 +129,6 @@ describe('createReconciliationState logic unit tests', () => {
     expect(state.ignoredCount).toBe(0);
   });
 
-  it('toggles selection all displayed transactions', () => {
-    const state = createReconciliationState({
-      bankStatementLines: mockBankTransactions,
-      glTransactions: mockGlTransactions,
-      seasonId: '25-26',
-      seasons: [{ id: '25-26', name: '2025-2026', active: true }],
-      members: []
-    });
-
-    expect(state.selectedCount).toBe(0);
-    state.toggleSelectAll(state.displayedTransactions);
-    expect(state.selectedCount).toBe(2);
-
-    state.toggleSelectAll(state.displayedTransactions);
-    expect(state.selectedCount).toBe(0);
-  });
-
   it('manages invoice selection and calculates selected sum', () => {
     const state = createReconciliationState({
       bankStatementLines: mockBankTransactions,
@@ -240,10 +223,15 @@ describe('createReconciliationState logic unit tests', () => {
     expect(state.unpaidInvoices[0].id).toBe(201);
   });
 
-  it('handles bulk reconcile API call', async () => {
+  /*
+    Le rapprochement en lot a disparu avec la sélection multiple : il contredisait la règle posée
+    pour cet écran — une ligne, une écriture validée. `validateSuggestion` reste le geste unitaire,
+    et emprunte la même route serveur.
+  */
+  it('valide la suggestion d\'une seule ligne', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ success: true })
+      json: () => Promise.resolve({ success: true, lines: [], entries: [] })
     } as Response);
 
     const state = createReconciliationState({
@@ -254,13 +242,13 @@ describe('createReconciliationState logic unit tests', () => {
       members: []
     });
 
-    state.selectedTxIds[1] = true;
-    await state.handleBulkReconcile();
+    await state.validateSuggestion(mockBankTransactions[0]);
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/accounting/import', expect.objectContaining({
-      method: 'POST',
-      body: expect.stringContaining('"action":"bulk"')
-    }));
+    const body = vi.mocked(globalThis.fetch).mock.calls
+      .map((call) => call?.[1]?.body as string | undefined)
+      .filter((b): b is string => typeof b === 'string')
+      .find((b) => b.includes('"action":"bulk"')) as string;
+    expect(body).toContain('"btId":1');
   });
 
   /**

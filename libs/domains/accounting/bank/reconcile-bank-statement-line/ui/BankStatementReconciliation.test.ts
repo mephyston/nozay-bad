@@ -318,7 +318,15 @@ describe('BankStatementReconciliation Component', () => {
     expect(target.innerHTML).toContain('FAC-2026-0001');
   });
 
-  it('ne montre les cases de sélection que sur demande', async () => {
+  /*
+    La sélection multiple a été retirée, et avec elle le rapprochement par lot.
+
+    Elle contredisait la règle posée pour cet écran — une ligne, une écriture validée — et son
+    autre usage, masquer des lignes en masse, retirait de l'écran de l'argent réellement sorti du
+    compte. L'analyse IA, elle, porte sur toute la file sans qu'on ait à sélectionner quoi que ce
+    soit.
+  */
+  it('ne propose ni case à cocher ni action de masse', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
@@ -326,28 +334,8 @@ describe('BankStatementReconciliation Component', () => {
       target,
       props: {
         bankStatementLines: [
-          {
-            id: 1,
-            fitid: 'TX-1',
-            accountId: 'current',
-            amount: 1000,
-            date: '2026-02-16',
-            name: 'TX-ONE',
-            memo: 'Memo 1',
-            status: 'pending',
-            aiSuggestions: JSON.stringify({ memberId: 42, memberName: 'Dupont Jean', category: '1' })
-          },
-          {
-            id: 2,
-            fitid: 'TX-2',
-            accountId: 'current',
-            amount: -2000,
-            date: '2026-02-17',
-            name: 'TX-TWO',
-            memo: 'Memo 2',
-            status: 'pending',
-            aiSuggestions: null
-          }
+          { id: 1, fitid: 'B-1', accountId: 'current', amount: -1000, date: '2026-02-16', name: 'FRAIS UN', memo: null, status: 'pending', aiSuggestions: null },
+          { id: 2, fitid: 'B-2', accountId: 'current', amount: -2000, date: '2026-02-17', name: 'FRAIS DEUX', memo: null, status: 'pending', aiSuggestions: null }
         ],
         glTransactions: [],
         seasonId: '25-26',
@@ -355,64 +343,15 @@ describe('BankStatementReconciliation Component', () => {
         members: []
       }
     });
-
     flushSync();
 
-    /*
-      Les cases ne s'imposent plus à chaque ligne.
-
-      Elles encombraient la file en permanence alors qu'elles ne servent qu'à écarter du bruit —
-      frais bancaires, prélèvements connus. La sélection multiple est devenue un mode, qu'on
-      demande.
-    */
     expect(target.querySelectorAll('[role="checkbox"]').length).toBe(0);
-
-    enableMultiSelect(target);
-
-    const checkboxes = target.querySelectorAll('[role="checkbox"]') as NodeListOf<HTMLButtonElement>;
-    expect(checkboxes.length).toBe(2);
-
-    checkboxes[0].click();
-    flushSync();
-    expect(target.innerHTML).toContain('1 sélectionnée');
-
-    checkboxes[1].click();
-    flushSync();
-    expect(target.innerHTML).toContain('2 sélectionnées');
-
-    // Mock window.location.reload
-    const reloadMock = vi.fn();
-    vi.stubGlobal('location', {
-      reload: reloadMock
-    });
-
-    const bulkReconcileBtn = Array.from(target.querySelectorAll('button')).find(
-      b => b.textContent?.includes('Valider les propositions')
-    ) as HTMLButtonElement;
-    expect(bulkReconcileBtn).not.toBeNull();
-    bulkReconcileBtn.click();
-    flushSync();
-
-    await new Promise(resolve => setTimeout(resolve, 50));
-    flushSync();
-
-    // Assert fetch call
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      '/admin/accounting/import',
-      expect.objectContaining({
-        method: 'POST',
-        body: expect.stringContaining('"action":"bulk"')
-      })
-    );
-    /*
-      L'écran ne se recharge plus : il applique ce que le serveur répond. Le rechargement était
-      l'unique moyen de voir le résultat d'un rapprochement, et il coûtait un rendu serveur
-      complet de la page par ligne traitée.
-    */
-    expect(reloadMock).not.toHaveBeenCalled();
+    expect(target.innerHTML).not.toContain('Sélection');
+    expect(target.innerHTML).not.toContain('Valider les propositions');
+    expect(target.innerHTML).not.toContain('Ignorer');
+    // L'analyse porte sur la file entière, sans sélection préalable.
+    expect(target.innerHTML).toContain('Analyse IA');
   });
-
-
 
   it('multi-match order selection basket in invoice tab updates selected sum and validates with tolerance', async () => {
     const target = document.createElement('div');

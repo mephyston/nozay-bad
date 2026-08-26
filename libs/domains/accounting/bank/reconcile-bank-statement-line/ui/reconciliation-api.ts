@@ -49,18 +49,6 @@ export async function apiBulkReconcile(requests: any[]): Promise<{ lines: BankSt
   return { lines: json?.lines ?? [], entries: json?.entries ?? [] };
 }
 
-/**
- * Une seule requête, et non une par ligne.
- *
- * Le lot ouvrait autant de POST parallèles que de lignes sélectionnées — deux cents frais
- * bancaires valaient deux cents appels à l'API — et un échec partiel laissait la base dans un
- * état que le message d'erreur ne décrivait pas.
- */
-export async function apiBulkIgnore(ids: number[]): Promise<number[]> {
-  const json = await postAction<any>({ action: 'status-bulk', ids, status: 'ignored' }, "Certaines transactions n'ont pas pu être ignorées.");
-  return json?.ids ?? ids;
-}
-
 export interface ImportSummary {
   read?: number;
   inserted?: number;
@@ -184,6 +172,3 @@ export async function apiUnignore(btId: number): Promise<void> {
   await postAction({ action: 'unignore', btId }, 'Erreur réactivation.');
 }
 
-export async function apiIgnore(btId: number): Promise<void> {
-  await postAction({ action: 'ignore', btId }, 'Erreur ignore.');
-}

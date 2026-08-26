@@ -55,14 +55,9 @@
               signifie que la différence s'explique intégralement par des décalages **connus** —
               pas qu'il ne reste rien à traiter. Les lignes en attente sont d'ailleurs comptées
               dans le solde attendu : c'est tout leur intérêt. « Bouclé » se lisait « terminé »,
-              et donnait à croire le travail fini alors que la file était pleine.
+              et donnait à croire le travail fini alors que la file était pleine. Leur décompte,
+              lui, n'est pas répété ici : la file l'annonce déjà, dans son titre et dans son filtre.
             -->
-            {#if statement.unrecordedBankLines.length > 0}
-              <span class="text-xs text-muted-foreground">
-                {statement.unrecordedBankLines.length} à comptabiliser
-              </span>
-            {/if}
-
             {#if !statement.statement}
               <Badge variant="warning">Aucun solde de relevé</Badge>
             {:else if statement.reconciled}

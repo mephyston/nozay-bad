@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, CheckCircle2, Inbox, Search, Trash2, X } from '@lucide/svelte';
+  import { CheckCircle2, Inbox, Search, X } from '@lucide/svelte';
   import { Amount, Badge, Button, Card, Input, SearchableCombobox } from '@nba/ui';
   import ReconciliationRow from './ReconciliationRow.svelte';
   import ReconciliationGapSheet from '../../get-reconciliation-statement/ui/ReconciliationGapSheet.svelte';
@@ -19,29 +19,22 @@
   ];
 
   /*
-    Les deux moitiés de l'écart, en tête de file.
+    L'autre moitié de l'écart — et elle seule.
 
-    Elles vivaient au fond de chaque encart d'état, sous deux niveaux de repli et une fois par
-    compte. Ce sont pourtant les deux nombres qui disent où en est le rapprochement : autant les
-    poser là où l'on travaille, et n'ouvrir le détail que si on le demande.
+    Les « lignes non comptabilisées » ne sont rien d'autre que la file affichée ci-dessous : les
+    annoncer en pastille répétait une quatrième fois un nombre déjà présent dans le titre, dans le
+    filtre par compte et dans l'encart d'état. Restent les écritures que les livres portent et
+    qu'aucune ligne de relevé ne pointe : celles-là ne se lisent nulle part ailleurs.
   */
   const gapStats = $derived.by(() => {
     const st = reconState.reconciliationStatements ?? [];
     return {
       entriesCount: st.reduce((n: number, s: any) => n + (s.unpointedEntries?.length ?? 0), 0),
-      entriesCents: st.reduce((n: number, s: any) => n - (s.unpointedEntriesTotalCents ?? 0), 0),
-      linesCount: st.reduce((n: number, s: any) => n + (s.unrecordedBankLines?.length ?? 0), 0),
-      linesCents: st.reduce((n: number, s: any) => n + (s.unrecordedBankLinesTotalCents ?? 0), 0)
+      entriesCents: st.reduce((n: number, s: any) => n - (s.unpointedEntriesTotalCents ?? 0), 0)
     };
   });
 
   let gapSheetOpen = $state(false);
-  let gapSheetSide = $state<'entries' | 'lines'>('entries');
-
-  function openGap(side: 'entries' | 'lines') {
-    gapSheetSide = side;
-    gapSheetOpen = true;
-  }
 
   /* La ligne dit son compte tant que la file en mélange plusieurs — sans quoi on pointe sans
      savoir contre quel état on progresse. Une fois filtrée, l'information est redondante. */
@@ -54,7 +47,6 @@
   const progress = $derived(total === 0 ? 0 : Math.round((done / total) * 100));
 
   const rows = $derived(reconState.view === 'history' ? reconState.historyTransactions : reconState.queueTransactions);
-  const selectedCount = $derived(reconState.selectedCount);
 
   /*
     Le clavier, parce qu'une file se vide au clavier.
@@ -105,11 +97,6 @@
         if (!line) return;
         e.preventDefault();
         reconState.selectedTx = line;
-        break;
-      case 'i':
-        if (!line || line.status !== 'pending' || reconState.isClosed) return;
-        e.preventDefault();
-        reconState.handleIgnore(line.id);
         break;
       case 'Enter':
         if (!line || reconState.isClosed) return;
@@ -174,32 +161,17 @@
       <div class="h-full bg-success transition-all duration-500" style={`width: ${progress}%`}></div>
     </div>
 
-    {#if gapStats.entriesCount > 0 || gapStats.linesCount > 0}
-      <div class="flex flex-wrap items-center gap-2">
-        {#if gapStats.entriesCount > 0}
-          <button
-            type="button"
-            class="flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted cursor-pointer"
-            onclick={() => openGap('entries')}
-          >
-            <span class="text-muted-foreground">Écritures non pointées</span>
-            <Badge variant="secondary" size="xs">{gapStats.entriesCount}</Badge>
-            <Amount cents={gapStats.entriesCents} showSign class="text-xs font-semibold" />
-          </button>
-        {/if}
-
-        {#if gapStats.linesCount > 0}
-          <button
-            type="button"
-            class="flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted cursor-pointer"
-            onclick={() => openGap('lines')}
-          >
-            <span class="text-muted-foreground">Lignes non comptabilisées</span>
-            <Badge variant="secondary" size="xs">{gapStats.linesCount}</Badge>
-            <Amount cents={gapStats.linesCents} showSign class="text-xs font-semibold" />
-          </button>
-        {/if}
-      </div>
+    {#if gapStats.entriesCount > 0}
+      <button
+        type="button"
+        class="flex items-center gap-1.5 self-start rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted cursor-pointer"
+        onclick={() => (gapSheetOpen = true)}
+      >
+        <span class="text-muted-foreground">
+          {gapStats.entriesCount} écriture{gapStats.entriesCount > 1 ? 's' : ''} sans ligne de relevé
+        </span>
+        <Amount cents={gapStats.entriesCents} showSign class="text-xs font-semibold" />
+      </button>
     {/if}
 
     {#if reconState.view === 'history'}
@@ -272,63 +244,8 @@
         />
       {/if}
 
-      {#if reconState.view === 'queue'}
-        <!--
-          La sélection multiple ne s'impose pas à l'écran : les cases encombraient chaque ligne
-          alors qu'elles ne servent qu'à écarter du bruit — frais bancaires, prélèvements connus.
-          Elle n'offre d'ailleurs que « Ignorer » : une écriture comptable se valide une par une.
-        -->
-        <Button
-          variant={reconState.isMultiSelect ? 'default' : 'outline'}
-          size="sm"
-          class="h-8 text-xs shrink-0"
-          onclick={() => {
-            reconState.isMultiSelect = !reconState.isMultiSelect;
-            if (!reconState.isMultiSelect) reconState.selectedTxIds = {};
-          }}
-        >
-          Sélection
-        </Button>
-      {/if}
     </div>
 
-    {#if reconState.isMultiSelect && reconState.view === 'queue'}
-      <div class="flex items-center justify-between gap-2 pt-2 border-t border-border/60">
-        <label class="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-          <input
-            type="checkbox"
-            class="h-4 w-4 rounded border-input"
-            checked={rows.length > 0 && rows.every((t) => reconState.selectedTxIds[t.id])}
-            onchange={() => reconState.toggleSelectAll(rows)}
-            disabled={rows.length === 0}
-          />
-          <span>Tout sélectionner ({rows.length})</span>
-        </label>
-
-        {#if selectedCount > 0}
-          <div class="flex items-center gap-2">
-            <Badge variant="secondary" size="xs">{selectedCount} sélectionnée{selectedCount > 1 ? 's' : ''}</Badge>
-            <Button
-              size="sm" variant="ai" class="text-xs h-7 gap-1.5"
-              disabled={reconState.isClosed || reconState.isSubmitting}
-              onclick={reconState.handleBulkReconcile}
-            >
-              <Check class="h-3.5 w-3.5" />
-              <span>Valider les propositions</span>
-            </Button>
-            <Button
-              size="sm" variant="outline"
-              class="text-xs h-7 gap-1 text-destructive hover:bg-destructive/10"
-              disabled={reconState.isClosed || reconState.isSubmitting}
-              onclick={reconState.handleBulkIgnore}
-            >
-              <Trash2 class="h-3.5 w-3.5" />
-              <span>Ignorer</span>
-            </Button>
-          </div>
-        {/if}
-      </div>
-    {/if}
   </div>
 
   <!--
@@ -336,7 +253,7 @@
   -->
   {#if rows.length > 0 && reconState.view === 'queue'}
     <div class="hidden lg:flex items-center gap-3 px-4 py-1.5 border-b border-border/60 bg-muted/10 text-[11px] text-muted-foreground">
-      {#each [['↑ ↓', 'naviguer'], ['Entrée', 'valider'], ['E', 'modifier'], ['I', 'ignorer'], ['/', 'rechercher']] as [k, label]}
+      {#each [['↑ ↓', 'naviguer'], ['Entrée', 'valider'], ['E', 'modifier'], ['/', 'rechercher']] as [k, label]}
         <span class="flex items-center gap-1">
           <kbd class="rounded border border-border bg-background px-1 py-px font-mono text-[10px]">{k}</kbd>
           <span>{label}</span>
@@ -368,7 +285,6 @@
           isExpanded={reconState.selectedTx?.id === line.id}
           isFocused={focusedLine?.id === line.id}
           accountLabel={showAccountOnRows ? accountLabelOf(line) : null}
-          showCheckbox={reconState.isMultiSelect && reconState.view === 'queue'}
         >
           <ReconciliationRowDetail bind:state={reconState} {line} />
         </ReconciliationRow>
@@ -379,6 +295,5 @@
 
 <ReconciliationGapSheet
   bind:open={gapSheetOpen}
-  side={gapSheetSide}
   statements={reconState.reconciliationStatements ?? []}
 />

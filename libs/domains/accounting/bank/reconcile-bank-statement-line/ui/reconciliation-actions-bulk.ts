@@ -1,10 +1,15 @@
-import { toast, uiConfirm, flashAndReload } from '@nba/ui';
-import { apiBulkReconcile, apiBulkIgnore, apiImportOfx, apiAnalyzeAi, type ImportSummary } from './reconciliation-api';
+import { toast, flashAndReload } from '@nba/ui';
+import { apiImportOfx, apiAnalyzeAi, type ImportSummary } from './reconciliation-api';
 import type { ReconciliationStateFields } from './reconciliation-types';
 import type { createPatchActions } from './reconciliation-patch';
-import { buildSuggestionRequest } from './reconciliation-suggestion';
 
 /*
+ * Ce qui porte sur le relevé entier : l'import, et l'analyse.
+ *
+ * Le rapprochement et le masquage **par lot** ont disparu avec la sélection multiple. Le premier
+ * contredisait de toute façon la règle posée pour cet écran — une ligne, une écriture validée ; le
+ * second masquait de l'argent réellement sorti du compte, sans trace du motif.
+ *
  * `flashAndReload` ne subsiste que pour l'import d'un relevé.
  *
  * Lui seul fait apparaître des lignes qui n'existaient pas : l'écran passe de la zone de dépôt à
@@ -12,53 +17,6 @@ import { buildSuggestionRequest } from './reconciliation-suggestion';
  * y compris l'analyse IA, qui ne fait que réécrire des suggestions — s'applique sur place.
  */
 export function createBulkActions(s: ReconciliationStateFields, patch: ReturnType<typeof createPatchActions>) {
-  async function handleBulkReconcile() {
-    const ids = Object.keys(s.selectedTxIds).map(Number).filter(id => s.selectedTxIds[id]);
-    if (ids.length === 0) return;
-    s.isSubmitting = true; s.errorMsg = '';
-    try {
-      /*
-       * La requête se construit au même endroit que pour le geste unitaire.
-       *
-       * Le lot la bâtissait à part, et y perdait trois champs : ni `accrualType`, ni `accrualNote`,
-       * ni `targetSeason` n'étaient transmis. Une cotisation encaissée d'avance validée en lot
-       * devenait une écriture ordinaire rattachée à l'exercice consulté — l'erreur même que le
-       * cut-off est là pour empêcher, et que seul le compte de résultat aurait révélée. Il
-       * retombait par ailleurs sur la catégorie 1 faute de mieux, et aurait enregistré un virement
-       * interne comme une recette ordinaire, alors que le geste unitaire le refuse explicitement.
-       */
-      const requests = ids
-        .map((id) => s.bankStatementLines.find((t) => t.id === id))
-        .filter((bt): bt is NonNullable<typeof bt> => !!bt)
-        .map((bt) => buildSuggestionRequest(bt, s.selectedSeason))
-        .filter((req): req is NonNullable<typeof req> => req !== null);
-
-      if (requests.length === 0) throw new Error("Aucune suggestion applicable d'un seul geste dans cette sélection.");
-      if (requests.length < ids.length) {
-        toast.info(`${ids.length - requests.length} opération(s) écartée(s) : virement interne, ou catégorie à choisir.`);
-      }
-      const { lines, entries } = await apiBulkReconcile(requests);
-      patch.applyOutcomes(lines, entries);
-      s.selectedTxIds = {};
-      toast.success(`${requests.length} opération${requests.length > 1 ? 's' : ''} rapprochée${requests.length > 1 ? 's' : ''}.`);
-      s.isSubmitting = false;
-    } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
-  }
-
-  async function handleBulkIgnore() {
-    const ids = Object.keys(s.selectedTxIds).map(Number).filter(id => s.selectedTxIds[id]);
-    if (ids.length === 0) return;
-    if (!(await uiConfirm(`Ignorer ces ${ids.length} transactions ?`))) return;
-    s.isSubmitting = true; s.errorMsg = '';
-    try {
-      const ignored = await apiBulkIgnore(ids);
-      patch.applyStatus(ignored, 'ignored');
-      s.selectedTxIds = {};
-      toast.info(`${ignored.length} transaction${ignored.length > 1 ? 's' : ''} ignorée${ignored.length > 1 ? 's' : ''}.`);
-      s.isSubmitting = false;
-    } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
-  }
-
   /**
    * Le compte rendu de l'import, en toutes lettres.
    *
@@ -108,5 +66,5 @@ export function createBulkActions(s: ReconciliationStateFields, patch: ReturnTyp
     } catch (err: any) { toast.error(err.message); s.isAnalyzingSingle = false; }
   }
 
-  return { handleBulkReconcile, handleBulkIgnore, handleImport, handleAnalyze, handleAnalyzeSingle };
+  return { handleImport, handleAnalyze, handleAnalyzeSingle };
 }

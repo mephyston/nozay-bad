@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Amount, Badge, Sheet } from '@nba/ui';
+  import { Amount, Sheet } from '@nba/ui';
   import type { ReconciliationStatementView } from './reconciliation-statement-types';
 
   /**
@@ -11,13 +11,10 @@
    */
   let {
     open = $bindable(false),
-    statements = [],
-    /** Quelle moitié de l'écart on vient consulter : les livres, ou la banque. */
-    side = 'entries'
+    statements = []
   }: {
     open?: boolean;
     statements: ReconciliationStatementView[];
-    side?: 'entries' | 'lines';
   } = $props();
 
   function formatDate(iso: string): string {
@@ -25,25 +22,16 @@
     return `${d}/${m}/${y}`;
   }
 
-  const title = $derived(
-    side === 'entries' ? 'Dans les livres, pas encore en banque' : 'En banque, pas encore dans les livres'
-  );
-
   /* Groupé par compte : deux comptes, deux totaux, et l'on veut savoir lequel dérive. */
   const groups = $derived(
     statements
       .map((s) => ({
         account: s.account,
         asOfDate: s.asOfDate,
-        totalCents: side === 'entries' ? -s.unpointedEntriesTotalCents : s.unrecordedBankLinesTotalCents,
-        rows:
-          side === 'entries'
-            ? s.unpointedEntries.map((e) => ({
-                id: e.id, date: e.date, label: e.description, cents: e.signedAmountCents, muted: false
-              }))
-            : s.unrecordedBankLines.map((l) => ({
-                id: l.id, date: l.date, label: l.name, cents: l.amountCents, muted: l.status === 'ignored'
-              }))
+        totalCents: -s.unpointedEntriesTotalCents,
+        rows: s.unpointedEntries.map((e) => ({
+          id: e.id, date: e.date, label: e.description, cents: e.signedAmountCents
+        }))
       }))
       .filter((g) => g.rows.length > 0)
   );
@@ -55,15 +43,11 @@
 <Sheet.Root bind:open>
   <Sheet.Content size="lg" class="flex flex-col h-full overflow-hidden">
     <Sheet.Header class="p-6 border-b border-border">
-      <Sheet.Title>{title}</Sheet.Title>
+      <Sheet.Title>Dans les livres, pas encore en banque</Sheet.Title>
       <Sheet.Description>
-        {#if side === 'entries'}
-          Écritures comptabilisées qu'aucune ligne de relevé ne pointe encore. Elles expliquent
-          l'écart entre le solde des livres et celui de la banque.
-        {:else}
-          Lignes du relevé qu'aucune écriture ne comptabilise encore. Ce sont elles qui restent à
-          rapprocher.
-        {/if}
+        Écritures comptabilisées qu'aucune ligne de relevé ne pointe encore. Elles expliquent
+        l'écart entre le solde des livres et celui de la banque. L'autre moitié de l'écart — les
+        lignes que les livres ignorent — est la file elle-même.
       </Sheet.Description>
     </Sheet.Header>
 
@@ -91,9 +75,6 @@
                   <span class="min-w-0 flex items-baseline gap-2">
                     <span class="text-muted-foreground tabular-nums shrink-0">{formatDate(row.date)}</span>
                     <span class="truncate">{row.label}</span>
-                    {#if row.muted}
-                      <Badge variant="secondary" size="xs">masquée</Badge>
-                    {/if}
                   </span>
                   <Amount cents={row.cents} showSign class="shrink-0" />
                 </div>

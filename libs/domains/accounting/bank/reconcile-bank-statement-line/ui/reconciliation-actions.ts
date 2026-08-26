@@ -1,5 +1,5 @@
 import type { BankStatementLine, ReconciliationStateFields, SplitRow } from './reconciliation-types';
-import { toast, uiConfirm } from '@nba/ui';
+import { toast } from '@nba/ui';
 import {
   apiLoadReconciliationStatements,
   apiLoadUnpaidInvoices,
@@ -7,8 +7,7 @@ import {
   apiCreateAndMatchSplit,
   apiCreateAndMatchSingle,
   apiDeleteLedgerEntry,
-  apiUnignore,
-  apiIgnore
+  apiUnignore
 } from './reconciliation-api';
 import { scrollMemberOptionIntoView, scrollCategoryOptionIntoView } from './reconciliation-dropdowns';
 import { createBulkActions } from './reconciliation-actions-bulk';
@@ -53,10 +52,6 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
     }
   }
 
-  function toggleSelectAll(displayedTxs: BankStatementLine[]) {
-    const allSelected = displayedTxs.length > 0 && displayedTxs.every(t => s.selectedTxIds[t.id]);
-    for (const t of displayedTxs) s.selectedTxIds[t.id] = !allSelected;
-  }
 
   function toggleInvoiceSelection(id: number) {
     if (s.selectedInvoiceIds.has(id)) s.selectedInvoiceIds.delete(id);
@@ -255,26 +250,13 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
-  async function handleIgnore(btId: number) {
-    if (!(await uiConfirm('Voulez-vous ignorer cette transaction bancaire ?'))) return;
-    s.isSubmitting = true;
-    try {
-      const nextId = patch.pickNextId(btId);
-      await apiIgnore(btId);
-      patch.applyStatus([btId], 'ignored');
-      patch.selectById(nextId);
-      toast.info('Transaction ignorée.');
-      s.isSubmitting = false;
-      void refreshStatements();
-    } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
-  }
 
   return {
     ...bulk,
     ...patch,
-    toggleSelectAll, toggleInvoiceSelection, addSplitRow, removeSplitRow, refreshStatements,
+    toggleInvoiceSelection, addSplitRow, removeSplitRow, refreshStatements,
     loadUnpaidInvoices, prefillFromInvoices, validateSuggestion,
     selectMember, handleMemberKeyDown, selectCategory, handleCategoryKeyDown,
-    handleMatch, handleCreateAndMatch, handleDeletePart, handleUnignore, handleIgnore
+    handleMatch, handleCreateAndMatch, handleDeletePart, handleUnignore
   };
 }
