@@ -17,8 +17,8 @@ const handleBulk = async (c: any) => {
   const body = c.req.valid('json');
   const db = createDb(c.env.DB);
   try {
-    const count = await reconcileBulkTransactions(db, body.requests);
-    return c.json({ success: true, count });
+    const { count, lines, entries } = await reconcileBulkTransactions(db, body.requests);
+    return c.json({ success: true, count, lines, entries });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, err.status || 400);
   }
@@ -32,8 +32,8 @@ const handleReconcile = async (c: any) => {
   const body = c.req.valid('json');
   const db = createDb(c.env.DB);
   try {
-    await reconcileBankStatementLine(db, id, body);
-    return c.json({ success: true });
+    const { line, entries } = await reconcileBankStatementLine(db, id, body);
+    return c.json({ success: true, line, entries });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, err.status || 400);
   }

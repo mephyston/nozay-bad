@@ -211,7 +211,23 @@ export async function reconcileBankTxInternal(db: Db, id: ReconcileBankTxInterna
   }
 
   await db.batch(result.statements as any);
-  return { success: true };
+
+  /*
+   * On relit ce qu'on vient d'écrire, plutôt que de le déduire de la demande.
+   *
+   * Deux lectures contre un rechargement complet de la page : l'écran n'avait aucun autre moyen
+   * de connaître le nouveau statut de la ligne ni l'identifiant des écritures créées. Les
+   * reconstituer côté client à partir du corps envoyé aurait marché tant que le serveur ne
+   * normalise rien — or il résout le compte, le mode de règlement et la catégorie, et fait
+   * basculer la ligne en `reconciled` sur un cumul que le client ne calcule pas.
+   */
+  const repo = new ReconcileBankStatementLineRepository();
+  const [line, entries] = await Promise.all([
+    repo.getBankStatementLineById(db, id),
+    repo.getLinkedLedgerEntriesForUi(db, id)
+  ]);
+
+  return { success: true, line, entries };
 }
 
 export async function reconcileBankStatementLine(db: Db, id: number, body: any) {
@@ -219,6 +235,7 @@ export async function reconcileBankStatementLine(db: Db, id: number, body: any) 
   if (!result.success) {
     throw new AppError(result.error || 'Reconciliation failed', result.status || 400);
   }
+  return { line: result.line, entries: result.entries };
 }
 
 export async function reconcileBulkTransactions(db: Db, requests: any[]) {
@@ -232,5 +249,21 @@ export async function reconcileBulkTransactions(db: Db, requests: any[]) {
   }
 
   await db.batch(allStatements as any);
-  return requests.length;
+
+  // Le même compte rendu que le rapprochement unitaire, pour chacune des lignes traitées.
+  const repo = new ReconcileBankStatementLineRepository();
+  const ids = Array.from(new Set(requests.map((req) => req.btId as number)));
+  const results = await Promise.all(ids.map(async (id) => {
+    const [line, entries] = await Promise.all([
+      repo.getBankStatementLineById(db, id),
+      repo.getLinkedLedgerEntriesForUi(db, id)
+    ]);
+    return { line, entries };
+  }));
+
+  return {
+    count: requests.length,
+    lines: results.map((r) => r.line).filter(Boolean),
+    entries: results.flatMap((r) => r.entries)
+  };
 }

@@ -77,4 +77,23 @@ export async function deleteLedgerEntry(db: Db, id: number) {
 
   // Phase 3 : Écriture (db.batch)
   await db.batch(statements as any);
+
+  /*
+   * Ce qui a réellement disparu, et ce qui est retombé en attente.
+   *
+   * L'écran de rapprochement ne peut pas le déduire de l'identifiant qu'il a envoyé : dissocier
+   * une jambe de virement en supprime **deux**, et remet en `pending` jusqu'à deux lignes de
+   * relevé. Sans ce compte rendu, la seule façon de le refléter était de reconstruire la page.
+   */
+  const resetBankStatementLineIds = Array.from(new Set([
+    ...(tx.bankStatementLineId && resetBankTxNeeded ? [tx.bankStatementLineId] : []),
+    ...entriesToDelete
+      .filter((entry) => entry.id !== id && entry.bankStatementLineId)
+      .map((entry) => entry.bankStatementLineId as number)
+  ]));
+
+  return {
+    deletedEntryIds: entriesToDelete.map((entry) => entry.id),
+    resetBankStatementLineIds
+  };
 }

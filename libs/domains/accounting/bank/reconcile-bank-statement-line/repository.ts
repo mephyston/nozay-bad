@@ -1,7 +1,8 @@
 import { seasonsTable } from '@nba/accounting/schema';
-import { ledgerEntriesTable } from '@nba/accounting/schema';
+import { ledgerEntriesTable, categoriesTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq, and, lte, gte } from 'drizzle-orm';
+import { getMembersByIds } from '@nba/members-api';
 import { bankStatementLinesTable, invoicesTable } from '../../shared/schema';
 
 export class ReconcileBankStatementLineRepository {
@@ -121,6 +122,59 @@ export class ReconcileBankStatementLineRepository {
       .set({ status: 'paid', bankStatementLineId })
       .where(eq(invoicesTable.id, id))
       .run();
+  }
+
+  /**
+   * Les écritures liées à une ligne de relevé, dans la forme que l'écran connaît déjà.
+   *
+   * C'est **la** projection de `list-ledger-entries` — `amount` en centimes, `category` portant
+   * le libellé, `memberName` reconstitué — moins le solde progressif et le compte d'en face, que
+   * cet écran n'affiche pas. Elle existe pour que le rapprochement puisse répondre ce qu'il vient
+   * d'écrire : sans cela l'écran n'a pas d'autre moyen de se mettre à jour qu'un rechargement
+   * complet de la page.
+   *
+   * Toute colonne ajoutée ici doit l'être à l'identique dans `list-ledger-entries` : deux formes
+   * pour une même écriture selon qu'elle arrive du serveur ou d'un rapprochement, et l'affichage
+   * change sous les yeux de la comptable sans qu'aucune donnée n'ait bougé.
+   */
+  async getLinkedLedgerEntriesForUi(db: DbOrTx, bankStatementLineId: number): Promise<any[]> {
+    const rows = await db.select({
+        id: ledgerEntriesTable.id,
+        seasonId: ledgerEntriesTable.seasonId,
+        type: ledgerEntriesTable.type,
+        accountId: ledgerEntriesTable.accountId,
+        transferId: ledgerEntriesTable.transferId,
+        transferLeg: ledgerEntriesTable.transferLeg,
+        category: categoriesTable.adminLabel,
+        categoryId: ledgerEntriesTable.categoryId,
+        amount: ledgerEntriesTable.amountCents,
+        date: ledgerEntriesTable.date,
+        description: ledgerEntriesTable.description,
+        reference: ledgerEntriesTable.reference,
+        memberId: ledgerEntriesTable.memberId,
+        invoiceId: ledgerEntriesTable.invoiceId,
+        bankStatementLineId: ledgerEntriesTable.bankStatementLineId,
+        accrualType: ledgerEntriesTable.accrualType,
+        accrualNote: ledgerEntriesTable.accrualNote,
+        status: ledgerEntriesTable.status
+      })
+      .from(ledgerEntriesTable)
+      .leftJoin(categoriesTable, eq(ledgerEntriesTable.categoryId, categoriesTable.id))
+      .where(eq(ledgerEntriesTable.bankStatementLineId, bankStatementLineId))
+      .all();
+
+    const memberIds = Array.from(new Set(rows.map((r) => r.memberId).filter((id): id is number => id !== null)));
+    const members = await getMembersByIds(db, memberIds);
+    const membersMap = new Map(members.map((m) => [m.id, m]));
+
+    return rows.map((r) => {
+      const m = r.memberId ? membersMap.get(r.memberId) : null;
+      return {
+        ...r,
+        memberName: m ? `${m.lastName} ${m.firstName}` : null,
+        memberLicence: m ? m.licence : null
+      };
+    });
   }
 
   async getLedgerEntriesForBankStatementLine(db: DbOrTx, bankStatementLineId: number): Promise<any[]> {

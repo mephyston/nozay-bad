@@ -17,8 +17,8 @@ const handleDelete = async (c: any) => {
   const { id: idStr } = c.req.valid('param');
   const id = parseInt(idStr, 10);
   const db = createDb(c.env.DB);
-  await deleteLedgerEntry(db, id);
-  return c.json({ success: true });
+  const result = await deleteLedgerEntry(db, id);
+  return c.json({ success: true, ...result });
 };
 
 const deleteValidator = tbValidator('param', deleteTransactionParamSchema, (result, c) => {

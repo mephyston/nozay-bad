@@ -18,6 +18,7 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
   const categories = await repo.getCategories(db);
   const seasonCode = await repo.getSeasonCode(db, input.seasonId);
   const catMap = resolveCategoryMap(categories);
+  const analyzedIds: number[] = [];
 
   let examplesPrompt = "";
   if (pastReconciled.length > 0) {
@@ -342,8 +343,10 @@ Renvoie STRICTEMENT un objet JSON sous la forme suivante :
     }
 
     await repo.updateAISuggestions(db, tx.id, suggestionResult);
+    analyzedIds.push(tx.id);
     analyzedCount++;
   }
 
-  return { count: analyzedCount };
+  // On rend les lignes telles qu'elles sont désormais : l'écran les affiche sans se recharger.
+  return { count: analyzedCount, lines: await repo.getLinesByIds(db, analyzedIds) };
 }

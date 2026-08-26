@@ -33,7 +33,7 @@ describe('ReconcileBankStatementLine Route', () => {
 
     it('should return 200 on valid body', async () => {
       const { mockD1 } = await setupMockDb();
-      vi.mocked(reconcileBulkTransactions).mockResolvedValue(1 as any);
+      vi.mocked(reconcileBulkTransactions).mockResolvedValue({ count: 1, lines: [{ id: 7, status: 'reconciled' }], entries: [{ id: 42 }] } as any);
 
       const res = await reconcileBankStatementLineRoute.request('http://localhost/bank-statement-lines/reconcile-bulk', {
         method: 'POST',
@@ -75,7 +75,10 @@ describe('ReconcileBankStatementLine Route', () => {
 
     it('should return 200 on valid body', async () => {
       const { mockD1 } = await setupMockDb();
-      vi.mocked(reconcileBankStatementLine).mockResolvedValue(undefined as any);
+      vi.mocked(reconcileBankStatementLine).mockResolvedValue({
+        line: { id: 123, status: 'reconciled' },
+        entries: [{ id: 42, bankStatementLineId: 123 }]
+      } as any);
 
       const res = await reconcileBankStatementLineRoute.request('http://localhost/bank-statement-lines/123/reconcile', {
         method: 'POST',
@@ -97,6 +100,12 @@ describe('ReconcileBankStatementLine Route', () => {
       expect(res.status).toBe(200);
       const body = await res.json() as any;
       expect(body.success).toBe(true);
+      /*
+        La réponse porte ce qui vient d'être écrit, pas un simple accusé : c'est ce qui permet à
+        l'écran de se mettre à jour sans se recharger.
+      */
+      expect(body.line).toEqual({ id: 123, status: 'reconciled' });
+      expect(body.entries).toEqual([{ id: 42, bankStatementLineId: 123 }]);
     });
   });
 });

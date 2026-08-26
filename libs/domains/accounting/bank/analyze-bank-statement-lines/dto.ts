@@ -4,6 +4,13 @@ export interface AnalyzeBankStatementLinesInput {
 }
 export interface AnalyzeBankStatementLinesOutput {
   count: number;
+  /**
+   * Les lignes analysées, suggestions comprises.
+   *
+   * Elles permettent à l'écran d'afficher le résultat sans se reconstruire : ré-analyser une
+   * seule opération lui coûtait auparavant un rendu serveur complet de la page.
+   */
+  lines?: any[];
 }
 
 /**

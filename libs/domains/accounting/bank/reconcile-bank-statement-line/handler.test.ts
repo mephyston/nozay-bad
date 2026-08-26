@@ -23,6 +23,7 @@ describe('reconcileBankStatementLine', () => {
       getTransactionById: vi.fn().mockResolvedValue({ seasonId: '23-24', amount: 10, category: 1 }),
       buildLinkTransactionToBankStatement: vi.fn().mockReturnValue('stmt1'),
       getLedgerEntriesForBankStatementLine: vi.fn().mockResolvedValue([{ amount: 10 }]),
+      getLinkedLedgerEntriesForUi: vi.fn().mockResolvedValue([{ id: 42, amount: 10, bankStatementLineId: 1 }]),
       buildMarkBankStatementLineReconciledStatement: vi.fn().mockReturnValue('stmt2'),
     };
     (vi.mocked(ReconcileBankStatementLineRepository) as any).mockImplementation(function() { return mockRepoInstance; });

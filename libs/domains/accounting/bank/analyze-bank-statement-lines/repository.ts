@@ -1,6 +1,6 @@
 import { seasonsTable } from '@nba/accounting/schema';
 import { categoriesTable, ledgerEntriesTable } from '@nba/accounting/schema';
-import { and, eq, desc, sql } from 'drizzle-orm';
+import { and, eq, desc, sql, inArray } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { bankStatementLinesTable } from '../../shared/schema';
 import { getMembersBySeason, getMembersByIds } from '@nba/members-api';
@@ -82,6 +82,12 @@ export class AnalyzeBankStatementLinesRepository {
     } catch {
       return [];
     }
+  }
+
+  /** Relit un lot de lignes, une fois leurs suggestions écrites. */
+  async getLinesByIds(db: DbOrTx, ids: number[]): Promise<(typeof bankStatementLinesTable.$inferSelect)[]> {
+    if (ids.length === 0) return [];
+    return db.select().from(bankStatementLinesTable).where(inArray(bankStatementLinesTable.id, ids)).all();
   }
 
   async updateAISuggestions(db: DbOrTx, id: number, suggestions: any): Promise<void> {
