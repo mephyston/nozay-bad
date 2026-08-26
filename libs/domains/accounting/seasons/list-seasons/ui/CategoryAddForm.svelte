@@ -76,7 +76,15 @@
     />
   </FormField>
 
-  <div class="grid grid-cols-2 gap-4">
+  <!--
+    Les deux classes l'une sous l'autre, et non côte à côte.
+
+    Le sheet est étroit (`size="md"`) : sur une demi-largeur, un libellé comme
+    « 63 - Impôts, taxes et versements assimilés » est tronqué dès le premier mot, et la liste
+    déroulante — dont la largeur suit celle de son déclencheur — débordait sur le champ voisin.
+    Deux listes illisibles qui se chevauchent valent moins qu'une ligne de plus à faire défiler.
+  -->
+  <div class="space-y-4">
       <FormField id="new-cat-recette" label="Classe Recette (CR)">
       <SearchableCombobox
         id="new-cat-recette"
