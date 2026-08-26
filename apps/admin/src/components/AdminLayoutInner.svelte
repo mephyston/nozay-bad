@@ -236,7 +236,7 @@
     if (item.href === "/admin/accounting/invoices") {
       return primary === "comptabilité" && sub === "factures";
     }
-    if (item.href === "/admin/accounting/import") {
+    if (item.href === "/admin/accounting/reconciliation") {
       return primary === "comptabilité" && sub === "rapprochement bancaire";
     }
     if (item.href === "/admin/accounting/cheques") {

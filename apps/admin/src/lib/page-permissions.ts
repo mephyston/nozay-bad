@@ -33,7 +33,7 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
 
   '/admin/accounting': 'accounting:ledger:read',
   '/admin/accounting/cash-box': 'accounting:ledger:read',
-  '/admin/accounting/import': 'accounting:bank:read',
+  '/admin/accounting/reconciliation': 'accounting:bank:read',
   '/admin/accounting/invoices': 'accounting:invoices:read',
   '/admin/accounting/invoices/[id]': 'accounting:invoices:read',
   '/admin/accounting/attestations/[id]': 'members:attestations:read',

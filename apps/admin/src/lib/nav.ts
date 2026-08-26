@@ -55,7 +55,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { name: 'Rapports financiers', icon: 'BarChart3', href: '/admin/accounting/reports', permission: 'accounting:reports:read' },
       { name: 'Grand Livre', icon: 'BookOpen', href: '/admin/accounting', permission: 'accounting:ledger:read' },
       { name: 'Factures', icon: 'FileCheck', href: '/admin/accounting/invoices', permission: 'accounting:invoices:read' },
-      { name: 'Rapprochement bancaire', icon: 'Scale', href: '/admin/accounting/import', permission: 'accounting:bank:read' },
+      { name: 'Rapprochement bancaire', icon: 'Scale', href: '/admin/accounting/reconciliation', permission: 'accounting:bank:read' },
       { name: 'Remises de chèques', icon: 'Landmark', href: '/admin/accounting/cheques', permission: 'accounting:checks:read' },
       { name: 'Caisse', icon: 'Wallet', href: '/admin/accounting/cash-box', permission: 'accounting:ledger:read' },
       { name: 'Notes de frais', icon: 'Coins', href: '/admin/expenses', permission: 'expenses:reports:read' }

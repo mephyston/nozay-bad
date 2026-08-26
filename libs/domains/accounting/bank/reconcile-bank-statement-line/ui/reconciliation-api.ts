@@ -11,7 +11,7 @@ export interface ReconcileOutcome {
 }
 
 async function postAction<T>(body: unknown, fallbackError: string): Promise<T> {
-  const res = await fetch('/admin/accounting/import', {
+  const res = await fetch('/admin/accounting/reconciliation', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
@@ -25,7 +25,7 @@ function toOutcome(json: any): ReconcileOutcome {
 }
 
 export async function apiLoadUnpaidInvoices(selectedSeason: string): Promise<Invoice[]> {
-  const res = await fetch('/admin/accounting/import', {
+  const res = await fetch('/admin/accounting/reconciliation', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -62,7 +62,7 @@ export async function apiImportOfx(file: File, selectedAccount: string): Promise
   const formData = new FormData();
   formData.append('file', file);
   formData.append('accountId', selectedAccount);
-  const res = await fetch('/admin/accounting/import', { method: 'POST', body: formData });
+  const res = await fetch('/admin/accounting/reconciliation', { method: 'POST', body: formData });
   if (!res.ok) throw new Error((await res.text()) || 'Erreur importation.');
   try {
     const json = await res.json();
