@@ -53,7 +53,6 @@ export class ReconciliationStore {
   activeRightTab = $state<'manual' | 'ledger'>('manual');
 
   category = $state('1');
-  paymentMethod = $state('virement');
   selectedMemberId = $state('');
   accrualType = $state('normal');
   accrualNote = $state('');
@@ -226,6 +225,24 @@ export class ReconciliationStore {
   }
 
   /**
+   * Les exercices arrêtés. On n'y écrit plus rien, pas même un pointage.
+   *
+   * `buildReconciliationStatements` refuse d'associer une écriture dont l'exercice est clos, et a
+   * raison de le faire. Mais l'écran la proposait quand même : le refus n'arrivait qu'après le
+   * clic, sous forme de message d'erreur, sur une écriture qu'il n'aurait jamais fallu offrir.
+   */
+  private closedSeasonIds = $derived(
+    new Set(this.seasons.filter((s) => s.closed).flatMap((s) => [String(s.id), String(s.code ?? '')]))
+  );
+
+  /** Les écritures qu'un pointage peut encore atteindre. */
+  pointableEntries = $derived(
+    this.glTransactions.filter(
+      (gt) => !gt.bankStatementLineId && !this.closedSeasonIds.has(String((gt as any).seasonId))
+    )
+  );
+
+  /**
    * Les écritures non pointées qui pourraient correspondre : même montant, sens compatible, ±7 jours.
    *
    * Les dates sont pré-calculées avec le grand livre plutôt qu'à chaque appel : la version
@@ -234,8 +251,7 @@ export class ReconciliationStore {
    */
   private unpointedByAmount = $derived.by(() => {
     const byAmount = new Map<number, { entry: GLTransaction; time: number }[]>();
-    for (const gt of this.glTransactions) {
-      if (gt.bankStatementLineId) continue;
+    for (const gt of this.pointableEntries) {
       const amount = Math.abs((gt as any).amountCents ?? gt.amount ?? 0);
       if (!byAmount.has(amount)) byAmount.set(amount, []);
       byAmount.get(amount)!.push({ entry: gt, time: new Date(gt.date).getTime() });

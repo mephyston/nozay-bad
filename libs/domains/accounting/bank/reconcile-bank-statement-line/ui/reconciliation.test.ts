@@ -539,4 +539,52 @@ describe('createReconciliationState logic unit tests', () => {
       expect(state.isSingleAccount).toBe(true);
     });
   });
+
+  describe('exercices clos', () => {
+    const entry = (over: Record<string, any> = {}) => ({
+      id: 900, type: 'recette', accountId: 1, amount: 15000, date: '2026-03-02',
+      description: 'Écriture', bankStatementLineId: null, seasonId: 1, ...over
+    }) as any;
+
+    const build = (glTransactions: any[]) =>
+      createReconciliationState({
+        bankStatementLines: mockBankTransactions,
+        glTransactions,
+        seasonId: '25-26',
+        seasons: [
+          { id: '1', code: '25-26', name: '2025-2026', active: true },
+          { id: '2', code: '24-25', name: '2024-2025', active: false, closed: true }
+        ],
+        members: []
+      } as any);
+
+    /*
+      Le serveur refuse d'associer une écriture dont l'exercice est arrêté, et a raison. L'écran la
+      proposait quand même : le refus n'arrivait qu'après le clic.
+    */
+    it("écarte les écritures d'un exercice arrêté", () => {
+      const state = build([entry({ id: 900, seasonId: 1 }), entry({ id: 901, seasonId: 2 })]);
+
+      expect(state.pointableEntries.map((e: any) => e.id)).toEqual([900]);
+    });
+
+    it("ne les propose pas non plus comme correspondance", () => {
+      const state = build([entry({ id: 901, seasonId: 2 })]);
+      state.selectedTx = mockBankTransactions[1];
+
+      expect(state.suggestions).toEqual([]);
+    });
+
+    it('reconnaît un exercice arrêté à son code comme à son identifiant', () => {
+      const state = build([entry({ id: 901, seasonId: '24-25' })]);
+
+      expect(state.pointableEntries).toEqual([]);
+    });
+
+    it('écarte aussi les écritures déjà pointées', () => {
+      const state = build([entry({ id: 900, bankStatementLineId: 42 })]);
+
+      expect(state.pointableEntries).toEqual([]);
+    });
+  });
 });

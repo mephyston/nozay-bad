@@ -14,6 +14,8 @@ export interface BankStatementLine {
 
 export interface GLTransaction {
   id: number;
+  /** L'exercice de rattachement : un exercice clos n'accepte plus aucun pointage. */
+  seasonId?: number | string;
   type: 'recette' | 'depense' | 'transfert';
   accountId: 'current' | 'savings' | 'cash';
   amount: number;
@@ -134,6 +136,7 @@ export interface SplitRow {
 export interface ReconciliationStateFields {
   bankStatementLines: BankStatementLine[];
   glTransactions: GLTransaction[];
+  pointableEntries: GLTransaction[];
   reconciliationStatements: any[];
   displayedTransactions: BankStatementLine[];
   queueTransactions: BankStatementLine[];
@@ -160,7 +163,6 @@ export interface ReconciliationStateFields {
   selectedSeason: string;
   selectedAccount: string;
   category: string;
-  paymentMethod: string;
   accrualType: string;
   accrualNote: string;
   amountToLink: number;

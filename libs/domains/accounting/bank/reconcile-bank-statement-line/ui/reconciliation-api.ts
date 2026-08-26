@@ -94,7 +94,7 @@ export async function apiMatchLedgerEntry(btId: number, ledgerEntryId: number, m
  *
  * L'API garde son repli sur la date pour un appelant qui n'en transmet aucun.
  */
-export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: number | null, targetSeasonId: string, paymentMethod: string, splits: SplitRow[], accrualType: string, accrualNote: string): Promise<ReconcileOutcome> {
+export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: number | null, targetSeasonId: string, splits: SplitRow[], accrualType: string, accrualNote: string): Promise<ReconcileOutcome> {
   return toOutcome(await postAction({
       action: 'create',
       btId: bt.id,
@@ -108,7 +108,9 @@ export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: nu
         category: s.category,
         amount: Math.round(Math.abs(s.amount) * 100),
         date: bt.date,
-        paymentMethod: paymentMethod || 'virement',
+        /* Une ligne de relevé est, par définition, de l'argent passé par la banque. Le mode ne se
+           demande plus : la nomenclature n'offre rien de plus juste pour ce cas. */
+        paymentMethod: 'virement',
         description: s.label || `${bt.name} (Partie ${index + 1})`,
         reference: bt.memo || bt.fitid,
         /* La part l'emporte sur la valeur commune : c'est ce qui permet à un virement groupé de
@@ -127,7 +129,6 @@ export async function apiCreateAndMatchSingle(
   targetSeasonId: string,
   category: string,
   amountToLink: number,
-  paymentMethod: string,
   accrualType: string,
   accrualNote: string
 ): Promise<ReconcileOutcome> {
@@ -144,7 +145,9 @@ export async function apiCreateAndMatchSingle(
         category,
         amount: Math.round(amountToLink * 100),
         date: bt.date,
-        paymentMethod: paymentMethod || 'virement',
+        /* Une ligne de relevé est, par définition, de l'argent passé par la banque. Le mode ne se
+           demande plus : la nomenclature n'offre rien de plus juste pour ce cas. */
+        paymentMethod: 'virement',
         description: bt.name,
         reference: bt.memo || bt.fitid,
         accrualType,

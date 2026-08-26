@@ -7,7 +7,6 @@
     selectedTx,
     remainingAmount = 0,
     category = $bindable('1'),
-    paymentMethod = $bindable('virement'),
     selectedMemberId = $bindable(''),
     accrualType = $bindable('normal'),
     accrualNote = $bindable(''),
@@ -34,7 +33,6 @@
     selectedTx: any;
     remainingAmount: number;
     category: string;
-    paymentMethod: string;
     selectedMemberId: string;
     accrualType: string;
     accrualNote: string;
@@ -72,18 +70,6 @@
     categorySearchQuery: string;
   } = $props();
 
-  const PAYMENT_METHODS = [
-    { value: 'virement', label: 'Virement bancaire' },
-    { value: 'carte', label: 'Carte bancaire' },
-    { value: 'cheque', label: 'Chèque' },
-    { value: 'especes', label: 'Espèces' },
-    { value: 'prelevement', label: 'Prélèvement' },
-    { value: 'pass_sport', label: 'Pass Sport' },
-    { value: 'ancv', label: 'Chèque vacances (ANCV)' },
-    { value: 'labaz', label: 'LABAZ' },
-    { value: 'ticket_loisir', label: 'Ticket Loisir' },
-    { value: 'up_loisir', label: 'Up Loisir' }
-  ];
 
   let categoryItems = $derived<ComboboxItem[]>(
     categories.map(c => ({
@@ -214,10 +200,21 @@
     quitter la ligne qu'on rapproche — c'est ce que le compte de résultat attend, lui
     qui lit `season_id` là où la trésorerie lit la date.
   -->
+  <!--
+    Le même composant que la catégorie, et non un second sélecteur d'aspect voisin.
+
+    Trois sélecteurs dans un même formulaire, dont deux d'un composant et un d'un autre : les
+    hauteurs différaient de six pixels, ce qui se voit dès qu'ils se touchent.
+  -->
   <div class="{aiFields.season ? AI_RING : ''}">
-    <FormField label="Exercice de rattachement">
-      <SearchableCombobox bind:value={targetSeasonId} items={seasonItems} />
-    </FormField>
+    <Combobox
+      id="target-season-input"
+      label="Exercice de rattachement"
+      placeholder="Rechercher un exercice..."
+      bind:value={targetSeasonId}
+      items={seasonItems}
+      allowClear={false}
+    />
     {#if browsedSeason && targetSeasonId && targetSeasonId !== browsedSeason}
       <p class="mt-1 text-xs text-muted-foreground">
         L'écriture comptera dans l'exercice {targetSeasonId}, alors que vous consultez {browsedSeason}.
@@ -226,17 +223,22 @@
   </div>
   </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-    <div>
-      <Combobox
-        id="payment-method-search-input"
-        label="Mode de règlement"
-        placeholder="Rechercher un mode..."
-        bind:value={paymentMethod}
-        items={PAYMENT_METHODS}
-        allowClear={false}
-      />
-    </div>
+  <!--
+    Le mode de règlement ne se demande plus ici.
+
+    Il explique le **décalage** entre l'écriture et la banque — un chèque reçu attend d'être
+    remis, d'où `in_vault` et le domaine des remises. Au rapprochement, l'argent est par
+    définition déjà en banque : la ligne de relevé le prouve, et son libellé dit déjà par quel
+    canal. Le champ posait donc une question dont la réponse était fixée — 546 écritures
+    rapprochées sur 546 portaient « virement », la valeur par défaut que personne n'avait
+    choisie, y compris sur 27 prélèvements et 7 remises de chèques.
+
+    Distinguer un prélèvement supposerait d'ajouter ce mode à la nomenclature, qui ne le connaît
+    pas. C'est une autre décision, avec une migration.
+  -->
+  <!-- Adhérent et régularisation se décident ensemble : ils qualifient la même écriture. La note
+       n'existe que pour expliquer la régularisation, et prend donc la ligne entière en dessous. -->
+  <div class="grid grid-cols-1 gap-4 mt-4 md:grid-cols-2">
     <div class={aiFields.member ? AI_RING : ''}>
       <Combobox
         id="member-search-input"
@@ -248,28 +250,33 @@
         clearLabel="Aucun adhérent (Écriture générale)"
       />
     </div>
-  </div>
 
-  <!-- Régularisation et note justificative partagent une ligne : la seconde n'existe que pour
-       expliquer la première, et n'apparaît que si l'on sort de « Normal ». -->
-  <div class="grid grid-cols-1 gap-4 mt-4 {accrualType !== 'normal' ? 'md:grid-cols-2' : ''}">
-      <!-- `FormField` n'accepte pas de `class` : un attribut inconnu serait ignoré sans un mot. -->
-      <div class={aiFields.accrual ? AI_RING : ''}>
-      <FormField label="Régularisation (Cut-off)">
-      <SearchableCombobox
+    <div class={aiFields.accrual ? AI_RING : ''}>
+      <Combobox
+        id="accrual-type-input"
+        label="Régularisation (Cut-off)"
+        placeholder="Rechercher un motif..."
         bind:value={accrualType}
         items={[{ label: 'Normal', value: 'normal' }, ...(selectedTx && selectedTx.amount > 0 ? [{ label: "Produit constaté d'avance (Ex: Cotisation en avance)", value: 'produit_constate_avance' }, { label: 'Produit à recevoir (Ex: Subvention)', value: 'produit_a_recevoir' }] : [{ label: "Charge constatée d'avance (Ex: Assurance en avance)", value: 'charge_constatee_avance' }, { label: 'Charge à payer (Ex: Facture non parvenue)', value: 'charge_a_payer' }])]}
+        allowClear={false}
       />
-    </FormField>
     </div>
-    {#if accrualType !== 'normal'}
-        <div class={aiFields.note ? AI_RING : ''}>
-        <FormField label="Note justificative *">
-        <input type="text" class="w-full px-3 py-2 border border-destructive/50 bg-background rounded-md text-sm focus:ring-1 focus:ring-destructive" placeholder="Détail de la régularisation..." bind:value={accrualNote} required />
-      </FormField>
-      </div>
-    {/if}
   </div>
+
+  {#if accrualType !== 'normal'}
+    <!-- `FormField` n'accepte pas de `class` : un attribut inconnu serait ignoré sans un mot. -->
+    <div class="mt-4 {aiFields.note ? AI_RING : ''}">
+      <FormField label="Note justificative *">
+        <input
+          type="text"
+          class="w-full px-3 py-2 border border-destructive/50 bg-background rounded-md text-sm focus:ring-1 focus:ring-destructive"
+          placeholder="Détail de la régularisation..."
+          bind:value={accrualNote}
+          required
+        />
+      </FormField>
+    </div>
+  {/if}
 
   <div class="pt-2">
     <Button 

@@ -16,7 +16,7 @@
 
   /* Mémoïsé : ce décompte vivait dans un libellé d'onglet, donc rebalayait tout le grand livre à
      chaque invalidation du panneau. */
-  const unpointedCount = $derived(reconState.glTransactions.filter((gt) => !gt.bankStatementLineId).length);
+  const unpointedCount = $derived(reconState.pointableEntries.length);
 
   const sug = $derived(line.status === 'pending' ? parseSuggestion(line) : null);
 
@@ -88,7 +88,6 @@
           selectedTx={line}
           remainingAmount={reconState.remainingAmount}
           bind:category={reconState.category}
-          bind:paymentMethod={reconState.paymentMethod}
           bind:selectedMemberId={reconState.selectedMemberId}
           bind:accrualType={reconState.accrualType}
           bind:accrualNote={reconState.accrualNote}
@@ -124,7 +123,7 @@
           isClosed={reconState.isClosed}
           isSubmitting={reconState.isSubmitting}
           suggestions={reconState.suggestions}
-          glTransactions={reconState.glTransactions}
+          glTransactions={reconState.pointableEntries}
           sortedMembers={reconState.sortedMembers}
           bind:selectedMemberId={reconState.selectedMemberId}
           onMatch={(glTxId) => reconState.handleMatch(line.id, glTxId)}
