@@ -10,12 +10,15 @@
     state: reconState = $bindable(),
     line,
     isExpanded = false,
+    isFocused = false,
     showCheckbox = false,
     children
   }: {
     state: ReconciliationState;
     line: BankStatementLine;
     isExpanded?: boolean;
+    /** Ligne visée par le clavier : elle doit se voir, sans se confondre avec une ligne ouverte. */
+    isFocused?: boolean;
     showCheckbox?: boolean;
     children?: import('svelte').Snippet;
   } = $props();
@@ -34,8 +37,9 @@
 </script>
 
 <div
-  class="border-b border-border last:border-b-0 transition-colors {isExpanded ? 'bg-primary/5' : 'hover:bg-muted/40'}"
+  class="border-b border-border last:border-b-0 transition-colors {isExpanded ? 'bg-primary/5' : isFocused ? 'bg-muted/60' : 'hover:bg-muted/40'} {isFocused && !isExpanded ? 'ring-1 ring-inset ring-primary/40' : ''}"
   data-line-id={line.id}
+  data-focused={isFocused ? 'true' : undefined}
 >
   <div class="flex items-stretch gap-0">
     {#if showCheckbox}

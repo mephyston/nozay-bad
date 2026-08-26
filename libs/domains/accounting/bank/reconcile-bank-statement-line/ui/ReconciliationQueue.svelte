@@ -2,6 +2,7 @@
   import { Check, CheckCircle2, Inbox, Search, Trash2, X } from '@lucide/svelte';
   import { Badge, Button, Card, Input, SearchableCombobox } from '@nba/ui';
   import ReconciliationRow from './ReconciliationRow.svelte';
+  import { isOneClickValidatable, parseSuggestion } from './reconciliation-suggestion';
   import ReconciliationRowDetail from './ReconciliationRowDetail.svelte';
   import type { ReconciliationState } from './reconciliation.svelte';
 
@@ -22,7 +23,82 @@
 
   const rows = $derived(reconState.view === 'history' ? reconState.historyTransactions : reconState.queueTransactions);
   const selectedCount = $derived(reconState.selectedCount);
+
+  /*
+    Le clavier, parce qu'une file se vide au clavier.
+
+    Deux cents lignes à traiter à la souris, c'est deux cents allers-retours vers un bouton. Les
+    raccourcis ne s'appliquent que hors saisie et hors ligne dépliée : dans un formulaire, `i` est
+    une lettre, pas un ordre.
+  */
+  let focusedIndex = $state(0);
+  let searchInput = $state<HTMLInputElement | null>(null);
+
+  const focusedLine = $derived(rows[Math.min(focusedIndex, rows.length - 1)] ?? null);
+
+  function isTyping(target: EventTarget | null) {
+    const el = target as HTMLElement | null;
+    if (!el) return false;
+    const tag = el.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+  }
+
+  function moveFocus(delta: number) {
+    if (rows.length === 0) return;
+    focusedIndex = Math.max(0, Math.min(rows.length - 1, focusedIndex + delta));
+    /* Appel optionnel : `scrollIntoView` n'existe pas partout (jsdom), et son absence ne doit pas
+       interrompre la navigation au clavier. */
+    document.querySelector(`[data-line-id="${rows[focusedIndex].id}"]`)
+      ?.scrollIntoView?.({ block: 'nearest' });
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === '/' && !isTyping(e.target)) {
+      e.preventDefault();
+      searchInput?.focus();
+      return;
+    }
+    if (e.key === 'Escape' && reconState.selectedTx) {
+      reconState.selectedTx = null;
+      return;
+    }
+    // Une ligne dépliée rend la main au formulaire : seule Échap la referme.
+    if (isTyping(e.target) || reconState.selectedTx || e.metaKey || e.ctrlKey || e.altKey) return;
+
+    const line = focusedLine;
+    switch (e.key) {
+      case 'ArrowDown': case 'j': e.preventDefault(); moveFocus(1); break;
+      case 'ArrowUp': case 'k': e.preventDefault(); moveFocus(-1); break;
+      case 'e':
+        if (!line) return;
+        e.preventDefault();
+        reconState.selectedTx = line;
+        break;
+      case 'i':
+        if (!line || line.status !== 'pending' || reconState.isClosed) return;
+        e.preventDefault();
+        reconState.handleIgnore(line.id);
+        break;
+      case 'Enter':
+        if (!line || reconState.isClosed) return;
+        e.preventDefault();
+        // Entrée valide ce qui est proposé ; à défaut, elle ouvre la ligne pour le saisir.
+        if (line.status === 'pending' && isOneClickValidatable(parseSuggestion(line))) {
+          reconState.validateSuggestion(line);
+        } else {
+          reconState.selectedTx = line;
+        }
+        break;
+    }
+  }
+
+  /* La file se raccourcit à mesure qu'on la vide : le curseur ne doit pas rester au-delà. */
+  $effect(() => {
+    if (focusedIndex > rows.length - 1) focusedIndex = Math.max(0, rows.length - 1);
+  });
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <Card.Root class="flex flex-col overflow-hidden">
   <!-- L'en-tête dit où l'on en est, et non ce qu'on pourrait filtrer. -->
@@ -92,6 +168,7 @@
           type="text"
           placeholder="Rechercher une opération…"
           bind:value={reconState.searchQuery}
+          bind:ref={searchInput}
           class="h-8 text-xs pl-7 pr-7"
         />
         {#if reconState.searchQuery}
@@ -165,6 +242,20 @@
     {/if}
   </div>
 
+  <!--
+    Les raccourcis s'annoncent : un raccourci que rien ne signale n'existe que dans le code.
+  -->
+  {#if rows.length > 0 && reconState.view === 'queue'}
+    <div class="hidden lg:flex items-center gap-3 px-4 py-1.5 border-b border-border/60 bg-muted/10 text-[11px] text-muted-foreground">
+      {#each [['↑ ↓', 'naviguer'], ['Entrée', 'valider'], ['E', 'modifier'], ['I', 'ignorer'], ['/', 'rechercher']] as [k, label]}
+        <span class="flex items-center gap-1">
+          <kbd class="rounded border border-border bg-background px-1 py-px font-mono text-[10px]">{k}</kbd>
+          <span>{label}</span>
+        </span>
+      {/each}
+    </div>
+  {/if}
+
   <div class="divide-y-0">
     {#if rows.length === 0}
       <div class="p-12 text-center text-muted-foreground">
@@ -186,6 +277,7 @@
           bind:state={reconState}
           {line}
           isExpanded={reconState.selectedTx?.id === line.id}
+          isFocused={focusedLine?.id === line.id}
           showCheckbox={reconState.isMultiSelect && reconState.view === 'queue'}
         >
           <ReconciliationRowDetail bind:state={reconState} {line} />

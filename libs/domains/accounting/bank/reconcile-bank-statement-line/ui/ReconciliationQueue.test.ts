@@ -139,3 +139,93 @@ describe('la file de décisions', () => {
     expect(target.querySelectorAll('[data-action="expand"][title="Replier"]').length).toBe(1);
   });
 });
+
+describe('le clavier', () => {
+  const key = (k: string, target: EventTarget = window) =>
+    target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+
+  const focusedId = (target: HTMLElement) =>
+    (target.querySelector('[data-focused="true"]') as HTMLElement | null)?.getAttribute('data-line-id') ?? null;
+
+  it('vise la première ligne, puis descend et remonte', () => {
+    const target = render([line({ id: 1 }), line({ id: 2 }), line({ id: 3 })]);
+
+    expect(focusedId(target)).toBe('1');
+
+    key('ArrowDown'); flushSync();
+    expect(focusedId(target)).toBe('2');
+
+    key('ArrowUp'); flushSync();
+    expect(focusedId(target)).toBe('1');
+  });
+
+  it('ne sort pas de la file par le haut ni par le bas', () => {
+    const target = render([line({ id: 1 }), line({ id: 2 })]);
+
+    key('ArrowUp'); flushSync();
+    expect(focusedId(target)).toBe('1');
+
+    key('ArrowDown'); key('ArrowDown'); key('ArrowDown'); flushSync();
+    expect(focusedId(target)).toBe('2');
+  });
+
+  it('déplie la ligne visée avec « e »', () => {
+    const target = render([line({ id: 1, name: 'PREMIERE' })]);
+
+    key('e'); flushSync();
+    expect(target.querySelectorAll('[data-action="expand"][title="Replier"]').length).toBe(1);
+  });
+
+  /* Dans un formulaire, « i » est une lettre — pas un ordre. */
+  it("n'exécute aucun raccourci sur une ligne dépliée", () => {
+    const target = render([line({ id: 1 }), line({ id: 2 })]);
+
+    key('e'); flushSync();
+    key('ArrowDown'); flushSync();
+
+    // Le curseur n'a pas bougé : la ligne ouverte a la main.
+    expect(focusedId(target)).toBe('1');
+  });
+
+  it('referme la ligne dépliée avec Échap', () => {
+    const target = render([line({ id: 1 })]);
+
+    key('e'); flushSync();
+    expect(target.querySelectorAll('[data-action="expand"][title="Replier"]').length).toBe(1);
+
+    key('Escape'); flushSync();
+    expect(target.querySelectorAll('[data-action="expand"][title="Replier"]').length).toBe(0);
+  });
+
+  it("n'exécute aucun raccourci pendant une saisie", () => {
+    const target = render([line({ id: 1 }), line({ id: 2 })]);
+    const input = target.querySelector('input[placeholder*="Rechercher"]') as HTMLInputElement;
+
+    key('ArrowDown', input); flushSync();
+    expect(focusedId(target)).toBe('1');
+  });
+
+  it('ouvre la ligne visée quand Entrée ne peut rien valider', () => {
+    const target = render([line({ id: 1 })]);
+
+    key('Enter'); flushSync();
+    expect(target.querySelectorAll('[data-action="expand"][title="Replier"]').length).toBe(1);
+  });
+
+  it('replie le curseur quand la file se raccourcit', async () => {
+    const target = render([line({ id: 1, name: 'PREMIERE LIGNE' }), line({ id: 2, name: 'SECONDE LIGNE' })]);
+
+    key('ArrowDown'); flushSync();
+    expect(focusedId(target)).toBe('2');
+
+    // On restreint la file à la première : le curseur ne peut pas rester au-delà.
+    const input = target.querySelector('input[placeholder*="Rechercher"]') as HTMLInputElement;
+    input.value = 'PREMIERE';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    flushSync();
+    await Promise.resolve();
+    flushSync();
+
+    expect(focusedId(target)).toBe('1');
+  });
+});
