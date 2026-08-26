@@ -213,11 +213,12 @@
 
         <Tabs.Content value="ledger">
           <!--
-            La prop s'appelle `onMatch`, pas `handleMatch` : c'est le nom que
-            `MatchTransaction` déclare. Une prop mal nommée n'échoue pas — elle arrive
-            `undefined`, et le bouton « Associer » ne fait rien sans que rien ne le
-            signale. Elle reçoit ici les deux identifiants que `handleMatch` attend,
-            là où le composant n'en connaît qu'un.
+            Toutes les props déclarées sont passées, et aucune de plus.
+
+            La prop s'appelle `onMatch`, pas `handleMatch` : une prop mal nommée n'échoue pas, elle
+            arrive `undefined`, et le bouton ne fait rien sans que rien ne le signale. Le composant
+            déclarait par ailleurs `sortedMembers` et `selectedMemberId` que ce panneau ne lui
+            passait pas : son sélecteur d'adhérents était vide en permanence.
           -->
           <MatchTransaction
             selectedTx={state.selectedTx}
@@ -225,6 +226,8 @@
             isSubmitting={state.isSubmitting}
             suggestions={state.suggestions}
             glTransactions={state.glTransactions}
+            sortedMembers={state.sortedMembers}
+            bind:selectedMemberId={state.selectedMemberId}
             onMatch={(glTxId) => state.handleMatch(state.selectedTx?.id, glTxId)}
           />
         </Tabs.Content>

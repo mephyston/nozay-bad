@@ -216,7 +216,9 @@ describe('BankStatementReconciliation Component', () => {
     flushSync();
 
     expect(target.innerHTML).not.toContain('Volants Clement');
-    expect(target.innerHTML).toContain('Aucune écriture correspondante trouvée à +/- 7 jours.');
+    /* Le message d'état vide dit enfin vrai : la liste est bornée aux candidats à ±7 jours,
+       là où elle affichait toutes les écritures non pointées tout en annonçant ce filtre. */
+    expect(target.innerHTML).toContain('Aucune écriture correspondante trouvée à ±7 jours.');
   });
 
   it('renders unpaid invoices in the invoice tab and handles matching', async () => {
