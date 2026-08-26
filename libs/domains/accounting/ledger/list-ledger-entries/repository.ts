@@ -2,7 +2,7 @@ import { seasonsTable } from '@nba/accounting/schema';
 import { ledgerEntriesTable, categoriesTable, paymentMethodsTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { and, or, eq, sql, inArray, isNull, desc, like } from 'drizzle-orm';
-import { bankStatementLinesTable, seasonBalancesTable } from '../../shared/schema';
+import { accountClassesTable, bankStatementLinesTable, seasonBalancesTable } from '../../shared/schema';
 import { getMembersByIds } from '@nba/members-api';
 import type { ListTransactionsFilters } from './dto';
 import { resolveAccountId } from '../../config/queries';
@@ -67,23 +67,60 @@ export class ListTransactionsRepository {
     if (filters.month) {
       conditions.push(like(ledgerEntriesTable.date, `%-${filters.month}-%`));
     }
+    if (filters.classCode) {
+      /*
+       * La classe est désignée par son **code** (`60`, `70`, `512`…), pas par son identifiant.
+       *
+       * Ce filtre comparait `Number(filters.classCode)` aux colonnes
+       * `receipt_account_class_id` / `expense_account_class_id`, qui portent des identifiants de
+       * ligne (1 à 12). `Number('60')` ne correspondait donc à aucune classe, la liste des
+       * catégories ressortait vide, et la condition retombait sur `1 = 0` : cliquer sur une classe
+       * depuis le compte de résultat ouvrait un grand livre vide. Il ne l'a jamais fait autrement.
+       */
+      const accountClass = await db.select()
+        .from(accountClassesTable)
+        .where(or(
+          eq(accountClassesTable.code, String(filters.classCode)),
+          eq(accountClassesTable.id, Number(filters.classCode) || -1)
+        ))
+        .get();
+
+      if (!accountClass) {
+        conditions.push(sql`1 = 0`);
+      } else {
+        /*
+         * Une classe n'a qu'un sens, et le filtre le suit.
+         *
+         * « Volants » se rattache au 70 en produit et au 60 en charge : chercher la classe des
+         * deux côtés ramenait ses recettes ET ses dépenses. Cliquer sur « 60 - Achats » depuis la
+         * colonne des charges doit montrer des achats, pas des ventes de volants.
+         */
+        const side = accountClass.type === 'recette'
+          ? categoriesTable.receiptAccountClassId
+          : categoriesTable.expenseAccountClassId;
+
+        const matchingCats = await db.select({ id: categoriesTable.id })
+          .from(categoriesTable)
+          .where(eq(side, accountClass.id))
+          .all();
+        const catIds = matchingCats.map((cat) => cat.id);
+
+        if (catIds.length === 0) {
+          conditions.push(sql`1 = 0`);
+        } else {
+          conditions.push(inArray(ledgerEntriesTable.categoryId, catIds));
+          if (accountClass.type === 'recette' || accountClass.type === 'depense') {
+            conditions.push(eq(ledgerEntriesTable.type, accountClass.type));
+          }
+        }
+      }
+    }
+
     return conditions;
   }
 
   async count(db: DbOrTx, filters: ListTransactionsFilters): Promise<number> {
     const conditions = await this.buildConditions(db, filters);
-    if (filters.classCode) {
-      const matchingCats = await db.select({ id: categoriesTable.id })
-        .from(categoriesTable)
-        .where(or(eq(categoriesTable.receiptAccountClassId, Number(filters.classCode)), eq(categoriesTable.expenseAccountClassId, Number(filters.classCode))))
-        .all();
-      const catIds = matchingCats.map((cat) => cat.id);
-      if (catIds.length > 0) {
-        conditions.push(inArray(ledgerEntriesTable.categoryId, catIds));
-      } else {
-        conditions.push(sql`1 = 0`);
-      }
-    }
     const countRes = await db.select({ count: sql<number>`count(*)` })
       .from(ledgerEntriesTable)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
@@ -93,18 +130,6 @@ export class ListTransactionsRepository {
 
   async list(db: DbOrTx, filters: ListTransactionsFilters, pagination: { limit: number; offset: number }): Promise<any[]> {
     const conditions = await this.buildConditions(db, filters);
-    if (filters.classCode) {
-      const matchingCats = await db.select({ id: categoriesTable.id })
-        .from(categoriesTable)
-        .where(or(eq(categoriesTable.receiptAccountClassId, Number(filters.classCode)), eq(categoriesTable.expenseAccountClassId, Number(filters.classCode))))
-        .all();
-      const catIds = matchingCats.map((cat) => cat.id);
-      if (catIds.length > 0) {
-        conditions.push(inArray(ledgerEntriesTable.categoryId, catIds));
-      } else {
-        conditions.push(sql`1 = 0`);
-      }
-    }
     /*
      * Le compte du solde progressif, résolu en base.
      *
