@@ -14,6 +14,14 @@ const requestedSeason = Astro.url.searchParams.get('season');
 const page = Astro.url.searchParams.get('page') || '1';
 const category = Astro.url.searchParams.get('category') || '';
 const classCode = Astro.url.searchParams.get('classCode') || '';
+/*
+ * Le sens de l'écriture, pour arriver droit sur les lignes qu'on cherche.
+ *
+ * Le compte de résultat sépare charges et produits ; le lien d'une catégorie ramenait pourtant
+ * les deux mélangés. Sur « Adhésions & Inscriptions », cliquer depuis la colonne des charges
+ * ouvrait trois cents cotisations pour y trouver sept remboursements.
+ */
+const type = Astro.url.searchParams.get('type') || '';
 const unreconciledChequesOnly = Astro.url.searchParams.get('unreconciledCheques') === 'true';
 const accountId = Astro.url.searchParams.get('accountId') || 'current';
 const search = Astro.url.searchParams.get('search') || '';
@@ -114,6 +122,7 @@ try {
   const queryParams = new URLSearchParams({ season, page, limit });
   if (category) queryParams.set('category', category);
   if (classCode) queryParams.set('classCode', classCode);
+  if (type) queryParams.set('type', type);
   if (unreconciledChequesOnly) queryParams.set('unreconciledCheques', 'true');
   queryParams.set('accountId', accountId);
   if (search) queryParams.set('search', search);

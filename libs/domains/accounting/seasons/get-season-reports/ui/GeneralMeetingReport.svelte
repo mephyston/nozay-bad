@@ -11,8 +11,10 @@
     getClassSumRealise as calcGetClassSumRealise,
     getClassSumPrevisionnel as calcGetClassSumPrevisionnel,
     getTotalDepensesRealise as calcGetTotalDepensesRealise,
-    getTotalRecettesRealise as calcGetTotalRecettesRealise
-  } from './report-calculations';
+    getTotalRecettesRealise as calcGetTotalRecettesRealise,
+  UNCLASSIFIED_CLASS_CODE,
+  UNCLASSIFIED_CLASS_LABEL
+} from './report-calculations';
   import ReportTresorerieTab from './ReportTresorerieTab.svelte';
   import ReportGraphiquesCard from './ReportGraphiquesCard.svelte';
   import ReportCompteResultatCard from './ReportCompteResultatCard.svelte';
@@ -72,19 +74,22 @@
     editableBudget = newMap;
   });
 
-  const getClassCategories = (code: string, type: 'recette' | 'depense') => calcGetClassCategories(categories, code, type, accountClasses);
+  const getClassCategories = (code: string, type: 'recette' | 'depense') => calcGetClassCategories(categories, code, type, accountClasses, report);
   const getCatTotal = (id: string, type: 'recette' | 'depense', mode: 'realise' | 'previsionnel') => calcGetCatTotal(report, prevReport, id, type, mode);
   const getClassSumRealise = (code: string, type: 'recette' | 'depense', mode: 'realise' | 'previsionnel') => calcGetClassSumRealise(categories, report, prevReport, code, type, mode, accountClasses);
   const getClassSumPrevisionnel = (code: string, type: 'recette' | 'depense') => calcGetClassSumPrevisionnel(categories, editableBudget, code, type, accountClasses);
   const getTotalDepensesRealise = (mode: 'realise' | 'previsionnel') => calcGetTotalDepensesRealise(accountClasses, categories, report, prevReport, mode);
   const getTotalRecettesRealise = (mode: 'realise' | 'previsionnel') => calcGetTotalRecettesRealise(accountClasses, categories, report, prevReport, mode);
 
+  // Le budget d'une catégorie non ventilée compte aussi : sinon l'écart au budget mentirait.
   let totalDepensesPrevisionnel = $derived(
     accountClasses.filter(ac => ac.type === 'depense').reduce((sum, ac) => sum + getClassSumPrevisionnel(ac.code, 'depense'), 0)
+      + getClassSumPrevisionnel(UNCLASSIFIED_CLASS_CODE, 'depense')
   );
 
   let totalRecettesPrevisionnel = $derived(
     accountClasses.filter(ac => ac.type === 'recette').reduce((sum, ac) => sum + getClassSumPrevisionnel(ac.code, 'recette'), 0)
+      + getClassSumPrevisionnel(UNCLASSIFIED_CLASS_CODE, 'recette')
   );
 
   let isClosed = $derived(seasons.find(s => s.id === selectedSeason)?.closed || false);
@@ -130,8 +135,25 @@
     isSaving = false;
   }
 
-  const chargeClasses = $derived(accountClasses.length > 0 ? accountClasses.filter(ac => ac.type === 'depense') : defaultChargeClasses);
-  const produitClasses = $derived(accountClasses.length > 0 ? accountClasses.filter(ac => ac.type === 'recette') : defaultProduitClasses);
+  /*
+   * La pseudo-classe « Non ventilé » ferme chaque colonne.
+   *
+   * Elle ne vient pas de `account_classes` : elle recueille ce qu'aucune classe ne réclame — une
+   * catégorie sans classe de ce côté, ou une écriture sans catégorie. Sans elle, ces montants
+   * pesaient sur le bilan analytique et disparaissaient du compte de résultat, qui annonçait donc
+   * un résultat différent. Les colonnes la masquent d'elles-mêmes quand elle vaut zéro.
+   */
+  const unclassifiedClass = (type: 'recette' | 'depense'): AccountClass =>
+    ({ code: UNCLASSIFIED_CLASS_CODE, label: UNCLASSIFIED_CLASS_LABEL, type }) as AccountClass;
+
+  const chargeClasses = $derived([
+    ...(accountClasses.length > 0 ? accountClasses.filter(ac => ac.type === 'depense') : defaultChargeClasses),
+    unclassifiedClass('depense')
+  ]);
+  const produitClasses = $derived([
+    ...(accountClasses.length > 0 ? accountClasses.filter(ac => ac.type === 'recette') : defaultProduitClasses),
+    unclassifiedClass('recette')
+  ]);
 
   const compResultatProps = $derived({
     report, prevReport, selectedSeason, seasons, categories, chargeClasses, produitClasses,

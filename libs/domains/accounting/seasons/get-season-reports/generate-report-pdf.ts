@@ -17,7 +17,9 @@ import {
   getClassCategories as calcGetClassCategories,
   getClassSumRealise as calcGetClassSumRealise,
   getTotalDepensesRealise as calcGetTotalDepenses,
-  getTotalRecettesRealise as calcGetTotalRecettes
+  getTotalRecettesRealise as calcGetTotalRecettes,
+  UNCLASSIFIED_CLASS_CODE,
+  UNCLASSIFIED_CLASS_LABEL
 } from './ui/report-calculations';
 import { defaultChargeClasses, defaultProduitClasses } from './ui/report-constants';
 import { accountLabels } from './ui/report-utils';
@@ -149,8 +151,17 @@ export async function generateSeasonReportPdf(
 
     const chargeClasses = accountClasses.filter((ac) => ac.type === 'depense');
     const produitClasses = accountClasses.filter((ac) => ac.type === 'recette');
-    const charges = chargeClasses.length ? chargeClasses : (defaultChargeClasses as AccountClass[]);
-    const produits = produitClasses.length ? produitClasses : (defaultProduitClasses as AccountClass[]);
+    /*
+     * La pseudo-classe « Non ventilé » ferme chaque colonne, comme à l'écran.
+     *
+     * Sans elle, une catégorie sans classe de compte de ce côté — ou une écriture sans catégorie —
+     * comptait dans le total sans apparaître dans aucune rubrique : le PDF présentait un compte de
+     * résultat dont les lignes ne faisaient pas la somme annoncée.
+     */
+    const unclassified = (type: 'recette' | 'depense') =>
+      ({ code: UNCLASSIFIED_CLASS_CODE, label: UNCLASSIFIED_CLASS_LABEL, type }) as AccountClass;
+    const charges = [...(chargeClasses.length ? chargeClasses : (defaultChargeClasses as AccountClass[])), unclassified('depense')];
+    const produits = [...(produitClasses.length ? produitClasses : (defaultProduitClasses as AccountClass[])), unclassified('recette')];
 
     // --- Prévisionnel (budget) : montants en centimes, comme le réalisé. ---
     const budgetMap: Record<string, number> = {};
@@ -170,6 +181,8 @@ export async function generateSeasonReportPdf(
 
     const classLabel = (ac: AccountClass) => {
       const l = ac.label || '';
+      // « Non ventilé » n'a pas de code du plan de comptes à préfixer.
+      if (ac.code === UNCLASSIFIED_CLASS_CODE) return l;
       return l.startsWith(ac.code) ? l : `${ac.code} - ${l}`;
     };
 
