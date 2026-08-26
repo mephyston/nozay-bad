@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Badge, Amount, FormField, Combobox, type ComboboxItem } from '@nba/ui';
+  import { Button, Badge, Amount, Combobox, type ComboboxItem } from '@nba/ui';
   import { Trash2, Plus, Split } from '@lucide/svelte';
   import type { SplitRow } from './reconciliation-types';
 

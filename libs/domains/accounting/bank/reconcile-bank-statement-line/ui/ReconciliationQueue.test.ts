@@ -383,3 +383,105 @@ describe("l'historique", () => {
     expect(btn(target, 'Rétablir')).not.toBeUndefined();
   });
 });
+
+/*
+  En ventilation, catégorie et adhérent se décident part par part. Les laisser aussi en commun
+  sous la ventilation en proposerait un second jeu, dont on ne saurait lequel l'emporte.
+*/
+describe('formulaire en ventilation', () => {
+  const withMembers = {
+    members: [{ id: 42, licence: '0102030', lastName: 'Dupont', firstName: 'Jean', amountRemaining: 0 }],
+    dbCategories: [{ id: 5, code: 'cotisations', adminLabel: 'Cotisations' }]
+  };
+
+  function expandAndSplit(target: HTMLElement) {
+    (target.querySelector('[data-action="expand"]') as HTMLButtonElement).click();
+    flushSync();
+    const ventiler = btn(target, 'Ventiler');
+    ventiler.click();
+    flushSync();
+  }
+
+  it("masque l'adhérent et la catégorie communs une fois en ventilation", () => {
+    const target = render([line({ id: 1 })], withMembers);
+
+    expandAndSplit(target);
+
+    expect(target.querySelector('#member-search-input')).toBeNull();
+    expect(target.querySelector('#category-search-input')).toBeNull();
+  });
+
+  it('propose une catégorie et un adhérent par part', () => {
+    const target = render([line({ id: 1 })], withMembers);
+
+    expandAndSplit(target);
+
+    expect(target.querySelector('#split-cat-0')).not.toBeNull();
+    expect(target.querySelector('#split-member-0')).not.toBeNull();
+  });
+
+  /* La régularisation qualifie le rattachement de l'opération entière, pas de chaque part. */
+  it('garde la régularisation en commun', () => {
+    const target = render([line({ id: 1 })], withMembers);
+
+    expandAndSplit(target);
+
+    expect(target.querySelector('#accrual-type-input')).not.toBeNull();
+  });
+});
+
+/*
+  `ledger_entries.member_id` désigne une adhésion, pas une personne : la même personne en a une
+  par saison, avec un identifiant différent. Proposer les deux annuaires laissait rattacher un
+  encaissement à l'adhésion du mauvais exercice, sans qu'aucun contrôle ne le rattrape.
+*/
+describe("annuaire et exercice de rattachement", () => {
+  const seasons = [
+    { id: '25-26', code: '25-26', name: 'Saison 2025-2026', active: true },
+    { id: '26-27', code: '26-27', name: 'Saison 2026-2027', active: false }
+  ];
+  const members = [
+    { id: 1, licence: '0102030', lastName: 'COURANTE', firstName: 'Anne', amountRemaining: 0 },
+    { id: 2, licence: '0405060', lastName: 'SUIVANTE', firstName: 'Bea', amountRemaining: 0, seasonCode: '26-27' }
+  ];
+
+  function openForm(target: HTMLElement) {
+    (target.querySelector('[data-action="expand"]') as HTMLButtonElement).click();
+    flushSync();
+  }
+
+  it("ne propose que l'annuaire de l'exercice consulté par défaut", () => {
+    const target = render([line({ id: 1 })], { seasons, members, seasonId: '25-26' });
+    openForm(target);
+
+    const input = target.querySelector('#member-search-input') as HTMLInputElement;
+    input.dispatchEvent(new FocusEvent('focus'));
+    flushSync();
+
+    expect(target.innerHTML).toContain('COURANTE');
+    expect(target.innerHTML).not.toContain('SUIVANTE');
+  });
+
+  it("bascule sur l'annuaire de l'exercice visé", () => {
+    const target = render([line({ id: 1 })], { seasons, members, seasonId: '25-26' });
+    openForm(target);
+
+    const season = target.querySelector('#target-season-input') as HTMLInputElement;
+    season.dispatchEvent(new FocusEvent('focus'));
+    flushSync();
+    const option = Array.from(target.querySelectorAll('[role="option"]')).find((o) =>
+      o.textContent?.includes('2026-2027')
+    ) as HTMLElement;
+    option.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    flushSync();
+
+    const input = target.querySelector('#member-search-input') as HTMLInputElement;
+    input.dispatchEvent(new FocusEvent('focus'));
+    flushSync();
+
+    expect(target.innerHTML).toContain('SUIVANTE');
+    expect(target.innerHTML).not.toContain('COURANTE');
+    /* Le millésime ne s'accole plus au nom : la liste ne mêle plus deux annuaires. */
+    expect(target.innerHTML).not.toContain('SUIVANTE Bea (26-27)');
+  });
+});

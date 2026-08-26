@@ -81,13 +81,46 @@
   // `seasonCode` n'est posé que sur les adhérents d'une autre saison que celle
   // consultée : le montrer évite de rattacher une cotisation au mauvais exercice, deux
   // adhésions d'un même adhérent étant sinon indiscernables dans la liste.
+  /**
+   * L'annuaire de l'exercice de rattachement, et de lui seul.
+   *
+   * `ledger_entries.member_id` désigne une **adhésion**, pas une personne : la même personne a
+   * une adhésion par saison, avec un identifiant différent. Proposer les deux annuaires côte à
+   * côte laissait donc rattacher un encaissement à l'adhésion du mauvais exercice — une erreur
+   * qu'aucun contrôle ne rattrape et que rien à l'écran ne signale.
+   *
+   * L'écran charge l'exercice consulté **et** le suivant, précisément pour qu'une cotisation
+   * encaissée en août pour la rentrée trouve son adhérent. `seasonCode` n'est posé que sur ceux
+   * de l'autre saison : son absence vaut « exercice consulté ».
+   */
+  let membersForTargetSeason = $derived(
+    sortedMembers.filter((m) =>
+      targetSeasonId === browsedSeason ? !m.seasonCode : m.seasonCode === targetSeasonId
+    )
+  );
+
+  /* Plus de millésime accolé au nom : il ne servait qu'à distinguer deux annuaires mêlés dans la
+     même liste. Filtrée sur l'exercice visé, elle n'en contient plus qu'un. */
   let memberItems = $derived<ComboboxItem[]>(
-    sortedMembers.map(m => ({
+    membersForTargetSeason.map(m => ({
       value: String(m.id),
-      label: m.seasonCode ? `${m.lastName} ${m.firstName} (${m.seasonCode})` : `${m.lastName} ${m.firstName}`,
+      label: `${m.lastName} ${m.firstName}`,
       detail: m.licence
     }))
   );
+
+  /*
+    Changer d'exercice écarte l'adhérent qui n'y appartient pas.
+
+    Sans cela, filtrer la liste tendait un piège : l'identifiant retenu restait celui de l'adhésion
+    de l'autre exercice, le champ paraissait vide, et l'écriture partait quand même sur la
+    mauvaise adhésion. On préfère perdre la sélection et la redemander.
+  */
+  $effect(() => {
+    if (selectedMemberId && !membersForTargetSeason.some((m) => String(m.id) === selectedMemberId)) {
+      selectedMemberId = '';
+    }
+  });
 
   /* Clôturée reste signalé : on ne peut pas y écrire. « Active » ne se choisit pas. */
   let seasonItems = $derived(toSeasonOptions(seasons as any, { markClosed: true }));
@@ -239,18 +272,27 @@
   -->
   <!-- Adhérent et régularisation se décident ensemble : ils qualifient la même écriture. La note
        n'existe que pour expliquer la régularisation, et prend donc la ligne entière en dessous. -->
-  <div class="grid grid-cols-1 gap-4 mt-4 md:grid-cols-2">
-    <div class={aiFields.member ? AI_RING : ''}>
-      <Combobox
-        id="member-search-input"
-        label="Adhérent Associé (Optionnel)"
-        placeholder="Tapez pour rechercher un adhérent..."
-        bind:value={selectedMemberId}
-        items={memberItems}
-        allowClear={true}
-        clearLabel="Aucun adhérent (Écriture générale)"
-      />
-    </div>
+  <!--
+    L'adhérent se masque en ventilation, comme la catégorie.
+
+    Chaque part y porte le sien : le laisser ici en proposerait un second, commun à toutes les
+    parts, dont on ne saurait lequel l'emporte. La régularisation, elle, reste commune — elle
+    qualifie le rattachement de l'opération entière, pas de chacune de ses parts.
+  -->
+  <div class="grid grid-cols-1 gap-4 mt-4 {isSplitMode ? '' : 'md:grid-cols-2'}">
+    {#if !isSplitMode}
+      <div class={aiFields.member ? AI_RING : ''}>
+        <Combobox
+          id="member-search-input"
+          label="Adhérent Associé (Optionnel)"
+          placeholder="Tapez pour rechercher un adhérent..."
+          bind:value={selectedMemberId}
+          items={memberItems}
+          allowClear={true}
+          clearLabel="Aucun adhérent (Écriture générale)"
+        />
+      </div>
+    {/if}
 
     <div class={aiFields.accrual ? AI_RING : ''}>
       <Combobox
