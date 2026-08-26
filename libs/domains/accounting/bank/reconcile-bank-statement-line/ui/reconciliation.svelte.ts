@@ -71,7 +71,6 @@ export class ReconciliationStore {
   targetSeasonId = $state('');
 
   searchQuery = $state('');
-  monthFilter = $state('');
   /**
    * Le compte sur lequel on rapproche. Vide = tous, mais ce n'est pas le défaut.
    *
@@ -222,7 +221,6 @@ export class ReconciliationStore {
       const query = this.searchQuery.toLowerCase().trim();
       if (!(t.name || '').toLowerCase().includes(query) && !(t.memo || '').toLowerCase().includes(query)) return false;
     }
-    if (this.monthFilter && !t.date.includes(`-${this.monthFilter}-`)) return false;
     if (this.accountFilter && String((t as any).accountId) !== this.accountFilter) return false;
     return true;
   }
@@ -272,7 +270,7 @@ export class ReconciliationStore {
 
     safeEffect(() => {
       const _ = `${this.view}:${this.activeTab}`;
-      this.searchQuery = ''; this.monthFilter = '';
+      this.searchQuery = '';
     });
 
     /*

@@ -10,13 +10,6 @@
   /* Prop renommée : déclarée `state`, elle capturerait la rune `$state`. */
   let { state: reconState = $bindable() }: { state: ReconciliationState } = $props();
 
-  const MONTHS = [
-    { label: 'Tous les mois', value: '' }, { label: 'Janvier', value: '01' }, { label: 'Février', value: '02' },
-    { label: 'Mars', value: '03' }, { label: 'Avril', value: '04' }, { label: 'Mai', value: '05' },
-    { label: 'Juin', value: '06' }, { label: 'Juillet', value: '07' }, { label: 'Août', value: '08' },
-    { label: 'Septembre', value: '09' }, { label: 'Octobre', value: '10' }, { label: 'Novembre', value: '11' },
-    { label: 'Décembre', value: '12' }
-  ];
 
   /* Suit le compte consulté : un état de rapprochement se lit compte par compte, et l'écart
      affiché doit être celui du compte qu'on a sous les yeux. */
@@ -229,8 +222,12 @@
       </div>
     {/if}
 
+    <!--
+      Le filtre par mois est retiré : il n'était pas utilisé, et sur mobile il tenait la ligne à
+      trois contrôles, dont deux illisibles. La recherche couvre le même besoin.
+    -->
     <div class="flex items-center gap-2">
-      <div class="relative flex-1">
+      <div class="relative min-w-0 flex-1">
         <!--
           La loupe passe par la prop `icon` du composant, et non par un positionnement à la main.
 
@@ -257,8 +254,6 @@
           </button>
         {/if}
       </div>
-      <SearchableCombobox class="h-8 text-xs w-40" items={MONTHS} bind:value={reconState.monthFilter} />
-
       <!--
         Le compte sur lequel on rapproche.
 
@@ -268,7 +263,7 @@
       -->
       {#if !reconState.isSingleAccount}
         <SearchableCombobox
-          class="h-8 text-xs w-52 shrink-0"
+          class="h-8 text-xs w-32 shrink-0 sm:w-52"
           items={[
             { label: `Tous les comptes (${reconState.pendingCount})`, value: '' },
             ...reconState.accountOptions.map((a) => ({
@@ -301,7 +296,7 @@
   <div class="divide-y-0">
     {#if rows.length === 0}
       <div class="p-12 text-center text-muted-foreground">
-        {#if reconState.searchQuery || reconState.monthFilter}
+        {#if reconState.searchQuery}
           <p class="text-sm">Aucune opération ne correspond à cette recherche.</p>
         {:else if reconState.view === 'history'}
           <p class="text-sm">
