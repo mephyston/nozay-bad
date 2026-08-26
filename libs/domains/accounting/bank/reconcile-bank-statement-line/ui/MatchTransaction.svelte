@@ -123,15 +123,14 @@
       </Button>
     </div>
 
-    <div class="relative">
-      <Search class="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-      <Input
-        type="text"
-        placeholder="Rechercher une écriture par libellé…"
-        bind:value={search}
-        class="h-8 text-xs pl-7"
-      />
-    </div>
+    <!-- La loupe passe par la prop `icon` : posée en absolu, elle chevauchait le texte. -->
+    <Input
+      type="text"
+      icon={Search}
+      placeholder="Rechercher une écriture par libellé…"
+      bind:value={search}
+      class="h-8 text-xs"
+    />
 
     {#if searched.length > 0}
       <div class="max-h-60 overflow-y-auto border border-border rounded-lg text-xs">

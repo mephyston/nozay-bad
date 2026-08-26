@@ -217,13 +217,21 @@
 
     <div class="flex items-center gap-2">
       <div class="relative flex-1">
-        <Search class="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <!--
+          La loupe passe par la prop `icon` du composant, et non par un positionnement à la main.
+
+          Posée en absolu au-dessus du champ, elle chevauchait le texte : le `pl-7` de l'appelant
+          se faisait écraser dès le palier `sm` par le `sm:px-2.5` du composant — une classe non
+          préfixée ne l'emporte pas sur une variante responsive. `Input` applique `!pl-9` quand on
+          lui passe une icône, ce qui, lui, tranche.
+        -->
         <Input
           type="text"
+          icon={Search}
           placeholder="Rechercher une opération…"
           bind:value={reconState.searchQuery}
           bind:ref={searchInput}
-          class="h-8 text-xs pl-7 pr-7"
+          class="h-8 text-xs !pr-8"
         />
         {#if reconState.searchQuery}
           <button
