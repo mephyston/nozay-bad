@@ -1,34 +1,44 @@
-import type { BankStatementLine, GLTransaction, Season, Invoice, Member, ReconciliationStateProps } from './reconciliation-types';
+import type { BankStatementLine, GLTransaction, Season, Invoice, Member, SplitRow, CategoryOption, ReconciliationStateProps } from './reconciliation-types';
 
 export * from './reconciliation-types';
 export * from './reconciliation-api';
 export * from './reconciliation-dropdowns';
 export * from './reconciliation-actions';
-export * from './reconciliation-proxy';
-export * from './reconciliation-refs';
+export * from './reconciliation-suggestion';
 
 import { createReconciliationActions } from './reconciliation-actions';
-import { createReconciliationProxy } from './reconciliation-proxy';
-import { createRefHandlers } from './reconciliation-refs';
 
-export function createReconciliationState(initialPropsOrGetter: ReconciliationStateProps | (() => ReconciliationStateProps)) {
-  const getProps = typeof initialPropsOrGetter === 'function' ? initialPropsOrGetter : () => initialPropsOrGetter;
-  let bankStatementLines = $state(getProps().bankStatementLines);
-  let glTransactions = $state(getProps().glTransactions);
-  let seasonId = $state(getProps().seasonId);
-  let seasons = $state(getProps().seasons);
-  let members = $state(getProps().members);
-  let dbCategories = $state(getProps().dbCategories || []);
-  let reconciliationStatements = $state(getProps().reconciliationStatements || []);
+/**
+ * L'état de l'écran de rapprochement.
+ *
+ * Il vivait dans une fermeture, derrière un `Proxy` : quarante-quatre lecteurs et trente-deux
+ * écrivains recopiés à la main dans deux tables, que le `Proxy` interrogeait à chaque accès. Le
+ * contrat n'était vérifié par personne — un champ ajouté à l'état sans sa ligne dans la table
+ * revenait `undefined` à l'écran, sans erreur ni échec de compilation. Le dépôt en porte déjà la
+ * trace : deux commentaires documentent des pannes muettes nées de ce mécanisme, et une troisième
+ * y dormait encore (les props absentes de `MatchTransaction`).
+ *
+ * Une classe à champs `$state` / `$derived` — l'idiome de Svelte 5 — rend le même service : les
+ * champs sont réactifs en lecture comme en écriture, et le compilateur vérifie enfin qu'ils
+ * existent.
+ */
+export class ReconciliationStore {
+  bankStatementLines = $state<BankStatementLine[]>([]);
+  glTransactions = $state<GLTransaction[]>([]);
+  seasonId = $state('');
+  seasons = $state<Season[]>([]);
+  members = $state<Member[]>([]);
+  dbCategories = $state<any[]>([]);
+  reconciliationStatements = $state<any[]>([]);
 
-  let selectedSeason = $state(getProps().seasonId);
-  let selectedTx = $state<BankStatementLine | null>(null);
-  let isSubmitting = $state(false);
-  let isAnalyzing = $state(false);
-  let isAnalyzingSingle = $state(false);
-  let errorMsg = $state('');
-  let showImportModal = $state(false);
-  let selectedAccount = $state('auto');
+  selectedSeason = $state('');
+  selectedTx = $state<BankStatementLine | null>(null);
+  isSubmitting = $state(false);
+  isAnalyzing = $state(false);
+  isAnalyzingSingle = $state(false);
+  errorMsg = $state('');
+  showImportModal = $state(false);
+  selectedAccount = $state('auto');
 
   /*
     L'écran de travail ne montre que ce qui reste à décider.
@@ -37,201 +47,289 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
     à vider et deux archives. `view` sépare les deux ; `activeTab` ne sert plus qu'à choisir
     l'archive consultée.
   */
-  let view = $state<'queue' | 'history'>('queue');
-  let activeTab = $state<'reconciled' | 'ignored'>('reconciled');
-  let isMultiSelect = $state(false);
-  let unpaidInvoices = $state<Invoice[]>([]);
-  let activeRightTab = $state<'manual' | 'ledger'>('manual');
+  view = $state<'queue' | 'history'>('queue');
+  activeTab = $state<'reconciled' | 'ignored'>('reconciled');
+  isMultiSelect = $state(false);
+  unpaidInvoices = $state<Invoice[]>([]);
+  activeRightTab = $state<'manual' | 'ledger'>('manual');
 
-  let category = $state('1');
-  let paymentMethod = $state('virement');
-  let selectedMemberId = $state<string>('');
-  let accrualType = $state('normal');
-  let accrualNote = $state('');
-  let amountToLink = $state<number>(0);
-  let lastProcessedTxId = $state<number | null>(null);
+  category = $state('1');
+  paymentMethod = $state('virement');
+  selectedMemberId = $state('');
+  accrualType = $state('normal');
+  accrualNote = $state('');
+  amountToLink = $state(0);
+  lastProcessedTxId = $state<number | null>(null);
 
-  let selectedInvoiceIds = $state<Set<number>>(new Set());
-  let isSplitMode = $state(false);
-  let splits = $state<{ category: string; amount: number }[]>([]);
+  selectedInvoiceIds = $state<Set<number>>(new Set());
+  isSplitMode = $state(false);
+  splits = $state<SplitRow[]>([]);
 
-  let isMemberDropdownOpen = $state(false);
-  let isCategoryDropdownOpen = $state(false);
-  let memberSearchQuery = $state('');
-  let categorySearchQuery = $state('');
-  let targetSeasonId = $state(getProps().seasonId);
+  isMemberDropdownOpen = $state(false);
+  isCategoryDropdownOpen = $state(false);
+  memberSearchQuery = $state('');
+  categorySearchQuery = $state('');
+  targetSeasonId = $state('');
 
-  let selectedTxIds = $state<Record<number, boolean>>({});
-  let searchQuery = $state('');
-  let monthFilter = $state('');
-  let memberHighlightedIndex = $state(-1);
-  let categoryHighlightedIndex = $state(-1);
+  selectedTxIds = $state<Record<number, boolean>>({});
+  searchQuery = $state('');
+  monthFilter = $state('');
+  memberHighlightedIndex = $state(-1);
+  categoryHighlightedIndex = $state(-1);
 
-  const isClosed = $derived(seasons.find(s => s.code === selectedSeason || String(s.id) === selectedSeason)?.closed || false);
-  const categories = $derived(dbCategories.filter((c: any) => c.active !== false).map((c: any) => ({ id: String(c.id), code: c.code, name: c.adminLabel })));
-  const sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
+  isClosed = $derived(
+    this.seasons.find((s) => s.code === this.selectedSeason || String(s.id) === this.selectedSeason)?.closed || false
+  );
+  categories = $derived<CategoryOption[]>(
+    this.dbCategories.filter((c: any) => c.active !== false).map((c: any) => ({ id: String(c.id), code: c.code, name: c.adminLabel }))
+  );
+  sortedMembers = $derived([...this.members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
 
-  function getSuggestions(bt: BankStatementLine) {
-    const btAmt = (bt as any).amountCents ?? bt.amount ?? 0;
-    return glTransactions.filter(gt => {
-      if (gt.bankStatementLineId) return false;
-      const gtAmt = (gt as any).amountCents ?? gt.amount ?? 0;
-      if (Math.abs(gtAmt) !== Math.abs(btAmt)) return false;
-      const isBankDebit = btAmt < 0;
-      if (isBankDebit && gt.type === 'recette') return false;
-      if (!isBankDebit && gt.type === 'depense') return false;
-      return Math.abs(new Date(bt.date).getTime() - new Date(gt.date).getTime()) / 86400000 <= 7;
-    });
-  }
+  suggestions = $derived(this.selectedTx ? this.getSuggestions(this.selectedTx) : []);
+  linkedGlTxs = $derived(
+    this.selectedTx ? this.glTransactions.filter((gt) => gt.bankStatementLineId === this.selectedTx!.id) : []
+  );
+  totalLinked = $derived(
+    this.linkedGlTxs.reduce((sum, gt) => sum + Math.abs((gt as any).amountCents ?? gt.amount ?? 0), 0)
+  );
+  remainingAmount = $derived(
+    this.selectedTx ? Math.abs((this.selectedTx as any).amountCents ?? this.selectedTx.amount ?? 0) - this.totalLinked : 0
+  );
 
-  const suggestions = $derived(selectedTx ? getSuggestions(selectedTx) : []);
-  const linkedGlTxs = $derived(selectedTx ? glTransactions.filter(gt => gt.bankStatementLineId === selectedTx!.id) : []);
-  const totalLinked = $derived(linkedGlTxs.reduce((sum, gt) => sum + Math.abs((gt as any).amountCents ?? gt.amount ?? 0), 0));
-  const remainingAmount = $derived(selectedTx ? Math.abs((selectedTx as any).amountCents ?? selectedTx.amount ?? 0) - totalLinked : 0);
-
-  const pendingCount = $derived(bankStatementLines.filter(t => t.status === 'pending').length);
-  const reconciledCount = $derived(bankStatementLines.filter(t => t.status === 'reconciled').length);
-  const ignoredCount = $derived(bankStatementLines.filter(t => t.status === 'ignored').length);
-  const selectedCount = $derived(Object.keys(selectedTxIds).map(Number).filter(id => selectedTxIds[id]).length);
-  const selectedSum = $derived(unpaidInvoices.filter(i => selectedInvoiceIds.has(i.id)).reduce((acc, i) => acc + i.totalAmount, 0));
-
-  function matchesFilters(t: BankStatementLine) {
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      if (!(t.name || '').toLowerCase().includes(query) && !(t.memo || '').toLowerCase().includes(query)) return false;
-    }
-    if (monthFilter && !t.date.includes(`-${monthFilter}-`)) return false;
-    return true;
-  }
+  pendingCount = $derived(this.bankStatementLines.filter((t) => t.status === 'pending').length);
+  reconciledCount = $derived(this.bankStatementLines.filter((t) => t.status === 'reconciled').length);
+  ignoredCount = $derived(this.bankStatementLines.filter((t) => t.status === 'ignored').length);
+  selectedCount = $derived(Object.keys(this.selectedTxIds).map(Number).filter((id) => this.selectedTxIds[id]).length);
+  selectedSum = $derived(
+    this.unpaidInvoices.filter((i) => this.selectedInvoiceIds.has(i.id)).reduce((acc, i) => acc + i.totalAmount, 0)
+  );
 
   /** La file : ce qui reste à décider, et rien d'autre. */
-  const queueTransactions = $derived(bankStatementLines.filter(t => t.status === 'pending' && matchesFilters(t)));
+  queueTransactions = $derived(this.bankStatementLines.filter((t) => t.status === 'pending' && this.matchesFilters(t)));
   /** L'archive : rapprochées ou ignorées, selon l'onglet consulté. */
-  const historyTransactions = $derived(bankStatementLines.filter(t => t.status === activeTab && matchesFilters(t)));
-
+  historyTransactions = $derived(this.bankStatementLines.filter((t) => t.status === this.activeTab && this.matchesFilters(t)));
   /* Ce que la vue courante affiche. `pickNextId` s'en sert pour avancer d'une ligne à l'autre. */
-  const displayedTransactions = $derived(view === 'history' ? historyTransactions : queueTransactions);
+  displayedTransactions = $derived(this.view === 'history' ? this.historyTransactions : this.queueTransactions);
 
-  const memberDisplayVal = $derived.by(() => {
-    if (!selectedMemberId) return '';
-    const m = members.find(x => x.id.toString() === selectedMemberId);
+  memberDisplayVal = $derived.by(() => {
+    if (!this.selectedMemberId) return '';
+    const m = this.members.find((x) => x.id.toString() === this.selectedMemberId);
     return m ? `${m.lastName} ${m.firstName}` : '';
   });
+  categoryDisplayVal = $derived.by(() => this.categories.find((c) => c.id === this.category)?.name || '');
+  filteredCategories = $derived(
+    this.categorySearchQuery.trim() === ''
+      ? this.categories
+      : this.categories.filter((c) => c.name.toLowerCase().includes(this.categorySearchQuery.toLowerCase()))
+  );
 
-  const categoryDisplayVal = $derived.by(() => categories.find(c => c.id === category)?.name || '');
-  const filteredCategories = $derived(categorySearchQuery.trim() === '' ? categories : categories.filter(c => c.name.toLowerCase().includes(categorySearchQuery.toLowerCase())));
-
-  const filteredMembers = $derived.by(() => {
-    const q = (memberSearchQuery || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    if (!q) return sortedMembers;
-    return sortedMembers.filter(m => {
-      const lastFirst = `${m.lastName || ''} ${m.firstName || ''} ${m.licence || ''}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      const firstLast = `${m.firstName || ''} ${m.lastName || ''} ${m.licence || ''}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      return lastFirst.includes(q) || firstLast.includes(q);
-    });
+  /**
+   * L'annuaire filtré, dé-accentué une fois par adhérent et non deux.
+   *
+   * Chaque frappe redéaccentuait deux chaînes par adhérent — quatre `normalize('NFD')` et autant
+   * de regex construites à la volée sur un millier d'adhérents. La clé se calcule maintenant une
+   * fois, avec l'annuaire.
+   */
+  private memberSearchKeys = $derived(
+    this.sortedMembers.map((m) => ({
+      member: m,
+      key: deaccent(`${m.lastName || ''} ${m.firstName || ''} ${m.licence || ''} ${m.firstName || ''} ${m.lastName || ''}`)
+    }))
+  );
+  filteredMembers = $derived.by(() => {
+    const q = deaccent(this.memberSearchQuery || '');
+    if (!q) return this.sortedMembers;
+    return this.memberSearchKeys.filter((e) => e.key.includes(q)).map((e) => e.member);
   });
+
   /* Les factures dont le montant colle exactement à la ligne : elles se signalent dans la liste.
      Le partitionnement en deux listes a disparu avec le troisième onglet — la reprise les propose
      toutes, en marquant celles qui tombent juste. */
-  const matchingInvoices = $derived(selectedTx && selectedTx.amount > 0 ? unpaidInvoices.filter(inv => inv.totalAmount === selectedTx?.amount) : []);
-
-  function safeEffect(fn: () => void) { try { $effect(fn); } catch (e) {} }
-
-  safeEffect(() => { const _ = `${view}:${activeTab}`; selectedTxIds = {}; searchQuery = ''; monthFilter = ''; });
-  /*
-    L'exercice de rattachement n'est **pas** remis à zéro ici, mais avec le reste du
-    préremplissage, plus bas : cet effet-ci suit aussi le montant restant, et se rejoue
-    donc à chaque rechargement des écritures liées. Il aurait effacé en silence l'exercice
-    que la suggestion — ou la comptable — venait de poser.
-  */
-  safeEffect(() => {
-    if (selectedTx) {
-      amountToLink = parseFloat((remainingAmount / 100).toFixed(2));
-      memberSearchQuery = ''; categorySearchQuery = ''; selectedInvoiceIds = new Set(); isSplitMode = false; splits = [];
-    }
-  });
-  safeEffect(() => { if (selectedSeason) actions.loadUnpaidInvoices(); });
-  /*
-    La sélection ne se restaure plus depuis `sessionStorage`.
-
-    Les deux effets qui l'y écrivaient puis l'y relisaient n'existaient que pour survivre au
-    rechargement complet de la page après chaque rapprochement. Sans rechargement, la sélection
-    n'est jamais perdue — et `pickNextId` la fait avancer sur la ligne suivante de la file.
-  */
-  safeEffect(() => {
-    if (selectedTx && selectedTx.id !== lastProcessedTxId) {
-      lastProcessedTxId = selectedTx.id;
-      if (selectedTx.aiSuggestions) {
-        try {
-          const sug = JSON.parse(selectedTx.aiSuggestions);
-          selectedMemberId = sug.memberId ? sug.memberId.toString() : '';
-          if (sug.category) category = sug.category.toString();
-          // Rattachement d'exercice déduit du libellé (cotisation encaissée d'avance) :
-          // il se préremplit comme le reste, et reste modifiable.
-          accrualType = sug.accrualType || 'normal';
-          accrualNote = sug.accrualNote || '';
-          /*
-            L'exercice de rattachement fait partie de la suggestion, et pas seulement de
-            sa note.
-
-            « Valider cette suggestion » enregistre le formulaire tel qu'il est affiché.
-            Tant que ce champ restait sur l'exercice consulté, le raccourci produisait une
-            écriture qui se contredisait : un produit constaté d'avance, une note disant
-            « à rattacher à 26-27 », et un `season_id` valant 25-26 — donc un encaissement
-            compté dans le résultat de l'exercice qui se clôture. Personne ne pouvait le
-            voir : c'est le seul champ de la suggestion qui ne s'affichait pas.
-          */
-          targetSeasonId = sug.targetSeason || selectedSeason;
-        } catch (e) { selectedMemberId = ''; accrualType = 'normal'; accrualNote = ''; targetSeasonId = selectedSeason; }
-      } else { selectedMemberId = ''; accrualType = 'normal'; accrualNote = ''; targetSeasonId = selectedSeason; }
-    } else if (!selectedTx) { lastProcessedTxId = null; selectedMemberId = ''; accrualType = 'normal'; accrualNote = ''; targetSeasonId = selectedSeason; }
-  });
-  safeEffect(() => { if (!isMemberDropdownOpen) memberHighlightedIndex = -1; });
-  safeEffect(() => { if (!isCategoryDropdownOpen) categoryHighlightedIndex = -1; });
-
-  const { getRef, setRef } = createRefHandlers(
-    {
-      bankStatementLines: () => bankStatementLines, glTransactions: () => glTransactions, seasonId: () => seasonId,
-      seasons: () => seasons, members: () => members, dbCategories: () => dbCategories, selectedSeason: () => selectedSeason,
-      reconciliationStatements: () => reconciliationStatements,
-      selectedTx: () => selectedTx, isSubmitting: () => isSubmitting, isAnalyzing: () => isAnalyzing, isAnalyzingSingle: () => isAnalyzingSingle,
-      errorMsg: () => errorMsg, showImportModal: () => showImportModal, selectedAccount: () => selectedAccount, activeTab: () => activeTab,
-      view: () => view, isMultiSelect: () => isMultiSelect, queueTransactions: () => queueTransactions, historyTransactions: () => historyTransactions,
-      unpaidInvoices: () => unpaidInvoices, activeRightTab: () => activeRightTab, category: () => category, paymentMethod: () => paymentMethod,
-      selectedMemberId: () => selectedMemberId, accrualType: () => accrualType, accrualNote: () => accrualNote, amountToLink: () => amountToLink, lastProcessedTxId: () => lastProcessedTxId,
-      selectedInvoiceIds: () => selectedInvoiceIds, isSplitMode: () => isSplitMode, splits: () => splits,
-      isMemberDropdownOpen: () => isMemberDropdownOpen, isCategoryDropdownOpen: () => isCategoryDropdownOpen,
-      memberSearchQuery: () => memberSearchQuery, categorySearchQuery: () => categorySearchQuery, targetSeasonId: () => targetSeasonId,
-      selectedTxIds: () => selectedTxIds, searchQuery: () => searchQuery, monthFilter: () => monthFilter, memberHighlightedIndex: () => memberHighlightedIndex,
-      categoryHighlightedIndex: () => categoryHighlightedIndex, isClosed: () => isClosed, categories: () => categories,
-      sortedMembers: () => sortedMembers, suggestions: () => suggestions, linkedGlTxs: () => linkedGlTxs, totalLinked: () => totalLinked,
-      remainingAmount: () => remainingAmount, pendingCount: () => pendingCount, reconciledCount: () => reconciledCount,
-      ignoredCount: () => ignoredCount, selectedCount: () => selectedCount, selectedSum: () => selectedSum,
-      displayedTransactions: () => displayedTransactions, memberDisplayVal: () => memberDisplayVal, categoryDisplayVal: () => categoryDisplayVal,
-      filteredMembers: () => filteredMembers, filteredCategories: () => filteredCategories, matchingInvoices: () => matchingInvoices,
-      getSuggestions: () => getSuggestions
-    },
-    {
-      bankStatementLines: v => bankStatementLines = v, glTransactions: v => glTransactions = v, seasonId: v => seasonId = v,
-      seasons: v => seasons = v, members: v => members = v, dbCategories: v => dbCategories = v, selectedSeason: v => selectedSeason = v,
-      reconciliationStatements: v => reconciliationStatements = v,
-      selectedTx: v => selectedTx = v, isSubmitting: v => isSubmitting = v, isAnalyzing: v => isAnalyzing = v, isAnalyzingSingle: v => isAnalyzingSingle = v,
-      errorMsg: v => errorMsg = v, showImportModal: v => showImportModal = v, selectedAccount: v => selectedAccount = v, activeTab: v => activeTab = v,
-      view: v => view = v, isMultiSelect: v => isMultiSelect = v,
-      unpaidInvoices: v => unpaidInvoices = v, activeRightTab: v => activeRightTab = v, category: v => category = v, paymentMethod: v => paymentMethod = v,
-      selectedMemberId: v => selectedMemberId = v, accrualType: v => accrualType = v, accrualNote: v => accrualNote = v, amountToLink: v => amountToLink = v, lastProcessedTxId: v => lastProcessedTxId = v,
-      selectedInvoiceIds: v => selectedInvoiceIds = v, isSplitMode: v => isSplitMode = v, splits: v => splits = v,
-      isMemberDropdownOpen: v => isMemberDropdownOpen = v, isCategoryDropdownOpen: v => isCategoryDropdownOpen = v,
-      memberSearchQuery: v => memberSearchQuery = v, categorySearchQuery: v => categorySearchQuery = v, targetSeasonId: v => targetSeasonId = v,
-      selectedTxIds: v => selectedTxIds = v, searchQuery: v => searchQuery = v, monthFilter: v => monthFilter = v, memberHighlightedIndex: v => memberHighlightedIndex = v,
-      categoryHighlightedIndex: v => categoryHighlightedIndex = v
-    }
+  matchingInvoices = $derived(
+    this.selectedTx && this.selectedTx.amount > 0
+      ? this.unpaidInvoices.filter((inv) => inv.totalAmount === this.selectedTx?.amount)
+      : []
   );
 
-  const stateProxy = createReconciliationProxy({ getSuggestions }, getRef, setRef);
-  const actions = createReconciliationActions(stateProxy);
+  constructor(getProps: () => ReconciliationStateProps) {
+    const props = getProps();
+    this.bankStatementLines = props.bankStatementLines;
+    this.glTransactions = props.glTransactions;
+    this.seasonId = props.seasonId;
+    this.seasons = props.seasons;
+    this.members = props.members;
+    this.dbCategories = props.dbCategories || [];
+    this.reconciliationStatements = props.reconciliationStatements || [];
+    this.selectedSeason = props.seasonId;
+    this.targetSeasonId = props.seasonId;
 
-  return createReconciliationProxy(actions, getRef, setRef);
+    /*
+      Les actions sont posées sur l'instance, et non héritées.
+
+      Elles vivent dans des modules à part — le fichier passerait autrement les mille lignes — et
+      reçoivent l'instance pour la muter. Les poser ici garde le contrat que l'écran connaît :
+      `state.handleIgnore(…)` comme `state.pendingCount`, sans que l'appelant sache d'où vient quoi.
+    */
+    Object.assign(this, createReconciliationActions(this as any));
+
+    this.registerEffects();
+  }
+
+  /** Les filtres de recherche, communs à la file et à l'archive. */
+  matchesFilters(t: BankStatementLine) {
+    if (this.searchQuery.trim()) {
+      const query = this.searchQuery.toLowerCase().trim();
+      if (!(t.name || '').toLowerCase().includes(query) && !(t.memo || '').toLowerCase().includes(query)) return false;
+    }
+    if (this.monthFilter && !t.date.includes(`-${this.monthFilter}-`)) return false;
+    return true;
+  }
+
+  /**
+   * Les écritures non pointées qui pourraient correspondre : même montant, sens compatible, ±7 jours.
+   *
+   * Les dates sont pré-calculées avec le grand livre plutôt qu'à chaque appel : la version
+   * précédente instanciait deux `Date` par écriture à chaque sélection de ligne, soit quelques
+   * milliers d'allocations par clic.
+   */
+  private unpointedByAmount = $derived.by(() => {
+    const byAmount = new Map<number, { entry: GLTransaction; time: number }[]>();
+    for (const gt of this.glTransactions) {
+      if (gt.bankStatementLineId) continue;
+      const amount = Math.abs((gt as any).amountCents ?? gt.amount ?? 0);
+      if (!byAmount.has(amount)) byAmount.set(amount, []);
+      byAmount.get(amount)!.push({ entry: gt, time: new Date(gt.date).getTime() });
+    }
+    return byAmount;
+  });
+
+  getSuggestions(bt: BankStatementLine): GLTransaction[] {
+    const btAmt = (bt as any).amountCents ?? bt.amount ?? 0;
+    const candidates = this.unpointedByAmount.get(Math.abs(btAmt));
+    if (!candidates) return [];
+
+    const isBankDebit = btAmt < 0;
+    const btTime = new Date(bt.date).getTime();
+    return candidates
+      .filter(({ entry, time }) => {
+        if (isBankDebit && entry.type === 'recette') return false;
+        if (!isBankDebit && entry.type === 'depense') return false;
+        return Math.abs(btTime - time) / 86400000 <= 7;
+      })
+      .map(({ entry }) => entry);
+  }
+
+  /**
+   * `$effect` hors d'un composant lève ; les tests instancient pourtant l'état directement.
+   *
+   * On les enregistre donc sous garde, comme avant. Ce n'est pas de la complaisance : ces effets
+   * ne servent qu'à préremplir un formulaire, et un test de logique n'en a pas besoin.
+   */
+  private registerEffects() {
+    const safeEffect = (fn: () => void) => { try { $effect(fn); } catch { /* hors composant */ } };
+
+    safeEffect(() => {
+      const _ = `${this.view}:${this.activeTab}`;
+      this.selectedTxIds = {}; this.searchQuery = ''; this.monthFilter = '';
+    });
+
+    /*
+      L'exercice de rattachement n'est **pas** remis à zéro ici, mais avec le reste du
+      préremplissage, plus bas : cet effet-ci suit aussi le montant restant, et se rejoue
+      donc à chaque rechargement des écritures liées. Il aurait effacé en silence l'exercice
+      que la suggestion — ou la comptable — venait de poser.
+    */
+    safeEffect(() => {
+      if (this.selectedTx) {
+        this.amountToLink = parseFloat((this.remainingAmount / 100).toFixed(2));
+        this.memberSearchQuery = ''; this.categorySearchQuery = '';
+        this.selectedInvoiceIds = new Set(); this.isSplitMode = false; this.splits = [];
+      }
+    });
+
+    safeEffect(() => { if (this.selectedSeason) (this as any).loadUnpaidInvoices(); });
+
+    /*
+      La sélection ne se restaure plus depuis `sessionStorage`.
+
+      Les deux effets qui l'y écrivaient puis l'y relisaient n'existaient que pour survivre au
+      rechargement complet de la page après chaque rapprochement. Sans rechargement, la sélection
+      n'est jamais perdue — et `pickNextId` la fait avancer sur la ligne suivante de la file.
+    */
+    safeEffect(() => {
+      if (this.selectedTx && this.selectedTx.id !== this.lastProcessedTxId) {
+        this.lastProcessedTxId = this.selectedTx.id;
+        this.prefillFromSuggestion(this.selectedTx);
+      } else if (!this.selectedTx) {
+        this.lastProcessedTxId = null;
+        this.resetEntryFields();
+      }
+    });
+
+    safeEffect(() => { if (!this.isMemberDropdownOpen) this.memberHighlightedIndex = -1; });
+    safeEffect(() => { if (!this.isCategoryDropdownOpen) this.categoryHighlightedIndex = -1; });
+  }
+
+  private resetEntryFields() {
+    this.selectedMemberId = '';
+    this.accrualType = 'normal';
+    this.accrualNote = '';
+    this.targetSeasonId = this.selectedSeason;
+  }
+
+  /** Le formulaire reprend la suggestion de la ligne — et reste modifiable. */
+  private prefillFromSuggestion(line: BankStatementLine) {
+    if (!line.aiSuggestions) {
+      this.resetEntryFields();
+      return;
+    }
+    try {
+      const sug = JSON.parse(line.aiSuggestions);
+      this.selectedMemberId = sug.memberId ? sug.memberId.toString() : '';
+      if (sug.category) this.category = sug.category.toString();
+      // Rattachement d'exercice déduit du libellé (cotisation encaissée d'avance) :
+      // il se préremplit comme le reste, et reste modifiable.
+      this.accrualType = sug.accrualType || 'normal';
+      this.accrualNote = sug.accrualNote || '';
+      /*
+        L'exercice de rattachement fait partie de la suggestion, et pas seulement de sa note.
+
+        « Valider cette suggestion » enregistre le formulaire tel qu'il est affiché. Tant que ce
+        champ restait sur l'exercice consulté, le raccourci produisait une écriture qui se
+        contredisait : un produit constaté d'avance, une note disant « à rattacher à 26-27 », et un
+        `season_id` valant 25-26 — donc un encaissement compté dans le résultat de l'exercice qui se
+        clôture. Personne ne pouvait le voir : c'est le seul champ de la suggestion qui ne
+        s'affichait pas.
+      */
+      this.targetSeasonId = sug.targetSeason || this.selectedSeason;
+    } catch {
+      this.resetEntryFields();
+    }
+  }
 }
 
-export type ReconciliationState = ReturnType<typeof createReconciliationState>;
+/** Minuscules et sans accents : la forme sous laquelle une recherche se compare. */
+function deaccent(value: string): string {
+  return value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/**
+ * Ce que l'écran manipule : l'état **et** les actions posées dessus.
+ *
+ * Le type porte les deux, sans quoi `state.handleIgnore(…)` n'aurait de sens nulle part — on
+ * aurait remplacé une table recopiée à la main par un contrat tout aussi muet.
+ *
+ * Portée réelle de la vérification : les modules `.ts` — actions, rapiéçage, tests — sont
+ * contrôlés par `tsc`, et une propriété absente ou mal orthographiée y échoue désormais à la
+ * compilation, ce que le `Proxy` ne pouvait pas faire. Les `.svelte`, eux, ne sont typés par
+ * personne : `svelte-check` n'est ni installé ni lancé en CI. Ce type leur sert dans l'éditeur,
+ * pas au portillon.
+ */
+export type ReconciliationState = ReconciliationStore & ReturnType<typeof createReconciliationActions>;
+
+export function createReconciliationState(
+  initialPropsOrGetter: ReconciliationStateProps | (() => ReconciliationStateProps)
+): ReconciliationState {
+  const getProps = typeof initialPropsOrGetter === 'function' ? initialPropsOrGetter : () => initialPropsOrGetter;
+  return new ReconciliationStore(getProps) as ReconciliationState;
+}
