@@ -1,7 +1,8 @@
 <script lang="ts">
   import { Check, CheckCircle2, Inbox, Search, Trash2, X } from '@lucide/svelte';
-  import { Badge, Button, Card, Input, SearchableCombobox } from '@nba/ui';
+  import { Amount, Badge, Button, Card, Input, SearchableCombobox } from '@nba/ui';
   import ReconciliationRow from './ReconciliationRow.svelte';
+  import ReconciliationGapSheet from '../../get-reconciliation-statement/ui/ReconciliationGapSheet.svelte';
   import { isOneClickValidatable, parseSuggestion } from './reconciliation-suggestion';
   import ReconciliationRowDetail from './ReconciliationRowDetail.svelte';
   import type { ReconciliationState } from './reconciliation.svelte';
@@ -16,6 +17,31 @@
     { label: 'Septembre', value: '09' }, { label: 'Octobre', value: '10' }, { label: 'Novembre', value: '11' },
     { label: 'Décembre', value: '12' }
   ];
+
+  /*
+    Les deux moitiés de l'écart, en tête de file.
+
+    Elles vivaient au fond de chaque encart d'état, sous deux niveaux de repli et une fois par
+    compte. Ce sont pourtant les deux nombres qui disent où en est le rapprochement : autant les
+    poser là où l'on travaille, et n'ouvrir le détail que si on le demande.
+  */
+  const gapStats = $derived.by(() => {
+    const st = reconState.reconciliationStatements ?? [];
+    return {
+      entriesCount: st.reduce((n: number, s: any) => n + (s.unpointedEntries?.length ?? 0), 0),
+      entriesCents: st.reduce((n: number, s: any) => n - (s.unpointedEntriesTotalCents ?? 0), 0),
+      linesCount: st.reduce((n: number, s: any) => n + (s.unrecordedBankLines?.length ?? 0), 0),
+      linesCents: st.reduce((n: number, s: any) => n + (s.unrecordedBankLinesTotalCents ?? 0), 0)
+    };
+  });
+
+  let gapSheetOpen = $state(false);
+  let gapSheetSide = $state<'entries' | 'lines'>('entries');
+
+  function openGap(side: 'entries' | 'lines') {
+    gapSheetSide = side;
+    gapSheetOpen = true;
+  }
 
   const total = $derived(reconState.pendingCount + reconState.reconciledCount + reconState.ignoredCount);
   const done = $derived(reconState.reconciledCount + reconState.ignoredCount);
@@ -141,6 +167,34 @@
     <div class="h-1.5 w-full rounded-full bg-muted overflow-hidden">
       <div class="h-full bg-success transition-all duration-500" style={`width: ${progress}%`}></div>
     </div>
+
+    {#if gapStats.entriesCount > 0 || gapStats.linesCount > 0}
+      <div class="flex flex-wrap items-center gap-2">
+        {#if gapStats.entriesCount > 0}
+          <button
+            type="button"
+            class="flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted cursor-pointer"
+            onclick={() => openGap('entries')}
+          >
+            <span class="text-muted-foreground">Écritures non pointées</span>
+            <Badge variant="secondary" size="xs">{gapStats.entriesCount}</Badge>
+            <Amount cents={gapStats.entriesCents} showSign class="text-xs font-semibold" />
+          </button>
+        {/if}
+
+        {#if gapStats.linesCount > 0}
+          <button
+            type="button"
+            class="flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted cursor-pointer"
+            onclick={() => openGap('lines')}
+          >
+            <span class="text-muted-foreground">Lignes non comptabilisées</span>
+            <Badge variant="secondary" size="xs">{gapStats.linesCount}</Badge>
+            <Amount cents={gapStats.linesCents} showSign class="text-xs font-semibold" />
+          </button>
+        {/if}
+      </div>
+    {/if}
 
     {#if reconState.view === 'history'}
       <div class="flex items-center gap-1">
@@ -286,3 +340,9 @@
     {/if}
   </div>
 </Card.Root>
+
+<ReconciliationGapSheet
+  bind:open={gapSheetOpen}
+  side={gapSheetSide}
+  statements={reconState.reconciliationStatements ?? []}
+/>
