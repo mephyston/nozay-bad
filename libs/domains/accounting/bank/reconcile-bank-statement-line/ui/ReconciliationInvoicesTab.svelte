@@ -39,7 +39,7 @@
         {/if}
       </span>
       {#if reconState.matchingInvoices.length > 0}
-        <Badge variant="success" size="xs" class="gap-1">
+        <Badge variant="success" size="xs">
           <Sparkles class="h-3 w-3" />
           <span>{reconState.matchingInvoices.length} au montant exact</span>
         </Badge>
