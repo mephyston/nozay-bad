@@ -193,7 +193,15 @@ try {
   const nextSeasonCode = nextSeason ? nextSeason.code || String(nextSeason.id) : null;
 
   const [btRes, glRes, membersRes, nextMembersRes, categoriesRes, statementsRes] = await Promise.all([
-    apiService.fetch(`http://localhost/accounting/bank-transactions?season=${season}`),
+    /*
+      Toutes les lignes, sans borne d'exercice.
+
+      Une ligne de relevé n'appartient à aucune saison : `bank_statement_lines` ne porte pas de
+      `season_id`, c'est un mouvement daté. Les borner à l'exercice consulté faisait disparaître
+      de la file, au 1er septembre, tout ce qui restait à rapprocher de l'année écoulée — et
+      l'écran n'aurait rien eu pour le dire.
+    */
+    apiService.fetch('http://localhost/accounting/bank-transactions'),
     /*
       Le solde progressif est refusé : c'est une sous-requête corrélée, réévaluée pour chacune
       des 2000 écritures demandées, et cet écran ne l'affiche nulle part. Seul le grand livre

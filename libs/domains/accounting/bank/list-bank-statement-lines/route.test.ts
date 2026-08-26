@@ -8,17 +8,29 @@ vi.mock('./handler', () => ({
 }));
 
 describe('listBankStatementLines Route', () => {
-  it('should return 400 when season is missing or empty', async () => {
+  /*
+    Sans exercice, la liste n'est plus refusée : elle rend tout.
+
+    Une ligne de relevé n'appartient à aucun exercice — `bank_statement_lines` ne porte pas de
+    `season_id`, c'est un mouvement daté. Exiger une saison faisait disparaître de la file toute
+    ligne datée hors de l'exercice consulté, soit au 1er septembre tout ce qui restait à
+    rapprocher de l'année écoulée.
+  */
+  it("rend toutes les lignes quand aucun exercice n'est demandé", async () => {
     const { mockD1 } = await setupMockDb();
+    vi.mocked(listBankStatementLines).mockResolvedValue([] as any);
+
     const res = await listBankStatementLinesRoute.request(
       'http://localhost/bank-statement-lines',
       { method: 'GET' },
       { DB: mockD1 as any }
     );
-    expect(res.status).toBe(400);
-    const body = await res.json() as any;
-    expect(body.success).toBe(false);
-    expect(body.error).toContain('Validation failed');
+
+    expect(res.status).toBe(200);
+    expect(listBankStatementLines).toHaveBeenCalledWith(
+      expect.anything(),
+      { seasonId: undefined, filters: { status: undefined, accountId: undefined } }
+    );
   });
 
   it('should return 200 on valid query parameters', async () => {

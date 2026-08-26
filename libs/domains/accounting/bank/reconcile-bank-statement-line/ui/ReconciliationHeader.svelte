@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Upload, Sparkles, ShieldAlert } from '@lucide/svelte';
-  import { Button, PageHeader, Label, Alert, SearchableCombobox, softNavigate, toSeasonOptions } from '@nba/ui';
+  import { Button, PageHeader, Alert } from '@nba/ui';
   import type { ReconciliationState } from './reconciliation.svelte';
 
   let { state = $bindable() }: { state: ReconciliationState } = $props();
@@ -21,26 +21,14 @@
 >
   {#snippet actions()}
     <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-      {#if state.seasons && state.seasons.length > 0}
-        <!--
-          Le libellé reste, mais ne s'affiche plus.
+      <!--
+        Plus de sélecteur d'exercice ici.
 
-          `FormField` l'empilait au-dessus du champ : dans une barre d'outils, cela faisait deux
-          lignes pour un contrôle qui en occupe une. Le poser à gauche donnait « Saison — Saison
-          2025-2026 », la valeur se décrivant déjà elle-même. Il subsiste pour les lecteurs
-          d'écran, à qui le seul `<button>` du combobox ne dirait rien.
-        -->
-        <div class="flex items-center gap-2 shrink-0">
-          <Label for="select-season" class="sr-only">Saison comptable</Label>
-          <SearchableCombobox
-            id="select-season"
-            items={toSeasonOptions(state.seasons)}
-            bind:value={state.selectedSeason}
-            onValueChange={() => { const url = new URL(window.location.href); url.searchParams.set('season', String(state.selectedSeason)); softNavigate(url.toString()); }}
-          />
-        </div>
-      {/if}
-
+        Une ligne non rapprochée n'appartient à aucun exercice, et la file les montre donc toutes.
+        L'exercice de rattachement de l'écriture, lui, se choisit dans le formulaire — au bon
+        endroit, ligne par ligne. Consulter un exercice clos n'avait par ailleurs aucun objet :
+        sa file est vide par construction.
+      -->
       <!-- Groupe de boutons toujours maintenus ensemble sur la même ligne (flex-nowrap) -->
       <div class="flex items-center gap-2 flex-nowrap flex-1 sm:flex-initial">
         <Button

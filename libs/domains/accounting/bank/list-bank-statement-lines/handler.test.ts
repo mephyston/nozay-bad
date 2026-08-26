@@ -100,4 +100,16 @@ describe('listBankStatementLines', () => {
     expect(line.amount).toBe(-8840);
     expect(line.amountCents).toBe(-8840);
   });
+
+  it("ne borne aucune date quand aucun exercice n'est demandé", async () => {
+    const repo = mockRepo();
+
+    await listBankStatementLines(db, {} as any);
+
+    expect(getSeasonFromDb).not.toHaveBeenCalled();
+    expect(repo.listBankStatementLines).toHaveBeenCalledWith(db, expect.objectContaining({
+      startDate: undefined,
+      endDate: undefined
+    }));
+  });
 });

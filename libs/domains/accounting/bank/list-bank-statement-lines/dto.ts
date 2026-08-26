@@ -11,7 +11,8 @@ export interface ListBankStatementLinesFilters {
 
 /** Les filtres se posent sous `filters` ; la racine reste acceptée pour les appelants directs. */
 export interface ListBankStatementLinesInput extends ListBankStatementLinesFilters {
-  seasonId: string;
+  /** Facultatif : sans lui, la liste n'est bornée par aucune date. */
+  seasonId?: string;
   filters?: ListBankStatementLinesFilters;
 }
 

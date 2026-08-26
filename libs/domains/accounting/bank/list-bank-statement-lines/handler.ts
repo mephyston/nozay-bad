@@ -21,8 +21,9 @@ export async function listBankStatementLines(db: Db, input: ListBankStatementLin
   const repo = new ListBankStatementLinesRepository();
   const filters = { ...(input as any), ...(input.filters ?? {}) };
 
-  const season = await getSeasonFromDb(db, input.seasonId);
-  if (!season) {
+  /* Sans exercice demandé, aucune borne de dates : toutes les lignes remontent. */
+  const season = input.seasonId ? await getSeasonFromDb(db, input.seasonId) : null;
+  if (input.seasonId && !season) {
     throw new AppError('Saison comptable introuvable.', 404);
   }
 
@@ -40,8 +41,8 @@ export async function listBankStatementLines(db: Db, input: ListBankStatementLin
     status: filters.status,
     accountId,
     // Un intervalle explicite l'emporte sur celui de l'exercice : il ne peut que le resserrer.
-    startDate: filters.startDate ?? season.startDate,
-    endDate: filters.endDate ?? season.endDate
+    startDate: filters.startDate ?? season?.startDate,
+    endDate: filters.endDate ?? season?.endDate
   });
 
   return rawLines.map(line => {
