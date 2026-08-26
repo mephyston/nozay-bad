@@ -7,7 +7,6 @@ import ReportAIAnalysis from './ReportAIAnalysis.svelte';
 
   let { report, selectedSeason, seasons = [], canUseAi = false }: { report: ReportData; selectedSeason: string; seasons?: Season[]; canUseAi?: boolean } = $props();
 
-  const dispo = $derived(report.tresorerieDisponible);
 
   /*
    * Le tableau montrait un seul nombre, sous l'intitulé « Solde Réel Final ». C'était le solde
@@ -114,53 +113,6 @@ import ReportAIAnalysis from './ReportAIAnalysis.svelte';
     </div>
   </Card.Content>
 </Card.Root>
-
-{#if dispo}
-  <!--
-    Ce passage du solde comptable au solde disponible en banque existait déjà dans le PDF du
-    rapport, et nulle part à l'écran : l'information juste ne se lisait que sur le papier.
-  -->
-  <Card.Root>
-    <Card.Content class="p-6 space-y-4">
-      <div>
-        <h3 class="text-lg font-semibold">Du solde comptable au solde bancaire</h3>
-        <p class="text-sm text-muted-foreground">
-          Une écriture saisie déplace le solde des livres. Elle ne déplace le solde de la banque
-          que le jour où l'argent y arrive vraiment.
-        </p>
-      </div>
-
-      <div class="space-y-2 text-sm">
-        <div class="flex items-baseline justify-between gap-4 font-semibold">
-          <span>Trésorerie comptable (soldes totaux)</span>
-          <span class="tabular-nums">{formatAmount(dispo.totalGrossCashCents)}</span>
-        </div>
-        {#if dispo.inVaultCents > 0}
-          <div class="flex items-baseline justify-between gap-4 pl-4 text-muted-foreground">
-            <span>dont chèques en coffre, non déposés</span>
-            <span class="tabular-nums">− {formatAmount(dispo.inVaultCents)}</span>
-          </div>
-        {/if}
-        {#if dispo.pendingDebitCents > 0}
-          <div class="flex items-baseline justify-between gap-4 pl-4 text-muted-foreground">
-            <span>dont paiements en attente de débit</span>
-            <span class="tabular-nums">+ {formatAmount(dispo.pendingDebitCents)}</span>
-          </div>
-        {/if}
-        <div class="flex items-baseline justify-between gap-4 border-t border-border pt-2 font-semibold">
-          <span>Trésorerie disponible en banque (relevés)</span>
-          <span class="tabular-nums">{formatAmount(dispo.netAvailableCashCents)}</span>
-        </div>
-      </div>
-
-      {#if dispo.inVaultCents === 0 && dispo.pendingDebitCents === 0}
-        <p class="text-xs text-muted-foreground">
-          Aucun décalage à cette date : les deux soldes coïncident.
-        </p>
-      {/if}
-    </Card.Content>
-  </Card.Root>
-{/if}
 
 {#if report.projections?.treasuryForecast}
   <ReportTreasuryForecast forecast={report.projections.treasuryForecast} />

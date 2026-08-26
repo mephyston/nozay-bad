@@ -390,36 +390,28 @@ export async function generateSeasonReportPdf(
     const dispo = reportRaw.tresorerieDisponible;
     if (!dispo) return;
 
+    /*
+     * Le passage « comptable → disponible en banque » a été retiré, ici comme à l'écran.
+     *
+     * Il annonçait « Trésorerie disponible en banque (Relevés) » en affichant
+     * `netAvailableCashCents`, c'est-à-dire le solde **théorique** — un nombre que le logiciel
+     * calcule, jamais un relevé. Quand aucun chèque ne dormait en coffre, il concluait que « les
+     * deux soldes coïncident » en comparant un nombre à lui-même. Le tableau ci-dessus porte
+     * désormais les deux vraies colonnes (solde comptable, solde du relevé), et l'état de
+     * rapprochement dit l'écart réel : ce bloc faisait doublon et mentait sur son intitulé.
+     *
+     * Les régularisations, elles, restent : elles ne se lisent nulle part ailleurs.
+     */
+    if (dispo.deferredRevenues.length === 0 && dispo.deferredExpenses.length === 0) return;
+
     y -= 12;
     ensureSpace(24);
-    page.drawText('Trésorerie Disponible & Régularisations', { x: MARGIN, y, size: 12, font: bold, color: INK });
+    page.drawText('Régularisations Comptables', { x: MARGIN, y, size: 12, font: bold, color: INK });
     y -= 8;
     page.drawLine({ start: { x: MARGIN, y }, end: { x: rightEdge, y }, thickness: 0.6, color: GREY });
     y -= 18;
 
-    const line = (label: string, amount: string, opts?: { indent?: boolean; strong?: boolean; color?: any }) => {
-      ensureSpace(15);
-      const f = opts?.strong ? bold : font;
-      const color = opts?.color ?? (opts?.indent ? GREY : INK);
-      page.drawText(clip(label, f, opts?.strong ? 10.5 : 10, CONTENT_W - 130), { x: MARGIN + (opts?.indent ? 14 : 0), y, size: opts?.strong ? 10.5 : 10, font: f, color });
-      drawRight(amount, rightEdge, opts?.strong ? 10.5 : 10, f, color);
-      y -= 15;
-    };
-
-    line('Trésorerie comptable (soldes totaux)', formatEuros(dispo.totalGrossCashCents), { strong: true });
-    if (dispo.inVaultCents > 0) line('- dont chèques en coffre (non déposés)', `- ${formatEuros(dispo.inVaultCents)}`, { indent: true });
-    if (dispo.pendingDebitCents > 0) line('- dont paiements en attente de débit (CB)', `+ ${formatEuros(dispo.pendingDebitCents)}`, { indent: true });
-    y -= 6;
-    ensureSpace(22);
-    page.drawLine({ start: { x: MARGIN, y: y + 11 }, end: { x: rightEdge, y: y + 11 }, thickness: 0.5, color: GREY });
-    line('Trésorerie disponible en banque (Relevés)', formatEuros(dispo.netAvailableCashCents), { strong: true });
-
-    if (dispo.deferredRevenues.length > 0 || dispo.deferredExpenses.length > 0) {
-      y -= 10;
-      ensureSpace(18);
-      page.drawText('Impacts sur le résultat (Régularisations)', { x: MARGIN, y, size: 10, font: bold, color: GREY });
-      y -= 16;
-
+    {
       if (dispo.deferredRevenues.length > 0) {
         ensureSpace(14);
         page.drawText("• Produits encaissés d'avance (à déduire du résultat) :", { x: MARGIN, y, size: 9.5, font, color: GREY });
