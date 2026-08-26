@@ -141,6 +141,10 @@ export interface ReconciliationStateFields {
   /** `queue` = ce qui reste à décider ; `history` = les archives. */
   view: 'queue' | 'history';
   isMultiSelect: boolean;
+  /** Compte sur lequel on rapproche ; vide = tous. */
+  accountFilter: string;
+  accountOptions: { id: string; label: string; pendingCount: number }[];
+  isSingleAccount: boolean;
   selectedTx: BankStatementLine | null;
   selectedTxIds: Record<number, boolean>;
   selectedInvoiceIds: Set<number>;

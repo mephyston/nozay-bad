@@ -458,4 +458,74 @@ describe('createReconciliationState logic unit tests', () => {
       expect(state.errorMsg).toContain('catégorie');
     });
   });
+
+  describe('filtre par compte', () => {
+    const lines = [
+      { id: 1, fitid: 'F1', accountId: 1, amount: 100, date: '2026-03-01', name: 'COURANT UN', memo: null, status: 'pending', aiSuggestions: null },
+      { id: 2, fitid: 'F2', accountId: 1, amount: 200, date: '2026-03-02', name: 'COURANT DEUX', memo: null, status: 'pending', aiSuggestions: null },
+      { id: 3, fitid: 'F3', accountId: 2, amount: 300, date: '2026-03-03', name: 'LIVRET UN', memo: null, status: 'pending', aiSuggestions: null },
+      { id: 4, fitid: 'F4', accountId: 2, amount: 400, date: '2026-03-04', name: 'LIVRET DEUX', memo: null, status: 'reconciled', aiSuggestions: null }
+    ] as any[];
+
+    const statements = [
+      { account: { id: 1, code: 'current', label: 'Compte Courant' } },
+      { account: { id: 2, code: 'savings', label: 'Livret A' } }
+    ];
+
+    const build = (over: Record<string, any> = {}) =>
+      createReconciliationState({
+        bankStatementLines: lines,
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: '2025-2026', active: true }],
+        members: [],
+        reconciliationStatements: statements,
+        ...over
+      } as any);
+
+    it('compte ce qui reste à traiter par compte', () => {
+      const state = build();
+
+      expect(state.accountOptions).toEqual([
+        { id: '1', label: 'Compte Courant', pendingCount: 2 },
+        { id: '2', label: 'Livret A', pendingCount: 1 }
+      ]);
+      expect(state.isSingleAccount).toBe(false);
+    });
+
+    it('restreint la file au compte choisi', () => {
+      const state = build();
+
+      state.accountFilter = '2';
+      expect(state.queueTransactions.map((t: any) => t.id)).toEqual([3]);
+
+      state.accountFilter = '';
+      expect(state.queueTransactions.map((t: any) => t.id)).toEqual([1, 2, 3]);
+    });
+
+    it("restreint aussi l'historique", () => {
+      const state = build();
+      state.view = 'history';
+      state.activeTab = 'reconciled';
+
+      state.accountFilter = '1';
+      expect(state.displayedTransactions).toEqual([]);
+
+      state.accountFilter = '2';
+      expect(state.displayedTransactions.map((t: any) => t.id)).toEqual([4]);
+    });
+
+    /* Un compte sans relevé arrêté n'a pas d'état : sa ligne ne doit pas disparaître du filtre. */
+    it('garde un compte que les états ne nomment pas', () => {
+      const state = build({ reconciliationStatements: [] });
+
+      expect(state.accountOptions.map((a: any) => a.label)).toEqual(['Compte #1', 'Compte #2']);
+    });
+
+    it("ne voit qu'un compte sur un relevé mono-compte", () => {
+      const state = build({ bankStatementLines: lines.filter((l) => l.accountId === 1) });
+
+      expect(state.isSingleAccount).toBe(true);
+    });
+  });
 });

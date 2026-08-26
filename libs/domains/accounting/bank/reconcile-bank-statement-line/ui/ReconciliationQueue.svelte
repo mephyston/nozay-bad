@@ -43,6 +43,12 @@
     gapSheetOpen = true;
   }
 
+  /* La ligne dit son compte tant que la file en mélange plusieurs — sans quoi on pointe sans
+     savoir contre quel état on progresse. Une fois filtrée, l'information est redondante. */
+  const showAccountOnRows = $derived(!reconState.isSingleAccount && !reconState.accountFilter);
+  const accountLabelOf = (line: any) =>
+    reconState.accountOptions.find((a) => a.id === String(line.accountId))?.label ?? null;
+
   const total = $derived(reconState.pendingCount + reconState.reconciledCount + reconState.ignoredCount);
   const done = $derived(reconState.reconciledCount + reconState.ignoredCount);
   const progress = $derived(total === 0 ? 0 : Math.round((done / total) * 100));
@@ -245,6 +251,27 @@
       </div>
       <SearchableCombobox class="h-8 text-xs w-40" items={MONTHS} bind:value={reconState.monthFilter} />
 
+      <!--
+        Le compte sur lequel on rapproche.
+
+        Un rapprochement se pose compte par compte : c'est l'unité sur laquelle l'état vérifie son
+        identité. Le filtre ne s'affiche que s'il y a matière à trancher, et chaque compte annonce
+        ce qu'il lui reste — c'est là que se lit où le travail attend.
+      -->
+      {#if !reconState.isSingleAccount}
+        <SearchableCombobox
+          class="h-8 text-xs w-52 shrink-0"
+          items={[
+            { label: `Tous les comptes (${reconState.pendingCount})`, value: '' },
+            ...reconState.accountOptions.map((a) => ({
+              label: `${a.label} (${a.pendingCount})`,
+              value: a.id
+            }))
+          ]}
+          bind:value={reconState.accountFilter}
+        />
+      {/if}
+
       {#if reconState.view === 'queue'}
         <!--
           La sélection multiple ne s'impose pas à l'écran : les cases encombraient chaque ligne
@@ -340,6 +367,7 @@
           {line}
           isExpanded={reconState.selectedTx?.id === line.id}
           isFocused={focusedLine?.id === line.id}
+          accountLabel={showAccountOnRows ? accountLabelOf(line) : null}
           showCheckbox={reconState.isMultiSelect && reconState.view === 'queue'}
         >
           <ReconciliationRowDetail bind:state={reconState} {line} />

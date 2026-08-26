@@ -74,6 +74,15 @@ export class ReconciliationStore {
   selectedTxIds = $state<Record<number, boolean>>({});
   searchQuery = $state('');
   monthFilter = $state('');
+  /**
+   * Le compte sur lequel on rapproche. Vide = tous.
+   *
+   * Un rapprochement est une preuve qui se pose **compte par compte** : l'identité vérifiée par
+   * l'état — solde du relevé = solde des livres − non pointées + non comptabilisées — n'a de sens
+   * que sur un compte. La file les mélangeait sans même dire lequel, si bien qu'on pointait sans
+   * savoir contre quel état on progressait.
+   */
+  accountFilter = $state('');
   memberHighlightedIndex = $state(-1);
   categoryHighlightedIndex = $state(-1);
 
@@ -103,6 +112,32 @@ export class ReconciliationStore {
   selectedSum = $derived(
     this.unpaidInvoices.filter((i) => this.selectedInvoiceIds.has(i.id)).reduce((acc, i) => acc + i.totalAmount, 0)
   );
+
+  /**
+   * Les comptes présents dans le relevé, avec ce qu'il leur reste à traiter.
+   *
+   * Construits depuis les lignes elles-mêmes, et non depuis les états : une ligne peut appartenir
+   * à un compte dont aucun relevé n'a encore été arrêté, et elle ne doit pas disparaître du filtre
+   * pour autant. Les libellés viennent des états quand ils existent.
+   */
+  accountOptions = $derived.by(() => {
+    const labels = new Map<string, string>(
+      (this.reconciliationStatements ?? []).map((s: any) => [String(s.account?.id), s.account?.label])
+    );
+    const pending = new Map<string, number>();
+    const total = new Map<string, number>();
+    for (const line of this.bankStatementLines) {
+      const id = String((line as any).accountId);
+      total.set(id, (total.get(id) ?? 0) + 1);
+      if (line.status === 'pending') pending.set(id, (pending.get(id) ?? 0) + 1);
+    }
+    return [...total.keys()]
+      .map((id) => ({ id, label: labels.get(id) ?? `Compte #${id}`, pendingCount: pending.get(id) ?? 0 }))
+      .sort((a, b) => b.pendingCount - a.pendingCount || a.label.localeCompare(b.label));
+  });
+
+  /** Vrai tant que le relevé ne porte qu'un seul compte : le filtre n'a alors rien à trancher. */
+  isSingleAccount = $derived(this.accountOptions.length <= 1);
 
   /** La file : ce qui reste à décider, et rien d'autre. */
   queueTransactions = $derived(this.bankStatementLines.filter((t) => t.status === 'pending' && this.matchesFilters(t)));
@@ -182,6 +217,7 @@ export class ReconciliationStore {
       if (!(t.name || '').toLowerCase().includes(query) && !(t.memo || '').toLowerCase().includes(query)) return false;
     }
     if (this.monthFilter && !t.date.includes(`-${this.monthFilter}-`)) return false;
+    if (this.accountFilter && String((t as any).accountId) !== this.accountFilter) return false;
     return true;
   }
 

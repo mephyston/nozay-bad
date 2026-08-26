@@ -11,6 +11,7 @@
     line,
     isExpanded = false,
     isFocused = false,
+    accountLabel = null,
     showCheckbox = false,
     children
   }: {
@@ -19,6 +20,8 @@
     isExpanded?: boolean;
     /** Ligne visée par le clavier : elle doit se voir, sans se confondre avec une ligne ouverte. */
     isFocused?: boolean;
+    /** Le compte de la ligne, quand la file en mélange plusieurs. */
+    accountLabel?: string | null;
     showCheckbox?: boolean;
     children?: import('svelte').Snippet;
   } = $props();
@@ -60,6 +63,9 @@
         <span class="text-[11px] text-muted-foreground tabular-nums shrink-0">{line.date}</span>
         <span class="font-medium text-sm truncate">{line.name}</span>
       </div>
+      {#if accountLabel}
+        <Badge variant="secondary" size="xs" class="self-start">{accountLabel}</Badge>
+      {/if}
       {#if line.memo}
         <div class="text-[11px] text-muted-foreground italic truncate">{line.memo}</div>
       {/if}

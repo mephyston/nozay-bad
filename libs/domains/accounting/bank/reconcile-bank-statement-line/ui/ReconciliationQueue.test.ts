@@ -229,3 +229,52 @@ describe('le clavier', () => {
     expect(focusedId(target)).toBe('1');
   });
 });
+
+describe('le filtre par compte', () => {
+  const multi = () => [
+    line({ id: 1, accountId: 1, name: 'COURANT UN' }),
+    line({ id: 2, accountId: 1, name: 'COURANT DEUX' }),
+    line({ id: 3, accountId: 2, name: 'LIVRET UN' })
+  ];
+
+  const statements = [
+    { account: { id: 1, code: 'current', label: 'Compte Courant' }, unpointedEntries: [], unrecordedBankLines: [], unpointedEntriesTotalCents: 0, unrecordedBankLinesTotalCents: 0 },
+    { account: { id: 2, code: 'savings', label: 'Livret A' }, unpointedEntries: [], unrecordedBankLines: [], unpointedEntriesTotalCents: 0, unrecordedBankLinesTotalCents: 0 }
+  ];
+
+  /* Un seul compte : le filtre n'a rien à trancher, il n'encombre pas la barre. */
+  it("ne s'affiche pas quand le relevé ne porte qu'un compte", () => {
+    const target = render([line({ id: 1, accountId: 1 })], { reconciliationStatements: statements });
+
+    expect(target.innerHTML).not.toContain('Tous les comptes');
+  });
+
+  /* Le combobox ne rend ses options qu'à l'ouverture : seul le libellé sélectionné est dans le
+     DOM au repos. Le décompte par compte se vérifie sur l'état, dans `reconciliation.test.ts`. */
+  it('propose le filtre, tous comptes par défaut', () => {
+    const target = render(multi(), { reconciliationStatements: statements });
+
+    expect(target.innerHTML).toContain('Tous les comptes (3)');
+  });
+
+  /*
+    Sans repère de compte, on pointe sans savoir contre quel état de rapprochement on progresse :
+    l'identité que vérifie l'état se pose compte par compte.
+  */
+  it('nomme le compte de chaque ligne tant que la file en mélange plusieurs', () => {
+    const target = render(multi(), { reconciliationStatements: statements });
+
+    const rowOf = (name: string) =>
+      Array.from(target.querySelectorAll('[data-line-id]')).find((r) => r.textContent?.includes(name))!;
+
+    expect(rowOf('COURANT UN').textContent).toContain('Compte Courant');
+    expect(rowOf('LIVRET UN').textContent).toContain('Livret A');
+  });
+
+  it("ne répète pas le compte sur les lignes d'un relevé mono-compte", () => {
+    const target = render([line({ id: 1, accountId: 1, name: 'SEULE' })], { reconciliationStatements: statements });
+
+    const row = target.querySelector('[data-line-id]')!;
+    expect(row.textContent).not.toContain('Compte Courant');
+  });
+});
