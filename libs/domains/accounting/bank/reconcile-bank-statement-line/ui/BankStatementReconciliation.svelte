@@ -6,8 +6,7 @@
   import ImportStatementDialog from './ImportStatementDialog.svelte';
   import ReconciliationHeader from './ReconciliationHeader.svelte';
   import ReconciliationStatement from '../../get-reconciliation-statement/ui/ReconciliationStatement.svelte';
-  import BankStatementLinesList from './BankStatementLinesList.svelte';
-  import ReconciliationDetailPanel from './ReconciliationDetailPanel.svelte';
+  import ReconciliationQueue from './ReconciliationQueue.svelte';
 
   let props: ReconciliationStateProps = $props();
   // svelte-ignore non_reactive_update
@@ -74,16 +73,14 @@
       </form>
     </Card.Root>
   {:else}
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-      <div class="lg:col-span-5 {state.selectedTx ? 'hidden lg:block' : 'block'}">
-        <!-- svelte-ignore non_reactive_update -->
-        <BankStatementLinesList bind:state />
-      </div>
+    <!--
+      Une colonne, et non plus deux.
 
-      <div class="lg:col-span-7 {state.selectedTx ? 'block' : 'hidden lg:block'}">
-        <!-- svelte-ignore non_reactive_update -->
-        <ReconciliationDetailPanel bind:state />
-      </div>
-    </div>
+      Le maître-détail imposait un aller-retour de l'œil à chaque ligne : cliquer à gauche, lire à
+      droite, revenir. La décision se prend maintenant là où la ligne se lit — le fait bancaire
+      face à sa proposition — et le formulaire ne s'ouvre en place que si on refuse celle-ci.
+    -->
+    <!-- svelte-ignore non_reactive_update -->
+    <ReconciliationQueue bind:state />
   {/if}
 </div>

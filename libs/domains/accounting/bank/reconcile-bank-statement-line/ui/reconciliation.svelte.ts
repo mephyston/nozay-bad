@@ -30,7 +30,16 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
   let showImportModal = $state(false);
   let selectedAccount = $state('auto');
 
-  let activeTab = $state<'pending' | 'reconciled' | 'ignored'>('pending');
+  /*
+    L'écran de travail ne montre que ce qui reste à décider.
+
+    Les trois onglets « À rapprocher / Rapprochées / Ignorées » mettaient sur le même plan une file
+    à vider et deux archives. `view` sépare les deux ; `activeTab` ne sert plus qu'à choisir
+    l'archive consultée.
+  */
+  let view = $state<'queue' | 'history'>('queue');
+  let activeTab = $state<'reconciled' | 'ignored'>('reconciled');
+  let isMultiSelect = $state(false);
   let unpaidInvoices = $state<Invoice[]>([]);
   let activeRightTab = $state<'manual' | 'ledger'>('manual');
 
@@ -86,19 +95,22 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
   const selectedCount = $derived(Object.keys(selectedTxIds).map(Number).filter(id => selectedTxIds[id]).length);
   const selectedSum = $derived(unpaidInvoices.filter(i => selectedInvoiceIds.has(i.id)).reduce((acc, i) => acc + i.totalAmount, 0));
 
-  const displayedTransactions = $derived(
-    bankStatementLines.filter(t => {
-      if (t.status !== activeTab) return false;
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        if (!(t.name || '').toLowerCase().includes(query) && !(t.memo || '').toLowerCase().includes(query)) return false;
-      }
-      if (monthFilter) {
-        if (!t.date.includes(`-${monthFilter}-`)) return false;
-      }
-      return true;
-    })
-  );
+  function matchesFilters(t: BankStatementLine) {
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      if (!(t.name || '').toLowerCase().includes(query) && !(t.memo || '').toLowerCase().includes(query)) return false;
+    }
+    if (monthFilter && !t.date.includes(`-${monthFilter}-`)) return false;
+    return true;
+  }
+
+  /** La file : ce qui reste à décider, et rien d'autre. */
+  const queueTransactions = $derived(bankStatementLines.filter(t => t.status === 'pending' && matchesFilters(t)));
+  /** L'archive : rapprochées ou ignorées, selon l'onglet consulté. */
+  const historyTransactions = $derived(bankStatementLines.filter(t => t.status === activeTab && matchesFilters(t)));
+
+  /* Ce que la vue courante affiche. `pickNextId` s'en sert pour avancer d'une ligne à l'autre. */
+  const displayedTransactions = $derived(view === 'history' ? historyTransactions : queueTransactions);
 
   const memberDisplayVal = $derived.by(() => {
     if (!selectedMemberId) return '';
@@ -125,7 +137,7 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
 
   function safeEffect(fn: () => void) { try { $effect(fn); } catch (e) {} }
 
-  safeEffect(() => { const _ = activeTab; selectedTxIds = {}; searchQuery = ''; monthFilter = ''; });
+  safeEffect(() => { const _ = `${view}:${activeTab}`; selectedTxIds = {}; searchQuery = ''; monthFilter = ''; });
   /*
     L'exercice de rattachement n'est **pas** remis à zéro ici, mais avec le reste du
     préremplissage, plus bas : cet effet-ci suit aussi le montant restant, et se rejoue
@@ -184,6 +196,7 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
       reconciliationStatements: () => reconciliationStatements,
       selectedTx: () => selectedTx, isSubmitting: () => isSubmitting, isAnalyzing: () => isAnalyzing, isAnalyzingSingle: () => isAnalyzingSingle,
       errorMsg: () => errorMsg, showImportModal: () => showImportModal, selectedAccount: () => selectedAccount, activeTab: () => activeTab,
+      view: () => view, isMultiSelect: () => isMultiSelect, queueTransactions: () => queueTransactions, historyTransactions: () => historyTransactions,
       unpaidInvoices: () => unpaidInvoices, activeRightTab: () => activeRightTab, category: () => category, paymentMethod: () => paymentMethod,
       selectedMemberId: () => selectedMemberId, accrualType: () => accrualType, accrualNote: () => accrualNote, amountToLink: () => amountToLink, lastProcessedTxId: () => lastProcessedTxId,
       selectedInvoiceIds: () => selectedInvoiceIds, isSplitMode: () => isSplitMode, splits: () => splits,
@@ -204,6 +217,7 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
       reconciliationStatements: v => reconciliationStatements = v,
       selectedTx: v => selectedTx = v, isSubmitting: v => isSubmitting = v, isAnalyzing: v => isAnalyzing = v, isAnalyzingSingle: v => isAnalyzingSingle = v,
       errorMsg: v => errorMsg = v, showImportModal: v => showImportModal = v, selectedAccount: v => selectedAccount = v, activeTab: v => activeTab = v,
+      view: v => view = v, isMultiSelect: v => isMultiSelect = v,
       unpaidInvoices: v => unpaidInvoices = v, activeRightTab: v => activeRightTab = v, category: v => category = v, paymentMethod: v => paymentMethod = v,
       selectedMemberId: v => selectedMemberId = v, accrualType: v => accrualType = v, accrualNote: v => accrualNote = v, amountToLink: v => amountToLink = v, lastProcessedTxId: v => lastProcessedTxId = v,
       selectedInvoiceIds: v => selectedInvoiceIds = v, isSplitMode: v => isSplitMode = v, splits: v => splits = v,

@@ -13,6 +13,8 @@ import {
 import { scrollMemberOptionIntoView, scrollCategoryOptionIntoView } from './reconciliation-dropdowns';
 import { createBulkActions } from './reconciliation-actions-bulk';
 import { createPatchActions } from './reconciliation-patch';
+import { buildSuggestionRequest } from './reconciliation-suggestion';
+import { apiBulkReconcile } from './reconciliation-api';
 
 export function createReconciliationActions(s: ReconciliationStateFields) {
   const patch = createPatchActions(s);
@@ -84,6 +86,35 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
    * catégorie quand la facture en mêle plusieurs — que la comptable relit, corrige et valide par
    * le geste habituel. Rien n'est plus codé en dur : ce qui manque se voit et se choisit.
    */
+  /**
+   * Valide la suggestion d'une ligne sans l'ouvrir : le geste courant de la file.
+   *
+   * Il ne passe **pas** par l'état du formulaire, et c'est délibéré : celui-ci se remplit par un
+   * effet déclenché à la sélection de la ligne, donc après coup. Valider depuis une ligne repliée
+   * enverrait alors le formulaire de la ligne précédente. La requête se déduit ici de la
+   * suggestion elle-même, par le même constructeur que le lot.
+   */
+  async function validateSuggestion(line: BankStatementLine) {
+    const request = buildSuggestionRequest(line, s.selectedSeason);
+    if (!request) {
+      toast.error("Cette opération demande une saisie : ouvrez-la pour la compléter.");
+      return;
+    }
+    s.isSubmitting = true;
+    try {
+      const nextId = patch.pickNextId(line.id);
+      const { lines, entries } = await apiBulkReconcile([request]);
+      patch.applyOutcomes(lines, entries);
+      toast.success('Opération rapprochée.');
+      if (lines[0]?.status === 'reconciled') patch.selectById(nextId);
+      s.isSubmitting = false;
+      void refreshStatements();
+    } catch (err: any) {
+      toast.error(err.message);
+      s.isSubmitting = false;
+    }
+  }
+
   function prefillFromInvoices(invoiceIds: number[]) {
     const chosen = s.unpaidInvoices.filter((inv) => invoiceIds.includes(inv.id));
     if (chosen.length === 0) return;
@@ -242,7 +273,7 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
     ...bulk,
     ...patch,
     toggleSelectAll, toggleInvoiceSelection, addSplitRow, removeSplitRow, refreshStatements,
-    loadUnpaidInvoices, prefillFromInvoices,
+    loadUnpaidInvoices, prefillFromInvoices, validateSuggestion,
     selectMember, handleMemberKeyDown, selectCategory, handleCategoryKeyDown,
     handleMatch, handleCreateAndMatch, handleDeletePart, handleUnignore, handleIgnore
   };

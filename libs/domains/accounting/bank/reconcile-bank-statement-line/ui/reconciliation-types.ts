@@ -136,6 +136,11 @@ export interface ReconciliationStateFields {
   glTransactions: GLTransaction[];
   reconciliationStatements: any[];
   displayedTransactions: BankStatementLine[];
+  queueTransactions: BankStatementLine[];
+  historyTransactions: BankStatementLine[];
+  /** `queue` = ce qui reste à décider ; `history` = les archives. */
+  view: 'queue' | 'history';
+  isMultiSelect: boolean;
   selectedTx: BankStatementLine | null;
   selectedTxIds: Record<number, boolean>;
   selectedInvoiceIds: Set<number>;

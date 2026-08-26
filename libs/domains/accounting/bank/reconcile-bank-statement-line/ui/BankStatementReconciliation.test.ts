@@ -2,6 +2,37 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount, unmount, flushSync, tick } from 'svelte';
 import BankStatementReconciliation from './BankStatementReconciliation.svelte';
 
+/**
+ * La ligne ne s'ouvre plus en cliquant sur son libellé.
+ *
+ * L'écran était un maître-détail : cliquer une ligne à gauche peuplait un panneau à droite. La
+ * décision se prend désormais dans la ligne elle-même, et le formulaire ne s'ouvre en place que
+ * si l'on refuse la proposition — par « Modifier ».
+ */
+function rowFor(target: HTMLElement, label: string): HTMLElement {
+  const row = Array.from(target.querySelectorAll('[data-line-id]')).find(
+    (r) => r.textContent?.includes(label)
+  ) as HTMLElement;
+  if (!row) throw new Error(`Ligne introuvable dans la file : ${label}`);
+  return row;
+}
+
+function expandRow(target: HTMLElement, label: string) {
+  const btn = rowFor(target, label).querySelector('[data-action="expand"]') as HTMLButtonElement;
+  if (!btn) throw new Error(`Aucun bouton d'ouverture sur la ligne : ${label}`);
+  btn.click();
+  flushSync();
+}
+
+/** La sélection multiple est un mode, pas l'état par défaut : les cases s'obtiennent. */
+function enableMultiSelect(target: HTMLElement) {
+  const btn = Array.from(target.querySelectorAll('button')).find(
+    (b) => b.textContent?.trim() === 'Sélection'
+  ) as HTMLButtonElement;
+  btn.click();
+  flushSync();
+}
+
 describe('BankStatementReconciliation Component', () => {
   const originalFetch = globalThis.fetch;
   let component: any = null;
@@ -99,7 +130,7 @@ describe('BankStatementReconciliation Component', () => {
     expect(target.innerHTML).toContain("Lancer l'importation");
   });
 
-  it('renders split-screen list and workspace when bank transactions exist', () => {
+  it('rend la file, et ouvre une ligne sur demande', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
@@ -145,15 +176,12 @@ describe('BankStatementReconciliation Component', () => {
       }
     });
 
-    expect(target.innerHTML).toContain('À rapprocher (1)');
+    expect(target.innerHTML).toContain('1 opération à rapprocher');
     expect(target.innerHTML).toContain('IONOS');
     expect(target.innerHTML).toContain('-15,60');
 
     // Cliquer sur le bouton de la transaction pour l'activer dans le panneau droit
-    const btn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('IONOS')) as HTMLButtonElement;
-    expect(btn).not.toBeNull();
-    btn.click();
-    flushSync();
+    expandRow(target, 'IONOS');
 
     // Focus sur l'input de recherche adhérent pour ouvrir le dropdown
     const input = target.querySelector('input[placeholder="Tapez pour rechercher un adhérent..."]') as HTMLInputElement;
@@ -203,10 +231,7 @@ describe('BankStatementReconciliation Component', () => {
       }
     });
 
-    const btn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('VIR RECU 12345')) as HTMLButtonElement;
-    expect(btn).not.toBeNull();
-    btn.click();
-    flushSync();
+    expandRow(target, 'VIR RECU 12345');
 
     // Cliquer sur l'onglet "Écritures existantes" pour afficher les écritures
     // du grand livre susceptibles de correspondre (les déjà rapprochées sont exclues)
@@ -249,10 +274,7 @@ describe('BankStatementReconciliation Component', () => {
     });
 
     // Select the bank transaction
-    const btn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('VIR RECU 12345')) as HTMLButtonElement;
-    expect(btn).not.toBeNull();
-    btn.click();
-    flushSync();
+    expandRow(target, 'VIR RECU 12345');
 
     // Le bloc « Reprendre une facture impayée » vit désormais dans l'onglet de saisie, replié.
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -296,7 +318,7 @@ describe('BankStatementReconciliation Component', () => {
     expect(target.innerHTML).toContain('FAC-2026-0001');
   });
 
-  it('displays checkboxes next to bank transactions and toggles bulk action bar', async () => {
+  it('ne montre les cases de sélection que sur demande', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
@@ -336,28 +358,27 @@ describe('BankStatementReconciliation Component', () => {
 
     flushSync();
 
-    // Bulk Action Bar should not be visible initially
-    expect(target.innerHTML).not.toContain('Rapprocher en masse');
-    expect(target.innerHTML).not.toContain('Ignorer en masse');
+    /*
+      Les cases ne s'imposent plus à chaque ligne.
 
-    // Checkboxes should be displayed next to bank transactions
+      Elles encombraient la file en permanence alors qu'elles ne servent qu'à écarter du bruit —
+      frais bancaires, prélèvements connus. La sélection multiple est devenue un mode, qu'on
+      demande.
+    */
+    expect(target.querySelectorAll('[role="checkbox"]').length).toBe(0);
+
+    enableMultiSelect(target);
+
     const checkboxes = target.querySelectorAll('[role="checkbox"]') as NodeListOf<HTMLButtonElement>;
     expect(checkboxes.length).toBe(2);
 
-    // Check the first checkbox
     checkboxes[0].click();
     flushSync();
+    expect(target.innerHTML).toContain('1 sélectionnée');
 
-    // Now the Bulk Action Bar should be visible
-    expect(target.innerHTML).toContain('Rapprocher en masse');
-    expect(target.innerHTML).toContain('Sélection (1)');
-
-    // Check the second checkbox
     checkboxes[1].click();
     flushSync();
-
-    // Count should be updated
-    expect(target.innerHTML).toContain('Sélection (2)');
+    expect(target.innerHTML).toContain('2 sélectionnées');
 
     // Mock window.location.reload
     const reloadMock = vi.fn();
@@ -365,9 +386,8 @@ describe('BankStatementReconciliation Component', () => {
       reload: reloadMock
     });
 
-    // Click "Rapprocher en masse"
     const bulkReconcileBtn = Array.from(target.querySelectorAll('button')).find(
-      b => b.textContent?.includes('Rapprocher en masse')
+      b => b.textContent?.includes('Valider les propositions')
     ) as HTMLButtonElement;
     expect(bulkReconcileBtn).not.toBeNull();
     bulkReconcileBtn.click();
@@ -423,10 +443,7 @@ describe('BankStatementReconciliation Component', () => {
     });
 
     // Select the bank transaction
-    const txBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('MULTI INVOICE TRANSFER')) as HTMLButtonElement;
-    expect(txBtn).not.toBeNull();
-    txBtn.click();
-    flushSync();
+    expandRow(target, 'MULTI INVOICE TRANSFER');
 
     await new Promise(resolve => setTimeout(resolve, 50));
     flushSync();
@@ -504,10 +521,7 @@ describe('BankStatementReconciliation Component', () => {
     });
 
     // Select the bank transaction
-    const txBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('DIVERS SPLIT')) as HTMLButtonElement;
-    expect(txBtn).not.toBeNull();
-    txBtn.click();
-    flushSync();
+    expandRow(target, 'DIVERS SPLIT');
 
     // Active right tab is 'manual' by default, but click it to be sure
     const manualTabBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Saisir / ventiler')) as HTMLButtonElement;
@@ -604,15 +618,10 @@ describe('BankStatementReconciliation Component', () => {
 
     await tick();
 
-    const listContainer = target.querySelector('.reconcile-list-container')!;
-    expect(listContainer).not.toBeNull();
+    expect(target.innerHTML).toContain('SALAIRE');
+    expect(target.innerHTML).toContain('ADHESION');
 
-    // Verify both are present initially
-    expect(listContainer.innerHTML).toContain('SALAIRE');
-    expect(listContainer.innerHTML).toContain('ADHESION');
-
-    // Find free-text search input
-    const searchInput = target.querySelector('input[placeholder*="Rechercher une transaction"]') as HTMLInputElement;
+    const searchInput = target.querySelector('input[placeholder*="Rechercher une opération"]') as HTMLInputElement;
     expect(searchInput).not.toBeNull();
 
     // Type "salaire" into search input
@@ -621,16 +630,16 @@ describe('BankStatementReconciliation Component', () => {
     await tick();
 
     // Only SALAIRE should be shown, ADHESION should be hidden
-    expect(listContainer.innerHTML).toContain('SALAIRE');
-    expect(listContainer.innerHTML).not.toContain('ADHESION');
+    expect(target.innerHTML).toContain('SALAIRE');
+    expect(target.innerHTML).not.toContain('ADHESION');
 
     // Type something that matches nothing
     searchInput.value = 'inconnu';
     searchInput.dispatchEvent(new Event('input', { bubbles: true }));
     await tick();
 
-    expect(listContainer.innerHTML).not.toContain('SALAIRE');
-    expect(listContainer.innerHTML).not.toContain('ADHESION');
+    expect(target.innerHTML).not.toContain('SALAIRE');
+    expect(target.innerHTML).not.toContain('ADHESION');
   });
 
   /*
@@ -688,28 +697,18 @@ describe('BankStatementReconciliation Component', () => {
 
     flushSync();
 
-    // Les deux lignes sont dans la file, mais aucune n'est ouverte.
+    // Les deux lignes sont dans la file, et aucune n'est dépliée.
     expect(target.innerHTML).toContain('TX ONE PENDING');
     expect(target.innerHTML).toContain('TX TWO PENDING');
-    expect(target.innerHTML).toContain('Aucune transaction sélectionnée');
+    expect(target.innerHTML).not.toContain('Saisir / ventiler');
     expect(setItem).not.toHaveBeenCalledWith('reconcile_active_bt_id', expect.anything());
 
-    // Une ligne désignée s'ouvre, et se referme, sans jamais toucher au stockage de session.
-    const rowBtn = Array.from(target.querySelectorAll('button')).find(
-      b => b.textContent?.includes('TX ONE PENDING')
-    ) as HTMLButtonElement;
-    rowBtn.click();
-    flushSync();
-    expect(target.innerHTML).toContain('Détails de la transaction');
+    // Une ligne s'ouvre en place, et se referme, sans jamais toucher au stockage de session.
+    expandRow(target, 'TX ONE PENDING');
+    expect(target.innerHTML).toContain('Saisir / ventiler');
 
-    const closeBtn = Array.from(target.querySelectorAll('button')).find(
-      b => b.textContent?.includes('Fermer')
-    ) as HTMLButtonElement;
-    expect(closeBtn).not.toBeNull();
-    closeBtn.click();
-    flushSync();
-
-    expect(target.innerHTML).toContain('Aucune transaction sélectionnée');
+    expandRow(target, 'TX ONE PENDING');
+    expect(target.innerHTML).not.toContain('Saisir / ventiler');
     expect(setItem).not.toHaveBeenCalledWith('reconcile_active_bt_id', expect.anything());
     vi.unstubAllGlobals();
   });
@@ -761,10 +760,7 @@ describe('BankStatementReconciliation Component', () => {
     flushSync();
 
     // Click on the transaction to select it
-    const btn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('VIR DUPONT JEAN')) as HTMLButtonElement;
-    expect(btn).not.toBeNull();
-    btn.click();
-    flushSync();
+    expandRow(target, 'VIR DUPONT JEAN');
 
     // The category dropdown should show 'Tournois Senior'
     expect(target.innerHTML).toContain('Tournois Senior');
@@ -816,12 +812,7 @@ describe('BankStatementReconciliation Component', () => {
 
     flushSync();
 
-    const line = Array.from(target.querySelectorAll('button')).find(b =>
-      b.textContent?.includes('VIR RENARD SYLVAIN')
-    ) as HTMLButtonElement;
-    expect(line).not.toBeNull();
-    line.click();
-    flushSync();
+    expandRow(target, 'VIR RENARD SYLVAIN');
 
     // Le rattachement suggéré préremplit le formulaire, note comprise.
     const note = target.querySelector('input[placeholder="Détail de la régularisation..."]') as HTMLInputElement;
@@ -911,6 +902,19 @@ describe('BankStatementReconciliation Component', () => {
 
     flushSync();
 
+    /*
+      Les lignes traitées ont quitté l'écran de travail.
+
+      Les trois onglets mettaient sur le même plan une file à vider et deux archives ; celles-ci
+      vivent maintenant dans une vue à part, qu'on demande.
+    */
+    const historyBtn = Array.from(target.querySelectorAll('button')).find(b =>
+      b.textContent?.includes("Voir l'historique")
+    ) as HTMLButtonElement;
+    expect(historyBtn).not.toBeNull();
+    historyBtn.click();
+    flushSync();
+
     const reconciledTab = Array.from(target.querySelectorAll('button')).find(b =>
       b.textContent?.includes('Rapprochées')
     ) as HTMLButtonElement;
@@ -918,12 +922,7 @@ describe('BankStatementReconciliation Component', () => {
     reconciledTab.click();
     flushSync();
 
-    const line = Array.from(target.querySelectorAll('button')).find(b =>
-      b.textContent?.includes('VIR INST RE 673390599511')
-    ) as HTMLButtonElement;
-    expect(line).not.toBeNull();
-    line.click();
-    flushSync();
+    expandRow(target, 'VIR INST RE 673390599511');
 
     // Ce qui a été enregistré est lisible…
     expect(target.innerHTML).toContain('RENARD Sylvain');
@@ -971,11 +970,7 @@ describe('BankStatementReconciliation Component', () => {
 
     flushSync();
 
-    const line = Array.from(target.querySelectorAll('button')).find(b =>
-      b.textContent?.includes('VIR INST RE 672885352540')
-    ) as HTMLButtonElement;
-    line.click();
-    flushSync();
+    expandRow(target, 'VIR INST RE 672885352540');
 
     const validate = Array.from(target.querySelectorAll('button')).find(b =>
       b.textContent?.includes('Créer et rapprocher')
@@ -1046,11 +1041,7 @@ describe('BankStatementReconciliation Component', () => {
 
     flushSync();
 
-    const line = Array.from(target.querySelectorAll('button')).find(b =>
-      b.textContent?.includes('VIR INST RE 672885352540')
-    ) as HTMLButtonElement;
-    line.click();
-    flushSync();
+    expandRow(target, 'VIR INST RE 672885352540');
 
     // L'exercice visé s'affiche dans l'encart : c'est ce qu'on s'apprête à enregistrer.
     expect(target.textContent).toContain('exercice 26-27');

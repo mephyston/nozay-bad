@@ -72,7 +72,13 @@ describe('createReconciliationState logic unit tests', () => {
     vi.restoreAllMocks();
   });
 
-  it('filters displayed transactions by activeTab and search query', () => {
+  /*
+    La file ne contient que ce qui reste à décider ; les archives vivent dans une vue à part.
+
+    Les trois onglets mettaient sur le même plan une file à vider et deux historiques, et faisaient
+    du statut consulté un filtre parmi d'autres.
+  */
+  it('ne met dans la file que les opérations en attente', () => {
     const state = createReconciliationState({
       bankStatementLines: mockBankTransactions,
       glTransactions: mockGlTransactions,
@@ -81,19 +87,32 @@ describe('createReconciliationState logic unit tests', () => {
       members: []
     });
 
-    // Default tab is 'pending'
-    expect(state.displayedTransactions.length).toBe(2);
+    expect(state.view).toBe('queue');
+    expect(state.queueTransactions.map((t: any) => t.id)).toEqual([1, 2]);
     expect(state.displayedTransactions.map((t: any) => t.id)).toEqual([1, 2]);
 
-    // Search query filtering
     state.searchQuery = 'dupont';
-    expect(state.displayedTransactions.length).toBe(1);
-    expect(state.displayedTransactions[0].id).toBe(2);
+    expect(state.displayedTransactions.map((t: any) => t.id)).toEqual([2]);
+  });
 
-    state.searchQuery = '';
+  it("bascule sur l'historique sans toucher à la file", () => {
+    const state = createReconciliationState({
+      bankStatementLines: mockBankTransactions,
+      glTransactions: mockGlTransactions,
+      seasonId: '25-26',
+      seasons: [{ id: '25-26', name: '2025-2026', active: true }],
+      members: []
+    });
+
+    state.view = 'history';
     state.activeTab = 'reconciled';
-    expect(state.displayedTransactions.length).toBe(1);
-    expect(state.displayedTransactions[0].id).toBe(3);
+    expect(state.displayedTransactions.map((t: any) => t.id)).toEqual([3]);
+
+    state.activeTab = 'ignored';
+    expect(state.displayedTransactions).toEqual([]);
+
+    // La file, elle, n'a pas bougé.
+    expect(state.queueTransactions.map((t: any) => t.id)).toEqual([1, 2]);
   });
 
   it('calculates counts correctly by status', () => {

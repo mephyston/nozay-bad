@@ -2,6 +2,7 @@ import { toast, uiConfirm, flashAndReload } from '@nba/ui';
 import { apiBulkReconcile, apiBulkIgnore, apiImportOfx, apiAnalyzeAi, type ImportSummary } from './reconciliation-api';
 import type { ReconciliationStateFields } from './reconciliation-types';
 import type { createPatchActions } from './reconciliation-patch';
+import { buildSuggestionRequest } from './reconciliation-suggestion';
 
 /*
  * `flashAndReload` ne subsiste que pour l'import d'un relevé.
@@ -16,14 +17,26 @@ export function createBulkActions(s: ReconciliationStateFields, patch: ReturnTyp
     if (ids.length === 0) return;
     s.isSubmitting = true; s.errorMsg = '';
     try {
-      const requests = ids.map(id => {
-        const bt = s.bankStatementLines.find((t) => t.id === id);
-        if (!bt || !bt.aiSuggestions) return null;
-        let memberId = null; let cat = '1';
-        try { const sug = JSON.parse(bt.aiSuggestions); memberId = sug.memberId ? parseInt(sug.memberId) : null; cat = sug.category || '1'; } catch {}
-        return { btId: bt.id, action: 'create', memberId, transaction: { seasonId: s.selectedSeason, type: bt.amount < 0 ? 'depense' : 'recette', accountId: bt.accountId, category: cat, amount: Math.abs(bt.amount), date: bt.date, paymentMethod: 'virement', description: bt.name, reference: bt.fitid } };
-      }).filter(Boolean);
-      if (requests.length === 0) throw new Error('Aucune suggestion valide.');
+      /*
+       * La requête se construit au même endroit que pour le geste unitaire.
+       *
+       * Le lot la bâtissait à part, et y perdait trois champs : ni `accrualType`, ni `accrualNote`,
+       * ni `targetSeason` n'étaient transmis. Une cotisation encaissée d'avance validée en lot
+       * devenait une écriture ordinaire rattachée à l'exercice consulté — l'erreur même que le
+       * cut-off est là pour empêcher, et que seul le compte de résultat aurait révélée. Il
+       * retombait par ailleurs sur la catégorie 1 faute de mieux, et aurait enregistré un virement
+       * interne comme une recette ordinaire, alors que le geste unitaire le refuse explicitement.
+       */
+      const requests = ids
+        .map((id) => s.bankStatementLines.find((t) => t.id === id))
+        .filter((bt): bt is NonNullable<typeof bt> => !!bt)
+        .map((bt) => buildSuggestionRequest(bt, s.selectedSeason))
+        .filter((req): req is NonNullable<typeof req> => req !== null);
+
+      if (requests.length === 0) throw new Error("Aucune suggestion applicable d'un seul geste dans cette sélection.");
+      if (requests.length < ids.length) {
+        toast.info(`${ids.length - requests.length} opération(s) écartée(s) : virement interne, ou catégorie à choisir.`);
+      }
       const { lines, entries } = await apiBulkReconcile(requests);
       patch.applyOutcomes(lines, entries);
       s.selectedTxIds = {};

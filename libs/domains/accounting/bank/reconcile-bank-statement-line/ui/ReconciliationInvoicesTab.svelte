@@ -18,18 +18,26 @@
   let isOpen = $state(false);
 
   const selectedCount = $derived(reconState.selectedInvoiceIds.size);
+  const hasInvoices = $derived(reconState.unpaidInvoices.length > 0);
   const matchesExactly = $derived(Math.abs(reconState.selectedSum - Math.abs(selectedTx.amount)) <= 10);
 </script>
 
 <div class="mb-4 rounded-lg border border-border bg-muted/20">
   <button
     type="button"
-    class="w-full flex items-center justify-between p-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:bg-muted/40 rounded-lg cursor-pointer"
+    class="w-full flex items-center justify-between p-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider rounded-lg {hasInvoices ? 'hover:bg-muted/40 cursor-pointer' : 'opacity-60 cursor-default'}"
+    disabled={!hasInvoices}
     onclick={() => (isOpen = !isOpen)}
   >
     <span class="flex items-center gap-2">
       <FileText class="h-3.5 w-3.5" />
-      <span>Reprendre une facture impayée ({reconState.unpaidInvoices.length})</span>
+      <span>
+        {#if hasInvoices}
+          Reprendre une facture impayée ({reconState.unpaidInvoices.length})
+        {:else}
+          Aucune facture impayée sur cet exercice
+        {/if}
+      </span>
       {#if reconState.matchingInvoices.length > 0}
         <Badge variant="success" size="xs" class="gap-1">
           <Sparkles class="h-3 w-3" />
@@ -37,10 +45,10 @@
         </Badge>
       {/if}
     </span>
-    <span class="text-base leading-none">{isOpen ? '−' : '+'}</span>
+    <span class="text-base leading-none">{hasInvoices ? (isOpen ? '−' : '+') : ''}</span>
   </button>
 
-  {#if isOpen}
+  {#if isOpen && hasInvoices}
     <div class="p-3 pt-0 space-y-3">
       <!--
         Choisir une facture ne rapproche rien : cela remplit le formulaire ci-dessous.
