@@ -8,7 +8,7 @@ import {
   ReopenSeasonInput,
   ReopenSeasonOutput
 } from "./dto";
-import { computeAccountBalances } from '../../shared/balances';
+import { computeAccountBalances, computeTransitCents, findHalfPointedTransferIds } from '../../shared/balances';
 
 export async function getCloseSeasonChecks(
   db: Db,
@@ -93,6 +93,34 @@ export async function getCloseSeasonChecks(
   const dbAccounts = await repo.getAccounts(db);
   const balances = await repo.getSeasonBalances(db, season.id);
   const seasonTxs = await repo.getTransactionsForSeason(db, season.id);
+
+  /*
+   * Deux contrôles que le modèle à une seule écriture rendait impossibles.
+   *
+   * De l'argent encore en route au 31 août appartient à l'exercice qu'on ferme mais ne figure sur
+   * aucun compte : le solde reporté à-nouveau est juste, la somme des comptes ne l'explique pas.
+   * Il faut le dire avant la clôture, parce qu'après on ne le verra plus.
+   *
+   * Un virement à jambe unique, lui, est un oubli de pointage : c'est le seul écart de
+   * rapprochement qu'aucun décalage bancaire n'explique.
+   */
+  const transitCents = computeTransitCents(seasonTxs, season.endDate);
+  if (transitCents !== 0) {
+    warnings.push({
+      code: 'CASH_IN_TRANSIT',
+      message: `${(transitCents / 100).toFixed(2)} € sont encore en transit au ${season.endDate} : sortis d'un compte, pas encore arrivés dans l'autre. Le solde reporté les comprend, la somme des comptes non.`,
+      details: { transitCents, asOfDate: season.endDate }
+    });
+  }
+
+  const halfPointedTransferIds = findHalfPointedTransferIds(seasonTxs);
+  if (halfPointedTransferIds.length > 0) {
+    warnings.push({
+      code: 'HALF_POINTED_TRANSFERS',
+      message: `${halfPointedTransferIds.length} virement(s) interne(s) n'ont qu'une seule jambe pointée : l'état de rapprochement affichera un écart que rien n'explique.`,
+      details: { transferIds: halfPointedTransferIds }
+    });
+  }
 
   const balancesToRollover: CloseSeasonCheckResult['balancesToRollover'] = [];
 

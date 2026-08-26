@@ -13,7 +13,8 @@ const entry = (over: Record<string, any> = {}) => ({
   id: 1,
   type: 'recette',
   accountId: 1,
-  destinationAccountId: null,
+  transferId: null,
+  transferLeg: null,
   amountCents: 0,
   date: '2025-10-01',
   description: 'Écriture',
@@ -162,10 +163,16 @@ describe('getReconciliationStatement', () => {
     expect(result.gapCents).toBe(0);
   });
 
-  it("ne retient d'un virement interne que sa jambe qui touche le compte", async () => {
+  it("ne retient d'un virement interne que la jambe posée sur le compte", async () => {
+    /*
+     * Les deux jambes sont chargées — la période l'exige — mais seule celle du compte courant
+     * compte dans son état de rapprochement. Sous l'ancien modèle, l'unique écriture portait les
+     * deux comptes et le calcul devait la démêler ; désormais chacune se suffit.
+     */
     mockRepo({
       getEntriesForPeriod: vi.fn().mockResolvedValue([
-        entry({ id: 9, type: 'transfert', accountId: 1, destinationAccountId: 2, amountCents: 30_000 })
+        entry({ id: 9, type: 'transfert', accountId: 1, transferId: 4, transferLeg: 'source', amountCents: 30_000 }),
+        entry({ id: 10, type: 'transfert', accountId: 2, transferId: 4, transferLeg: 'destination', amountCents: 30_000 })
       ])
     });
 
@@ -173,6 +180,25 @@ describe('getReconciliationStatement', () => {
 
     expect(result.unpointedEntries).toHaveLength(1);
     expect(result.unpointedEntriesTotalCents).toBe(-30_000);
+  });
+
+  it("signale un virement dont une seule jambe est pointée, et l'écart qu'il crée", async () => {
+    /*
+     * C'est l'anomalie que l'ancien modèle rendait **inévitable** : une écriture, un
+     * `bank_statement_line_id`, deux lignes de relevé. Elle devient ici un oubli, et doit se voir
+     * — une jambe pointée sort des « écritures non pointées » pendant que sa ligne de relevé
+     * reste « non comptabilisée », ce qui creuse un écart que rien n'explique à l'écran.
+     */
+    mockRepo({
+      getEntriesForPeriod: vi.fn().mockResolvedValue([
+        entry({ id: 9, type: 'transfert', accountId: 1, transferId: 4, transferLeg: 'source', amountCents: 30_000, bankStatementLineId: 77 }),
+        entry({ id: 10, type: 'transfert', accountId: 2, transferId: 4, transferLeg: 'destination', amountCents: 30_000 })
+      ])
+    });
+
+    const result = await getReconciliationStatement(db, { accountCode: 'current', seasonId: '25-26', date: '2025-10-31' });
+
+    expect(result.halfPointedTransferIds).toEqual([4]);
   });
 
   it("rend un écart nul et non trompeur tant qu'aucun relevé n'a été importé", async () => {

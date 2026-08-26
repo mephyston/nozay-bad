@@ -23,6 +23,7 @@
     "0019_drop_members_and_profiles.sql": "ed16d1999f930adc",
     "0020_open_play.sql": "491b8fcac36b5581",
     "0021_open_play_roles.sql": "c9658e7ee00ce1be",
-    "0022_bank_statement_balances.sql": "ca58136f2deefe32"
+    "0022_bank_statement_balances.sql": "ca58136f2deefe32",
+    "0023_internal_transfer_legs.sql": "b9c2070abe14ad88"
   }
 }

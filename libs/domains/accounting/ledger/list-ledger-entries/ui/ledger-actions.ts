@@ -9,6 +9,8 @@ export interface TransactionFormValues {
   category: string;
   formAccountId: string;
   destinationAccountId: string;
+  /** Date de valeur au crédit du compte destinataire ; vide = le même jour que le débit. */
+  destinationDate: string;
   paymentMethod: string;
   description: string;
   reference: string;
@@ -22,11 +24,48 @@ export function validateTransaction(params: TransactionFormValues): string | nul
   if (isNaN(floatAmount) || floatAmount <= 0) {
     return 'Le montant doit être un nombre positif.';
   }
+  if (params.showPanel === 'transfert') {
+    if (!params.destinationAccountId || params.destinationAccountId === params.formAccountId) {
+      return 'Le compte destinataire doit être différent du compte source.';
+    }
+    if (params.destinationDate && params.destinationDate < params.date) {
+      return "L'argent ne peut pas arriver avant d'être parti : la date de crédit précède celle du débit.";
+    }
+  }
   return null;
 }
 
 export async function submitTransaction(params: TransactionFormValues): Promise<void> {
   const floatAmount = parseFloat(params.amount);
+
+  /*
+   * Un virement n'emprunte pas la même route qu'une recette : il écrit **deux** écritures, une
+   * par compte, chacune avec sa date de valeur et son propre pointage bancaire. La route du grand
+   * livre n'en écrit qu'une et refuse désormais franchement le type `transfert`.
+   */
+  if (params.showPanel === 'transfert' && !params.editingId) {
+    const res = await fetch('/admin/accounting', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create-transfer',
+        seasonId: params.targetSeasonId,
+        sourceAccountId: params.formAccountId,
+        destinationAccountId: params.destinationAccountId,
+        amountCents: Math.round(floatAmount * 100),
+        sourceDate: params.date,
+        destinationDate: params.destinationDate || params.date,
+        description: params.description,
+        reference: params.reference || null
+      })
+    });
+    const json = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string };
+    if (!res.ok || json?.success === false) {
+      throw new Error(json?.error || "Le virement n'a pas pu être enregistré.");
+    }
+    softNavigate(window.location.href);
+    return;
+  }
 
   const payload = params.editingId
     ? {
@@ -36,8 +75,7 @@ export async function submitTransaction(params: TransactionFormValues): Promise<
           seasonId: params.targetSeasonId,
           type: params.showPanel,
           accountId: params.formAccountId,
-          destinationAccountId: params.showPanel === 'transfert' ? params.destinationAccountId : null,
-          category: params.showPanel !== 'transfert' ? params.category : null,
+          category: params.category,
           amount: Math.round(floatAmount * 100),
           date: params.date,
           paymentMethod: params.paymentMethod,
@@ -52,8 +90,7 @@ export async function submitTransaction(params: TransactionFormValues): Promise<
         seasonId: params.targetSeasonId,
         type: params.showPanel,
         accountId: params.formAccountId,
-        destinationAccountId: params.showPanel === 'transfert' ? params.destinationAccountId : null,
-        category: params.showPanel !== 'transfert' ? params.category : null,
+        category: params.category,
         amount: Math.round(floatAmount * 100),
         date: params.date,
         paymentMethod: params.paymentMethod,

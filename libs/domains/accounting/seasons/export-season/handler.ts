@@ -5,6 +5,7 @@ import { listInvoices } from '../../invoices/list-invoices/handler';
 import { getInvoice } from '../../invoices/get-invoice/handler';
 import { listExpenses } from '@nba/expenses-api';
 import { listLedgerEntries } from '../../ledger/list-ledger-entries/handler';
+import { accountLabels } from '../../ledger/list-ledger-entries/ui/ledger-types';
 
 export async function exportSeasonArchive(db: Db, season: string, type: 'all' | 'ledger' | 'expenses' | 'invoices' = 'all'): Promise<{ data: Uint8Array, filename: string, mimeType: string }> {
   const zipData: Record<string, Uint8Array> = {};
@@ -54,15 +55,37 @@ export async function exportSeasonArchive(db: Db, season: string, type: 'all' | 
     try {
       const ledger = await listLedgerEntries(db, { seasonId: season }, { page: 1, limit: 10000 });
       if (ledger.data && ledger.data.length > 0) {
-        const keys = ['Date', 'Type', 'Description', 'Montant EUR', 'Catégorie', 'Mode de paiement', 'Référence', 'Membre'];
+        /*
+         * Le journal porte désormais les comptes et un montant **signé**.
+         *
+         * Sans eux, un virement y figurait en type `transfert`, catégorie vide et montant positif :
+         * impossible de savoir d'où à où l'argent était allé, ni s'il entrait ou sortait. Un
+         * contrôleur aux comptes ne pouvait rien reconstituer d'un tel journal.
+         */
+        const keys = ['Date', 'Type', 'Compte', 'Compte destinataire', 'Description', 'Montant EUR', 'Catégorie', 'Mode de paiement', 'Référence', 'Membre'];
         let csv = keys.join(';') + '\n';
-        
-        for (const row of ledger.data) {
+
+        const label = (accountId: number | string | null | undefined) =>
+          accountId === null || accountId === undefined ? '' : (accountLabels[String(accountId)] ?? String(accountId));
+
+        for (const row of ledger.data as any[]) {
+          const amountCents = row.amount || 0;
+          const isCredit = row.type === 'recette' || (row.type === 'transfert' && row.transferLeg === 'destination');
+          const signedCents = isCredit ? amountCents : -amountCents;
+
+          const [fromAccount, toAccount] = row.type !== 'transfert'
+            ? [label(row.accountId), '']
+            : row.transferLeg === 'destination'
+              ? [label(row.counterpartAccountId), label(row.accountId)]
+              : [label(row.accountId), label(row.counterpartAccountId)];
+
           const line = [
               row.date,
               row.type,
+              `"${fromAccount}"`,
+              `"${toAccount}"`,
               `"${(row.description || '').replace(/"/g, '""')}"`,
-              ((row.amount || 0) / 100).toFixed(2).replace('.', ','),
+              (signedCents / 100).toFixed(2).replace('.', ','),
               `"${(row.category || '')}"`,
               `"${(row.paymentMethod || '')}"`,
               `"${(row.reference || '')}"`,

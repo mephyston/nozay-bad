@@ -59,6 +59,11 @@ const tables = [
     // du test *suivant*, loin de sa cause.
     'checks',
     'ledger_entries',
+    // `internal_transfers` après `ledger_entries` : ce sont les jambes qui le référencent, pas
+    // l'inverse. Oublier cette table ici ne fait pas échouer la purge — elle survit simplement au
+    // `beforeEach`, et c'est le `CREATE TABLE` de la migration suivante qui échoue, sur un
+    // « table already exists » qui ne dit rien de sa cause.
+    'internal_transfers',
     'orders',
     'invoice_items',
     'invoices',

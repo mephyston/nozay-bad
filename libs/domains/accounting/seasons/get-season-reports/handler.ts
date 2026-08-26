@@ -1,10 +1,11 @@
 import { type Db, AppError } from '@nba/db';
 import { normalizeCategory } from '../../shared/helpers';
+import { affectsProfitAndLoss, resolveLegacyTransferCategoryId } from '../../shared/entry-classification';
 import { GetSeasonReportsRepository } from './repository';
 import { GetSeasonReportsInput, GetSeasonReportsOutput, CategoryProjection, DeferredCashBreakdown } from "./dto";
 import { getSeasonFromDb } from '../../shared/accruals';
 import { generateTreasuryForecast } from './forecast-engine';
-import { computeAccountBalance, computeAccountBalances, sumAccountBalances, type AccountRef } from '../../shared/balances';
+import { computeAccountBalance, computeAccountBalances, sumAccountBalances, type AccountRef, signedEntryAmountCents } from '../../shared/balances';
 
 export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Promise<GetSeasonReportsOutput> {
   const seasonId = typeof input === 'string' ? input : input.seasonId;
@@ -34,18 +35,20 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
   let totalRecettes = 0;
   let totalDepenses = 0;
 
-  const virementInterneCatId = dbCategories.find((c: any) => c.adminLabel && c.adminLabel.startsWith('Virements Internes'))?.id;
+  const virementInterneCatId = resolveLegacyTransferCategoryId(dbCategories as any);
 
   for (const tx of allTxs) {
-    if (tx.type === 'transfert') continue;
+    /*
+     * Une seule question posée, au même endroit que partout ailleurs : cette écriture pèse-t-elle
+     * sur le résultat ? La règle tenait ici en deux tests distincts — le type, puis la catégorie
+     * héritée — recopiés à six endroits, dont deux n'en appliquaient qu'un.
+     */
+    if (!affectsProfitAndLoss(tx, virementInterneCatId)) continue;
     // Exclude transactions dated after cut-off date
     if (tx.date > effectiveEndDate) continue;
 
     const amount = tx.amountCents ?? 0;
     const catId = normalizeCategory(tx.categoryId ?? tx.category);
-    
-    // Ignore manual internal transfers for revenue/expense calculations
-    if (catId === virementInterneCatId) continue;
 
     const cat = catId !== null ? catId.toString() : 'divers';
     const key = `${cat}_${tx.type}`;
@@ -247,7 +250,7 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     const pastSeasons = await repo.getPastSeasons(db, season.startDate);
     const pastTransactions = await repo.getPastTransactions(db, season.startDate);
     const dbCategories = await repo.getAllCategories(db);
-    const virementInterneCatId = dbCategories.find((c: any) => c.adminLabel && c.adminLabel.startsWith('Virements Internes'))?.id;
+    const virementInterneCatId = resolveLegacyTransferCategoryId(dbCategories as any);
 
     // Always compute historical average so unbudgeted categories fallback to it
     const categoryHistoricalAverage: Record<string, number> = {};
@@ -266,8 +269,8 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
             const belongsToValidSeason = validPastSeasons.some(ps => tx.seasonId === ps.id || tx.seasonId === Number(ps.id) || tx.seasonId === String(ps.id));
             if (!belongsToValidSeason) continue;
 
+            if (!affectsProfitAndLoss(tx, virementInterneCatId)) continue;
             const catId = typeof tx.categoryId === 'object' ? (tx.categoryId as any).id : tx.categoryId;
-            if (catId === virementInterneCatId) continue;
             const key = `${catId}_${tx.type}`;
             catTotalsPast[key] = (catTotalsPast[key] || 0) + (tx.amountCents ?? 0);
           }
@@ -288,8 +291,8 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     const transactions = seasonTxs.filter((tx: any) => tx.date <= effectiveEndDate);
     for (const tx of transactions) {
       if (tx.categoryId !== null) {
+        if (!affectsProfitAndLoss(tx, virementInterneCatId)) continue;
         const catId = typeof tx.categoryId === 'object' ? (tx.categoryId as any).id : tx.categoryId;
-        if (catId === virementInterneCatId) continue;
         const key = `${catId}_${tx.type}`;
         if (!categoryTotals[key]) {
           categoryTotals[key] = { total: 0 };
@@ -354,11 +357,22 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     const effectiveDateObj = new Date(effectiveEndDate);
     const effectiveMonthIdxRaw = (effectiveDateObj.getFullYear() - seasonStart.getFullYear()) * 12 + (effectiveDateObj.getMonth() - seasonStart.getMonth());
 
-    const currentAccId = dbAccounts.find(a => a.code === 'current')?.id || 'current';
-    const savingsAccId = dbAccounts.find(a => a.code === 'savings')?.id || 'savings';
-    
+    /*
+     * Les comptes de la courbe de trésorerie, résolus en base plutôt que nommés en dur.
+     *
+     * La boucle qui suit recodait à la main la ventilation d'un virement, avec `'current'` et
+     * `'savings'` écrits en toutes lettres : la **caisse n'y figurait pas**. Un dépôt d'espèces —
+     * le seul virement que le centre d'aide recommande explicitement — sortait donc de la courbe
+     * comme une fuite de trésorerie. Le total suit désormais les trois comptes ; les deux séries
+     * nommées restent celles que le graphe affiche.
+     */
+    const currentAccount = dbAccounts.find(a => a.code === 'current');
+    const savingsAccount = dbAccounts.find(a => a.code === 'savings');
+    const cashAccount = dbAccounts.find(a => a.code === 'cash');
+
     const initCurrent = reportBalances.find(b => b.accountId === 'current')?.initialBalance ?? 0;
     const initSavings = reportBalances.find(b => b.accountId === 'savings')?.initialBalance ?? 0;
+    const initCash = reportBalances.find(b => b.accountId === 'cash')?.initialBalance ?? 0;
 
     const validEffectiveMonthIndex = Math.min(11, effectiveMonthIdxRaw);
 
@@ -377,49 +391,40 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
       
       let curBal = initCurrent;
       let savBal = initSavings;
-      
+      let cashBal = initCash;
+
       let monthRecettes = 0;
       let monthDepenses = 0;
 
       for (const tx of periodTxs) {
         if (tx.date > monthEndStr) continue;
-        
-        const isCur = tx.accountId === currentAccId || tx.accountId === 'current';
-        const isSav = tx.accountId === savingsAccId || tx.accountId === 'savings';
-        const isDestCur = tx.destinationAccountId === currentAccId || tx.destinationAccountId === 'current';
-        const isDestSav = tx.destinationAccountId === savingsAccId || tx.destinationAccountId === 'savings';
 
         const amount = tx.amountCents ?? 0;
-        
-        const txCatId = typeof tx.categoryId === 'object' ? (tx.categoryId as any)?.id : tx.categoryId;
-        
+
         if (tx.date >= monthStartStr && tx.date <= monthEndStr) {
           if (tx.seasonId === season.id || tx.seasonId === Number(season.id) || tx.seasonId === String(season.id)) {
-            if (txCatId !== virementInterneCatId) {
+            if (affectsProfitAndLoss(tx, virementInterneCatId)) {
               if (tx.type === 'recette') monthRecettes += amount;
               else if (tx.type === 'depense') monthDepenses += amount;
             }
           }
         }
 
-        if (tx.type === 'recette') {
-          if (isCur) curBal += amount;
-          if (isSav) savBal += amount;
-        } else if (tx.type === 'depense') {
-          if (isCur) curBal -= amount;
-          if (isSav) savBal -= amount;
-        } else if (tx.type === 'transfert') {
-          if (isCur) curBal -= amount;
-          if (isSav) savBal -= amount;
-          if (isDestCur) curBal += amount;
-          if (isDestSav) savBal += amount;
-        }
+        /*
+         * Le même calcul de signe que partout ailleurs, plutôt qu'une troisième réécriture.
+         * Une jambe de virement ne touche que son compte : il n'y a plus de destinataire à
+         * démêler, et plus de compte à oublier.
+         */
+        if (currentAccount) curBal += signedEntryAmountCents(tx, currentAccount);
+        if (savingsAccount) savBal += signedEntryAmountCents(tx, savingsAccount);
+        if (cashAccount) cashBal += signedEntryAmountCents(tx, cashAccount);
       }
       
       history.push({
         monthIndex: m,
         currentCents: curBal,
         savingsCents: savBal,
+        cashCents: cashBal,
         realRecettesCents: monthRecettes,
         realDepensesCents: monthDepenses
 
@@ -435,7 +440,8 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
       history,
       effectiveEndDate,
       initCurrent,
-      initSavings
+      initSavings,
+      virementInterneCatId
     );
 
     projections = {

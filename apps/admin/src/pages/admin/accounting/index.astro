@@ -24,6 +24,8 @@ const limit = Astro.url.searchParams.get('limit') || '20';
 /** Permission exigée par action d'écriture de cette page. */
 const ACTIONS = {
   create: 'accounting:ledger:write',
+  // Un virement écrit deux lignes du grand livre : c'est le même droit.
+  'create-transfer': 'accounting:ledger:write',
   update: 'accounting:ledger:write',
   delete: 'accounting:ledger:delete'
 } as const;
@@ -39,6 +41,25 @@ if (Astro.request.method === 'POST') {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
+      });
+      if (!apiRes.ok) {
+        return new Response(await apiRes.text(), { status: apiRes.status });
+      }
+      return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
+    } else if (data.action === 'create-transfer') {
+      const apiRes = await apiService.fetch('http://localhost/accounting/internal-transfers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          seasonId: data.seasonId,
+          sourceAccountId: data.sourceAccountId,
+          destinationAccountId: data.destinationAccountId,
+          amountCents: data.amountCents,
+          sourceDate: data.sourceDate,
+          destinationDate: data.destinationDate,
+          description: data.description,
+          reference: data.reference
+        })
       });
       if (!apiRes.ok) {
         return new Response(await apiRes.text(), { status: apiRes.status });

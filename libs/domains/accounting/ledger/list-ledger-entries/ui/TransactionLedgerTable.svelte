@@ -119,7 +119,9 @@
       {:else if tx.type === 'depense'}
         <Badge variant="destructive" size="lg" shape="pill">Dépense</Badge>
       {:else}
-        <Badge variant="info" size="lg" shape="pill">Transfert</Badge>
+        <Badge variant="info" size="lg" shape="pill">
+          {tx.transferLeg === 'destination' ? 'Virement reçu' : 'Virement émis'}
+        </Badge>
       {/if}
       <!--
         « Cut-off » désigne le rattachement d'exercice de l'écriture, et rien d'autre.
@@ -136,7 +138,25 @@
         <Badge variant="secondary" size="xs" class="ml-1" title="Écriture d'un exercice autre que celui consulté">Autre exercice</Badge>
       {/if}
     </Table.Cell>
-    <Table.Cell>{tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : 'Transfert'}</Table.Cell>
+    <!--
+      Un virement n'a pas de catégorie — le CHECK de la base l'interdit — mais il a deux comptes,
+      et la colonne se contentait d'afficher « Transfert ». Sur un compte filtré, un virement
+      entrant et un virement sortant étaient rigoureusement identiques à l'œil : seule la variation
+      du solde progressif permettait de trancher.
+    -->
+    <Table.Cell>
+      {#if tx.type === 'transfert'}
+        <span class="text-xs text-muted-foreground whitespace-nowrap">
+          {#if tx.transferLeg === 'destination'}
+            {accountLabels[String(tx.counterpartAccountId)] ?? '?'} → {accountLabels[String(tx.accountId)] ?? '?'}
+          {:else}
+            {accountLabels[String(tx.accountId)] ?? '?'} → {accountLabels[String(tx.counterpartAccountId)] ?? '?'}
+          {/if}
+        </span>
+      {:else}
+        {tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : '—'}
+      {/if}
+    </Table.Cell>
     <Table.Cell class="font-medium max-w-[200px] md:max-w-[300px] lg:max-w-[400px]">
       <div class="line-clamp-2" title={tx.description}>{tx.description}</div>
       {#if tx.reference}
@@ -162,7 +182,12 @@
       {:else if tx.type === 'depense'}
         <Amount cents={-((tx as any).amountCents ?? tx.amount)} showSign colored />
       {:else}
-        <Amount cents={(tx as any).amountCents ?? tx.amount} class="text-muted-foreground" />
+        <!-- Signé comme le reste : un virement déplace bien de l'argent sur le compte affiché. -->
+        <Amount
+          cents={(tx.transferLeg === 'destination' ? 1 : -1) * ((tx as any).amountCents ?? tx.amount)}
+          showSign
+          colored
+        />
       {/if}
     </Table.Cell>
     <Table.Cell class="text-right">
@@ -201,7 +226,9 @@
           {:else if item.type === 'depense'}
             <Badge variant="destructive" size="xs" shape="pill">Dépense</Badge>
           {:else}
-            <Badge variant="info" size="xs" shape="pill">Transfert</Badge>
+            <Badge variant="info" size="xs" shape="pill">
+              {item.transferLeg === 'destination' ? 'Virement reçu' : 'Virement émis'}
+            </Badge>
           {/if}
           <span class="text-xs text-muted-foreground">{item.date}</span>
         </div>
@@ -222,7 +249,11 @@
           {:else if item.type === 'depense'}
             <Amount cents={-((item as any).amountCents ?? item.amount)} showSign colored />
           {:else}
-            <Amount cents={(item as any).amountCents ?? item.amount} class="text-muted-foreground" />
+            <Amount
+              cents={(item.transferLeg === 'destination' ? 1 : -1) * ((item as any).amountCents ?? item.amount)}
+              showSign
+              colored
+            />
           {/if}
         </span>
       </div>
@@ -230,7 +261,13 @@
 
     <div class="flex flex-wrap items-center justify-between gap-1.5 text-xs pt-1">
       <div class="text-muted-foreground">
-        Catégorie: <span class="font-medium text-foreground">{item.category ? (activeCategories.find(c => c.id === String(item.category))?.name || item.category) : 'Transfert'}</span>
+        {#if item.type === 'transfert'}
+          {item.transferLeg === 'destination'
+            ? `${accountLabels[String(item.counterpartAccountId)] ?? '?'} → ${accountLabels[String(item.accountId)] ?? '?'}`
+            : `${accountLabels[String(item.accountId)] ?? '?'} → ${accountLabels[String(item.counterpartAccountId)] ?? '?'}`}
+        {:else}
+          Catégorie: <span class="font-medium text-foreground">{item.category ? (activeCategories.find(c => c.id === String(item.category))?.name || item.category) : '—'}</span>
+        {/if}
       </div>
       {#if item.runningBalanceCents !== undefined && !isChild}
         <div class="text-muted-foreground ml-auto">

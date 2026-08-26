@@ -74,7 +74,7 @@
             <div>{tx.description}</div>
             {#if tx.type === 'transfert'}
               <Badge variant="primary-soft" size="xs" class="uppercase">
-                Virement interne
+                {tx.transferLeg === 'destination' ? 'Entrée en caisse' : 'Dépôt en banque'}
               </Badge>
             {/if}
           </Table.Cell>
@@ -86,7 +86,7 @@
               <Amount cents={tx.amount} showSign colored />
             {:else if tx.type === 'depense'}
               <Amount cents={-tx.amount} showSign colored />
-            {:else if tx.type === 'transfert' && tx.destinationAccountId === 'cash'}
+            {:else if tx.type === 'transfert' && tx.transferLeg === 'destination'}
               <Amount cents={tx.amount} showSign colored />
             {:else}
               <Amount cents={-tx.amount} showSign colored />

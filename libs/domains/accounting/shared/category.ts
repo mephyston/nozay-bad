@@ -63,7 +63,6 @@ export interface CategoryMap {
   championnats: number;
   stagesFormations: number;
   fonctionnement: number;
-  virementsInternes: number;
 }
 
 export function resolveCategoryMap(categories: CategoryLike[]): CategoryMap {
@@ -92,8 +91,16 @@ export function resolveCategoryMap(categories: CategoryLike[]): CategoryMap {
     licences: findId(['licence', 'licences', 'ffbad', 'fédération'], 'licences'),
     championnats: findId(['championnat', 'championnats', 'interclub', 'interclubs'], 'championnats'),
     stagesFormations: findId(['stage', 'stages', 'formation', 'formations'], 'stagesFormations'),
-    fonctionnement: findId(['fonctionnement', 'administratif', 'bureau'], 'fonctionnement'),
-    virementsInternes: findId(['virement interne', 'virements internes', 'transit'], 'virementsInternes')
+    /*
+     * Plus de `virementsInternes` ici.
+     *
+     * Un virement interne n'est pas une imputation analytique : c'est un mouvement entre deux
+     * comptes du club, désormais écrit en deux jambes sans catégorie. Le garder dans cette carte
+     * était doublement risqué — `findId` retombe sur `categories[0]` quand rien ne correspond,
+     * c'est-à-dire sur « Adhésions & Inscriptions » avec le seed en place : renommer la catégorie
+     * aurait fait suggérer des cotisations à la place des virements.
+     */
+    fonctionnement: findId(['fonctionnement', 'administratif', 'bureau'], 'fonctionnement')
   };
 }
 

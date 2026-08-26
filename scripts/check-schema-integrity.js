@@ -13,8 +13,15 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 // La liste précédente recopiait toute la nomenclature comptable ; le jour où le seed
 // a été réécrit, ce contrôle est devenu rouge en permanence sans rien protéger.
 const REQUIRED_REFERENCE_CODES = {
-  // `get-season-reports` isole les transferts via startsWith('Virements Internes').
-  categories: ['Virements Internes'],
+  /*
+   * « Virements Internes » n'est plus requis.
+   *
+   * Le code n'en dépend plus : un virement s'écrit en deux jambes `type='transfert'`, sans
+   * catégorie — le CHECK de `ledger_entries` l'interdit. La catégorie ne subsiste que pour lire
+   * les écritures que la migration `0023` n'a pas pu apparier, et la migration l'a désactivée.
+   * L'exiger ici reviendrait à figer une donnée en voie de disparition.
+   */
+  categories: [],
   account_classes: ['60', '61', '62', '63', '64', '65', '70', '74', '75', '512', '517', '530'],
   accounts: ['current', 'savings', 'cash'],
   // Doit couvrir `paymentMethodsList` (libs/domains/shop/.../catalog-types.ts).
@@ -259,6 +266,63 @@ function checkReferenceData() {
   console.log(`  ✓ 5. Données de référence : Tous les codes métiers requis sont présents dans 0001_seed_reference_data.sql.`);
 }
 
+/**
+ * 6. Le virement interne ne se reconnaît plus à un libellé de catégorie.
+ *
+ * C'était la fragilité centrale de l'ancien modèle : l'exclusion des virements du compte de
+ * résultat tenait à `adminLabel.startsWith('Virements Internes')`, sur une catégorie que l'écran
+ * de configuration laisse renommer. La renommer en minuscules aurait fait remonter tous ces
+ * mouvements en produits et en charges, sans le moindre message.
+ *
+ * La règle vit désormais dans `shared/entry-classification.ts`, et nulle part ailleurs. Ce
+ * contrôle interdit qu'elle soit réécrite ailleurs, sous quelque forme que ce soit.
+ */
+function checkInternalTransferRule() {
+  if (process.argv.includes('--test-fail-6')) {
+    throw new Error("[internal-transfers] ÉCHEC SIMULÉ : reconnaissance d'un virement par libellé de catégorie.");
+  }
+
+  const OWNER = path.join('libs', 'domains', 'accounting', 'shared', 'entry-classification.ts');
+  const offenders = [];
+
+  const walk = (dir) => {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === '.astro') continue;
+        walk(full);
+        continue;
+      }
+      if (!/\.(ts|svelte|astro)$/.test(entry.name)) continue;
+
+      const relative = path.relative(ROOT_DIR, full);
+      // Le module propriétaire de la règle, et le script d'audit qui lit l'historique.
+      if (relative === OWNER || relative.includes('audit-internal-transfers')) continue;
+      // `ai-knowledge.ts` recopie le centre d'aide : c'est de la documentation, pas une règle.
+      if (relative.endsWith('ai-knowledge.ts')) continue;
+
+      const content = fs.readFileSync(full, 'utf8');
+      if (/(startsWith|includes)\(\s*['"`]Virements? [Ii]nternes?/.test(content)) {
+        offenders.push(relative);
+      }
+    }
+  };
+
+  walk(path.join(ROOT_DIR, 'libs'));
+  walk(path.join(ROOT_DIR, 'apps'));
+
+  if (offenders.length > 0) {
+    console.error("\n❌ [internal-transfers] ÉCHEC : un virement interne est reconnu à son libellé de catégorie.");
+    offenders.forEach((f) => console.error(`  - ${f}`));
+    console.error(`\n  La règle appartient à ${OWNER} (affectsProfitAndLoss) : renommer la catégorie`);
+    console.error("  depuis l'écran de configuration ferait sinon remonter les virements au compte de résultat.");
+    throw new Error('[internal-transfers] La qualification d\'un virement ne doit dépendre d\'aucun libellé.');
+  }
+
+  console.log('  ✓ 6. Virements internes : la règle vit dans entry-classification.ts, et nulle part ailleurs.');
+}
+
 function main() {
   console.log('🔍 Exécution des contrôles d\'intégrité de schéma (PROMPT 14)...\n');
 
@@ -268,6 +332,7 @@ function main() {
     checkSchemaDrift();
     checkConstraintLoss();
     checkReferenceData();
+    checkInternalTransferRule();
 
     console.log('\n✅ [schema-check] TOUS LES CONTRÔLES DE SCHÉMA ONT RÉUSSI AVEC SUCCÈS !\n');
     process.exit(0);

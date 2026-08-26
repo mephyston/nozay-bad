@@ -1,7 +1,7 @@
 import { ledgerEntriesTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq, and, ne, sql } from 'drizzle-orm';
-import { bankStatementLinesTable } from '../../shared/schema';
+import { bankStatementLinesTable, internalTransfersTable } from '../../shared/schema';
 
 export class DeleteTransactionRepository {
   async getById(db: DbOrTx, id: number): Promise<any | undefined> {
@@ -30,6 +30,15 @@ export class DeleteTransactionRepository {
     await db.run(sql`
       UPDATE expenses SET status = 'pending', ledger_entry_id = NULL WHERE ledger_entry_id = ${txId}
     `);
+  }
+
+  /** Les deux jambes d'un virement : supprimer l'une sans l'autre laisserait un demi-virement. */
+  async getTransferLegs(db: DbOrTx, transferId: number): Promise<any[]> {
+    return db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.transferId, transferId)).all();
+  }
+
+  buildDeleteTransferStatement(db: DbOrTx, transferId: number): any {
+    return db.delete(internalTransfersTable).where(eq(internalTransfersTable.id, transferId));
   }
 
   buildDeleteLedgerEntryStatement(db: DbOrTx, id: number): any {

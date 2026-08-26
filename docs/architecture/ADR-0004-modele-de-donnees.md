@@ -222,8 +222,9 @@ erDiagram
 | `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Clé technique unique. |
 | `season_id` | `INTEGER` | `NOT NULL REFERENCES seasons(id)` | Exercice d'imputation comptable. |
 | `type` | `TEXT` | `NOT NULL` | Flow de trésorerie (`'recette'`, `'depense'`, `'transfert'`). |
-| `account_id` | `INTEGER` | `NOT NULL REFERENCES accounts(id)` | Compte source (débité ou crédité). |
-| `destination_account_id` | `INTEGER` | `NULL REFERENCES accounts(id)` | Compte cible (uniquement pour un virement interne). |
+| `account_id` | `INTEGER` | `NOT NULL REFERENCES accounts(id)` | **Le** compte que l'écriture touche. Une écriture n'en touche jamais deux. |
+| `transfer_id` | `INTEGER` | `NULL REFERENCES internal_transfers(id)` | Le virement dont l'écriture est une jambe (NULL sinon). |
+| `transfer_leg` | `TEXT` | `NULL` | Côté de la jambe : `'source'` retire l'argent du compte, `'destination'` l'y verse. |
 | `category_id` | `INTEGER` | `NULL REFERENCES categories(id)` | Catégorie budgétaire/analytique (NULL pour transfert). |
 | `amount_cents` | `INTEGER` | `NOT NULL` | Montant du mouvement en centimes d'euros (> 0). |
 | `date` | `TEXT` | `NOT NULL` | Date effective du mouvement financier (`YYYY-MM-DD`). |
@@ -243,12 +244,54 @@ erDiagram
   2. `CHECK(type IN ('recette', 'depense', 'transfert'))`
   3. `CHECK(status IN ('pending_debit', 'in_vault', 'cleared'))`
   4. `CHECK(accrual_type IN ('normal', 'produit_constate_avance', 'charge_constatee_avance', 'charge_a_payer', 'produit_a_recevoir'))`
-  5. **Invariant du transfert** :
-     `CHECK((type = 'transfert' AND destination_account_id IS NOT NULL AND destination_account_id <> account_id AND category_id IS NULL) OR (type <> 'transfert' AND destination_account_id IS NULL))`
+  5. **Invariant du transfert** (revu par la migration `0023`) :
+     `CHECK((type = 'transfert' AND transfer_id IS NOT NULL AND transfer_leg IN ('source','destination') AND category_id IS NULL) OR (type <> 'transfert' AND transfer_id IS NULL AND transfer_leg IS NULL))`
+     plus `CREATE UNIQUE INDEX internal_transfer_leg_idx ON ledger_entries(transfer_id, transfer_leg)` — « au plus une jambe de chaque sens ». Que la paire soit **complète** et de montants égaux ne se contraint pas en SQLite : c'est gardé en applicatif et vérifié par `scripts/check-schema-integrity.js`.
   6. **Invariant de cohérence des régularisations** :
      `CHECK((accrual_type LIKE 'produit_%' AND type = 'recette') OR (accrual_type LIKE 'charge_%' AND type = 'depense') OR (accrual_type = 'normal'))`
   7. **Note de régularisation obligatoire** :
      `CHECK((accrual_type = 'normal') OR (accrual_type <> 'normal' AND accrual_note IS NOT NULL))`
+
+#### Table `internal_transfers` (Virements Internes)
+*Introduite par la migration `0023`. Porte l'identité d'un virement ; les mouvements eux-mêmes sont deux `ledger_entries`.*
+
+| Colonne | Type SQL | Contraintes / Modificateurs | Rôle & Justification Métier |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Clé technique unique. |
+| `season_id` | `INTEGER` | `NOT NULL REFERENCES seasons(id)` | Exercice d'imputation. |
+| `reference` | `TEXT` | `NOT NULL UNIQUE` | `VIR-25-26-0001`. **Clé naturelle** : `last_insert_rowid()` ne désigne qu'un enfant, un virement en a deux (cf. ADR-0002). |
+| `amount_cents` | `INTEGER` | `NOT NULL CHECK(> 0)` | Montant du virement. |
+| `description` | `TEXT` | `NOT NULL` | Libellé commun aux deux jambes. |
+| `created_at` | `INTEGER` | `NOT NULL` | Horodatage de création. |
+
+##### Pourquoi deux écritures et non une
+
+Le modèle initial tenait un virement en **une** ligne portant `account_id` et
+`destination_account_id`. Comptablement juste, mais inapplicable au rapprochement bancaire :
+`ledger_entries.bank_statement_line_id` est scalaire, alors qu'un virement entre deux comptes
+bancaires produit **deux** lignes de relevé, les deux comptes étant importés en OFX. Une écriture
+ne pouvait en pointer qu'une.
+
+Les deux issues étaient également fausses. Pointer la jambe « courant » sortait l'écriture des
+« écritures non pointées » côté livret pendant que sa ligne de relevé restait « non
+comptabilisée » : un écart permanent de `−montant` dans l'état de rapprochement. Ne rien pointer
+faisait boucler l'identité, mais laissait la ligne en `pending` — et `getPendingBankTransactions`
+**bloque la clôture** sur une ligne `pending`.
+
+D'où un contournement devenu la norme : saisir le virement en deux `recette`/`depense` portant la
+catégorie « Virements Internes ». Le logiciel le fabriquait lui-même — le rapprochement ne créait
+jamais de `transfert`, et l'analyse IA suggérait cette catégorie. Le dépôt portait donc **deux
+représentations** du même événement, dont l'exclusion du compte de résultat tenait au *libellé*
+d'une catégorie que l'écran de configuration laisse renommer.
+
+Le modèle à deux jambes lève les trois problèmes d'un coup : chaque jambe pointe sa propre ligne,
+porte sa propre **date de valeur** (d'où l'argent en transit, `computeTransitCents`), et la règle
+« un virement ne pèse pas sur le résultat » se lit sur le seul `type`, en un seul endroit
+(`shared/entry-classification.ts`).
+
+Le compte 58 « Virements internes » du PCG n'a pas été introduit : le décalage entre les deux
+dates de valeur porte exactement la même information, sans faire figurer au plan de comptes un
+compte où le club n'a jamais eu d'argent.
 
 #### Table `bank_statement_lines` (Lignes d'Extraits Bancaires Importées)
 *Anciennement nommée `bank_statement_lines`. Représente les données d'extraits de compte externe (OFX/CSV) en attente de rapprochement.*

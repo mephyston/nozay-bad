@@ -136,12 +136,42 @@ export const invoiceItemsTable = sqliteTable('invoice_items', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
+/**
+ * Un virement interne : de l'argent qui passe d'un compte du club à un autre.
+ *
+ * Il ne s'agit **pas** d'une écriture, mais de ce qui relie les deux qu'il produit. Le modèle
+ * précédent tenait en une seule ligne portant ses deux comptes ; c'était juste comptablement, mais
+ * `ledger_entries.bank_statement_line_id` est scalaire alors qu'un virement courant↔livret produit
+ * deux lignes de relevé. Une écriture ne pouvait en pointer qu'une, et le rapprochement ne bouclait
+ * jamais sur le second compte.
+ *
+ * `reference` est en UNIQUE parce qu'elle sert de **clé naturelle** au batch D1 :
+ * `last_insert_rowid()` ne vaut que pour un seul enfant, et un virement en a deux.
+ */
+export const internalTransfersTable = sqliteTable('internal_transfers', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  seasonId: integer('season_id').notNull().references(() => seasonsTable.id),
+  reference: text('reference').notNull().unique(),
+  amountCents: integer('amount_cents').notNull(),
+  description: text('description').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+}, (table) => ({
+  amountCheck: check('internal_transfers_amount_cents_check', sql`${table.amountCents} > 0`)
+}));
+
 export const ledgerEntriesTable = sqliteTable('ledger_entries', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   seasonId: integer('season_id').notNull().references(() => seasonsTable.id),
   type: text('type', { enum: ['recette', 'depense', 'transfert'] }).notNull(),
   accountId: integer('account_id').notNull().references(() => accountsTable.id),
-  destinationAccountId: integer('destination_account_id').references(() => accountsTable.id),
+  /*
+   * Les deux jambes d'un virement interne. `transferLeg` dit de quel côté se tient l'écriture :
+   * `source` retire l'argent de `accountId`, `destination` l'y verse. Chaque jambe porte donc sa
+   * propre date de valeur, son propre statut et son propre pointage bancaire — c'est tout l'objet
+   * du modèle à deux jambes, et ce que l'ancienne colonne `destination_account_id` interdisait.
+   */
+  transferId: integer('transfer_id').references(() => internalTransfersTable.id),
+  transferLeg: text('transfer_leg', { enum: ['source', 'destination'] }),
   categoryId: integer('category_id').references(() => categoriesTable.id),
   amountCents: integer('amount_cents').notNull(),
   date: text('date').notNull(),
@@ -163,10 +193,20 @@ export const ledgerEntriesTable = sqliteTable('ledger_entries', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 }, (table) => ({
   amountCheck: check('ledger_entries_amount_cents_check', sql`${table.amountCents} > 0`),
+  /*
+   * Une écriture de virement est une jambe, et rien d'autre : elle appartient à un virement, se
+   * situe d'un côté, et ne porte jamais de catégorie — un virement ne change pas le résultat.
+   */
   transfertCheck: check(
     'ledger_entries_transfert_check',
-    sql`(${table.type} = 'transfert' AND ${table.destinationAccountId} IS NOT NULL AND ${table.destinationAccountId} <> ${table.accountId} AND ${table.categoryId} IS NULL) OR (${table.type} <> 'transfert' AND ${table.destinationAccountId} IS NULL)`
-  )
+    sql`(${table.type} = 'transfert' AND ${table.transferId} IS NOT NULL AND ${table.transferLeg} IN ('source', 'destination') AND ${table.categoryId} IS NULL) OR (${table.type} <> 'transfert' AND ${table.transferId} IS NULL AND ${table.transferLeg} IS NULL)`
+  ),
+  /*
+   * « Au plus une jambe de chaque sens par virement ». Que la paire soit **complète** et de
+   * montants égaux ne se contraint pas en SQLite : c'est gardé en applicatif et vérifié par
+   * `scripts/check-schema-integrity.js`.
+   */
+  transferLegIdx: uniqueIndex('internal_transfer_leg_idx').on(table.transferId, table.transferLeg)
 }));
 
 export const checksTable = sqliteTable('checks', {

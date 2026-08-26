@@ -387,7 +387,7 @@ En dessous, l'historique des mouvements, filtrable par recherche libre sur le li
 
 ## Enregistrer un mouvement
 
-Le bouton **Nouveau mouvement** ouvre un formulaire simplifié :
+Le bouton **Nouveau mouvement** ouvre un formulaire simplifié (pour une entrée ou une sortie d'espèces ; un dépôt en banque se saisit au grand livre, voir plus bas) :
 
 - **Type** — Entrée (recette, par exemple une vente à la buvette) ou Sortie (dépense, par exemple un achat de boissons) ;
 - **Montant** et **date** ;
@@ -400,8 +400,12 @@ Un dépôt d'espèces n'est ni une recette ni une dépense : c'est un **virement
 
 - **Compte source** : Caisse physique
 - **Compte destinataire** : Compte Courant
+- **Date** : le jour où les espèces quittent réellement la caisse
+- **Date de crédit** : le jour où la banque les porte au compte, s'il est différent
 
-La ligne du relevé bancaire correspondante sera ensuite associée à ce virement lors du [rapprochement bancaire](/admin/help/rapprochement-bancaire).
+Le virement écrit alors deux écritures : la caisse baisse le jour du dépôt, le compte courant monte le jour du crédit. Entre les deux, l'argent est **en transit** — c'est normal, et l'écran de [rapprochement bancaire](/admin/help/rapprochement-bancaire) l'affiche.
+
+La ligne du relevé bancaire correspondante sera ensuite associée à la jambe créditrice lors du rapprochement.
 
 > [!TIP]
 > Le solde affiché doit toujours correspondre à l'argent réellement présent dans la caisse du club. Un écart signale un mouvement oublié : comptez la caisse avant chaque dépôt en banque.
@@ -440,13 +444,15 @@ Le bouton **Nouvelle catégorie** ouvre le formulaire ; le menu de chaque ligne 
 
 ## Où les catégories interviennent
 
-- Elles sont obligatoires sur toute recette et toute dépense du [grand livre](/admin/help/grand-livre) ; un virement interne n'en porte jamais.
+- Elles sont obligatoires sur toute recette et toute dépense du [grand livre](/admin/help/grand-livre) ; un virement interne n'en porte jamais, et le logiciel refuse de lui en attribuer une.
 - Elles structurent le [compte de résultat](/admin/help/rapports-financiers) et le [budget](/admin/help/budget-previsionnel).
 - Chaque **famille de produits** de la boutique pointe vers une catégorie comptable, ce qui rend automatique l'écriture de recette à la validation d'une commande. Voir [Catégories de produits](/admin/help/categories-produits).
 - La catégorie d'**adhésion** a un rôle particulier : un encaissement rattaché à un adhérent et imputé à cette catégorie met à jour le montant reçu de sa cotisation.
 
 > [!NOTE]
-> Certaines automatisations reconnaissent une catégorie à son libellé (« volant », « cordage », « matériel », « virement interne »…). Renommer largement une catégorie peut donc changer le comportement des suggestions de rapprochement ou la répartition par pôle du tableau de bord.
+> Certaines automatisations reconnaissent une catégorie à son libellé (« volant », « cordage », « matériel »…). Renommer largement une catégorie peut donc changer le comportement des suggestions de rapprochement ou la répartition par pôle du tableau de bord.
+>
+> Ce n'est **plus** le cas des virements internes : ils se reconnaissent désormais à leur nature, pas à un libellé. La catégorie « Virements Internes » a été désactivée et ne peut plus être attribuée.
 
 
 --- Article: categories-produits.md ---
@@ -751,7 +757,7 @@ Les écritures du grand livre rattachées à cet adhérent, lues **de son point 
 
 - une recette du club apparaît comme un **Achat** ;
 - une dépense du club apparaît comme un **Remboursement** ;
-- un virement interne apparaît comme un **Transfert**.
+- une jambe de virement interne apparaît comme un **Virement émis** ou un **Virement reçu**.
 
 ## Autoriser les notes de frais
 
@@ -925,6 +931,9 @@ Le **Grand livre** (« Journal des écritures ») est le registre de toutes les 
 
 Trois boutons ouvrent le même formulaire, avec des champs adaptés : **recette**, **dépense**, **virement interne**.
 
+> [!NOTE]
+> Un virement interne s'enregistre en **deux écritures**, une par compte : elles apparaissent toutes les deux dans le grand livre, marquées « Virement émis » et « Virement reçu », et nomment chacune le compte d'en face. Supprimer l'une supprime l'autre — c'est un seul mouvement, écrit des deux côtés.
+
 | Champ | Détail |
 |---|---|
 | Montant | En euros, strictement positif |
@@ -933,6 +942,7 @@ Trois boutons ouvrent le même formulaire, avec des champs adaptés : **recette*
 | Catégorie | Obligatoire pour une recette ou une dépense |
 | Compte financier | Compte Courant, Compte Livret ou Caisse physique |
 | Comptes source et destinataire | Pour un virement interne, obligatoirement différents |
+| Date de crédit | Pour un virement interne, si l'argent arrive un autre jour que celui où il part. Laissée vide, elle vaut celle du débit |
 | Moyen de paiement | Virement, Chèque, Espèces, LABAZ, ANCV, Pass'Sport, Ticket Loisir, Up & Loisir |
 | Régularisation | *Normal* par défaut ; les autres motifs exigent une note justificative |
 | Description | Le motif de l'opération |
@@ -1625,7 +1635,7 @@ L'argent du club est suivi sur trois comptes :
 - **Compte Livret**
 - **Caisse physique**
 
-Chaque écriture désigne l'un de ces comptes ; un virement interne en désigne deux.
+Chaque écriture désigne **un** de ces comptes. Un virement interne, lui, s'enregistre en **deux écritures** : une qui retire l'argent du compte de départ, une qui le verse au compte d'arrivée.
 
 ## Les trois types d'écriture
 
@@ -1633,9 +1643,15 @@ Chaque écriture désigne l'un de ces comptes ; un virement interne en désigne 
 |---|---|---|
 | **Recette** | L'argent entre sur un compte | Une catégorie est obligatoire |
 | **Dépense** | L'argent sort d'un compte | Une catégorie est obligatoire |
-| **Virement interne** | L'argent passe d'un compte à l'autre | Deux comptes différents, **aucune catégorie** |
+| **Virement interne** | L'argent passe d'un compte à l'autre | **Deux écritures** liées, sur deux comptes différents, **aucune catégorie** |
 
 Un virement interne ne change pas le résultat de l'exercice : il n'apparaît ni en produit ni en charge dans le compte de résultat.
+
+### Pourquoi deux écritures, et non une seule
+
+Parce que la banque, elle, en annonce deux. Un virement de votre compte courant vers le livret apparaît sur **les deux relevés** : un débit d'un côté, un crédit de l'autre. Une écriture unique ne pourrait être associée qu'à l'une des deux lignes, et l'autre resterait éternellement en attente — au point de bloquer la clôture de l'exercice.
+
+Chaque écriture porte donc **sa propre date de valeur**. C'est ce qui permet de dire qu'un dépôt d'espèces est sorti de la caisse le lundi et n'est arrivé en banque que le jeudi : entre les deux, l'argent est **en transit**. L'écran de [rapprochement bancaire](/admin/help/rapprochement-bancaire) affiche ce montant, qui explique pourquoi le total de trésorerie peut baisser quelques jours sans qu'un euro ait été perdu.
 
 ## La catégorie, et non le numéro de compte
 
@@ -1794,7 +1810,10 @@ Ce n'est qu'une proposition : rien n'est enregistré tant que vous n'avez pas va
 La liste de gauche répartit les lignes en trois onglets — **En attente**, **Rapprochées**, **Ignorées** — avec une recherche libre. Sélectionner une ligne ouvre à droite un panneau proposant trois façons de la traiter :
 
 - **Saisir écriture** — créer l'écriture correspondante (type, catégorie, montant, date, libellé, adhérent). Une même ligne bancaire peut être **ventilée en plusieurs écritures** : ajoutez des lignes de répartition tant que le montant n'est pas soldé.
-- **Associer** — rattacher la ligne à une écriture **déjà saisie** dans le grand livre (un chèque enregistré, un virement interne, une note de frais validée…).
+- **Associer** — rattacher la ligne à une écriture **déjà saisie** dans le grand livre (un chèque enregistré, une jambe de virement interne, une note de frais validée…).
+
+> [!IMPORTANT]
+> Un virement entre deux comptes du club apparaît sur **les deux relevés**. Saisissez-le une fois depuis le [grand livre](/admin/help/grand-livre) — il y écrit deux écritures — puis associez **chacune** des deux lignes de relevé à sa jambe. N'en associer qu'une laisse un écart que rien n'explique, et l'écran vous le signale.
 - **Associer facture** — rattacher la ligne à une ou plusieurs **factures en attente de règlement**. Les factures concernées passent automatiquement au statut *Payée*.
 
 Une ligne est marquée **Rapprochée** dès que le total des écritures qui lui sont rattachées atteint son montant. Tant qu'il reste un écart, elle demeure en attente et vous pouvez continuer à la ventiler.
@@ -2741,6 +2760,28 @@ export const bankStatementLinesTable = sqliteTable('bank_statement_lines', {
   created_at: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
+/*
+ * Le solde que la banque, elle, annonce — la seule chose qu'une écriture ne peut pas
+ * bouger.
+ *
+ * \`bank_statement_lines\` porte les mouvements du relevé ; il y manquait le \`<LEDGERBAL>\`
+ * du fichier OFX, c'est-à-dire le solde arrêté par la banque à une date. Sans lui on
+ * pouvait pointer les opérations une à une, mais jamais boucler un état de rapprochement :
+ * il n'y avait aucun nombre extérieur auquel confronter le solde des livres.
+ *
+ * Une ligne par compte et par arrêté (\`account_id\`, \`date\`) : réimporter deux fois le même
+ * relevé écrase la ligne au lieu d'en empiler une seconde.
+ */
+export const bankStatementBalancesTable = sqliteTable('bank_statement_balances', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  account_id: integer('account_id').notNull().references(() => accountsTable.id),
+  date: text('date').notNull(),
+  balance_cents: integer('balance_cents').notNull(),
+  created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+}, (table) => ({
+  bank_statement_balance_account_date_idx: uniqueIndex('bank_statement_balance_account_date_idx').on(table.accountId, table.date),
+}));
+
 export const checkDepositsTable = sqliteTable('check_deposits', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   season_id: integer('season_id').notNull().references(() => seasonsTable.id),
@@ -2781,12 +2822,42 @@ export const invoiceItemsTable = sqliteTable('invoice_items', {
   created_at: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
+/**
+ * Un virement interne : de l'argent qui passe d'un compte du club à un autre.
+ *
+ * Il ne s'agit **pas** d'une écriture, mais de ce qui relie les deux qu'il produit. Le modèle
+ * précédent tenait en une seule ligne portant ses deux comptes ; c'était juste comptablement, mais
+ * \`ledger_entries.bank_statement_line_id\` est scalaire alors qu'un virement courant↔livret produit
+ * deux lignes de relevé. Une écriture ne pouvait en pointer qu'une, et le rapprochement ne bouclait
+ * jamais sur le second compte.
+ *
+ * \`reference\` est en UNIQUE parce qu'elle sert de **clé naturelle** au batch D1 :
+ * \`last_insert_rowid()\` ne vaut que pour un seul enfant, et un virement en a deux.
+ */
+export const internalTransfersTable = sqliteTable('internal_transfers', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  season_id: integer('season_id').notNull().references(() => seasonsTable.id),
+  reference: text('reference').notNull().unique(),
+  amount_cents: integer('amount_cents').notNull(),
+  description: text('description').notNull(),
+  created_at: integer('created_at', { mode: 'timestamp' }).notNull()
+}, (table) => ({
+  internal_transfers_amount_cents_check: check('internal_transfers_amount_cents_check', sql\`\${table.amountCents} > 0\`)
+}));
+
 export const ledgerEntriesTable = sqliteTable('ledger_entries', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   season_id: integer('season_id').notNull().references(() => seasonsTable.id),
   type: text('type', { enum: ['recette', 'depense', 'transfert'] }).notNull(),
   account_id: integer('account_id').notNull().references(() => accountsTable.id),
-  destination_account_id: integer('destination_account_id').references(() => accountsTable.id),
+  /*
+   * Les deux jambes d'un virement interne. \`transferLeg\` dit de quel côté se tient l'écriture :
+   * \`source\` retire l'argent de \`accountId\`, \`destination\` l'y verse. Chaque jambe porte donc sa
+   * propre date de valeur, son propre statut et son propre pointage bancaire — c'est tout l'objet
+   * du modèle à deux jambes, et ce que l'ancienne colonne \`destination_account_id\` interdisait.
+   */
+  transfer_id: integer('transfer_id').references(() => internalTransfersTable.id),
+  transfer_leg: text('transfer_leg', { enum: ['source', 'destination'] }),
   category_id: integer('category_id').references(() => categoriesTable.id),
   amount_cents: integer('amount_cents').notNull(),
   date: text('date').notNull(),
@@ -2797,6 +2868,10 @@ export const ledgerEntriesTable = sqliteTable('ledger_entries', {
     enum: ['normal', 'produit_constate_avance', 'charge_constatee_avance', 'charge_a_payer', 'produit_a_recevoir']
   }).notNull().default('normal'),
   accrual_note: text('accrual_note'),
+  // Adhésion (\`memberships.id\`), et non personne : une commande, une dépense, une écriture
+  // ou une inscription appartient à la saison où elle a eu lieu. La colonne garde son nom
+  // \`member_id\` — la renommer aurait imposé deux migrations de plus et la réécriture de
+  // cinq tables, pour un gain de vocabulaire.
   member_id: integer('member_id'),
   bank_statement_line_id: integer('bank_statement_line_id').references(() => bankStatementLinesTable.id),
   invoice_id: integer('invoice_id').references(() => invoicesTable.id),
@@ -2804,10 +2879,20 @@ export const ledgerEntriesTable = sqliteTable('ledger_entries', {
   created_at: integer('created_at', { mode: 'timestamp' }).notNull()
 }, (table) => ({
   ledger_entries_amount_cents_check: check('ledger_entries_amount_cents_check', sql\`\${table.amountCents} > 0\`),
+  /*
+   * Une écriture de virement est une jambe, et rien d'autre : elle appartient à un virement, se
+   * situe d'un côté, et ne porte jamais de catégorie — un virement ne change pas le résultat.
+   */
   transfertCheck: check(
     'ledger_entries_transfert_check',
-    sql\`(\${table.type} = 'transfert' AND \${table.destinationAccountId} IS NOT NULL AND \${table.destinationAccountId} <> \${table.accountId} AND \${table.categoryId} IS NULL) OR (\${table.type} <> 'transfert' AND \${table.destinationAccountId} IS NULL)\`
-  )
+    sql\`(\${table.type} = 'transfert' AND \${table.transferId} IS NOT NULL AND \${table.transferLeg} IN ('source', 'destination') AND \${table.categoryId} IS NULL) OR (\${table.type} <> 'transfert' AND \${table.transferId} IS NULL AND \${table.transferLeg} IS NULL)\`
+  ),
+  /*
+   * « Au plus une jambe de chaque sens par virement ». Que la paire soit **complète** et de
+   * montants égaux ne se contraint pas en SQLite : c'est gardé en applicatif et vérifié par
+   * \`scripts/check-schema-integrity.js\`.
+   */
+  internal_transfer_leg_idx: uniqueIndex('internal_transfer_leg_idx').on(table.transferId, table.transferLeg)
 }));
 
 export const checksTable = sqliteTable('checks', {
@@ -3343,6 +3428,10 @@ export const clubEventRegistrationsTable = sqliteTable(
      * inscription de novembre vers une ligne périmée dès la saison suivante. Le domaine
      * n'a par ailleurs pas à dépendre de \`members\` pour compter des présents.
      */
+    // Adhésion (\`memberships.id\`), et non personne : une commande, une dépense, une écriture
+    // ou une inscription appartient à la saison où elle a eu lieu. La colonne garde son nom
+    // \`member_id\` — la renommer aurait imposé deux migrations de plus et la réécriture de
+    // cinq tables, pour un gain de vocabulaire.
     member_id: integer('member_id').notNull(),
     /**
      * Identité **recopiée** au moment de l'inscription, sur le modèle de
@@ -3403,6 +3492,10 @@ export const expensesTable = sqliteTable('expenses', {
   photo_url: text('photo_url'),
   status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
   emitter_name: text('emitter_name').notNull(),
+  // Adhésion (\`memberships.id\`), et non personne : une commande, une dépense, une écriture
+  // ou une inscription appartient à la saison où elle a eu lieu. La colonne garde son nom
+  // \`member_id\` — la renommer aurait imposé deux migrations de plus et la réécriture de
+  // cinq tables, pour un gain de vocabulaire.
   member_id: integer('member_id'),
   ledger_entry_id: integer('ledger_entry_id'),
   created_at: integer('created_at', { mode: 'timestamp' }).notNull()
@@ -3523,19 +3616,97 @@ export const usersTable = sqliteTable('users', {
   created_at: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
-export const membersTable = sqliteTable('members', {
+/**
+ * La personne : le licencié, tel qu'il traverse les saisons.
+ *
+ * Une ligne par **licence**, et une seule. Tout ce qui reste vrai d'une rentrée à l'autre
+ * vit ici — identité, coordonnées, portrait — par opposition à \`memberships\`, qui porte ce
+ * que la saison attribue.
+ *
+ * Pourquoi cette table existe : \`members\` (devenue \`memberships\`) portait une ligne par
+ * (licence, saison), si bien que l'identité était recopiée à chaque adhésion et réécrite
+ * par l' * à clé \`licence\` sans clé étrangère — \`member_club_functions\`, puis \`member_profiles\` —
+ * en contradiction avec la règle 2.2 de l'ADR-0004. \`persons\` est la cible que ces deux
+ * tables contournaient.
+ *
+ * \`licence\` est la clé naturelle **externe**, au sens de la règle 2.3 de l'ADR-0004 : elle
+ * est définie hors du système (fédération), et c'est elle que portent les exports Poona et
+ * les classements ELO. Les FK, elles, pointent \`id\` comme partout ailleurs.
+ */
+export const personsTable = sqliteTable('persons', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   licence: text('licence').notNull(),
-  season_id: integer('season_id').notNull(),
   last_name: text('last_name').notNull(),
   first_name: text('first_name').notNull(),
   gender: text('gender', { enum: ['M', 'F'] }).notNull(),
   birth_date: text('birth_date').notNull(),
+  /*
+    Coordonnées en « dernier connu », et non en instantané de la saison.
+
+    Mesuré sur la production avant la bascule : sur 226 personnes, l'email ne diverge
+    jamais d'une saison à l'autre, le téléphone et le contact parental divergent pour deux
+    personnes. L'essentiel des écarts apparents était du vide comblé au fil des exports.
+    Une adresse au dossier sert à joindre quelqu'un aujourd'hui — pas à savoir qui était
+    joignable en 2024.
+  */
   email: text('email'),
   phone: text('phone'),
+  parent1_name: text('parent1_name'),
+  parent1_email: text('parent1_email'),
+  parent1_phone: text('parent1_phone'),
+  parent2_name: text('parent2_name'),
+  parent2_email: text('parent2_email'),
+  parent2_phone: text('parent2_phone'),
+  // Préfixe R2 du portrait, sans la taille : \`member-photos/<empreinte>\`. Les objets
+  // déposés sont \`<préfixe>/512\` et \`<préfixe>/128\` — sans extension, le type réel étant
+  // porté par les métadonnées R2 (voir \`shared/photo.ts\`).
+  photo_key: text('photo_key'),
+  photo_updated_at: integer('photo_updated_at', { mode: 'timestamp' }),
+  created_at: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updated_at: integer('updated_at', { mode: 'timestamp' }).notNull()
+}, (table) => ({
+  persons_licence_idx: uniqueIndex('persons_licence_idx').on(table.licence)
+}));
+
+/**
+ * L'adhésion d'une personne à une saison — l'ancienne table \`members\`.
+ *
+ * Elle garde ses \`id\` : cinq tables les stockent durablement (\`orders\`, \`expenses\`,
+ * \`ledger_entries\`, \`checks\`, \`club_event_registrations\`) sans jamais avoir déclaré de clé
+ * étrangère, et une cotisation s'impute bien à l'adhésion d'une saison, pas à la personne.
+ * Les faire changer de sens aurait rattaché des écritures comptables à quelqu'un d'autre.
+ *
+ * \`season_id\` reste un entier nu, sans FK : les saisons appartiennent au domaine
+ * \`accounting\`, et les clés étrangères de ce dépôt sont volontairement intra-domaine.
+ */
+export const membershipsTable = sqliteTable('memberships', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  person_id: integer('person_id').notNull().references(() => personsTable.id),
+  season_id: integer('season_id').notNull(),
   status: text('status', { enum: ['valide', 'suspendu', 'incomplet', 'en_attente'] }).notNull().default('valide'),
+  // Libellé de tarif Poona (« Adulte », « Jeune »…). Saisonnier pour de bon : un jeune
+  // devient adulte, et six licences changeaient déjà de type d'une saison à l'autre.
   type: text('type').notNull(),
   imported_at: integer('imported_at', { mode: 'timestamp' }).notNull(),
+  /*
+    Le règlement de la cotisation vient de l'export Poona, et de lui seul.
+
+    Ces quatre colonnes n'ont qu'un écrivain : \`import-members-csv/repository.ts\`, qui les
+    écrase à chaque import. Rien d'autre ne doit y toucher — surtout pas la comptabilité.
+
+    Le rapprochement bancaire et la saisie des chèques l'ont fait pendant un temps, en
+    ajoutant le montant encaissé. Comme un même règlement figure des deux côtés, il comptait
+    deux fois, et le total dépendait de l'ordre entre le rapprochement et l'    changeait tout seul, sans que rien ne le signale. Ces chemins additionnaient de surcroît
+    une valeur absolue sans regarder le \`type\`, si bien qu'un remboursement d'adhésion
+    gonflait le montant reçu — 547,94 € d'écart en production sur la saison 25-26.
+
+    Poona voit ce que la banque ne montre pas : un chèque sport regroupé sur un bordereau non
+    ventilé, des espèces, un règlement d'une saison antérieure non reprise. C'est pourquoi
+    c'est lui qui fait foi, et non l'inverse.
+
+    Ce que la comptabilité dit, elle, c'est à quelle adhésion l'argent se rapporte :
+    \`ledger_entries.member_id\`. Ce rattachement-là lui appartient.
+  */
   amount_due_cents: integer('amount_due_cents').notNull().default(0),
   amount_received_cents: integer('amount_received_cents').notNull().default(0),
   amount_remaining_cents: integer('amount_remaining_cents').notNull().default(0),
@@ -3545,15 +3716,10 @@ export const membersTable = sqliteTable('members', {
   // le repli (1er septembre de la saison) est le cas courant, pas l'exception.
   payment_date: text('payment_date'),
   // Autorise l'adhérent à saisir des notes de frais (défaut : non). Piloté depuis l'admin.
-  expense_authorized: integer('expense_authorized', { mode: 'boolean' }).notNull().default(false),
-  parent1_name: text('parent1_name'),
-  parent1_email: text('parent1_email'),
-  parent1_phone: text('parent1_phone'),
-  parent2_name: text('parent2_name'),
-  parent2_email: text('parent2_email'),
-  parent2_phone: text('parent2_phone')
+  // Saisonnier par nature : le droit se redonne à chaque réinscription.
+  expense_authorized: integer('expense_authorized', { mode: 'boolean' }).notNull().default(false)
 }, (table) => ({
-  members_licence_season_idx: uniqueIndex('members_licence_season_idx').on(table.licence, table.seasonId),
+  memberships_person_season_idx: uniqueIndex('memberships_person_season_idx').on(table.personId, table.seasonId),
 }));
 
 // Fonction au club (bureau, CA, entraîneur) attribuée à un adhérent pour une saison.
@@ -3594,31 +3760,6 @@ export const attestationConfigTable = sqliteTable('attestation_config', {
   signature_base64: text('signature_base64'),
   updated_at: integer('updated_at', { mode: 'timestamp' }).notNull()
 });
-
-// Ce que la personne est, par opposition à ce que la saison lui attribue.
-//
-// Table annexe **sans \`season_id\`** : \`members\` porte une ligne par (licence, saison),
-// donc une photo rattachée à un \`member.id\` serait à redéposer à chaque réinscription,
-// et une colonne posée sur \`members\` serait écrasée par l'// (\`onConflictDoUpdate\`). La clé est la licence — clé naturelle stable d'une saison à
-// l'autre, sans clé étrangère, même convention que \`member_club_functions\`. Un adhérent
-// qui revient après une saison blanche retrouve son portrait.
-//
-// C'est ici qu'iront les prochaines données durables d'un adhérent (surnom, présentation,
-// préférences d'affichage) ; la cotisation, l'autorisation de notes de frais et la
-// fonction au club restent saisonnières et n'y ont pas leur place.
-export const memberProfilesTable = sqliteTable('member_profiles', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  licence: text('licence').notNull(),
-  // Préfixe R2 du portrait, sans la taille : \`member-photos/<empreinte>\`. Les objets
-  // déposés sont \`<préfixe>/512\` et \`<préfixe>/128\` — sans extension, le type réel
-  // étant porté par les métadonnées R2 (voir \`shared/photo.ts\`).
-  photo_key: text('photo_key'),
-  photo_updated_at: integer('photo_updated_at', { mode: 'timestamp' }),
-  created_at: integer('created_at', { mode: 'timestamp' }).notNull(),
-  updated_at: integer('updated_at', { mode: 'timestamp' }).notNull()
-}, (table) => ({
-  member_profiles_licence_idx: uniqueIndex('member_profiles_licence_idx').on(table.licence)
-}));
 
 // Schema: notifications
 /**
@@ -3814,6 +3955,16 @@ export const AUDIENCE_LABELS: Record<ScheduleSlotRow['audience'], string> = {
 
 export const WEEKDAY_LABELS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
+/**
+ * Séances de jeu libre, ré-exportées depuis \`open-play-schema.ts\`.
+ *
+ * Le glob de drizzle-kit ne résout que ce fichier-ci : sans cette ligne, les tables du
+ * jeu libre seraient absentes du modèle vu par \`drizzle-kit generate\`, et la prochaine
+ * migration générée les recréerait — ou pire, ne les verrait pas du tout. Le contenu vit
+ * à côté pour ne pas doubler la taille de ce fichier.
+ */
+export * from './open-play-schema';
+
 // Schema: shop
 export const productCategoriesTable = sqliteTable('product_categories', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -3839,6 +3990,10 @@ export const productsTable = sqliteTable('products', {
 export const ordersTable = sqliteTable('orders', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   season_id: integer('season_id').notNull(),
+  // Adhésion (\`memberships.id\`), et non personne : une commande, une dépense, une écriture
+  // ou une inscription appartient à la saison où elle a eu lieu. La colonne garde son nom
+  // \`member_id\` — la renommer aurait imposé deux migrations de plus et la réécriture de
+  // cinq tables, pour un gain de vocabulaire.
   member_id: integer('member_id').notNull(),
   product_id: integer('product_id').notNull().references(() => productsTable.id),
   quantity: integer('quantity').notNull().default(1),

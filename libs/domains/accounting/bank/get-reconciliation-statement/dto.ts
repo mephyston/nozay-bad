@@ -53,6 +53,10 @@ export type GetReconciliationStatementOutput = {
   ignoredBankLinesTotalCents: number;
 
   /** `grossCents − unpointedEntriesTotalCents + unrecordedBankLinesTotalCents`. */
+  /** L'argent parti d'un compte et pas encore arrivé dans l'autre, à la date d'arrêté. */
+  transitCents: number;
+  /** Les virements dont une seule des deux jambes est pointée : une anomalie, pas un décalage. */
+  halfPointedTransferIds: number[];
   expectedBankBalanceCents: number;
   /** `statement.balanceCents − expectedBankBalanceCents`. `null` faute de relevé. */
   gapCents: number | null;

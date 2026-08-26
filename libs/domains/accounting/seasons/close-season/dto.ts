@@ -8,7 +8,20 @@ export type CloseSeasonInput = string | {
 };
 
 export type CloseSeasonCheckItem = {
-  code: 'ALREADY_CLOSED' | 'BEFORE_END_DATE' | 'PENDING_BANK_TRANSACTIONS' | 'UNRESOLVED_CHECK_DEPOSITS' | 'UNCLAIMED_IN_VAULT_CHECKS' | 'UNVALIDATED_PAID_ORDERS' | 'PENDING_DEBIT_TRANSACTIONS' | 'CASH_DISCREPANCY' | 'BANK_STATEMENT_DISCREPANCY';
+  code:
+    | 'ALREADY_CLOSED'
+    | 'BEFORE_END_DATE'
+    | 'PENDING_BANK_TRANSACTIONS'
+    | 'UNRESOLVED_CHECK_DEPOSITS'
+    | 'UNCLAIMED_IN_VAULT_CHECKS'
+    | 'UNVALIDATED_PAID_ORDERS'
+    | 'PENDING_DEBIT_TRANSACTIONS'
+    | 'CASH_DISCREPANCY'
+    | 'BANK_STATEMENT_DISCREPANCY'
+    /** De l'argent sorti d'un compte et pas encore arrivé dans l'autre à la date de clôture. */
+    | 'CASH_IN_TRANSIT'
+    /** Un virement dont une seule jambe a été pointée : un écart qu'aucun décalage n'explique. */
+    | 'HALF_POINTED_TRANSFERS';
   message: string;
   details?: any;
 };

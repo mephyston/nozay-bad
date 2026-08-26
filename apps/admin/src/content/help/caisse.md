@@ -15,7 +15,7 @@ En dessous, l'historique des mouvements, filtrable par recherche libre sur le li
 
 ## Enregistrer un mouvement
 
-Le bouton **Nouveau mouvement** ouvre un formulaire simplifié :
+Le bouton **Nouveau mouvement** ouvre un formulaire simplifié (pour une entrée ou une sortie d'espèces ; un dépôt en banque se saisit au grand livre, voir plus bas) :
 
 - **Type** — Entrée (recette, par exemple une vente à la buvette) ou Sortie (dépense, par exemple un achat de boissons) ;
 - **Montant** et **date** ;
@@ -28,8 +28,12 @@ Un dépôt d'espèces n'est ni une recette ni une dépense : c'est un **virement
 
 - **Compte source** : Caisse physique
 - **Compte destinataire** : Compte Courant
+- **Date** : le jour où les espèces quittent réellement la caisse
+- **Date de crédit** : le jour où la banque les porte au compte, s'il est différent
 
-La ligne du relevé bancaire correspondante sera ensuite associée à ce virement lors du [rapprochement bancaire](/admin/help/rapprochement-bancaire).
+Le virement écrit alors deux écritures : la caisse baisse le jour du dépôt, le compte courant monte le jour du crédit. Entre les deux, l'argent est **en transit** — c'est normal, et l'écran de [rapprochement bancaire](/admin/help/rapprochement-bancaire) l'affiche.
+
+La ligne du relevé bancaire correspondante sera ensuite associée à la jambe créditrice lors du rapprochement.
 
 > [!TIP]
 > Le solde affiché doit toujours correspondre à l'argent réellement présent dans la caisse du club. Un écart signale un mouvement oublié : comptez la caisse avant chaque dépôt en banque.

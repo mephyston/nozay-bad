@@ -1,5 +1,6 @@
 import { AppError } from '@nba/db';
 import { CategoryProjection, ForecastDataPoint } from './dto';
+import { affectsProfitAndLoss } from '../../shared/entry-classification';
 
 // Represents a historical transaction to compute seasonality
 export interface HistoricalTransaction {
@@ -20,6 +21,8 @@ export interface MonthlyHistory {
   monthIndex: number;
   currentCents: number;
   savingsCents: number;
+  /** La caisse, que la courbe ignorait : un dépôt d'espèces y passait pour une fuite. */
+  cashCents: number;
   realRecettesCents: number;
   realDepensesCents: number;
 }
@@ -40,7 +43,8 @@ export function generateTreasuryForecast(
   history: MonthlyHistory[],
   effectiveEndDate: string, // The date up to which we have real data
   initCurrent: number = 0,
-  initSavings: number = 0
+  initSavings: number = 0,
+  legacyTransferCategoryId?: number
 ): ForecastDataPoint[] {
   
   // 1. Compute historical weights per category and relative month
@@ -50,7 +54,13 @@ export function generateTreasuryForecast(
   const seasonMap = new Map(pastSeasons.map(s => [s.id, s]));
 
   for (const tx of pastTransactions) {
-    if (tx.type === 'transfert' || tx.categoryId === null) continue;
+    /*
+     * L'exclusion tenait au seul `type === 'transfert'`, et laissait donc entrer les virements
+     * saisis sous l'autre forme — deux `recette`/`depense` portant la catégorie « Virements
+     * Internes ». Un virement de 10 000 € vers le livret pesait dans la saisonnalité comme une
+     * charge de fonctionnement, et faussait la projection de tout l'exercice.
+     */
+    if (!affectsProfitAndLoss(tx, legacyTransferCategoryId) || tx.categoryId === null) continue;
     
     // Pure cash flow: find the past season based on the transaction date, NOT its accounting seasonId
     const season = pastSeasons.find(s => tx.date >= s.startDate && tx.date <= s.endDate);
@@ -122,12 +132,12 @@ export function generateTreasuryForecast(
     if (h.monthIndex >= 0 && h.monthIndex < 12) {
       timeline[h.monthIndex].realCurrent = h.currentCents;
       timeline[h.monthIndex].realSavings = h.savingsCents;
-      timeline[h.monthIndex].realTotal = h.currentCents + h.savingsCents;
+      timeline[h.monthIndex].realTotal = h.currentCents + h.savingsCents + h.cashCents;
       
       // The projected curve matches the real curve in the past
       timeline[h.monthIndex].projectedCurrent = h.currentCents;
       timeline[h.monthIndex].projectedSavings = h.savingsCents;
-      timeline[h.monthIndex].projectedTotal = h.currentCents + h.savingsCents;
+      timeline[h.monthIndex].projectedTotal = h.currentCents + h.savingsCents + h.cashCents;
       
       // Show actual realized revenues and expenses in the table for past months
       timeline[h.monthIndex].projectedRecettes = h.realRecettesCents;
@@ -160,7 +170,8 @@ export function generateTreasuryForecast(
   // Pre-calculate cash realized this season per category
   const currentCashRealized: Record<string, number> = {};
   for (const tx of currentTransactions) {
-    if (tx.type === 'transfert' || tx.categoryId === null) continue;
+    // Même exclusion que sur l'historique : le « réalisé cash » ne compte pas les virements.
+    if (!affectsProfitAndLoss(tx, legacyTransferCategoryId) || tx.categoryId === null) continue;
     const catId = typeof tx.categoryId === 'object' ? (tx.categoryId as any).id : tx.categoryId;
     const key = `${catId}_${tx.type}`;
     currentCashRealized[key] = (currentCashRealized[key] || 0) + tx.amountCents;

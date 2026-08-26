@@ -13,6 +13,15 @@ export interface AnalyzeBankStatementLinesOutput {
  * ici doit y être repris, sans quoi il n'existe que dans la base.
  */
 export interface BankStatementLineSuggestion {
+  /**
+   * La nature du mouvement, et non son imputation.
+   *
+   * `internal-transfer` désigne un mouvement de compte à compte du club. Il n'a pas de catégorie —
+   * le CHECK de `ledger_entries` l'interdit — et ne s'écrit pas depuis le rapprochement, qui ne
+   * produit qu'une écriture là où il en faut deux. L'écran propose donc de le saisir au grand
+   * livre, puis d'associer chacune des deux lignes de relevé à sa jambe.
+   */
+  kind?: 'entry' | 'internal-transfer';
   category: number;
   memberId: number | null;
   memberName: string | null;

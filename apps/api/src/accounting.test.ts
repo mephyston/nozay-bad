@@ -206,21 +206,38 @@ describe('Accounting API Endpoints', () => {
     }
     expect(txRes.status).toBe(200);
 
-    // 3. Add internal transfer (current -> cash)
-    const transferRes = await app.request('http://localhost/accounting/ledger-entries', {
+    // 3. Le grand livre refuse un virement : il n'écrit qu'une ligne là où il en faut deux.
+    const refusedRes = await app.request('http://localhost/accounting/ledger-entries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         seasonId: '25-26',
         type: 'transfert',
         accountId: 'current',
-        destinationAccountId: 'cash',
-        amount: 20000, // 200 €
+        amount: 20000,
         date: '2026-07-13',
         paymentMethod: 'virement',
         description: 'Approvisionnement Caisse'
       })
     }, { DB: mockD1 as any });
+    expect(refusedRes.status).toBe(400);
+
+    // 3b. Le virement s'écrit sur sa propre route, en deux jambes (courant → caisse).
+    const transferRes = await app.request('http://localhost/accounting/internal-transfers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seasonId: '25-26',
+        sourceAccountId: 'current',
+        destinationAccountId: 'cash',
+        amountCents: 20000, // 200 €
+        sourceDate: '2026-07-13',
+        description: 'Approvisionnement Caisse'
+      })
+    }, { DB: mockD1 as any });
+    if (transferRes.status !== 200) {
+      console.log('TRANSFER_RES_ERROR:', await transferRes.clone().text());
+    }
     expect(transferRes.status).toBe(200);
 
     // 4. Fetch reports and assert correct balances
@@ -269,8 +286,18 @@ describe('Accounting API Endpoints', () => {
     expect(getTxRes.status).toBe(200);
     const getTxJson = await getTxRes.json() as any;
     expect(getTxJson.success).toBe(true);
-    expect(getTxJson.data).toHaveLength(2);
-    expect(getTxJson.pagination.total).toBe(2);
+    /*
+     * Trois écritures, et non deux : la recette, plus les **deux** jambes du virement. C'est le
+     * cœur du changement — un virement n'est plus une ligne qui touche deux comptes, mais deux
+     * écritures ordinaires, chacune sur son compte, chacune pointable sur sa ligne de relevé.
+     */
+    expect(getTxJson.data).toHaveLength(3);
+    expect(getTxJson.pagination.total).toBe(3);
+
+    const legs = getTxJson.data.filter((t: any) => t.type === 'transfert');
+    expect(legs.map((l: any) => l.transferLeg).sort()).toEqual(['destination', 'source']);
+    // Chaque jambe nomme le compte d'en face, sans quoi entrant et sortant se ressemblent.
+    for (const leg of legs) expect(leg.counterpartAccountId).not.toBeNull();
 
     // 7. Test DELETE /accounting/ledger-entries/:id
     const txIdToDelete = getTxJson.data[0].id;
@@ -911,7 +938,7 @@ VERSION:102
     expect(updatedBt2.aiSuggestions).toBeNull();
   });
 
-  it('classifies club recharges and long numeric IDs as internal transfers (category 15)', async () => {
+  it('qualifies a club recharge as an internal transfer, without imputing a category', async () => {
     const { mockD1, db } = await setupMockDb();
 
     await db.insert(seasonsTable).values({
@@ -955,13 +982,27 @@ VERSION:102
     const updatedBt1 = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt1.id)).get())!;
     expect(updatedBt1.aiSuggestions).not.toBeNull();
     const sug1 = JSON.parse(updatedBt1.aiSuggestions!);
-    expect(sug1.category).toBe(15);
+    /*
+     * L'analyse **qualifie** le mouvement au lieu de l'imputer.
+     *
+     * Elle posait ici la catégorie « Virements Internes » (id 15), et l'écran créait alors une
+     * recette ou une dépense qui la portait : c'est ainsi que la seconde représentation du
+     * virement se fabriquait, ligne de relevé après ligne de relevé. Un virement s'écrit désormais
+     * en deux jambes, que le rapprochement ne sait pas produire — il renvoie donc au grand livre.
+     */
+    expect(sug1.kind).toBe('internal-transfer');
     expect(sug1.memberId).toBeNull();
 
     const updatedBt2 = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt2.id)).get())!;
     expect(updatedBt2.aiSuggestions).not.toBeNull();
     const sug2 = JSON.parse(updatedBt2.aiSuggestions!);
-    expect([14, 15]).toContain(sug2.category);
+    /*
+     * `000001 VIR EUROPEEN EMIS NET` ne porte aucun marqueur : ni « nozay », ni suite de plus de
+     * vingt chiffres dans le libellé — la longue suite est dans le `fitid`, que l'analyse ne lit
+     * pas. Elle reste donc une écriture ordinaire, et l'ancien test le masquait en acceptant deux
+     * catégories possibles.
+     */
+    expect(sug2.kind).toBe('entry');
     expect(sug2.memberId).toBeNull();
   });
 

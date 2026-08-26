@@ -123,6 +123,10 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/accounting/bank-transactions/:id/ignore', permission: 'accounting:bank:reconcile' },
   { method: 'POST', path: '/accounting/bank-transactions/:id/unignore', permission: 'accounting:bank:reconcile' },
 
+  // ── Comptabilité : virements internes ──────────────────────────────────────
+  // Un virement écrit deux lignes du grand livre : c'est le même droit.
+  { method: 'POST', path: '/accounting/internal-transfers', permission: 'accounting:ledger:write' },
+
   // ── Comptabilité : grand livre ─────────────────────────────────────────────
   // `transactions` et `ledger` sont les alias historiques de `ledger-entries`.
   { method: 'GET', path: '/accounting/ledger-entries', permission: 'accounting:ledger:read' },

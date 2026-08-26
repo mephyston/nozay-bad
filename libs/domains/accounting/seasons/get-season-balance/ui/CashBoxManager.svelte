@@ -33,20 +33,24 @@
 
   const isClosed = $derived(seasons.find(s => s.id === seasonId)?.closed || false);
 
+  /*
+   * Les écritures reçues sont déjà celles de la caisse — la page les demande par compte. Il n'y a
+   * donc plus de compte à reconnaître, seulement un sens à lire : une jambe `destination` fait
+   * entrer l'argent, une jambe `source` le fait sortir.
+   *
+   * La version précédente comparait `tx.accountId === 'cash'` à un identifiant numérique. Le test
+   * était toujours faux, les virements n'entraient dans aucun total, et le solde affiché ne
+   * correspondait jamais à l'argent réellement en caisse dès qu'un dépôt avait été fait.
+   */
+  const entersCashBox = (tx: CashTransaction) =>
+    tx.type === 'recette' || (tx.type === 'transfert' && tx.transferLeg === 'destination');
+
   let totalIn = $derived(
-    transactions.reduce((sum, tx) => {
-      if (tx.type === 'recette') return sum + tx.amount;
-      if (tx.type === 'transfert' && tx.destinationAccountId === 'cash') return sum + tx.amount;
-      return sum;
-    }, 0)
+    transactions.reduce((sum, tx) => (entersCashBox(tx) ? sum + tx.amount : sum), 0)
   );
 
   let totalOut = $derived(
-    transactions.reduce((sum, tx) => {
-      if (tx.type === 'depense') return sum + tx.amount;
-      if (tx.type === 'transfert' && tx.accountId === 'cash') return sum + tx.amount;
-      return sum;
-    }, 0)
+    transactions.reduce((sum, tx) => (!entersCashBox(tx) ? sum + tx.amount : sum), 0)
   );
 
   let currentBalance = $derived(initialBalance + totalIn - totalOut);

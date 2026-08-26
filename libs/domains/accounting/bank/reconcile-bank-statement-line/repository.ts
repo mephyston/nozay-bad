@@ -62,9 +62,6 @@ export class ReconcileBankStatementLineRepository {
     const rawAcc = values.accountId;
     const accountIdNum = typeof rawAcc === 'number' ? rawAcc : (isNaN(Number(rawAcc)) ? 1 : Number(rawAcc));
 
-    const rawDestAcc = values.destinationAccountId;
-    const destAccountIdNum = rawDestAcc ? (typeof rawDestAcc === 'number' ? rawDestAcc : (isNaN(Number(rawDestAcc)) ? null : Number(rawDestAcc))) : null;
-
     const rawPay = values.paymentMethodId ?? values.paymentMethod;
     const paymentMethodIdNum = typeof rawPay === 'number' ? rawPay : (isNaN(Number(rawPay)) ? 1 : Number(rawPay));
 
@@ -78,7 +75,6 @@ export class ReconcileBankStatementLineRepository {
       seasonId: seasonIdNum,
       type: values.type,
       accountId: accountIdNum,
-      destinationAccountId: destAccountIdNum,
       categoryId: categoryIdNum,
       amountCents: values.amountCents ?? (values.amount !== undefined ? Math.round(values.amount) : 0),
       date: values.date,

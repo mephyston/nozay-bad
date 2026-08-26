@@ -7,6 +7,8 @@ import {
   computeAccountBalances,
   sumAccountBalances,
   unpointedEntryTotalCents,
+  computeTransitCents,
+  findHalfPointedTransferIds,
   type AccountRef,
   type TreasuryEntryLike
 } from './balances';
@@ -17,12 +19,31 @@ const SAVINGS: AccountRef = { id: 2, code: 'savings', label: 'Compte Livret' };
 const entry = (over: Partial<TreasuryEntryLike>): TreasuryEntryLike => ({
   type: 'recette',
   accountId: 1,
-  destinationAccountId: null,
   amountCents: 0,
   status: 'cleared',
   bankStatementLineId: null,
+  transferId: null,
+  transferLeg: null,
+  date: '2026-01-01',
   ...over
 });
+
+/** Les deux jambes d'un même virement, telles que `create-internal-transfer` les écrit. */
+const transferLegs = (over: {
+  transferId?: number; amountCents: number; sourceAccountId?: number; destinationAccountId?: number;
+  sourceDate?: string; destinationDate?: string;
+}): TreasuryEntryLike[] => [
+  entry({
+    type: 'transfert', transferId: over.transferId ?? 1, transferLeg: 'source',
+    accountId: over.sourceAccountId ?? 1, amountCents: over.amountCents,
+    date: over.sourceDate ?? '2026-01-01'
+  }),
+  entry({
+    type: 'transfert', transferId: over.transferId ?? 1, transferLeg: 'destination',
+    accountId: over.destinationAccountId ?? 2, amountCents: over.amountCents,
+    date: over.destinationDate ?? over.sourceDate ?? '2026-01-01'
+  })
+];
 
 describe('matchesAccount', () => {
   it('reconnaît un compte par identifiant, par code, et par identifiant en texte', () => {
@@ -54,10 +75,15 @@ describe('signedEntryAmountCents', () => {
     expect(signedEntryAmountCents(entry({ type: 'depense', amountCents: 5000 }), CURRENT)).toBe(-5000);
   });
 
-  it('compte un transfert deux fois, en sens opposés', () => {
-    const transfer = entry({ type: 'transfert', accountId: 1, destinationAccountId: 2, amountCents: 20000 });
-    expect(signedEntryAmountCents(transfer, CURRENT)).toBe(-20000);
-    expect(signedEntryAmountCents(transfer, SAVINGS)).toBe(20000);
+  it('signe chaque jambe de virement selon son côté, et seulement sur son compte', () => {
+    const [source, destination] = transferLegs({ amountCents: 20000 });
+
+    expect(signedEntryAmountCents(source, CURRENT)).toBe(-20000);
+    expect(signedEntryAmountCents(destination, SAVINGS)).toBe(20000);
+
+    // Une jambe ne touche que le compte qu'elle nomme : c'est ce qui rend le pointage possible.
+    expect(signedEntryAmountCents(source, SAVINGS)).toBe(0);
+    expect(signedEntryAmountCents(destination, CURRENT)).toBe(0);
   });
 
   it("ignore l'écriture d'un autre compte", () => {
@@ -135,7 +161,7 @@ describe('computeAccountBalances / sumAccountBalances', () => {
         { accountId: 1, initialBalanceCents: 100_000 },
         { accountId: 2, initialBalanceCents: 50_000 }
       ],
-      [entry({ type: 'transfert', accountId: 1, destinationAccountId: 2, amountCents: 30_000 })]
+      transferLegs({ amountCents: 30_000 })
     );
 
     expect(balances.map((b) => b.grossCents)).toEqual([70_000, 80_000]);
@@ -171,5 +197,50 @@ describe('unpointedEntryTotalCents', () => {
       CURRENT
     );
     expect(total).toBe(2_000);
+  });
+});
+
+describe('computeTransitCents', () => {
+  it("compte l'argent parti d'un compte et pas encore arrivé dans l'autre", () => {
+    // Sorti de la caisse le 12, crédité en banque le 15 : entre les deux, il n'est nulle part.
+    const legs = transferLegs({ amountCents: 40_000, sourceDate: '2026-03-12', destinationDate: '2026-03-15' });
+
+    expect(computeTransitCents(legs, '2026-03-11')).toBe(0);
+    expect(computeTransitCents(legs, '2026-03-12')).toBe(40_000);
+    expect(computeTransitCents(legs, '2026-03-14')).toBe(40_000);
+    expect(computeTransitCents(legs, '2026-03-15')).toBe(0);
+  });
+
+  it('ignore un virement dont les deux jambes portent la même date', () => {
+    expect(computeTransitCents(transferLegs({ amountCents: 40_000, sourceDate: '2026-03-12' }), '2026-03-12')).toBe(0);
+  });
+
+  it("ignore un virement à jambe unique, qui est une anomalie et non de l'argent en route", () => {
+    const [source] = transferLegs({ amountCents: 40_000, sourceDate: '2026-03-12' });
+    expect(computeTransitCents([source], '2026-03-13')).toBe(0);
+  });
+
+  it('additionne plusieurs virements en cours de route', () => {
+    const legs = [
+      ...transferLegs({ transferId: 1, amountCents: 40_000, sourceDate: '2026-03-12', destinationDate: '2026-03-15' }),
+      ...transferLegs({ transferId: 2, amountCents: 10_000, sourceDate: '2026-03-13', destinationDate: '2026-03-16' })
+    ];
+    expect(computeTransitCents(legs, '2026-03-13')).toBe(50_000);
+  });
+});
+
+describe('findHalfPointedTransferIds', () => {
+  it('signale un virement dont une seule jambe est pointée', () => {
+    const [source, destination] = transferLegs({ amountCents: 30_000 });
+    expect(findHalfPointedTransferIds([{ ...source, bankStatementLineId: 7 }, destination])).toEqual([1]);
+  });
+
+  it('ne signale rien quand les deux jambes sont pointées, ni quand aucune ne l\'est', () => {
+    const [source, destination] = transferLegs({ amountCents: 30_000 });
+    expect(findHalfPointedTransferIds([
+      { ...source, bankStatementLineId: 7 },
+      { ...destination, bankStatementLineId: 8 }
+    ])).toEqual([]);
+    expect(findHalfPointedTransferIds([source, destination])).toEqual([]);
   });
 });

@@ -13,6 +13,7 @@
     category = $bindable('1'),
     formAccountId = $bindable('current'),
     destinationAccountId = $bindable('cash'),
+    destinationDate = $bindable(''),
     paymentMethod = $bindable('virement'),
     description = $bindable(''),
     reference = $bindable(''),
@@ -33,6 +34,7 @@
     category: string;
     formAccountId: 'current' | 'savings' | 'cash';
     destinationAccountId: 'current' | 'savings' | 'cash';
+    destinationDate: string;
     paymentMethod: string;
     description: string;
     reference: string;
@@ -129,6 +131,22 @@
             <SearchableCombobox id="dest-account-select" items={destinationItems} bind:value={destinationAccountId} />
           </FormField>
         </div>
+
+        <!--
+          La date de crédit, distincte de celle du débit.
+
+          Un virement s'écrit désormais en deux écritures, une par compte : l'argent peut donc
+          sortir un jour et arriver un autre. C'est le cas courant du dépôt d'espèces, sorti de la
+          caisse le lundi et crédité en banque le jeudi. Laissée vide, elle vaut celle du débit —
+          le cas d'un virement de compte à compte, instantané.
+        -->
+        <FormField id="destination-date-input" label="Date de crédit (si différente)">
+          <Input id="destination-date-input" type="date" min={date} bind:value={destinationDate} />
+          <p class="text-xs text-muted-foreground">
+            L'écart entre les deux dates, c'est l'argent en transit : sorti d'un compte, pas encore
+            arrivé dans l'autre. Laissée vide, elle vaut celle du débit.
+          </p>
+        </FormField>
       {/if}
 
       <!-- Ligne 4 : Moyen de paiement -->

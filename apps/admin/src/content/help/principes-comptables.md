@@ -19,7 +19,7 @@ L'argent du club est suivi sur trois comptes :
 - **Compte Livret**
 - **Caisse physique**
 
-Chaque écriture désigne l'un de ces comptes ; un virement interne en désigne deux.
+Chaque écriture désigne **un** de ces comptes. Un virement interne, lui, s'enregistre en **deux écritures** : une qui retire l'argent du compte de départ, une qui le verse au compte d'arrivée.
 
 ## Les trois types d'écriture
 
@@ -27,9 +27,15 @@ Chaque écriture désigne l'un de ces comptes ; un virement interne en désigne 
 |---|---|---|
 | **Recette** | L'argent entre sur un compte | Une catégorie est obligatoire |
 | **Dépense** | L'argent sort d'un compte | Une catégorie est obligatoire |
-| **Virement interne** | L'argent passe d'un compte à l'autre | Deux comptes différents, **aucune catégorie** |
+| **Virement interne** | L'argent passe d'un compte à l'autre | **Deux écritures** liées, sur deux comptes différents, **aucune catégorie** |
 
 Un virement interne ne change pas le résultat de l'exercice : il n'apparaît ni en produit ni en charge dans le compte de résultat.
+
+### Pourquoi deux écritures, et non une seule
+
+Parce que la banque, elle, en annonce deux. Un virement de votre compte courant vers le livret apparaît sur **les deux relevés** : un débit d'un côté, un crédit de l'autre. Une écriture unique ne pourrait être associée qu'à l'une des deux lignes, et l'autre resterait éternellement en attente — au point de bloquer la clôture de l'exercice.
+
+Chaque écriture porte donc **sa propre date de valeur**. C'est ce qui permet de dire qu'un dépôt d'espèces est sorti de la caisse le lundi et n'est arrivé en banque que le jeudi : entre les deux, l'argent est **en transit**. L'écran de [rapprochement bancaire](/admin/help/rapprochement-bancaire) affiche ce montant, qui explique pourquoi le total de trésorerie peut baisser quelques jours sans qu'un euro ait été perdu.
 
 ## La catégorie, et non le numéro de compte
 

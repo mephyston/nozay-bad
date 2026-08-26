@@ -20,6 +20,11 @@
  * L'écart entre les deux premiers tient à deux décalages, et à eux seuls :
  * un chèque encaissé dans les livres mais pas encore déposé (`in_vault`), et une dépense
  * saisie mais pas encore débitée (`pending_debit`, typiquement une CB à débit différé).
+ *
+ * À quoi s'ajoute, tous comptes confondus, un nombre qui n'appartient à aucun compte :
+ * l'**argent en transit** (`computeTransitCents`), sorti d'un compte et pas encore arrivé dans
+ * l'autre. Il ne fausse aucun des trois soldes — il explique pourquoi leur somme peut baisser
+ * quelques jours sans qu'un euro soit perdu.
  */
 
 /** Un compte de trésorerie, tel que `accounts` le porte. */
@@ -40,10 +45,15 @@ export interface AccountRef {
 export interface TreasuryEntryLike {
   type?: string | null;
   accountId?: number | string | null;
-  destinationAccountId?: number | string | null;
   amountCents?: number | null;
   status?: string | null;
   bankStatementLineId?: number | null;
+  /** Le virement auquel l'écriture appartient, quand c'en est une jambe. */
+  transferId?: number | null;
+  /** De quel côté du virement : `source` retire l'argent du compte, `destination` l'y verse. */
+  transferLeg?: 'source' | 'destination' | string | null;
+  /** Nécessaire au seul calcul de l'argent en transit, qui compare les dates des deux jambes. */
+  date?: string | null;
 }
 
 export interface AccountBalance {
@@ -85,21 +95,21 @@ export function matchesAccount(value: number | string | null | undefined, accoun
 /**
  * Le montant d'une écriture, signé du point de vue d'un compte donné.
  *
- * Un transfert compte deux fois, en négatif sur le compte d'origine et en positif sur le
- * compte de destination : c'est le seul type d'écriture qui touche deux comptes.
+ * Depuis que le virement interne se tient en deux écritures liées, **toute** écriture ne touche
+ * qu'un compte : celui qu'elle nomme. La jambe `source` en retire l'argent, la jambe
+ * `destination` l'y verse. Il n'y a plus de cas particulier à deux comptes, et c'est ce qui rend
+ * le pointage bancaire possible — chaque jambe fait face à sa propre ligne de relevé.
  */
 export function signedEntryAmountCents(entry: TreasuryEntryLike, account: AccountRef): number {
   const amount = entry.amountCents ?? 0;
-  const isSource = matchesAccount(entry.accountId, account);
+  if (!matchesAccount(entry.accountId, account)) return 0;
 
   if (entry.type === 'transfert') {
-    let signed = 0;
-    if (isSource) signed -= amount;
-    if (matchesAccount(entry.destinationAccountId, account)) signed += amount;
-    return signed;
+    if (entry.transferLeg === 'source') return -amount;
+    if (entry.transferLeg === 'destination') return amount;
+    return 0;
   }
 
-  if (!isSource) return 0;
   if (entry.type === 'recette') return amount;
   if (entry.type === 'depense') return -amount;
   return 0;
@@ -186,4 +196,69 @@ export function unpointedEntryTotalCents(entries: TreasuryEntryLike[], account: 
   return entries
     .filter((e) => e.bankStatementLineId === null || e.bankStatementLineId === undefined)
     .reduce((sum, e) => sum + signedEntryAmountCents(e, account), 0);
+}
+
+/**
+ * L'argent en transit à une date : sorti d'un compte, pas encore arrivé dans l'autre.
+ *
+ * C'est le décalage que l'ancien modèle ne savait pas dire. Un virement tenait en une écriture,
+ * donc en une date : un dépôt d'espèces sorti de la caisse le 12 et crédité en banque le 15
+ * s'écrivait forcément à l'un ou l'autre jour, et le solde était faux entre les deux — soit
+ * l'argent était compté deux fois, soit il n'était compté nulle part.
+ *
+ * Chaque jambe portant désormais sa propre date de valeur, la trésorerie totale **baisse**
+ * réellement pendant le trajet. C'est comptablement exact, mais illisible sans ce nombre : d'où
+ * son affichage à part, plutôt qu'une correction qui remettrait l'argent dans un compte où il
+ * n'est pas. C'est le rôle que le compte 58 « Virements internes » tient au plan comptable
+ * général, sans avoir à faire figurer un compte où le club n'a jamais eu d'argent.
+ *
+ * Le signe suit l'intuition : positif quand de l'argent est en route.
+ */
+export function computeTransitCents(entries: TreasuryEntryLike[], asOfDate: string): number {
+  const legsByTransfer = new Map<number, TreasuryEntryLike[]>();
+  for (const entry of entries) {
+    if (entry.type !== 'transfert' || entry.transferId === null || entry.transferId === undefined) continue;
+    const legs = legsByTransfer.get(entry.transferId);
+    if (legs) legs.push(entry);
+    else legsByTransfer.set(entry.transferId, [entry]);
+  }
+
+  let transitCents = 0;
+  for (const legs of legsByTransfer.values()) {
+    const source = legs.find((l) => l.transferLeg === 'source');
+    const destination = legs.find((l) => l.transferLeg === 'destination');
+    /*
+     * Un virement à jambe unique n'est pas de l'argent en transit mais une anomalie de saisie :
+     * l'état de rapprochement le signale à part, sous son propre nom.
+     */
+    if (!source || !destination || !source.date || !destination.date) continue;
+    if (source.date <= asOfDate && destination.date > asOfDate) {
+      transitCents += source.amountCents ?? 0;
+    }
+  }
+  return transitCents;
+}
+
+/**
+ * Les virements dont une seule jambe est pointée.
+ *
+ * Sous l'ancien modèle, c'était l'état normal et inévitable : une écriture, un
+ * `bank_statement_line_id`, deux lignes de relevé. Sous le nouveau, c'en est un oubli — et le
+ * seul qui puisse encore faire mentir l'état de rapprochement, puisqu'une jambe pointée sort des
+ * « écritures non pointées » pendant que sa ligne de relevé reste « non comptabilisée ».
+ */
+export function findHalfPointedTransferIds(entries: TreasuryEntryLike[]): number[] {
+  const pointedByTransfer = new Map<number, { pointed: number; total: number }>();
+  for (const entry of entries) {
+    if (entry.type !== 'transfert' || entry.transferId === null || entry.transferId === undefined) continue;
+    const tally = pointedByTransfer.get(entry.transferId) ?? { pointed: 0, total: 0 };
+    tally.total += 1;
+    if (entry.bankStatementLineId !== null && entry.bankStatementLineId !== undefined) tally.pointed += 1;
+    pointedByTransfer.set(entry.transferId, tally);
+  }
+
+  return [...pointedByTransfer.entries()]
+    .filter(([, t]) => t.total === 2 && t.pointed === 1)
+    .map(([transferId]) => transferId)
+    .sort((a, b) => a - b);
 }

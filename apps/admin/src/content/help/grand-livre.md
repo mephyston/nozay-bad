@@ -11,6 +11,9 @@ Le **Grand livre** (« Journal des écritures ») est le registre de toutes les 
 
 Trois boutons ouvrent le même formulaire, avec des champs adaptés : **recette**, **dépense**, **virement interne**.
 
+> [!NOTE]
+> Un virement interne s'enregistre en **deux écritures**, une par compte : elles apparaissent toutes les deux dans le grand livre, marquées « Virement émis » et « Virement reçu », et nomment chacune le compte d'en face. Supprimer l'une supprime l'autre — c'est un seul mouvement, écrit des deux côtés.
+
 | Champ | Détail |
 |---|---|
 | Montant | En euros, strictement positif |
@@ -19,6 +22,7 @@ Trois boutons ouvrent le même formulaire, avec des champs adaptés : **recette*
 | Catégorie | Obligatoire pour une recette ou une dépense |
 | Compte financier | Compte Courant, Compte Livret ou Caisse physique |
 | Comptes source et destinataire | Pour un virement interne, obligatoirement différents |
+| Date de crédit | Pour un virement interne, si l'argent arrive un autre jour que celui où il part. Laissée vide, elle vaut celle du débit |
 | Moyen de paiement | Virement, Chèque, Espèces, LABAZ, ANCV, Pass'Sport, Ticket Loisir, Up & Loisir |
 | Régularisation | *Normal* par défaut ; les autres motifs exigent une note justificative |
 | Description | Le motif de l'opération |

@@ -44,6 +44,7 @@ import { getReconciliationStatementRoute } from './bank/get-reconciliation-state
 // Transactions Routes
 import { listTransactionsRoute } from './ledger/list-ledger-entries/route';
 import { createTransactionRoute } from './ledger/create-ledger-entry/route';
+import { createInternalTransferRoute } from './ledger/create-internal-transfer/route';
 import { updateTransactionRoute } from './ledger/update-ledger-entry/route';
 import { deleteTransactionRoute } from './ledger/delete-ledger-entry/route';
 
@@ -110,6 +111,7 @@ accountingRouter.route('/', getReconciliationStatementRoute);
 // 5. TRANSACTIONS ROUTES
 accountingRouter.route('/', listTransactionsRoute);
 accountingRouter.route('/', createTransactionRoute);
+accountingRouter.route('/', createInternalTransferRoute);
 accountingRouter.route('/', updateTransactionRoute);
 accountingRouter.route('/', deleteTransactionRoute);
 

@@ -16,6 +16,19 @@ export async function deleteLedgerEntry(db: Db, id: number) {
     throw new SeasonClosedError('La saison est clôturée. Impossible de supprimer cette transaction.');
   }
 
+  /*
+   * Un virement se supprime entier.
+   *
+   * Ses deux jambes ne sont pas deux écritures que le trésorier aurait saisies l'une après
+   * l'autre : c'est un seul mouvement, écrit des deux côtés. N'en retirer qu'une laisserait un
+   * demi-virement — de l'argent parti de nulle part, ou arrivé de nulle part — que rien dans le
+   * modèle ne peut rattraper. La suppression porte donc sur le parent et sur les deux jambes,
+   * quelle que soit celle par laquelle on est entré.
+   */
+  const entriesToDelete = tx.transferId
+    ? await repo.getTransferLegs(db, tx.transferId)
+    : [tx];
+
   let resetBankTxNeeded = false;
   if (tx.bankStatementLineId) {
     const bankTx = await repo.getBankStatementLineById(db, tx.bankStatementLineId);
@@ -42,7 +55,22 @@ export async function deleteLedgerEntry(db: Db, id: number) {
    * qui écrase de toute façon ce que la comptabilité y aurait écrit. Retirer le montant ici
    * n'annulait rien de fiable — cela creusait un second écart en sens inverse.
    */
-  statements.push(repo.buildDeleteLedgerEntryStatement(db, id));
+  /*
+   * Chaque jambe peut pointer sa propre ligne de relevé : on les remet toutes en `pending`, sans
+   * quoi une ligne resterait marquée rapprochée face à une écriture qui n'existe plus — et
+   * bloquerait la clôture sans qu'on puisse en retrouver la cause.
+   */
+  for (const entry of entriesToDelete) {
+    if (entry.id !== id && entry.bankStatementLineId) {
+      statements.push(repo.buildUpdateBankStatementLineStatusStatement(db, entry.bankStatementLineId, 'pending'));
+    }
+    statements.push(repo.buildDeleteLedgerEntryStatement(db, entry.id));
+  }
+
+  // Le parent part en dernier : les jambes le référencent.
+  if (tx.transferId) {
+    statements.push(repo.buildDeleteTransferStatement(db, tx.transferId));
+  }
 
   // Reset expense status if linked
   await repo.resetExpenseStatusByTxId(db, id);

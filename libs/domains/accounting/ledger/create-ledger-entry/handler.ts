@@ -18,21 +18,26 @@ export async function createLedgerEntry(db: Db, body: CreateTransactionDTO & { a
     accrualNote: body.accrualNote
   });
 
+  /*
+   * Un virement interne ne se saisit plus ici.
+   *
+   * Il lui faut deux écritures — une par compte, chacune avec sa date de valeur et son propre
+   * pointage bancaire — et cette route n'en écrit qu'une. La refuser franchement vaut mieux que
+   * d'écrire une jambe orpheline : le CHECK de la base la rejetterait de toute façon, mais avec
+   * une erreur D1 brute au lieu d'un message.
+   */
   if (body.type === 'transfert') {
-    if (!body.destinationAccountId || body.accountId === body.destinationAccountId) {
-      throw new AppError('Le compte destinataire doit être différent du compte source.', 400);
-    }
-  } else {
-    if (!body.category) {
-      throw new AppError('La catégorie est obligatoire pour les recettes/dépenses.', 400);
-    }
+    throw new AppError('Un virement interne se saisit via POST /accounting/internal-transfers.', 400);
+  }
+
+  if (!body.category) {
+    throw new AppError('La catégorie est obligatoire pour les recettes/dépenses.', 400);
   }
 
   const repo = new CreateLedgerEntryRepository();
   const seasonIdInt = await repo.resolveSeasonId(db, body.seasonId);
 
   const accountIdInt = await resolveAccountId(db, body.accountId);
-  const destAccountIdInt = body.destinationAccountId ? await resolveAccountId(db, body.destinationAccountId, 'savings') : null;
 
   const paymentMethod = await resolvePaymentMethod(db, body.paymentMethod);
   const paymentMethodIdInt = paymentMethod.id;
@@ -43,8 +48,7 @@ export async function createLedgerEntry(db: Db, body: CreateTransactionDTO & { a
     seasonId: seasonIdInt,
     type: body.type,
     accountId: accountIdInt,
-    destinationAccountId: body.type === 'transfert' ? destAccountIdInt : null,
-    categoryId: body.type !== 'transfert' ? categoryIdInt : null,
+    categoryId: categoryIdInt,
     amountCents: (body as any).amountCents ?? (body.amount !== undefined ? Math.round(body.amount) : 0),
     date: body.date,
     paymentMethodId: paymentMethodIdInt,

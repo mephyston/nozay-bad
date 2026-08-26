@@ -82,10 +82,19 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
     }
 
     const textToLower = `${tx.name} ${tx.memo || ''}`.toLowerCase();
-    
-    if (
-      /\b\d{20,}\b/.test(textToLower) || 
-      textToLower.includes('virement interne') || 
+
+    /*
+     * Un virement interne se **qualifie**, il ne se catégorise plus.
+     *
+     * L'heuristique posait ici la catégorie « Virements Internes », et l'écran créait alors une
+     * recette ou une dépense qui la portait : c'est ainsi que la seconde représentation du
+     * virement était fabriquée, opération après opération. Depuis la migration `0023`, un virement
+     * s'écrit en deux jambes, que cette route ne sait pas produire — elle le signale donc, et
+     * renvoie le trésorier vers le grand livre plutôt que d'écrire une moitié de vérité.
+     */
+    const looksLikeInternalTransfer =
+      /\b\d{20,}\b/.test(textToLower) ||
+      textToLower.includes('virement interne') ||
       textToLower.includes('virmt interne') ||
       textToLower.includes('de: nozay badminton') ||
       textToLower.includes('de: nozay bad') ||
@@ -93,9 +102,10 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
       textToLower.includes('pour: nozay badminton') ||
       textToLower.includes('pour: nozay bad') ||
       textToLower.includes('pour: nba') ||
-      (textToLower.includes('nozay badminton') && textToLower.includes('recharge'))
-    ) {
-      suggestedCategory = catMap.virementsInternes;
+      (textToLower.includes('nozay badminton') && textToLower.includes('recharge'));
+
+    if (looksLikeInternalTransfer) {
+      /* La catégorie reste celle du repli : elle ne sera pas utilisée, `kind` prend le pas. */
     } else if (
       textToLower.includes('adhesion') || 
       textToLower.includes('cotisation') || 
@@ -229,6 +239,11 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
 
 
     let suggestionResult: BankStatementLineSuggestion = {
+      /*
+       * `internal-transfer` n'est pas une catégorie mais une nature : elle dit à l'écran de
+       * proposer la saisie d'un virement, et non l'imputation d'une recette.
+       */
+      kind: looksLikeInternalTransfer ? 'internal-transfer' : 'entry',
       category: suggestedCategory,
       memberId: exactCandidate ? exactCandidate.id : null,
       memberName: exactCandidate ? `${exactCandidate.lastName} ${exactCandidate.firstName}` : null,
@@ -242,7 +257,7 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
       targetSeason: isAdvanceMembership ? citedSeason : null
     };
 
-    if (candidates.length > 0) {
+    if (candidates.length > 0 && !looksLikeInternalTransfer) {
       const prompt = `Tu es l'assistant comptable du club Nozay Badminton.
 Opération bancaire à rapprocher :
 - Libellé : "${tx.name}"
@@ -262,7 +277,7 @@ ${candidates.map(c => `- ID: ${c.id}, Nom: ${c.lastName} ${c.firstName}, Parent 
 Instructions :
 1. Associe l'adhérent (memberId et memberName) si son nom ou prénom (ou celui d'un de ses parents) apparaît clairement dans le libellé ou memo de l'opération, même si son "Montant Restant Dû Adhésion" est de 0.00 EUR. Si les prénom ET nom d'un adhérent figurent dans le texte, associe-le lui, et non un autre adhérent dont il serait seulement le parent : un parent qui règle sa propre licence porte le même nom que son enfant.
 2. Choisis la catégorie la plus adaptée parmi la liste des catégories valides ci-dessus.
-3. Si le libellé bancaire ou le mémo est composé principalement d'une longue suite de chiffres (plus de 20 chiffres d'affilée), il s'agit d'un virement interne de compte à compte. Associe impérativement la catégorie ${catMap.virementsInternes} et aucun adhérent.
+3. N'associe jamais d'adhérent à une opération dont le libellé est composé principalement d'une longue suite de chiffres : c'est un mouvement de compte à compte du club, traité en amont.
 4. Si le montant correspond exactement au tarif d'un produit (par exemple 31.50 EUR pour les volants) ou à un multiple entier de celui-ci (comme 63.00 EUR pour 2 boîtes de volants, ou 30.00 EUR pour 2 cordages), et qu'il n'y a pas d'autre indication de catégorie dans le texte, choisis la catégorie associée à ce produit. Si le texte mentionne explicitement "adhesion", "cotisation" ou "inscription", choisis impérativement la catégorie ${catMap.adhesions}.
 5. Si le libellé bancaire ou le mémo mentionne des déplacements, tournois, accompagnements pour les jeunes (ex: "deplacement jeune", "tournoi jeune") ou des stages de vacances scolaires ou d'entraînement pour jeunes (ex: "minibad", "stage minibad", "toussaint", "paques", "pâques", "stage février", "stage toussaint", "stg paques", "stage d'hiver", "stage de pâques", "stage de printemps", "stage jeunes", "course stage hivers") ou des frais d'hébergement/logement liés à ces déplacements pour les jeunes ou parents accompagnateurs (ex: "airbnb", "air bnb"), choisis impérativement la catégorie ${catMap.actionsJeunes}.
 6. Si le libellé bancaire ou le mémo mentionne l'application "ebad" (ex: "ebad", "e-bad", "portefeuille ebad", "portefeuille e-bad") ou des tournois/événements adultes comme "blackminton", ou des inscriptions à des tournois adultes/seniors (sans mention de jeunes), choisis impérativement la catégorie ${catMap.tournoisSenior}.
@@ -285,6 +300,7 @@ Renvoie STRICTEMENT un objet JSON sous la forme suivante :
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
           suggestionResult = {
+            kind: suggestionResult.kind,
             category: parsed.category ? Number(parsed.category) : suggestedCategory,
             // Un adhérent, et un seul, nommé par ses propres prénom et nom : c'est une
             // lecture, pas une hypothèse, et le modèle n'a pas à la défaire. Dès que

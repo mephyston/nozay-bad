@@ -51,6 +51,26 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
     }
   }
 
+  /*
+   * Le rapprochement ne fabrique pas de virement interne.
+   *
+   * Le validator acceptait `type: 'transfert'` **et** une catégorie à la fois, et le bâtisseur
+   * n'annulait ni l'un ni l'autre : un appel direct produisait une écriture qui violait le CHECK,
+   * donc une erreur D1 brute en 500 au lieu d'un message. Un virement s'écrit maintenant en deux
+   * jambes, ce que cette route ne sait pas faire — autant le dire.
+   */
+  const proposedTypes = [
+    body.transaction?.type,
+    ...((body.transactions ?? []).map((t: any) => t.type))
+  ].filter(Boolean);
+  if (proposedTypes.includes('transfert')) {
+    return {
+      statements: [],
+      error: 'Un virement interne se saisit via POST /accounting/internal-transfers, puis se pointe par « Associer ».',
+      status: 400
+    };
+  }
+
   const statements: any[] = [];
 
   if (body.action === 'match') {
@@ -84,7 +104,6 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
           seasonId,
           type: txItem.type,
           accountId: await resolveAccountId(db, txItem.accountId),
-          destinationAccountId: txItem.destinationAccountId ? await resolveAccountId(db, txItem.destinationAccountId, 'savings') : null,
           category: normalizeCategory(txItem.category),
           amount: Math.round(txItem.amount),
           date: txItem.date,
@@ -123,7 +142,6 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
         seasonId,
         type: tx.type,
         accountId: await resolveAccountId(db, tx.accountId),
-        destinationAccountId: tx.destinationAccountId ? await resolveAccountId(db, tx.destinationAccountId, 'savings') : null,
         category: normalizeCategory(tx.category),
         amount: Math.round(tx.amount),
         date: tx.date,

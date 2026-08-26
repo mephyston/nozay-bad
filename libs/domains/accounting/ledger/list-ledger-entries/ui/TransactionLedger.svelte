@@ -140,6 +140,8 @@
   let category = $state('1');
   let formAccountId = $state<'current' | 'savings' | 'cash'>('current');
   let destinationAccountId = $state<'current' | 'savings' | 'cash'>('cash');
+  /** Date de valeur au crédit : vide tant que le trésorier ne la distingue pas de celle du débit. */
+  let destinationDate = $state('');
   let paymentMethod = $state('virement');
   let description = $state('');
   let reference = $state('');
@@ -171,6 +173,20 @@
     accrualNote = '';
     targetSeasonId = selectedSeason;
     editingId = null;
+    /*
+     * Les comptes, le moyen de paiement et la catégorie sont remis à zéro eux aussi.
+     *
+     * Ils ne l'étaient pas : après avoir modifié une écriture, ouvrir « Virement Interne »
+     * héritait des comptes de la précédente — et du moyen de paiement, pourtant masqué à l'écran,
+     * dont le `default_entry_status` partait tel quel en base. Un virement pouvait ainsi naître
+     * `in_vault`, sans que rien ne le montre.
+     */
+    formAccountId = 'current';
+    destinationAccountId = 'cash';
+    destinationDate = '';
+    paymentMethod = 'virement';
+    category = '1';
+    date = new Date().toISOString().split('T')[0];
   }
 
   function startEdit(tx: Transaction, e: MouseEvent) {
@@ -189,7 +205,6 @@
     date = tx.date;
     category = tx.categoryId ? String(tx.categoryId) : '1';
     formAccountId = reverseAccountMap[tx.accountId as any] || 'current';
-    destinationAccountId = reverseAccountMap[tx.destinationAccountId as any] || 'cash';
     paymentMethod = tx.paymentMethod;
     description = tx.description;
     reference = tx.reference || '';
@@ -204,7 +219,7 @@
     isSubmitting = true;
     errorMsg = '';
 
-    const values = { editingId, showPanel, amount, date, category, formAccountId, destinationAccountId, paymentMethod, description, reference, accrualType, accrualNote, targetSeasonId };
+    const values = { editingId, showPanel, amount, date, category, formAccountId, destinationAccountId, destinationDate, paymentMethod, description, reference, accrualType, accrualNote, targetSeasonId };
     await submitForm({
       validate: () => validateTransaction(values),
       submit: () => submitTransaction(values),
@@ -390,6 +405,7 @@
     bind:category
     bind:formAccountId
     bind:destinationAccountId
+    bind:destinationDate
     bind:paymentMethod
     bind:description
     bind:reference

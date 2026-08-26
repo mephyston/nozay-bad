@@ -5,6 +5,7 @@ import { and, or, eq, sql, inArray, isNull, desc, like } from 'drizzle-orm';
 import { bankStatementLinesTable, seasonBalancesTable } from '../../shared/schema';
 import { getMembersByIds } from '@nba/members-api';
 import type { ListTransactionsFilters } from './dto';
+import { resolveAccountId } from '../../config/queries';
 
 export class ListTransactionsRepository {
   async resolveSeasonId(db: DbOrTx, seasonIdOrCode: string | number): Promise<number> {
@@ -33,9 +34,13 @@ export class ListTransactionsRepository {
       }
     }
     if (filters.accountId) {
-      const accountIdMap: Record<string, number> = { current: 1, savings: 2, cash: 3 };
-      const accId = typeof filters.accountId === 'number' ? filters.accountId : accountIdMap[filters.accountId as string] || Number(filters.accountId) || 1;
-      conditions.push(or(eq(ledgerEntriesTable.accountId, accId), eq(ledgerEntriesTable.destinationAccountId, accId)) as any);
+      /*
+       * Une seule colonne à interroger désormais : chaque écriture ne touche qu'un compte, celui
+       * qu'elle nomme. Le `OR ... destination_account_id` n'a plus d'objet — la jambe créditrice
+       * d'un virement est une écriture à part entière, sur son propre compte.
+       */
+      const accId = await resolveAccountId(db, filters.accountId);
+      conditions.push(eq(ledgerEntriesTable.accountId, accId));
     }
     if (filters.type) {
       conditions.push(eq(ledgerEntriesTable.type, filters.type as any));
@@ -100,10 +105,14 @@ export class ListTransactionsRepository {
         conditions.push(sql`1 = 0`);
       }
     }
-    const accountIdMap: Record<string, number> = { current: 1, savings: 2, cash: 3 };
-    const accId = filters.accountId 
-      ? (typeof filters.accountId === 'number' ? filters.accountId : accountIdMap[filters.accountId as string] || Number(filters.accountId) || 1)
-      : 1;
+    /*
+     * Le compte du solde progressif, résolu en base.
+     *
+     * La table `{ current: 1, savings: 2, cash: 3 }` qui tenait ici ne valait que pour l'ordre du
+     * seed d'origine, et retombait sur le compte courant devant un code inconnu — le solde
+     * progressif d'un compte inexistant s'affichait alors comme celui du courant, sans un mot.
+     */
+    const accId = filters.accountId ? await resolveAccountId(db, filters.accountId) : await resolveAccountId(db, null);
 
     let initialBalance = 0;
     let seasonStartDate = '';
@@ -130,7 +139,18 @@ export class ListTransactionsRepository {
       seasonId: ledgerEntriesTable.seasonId,
       type: ledgerEntriesTable.type,
       accountId: ledgerEntriesTable.accountId,
-      destinationAccountId: ledgerEntriesTable.destinationAccountId,
+      transferId: ledgerEntriesTable.transferId,
+      transferLeg: ledgerEntriesTable.transferLeg,
+      /*
+       * Le compte d'en face, lu sur la jambe jumelle. Le grand livre doit pouvoir écrire
+       * « Compte Courant → Livret A » sur chacune des deux lignes : sans lui, un virement entrant
+       * et un virement sortant sont indiscernables à l'écran.
+       */
+      counterpartAccountId: sql<number | null>`(
+        SELECT other.account_id FROM ledger_entries other
+        WHERE other.transfer_id = ${ledgerEntriesTable.transferId}
+          AND other.id <> ${ledgerEntriesTable.id}
+      )`,
       category: categoriesTable.adminLabel,
       categoryId: ledgerEntriesTable.categoryId,
       amount: ledgerEntriesTable.amountCents,
@@ -151,18 +171,26 @@ export class ListTransactionsRepository {
        */
       accrualType: ledgerEntriesTable.accrualType,
       accrualNote: ledgerEntriesTable.accrualNote,
+      /*
+       * Le statut fait partie de l'écriture, et la projection l'omettait.
+       *
+       * C'est lui qui sépare le solde comptable du solde bancaire théorique (`in_vault`,
+       * `pending_debit`). Sans lui, le grand livre ne pouvait afficher que le premier, et rouvrir
+       * une écriture pour la réenregistrer renvoyait un statut absent au serveur.
+       */
+      status: ledgerEntriesTable.status,
       runningBalanceCents: sql<number>`CAST(${trueInitialBalance} + COALESCE((
         SELECT SUM(
           CASE
             WHEN le2.type = 'recette' THEN le2.amount_cents
             WHEN le2.type = 'depense' THEN -le2.amount_cents
-            WHEN le2.type = 'transfert' AND le2.account_id = ${accId} THEN -le2.amount_cents
-            WHEN le2.type = 'transfert' AND le2.destination_account_id = ${accId} THEN le2.amount_cents
+            WHEN le2.type = 'transfert' AND le2.transfer_leg = 'source' THEN -le2.amount_cents
+            WHEN le2.type = 'transfert' AND le2.transfer_leg = 'destination' THEN le2.amount_cents
             ELSE 0
           END
         )
         FROM ledger_entries le2
-        WHERE (le2.account_id = ${accId} OR le2.destination_account_id = ${accId})
+        WHERE le2.account_id = ${accId}
           AND (le2.date < ${ledgerEntriesTable.date} OR (le2.date = ${ledgerEntriesTable.date} AND le2.id <= ${ledgerEntriesTable.id}))
           ${seasonStartDate ? sql`AND le2.date >= ${seasonStartDate}` : sql``}
       ), 0) AS INTEGER)`.mapWith(Number)

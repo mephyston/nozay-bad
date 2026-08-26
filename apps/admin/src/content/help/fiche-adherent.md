@@ -28,7 +28,7 @@ Les écritures du grand livre rattachées à cet adhérent, lues **de son point 
 
 - une recette du club apparaît comme un **Achat** ;
 - une dépense du club apparaît comme un **Remboursement** ;
-- un virement interne apparaît comme un **Transfert**.
+- une jambe de virement interne apparaît comme un **Virement émis** ou un **Virement reçu**.
 
 ## Autoriser les notes de frais
 

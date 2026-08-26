@@ -28,10 +28,12 @@ Le bouton **Nouvelle catégorie** ouvre le formulaire ; le menu de chaque ligne 
 
 ## Où les catégories interviennent
 
-- Elles sont obligatoires sur toute recette et toute dépense du [grand livre](/admin/help/grand-livre) ; un virement interne n'en porte jamais.
+- Elles sont obligatoires sur toute recette et toute dépense du [grand livre](/admin/help/grand-livre) ; un virement interne n'en porte jamais, et le logiciel refuse de lui en attribuer une.
 - Elles structurent le [compte de résultat](/admin/help/rapports-financiers) et le [budget](/admin/help/budget-previsionnel).
 - Chaque **famille de produits** de la boutique pointe vers une catégorie comptable, ce qui rend automatique l'écriture de recette à la validation d'une commande. Voir [Catégories de produits](/admin/help/categories-produits).
 - La catégorie d'**adhésion** a un rôle particulier : un encaissement rattaché à un adhérent et imputé à cette catégorie met à jour le montant reçu de sa cotisation.
 
 > [!NOTE]
-> Certaines automatisations reconnaissent une catégorie à son libellé (« volant », « cordage », « matériel », « virement interne »…). Renommer largement une catégorie peut donc changer le comportement des suggestions de rapprochement ou la répartition par pôle du tableau de bord.
+> Certaines automatisations reconnaissent une catégorie à son libellé (« volant », « cordage », « matériel »…). Renommer largement une catégorie peut donc changer le comportement des suggestions de rapprochement ou la répartition par pôle du tableau de bord.
+>
+> Ce n'est **plus** le cas des virements internes : ils se reconnaissent désormais à leur nature, pas à un libellé. La catégorie « Virements Internes » a été désactivée et ne peut plus être attribuée.

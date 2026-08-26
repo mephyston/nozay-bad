@@ -2,8 +2,12 @@ export interface Transaction {
   id: number;
   seasonId: string;
   type: 'recette' | 'depense' | 'transfert';
-  accountId: 'current' | 'savings' | 'cash';
-  destinationAccountId: 'current' | 'savings' | 'cash' | null;
+  /** L'identifiant numérique du compte, tel que l'API le projette. */
+  accountId: number;
+  /** De quel côté du virement se tient l'écriture ; `null` pour une recette ou une dépense. */
+  transferLeg?: 'source' | 'destination' | null;
+  /** Le compte d'en face, lu sur la jambe jumelle : sans lui, entrant et sortant se ressemblent. */
+  counterpartAccountId?: number | null;
   category: string | null;
   categoryId?: number | null;
   amount: number;
