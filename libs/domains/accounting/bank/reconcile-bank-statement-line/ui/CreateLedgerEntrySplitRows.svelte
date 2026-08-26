@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Button, Badge, Amount, FormField, SearchableCombobox } from '@nba/ui';
   import { Trash2, Plus, Split } from '@lucide/svelte';
+  import type { SplitRow } from './reconciliation-types';
 
   let {
     splits = $bindable([]),
@@ -10,7 +11,7 @@
     addSplitRow,
     removeSplitRow
   }: {
-    splits: { category: string; amount: number }[];
+    splits: SplitRow[];
     remainingAmount: number;
     splitSum: number;
     categories: any[];
@@ -37,7 +38,24 @@
 
   <div class="space-y-2.5">
     {#each splits as sp, idx}
-      <div class="flex items-center gap-3 bg-background p-2.5 rounded-lg border border-border/70 shadow-sm">
+      <div class="flex flex-col gap-1 bg-background p-2.5 rounded-lg border border-border/70 shadow-sm">
+        <!--
+          La provenance de la part, quand elle en a une.
+
+          Une part reprise d'une facture doit se relire comme telle : c'est ce qui distingue une
+          ventilation choisie d'une ventilation héritée, et ce qui permet de repérer la part dont
+          l'imputation reste à choisir.
+        -->
+        {#if sp.label}
+          <div class="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <span class="truncate">{sp.label}</span>
+            {#if !sp.category}
+              <Badge variant="warning" size="xs">Catégorie à choisir</Badge>
+            {/if}
+          </div>
+        {/if}
+
+        <div class="flex items-center gap-3">
         <div class="flex-1">
           <FormField id="split-cat-{idx}" label="Catégorie">
           <SearchableCombobox id="split-cat-{idx}" items={categories.map((cat) => ({ label: cat.name || cat.adminLabel || `Catégorie ${cat.id}`, value: String(cat.id) }))} bind:value={sp.category} />
@@ -66,6 +84,7 @@
         >
           <Trash2 class="w-4 h-4" />
         </button>
+        </div>
       </div>
     {/each}
   </div>

@@ -118,8 +118,10 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
       return lastFirst.includes(q) || firstLast.includes(q);
     });
   });
+  /* Les factures dont le montant colle exactement à la ligne : elles se signalent dans la liste.
+     Le partitionnement en deux listes a disparu avec le troisième onglet — la reprise les propose
+     toutes, en marquant celles qui tombent juste. */
   const matchingInvoices = $derived(selectedTx && selectedTx.amount > 0 ? unpaidInvoices.filter(inv => inv.totalAmount === selectedTx?.amount) : []);
-  const otherUnpaidInvoices = $derived(selectedTx && selectedTx.amount > 0 ? unpaidInvoices.filter(inv => inv.totalAmount !== selectedTx?.amount) : unpaidInvoices);
 
   function safeEffect(fn: () => void) { try { $effect(fn); } catch (e) {} }
 
@@ -194,7 +196,7 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
       ignoredCount: () => ignoredCount, selectedCount: () => selectedCount, selectedSum: () => selectedSum,
       displayedTransactions: () => displayedTransactions, memberDisplayVal: () => memberDisplayVal, categoryDisplayVal: () => categoryDisplayVal,
       filteredMembers: () => filteredMembers, filteredCategories: () => filteredCategories, matchingInvoices: () => matchingInvoices,
-      otherUnpaidInvoices: () => otherUnpaidInvoices, getSuggestions: () => getSuggestions
+      getSuggestions: () => getSuggestions
     },
     {
       bankStatementLines: v => bankStatementLines = v, glTransactions: v => glTransactions = v, seasonId: v => seasonId = v,
