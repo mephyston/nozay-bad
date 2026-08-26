@@ -24,6 +24,8 @@
     browsedSeason = '',
     aiHint = null,
     aiFields = {},
+    isAnalyzing = false,
+    onReanalyze = undefined,
     isMemberDropdownOpen = $bindable(false),
     isCategoryDropdownOpen = $bindable(false),
     memberSearchQuery = $bindable(''),
@@ -60,7 +62,10 @@
     /** Résumé de la proposition du modèle : confiance et motif, en une ligne. */
     aiHint?: { confidence?: number; reason?: string | null } | null;
     /** Quels champs portent encore la valeur proposée — ceux-là seuls se signalent. */
-    aiFields?: { category?: boolean; member?: boolean; accrual?: boolean; season?: boolean };
+    aiFields?: { category?: boolean; member?: boolean; accrual?: boolean; season?: boolean; note?: boolean };
+    isAnalyzing?: boolean;
+    /** Relancer l'analyse sur cette seule ligne ; l'action vit sur la ligne de proposition. */
+    onReanalyze?: (() => void) | undefined;
     isMemberDropdownOpen: boolean;
     isCategoryDropdownOpen: boolean;
     memberSearchQuery: string;
@@ -135,15 +140,43 @@
     </Button>
   </div>
 
-  {#if aiHint}
-    <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-      <span class="inline-flex items-center gap-1 font-medium text-purple-600 dark:text-purple-400">
-        <Sparkles class="h-3 w-3" />
-        Proposition IA
-      </span>
-      {#if aiHint.confidence}<span>· {Math.round(aiHint.confidence * 100)} %</span>{/if}
-      {#if aiHint.reason}<span class="italic">· « {aiHint.reason} »</span>{/if}
-    </p>
+  <!--
+    Une seule ligne pour la proposition et son bouton.
+
+    Le bouton « Re-analyser » occupait une rangée à lui seul, au-dessus des onglets. Il appartient
+    à la proposition : c'est elle qu'il refait. Et la ligne s'affiche même sans proposition —
+    sinon, la seule ligne dépourvue de suggestion serait aussi la seule à ne pas pouvoir en
+    demander une.
+  -->
+  {#if aiHint || onReanalyze}
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <p class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+        {#if aiHint}
+          <span class="inline-flex items-center gap-1 font-medium text-purple-600 dark:text-purple-400">
+            <Sparkles class="h-3 w-3" />
+            Proposition IA
+          </span>
+          {#if aiHint.confidence}<span>· {Math.round(aiHint.confidence * 100)} %</span>{/if}
+          {#if aiHint.reason}<span class="truncate italic">· « {aiHint.reason} »</span>{/if}
+        {:else}
+          <span class="italic">Aucune proposition pour cette opération.</span>
+        {/if}
+      </p>
+
+      {#if onReanalyze}
+        <Button
+          size="sm"
+          variant="ai-ghost"
+          class="h-7 shrink-0 gap-1.5 text-xs"
+          title={aiHint ? 'Refaire la proposition' : 'Demander une proposition'}
+          disabled={isAnalyzing}
+          onclick={onReanalyze}
+        >
+          <Sparkles class="h-3.5 w-3.5" />
+          <span>{isAnalyzing ? 'Analyse…' : aiHint ? 'Re-analyser' : 'Analyser (IA)'}</span>
+        </Button>
+      {/if}
+    </div>
   {/if}
 
   <!-- Catégorie et exercice de rattachement tiennent sur une ligne : ce sont deux imputations,
@@ -217,7 +250,9 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-1 gap-4 mt-4">
+  <!-- Régularisation et note justificative partagent une ligne : la seconde n'existe que pour
+       expliquer la première, et n'apparaît que si l'on sort de « Normal ». -->
+  <div class="grid grid-cols-1 gap-4 mt-4 {accrualType !== 'normal' ? 'md:grid-cols-2' : ''}">
       <!-- `FormField` n'accepte pas de `class` : un attribut inconnu serait ignoré sans un mot. -->
       <div class={aiFields.accrual ? AI_RING : ''}>
       <FormField label="Régularisation (Cut-off)">
@@ -228,9 +263,11 @@
     </FormField>
     </div>
     {#if accrualType !== 'normal'}
+        <div class={aiFields.note ? AI_RING : ''}>
         <FormField label="Note justificative *">
         <input type="text" class="w-full px-3 py-2 border border-destructive/50 bg-background rounded-md text-sm focus:ring-1 focus:ring-destructive" placeholder="Détail de la régularisation..." bind:value={accrualNote} required />
       </FormField>
+      </div>
     {/if}
   </div>
 

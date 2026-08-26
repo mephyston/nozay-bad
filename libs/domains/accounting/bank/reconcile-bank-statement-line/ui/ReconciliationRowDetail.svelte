@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { Sparkles } from '@lucide/svelte';
-  import { Button, Tabs } from '@nba/ui';
+  import { Tabs } from '@nba/ui';
   import MatchTransaction from './MatchTransaction.svelte';
   import CreateLedgerEntryFromBankLine from './CreateLedgerEntryFromBankLine.svelte';
   import ReconciliationAiSuggestion from './ReconciliationAiSuggestion.svelte';
@@ -32,7 +31,9 @@
     category: !!sug && sug.category != null && reconState.category === String(sug.category),
     member: !!sug && sug.memberId != null && reconState.selectedMemberId === String(sug.memberId),
     accrual: !!sug && !!sug.accrualType && sug.accrualType !== 'normal' && reconState.accrualType === sug.accrualType,
-    season: !!sug && !!sug.targetSeason && reconState.targetSeasonId === sug.targetSeason
+    season: !!sug && !!sug.targetSeason && reconState.targetSeasonId === sug.targetSeason,
+    /* La note est le seul champ libre que le modèle remplit : elle se signale comme les autres. */
+    note: !!sug && !!sug.accrualNote && reconState.accrualNote === sug.accrualNote
   });
 
   const aiHint = $derived(
@@ -72,20 +73,6 @@
         : 'Cette ligne est ignorée. Rétablissez-la pour la rapprocher.'}
     </p>
   {:else}
-    <div class="flex justify-end">
-      <Button
-        size="sm"
-        variant="ai-ghost"
-        class="h-7 text-xs gap-1.5"
-        title="Re-analyser cette opération"
-        disabled={reconState.isClosed || reconState.isAnalyzingSingle}
-        onclick={() => reconState.handleAnalyzeSingle(line.id)}
-      >
-        <Sparkles class="h-3.5 w-3.5" />
-        <span>{reconState.isAnalyzingSingle ? 'Analyse…' : 'Re-analyser (IA)'}</span>
-      </Button>
-    </div>
-
     <Tabs.Root value={reconState.activeRightTab} onValueChange={(v) => (reconState.activeRightTab = v as any)} class="w-full">
       <Tabs.List class="flex w-full justify-start sm:justify-center overflow-x-auto no-scrollbar mb-4">
         <Tabs.Trigger value="manual" class="text-xs cursor-pointer">Saisir / ventiler</Tabs.Trigger>
@@ -118,6 +105,8 @@
           browsedSeason={reconState.selectedSeason}
           {aiHint}
           {aiFields}
+          isAnalyzing={reconState.isAnalyzingSingle}
+          onReanalyze={() => reconState.handleAnalyzeSingle(line.id)}
           bind:isMemberDropdownOpen={reconState.isMemberDropdownOpen}
           bind:isCategoryDropdownOpen={reconState.isCategoryDropdownOpen}
           bind:memberSearchQuery={reconState.memberSearchQuery}
