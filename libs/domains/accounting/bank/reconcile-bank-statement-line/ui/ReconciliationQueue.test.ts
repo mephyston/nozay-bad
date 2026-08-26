@@ -249,26 +249,35 @@ describe('le filtre par compte', () => {
     expect(target.innerHTML).not.toContain('Tous les comptes');
   });
 
-  /* Le combobox ne rend ses options qu'à l'ouverture : seul le libellé sélectionné est dans le
-     DOM au repos. Le décompte par compte se vérifie sur l'état, dans `reconciliation.test.ts`. */
-  it('propose le filtre, tous comptes par défaut', () => {
+  /*
+    L'écran s'ouvre sur un compte, jamais sur un mélange.
+
+    « Tous les comptes » reste proposé, mais ne peut pas être le défaut : la file ne correspondrait
+    alors à aucun des états de rapprochement affichés au-dessus. Le combobox ne rend ses options
+    qu'à l'ouverture — seul le libellé sélectionné est dans le DOM au repos.
+  */
+  it('s\'ouvre sur le compte qui a le plus à traiter', () => {
     const target = render(multi(), { reconciliationStatements: statements });
 
-    expect(target.innerHTML).toContain('Tous les comptes (3)');
+    expect(target.innerHTML).toContain('Compte Courant (2)');
+    expect(target.innerHTML).not.toContain('Tous les comptes');
+    // Et la file se limite à ce compte.
+    expect(target.innerHTML).toContain('COURANT UN');
+    expect(target.innerHTML).not.toContain('LIVRET UN');
   });
 
   /*
-    Sans repère de compte, on pointe sans savoir contre quel état de rapprochement on progresse :
-    l'identité que vérifie l'état se pose compte par compte.
+    Le compte n'est rappelé sur les lignes que si la file en mélange plusieurs — c'est-à-dire
+    seulement quand on a explicitement demandé « tous les comptes ». Filtrée, l'information serait
+    répétée à chaque ligne pour rien.
   */
-  it('nomme le compte de chaque ligne tant que la file en mélange plusieurs', () => {
+  it('ne nomme le compte des lignes que sur la vue tous comptes', () => {
     const target = render(multi(), { reconciliationStatements: statements });
-
     const rowOf = (name: string) =>
       Array.from(target.querySelectorAll('[data-line-id]')).find((r) => r.textContent?.includes(name))!;
 
-    expect(rowOf('COURANT UN').textContent).toContain('Compte Courant');
-    expect(rowOf('LIVRET UN').textContent).toContain('Livret A');
+    // Filtrée sur le Compte Courant : ses lignes ne le répètent pas.
+    expect(rowOf('COURANT UN').textContent).not.toContain('Compte Courant');
   });
 
   it("ne répète pas le compte sur les lignes d'un relevé mono-compte", () => {
@@ -276,5 +285,101 @@ describe('le filtre par compte', () => {
 
     const row = target.querySelector('[data-line-id]')!;
     expect(row.textContent).not.toContain('Compte Courant');
+  });
+});
+
+/*
+  Un doublon de recette a été créé sur 60,07 € : l'écran proposait « Valider » — qui crée une
+  écriture — sur une ligne dont les livres portaient déjà l'opération. L'écriture d'origine est
+  restée orpheline, le rapprochement a continué de boucler (une écriture non pointée passe pour un
+  décalage de traitement), et le compte de résultat a compté la somme deux fois.
+*/
+describe("pointer avant créer", () => {
+  const entry = (over: Record<string, any> = {}) => ({
+    id: 900, type: 'recette', accountId: 1, amount: 6007, date: '2025-09-16',
+    description: 'Licence Paul Madrange', bankStatementLineId: null, ...over
+  });
+
+  const bankLine = (over: Record<string, any> = {}) =>
+    line({ id: 1, amount: 6007, date: '2025-09-15', name: 'VIR RECU 9525858309767', ...over });
+
+  const withSuggestion = { aiSuggestions: JSON.stringify({ category: 5, memberId: 42, confidence: 0.9 }) };
+
+  it("annonce l'écriture existante plutôt qu'une proposition de saisie", () => {
+    const target = render([bankLine(withSuggestion)], { glTransactions: [entry()] });
+
+    expect(target.innerHTML).toContain('Une écriture existante correspond');
+    expect(target.innerHTML).toContain('Licence Paul Madrange');
+  });
+
+  it("n'offre pas de valider une création quand une écriture attend d'être pointée", () => {
+    const target = render([bankLine(withSuggestion)], { glTransactions: [entry()] });
+
+    expect(btn(target, 'Pointer')).not.toBeUndefined();
+    expect(btn(target, 'Valider')).toBeUndefined();
+  });
+
+  it("laisse valider la suggestion quand rien n'existe dans les livres", () => {
+    const target = render([bankLine(withSuggestion)], { glTransactions: [] });
+
+    expect(btn(target, 'Valider')).not.toBeUndefined();
+    expect(btn(target, 'Pointer')).toBeUndefined();
+  });
+
+  /* Un montant identique mais hors de la fenêtre de sept jours n'est pas un candidat. */
+  it("ignore une écriture trop éloignée dans le temps", () => {
+    const target = render([bankLine(withSuggestion)], { glTransactions: [entry({ date: '2025-11-30' })] });
+
+    expect(btn(target, 'Valider')).not.toBeUndefined();
+    expect(target.innerHTML).not.toContain('Une écriture existante correspond');
+  });
+
+  it("ignore une écriture déjà pointée sur une autre ligne", () => {
+    const target = render([bankLine(withSuggestion)], { glTransactions: [entry({ bankStatementLineId: 42 })] });
+
+    expect(btn(target, 'Valider')).not.toBeUndefined();
+  });
+
+  it("ouvre la ligne sur l'onglet de pointage, et non sur la saisie", () => {
+    const target = render([bankLine(withSuggestion)], { glTransactions: [entry()] });
+
+    btn(target, 'Pointer').click();
+    flushSync();
+
+    // L'onglet « Pointer une écriture » est actif, et l'écriture candidate est listée.
+    expect(target.innerHTML).toContain('Correspondances au même montant');
+    expect(target.innerHTML).toContain('Licence Paul Madrange');
+  });
+});
+
+describe("l'historique", () => {
+  it("ne propose aucune bascule quand rien n'est masqué", () => {
+    const target = render([line({ id: 1 }), line({ id: 2, status: 'reconciled' })]);
+
+    btn(target, "Voir l'historique").click();
+    flushSync();
+
+    expect(target.innerHTML).toContain('DUPONT');
+    expect(target.innerHTML).not.toContain('Masquées');
+    expect(target.innerHTML).not.toContain('Rapprochées (');
+  });
+
+  /* Une ligne masquée pèse dans l'écart : la rendre inatteignable la ferait disparaître de
+     l'écran sans la retirer du compte. */
+  it('rouvre la bascule si des lignes masquées subsistent', () => {
+    const target = render([
+      line({ id: 1, status: 'reconciled' }),
+      line({ id: 2, status: 'ignored', name: 'ANCIENNE MASQUEE' })
+    ]);
+
+    btn(target, "Voir l'historique").click();
+    flushSync();
+
+    expect(target.innerHTML).toContain('Masquées, à rétablir (1)');
+
+    btn(target, 'Masquées, à rétablir').click();
+    flushSync();
+    expect(target.innerHTML).toContain('ANCIENNE MASQUEE');
+    expect(btn(target, 'Rétablir')).not.toBeUndefined();
   });
 });

@@ -854,13 +854,8 @@ describe('BankStatementReconciliation Component', () => {
     historyBtn.click();
     flushSync();
 
-    const reconciledTab = Array.from(target.querySelectorAll('button')).find(b =>
-      b.textContent?.includes('Rapprochées')
-    ) as HTMLButtonElement;
-    expect(reconciledTab).not.toBeNull();
-    reconciledTab.click();
-    flushSync();
-
+    /* L'historique n'a plus de bascule : masquer une ligne n'est plus possible, il n'a donc
+       qu'un contenu. */
     expandRow(target, 'VIR INST RE 673390599511');
 
     // Ce qui a été enregistré est lisible…

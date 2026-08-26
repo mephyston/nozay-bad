@@ -471,6 +471,29 @@ describe('createReconciliationState logic unit tests', () => {
         ...over
       } as any);
 
+    /*
+      Un rapprochement se pose compte par compte : ouvrir sur « tous » donnerait une file à
+      laquelle aucun des états affichés au-dessus ne correspond.
+    */
+    it('ouvre sur le compte qui a le plus à traiter', () => {
+      const state = build();
+
+      expect(state.accountFilter).toBe('1');
+      expect(state.queueTransactions.map((t: any) => t.id)).toEqual([1, 2]);
+    });
+
+    it("ouvre sur le seul compte d'un relevé mono-compte", () => {
+      const state = build({ bankStatementLines: lines.filter((l) => l.accountId === 2) });
+
+      expect(state.accountFilter).toBe('2');
+    });
+
+    it("ne choisit aucun compte quand le relevé est vide", () => {
+      const state = build({ bankStatementLines: [] });
+
+      expect(state.accountFilter).toBe('');
+    });
+
     it('compte ce qui reste à traiter par compte', () => {
       const state = build();
 

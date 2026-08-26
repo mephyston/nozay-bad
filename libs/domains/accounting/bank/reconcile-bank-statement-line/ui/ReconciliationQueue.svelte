@@ -26,8 +26,16 @@
     filtre par compte et dans l'encart d'état. Restent les écritures que les livres portent et
     qu'aucune ligne de relevé ne pointe : celles-là ne se lisent nulle part ailleurs.
   */
+  /* Suit le compte consulté : un état de rapprochement se lit compte par compte, et l'écart
+     affiché doit être celui du compte qu'on a sous les yeux. */
+  const scopedStatements = $derived(
+    (reconState.reconciliationStatements ?? []).filter(
+      (s: any) => !reconState.accountFilter || String(s.account?.id) === reconState.accountFilter
+    )
+  );
+
   const gapStats = $derived.by(() => {
-    const st = reconState.reconciliationStatements ?? [];
+    const st = scopedStatements;
     return {
       entriesCount: st.reduce((n: number, s: any) => n + (s.unpointedEntries?.length ?? 0), 0),
       entriesCents: st.reduce((n: number, s: any) => n - (s.unpointedEntriesTotalCents ?? 0), 0)
@@ -174,7 +182,15 @@
       </button>
     {/if}
 
-    {#if reconState.view === 'history'}
+    <!--
+      Plus de bascule « Rapprochées / Ignorées » : masquer une ligne n'est plus possible, et
+      l'historique n'a donc qu'un contenu.
+
+      Elle ne réapparaît que si d'anciennes lignes masquées subsistent — les rendre inatteignables
+      les ferait disparaître de l'écran tout en continuant de peser dans l'écart, ce qui est
+      précisément le défaut pour lequel « Ignorer » a été retiré.
+    -->
+    {#if reconState.view === 'history' && reconState.ignoredCount > 0}
       <div class="flex items-center gap-1">
         <Button
           variant={reconState.activeTab === 'reconciled' ? 'default' : 'ghost'}
@@ -188,7 +204,7 @@
           size="sm" class="text-xs h-7"
           onclick={() => (reconState.activeTab = 'ignored')}
         >
-          Ignorées ({reconState.ignoredCount})
+          Masquées, à rétablir ({reconState.ignoredCount})
         </Button>
       </div>
     {/if}
@@ -295,5 +311,5 @@
 
 <ReconciliationGapSheet
   bind:open={gapSheetOpen}
-  statements={reconState.reconciliationStatements ?? []}
+  statements={scopedStatements}
 />

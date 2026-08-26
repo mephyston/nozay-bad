@@ -73,12 +73,12 @@ export class ReconciliationStore {
   searchQuery = $state('');
   monthFilter = $state('');
   /**
-   * Le compte sur lequel on rapproche. Vide = tous.
+   * Le compte sur lequel on rapproche. Vide = tous, mais ce n'est pas le défaut.
    *
    * Un rapprochement est une preuve qui se pose **compte par compte** : l'identité vérifiée par
    * l'état — solde du relevé = solde des livres − non pointées + non comptabilisées — n'a de sens
-   * que sur un compte. La file les mélangeait sans même dire lequel, si bien qu'on pointait sans
-   * savoir contre quel état on progressait.
+   * que sur un compte. L'écran s'ouvre donc sur celui qui a le plus à traiter (cf. constructeur),
+   * et non sur un mélange dont aucun état ne rend compte.
    */
   accountFilter = $state('');
   memberHighlightedIndex = $state(-1);
@@ -194,6 +194,15 @@ export class ReconciliationStore {
     this.reconciliationStatements = props.reconciliationStatements || [];
     this.selectedSeason = props.seasonId;
     this.targetSeasonId = props.seasonId;
+
+    /*
+      On s'ouvre sur le compte qui a le plus à traiter.
+
+      `accountOptions` est trié par nombre de lignes en attente : le premier est celui où le
+      travail attend. « Tous les comptes » reste proposé, mais ne peut pas être le défaut — la file
+      correspondrait alors à aucun des états affichés au-dessus.
+    */
+    this.accountFilter = this.accountOptions[0]?.id ?? '';
 
     /*
       Les actions sont posées sur l'instance, et non héritées.
