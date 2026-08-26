@@ -116,10 +116,59 @@
     de l'autre exercice, le champ paraissait vide, et l'écriture partait quand même sur la
     mauvaise adhésion. On préfère perdre la sélection et la redemander.
   */
+  /* Vrai le temps de le dire : l'adhérent retenu appartenait à l'autre exercice. */
+  let memberDroppedBySeason = $state(false);
+
   $effect(() => {
     if (selectedMemberId && !membersForTargetSeason.some((m) => String(m.id) === selectedMemberId)) {
       selectedMemberId = '';
+      memberDroppedBySeason = true;
     }
+  });
+
+  /**
+   * L'exercice de rattachement se déduit de la date et du motif — il ne se devine pas.
+   *
+   * C'est la règle que `validateAccrualAndFiscalPhase` impose déjà, mot pour mot : une écriture
+   * `normal` doit tomber **dans** l'exercice visé ; un « constaté d'avance » **avant** son début,
+   * puisqu'il désigne de l'argent encaissé par avance ; un « à recevoir » ou « à payer » **après**
+   * sa fin, puisqu'il désigne de l'argent qui arrivera plus tard. Le motif ne décrit rien d'autre
+   * que cet écart.
+   *
+   * Laisser les deux champs indépendants revenait à offrir des combinaisons que le serveur
+   * refusait ensuite, par un message d'erreur, sur une écriture déjà saisie. Les dériver rend ces
+   * combinaisons inatteignables.
+   */
+  const orderedSeasons = $derived(
+    [...(seasons as any[])].sort((a, b) => String(a.startDate ?? a.code ?? '').localeCompare(String(b.startDate ?? b.code ?? '')))
+  );
+
+  const seasonOfLineDate = $derived.by(() => {
+    const date = selectedTx?.date;
+    if (!date) return null;
+    return orderedSeasons.find((s: any) => s.startDate && s.endDate && date >= s.startDate && date <= s.endDate) ?? null;
+  });
+
+  const derivedTargetSeason = $derived.by(() => {
+    const base = seasonOfLineDate;
+    if (!base) return null;
+    const i = orderedSeasons.indexOf(base);
+    if (accrualType === 'produit_constate_avance' || accrualType === 'charge_constatee_avance') {
+      return orderedSeasons[i + 1] ?? null;
+    }
+    if (accrualType === 'produit_a_recevoir' || accrualType === 'charge_a_payer') {
+      return orderedSeasons[i - 1] ?? null;
+    }
+    return base;
+  });
+
+  /* Le motif décide de l'exercice ; changer l'un déplace l'autre. Le champ reste modifiable —
+     un cas rare peut viser plus loin — mais il ne part plus d'une valeur que le serveur refuse. */
+  $effect(() => {
+    const target = derivedTargetSeason;
+    if (!target) return;
+    const value = String(target.code ?? target.id);
+    if (targetSeasonId !== value) targetSeasonId = value;
   });
 
   /* Clôturée reste signalé : on ne peut pas y écrire. « Active » ne se choisit pas. */
@@ -249,9 +298,22 @@
       items={seasonItems}
       allowClear={false}
     />
-    {#if browsedSeason && targetSeasonId && targetSeasonId !== browsedSeason}
+    {#if accrualType !== 'normal' && !derivedTargetSeason}
+      <p class="mt-1 text-xs text-destructive">
+        Aucun exercice ne convient à ce motif pour une opération datée du {selectedTx?.date} : il
+        faudrait créer l'exercice {accrualType.startsWith('produit_constate') || accrualType.startsWith('charge_constatee') ? 'suivant' : 'précédent'}.
+      </p>
+    {:else if accrualType !== 'normal'}
       <p class="mt-1 text-xs text-muted-foreground">
-        L'écriture comptera dans l'exercice {targetSeasonId}, alors que vous consultez {browsedSeason}.
+        Déduit du motif : un
+        {accrualType === 'produit_constate_avance' || accrualType === 'charge_constatee_avance'
+          ? "« constaté d'avance » se rattache à l'exercice qui suit l'encaissement"
+          : "« à recevoir » ou « à payer » se rattache à l'exercice déjà terminé"}.
+      </p>
+    {:else if seasonOfLineDate}
+      <p class="mt-1 text-xs text-muted-foreground">
+        L'exercice de la date de l'opération. Pour la rattacher ailleurs, changez le motif de
+        régularisation.
       </p>
     {/if}
   </div>
@@ -290,7 +352,22 @@
           items={memberItems}
           allowClear={true}
           clearLabel="Aucun adhérent (Écriture générale)"
+          onselect={() => (memberDroppedBySeason = false)}
         />
+        <!--
+          Le retrait se dit, il ne se subit pas.
+
+          L'exercice se déduisant du motif, changer celui-ci change l'annuaire proposé — et
+          l'adhérent déjà choisi, qui appartient à l'autre exercice, en sort. Le laisser
+          disparaître sans un mot ferait passer pour un bug ce qui est un garde-fou :
+          `member_id` désigne une adhésion, pas une personne.
+        -->
+        {#if memberDroppedBySeason}
+          <p class="mt-1 text-xs text-warning">
+            L'adhérent choisi relevait d'un autre exercice : sélectionnez son adhésion
+            {targetSeasonId}.
+          </p>
+        {/if}
       </div>
     {/if}
 

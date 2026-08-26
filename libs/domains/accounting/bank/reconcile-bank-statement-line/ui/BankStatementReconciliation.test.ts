@@ -896,8 +896,8 @@ describe('BankStatementReconciliation Component', () => {
         glTransactions: [],
         seasonId: '25-26',
         seasons: [
-          { id: '25-26', code: '25-26', name: 'Saison 2025-2026', active: true },
-          { id: '26-27', code: '26-27', name: 'Saison 2026-2027', active: false }
+          { id: '25-26', code: '25-26', name: 'Saison 2025-2026', active: true, startDate: '2025-09-01', endDate: '2026-08-31' },
+          { id: '26-27', code: '26-27', name: 'Saison 2026-2027', active: false, startDate: '2026-09-01', endDate: '2027-08-31' }
         ],
         members: [],
         dbCategories: [{ id: 1, code: 'adhesions_inscriptions', adminLabel: 'Adhésions' }]
@@ -967,8 +967,8 @@ describe('BankStatementReconciliation Component', () => {
         glTransactions: [],
         seasonId: '25-26',
         seasons: [
-          { id: '25-26', code: '25-26', name: 'Saison 2025-2026', active: true },
-          { id: '26-27', code: '26-27', name: 'Saison 2026-2027', active: false }
+          { id: '25-26', code: '25-26', name: 'Saison 2025-2026', active: true, startDate: '2025-09-01', endDate: '2026-08-31' },
+          { id: '26-27', code: '26-27', name: 'Saison 2026-2027', active: false, startDate: '2026-09-01', endDate: '2027-08-31' }
         ],
         members: [],
         dbCategories: [{ id: 1, code: 'adhesions_inscriptions', adminLabel: 'Adhésions' }]
@@ -979,8 +979,11 @@ describe('BankStatementReconciliation Component', () => {
 
     expandRow(target, 'VIR INST RE 672885352540');
 
-    // L'exercice visé se lit dans le champ, et l'écart avec l'exercice consulté est annoncé.
-    expect(target.textContent).toContain("L'écriture comptera dans l'exercice 26-27");
+    /*
+      L'exercice ne se choisit plus : il se déduit du motif et de la date, comme le validateur
+      serveur l'impose. Un « constaté d'avance » se rattache à l'exercice qui suit l'encaissement.
+    */
+    expect(target.textContent).toContain("se rattache à l'exercice qui suit l'encaissement");
 
     const validate = Array.from(target.querySelectorAll('button')).find(b =>
       b.textContent?.includes('Créer et rapprocher')

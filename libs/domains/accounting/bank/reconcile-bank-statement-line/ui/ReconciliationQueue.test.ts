@@ -485,3 +485,56 @@ describe("annuaire et exercice de rattachement", () => {
     expect(target.innerHTML).not.toContain('SUIVANTE Bea (26-27)');
   });
 });
+
+/*
+  L'exercice de rattachement ne se choisit plus : il se déduit de la date et du motif, exactement
+  comme `validateAccrualAndFiscalPhase` l'impose. Les laisser indépendants offrait des
+  combinaisons que le serveur refusait ensuite, sur une écriture déjà saisie.
+*/
+describe("exercice déduit du motif", () => {
+  const seasons = [
+    { id: '24-25', code: '24-25', name: 'Saison 2024-2025', active: false, startDate: '2024-09-01', endDate: '2025-08-31' },
+    { id: '25-26', code: '25-26', name: 'Saison 2025-2026', active: true, startDate: '2025-09-01', endDate: '2026-08-31' },
+    { id: '26-27', code: '26-27', name: 'Saison 2026-2027', active: false, startDate: '2026-09-01', endDate: '2027-08-31' }
+  ];
+
+  function openWith(accrual: string | null, over: Record<string, any> = {}) {
+    const target = render(
+      [line({ id: 1, date: '2026-08-20', amount: 15000, aiSuggestions: accrual ? JSON.stringify({ category: 5, accrualType: accrual, accrualNote: 'note', targetSeason: null }) : null })],
+      { seasons, seasonId: '25-26', dbCategories: [{ id: 5, code: 'c', adminLabel: 'Cotisations' }], ...over }
+    );
+    (target.querySelector('[data-action="expand"]') as HTMLButtonElement).click();
+    flushSync();
+    return target;
+  }
+
+  const seasonField = (t: HTMLElement) => (t.querySelector('#target-season-input') as HTMLInputElement).value;
+
+  it("rattache une écriture normale à l'exercice de sa date", () => {
+    expect(seasonField(openWith(null))).toContain('2025-2026');
+  });
+
+  it("rattache un « constaté d'avance » à l'exercice suivant", () => {
+    const target = openWith('produit_constate_avance');
+    expect(seasonField(target)).toContain('2026-2027');
+    expect(target.textContent).toContain("se rattache à l'exercice qui suit l'encaissement");
+  });
+
+  it("rattache un « à recevoir » à l'exercice précédent", () => {
+    const target = openWith('produit_a_recevoir');
+    expect(seasonField(target)).toContain('2024-2025');
+    expect(target.textContent).toContain("se rattache à l'exercice déjà terminé");
+  });
+
+  /* Sans exercice voisin, on ne devine pas : on le dit. */
+  it("signale l'absence d'exercice adéquat", () => {
+    const target = render(
+      [line({ id: 1, date: '2026-08-20', aiSuggestions: JSON.stringify({ category: 5, accrualType: 'produit_constate_avance', accrualNote: 'n' }) })],
+      { seasons: seasons.slice(0, 2), seasonId: '25-26', dbCategories: [{ id: 5, code: 'c', adminLabel: 'Cotisations' }] }
+    );
+    (target.querySelector('[data-action="expand"]') as HTMLButtonElement).click();
+    flushSync();
+
+    expect(target.textContent).toContain('Aucun exercice ne convient à ce motif');
+  });
+});
