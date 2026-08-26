@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Eye, Image as ImageIcon } from '@lucide/svelte';
-  import { Button, Input, Card, Textarea, FormField, SearchableCombobox } from '@nba/ui';
+  import { Button, Input, Card, Textarea, FormField, SearchableCombobox, toSeasonOptions } from '@nba/ui';
   import type { Expense, Season, CategoryOption } from './expenses-types';
 
   let {
@@ -46,7 +46,7 @@
     </FormField>
 
       <FormField id="edit-season-{exp.id}" label="Saison d'affectation">
-      <SearchableCombobox id="edit-season-{exp.id}" items={seasons.map((s) => ({ label: s.name, value: String(s.id) }))} bind:value={editSeasonId} />
+      <SearchableCombobox id="edit-season-{exp.id}" items={toSeasonOptions(seasons, { value: 'id' })} bind:value={editSeasonId} />
     </FormField>
 
       <FormField id="edit-amount-{exp.id}" label="Montant (€)">

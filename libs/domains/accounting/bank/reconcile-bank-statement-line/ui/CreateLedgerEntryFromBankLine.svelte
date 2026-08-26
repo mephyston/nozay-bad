@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Amount, Combobox, type ComboboxItem, FormField, SearchableCombobox } from '@nba/ui';
+  import { Button, Amount, Combobox, type ComboboxItem, FormField, SearchableCombobox, toSeasonOptions } from '@nba/ui';
   import CreateLedgerEntrySplitRows from './CreateLedgerEntrySplitRows.svelte';
 
   let {
@@ -91,12 +91,8 @@
     }))
   );
 
-  let seasonItems = $derived(
-    seasons.map((s: any) => ({
-      value: String(s.code || s.id),
-      label: `${s.name || s.code}${s.active ? ' (active)' : ''}${s.closed ? ' — clôturée' : ''}`
-    }))
-  );
+  /* Clôturée reste signalé : on ne peut pas y écrire. « Active » ne se choisit pas. */
+  let seasonItems = $derived(toSeasonOptions(seasons as any, { markClosed: true }));
 
   let splitSum = $derived(splits.reduce((sum, s) => sum + Math.round((s.amount || 0) * 100), 0));
 </script>

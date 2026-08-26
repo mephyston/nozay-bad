@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FileText, AlertCircle } from '@lucide/svelte';
-  import { Alert, Card, uiConfirm, Badge, PageHeader, FormField, SearchableCombobox, Button, softNavigate, submitForm } from '@nba/ui';
+  import { Alert, Card, uiConfirm, Badge, PageHeader, FormField, SearchableCombobox, Button, softNavigate, submitForm, toSeasonOptions } from '@nba/ui';
   import type { Expense, Season, Category } from './expenses-types';
   import { getCategoryOptions, getCategoryLabels } from './expenses-types';
   import { ExpensesState } from './expenses-state.svelte';
@@ -153,7 +153,7 @@
 
     {#snippet toolbarFilters()}
       <FormField id="filter-season" label="Saison">
-        <SearchableCombobox id="filter-season" items={seasons.map((s) => ({ label: s.name, value: String(s.code || s.id) }))} bind:value={selectedSeason} />
+        <SearchableCombobox id="filter-season" items={toSeasonOptions(seasons)} bind:value={selectedSeason} />
       </FormField>
       <FormField id="filter-status" label="Statut">
         <SearchableCombobox 

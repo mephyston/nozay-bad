@@ -1,6 +1,6 @@
 <script lang="ts">
   import { AlertCircle } from '@lucide/svelte';
-  import { Button, Input, Sheet, Label, Alert, SearchableCombobox, FormField } from '@nba/ui';
+  import { Button, Input, Sheet, Label, Alert, SearchableCombobox, FormField, toSeasonOptions } from '@nba/ui';
   import type { Season, Category } from './ledger-types';
   import { accountLabels, methodLabels, formAccountOptions } from './ledger-types';
 
@@ -50,7 +50,7 @@
 
   const seasonItems = $derived(
     seasons.length > 0
-      ? seasons.map((s) => ({ label: s.name, value: String(s.id) }))
+      ? toSeasonOptions(seasons, { value: 'id' })
       : [{ label: 'Saison 2025-2026', value: '25-26' }]
   );
   const categoryItems = $derived(activeCategories.map((cat) => ({ label: cat.name, value: String(cat.id) })));

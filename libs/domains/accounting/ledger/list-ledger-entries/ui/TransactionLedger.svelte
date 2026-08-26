@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Search, X, Filter, ChevronDown } from '@lucide/svelte';
-  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog, DataTableToolbar, FormField, SearchableCombobox, softNavigate, submitForm, toast } from '@nba/ui';
+  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog, DataTableToolbar, FormField, SearchableCombobox, softNavigate, submitForm, toast, toSeasonOptions } from '@nba/ui';
   import type { Transaction, Pagination, BalanceReport, Season, Category, AccountClass } from './ledger-types';
   import { submitTransaction, validateTransaction, deleteTransaction, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange } from './ledger-actions';
   import TransactionLedgerBalances from './TransactionLedgerBalances.svelte';
@@ -265,7 +265,7 @@
 
   const seasonItems = $derived(
     seasons.length > 0
-      ? seasons.map((s) => ({ label: s.name, value: String(s.code || s.id) }))
+      ? toSeasonOptions(seasons)
       : [{ label: 'Saison 2025-2026', value: '25-26' }]
   );
   const accountItems = [

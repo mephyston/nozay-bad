@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus } from '@lucide/svelte';
-  import { AlertDialog, Button, DataTableToolbar, FormField, SearchableCombobox, softNavigate, submitForm, toast } from '@nba/ui';
+  import { AlertDialog, Button, DataTableToolbar, FormField, SearchableCombobox, softNavigate, submitForm, toast, toSeasonOptions } from '@nba/ui';
   import type { Invoice, Season } from './invoices-types';
   import { InvoiceFormState } from './invoices-form-state.svelte';
   import * as api from './invoices-api';
@@ -159,7 +159,7 @@
             <FormField id="filter-season" label="Saison">
             <SearchableCombobox
               id="filter-season"
-              items={seasons.length > 0 ? seasons.map((s) => ({ label: s.name, value: String(s.code || s.id) })) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
+              items={seasons.length > 0 ? toSeasonOptions(seasons) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
               value={seasonId}
               onValueChange={(v) => { const val = String(v); const params = new URLSearchParams(window.location.search); params.set('season', val); softNavigate(`/admin/accounting/invoices?${params.toString()}`); }}
             />

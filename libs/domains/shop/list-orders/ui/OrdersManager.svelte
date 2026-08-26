@@ -5,7 +5,7 @@
 <script lang="ts">
   import { AlertCircle } from "@lucide/svelte";
   import { onMount } from "svelte";
-  import { Alert, Button, Sheet, flashAndReload } from"@nba/ui";
+  import { Alert, Button, Sheet, flashAndReload, toSeasonOptions } from "@nba/ui";
   import type { OrderItem, OrdersTab, Season } from './orders-manager-types';
   import { paymentMethodLabels } from './orders-manager-types';
   import { validateOrder, payOrder, rejectOrder, cancelOrder } from './orders-manager-actions';
@@ -139,7 +139,7 @@
     <FormField id="filter-season" label="Saison">
       <SearchableCombobox 
         id="filter-season" 
-        items={seasons.length > 0 ? seasons.map((s) => ({ label: s.name, value: String(s.id) })) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
+        items={seasons.length > 0 ? toSeasonOptions(seasons, { value: 'id' }) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
         bind:value={selectedSeason} 
       />
     </FormField>

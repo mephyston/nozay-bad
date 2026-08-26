@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DataTableToolbar, Button, SearchableCombobox } from '@nba/ui';
+  import { DataTableToolbar, Button, SearchableCombobox, toSeasonOptions } from '@nba/ui';
   import type { Season } from './members-table-types';
 
   let {
@@ -32,7 +32,7 @@
 
   const seasonItems = $derived(
     seasons.length > 0
-      ? seasons.map((s) => ({ label: s.name, value: String(s.code || s.id) }))
+      ? toSeasonOptions(seasons)
       : [{ label: 'Saison 2025-2026', value: '25-26' }]
   );
   const genderItems = [
