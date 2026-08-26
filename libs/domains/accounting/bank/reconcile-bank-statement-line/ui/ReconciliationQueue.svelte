@@ -229,6 +229,10 @@
     <div class="flex items-center gap-2">
       <div class="relative min-w-0 flex-1">
         <!--
+          Aucune hauteur imposée : `Input` et le combobox portent tous deux `h-11 sm:h-8`, soit la
+          cible tactile de 44 px sur mobile. La forcer à `h-8` sur le seul champ de recherche le
+          désalignait du sélecteur de compte, juste à côté.
+
           La loupe passe par la prop `icon` du composant, et non par un positionnement à la main.
 
           Posée en absolu au-dessus du champ, elle chevauchait le texte : le `pl-7` de l'appelant
@@ -242,7 +246,7 @@
           placeholder="Rechercher une opération…"
           bind:value={reconState.searchQuery}
           bind:ref={searchInput}
-          class="h-8 text-xs !pr-8"
+          class="text-xs !pr-8"
         />
         {#if reconState.searchQuery}
           <button
@@ -263,7 +267,7 @@
       -->
       {#if !reconState.isSingleAccount}
         <SearchableCombobox
-          class="h-8 text-xs w-32 shrink-0 sm:w-52"
+          class="text-xs w-32 shrink-0 sm:w-52"
           items={[
             { label: `Tous les comptes (${reconState.pendingCount})`, value: '' },
             ...reconState.accountOptions.map((a) => ({
@@ -315,6 +319,7 @@
           {line}
           isExpanded={reconState.selectedTx?.id === line.id}
           isFocused={focusedLine?.id === line.id}
+          isDimmed={!!reconState.selectedTx && reconState.selectedTx.id !== line.id}
           accountLabel={showAccountOnRows ? accountLabelOf(line) : null}
         >
           <ReconciliationRowDetail bind:state={reconState} {line} />
