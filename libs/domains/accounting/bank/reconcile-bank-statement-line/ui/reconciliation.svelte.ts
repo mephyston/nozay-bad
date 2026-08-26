@@ -19,6 +19,7 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
   let seasons = $state(getProps().seasons);
   let members = $state(getProps().members);
   let dbCategories = $state(getProps().dbCategories || []);
+  let reconciliationStatements = $state(getProps().reconciliationStatements || []);
 
   let selectedSeason = $state(getProps().seasonId);
   let selectedTx = $state<BankStatementLine | null>(null);
@@ -136,19 +137,13 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
     }
   });
   safeEffect(() => { if (selectedSeason) actions.loadUnpaidInvoices(); });
-  safeEffect(() => {
-    if (!selectedTx && bankStatementLines.length > 0 && typeof sessionStorage !== 'undefined') {
-      const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-      if (!isMobile) {
-        const savedIdStr = sessionStorage.getItem('reconcile_active_bt_id');
-        if (savedIdStr) {
-          const found = bankStatementLines.find(t => t.id === parseInt(savedIdStr) && t.status === activeTab);
-          if (found) selectedTx = found;
-        }
-      }
-    }
-  });
-  safeEffect(() => { if (selectedTx && typeof sessionStorage !== 'undefined') sessionStorage.setItem('reconcile_active_bt_id', selectedTx.id.toString()); });
+  /*
+    La sélection ne se restaure plus depuis `sessionStorage`.
+
+    Les deux effets qui l'y écrivaient puis l'y relisaient n'existaient que pour survivre au
+    rechargement complet de la page après chaque rapprochement. Sans rechargement, la sélection
+    n'est jamais perdue — et `pickNextId` la fait avancer sur la ligne suivante de la file.
+  */
   safeEffect(() => {
     if (selectedTx && selectedTx.id !== lastProcessedTxId) {
       lastProcessedTxId = selectedTx.id;
@@ -184,6 +179,7 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
     {
       bankStatementLines: () => bankStatementLines, glTransactions: () => glTransactions, seasonId: () => seasonId,
       seasons: () => seasons, members: () => members, dbCategories: () => dbCategories, selectedSeason: () => selectedSeason,
+      reconciliationStatements: () => reconciliationStatements,
       selectedTx: () => selectedTx, isSubmitting: () => isSubmitting, isAnalyzing: () => isAnalyzing, isAnalyzingSingle: () => isAnalyzingSingle,
       errorMsg: () => errorMsg, showImportModal: () => showImportModal, selectedAccount: () => selectedAccount, activeTab: () => activeTab,
       unpaidInvoices: () => unpaidInvoices, activeRightTab: () => activeRightTab, category: () => category, paymentMethod: () => paymentMethod,
@@ -203,6 +199,7 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
     {
       bankStatementLines: v => bankStatementLines = v, glTransactions: v => glTransactions = v, seasonId: v => seasonId = v,
       seasons: v => seasons = v, members: v => members = v, dbCategories: v => dbCategories = v, selectedSeason: v => selectedSeason = v,
+      reconciliationStatements: v => reconciliationStatements = v,
       selectedTx: v => selectedTx = v, isSubmitting: v => isSubmitting = v, isAnalyzing: v => isAnalyzing = v, isAnalyzingSingle: v => isAnalyzingSingle = v,
       errorMsg: v => errorMsg = v, showImportModal: v => showImportModal = v, selectedAccount: v => selectedAccount = v, activeTab: v => activeTab = v,
       unpaidInvoices: v => unpaidInvoices = v, activeRightTab: v => activeRightTab = v, category: v => category = v, paymentMethod: v => paymentMethod = v,

@@ -5,6 +5,7 @@
   import { createReconciliationState, type ReconciliationStateProps } from './reconciliation.svelte';
   import ImportStatementDialog from './ImportStatementDialog.svelte';
   import ReconciliationHeader from './ReconciliationHeader.svelte';
+  import ReconciliationStatement from '../../get-reconciliation-statement/ui/ReconciliationStatement.svelte';
   import BankStatementLinesList from './BankStatementLinesList.svelte';
   import ReconciliationDetailPanel from './ReconciliationDetailPanel.svelte';
 
@@ -26,6 +27,15 @@
 </script>
 
 <div class="space-y-6">
+  <!--
+    L'encart d'état de rapprochement vit dans cette île, et non plus à côté d'elle.
+
+    En île séparée, il ne pouvait se rafraîchir que par un rechargement de la page : c'est le seul
+    nombre de l'écran que le client ne sait pas recalculer, puisqu'il se mesure contre le solde
+    annoncé par la banque. Il se relit maintenant après chaque écriture.
+  -->
+  <ReconciliationStatement statements={state.reconciliationStatements} />
+
   <!-- svelte-ignore non_reactive_update -->
   <ImportStatementDialog bind:state />
 

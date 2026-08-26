@@ -283,7 +283,12 @@ describe('BankStatementReconciliation Component', () => {
     flushSync();
 
     expect(globalThis.fetch).toHaveBeenCalledWith('/admin/accounting/import', expect.any(Object));
-    expect(reloadMock).toHaveBeenCalled();
+    /*
+      L'écran ne se recharge plus : il applique ce que le serveur répond. Le rechargement était
+      l'unique moyen de voir le résultat d'un rapprochement, et il coûtait un rendu serveur
+      complet de la page par ligne traitée.
+    */
+    expect(reloadMock).not.toHaveBeenCalled();
   });
 
   it('displays checkboxes next to bank transactions and toggles bulk action bar', async () => {
@@ -374,7 +379,12 @@ describe('BankStatementReconciliation Component', () => {
         body: expect.stringContaining('"action":"bulk"')
       })
     );
-    expect(reloadMock).toHaveBeenCalled();
+    /*
+      L'écran ne se recharge plus : il applique ce que le serveur répond. Le rechargement était
+      l'unique moyen de voir le résultat d'un rapprochement, et il coûtait un rendu serveur
+      complet de la page par ligne traitée.
+    */
+    expect(reloadMock).not.toHaveBeenCalled();
   });
 
 
@@ -466,7 +476,12 @@ describe('BankStatementReconciliation Component', () => {
       method: 'POST',
       body: expect.stringContaining('"invoiceIds":[101,102]')
     }));
-    expect(reloadMock).toHaveBeenCalled();
+    /*
+      L'écran ne se recharge plus : il applique ce que le serveur répond. Le rechargement était
+      l'unique moyen de voir le résultat d'un rapprochement, et il coûtait un rendu serveur
+      complet de la page par ligne traitée.
+    */
+    expect(reloadMock).not.toHaveBeenCalled();
   });
 
   it('dynamic split form in manual entry tab adds rows and validates against transaction amount', async () => {
@@ -550,7 +565,12 @@ describe('BankStatementReconciliation Component', () => {
       method: 'POST',
       body: expect.stringContaining('"transactions":')
     }));
-    expect(reloadMock).toHaveBeenCalled();
+    /*
+      L'écran ne se recharge plus : il applique ce que le serveur répond. Le rechargement était
+      l'unique moyen de voir le résultat d'un rapprochement, et il coûtait un rendu serveur
+      complet de la page par ligne traitée.
+    */
+    expect(reloadMock).not.toHaveBeenCalled();
   });
 
   it('filters bank transactions using free text search input field', async () => {
@@ -622,13 +642,19 @@ describe('BankStatementReconciliation Component', () => {
     expect(listContainer.innerHTML).not.toContain('ADHESION');
   });
 
-  it('restores focused transaction from sessionStorage on mount, and clears it on tab switch or close panel', async () => {
-    const store: Record<string, string> = {
-      'reconcile_active_bt_id': '1'
-    };
+  /*
+    La sélection ne se restaure plus depuis `sessionStorage`, et n'y est plus écrite.
+
+    Les deux effets qui s'en chargeaient n'existaient que pour survivre au rechargement complet
+    de la page après chaque rapprochement. Sans rechargement, rien n'est perdu — et l'écran ne
+    doit surtout pas rouvrir de lui-même une ligne que la comptable n'a pas désignée.
+  */
+  it("n'ouvre aucune ligne au montage et n'écrit rien en sessionStorage", async () => {
+    const store: Record<string, string> = { 'reconcile_active_bt_id': '1' };
+    const setItem = vi.fn((key: string, val: string) => { store[key] = val; });
     vi.stubGlobal('sessionStorage', {
       getItem: (key: string) => store[key] || null,
-      setItem: (key: string, val: string) => { store[key] = val; },
+      setItem,
       removeItem: (key: string) => { delete store[key]; }
     });
 
@@ -671,7 +697,20 @@ describe('BankStatementReconciliation Component', () => {
 
     flushSync();
 
+    // Les deux lignes sont dans la file, mais aucune n'est ouverte.
     expect(target.innerHTML).toContain('TX ONE PENDING');
+    expect(target.innerHTML).toContain('TX TWO PENDING');
+    expect(target.innerHTML).toContain('Aucune transaction sélectionnée');
+    expect(setItem).not.toHaveBeenCalledWith('reconcile_active_bt_id', expect.anything());
+
+    // Une ligne désignée s'ouvre, et se referme, sans jamais toucher au stockage de session.
+    const rowBtn = Array.from(target.querySelectorAll('button')).find(
+      b => b.textContent?.includes('TX ONE PENDING')
+    ) as HTMLButtonElement;
+    rowBtn.click();
+    flushSync();
+    expect(target.innerHTML).toContain('Détails de la transaction');
+
     const closeBtn = Array.from(target.querySelectorAll('button')).find(
       b => b.textContent?.includes('Fermer')
     ) as HTMLButtonElement;
@@ -679,7 +718,8 @@ describe('BankStatementReconciliation Component', () => {
     closeBtn.click();
     flushSync();
 
-    expect(store['reconcile_active_bt_id']).toBeUndefined();
+    expect(target.innerHTML).toContain('Aucune transaction sélectionnée');
+    expect(setItem).not.toHaveBeenCalledWith('reconcile_active_bt_id', expect.anything());
     vi.unstubAllGlobals();
   });
 

@@ -79,6 +79,13 @@ export interface ReconciliationStateProps {
   seasons: Season[];
   members: Member[];
   dbCategories?: any[];
+  /**
+   * L'état de rapprochement par compte, rendu au-dessus de la file.
+   *
+   * Il vit dans le même état que le reste depuis qu'il doit se rafraîchir après chaque écriture :
+   * en île séparée, il ne pouvait se mettre à jour que par un rechargement de la page.
+   */
+  reconciliationStatements?: any[];
 }
 
 /** Catégorie comptable telle que présentée dans les sélecteurs. */
@@ -106,6 +113,7 @@ export interface SplitRow {
 export interface ReconciliationStateFields {
   bankStatementLines: BankStatementLine[];
   glTransactions: GLTransaction[];
+  reconciliationStatements: any[];
   displayedTransactions: BankStatementLine[];
   selectedTx: BankStatementLine | null;
   selectedTxIds: Record<number, boolean>;

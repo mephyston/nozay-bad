@@ -44,10 +44,7 @@
             variant="ghost"
             size="sm"
             class="gap-1.5 text-xs text-primary font-medium hover:text-primary/80 cursor-pointer -ml-2 h-7"
-            onclick={() => {
-              sessionStorage.removeItem('reconcile_active_bt_id');
-              state.selectedTx = null;
-            }}
+            onclick={() => state.selectedTx = null}
           >
             <ArrowLeft class="h-3.5 w-3.5" />
             <span>Retour</span>
@@ -101,10 +98,7 @@
           <button
             type="button"
             class="hidden lg:block text-muted-foreground hover:text-foreground p-1 text-sm rounded hover:bg-muted ml-1"
-            onclick={() => {
-              sessionStorage.removeItem('reconcile_active_bt_id');
-              state.selectedTx = null;
-            }}
+            onclick={() => state.selectedTx = null}
             title="Fermer le panneau"
           >
             ✕ <span class="sr-only">Fermer</span>

@@ -2,7 +2,7 @@
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
 import { ErrorAlert } from '@nba/ui';
-import { BankStatementReconciliation, ReconciliationStatement } from '@nba/accounting-ui';
+import { BankStatementReconciliation } from '@nba/accounting-ui';
 import { env } from 'cloudflare:workers';
 import { createAdminApiClient } from '../../../lib/api';
 import { guardAction } from '../../../lib/guard';
@@ -25,7 +25,9 @@ const ACTIONS = {
   create: 'accounting:ledger:write',
   'delete-ledger-entry': 'accounting:ledger:delete',
   'delete-transaction': 'accounting:ledger:delete',
-  'get-unpaid-invoices': 'accounting:invoices:read'
+  'status-bulk': 'accounting:bank:reconcile',
+  'get-unpaid-invoices': 'accounting:invoices:read',
+  'get-reconciliation-statements': 'accounting:bank:read'
 } as const;
 
 if (Astro.request.method === 'POST') {
@@ -128,6 +130,28 @@ if (Astro.request.method === 'POST') {
         });
         if (!apiRes.ok) {
           return new Response('Erreur suppression transaction', { status: apiRes.status });
+        }
+        return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
+      } else if (data.action === 'status-bulk') {
+        const apiRes = await apiService.fetch('http://localhost/accounting/bank-transactions/status-bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: data.ids, status: data.status })
+        });
+        if (!apiRes.ok) {
+          return new Response(await apiRes.text(), { status: apiRes.status });
+        }
+        return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
+      } else if (data.action === 'get-reconciliation-statements') {
+        /*
+          L'encart d'état de rapprochement se relit seul après chaque écriture.
+
+          C'est le seul morceau de l'écran que le client ne peut pas recalculer : l'écart tient
+          au solde annoncé par la banque, que seul le serveur connaît.
+        */
+        const apiRes = await apiService.fetch(`http://localhost/accounting/reconciliation-statements?season=${data.season}`);
+        if (!apiRes.ok) {
+          return new Response(await apiRes.text(), { status: apiRes.status });
         }
         return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
       } else if (data.action === 'get-unpaid-invoices') {
@@ -245,8 +269,6 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
     <div class="space-y-6">
       {errorMsg && <ErrorAlert message={errorMsg} />}
 
-      <ReconciliationStatement client:load statements={reconciliationStatements} />
-
       <BankStatementReconciliation
         client:load
         bankStatementLines={bankStatementLines}
@@ -255,6 +277,7 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
         seasonId={season}
         members={membersList}
         dbCategories={categoriesList}
+        reconciliationStatements={reconciliationStatements}
       />
     </div>
   </AdminLayout>

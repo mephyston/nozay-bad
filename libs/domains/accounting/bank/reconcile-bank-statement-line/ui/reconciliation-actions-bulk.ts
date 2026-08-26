@@ -1,8 +1,16 @@
 import { toast, uiConfirm, flashAndReload } from '@nba/ui';
 import { apiBulkReconcile, apiBulkIgnore, apiImportOfx, apiAnalyzeAi, type ImportSummary } from './reconciliation-api';
 import type { ReconciliationStateFields } from './reconciliation-types';
+import type { createPatchActions } from './reconciliation-patch';
 
-export function createBulkActions(s: ReconciliationStateFields) {
+/*
+ * `flashAndReload` ne subsiste que pour l'import d'un relevé.
+ *
+ * Lui seul fait apparaître des lignes qui n'existaient pas : l'écran passe de la zone de dépôt à
+ * la file, et rien de ce que le client tient en mémoire ne décrit le nouvel état. Tout le reste —
+ * y compris l'analyse IA, qui ne fait que réécrire des suggestions — s'applique sur place.
+ */
+export function createBulkActions(s: ReconciliationStateFields, patch: ReturnType<typeof createPatchActions>) {
   async function handleBulkReconcile() {
     const ids = Object.keys(s.selectedTxIds).map(Number).filter(id => s.selectedTxIds[id]);
     if (ids.length === 0) return;
@@ -16,9 +24,11 @@ export function createBulkActions(s: ReconciliationStateFields) {
         return { btId: bt.id, action: 'create', memberId, transaction: { seasonId: s.selectedSeason, type: bt.amount < 0 ? 'depense' : 'recette', accountId: bt.accountId, category: cat, amount: Math.abs(bt.amount), date: bt.date, paymentMethod: 'virement', description: bt.name, reference: bt.fitid } };
       }).filter(Boolean);
       if (requests.length === 0) throw new Error('Aucune suggestion valide.');
-      await apiBulkReconcile(requests);
+      const { lines, entries } = await apiBulkReconcile(requests);
+      patch.applyOutcomes(lines, entries);
       s.selectedTxIds = {};
-      flashAndReload('Rapprochement par lot réussi !');
+      toast.success(`${requests.length} opération${requests.length > 1 ? 's' : ''} rapprochée${requests.length > 1 ? 's' : ''}.`);
+      s.isSubmitting = false;
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
@@ -28,9 +38,11 @@ export function createBulkActions(s: ReconciliationStateFields) {
     if (!(await uiConfirm(`Ignorer ces ${ids.length} transactions ?`))) return;
     s.isSubmitting = true; s.errorMsg = '';
     try {
-      await apiBulkIgnore(ids);
+      const ignored = await apiBulkIgnore(ids);
+      patch.applyStatus(ignored, 'ignored');
       s.selectedTxIds = {};
-      flashAndReload(`${ids.length} transactions ignorées.`, 'info');
+      toast.info(`${ignored.length} transaction${ignored.length > 1 ? 's' : ''} ignorée${ignored.length > 1 ? 's' : ''}.`);
+      s.isSubmitting = false;
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
@@ -66,16 +78,20 @@ export function createBulkActions(s: ReconciliationStateFields) {
   async function handleAnalyze() {
     s.isAnalyzing = true; s.errorMsg = '';
     try {
-      await apiAnalyzeAi(s.selectedSeason);
-      flashAndReload('Analyse IA terminée !');
+      const { count, lines } = await apiAnalyzeAi(s.selectedSeason);
+      patch.applyAnalyzed(lines);
+      toast.success(`Analyse IA terminée : ${count} opération${count > 1 ? 's' : ''}.`);
+      s.isAnalyzing = false;
     } catch (err: any) { toast.error(err.message); s.isAnalyzing = false; }
   }
 
   async function handleAnalyzeSingle(btId: number) {
     s.isAnalyzingSingle = true; s.errorMsg = '';
     try {
-      await apiAnalyzeAi(s.selectedSeason, btId);
-      flashAndReload('Analyse IA de l\'opération effectuée !');
+      const { lines } = await apiAnalyzeAi(s.selectedSeason, btId);
+      patch.applyAnalyzed(lines);
+      toast.success('Analyse IA de l\'opération effectuée !');
+      s.isAnalyzingSingle = false;
     } catch (err: any) { toast.error(err.message); s.isAnalyzingSingle = false; }
   }
 

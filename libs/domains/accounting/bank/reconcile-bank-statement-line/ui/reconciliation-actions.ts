@@ -1,6 +1,7 @@
 import type { BankStatementLine, ReconciliationStateFields, SplitRow } from './reconciliation-types';
-import { toast, uiConfirm, flashAndReload } from '@nba/ui';
+import { toast, uiConfirm } from '@nba/ui';
 import {
+  apiLoadReconciliationStatements,
   apiLoadUnpaidInvoices,
   apiReconcileInvoice,
   apiMultiInvoiceReconcile,
@@ -13,21 +14,42 @@ import {
 } from './reconciliation-api';
 import { scrollMemberOptionIntoView, scrollCategoryOptionIntoView } from './reconciliation-dropdowns';
 import { createBulkActions } from './reconciliation-actions-bulk';
+import { createPatchActions } from './reconciliation-patch';
 
 export function createReconciliationActions(s: ReconciliationStateFields) {
-  const bulk = createBulkActions(s);
+  const patch = createPatchActions(s);
+  const bulk = createBulkActions(s, patch);
 
-  function prepareNextFocus(currentBtId: number, isFullyReconciled: boolean) {
-    if (typeof sessionStorage === 'undefined') return;
-    if (!isFullyReconciled) {
-      sessionStorage.setItem('reconcile_active_bt_id', currentBtId.toString());
-    } else {
-      const index = s.displayedTransactions.findIndex((t) => t.id === currentBtId);
-      if (index !== -1) {
-        if (index + 1 < s.displayedTransactions.length) sessionStorage.setItem('reconcile_active_bt_id', s.displayedTransactions[index + 1].id.toString());
-        else if (index - 1 >= 0) sessionStorage.setItem('reconcile_active_bt_id', s.displayedTransactions[index - 1].id.toString());
-        else sessionStorage.removeItem('reconcile_active_bt_id');
-      } else sessionStorage.removeItem('reconcile_active_bt_id');
+  /**
+   * Le geste commun à toutes les écritures : appliquer ce que le serveur a répondu, le dire, et
+   * passer à la suivante si la ligne est soldée.
+   *
+   * Chaque action se terminait auparavant par `flashAndReload` — un rendu serveur complet de la
+   * page pour une seule ligne rapprochée. La ligne reste ici sélectionnée tant qu'il reste
+   * quelque chose à lui rattacher : c'est le cas d'une ventilation saisie en plusieurs fois.
+   */
+  function settle(outcome: { line: BankStatementLine | null; entries: any[] }, message: string, currentBtId: number) {
+    // Le voisin se repère avant le rapiéçage : après, la ligne traitée a quitté la file.
+    const nextId = patch.pickNextId(currentBtId);
+    patch.applyOutcome(outcome);
+    toast.success(message);
+    if (outcome.line?.status === 'reconciled') patch.selectById(nextId);
+    s.isSubmitting = false;
+    void refreshStatements();
+  }
+
+  /**
+   * L'encart d'état de rapprochement, relu à part.
+   *
+   * C'est le seul morceau de l'écran que le client ne sait pas recalculer : l'écart se mesure
+   * contre le solde annoncé par la banque. Sa relecture ne bloque pas le geste — elle échoue en
+   * silence plutôt que d'annuler un rapprochement qui, lui, a bien eu lieu.
+   */
+  async function refreshStatements() {
+    try {
+      s.reconciliationStatements = await apiLoadReconciliationStatements(s.selectedSeason);
+    } catch (err) {
+      console.error("État de rapprochement non relu :", err);
     }
   }
 
@@ -54,9 +76,9 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
     try {
       const invoice = s.unpaidInvoices.find((inv) => inv.id === invoiceId);
       if (!invoice) throw new Error('Facture introuvable.');
-      prepareNextFocus(bt.id, (s.remainingAmount - invoice.totalAmount) <= 10);
-      await apiReconcileInvoice(bt, invoice);
-      flashAndReload('Rapprochement de facture effectué !');
+      const outcome = await apiReconcileInvoice(bt, invoice);
+      s.unpaidInvoices = s.unpaidInvoices.filter((inv) => inv.id !== invoiceId);
+      settle(outcome, 'Rapprochement de facture effectué !', bt.id);
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
@@ -68,9 +90,12 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
       if (ids.length === 0) throw new Error('Aucune facture sélectionnée.');
       const firstInvoice = s.unpaidInvoices.find((inv) => inv.id === ids[0]);
       if (!firstInvoice) throw new Error('Facture introuvable.');
-      prepareNextFocus(s.selectedTx.id, Math.abs(s.selectedSum - s.selectedTx.amount) <= 10);
-      await apiMultiInvoiceReconcile(s.selectedTx, firstInvoice, ids);
-      flashAndReload('Rapprochement des factures effectué !');
+      const btId = s.selectedTx.id;
+      const outcome = await apiMultiInvoiceReconcile(s.selectedTx, firstInvoice, ids);
+      const paid = new Set(ids);
+      s.unpaidInvoices = s.unpaidInvoices.filter((inv) => !paid.has(inv.id));
+      s.selectedInvoiceIds = new Set();
+      settle(outcome, 'Rapprochement des factures effectué !', btId);
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
@@ -108,10 +133,8 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
   async function handleMatch(btId: number, ledgerEntryId: number) {
     s.isSubmitting = true;
     try {
-      const matchedTx = s.glTransactions.find((t) => t.id === ledgerEntryId);
-      prepareNextFocus(btId, (s.remainingAmount - (matchedTx ? Math.abs(matchedTx.amount) : 0)) <= 10);
-      await apiMatchLedgerEntry(btId, ledgerEntryId, s.selectedMemberId ? parseInt(s.selectedMemberId) : null);
-      flashAndReload('Rapprochement effectué avec succès !');
+      const outcome = await apiMatchLedgerEntry(btId, ledgerEntryId, s.selectedMemberId ? parseInt(s.selectedMemberId) : null);
+      settle(outcome, 'Rapprochement effectué avec succès !', btId);
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
@@ -135,17 +158,15 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
         throw new Error('Aucune transaction bancaire sélectionnée.');
       }
       const memId = s.selectedMemberId ? parseInt(s.selectedMemberId) : null;
+      let outcome;
       if (s.isSplitMode) {
         const splitSumCents = s.splits.reduce((acc: number, sp: SplitRow) => acc + Math.round((sp.amount || 0) * 100), 0);
         if (Math.abs(splitSumCents - s.remainingAmount) > 10) throw new Error("Le montant total ventilé doit être égal au reste à rapprocher.");
-        prepareNextFocus(targetBt.id, (s.remainingAmount - splitSumCents) <= 10);
-        await apiCreateAndMatchSplit(targetBt, memId, s.targetSeasonId, s.paymentMethod, s.splits, s.accrualType, s.accrualNote);
+        outcome = await apiCreateAndMatchSplit(targetBt, memId, s.targetSeasonId, s.paymentMethod, s.splits, s.accrualType, s.accrualNote);
       } else {
-        const linkedAmount = Math.round(s.amountToLink * 100);
-        prepareNextFocus(targetBt.id, (s.remainingAmount - linkedAmount) <= 10);
-        await apiCreateAndMatchSingle(targetBt, memId, s.targetSeasonId, s.category, s.amountToLink, s.paymentMethod, s.accrualType, s.accrualNote);
+        outcome = await apiCreateAndMatchSingle(targetBt, memId, s.targetSeasonId, s.category, s.amountToLink, s.paymentMethod, s.accrualType, s.accrualNote);
       }
-      flashAndReload('Écriture créée et rapprochée avec succès !');
+      settle(outcome, 'Écriture créée et rapprochée avec succès !', targetBt.id);
     } catch (err: any) { 
       toast.error(err.message); 
       s.errorMsg = err.message || 'Erreur lors de la création.';
@@ -156,18 +177,22 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
   async function handleDeletePart(txId: number) {
     s.isSubmitting = true;
     try {
-      if (s.selectedTx) prepareNextFocus(s.selectedTx.id, false);
-      await apiDeleteLedgerEntry(txId);
-      flashAndReload('Écriture dissociée avec succès !');
+      const { deletedEntryIds, resetBankStatementLineIds } = await apiDeleteLedgerEntry(txId);
+      patch.applyDeletion(deletedEntryIds, resetBankStatementLineIds);
+      toast.success('Écriture dissociée avec succès !');
+      s.isSubmitting = false;
+      void refreshStatements();
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
   async function handleUnignore(btId: number) {
     s.isSubmitting = true;
     try {
-      prepareNextFocus(btId, false);
       await apiUnignore(btId);
-      flashAndReload('Transaction rétablie !');
+      patch.applyStatus([btId], 'pending');
+      toast.success('Transaction rétablie !');
+      s.isSubmitting = false;
+      void refreshStatements();
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
@@ -175,15 +200,20 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
     if (!(await uiConfirm('Voulez-vous ignorer cette transaction bancaire ?'))) return;
     s.isSubmitting = true;
     try {
-      prepareNextFocus(btId, true);
+      const nextId = patch.pickNextId(btId);
       await apiIgnore(btId);
-      flashAndReload('Transaction ignorée.', 'info');
+      patch.applyStatus([btId], 'ignored');
+      patch.selectById(nextId);
+      toast.info('Transaction ignorée.');
+      s.isSubmitting = false;
+      void refreshStatements();
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
   return {
     ...bulk,
-    toggleSelectAll, toggleInvoiceSelection, addSplitRow, removeSplitRow, prepareNextFocus,
+    ...patch,
+    toggleSelectAll, toggleInvoiceSelection, addSplitRow, removeSplitRow, refreshStatements,
     loadUnpaidInvoices, handleReconcile, handleMultiInvoiceReconcile,
     selectMember, handleMemberKeyDown, selectCategory, handleCategoryKeyDown,
     handleMatch, handleCreateAndMatch, handleDeletePart, handleUnignore, handleIgnore

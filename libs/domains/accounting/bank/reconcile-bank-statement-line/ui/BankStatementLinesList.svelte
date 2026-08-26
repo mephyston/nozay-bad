@@ -99,13 +99,11 @@
   </div>
 
   <!-- Liste des transactions -->
-  <div
-    class="flex-1 overflow-y-auto divide-y divide-border reconcile-list-container"
-    onscroll={(e) => {
-      const target = e.target as HTMLElement;
-      sessionStorage.setItem('reconcile_list_scroll_top', target.scrollTop.toString());
-    }}
-  >
+  <!--
+    Le défilement ne s'écrit plus en `sessionStorage` à chaque frame : cette valeur n'était jamais
+    relue, et n'existait que pour tenter de survivre au rechargement de la page — qui n'a plus lieu.
+  -->
+  <div class="flex-1 overflow-y-auto divide-y divide-border reconcile-list-container">
     {#if state.displayedTransactions.length === 0}
       <div class="p-8 text-center text-muted-foreground text-sm">
         {#if state.searchQuery}

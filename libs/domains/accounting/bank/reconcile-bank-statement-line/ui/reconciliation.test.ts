@@ -269,7 +269,12 @@ describe('createReconciliationState logic unit tests', () => {
     state.amountToLink = 150;
     await state.handleCreateAndMatch();
 
-    const body = vi.mocked(globalThis.fetch).mock.calls.at(-1)?.[1]?.body as string;
+    /* On cherche l'appel de rapprochement, et non le dernier : la relecture de l'état de
+       rapprochement suit désormais chaque écriture. */
+    const body = vi.mocked(globalThis.fetch).mock.calls
+      .map((call) => call?.[1]?.body as string | undefined)
+      .filter((b): b is string => typeof b === 'string')
+      .find((b) => b.includes('"action":"create"')) as string;
     expect(body).toContain('"btId":2');
     expect(body).not.toContain('"btId":null');
   });

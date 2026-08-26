@@ -1,4 +1,28 @@
-import type { BankStatementLine, Invoice } from './reconciliation-types';
+import type { BankStatementLine, GLTransaction, Invoice } from './reconciliation-types';
+
+/**
+ * Ce qu'une écriture de rapprochement renvoie désormais : la ligne de relevé telle qu'elle est
+ * après l'opération, et les écritures qui lui sont rattachées. C'est de quoi remettre l'écran à
+ * jour sur place, là où il ne savait que se recharger entier.
+ */
+export interface ReconcileOutcome {
+  line: BankStatementLine | null;
+  entries: GLTransaction[];
+}
+
+async function postAction<T>(body: unknown, fallbackError: string): Promise<T> {
+  const res = await fetch('/admin/accounting/import', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error((await res.text()) || fallbackError);
+  return (await res.json()) as T;
+}
+
+function toOutcome(json: any): ReconcileOutcome {
+  return { line: json?.line ?? null, entries: json?.entries ?? [] };
+}
 
 export async function apiLoadUnpaidInvoices(selectedSeason: string): Promise<Invoice[]> {
   const res = await fetch('/admin/accounting/import', {
@@ -16,34 +40,25 @@ export async function apiLoadUnpaidInvoices(selectedSeason: string): Promise<Inv
     .map((inv: any) => ({ ...inv, totalAmount: inv.totalAmount ?? inv.totalAmountCents ?? 0 }));
 }
 
-export async function apiBulkReconcile(requests: any[]): Promise<void> {
-  const res = await fetch('/admin/accounting/import', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'bulk', requests })
-  });
-  if (!res.ok) throw new Error((await res.text()) || 'Erreur lors du rapprochement en masse.');
+export async function apiBulkReconcile(requests: any[]): Promise<{ lines: BankStatementLine[]; entries: GLTransaction[] }> {
+  const json = await postAction<any>({ action: 'bulk', requests }, 'Erreur lors du rapprochement en masse.');
+  return { lines: json?.lines ?? [], entries: json?.entries ?? [] };
 }
 
-export async function apiBulkIgnore(ids: number[]): Promise<void> {
-  const promises = ids.map(btId =>
-    fetch('/admin/accounting/import', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'ignore', btId })
-    })
-  );
-  const responses = await Promise.all(promises);
-  if (responses.some(r => !r.ok)) {
-    throw new Error("Certaines transactions n'ont pas pu être ignorées.");
-  }
+/**
+ * Une seule requête, et non une par ligne.
+ *
+ * Le lot ouvrait autant de POST parallèles que de lignes sélectionnées — deux cents frais
+ * bancaires valaient deux cents appels à l'API — et un échec partiel laissait la base dans un
+ * état que le message d'erreur ne décrivait pas.
+ */
+export async function apiBulkIgnore(ids: number[]): Promise<number[]> {
+  const json = await postAction<any>({ action: 'status-bulk', ids, status: 'ignored' }, "Certaines transactions n'ont pas pu être ignorées.");
+  return json?.ids ?? ids;
 }
 
-export async function apiReconcileInvoice(bt: BankStatementLine, invoice: Invoice): Promise<void> {
-  const res = await fetch('/admin/accounting/import', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+export async function apiReconcileInvoice(bt: BankStatementLine, invoice: Invoice): Promise<ReconcileOutcome> {
+  return toOutcome(await postAction({
       action: 'create',
       btId: bt.id,
       invoiceId: invoice.id,
@@ -58,16 +73,11 @@ export async function apiReconcileInvoice(bt: BankStatementLine, invoice: Invoic
         description: `Facture ${invoice.invoiceNumber} - ${invoice.clientName}`,
         reference: bt.memo || bt.fitid
       }
-    })
-  });
-  if (!res.ok) throw new Error('Erreur association facture.');
+  }, 'Erreur association facture.'));
 }
 
-export async function apiMultiInvoiceReconcile(bt: BankStatementLine, firstInvoice: Invoice, ids: number[]): Promise<void> {
-  const res = await fetch('/admin/accounting/import', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+export async function apiMultiInvoiceReconcile(bt: BankStatementLine, firstInvoice: Invoice, ids: number[]): Promise<ReconcileOutcome> {
+  return toOutcome(await postAction({
       action: 'create',
       btId: bt.id,
       invoiceIds: ids,
@@ -82,9 +92,7 @@ export async function apiMultiInvoiceReconcile(bt: BankStatementLine, firstInvoi
         description: `Rapprochement de ${ids.length} factures`,
         reference: bt.memo || bt.fitid
       }
-    })
-  });
-  if (!res.ok) throw new Error('Erreur association factures.');
+  }, 'Erreur association factures.'));
 }
 
 export interface ImportSummary {
@@ -111,23 +119,14 @@ export async function apiImportOfx(file: File, selectedAccount: string): Promise
   }
 }
 
-export async function apiAnalyzeAi(season: string, btId?: number): Promise<void> {
+export async function apiAnalyzeAi(season: string, btId?: number): Promise<{ count: number; lines: BankStatementLine[] }> {
   const body = btId ? { action: 'analyze', season, btId } : { action: 'analyze', season };
-  const res = await fetch('/admin/accounting/import', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) throw new Error((await res.text()) || 'Erreur analyse.');
+  const json = await postAction<any>(body, 'Erreur analyse.');
+  return { count: json?.count ?? 0, lines: json?.lines ?? [] };
 }
 
-export async function apiMatchLedgerEntry(btId: number, ledgerEntryId: number, memberId: number | null): Promise<void> {
-  const res = await fetch('/admin/accounting/import', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'match', btId, ledgerEntryId, memberId })
-  });
-  if (!res.ok) throw new Error('Erreur association.');
+export async function apiMatchLedgerEntry(btId: number, ledgerEntryId: number, memberId: number | null): Promise<ReconcileOutcome> {
+  return toOutcome(await postAction({ action: 'match', btId, ledgerEntryId, memberId }, 'Erreur association.'));
 }
 
 /**
@@ -141,11 +140,8 @@ export async function apiMatchLedgerEntry(btId: number, ledgerEntryId: number, m
  *
  * L'API garde son repli sur la date pour un appelant qui n'en transmet aucun.
  */
-export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: number | null, targetSeasonId: string, paymentMethod: string, splits: { category: string; amount: number }[], accrualType: string, accrualNote: string): Promise<void> {
-  const res = await fetch('/admin/accounting/import', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: number | null, targetSeasonId: string, paymentMethod: string, splits: { category: string; amount: number }[], accrualType: string, accrualNote: string): Promise<ReconcileOutcome> {
+  return toOutcome(await postAction({
       action: 'create',
       btId: bt.id,
       memberId,
@@ -164,12 +160,7 @@ export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: nu
         accrualType,
         accrualNote
       }))
-    })
-  });
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(errText || 'Erreur création.');
-  }
+  }, 'Erreur création.'));
 }
 
 export async function apiCreateAndMatchSingle(
@@ -181,13 +172,10 @@ export async function apiCreateAndMatchSingle(
   paymentMethod: string,
   accrualType: string,
   accrualNote: string
-): Promise<void> {
+): Promise<ReconcileOutcome> {
   const btAmt = (bt as any).amountCents ?? bt.amount ?? 0;
   const rawAccountId = bt.accountId || 'current';
-  const res = await fetch('/admin/accounting/import', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+  return toOutcome(await postAction({
       action: 'create',
       btId: bt.id,
       memberId,
@@ -204,37 +192,28 @@ export async function apiCreateAndMatchSingle(
         accrualType,
         accrualNote
       }
-    })
-  });
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(errorText || 'Erreur lors du rapprochement.');
-  }
+  }, 'Erreur lors du rapprochement.'));
 }
 
-export async function apiDeleteLedgerEntry(txId: number): Promise<void> {
-  const res = await fetch('/admin/accounting/import', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'delete-transaction', txId })
-  });
-  if (!res.ok) throw new Error('Erreur lors de la suppression.');
+/** Dissocier une jambe de virement en supprime deux : c'est le serveur qui dit lesquelles. */
+export async function apiDeleteLedgerEntry(txId: number): Promise<{ deletedEntryIds: number[]; resetBankStatementLineIds: number[] }> {
+  const json = await postAction<any>({ action: 'delete-transaction', txId }, 'Erreur lors de la suppression.');
+  return {
+    deletedEntryIds: json?.deletedEntryIds ?? [txId],
+    resetBankStatementLineIds: json?.resetBankStatementLineIds ?? []
+  };
+}
+
+/** L'état de rapprochement par compte — le seul nombre que le client ne peut pas recalculer. */
+export async function apiLoadReconciliationStatements(season: string): Promise<any[]> {
+  const json = await postAction<any>({ action: 'get-reconciliation-statements', season }, "Impossible de relire l'état de rapprochement.");
+  return json?.data ?? [];
 }
 
 export async function apiUnignore(btId: number): Promise<void> {
-  const res = await fetch('/admin/accounting/import', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'unignore', btId })
-  });
-  if (!res.ok) throw new Error('Erreur réactivation.');
+  await postAction({ action: 'unignore', btId }, 'Erreur réactivation.');
 }
 
 export async function apiIgnore(btId: number): Promise<void> {
-  const res = await fetch('/admin/accounting/import', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'ignore', btId })
-  });
-  if (!res.ok) throw new Error('Erreur ignore.');
+  await postAction({ action: 'ignore', btId }, 'Erreur ignore.');
 }
