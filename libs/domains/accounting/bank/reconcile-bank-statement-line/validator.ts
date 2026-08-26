@@ -18,7 +18,17 @@ const transactionDetailsSchema = Type.Object({
   description: Type.String(),
   reference: Type.Optional(Type.Union([Type.String(), Type.Null()])),
   accrualType: Type.Optional(Type.Union([Type.String(), Type.Null()])),
-  accrualNote: Type.Optional(Type.Union([Type.String(), Type.Null()]))
+  accrualNote: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+  /**
+   * L'adhérent et la facture se déclarent par **part**.
+   *
+   * Ils vivaient au niveau du corps, donc communs à toutes les écritures d'une ventilation : un
+   * virement groupé réglant deux cotisations ne pouvait pas être ventilé correctement, et sur
+   * plusieurs factures une seule était rattachée à une écriture. Les valeurs du corps restent
+   * acceptées en repli, pour l'écriture unique.
+   */
+  memberId: Type.Optional(Type.Union([Type.Number(), Type.Null()])),
+  invoiceId: Type.Optional(Type.Union([Type.Number(), Type.Null()]))
 });
 
 export const reconcileBankTransactionSchema = Type.Object({

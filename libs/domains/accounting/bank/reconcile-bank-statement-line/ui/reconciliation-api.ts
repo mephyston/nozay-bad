@@ -1,4 +1,4 @@
-import type { BankStatementLine, GLTransaction, Invoice } from './reconciliation-types';
+import type { BankStatementLine, GLTransaction, Invoice, SplitRow } from './reconciliation-types';
 
 /**
  * Ce qu'une écriture de rapprochement renvoie désormais : la ligne de relevé telle qu'elle est
@@ -37,7 +37,11 @@ export async function apiLoadUnpaidInvoices(selectedSeason: string): Promise<Inv
   const json = (await res.json()) as any;
   return (json.data || [])
     .filter((inv: Invoice) => inv.status === 'draft' || inv.status === 'sent')
-    .map((inv: any) => ({ ...inv, totalAmount: inv.totalAmount ?? inv.totalAmountCents ?? 0 }));
+    .map((inv: any) => ({
+      ...inv,
+      totalAmount: inv.totalAmount ?? inv.totalAmountCents ?? 0,
+      categoryBreakdown: inv.categoryBreakdown ?? []
+    }));
 }
 
 export async function apiBulkReconcile(requests: any[]): Promise<{ lines: BankStatementLine[]; entries: GLTransaction[] }> {
@@ -55,44 +59,6 @@ export async function apiBulkReconcile(requests: any[]): Promise<{ lines: BankSt
 export async function apiBulkIgnore(ids: number[]): Promise<number[]> {
   const json = await postAction<any>({ action: 'status-bulk', ids, status: 'ignored' }, "Certaines transactions n'ont pas pu être ignorées.");
   return json?.ids ?? ids;
-}
-
-export async function apiReconcileInvoice(bt: BankStatementLine, invoice: Invoice): Promise<ReconcileOutcome> {
-  return toOutcome(await postAction({
-      action: 'create',
-      btId: bt.id,
-      invoiceId: invoice.id,
-      transaction: {
-        seasonId: invoice.seasonId,
-        type: 'recette',
-        accountId: bt.accountId,
-        category: '1',
-        amount: invoice.totalAmount,
-        date: bt.date,
-        paymentMethod: 'virement',
-        description: `Facture ${invoice.invoiceNumber} - ${invoice.clientName}`,
-        reference: bt.memo || bt.fitid
-      }
-  }, 'Erreur association facture.'));
-}
-
-export async function apiMultiInvoiceReconcile(bt: BankStatementLine, firstInvoice: Invoice, ids: number[]): Promise<ReconcileOutcome> {
-  return toOutcome(await postAction({
-      action: 'create',
-      btId: bt.id,
-      invoiceIds: ids,
-      transaction: {
-        seasonId: firstInvoice.seasonId,
-        type: 'recette',
-        accountId: bt.accountId,
-        category: '1',
-        amount: bt.amount,
-        date: bt.date,
-        paymentMethod: 'virement',
-        description: `Rapprochement de ${ids.length} factures`,
-        reference: bt.memo || bt.fitid
-      }
-  }, 'Erreur association factures.'));
 }
 
 export interface ImportSummary {
@@ -140,7 +106,7 @@ export async function apiMatchLedgerEntry(btId: number, ledgerEntryId: number, m
  *
  * L'API garde son repli sur la date pour un appelant qui n'en transmet aucun.
  */
-export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: number | null, targetSeasonId: string, paymentMethod: string, splits: { category: string; amount: number }[], accrualType: string, accrualNote: string): Promise<ReconcileOutcome> {
+export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: number | null, targetSeasonId: string, paymentMethod: string, splits: SplitRow[], accrualType: string, accrualNote: string): Promise<ReconcileOutcome> {
   return toOutcome(await postAction({
       action: 'create',
       btId: bt.id,
@@ -155,8 +121,12 @@ export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: nu
         amount: Math.round(Math.abs(s.amount) * 100),
         date: bt.date,
         paymentMethod: paymentMethod || 'virement',
-        description: `${bt.name} (Partie ${index + 1})`,
+        description: s.label || `${bt.name} (Partie ${index + 1})`,
         reference: bt.memo || bt.fitid,
+        /* La part l'emporte sur la valeur commune : c'est ce qui permet à un virement groupé de
+           régler deux cotisations, ou trois factures, en une seule ligne de relevé. */
+        memberId: s.memberId ?? memberId ?? null,
+        invoiceId: s.invoiceId ?? null,
         accrualType,
         accrualNote
       }))

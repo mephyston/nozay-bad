@@ -10,6 +10,10 @@
 
   let { state = $bindable() }: { state: ReconciliationState } = $props();
 
+  /* Mémoïsé : ce décompte vivait dans le libellé de l'onglet, donc rebalayait toutes les
+     écritures du grand livre à chaque invalidation du panneau. */
+  const unpointedCount = $derived(state.glTransactions.filter((gt) => !gt.bankStatementLineId).length);
+
   function formatShortDate(dateStr: string) {
     if (!dateStr) return '';
     const parts = dateStr.includes('-') ? dateStr.split('-') : dateStr.split('/');
@@ -161,17 +165,26 @@
       {:else}
       <!-- Onglets de rapprochement -->
       <Tabs.Root value={state.activeRightTab} onValueChange={(v) => state.activeRightTab = v as any} class="w-full">
+        <!--
+          Deux chemins, et non trois.
+
+          « Associer Facture » était un troisième chemin parallèle à la saisie, qui court-circuitait
+          le formulaire et devait donc coder la catégorie comptable en dur. Une facture n'est pas un
+          chemin : c'est une source de préremplissage, comme la suggestion du modèle. Elle a rejoint
+          l'onglet de saisie, au-dessus du formulaire.
+        -->
         <Tabs.List class="flex w-full justify-start sm:justify-center overflow-x-auto no-scrollbar mb-4">
-          <Tabs.Trigger value="manual" class="text-xs cursor-pointer">Saisir écriture</Tabs.Trigger>
+          <Tabs.Trigger value="manual" class="text-xs cursor-pointer">Saisir / ventiler</Tabs.Trigger>
           <Tabs.Trigger value="ledger" class="text-xs cursor-pointer">
-            Écritures existantes ({state.glTransactions.filter(gt => !gt.bankStatementLineId).length})
-          </Tabs.Trigger>
-          <Tabs.Trigger value="invoice" class="text-xs cursor-pointer">
-            Associer Facture ({state.unpaidInvoices.length})
+            Pointer une écriture ({unpointedCount})
           </Tabs.Trigger>
         </Tabs.List>
 
         <Tabs.Content value="manual">
+          {#if state.unpaidInvoices.length > 0}
+            <ReconciliationInvoicesTab {state} selectedTx={state.selectedTx} />
+          {/if}
+
           <CreateLedgerEntryFromBankLine
             selectedTx={state.selectedTx}
             remainingAmount={state.remainingAmount}
@@ -216,9 +229,6 @@
           />
         </Tabs.Content>
 
-        <Tabs.Content value="invoice">
-          <ReconciliationInvoicesTab {state} selectedTx={state.selectedTx} />
-        </Tabs.Content>
       </Tabs.Root>
       {/if}
     </div>

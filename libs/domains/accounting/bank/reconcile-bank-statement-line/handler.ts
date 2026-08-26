@@ -19,12 +19,28 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
     return { statements: [], error: 'Écriture bancaire déjà rapprochée.', status: 400 };
   }
 
+  /*
+   * L'adhérent et la facture se portent par **part**, et non plus une fois pour toutes.
+   *
+   * `memberId` vivait hors de la boucle de ventilation : les N écritures d'un virement groupé
+   * recevaient toutes le même adhérent, ce qui rendait deux cotisations réglées d'un seul
+   * virement impossibles à ventiler correctement. Idem pour la facture, dont seul le premier
+   * identifiant était retenu — les autres passaient `paid` sans écriture pour les porter.
+   *
+   * Les valeurs au niveau du corps restent lues, en repli : elles servent l'écriture unique et
+   * les appelants qui ne ventilent pas.
+   */
   const memberId = body.memberId || body.transaction?.memberId;
-  const invoiceId = body.invoiceId;
-  const invoiceIds = body.invoiceIds;
+  const parts: any[] = Array.isArray(body.transactions) ? body.transactions : [];
 
-  if (invoiceId) {
-    const invoice = await repo.getInvoiceById(db, invoiceId);
+  const invoiceIdsToSettle = Array.from(new Set([
+    ...(body.invoiceId ? [body.invoiceId] : []),
+    ...(Array.isArray(body.invoiceIds) ? body.invoiceIds : []),
+    ...parts.map((part) => part.invoiceId).filter(Boolean)
+  ])) as number[];
+
+  for (const invId of invoiceIdsToSettle) {
+    const invoice = await repo.getInvoiceById(db, invId);
     if (!invoice) {
       return { statements: [], error: 'Facture introuvable', status: 404 };
     }
@@ -33,21 +49,6 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
     }
     if (await isSeasonClosed(db, invoice.seasonId)) {
       return { statements: [], error: 'La saison de la facture est clôturée.', status: 400 };
-    }
-  }
-
-  if (invoiceIds && Array.isArray(invoiceIds)) {
-    for (const invId of invoiceIds) {
-      const invoice = await repo.getInvoiceById(db, invId);
-      if (!invoice) {
-        return { statements: [], error: 'Facture introuvable', status: 404 };
-      }
-      if (invoice.status === 'paid' || invoice.status === 'cancelled') {
-        return { statements: [], error: 'La facture a déjà été payée ou a été annulée.', status: 400 };
-      }
-      if (await isSeasonClosed(db, invoice.seasonId)) {
-        return { statements: [], error: 'La saison de la facture est clôturée.', status: 400 };
-      }
     }
   }
 
@@ -112,8 +113,9 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
           reference: txItem.reference || null,
           accrualType: txItem.accrualType || txItem.accrual_type || 'normal',
           accrualNote: txItem.accrualNote || txItem.accrual_note || null,
-          memberId: memberId || null,
-          invoiceId: invoiceId || null,
+          // La part l'emporte sur la valeur commune : c'est ce qui rend la ventilation exacte.
+          memberId: txItem.memberId ?? memberId ?? null,
+          invoiceId: txItem.invoiceId ?? null,
           bankStatementLineId: id,
           createdAt: new Date()
         }));
@@ -150,21 +152,15 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
         reference: tx.reference || null,
         accrualType: tx.accrualType || tx.accrual_type || 'normal',
         accrualNote: tx.accrualNote || tx.accrual_note || null,
-        memberId: memberId || null,
-        invoiceId: (invoiceIds && invoiceIds.length > 0) ? invoiceIds[0] : (invoiceId || null),
+        memberId: tx.memberId ?? memberId ?? null,
+        invoiceId: body.invoiceId ?? null,
         bankStatementLineId: id,
         createdAt: new Date()
       }));
     }
 
-    if (invoiceId) {
-      statements.push(repo.buildMarkInvoiceAsPaidStatement(db, invoiceId, id));
-    }
-
-    if (invoiceIds && Array.isArray(invoiceIds)) {
-      for (const invId of invoiceIds) {
-        statements.push(repo.buildMarkInvoiceAsPaidStatement(db, invId, id));
-      }
+    for (const invId of invoiceIdsToSettle) {
+      statements.push(repo.buildMarkInvoiceAsPaidStatement(db, invId, id));
     }
   } else {
     return { statements: [], error: 'Action invalide.', status: 400 };

@@ -32,7 +32,7 @@ export function createReconciliationState(initialPropsOrGetter: ReconciliationSt
 
   let activeTab = $state<'pending' | 'reconciled' | 'ignored'>('pending');
   let unpaidInvoices = $state<Invoice[]>([]);
-  let activeRightTab = $state<'manual' | 'ledger' | 'invoice'>('manual');
+  let activeRightTab = $state<'manual' | 'ledger'>('manual');
 
   let category = $state('1');
   let paymentMethod = $state('virement');

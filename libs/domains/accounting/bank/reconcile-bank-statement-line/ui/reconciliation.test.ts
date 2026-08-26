@@ -298,4 +298,145 @@ describe('createReconciliationState logic unit tests', () => {
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(state.errorMsg).toContain('Aucune transaction bancaire');
   });
+
+  describe('reprise de facture', () => {
+    const invoice = (over: Record<string, any> = {}) => ({
+      id: 101, invoiceNumber: 'FAC-2026-0001', seasonId: '25-26', date: '2026-02-15',
+      dueDate: '2026-03-15', clientName: 'Mairie', clientAddress: null, clientEmail: null,
+      subject: null, location: null, period: null, attendees: null, status: 'sent',
+      totalAmount: 15000, createdAt: '2026-02-15', categoryBreakdown: [{ categoryId: 7, amountCents: 15000 }],
+      ...over
+    });
+
+    function stateWithInvoices(invoices: any[]) {
+      const state = createReconciliationState({
+        bankStatementLines: mockBankTransactions,
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: '2025-2026', active: true }],
+        members: []
+      });
+      state.unpaidInvoices = invoices;
+      state.selectedTx = mockBankTransactions[1];
+      return state;
+    }
+
+    /*
+      Reprendre une facture remplit le formulaire ; l'ancienne version écrivait directement une
+      recette avec `category: '1'` en dur, sans que personne n'ait pu la relire.
+    */
+    it("reprend l'imputation portée par la facture", () => {
+      const state = stateWithInvoices([invoice()]);
+
+      state.prefillFromInvoices([101]);
+
+      expect(state.splits).toHaveLength(1);
+      expect(state.splits[0]).toMatchObject({ category: '7', amount: 150, invoiceId: 101 });
+      expect(state.splits[0].label).toContain('FAC-2026-0001');
+      // Une part unique se saisit dans le formulaire simple.
+      expect(state.isSplitMode).toBe(false);
+      expect(state.category).toBe('7');
+    });
+
+    it('donne une part par facture, chacune portant la sienne', () => {
+      const state = stateWithInvoices([
+        invoice(),
+        invoice({ id: 102, invoiceNumber: 'FAC-2026-0002', totalAmount: 5000, categoryBreakdown: [{ categoryId: 9, amountCents: 5000 }] })
+      ]);
+
+      state.prefillFromInvoices([101, 102]);
+
+      expect(state.splits.map((r: any) => r.invoiceId)).toEqual([101, 102]);
+      expect(state.splits.map((r: any) => r.category)).toEqual(['7', '9']);
+      expect(state.isSplitMode).toBe(true);
+    });
+
+    it("ventile une facture qui mêle deux catégories", () => {
+      const state = stateWithInvoices([
+        invoice({ categoryBreakdown: [{ categoryId: 3, amountCents: 10000 }, { categoryId: 9, amountCents: 5000 }] })
+      ]);
+
+      state.prefillFromInvoices([101]);
+
+      expect(state.splits).toHaveLength(2);
+      expect(state.splits.map((r: any) => r.amount)).toEqual([100, 50]);
+      // Les deux parts restent rattachées à la même facture.
+      expect(state.splits.every((r: any) => r.invoiceId === 101)).toBe(true);
+    });
+
+    /* Une facture antérieure à la colonne n'a pas d'imputation : la comptable doit la choisir. */
+    it("laisse la catégorie vide quand la facture n'en porte pas", () => {
+      const state = stateWithInvoices([invoice({ categoryBreakdown: [] })]);
+
+      state.prefillFromInvoices([101]);
+
+      expect(state.splits).toHaveLength(1);
+      expect(state.splits[0].category).toBe('');
+      expect(state.splits[0].amount).toBe(150);
+    });
+
+    it("bascule sur l'onglet de saisie et n'écrit rien", () => {
+      const state = stateWithInvoices([invoice()]);
+      state.activeRightTab = 'ledger';
+
+      state.prefillFromInvoices([101]);
+
+      expect(state.activeRightTab).toBe('manual');
+      expect(vi.mocked(globalThis.fetch)).not.toHaveBeenCalledWith(
+        '/admin/accounting/import',
+        expect.objectContaining({ body: expect.stringContaining('"action":"create"') })
+      );
+    });
+
+    it('ignore une reprise qui ne désigne aucune facture connue', () => {
+      const state = stateWithInvoices([invoice()]);
+      state.splits = [];
+
+      state.prefillFromInvoices([999]);
+
+      expect(state.splits).toEqual([]);
+    });
+  });
+
+  describe("garde-fou d'imputation", () => {
+    function stateFor(over: Record<string, any> = {}) {
+      const state = createReconciliationState({
+        bankStatementLines: mockBankTransactions,
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: '2025-2026', active: true }],
+        members: []
+      });
+      state.selectedTx = mockBankTransactions[1];
+      for (const [k, v] of Object.entries(over)) (state as any)[k] = v;
+      return state;
+    }
+
+    /*
+      Sans ce refus, le serveur retomberait sur la catégorie 1 — « Adhésions & Inscriptions » —
+      et l'on aurait déplacé le défaut codé en dur d'un cran plus bas au lieu de le supprimer.
+    */
+    it('refuse de ventiler une part sans imputation, et la nomme', async () => {
+      const state = stateFor({
+        isSplitMode: true,
+        splits: [{ category: '7', amount: 100 }, { category: '', amount: 50 }]
+      });
+
+      await state.handleCreateAndMatch();
+
+      expect(state.errorMsg).toContain('part 2');
+      expect(vi.mocked(globalThis.fetch)).not.toHaveBeenCalledWith(
+        '/admin/accounting/import',
+        expect.objectContaining({ body: expect.stringContaining('"action":"create"') })
+      );
+    });
+
+    it("refuse une écriture unique sans imputation", async () => {
+      const state = stateFor({ category: '', amountToLink: 150 });
+
+      await state.handleCreateAndMatch();
+
+      expect(state.errorMsg).toContain('catégorie');
+    });
+  });
 });

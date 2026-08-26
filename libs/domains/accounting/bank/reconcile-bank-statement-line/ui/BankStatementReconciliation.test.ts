@@ -210,7 +210,7 @@ describe('BankStatementReconciliation Component', () => {
 
     // Cliquer sur l'onglet "Écritures existantes" pour afficher les écritures
     // du grand livre susceptibles de correspondre (les déjà rapprochées sont exclues)
-    const sugTabBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Écritures existantes')) as HTMLButtonElement;
+    const sugTabBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Pointer une écriture')) as HTMLButtonElement;
     expect(sugTabBtn).toBeDefined();
     sugTabBtn.click();
     flushSync();
@@ -252,43 +252,46 @@ describe('BankStatementReconciliation Component', () => {
     btn.click();
     flushSync();
 
-    // Click on the Associer Facture tab
-    const invoiceTabBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Associer Facture')) as HTMLButtonElement;
-    expect(invoiceTabBtn).not.toBeNull();
-    invoiceTabBtn.click();
-    flushSync();
-
-    // Wait for the async loadUnpaidInvoices to run and populate the state
+    // Le bloc « Reprendre une facture impayée » vit désormais dans l'onglet de saisie, replié.
     await new Promise(resolve => setTimeout(resolve, 50));
     flushSync();
 
-    // Verify invoice information is displayed
+    const invoicesToggle = Array.from(target.querySelectorAll('button')).find(
+      b => b.textContent?.includes('Reprendre une facture impayée')
+    ) as HTMLButtonElement;
+    expect(invoicesToggle).not.toBeNull();
+    invoicesToggle.click();
+    flushSync();
+
     expect(target.innerHTML).toContain('Client Test');
     expect(target.innerHTML).toContain('FAC-2026-0001');
-    expect(target.innerHTML).toContain('156,00'); // formatted totalAmount
-    expect(target.innerHTML).toContain('Suggestion de Facture');
+    expect(target.innerHTML).toContain('156,00');
+    // La facture au montant exact est signalée, mais ne déclenche plus rien à elle seule.
+    expect(target.innerHTML).toContain('Montant exact');
 
-    // Verify the mock call triggers match
-    const associateBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Associer') as HTMLButtonElement;
-    expect(associateBtn).not.toBeNull();
+    const checkbox = target.querySelector('.invoice-checkbox') as HTMLInputElement;
+    expect(checkbox).not.toBeNull();
+    checkbox.click();
+    flushSync();
 
-    // Mock window.location
-    const reloadMock = vi.fn();
-    vi.stubGlobal('location', {
-      reload: reloadMock
-    });
+    const prefillBtn = target.querySelector('#btn-valider-association') as HTMLButtonElement;
+    expect(prefillBtn).not.toBeNull();
 
-    associateBtn.click();
+    const callsBefore = vi.mocked(globalThis.fetch).mock.calls.length;
+    prefillBtn.click();
     await new Promise(resolve => setTimeout(resolve, 50));
     flushSync();
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/accounting/import', expect.any(Object));
     /*
-      L'écran ne se recharge plus : il applique ce que le serveur répond. Le rechargement était
-      l'unique moyen de voir le résultat d'un rapprochement, et il coûtait un rendu serveur
-      complet de la page par ligne traitée.
+      Reprendre une facture n'écrit rien : cela remplit le formulaire, que la comptable relit.
+
+      L'écran créait ici directement une recette, avec `category: '1'` en dur — « Adhésions &
+      Inscriptions » pour une location de salle comme pour du sponsoring — sans que le
+      formulaire, ni personne, n'ait eu son mot à dire.
     */
-    expect(reloadMock).not.toHaveBeenCalled();
+    expect(vi.mocked(globalThis.fetch).mock.calls.length).toBe(callsBefore);
+    // Le libellé de la facture est repris dans l'écriture proposée.
+    expect(target.innerHTML).toContain('FAC-2026-0001');
   });
 
   it('displays checkboxes next to bank transactions and toggles bulk action bar', async () => {
@@ -423,64 +426,50 @@ describe('BankStatementReconciliation Component', () => {
     txBtn.click();
     flushSync();
 
-    // Click on the Associer Facture tab
-    const invoiceTabBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Associer Facture')) as HTMLButtonElement;
-    expect(invoiceTabBtn).not.toBeNull();
-    invoiceTabBtn.click();
-    flushSync();
-
-    // Wait for the async loadUnpaidInvoices to run and populate the state
     await new Promise(resolve => setTimeout(resolve, 50));
     flushSync();
 
-    // Verify both invoices are listed
+    const invoicesToggle = Array.from(target.querySelectorAll('button')).find(
+      b => b.textContent?.includes('Reprendre une facture impayée')
+    ) as HTMLButtonElement;
+    expect(invoicesToggle).not.toBeNull();
+    invoicesToggle.click();
+    flushSync();
+
     expect(target.innerHTML).toContain('FAC-2026-0001');
     expect(target.innerHTML).toContain('FAC-2026-0002');
 
-    // Find checkboxes
-    const invoiceCheckboxes = target.querySelectorAll('.invoice-checkbox') as NodeListOf<HTMLButtonElement>;
+    const invoiceCheckboxes = target.querySelectorAll('.invoice-checkbox') as NodeListOf<HTMLInputElement>;
     expect(invoiceCheckboxes.length).toBe(2);
 
-    // Check first invoice checkbox
     invoiceCheckboxes[0].click();
     flushSync();
-
-    // The selected sum should be 156.00 € (15600 cents)
     expect(target.innerHTML).toContain('156,00');
 
-    // Since selectedSum (15600) != selectedTx.amount (20600), the validation button must be disabled
-    const submitBtn = target.querySelector('#btn-valider-association') as HTMLButtonElement;
-    expect(submitBtn).not.toBeNull();
-    expect(submitBtn.disabled).toBe(true);
-
-    // Check second invoice checkbox
     invoiceCheckboxes[1].click();
     flushSync();
-
-    // Now both selected: sum is 20600 which matches selectedTx.amount (20600)
     expect(target.innerHTML).toContain('206,00');
-    expect(submitBtn.disabled).toBe(false);
 
-    // Mock window.location
     const reloadMock = vi.fn();
-    vi.stubGlobal('location', {
-      reload: reloadMock
-    });
+    vi.stubGlobal('location', { reload: reloadMock });
 
-    // Click submit
-    submitBtn.click();
+    const prefillBtn = target.querySelector('#btn-valider-association') as HTMLButtonElement;
+    expect(prefillBtn).not.toBeNull();
+    const callsBefore = vi.mocked(globalThis.fetch).mock.calls.length;
+    prefillBtn.click();
     await new Promise(resolve => setTimeout(resolve, 50));
     flushSync();
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/accounting/import', expect.objectContaining({
-      method: 'POST',
-      body: expect.stringContaining('"invoiceIds":[101,102]')
-    }));
     /*
-      L'écran ne se recharge plus : il applique ce que le serveur répond. Le rechargement était
-      l'unique moyen de voir le résultat d'un rapprochement, et il coûtait un rendu serveur
-      complet de la page par ligne traitée.
+      Deux factures reprises donnent **deux** parts de ventilation, chacune portant la sienne.
+
+      L'écran n'écrivait qu'une seule recette, libellée « Rapprochement de N factures », ne
+      retenant que `invoiceIds[0]` : les autres factures passaient payées sans qu'aucune écriture
+      ne les porte, et rien ne comparait leur somme au montant du relevé.
     */
+    expect(vi.mocked(globalThis.fetch).mock.calls.length).toBe(callsBefore);
+    expect(target.innerHTML).toContain('FAC-2026-0001');
+    expect(target.innerHTML).toContain('FAC-2026-0002');
     expect(reloadMock).not.toHaveBeenCalled();
   });
 
@@ -519,7 +508,7 @@ describe('BankStatementReconciliation Component', () => {
     flushSync();
 
     // Active right tab is 'manual' by default, but click it to be sure
-    const manualTabBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Saisir écriture')) as HTMLButtonElement;
+    const manualTabBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Saisir / ventiler')) as HTMLButtonElement;
     expect(manualTabBtn).not.toBeNull();
     manualTabBtn.click();
     flushSync();

@@ -37,6 +37,12 @@ export interface Season {
   closed?: boolean;
 }
 
+/** Ce qu'une facture encaissera, et sous quelle imputation. `categoryId: null` = à choisir. */
+export interface InvoiceCategoryPart {
+  categoryId: number | null;
+  amountCents: number;
+}
+
 export interface Invoice {
   id: number;
   invoiceNumber: string;
@@ -53,6 +59,8 @@ export interface Invoice {
   status: 'draft' | 'sent' | 'paid' | 'cancelled';
   totalAmount: number;
   createdAt: string;
+  /** L'imputation de ses lignes, qui préremplit l'écriture au rapprochement. */
+  categoryBreakdown?: InvoiceCategoryPart[];
 }
 
 export interface Member {
@@ -99,6 +107,19 @@ export interface CategoryOption {
 export interface SplitRow {
   category: string;
   amount: number;
+  /**
+   * La facture que cette part encaisse, s'il y en a une.
+   *
+   * Un virement couvrant trois factures n'est pas un mode de rapprochement à part : c'est une
+   * ventilation en trois parts, chacune portant sa facture. Le modèle savait déjà l'écrire —
+   * l'écran, lui, produisait une écriture unique « Rapprochement de N factures » ne retenant
+   * qu'un seul identifiant, les autres factures passant `paid` sans rien pour les porter.
+   */
+  invoiceId?: number | null;
+  /** L'adhérent de cette part ; deux cotisations réglées d'un seul virement en ont deux. */
+  memberId?: number | null;
+  /** Libellé propre à la part ; à défaut, celui de la ligne bancaire suffixé du rang. */
+  label?: string;
 }
 
 /**
@@ -119,6 +140,8 @@ export interface ReconciliationStateFields {
   selectedTxIds: Record<number, boolean>;
   selectedInvoiceIds: Set<number>;
   unpaidInvoices: Invoice[];
+  /** Onglet du panneau : saisir/ventiler, ou pointer une écriture existante. */
+  activeRightTab: 'manual' | 'ledger';
   selectedSum: number;
   remainingAmount: number;
   splits: SplitRow[];

@@ -3,8 +3,6 @@ import { toast, uiConfirm } from '@nba/ui';
 import {
   apiLoadReconciliationStatements,
   apiLoadUnpaidInvoices,
-  apiReconcileInvoice,
-  apiMultiInvoiceReconcile,
   apiMatchLedgerEntry,
   apiCreateAndMatchSplit,
   apiCreateAndMatchSingle,
@@ -71,32 +69,51 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
     try { s.unpaidInvoices = await apiLoadUnpaidInvoices(s.selectedSeason); } catch (err) { console.error('Erreur factures:', err); }
   }
 
-  async function handleReconcile(action: 'create', bt: BankStatementLine, invoiceId: number) {
-    s.isSubmitting = true;
-    try {
-      const invoice = s.unpaidInvoices.find((inv) => inv.id === invoiceId);
-      if (!invoice) throw new Error('Facture introuvable.');
-      const outcome = await apiReconcileInvoice(bt, invoice);
-      s.unpaidInvoices = s.unpaidInvoices.filter((inv) => inv.id !== invoiceId);
-      settle(outcome, 'Rapprochement de facture effectué !', bt.id);
-    } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
-  }
+  /**
+   * Préremplit le formulaire à partir des factures choisies. **N'écrit rien.**
+   *
+   * L'écran offrait ici un troisième chemin de rapprochement, parallèle à la saisie : choisir une
+   * facture créait directement une recette, avec `category: '1'` en dur — soit « Adhésions &
+   * Inscriptions » pour une location de salle comme pour du sponsoring — et un mode de règlement
+   * figé sur « virement ». Sur plusieurs factures, il n'en créait qu'**une**, libellée
+   * « Rapprochement de N factures », ne retenant qu'un seul `invoice_id` : les autres passaient
+   * `paid` sans aucune écriture pour les porter.
+   *
+   * Une facture n'est pas un chemin : c'est une source de préremplissage, au même titre que la
+   * suggestion du modèle. Elle remplit la ventilation — une part par facture, et une par
+   * catégorie quand la facture en mêle plusieurs — que la comptable relit, corrige et valide par
+   * le geste habituel. Rien n'est plus codé en dur : ce qui manque se voit et se choisit.
+   */
+  function prefillFromInvoices(invoiceIds: number[]) {
+    const chosen = s.unpaidInvoices.filter((inv) => invoiceIds.includes(inv.id));
+    if (chosen.length === 0) return;
 
-  async function handleMultiInvoiceReconcile() {
-    if (!s.selectedTx) return;
-    s.isSubmitting = true;
-    try {
-      const ids = Array.from(s.selectedInvoiceIds) as number[];
-      if (ids.length === 0) throw new Error('Aucune facture sélectionnée.');
-      const firstInvoice = s.unpaidInvoices.find((inv) => inv.id === ids[0]);
-      if (!firstInvoice) throw new Error('Facture introuvable.');
-      const btId = s.selectedTx.id;
-      const outcome = await apiMultiInvoiceReconcile(s.selectedTx, firstInvoice, ids);
-      const paid = new Set(ids);
-      s.unpaidInvoices = s.unpaidInvoices.filter((inv) => !paid.has(inv.id));
-      s.selectedInvoiceIds = new Set();
-      settle(outcome, 'Rapprochement des factures effectué !', btId);
-    } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
+    const rows: SplitRow[] = [];
+    for (const invoice of chosen) {
+      const parts = invoice.categoryBreakdown?.length
+        ? invoice.categoryBreakdown
+        : [{ categoryId: null, amountCents: invoice.totalAmount }];
+
+      for (const part of parts) {
+        rows.push({
+          // Vide quand la facture ne porte pas d'imputation : la comptable la choisit, en la voyant.
+          category: part.categoryId != null ? String(part.categoryId) : '',
+          amount: Math.abs(part.amountCents) / 100,
+          invoiceId: invoice.id,
+          label: `Facture ${invoice.invoiceNumber} — ${invoice.clientName}`
+        });
+      }
+    }
+
+    s.splits = rows;
+    // Une part unique se saisit dans le formulaire simple ; au-delà, c'est une ventilation.
+    s.isSplitMode = rows.length > 1;
+    if (rows.length === 1) {
+      s.category = rows[0].category;
+      s.amountToLink = rows[0].amount;
+    }
+    s.activeRightTab = 'manual';
+    toast.info(`${chosen.length} facture${chosen.length > 1 ? 's' : ''} reprise${chosen.length > 1 ? 's' : ''} : relisez l'écriture avant de valider.`);
   }
 
   function selectMember(idStr: string, name: string) { s.selectedMemberId = idStr; s.memberSearchQuery = name; s.isMemberDropdownOpen = false; s.memberHighlightedIndex = -1; }
@@ -162,8 +179,19 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
       if (s.isSplitMode) {
         const splitSumCents = s.splits.reduce((acc: number, sp: SplitRow) => acc + Math.round((sp.amount || 0) * 100), 0);
         if (Math.abs(splitSumCents - s.remainingAmount) > 10) throw new Error("Le montant total ventilé doit être égal au reste à rapprocher.");
+        /*
+         * Une part sans imputation est refusée ici, et nommée.
+         *
+         * Une facture antérieure à la colonne `category_id` n'en porte aucune : la reprise laisse
+         * alors la case vide, à dessein. Sans ce contrôle, le serveur retomberait sur la
+         * catégorie 1 — « Adhésions & Inscriptions » — et l'on aurait remplacé un défaut codé en
+         * dur dans l'écran par le même défaut, caché un cran plus bas.
+         */
+        const missing = s.splits.findIndex((sp: SplitRow) => !sp.category);
+        if (missing !== -1) throw new Error(`La catégorie de la part ${missing + 1} reste à choisir.`);
         outcome = await apiCreateAndMatchSplit(targetBt, memId, s.targetSeasonId, s.paymentMethod, s.splits, s.accrualType, s.accrualNote);
       } else {
+        if (!s.category) throw new Error("La catégorie comptable reste à choisir.");
         outcome = await apiCreateAndMatchSingle(targetBt, memId, s.targetSeasonId, s.category, s.amountToLink, s.paymentMethod, s.accrualType, s.accrualNote);
       }
       settle(outcome, 'Écriture créée et rapprochée avec succès !', targetBt.id);
@@ -214,7 +242,7 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
     ...bulk,
     ...patch,
     toggleSelectAll, toggleInvoiceSelection, addSplitRow, removeSplitRow, refreshStatements,
-    loadUnpaidInvoices, handleReconcile, handleMultiInvoiceReconcile,
+    loadUnpaidInvoices, prefillFromInvoices,
     selectMember, handleMemberKeyDown, selectCategory, handleCategoryKeyDown,
     handleMatch, handleCreateAndMatch, handleDeletePart, handleUnignore, handleIgnore
   };
