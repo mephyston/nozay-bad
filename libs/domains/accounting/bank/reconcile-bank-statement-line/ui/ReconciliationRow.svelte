@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, ChevronDown, Sparkles, RefreshCw, Pencil } from '@lucide/svelte';
+  import { Check, ChevronDown, Link2, Sparkles, RefreshCw, Pencil } from '@lucide/svelte';
   import { Amount, Badge, Button } from '@nba/ui';
   import { accrualLabel } from '../../../shared/accrual-labels';
   import { parseSuggestion, isOneClickValidatable } from './reconciliation-suggestion';
@@ -26,14 +26,38 @@
 
   const cents = $derived((line as any).amountCents ?? line.amount ?? 0);
   const sug = $derived(parseSuggestion(line));
-  const canValidateInOneClick = $derived(isOneClickValidatable(sug));
+
+  /**
+   * Une écriture existante attend-elle d'être pointée ?
+   *
+   * C'est la première question à poser, avant toute suggestion : si les livres portent déjà
+   * l'opération, la rapprocher consiste à **pointer**, jamais à créer. Proposer « Valider » —
+   * qui crée — sur une ligne dont l'écriture existe produit un doublon de recette ou de charge,
+   * que le rapprochement ne signale même pas : l'écriture orpheline y passe pour un simple
+   * décalage de traitement, et l'état continue de boucler pendant que le résultat est faux.
+   * C'est arrivé, sur 60,07 € de licence.
+   */
+  const matchingEntries = $derived(line.status === 'pending' ? reconState.getSuggestions(line) : []);
+  const hasExistingEntry = $derived(matchingEntries.length > 0);
+
+  const canValidateInOneClick = $derived(isOneClickValidatable(sug) && !hasExistingEntry);
+
+  /** Ouvrir la ligne mène là où se trouve la décision : pointer, ou saisir. */
+  function openOn(tab: 'manual' | 'ledger') {
+    reconState.activeRightTab = tab;
+    reconState.selectedTx = line;
+  }
 
   const categoryName = $derived(
     sug?.category != null ? reconState.categories.find((c) => c.id === String(sug.category))?.name : null
   );
 
   function toggleExpand() {
-    reconState.selectedTx = isExpanded ? null : line;
+    if (isExpanded) {
+      reconState.selectedTx = null;
+      return;
+    }
+    openOn(hasExistingEntry ? 'ledger' : 'manual');
   }
 </script>
 
@@ -65,6 +89,18 @@
         <Badge variant="success" size="xs" class="self-start">Rapprochée</Badge>
       {:else if line.status === 'ignored'}
         <Badge variant="secondary" size="xs" class="self-start">Ignorée</Badge>
+      {:else if hasExistingEntry}
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <Link2 class="h-3 w-3 text-success shrink-0" />
+          <span class="text-xs font-medium text-foreground">
+            {matchingEntries.length === 1
+              ? 'Une écriture existante correspond'
+              : `${matchingEntries.length} écritures existantes correspondent`}
+          </span>
+        </div>
+        <span class="text-[11px] text-muted-foreground truncate">
+          {matchingEntries[0].date} · {matchingEntries[0].description}
+        </span>
       {:else if sug?.kind === 'internal-transfer'}
         <span class="text-xs font-medium text-foreground">Virement interne</span>
         <span class="text-[11px] text-muted-foreground">À saisir au grand livre, en deux jambes.</span>
@@ -94,7 +130,25 @@
     <!-- Une seule action par défaut ; le reste est discret. -->
     <div class="p-3 flex items-center gap-1 shrink-0">
       {#if line.status === 'pending'}
-        {#if canValidateInOneClick}
+        {#if hasExistingEntry}
+          <!--
+            « Pointer », et non « Valider ».
+
+            Créer une écriture pour une opération que les livres portent déjà la compte deux fois.
+            Le bouton mène donc à la liste des écritures qui correspondent, où le geste est
+            l'association.
+          -->
+          <Button
+            size="sm"
+            class="h-8 gap-1.5 text-xs"
+            title="Pointer contre une écriture existante"
+            disabled={reconState.isClosed || reconState.isSubmitting}
+            onclick={() => openOn('ledger')}
+          >
+            <Link2 class="h-3.5 w-3.5" />
+            <span class="hidden sm:inline">Pointer</span>
+          </Button>
+        {:else if canValidateInOneClick}
           <Button
             size="sm"
             class="h-8 gap-1.5 text-xs"
