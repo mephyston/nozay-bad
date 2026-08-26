@@ -130,6 +130,15 @@ export const invoiceItemsTable = sqliteTable('invoice_items', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   invoiceId: integer('invoice_id').notNull().references(() => invoicesTable.id, { onDelete: 'cascade' }),
   description: text('description').notNull(),
+  /**
+   * L'imputation comptable de la ligne, et donc du produit qu'elle encaissera.
+   *
+   * Nullable : les factures antérieures n'en portent pas, et leur en attribuer une d'office
+   * les étiquetterait à tort. Absente, elle est demandée à la comptable au rapprochement —
+   * qui la posait jusqu'ici en dur sur « Adhésions & Inscriptions », quel que soit l'objet
+   * facturé.
+   */
+  categoryId: integer('category_id').references(() => categoriesTable.id),
   quantity: integer('quantity').notNull().default(1),
   unitPriceCents: integer('unit_price_cents').notNull(),
   totalPriceCents: integer('total_price_cents').notNull(),

@@ -20,6 +20,7 @@ export class UpdateInvoiceRepository {
           quantity: item.quantity,
           unitPriceCents: item.unitPrice ?? item.unitPriceCents ?? 0,
           totalPriceCents: item.totalPriceCents ?? (item.quantity * (item.unitPrice ?? item.unitPriceCents ?? 0)),
+          categoryId: item.categoryId ?? null,
           createdAt: new Date()
         });
         statements.push(itemStmt);
@@ -39,6 +40,7 @@ export class UpdateInvoiceRepository {
           quantity: item.quantity,
           unitPriceCents: item.unitPrice ?? item.unitPriceCents ?? 0,
           totalPriceCents: item.totalPriceCents ?? (item.quantity * (item.unitPrice ?? item.unitPriceCents ?? 0)),
+          categoryId: item.categoryId ?? null,
           createdAt: new Date()
         }).run();
       }

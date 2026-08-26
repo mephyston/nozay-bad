@@ -10,12 +10,23 @@
   let {
     invoices = [],
     seasonId,
-    seasons = []
+    seasons = [],
+    categories = []
   }: {
     invoices: Invoice[];
     seasonId: string;
     seasons?: Season[];
+    /** Nomenclature comptable : chaque ligne de facture y choisit son imputation. */
+    categories?: { id: number | string; adminLabel?: string; name?: string; active?: boolean }[];
   } = $props();
+
+  /* Le même façonnage que l'écran de rapprochement, pour que les deux nomment les catégories
+     à l'identique. */
+  const categoryOptions = $derived(
+    categories
+      .filter((c) => c.active !== false)
+      .map((c) => ({ value: String(c.id), label: c.adminLabel ?? c.name ?? `Catégorie #${c.id}` }))
+  );
 
   const isClosed = $derived(seasons.find(s => s.id === seasonId)?.closed || false);
   
@@ -184,6 +195,7 @@
 <InvoiceFormModal
   bind:showModal={form.showModal}
   editingId={form.editingId}
+  categories={categoryOptions}
   {isClosed}
   {isSubmitting}
   bind:clientName={form.clientName}

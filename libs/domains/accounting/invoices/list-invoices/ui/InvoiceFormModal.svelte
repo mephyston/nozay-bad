@@ -15,6 +15,7 @@
     date = $bindable(''),
     items = $bindable([]),
     itemsTotal = 0,
+    categories = [],
     onSubmit
   }: {
     showModal: boolean;
@@ -27,17 +28,19 @@
     date: string;
     items: InvoiceFormItem[];
     itemsTotal: number;
+    /** Nomenclature comptable proposée à chaque ligne. */
+    categories?: { value: string; label: string }[];
     onSubmit: (e: Event) => void;
   } = $props();
 
   function addItem() {
-    items = [...items, { description: '', quantity: 1, unitPriceStr: '' }];
+    items = [...items, { description: '', quantity: 1, unitPriceStr: '', categoryId: '' }];
   }
 
   function removeItem(index: number) {
     items = items.filter((_, i) => i !== index);
     if (items.length === 0) {
-      items = [{ description: '', quantity: 1, unitPriceStr: '' }];
+      items = [{ description: '', quantity: 1, unitPriceStr: '', categoryId: '' }];
     }
   }
 </script>
@@ -106,6 +109,7 @@
                   {item}
                   {index}
                   {isClosed}
+                  {categories}
                   onRemove={removeItem}
                 />
               {/each}

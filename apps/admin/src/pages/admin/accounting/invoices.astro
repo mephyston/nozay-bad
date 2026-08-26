@@ -94,6 +94,7 @@ if (Astro.request.method === 'POST') {
 
 let invoicesList = [];
 let seasonsList: any[] = [];
+let categoriesList: any[] = [];
 let errorMsg = '';
 
 try {
@@ -119,6 +120,18 @@ try {
   }
   const invoicesJson = await invoicesRes.json() as any;
   invoicesList = invoicesJson.data || [];
+
+  /*
+    Les catégories comptables : une ligne de facture porte désormais son imputation.
+
+    Sans elle, le rapprochement devait en inventer une, et il l'inventait en dur — toute recette
+    de facturation atterrissait sous « Adhésions & Inscriptions ».
+  */
+  const categoriesRes = await apiService.fetch('http://localhost/accounting/categories');
+  if (categoriesRes.ok) {
+    const categoriesJson = await categoriesRes.json() as any;
+    categoriesList = categoriesJson.data || [];
+  }
 } catch (err: any) {
   errorMsg = err.message || 'Une erreur est survenue lors du chargement des données.';
 }
@@ -154,6 +167,7 @@ const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id
         invoices={invoicesList}
         seasonId={season}
         seasons={seasonsList}
+        categories={categoriesList}
       />
     </div>
   </AdminLayout>

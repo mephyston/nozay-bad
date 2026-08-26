@@ -31,7 +31,7 @@ export class InvoiceFormState {
     this.clientAddress = '';
     this.clientEmail = '';
     this.date = getTodayString();
-    this.items = [{ description: '', quantity: 1, unitPriceStr: '' }];
+    this.items = [{ description: '', quantity: 1, unitPriceStr: '', categoryId: '' }];
     this.showModal = true;
   }
 
@@ -41,7 +41,7 @@ export class InvoiceFormState {
     this.clientAddress = invoice.clientAddress || '';
     this.clientEmail = invoice.clientEmail || '';
     this.date = invoice.date;
-    this.items = fetchedItems.length > 0 ? fetchedItems : [{ description: '', quantity: 1, unitPriceStr: '' }];
+    this.items = fetchedItems.length > 0 ? fetchedItems : [{ description: '', quantity: 1, unitPriceStr: '', categoryId: '' }];
     this.showModal = true;
   }
 

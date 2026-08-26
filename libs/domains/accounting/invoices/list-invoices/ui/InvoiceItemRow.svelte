@@ -1,17 +1,20 @@
 <script lang="ts">
   import { Trash2 } from '@lucide/svelte';
-  import { Button, Input, FormField } from '@nba/ui';
+  import { Button, Input, FormField, SearchableCombobox } from '@nba/ui';
   import type { InvoiceFormItem } from './invoices-types';
 
   let {
     item,
     index,
     isClosed = false,
+    categories = [],
     onRemove
   }: {
     item: InvoiceFormItem;
     index: number;
     isClosed?: boolean;
+    /** Nomenclature comptable ; vide, le champ ne s'affiche pas. */
+    categories?: { value: string; label: string }[];
     onRemove: (index: number) => void;
   } = $props();
 </script>
@@ -41,6 +44,26 @@
     />
     </FormField>
   </div>
+    {#if categories.length > 0}
+    <div class="w-48">
+      <!--
+        L'imputation comptable de la ligne.
+
+        C'est elle qui préremplira l'écriture au rapprochement. Laissée vide, la comptable devra
+        la choisir à l'encaissement — ce qui vaut toujours mieux que le « Adhésions &
+        Inscriptions » que le rapprochement posait en dur sur toute recette facturée.
+      -->
+      <FormField id={`cat-${index}`} label="Catégorie comptable" class="sr-only">
+        <SearchableCombobox
+          id={`cat-${index}`}
+          items={categories}
+          bind:value={item.categoryId}
+          placeholder="Catégorie…"
+          disabled={isClosed}
+        />
+      </FormField>
+    </div>
+    {/if}
     <div class="w-32">
     <FormField id={`price-${index}`} label="Prix unitaire (€)" class="sr-only">
     <Input

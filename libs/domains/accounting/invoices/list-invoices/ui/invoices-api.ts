@@ -30,7 +30,8 @@ export async function fetchInvoiceDetails(id: number): Promise<InvoiceFormItem[]
     return json.data.items.map((item: any) => ({
       description: item.description,
       quantity: item.quantity,
-      unitPriceStr: ((item.unitPriceCents ?? item.unitPrice ?? 0) / 100).toString()
+      unitPriceStr: ((item.unitPriceCents ?? item.unitPrice ?? 0) / 100).toString(),
+      categoryId: item.categoryId != null ? String(item.categoryId) : ''
     }));
   }
 
@@ -60,7 +61,9 @@ export async function saveInvoice(data: {
       items: data.items.map(item => ({
         description: item.description.trim(),
         quantity: item.quantity,
-        unitPrice: Math.round(parseFloat(item.unitPriceStr.replace(',', '.')) * 100)
+        unitPrice: Math.round(parseFloat(item.unitPriceStr.replace(',', '.')) * 100),
+        // Non renseignée, l'imputation reste nulle : la comptable la choisira au rapprochement.
+        categoryId: item.categoryId ? Number(item.categoryId) : null
       }))
     }
   };

@@ -12,7 +12,7 @@ export interface CreateInvoiceInput {
   period?: string;
   attendees?: string;
   totalAmount: number;
-  items?: { description: string; quantity: number; unitPrice: number }[];
+  items?: { description: string; quantity: number; unitPrice: number; categoryId?: number | null }[];
 }
 
 export type CreateInvoiceOutput = typeof invoicesTable.$inferSelect;

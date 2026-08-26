@@ -37,4 +37,11 @@ export interface InvoiceFormItem {
   description: string;
   quantity: number;
   unitPriceStr: string;
+  /**
+   * L'imputation comptable de la ligne, sous forme de chaîne — c'est la valeur d'un sélecteur.
+   *
+   * Vide tant qu'elle n'est pas choisie : c'est elle qui préremplit l'écriture au rapprochement,
+   * là où celui-ci posait « Adhésions & Inscriptions » en dur sur toute recette de facturation.
+   */
+  categoryId: string;
 }

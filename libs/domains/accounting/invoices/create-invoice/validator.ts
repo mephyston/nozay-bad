@@ -15,6 +15,9 @@ export const createInvoiceSchema = Type.Object({
   items: Type.Optional(Type.Array(Type.Object({
     description: Type.String({ minLength: 1 }),
     quantity: Type.Number(),
-    unitPrice: Type.Number()
+    unitPrice: Type.Number(),
+    /* L'imputation comptable de la ligne. Facultative : une facture antérieure n'en porte pas,
+       et la comptable la choisit alors au rapprochement. */
+    categoryId: Type.Optional(Type.Union([Type.Integer(), Type.Null()]))
   })))
 });
