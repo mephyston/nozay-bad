@@ -66,55 +66,64 @@
   data-line-id={line.id}
   data-focused={isFocused ? 'true' : undefined}
 >
-  <div class="flex items-stretch gap-0">
+  <!--
+    Une grille à colonnes fixes, et non deux moitiés qui se calent sur leur contenu.
 
+    Chaque volet occupait `flex-1` et se centrait sur sa propre hauteur : une ligne sans
+    proposition tenant sur un mot, une autre en portant trois, les dates, les montants et les
+    boutons ne tombaient pas à la même abscisse d'une ligne à l'autre. On lit une file en
+    balayant une colonne du regard ; il faut donc qu'il y en ait une.
+  -->
+  <div class="flex flex-col gap-2 p-3 md:flex-row md:items-center md:gap-3">
     <!-- Volet gauche : le fait bancaire. Il ne se modifie pas, il se lit. -->
-    <div class="flex-1 min-w-0 p-3 flex flex-col justify-center">
-      <div class="flex items-baseline gap-2">
-        <span class="text-[11px] text-muted-foreground tabular-nums shrink-0">{line.date}</span>
-        <span class="font-medium text-sm truncate">{line.name}</span>
-      </div>
-      {#if accountLabel}
-        <Badge variant="secondary" size="xs" class="self-start">{accountLabel}</Badge>
-      {/if}
+    <span class="shrink-0 text-[11px] text-muted-foreground tabular-nums md:w-[4.5rem]">{line.date}</span>
+
+    <div class="min-w-0 flex-1">
+      <div class="truncate text-sm font-medium">{line.name}</div>
       {#if line.memo}
-        <div class="text-[11px] text-muted-foreground italic truncate">{line.memo}</div>
+        <div class="truncate text-[11px] italic text-muted-foreground">{line.memo}</div>
       {/if}
-      <Amount {cents} colorize={true} class="text-sm font-semibold mt-0.5 self-start" />
+      {#if accountLabel}
+        <Badge variant="secondary" size="xs">{accountLabel}</Badge>
+      {/if}
     </div>
 
+    <Amount {cents} colorize={true} class="shrink-0 text-sm font-semibold md:w-28 md:text-right" />
+
+    <div class="hidden w-px self-stretch bg-border/60 md:block"></div>
+
     <!-- Volet droit : la proposition, modifiable. -->
-    <div class="flex-1 min-w-0 p-3 border-l border-border/60 flex flex-col justify-center gap-1">
+    <div class="flex min-w-0 flex-col justify-center gap-1 md:w-[34%]">
       {#if line.status === 'reconciled'}
         <Badge variant="success" size="xs" class="self-start">Rapprochée</Badge>
       {:else if line.status === 'ignored'}
         <Badge variant="secondary" size="xs" class="self-start">Ignorée</Badge>
       {:else if hasExistingEntry}
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <Link2 class="h-3 w-3 text-success shrink-0" />
+        <div class="flex flex-wrap items-center gap-1.5">
+          <Link2 class="h-3 w-3 shrink-0 text-success" />
           <span class="text-xs font-medium text-foreground">
             {matchingEntries.length === 1
               ? 'Une écriture existante correspond'
               : `${matchingEntries.length} écritures existantes correspondent`}
           </span>
         </div>
-        <span class="text-[11px] text-muted-foreground truncate">
+        <span class="truncate text-[11px] text-muted-foreground">
           {matchingEntries[0].date} · {matchingEntries[0].description}
         </span>
       {:else if sug?.kind === 'internal-transfer'}
         <span class="text-xs font-medium text-foreground">Virement interne</span>
         <span class="text-[11px] text-muted-foreground">À saisir au grand livre, en deux jambes.</span>
       {:else if sug}
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <Sparkles class="h-3 w-3 text-primary shrink-0" />
-          <span class="text-xs font-medium text-foreground truncate">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <Sparkles class="h-3 w-3 shrink-0 text-primary" />
+          <span class="truncate text-xs font-medium text-foreground">
             {categoryName ?? 'Catégorie à choisir'}
           </span>
           {#if sug.confidence}
             <Badge variant="ai" size="xs">{Math.round(sug.confidence * 100)} %</Badge>
           {/if}
         </div>
-        <span class="text-[11px] text-muted-foreground truncate">
+        <span class="truncate text-[11px] text-muted-foreground">
           {sug.memberName || (sug.memberId ? `Adhérent #${sug.memberId}` : 'Aucun adhérent')}
         </span>
         {#if sug.accrualType && sug.accrualType !== 'normal'}
@@ -123,12 +132,13 @@
           </Badge>
         {/if}
       {:else}
-        <span class="text-xs text-muted-foreground italic">Aucune proposition — à saisir</span>
+        <span class="text-xs italic text-muted-foreground">Aucune proposition — à saisir</span>
       {/if}
     </div>
 
-    <!-- Une seule action par défaut ; le reste est discret. -->
-    <div class="p-3 flex items-center gap-1 shrink-0">
+    <!-- Une seule action par défaut ; le reste est discret. Largeur fixe, pour que les boutons
+         tombent au même endroit d'une ligne à l'autre. -->
+    <div class="flex shrink-0 items-center justify-end gap-1 md:w-[13.5rem]">
       {#if line.status === 'pending'}
         {#if hasExistingEntry}
           <!--
