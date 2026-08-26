@@ -47,12 +47,28 @@
           </span>
 
           <span class="flex items-center gap-2 shrink-0">
+            <!--
+              « Écart expliqué », et non « Bouclé ».
+
+              Un état de rapprochement vérifie une identité : solde du relevé = solde des livres
+              − écritures non pointées + lignes non comptabilisées. Quand elle tombe juste, cela
+              signifie que la différence s'explique intégralement par des décalages **connus** —
+              pas qu'il ne reste rien à traiter. Les lignes en attente sont d'ailleurs comptées
+              dans le solde attendu : c'est tout leur intérêt. « Bouclé » se lisait « terminé »,
+              et donnait à croire le travail fini alors que la file était pleine.
+            -->
+            {#if statement.unrecordedBankLines.length > 0}
+              <span class="text-xs text-muted-foreground">
+                {statement.unrecordedBankLines.length} à comptabiliser
+              </span>
+            {/if}
+
             {#if !statement.statement}
               <Badge variant="warning">Aucun solde de relevé</Badge>
             {:else if statement.reconciled}
               <Badge variant="success">
                 <CheckCircle2 class="h-3 w-3" />
-                Bouclé
+                Écart expliqué
               </Badge>
             {:else}
               <Badge variant="destructive">
@@ -121,7 +137,7 @@
                   <span class="flex items-center gap-2">
                     {#if statement.reconciled}
                       <CheckCircle2 class="h-4 w-4" />
-                      Rapprochement bouclé
+                      Écart intégralement expliqué
                     {:else}
                       <TriangleAlert class="h-4 w-4" />
                       Écart inexpliqué
@@ -131,6 +147,15 @@
                 </div>
               {/if}
             </div>
+
+            {#if statement.reconciled && statement.unrecordedBankLines.length > 0}
+              <p class="text-xs text-muted-foreground">
+                Les livres et la banque se répondent, ce qui ne veut pas dire que tout est traité :
+                les {statement.unrecordedBankLines.length} lignes non encore comptabilisées sont
+                comptées dans le solde attendu — c'est ce qui permet à l'identité de tomber juste.
+                Elles restent à rapprocher.
+              </p>
+            {/if}
 
             {#if statement.gapCents !== null && !statement.reconciled}
               <p class="text-xs text-muted-foreground">

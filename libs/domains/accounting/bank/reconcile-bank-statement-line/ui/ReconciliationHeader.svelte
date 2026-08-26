@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Upload, Sparkles, ShieldAlert } from '@lucide/svelte';
-  import { Button, PageHeader, FormField, Alert, SearchableCombobox, softNavigate } from '@nba/ui';
+  import { Button, PageHeader, Label, Alert, SearchableCombobox, softNavigate } from '@nba/ui';
   import type { ReconciliationState } from './reconciliation.svelte';
 
   let { state = $bindable() }: { state: ReconciliationState } = $props();
@@ -22,15 +22,22 @@
   {#snippet actions()}
     <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
       {#if state.seasons && state.seasons.length > 0}
+        <!--
+          Le libellé reste, mais ne s'affiche plus.
+
+          `FormField` l'empilait au-dessus du champ : dans une barre d'outils, cela faisait deux
+          lignes pour un contrôle qui en occupe une. Le poser à gauche donnait « Saison — Saison
+          2025-2026 », la valeur se décrivant déjà elle-même. Il subsiste pour les lecteurs
+          d'écran, à qui le seul `<button>` du combobox ne dirait rien.
+        -->
         <div class="flex items-center gap-2 shrink-0">
-          <FormField id="select-season" label="Saison : ">
+          <Label for="select-season" class="sr-only">Saison comptable</Label>
           <SearchableCombobox
             id="select-season"
             items={state.seasons.map((s) => ({ label: `${s.name || s.code} ${s.active ? '(Active)' : ''}`.trim(), value: String(s.code || s.id) }))}
             bind:value={state.selectedSeason}
             onValueChange={() => { const url = new URL(window.location.href); url.searchParams.set('season', String(state.selectedSeason)); softNavigate(url.toString()); }}
           />
-          </FormField>
         </div>
       {/if}
 
