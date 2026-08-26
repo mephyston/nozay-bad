@@ -11,5 +11,6 @@ export const listTransactionsQuerySchema = Type.Object({
   classCode: Type.Optional(Type.String()),
   memberId: Type.Optional(Type.String()),
   month: Type.Optional(Type.String()),
-  search: Type.Optional(Type.String())
+  search: Type.Optional(Type.String()),
+  runningBalance: Type.Optional(Type.Union([Type.Literal('0'), Type.Literal('1'), Type.Literal('true'), Type.Literal('false')]))
 });

@@ -128,36 +128,80 @@ export class ListTransactionsRepository {
     return countRes?.count || 0;
   }
 
-  async list(db: DbOrTx, filters: ListTransactionsFilters, pagination: { limit: number; offset: number }): Promise<any[]> {
+  /**
+   * Les écritures d'une page du grand livre.
+   *
+   * `runningBalance: false` retire les deux colonnes dérivées — le solde progressif et le
+   * compte d'en face — ainsi que les trois requêtes qui les préparent. Toutes deux sont des
+   * sous-requêtes **corrélées**, réévaluées pour chaque ligne rendue : sur les 2000 écritures
+   * que l'écran de rapprochement demandait, le solde progressif seul balaie la table une fois
+   * par ligne. Or ni l'une ni l'autre n'est affichée ailleurs qu'au grand livre.
+   *
+   * Le défaut reste `true` : un appelant qui ne sait pas ce qu'il veut obtient la vue complète.
+   */
+  async list(db: DbOrTx, filters: ListTransactionsFilters, pagination: { limit: number; offset: number; runningBalance?: boolean }): Promise<any[]> {
     const conditions = await this.buildConditions(db, filters);
-    /*
-     * Le compte du solde progressif, résolu en base.
-     *
-     * La table `{ current: 1, savings: 2, cash: 3 }` qui tenait ici ne valait que pour l'ordre du
-     * seed d'origine, et retombait sur le compte courant devant un code inconnu — le solde
-     * progressif d'un compte inexistant s'affichait alors comme celui du courant, sans un mot.
-     */
-    const accId = filters.accountId ? await resolveAccountId(db, filters.accountId) : await resolveAccountId(db, null);
+    const withRunningBalance = pagination.runningBalance !== false;
 
-    let initialBalance = 0;
-    let seasonStartDate = '';
-    if (filters.seasonId) {
-      const seasonIdInt = await this.resolveSeasonId(db, filters.seasonId);
-      const balanceRow = await db.select({ 
-          initialBalanceCents: seasonBalancesTable.initialBalanceCents,
-          startDate: seasonsTable.startDate
-        })
-        .from(seasonBalancesTable)
-        .innerJoin(seasonsTable, eq(seasonBalancesTable.seasonId, seasonsTable.id))
-        .where(and(eq(seasonBalancesTable.seasonId, seasonIdInt), eq(seasonBalancesTable.accountId, accId)))
-        .get();
-      if (balanceRow) {
-        initialBalance = balanceRow.initialBalanceCents;
-        seasonStartDate = balanceRow.startDate;
+    let derivedColumns: Record<string, any> = {};
+    if (withRunningBalance) {
+      /*
+       * Le compte du solde progressif, résolu en base.
+       *
+       * La table `{ current: 1, savings: 2, cash: 3 }` qui tenait ici ne valait que pour l'ordre du
+       * seed d'origine, et retombait sur le compte courant devant un code inconnu — le solde
+       * progressif d'un compte inexistant s'affichait alors comme celui du courant, sans un mot.
+       */
+      const accId = filters.accountId ? await resolveAccountId(db, filters.accountId) : await resolveAccountId(db, null);
+
+      let initialBalance = 0;
+      let seasonStartDate = '';
+      if (filters.seasonId) {
+        const seasonIdInt = await this.resolveSeasonId(db, filters.seasonId);
+        const balanceRow = await db.select({
+            initialBalanceCents: seasonBalancesTable.initialBalanceCents,
+            startDate: seasonsTable.startDate
+          })
+          .from(seasonBalancesTable)
+          .innerJoin(seasonsTable, eq(seasonBalancesTable.seasonId, seasonsTable.id))
+          .where(and(eq(seasonBalancesTable.seasonId, seasonIdInt), eq(seasonBalancesTable.accountId, accId)))
+          .get();
+        if (balanceRow) {
+          initialBalance = balanceRow.initialBalanceCents;
+          seasonStartDate = balanceRow.startDate;
+        }
       }
-    }
 
-    const trueInitialBalance = initialBalance;
+      const trueInitialBalance = initialBalance;
+
+      derivedColumns = {
+        /*
+         * Le compte d'en face, lu sur la jambe jumelle. Le grand livre doit pouvoir écrire
+         * « Compte Courant → Livret A » sur chacune des deux lignes : sans lui, un virement entrant
+         * et un virement sortant sont indiscernables à l'écran.
+         */
+        counterpartAccountId: sql<number | null>`(
+          SELECT other.account_id FROM ledger_entries other
+          WHERE other.transfer_id = ${ledgerEntriesTable.transferId}
+            AND other.id <> ${ledgerEntriesTable.id}
+        )`,
+        runningBalanceCents: sql<number>`CAST(${trueInitialBalance} + COALESCE((
+          SELECT SUM(
+            CASE
+              WHEN le2.type = 'recette' THEN le2.amount_cents
+              WHEN le2.type = 'depense' THEN -le2.amount_cents
+              WHEN le2.type = 'transfert' AND le2.transfer_leg = 'source' THEN -le2.amount_cents
+              WHEN le2.type = 'transfert' AND le2.transfer_leg = 'destination' THEN le2.amount_cents
+              ELSE 0
+            END
+          )
+          FROM ledger_entries le2
+          WHERE le2.account_id = ${accId}
+            AND (le2.date < ${ledgerEntriesTable.date} OR (le2.date = ${ledgerEntriesTable.date} AND le2.id <= ${ledgerEntriesTable.id}))
+            ${seasonStartDate ? sql`AND le2.date >= ${seasonStartDate}` : sql``}
+        ), 0) AS INTEGER)`.mapWith(Number)
+      };
+    }
 
     const txs = await db.select({
       id: ledgerEntriesTable.id,
@@ -166,16 +210,6 @@ export class ListTransactionsRepository {
       accountId: ledgerEntriesTable.accountId,
       transferId: ledgerEntriesTable.transferId,
       transferLeg: ledgerEntriesTable.transferLeg,
-      /*
-       * Le compte d'en face, lu sur la jambe jumelle. Le grand livre doit pouvoir écrire
-       * « Compte Courant → Livret A » sur chacune des deux lignes : sans lui, un virement entrant
-       * et un virement sortant sont indiscernables à l'écran.
-       */
-      counterpartAccountId: sql<number | null>`(
-        SELECT other.account_id FROM ledger_entries other
-        WHERE other.transfer_id = ${ledgerEntriesTable.transferId}
-          AND other.id <> ${ledgerEntriesTable.id}
-      )`,
       category: categoriesTable.adminLabel,
       categoryId: ledgerEntriesTable.categoryId,
       amount: ledgerEntriesTable.amountCents,
@@ -204,22 +238,8 @@ export class ListTransactionsRepository {
        * une écriture pour la réenregistrer renvoyait un statut absent au serveur.
        */
       status: ledgerEntriesTable.status,
-      runningBalanceCents: sql<number>`CAST(${trueInitialBalance} + COALESCE((
-        SELECT SUM(
-          CASE
-            WHEN le2.type = 'recette' THEN le2.amount_cents
-            WHEN le2.type = 'depense' THEN -le2.amount_cents
-            WHEN le2.type = 'transfert' AND le2.transfer_leg = 'source' THEN -le2.amount_cents
-            WHEN le2.type = 'transfert' AND le2.transfer_leg = 'destination' THEN le2.amount_cents
-            ELSE 0
-          END
-        )
-        FROM ledger_entries le2
-        WHERE le2.account_id = ${accId}
-          AND (le2.date < ${ledgerEntriesTable.date} OR (le2.date = ${ledgerEntriesTable.date} AND le2.id <= ${ledgerEntriesTable.id}))
-          ${seasonStartDate ? sql`AND le2.date >= ${seasonStartDate}` : sql``}
-      ), 0) AS INTEGER)`.mapWith(Number)
-    })
+      ...derivedColumns
+    } as any)
       .from(ledgerEntriesTable)
       .leftJoin(bankStatementLinesTable, eq(ledgerEntriesTable.bankStatementLineId, bankStatementLinesTable.id))
       .leftJoin(paymentMethodsTable, eq(ledgerEntriesTable.paymentMethodId, paymentMethodsTable.id))
@@ -228,7 +248,9 @@ export class ListTransactionsRepository {
       .orderBy(desc(ledgerEntriesTable.date), desc(ledgerEntriesTable.id))
       .limit(pagination.limit)
       .offset(pagination.offset)
-      .all();
+      /* La projection étant assemblée en deux morceaux, Drizzle ne peut plus en déduire la forme
+         de la ligne : on la nomme ici plutôt que de la laisser retomber sur celle des jointures. */
+      .all() as unknown as { memberId: number | null; [key: string]: any }[];
 
     const memberIds = Array.from(new Set(txs.map((t) => t.memberId).filter((id) => id !== null))) as number[];
     const members = await getMembersByIds(db, memberIds);

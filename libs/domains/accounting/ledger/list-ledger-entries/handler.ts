@@ -11,7 +11,7 @@ export async function listLedgerEntries(
   const offset = (pagination.page - 1) * pagination.limit;
 
   const total = await repo.count(db, filters);
-  const data = await repo.list(db, filters, { limit: pagination.limit, offset });
+  const data = await repo.list(db, filters, { limit: pagination.limit, offset, runningBalance: pagination.runningBalance });
 
   return {
     data,

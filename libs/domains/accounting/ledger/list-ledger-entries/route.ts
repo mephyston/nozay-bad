@@ -24,6 +24,11 @@ const handleList = async (c: any) => {
   const page = parseInt(query.page || '1', 10);
   const rawLimit = parseInt(query.limit || '20', 10);
   const limit = Math.min(Math.max(1, rawLimit), 2000);
+  /*
+   * `?runningBalance=0` allège la projection. Seule une valeur explicitement fausse la
+   * désactive : une absence de paramètre garde la vue complète du grand livre.
+   */
+  const runningBalance = !(query.runningBalance === '0' || query.runningBalance === 'false');
 
   const accountId = query.accountId;
   const type = query.type;
@@ -42,7 +47,7 @@ const handleList = async (c: any) => {
     unreconciledChequesOnly,
     month: query.month,
     search: query.search
-  }, { page, limit });
+  }, { page, limit, runningBalance });
 
   return c.json({ success: true, ...result });
 };

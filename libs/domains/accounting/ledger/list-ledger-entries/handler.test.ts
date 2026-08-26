@@ -21,4 +21,30 @@ describe('listLedgerEntries', () => {
     expect(result.pagination.limit).toBe(10);
     expect(result.pagination.totalPages).toBe(3);
   });
+
+  it('transmet le refus du solde progressif au repository', async () => {
+    vi.mocked(ListTransactionsRepository.prototype.count).mockResolvedValue(0);
+    vi.mocked(ListTransactionsRepository.prototype.list).mockResolvedValue([]);
+
+    await listLedgerEntries({} as any, { seasonId: '25-26' }, { page: 1, limit: 20, runningBalance: false });
+
+    expect(ListTransactionsRepository.prototype.list).toHaveBeenCalledWith(
+      expect.anything(),
+      { seasonId: '25-26' },
+      { limit: 20, offset: 0, runningBalance: false }
+    );
+  });
+
+  it('garde la vue complète quand rien ne la refuse', async () => {
+    vi.mocked(ListTransactionsRepository.prototype.count).mockResolvedValue(0);
+    vi.mocked(ListTransactionsRepository.prototype.list).mockResolvedValue([]);
+
+    await listLedgerEntries({} as any, { seasonId: '25-26' }, { page: 2, limit: 50 });
+
+    expect(ListTransactionsRepository.prototype.list).toHaveBeenCalledWith(
+      expect.anything(),
+      { seasonId: '25-26' },
+      { limit: 50, offset: 50, runningBalance: undefined }
+    );
+  });
 });

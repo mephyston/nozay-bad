@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { listTransactionsRoute } from './route';
+import { listLedgerEntries } from './handler';
 
 vi.mock('./handler', () => ({
   listLedgerEntries: vi.fn().mockResolvedValue({ items: [], total: 0, page: 1, limit: 20 })
@@ -25,5 +26,30 @@ describe('listTransactionsRoute', () => {
     expect(res.status).toBe(400);
     const body = await res.json() as any;
     expect(body.success).toBe(false);
+  });
+
+  it.each(['0', 'false'])('refuse le solde progressif sur ?runningBalance=%s', async (value) => {
+    vi.mocked(listLedgerEntries).mockClear();
+
+    const res = await listTransactionsRoute.request(`/ledger-entries?season=25-26&runningBalance=${value}`, {}, { DB: {} as any });
+
+    expect(res.status).toBe(200);
+    expect(listLedgerEntries).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ runningBalance: false })
+    );
+  });
+
+  it('garde le solde progressif quand le paramètre est absent', async () => {
+    vi.mocked(listLedgerEntries).mockClear();
+
+    await listTransactionsRoute.request('/ledger-entries?season=25-26', {}, { DB: {} as any });
+
+    expect(listLedgerEntries).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ runningBalance: true })
+    );
   });
 });

@@ -181,7 +181,12 @@ try {
 
   const [btRes, glRes, membersRes, nextMembersRes, categoriesRes, statementsRes] = await Promise.all([
     apiService.fetch(`http://localhost/accounting/bank-transactions?season=${season}`),
-    apiService.fetch(`http://localhost/accounting/transactions?season=${season}&page=1&limit=2000`),
+    /*
+      Le solde progressif est refusé : c'est une sous-requête corrélée, réévaluée pour chacune
+      des 2000 écritures demandées, et cet écran ne l'affiche nulle part. Seul le grand livre
+      en a l'usage.
+    */
+    apiService.fetch(`http://localhost/accounting/transactions?season=${season}&page=1&limit=2000&runningBalance=0`),
     apiService.fetch(`http://localhost/members?season=${season}&limit=500`),
     nextSeasonCode
       ? apiService.fetch(`http://localhost/members?season=${nextSeasonCode}&limit=500`)
