@@ -1,5 +1,4 @@
 export { default as BankStatementReconciliation } from '../bank/reconcile-bank-statement-line/ui/BankStatementReconciliation.svelte';
-export { default as ReconciliationStatement } from '../bank/get-reconciliation-statement/ui/ReconciliationStatement.svelte';
 export { default as InitialBalancesConfig } from '../seasons/list-seasons/ui/InitialBalancesConfig.svelte';
 export { default as TransactionLedger } from '../ledger/list-ledger-entries/ui/TransactionLedger.svelte';
 export { default as CheckDepositManager } from '../checks/create-bank-check-deposit/ui/CheckDepositManager.svelte';

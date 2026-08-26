@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { CheckCircle2, Inbox, Search, X } from '@lucide/svelte';
+  import { CheckCircle2, Inbox, Search, TriangleAlert, X } from '@lucide/svelte';
   import { Amount, Badge, Button, Card, Input, SearchableCombobox } from '@nba/ui';
   import ReconciliationRow from './ReconciliationRow.svelte';
-  import ReconciliationGapSheet from '../../get-reconciliation-statement/ui/ReconciliationGapSheet.svelte';
+  import ReconciliationStatementSheet from '../../get-reconciliation-statement/ui/ReconciliationStatementSheet.svelte';
   import { isOneClickValidatable, parseSuggestion } from './reconciliation-suggestion';
   import ReconciliationRowDetail from './ReconciliationRowDetail.svelte';
   import type { ReconciliationState } from './reconciliation.svelte';
@@ -18,14 +18,6 @@
     { label: 'Décembre', value: '12' }
   ];
 
-  /*
-    L'autre moitié de l'écart — et elle seule.
-
-    Les « lignes non comptabilisées » ne sont rien d'autre que la file affichée ci-dessous : les
-    annoncer en pastille répétait une quatrième fois un nombre déjà présent dans le titre, dans le
-    filtre par compte et dans l'encart d'état. Restent les écritures que les livres portent et
-    qu'aucune ligne de relevé ne pointe : celles-là ne se lisent nulle part ailleurs.
-  */
   /* Suit le compte consulté : un état de rapprochement se lit compte par compte, et l'écart
      affiché doit être celui du compte qu'on a sous les yeux. */
   const scopedStatements = $derived(
@@ -34,11 +26,21 @@
     )
   );
 
+  /**
+   * Le verdict, tel qu'il tient dans un badge.
+   *
+   * Deux encarts permanents en haut de page répondaient à cette seule question, en poussant la
+   * file sous la ligne de flottaison. Le raisonnement, lui, se consulte d'un clic.
+   */
   const gapStats = $derived.by(() => {
     const st = scopedStatements;
+    const withStatement = st.filter((s: any) => s.statement);
     return {
       entriesCount: st.reduce((n: number, s: any) => n + (s.unpointedEntries?.length ?? 0), 0),
-      entriesCents: st.reduce((n: number, s: any) => n - (s.unpointedEntriesTotalCents ?? 0), 0)
+      entriesCents: st.reduce((n: number, s: any) => n - (s.unpointedEntriesTotalCents ?? 0), 0),
+      hasStatement: withStatement.length > 0,
+      reconciled: withStatement.length > 0 && withStatement.every((s: any) => s.reconciled),
+      gapCents: withStatement.reduce((n: number, s: any) => n + (s.gapCents ?? 0), 0)
     };
   });
 
@@ -147,6 +149,36 @@
       </div>
 
       <div class="flex items-center gap-2">
+        {#if scopedStatements.length > 0}
+          <button
+            type="button"
+            class="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted cursor-pointer"
+            title="Voir l'état de rapprochement"
+            onclick={() => (gapSheetOpen = true)}
+          >
+            {#if !gapStats.hasStatement}
+              <Badge variant="warning" size="xs">Aucun solde de relevé</Badge>
+            {:else if gapStats.reconciled}
+              <Badge variant="success" size="xs">
+                <CheckCircle2 class="h-3 w-3" />
+                Écart expliqué
+              </Badge>
+            {:else}
+              <Badge variant="destructive" size="xs">
+                <TriangleAlert class="h-3 w-3" />
+                Écart
+              </Badge>
+              <Amount cents={gapStats.gapCents} showSign class="text-xs font-bold text-destructive" />
+            {/if}
+            {#if gapStats.entriesCount > 0}
+              <span class="text-muted-foreground">
+                · {gapStats.entriesCount} écriture{gapStats.entriesCount > 1 ? 's' : ''} non pointée{gapStats.entriesCount > 1 ? 's' : ''}
+              </span>
+              <Amount cents={gapStats.entriesCents} showSign class="text-xs font-semibold" />
+            {/if}
+          </button>
+        {/if}
+
         {#if reconState.view === 'queue'}
           <Button
             variant="ghost"
@@ -169,18 +201,6 @@
       <div class="h-full bg-success transition-all duration-500" style={`width: ${progress}%`}></div>
     </div>
 
-    {#if gapStats.entriesCount > 0}
-      <button
-        type="button"
-        class="flex items-center gap-1.5 self-start rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted cursor-pointer"
-        onclick={() => (gapSheetOpen = true)}
-      >
-        <span class="text-muted-foreground">
-          {gapStats.entriesCount} écriture{gapStats.entriesCount > 1 ? 's' : ''} sans ligne de relevé
-        </span>
-        <Amount cents={gapStats.entriesCents} showSign class="text-xs font-semibold" />
-      </button>
-    {/if}
 
     <!--
       Plus de bascule « Rapprochées / Ignorées » : masquer une ligne n'est plus possible, et
@@ -309,7 +329,7 @@
   </div>
 </Card.Root>
 
-<ReconciliationGapSheet
+<ReconciliationStatementSheet
   bind:open={gapSheetOpen}
   statements={scopedStatements}
 />
