@@ -1,17 +1,16 @@
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import {
+  BRAND,
   CONTENT_W,
-  FOOTER_TEXT,
   GREY,
   INK,
   MARGIN,
   PAGE_H,
   PAGE_W,
-  drawClubFooter,
-  drawClubHeader,
+  drawLetterhead,
   drawParagraph,
   formatFrenchDate,
-  wrapLines
+  loadLetterhead
 } from '@nba/pdf';
 
 // Données issues de get-invoice (invoicesTable + items).
@@ -57,32 +56,41 @@ export async function generateInvoicePdf(invoice: InvoiceData, items: InvoiceIte
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
-  // ---------- EN-TÊTE (club, partagé) ----------
-  const ruleY = await drawClubHeader(doc, page, { font, bold });
+  // ---------- PAPIER À LETTRE (club, partagé) ----------
+  const letterhead = await loadLetterhead(doc);
+  drawLetterhead(page, letterhead, font);
 
-  // ---------- DESTINATAIRE (bloc à gauche) ----------
-  // Un peu d'air entre l'en-tête et le corps de la facture.
-  const blockTop = ruleY - 54;
-  let recipY = blockTop;
-  page.drawText('Destinataire', { x: MARGIN, y: recipY, size: 10, font: bold, color: INK });
-  recipY -= 15;
-  page.drawText(invoice.clientName, { x: MARGIN, y: recipY, size: 10, font, color: INK });
+  const rightEdge = PAGE_W - MARGIN;
+  const blockTop = letterhead.bodyTop;
+
+  // ---------- TITRE + RÉFÉRENCES (à gauche) ----------
+  page.drawText('FACTURE', { x: MARGIN, y: blockTop - 16, size: 22, font: bold, color: INK });
+  page.drawLine({
+    start: { x: MARGIN, y: blockTop - 26 },
+    end: { x: MARGIN + bold.widthOfTextAtSize('FACTURE', 22), y: blockTop - 26 },
+    thickness: 2.5,
+    color: BRAND
+  });
+  let refY = blockTop - 48;
+  page.drawText(`N° ${invoice.invoiceNumber}`, { x: MARGIN, y: refY, size: 12, font: bold, color: INK });
+  refY -= 16;
+  page.drawText(`Date : ${formatFrenchDate(invoice.date)}`, { x: MARGIN, y: refY, size: 10, font, color: GREY });
+
+  // ---------- DESTINATAIRE (bloc à droite, côté fenêtre d'enveloppe) ----------
+  const recipX = MARGIN + CONTENT_W * 0.52;
+  let recipY = blockTop - 16;
+  page.drawText('Destinataire', { x: recipX, y: recipY, size: 9, font: bold, color: GREY });
+  recipY -= 16;
+  page.drawText(invoice.clientName, { x: recipX, y: recipY, size: 11, font: bold, color: INK });
   for (const line of (invoice.clientAddress || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean)) {
     recipY -= 13;
-    page.drawText(line, { x: MARGIN, y: recipY, size: 10, font, color: INK });
+    page.drawText(line, { x: recipX, y: recipY, size: 10, font, color: INK });
   }
-
-  // ---------- DATE + N° DE FACTURE (à droite, alignés sur le haut du destinataire) ----------
-  const rightEdge = PAGE_W - MARGIN;
-  const dateStr = `Date : ${formatFrenchDate(invoice.date)}`;
-  page.drawText(dateStr, { x: rightEdge - font.widthOfTextAtSize(dateStr, 10), y: blockTop, size: 10, font, color: INK });
-  const numStr = `Facture N° ${invoice.invoiceNumber}`;
-  page.drawText(numStr, { x: rightEdge - bold.widthOfTextAtSize(numStr, 12), y: blockTop - 18, size: 12, font: bold, color: INK });
 
   // ---------- LIGNES DE LA FACTURE ----------
   // Tout le détail (objet, personnes, dates…) est porté par la description de
   // chaque ligne. En-tête de tableau, puis lignes avec le montant à droite.
-  let y = Math.min(recipY, blockTop - 18) - 42;
+  let y = Math.min(recipY, refY) - 42;
   page.drawText('Description', { x: MARGIN, y, size: 9, font: bold, color: GREY });
   const montantHeader = 'Montant';
   page.drawText(montantHeader, { x: rightEdge - bold.widthOfTextAtSize(montantHeader, 9), y, size: 9, font: bold, color: GREY });
@@ -127,14 +135,10 @@ export async function generateInvoicePdf(invoice: InvoiceData, items: InvoiceIte
   y -= 15;
   page.drawText(TVA_MENTION, { x: MARGIN, y, size: 9.5, font, color: GREY });
 
-  // ---------- BLOC BAS (ancré au-dessus du pied de page) ----------
-  // Séparateur horizontal pleine largeur, juste au-dessus du texte du pied.
-  const footerTopY = MARGIN + (wrapLines(FOOTER_TEXT, font, 9, CONTENT_W).length - 1) * 12;
-  const sepY = footerTopY + 16;
-  page.drawLine({ start: { x: MARGIN, y: sepY }, end: { x: PAGE_W - MARGIN, y: sepY }, thickness: 0.8, color: GREY });
-
-  // Coordonnées bancaires + mentions, calées en bas du courrier.
-  let by = sepY + 108;
+  // ---------- BLOC BAS (ancré juste au-dessus du papier à lettre) ----------
+  // Coordonnées bancaires + mentions, calées en bas du courrier. Le filet du bas de
+  // page est déjà porté par le papier à lettre : en ajouter un second ferait doublon.
+  let by = letterhead.bodyBottom + 92;
   page.drawText('Coordonnées bancaires :', { x: MARGIN, y: by, size: 10.5, font: bold, color: INK });
   by -= 16;
   const bankLine = (label: string, value: string) => {
@@ -148,9 +152,6 @@ export async function generateInvoicePdf(invoice: InvoiceData, items: InvoiceIte
   bankLine('BIC', BANK.bic);
   by -= 12;
   page.drawText("Merci d'indiquer le numéro de facture dans le motif du virement.", { x: MARGIN, y: by, size: 9.5, font, color: GREY });
-
-  // ---------- PIED DE PAGE (club, partagé) ----------
-  drawClubFooter(page, { font });
 
   return doc.save();
 }

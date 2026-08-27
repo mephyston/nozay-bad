@@ -8,10 +8,8 @@ export const CONTENT_W = PAGE_W - MARGIN * 2;
 
 export const INK = rgb(0.09, 0.11, 0.17);
 export const GREY = rgb(0.37, 0.37, 0.37);
-
-// Ligne partenaires du pied de page club (identique attestation/facture).
-export const FOOTER_TEXT =
-  "Nos Partenaires : Ville de Nozay – Conseil Départemental de l'Essonne – ANS du Ministère des Sports, de la Jeunesse, de l'Education Populaire et de la Vie Associative – Babolat – J2S – Lardesport – Société Générale";
+/** Cyan de la marque, relevé sur le papier à lettre (« www.nozaybad.fr »). */
+export const BRAND = rgb(35 / 255, 184 / 255, 233 / 255);
 
 export const embed = (doc: PDFDocument, a: EmbeddedImage): Promise<PDFImage> =>
   a.kind === 'png' ? doc.embedPng(a.base64) : doc.embedJpg(a.base64);
@@ -54,18 +52,6 @@ export function drawImageAtHeight(page: PDFPage, img: PDFImage, x: number, topY:
   return { width };
 }
 
-/** Ajuste une image DANS une cellule (contain) et la centre. */
-export function drawImageInCell(page: PDFPage, img: PDFImage, cellX: number, cellTopY: number, cellW: number, cellH: number): void {
-  const scale = Math.min(cellW / img.width, cellH / img.height);
-  const w = img.width * scale;
-  const h = img.height * scale;
-  page.drawImage(img, {
-    x: cellX + (cellW - w) / 2,
-    y: cellTopY - cellH + (cellH - h) / 2,
-    width: w,
-    height: h
-  });
-}
 
 const MONTHS = [
   'janvier', 'février', 'mars', 'avril', 'mai', 'juin',

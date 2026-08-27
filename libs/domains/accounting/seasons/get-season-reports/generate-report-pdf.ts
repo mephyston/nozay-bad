@@ -1,14 +1,15 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import {
+  BRAND,
   CONTENT_W,
   GREY,
   INK,
   MARGIN,
   PAGE_H,
   PAGE_W,
-  drawClubFooter,
-  drawClubHeader,
-  formatFrenchDate
+  drawLetterhead,
+  formatFrenchDate,
+  loadLetterhead
 } from '@nba/pdf';
 import type { GetSeasonReportsOutput } from './dto';
 import type { AccountClass, DbCategory, ReportData } from './ui/report-types';
@@ -83,31 +84,37 @@ export async function generateSeasonReportPdf(
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
   const rightEdge = PAGE_W - MARGIN;
-  // Espace réservé en bas pour la ligne « Nos Partenaires : … » (pied de page club).
-  const bottomLimit = MARGIN + 44;
+
+  // --- papier à lettre (club, partagé), embarqué une fois pour tout le document ---
+  const letterhead = await loadLetterhead(doc);
+  // Le corps s'arrête au-dessus du bas de page pré-imprimé.
+  const bottomLimit = letterhead.bodyBottom;
 
   // --- gestion de page + curseur vertical partagé ---
   let page = doc.addPage([PAGE_W, PAGE_H]);
   let y = 0;
-  drawClubFooter(page, { font });
-  const ruleY = await drawClubHeader(doc, page, { font, bold });
+  drawLetterhead(page, letterhead, font);
 
-  // Titre du rapport, sous l'en-tête club.
-  y = ruleY - 34;
+  // Titre du rapport, sous la bande d'en-tête.
+  y = letterhead.bodyTop - 20;
   page.drawText(title, { x: MARGIN, y, size: 17, font: bold, color: INK });
   y -= 18;
   // Le nom de saison peut déjà contenir « Saison … » → éviter le doublon.
   const seasonText = /^saison\b/i.test(seasonLabel) ? seasonLabel : `Saison ${seasonLabel}`;
   const sub = `${seasonText}${reportRaw.arretedAu ? ` — arrêté au ${formatFrenchDate(reportRaw.arretedAu)}` : ''}`;
   page.drawText(sub, { x: MARGIN, y, size: 10, font, color: GREY });
-  y -= 8;
-  page.drawLine({ start: { x: MARGIN, y }, end: { x: rightEdge, y }, thickness: 0.8, color: GREY });
+  y -= 10;
+  page.drawLine({ start: { x: MARGIN, y }, end: { x: rightEdge, y }, thickness: 2, color: BRAND });
   y -= 24;
 
+  /*
+   * Chaque page reçoit le papier à lettre entier, comme une feuille pré-imprimée :
+   * un rapport long tient sur plusieurs feuilles, toutes à l'en-tête du club.
+   */
   function addBlankPage() {
     page = doc.addPage([PAGE_W, PAGE_H]);
-    drawClubFooter(page, { font });
-    y = PAGE_H - MARGIN;
+    drawLetterhead(page, letterhead, font);
+    y = letterhead.bodyTop - 20;
   }
   function ensureSpace(needed: number) {
     if (y - needed < bottomLimit) addBlankPage();

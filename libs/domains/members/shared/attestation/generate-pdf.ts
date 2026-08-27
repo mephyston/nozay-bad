@@ -1,5 +1,6 @@
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import {
+  BRAND,
   CONTENT_W,
   GREY,
   INK,
@@ -7,11 +8,11 @@ import {
   PAGE_H,
   PAGE_W,
   assets,
-  drawClubFooter,
-  drawClubHeader,
   drawImageAtHeight,
+  drawLetterhead,
   drawParagraph,
-  embed
+  embed,
+  loadLetterhead
 } from '@nba/pdf';
 import type { AttestationConfig } from './config';
 import { signatureKind } from './config';
@@ -51,20 +52,28 @@ export async function generateCseAttestationPdf(data: AttestationData, config: A
     ? await (signatureKind(configured) === 'png' ? doc.embedPng(configured) : doc.embedJpg(configured))
     : await embed(doc, assets.defaultSignature);
 
-  // ---------- EN-TÊTE (club, partagé) ----------
-  const ruleY = await drawClubHeader(doc, page, { font, bold });
+  // ---------- PAPIER À LETTRE (club, partagé) ----------
+  const letterhead = await loadLetterhead(doc);
+  drawLetterhead(page, letterhead, font);
 
   // ---------- TITRES ----------
-  const titleY = ruleY - 96;
+  const titleY = letterhead.bodyTop - 30;
   const title = "ATTESTATION D'ADHÉSION";
   page.drawText(title, { x: (PAGE_W - bold.widthOfTextAtSize(title, 20)) / 2, y: titleY, size: 20, font: bold, color: INK });
   const subtitle = 'Facture acquittée';
   page.drawText(subtitle, { x: (PAGE_W - font.widthOfTextAtSize(subtitle, 14)) / 2, y: titleY - 22, size: 14, font, color: GREY });
+  // Filet aux couleurs du papier à lettre, sous le titre.
+  page.drawLine({
+    start: { x: (PAGE_W - 120) / 2, y: titleY - 38 },
+    end: { x: (PAGE_W + 120) / 2, y: titleY - 38 },
+    thickness: 2,
+    color: BRAND
+  });
 
   // ---------- CORPS ----------
   const bodySize = 11;
   const lineH = 18;
-  let y = titleY - 62;
+  let y = titleY - 72;
 
   y = drawParagraph(
     page,
@@ -127,9 +136,6 @@ export async function generateCseAttestationPdf(data: AttestationData, config: A
   page.drawText(`Mail : ${config.signatoryEmail}`, { x: rightX, y: ry, size: 9, font, color: GREY });
   ry -= 13;
   page.drawText(`Site web : ${config.websiteUrl}`, { x: rightX, y: ry, size: 9, font, color: GREY });
-
-  // ---------- PIED DE PAGE (club, partagé) ----------
-  drawClubFooter(page, { font });
 
   return doc.save();
 }
