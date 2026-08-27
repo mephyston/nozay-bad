@@ -61,7 +61,9 @@
         "binding": "IMAGES"
       },
       "triggers": {
-        "crons": []
+        "crons": [
+          "* * * * *"
+        ]
       },
       "vars": {
         "VAPID_SUBJECT": "mailto:contact@nozaybad.fr",

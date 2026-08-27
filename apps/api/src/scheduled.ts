@@ -51,7 +51,25 @@ export type ScheduledBindings = {
   PUSH_LINEUP_REMINDERS_ENABLED?: string;
 } & VapidEnv;
 
-/** Doit rester identique aux entrées `triggers.crons` de wrangler.json. */
+/*
+ * Doit rester identique aux entrées `triggers.crons` de wrangler.json.
+ *
+ * **`wrangler.json` est du JSON strict** : `vitest.wrangler.ts` le passe à `JSON.parse` sans
+ * dépouiller les commentaires, un `//` y casse donc toute la suite de tests. D'où cette note ici.
+ *
+ * Le plan gratuit plafonne le compte à 5 Cron Triggers. La production en consomme 3 ; **staging
+ * n'a que `DISPATCH_CRON`**, et c'est délibéré :
+ *
+ * - sans lui, une notification était écrite dans `push_deliveries` puis n'était jamais envoyée.
+ *   Rien ne le signalait, et le déclenchement métier passait pour cassé alors que seul le
+ *   drainage manquait ;
+ * - les deux autres n'y ont pas leur place : les envois programmés de staging sont de toute façon
+ *   coupés par les `PUSH_*_ENABLED` à `false`, et ils consommeraient les deux derniers
+ *   emplacements du compte.
+ *
+ * `handleScheduled` draine la file quel que soit le déclencheur : le cron quotidien et
+ * l'hebdomadaire vident aussi ce qu'ils viennent d'y écrire.
+ */
 export const DISPATCH_CRON = '* * * * *';
 export const DAILY_CRON = '0 7 * * *';
 export const WEEKLY_CRON = '0 8 * * 1';
