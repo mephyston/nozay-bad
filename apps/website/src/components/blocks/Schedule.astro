@@ -8,9 +8,8 @@ const { block, slots = [], nested = false } = Astro.props;
 /*
   Imbriqué dans une colonne, le bloc perd son enveloppe et son niveau de titre.
 
-  La grille garde en revanche son point de bascule `md` : elle compte jusqu'à neuf
-  colonnes et son seul mode étroit est la liste par jour, qui n'a rien à gagner à la
-  largeur d'une colonne.
+  La grille garde en revanche son point de bascule `md` : son seul mode étroit est la
+  liste par jour, qui n'a rien à gagner à la largeur d'une colonne.
 */
 const shell = nested ? '' : 'mx-auto max-w-5xl px-4 py-8';
 const Heading = nested ? 'h3' : 'h2';
@@ -18,6 +17,7 @@ const Heading = nested ? 'h3' : 'h2';
 const DayHeading = nested ? 'h4' : 'h3';
 
 const WEEKDAYS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+const SHORT_WEEKDAYS = ['', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.'];
 const AUDIENCES: Record<string, string> = {
   minibad: 'Minibad (U9)', poussins: 'Poussins (U11)', jeunes: 'Jeunes',
   elite_jeunes: 'Élite Jeunes', adultes_loisir: 'Adultes loisirs',
@@ -52,47 +52,23 @@ const shown = block.audiences.length > 0
   ? slots.filter((slot) => block.audiences.includes(slot.audience))
   : slots;
 
-/**
- * Colonnes : les jours réellement occupés, chacun scindé par les gymnases **qu'il
- * utilise**.
- *
- * Le découpage est calculé jour par jour, et non une fois pour toute la semaine : un
- * gymnase qui ne sert pas le mercredi n'y ouvre pas une colonne vide. La grille passe
- * ainsi de neuf colonnes à six sur la saison en cours, et tient sans défilement.
- */
-const days = WEEKDAYS
-  .map((label, weekday) => ({ label, weekday }))
-  .filter((day) => day.weekday > 0 && shown.some((slot) => slot.weekday === day.weekday))
-  .map((day) => ({
-    ...day,
-    venues: [
-      ...new Set(
-        shown
-          .filter((slot) => slot.weekday === day.weekday)
-          .map((slot) => slot.venue?.name ?? '—')
-      )
-    ].sort()
-  }));
+/** « 18:30 » → 1110. Le club n'a qu'un fuseau, l'heure locale suffit. */
+const toMinutes = (time: string) => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + (minutes || 0);
+};
 
-// Lignes : les plages horaires distinctes, du matin au soir. Les horaires du club
-// sont irréguliers (13:15–14:15, 10:00–13:00) : une grille à pas fixe laisserait
-// des lignes vides sans rien gagner en lisibilité.
-const ranges = [...new Set(shown.map((slot) => `${slot.startTime}|${slot.endTime}`))]
-  .sort()
-  .map((key) => {
-    const [startTime, endTime] = key.split('|');
-    return { key, startTime, endTime };
-  });
+const pad = (n: number) => String(n).padStart(2, '0');
 
 /**
- * Nom court d'un gymnase, pour l'en-tête de colonne.
+ * Nom court d'un gymnase.
  *
  * Heuristique assumée, faute d'un champ dédié en base : « Gymnase Pierre Dupuis »
  * donne « Dupuis » — le mot distinctif est le patronyme — tandis que « Halle des
- * Sports » donne « Halle », son nom d'usage. Le nom complet reste lu par les lecteurs
- * d'écran et disponible en infobulle ; rien ne se perd si la règle tombe à côté sur un
- * futur gymnase. Le jour où le club en compte plus de deux, mieux vaudra une colonne
- * `shortName` sur `venues` qu'une heuristique plus fine.
+ * Sports » donne « Halle », son nom d'usage. Le nom complet reste disponible en
+ * infobulle et dans la liste par jour ; rien ne se perd si la règle tombe à côté sur
+ * un futur gymnase. Le jour où le club en compte plus de deux, mieux vaudra une
+ * colonne `shortName` sur `venues` qu'une heuristique plus fine.
  */
 function shortVenue(name: string): string {
   const words = name.trim().split(/\s+/);
@@ -100,15 +76,98 @@ function shortVenue(name: string): string {
   return /^gymnase$/i.test(words[0]) ? words[words.length - 1] : words[0];
 }
 
-/** Créneaux d'une case. Plusieurs sont possibles : deux groupes partagent parfois l'heure et la salle. */
-const cellSlots = (weekday: number, venue: string, range: { startTime: string; endTime: string }) =>
-  shown.filter(
-    (slot) =>
-      slot.weekday === weekday &&
-      (slot.venue?.name ?? '—') === venue &&
-      slot.startTime === range.startTime &&
-      slot.endTime === range.endTime
-  );
+/**
+ * Placement d'un créneau dans sa colonne de jour.
+ *
+ * Deux créneaux qui se chevauchent se partagent la largeur du jour, en « voies ». Le
+ * partage se calcule par **grappe** — un ensemble de créneaux liés de proche en proche
+ * par un chevauchement — et non sur la journée entière : le mercredi, le Minibad de
+ * 13:15 n'a aucune raison de rétrécir parce que deux créneaux se superposent le soir.
+ */
+interface Placed {
+  slot: ScheduleSlotView;
+  startMin: number;
+  endMin: number;
+  lane: number;
+  lanes: number;
+}
+
+function place(daySlots: ScheduleSlotView[]): Placed[] {
+  const sorted = daySlots
+    .map((slot) => ({ slot, startMin: toMinutes(slot.startTime), endMin: toMinutes(slot.endTime) }))
+    .sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
+
+  const placed: Placed[] = [];
+  let cluster: Placed[] = [];
+  let laneEnds: number[] = [];
+  let clusterEnd = -1;
+
+  const flush = () => {
+    for (const item of cluster) item.lanes = laneEnds.length;
+    placed.push(...cluster);
+    cluster = [];
+    laneEnds = [];
+    clusterEnd = -1;
+  };
+
+  for (const item of sorted) {
+    // Plus aucun recouvrement avec ce qui précède : la grappe est close, la largeur
+    // repart à pleine colonne.
+    if (cluster.length > 0 && item.startMin >= clusterEnd) flush();
+
+    let lane = laneEnds.findIndex((end) => end <= item.startMin);
+    if (lane === -1) {
+      laneEnds.push(item.endMin);
+      lane = laneEnds.length - 1;
+    } else {
+      laneEnds[lane] = item.endMin;
+    }
+
+    cluster.push({ ...item, lane, lanes: 1 });
+    clusterEnd = Math.max(clusterEnd, item.endMin);
+  }
+  flush();
+
+  return placed;
+}
+
+/**
+ * Colonnes : un jour, et rien d'autre.
+ *
+ * Scinder chaque jour par gymnase donnait jusqu'à quatorze colonnes, et un tableau plus
+ * large que l'écran dès que la semaine se remplit. Le gymnase est désormais **écrit dans
+ * le créneau** : la grille reste à sept colonnes au pire, quel que soit le nombre de
+ * salles que le club obtienne de la mairie.
+ */
+const days = WEEKDAYS
+  .map((label, weekday) => ({ label, short: SHORT_WEEKDAYS[weekday], weekday }))
+  .filter((day) => day.weekday > 0 && shown.some((slot) => slot.weekday === day.weekday))
+  .map((day) => ({
+    ...day,
+    placed: place(shown.filter((slot) => slot.weekday === day.weekday))
+  }));
+
+/**
+ * Lignes : une par heure pleine, du premier début au dernier fin.
+ *
+ * Les horaires du club sont irréguliers (13:15–14:15, 15:45–16:30) ; une ligne par
+ * plage distincte donnait une règle verticale sans échelle, où deux lignes voisines
+ * pouvaient valoir quinze minutes ou trois heures. La règle est donc au pas fixe et les
+ * créneaux se positionnent **au prorata des minutes** : un créneau à cheval sur deux
+ * heures les chevauche pour de bon, sans décaler quoi que ce soit autour de lui.
+ */
+const bounds = shown.flatMap((slot) => [toMinutes(slot.startTime), toMinutes(slot.endTime)]);
+const startHour = bounds.length > 0 ? Math.floor(Math.min(...bounds) / 60) : 0;
+const endHour = bounds.length > 0 ? Math.ceil(Math.max(...bounds) / 60) : 0;
+const hours = Array.from({ length: Math.max(endHour - startHour, 0) }, (_, i) => startHour + i);
+const originMin = startHour * 60;
+const spanMin = Math.max((endHour - startHour) * 60, 1);
+
+/** Position d'un créneau, en pourcentage de la hauteur totale de la règle. */
+const offsetOf = (placedSlot: Placed) => ((placedSlot.startMin - originMin) / spanMin) * 100;
+const heightOf = (placedSlot: Placed) => ((placedSlot.endMin - placedSlot.startMin) / spanMin) * 100;
+
+const titleOf = (slot: ScheduleSlotView) => slot.label ?? AUDIENCES[slot.audience] ?? slot.audience;
 
 const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'libre'))];
 ---
@@ -135,96 +194,59 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
       )}
 
       {/*
-        Grille hebdomadaire : les jours en colonnes, les horaires en lignes, chaque
-        jour scindé par gymnase. Réservée aux écrans larges — neuf colonnes sur un
-        téléphone ne se lisent pas, d'où la liste par jour en dessous.
+        Grille hebdomadaire : les jours en colonnes, une règle d'heures pleines à gauche.
+
+        Elle est purement visuelle — `aria-hidden` — parce qu'aucune sémantique HTML ne
+        décrit honnêtement un créneau posé à 22 % de la hauteur d'une colonne. C'est la
+        liste par jour, juste en dessous, qui porte l'information pour les lecteurs
+        d'écran : elle reste dans le flux à toutes les largeurs, seulement masquée à
+        l'œil au-delà de `md`.
       */}
-      <div class="hidden overflow-x-auto md:block">
-        <table class="w-full border-separate border-spacing-0 text-left text-sm">
-          <caption class="sr-only">
-            Créneaux d'entraînement : les jours en colonnes, scindés par gymnase, les horaires en lignes.
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col" rowspan="2" class="border-border sticky left-0 z-10 border-b bg-background px-3 py-2 align-bottom font-medium">
-                Horaire
-              </th>
-              {days.map((day) => (
-                <th
-                  scope="colgroup"
-                  colspan={day.venues.length}
-                  class="border-border border-b border-l px-3 py-2 text-center font-medium"
-                >
-                  {day.label}
-                </th>
-              ))}
-            </tr>
-            <tr>
-              {days.map((day) =>
-                day.venues.map((venue, index) => (
-                  <th
-                    scope="col"
-                    class:list={[
-                      'border-border text-muted-foreground min-w-[8rem] border-b px-3 py-1.5 text-xs font-normal',
-                      index === 0 && 'border-l'
-                    ]}
-                  >
-                    {/*
-                      Le nom court est affiché, le nom complet lu : `title` seul ne
-                      s'annonce pas de façon fiable au lecteur d'écran, et n'existe pas
-                      au toucher.
-                    */}
-                    <span aria-hidden="true" title={venue}>{shortVenue(venue)}</span>
-                    <span class="sr-only">{venue}</span>
-                  </th>
-                ))
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {ranges.map((range) => (
-              <tr>
-                <th
-                  scope="row"
-                  class="border-border sticky left-0 z-10 border-b bg-background px-3 py-2 text-left font-normal tabular-nums whitespace-nowrap"
-                >
-                  {range.startTime} – {range.endTime}
-                </th>
-                {days.map((day) =>
-                  day.venues.map((venue, index) => {
-                    const cell = cellSlots(day.weekday, venue, range);
-                    return (
-                      <td
-                        class:list={[
-                          'border-border border-b px-1.5 py-1.5 align-top',
-                          index === 0 && 'border-l'
-                        ]}
-                      >
-                        {cell.map((slot) => (
-                          <div
-                            class="nba-slot rounded-md px-2 py-1.5"
-                            data-family={FAMILY[slot.audience] ?? 'libre'}
-                          >
-                            <span class="block font-medium">
-                              {slot.label ?? AUDIENCES[slot.audience] ?? slot.audience}
-                            </span>
-                            <span class="text-muted-foreground block text-xs tabular-nums">
-                              {slot.startTime} – {slot.endTime}
-                            </span>
-                          </div>
-                        ))}
-                      </td>
-                    );
-                  })
-                )}
-              </tr>
+      <div
+        class="nba-schedule-grid hidden md:grid"
+        style={`grid-template-columns: var(--gutter) repeat(${days.length}, minmax(0, 1fr)); --hours: ${hours.length}`}
+        aria-hidden="true"
+      >
+        <div class="nba-schedule-corner"></div>
+        {days.map((day) => (
+          <div class="nba-schedule-head">
+            <span class="lg:hidden">{day.short}</span>
+            <span class="hidden lg:inline">{day.label}</span>
+          </div>
+        ))}
+
+        <div class="nba-schedule-gutter">
+          {hours.map((hour) => (
+            <div class="nba-schedule-hour">{pad(hour)}:00</div>
+          ))}
+        </div>
+
+        {days.map((day) => (
+          <div class="nba-schedule-day">
+            {day.placed.map((entry) => (
+              <div
+                class="nba-slot"
+                data-family={FAMILY[entry.slot.audience] ?? 'libre'}
+                data-narrow={entry.lanes > 1 ? 'true' : undefined}
+                style={`--top: ${offsetOf(entry)}; --height: ${heightOf(entry)}; --lane: ${entry.lane}; --lanes: ${entry.lanes}`}
+                title={`${titleOf(entry.slot)} — ${entry.slot.startTime}–${entry.slot.endTime} · ${entry.slot.venue?.name ?? '—'}`}
+              >
+                <span class="nba-slot-title">{titleOf(entry.slot)}</span>
+                <span class="nba-slot-meta">
+                  {entry.slot.startTime}–{entry.slot.endTime}
+                  {entry.slot.venue && <> · {shortVenue(entry.slot.venue.name)}</>}
+                </span>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        ))}
       </div>
 
-      {/* Sur téléphone, la grille devient une liste par jour : même information, sans défilement latéral. */}
-      <div class="space-y-5 md:hidden">
+      {/*
+        Sur téléphone, la grille devient une liste par jour : même information, sans
+        défilement latéral. Au-delà de `md`, elle reste lue mais n'est plus vue.
+      */}
+      <div class="space-y-5 md:sr-only">
         {days.map((day) => (
           <div>
             <DayHeading class="mb-2 font-semibold">{day.label}</DayHeading>
@@ -234,9 +256,7 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
                 .sort((a, b) => a.startTime.localeCompare(b.startTime))
                 .map((slot) => (
                   <li class="nba-slot rounded-md px-3 py-2" data-family={FAMILY[slot.audience] ?? 'libre'}>
-                    <span class="block font-medium">
-                      {slot.label ?? AUDIENCES[slot.audience] ?? slot.audience}
-                    </span>
+                    <span class="block font-medium">{titleOf(slot)}</span>
                     <span class="text-muted-foreground block text-xs tabular-nums">
                       {slot.startTime} – {slot.endTime} · {slot.venue?.name ?? '—'}
                     </span>
@@ -272,6 +292,72 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
     --group-libre: #199e70;
   }
 
+  .nba-schedule-grid {
+    /*
+      Hauteur d'une heure. C'est l'unique échelle de la grille : tout le reste — la
+      règle, la position et la hauteur des créneaux — s'en déduit, et un créneau de
+      quarante-cinq minutes fait bien les trois quarts d'un créneau d'une heure.
+    */
+    --hour-h: 4rem;
+    --gutter: 3.25rem;
+  }
+
+  @media (min-width: 1024px) {
+    .nba-schedule-grid {
+      --hour-h: 4.5rem;
+      --gutter: 3.75rem;
+    }
+  }
+
+  .nba-schedule-head {
+    border-bottom: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+    padding: 0.375rem 0.5rem;
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .nba-schedule-corner {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nba-schedule-gutter,
+  .nba-schedule-day {
+    height: calc(var(--hours) * var(--hour-h));
+  }
+
+  .nba-schedule-hour {
+    /*
+      Le libellé coiffe sa tranche plutôt que de chevaucher le trait : la ligne
+      « 18:00 » nomme la bande qui va de 18 h à 19 h, ce qui se lit sans légende.
+    */
+    height: var(--hour-h);
+    padding-top: 0.125rem;
+    padding-right: 0.5rem;
+    text-align: right;
+    font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted-foreground);
+  }
+
+  .nba-schedule-day {
+    position: relative;
+    border-left: 1px solid var(--border);
+    /*
+      Les traits d'heure sont peints, pas empilés en éléments : une seule déclaration
+      donne la règle complète, et rien dans le DOM ne peut la décaler.
+    */
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--border) 0,
+      var(--border) 1px,
+      transparent 1px,
+      transparent var(--hour-h)
+    );
+    border-bottom: 1px solid var(--border);
+  }
+
   /*
     Fond teinté et non aplat : le texte garde l'encre du thème plutôt que la couleur
     de sa famille — une couleur de série ne doit jamais porter du texte. Le liseré
@@ -279,14 +365,75 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
   */
   .nba-slot {
     border-left: 3px solid var(--family-color);
-    background: color-mix(in oklab, var(--family-color) 12%, transparent);
+    /*
+      Fond **opaque**, et non teinté par transparence : sur la grille, les traits
+      d'heure passeraient sinon au travers du créneau et le barreraient en deux. Le
+      mélange se fait donc avec le fond de page plutôt qu'avec du transparent, pour
+      exactement la même couleur à l'œil et un créneau qui masque ce qu'il recouvre.
+    */
+    background: color-mix(in oklab, var(--family-color) 12%, var(--background));
   }
   .nba-slot[data-family='jeunes'] { --family-color: var(--group-jeunes); }
   .nba-slot[data-family='adultes'] { --family-color: var(--group-adultes); }
   .nba-slot[data-family='libre'] { --family-color: var(--group-libre); }
 
+  .nba-schedule-day .nba-slot {
+    position: absolute;
+    top: calc(var(--top) * 1%);
+    height: calc(var(--height) * 1% - 2px);
+    /*
+      Les créneaux qui se chevauchent se partagent la largeur du jour. `right` reste
+      automatique : la largeur est donc bien celle demandée, moins l'espace qui sépare
+      deux voies.
+    */
+    left: calc(var(--lane) / var(--lanes) * 100%);
+    width: calc(100% / var(--lanes) - 3px);
+    margin-left: 2px;
+    overflow: hidden;
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.375rem;
+    line-height: 1.2;
+  }
+
+  .nba-slot-title {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .nba-slot-meta {
+    display: block;
+    font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted-foreground);
+  }
+
+  /*
+    `break-word` et non `anywhere` : le second entre dans le calcul de la largeur
+    minimale et coupe « Poussins » en « Poussin / s » alors même que le mot tenait.
+    La césure prend le relais quand un mot déborde vraiment.
+  */
+  .nba-schedule-day .nba-slot-title,
+  .nba-schedule-day .nba-slot-meta {
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  /* Deux créneaux qui se partagent un jour disposent de moitié moins de largeur. */
+  .nba-schedule-day .nba-slot[data-narrow] .nba-slot-title {
+    font-size: 0.6875rem;
+  }
+  .nba-schedule-day .nba-slot[data-narrow] .nba-slot-meta {
+    font-size: 0.625rem;
+  }
+
   .nba-slot + .nba-slot {
     /* Deux groupes dans la même case : un écart franc, pas deux fonds accolés. */
     margin-top: 0.375rem;
+  }
+
+  .nba-schedule-day .nba-slot + .nba-slot {
+    /* Positionnés en absolu, les créneaux voisins n'ont aucun écart à ménager. */
+    margin-top: 0;
   }
 </style>
