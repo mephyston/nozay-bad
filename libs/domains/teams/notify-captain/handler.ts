@@ -57,7 +57,7 @@ export async function notifyCaptain(
   const members = await getMembersBySeason(db, team.seasonCode);
   const byLicence = new Map(members.map((m) => [normalizeLicence(m.licence), m]));
 
-  const own = await staffContacts(db, byLicence, [lineup.captainLicence, lineup.viceCaptainLicence]);
+  const own = staffContacts(byLicence, [lineup.captainLicence, lineup.viceCaptainLicence]);
 
   // L'équipe du dessus n'est concernée que par la hiérarchie : une erreur dure sur la
   // composition d'en dessous ne la regarde pas.
@@ -66,7 +66,7 @@ export async function notifyCaptain(
     ? await loadLineup(db, { teamId: upper.id, dayNumber: input.dayNumber })
     : null;
   const counterpart = upperLineup
-    ? await staffContacts(db, byLicence, [
+    ? staffContacts(byLicence, [
         upperLineup.captainLicence,
         upperLineup.viceCaptainLicence
       ])

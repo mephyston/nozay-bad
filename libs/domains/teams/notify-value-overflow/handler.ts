@@ -55,11 +55,11 @@ export async function notifyValueOverflow(
     upperTeam: ClubTeamRow,
     upperLineup: GetLineupOutput
   ) => {
-    const ownStaff = await staffContacts(db, byLicence, [
+    const ownStaff = staffContacts(byLicence, [
       lowerLineup.captainLicence,
       lowerLineup.viceCaptainLicence
     ]);
-    const upperStaff = await staffContacts(db, byLicence, [
+    const upperStaff = staffContacts(byLicence, [
       upperLineup.captainLicence,
       upperLineup.viceCaptainLicence
     ]);
