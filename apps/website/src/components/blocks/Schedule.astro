@@ -8,17 +8,16 @@ const { block, slots = [], nested = false } = Astro.props;
 /*
   Imbriqué dans une colonne, le bloc perd son enveloppe et son niveau de titre.
 
-  Hors imbrication, il prend `max-w-7xl` là où les autres blocs tiennent en `max-w-5xl` :
-  la grille doit loger jusqu'à quatorze voies — dix sous-colonnes « jour × gymnase », dont
-  quatre dédoublées — et 992 px les ramèneraient à 66 px, sous la largeur d'un horaire.
-  Rien ne l'en empêche : les blocs portent chacun leur propre enveloppe, la page n'en
-  impose aucune.
+  Il reprend la largeur des autres blocs, `max-w-5xl` : la pondération des colonnes donne
+  78 px par voie, ce qui suffit à un libellé et à son horaire. C'est le survol qui rend de
+  la place là où on regarde, plutôt qu'une enveloppe hors gabarit qui en donnerait partout
+  et tout le temps.
 
-  Le point de bascule passe de `md` à `lg`. À 768 px, quatorze voies ne tiennent pas sans
-  défilement horizontal, et c'est précisément ce qu'on cherche à éviter ; la liste par
-  jour, elle, ne perd rien à être lue sur une tablette.
+  La bascule reste à `lg`. En dessous, douze parts de largeur ne tiennent pas sans
+  défilement horizontal, et le survol n'existe pas au doigt ; la liste par jour, elle, ne
+  perd rien à être lue sur une tablette.
 */
-const shell = nested ? '' : 'mx-auto max-w-7xl px-4 py-8';
+const shell = nested ? '' : 'mx-auto max-w-5xl px-4 py-8';
 const Heading = nested ? 'h3' : 'h2';
 /** Le nom du jour reste d'un cran sous le titre du bloc, imbriqué ou non. */
 const DayHeading = nested ? 'h4' : 'h3';
@@ -170,20 +169,58 @@ const days = WEEKDAYS
   });
 
 /**
- * Gabarit des colonnes, pondéré par le nombre de voies.
+ * Largeurs, au repos et au survol.
  *
  * Une sous-colonne qui accueille deux groupes au même horaire vaut deux voies, donc deux
- * parts de largeur : **toutes les voies de la grille font ainsi la même largeur**, qu'elles
- * partagent leur colonne ou non. Répartir à colonnes égales donnerait des demi-colonnes de
- * 46 px à côté de colonnes pleines de 93 px, pour la même chose à l'écran.
+ * parts : **toutes les voies font ainsi la même largeur au repos**, qu'elles partagent
+ * leur colonne ou non. Répartir à colonnes égales donnerait des demi-colonnes de 39 px à
+ * côté de colonnes pleines de 78 px, pour la même chose à l'écran.
  *
- * Le plancher `--col-min` reste uniforme et volontairement bas : il ne sert qu'à empêcher
- * l'écrasement, pas à dicter la répartition, que les `fr` font seuls.
+ * Au survol d'un gymnase, ce gymnase gagne de la largeur sur son jour et les autres se
+ * partagent le reste, au prorata de leur poids de repos. Les gabarits sont
+ * calculés ici et posés en variables CSS : le survol se contente d'échanger une variable,
+ * ce qui laisse la transition interpoler deux listes de `fr` de même longueur — la seule
+ * forme que le navigateur sache animer.
  */
-const columnTemplate = days
-  .flatMap((day) => day.venues.map((venue) => Math.max(1, ...venue.placed.map((entry) => entry.lanes))))
-  .map((lanes) => `minmax(var(--col-min), ${lanes}fr)`)
-  .join(' ');
+/**
+ * De combien le survol élargit, et jusqu'où.
+ *
+ * L'élargissement est **relatif** : une part fixe ne marcherait pas, un gymnase déjà
+ * dédoublé occupant déjà les deux tiers de son jour, la lui « donner » ne bougerait rien.
+ * Le gymnase survolé gagne donc `HOVER_GAIN` de la largeur du jour, plafonné à
+ * `HOVER_MAX` — au-delà, le voisin descend sous la largeur d'un mot et ne montre plus
+ * qu'un aplat de couleur.
+ */
+const HOVER_GAIN = 0.3;
+const HOVER_MAX = 0.75;
+
+const laneCount = (venue: { placed: Placed[] }) =>
+  Math.max(1, ...venue.placed.map((entry) => entry.lanes));
+
+const layout = days.map((day) => {
+  const weights = day.venues.map(laneCount);
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  const rest = weights.map((weight) => `${weight}fr`).join(' ');
+
+  return {
+    ...day,
+    /** Poids du jour dans la rangée : la somme de ses voies. */
+    weight: total,
+    rest,
+    hovered: weights.map((_, index) => {
+      if (weights.length === 1) return rest;
+      const others = total - weights[index];
+      const share = Math.min(HOVER_MAX, weights[index] / total + HOVER_GAIN);
+      return weights
+        .map((weight, i) =>
+          i === index
+            ? `${share.toFixed(3)}fr`
+            : `${((1 - share) * (weight / others)).toFixed(3)}fr`
+        )
+        .join(' ');
+    })
+  };
+});
 
 /**
  * Lignes : une par heure pleine, du premier début au dernier fin.
@@ -233,64 +270,67 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
 
       {/*
         Grille hebdomadaire : les jours en colonnes, scindés par gymnase, sur une règle
-        d'heures pleines.
+        d'heures pleines. Survoler un gymnase lui donne les deux tiers de la largeur de
+        son jour ; son voisin se resserre et se réduit à ses libellés.
 
         Elle est purement visuelle — `aria-hidden` — parce qu'aucune sémantique HTML ne
-        décrit honnêtement un créneau posé à 22 % de la hauteur d'une colonne. C'est la
-        liste par jour, juste en dessous, qui porte l'information pour les lecteurs
-        d'écran : elle reste dans le flux à toutes les largeurs, seulement masquée à
-        l'œil au-delà de `md`.
+        décrit honnêtement un créneau posé à 22 % de la hauteur d'une colonne, et parce
+        qu'une information qui n'apparaît qu'au survol n'en est pas une. C'est la liste
+        par jour, juste en dessous, qui porte l'information pour les lecteurs d'écran :
+        elle reste dans le flux à toutes les largeurs, seulement masquée à l'œil au-delà
+        de `lg`, et elle donne tout, sans rien demander.
       */}
-      <div class="nba-schedule-scroll hidden lg:block">
-        <div
-          class="nba-schedule-grid"
-          style={`grid-template-columns: var(--gutter) ${columnTemplate}; --hours: ${hours.length}`}
-          aria-hidden="true"
-        >
-          <div class="nba-schedule-corner"></div>
-
-          {days.map((day) => (
-            <div class="nba-schedule-day-head" style={`grid-column: span ${day.venues.length}`}>
-              {day.label}
-            </div>
-          ))}
-
-          {days.map((day) =>
-            day.venues.map((venue, index) => (
-              <div class="nba-schedule-venue-head" data-first={index === 0 ? 'true' : undefined}>
-                {/*
-                  Le nom court est affiché, le nom complet reste lisible en infobulle et
-                  écrit en toutes lettres dans la liste par jour, qui est la version lue.
-                */}
-                <span title={venue.name}>{shortVenue(venue.name)}</span>
-              </div>
-            ))
-          )}
-
-          <div class="nba-schedule-gutter">
+      <div class="nba-schedule-grid hidden lg:flex" style={`--hours: ${hours.length}`} aria-hidden="true">
+        <div class="nba-schedule-gutter">
+          <div class="nba-schedule-gutter-head"></div>
+          <div class="nba-schedule-hours">
             {hours.map((hour) => (
               <div class="nba-schedule-hour">{pad(hour)}:00</div>
             ))}
           </div>
-
-          {days.map((day) =>
-            day.venues.map((venue, index) => (
-              <div class="nba-schedule-col" data-first={index === 0 ? 'true' : undefined}>
-                {venue.placed.map((entry) => (
-                  <div
-                    class="nba-slot nba-schedule-cell"
-                    data-family={FAMILY[entry.slot.audience] ?? 'libre'}
-                    style={`--top: ${offsetOf(entry)}; --height: ${heightOf(entry)}; --lane: ${entry.lane}; --lanes: ${entry.lanes}`}
-                    title={`${titleOf(entry.slot)} — ${entry.slot.startTime}–${entry.slot.endTime} · ${venue.name}`}
-                  >
-                    <span class="nba-slot-title">{titleOf(entry.slot)}</span>
-                    <span class="nba-slot-meta">{entry.slot.startTime}–{entry.slot.endTime}</span>
-                  </div>
-                ))}
-              </div>
-            ))
-          )}
         </div>
+
+        {layout.map((day) => (
+          <div class="nba-schedule-day" style={`flex-grow: ${day.weight}`}>
+            <div class="nba-schedule-day-head">{day.label}</div>
+            <div
+              class="nba-schedule-venues"
+              style={[
+                `--rest: ${day.rest}`,
+                ...day.hovered.map((template, index) => `--hov-${index + 1}: ${template}`)
+              ].join('; ')}
+            >
+              {day.venues.map((venue) => (
+                <div class="nba-schedule-venue">
+                  <div class="nba-schedule-venue-head">
+                    {/*
+                      Le nom court est affiché, le nom complet reste lisible en infobulle
+                      et écrit en toutes lettres dans la liste par jour, qui est la
+                      version lue.
+                    */}
+                    <span title={venue.name}>{shortVenue(venue.name)}</span>
+                  </div>
+                  <div class="nba-schedule-col">
+                    {venue.placed.map((entry) => (
+                      <div
+                        class="nba-slot nba-schedule-cell"
+                        data-family={FAMILY[entry.slot.audience] ?? 'libre'}
+                        style={`--top: ${offsetOf(entry)}; --height: ${heightOf(entry)}; --lane: ${entry.lane}; --lanes: ${entry.lanes}`}
+                        title={`${titleOf(entry.slot)} — ${entry.slot.startTime}–${entry.slot.endTime} · ${venue.name}`}
+                      >
+                        <span class="nba-slot-title">{titleOf(entry.slot)}</span>
+                        <span class="nba-slot-meta">{entry.slot.startTime}–{entry.slot.endTime}</span>
+                        {entry.slot.coachName && (
+                          <span class="nba-slot-coach">{entry.slot.coachName}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/*
@@ -343,103 +383,32 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
     --group-libre: #199e70;
   }
 
-  .nba-schedule-scroll {
-    /*
-      Filet de sécurité, et non mode de fonctionnement : à dix sous-colonnes la grille
-      tient dans les 992 px du gabarit sans défiler. `--col-min` ne se fait sentir que
-      le jour où le club obtiendrait une troisième salle — mieux vaut alors défiler que
-      rendre chaque colonne illisible.
-    */
-    overflow-x: auto;
-  }
-
   .nba-schedule-grid {
-    display: grid;
     /*
-      Hauteur d'une heure. C'est l'unique échelle de la grille : tout le reste — la
-      règle, la position et la hauteur des créneaux — s'en déduit, et un créneau de
-      quarante-cinq minutes fait bien les trois quarts d'un créneau d'une heure.
+      Deux hauteurs et deux échelles, et tout le reste s'en déduit : la règle, la position
+      et la hauteur des créneaux. Un créneau de quarante-cinq minutes fait bien les trois
+      quarts d'un créneau d'une heure.
     */
     --hour-h: 4.5rem;
-    --gutter: 3.75rem;
-    /*
-      Plancher d'une voie, pas sa largeur : les `fr` répartissent, celui-ci empêche
-      seulement l'écrasement. Il est calé sous la part qu'obtient une voie au point de
-      bascule (1024 px → 66 px), pour qu'aucune colonne ne soit bloquée à son minimum et
-      ne fasse déborder la grille.
-    */
-    --col-min: 4rem;
-  }
-
-  /* Le jour coiffe ses gymnases ; l'angle mort couvre les deux rangs d'en-tête. */
-  .nba-schedule-corner {
-    grid-row: 1 / 3;
-    grid-column: 1;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .nba-schedule-day-head {
-    grid-row: 1;
-    border-left: 1px solid var(--border);
-    padding: 0.375rem 0.5rem;
-    text-align: center;
-    font-size: 0.875rem;
-    font-weight: 500;
-  }
-
-  .nba-schedule-venue-head {
-    grid-row: 2;
-    border-bottom: 1px solid var(--border);
-    padding: 0.25rem 0.375rem;
-    text-align: center;
-    font-size: 0.6875rem;
-    font-weight: 400;
-    color: var(--muted-foreground);
-    /* Un nom de gymnase ne doit pas élargir la colonne : il est déjà abrégé. */
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  /*
-    Deux traits de force différente : le jour se sépare franchement du précédent, les
-    salles d'un même jour se distinguent d'un filet discret. Sans cette hiérarchie, dix
-    colonnes équidistantes ne laissent plus voir où commence le mardi.
-  */
-  .nba-schedule-venue-head[data-first],
-  .nba-schedule-col[data-first] {
-    border-left: 1px solid var(--border);
-  }
-  .nba-schedule-venue-head:not([data-first]),
-  .nba-schedule-col:not([data-first]) {
-    border-left: 1px dotted color-mix(in oklab, var(--border) 70%, transparent);
+    --gutter-w: 3.5rem;
+    --day-head-h: 1.75rem;
+    --venue-head-h: 1.5rem;
+    --body-h: calc(var(--hours) * var(--hour-h));
+    align-items: stretch;
   }
 
   .nba-schedule-gutter {
-    grid-row: 3;
-    grid-column: 1;
+    flex: 0 0 var(--gutter-w);
   }
 
-  .nba-schedule-col {
-    grid-row: 3;
-    position: relative;
-    /*
-      Les traits d'heure sont peints, pas empilés en éléments : une seule déclaration
-      donne la règle complète, et rien dans le DOM ne peut la décaler.
-    */
-    background-image: repeating-linear-gradient(
-      to bottom,
-      var(--border) 0,
-      var(--border) 1px,
-      transparent 1px,
-      transparent var(--hour-h)
-    );
+  /* L'angle mort coiffe les deux rangs d'en-tête, jour puis gymnase. */
+  .nba-schedule-gutter-head {
+    height: calc(var(--day-head-h) + var(--venue-head-h));
     border-bottom: 1px solid var(--border);
   }
 
-  .nba-schedule-gutter,
-  .nba-schedule-col {
-    height: calc(var(--hours) * var(--hour-h));
+  .nba-schedule-hours {
+    height: var(--body-h);
   }
 
   .nba-schedule-hour {
@@ -454,6 +423,103 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
     font-size: 0.6875rem;
     font-variant-numeric: tabular-nums;
     color: var(--muted-foreground);
+  }
+
+  /*
+    Un jour pèse la somme de ses voies : deux gymnases dont l'un dédouble vaut trois parts.
+    `flex-basis: 0` pour que `flex-grow` réparte la largeur entière et non le seul surplus.
+  */
+  .nba-schedule-day {
+    flex-basis: 0;
+    min-width: 0;
+    border-left: 1px solid var(--border);
+  }
+
+  .nba-schedule-day-head {
+    height: var(--day-head-h);
+    /* Marge minimale : « Dimanche » tient tout juste dans une colonne d'une seule voie. */
+    padding: 0 0.125rem;
+    text-align: center;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: var(--day-head-h);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  /*
+    La grille imbriquée d'un jour : une colonne par gymnase, et **c'est elle qui s'anime**.
+    Les deux listes de `fr` ont la même longueur, seule forme que le navigateur sache
+    interpoler ; les gabarits viennent du modèle, en variables.
+  */
+  .nba-schedule-venues {
+    display: grid;
+    grid-template-columns: var(--rest);
+    transition: grid-template-columns 200ms ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nba-schedule-venues {
+      transition: none;
+    }
+  }
+
+  /*
+    Trois règles pour trois gymnases possibles dans une même journée : le club en a deux,
+    la troisième est écrite d'avance pour que le jour où la mairie en attribue un de plus
+    ne casse rien en silence. `:focus-within` double le survol pour le clavier.
+  */
+  .nba-schedule-venues:has(> :nth-child(1):hover),
+  .nba-schedule-venues:has(> :nth-child(1):focus-within) {
+    grid-template-columns: var(--hov-1);
+  }
+  .nba-schedule-venues:has(> :nth-child(2):hover),
+  .nba-schedule-venues:has(> :nth-child(2):focus-within) {
+    grid-template-columns: var(--hov-2);
+  }
+  .nba-schedule-venues:has(> :nth-child(3):hover),
+  .nba-schedule-venues:has(> :nth-child(3):focus-within) {
+    grid-template-columns: var(--hov-3);
+  }
+
+  .nba-schedule-venue {
+    min-width: 0;
+  }
+
+  .nba-schedule-venue + .nba-schedule-venue {
+    /* Deux salles d'un même jour : un filet, là où deux jours se séparent d'un trait. */
+    border-left: 1px dotted color-mix(in oklab, var(--border) 70%, transparent);
+  }
+
+  .nba-schedule-venue-head {
+    height: var(--venue-head-h);
+    border-bottom: 1px solid var(--border);
+    padding: 0 0.25rem;
+    text-align: center;
+    font-size: 0.6875rem;
+    line-height: var(--venue-head-h);
+    color: var(--muted-foreground);
+    /* Un nom de gymnase ne doit pas élargir sa colonne : il est déjà abrégé. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nba-schedule-col {
+    position: relative;
+    height: var(--body-h);
+    /*
+      Les traits d'heure sont peints, pas empilés en éléments : une seule déclaration
+      donne la règle complète, et rien dans le DOM ne peut la décaler.
+    */
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--border) 0,
+      var(--border) 1px,
+      transparent 1px,
+      transparent var(--hour-h)
+    );
+    border-bottom: 1px solid var(--border);
   }
 
   /*
@@ -480,9 +546,9 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
     top: calc(var(--top) * 1%);
     height: calc(var(--height) * 1% - 2px);
     /*
-      Deux créneaux qui se superposent se partagent la largeur de la sous-colonne — que
-      le gabarit a justement doublée pour eux. `right` reste automatique : la largeur est
-      donc bien celle demandée, moins l'espace qui sépare deux voies.
+      Deux créneaux qui se superposent dans la même salle se partagent la largeur de la
+      colonne — que la pondération a justement doublée pour eux. `right` reste
+      automatique : la largeur est donc bien celle demandée, moins l'écart entre voies.
     */
     left: calc(var(--lane) / var(--lanes) * 100%);
     width: calc(100% / var(--lanes) - 3px);
@@ -499,44 +565,63 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
     font-weight: 500;
   }
 
-  .nba-slot-meta {
+  .nba-slot-meta,
+  .nba-slot-coach {
     display: block;
     font-size: 0.6875rem;
     font-variant-numeric: tabular-nums;
     color: var(--muted-foreground);
-    /*
-      Un intervalle horaire ne se coupe jamais : « 18:00–19:30 » réparti sur quatre
-      lignes ne se lit plus comme une heure. S'il ne tient pas, il vaut mieux qu'il soit
-      tronqué — la règle de gauche et l'infobulle donnent l'information de toute façon.
-    */
-    white-space: nowrap;
   }
 
-  /*
-    `break-word` et non `anywhere` : le second entre dans le calcul de la largeur
-    minimale et coupe « Poussins » en « Poussin / s » alors même que le mot tenait.
-    La césure prend le relais quand un mot déborde vraiment.
-  */
   .nba-schedule-cell .nba-slot-title {
+    font-size: 0.6875rem;
+    /*
+      `break-word` et non `anywhere` : le second entre dans le calcul de la largeur
+      minimale et coupe « Poussins » en « Poussin / s » alors même que le mot tenait.
+      La césure prend le relais quand un mot déborde vraiment.
+    */
     overflow-wrap: break-word;
     hyphens: auto;
   }
 
-  /*
-    Entre le point de bascule et `xl`, l'enveloppe n'a pas encore ses 1280 px : une voie
-    tombe vers 78 px, où un horaire en 11 px se fait trancher en fin de ligne — il est
-    insécable, il déborde plutôt que de se replier. Tout descend donc d'un cran, le nom du
-    jour compris : « Dimanche » ne tient pas non plus en 78 px à 14 px.
-  */
-  @media (max-width: 1279px) {
-    .nba-schedule-day-head {
-      font-size: 0.8125rem;
-    }
-    .nba-schedule-cell .nba-slot-title {
-      font-size: 0.6875rem;
-    }
-    .nba-schedule-cell .nba-slot-meta {
-      font-size: 0.625rem;
-    }
+  .nba-schedule-cell .nba-slot-meta {
+    font-size: 0.625rem;
+    /*
+      Un intervalle horaire ne se coupe jamais : « 18:00–19:30 » réparti sur quatre
+      lignes ne se lit plus comme une heure.
+    */
+    white-space: nowrap;
   }
+
+  /* L'entraîneur n'apparaît qu'une fois la place faite : c'est le détail qu'on va chercher. */
+  .nba-schedule-cell .nba-slot-coach {
+    display: none;
+    font-size: 0.625rem;
+  }
+
+  .nba-schedule-venue:hover .nba-slot-coach,
+  .nba-schedule-venue:focus-within .nba-slot-coach {
+    display: block;
+  }
+
+  /*
+    Le gymnase qu'on ne regarde pas se resserre : il perd son horaire et garde son
+    libellé sur une ligne. Sans cela, une colonne descendue à 27 % rend un texte haché
+    dont plus rien ne se lit — et ce texte est justement celui dont on vient de détourner
+    l'attention.
+  */
+  .nba-schedule-venues:has(> :nth-child(1):hover) > :not(:nth-child(1)) .nba-slot-meta,
+  .nba-schedule-venues:has(> :nth-child(2):hover) > :not(:nth-child(2)) .nba-slot-meta,
+  .nba-schedule-venues:has(> :nth-child(3):hover) > :not(:nth-child(3)) .nba-slot-meta {
+    display: none;
+  }
+  .nba-schedule-venues:has(> :nth-child(1):hover) > :not(:nth-child(1)) .nba-slot-title,
+  .nba-schedule-venues:has(> :nth-child(2):hover) > :not(:nth-child(2)) .nba-slot-title,
+  .nba-schedule-venues:has(> :nth-child(3):hover) > :not(:nth-child(3)) .nba-slot-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    hyphens: none;
+  }
+
 </style>
