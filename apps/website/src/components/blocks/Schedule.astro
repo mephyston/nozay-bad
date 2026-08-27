@@ -77,24 +77,45 @@ function shortVenue(name: string): string {
 }
 
 /**
- * Placement d'un créneau dans sa colonne de jour.
+ * Placement d'un créneau dans sa colonne « jour × gymnase ».
  *
- * Deux créneaux qui se chevauchent se partagent la largeur du jour, en « voies ». Le
- * partage se calcule par **grappe** — un ensemble de créneaux liés de proche en proche
- * par un chevauchement — et non sur la journée entière : le mercredi, le Minibad de
- * 13:15 n'a aucune raison de rétrécir parce que deux créneaux se superposent le soir.
+ * Deux étapes, parce qu'il y a deux façons de se superposer et qu'une seule mérite de
+ * couper la colonne :
+ *
+ * 1. **Même intervalle exact** — deux groupes qui se partagent la salle de 18:00 à
+ *    19:30. Ils s'empilent dans une seule case, sur toute la largeur. Les couper en deux
+ *    demi-colonnes de quarante pixels casserait leurs libellés en morceaux (« Pous /
+ *    sins ») sans rien apprendre à personne : ils ont la même heure, c'est justement ce
+ *    que la case dit déjà.
+ * 2. **Chevauchement partiel** — un créneau qui déborde sur un autre. Là, les voies sont
+ *    la seule façon honnête de le montrer, et le partage se calcule par **grappe** : le
+ *    Minibad du mercredi midi n'a pas à rétrécir parce que deux créneaux se superposent
+ *    le soir.
  */
 interface Placed {
-  slot: ScheduleSlotView;
+  /** Un seul le plus souvent ; plusieurs quand la salle accueille deux groupes à la même heure. */
+  slots: ScheduleSlotView[];
   startMin: number;
   endMin: number;
   lane: number;
   lanes: number;
 }
 
-function place(daySlots: ScheduleSlotView[]): Placed[] {
-  const sorted = daySlots
-    .map((slot) => ({ slot, startMin: toMinutes(slot.startTime), endMin: toMinutes(slot.endTime) }))
+function place(venueSlots: ScheduleSlotView[]): Placed[] {
+  const byRange = new Map<string, ScheduleSlotView[]>();
+  for (const slot of venueSlots) {
+    const key = `${slot.startTime}|${slot.endTime}`;
+    const bucket = byRange.get(key);
+    if (bucket) bucket.push(slot);
+    else byRange.set(key, [slot]);
+  }
+
+  const sorted = [...byRange.values()]
+    .map((slots) => ({
+      slots,
+      startMin: toMinutes(slots[0].startTime),
+      endMin: toMinutes(slots[0].endTime)
+    }))
     .sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
 
   const placed: Placed[] = [];
@@ -132,20 +153,35 @@ function place(daySlots: ScheduleSlotView[]): Placed[] {
 }
 
 /**
- * Colonnes : un jour, et rien d'autre.
+ * Colonnes : un jour, scindé par les gymnases **qu'il utilise**.
  *
- * Scinder chaque jour par gymnase donnait jusqu'à quatorze colonnes, et un tableau plus
- * large que l'écran dès que la semaine se remplit. Le gymnase est désormais **écrit dans
- * le créneau** : la grille reste à sept colonnes au pire, quel que soit le nombre de
- * salles que le club obtienne de la mairie.
+ * Le découpage se calcule jour par jour, et non une fois pour toute la semaine : un
+ * gymnase qui ne sert pas le mardi n'y ouvre pas de colonne vide. Sur la saison en
+ * cours, la grille tient ainsi en dix colonnes là où le produit jours × gymnases en
+ * demanderait quatorze.
+ *
+ * Le gymnase étant porté par la colonne, il sort du créneau : chaque case y regagne en
+ * texte la ligne qu'elle vient de perdre en largeur.
  */
 const days = WEEKDAYS
   .map((label, weekday) => ({ label, short: SHORT_WEEKDAYS[weekday], weekday }))
   .filter((day) => day.weekday > 0 && shown.some((slot) => slot.weekday === day.weekday))
-  .map((day) => ({
-    ...day,
-    placed: place(shown.filter((slot) => slot.weekday === day.weekday))
-  }));
+  .map((day) => {
+    const daySlots = shown.filter((slot) => slot.weekday === day.weekday);
+    const names = [...new Set(daySlots.map((slot) => slot.venue?.name ?? '—'))].sort();
+    return {
+      ...day,
+      venues: names.map((name) => ({
+        name,
+        // Les voies ne servent plus qu'au vrai chevauchement : deux groupes à la même
+        // heure **dans la même salle**, ce que la colonne ne peut pas départager.
+        placed: place(daySlots.filter((slot) => (slot.venue?.name ?? '—') === name))
+      }))
+    };
+  });
+
+/** Total des sous-colonnes : ce que la grille doit répartir sur sa largeur. */
+const columnCount = days.reduce((total, day) => total + day.venues.length, 0);
 
 /**
  * Lignes : une par heure pleine, du premier début au dernier fin.
@@ -194,7 +230,8 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
       )}
 
       {/*
-        Grille hebdomadaire : les jours en colonnes, une règle d'heures pleines à gauche.
+        Grille hebdomadaire : les jours en colonnes, scindés par gymnase, sur une règle
+        d'heures pleines.
 
         Elle est purement visuelle — `aria-hidden` — parce qu'aucune sémantique HTML ne
         décrit honnêtement un créneau posé à 22 % de la hauteur d'une colonne. C'est la
@@ -202,44 +239,75 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
         d'écran : elle reste dans le flux à toutes les largeurs, seulement masquée à
         l'œil au-delà de `md`.
       */}
-      <div
-        class="nba-schedule-grid hidden md:grid"
-        style={`grid-template-columns: var(--gutter) repeat(${days.length}, minmax(0, 1fr)); --hours: ${hours.length}`}
-        aria-hidden="true"
-      >
-        <div class="nba-schedule-corner"></div>
-        {days.map((day) => (
-          <div class="nba-schedule-head">
-            <span class="lg:hidden">{day.short}</span>
-            <span class="hidden lg:inline">{day.label}</span>
-          </div>
-        ))}
+      <div class="nba-schedule-scroll hidden md:block">
+        <div
+          class="nba-schedule-grid"
+          style={`grid-template-columns: var(--gutter) repeat(${columnCount}, minmax(var(--col-min), 1fr)); --hours: ${hours.length}`}
+          aria-hidden="true"
+        >
+          <div class="nba-schedule-corner"></div>
 
-        <div class="nba-schedule-gutter">
-          {hours.map((hour) => (
-            <div class="nba-schedule-hour">{pad(hour)}:00</div>
+          {days.map((day) => (
+            <div class="nba-schedule-day-head" style={`grid-column: span ${day.venues.length}`}>
+              <span class="lg:hidden">{day.short}</span>
+              <span class="hidden lg:inline">{day.label}</span>
+            </div>
           ))}
-        </div>
 
-        {days.map((day) => (
-          <div class="nba-schedule-day">
-            {day.placed.map((entry) => (
-              <div
-                class="nba-slot"
-                data-family={FAMILY[entry.slot.audience] ?? 'libre'}
-                data-narrow={entry.lanes > 1 ? 'true' : undefined}
-                style={`--top: ${offsetOf(entry)}; --height: ${heightOf(entry)}; --lane: ${entry.lane}; --lanes: ${entry.lanes}`}
-                title={`${titleOf(entry.slot)} — ${entry.slot.startTime}–${entry.slot.endTime} · ${entry.slot.venue?.name ?? '—'}`}
-              >
-                <span class="nba-slot-title">{titleOf(entry.slot)}</span>
-                <span class="nba-slot-meta">
-                  {entry.slot.startTime}–{entry.slot.endTime}
-                  {entry.slot.venue && <> · {shortVenue(entry.slot.venue.name)}</>}
-                </span>
+          {days.map((day) =>
+            day.venues.map((venue, index) => (
+              <div class="nba-schedule-venue-head" data-first={index === 0 ? 'true' : undefined}>
+                {/*
+                  Le nom court est affiché, le nom complet reste lisible en infobulle et
+                  écrit en toutes lettres dans la liste par jour, qui est la version lue.
+                */}
+                <span title={venue.name}>{shortVenue(venue.name)}</span>
               </div>
+            ))
+          )}
+
+          <div class="nba-schedule-gutter">
+            {hours.map((hour) => (
+              <div class="nba-schedule-hour">{pad(hour)}:00</div>
             ))}
           </div>
-        ))}
+
+          {days.map((day) =>
+            day.venues.map((venue, index) => (
+              <div class="nba-schedule-col" data-first={index === 0 ? 'true' : undefined}>
+                {venue.placed.map((entry) => (
+                  <div
+                    class="nba-schedule-cell"
+                    data-narrow={entry.lanes > 1 ? 'true' : undefined}
+                    data-stacked={entry.slots.length > 1 ? 'true' : undefined}
+                    style={`--top: ${offsetOf(entry)}; --height: ${heightOf(entry)}; --lane: ${entry.lane}; --lanes: ${entry.lanes}`}
+                  >
+                    {/*
+                      Deux groupes empilés partagent l'horaire par construction : l'écrire
+                      sur chacun le répète et, sur une case d'une heure et demie, en tronque
+                      les deux. Il est donc écrit une fois, en tête de case.
+                    */}
+                    {entry.slots.length > 1 && (
+                      <span class="nba-schedule-cell-time">
+                        {entry.slots[0].startTime}–{entry.slots[0].endTime}
+                      </span>
+                    )}
+                    {entry.slots.map((slot) => (
+                      <div
+                        class="nba-slot"
+                        data-family={FAMILY[slot.audience] ?? 'libre'}
+                        title={`${titleOf(slot)} — ${slot.startTime}–${slot.endTime} · ${venue.name}`}
+                      >
+                        <span class="nba-slot-title">{titleOf(slot)}</span>
+                        <span class="nba-slot-meta">{slot.startTime}–{slot.endTime}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/*
@@ -292,7 +360,18 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
     --group-libre: #199e70;
   }
 
+  .nba-schedule-scroll {
+    /*
+      Filet de sécurité, et non mode de fonctionnement : à dix sous-colonnes la grille
+      tient dans les 992 px du gabarit sans défiler. `--col-min` ne se fait sentir que
+      le jour où le club obtiendrait une troisième salle — mieux vaut alors défiler que
+      rendre chaque colonne illisible.
+    */
+    overflow-x: auto;
+  }
+
   .nba-schedule-grid {
+    display: grid;
     /*
       Hauteur d'une heure. C'est l'unique échelle de la grille : tout le reste — la
       règle, la position et la hauteur des créneaux — s'en déduit, et un créneau de
@@ -300,17 +379,26 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
     */
     --hour-h: 4rem;
     --gutter: 3.25rem;
+    --col-min: 4.5rem;
   }
 
   @media (min-width: 1024px) {
     .nba-schedule-grid {
       --hour-h: 4.5rem;
       --gutter: 3.75rem;
+      --col-min: 5rem;
     }
   }
 
-  .nba-schedule-head {
+  /* Le jour coiffe ses gymnases ; l'angle mort couvre les deux rangs d'en-tête. */
+  .nba-schedule-corner {
+    grid-row: 1 / 3;
+    grid-column: 1;
     border-bottom: 1px solid var(--border);
+  }
+
+  .nba-schedule-day-head {
+    grid-row: 1;
     border-left: 1px solid var(--border);
     padding: 0.375rem 0.5rem;
     text-align: center;
@@ -318,12 +406,45 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
     font-weight: 500;
   }
 
-  .nba-schedule-corner {
+  .nba-schedule-venue-head {
+    grid-row: 2;
     border-bottom: 1px solid var(--border);
+    padding: 0.25rem 0.375rem;
+    text-align: center;
+    font-size: 0.6875rem;
+    font-weight: 400;
+    color: var(--muted-foreground);
+    /* Un nom de gymnase ne doit pas élargir la colonne : il est déjà abrégé. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /*
+    Deux traits de force différente : le jour se sépare franchement du précédent, les
+    salles d'un même jour se distinguent d'un filet discret. Sans cette hiérarchie, dix
+    colonnes équidistantes ne laissent plus voir où commence le mardi.
+  */
+  .nba-schedule-venue-head[data-first],
+  .nba-schedule-col[data-first] {
+    border-left: 1px solid var(--border);
+  }
+  .nba-schedule-venue-head:not([data-first]),
+  .nba-schedule-col:not([data-first]) {
+    border-left: 1px dotted color-mix(in oklab, var(--border) 70%, transparent);
+  }
+
+  .nba-schedule-gutter {
+    grid-row: 3;
+    grid-column: 1;
+  }
+
+  .nba-schedule-col {
+    grid-row: 3;
   }
 
   .nba-schedule-gutter,
-  .nba-schedule-day {
+  .nba-schedule-col {
     height: calc(var(--hours) * var(--hour-h));
   }
 
@@ -341,9 +462,8 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
     color: var(--muted-foreground);
   }
 
-  .nba-schedule-day {
+  .nba-schedule-col {
     position: relative;
-    border-left: 1px solid var(--border);
     /*
       Les traits d'heure sont peints, pas empilés en éléments : une seule déclaration
       donne la règle complète, et rien dans le DOM ne peut la décaler.
@@ -377,22 +497,79 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
   .nba-slot[data-family='adultes'] { --family-color: var(--group-adultes); }
   .nba-slot[data-family='libre'] { --family-color: var(--group-libre); }
 
-  .nba-schedule-day .nba-slot {
+  /*
+    La case : positionnée sur la règle, elle porte l'heure ; les créneaux qu'elle
+    contient se partagent sa hauteur. Un seul le plus souvent, deux quand la salle
+    accueille deux groupes au même horaire.
+  */
+  .nba-schedule-cell {
     position: absolute;
     top: calc(var(--top) * 1%);
     height: calc(var(--height) * 1% - 2px);
     /*
-      Les créneaux qui se chevauchent se partagent la largeur du jour. `right` reste
-      automatique : la largeur est donc bien celle demandée, moins l'espace qui sépare
-      deux voies.
+      Les cases qui se chevauchent partiellement se partagent la largeur de la colonne.
+      `right` reste automatique : la largeur est donc bien celle demandée, moins l'espace
+      qui sépare deux voies.
     */
     left: calc(var(--lane) / var(--lanes) * 100%);
     width: calc(100% / var(--lanes) - 3px);
     margin-left: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nba-schedule-cell-time {
+    flex: 0 0 auto;
+    padding: 0 0.125rem;
+    font-size: 0.625rem;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--muted-foreground);
+  }
+
+  /* L'horaire vit sur la case : les créneaux empilés n'ont plus à le porter. */
+  .nba-schedule-cell[data-stacked] .nba-slot-meta {
+    display: none;
+  }
+
+  .nba-schedule-cell[data-stacked] .nba-slot-title {
+    font-size: 0.6875rem;
+  }
+
+  .nba-schedule-cell .nba-slot {
+    /* Deux groupes empilés se partagent la hauteur ; un seul la prend toute. */
+    flex: 1 1 0;
+    min-height: 0;
     overflow: hidden;
     border-radius: 0.25rem;
     padding: 0.25rem 0.375rem;
     line-height: 1.2;
+  }
+
+  /*
+    Empilés, deux créneaux se partagent la hauteur d'un seul : la marge intérieure et
+    l'interligne se resserrent pour rendre à chacun la troisième ligne de libellé qu'un
+    « Groupe collège / Loisirs jeunes » réclame.
+  */
+  .nba-schedule-cell[data-stacked] .nba-slot {
+    padding: 0.125rem 0.3125rem;
+    line-height: 1.15;
+  }
+
+  /*
+    Sous `lg`, une sous-colonne descend vers 77 px : un intervalle en 11 px n'y tient
+    plus et, `nowrap` aidant, se ferait trancher en fin de ligne. Il passe donc d'un
+    cran, comme le libellé.
+  */
+  @media (max-width: 1023px) {
+    .nba-schedule-cell .nba-slot-title {
+      font-size: 0.6875rem;
+    }
+    .nba-schedule-cell .nba-slot-meta {
+      font-size: 0.625rem;
+    }
   }
 
   .nba-slot-title {
@@ -406,6 +583,12 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
     font-size: 0.6875rem;
     font-variant-numeric: tabular-nums;
     color: var(--muted-foreground);
+    /*
+      Un intervalle horaire ne se coupe jamais : « 18:00–19:30 » réparti sur quatre
+      lignes ne se lit plus comme une heure. S'il ne tient pas, il vaut mieux qu'il soit
+      tronqué — la règle de gauche et l'infobulle donnent l'information de toute façon.
+    */
+    white-space: nowrap;
   }
 
   /*
@@ -413,27 +596,37 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
     minimale et coupe « Poussins » en « Poussin / s » alors même que le mot tenait.
     La césure prend le relais quand un mot déborde vraiment.
   */
-  .nba-schedule-day .nba-slot-title,
-  .nba-schedule-day .nba-slot-meta {
+  .nba-schedule-cell .nba-slot-title {
     overflow-wrap: break-word;
     hyphens: auto;
   }
 
-  /* Deux créneaux qui se partagent un jour disposent de moitié moins de largeur. */
-  .nba-schedule-day .nba-slot[data-narrow] .nba-slot-title {
+  /*
+    Deux groupes à la même heure **dans la même salle** : la colonne se coupe en deux, et
+    chaque moitié n'a plus la largeur d'un horaire. C'est l'horaire qui saute, pas le
+    libellé — le nom du groupe est la seule chose que la position ne dit pas déjà. Sur une
+    règle proportionnelle, un créneau qui part de la ligne « 18:00 » et s'arrête à
+    mi-chemin de « 20:00 » se lit sans qu'on le lui répète ; l'infobulle et la liste par
+    jour donnent l'heure exacte à qui la veut.
+
+    Pondérer les colonnes à voies pour leur donner plus de largeur a été essayé et
+    retiré : la place se prend alors sur les colonnes simples, qui tombent à leur plancher
+    et tronquent **leurs** horaires. Une gêne sur quatre cases valait mieux que dix.
+  */
+  .nba-schedule-cell[data-narrow] .nba-slot .nba-slot-title {
     font-size: 0.6875rem;
   }
-  .nba-schedule-day .nba-slot[data-narrow] .nba-slot-meta {
-    font-size: 0.625rem;
+  .nba-schedule-cell[data-narrow] .nba-slot .nba-slot-meta {
+    display: none;
   }
 
   .nba-slot + .nba-slot {
-    /* Deux groupes dans la même case : un écart franc, pas deux fonds accolés. */
+    /* Deux groupes à la suite dans la liste : un écart franc, pas deux fonds accolés. */
     margin-top: 0.375rem;
   }
 
-  .nba-schedule-day .nba-slot + .nba-slot {
-    /* Positionnés en absolu, les créneaux voisins n'ont aucun écart à ménager. */
+  .nba-schedule-cell .nba-slot + .nba-slot {
+    /* Dans la grille, c'est le `gap` de la case qui les sépare. */
     margin-top: 0;
   }
 </style>
