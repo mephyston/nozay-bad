@@ -522,11 +522,6 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
     hyphens: auto;
   }
 
-  .nba-slot + .nba-slot {
-    /* Deux groupes à la suite dans la liste par jour : un écart franc, pas deux fonds accolés. */
-    margin-top: 0.375rem;
-  }
-
   /*
     Entre le point de bascule et `xl`, l'enveloppe n'a pas encore ses 1280 px : une voie
     tombe vers 78 px, où un horaire en 11 px se fait trancher en fin de ligne — il est
