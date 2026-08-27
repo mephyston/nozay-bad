@@ -148,6 +148,22 @@
 
   const filled = $derived(lines().length);
   const formatValue = (v: number | null) => (v === null ? '—' : v.toFixed(2).replace('.', ','));
+  /*
+   * Ce qui est une faute de composition s'affiche en rouge, comme les erreurs dures.
+   *
+   * `W1` (valeur supérieure à celle de l'équipe du dessus) et `W2` (joueurs hors de l'ordre
+   * du classement) sont des manquements au règlement : le premier fait perdre la rencontre
+   * **aux deux équipes** par pénalité, le second contrevient à l'article 6.2.2. Les afficher
+   * en ambre ou en bleu les rangeait visuellement avec les remarques anodines, alors qu'ils
+   * demandent une correction avant la journée.
+   *
+   * `W3` et `W4` restent en information, et ce n'est pas un oubli : le règlement **prévoit**
+   * l'équipe incomplète et ajuste le diviseur en conséquence, et un classement inconnu est une
+   * donnée manquante, pas une erreur du capitaine. Les peindre en rouge apprendrait à ignorer
+   * la couleur — c'est exactement ce qu'on cherche à éviter.
+   */
+  const FAULT_CODES = new Set(['W1', 'W2']);
+  const isFault = (code: string) => FAULT_CODES.has(code);
 </script>
 
 <div class="space-y-4">
@@ -246,8 +262,8 @@
   {/if}
 
   {#each view.warnings as issue (issue.code + (issue.slot ?? '') + (issue.licence ?? ''))}
-    <Alert.Root variant={issue.code === 'W1' ? 'warning' : 'info'}>
-      {#if issue.code === 'W1'}<TriangleAlert class="w-4 h-4" />{:else}<Info class="w-4 h-4" />{/if}
+    <Alert.Root variant={isFault(issue.code) ? 'destructive' : 'info'}>
+      {#if isFault(issue.code)}<TriangleAlert class="w-4 h-4" />{:else}<Info class="w-4 h-4" />{/if}
       <Alert.Description>
         {issue.message} <span class="text-xs opacity-70">(art. {issue.article})</span>
       </Alert.Description>
