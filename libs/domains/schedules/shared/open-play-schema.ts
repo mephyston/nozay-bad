@@ -34,8 +34,6 @@ export const openPlaySessionsTable = sqliteTable(
   'open_play_sessions',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    /** Recopié et non lié, comme `schedule_slots.season_code` : même domaine, même convention. */
-    seasonCode: text('season_code').notNull(),
     venueId: integer('venue_id')
       .notNull()
       .references(() => venuesTable.id),

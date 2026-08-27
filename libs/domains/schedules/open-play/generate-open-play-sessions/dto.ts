@@ -1,5 +1,4 @@
 export interface GenerateOpenPlaySessionsInput {
-  seasonCode: string;
   /** Bornes comprises, dates locales « AAAA-MM-JJ ». */
   from: string;
   to: string;

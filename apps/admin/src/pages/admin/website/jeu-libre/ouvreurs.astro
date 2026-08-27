@@ -5,6 +5,7 @@ import { PageHeader, ErrorAlert } from '@nba/ui';
 import { OpenPlayOpenersCard } from '@nba/schedules-ui';
 import { createAdminApiClient } from '../../../../lib/api';
 import { can, guardAction } from '../../../../lib/guard';
+import { fetchSeasons, currentSeasonCode } from '../../../../lib/seasons';
 import { resolveEnv } from '@nba/runtime-env';
 
 /**
@@ -65,16 +66,19 @@ let seasonCode = '';
 let errorMsg = '';
 
 try {
-  // La saison vient des créneaux, qui la portent déjà : ce domaine ne franchit pas la
-  // frontière de la comptabilité pour une chaîne de caractères.
-  const slotsRes = await apiService.fetch('http://localhost/schedules');
-  if (slotsRes.ok) {
-    const slots = ((await slotsRes.json()) as any).data ?? [];
-    seasonCode = slots[0]?.seasonCode ?? '';
-  }
+  /*
+    La saison vient du référentiel, et non plus d'un créneau.
+    Les créneaux ne portent plus de saison depuis la migration `0025` — un créneau vaut
+    d'une année sur l'autre. Lire `/accounting/seasons` coûte un droit de plus
+    (`accounting:seasons:read`), mais c'est la seule source qui dise vraiment quelle
+    saison court aujourd'hui : la précédente reposait sur la date de création d'un
+    créneau, ce qui donnait « 25-26 » à un club qui jouait sa saison 26-27.
+  */
+  const { seasons, errorMsg: seasonsError } = await fetchSeasons(apiService);
+  seasonCode = currentSeasonCode(seasons);
 
   if (!seasonCode) {
-    errorMsg = "Aucun créneau n'est enregistré : la saison des ouvreurs ne peut pas être déterminée.";
+    errorMsg = seasonsError ?? "Aucune saison n'est ouverte : la liste des ouvreurs se tient par saison.";
   } else {
     const openersRes = await apiService.fetch(
       `http://localhost/schedules/open-play/openers?season=${encodeURIComponent(seasonCode)}`

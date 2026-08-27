@@ -27,8 +27,8 @@
   }
   interface VenueRow { id: number; name: string }
 
-  let { slots = [], venues = [], seasonCode = '', canWrite = false } = $props<{
-    slots: SlotRow[]; venues: VenueRow[]; seasonCode?: string; canWrite?: boolean;
+  let { slots = [], venues = [], canWrite = false } = $props<{
+    slots: SlotRow[]; venues: VenueRow[]; canWrite?: boolean;
   }>();
 
   let editingId = $state<number | null>(null);
@@ -118,7 +118,7 @@
                 startTime, endTime, audience, label: label.trim() || null
               }
             : {
-                action: 'create', seasonCode, venueId: Number(venueId), weekday: Number(weekday),
+                action: 'create', venueId: Number(venueId), weekday: Number(weekday),
                 startTime, endTime, audience, label: label.trim() || undefined
               },
           id ? 'La modification a échoué.' : 'La création a échoué.'

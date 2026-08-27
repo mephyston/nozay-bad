@@ -23,7 +23,6 @@ async function seedSlot(weekday: number, over: Record<string, unknown> = {}) {
   const [slot] = await db
     .insert(scheduleSlotsTable)
     .values({
-      seasonCode: '25-26',
       venueId,
       weekday,
       startTime: '14:00',
@@ -55,7 +54,7 @@ describe('génération en lot', () => {
     // Du lundi 16 au dimanche 29 mars : deux samedis.
     const result = await generateOpenPlaySessions(
       db,
-      { seasonCode: '25-26', from: '2026-03-16', to: '2026-03-29' },
+      { from: '2026-03-16', to: '2026-03-29' },
       NOW
     );
 
@@ -73,7 +72,7 @@ describe('génération en lot', () => {
 
     const result = await generateOpenPlaySessions(
       db,
-      { seasonCode: '25-26', from: '2026-03-16', to: '2026-03-29' },
+      { from: '2026-03-16', to: '2026-03-29' },
       NOW
     );
 
@@ -88,11 +87,11 @@ describe('génération en lot', () => {
 
   it('est rejouable : rien de neuf, rien d’écrasé', async () => {
     await seedSlot(6);
-    await generateOpenPlaySessions(db, { seasonCode: '25-26', from: '2026-03-16', to: '2026-03-29' }, NOW);
+    await generateOpenPlaySessions(db, { from: '2026-03-16', to: '2026-03-29' }, NOW);
 
     const again = await generateOpenPlaySessions(
       db,
-      { seasonCode: '25-26', from: '2026-03-16', to: '2026-03-29' },
+      { from: '2026-03-16', to: '2026-03-29' },
       NOW
     );
 
@@ -104,7 +103,7 @@ describe('génération en lot', () => {
     // Le test central : un `DO UPDATE` au lieu d'un `DO NOTHING` remettrait le statut à
     // « ouverte » et effacerait l'ouvreur — des gens viendraient devant une porte close.
     await seedSlot(6);
-    await generateOpenPlaySessions(db, { seasonCode: '25-26', from: '2026-03-16', to: '2026-03-29' }, NOW);
+    await generateOpenPlaySessions(db, { from: '2026-03-16', to: '2026-03-29' }, NOW);
     await saveOpenPlayOpener(db, { seasonCode: '25-26', licence: '00000009' }, NOW);
     const [first] = await sessions();
     await claimOpenPlaySession(
@@ -113,7 +112,7 @@ describe('génération en lot', () => {
       NOW
     );
 
-    await generateOpenPlaySessions(db, { seasonCode: '25-26', from: '2026-03-16', to: '2026-04-30' }, NOW);
+    await generateOpenPlaySessions(db, { from: '2026-03-16', to: '2026-04-30' }, NOW);
 
     const [kept] = await db
       .select()
@@ -127,7 +126,7 @@ describe('génération en lot', () => {
     await seedSlot(6);
     await generateOpenPlaySessions(
       db,
-      { seasonCode: '25-26', from: '2026-03-16', to: '2026-03-29', minPlayers: 6 },
+      { from: '2026-03-16', to: '2026-03-29', minPlayers: 6 },
       NOW
     );
     expect((await sessions()).every((r) => r.minPlayers === 6)).toBe(true);
@@ -139,7 +138,7 @@ describe('génération en lot', () => {
 
     await generateOpenPlaySessions(
       db,
-      { seasonCode: '25-26', from: '2026-03-16', to: '2026-03-29', slotIds: [saturday.id] },
+      { from: '2026-03-16', to: '2026-03-29', slotIds: [saturday.id] },
       NOW
     );
     expect((await sessions()).map((r) => r.date)).toEqual(['2026-03-21', '2026-03-28']);
@@ -151,21 +150,14 @@ describe('ce que la génération ignore', () => {
     // Masquer un créneau est justement la façon dont le bureau retire un horaire.
     await seedSlot(6, { active: false });
     await expect(
-      generateOpenPlaySessions(db, { seasonCode: '25-26', from: '2026-03-16', to: '2026-03-29' }, NOW)
+      generateOpenPlaySessions(db, { from: '2026-03-16', to: '2026-03-29' }, NOW)
     ).rejects.toThrow(NoOpenPlaySlotError);
   });
 
   it('ignore les créneaux d’un autre public', async () => {
     await seedSlot(6, { audience: 'adultes_loisir' });
     await expect(
-      generateOpenPlaySessions(db, { seasonCode: '25-26', from: '2026-03-16', to: '2026-03-29' }, NOW)
-    ).rejects.toThrow(NoOpenPlaySlotError);
-  });
-
-  it('ignore les créneaux d’une autre saison', async () => {
-    await seedSlot(6, { seasonCode: '24-25' });
-    await expect(
-      generateOpenPlaySessions(db, { seasonCode: '25-26', from: '2026-03-16', to: '2026-03-29' }, NOW)
+      generateOpenPlaySessions(db, { from: '2026-03-16', to: '2026-03-29' }, NOW)
     ).rejects.toThrow(NoOpenPlaySlotError);
   });
 });
@@ -174,21 +166,21 @@ describe('bornes de la période', () => {
   it('refuse une période inversée', async () => {
     await seedSlot(6);
     await expect(
-      generateOpenPlaySessions(db, { seasonCode: '25-26', from: '2026-03-29', to: '2026-03-16' }, NOW)
+      generateOpenPlaySessions(db, { from: '2026-03-29', to: '2026-03-16' }, NOW)
     ).rejects.toThrow(InvalidSessionDateError);
   });
 
   it('refuse une date qui n’existe pas', async () => {
     await seedSlot(6);
     await expect(
-      generateOpenPlaySessions(db, { seasonCode: '25-26', from: '2026-02-31', to: '2026-03-16' }, NOW)
+      generateOpenPlaySessions(db, { from: '2026-02-31', to: '2026-03-16' }, NOW)
     ).rejects.toThrow(InvalidSessionDateError);
   });
 
   it('refuse au-delà d’un an — la faute de frappe sur l’année', async () => {
     await seedSlot(6);
     await expect(
-      generateOpenPlaySessions(db, { seasonCode: '25-26', from: '2026-03-16', to: '2036-03-16' }, NOW)
+      generateOpenPlaySessions(db, { from: '2026-03-16', to: '2036-03-16' }, NOW)
     ).rejects.toThrow(RangeTooWideError);
   });
 
@@ -200,7 +192,7 @@ describe('bornes de la période', () => {
 
     const result = await generateOpenPlaySessions(
       db,
-      { seasonCode: '25-26', from: '2025-09-01', to: '2026-06-30' },
+      { from: '2025-09-01', to: '2026-06-30' },
       NOW
     );
 
@@ -211,7 +203,7 @@ describe('bornes de la période', () => {
 
   it('traverse un changement d’heure sans décaler les dates', async () => {
     await seedSlot(7); // dimanche
-    await generateOpenPlaySessions(db, { seasonCode: '25-26', from: '2026-03-22', to: '2026-04-05' }, NOW);
+    await generateOpenPlaySessions(db, { from: '2026-03-22', to: '2026-04-05' }, NOW);
     // Le 29 mars est le dimanche du passage à l'heure d'été.
     expect((await sessions()).map((r) => r.date)).toEqual([
       '2026-03-22',

@@ -267,8 +267,7 @@ export const scheduleBlockSchema = Type.Object(
     type: Type.Literal('schedule'),
     heading: Type.Optional(Type.String({ maxLength: 160 })),
     audiences: Type.Array(Type.String({ maxLength: 40 }), { maxItems: 8 }),
-    venueId: Type.Optional(Type.Integer({ minimum: 1 })),
-    seasonCode: Type.Optional(Type.String({ maxLength: 10 }))
+    venueId: Type.Optional(Type.Integer({ minimum: 1 }))
   },
   { additionalProperties: false }
 );

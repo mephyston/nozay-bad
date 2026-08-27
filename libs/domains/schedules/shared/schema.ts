@@ -8,6 +8,13 @@ import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
  * club, que le site se contente d'afficher — et que l'espace adhérent voudra afficher
  * à son tour. Le bloc `schedule` d'une page ne porte donc qu'une requête, jamais des
  * lignes, et le domaine `cms` n'importe rien d'ici.
+ *
+ * Et **hors saison** : un créneau vaut d'une année sur l'autre. La colonne
+ * `season_code` a existé jusqu'à la migration `0025` ; comme rien ne la saisissait —
+ * l'admin la déduisait de la date du jour, sans jamais l'afficher — elle ne datait
+ * pas les créneaux, elle datait leur création. Une grille tenue sur deux étés s'y
+ * retrouvait coupée en deux jeux qui ne se distinguaient par rien de visible. Ce que
+ * le bureau retire d'une saison à l'autre, il le retire avec `active`.
  */
 
 export const venuesTable = sqliteTable('venues', {
@@ -34,13 +41,6 @@ export const scheduleSlotsTable = sqliteTable(
   'schedule_slots',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    /**
-     * Code de saison, recopié et non lié.
-     *
-     * `seasons` appartient au domaine comptable, et la VSA proscrit le SQL traversant
-     * les frontières de domaine. Le code est stable et lisible (« 25-26 »), il suffit.
-     */
-    seasonCode: text('season_code').notNull(),
     venueId: integer('venue_id')
       .notNull()
       .references(() => venuesTable.id),
@@ -67,7 +67,7 @@ export const scheduleSlotsTable = sqliteTable(
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
   },
   (table) => ({
-    byWeek: index('schedule_slots_season_weekday_idx').on(table.seasonCode, table.weekday, table.startTime),
+    byWeek: index('schedule_slots_weekday_idx').on(table.weekday, table.startTime),
     byAudience: index('schedule_slots_audience_idx').on(table.audience)
   })
 );

@@ -1,7 +1,6 @@
 import type { ScheduleSlotRow, VenueRow } from '../shared/schema';
 
 export interface ListScheduleSlotsInput {
-  seasonCode?: string;
   audiences?: string[];
   venueId?: number;
   /** Absent = seulement les créneaux actifs, ce que veut le site public. */

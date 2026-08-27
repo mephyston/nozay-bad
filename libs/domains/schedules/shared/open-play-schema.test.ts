@@ -32,7 +32,6 @@ async function seedSession(overrides: Record<string, unknown> = {}) {
   const [session] = await db
     .insert(openPlaySessionsTable)
     .values({
-      seasonCode: '25-26',
       venueId: venue.id,
       date: '2026-03-21',
       startTime: '14:00',
@@ -89,7 +88,6 @@ describe('séances de jeu libre', () => {
     // période ne doit rien créer, et surtout ne rien écraser.
     await expect(
       db.insert(openPlaySessionsTable).values({
-        seasonCode: '25-26',
         venueId: venue.id,
         date: '2026-03-21',
         startTime: '14:00',
@@ -110,7 +108,6 @@ describe('séances de jeu libre', () => {
     const [session] = await db
       .insert(openPlaySessionsTable)
       .values({
-        seasonCode: '25-26',
         venueId: other.id,
         date: '2026-03-21',
         startTime: '14:00',
@@ -173,7 +170,6 @@ describe('créneau récurrent supprimé', () => {
     const [slot] = await db
       .insert(scheduleSlotsTable)
       .values({
-        seasonCode: '25-26',
         venueId: venue.id,
         weekday: 6,
         startTime: '14:00',
@@ -186,7 +182,6 @@ describe('créneau récurrent supprimé', () => {
     const [generated] = await db
       .insert(openPlaySessionsTable)
       .values({
-        seasonCode: '25-26',
         venueId: venue.id,
         slotId: slot.id,
         date: '2026-03-28',

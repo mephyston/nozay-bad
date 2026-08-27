@@ -62,10 +62,6 @@ try {
   errorMsg = 'Impossible de charger les créneaux.';
 }
 
-// Saison en cours, déduite du calendrier sportif : il bascule à l'été.
-const now = new Date();
-const startYear = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
-const seasonCode = `${String(startYear).slice(2)}-${String(startYear + 1).slice(2)}`;
 ---
 
 <Layout title="Créneaux - NBA 91">
@@ -82,10 +78,10 @@ const seasonCode = `${String(startYear).slice(2)}-${String(startYear + 1).slice(
 
       <PageHeader
         title="Créneaux"
-        description={`Saison ${seasonCode}. Ces créneaux alimentent la page publique : ils remplacent la feuille Google que les moteurs de recherche ne voyaient pas.`}
+        description="Ces créneaux alimentent la page publique : ils remplacent la feuille Google que les moteurs de recherche ne voyaient pas. Ils valent d'une saison à l'autre — ce qui ne se tient plus se désactive."
       />
 
-      <SchedulesManager client:load slots={slots} venues={venues} seasonCode={seasonCode} canWrite={canWrite} />
+      <SchedulesManager client:load slots={slots} venues={venues} canWrite={canWrite} />
     </div>
   </AdminLayout>
 </Layout>

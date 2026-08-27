@@ -47,7 +47,6 @@ if (Astro.request.method === 'POST') {
       url: 'http://localhost/schedules/open-play',
       method: 'POST',
       body: {
-        seasonCode: data.seasonCode,
         venueId: data.venueId,
         date: data.date,
         startTime: data.startTime,
@@ -61,7 +60,6 @@ if (Astro.request.method === 'POST') {
       url: 'http://localhost/schedules/open-play/generate',
       method: 'POST',
       body: {
-        seasonCode: data.seasonCode,
         from: data.from,
         to: data.to,
         slotIds: data.slotIds,
@@ -109,7 +107,6 @@ if (Astro.request.method === 'POST') {
 let sessions: any[] = [];
 let venues: any[] = [];
 let openPlaySlots: any[] = [];
-let seasonCode = '';
 let errorMsg = '';
 
 try {
@@ -136,11 +133,8 @@ try {
 
   if (venuesRes.ok) venues = ((await venuesRes.json()) as any).data ?? [];
 
-  // La saison n'a pas d'écran propre ici : on la reprend des créneaux, qui la portent
-  // déjà, plutôt que d'interroger la comptabilité pour une chaîne de caractères.
   if (slotsRes.ok) {
     const allSlots = ((await slotsRes.json()) as any).data ?? [];
-    seasonCode = allSlots[0]?.seasonCode ?? sessions[0]?.seasonCode ?? '';
     // Seuls les créneaux de jeu libre peuvent être déroulés en séances.
     openPlaySlots = allSlots.filter((slot: any) => slot.audience === 'jeu_libre');
   }
@@ -171,7 +165,6 @@ try {
         sessions={sessions}
         venues={venues}
         slots={openPlaySlots}
-        seasonCode={seasonCode}
         canWrite={canWrite}
         canReadRegistrations={canReadRegistrations}
       />

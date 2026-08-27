@@ -18,7 +18,7 @@ describe('créneaux', () => {
 
   const slot = (over: Partial<Parameters<typeof createScheduleSlot>[1]> = {}) =>
     createScheduleSlot(db, {
-      seasonCode: '25-26', venueId, weekday: 1,
+      venueId, weekday: 1,
       startTime: '18:00', endTime: '19:30', audience: 'jeunes', ...over
     });
 
@@ -54,13 +54,14 @@ describe('créneaux', () => {
     expect(await listScheduleSlots(db, { includeInactive: true })).toHaveLength(1);
   });
 
-  it('filtre par public et par saison', async () => {
+  it('filtre par public', async () => {
     await slot({ audience: 'minibad' });
     await slot({ audience: 'adultes_loisir', weekday: 2 });
-    await slot({ seasonCode: '24-25', audience: 'jeunes', weekday: 4 });
+    await slot({ audience: 'jeunes', weekday: 4 });
 
     expect(await listScheduleSlots(db, { audiences: ['minibad'] })).toHaveLength(1);
-    expect(await listScheduleSlots(db, { seasonCode: '25-26' })).toHaveLength(2);
+    expect(await listScheduleSlots(db, { audiences: ['minibad', 'jeunes'] })).toHaveLength(2);
+    expect(await listScheduleSlots(db)).toHaveLength(3);
   });
 
   it('refuse une modification qui inverserait l’intervalle', async () => {

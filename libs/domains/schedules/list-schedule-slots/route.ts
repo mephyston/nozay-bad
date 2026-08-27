@@ -15,7 +15,7 @@ listScheduleSlotsRoute.get(
   }),
   async (c) => {
     if (!c.env?.DB) return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
-    const { season, audiences, venue } = c.req.valid('query');
+    const { audiences, venue } = c.req.valid('query');
     const db = createDb(c.env.DB);
 
     // Le site public ne voit que les créneaux actifs : un créneau désactivé l'est
@@ -25,7 +25,6 @@ listScheduleSlotsRoute.get(
     return c.json({
       success: true,
       data: await listScheduleSlots(db, {
-        seasonCode: season,
         audiences: audiences ? audiences.split(',').map((a) => a.trim()).filter(Boolean) : undefined,
         venueId: venue ? Number(venue) : undefined,
         includeInactive

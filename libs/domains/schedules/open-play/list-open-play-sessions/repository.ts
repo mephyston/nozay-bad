@@ -18,10 +18,9 @@ export interface SessionTally {
 export class ListOpenPlaySessionsRepository {
   async list(
     db: DbOrTx,
-    filters: { seasonCode?: string; from?: string; to?: string; sessionIds?: number[] }
+    filters: { from?: string; to?: string; sessionIds?: number[] }
   ): Promise<OpenPlaySessionRow[]> {
     const where = [
-      filters.seasonCode ? eq(openPlaySessionsTable.seasonCode, filters.seasonCode) : undefined,
       filters.from ? gte(openPlaySessionsTable.date, filters.from) : undefined,
       filters.to ? lte(openPlaySessionsTable.date, filters.to) : undefined,
       filters.sessionIds?.length ? inArray(openPlaySessionsTable.id, filters.sessionIds) : undefined

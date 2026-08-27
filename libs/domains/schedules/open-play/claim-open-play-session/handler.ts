@@ -1,4 +1,5 @@
 import { type Db } from '@nba/db';
+import { seasonCodeForDate } from '../../shared/season';
 import { isUpcomingDate } from '../../shared/open-play';
 import {
   NotAnOpenerError,
@@ -34,7 +35,10 @@ export async function claimOpenPlaySession(
   if (!isUpcomingDate(session.date, now)) throw new OpenPlaySessionPassedError();
 
   const licence = input.licence.trim();
-  if (!(await repo.isOpener(db, session.seasonCode, licence))) throw new NotAnOpenerError();
+  // La séance est datée ; la liste d'ouvreurs qui s'applique est celle de sa saison.
+  if (!(await repo.isOpener(db, seasonCodeForDate(session.date), licence))) {
+    throw new NotAnOpenerError();
+  }
 
   const claimed = await repo.claim(db, session.id, {
     licence,

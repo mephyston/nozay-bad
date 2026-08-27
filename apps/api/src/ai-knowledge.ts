@@ -2816,6 +2816,15 @@ export const invoiceItemsTable = sqliteTable('invoice_items', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   invoice_id: integer('invoice_id').notNull().references(() => invoicesTable.id, { onDelete: 'cascade' }),
   description: text('description').notNull(),
+  /**
+   * L'imputation comptable de la ligne, et donc du produit qu'elle encaissera.
+   *
+   * Nullable : les factures antérieures n'en portent pas, et leur en attribuer une d'office
+   * les étiquetterait à tort. Absente, elle est demandée à la comptable au rapprochement —
+   * qui la posait jusqu'ici en dur sur « Adhésions & Inscriptions », quel que soit l'objet
+   * facturé.
+   */
+  category_id: integer('category_id').references(() => categoriesTable.id),
   quantity: integer('quantity').notNull().default(1),
   unit_price_cents: integer('unit_price_cents').notNull(),
   total_price_cents: integer('total_price_cents').notNull(),
@@ -3875,6 +3884,13 @@ export type PushDeliveryRow = typeof pushDeliveriesTable.\$inferSelect;
  * club, que le site se contente d'afficher — et que l'espace adhérent voudra afficher
  * à son tour. Le bloc \`schedule\` d'une page ne porte donc qu'une requête, jamais des
  * lignes, et le domaine \`cms\` n'importe rien d'ici.
+ *
+ * Et **hors saison** : un créneau vaut d'une année sur l'autre. La colonne
+ * \`season_code\` a existé jusqu'à la migration \`0025\` ; comme rien ne la saisissait —
+ * l'admin la déduisait de la date du jour, sans jamais l'afficher — elle ne datait
+ * pas les créneaux, elle datait leur création. Une grille tenue sur deux étés s'y
+ * retrouvait coupée en deux jeux qui ne se distinguaient par rien de visible. Ce que
+ * le bureau retire d'une saison à l'autre, il le retire avec \`active\`.
  */
 
 export const venuesTable = sqliteTable('venues', {
@@ -3901,13 +3917,6 @@ export const scheduleSlotsTable = sqliteTable(
   'schedule_slots',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    /**
-     * Code de saison, recopié et non lié.
-     *
-     * \`seasons\` appartient au domaine comptable, et la VSA proscrit le SQL traversant
-     * les frontières de domaine. Le code est stable et lisible (« 25-26 »), il suffit.
-     */
-    season_code: text('season_code').notNull(),
     venue_id: integer('venue_id')
       .notNull()
       .references(() => venuesTable.id),
@@ -3934,7 +3943,7 @@ export const scheduleSlotsTable = sqliteTable(
     created_at: integer('created_at', { mode: 'timestamp' }).notNull()
   },
   (table) => ({
-    schedule_slots_season_weekday_idx: index('schedule_slots_season_weekday_idx').on(table.seasonCode, table.weekday, table.startTime),
+    schedule_slots_weekday_idx: index('schedule_slots_weekday_idx').on(table.weekday, table.startTime),
     schedule_slots_audience_idx: index('schedule_slots_audience_idx').on(table.audience)
   })
 );

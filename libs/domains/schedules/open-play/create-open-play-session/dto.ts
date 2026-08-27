@@ -1,7 +1,6 @@
 import type { OpenPlaySessionRow } from '../../shared/open-play-schema';
 
 export interface CreateOpenPlaySessionInput {
-  seasonCode: string;
   venueId: number;
   /** Date locale « 2026-03-14 ». */
   date: string;

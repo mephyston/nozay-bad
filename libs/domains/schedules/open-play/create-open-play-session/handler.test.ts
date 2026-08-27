@@ -16,7 +16,6 @@ let db: Db;
 let venueId: number;
 
 const SATURDAY = {
-  seasonCode: '25-26',
   date: '2026-03-21',
   startTime: '14:00',
   endTime: '17:00'

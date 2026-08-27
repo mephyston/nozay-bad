@@ -32,7 +32,6 @@ export async function createOpenPlaySession(
   if (!(await repo.findVenue(db, input.venueId))) throw new VenueNotFoundError();
 
   const session = await repo.insertIfAbsent(db, {
-    seasonCode: input.seasonCode,
     venueId: input.venueId,
     slotId: null,
     date: input.date,

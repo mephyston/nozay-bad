@@ -8,7 +8,6 @@ import { Type } from '@sinclair/typebox';
  * une jauge de gymnase, c'est un garde-fou de frappe.
  */
 export const createOpenPlaySessionSchema = Type.Object({
-  seasonCode: Type.String({ minLength: 1, maxLength: 10 }),
   venueId: Type.Integer({ minimum: 1 }),
   date: Type.String({ pattern: '^\\d{4}-\\d{2}-\\d{2}$' }),
   startTime: Type.String({ pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$' }),

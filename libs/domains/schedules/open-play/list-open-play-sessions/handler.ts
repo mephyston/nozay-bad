@@ -1,4 +1,5 @@
 import { type Db } from '@nba/db';
+import { seasonCodeForDate } from '../../shared/season';
 import { ListOpenPlaySessionsRepository } from './repository';
 import type {
   ListOpenPlaySessionsInput,
@@ -36,7 +37,7 @@ export async function listOpenPlaySessions(
     (input.needsOpenerWithinDays ? localDate(now, input.needsOpenerWithinDays) : undefined);
 
   const [sessions, venues, tallies] = await Promise.all([
-    repo.list(db, { seasonCode: input.seasonCode, from, to, sessionIds: input.sessionIds }),
+    repo.list(db, { from, to, sessionIds: input.sessionIds }),
     repo.venues(db),
     repo.tallies(db)
   ]);
@@ -44,11 +45,12 @@ export async function listOpenPlaySessions(
   const mine = input.memberId ? await repo.registrationsOf(db, input.memberId) : new Map();
   const venueById = new Map(venues.map((venue) => [venue.id, venue]));
 
-  // Un seul contrôle d'ouvreur pour toute la liste : la saison est celle des séances
-  // rendues, et le club n'en a jamais deux en cours.
-  const seasonCode = input.seasonCode ?? sessions[0]?.seasonCode;
-  const canOpen =
-    input.licence && seasonCode ? await repo.isOpener(db, seasonCode, input.licence) : false;
+  // Un seul contrôle d'ouvreur pour toute la liste, et il porte sur la saison **en
+  // cours** : « puis-je ouvrir ? » est une question au présent. Elle se lisait avant sur
+  // la première séance rendue, ce qui donnait la mauvaise réponse à l'administration, qui
+  // remonte l'historique depuis 2000 — la saison de la plus vieille séance de la liste.
+  const seasonCode = seasonCodeForDate(localDate(now));
+  const canOpen = input.licence ? await repo.isOpener(db, seasonCode, input.licence) : false;
 
   const items: OpenPlaySessionListItem[] = sessions
     .filter((session) => (input.includeCancelled === false ? session.status !== 'cancelled' : true))

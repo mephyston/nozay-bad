@@ -229,7 +229,10 @@ export async function sendOpenPlayOpenerReminders(
 ): Promise<void> {
   const { sessions } = await listOpenPlaySessions(
     db,
-    { seasonCode: season.code, from: parisToday, needsOpenerWithinDays: OPEN_PLAY_HORIZON_DAYS },
+    // Plus de filtre de saison : une séance est une date, et la fenêtre de quelques jours
+    // qui suit `parisToday` est déjà dans la saison en cours. Les ouvreurs, eux, restent
+    // lus par saison — c'est leur mandat qui l'est.
+    { from: parisToday, needsOpenerWithinDays: OPEN_PLAY_HORIZON_DAYS },
     now
   );
   if (sessions.length === 0) return;

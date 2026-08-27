@@ -5,18 +5,15 @@ import { openPlaySessionsTable } from '../../shared/open-play-schema';
 
 export class GenerateOpenPlaySessionsRepository {
   /**
-   * Les créneaux de jeu libre **actifs** de la saison.
+   * Les créneaux de jeu libre **actifs**.
    *
    * Un créneau masqué du site n'a pas à produire de séances : le masquer est justement
-   * la façon dont le bureau retire un horaire qu'il ne tient plus.
+   * la façon dont le bureau retire un horaire qu'il ne tient plus. C'est aussi le seul
+   * filtre qui reste — un créneau ne porte plus de saison, seule la période demandée
+   * borne la génération.
    */
-  async openPlaySlots(
-    db: DbOrTx,
-    seasonCode: string,
-    slotIds?: number[]
-  ): Promise<ScheduleSlotRow[]> {
+  async openPlaySlots(db: DbOrTx, slotIds?: number[]): Promise<ScheduleSlotRow[]> {
     const where = [
-      eq(scheduleSlotsTable.seasonCode, seasonCode),
       eq(scheduleSlotsTable.audience, 'jeu_libre'),
       eq(scheduleSlotsTable.active, true),
       slotIds?.length ? inArray(scheduleSlotsTable.id, slotIds) : undefined

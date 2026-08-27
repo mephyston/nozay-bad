@@ -1,7 +1,6 @@
 import type { ScheduleSlotRow } from '../shared/schema';
 
 export interface CreateScheduleSlotInput {
-  seasonCode: string;
   venueId: number;
   weekday: number;
   startTime: string;

@@ -16,7 +16,6 @@ async function seedSession(overrides: Record<string, unknown> = {}): Promise<num
   const [session] = await db
     .insert(openPlaySessionsTable)
     .values({
-      seasonCode: '25-26',
       venueId,
       date: '2026-03-21',
       startTime: '14:00',

@@ -3,7 +3,6 @@ import type { OpenPlaySessionRow } from '../../shared/open-play-schema';
 import type { GuestName } from '../register-to-open-play/dto';
 
 export interface ListOpenPlaySessionsInput {
-  seasonCode?: string;
   /** Défaut : à partir d'aujourd'hui. L'administration passe une date basse pour l'historique. */
   from?: string;
   to?: string;

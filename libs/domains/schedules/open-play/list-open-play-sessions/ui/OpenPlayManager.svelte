@@ -47,10 +47,10 @@
   interface SlotRow { id: number; weekday: number; startTime: string; endTime: string; venue: { name: string } | null }
 
   let {
-    sessions = [], venues = [], slots = [], seasonCode = '',
+    sessions = [], venues = [], slots = [],
     canWrite = false, canReadRegistrations = false
   } = $props<{
-    sessions: SessionRow[]; venues: VenueRow[]; slots?: SlotRow[]; seasonCode?: string;
+    sessions: SessionRow[]; venues: VenueRow[]; slots?: SlotRow[];
     canWrite?: boolean; canReadRegistrations?: boolean;
   }>();
 
@@ -164,7 +164,7 @@
         post(
           {
             action: id ? 'update' : 'create',
-            ...(id ? { id } : { seasonCode }),
+            ...(id ? { id } : {}),
             venueId: Number(venueId),
             date, startTime, endTime,
             minPlayers: Number(minPlayers),
@@ -215,7 +215,6 @@
         const payload = await post(
           {
             action: 'generate',
-            seasonCode,
             from: genFrom,
             to: genTo,
             slotIds: genSlotIds,

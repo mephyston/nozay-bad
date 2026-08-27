@@ -16,7 +16,6 @@ listOpenPlaySessionsRoute.get('/open-play', async (c) => {
   return c.json({
     success: true,
     data: await listOpenPlaySessions(createDb(c.env.DB), {
-      seasonCode: query.season || undefined,
       // L'administration passe `from` pour remonter l'historique ; à défaut, la lecture
       // commence aujourd'hui, ce que veut l'espace adhérent.
       from: query.from || undefined,

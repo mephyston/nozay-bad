@@ -15,7 +15,6 @@ export async function createScheduleSlot(
   if (!(await repo.findVenue(db, input.venueId))) throw new VenueNotFoundError();
 
   return repo.insert(db, {
-    seasonCode: input.seasonCode,
     venueId: input.venueId,
     weekday: input.weekday,
     startTime: input.startTime,

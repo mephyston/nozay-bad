@@ -41,7 +41,7 @@ export async function generateOpenPlaySessions(
   if (daysBetween(input.from, input.to) > MAX_GENERATION_DAYS) throw new RangeTooWideError();
 
   // — Lecture.
-  const slots = await repo.openPlaySlots(db, input.seasonCode, input.slotIds);
+  const slots = await repo.openPlaySlots(db, input.slotIds);
   // Générer zéro séance en silence laisserait croire que l'opération a fonctionné.
   if (slots.length === 0) throw new NoOpenPlaySlotError();
 
@@ -49,7 +49,6 @@ export async function generateOpenPlaySessions(
   const minPlayers = input.minPlayers ?? DEFAULT_MIN_PLAYERS;
   const rows = slots.flatMap((slot) =>
     datesInRange(input.from, input.to, new Set([slot.weekday])).map((date) => ({
-      seasonCode: input.seasonCode,
       venueId: slot.venueId,
       slotId: slot.id,
       date,

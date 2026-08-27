@@ -55,7 +55,6 @@ describe('OpenPlayManager', () => {
       props: {
         sessions: [session()],
         venues: [{ id: 1, name: 'Pierre Dupuis' }],
-        seasonCode: '25-26',
         canWrite: true,
         canReadRegistrations: true,
         ...props

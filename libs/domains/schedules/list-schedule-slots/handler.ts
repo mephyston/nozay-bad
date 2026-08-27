@@ -18,7 +18,6 @@ export async function listScheduleSlots(
 
   return slots
     .filter((slot) => (filters.includeInactive ? true : slot.active))
-    .filter((slot) => (filters.seasonCode ? slot.seasonCode === filters.seasonCode : true))
     .filter((slot) => (filters.venueId ? slot.venueId === filters.venueId : true))
     .filter((slot) =>
       filters.audiences && filters.audiences.length > 0 ? filters.audiences.includes(slot.audience) : true

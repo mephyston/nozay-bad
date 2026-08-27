@@ -37,7 +37,6 @@ beforeEach(async () => {
   const [session] = await db
     .insert(openPlaySessionsTable)
     .values({
-      seasonCode: '25-26',
       venueId: venue.id,
       date: '2026-03-21',
       startTime: '14:00',

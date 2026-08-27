@@ -30,7 +30,7 @@ beforeEach(async () => {
   venueId = venue.id;
   const session = await createOpenPlaySession(
     db,
-    { seasonCode: '25-26', venueId, date: '2026-03-21', startTime: '14:00', endTime: '17:00' },
+    { venueId, date: '2026-03-21', startTime: '14:00', endTime: '17:00' },
     NOW
   );
   sessionId = session.id;
