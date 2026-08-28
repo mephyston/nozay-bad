@@ -41,6 +41,8 @@ function mockRepo(over: Record<string, any> = {}) {
     getUnreconciledBankLines: vi.fn().mockResolvedValue([]),
     getLatestBankStatementBalance: vi.fn().mockResolvedValue(undefined),
     getLatestBankStatementDate: vi.fn().mockResolvedValue(undefined),
+    getLatestBankLineDate: vi.fn().mockResolvedValue(undefined),
+    getLatestBankLineDates: vi.fn().mockResolvedValue(new Map()),
     getAccountsWithStatements: vi.fn().mockResolvedValue([]),
     getInitialBalancesBySeason: vi.fn().mockResolvedValue(new Map()),
     getUnreconciledBankLinesForAccounts: vi.fn().mockResolvedValue(new Map()),
@@ -144,6 +146,54 @@ describe('getReconciliationStatement', () => {
 
     expect(result.gapCents).toBe(-3_000);
     expect(result.reconciled).toBe(false);
+    // Rien ne dit ici que l'arrêté devance son détail : l'écart reste inexpliqué.
+    expect(result.statementAheadOfBankLines).toBe(false);
+  });
+
+  /*
+   * Cas réel du 27/08/2026, 176,00 €. L'OFX porte le solde **comptable** de la banque, qui
+   * compte déjà les opérations du dernier jour dont l'export ne détaille pas les `<STMTTRN>`.
+   * Les livres suivent le détail, donc le solde *en valeur*. L'écart n'est l'anomalie de
+   * personne et se résorbe au relevé suivant : il doit se distinguer d'un écart inexpliqué.
+   */
+  it("distingue l'arrêté en avance sur son propre détail d'un écart inexpliqué", async () => {
+    mockRepo({
+      getInitialBalanceCents: vi.fn().mockResolvedValue(100_000),
+      getLatestBankStatementBalance: vi.fn().mockResolvedValue({ date: '2026-08-27', balanceCents: 117_600 }),
+      getLatestBankLineDate: vi.fn().mockResolvedValue('2026-08-26')
+    });
+
+    const result = await getReconciliationStatement(db, { accountCode: 'current', seasonId: '25-26', date: '2026-08-27' });
+
+    expect(result.gapCents).toBe(17_600);
+    expect(result.reconciled).toBe(false);
+    expect(result.lastBankLineDate).toBe('2026-08-26');
+    expect(result.statementAheadOfBankLines).toBe(true);
+  });
+
+  /*
+   * La comparaison se fait à la date de l'ARRÊTÉ, pas à la date de consultation : des lignes
+   * postérieures à l'arrêté prouvent au contraire que le détail ne lui manque pas.
+   */
+  it("ne crie pas à l'avance quand le détail va au moins jusqu'à l'arrêté", async () => {
+    mockRepo({
+      getInitialBalanceCents: vi.fn().mockResolvedValue(100_000),
+      getLatestBankStatementBalance: vi.fn().mockResolvedValue({ date: '2026-08-27', balanceCents: 117_600 }),
+      getLatestBankLineDate: vi.fn().mockResolvedValue('2026-08-31')
+    });
+
+    const result = await getReconciliationStatement(db, { accountCode: 'current', seasonId: '25-26', date: '2026-08-27' });
+
+    expect(result.statementAheadOfBankLines).toBe(false);
+  });
+
+  it("ne prétend rien quand le compte n'a ni arrêté ni ligne", async () => {
+    mockRepo();
+
+    const result = await getReconciliationStatement(db, { accountCode: 'current', seasonId: '25-26' });
+
+    expect(result.lastBankLineDate).toBeNull();
+    expect(result.statementAheadOfBankLines).toBe(false);
   });
 
   /*
@@ -290,6 +340,7 @@ describe('getReconciliationStatements', () => {
     expect(repo.getInitialBalancesBySeason).toHaveBeenCalledTimes(1);
     expect(repo.getUnreconciledBankLinesForAccounts).toHaveBeenCalledTimes(1);
     expect(repo.getBankStatementBalancesForAccounts).toHaveBeenCalledTimes(1);
+    expect(repo.getLatestBankLineDates).toHaveBeenCalledTimes(1);
 
     // Les lectures par compte de l'ancienne boucle ne doivent plus servir du tout.
     expect(repo.getEntriesForPeriod).not.toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), expect.anything());
@@ -297,6 +348,31 @@ describe('getReconciliationStatements', () => {
     expect(repo.getInitialBalanceCents).not.toHaveBeenCalled();
     expect(repo.getLatestBankStatementBalance).not.toHaveBeenCalled();
     expect(repo.getLatestBankStatementDate).not.toHaveBeenCalled();
+    expect(repo.getLatestBankLineDate).not.toHaveBeenCalled();
+  });
+
+  /* Chaque compte reçoit SA dernière ligne : le courant peut devancer son détail sans que le
+     livret, dont le relevé est complet, en hérite. */
+  it("juge l'avance de l'arrêté compte par compte", async () => {
+    mockRepo({
+      getAccountsWithStatements: vi.fn().mockResolvedValue([
+        { id: 1, code: 'current', label: 'Compte Courant' },
+        { id: 2, code: 'savings', label: 'Compte Livret' }
+      ]),
+      getBankStatementBalancesForAccounts: vi.fn().mockResolvedValue(new Map([
+        [1, [{ date: '2026-08-27', balanceCents: 117_600 }]],
+        [2, [{ date: '2026-08-27', balanceCents: 100_000 }]]
+      ])),
+      getLatestBankLineDates: vi.fn().mockResolvedValue(new Map([
+        [1, '2026-08-26'],
+        [2, '2026-08-27']
+      ]))
+    });
+
+    const results = await getReconciliationStatements(db, { seasonId: '25-26', date: '2026-08-27' });
+
+    expect(results.map((r) => [r.account.code, r.statementAheadOfBankLines]))
+      .toEqual([['current', true], ['savings', false]]);
   });
 
   /*

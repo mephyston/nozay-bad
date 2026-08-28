@@ -122,6 +122,40 @@ export class GetReconciliationStatementRepository {
     return byAccount;
   }
 
+  /**
+   * La dernière opération que les relevés du compte détaillent, toutes dates confondues.
+   *
+   * Volontairement non bornée par la date d'arrêté : elle ne sert qu'à répondre « l'arrêté
+   * est-il en avance sur son propre détail ? », c'est-à-dire à se comparer à la date de
+   * l'arrêté, jamais à la date de consultation. Une borne haute ne pourrait que retirer des
+   * lignes postérieures à l'arrêté — dont la présence prouve justement qu'il n'est pas en
+   * avance. Sans borne, la réponse est exacte dans les deux sens.
+   */
+  async getLatestBankLineDate(db: DbOrTx, accountId: number): Promise<string | undefined> {
+    const row = await db.select({ date: bankStatementLinesTable.date })
+      .from(bankStatementLinesTable)
+      .where(eq(bankStatementLinesTable.accountId, accountId))
+      .orderBy(desc(bankStatementLinesTable.date))
+      .limit(1)
+      .get();
+    return row?.date;
+  }
+
+  /** La même date pour plusieurs comptes, en une lecture. */
+  async getLatestBankLineDates(db: DbOrTx, accountIds: number[]): Promise<Map<number, string>> {
+    if (accountIds.length === 0) return new Map();
+
+    const rows = await db.select({
+        accountId: bankStatementLinesTable.accountId,
+        date: sql<string>`MAX(${bankStatementLinesTable.date})`
+      })
+      .from(bankStatementLinesTable)
+      .where(inArray(bankStatementLinesTable.accountId, accountIds))
+      .groupBy(bankStatementLinesTable.accountId)
+      .all();
+    return new Map(rows.map((r) => [r.accountId, r.date]));
+  }
+
   /* Le tri et la coupe reviennent à SQLite : charger tous les arrêtés pour n'en garder qu'un
      faisait faire au Worker un travail que l'index fait mieux. */
   async getLatestBankStatementBalance(db: DbOrTx, accountId: number, asOfDate: string): Promise<{ date: string; balanceCents: number } | undefined> {

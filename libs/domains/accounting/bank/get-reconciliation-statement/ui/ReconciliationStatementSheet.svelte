@@ -89,11 +89,20 @@
                 <Amount cents={statement.statement.balanceCents} />
               </div>
 
-              <div class="flex items-baseline justify-between gap-4 rounded-md px-3 py-2 font-bold {statement.reconciled ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}">
+              <!--
+                Trois verdicts, pas deux. Un écart dû à l'avance de l'arrêté sur son propre
+                détail n'est l'anomalie de personne : l'annoncer en rouge comme « inexpliqué »
+                envoyait le trésorier chercher une erreur qui n'existe pas, au dernier jour de
+                chaque relevé.
+              -->
+              <div class="flex items-baseline justify-between gap-4 rounded-md px-3 py-2 font-bold {statement.reconciled ? 'bg-success/10 text-success' : statement.statementAheadOfBankLines ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'}">
                 <span class="flex items-center gap-2">
                   {#if statement.reconciled}
                     <CheckCircle2 class="h-4 w-4" />
                     Écart intégralement expliqué
+                  {:else if statement.statementAheadOfBankLines}
+                    <Info class="h-4 w-4" />
+                    Arrêté en avance sur le détail du relevé
                   {:else}
                     <TriangleAlert class="h-4 w-4" />
                     Écart inexpliqué
@@ -114,12 +123,23 @@
           {/if}
 
           {#if statement.gapCents !== null && !statement.reconciled}
-            <p class="text-xs text-muted-foreground">
-              Trois causes possibles, de la plus fréquente à la plus rare : un relevé pas encore
-              importé jusqu'à la date d'arrêté ; une écriture pointée sur une ligne d'un montant
-              différent ; un solde initial d'exercice qui ne correspond pas au solde bancaire
-              d'ouverture.
-            </p>
+            {#if statement.statementAheadOfBankLines && statement.statement && statement.lastBankLineDate}
+              <p class="text-xs text-muted-foreground">
+                Le solde est arrêté au {formatDate(statement.statement.date)}, mais la dernière opération
+                que le relevé détaille est du {formatDate(statement.lastBankLineDate)}. La banque tient trois
+                soldes — comptable, en valeur, instantané — et le fichier porte le <strong>comptable</strong> :
+                il compte déjà des opérations dont il ne donne pas encore le détail. Les livres, eux, ne
+                reproduisent que ce qui est détaillé. Cet écart-là se résorbe au prochain relevé ; il n'y a
+                rien à corriger, et surtout pas le solde annoncé.
+              </p>
+            {:else}
+              <p class="text-xs text-muted-foreground">
+                Trois causes possibles, de la plus fréquente à la plus rare : un relevé pas encore
+                importé jusqu'à la date d'arrêté ; une écriture pointée sur une ligne d'un montant
+                différent ; un solde initial d'exercice qui ne correspond pas au solde bancaire
+                d'ouverture.
+              </p>
+            {/if}
           {/if}
 
           {#if statement.ignoredBankLinesTotalCents !== 0}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CheckCircle2, Inbox, Search, TriangleAlert, X } from '@lucide/svelte';
+  import { CheckCircle2, Inbox, Info, Search, TriangleAlert, X } from '@lucide/svelte';
   import { Amount, Badge, Button, Card, Input, SearchableCombobox } from '@nba/ui';
   import ReconciliationRow from './ReconciliationRow.svelte';
   import ReconciliationStatementSheet from '../../get-reconciliation-statement/ui/ReconciliationStatementSheet.svelte';
@@ -33,6 +33,12 @@
       entriesCents: st.reduce((n: number, s: any) => n - (s.unpointedEntriesTotalCents ?? 0), 0),
       hasStatement: withStatement.length > 0,
       reconciled: withStatement.length > 0 && withStatement.every((s: any) => s.reconciled),
+      /* Il reste un écart, mais aucun compte ne le doit à autre chose qu'un arrêté en avance
+         sur le détail de son relevé : c'est un décalage connu, pas une alerte rouge. */
+      aheadOnly:
+        withStatement.length > 0 &&
+        !withStatement.every((s: any) => s.reconciled) &&
+        withStatement.every((s: any) => s.reconciled || s.statementAheadOfBankLines),
       gapCents: withStatement.reduce((n: number, s: any) => n + (s.gapCents ?? 0), 0)
     };
   });
@@ -156,6 +162,12 @@
                 <CheckCircle2 class="h-3 w-3" />
                 Écart expliqué
               </Badge>
+            {:else if gapStats.aheadOnly}
+              <Badge variant="warning" size="xs">
+                <Info class="h-3 w-3" />
+                Arrêté en avance
+              </Badge>
+              <Amount cents={gapStats.gapCents} showSign class="text-xs font-bold text-warning" />
             {:else}
               <Badge variant="destructive" size="xs">
                 <TriangleAlert class="h-3 w-3" />

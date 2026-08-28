@@ -17,6 +17,10 @@ export interface ReconciliationStatementView {
     bankTheoreticalCents: number;
   };
   statement: { date: string; balanceCents: number } | null;
+  /** La dernière opération que le relevé détaille. */
+  lastBankLineDate: string | null;
+  /** L'arrêté est postérieur à cette dernière opération : il devance son propre détail. */
+  statementAheadOfBankLines: boolean;
   unpointedEntries: {
     id: number;
     date: string;

@@ -69,8 +69,11 @@ export async function getReconciliationStatement(
   const entries = await repo.getEntriesForPeriod(db, season.startDate, asOfDate);
   const bankLines = await repo.getUnreconciledBankLines(db, account.id, season.startDate, asOfDate);
   const statement = (await repo.getLatestBankStatementBalance(db, account.id, asOfDate)) ?? null;
+  const lastBankLineDate = (await repo.getLatestBankLineDate(db, account.id)) ?? null;
 
-  return buildStatement({ account, season, asOfDate, initialBalanceCents, entries, bankLines, statement });
+  return buildStatement({
+    account, season, asOfDate, initialBalanceCents, entries, bankLines, statement, lastBankLineDate
+  });
 }
 
 interface StatementInputs {
@@ -82,6 +85,8 @@ interface StatementInputs {
   entries: any[];
   bankLines: any[];
   statement: { date: string; balanceCents: number } | null;
+  /** La dernière opération détaillée par les relevés du compte, toutes dates confondues. */
+  lastBankLineDate: string | null;
 }
 
 /**
@@ -93,7 +98,7 @@ interface StatementInputs {
  * entier trois fois pour en tirer trois nombres différents.
  */
 function buildStatement(inputs: StatementInputs): GetReconciliationStatementOutput {
-  const { account, season, asOfDate, initialBalanceCents, entries, bankLines, statement } = inputs;
+  const { account, season, asOfDate, initialBalanceCents, entries, bankLines, statement, lastBankLineDate } = inputs;
 
   const balance = computeAccountBalance(account, initialBalanceCents, entries);
 
@@ -146,6 +151,20 @@ function buildStatement(inputs: StatementInputs): GetReconciliationStatementOutp
 
   const gapCents = statement ? statement.balanceCents - expectedBankBalanceCents : null;
 
+  /*
+   * Le cinquième décalage, structurel, que l'écart ne savait pas nommer.
+   *
+   * La banque tient trois soldes — comptable, en valeur, instantané — et le `<LEDGERBAL>` de
+   * l'OFX porte le **comptable**, qui compte déjà les opérations du dernier jour dont l'export
+   * ne donne pas encore le détail. Les livres ne reproduisent que les lignes détaillées : ils
+   * suivent donc le solde *en valeur*. Confronter l'un à l'autre au dernier jour d'un relevé
+   * fait apparaître un écart qui n'est l'anomalie de personne, et qui disparaît au relevé
+   * suivant. La comparaison se fait à la date de l'ARRÊTÉ, pas à celle de consultation : c'est
+   * l'arrêté qui prétend valoir à une date, et lui seul.
+   */
+  const statementAheadOfBankLines =
+    statement !== null && lastBankLineDate !== null && lastBankLineDate < statement.date;
+
   unpointedEntries.sort((a, b) => a.date.localeCompare(b.date));
   unrecordedBankLines.sort((a, b) => a.date.localeCompare(b.date));
 
@@ -162,6 +181,8 @@ function buildStatement(inputs: StatementInputs): GetReconciliationStatementOutp
       bankTheoreticalCents: balance.bankTheoreticalCents
     },
     statement,
+    lastBankLineDate,
+    statementAheadOfBankLines,
     unpointedEntries,
     unpointedEntriesTotalCents,
     unrecordedBankLines,
@@ -213,11 +234,12 @@ export async function getReconciliationStatements(
    */
   const maxAsOfDate = [...asOfDates.values()].reduce((max, d) => (d > max ? d : max), season.startDate);
 
-  const [initialBalances, allEntries, bankLinesByAccount, balancesByAccount] = await Promise.all([
+  const [initialBalances, allEntries, bankLinesByAccount, balancesByAccount, lastLineDates] = await Promise.all([
     repo.getInitialBalancesBySeason(db, season.id),
     repo.getEntriesForPeriod(db, season.startDate, maxAsOfDate),
     repo.getUnreconciledBankLinesForAccounts(db, accountIds, season.startDate, maxAsOfDate),
-    repo.getBankStatementBalancesForAccounts(db, accountIds)
+    repo.getBankStatementBalancesForAccounts(db, accountIds),
+    repo.getLatestBankLineDates(db, accountIds)
   ]);
 
   return accounts.map((accountRow) => {
@@ -242,7 +264,8 @@ export async function getReconciliationStatements(
       initialBalanceCents: initialBalances.get(account.id) ?? 0,
       entries,
       bankLines,
-      statement
+      statement,
+      lastBankLineDate: lastLineDates.get(account.id) ?? null
     });
   });
 }

@@ -45,6 +45,23 @@ export type GetReconciliationStatementOutput = {
   /** Le côté banque. `null` tant qu'aucun relevé n'a été importé pour ce compte. */
   statement: { date: string; balanceCents: number } | null;
 
+  /** La dernière opération que le relevé détaille. `null` si le compte n'a aucune ligne. */
+  lastBankLineDate: string | null;
+  /**
+   * L'arrêté est postérieur à la dernière opération détaillée.
+   *
+   * La banque ne tient pas un solde mais trois — comptable, en valeur, instantané — et
+   * `<LEDGERBAL>` porte le **comptable** : il compte déjà les opérations du dernier jour dont
+   * l'export ne donne pas encore le détail. Les livres, eux, ne reproduisent que les lignes
+   * détaillées, soit le solde *en valeur*. Au dernier jour de chaque relevé, l'écart qui en
+   * résulte n'est pas une anomalie mais une avance de l'arrêté sur son propre détail — elle se
+   * résorbe au relevé suivant, sans rien corriger.
+   *
+   * Constaté le 2026-08-28 : 176,00 € entre un arrêté au 27/08 et des opérations qui
+   * s'arrêtaient au 26/08. L'écran les présentait comme « n'est explicable par aucun décalage ».
+   */
+  statementAheadOfBankLines: boolean;
+
   unpointedEntries: UnpointedEntry[];
   unpointedEntriesTotalCents: number;
   unrecordedBankLines: UnrecordedBankLine[];
