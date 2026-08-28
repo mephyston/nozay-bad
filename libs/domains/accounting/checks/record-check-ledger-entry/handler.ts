@@ -2,6 +2,7 @@ import { RecordCheckTransactionRepository } from './repository';
 import { AppError, type Db, type Tx } from '@nba/db';
 import { cleanName } from '../../shared/helpers';
 import type { CreateCheckInput, AnalyzeCheckOutput } from './dto';
+import { assertMembershipMatchesSeason } from '../../shared/member-season';
 
 /** Liaison Workers AI : seule `run` est utilisée. */
 export interface VisionAi {
@@ -223,6 +224,14 @@ export async function createCheck(db: Db, body: CreateCheckInput) {
   const categoryVal = body.category ? Number(body.category) : 1;
 
   const seasonIdInt = await repo.resolveSeasonId(db, body.seasonId);
+
+  /*
+   * Ce chemin écrit lui aussi un `member_id` sur une écriture, sans passer par
+   * `validateAccrualAndFiscalPhase` — le contrôle d'exercice s'y appelle donc en propre.
+   * Un chèque de la rentrée déposé au nom de l'adhésion de l'année écoulée ferait disparaître
+   * le règlement des deux dossiers, exactement comme un virement.
+   */
+  await assertMembershipMatchesSeason(db, body.memberId || null, seasonIdInt);
 
   // Phase 2 : Décision (en mémoire)
   const descStr = body.description || `Règlement par chèque n°${body.number} de ${body.emitter}`;

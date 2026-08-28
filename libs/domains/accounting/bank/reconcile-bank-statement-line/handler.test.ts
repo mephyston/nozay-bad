@@ -3,11 +3,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { reconcileBankStatementLine } from './handler';
 import { ReconcileBankStatementLineRepository } from './repository';
 import { isSeasonClosed } from '@nba/members-api';
+import { assertMembershipMatchesSeason } from '../../shared/member-season';
 vi.mock('@nba/members-api', () => ({
   isSeasonClosed: vi.fn()
 }));
 vi.mock('./repository');
 vi.mock('@nba/accounting-api', () => ({ normalizeCategory: vi.fn().mockReturnValue(1) }));
+/* Le contrôle d'exercice a son propre banc d'essai (`shared/member-season.test.ts`) et lit la
+   base ; ici on vérifie seulement que « Associer » le franchit, avec l'exercice de l'écriture
+   cible et non celui de l'écran. */
+vi.mock('../../shared/member-season', () => ({ assertMembershipMatchesSeason: vi.fn() }));
 
 
 describe('reconcileBankStatementLine', () => {
@@ -30,6 +35,7 @@ describe('reconcileBankStatementLine', () => {
     const payload = { action: 'match', ledgerEntryId: 1, memberId: 1 };
     await (reconcileBankStatementLine as any)(db, 1, payload);
     expect(db.batch).toHaveBeenCalled();
+    expect(assertMembershipMatchesSeason).toHaveBeenCalledWith(db, 1, '23-24');
   });
   it('should throw error', async () => {
     (isSeasonClosed as any).mockResolvedValue(false);

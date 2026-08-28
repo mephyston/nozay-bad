@@ -132,6 +132,28 @@ export async function getMembersBySeason(db: DbOrTx, seasonId: string | number):
 }
 
 /**
+ * L'adhésion d'une personne dans un exercice donné, s'il y en a une.
+ *
+ * Une personne se réinscrit : elle tient autant d'adhésions que de saisons, et c'est l'adhésion
+ * — pas la personne — que référencent commandes, notes de frais et écritures comptables.
+ * Retrouver la bonne à partir d'une autre est donc une question courante, et la comptabilité se
+ * la pose au moment de refuser une écriture rattachée à la mauvaise : elle nomme alors celle
+ * qu'il fallait, plutôt que de se contenter d'un refus. Elle passe par ici et non par les
+ * tables : hors du domaine, personne ne les touche (cf. `libs/architecture.test.ts`).
+ */
+export async function getMembershipForPersonInSeason(
+  db: DbOrTx,
+  personId: number,
+  seasonId: number
+): Promise<{ id: number } | undefined> {
+  return db
+    .select({ id: membershipsTable.id })
+    .from(membershipsTable)
+    .where(and(eq(membershipsTable.personId, personId), eq(membershipsTable.seasonId, seasonId)))
+    .get();
+}
+
+/**
  * Toutes les adhésions, toutes saisons confondues, la plus récente d'abord.
  *
  * Une personne réinscrite y figure autant de fois qu'elle a adhéré : c'est voulu, le seul

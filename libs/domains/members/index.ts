@@ -53,6 +53,7 @@ export {
   getMemberById,
   getMembersByIds,
   getMembersBySeason,
+  getMembershipForPersonInSeason,
   getAllMembers,
   getHouseholdEmailsForActiveSeason,
   getContactEmailsForMember,

@@ -1,6 +1,7 @@
 import { seasonsTable } from '@nba/accounting/schema';
 import { type DbOrTx, AppError } from '@nba/db';
 import { eq, or } from 'drizzle-orm';
+import { assertMembershipMatchesSeason } from './member-season';
 
 
 export interface AccrualValidationParams {
@@ -9,6 +10,15 @@ export interface AccrualValidationParams {
   date: string;
   accrualType?: string | null;
   accrualNote?: string | null;
+  /**
+   * L'adhésion à laquelle l'écriture se rattache, quand elle en désigne une.
+   *
+   * Passée ici plutôt que contrôlée par chaque appelant : cette fonction est la porte que tous
+   * les chemins d'écriture franchissent déjà, et elle tient la saison résolue dont le contrôle
+   * a besoin. Voir [[assertMembershipMatchesSeason]] pour ce qu'une adhésion d'un autre
+   * exercice fait disparaître.
+   */
+  memberId?: number | null;
 }
 
 export async function getSeasonFromDb(db: DbOrTx, seasonId: number | string) {
@@ -25,6 +35,8 @@ export async function validateAccrualAndFiscalPhase(db: DbOrTx, params: AccrualV
   if (!season) {
     throw new AppError("Saison comptable introuvable.", 404);
   }
+
+  await assertMembershipMatchesSeason(db, params.memberId, season.id);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const accrualType = params.accrualType || 'normal';

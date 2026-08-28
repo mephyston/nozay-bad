@@ -5,6 +5,7 @@ import { normalizeCategory } from '../../shared/helpers';
 import { ReconcileBankTxInternalId, ReconcileBankTxInternalInput, ReconcileBankTxInternalOutput } from "./dto";
 import { BankStatementLine } from '../../shared/bank-statement-line';
 import { validateAccrualAndFiscalPhase } from '../../shared/accruals';
+import { assertMembershipMatchesSeason } from '../../shared/member-season';
 import { resolveAccountId, resolvePaymentMethod } from '../../config/queries';
 
 export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxInternalId, body: ReconcileBankTxInternalInput): Promise<{ statements: any[]; error?: string; status?: number }> {
@@ -85,6 +86,13 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
       return { statements: [], error: 'La saison de la transaction est clôturée. Rapprochement impossible.', status: 400 };
     }
 
+    /*
+     * « Associer » ne fait pas que pointer : il pose aussi l'adhérent sur l'écriture. Le
+     * contrôle vaut donc ici comme à la création — et l'exercice qui fait foi est celui de
+     * l'écriture existante, pas celui que l'écran consulte.
+     */
+    await assertMembershipMatchesSeason(db, memberId ?? null, existingTx.seasonId);
+
     matchedAmountCents = Math.abs(existingTx.amountCents ?? existingTx.amount ?? 0);
     statements.push(repo.buildLinkTransactionToBankStatement(db, body.ledgerEntryId, id, memberId));
   } else if (body.action === 'create') {
@@ -99,7 +107,9 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
           type: txItem.type,
           date: txItem.date,
           accrualType: txItem.accrualType || txItem.accrual_type,
-          accrualNote: txItem.accrualNote || txItem.accrual_note
+          accrualNote: txItem.accrualNote || txItem.accrual_note,
+          // La part l'emporte sur la valeur commune, ici comme à l'écriture.
+          memberId: txItem.memberId ?? memberId ?? null
         });
 
         const seasonId = await repo.resolveSeasonId(db, rawSeason);
@@ -138,7 +148,8 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
         type: tx.type,
         date: tx.date,
         accrualType: tx.accrualType || tx.accrual_type,
-        accrualNote: tx.accrualNote || tx.accrual_note
+        accrualNote: tx.accrualNote || tx.accrual_note,
+        memberId: tx.memberId ?? memberId ?? null
       });
 
       const seasonId = await repo.resolveSeasonId(db, rawSeason);
