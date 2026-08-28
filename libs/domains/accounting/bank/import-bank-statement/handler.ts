@@ -53,6 +53,7 @@ function detectSwallowedOperation(tail: string): ParsedStatementIssue | null {
   const name = tail.match(/<NAME>([^\r\n<]+)/);
 
   return {
+    kind: 'orphan',
     date: date ? toIsoDate(date[1]) : null,
     amountCents: amount ? Math.round(parseFloat(amount[1]) * 100) : null,
     fitid: fitid ? fitid[1].trim() : null,
@@ -79,7 +80,31 @@ export function parseOFX(ofxContent: string): ParseOFXOutput {
     const nameMatch = block.match(/<NAME>([^\r\n<]+)/);
     const memoMatch = block.match(/<MEMO>([^\r\n<]+)/);
 
-    if (!fitidMatch || !trnamtMatch || !dtpostedMatch || !nameMatch) continue;
+    /*
+     * Un bloc auquel il manque un champ obligatoire se nomme, il ne se saute pas.
+     *
+     * Cette ligne était un `continue` nu. Un bloc parfaitement délimité mais privé de son
+     * `<NAME>` — ou de son `<FITID>` — sortait de la lecture sans un mot : absent des
+     * `transactions`, donc de `read` et de `skipped`, et absent des `issues`, donc du refus.
+     * Le second trou du même filet, identique dans ses effets à l'opération non ouverte : de
+     * l'argent qui manque aux comptes sans que rien ne le signale.
+     */
+    if (!fitidMatch || !trnamtMatch || !dtpostedMatch || !nameMatch) {
+      issues.push({
+        kind: 'incomplete',
+        missing: [
+          fitidMatch ? null : '<FITID>',
+          trnamtMatch ? null : '<TRNAMT>',
+          dtpostedMatch ? null : '<DTPOSTED>',
+          nameMatch ? null : '<NAME>'
+        ].filter((tag): tag is string => tag !== null),
+        date: dtpostedMatch ? toIsoDate(dtpostedMatch[1].trim()) : null,
+        amountCents: trnamtMatch ? Math.round(parseFloat(trnamtMatch[1].trim()) * 100) : null,
+        fitid: fitidMatch ? fitidMatch[1].trim() : null,
+        name: nameMatch ? nameMatch[1].trim() : null
+      });
+      continue;
+    }
 
     const rawAmount = parseFloat(trnamtMatch[1].trim());
     const amountCents = Math.round(rawAmount * 100);
@@ -100,21 +125,31 @@ export function parseOFX(ofxContent: string): ParseOFXOutput {
   return { transactions, balance: parseLedgerBalance(ofxContent), issues };
 }
 
-/** « le 16/09/2025, 60,07 € (GEN-2526-067) » — de quoi retrouver la ligne dans le fichier. */
+/**
+ * « le 16/09/2025, 60,07 € (GEN-2526-067) — hors de tout bloc <STMTTRN> ».
+ *
+ * De quoi retrouver la ligne dans le fichier **et** savoir quoi y corriger : les deux façons de
+ * perdre une opération se réparent différemment, et l'une d'elles ne se devine pas.
+ */
 function describeIssue(issue: ParsedStatementIssue): string {
   const parts: string[] = [];
   if (issue.date) parts.push(`le ${issue.date.split('-').reverse().join('/')}`);
   if (issue.amountCents !== null) parts.push(`${(issue.amountCents / 100).toFixed(2)} €`);
   if (issue.name) parts.push(`« ${issue.name} »`);
   if (issue.fitid) parts.push(`(${issue.fitid})`);
-  return parts.join(' ') || 'opération non identifiable';
+
+  const quoi = parts.join(' ') || 'opération non identifiable';
+  const cause = issue.kind === 'orphan'
+    ? 'hors de tout bloc <STMTTRN>'
+    : `bloc privé de ${issue.missing?.join(', ') || 'ses champs obligatoires'}`;
+  return `${quoi} — ${cause}`;
 }
 
 export async function importBankStatement(db: Db, fileContent: string, forcedAccountId?: string): Promise<ImportBankStatementOutput> {
   const { transactions, balance, issues } = parseOFX(fileContent);
 
   /*
-   * Un fichier dont un bloc ne s'ouvre pas est refusé EN ENTIER, et nommément.
+   * Un fichier dont une opération ne se lit pas est refusé EN ENTIER, et nommément.
    *
    * L'import pourrait charger les opérations lisibles et se taire sur les autres. C'est
    * exactement ce qu'il faisait, et une dépense de 120 € a manqué aux comptes pendant huit mois
@@ -126,8 +161,8 @@ export async function importBankStatement(db: Db, fileContent: string, forcedAcc
     const details = issues.slice(0, 5).map(describeIssue).join(' ; ');
     const reste = issues.length > 5 ? ` (et ${issues.length - 5} autre(s))` : '';
     throw new AppError(
-      `Fichier illisible : ${issues.length} opération(s) hors de tout bloc <STMTTRN>, donc invisibles à l'import — ${details}${reste}. ` +
-      `Corrigez la balise ouvrante manquante puis réimportez : aucune opération n'a été chargée.`,
+      `Fichier illisible : ${issues.length} opération(s) que l'import ne peut pas lire, donc invisibles aux comptes — ${details}${reste}. ` +
+      `Corrigez le fichier puis réimportez : aucune opération n'a été chargée.`,
       400
     );
   }

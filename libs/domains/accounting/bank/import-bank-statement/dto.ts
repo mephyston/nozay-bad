@@ -8,14 +8,23 @@ export type ParsedStatementBalance = {
 };
 
 /**
- * Une opération que le fichier contient mais que le découpage ne peut pas atteindre.
+ * Une opération que le fichier porte mais que l'import ne peut pas lire.
  *
- * `parseOFX` découpe sur `<STMTTRN>` et ne lit que le premier jeu de champs de chaque morceau :
- * une opération dont la balise ouvrante manque est collée à la fin de la précédente et
- * disparaît. C'est arrivé pour de vrai — 60,07 € restés invisibles dans un relevé reconstitué
- * jusqu'à ce qu'un rapprochement les réclame, huit mois plus tard.
+ * Deux façons de disparaître, et il a fallu les deux pour fermer le trou :
+ *
+ * - `orphan` — la balise ouvrante manque. `parseOFX` découpe sur `<STMTTRN>` et ne lit que le
+ *   premier jeu de champs de chaque morceau : l'opération est collée à la fin de la précédente
+ *   et n'est jamais atteinte. C'est arrivé pour de vrai — 60,07 € restés invisibles dans un
+ *   relevé reconstitué jusqu'à ce qu'un rapprochement les réclame, huit mois plus tard.
+ * - `incomplete` — le bloc est bien délimité mais un champ obligatoire manque. La lecture
+ *   l'écartait alors d'un `continue` muet : ni comptée dans `read`, ni dans `skipped`, ni
+ *   signalée. Une opération sans `<NAME>` — le cas d'une écriture de frais chez certaines
+ *   banques — s'évaporait sans laisser de trace, exactement comme la précédente.
  */
 export type ParsedStatementIssue = {
+  kind: 'orphan' | 'incomplete';
+  /** Les balises attendues qui manquent. Vide pour un `orphan`, qui n'en manque aucune. */
+  missing?: string[];
   date: string | null;
   amountCents: number | null;
   fitid: string | null;

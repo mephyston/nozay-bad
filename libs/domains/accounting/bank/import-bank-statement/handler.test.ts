@@ -164,13 +164,57 @@ describe("l'import ne perd plus d'opération en silence", () => {
 <NAME>PRLV IONOS SARL</NAME>
 </STMTTRN>`;
 
+  /*
+   * Un bloc bien délimité mais privé d'un champ obligatoire. Certaines banques émettent des
+   * écritures de frais sans `<NAME>` : le bloc s'ouvre et se ferme correctement, et l'opération
+   * n'en sortait pas moins de la lecture par un `continue` muet.
+   */
+  const OFX_BLOC_SANS_NOM = `<ACCTID>123
+<STMTTRN>
+<TRNTYPE>CREDIT
+<DTPOSTED>20250915
+<TRNAMT>210.00
+<FITID>GEN-001</FITID>
+<NAME>VIR INST RE 575886323034</NAME>
+</STMTTRN>
+<STMTTRN>
+<TRNTYPE>DEBIT
+<DTPOSTED>20250917
+<TRNAMT>-176.00
+<FITID>GEN-002</FITID>
+<MEMO>COTISATION JAZZ ASSOCIATIONS</MEMO>
+</STMTTRN>`;
+
   it("repère l'opération qu'un bloc non ouvert rend invisible", () => {
     const parsed = parseOFX(OFX_BLOC_NON_OUVERT);
 
     // Le découpage ne voit que 2 opérations là où le fichier en porte 3.
     expect(parsed.transactions.map((t) => t.fitid)).toEqual(['GEN-001', 'GEN-003']);
     expect(parsed.issues).toHaveLength(1);
-    expect(parsed.issues[0]).toMatchObject({ fitid: 'GEN-002', amountCents: 6007, date: '2025-09-15' });
+    expect(parsed.issues[0]).toMatchObject({
+      kind: 'orphan', fitid: 'GEN-002', amountCents: 6007, date: '2025-09-15'
+    });
+  });
+
+  it("repère l'opération qu'un champ obligatoire manquant faisait sauter en silence", () => {
+    const parsed = parseOFX(OFX_BLOC_SANS_NOM);
+
+    expect(parsed.transactions.map((t) => t.fitid)).toEqual(['GEN-001']);
+    expect(parsed.issues).toHaveLength(1);
+    expect(parsed.issues[0]).toMatchObject({
+      kind: 'incomplete',
+      missing: ['<NAME>'],
+      fitid: 'GEN-002',
+      amountCents: -17600,
+      date: '2025-09-17'
+    });
+  });
+
+  it("refuse le fichier et dit quelle balise manque", async () => {
+    const repo = mockRepo();
+    await expect(importBankStatement(db, OFX_BLOC_SANS_NOM, 'auto'))
+      .rejects.toThrow(/GEN-002.*<NAME>/);
+    expect(repo.insertBankStatementLine).not.toHaveBeenCalled();
   });
 
   it('refuse le fichier entier et nomme la ligne fautive', async () => {
