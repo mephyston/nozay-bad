@@ -57,7 +57,20 @@ export class ReconciliationStore {
   accrualType = $state('normal');
   accrualNote = $state('');
   amountToLink = $state(0);
-  lastProcessedTxId = $state<number | null>(null);
+  /**
+   * Ce qui a déjà été prérempli : la ligne **et** la suggestion qu'elle portait alors.
+   *
+   * Le garde ne retenait que l'identifiant de la ligne. Réanalyser celle qui est déjà
+   * sélectionnée réécrit ses `aiSuggestions` sans toucher à son identifiant : l'encart affichait
+   * le nouvel adhérent, le formulaire restait sur l'état d'avant — c'est-à-dire vide — et le
+   * trésorier devait ressaisir à la main ce que l'analyse venait de trouver. Il n'avait aucun
+   * moyen de rejouer le préremplissage sans changer de ligne puis revenir.
+   *
+   * Mettre la suggestion dans la clé le rejoue exactement quand elle change, et seulement là :
+   * rien d'autre que l'analyse ne la modifie, donc une saisie faite entre-temps n'est pas
+   * écrasée par un simple rendu.
+   */
+  lastPrefilledKey = $state<string | null>(null);
 
   selectedInvoiceIds = $state<Set<number>>(new Set());
   isSplitMode = $state(false);
@@ -313,11 +326,14 @@ export class ReconciliationStore {
       n'est jamais perdue — et `pickNextId` la fait avancer sur la ligne suivante de la file.
     */
     safeEffect(() => {
-      if (this.selectedTx && this.selectedTx.id !== this.lastProcessedTxId) {
-        this.lastProcessedTxId = this.selectedTx.id;
-        this.prefillFromSuggestion(this.selectedTx);
-      } else if (!this.selectedTx) {
-        this.lastProcessedTxId = null;
+      if (this.selectedTx) {
+        const key = `${this.selectedTx.id}:${this.selectedTx.aiSuggestions ?? ''}`;
+        if (key !== this.lastPrefilledKey) {
+          this.lastPrefilledKey = key;
+          this.prefillFromSuggestion(this.selectedTx);
+        }
+      } else {
+        this.lastPrefilledKey = null;
         this.resetEntryFields();
       }
     });

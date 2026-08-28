@@ -707,6 +707,80 @@ describe('BankStatementReconciliation Component', () => {
     // The member search combobox should show the selected member name 'Dupont Jean'
   });
 
+  /*
+   * Le préremplissage ne se déclenchait qu'au CHANGEMENT de ligne sélectionnée.
+   *
+   * Demander une analyse sur la ligne déjà ouverte réécrit ses `aiSuggestions` sans toucher à
+   * son identifiant : l'encart annonçait le bon adhérent, le formulaire restait vide, et il
+   * fallait changer de ligne puis revenir pour que le champ se remplisse.
+   */
+  it("remplit le formulaire quand l'analyse est demandée sur la ligne déjà ouverte", async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    const ligneAnalysee = {
+      id: 42,
+      fitid: 'TX-AI-REANALYSE',
+      accountId: 'current',
+      amount: 15000,
+      amountCents: 15000,
+      date: '2026-02-16',
+      name: 'VIR DUPONT JEAN ADHESION',
+      memo: 'Cotisation 25-26',
+      status: 'pending',
+      aiSuggestions: JSON.stringify({
+        kind: 'entry', category: 5, memberId: 99, memberName: 'Dupont Jean',
+        confidence: 0.9, accrualType: 'normal', accrualNote: null, targetSeason: null
+      })
+    };
+
+    const fetchDeBase = globalThis.fetch as any;
+    globalThis.fetch = vi.fn().mockImplementation((url: any, init: any) => {
+      if (url === '/admin/accounting/reconciliation' && init?.body) {
+        const body = JSON.parse(init.body);
+        if (body.action === 'analyze') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ success: true, count: 1, lines: [ligneAnalysee] })
+          } as Response);
+        }
+      }
+      return fetchDeBase(url, init);
+    });
+
+    component = mount(BankStatementReconciliation, {
+      target,
+      props: {
+        // La ligne s'ouvre SANS proposition : c'est l'analyse qui doit la lui donner.
+        bankStatementLines: [{ ...ligneAnalysee, aiSuggestions: null }],
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', code: '25-26', name: 'Saison 2025-2026', startDate: '2025-09-01', endDate: '2026-08-31', active: true }],
+        members: [{ id: 99, licence: '0102030', lastName: 'Dupont', firstName: 'Jean', amountRemaining: 15000 }],
+        dbCategories: [{ id: 5, code: 'tournois_senior', adminLabel: 'Tournois Senior' }]
+      }
+    });
+
+    flushSync();
+    expandRow(target, 'VIR DUPONT JEAN');
+
+    const champAdherent = () => target.querySelector('#member-search-input') as HTMLInputElement;
+    expect(champAdherent().value).toBe('');
+
+    const boutonAnalyse = Array.from(target.querySelectorAll('button')).find(
+      (b) => b.textContent?.includes('Analyser (IA)')
+    ) as HTMLButtonElement;
+    expect(boutonAnalyse).toBeTruthy();
+
+    boutonAnalyse.click();
+    await tick();
+    flushSync();
+    await tick();
+    flushSync();
+
+    expect(champAdherent().value).toContain('Dupont');
+  });
+
   it('validates the AI card with the corrections made in the form, not the frozen suggestion', async () => {
     // La comptable corrige l'adhérent proposé par le modèle, puis clique sur le bouton de
     // la carte IA. Ce bouton rejouait les valeurs du modèle : la correction et le
