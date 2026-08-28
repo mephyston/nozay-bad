@@ -3,12 +3,38 @@ import { AnalyzeBankStatementLinesRepository } from './repository';
 import { cleanName } from '../../shared/helpers';
 import { resolveCategoryMap, resolveProductAccountingCategory } from '../../shared/category';
 import { pickMemberCandidate } from './member-match';
-import { isFutureSeason, seasonInText } from './season-reference';
+import { isFutureSeason, isInAdvanceWindow, seasonInText } from './season-reference';
 import type {
   AnalyzeBankStatementLinesInput,
   AnalyzeBankStatementLinesOutput,
   BankStatementLineSuggestion
 } from './dto';
+
+/**
+ * Une adhésion par personne, la première rencontrée l'emportant.
+ *
+ * Le vivier d'une cotisation payée d'avance mêle deux annuaires : la personne réinscrite y
+ * figure deux fois, sous deux identifiants d'adhésion différents. L'appelant range l'exercice
+ * de rattachement en tête, c'est donc celui-là qui est retenu.
+ *
+ * Les annuaires simulés des tests n'ont pas toujours de `personId` : sans clé, une adhésion ne
+ * peut faire doublon avec personne et passe telle quelle — on ne dédoublonne pas à l'aveugle.
+ */
+function dedupeByPerson<T extends { personId?: number | null }>(members: T[]): T[] {
+  const seen = new Set<number>();
+  const kept: T[] = [];
+  for (const member of members) {
+    const personId = member.personId;
+    if (personId === null || personId === undefined) {
+      kept.push(member);
+      continue;
+    }
+    if (seen.has(personId)) continue;
+    seen.add(personId);
+    kept.push(member);
+  }
+  return kept;
+}
 
 export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeBankStatementLinesInput): Promise<AnalyzeBankStatementLinesOutput> {
   const repo = new AnalyzeBankStatementLinesRepository();
@@ -17,6 +43,9 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
   const pastReconciled = await repo.getPastReconciledTransactions(db);
   const categories = await repo.getCategories(db);
   const seasonCode = await repo.getSeasonCode(db, input.seasonId);
+  /* Les bornes des exercices : c'est la date de l'opération qui dit si elle tombe en fin
+     d'exercice, et aucun code de saison ne porte cette information. */
+  const orderedSeasons = await repo.getSeasonsOrdered(db);
   const catMap = resolveCategoryMap(categories);
   const analyzedIds: number[] = [];
 
@@ -50,6 +79,20 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
    * un relevé de rentrée en compte plusieurs, et la refaire ligne à ligne multiplierait
    * les requêtes sans rien apporter.
    */
+  /**
+   * L'exercice de la rentrée, quand l'opération tombe dans les derniers mois du sien.
+   *
+   * `null` partout ailleurs : au milieu d'un exercice, une adhésion encaissée appartient à
+   * l'exercice qui l'encaisse, et rien dans la date ne permet d'en douter.
+   */
+  function rentreeAfter(date: string | null | undefined): string | null {
+    if (!date) return null;
+    const index = orderedSeasons.findIndex((s) => date >= s.startDate && date <= s.endDate);
+    if (index === -1) return null;
+    if (!isInAdvanceWindow(date, orderedSeasons[index].endDate)) return null;
+    return orderedSeasons[index + 1]?.code ?? null;
+  }
+
   const otherSeasons = new Map<string, Awaited<ReturnType<typeof repo.getMembersBySeason>>>();
   async function membersOfSeason(code: string) {
     const known = otherSeasons.get(code);
@@ -202,22 +245,50 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
      * produit constaté d'avance.
      */
     const citedSeason = seasonCode ? seasonInText(textToLower) : null;
+
+    /*
+     * À défaut d'un millésime écrit, la DATE de l'encaissement désigne l'exercice.
+     *
+     * La détection ne reposait que sur le libellé, et n'attrapait donc que les adhérents qui
+     * prennent la peine d'écrire « 2026-2027 » dans leur motif. Les autres passaient en
+     * « normal » : en août 2026, 29 encaissements d'adhésion sur 58 se sont vus proposer le
+     * cut-off, et le trésorier a rattaché les 29 restants à la main. Aucun des 58 n'appartenait
+     * à l'exercice qui les encaissait — au dernier bimestre d'un exercice, une cotisation qui
+     * rentre est celle de la rentrée qui s'ouvre, et l'exception n'existe pas.
+     *
+     * Le libellé garde la priorité : un millésime écrit est une lecture, la date n'est qu'une
+     * déduction — et l'adhérent qui solde en août une cotisation de l'année écoulée l'écrit.
+     * La déduction se dit d'ailleurs comme telle dans la note, pour que le trésorier sache sur
+     * quoi elle repose avant de la valider.
+     */
+    const targetSeason = citedSeason ?? rentreeAfter(tx.date);
     const isAdvanceMembership =
-      citedSeason !== null &&
+      targetSeason !== null &&
       seasonCode !== null &&
       txAmount > 0 &&
       suggestedCategory === catMap.adhesions &&
-      isFutureSeason(citedSeason, seasonCode);
+      isFutureSeason(targetSeason, seasonCode);
 
     /*
-     * Les adhérents de la saison citée entrent aussi dans le vivier.
+     * Les adhérents de la saison citée entrent aussi dans le vivier — et ils passent devant.
      *
      * Un adhérent qui rejoint le club en août n'existe pas encore dans la saison en
      * cours : son virement de rentrée ne pouvait se rattacher à personne, et l'analyse
      * rendait « aucun adhérent » sans que rien n'explique pourquoi. Le libellé, lui,
      * nomme la saison — autant s'en servir.
+     *
+     * L'ordre n'est pas un détail, et le mélange non plus. Un réinscrit tient DEUX adhésions,
+     * une par exercice, sous deux identifiants. La suggestion doit porter celle de l'exercice
+     * de **rattachement**, faute de quoi l'écran — dont l'annuaire est filtré sur cet exercice
+     * — écarte l'adhésion proposée et vide le champ : le nom s'affiche dans la suggestion, la
+     * liste déroulante reste vide, et le trésorier doit resélectionner à la main. Les deux
+     * annuaires empilés faisaient de surcroît apparaître la même personne deux fois, ce qui
+     * suffisait à défaire la règle « un seul adhérent nommé, c'est une lecture, pas une
+     * hypothèse » de `pickMemberCandidate` : le modèle reprenait la main sans raison.
      */
-    const pool = isAdvanceMembership ? [...members, ...(await membersOfSeason(citedSeason!))] : members;
+    const pool = isAdvanceMembership
+      ? dedupeByPerson([...(await membersOfSeason(targetSeason!)), ...members])
+      : members;
 
     const candidates = pool.filter(m => {
       const cleanLast = cleanName(m.lastName);
@@ -250,12 +321,16 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
       memberName: exactCandidate ? `${exactCandidate.lastName} ${exactCandidate.firstName}` : null,
       confidence: exactCandidate ? 0.9 : 0.5,
       accrualType: isAdvanceMembership ? 'produit_constate_avance' : 'normal',
+      /* La note dit sur quoi le rattachement repose : un millésime lu dans le motif n'engage
+         pas comme une déduction tirée de la seule date. Le trésorier valide en connaissance. */
       accrualNote: isAdvanceMembership
-        ? `Cotisation encaissée d'avance pour la saison ${citedSeason}, à rattacher à cet exercice.`
+        ? (citedSeason
+            ? `Cotisation encaissée d'avance pour la saison ${targetSeason}, citée dans le libellé.`
+            : `Cotisation encaissée en fin d'exercice : rattachée à la saison ${targetSeason}, celle de la rentrée. Le libellé ne cite aucune saison.`)
         : null,
       // « cet exercice », c'est celui-là — et il faut le dire, pas seulement l'écrire dans
       // la note. Sans lui, l'écran retombe sur l'exercice consulté.
-      targetSeason: isAdvanceMembership ? citedSeason : null
+      targetSeason: isAdvanceMembership ? targetSeason : null
     };
 
     if (candidates.length > 0 && !looksLikeInternalTransfer) {
@@ -329,7 +404,9 @@ Renvoie STRICTEMENT un objet JSON sous la forme suivante :
     }
 
     if (suggestionResult.memberId) {
-      const matchedMember = members.find(m => m.id === suggestionResult.memberId);
+      /* Le vivier, pas l'annuaire consulté : l'adhésion suggérée peut relever de l'exercice
+         cité, auquel cas `members` ne la contient pas et la règle d'âge ne s'appliquait plus. */
+      const matchedMember = pool.find(m => m.id === suggestionResult.memberId);
       if (matchedMember && matchedMember.birthDate) {
         const birthYear = new Date(matchedMember.birthDate).getFullYear();
         const currentYear = new Date().getFullYear();

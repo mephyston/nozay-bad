@@ -21,6 +21,18 @@ export class AnalyzeBankStatementLinesRepository {
     return row?.code ?? null;
   }
 
+  /** Les exercices avec leurs bornes, du plus ancien au plus récent. Trois lignes, une lecture. */
+  async getSeasonsOrdered(db: DbOrTx): Promise<{ code: string; startDate: string; endDate: string }[]> {
+    return db.select({
+        code: seasonsTable.code,
+        startDate: seasonsTable.startDate,
+        endDate: seasonsTable.endDate
+      })
+      .from(seasonsTable)
+      .orderBy(seasonsTable.startDate)
+      .all();
+  }
+
   async getCategories(db: DbOrTx): Promise<(typeof categoriesTable.$inferSelect)[]> {
     return db.select().from(categoriesTable).all();
   }

@@ -59,6 +59,41 @@ export function seasonInText(text: string): string | null {
   return null;
 }
 
+/**
+ * Les derniers mois d'un exercice, pendant lesquels une adhésion encaissée vise la rentrée.
+ *
+ * L'exercice se clôt le 31 août et les inscriptions s'ouvrent en juillet : à partir de là,
+ * une cotisation qui rentre n'appartient plus à l'exercice qui l'encaisse. Deux mois, donc,
+ * comptés depuis la fin de l'exercice et non depuis un mois codé en dur — un club dont la
+ * saison finirait en juin n'aurait pas à réécrire cette règle.
+ */
+export const ADVANCE_WINDOW_MONTHS = 2;
+
+/**
+ * L'encaissement tombe-t-il dans cette fenêtre ?
+ *
+ * La date n'est pas une preuve, à la différence d'un millésime écrit dans le motif — mais
+ * c'est le seul indice disponible quand l'adhérent n'écrit rien, et il ne s'est pas démenti :
+ * en août 2026, les 58 encaissements d'adhésion ont tous été rattachés à la rentrée, sans une
+ * exception. Les laisser en « normal » revenait à faire corriger le trésorier une à une, ou à
+ * gonfler le résultat de l'exercice qui se clôture s'il ne les voyait pas passer.
+ *
+ * La fenêtre commence au PREMIER JOUR de son premier mois : reculer de deux mois depuis un
+ * 31 août demanderait de raboter au 30 juin, une arithmétique de calendrier qu'une comparaison
+ * de chaînes n'a pas à connaître.
+ */
+export function isInAdvanceWindow(date: string, seasonEndDate: string, months = ADVANCE_WINDOW_MONTHS): boolean {
+  const [endYear, endMonth] = seasonEndDate.split('-').map(Number);
+  if (!endYear || !endMonth) return false;
+
+  let year = endYear;
+  let month = endMonth - months + 1;
+  while (month < 1) { month += 12; year -= 1; }
+
+  const windowStart = `${year}-${String(month).padStart(2, '0')}-01`;
+  return date >= windowStart && date <= seasonEndDate;
+}
+
 /** La saison citée est-elle postérieure à celle de l'exercice en cours ? */
 export function isFutureSeason(cited: string, current: string): boolean {
   const startOf = (code: string) => Number(code.split('-')[0]);

@@ -300,6 +300,122 @@ describe('analyzeBankStatementLines', () => {
     expect(suggestions.accrualType).toBe('produit_constate_avance');
   });
 
+  /*
+   * Cas réel du 25/08/2026 : « DE: M GAUTHIER GUYON ... ADHESION 2026-2027 ». Gauthier tient
+   * deux adhésions, une par exercice. L'analyse proposait la 25-26 alors qu'elle rattachait
+   * l'encaissement à 26-27 : l'écran, dont l'annuaire est filtré sur l'exercice de
+   * rattachement, écartait l'adhésion suggérée et laissait la liste déroulante vide.
+   */
+  it("propose l'adhésion de l'exercice de rattachement, pas celle de l'exercice consulté", async () => {
+    await db.insert(seasonsTable).values({
+      code: '26-27', name: 'Saison 26-27', startDate: '2026-09-01', endDate: '2027-08-31',
+      active: false, closedAt: null, createdAt: new Date()
+    }).run();
+
+    await db.insert(bankStatementLinesTable).values({
+      id: 9,
+      fitid: 'TX1009',
+      accountId: 1,
+      amountCents: 23000,
+      date: '2026-08-25',
+      name: 'VIR INST RE 673693650144',
+      memo: 'DE: M GAUTHIER GUYON MOTIF: GUYON-GAUTHIER-ADHESION2026-2027',
+      status: 'pending',
+      createdAt: new Date()
+    }).run();
+
+    const base = {
+      gender: 'M', birthDate: '1990-01-01', type: 'Adulte', importedAt: new Date(),
+      amountDue: 23000, amountReceived: 0, amountRemaining: 23000,
+      amountDueCents: 23000, amountReceivedCents: 0, amountRemainingCents: 23000,
+      parent1Name: null, parent2Name: null,
+      // La même personne, deux adhésions : c'est `personId` qui les rassemble.
+      personId: 77, lastName: 'GUYON', firstName: 'Gauthier'
+    };
+    vi.spyOn(AnalyzeBankStatementLinesRepository.prototype, 'getMembersBySeason').mockImplementation(
+      async (_db: any, season: any) =>
+        (season === '26-27'
+          ? [{ ...base, id: 780, licence: '0000780', seasonId: 2 }]
+          : [{ ...base, id: 542, licence: '0000542', seasonId: 1 }]) as any
+    );
+
+    const aiMock = { run: vi.fn() };
+    await analyzeBankStatementLines(db, aiMock, { seasonId: '25-26' });
+
+    const row = await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, 9)).all();
+    const suggestions = JSON.parse(row[0].aiSuggestions);
+    expect(suggestions.targetSeason).toBe('26-27');
+    expect(suggestions.memberId).toBe(780);
+    expect(suggestions.memberName).toBe('GUYON Gauthier');
+    /*
+     * Les deux annuaires empilés donnaient DEUX candidats pour une seule personne. Le repli
+     * « un seul candidat, on le prend » ne s'appliquait donc jamais à un réinscrit — c'est
+     * lui qui désigne ici la bonne adhésion, preuve que le dédoublonnage a bien eu lieu.
+     */
+    expect(suggestions.confidence).toBe(0.7);
+  });
+
+  /*
+   * En août 2026, 58 encaissements d'adhésion sur 58 ont été rattachés à la rentrée. L'analyse
+   * n'en proposait le cut-off que pour ceux dont le motif citait « 2026-2027 » : les autres
+   * partaient en « normal » et gonflaient le résultat de l'exercice qui se clôture.
+   */
+  it("rattache à la rentrée une adhésion encaissée en fin d'exercice, motif muet", async () => {
+    await db.insert(seasonsTable).values({
+      code: '26-27', name: 'Saison 26-27', startDate: '2026-09-01', endDate: '2027-08-31',
+      active: false, closedAt: null, createdAt: new Date()
+    }).run();
+
+    await db.insert(bankStatementLinesTable).values({
+      id: 10,
+      fitid: 'TX1010',
+      accountId: 1,
+      amountCents: 26000,
+      date: '2026-08-06',
+      name: 'VIR INST RE 671873278414',
+      // Aucun millésime : c'est la date, et elle seule, qui doit décider.
+      memo: 'DE: M DOUX JEROME MOTIF: DOUX JEROME ADHESION',
+      status: 'pending',
+      createdAt: new Date()
+    }).run();
+
+    vi.spyOn(AnalyzeBankStatementLinesRepository.prototype, 'getMembersBySeason').mockResolvedValue([]);
+
+    const aiMock = { run: vi.fn() };
+    await analyzeBankStatementLines(db, aiMock, { seasonId: '25-26' });
+
+    const row = await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, 10)).all();
+    const suggestions = JSON.parse(row[0].aiSuggestions);
+    expect(suggestions.accrualType).toBe('produit_constate_avance');
+    expect(suggestions.targetSeason).toBe('26-27');
+    // La note dit sur quoi le rattachement repose : ici une déduction, pas une lecture.
+    expect(suggestions.accrualNote).toContain('ne cite aucune saison');
+  });
+
+  it("laisse en normal une adhésion encaissée au milieu de l'exercice", async () => {
+    await db.insert(bankStatementLinesTable).values({
+      id: 11,
+      fitid: 'TX1011',
+      accountId: 1,
+      amountCents: 26000,
+      date: '2026-02-06',
+      name: 'VIR INST RE 000000000',
+      memo: 'DE: M DOUX JEROME MOTIF: DOUX JEROME ADHESION',
+      status: 'pending',
+      createdAt: new Date()
+    }).run();
+
+    vi.spyOn(AnalyzeBankStatementLinesRepository.prototype, 'getMembersBySeason').mockResolvedValue([]);
+
+    const aiMock = { run: vi.fn() };
+    await analyzeBankStatementLines(db, aiMock, { seasonId: '25-26' });
+
+    const row = await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, 11)).all();
+    const suggestions = JSON.parse(row[0].aiSuggestions);
+    expect(suggestions.accrualType).toBe('normal');
+    expect(suggestions.targetSeason).toBeNull();
+  });
+
   it('ne va chercher une autre saison que pour une cotisation payée d’avance', async () => {
     await db.insert(bankStatementLinesTable).values({
       id: 8,
