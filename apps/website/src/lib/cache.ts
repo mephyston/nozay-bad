@@ -245,7 +245,8 @@ export async function withPageCache(
     return response;
   }
 
-  const version = isFingerprintedPath(options.pathname) ? null : options.version;
+  const fingerprinted = isFingerprintedPath(options.pathname);
+  const version = fingerprinted ? null : options.version;
   const key = cacheKeyFor(options.pathname, version, query);
 
   const hit = await store.match(key);
@@ -254,6 +255,28 @@ export async function withPageCache(
   const response = await render();
   const status = response.status;
   if (!CACHEABLE_STATUS.has(status)) return response;
+
+  /*
+    Un média absent n'est **jamais** rangé, même quinze minutes.
+
+    Ranger une 404 tient parce que la clé porte la version de contenu : publier la
+    page manquante rend l'entrée inatteignable sur-le-champ. Un chemin empreinté n'a
+    justement pas de version dans sa clé — c'est tout l'intérêt — donc rien ne vient
+    l'invalider, et l'absence d'un média est le cas où cette différence coûte cher :
+    déposer le fichier ne le fait pas apparaître. Le média était introuvable à la
+    seconde où quelqu'un a demandé son adresse, il le restait un quart d'heure après
+    l'avoir déposé, par centre de données — et le réglage « Browser Cache TTL » de la
+    zone, qui écrase un `max-age=0`, l'épinglait quatre heures de plus dans le
+    navigateur qui avait posé la question. Un dépôt qui semble refusé, alors que le
+    fichier est bien en place.
+
+    `no-store` et pas une durée courte : l'absence est un état transitoire, le seul
+    qu'un cache ne doit pas apprendre.
+  */
+  if (fingerprinted && status !== 200) {
+    response.headers.set('Cache-Control', 'private, no-store');
+    return response;
+  }
 
   const isHtml = (response.headers.get('Content-Type') ?? '').includes('text/html');
   if (status !== 200) response.headers.set('Cache-Control', NOT_FOUND_CACHE_CONTROL);

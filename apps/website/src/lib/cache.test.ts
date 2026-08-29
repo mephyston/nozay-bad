@@ -262,6 +262,40 @@ describe('withPageCache — ce qui est rangé', () => {
     expect(response.headers.get('Cache-Control')).toBe(NOT_FOUND_CACHE_CONTROL);
   });
 
+  it('ne range jamais l’absence d’un média, qu’un dépôt doit pouvoir démentir', async () => {
+    /*
+      Le dépôt d'un fichier ne réparait pas son adresse.
+
+      Demander `/media/<clé>/original.pdf` avant que le fichier n'existe rangeait la
+      404 sous une clé **sans version** — les chemins empreintés n'en ont pas — donc
+      qu'aucune publication ne pouvait atteindre. Le document déposé juste après
+      restait « introuvable » un quart d'heure par centre de données, et bien plus
+      longtemps dans le navigateur qui avait posé la question.
+    */
+    const entries = fakeCaches();
+    let renders = 0;
+    const render = async () => {
+      renders++;
+      return renders === 1
+        ? new Response('Not found', { status: 404 })
+        : new Response('bytes', {
+            headers: { 'Content-Type': 'application/pdf', 'Cache-Control': IMMUTABLE_CACHE_CONTROL }
+          });
+    };
+    const options = { pathname: '/media/552b513bf155413e/original.pdf', version: 1, cacheable: true };
+
+    const missing = await withPageCache(render, options);
+    expect(missing.status).toBe(404);
+    expect(missing.headers.get('Cache-Control')).toBe('private, no-store');
+    expect(entries.size, "rien ne doit être rangé sous une clé qu'on ne sait pas invalider").toBe(0);
+
+    // Le fichier est déposé : l'adresse suivante le sert, sans attendre l'expiration
+    // d'une entrée que rien n'aurait pu retirer.
+    const found = await withPageCache(render, options);
+    expect(found.status).toBe(200);
+    expect(renders, 'la seconde demande doit repartir vers R2').toBe(2);
+  });
+
   it('ne fige pas une 404 née d’une panne', async () => {
     // Le cas qui rendait le cache des 404 dangereux : une API qui répond 403 fait
     // résoudre *toutes* les adresses en « introuvable ». Le drapeau l'arrête.
