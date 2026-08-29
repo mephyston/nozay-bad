@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, getTableColumns, inArray, sql, type SQL } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import {
   cmsPostsTable, cmsPostCategoriesTable, cmsPostCategoryLinksTable, cmsMediaTable,
@@ -44,15 +44,43 @@ export class ListPostsRepository {
     }
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-    // `publishedAt` d'abord : un brouillon rédigé la semaine dernière puis publié
-    // aujourd'hui doit passer devant. `createdAt` départage les brouillons.
-    const base = db
-      .select()
-      .from(cmsPostsTable)
-      .orderBy(desc(cmsPostsTable.publishedAt), desc(cmsPostsTable.createdAt));
+    /*
+      Découpage en base, et non en mémoire.
 
-    const all = where ? await base.where(where).all() : await base.all();
-    return { rows: all.slice(filters.offset, filters.offset + filters.limit), total: all.length };
+      Cette requête chargeait **toute** l'archive — corps HTML compris — avant d'en
+      découper une page en JavaScript. Vingt articles aujourd'hui, quelques centaines
+      dans quelques saisons : le coût aurait grandi sans que rien ne le signale, et
+      l'accueil de l'espace adhérent en demandait cinquante pour en afficher trois.
+
+      `count(*) over ()` rend le total dans la même requête : SQLite l'évalue avant le
+      `LIMIT`, donc la pagination reste exacte sans second aller-retour. Les lignes
+      transportées, elles, se limitent à la page demandée.
+
+      `publishedAt` d'abord : un brouillon rédigé la semaine dernière puis publié
+      aujourd'hui doit passer devant. `createdAt` départage les brouillons.
+    */
+    const base = db
+      .select({ ...getTableColumns(cmsPostsTable), total: sql<number>`count(*) over ()` })
+      .from(cmsPostsTable)
+      .orderBy(desc(cmsPostsTable.publishedAt), desc(cmsPostsTable.createdAt))
+      .limit(filters.limit)
+      .offset(filters.offset);
+
+    const page = where ? await base.where(where).all() : await base.all();
+    if (page.length > 0) {
+      return { rows: page.map(({ total, ...row }) => row as CmsPostRow), total: page[0].total };
+    }
+
+    /*
+      Page vide : le total se lisant sur les lignes rendues, il n'y a plus rien à lire —
+      et répondre zéro mentirait. Une demande au-delà de la dernière page doit continuer
+      de dire combien d'articles existent, sans quoi l'écran d'administration conclurait
+      « aucune actualité » à qui a simplement dépassé la fin. D'où ce décompte, payé
+      seulement dans ce cas-là.
+    */
+    const compte = db.select({ total: sql<number>`count(*)` }).from(cmsPostsTable);
+    const row = where ? await compte.where(where).get() : await compte.get();
+    return { rows: [], total: row?.total ?? 0 };
   }
 
   /**
