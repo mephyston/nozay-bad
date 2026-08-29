@@ -171,6 +171,40 @@ const GRAPH = { largeur: 640, hauteur: 172, gauche: 50, droite: 14, haut: 26, ba
  * La moyenne ignore le dernier point : la journée en cours est partielle, et la compter
  * tirerait la moyenne d'autant plus bas qu'on regarde la page tôt le matin.
  */
+/**
+ * Les cinq quantiles de temps CPU, un seul tracé à la fois.
+ *
+ * Les empiler sur un même graphique aurait écrasé la médiane contre l'axe — un p99 vaut
+ * dix fois un p50 — et rendu l'échelle illisible. Le choix passe donc par l'URL, comme la
+ * période : pas de JavaScript, et un lien qui se partage tel quel.
+ */
+const CPU_CHOIX = [
+  { param: 'p50', cle: 'cpuP50Ms', label: 'médiane (p50)' },
+  { param: 'p75', cle: 'cpuP75Ms', label: 'p75' },
+  { param: 'p90', cle: 'cpuP90Ms', label: 'p90' },
+  { param: 'p95', cle: 'cpuP95Ms', label: 'p95' },
+  { param: 'p99', cle: 'cpuP99Ms', label: 'p99' }
+] as const;
+
+const cpuChoisi =
+  CPU_CHOIX.find((choix) => choix.param === Astro.url.searchParams.get('cpu')) ?? CPU_CHOIX[0];
+
+/** Lien conservant l'autre sélecteur : changer de quantile ne doit pas changer de période. */
+const lien = (params: Record<string, string>) => {
+  const url = new URLSearchParams({ periode: String(usage?.history.days ?? 7), cpu: cpuChoisi.param });
+  for (const [k, v] of Object.entries(params)) url.set(k, v);
+  return `?${url.toString()}`;
+};
+
+interface Definition {
+  cle: Exclude<keyof DayPoint, 'date'>;
+  label: string;
+  limite: number;
+  unite?: 'ms';
+  /** Le seuil CPU vaut d'être tracé même très au-dessus des valeurs : c'est le sujet. */
+  limiteToujours?: boolean;
+}
+
 const metriques = usage?.configured
   ? (
       [
@@ -187,24 +221,17 @@ const metriques = usage?.configured
         },
         /*
          * Le temps CPU n'est pas un volume : sa moyenne n'a pas de « par jour », et sa
-         * limite s'applique à une invocation, pas à une journée. Les deux courbes
-         * répondent à la seule question qui vaille — est-ce que ça s'alourdit ?
+         * limite s'applique à une invocation, pas à une journée.
          */
         {
-          cle: 'cpuP50Ms',
-          label: 'Temps CPU médian (p50)',
+          cle: cpuChoisi.cle,
+          label: `Temps CPU — ${cpuChoisi.label}`,
           limite: usage.limits.cpuMsPerInvocation,
-          unite: 'ms' as const
-        },
-        {
-          cle: 'cpuP99Ms',
-          label: 'Temps CPU du pire centième (p99)',
-          limite: usage.limits.cpuMsPerInvocation,
-          unite: 'ms' as const
+          unite: 'ms',
+          limiteToujours: true
         }
-      ] as const
-    ).map(({ cle, label, limite, ...reste }) => {
-      const unite = 'unite' in reste ? (reste as { unite: string }).unite : '';
+      ] as Definition[]
+    ).map(({ cle, label, limite, unite = '', limiteToujours = false }) => {
       const brut = series.map((p) => ({ date: p.date, valeur: p[cle] as number }));
       const valeurs = brut.map((p) => p.valeur);
       const max = Math.max(0, ...valeurs);
@@ -214,7 +241,7 @@ const metriques = usage?.configured
        * La limite mérite d'être tracée dès qu'elle est du même ordre que les données —
        * y compris, et surtout, quand elles la dépassent.
        */
-      const limiteVisible = max > 0 && limite <= max * 1.6;
+      const limiteVisible = limiteToujours || (max > 0 && limite <= max * 1.6);
       /*
        * Le plafond couvre TOUJOURS les données.
        *
@@ -366,7 +393,7 @@ const depuis = usage
               <div class="flex items-center gap-1 rounded-lg border border-border p-1">
                 {PERIODES.map((jours) => (
                   <a
-                    href={`?periode=${jours}`}
+                    href={lien({ periode: String(jours) })}
                     class={`rounded-md px-3 py-1 text-xs font-medium no-underline transition-colors ${
                       usage.history.days === jours
                         ? 'bg-primary text-primary-foreground'
@@ -381,6 +408,22 @@ const depuis = usage
             <div class="px-5 py-4 space-y-6">
               {metriques.map((metrique) => (
                 <div class="space-y-1">
+                  {metrique.unite === 'ms' && (
+                    <div class="flex flex-wrap items-center gap-1 rounded-lg border border-border p-1 w-fit">
+                      {CPU_CHOIX.map((choix) => (
+                        <a
+                          href={lien({ cpu: choix.param })}
+                          class={`rounded-md px-3 py-1 text-xs font-medium no-underline transition-colors ${
+                            cpuChoisi.param === choix.param
+                              ? 'bg-primary text-primary-foreground'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          {choix.label}
+                        </a>
+                      ))}
+                    </div>
+                  )}
                   <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                     <p class="text-xs font-medium text-foreground">{metrique.label}</p>
                     <p class="text-xs text-muted-foreground tabular-nums">
