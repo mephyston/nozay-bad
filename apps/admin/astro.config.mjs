@@ -35,8 +35,7 @@ const WEBSITE_URL =
     ? 'http://localhost:4323'
     : APP_ENV === 'staging'
       ? 'https://staging-www.nozaybad.fr'
-      : // Temporaire : l'apex sert encore WordPress ; à rebasculer sur https://nozaybad.fr à la bascule DNS.
-        'https://prod-www.nozaybad.fr';
+      : 'https://nozaybad.fr';
 
 export default defineConfig({
   output: 'server',

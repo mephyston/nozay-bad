@@ -44,10 +44,19 @@ const ENVS = ['staging', 'production'];
  */
 const TURNSTILE_SITE_KEY = '0x4AAAAAAD1TY7I_ql47XOjI';
 
-/** Domaines inlinés par les `astro.config.mjs`, utilisés comme marqueurs de vérification. */
+/**
+ * Domaines inlinés par les `astro.config.mjs`, utilisés comme marqueurs de vérification.
+ *
+ * Depuis la bascule DNS, l'hôte du site public en production est l'apex `nozaybad.fr` —
+ * sous-chaîne de tous les hôtes de préproduction, donc neutralisé par
+ * `isSubstringOfOwnHosts`. Le sens « marqueur de production dans un bundle de
+ * préproduction » n'a donc plus que `my.nozaybad.fr` à se mettre sous la dent ; le sens
+ * qui compte vraiment — un marqueur de *préproduction* dans un bundle de *production* —
+ * reste, lui, entièrement couvert.
+ */
 const HOSTS = {
   staging: ['staging-my.nozaybad.fr', 'staging-www.nozaybad.fr'],
-  production: ['my.nozaybad.fr', 'prod-www.nozaybad.fr']
+  production: ['my.nozaybad.fr', 'nozaybad.fr']
 };
 
 function fail(message) {
