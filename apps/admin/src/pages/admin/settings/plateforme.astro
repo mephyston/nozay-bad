@@ -191,15 +191,21 @@ const CPU_CHOIX = [
 const cpuChoisi =
   CPU_CHOIX.find((choix) => choix.param === Astro.url.searchParams.get('cpu')) ?? CPU_CHOIX[0];
 
-/** Lien conservant l'autre sélecteur : changer de quantile ne doit pas changer de période. */
-const lien = (params: Record<string, string>) => {
+/**
+ * Lien d'un sélecteur : conserve les autres, et **ramène où l'on était**.
+ *
+ * Ces liens provoquent une navigation, qui replace la page en haut : changer de quantile
+ * renvoyait le lecteur au-dessus des jauges, à trois écrans du graphique qu'il regardait.
+ * L'ancre l'y ramène, que la navigation soit douce ou complète.
+ */
+const lien = (params: Record<string, string>, ancre = 'evolution') => {
   const url = new URLSearchParams({ periode: String(usage?.history.days ?? 7), cpu: cpuChoisi.param });
   if (usage?.history.worker) url.set('worker', usage.history.worker);
   for (const [k, v] of Object.entries(params)) {
     if (v === '') url.delete(k);
     else url.set(k, v);
   }
-  return `?${url.toString()}`;
+  return `?${url.toString()}#${ancre}`;
 };
 
 interface Definition {
@@ -385,7 +391,7 @@ const depuis = usage
             ))}
           </div>
 
-          <div class="rounded-xl border border-border bg-card overflow-hidden">
+          <div id="evolution" class="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
             <div class="px-5 py-4 border-b border-border flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p class="text-sm font-semibold text-foreground">Évolution</p>
@@ -413,12 +419,15 @@ const depuis = usage
             </div>
             <div class="px-5 py-4 space-y-6">
               {metriques.map((metrique) => (
-                <div class="space-y-1">
+                <div
+                  class="space-y-1 scroll-mt-20"
+                  id={metrique.unite === 'ms' ? 'cpu' : undefined}
+                >
                   {metrique.unite === 'ms' && (
                     <div class="flex flex-wrap items-center gap-1 rounded-lg border border-border p-1 w-fit">
                       {CPU_CHOIX.map((choix) => (
                         <a
-                          href={lien({ cpu: choix.param })}
+                          href={lien({ cpu: choix.param }, 'cpu')}
                           class={`rounded-md px-3 py-1 text-xs font-medium no-underline transition-colors ${
                             cpuChoisi.param === choix.param
                               ? 'bg-primary text-primary-foreground'
@@ -436,7 +445,7 @@ const depuis = usage
                       {[{ nom: '', label: 'tous' }, ...usage.history.workers.map((w) => ({ nom: w, label: w }))].map(
                         (choix) => (
                           <a
-                            href={lien({ worker: choix.nom })}
+                            href={lien({ worker: choix.nom }, 'cpu')}
                             class={`rounded-md border px-2 py-0.5 text-xs no-underline transition-colors ${
                               (usage.history.worker ?? '') === choix.nom
                                 ? 'border-primary bg-primary text-primary-foreground'
