@@ -185,8 +185,19 @@ const metriques = usage?.configured
       const max = Math.max(0, ...valeurs);
       const complets = valeurs.slice(0, -1);
 
+      /*
+       * La limite mérite d'être tracée dès qu'elle est du même ordre que les données —
+       * y compris, et surtout, quand elles la dépassent.
+       */
       const limiteVisible = max > 0 && limite <= max * 1.6;
-      const plafond = Math.max(limiteVisible ? limite * 1.1 : max * 1.25, 1);
+      /*
+       * Le plafond couvre TOUJOURS les données.
+       *
+       * Le caler sur la seule limite paraissait suffisant tant que les valeurs restaient
+       * dessous ; le jour où le grand livre a lu 34 millions de lignes pour une limite de
+       * 5, le point s'est calculé à y = -583 et le graphique a débordé sur celui du dessus.
+       */
+      const plafond = Math.max(max * 1.25, limiteVisible ? limite * 1.1 : 0, 1);
 
       const largeurUtile = GRAPH.largeur - GRAPH.cote * 2;
       const hauteurUtile = GRAPH.hauteur - GRAPH.haut - GRAPH.bas;
@@ -199,6 +210,8 @@ const metriques = usage?.configured
         x: abscisse(i),
         y: ordonnee(point.valeur),
         part: limite > 0 ? point.valeur / limite : 0,
+        /** Étiquette maintenue dans le cadre : au plus haut, elle passerait au-dessus. */
+        etiquetteY: Math.max(GRAPH.haut + (1 - point.valeur / plafond) * hauteurUtile - 9, 10),
         /** Journée en cours : incomplète, donc annoncée comme telle au survol. */
         partiel: i === brut.length - 1
       }));
@@ -336,7 +349,7 @@ const depuis = usage
 
                   <svg
                     viewBox={`0 0 ${GRAPH.largeur} ${GRAPH.hauteur}`}
-                    class="w-full h-auto overflow-visible"
+                    class="w-full h-auto"
                     role="img"
                     aria-label={`${metrique.label} : ${metrique.points.map((p) => `${jourCourt.format(new Date(p.date))} ${nombre.format(p.valeur)}`).join(', ')}`}
                   >
@@ -354,7 +367,7 @@ const depuis = usage
                         />
                         <text
                           x={GRAPH.largeur}
-                          y={metrique.limiteY - 5}
+                          y={Math.max(metrique.limiteY - 5, 9)}
                           text-anchor="end"
                           font-size="10"
                           fill="currentColor"
@@ -391,7 +404,7 @@ const depuis = usage
                         {i % metrique.pasEtiquette === 0 && (
                           <text
                             x={point.x}
-                            y={point.y - 9}
+                            y={point.etiquetteY}
                             text-anchor="middle"
                             font-size="10"
                             fill="currentColor"
@@ -485,7 +498,9 @@ const depuis = usage
               <p class="text-sm font-semibold text-foreground">Bases D1</p>
               <p class="text-xs text-muted-foreground">
                 Ce sont les <em>lignes lues</em> qui comptent, pas les requêtes : une requête sans
-                index en lit toute une table.
+                index en lit toute une table. Le quota vaut pour le <strong>compte entier</strong> et
+                non par base : c’est donc sur le total qu’il est rappelé, les bases s’y partageant
+                le même plafond.
               </p>
             </div>
             <div class="overflow-x-auto">
@@ -520,6 +535,29 @@ const depuis = usage
                       <td colspan="5" class="px-5 py-6 text-center text-muted-foreground text-xs">
                         Aucune requête depuis minuit UTC.
                       </td>
+                    </tr>
+                  )}
+                  {usage.databases.length > 0 && (
+                    <tr class="border-t-2 border-border bg-muted/30 font-medium">
+                      <td class="px-5 py-2 text-foreground">Total du compte</td>
+                      <td
+                        class={`px-3 py-2 text-right tabular-nums ${TEXTE[niveau(usage.totals.d1RowsRead / usage.limits.d1RowsReadPerDay)]}`}
+                      >
+                        {nombre.format(usage.totals.d1RowsRead)}
+                        <span class="text-muted-foreground font-normal">
+                          {' '}/ {nombre.format(usage.limits.d1RowsReadPerDay)}
+                        </span>
+                      </td>
+                      <td
+                        class={`px-3 py-2 text-right tabular-nums ${TEXTE[niveau(usage.totals.d1RowsWritten / usage.limits.d1RowsWrittenPerDay)]}`}
+                      >
+                        {nombre.format(usage.totals.d1RowsWritten)}
+                        <span class="text-muted-foreground font-normal">
+                          {' '}/ {nombre.format(usage.limits.d1RowsWrittenPerDay)}
+                        </span>
+                      </td>
+                      <td class="px-3 py-2 text-right text-muted-foreground font-normal">—</td>
+                      <td class="px-5 py-2 text-right text-muted-foreground font-normal">—</td>
                     </tr>
                   )}
                 </tbody>
