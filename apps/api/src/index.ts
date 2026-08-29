@@ -17,6 +17,7 @@ import { openPlayFeatureFlag } from './open-play';
 import { invalidatePublicContent } from './content-version';
 import { AppError } from '@nba/db';
 import { authorize } from './authz/middleware';
+import { cacheSharedReads } from './shared-read-cache';
 
 type Bindings = {
   DB: D1Database;
@@ -88,6 +89,10 @@ app.use('*', authorize());
 // Après l'autorisation, et après le handler : une écriture réussie sur les créneaux
 // périme les pages du site public, qui les met en cache sous la version de contenu.
 app.use('*', invalidatePublicContent());
+
+// Également après l'autorisation, et pour la même raison : une réponse mise de côté ne
+// peut être servie qu'à un appelant dont les droits ont déjà été vérifiés.
+app.use('*', cacheSharedReads());
 
 app.get('/health', (c) => {
   return c.json({ status: 'ok' });
