@@ -12,6 +12,7 @@ import { getContentVersionRoute } from './publishing/get-content-version/route';
 import { listMediaRoute } from './media/list-media/route';
 import { uploadMediaRoute } from './media/upload-media/route';
 import { getMediaRoute } from './media/get-media/route';
+import { updateMediaRoute } from './media/update-media/route';
 import { deleteMediaRoute } from './media/delete-media/route';
 import { listPageRevisionsRoute } from './revisions/list-page-revisions/route';
 import { restorePageRevisionRoute } from './revisions/restore-page-revision/route';
@@ -81,6 +82,7 @@ cmsRouter.route('/', saveSiteSettingsRoute);
 cmsRouter.route('/', listMediaRoute);
 cmsRouter.route('/', uploadMediaRoute);
 cmsRouter.route('/', getMediaRoute);
+cmsRouter.route('/', updateMediaRoute);
 cmsRouter.route('/', deleteMediaRoute);
 
 // API publique du contexte.

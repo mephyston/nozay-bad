@@ -16,6 +16,8 @@ const apiService = createAdminApiClient(Astro.locals);
 
 const ACTIONS = {
   upload: 'cms:media:write',
+  // Renommer, c'est décrire le fichier déposé : même droit que le dépôt.
+  update: 'cms:media:write',
   delete: 'cms:media:delete'
 } as const;
 
@@ -36,11 +38,18 @@ if (Astro.request.method === 'POST') {
     });
   }
 
-  const data = (await Astro.request.json()) as { action: string; id?: number };
+  const data = (await Astro.request.json()) as { action: string; id?: number; alt?: string };
   const denied = guardAction(Astro.locals, data.action, ACTIONS);
   if (denied) return denied;
 
-  const apiRes = await apiService.fetch(`http://localhost/cms/media/${data.id}`, { method: 'DELETE' });
+  const apiRes =
+    data.action === 'update'
+      ? await apiService.fetch(`http://localhost/cms/media/${data.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ alt: data.alt ?? '' })
+        })
+      : await apiService.fetch(`http://localhost/cms/media/${data.id}`, { method: 'DELETE' });
   if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
   return new Response(JSON.stringify(await apiRes.json()), {
     headers: { 'Content-Type': 'application/json' }

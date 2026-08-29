@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Plus, Trash2, ExternalLink, Upload } from '@lucide/svelte';
+  import { Plus, Trash2, ExternalLink, Upload, Pencil } from '@lucide/svelte';
   import { mediaUrl } from '../../media-url';
   import {
     Button,
@@ -16,7 +16,7 @@
     uiConfirm,
     flashAndReload
   } from '@nba/ui';
-  import { uploadFile, deleteMedia } from './media-actions';
+  import { uploadFile, updateMediaAlt, deleteMedia } from './media-actions';
   import { humanSize } from './media-upload';
 
   interface MediaRow {
@@ -42,6 +42,18 @@
   let showFormSheet = $state(false);
   let errorMsg = $state('');
   let searchTerm = $state('');
+
+  /*
+    Second formulaire, et non le premier réutilisé : déposer demande un fichier,
+    reprendre une description n'en demande aucun. Un formulaire unique aurait porté un
+    champ fichier tantôt requis tantôt interdit, et le fichier déposé n'est de toute
+    façon pas remplaçable — sa clé porte l'empreinte de son contenu.
+  */
+  let editing = $state<MediaRow | null>(null);
+  let showEditSheet = $state(false);
+  let editAlt = $state('');
+  let editError = $state('');
+  let editBusy = $state(false);
 
   const isImage = (mime: string) => mime.startsWith('image/');
 
@@ -96,6 +108,45 @@
     });
 
     busy = false;
+  }
+
+  function openEditForm(row: MediaRow) {
+    editing = row;
+    editAlt = row.alt;
+    editError = '';
+    showEditSheet = true;
+  }
+
+  async function submitEdit(event: Event) {
+    event.preventDefault();
+    editError = '';
+    editBusy = true;
+
+    const row = editing;
+
+    await submitForm({
+      validate: () => {
+        if (!row) return 'Aucun média sélectionné.';
+        // Même exigence qu'au dépôt : une image sans description n'est lisible ni par
+        // un lecteur d'écran, ni par la recherche de la médiathèque.
+        if (isImage(row.mimeType) && editAlt.trim() === '') {
+          return "Décrivez l'image en quelques mots, ou indiquez qu'elle est décorative.";
+        }
+        return null;
+      },
+      submit: () => updateMediaAlt((row as MediaRow).id, editAlt.trim()),
+      success: 'Description modifiée.',
+      close: () => {
+        editing = null;
+        editAlt = '';
+        showEditSheet = false;
+      },
+      onError: (message) => {
+        editError = message;
+      }
+    });
+
+    editBusy = false;
   }
 
   async function remove(row: MediaRow) {
@@ -179,6 +230,12 @@
                   <ExternalLink class="mr-2 h-3.5 w-3.5" />
                   Ouvrir
                 </DropdownMenu.Item>
+                {#if canWrite}
+                  <DropdownMenu.Item onclick={() => openEditForm(row)} class="cursor-pointer">
+                    <Pencil class="mr-2 h-3.5 w-3.5" />
+                    Modifier la description
+                  </DropdownMenu.Item>
+                {/if}
                 {#if canDelete}
                   <DropdownMenu.Item
                     onclick={() => remove(row)}
@@ -221,5 +278,21 @@
 
   <FormField id="media-alt" label="Texte alternatif">
     <Input id="media-alt" bind:value={alt} placeholder="Ce que montre l'image" />
+  </FormField>
+</FormSheet>
+
+<FormSheet
+  bind:open={showEditSheet}
+  title="Modifier la description"
+  description="Le fichier déposé ne change pas : cette description sert au site public et à retrouver le média ici."
+  icon={Pencil}
+  error={editError}
+  isSubmitting={editBusy}
+  submitLabel="Enregistrer"
+  submittingLabel="Enregistrement…"
+  onSubmit={submitEdit}
+>
+  <FormField id="media-edit-alt" label="Texte alternatif">
+    <Input id="media-edit-alt" bind:value={editAlt} placeholder="Ce que montre l'image, ou le nom du document" />
   </FormField>
 </FormSheet>

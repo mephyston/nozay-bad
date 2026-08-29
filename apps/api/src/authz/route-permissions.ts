@@ -33,6 +33,10 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
 
   // ── Tableau de bord et assistant IA ────────────────────────────────────────
   { method: 'GET', path: '/dashboard/overview', permission: 'dashboard:overview:read' },
+
+  // Consommation Cloudflare. Aucune donnée du club, mais un jeton qui voit tout le
+  // compte : jamais ouvert aux appelants de service.
+  { method: 'GET', path: '/platform/usage', permission: 'settings:platform:read' },
   { method: 'POST', path: '/ai/chat', permission: 'ai:assistant:use' },
 
   // ── Adhérents ──────────────────────────────────────────────────────────────
@@ -212,6 +216,9 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'GET', path: '/cms/media', permission: 'cms:media:read', service: true },
   { method: 'GET', path: '/cms/media/:id', permission: 'cms:media:read', service: true },
   { method: 'POST', path: '/cms/media', permission: 'cms:media:write' },
+  // Reprendre le texte alternatif relève du dépôt : c'est le libellé du média, pas un
+  // droit distinct. Rien d'autre n'est modifiable — le fichier, lui, est immuable.
+  { method: 'PUT', path: '/cms/media/:id', permission: 'cms:media:write' },
   { method: 'DELETE', path: '/cms/media/:id', permission: 'cms:media:delete' },
   // Historique des pages. Restaurer réécrit le contenu : c'est un acte de rédaction,
   // pas un droit distinct.

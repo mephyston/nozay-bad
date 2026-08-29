@@ -33,6 +33,22 @@ export async function uploadFile(file: File, alt: string): Promise<PickableMedia
   return body.data;
 }
 
+/**
+ * Reprend le texte alternatif d'un média.
+ *
+ * C'est le seul champ modifiable, et il en porte deux : ce que lit un lecteur d'écran
+ * sur le site public, et le libellé sous lequel la médiathèque retrouve le fichier —
+ * la recherche n'a que lui et une empreinte de seize caractères.
+ */
+export async function updateMediaAlt(id: number, alt: string): Promise<void> {
+  const response = await fetch('', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'update', id, alt })
+  });
+  if (!response.ok) throw new Error(await extractError(response, 'La modification a échoué.'));
+}
+
 export async function deleteMedia(id: number): Promise<void> {
   const response = await fetch('', {
     method: 'POST',
