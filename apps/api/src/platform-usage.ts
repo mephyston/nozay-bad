@@ -66,7 +66,16 @@ export const FREE_PLAN_LIMITS = {
   workerRequestsPerDay: 100_000,
   d1RowsReadPerDay: 5_000_000,
   d1RowsWrittenPerDay: 100_000,
-  cronTriggersPerAccount: 5
+  cronTriggersPerAccount: 5,
+  /**
+   * Temps CPU par invocation, en millisecondes.
+   *
+   * Seuil **documenté**, à ne pas confondre avec un couperet : relevé sur sept jours de
+   * ce compte, aucune invocation n'a fini en `exceededCpu` alors que l'administration
+   * tient un p50 au-dessus de 10 ms et des pointes à 200. Cloudflare tolère donc les
+   * dépassements — sans rien garantir, ce qui est bien la raison de l'afficher.
+   */
+  cpuMsPerInvocation: 10
 } as const;
 
 /**
