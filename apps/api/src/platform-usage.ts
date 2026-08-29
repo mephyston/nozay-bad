@@ -294,6 +294,16 @@ export function aggregateUsage(
   const ordered = [...workers.values()].sort((a, b) => b.requests - a.requests);
   for (const worker of ordered) worker.statuses.sort((a, b) => b.requests - a.requests);
 
+  /*
+   * Le total est celui du **compte**, la liste celle du club.
+   *
+   * Les autres projets hébergés partagent les quotas — les retirer du total ferait croire
+   * à une marge qui n'existe pas — mais il n'y a rien à diagnostiquer d'eux dans ce
+   * tableau. D'où le décompte avant filtrage, et une seule ligne pour le dire.
+   */
+  const totalRequests = ordered.reduce((sum, w) => sum + w.requests, 0);
+  const duClub = ordered.filter((w) => w.script.startsWith('nba'));
+
   // Somme par jour, puis projection sur le calendrier complet : les jours sans activité
   // valent zéro et gardent leur place, plutôt que de disparaître du graphique.
   const requestsByDay = new Map<string, number>();
@@ -345,10 +355,10 @@ export function aggregateUsage(
       worker,
       workers: [...workersVus].sort()
     },
-    workers: ordered,
+    workers: duClub,
     databases: databases.sort((a, b) => b.rowsRead - a.rowsRead),
     totals: {
-      workerRequests: ordered.reduce((sum, w) => sum + w.requests, 0),
+      workerRequests: totalRequests,
       d1RowsRead: databases.reduce((sum, d) => sum + d.rowsRead, 0),
       d1RowsWritten: databases.reduce((sum, d) => sum + d.rowsWritten, 0),
       cronTriggers: CRON_TRIGGERS.reduce((sum, c) => sum + c.schedules, 0)
