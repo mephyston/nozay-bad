@@ -74,6 +74,7 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
   '/admin/settings/accounting': 'accounting:config:read',
   '/admin/settings/attestation': 'members:attestations:read',
   '/admin/settings/products': 'shop:products:read',
+  '/admin/settings/plateforme': 'settings:platform:read',
 
   '/admin/iam': 'iam:users:read'
 };

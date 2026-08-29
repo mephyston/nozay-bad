@@ -1,0 +1,269 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader, ErrorAlert } from '@nba/ui';
+import { createAdminApiClient } from '../../../lib/api';
+
+/**
+ * Consommation de la plateforme Cloudflare.
+ *
+ * La page dit une chose que le tableau de bord de Cloudflare ne dit nulle part : la
+ * **distance au mur**. Sur le plan gratuit, dépasser un quota n'ajoute pas une ligne à
+ * une facture, ça arrête le service jusqu'à minuit UTC — 1027 pour les requêtes, refus
+ * sec des requêtes pour D1. Un pourcentage est donc la seule lecture utile.
+ */
+
+const userEmail = Astro.locals.user?.email || '';
+const apiService = createAdminApiClient(Astro.locals);
+
+interface WorkerUsage {
+  script: string;
+  requests: number;
+  errors: number;
+  subrequests: number;
+  cpuP50Ms: number;
+  cpuP99Ms: number;
+  statuses: { status: string; requests: number }[];
+}
+
+interface Usage {
+  configured: boolean;
+  since: string;
+  workers: WorkerUsage[];
+  databases: { databaseId: string; rowsRead: number; rowsWritten: number; readQueries: number; writeQueries: number }[];
+  totals: { workerRequests: number; d1RowsRead: number; d1RowsWritten: number; cronTriggers: number };
+  limits: {
+    workerRequestsPerDay: number;
+    d1RowsReadPerDay: number;
+    d1RowsWrittenPerDay: number;
+    cronTriggersPerAccount: number;
+  };
+}
+
+let usage: Usage | null = null;
+let error: string | null = null;
+
+try {
+  const res = await apiService.fetch('http://localhost/platform/usage');
+  const body = (await res.json()) as { success: boolean; data?: Usage; error?: string };
+  if (!res.ok || !body.success) error = body.error ?? `Erreur ${res.status}`;
+  else usage = body.data ?? null;
+} catch (err) {
+  error = err instanceof Error ? err.message : 'Erreur inconnue';
+}
+
+const nombre = new Intl.NumberFormat('fr-FR');
+
+/**
+ * Trois décisions, pas un dégradé : rien à faire, surveiller, agir aujourd'hui.
+ *
+ * Jetons sémantiques et non palette brute — `libs/design-system.test.ts` le vérifie, et
+ * c'est ce qui fait que le seuil garde la même couleur d'un écran à l'autre.
+ */
+function teinte(part: number): string {
+  if (part >= 0.85) return 'bg-destructive';
+  if (part >= 0.6) return 'bg-warning';
+  return 'bg-success';
+}
+
+const jauges = usage?.configured
+  ? [
+      {
+        label: 'Requêtes Workers',
+        value: usage.totals.workerRequests,
+        limit: usage.limits.workerRequestsPerDay,
+        detail: 'aujourd’hui, tous workers du compte'
+      },
+      {
+        label: 'Lignes D1 lues',
+        value: usage.totals.d1RowsRead,
+        limit: usage.limits.d1RowsReadPerDay,
+        detail: 'aujourd’hui, toutes bases'
+      },
+      {
+        label: 'Lignes D1 écrites',
+        value: usage.totals.d1RowsWritten,
+        limit: usage.limits.d1RowsWrittenPerDay,
+        detail: 'aujourd’hui, toutes bases'
+      },
+      {
+        label: 'Déclencheurs cron',
+        value: usage.totals.cronTriggers,
+        limit: usage.limits.cronTriggersPerAccount,
+        detail: 'déclarés — la limite la moins visible'
+      }
+    ].map((j) => ({ ...j, part: j.limit > 0 ? j.value / j.limit : 0 }))
+  : [];
+
+const depuis = usage
+  ? new Intl.DateTimeFormat('fr-FR', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+      timeZone: 'Europe/Paris'
+    }).format(new Date(usage.since))
+  : '';
+---
+
+<Layout title="Consommation de la plateforme - NBA 91">
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={userEmail}
+    breadcrumb="Consommation de la plateforme"
+    permissions={Astro.locals.user?.permissions || []}
+  >
+    <div class="space-y-6">
+      <PageHeader
+        title="Consommation de la plateforme"
+        description="Ce que les quatre applications consomment sur le compte Cloudflare, rapporté aux quotas du plan gratuit. Tout se remet à zéro à minuit UTC."
+      />
+
+      {error && <ErrorAlert message={error} />}
+
+      {usage && !usage.configured && (
+        <div class="rounded-xl border border-border bg-card px-5 py-4 space-y-2">
+          <p class="text-sm font-semibold text-foreground">Jeton d’analytique non configuré</p>
+          <p class="text-xs text-muted-foreground">
+            Ces chiffres viennent de l’API GraphQL de Cloudflare, qui exige un jeton à portée
+            compte, en lecture seule. Créez-le depuis <span class="font-mono">My Profile → API
+            Tokens</span> avec la portée <span class="font-mono">Account Analytics: Read</span>,
+            puis posez-le sur le Worker :
+          </p>
+          <pre class="text-xs bg-muted rounded-md px-3 py-2 overflow-x-auto"><code>npx wrangler secret put CLOUDFLARE_ANALYTICS_TOKEN --name nba-api</code></pre>
+        </div>
+      )}
+
+      {usage?.configured && (
+        <>
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {jauges.map((jauge) => (
+              <div class="rounded-xl border border-border bg-card px-5 py-4 space-y-3">
+                <div class="flex items-baseline justify-between gap-2">
+                  <p class="text-sm font-semibold text-foreground">{jauge.label}</p>
+                  <p class="text-sm font-semibold tabular-nums text-foreground">
+                    {Math.round(jauge.part * 100)} %
+                  </p>
+                </div>
+                <div class="h-2 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    class={`h-full rounded-full ${teinte(jauge.part)}`}
+                    style={`width: ${Math.min(100, Math.max(jauge.part * 100, jauge.value > 0 ? 1 : 0))}%`}
+                  />
+                </div>
+                <p class="text-xs text-muted-foreground tabular-nums">
+                  {nombre.format(jauge.value)} / {nombre.format(jauge.limit)}
+                </p>
+                <p class="text-xs text-muted-foreground">{jauge.detail}</p>
+              </div>
+            ))}
+          </div>
+
+          <div class="rounded-xl border border-border bg-card overflow-hidden">
+            <div class="px-5 py-4 border-b border-border">
+              <p class="text-sm font-semibold text-foreground">Workers</p>
+              <p class="text-xs text-muted-foreground">
+                Le temps CPU ne compte que l’exécution : l’attente d’une requête réseau ou d’une
+                lecture D1 n’y entre pas. Un statut autre que « success » mérite un regard —
+                <span class="font-mono">exceededCpu</span> signalerait des requêtes tuées.
+              </p>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-muted/50 text-xs text-muted-foreground">
+                  <tr>
+                    <th class="text-left font-medium px-5 py-2">Worker</th>
+                    <th class="text-right font-medium px-3 py-2">Requêtes</th>
+                    <th class="text-right font-medium px-3 py-2">Sous-req.</th>
+                    <th class="text-right font-medium px-3 py-2">CPU p50</th>
+                    <th class="text-right font-medium px-3 py-2">CPU p99</th>
+                    <th class="text-left font-medium px-5 py-2">Statuts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usage.workers.map((worker) => (
+                    <tr class="border-t border-border">
+                      <td class="px-5 py-2 font-medium text-foreground">{worker.script}</td>
+                      <td class="px-3 py-2 text-right tabular-nums">{nombre.format(worker.requests)}</td>
+                      <td class="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                        {nombre.format(worker.subrequests)}
+                      </td>
+                      <td class="px-3 py-2 text-right tabular-nums">{worker.cpuP50Ms} ms</td>
+                      <td class="px-3 py-2 text-right tabular-nums">{worker.cpuP99Ms} ms</td>
+                      <td class="px-5 py-2 text-xs text-muted-foreground">
+                        {worker.statuses
+                          .filter((s) => s.status !== 'success')
+                          .map((s) => `${s.status} : ${nombre.format(s.requests)}`)
+                          .join(' · ') || '—'}
+                      </td>
+                    </tr>
+                  ))}
+                  {usage.workers.length === 0 && (
+                    <tr>
+                      <td colspan="6" class="px-5 py-6 text-center text-muted-foreground text-xs">
+                        Aucune invocation depuis minuit UTC.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-border bg-card overflow-hidden">
+            <div class="px-5 py-4 border-b border-border">
+              <p class="text-sm font-semibold text-foreground">Bases D1</p>
+              <p class="text-xs text-muted-foreground">
+                Ce sont les <em>lignes lues</em> qui comptent, pas les requêtes : une requête sans
+                index en lit toute une table.
+              </p>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-muted/50 text-xs text-muted-foreground">
+                  <tr>
+                    <th class="text-left font-medium px-5 py-2">Base</th>
+                    <th class="text-right font-medium px-3 py-2">Lignes lues</th>
+                    <th class="text-right font-medium px-3 py-2">Lignes écrites</th>
+                    <th class="text-right font-medium px-3 py-2">Requêtes L / É</th>
+                    <th class="text-right font-medium px-5 py-2">Lignes / requête</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usage.databases.map((base) => (
+                    <tr class="border-t border-border">
+                      <td class="px-5 py-2 font-mono text-xs text-foreground">
+                        {base.databaseId.slice(0, 8)}…
+                      </td>
+                      <td class="px-3 py-2 text-right tabular-nums">{nombre.format(base.rowsRead)}</td>
+                      <td class="px-3 py-2 text-right tabular-nums">{nombre.format(base.rowsWritten)}</td>
+                      <td class="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                        {nombre.format(base.readQueries)} / {nombre.format(base.writeQueries)}
+                      </td>
+                      <td class="px-5 py-2 text-right tabular-nums">
+                        {base.readQueries > 0 ? Math.round(base.rowsRead / base.readQueries) : 0}
+                      </td>
+                    </tr>
+                  ))}
+                  {usage.databases.length === 0 && (
+                    <tr>
+                      <td colspan="5" class="px-5 py-6 text-center text-muted-foreground text-xs">
+                        Aucune requête depuis minuit UTC.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <p class="text-xs text-muted-foreground">
+            Fenêtre : depuis le {depuis} (minuit UTC). Chiffres rafraîchis au plus toutes les
+            cinq minutes — l’API d’analytique agrège elle-même à la minute, et un rechargement
+            compulsif pèserait plus lourd que ce qu’il mesure.
+          </p>
+        </>
+      )}
+    </div>
+  </AdminLayout>
+</Layout>

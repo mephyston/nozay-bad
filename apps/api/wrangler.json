@@ -47,7 +47,8 @@
     "PUSH_RANKING_REMINDERS_ENABLED": "true",
     "PUSH_LINEUP_REMINDERS_ENABLED": "true",
     "OPEN_PLAY_ENABLED": "true",
-    "PUSH_OPEN_PLAY_ENABLED": "false"
+    "PUSH_OPEN_PLAY_ENABLED": "false",
+    "CLOUDFLARE_ACCOUNT_ID": "4f2da32c6c3c548f14fd56434f1d0fe4"
   },
   "env": {
     "staging": {
@@ -73,7 +74,8 @@
         "PUSH_RANKING_REMINDERS_ENABLED": "false",
         "PUSH_LINEUP_REMINDERS_ENABLED": "false",
         "OPEN_PLAY_ENABLED": "true",
-        "PUSH_OPEN_PLAY_ENABLED": "false"
+        "PUSH_OPEN_PLAY_ENABLED": "false",
+        "CLOUDFLARE_ACCOUNT_ID": "4f2da32c6c3c548f14fd56434f1d0fe4"
       },
       "d1_databases": [
         {

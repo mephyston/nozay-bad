@@ -213,6 +213,7 @@ exports[`matrice des droits > correspond à l’instantané validé 1`] = `
     "schedules:slots:read",
     "schedules:slots:write",
     "settings:hub:read",
+    "settings:platform:read",
     "shop:categories:write",
     "shop:orders:approve",
     "shop:orders:read",

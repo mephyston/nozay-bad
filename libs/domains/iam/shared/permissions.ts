@@ -127,6 +127,10 @@ export const ALL_PERMISSIONS = [
 
   // — Administration —
   'settings:hub:read',
+  // Lire la consommation de la plateforme suppose un jeton d'analytique à portée
+  // compte, qui voit tous les Workers hébergés — y compris ceux qui n'ont rien à voir
+  // avec le club. Le droit reste donc à part de la configuration fonctionnelle.
+  'settings:platform:read',
   'iam:users:read',
   'iam:users:write',
   'iam:users:delete',

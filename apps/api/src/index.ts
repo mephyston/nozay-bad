@@ -18,6 +18,7 @@ import { invalidatePublicContent } from './content-version';
 import { AppError } from '@nba/db';
 import { authorize } from './authz/middleware';
 import { cacheSharedReads } from './shared-read-cache';
+import { platformRouter } from './platform-usage';
 
 type Bindings = {
   DB: D1Database;
@@ -111,6 +112,7 @@ app.route('/schedules', schedulesRouter);
 app.route('/events', eventsRouter);
 app.route('/teams', teamsRouter);
 app.route('/dashboard', dashboardRouter);
+app.route('/platform', platformRouter);
 app.route('/ai', aiRouter);
 
 // Application Hono exposée pour les tests, qui appellent `app.request()`.

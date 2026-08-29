@@ -84,6 +84,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'ai:assistant:use': "Utiliser l'assistant IA",
 
   'settings:hub:read': 'Accéder aux réglages',
+  'settings:platform:read': 'Consulter la consommation de la plateforme',
   'iam:users:read': 'Consulter les accès',
   'iam:users:write': 'Créer un accès et attribuer des rôles',
   'iam:users:delete': 'Supprimer un accès',

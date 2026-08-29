@@ -37,6 +37,13 @@ const cards = [
     title: 'Catégories Produits',
     description: 'Catégories de la boutique et leurs correspondances comptables.',
     allowed: can(Astro.locals, 'shop:products:read')
+  },
+  {
+    href: '/admin/settings/plateforme',
+    title: 'Consommation de la plateforme',
+    description:
+      'Requêtes Workers, temps CPU et lignes D1 du jour, rapportés aux quotas du plan gratuit.',
+    allowed: can(Astro.locals, 'settings:platform:read')
   }
 ].filter((c) => c.allowed);
 ---
