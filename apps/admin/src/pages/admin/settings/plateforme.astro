@@ -79,33 +79,58 @@ function teinte(part: number): string {
   return 'bg-success';
 }
 
+/**
+ * Deux repères sous chaque jauge : la veille, et le pire jour de la période.
+ *
+ * Sans eux la jauge du jour se lit mal — à huit heures du matin elle n'affiche qu'un
+ * début de journée, et 4 % ne dit pas si l'on finira à 6 % ou à 40 %. La veille donne
+ * l'échelle d'une journée entière, le pic dit jusqu'où on est déjà monté. Les deux se
+ * rapportent à la **limite quotidienne**, puisque ce sont des journées.
+ *
+ * Ils sortent de la série d'historique, déjà chargée : aucune requête de plus.
+ */
+const series = usage?.history.series ?? [];
+/** Journées achevées : celle en cours est partielle et fausserait le pic comme la moyenne. */
+const joursComplets = series.slice(0, -1);
+
+function reperes(cle: keyof DayPoint | null) {
+  if (!cle || joursComplets.length === 0) return { veille: null, pic: null };
+  const valeurs = joursComplets.map((p) => p[cle] as number);
+  return { veille: valeurs[valeurs.length - 1] ?? null, pic: Math.max(...valeurs) };
+}
+
 const jauges = usage?.configured
   ? [
       {
         label: 'Requêtes Workers',
         value: usage.totals.workerRequests,
         limit: usage.limits.workerRequestsPerDay,
-        detail: 'aujourd’hui, tous workers du compte'
+        detail: 'aujourd’hui, tous workers du compte',
+        cle: 'workerRequests' as const
       },
       {
         label: 'Lignes D1 lues',
         value: usage.totals.d1RowsRead,
         limit: usage.limits.d1RowsReadPerDay,
-        detail: 'aujourd’hui, toutes bases'
+        detail: 'aujourd’hui, toutes bases',
+        cle: 'd1RowsRead' as const
       },
       {
         label: 'Lignes D1 écrites',
         value: usage.totals.d1RowsWritten,
         limit: usage.limits.d1RowsWrittenPerDay,
-        detail: 'aujourd’hui, toutes bases'
+        detail: 'aujourd’hui, toutes bases',
+        cle: 'd1RowsWritten' as const
       },
       {
+        // Un décompte de configuration, pas une consommation : ni veille ni pic.
         label: 'Déclencheurs cron',
         value: usage.totals.cronTriggers,
         limit: usage.limits.cronTriggersPerAccount,
-        detail: 'déclarés — la limite la moins visible'
+        detail: 'déclarés — la limite la moins visible',
+        cle: null
       }
-    ].map((j) => ({ ...j, part: j.limit > 0 ? j.value / j.limit : 0 }))
+    ].map((j) => ({ ...j, part: j.limit > 0 ? j.value / j.limit : 0, ...reperes(j.cle) }))
   : [];
 
 const jourCourt = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit' });
@@ -197,6 +222,17 @@ const depuis = usage
                 <p class="text-xs text-muted-foreground tabular-nums">
                   {nombre.format(jauge.value)} / {nombre.format(jauge.limit)}
                 </p>
+                {jauge.veille !== null && jauge.pic !== null ? (
+                  <p
+                    class="text-xs text-muted-foreground tabular-nums"
+                    title={`Hier : ${nombre.format(jauge.veille)} · pire journée des ${usage.history.days} derniers jours : ${nombre.format(jauge.pic)}`}
+                  >
+                    hier {Math.round((jauge.veille / jauge.limit) * 100)} % · pic{' '}
+                    {Math.round((jauge.pic / jauge.limit) * 100)} % sur {usage.history.days} j
+                  </p>
+                ) : (
+                  <p class="text-xs text-muted-foreground">&nbsp;</p>
+                )}
                 <p class="text-xs text-muted-foreground">{jauge.detail}</p>
               </div>
             ))}
