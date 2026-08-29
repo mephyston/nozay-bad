@@ -60,6 +60,23 @@ try {
 } catch {
   errorMsg = 'Impossible de charger les menus.';
 }
+
+/*
+ * MESURE TEMPORAIRE — à retirer une fois la question tranchée.
+ *
+ * Les pages d'administration coûtent 20 à 50 ms de temps CPU chacune, deux à cinq fois
+ * le seuil documenté du plan gratuit, et sur des écrans qui n'ont rien de commun sinon
+ * leur structure. L'hypothèse est que le coût vient du rendu serveur des îlots Svelte et
+ * de la sérialisation de leurs props, pas du travail de la page.
+ *
+ * `?ssr=0` rend le même îlot en `client:only` : Astro saute alors son rendu serveur. Même
+ * page, mêmes données, même isolate — la différence de CPU mesurée sur une vingtaine de
+ * chargements de chaque variante donne la réponse. L'analytique les distingue par
+ * `$workers.event.request.url`, qui conserve la chaîne de requête.
+ *
+ * Sans le paramètre, la page se comporte exactement comme avant.
+ */
+const mesureSansRenduServeur = Astro.url.searchParams.get('ssr') === '0';
 ---
 
 <Layout title="Menus du site - NBA 91">
@@ -79,7 +96,11 @@ try {
         description="La barre de navigation, la colonne de liens du pied de page et la barre légale du site public. Une entrée principale peut porter un sous-menu, qui s'affiche au survol sur ordinateur et dans le menu déroulant sur mobile."
       />
 
-      <MenusManager client:load header={header} footer={footer} legal={legal} pages={pages} canWrite={canWrite} />
+      {mesureSansRenduServeur ? (
+        <MenusManager client:only="svelte" header={header} footer={footer} legal={legal} pages={pages} canWrite={canWrite} />
+      ) : (
+        <MenusManager client:load header={header} footer={footer} legal={legal} pages={pages} canWrite={canWrite} />
+      )}
     </div>
   </AdminLayout>
 </Layout>
