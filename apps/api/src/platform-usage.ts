@@ -17,6 +17,37 @@ import { Hono } from 'hono';
  * `settings:platform:read`.
  */
 
+/**
+ * Périodes d'historique proposées.
+ *
+ * Plafonnées par Cloudflare, qui refuse une fenêtre de plus de 4 semaines et 4 jours sur
+ * ces jeux de données — 30 est donc le dernier palier possible, pas un choix esthétique.
+ */
+export const HISTORY_CHOICES = [7, 15, 30] as const;
+
+export function parseHistoryDays(raw: string | undefined | null): number {
+  const value = Number(raw);
+  return (HISTORY_CHOICES as readonly number[]).includes(value) ? value : HISTORY_CHOICES[0];
+}
+
+/**
+ * Les jours de la fenêtre, du plus ancien à aujourd'hui.
+ *
+ * Construits ici plutôt que déduits des lignes reçues : un jour sans la moindre requête
+ * n'apparaît pas dans la réponse de Cloudflare, et le graphique le ferait disparaître —
+ * une journée creuse se lirait alors comme une journée normale, collée à sa voisine.
+ */
+export function historyDates(now: Date, days: number): string[] {
+  const dates: string[] = [];
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const day = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - i)
+    );
+    dates.push(day.toISOString().slice(0, 10));
+  }
+  return dates;
+}
+
 /** Fenêtre d'observation : les quotas quotidiens de Cloudflare se rouvrent à minuit UTC. */
 export function startOfUtcDay(now: Date): string {
   return new Date(
@@ -76,6 +107,15 @@ export interface PlatformUsage {
   /** Faux quand le jeton manque : la page l'explique au lieu d'afficher une erreur. */
   configured: boolean;
   since: string;
+  /**
+   * Consommation jour par jour, indépendante des jauges.
+   *
+   * Les jauges répondent « où en suis-je du quota d'aujourd'hui » ; l'historique répond
+   * « est-ce que ça dérive ». Ce sont deux questions distinctes, et confondre les deux —
+   * additionner trente jours pour les rapporter à une limite quotidienne — donnerait un
+   * pourcentage qui ne veut rien dire.
+   */
+  history: { days: number; series: DayPoint[] };
   workers: WorkerUsage[];
   databases: DatabaseUsage[];
   totals: {
@@ -98,13 +138,40 @@ interface DatabaseRow {
   sum: { rowsRead: number; rowsWritten: number; readQueries: number; writeQueries: number };
 }
 
+interface DailyInvocationRow {
+  dimensions: { date: string };
+  sum: { requests: number };
+}
+
+interface DailyDatabaseRow {
+  dimensions: { date: string };
+  sum: { rowsRead: number; rowsWritten: number };
+}
+
 export interface UsageAccountData {
   workersInvocationsAdaptive?: InvocationRow[];
   d1AnalyticsAdaptiveGroups?: DatabaseRow[];
+  workersDaily?: DailyInvocationRow[];
+  d1Daily?: DailyDatabaseRow[];
 }
 
+/** Un jour de la fenêtre d'historique. */
+export interface DayPoint {
+  date: string;
+  workerRequests: number;
+  d1RowsRead: number;
+  d1RowsWritten: number;
+}
+
+/*
+  Deux séries volontairement séparées plutôt qu'une seule croisée.
+
+  Le détail par worker ne porte pas la date, l'historique ne porte pas le worker : croiser
+  les deux ferait une quinzaine de workers fois quatre statuts fois trente jours, soit
+  près de deux mille lignes pour afficher trente barres.
+*/
 const QUERY = `
-query($account: String!, $since: Time!) {
+query($account: String!, $since: Time!, $historySince: Time!) {
   viewer {
     accounts(filter: { accountTag: $account }) {
       workersInvocationsAdaptive(limit: 200, filter: { datetime_geq: $since }) {
@@ -115,6 +182,14 @@ query($account: String!, $since: Time!) {
       d1AnalyticsAdaptiveGroups(limit: 50, filter: { datetime_geq: $since }) {
         dimensions { databaseId }
         sum { rowsRead rowsWritten readQueries writeQueries }
+      }
+      workersDaily: workersInvocationsAdaptive(limit: 500, filter: { datetime_geq: $historySince }) {
+        dimensions { date }
+        sum { requests }
+      }
+      d1Daily: d1AnalyticsAdaptiveGroups(limit: 500, filter: { datetime_geq: $historySince }) {
+        dimensions { date }
+        sum { rowsRead rowsWritten }
       }
     }
   }
@@ -134,7 +209,11 @@ function roundMs(microseconds: number): number {
  * élevé** : c'est le pire cas observé, et c'est bien lui qu'on veut voir approcher d'une
  * limite.
  */
-export function aggregateUsage(account: UsageAccountData, since: string): PlatformUsage {
+export function aggregateUsage(
+  account: UsageAccountData,
+  since: string,
+  dates: readonly string[] = []
+): PlatformUsage {
   const workers = new Map<string, WorkerUsage>();
 
   for (const row of account.workersInvocationsAdaptive ?? []) {
@@ -172,9 +251,34 @@ export function aggregateUsage(account: UsageAccountData, since: string): Platfo
   const ordered = [...workers.values()].sort((a, b) => b.requests - a.requests);
   for (const worker of ordered) worker.statuses.sort((a, b) => b.requests - a.requests);
 
+  // Somme par jour, puis projection sur le calendrier complet : les jours sans activité
+  // valent zéro et gardent leur place, plutôt que de disparaître du graphique.
+  const requestsByDay = new Map<string, number>();
+  for (const row of account.workersDaily ?? []) {
+    requestsByDay.set(
+      row.dimensions.date,
+      (requestsByDay.get(row.dimensions.date) ?? 0) + row.sum.requests
+    );
+  }
+  const d1ByDay = new Map<string, { read: number; written: number }>();
+  for (const row of account.d1Daily ?? []) {
+    const day = d1ByDay.get(row.dimensions.date) ?? { read: 0, written: 0 };
+    day.read += row.sum.rowsRead;
+    day.written += row.sum.rowsWritten;
+    d1ByDay.set(row.dimensions.date, day);
+  }
+
+  const series: DayPoint[] = dates.map((date) => ({
+    date,
+    workerRequests: requestsByDay.get(date) ?? 0,
+    d1RowsRead: d1ByDay.get(date)?.read ?? 0,
+    d1RowsWritten: d1ByDay.get(date)?.written ?? 0
+  }));
+
   return {
     configured: true,
     since,
+    history: { days: dates.length, series },
     workers: ordered,
     databases: databases.sort((a, b) => b.rowsRead - a.rowsRead),
     totals: {
@@ -196,10 +300,11 @@ export function aggregateUsage(account: UsageAccountData, since: string): Platfo
  * plus lourd que ce qu'il mesure.
  */
 const TTL_MS = 5 * 60_000;
-let cached: { payload: PlatformUsage; expiresAt: number } | null = null;
+/** Une entrée par période : les trois fenêtres ne se déduisent pas l'une de l'autre. */
+const cached = new Map<number, { payload: PlatformUsage; expiresAt: number }>();
 
 export function clearPlatformUsageCache(): void {
-  cached = null;
+  cached.clear();
 }
 
 export class AnalyticsApiError extends Error {}
@@ -207,14 +312,17 @@ export class AnalyticsApiError extends Error {}
 export async function fetchUsage(
   token: string,
   account: string,
+  days: number = HISTORY_CHOICES[0],
   now: Date = new Date()
 ): Promise<PlatformUsage> {
   const since = startOfUtcDay(now);
+  const dates = historyDates(now, days);
+  const historySince = `${dates[0]}T00:00:00.000Z`;
 
   const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: QUERY, variables: { account, since } })
+    body: JSON.stringify({ query: QUERY, variables: { account, since, historySince } })
   });
 
   if (!response.ok) {
@@ -232,7 +340,7 @@ export async function fetchUsage(
     throw new AnalyticsApiError(body.errors.map((e) => e.message).join(' ; '));
   }
 
-  return aggregateUsage(body.data?.viewer?.accounts?.[0] ?? {}, since);
+  return aggregateUsage(body.data?.viewer?.accounts?.[0] ?? {}, since, dates);
 }
 
 export type PlatformUsageBindings = {
@@ -248,12 +356,15 @@ platformRouter.get('/usage', async (c) => {
 
   // Jeton absent : ce n'est pas une panne, c'est une installation incomplète. La page
   // le dit et donne la commande à lancer, plutôt que d'afficher une erreur muette.
+  const days = parseHistoryDays(c.req.query('periode'));
+
   if (!token || !account) {
     return c.json({
       success: true,
       data: {
         configured: false,
         since: startOfUtcDay(new Date()),
+        history: { days, series: [] },
         workers: [],
         databases: [],
         totals: { workerRequests: 0, d1RowsRead: 0, d1RowsWritten: 0, cronTriggers: 0 },
@@ -263,13 +374,14 @@ platformRouter.get('/usage', async (c) => {
   }
 
   const now = Date.now();
-  if (cached && cached.expiresAt > now) {
-    return c.json({ success: true, data: cached.payload });
+  const hit = cached.get(days);
+  if (hit && hit.expiresAt > now) {
+    return c.json({ success: true, data: hit.payload });
   }
 
   try {
-    const payload = await fetchUsage(token, account);
-    cached = { payload, expiresAt: now + TTL_MS };
+    const payload = await fetchUsage(token, account, days);
+    cached.set(days, { payload, expiresAt: now + TTL_MS });
     return c.json({ success: true, data: payload });
   } catch (err) {
     console.error({

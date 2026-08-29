@@ -26,9 +26,17 @@ interface WorkerUsage {
   statuses: { status: string; requests: number }[];
 }
 
+interface DayPoint {
+  date: string;
+  workerRequests: number;
+  d1RowsRead: number;
+  d1RowsWritten: number;
+}
+
 interface Usage {
   configured: boolean;
   since: string;
+  history: { days: number; series: DayPoint[] };
   workers: WorkerUsage[];
   databases: { databaseId: string; rowsRead: number; rowsWritten: number; readQueries: number; writeQueries: number }[];
   totals: { workerRequests: number; d1RowsRead: number; d1RowsWritten: number; cronTriggers: number };
@@ -43,8 +51,13 @@ interface Usage {
 let usage: Usage | null = null;
 let error: string | null = null;
 
+const PERIODES = [7, 15, 30];
+const periodeDemandee = Astro.url.searchParams.get('periode') ?? '7';
+
 try {
-  const res = await apiService.fetch('http://localhost/platform/usage');
+  const res = await apiService.fetch(
+    `http://localhost/platform/usage?periode=${encodeURIComponent(periodeDemandee)}`
+  );
   const body = (await res.json()) as { success: boolean; data?: Usage; error?: string };
   if (!res.ok || !body.success) error = body.error ?? `Erreur ${res.status}`;
   else usage = body.data ?? null;
@@ -93,6 +106,36 @@ const jauges = usage?.configured
         detail: 'déclarés — la limite la moins visible'
       }
     ].map((j) => ({ ...j, part: j.limit > 0 ? j.value / j.limit : 0 }))
+  : [];
+
+const jourCourt = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit' });
+
+/**
+ * Trois séries à dessiner.
+ *
+ * La moyenne ignore le dernier point : la journée en cours est partielle, et la compter
+ * tirerait la moyenne vers le bas d'autant plus fort qu'on regarde la page tôt le matin.
+ */
+const metriques = usage?.configured
+  ? (
+      [
+        { cle: 'workerRequests', label: 'Requêtes Workers' },
+        { cle: 'd1RowsRead', label: 'Lignes D1 lues' },
+        { cle: 'd1RowsWritten', label: 'Lignes D1 écrites' }
+      ] as const
+    ).map(({ cle, label }) => {
+      const points = usage.history.series.map((p) => ({ date: p.date, valeur: p[cle] }));
+      const valeurs = points.map((p) => p.valeur);
+      const complets = valeurs.slice(0, -1);
+      return {
+        label,
+        points,
+        max: Math.max(0, ...valeurs),
+        moyenne: complets.length
+          ? Math.round(complets.reduce((a, b) => a + b, 0) / complets.length)
+          : 0
+      };
+    })
   : [];
 
 const depuis = usage
@@ -157,6 +200,58 @@ const depuis = usage
                 <p class="text-xs text-muted-foreground">{jauge.detail}</p>
               </div>
             ))}
+          </div>
+
+          <div class="rounded-xl border border-border bg-card overflow-hidden">
+            <div class="px-5 py-4 border-b border-border flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold text-foreground">Évolution</p>
+                <p class="text-xs text-muted-foreground">
+                  Consommation jour par jour. La dernière barre est la journée en cours, donc
+                  incomplète — la moyenne l’ignore.
+                </p>
+              </div>
+              <div class="flex items-center gap-1 rounded-lg border border-border p-1">
+                {PERIODES.map((jours) => (
+                  <a
+                    href={`?periode=${jours}`}
+                    class={`rounded-md px-3 py-1 text-xs font-medium no-underline transition-colors ${
+                      usage.history.days === jours
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {jours} jours
+                  </a>
+                ))}
+              </div>
+            </div>
+            <div class="px-5 py-4 space-y-6">
+              {metriques.map((metrique) => (
+                <div class="space-y-2">
+                  <div class="flex items-baseline justify-between gap-2">
+                    <p class="text-xs font-medium text-foreground">{metrique.label}</p>
+                    <p class="text-xs text-muted-foreground tabular-nums">
+                      moyenne {nombre.format(metrique.moyenne)} / jour · pic{' '}
+                      {nombre.format(metrique.max)}
+                    </p>
+                  </div>
+                  <div class="flex items-end gap-[2px] h-20">
+                    {metrique.points.map((point) => (
+                      <div
+                        class="flex-1 rounded-t-sm bg-primary/70 hover:bg-primary transition-colors min-h-[2px]"
+                        style={`height: ${metrique.max > 0 ? Math.max(2, (point.valeur / metrique.max) * 100) : 2}%`}
+                        title={`${jourCourt.format(new Date(point.date))} : ${nombre.format(point.valeur)}`}
+                      />
+                    ))}
+                  </div>
+                  <div class="flex justify-between text-[10px] text-muted-foreground">
+                    <span>{metrique.points.length > 0 ? jourCourt.format(new Date(metrique.points[0].date)) : ''}</span>
+                    <span>{metrique.points.length > 0 ? jourCourt.format(new Date(metrique.points[metrique.points.length - 1].date)) : ''}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div class="rounded-xl border border-border bg-card overflow-hidden">

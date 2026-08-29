@@ -6,6 +6,8 @@ import {
   FREE_PLAN_LIMITS,
   aggregateUsage,
   clearPlatformUsageCache,
+  historyDates,
+  parseHistoryDays,
   startOfUtcDay,
   type UsageAccountData
 } from './platform-usage';
@@ -54,6 +56,37 @@ afterEach(() => {
 describe('startOfUtcDay', () => {
   it('ramène à minuit UTC, où les quotas quotidiens se rouvrent', () => {
     expect(startOfUtcDay(new Date('2026-08-29T15:47:03.221Z'))).toBe('2026-08-29T00:00:00.000Z');
+  });
+});
+
+describe('parseHistoryDays', () => {
+  it('accepte les trois paliers proposés', () => {
+    expect(parseHistoryDays('7')).toBe(7);
+    expect(parseHistoryDays('15')).toBe(15);
+    expect(parseHistoryDays('30')).toBe(30);
+  });
+
+  it('retombe sur sept devant n’importe quoi d’autre', () => {
+    // 60 est refusé par Cloudflare lui-même (fenêtre maximale de 4 semaines et 4 jours) :
+    // le laisser passer transformerait un paramètre d'URL bricolé en erreur 502.
+    expect(parseHistoryDays('60')).toBe(7);
+    expect(parseHistoryDays('tout')).toBe(7);
+    expect(parseHistoryDays(undefined)).toBe(7);
+    expect(parseHistoryDays(null)).toBe(7);
+  });
+});
+
+describe('historyDates', () => {
+  it('rend la fenêtre du plus ancien à aujourd’hui, bornes comprises', () => {
+    const dates = historyDates(new Date('2026-08-29T15:00:00Z'), 7);
+    expect(dates).toHaveLength(7);
+    expect(dates[0]).toBe('2026-08-23');
+    expect(dates[6]).toBe('2026-08-29');
+  });
+
+  it('franchit un changement de mois sans trou', () => {
+    const dates = historyDates(new Date('2026-09-02T00:30:00Z'), 4);
+    expect(dates).toEqual(['2026-08-30', '2026-08-31', '2026-09-01', '2026-09-02']);
   });
 });
 
@@ -149,6 +182,32 @@ describe('aggregateUsage', () => {
     expect(usage.totals.cronTriggers).toBe(4);
   });
 
+  it('garde leur place aux jours sans activité', () => {
+    // Cloudflare n'envoie aucune ligne pour un jour creux : sans le calendrier construit
+    // à part, le graphique collerait la veille à l'avant-veille et la creusée deviendrait
+    // invisible.
+    const avecTrou = aggregateUsage(
+      {
+        workersDaily: [
+          { dimensions: { date: '2026-08-27' }, sum: { requests: 900 } },
+          { dimensions: { date: '2026-08-29' }, sum: { requests: 500 } }
+        ],
+        d1Daily: [
+          { dimensions: { date: '2026-08-29' }, sum: { rowsRead: 1200, rowsWritten: 30 } }
+        ]
+      },
+      '2026-08-29T00:00:00.000Z',
+      ['2026-08-27', '2026-08-28', '2026-08-29']
+    );
+
+    expect(avecTrou.history.days).toBe(3);
+    expect(avecTrou.history.series).toEqual([
+      { date: '2026-08-27', workerRequests: 900, d1RowsRead: 0, d1RowsWritten: 0 },
+      { date: '2026-08-28', workerRequests: 0, d1RowsRead: 0, d1RowsWritten: 0 },
+      { date: '2026-08-29', workerRequests: 500, d1RowsRead: 1200, d1RowsWritten: 30 }
+    ]);
+  });
+
   it('supporte un compte sans aucune activité', () => {
     const vide = aggregateUsage({}, '2026-08-29T00:00:00.000Z');
     expect(vide.workers).toEqual([]);
@@ -191,6 +250,30 @@ describe('GET /platform/usage', () => {
 
     await app.request('/platform/usage', { headers: ADMIN }, env(mockD1, CONFIGURED));
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('sert chaque période depuis sa propre entrée de cache', async () => {
+    const { mockD1, db } = await setupMockDb();
+    await seedTestAdmin(db);
+
+    const fetchMock = vi.fn(async () => graphqlResponse({}));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const sept = await app.request(
+      '/platform/usage?periode=7',
+      { headers: ADMIN },
+      env(mockD1, CONFIGURED)
+    );
+    const trente = await app.request(
+      '/platform/usage?periode=30',
+      { headers: ADMIN },
+      env(mockD1, CONFIGURED)
+    );
+
+    expect(((await sept.json()) as { data: { history: { days: number } } }).data.history.days).toBe(7);
+    expect(((await trente.json()) as { data: { history: { days: number } } }).data.history.days).toBe(30);
+    // Deux fenêtres, deux interrogations : la seconde ne se déduit pas de la première.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it('remonte une erreur GraphQL, que Cloudflare rend sous un code 200', async () => {
