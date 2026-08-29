@@ -1,7 +1,7 @@
 import { seasonsTable } from '@nba/accounting/schema';
 import { ledgerEntriesTable, categoriesTable, paymentMethodsTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
-import { and, or, eq, sql, inArray, isNull, desc, like } from 'drizzle-orm';
+import { and, or, eq, sql, inArray, isNull, desc, like, type SQL } from 'drizzle-orm';
 import { accountClassesTable, bankStatementLinesTable, seasonBalancesTable } from '../../shared/schema';
 import { getMembersByIds } from '@nba/members-api';
 import type { ListTransactionsFilters } from './dto';
@@ -144,6 +144,8 @@ export class ListTransactionsRepository {
     const withRunningBalance = pagination.runningBalance !== false;
 
     let derivedColumns: Record<string, any> = {};
+    /** Table dérivée des cumuls, jointe seulement quand le solde progressif est demandé. */
+    let runningBalanceSource: SQL | null = null;
     if (withRunningBalance) {
       /*
        * Le compte du solde progressif, résolu en base.
@@ -185,25 +187,43 @@ export class ListTransactionsRepository {
           WHERE other.transfer_id = ${ledgerEntriesTable.transferId}
             AND other.id <> ${ledgerEntriesTable.id}
         )`,
-        runningBalanceCents: sql<number>`CAST(${trueInitialBalance} + COALESCE((
-          SELECT SUM(
-            CASE
-              WHEN le2.type = 'recette' THEN le2.amount_cents
-              WHEN le2.type = 'depense' THEN -le2.amount_cents
-              WHEN le2.type = 'transfert' AND le2.transfer_leg = 'source' THEN -le2.amount_cents
-              WHEN le2.type = 'transfert' AND le2.transfer_leg = 'destination' THEN le2.amount_cents
-              ELSE 0
-            END
-          )
-          FROM ledger_entries le2
-          WHERE le2.account_id = ${accId}
-            AND (le2.date < ${ledgerEntriesTable.date} OR (le2.date = ${ledgerEntriesTable.date} AND le2.id <= ${ledgerEntriesTable.id}))
-            ${seasonStartDate ? sql`AND le2.date >= ${seasonStartDate}` : sql``}
-        ), 0) AS INTEGER)`.mapWith(Number)
+        runningBalanceCents: sql<number>`CAST(${trueInitialBalance} + COALESCE(running_balance.cumul, 0) AS INTEGER)`.mapWith(Number)
       };
+
+      /*
+       * Le cumul, calculé en une passe et non une par ligne.
+       *
+       * Ici vivait une sous-requête **corrélée** : pour chaque ligne affichée, elle
+       * rebalayait les écritures du compte afin d'en resommer le cumul. Relevé sur la
+       * production, c'était le premier poste de lecture D1 du compte — 345 923 lignes par
+       * exécution avant que `transfer_leg` ne rende le prédicat indexable, 8 858 encore
+       * après, sur les 5 millions par jour qu'accorde le plan gratuit. Une journée à
+       * consulter le grand livre suffisait à dépasser le quota.
+       *
+       * La fonction de fenêtrage calcule tous les cumuls en un seul parcours ordonné ; la
+       * jointure ne fait qu'y prendre celui de la ligne. Prédicat, ordre et inclusion de la
+       * ligne courante sont ceux d'avant : les soldes affichés ne bougent pas, y compris
+       * quand un filtre masque des écritures — le cumul reste celui du **compte**, jamais
+       * celui de la page, sans quoi filtrer par catégorie changerait les soldes.
+       */
+      runningBalanceSource = sql`(
+        SELECT le2.id AS id,
+               SUM(
+                 CASE
+                   WHEN le2.type = 'recette' THEN le2.amount_cents
+                   WHEN le2.type = 'depense' THEN -le2.amount_cents
+                   WHEN le2.type = 'transfert' AND le2.transfer_leg = 'source' THEN -le2.amount_cents
+                   WHEN le2.type = 'transfert' AND le2.transfer_leg = 'destination' THEN le2.amount_cents
+                   ELSE 0
+                 END
+               ) OVER (ORDER BY le2.date, le2.id ROWS UNBOUNDED PRECEDING) AS cumul
+        FROM ledger_entries le2
+        WHERE le2.account_id = ${accId}
+          ${seasonStartDate ? sql`AND le2.date >= ${seasonStartDate}` : sql``}
+      ) running_balance`;
     }
 
-    const txs = await db.select({
+    let base = db.select({
       id: ledgerEntriesTable.id,
       seasonId: ledgerEntriesTable.seasonId,
       type: ledgerEntriesTable.type,
@@ -243,7 +263,15 @@ export class ListTransactionsRepository {
       .from(ledgerEntriesTable)
       .leftJoin(bankStatementLinesTable, eq(ledgerEntriesTable.bankStatementLineId, bankStatementLinesTable.id))
       .leftJoin(paymentMethodsTable, eq(ledgerEntriesTable.paymentMethodId, paymentMethodsTable.id))
-      .leftJoin(categoriesTable, eq(ledgerEntriesTable.categoryId, categoriesTable.id))
+      .leftJoin(categoriesTable, eq(ledgerEntriesTable.categoryId, categoriesTable.id)) as any;
+
+    // Jointure ajoutée à part : sans solde progressif, la table dérivée n'a pas à être
+    // calculée du tout — c'est tout l'objet de `runningBalance: false`.
+    if (runningBalanceSource) {
+      base = base.leftJoin(runningBalanceSource, sql`running_balance.id = ${ledgerEntriesTable.id}`);
+    }
+
+    const txs = await base
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(ledgerEntriesTable.date), desc(ledgerEntriesTable.id))
       .limit(pagination.limit)
