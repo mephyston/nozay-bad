@@ -31,6 +31,8 @@ interface DayPoint {
   workerRequests: number;
   d1RowsRead: number;
   d1RowsWritten: number;
+  cpuP50Ms: number;
+  cpuP99Ms: number;
 }
 
 interface Usage {
@@ -182,9 +184,27 @@ const metriques = usage?.configured
           cle: 'd1RowsWritten',
           label: 'Lignes D1 écrites',
           limite: usage.limits.d1RowsWrittenPerDay
+        },
+        /*
+         * Le temps CPU n'est pas un volume : sa moyenne n'a pas de « par jour », et sa
+         * limite s'applique à une invocation, pas à une journée. Les deux courbes
+         * répondent à la seule question qui vaille — est-ce que ça s'alourdit ?
+         */
+        {
+          cle: 'cpuP50Ms',
+          label: 'Temps CPU médian (p50)',
+          limite: usage.limits.cpuMsPerInvocation,
+          unite: 'ms' as const
+        },
+        {
+          cle: 'cpuP99Ms',
+          label: 'Temps CPU du pire centième (p99)',
+          limite: usage.limits.cpuMsPerInvocation,
+          unite: 'ms' as const
         }
       ] as const
-    ).map(({ cle, label, limite }) => {
+    ).map(({ cle, label, limite, ...reste }) => {
+      const unite = 'unite' in reste ? (reste as { unite: string }).unite : '';
       const brut = series.map((p) => ({ date: p.date, valeur: p[cle] as number }));
       const valeurs = brut.map((p) => p.valeur);
       const max = Math.max(0, ...valeurs);
@@ -224,6 +244,13 @@ const metriques = usage?.configured
       return {
         label,
         limite,
+        unite,
+        /** « 14,2 ms » ou « 13,9 k » : deux natures, deux écritures. */
+        formate: (valeur: number) =>
+          unite === 'ms' ? `${valeur.toFixed(1)} ms` : compact.format(Math.round(valeur)),
+        detaille: (valeur: number) =>
+          unite === 'ms' ? `${valeur.toFixed(1)} ms` : nombre.format(Math.round(valeur)),
+        parJour: unite === 'ms' ? '' : ' / jour',
         points,
         max,
         moyenne: complets.length
@@ -330,8 +357,10 @@ const depuis = usage
               <div>
                 <p class="text-sm font-semibold text-foreground">Évolution</p>
                 <p class="text-xs text-muted-foreground">
-                  Consommation jour par jour. La dernière barre est la journée en cours, donc
-                  incomplète — la moyenne l’ignore.
+                  Consommation jour par jour. Le dernier point est la journée en cours, donc
+                  incomplet — la moyenne l’ignore. Les deux dernières courbes suivent le temps
+                  CPU, tous workers confondus : c’est la tendance qui s’y lit, pas le coût d’une
+                  route.
                 </p>
               </div>
               <div class="flex items-center gap-1 rounded-lg border border-border p-1">
@@ -355,12 +384,12 @@ const depuis = usage
                   <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                     <p class="text-xs font-medium text-foreground">{metrique.label}</p>
                     <p class="text-xs text-muted-foreground tabular-nums">
-                      moyenne {nombre.format(metrique.moyenne)} / jour · pic{' '}
+                      moyenne {metrique.detaille(metrique.moyenne)}{metrique.parJour} · pic{' '}
                       <span class={TEXTE[niveau(metrique.limite > 0 ? metrique.max / metrique.limite : 0)]}>
-                        {nombre.format(metrique.max)} ={' '}
+                        {metrique.detaille(metrique.max)} ={' '}
                         {Math.round((metrique.max / metrique.limite) * 100)} % de la limite
                       </span>{' '}
-                      · limite {nombre.format(metrique.limite)} / jour
+                      · limite {metrique.detaille(metrique.limite)}{metrique.parJour}
                       {metrique.limiteY === null ? ', hors du cadre' : ''}
                     </p>
                   </div>
@@ -390,7 +419,7 @@ const depuis = usage
                           fill="currentColor"
                           class="text-muted-foreground"
                         >
-                          {compact.format(Math.round(graduation.valeur))}
+                          {metrique.formate(graduation.valeur)}
                         </text>
                       </g>
                     ))}
@@ -429,7 +458,7 @@ const depuis = usage
                           font-size="10"
                           fill="currentColor"
                         >
-                          limite {compact.format(metrique.limite)}
+                          limite {metrique.formate(metrique.limite)}
                         </text>
                       </g>
                     )}
@@ -455,7 +484,7 @@ const depuis = usage
                           stroke-width="1.5"
                         >
                           <title>
-                            {`${jourCourt.format(new Date(point.date))} : ${nombre.format(point.valeur)} — ${Math.round(point.part * 100)} % de la limite quotidienne${point.partiel ? ' (journée en cours)' : ''}`}
+                            {`${jourCourt.format(new Date(point.date))} : ${metrique.detaille(point.valeur)} — ${Math.round(point.part * 100)} % de la limite${point.partiel ? ' (journée en cours)' : ''}`}
                           </title>
                         </circle>
                         {i % metrique.pasEtiquette === 0 && (
@@ -466,7 +495,7 @@ const depuis = usage
                             font-size="10"
                             fill="currentColor"
                           >
-                            {compact.format(point.valeur)}
+                            {metrique.formate(point.valeur)}
                           </text>
                         )}
                       </g>

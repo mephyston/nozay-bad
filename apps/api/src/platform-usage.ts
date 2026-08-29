@@ -150,6 +150,7 @@ interface DatabaseRow {
 interface DailyInvocationRow {
   dimensions: { date: string };
   sum: { requests: number };
+  quantiles: { cpuTimeP50: number | null; cpuTimeP99: number | null };
 }
 
 interface DailyDatabaseRow {
@@ -170,6 +171,15 @@ export interface DayPoint {
   workerRequests: number;
   d1RowsRead: number;
   d1RowsWritten: number;
+  /**
+   * Temps CPU du jour, **tous workers confondus**.
+   *
+   * L'agrégat mêle donc une page d'administration à un appel d'API — c'est assumé : ce
+   * qu'on lit ici n'est pas le coût d'une route mais une tendance, « est-ce que ça
+   * s'alourdit ». Le détail par route se lit dans le tableau des workers.
+   */
+  cpuP50Ms: number;
+  cpuP99Ms: number;
 }
 
 /*
@@ -195,6 +205,7 @@ query($account: String!, $since: Time!, $historySince: Time!) {
       workersDaily: workersInvocationsAdaptive(limit: 500, filter: { datetime_geq: $historySince }) {
         dimensions { date }
         sum { requests }
+        quantiles { cpuTimeP50 cpuTimeP99 }
       }
       d1Daily: d1AnalyticsAdaptiveGroups(limit: 500, filter: { datetime_geq: $historySince }) {
         dimensions { date }
@@ -263,11 +274,15 @@ export function aggregateUsage(
   // Somme par jour, puis projection sur le calendrier complet : les jours sans activité
   // valent zéro et gardent leur place, plutôt que de disparaître du graphique.
   const requestsByDay = new Map<string, number>();
+  const cpuByDay = new Map<string, { p50: number; p99: number }>();
   for (const row of account.workersDaily ?? []) {
-    requestsByDay.set(
-      row.dimensions.date,
-      (requestsByDay.get(row.dimensions.date) ?? 0) + row.sum.requests
-    );
+    const jour = row.dimensions.date;
+    requestsByDay.set(jour, (requestsByDay.get(jour) ?? 0) + row.sum.requests);
+    // Les quantiles ne s'additionnent pas : on retient le pire, comme pour les workers.
+    const cpu = cpuByDay.get(jour) ?? { p50: 0, p99: 0 };
+    cpu.p50 = Math.max(cpu.p50, roundMs(row.quantiles?.cpuTimeP50 ?? 0));
+    cpu.p99 = Math.max(cpu.p99, roundMs(row.quantiles?.cpuTimeP99 ?? 0));
+    cpuByDay.set(jour, cpu);
   }
   const d1ByDay = new Map<string, { read: number; written: number }>();
   for (const row of account.d1Daily ?? []) {
@@ -281,7 +296,9 @@ export function aggregateUsage(
     date,
     workerRequests: requestsByDay.get(date) ?? 0,
     d1RowsRead: d1ByDay.get(date)?.read ?? 0,
-    d1RowsWritten: d1ByDay.get(date)?.written ?? 0
+    d1RowsWritten: d1ByDay.get(date)?.written ?? 0,
+    cpuP50Ms: cpuByDay.get(date)?.p50 ?? 0,
+    cpuP99Ms: cpuByDay.get(date)?.p99 ?? 0
   }));
 
   return {

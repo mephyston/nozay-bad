@@ -189,8 +189,16 @@ describe('aggregateUsage', () => {
     const avecTrou = aggregateUsage(
       {
         workersDaily: [
-          { dimensions: { date: '2026-08-27' }, sum: { requests: 900 } },
-          { dimensions: { date: '2026-08-29' }, sum: { requests: 500 } }
+          {
+            dimensions: { date: '2026-08-27' },
+            sum: { requests: 900 },
+            quantiles: { cpuTimeP50: 4000, cpuTimeP99: 30000 }
+          },
+          {
+            dimensions: { date: '2026-08-29' },
+            sum: { requests: 500 },
+            quantiles: { cpuTimeP50: 2000, cpuTimeP99: 12000 }
+          }
         ],
         d1Daily: [
           { dimensions: { date: '2026-08-29' }, sum: { rowsRead: 1200, rowsWritten: 30 } }
@@ -202,9 +210,9 @@ describe('aggregateUsage', () => {
 
     expect(avecTrou.history.days).toBe(3);
     expect(avecTrou.history.series).toEqual([
-      { date: '2026-08-27', workerRequests: 900, d1RowsRead: 0, d1RowsWritten: 0 },
-      { date: '2026-08-28', workerRequests: 0, d1RowsRead: 0, d1RowsWritten: 0 },
-      { date: '2026-08-29', workerRequests: 500, d1RowsRead: 1200, d1RowsWritten: 30 }
+      { date: '2026-08-27', workerRequests: 900, d1RowsRead: 0, d1RowsWritten: 0, cpuP50Ms: 4, cpuP99Ms: 30 },
+      { date: '2026-08-28', workerRequests: 0, d1RowsRead: 0, d1RowsWritten: 0, cpuP50Ms: 0, cpuP99Ms: 0 },
+      { date: '2026-08-29', workerRequests: 500, d1RowsRead: 1200, d1RowsWritten: 30, cpuP50Ms: 2, cpuP99Ms: 12 }
     ]);
   });
 
