@@ -301,7 +301,9 @@ export function aggregateUsage(
   const workersVus = new Set<string>();
   for (const row of account.workersDaily ?? []) {
     const jour = row.dimensions.date;
-    workersVus.add(row.dimensions.scriptName);
+    // Le compte héberge d'autres projets : ils partagent les quotas, donc ils comptent
+    // dans les volumes, mais il n'y a rien à diagnostiquer d'eux ici.
+    if (row.dimensions.scriptName.startsWith('nba')) workersVus.add(row.dimensions.scriptName);
     // Le volume reste celui du compte : un worker choisi ne filtre que le temps CPU.
     requestsByDay.set(jour, (requestsByDay.get(jour) ?? 0) + row.sum.requests);
     if (worker && row.dimensions.scriptName !== worker) continue;
