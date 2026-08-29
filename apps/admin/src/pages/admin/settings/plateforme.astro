@@ -38,7 +38,7 @@ interface DayPoint {
 interface Usage {
   configured: boolean;
   since: string;
-  history: { days: number; series: DayPoint[] };
+  history: { days: number; series: DayPoint[]; worker: string | null; workers: string[] };
   workers: WorkerUsage[];
   databases: { databaseId: string; rowsRead: number; rowsWritten: number; readQueries: number; writeQueries: number }[];
   totals: { workerRequests: number; d1RowsRead: number; d1RowsWritten: number; cronTriggers: number };
@@ -56,10 +56,12 @@ let error: string | null = null;
 
 const PERIODES = [7, 15, 30];
 const periodeDemandee = Astro.url.searchParams.get('periode') ?? '7';
+const workerDemande = Astro.url.searchParams.get('worker') ?? '';
 
 try {
   const res = await apiService.fetch(
-    `http://localhost/platform/usage?periode=${encodeURIComponent(periodeDemandee)}`
+    `http://localhost/platform/usage?periode=${encodeURIComponent(periodeDemandee)}` +
+      (workerDemande ? `&worker=${encodeURIComponent(workerDemande)}` : '')
   );
   const body = (await res.json()) as { success: boolean; data?: Usage; error?: string };
   if (!res.ok || !body.success) error = body.error ?? `Erreur ${res.status}`;
@@ -192,7 +194,11 @@ const cpuChoisi =
 /** Lien conservant l'autre sélecteur : changer de quantile ne doit pas changer de période. */
 const lien = (params: Record<string, string>) => {
   const url = new URLSearchParams({ periode: String(usage?.history.days ?? 7), cpu: cpuChoisi.param });
-  for (const [k, v] of Object.entries(params)) url.set(k, v);
+  if (usage?.history.worker) url.set('worker', usage.history.worker);
+  for (const [k, v] of Object.entries(params)) {
+    if (v === '') url.delete(k);
+    else url.set(k, v);
+  }
   return `?${url.toString()}`;
 };
 
@@ -225,7 +231,7 @@ const metriques = usage?.configured
          */
         {
           cle: cpuChoisi.cle,
-          label: `Temps CPU — ${cpuChoisi.label}`,
+          label: `Temps CPU — ${cpuChoisi.label} · ${usage.history.worker ?? 'tous workers'}`,
           limite: usage.limits.cpuMsPerInvocation,
           unite: 'ms',
           limiteToujours: true
@@ -422,6 +428,25 @@ const depuis = usage
                           {choix.label}
                         </a>
                       ))}
+                    </div>
+                  )}
+                  {metrique.unite === 'ms' && usage.history.workers.length > 0 && (
+                    <div class="flex flex-wrap items-center gap-1">
+                      <span class="text-xs text-muted-foreground mr-1">worker :</span>
+                      {[{ nom: '', label: 'tous' }, ...usage.history.workers.map((w) => ({ nom: w, label: w }))].map(
+                        (choix) => (
+                          <a
+                            href={lien({ worker: choix.nom })}
+                            class={`rounded-md border px-2 py-0.5 text-xs no-underline transition-colors ${
+                              (usage.history.worker ?? '') === choix.nom
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : 'border-border text-muted-foreground hover:text-foreground'
+                            }`}
+                          >
+                            {choix.label}
+                          </a>
+                        )
+                      )}
                     </div>
                   )}
                   <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">

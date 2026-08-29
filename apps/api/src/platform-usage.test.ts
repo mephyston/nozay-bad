@@ -190,12 +190,12 @@ describe('aggregateUsage', () => {
       {
         workersDaily: [
           {
-            dimensions: { date: '2026-08-27' },
+            dimensions: { date: '2026-08-27', scriptName: 'nba-api' },
             sum: { requests: 900 },
             quantiles: { cpuTimeP50: 4000, cpuTimeP75: 8000, cpuTimeP90: 15000, cpuTimeP95: 20000, cpuTimeP99: 30000 }
           },
           {
-            dimensions: { date: '2026-08-29' },
+            dimensions: { date: '2026-08-29', scriptName: 'nba-api' },
             sum: { requests: 500 },
             quantiles: { cpuTimeP50: 2000, cpuTimeP75: 3000, cpuTimeP90: 6000, cpuTimeP95: 9000, cpuTimeP99: 12000 }
           }
@@ -214,6 +214,34 @@ describe('aggregateUsage', () => {
       { date: '2026-08-28', workerRequests: 0, d1RowsRead: 0, d1RowsWritten: 0, cpuP50Ms: 0, cpuP75Ms: 0, cpuP90Ms: 0, cpuP95Ms: 0, cpuP99Ms: 0 },
       { date: '2026-08-29', workerRequests: 500, d1RowsRead: 1200, d1RowsWritten: 30, cpuP50Ms: 2, cpuP75Ms: 3, cpuP90Ms: 6, cpuP95Ms: 9, cpuP99Ms: 12 }
     ]);
+  });
+
+  it('ne filtre que le CPU quand un worker est choisi', () => {
+    const deuxWorkers = {
+      workersDaily: [
+        {
+          dimensions: { date: '2026-08-29', scriptName: 'nba-api' },
+          sum: { requests: 300 },
+          quantiles: { cpuTimeP50: 2000, cpuTimeP75: 3000, cpuTimeP90: 4000, cpuTimeP95: 5000, cpuTimeP99: 6000 }
+        },
+        {
+          dimensions: { date: '2026-08-29', scriptName: 'nba-admin' },
+          sum: { requests: 40 },
+          quantiles: { cpuTimeP50: 14000, cpuTimeP75: 25000, cpuTimeP90: 42000, cpuTimeP95: 60000, cpuTimeP99: 130000 }
+        }
+      ]
+    };
+
+    const admin = aggregateUsage(deuxWorkers, '2026-08-29T00:00:00.000Z', ['2026-08-29'], 'nba-admin');
+
+    // Le CPU est celui de l'admin seul…
+    expect(admin.history.series[0].cpuP50Ms).toBe(14);
+    expect(admin.history.series[0].cpuP99Ms).toBe(130);
+    // …mais les requêtes restent celles du compte : elles ne se filtrent pas par worker
+    // sans devenir incomparables aux quotas, qui sont globaux.
+    expect(admin.history.series[0].workerRequests).toBe(340);
+    expect(admin.history.workers).toEqual(['nba-admin', 'nba-api']);
+    expect(admin.history.worker).toBe('nba-admin');
   });
 
   it('supporte un compte sans aucune activité', () => {

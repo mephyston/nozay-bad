@@ -124,7 +124,20 @@ export interface PlatformUsage {
    * additionner trente jours pour les rapporter à une limite quotidienne — donnerait un
    * pourcentage qui ne veut rien dire.
    */
-  history: { days: number; series: DayPoint[] };
+  history: {
+    days: number;
+    series: DayPoint[];
+    /**
+     * Worker dont les temps CPU sont rapportés, `null` pour l'ensemble du compte.
+     *
+     * Le filtre ne vaut **que pour le CPU** : les requêtes restent celles du compte, et
+     * les lignes D1 ne s'attribuent à aucun worker — c'est la base qui les compte, pas
+     * l'appelant.
+     */
+    worker: string | null;
+    /** Workers observés sur la fenêtre, pour peupler le sélecteur. */
+    workers: string[];
+  };
   workers: WorkerUsage[];
   databases: DatabaseUsage[];
   totals: {
@@ -148,7 +161,7 @@ interface DatabaseRow {
 }
 
 interface DailyInvocationRow {
-  dimensions: { date: string };
+  dimensions: { date: string; scriptName: string };
   sum: { requests: number };
   quantiles: {
     cpuTimeP50: number | null;
@@ -211,8 +224,8 @@ query($account: String!, $since: Time!, $historySince: Time!) {
         dimensions { databaseId }
         sum { rowsRead rowsWritten readQueries writeQueries }
       }
-      workersDaily: workersInvocationsAdaptive(limit: 500, filter: { datetime_geq: $historySince }) {
-        dimensions { date }
+      workersDaily: workersInvocationsAdaptive(limit: 1000, filter: { datetime_geq: $historySince }) {
+        dimensions { date scriptName }
         sum { requests }
         quantiles { cpuTimeP50 cpuTimeP75 cpuTimeP90 cpuTimeP95 cpuTimeP99 }
       }
@@ -241,7 +254,8 @@ function roundMs(microseconds: number): number {
 export function aggregateUsage(
   account: UsageAccountData,
   since: string,
-  dates: readonly string[] = []
+  dates: readonly string[] = [],
+  worker: string | null = null
 ): PlatformUsage {
   const workers = new Map<string, WorkerUsage>();
 
@@ -284,9 +298,13 @@ export function aggregateUsage(
   // valent zéro et gardent leur place, plutôt que de disparaître du graphique.
   const requestsByDay = new Map<string, number>();
   const cpuByDay = new Map<string, Record<'p50' | 'p75' | 'p90' | 'p95' | 'p99', number>>();
+  const workersVus = new Set<string>();
   for (const row of account.workersDaily ?? []) {
     const jour = row.dimensions.date;
+    workersVus.add(row.dimensions.scriptName);
+    // Le volume reste celui du compte : un worker choisi ne filtre que le temps CPU.
     requestsByDay.set(jour, (requestsByDay.get(jour) ?? 0) + row.sum.requests);
+    if (worker && row.dimensions.scriptName !== worker) continue;
     // Les quantiles ne s'additionnent pas : on retient le pire, comme pour les workers.
     const cpu = cpuByDay.get(jour) ?? { p50: 0, p75: 0, p90: 0, p95: 0, p99: 0 };
     cpu.p50 = Math.max(cpu.p50, roundMs(row.quantiles?.cpuTimeP50 ?? 0));
@@ -319,7 +337,12 @@ export function aggregateUsage(
   return {
     configured: true,
     since,
-    history: { days: dates.length, series },
+    history: {
+      days: dates.length,
+      series,
+      worker,
+      workers: [...workersVus].sort()
+    },
     workers: ordered,
     databases: databases.sort((a, b) => b.rowsRead - a.rowsRead),
     totals: {
@@ -342,7 +365,7 @@ export function aggregateUsage(
  */
 const TTL_MS = 5 * 60_000;
 /** Une entrée par période : les trois fenêtres ne se déduisent pas l'une de l'autre. */
-const cached = new Map<number, { payload: PlatformUsage; expiresAt: number }>();
+const cached = new Map<string, { payload: PlatformUsage; expiresAt: number }>();
 
 export function clearPlatformUsageCache(): void {
   cached.clear();
@@ -354,6 +377,7 @@ export async function fetchUsage(
   token: string,
   account: string,
   days: number = HISTORY_CHOICES[0],
+  worker: string | null = null,
   now: Date = new Date()
 ): Promise<PlatformUsage> {
   const since = startOfUtcDay(now);
@@ -381,7 +405,7 @@ export async function fetchUsage(
     throw new AnalyticsApiError(body.errors.map((e) => e.message).join(' ; '));
   }
 
-  return aggregateUsage(body.data?.viewer?.accounts?.[0] ?? {}, since, dates);
+  return aggregateUsage(body.data?.viewer?.accounts?.[0] ?? {}, since, dates, worker);
 }
 
 export type PlatformUsageBindings = {
@@ -398,6 +422,12 @@ platformRouter.get('/usage', async (c) => {
   // Jeton absent : ce n'est pas une panne, c'est une installation incomplète. La page
   // le dit et donne la commande à lancer, plutôt que d'afficher une erreur muette.
   const days = parseHistoryDays(c.req.query('periode'));
+  /*
+   * Le nom du worker est repris tel quel dans un filtre côté application, jamais dans la
+   * requête GraphQL : une valeur inconnue ne rend donc rien plutôt que de faire échouer
+   * l'appel. On le borne quand même, pour ne pas ranger n'importe quoi en clé de cache.
+   */
+  const worker = (c.req.query('worker') ?? '').slice(0, 64) || null;
 
   if (!token || !account) {
     return c.json({
@@ -405,7 +435,7 @@ platformRouter.get('/usage', async (c) => {
       data: {
         configured: false,
         since: startOfUtcDay(new Date()),
-        history: { days, series: [] },
+        history: { days, series: [], worker, workers: [] },
         workers: [],
         databases: [],
         totals: { workerRequests: 0, d1RowsRead: 0, d1RowsWritten: 0, cronTriggers: 0 },
@@ -415,14 +445,15 @@ platformRouter.get('/usage', async (c) => {
   }
 
   const now = Date.now();
-  const hit = cached.get(days);
+  const cle = `${days}|${worker ?? ''}`;
+  const hit = cached.get(cle);
   if (hit && hit.expiresAt > now) {
     return c.json({ success: true, data: hit.payload });
   }
 
   try {
-    const payload = await fetchUsage(token, account, days);
-    cached.set(days, { payload, expiresAt: now + TTL_MS });
+    const payload = await fetchUsage(token, account, days, worker);
+    cached.set(cle, { payload, expiresAt: now + TTL_MS });
     return c.json({ success: true, data: payload });
   } catch (err) {
     console.error({
