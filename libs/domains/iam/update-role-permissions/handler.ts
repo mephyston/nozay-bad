@@ -3,6 +3,7 @@ import { isPermission, type Permission } from '../shared/permissions';
 import { withPrerequisites } from '../shared/prerequisites';
 import { isRole, type Role } from '../shared/roles';
 import { isEditableRole } from '../shared/role-permissions';
+import { invalidateRolePermissions } from '../get-actor/handler';
 import { UpdateRolePermissionsRepository } from './repository';
 
 export class RoleNotFoundError extends AppError {
@@ -76,6 +77,9 @@ export async function updateRolePermissions(
       ]
     });
     await db.batch(statements as never);
+    // Les droits viennent de changer : le plan mis en cache par `getActor` ne vaut
+    // plus rien dans cet isolate. Les autres attendront l'expiration.
+    invalidateRolePermissions();
   }
 
   return { role, permissions: [...after].sort(), granted, revoked };

@@ -1,4 +1,4 @@
-import { getActor, normalizeEmail, type Actor } from '@nba/iam';
+import { getActor, invalidateRolePermissions, normalizeEmail, type Actor } from '@nba/iam';
 import type { Db } from '@nba/db';
 
 /**
@@ -51,4 +51,8 @@ export function invalidateActor(email: string): void {
 
 export function clearActorCache(): void {
   cache.clear();
+  // Le plan des droits est mis en cache dans `@nba/iam`, avec un TTL plus long. Un
+  // test qui réinitialise sa base doit le perdre aussi, sinon il hérite des droits
+  // d'un test précédent — l'oubli ne se voit que plusieurs fichiers plus loin.
+  invalidateRolePermissions();
 }

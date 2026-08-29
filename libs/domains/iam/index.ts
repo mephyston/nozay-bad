@@ -9,7 +9,7 @@ export * from './router';
 
 // Résolution d'identité : utilisée par le middleware d'autorisation de l'API et par
 // l'application admin, qui passent ainsi par exactement le même code.
-export { getActor } from './get-actor/handler';
+export { getActor, invalidateRolePermissions } from './get-actor/handler';
 export { toActorDto, normalizeEmail, type Actor, type ActorDto } from './get-actor/dto';
 export { getMe } from './get-me/handler';
 export { listRolePermissions } from './list-role-permissions/handler';
