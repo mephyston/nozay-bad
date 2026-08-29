@@ -19,6 +19,7 @@ import { restorePageRevisionRoute } from './revisions/restore-page-revision/rout
 import { listPostsRoute } from './posts/list-posts/route';
 import { createPostRoute } from './posts/create-post/route';
 import { getPostRoute } from './posts/get-post/route';
+import { listAnnouncementsRoute } from './posts/list-announcements/route';
 import { updatePostRoute } from './posts/update-post/route';
 import { publishPostRoute } from './posts/publish-post/route';
 import { deletePostRoute } from './posts/delete-post/route';
@@ -62,6 +63,8 @@ cmsRouter.route('/', savePostCategoryRoute);
 cmsRouter.route('/', publishPostRoute);
 cmsRouter.route('/', listPostsRoute);
 cmsRouter.route('/', createPostRoute);
+// Avant `getPostRoute` : « announcements » serait pris pour un identifiant d'article.
+cmsRouter.route('/', listAnnouncementsRoute);
 cmsRouter.route('/', getPostRoute);
 cmsRouter.route('/', updatePostRoute);
 cmsRouter.route('/', deletePostRoute);

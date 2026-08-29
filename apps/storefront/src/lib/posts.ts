@@ -97,6 +97,44 @@ export async function fetchPosts(env: unknown, limit: number): Promise<FetchedPo
   }
 }
 
+/** Une actualité réduite à ce qui rattache un rendez-vous à son article. */
+export interface AnnouncementPost {
+  id: number;
+  slug: string;
+  path: string;
+  title: string;
+  eventId: number;
+}
+
+/**
+ * L'index « rendez-vous → article qui l'annonce », sans le reste des articles.
+ *
+ * L'agenda et l'accueil n'ont besoin, pour poser ce lien, que d'un titre et d'une
+ * adresse. Ils lisaient pourtant la liste complète des actualités — corps HTML,
+ * couvertures et déclinaisons d'images comprises, cinquante d'un coup — pour en extraire
+ * trois champs. Mesuré côté production : `/agenda` coûtait 11,6 ms de temps processeur,
+ * dont l'essentiel à désérialiser ce qu'il jetait aussitôt.
+ *
+ * La route dédiée écarte en base ce qui n'annonce rien, et la réponse, identique pour
+ * tous les adhérents, est mise en cache cinq minutes par l'API.
+ */
+export async function fetchAnnouncements(
+  env: unknown,
+  limit: number
+): Promise<AnnouncementPost[]> {
+  try {
+    const apiService = createApiClient(env as never);
+    const res = await apiService.fetch(`http://localhost/cms/posts/announcements?limit=${limit}`);
+    if (!res.ok) return [];
+
+    const json = (await res.json()) as { data?: { posts?: AnnouncementPost[] } };
+    return json.data?.posts ?? [];
+  } catch {
+    // Un agenda sans lien vers les articles reste un agenda : l'échec se tait.
+    return [];
+  }
+}
+
 /**
  * Amorce du texte d'une actualité, pour une carte qui la résume.
  *

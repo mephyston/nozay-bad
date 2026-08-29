@@ -203,6 +203,8 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'GET', path: '/cms/route', permission: 'cms:pages:read', service: true },
   { method: 'GET', path: '/cms/content-version', permission: 'cms:pages:read', service: true },
   { method: 'GET', path: '/cms/pages', permission: 'cms:pages:read', service: true },
+  // Index « rendez-vous → article qui l'annonce », sans le corps des articles.
+  { method: 'GET', path: '/cms/posts/announcements', permission: 'cms:posts:read', service: true },
   { method: 'GET', path: '/cms/pages/:id', permission: 'cms:pages:read' },
   { method: 'POST', path: '/cms/pages', permission: 'cms:pages:write' },
   { method: 'PUT', path: '/cms/pages/:id', permission: 'cms:pages:write' },

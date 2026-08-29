@@ -12,7 +12,7 @@ import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 import { getActiveMemberStatus } from '../lib/member-status';
 import { fetchUpcomingEvents } from '../lib/agenda';
-import { fetchPosts, ANNOUNCEMENT_LOOKUP_LIMIT, postAnchor } from '../lib/posts';
+import { fetchAnnouncements, ANNOUNCEMENT_LOOKUP_LIMIT, postAnchor } from '../lib/posts';
 import { announcementsByEvent } from '@nba/cms/public';
 import { fetchMyFixtures, normalizeLicence } from '../lib/my-fixtures';
 import { toFixtureEntries } from '../lib/fixture-events';
@@ -176,10 +176,10 @@ const active = session?.members.find((m) => m.id === session.activeMemberId);
 const runtimeEnv = resolveEnv<{ OPEN_PLAY_ENABLED?: string }>(Astro.locals);
 const openPlayEnabled = runtimeEnv.OPEN_PLAY_ENABLED === 'true';
 
-const [events, myFixtures, { posts }, openPlay] = await Promise.all([
+const [events, myFixtures, annonces, openPlay] = await Promise.all([
   fetchUpcomingEvents(env, 50, session?.activeMemberId),
   fetchMyFixtures(env, status.seasonCode ?? null, normalizeLicence(active?.licence)),
-  fetchPosts(env, ANNOUNCEMENT_LOOKUP_LIMIT),
+  fetchAnnouncements(env, ANNOUNCEMENT_LOOKUP_LIMIT),
   // Quinze jours seulement : une séance par semaine sur une saison noierait les
   // rendez-vous du club, et personne ne s'inscrit à un jeu libre du mois prochain.
   openPlayEnabled
@@ -199,7 +199,7 @@ const [events, myFixtures, { posts }, openPlay] = await Promise.all([
  * rendez-vous. L'espace adhérent n'ayant pas de page par article, le lien vise l'ancre
  * de la carte dans la liste des actualités.
  */
-const announcements = announcementsByEvent(posts, (post) => postAnchor(post));
+const announcements = announcementsByEvent(annonces, (post) => postAnchor(post));
 
 const fixtures = toFixtureEntries(myFixtures);
 

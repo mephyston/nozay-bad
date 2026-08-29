@@ -44,6 +44,7 @@ import type { Context, Next } from 'hono';
  */
 const CACHED_READS = new Map<string, number>([
   ['/members/birthdays', 3600],
+  ['/cms/posts/announcements', 300],
   ['/schedules', 300],
   ['/schedules/venues', 300],
   ['/shop/products', 300],

@@ -9,7 +9,7 @@ import NextFixtureCard from '../components/NextFixtureCard.astro';
 import BirthdayCard from '../components/BirthdayCard.astro';
 import { env } from 'cloudflare:workers';
 import { getActiveMemberStatus } from '../lib/member-status';
-import { fetchPosts, ANNOUNCEMENT_LOOKUP_LIMIT, postAnchor } from '../lib/posts';
+import { fetchPosts, fetchAnnouncements, ANNOUNCEMENT_LOOKUP_LIMIT, postAnchor } from '../lib/posts';
 import { announcementsByEvent } from '@nba/cms/public';
 import { fetchUpcomingEvents } from '../lib/agenda';
 import { fetchOpenPlaySessions, OPEN_PLAY_HORIZON_DAYS } from '../lib/open-play';
@@ -39,8 +39,14 @@ const licence = normalizeLicence(active?.licence);
 
 const runtimeEnv = resolveEnv<{ OPEN_PLAY_ENABLED?: string }>(Astro.locals);
 
-const [{ posts: latestPosts }, events, birthdays, fixtures, openPlay] = await Promise.all([
-  fetchPosts(env, ANNOUNCEMENT_LOOKUP_LIMIT),
+/*
+ * Deux lectures d'actualités, et non plus une : trois articles à afficher, et l'index des
+ * annonces. La lecture unique de cinquante articles complets servait surtout à en jeter
+ * quarante-sept.
+ */
+const [{ posts: latestPosts }, annonces, events, birthdays, fixtures, openPlay] = await Promise.all([
+  fetchPosts(env, 3),
+  fetchAnnouncements(env, ANNOUNCEMENT_LOOKUP_LIMIT),
   fetchUpcomingEvents(env, 1, session?.activeMemberId),
   fetchTodayBirthdays(env),
   fetchMyFixtures(env, status.seasonCode ?? null, licence, 1),
@@ -61,8 +67,8 @@ const [{ posts: latestPosts }, events, birthdays, fixtures, openPlay] = await Pr
  * lecture est déjà faite, l'élargir ne coûte pas d'aller-retour de plus ; c'est la
  * même liste qui sert aux deux.
  */
-const posts = latestPosts.slice(0, 3);
-const announcements = announcementsByEvent(latestPosts, (post) => postAnchor(post));
+const posts = latestPosts;
+const announcements = announcementsByEvent(annonces, (post) => postAnchor(post));
 
 /*
  * Le prochain rendez-vous, au sens du calendrier.
