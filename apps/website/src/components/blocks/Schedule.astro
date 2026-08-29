@@ -401,10 +401,34 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
     flex: 0 0 var(--gutter-w);
   }
 
+  /*
+    En-têtes collants : le jour et le gymnase restent lisibles pendant qu'on descend.
+
+    La grille fait douze rangs d'heure, soit plus d'une hauteur d'écran dès qu'on
+    l'ouvre sur un portable : passé le premier tiers, une case n'était plus rattachable
+    ni à son jour ni à sa salle sans remonter. Chaque en-tête se colle donc pour son
+    compte — il n'existe pas de rangée commune à figer, les jours étant des colonnes
+    indépendantes — et ils se rejoignent au même `top` parce qu'ils partagent la même
+    origine et les mêmes hauteurs.
+
+    L'origine, c'est le bas de l'en-tête du site, `sticky` lui aussi : se coller à
+    `top: 0` glisserait la bande dessous. Le fond est **opaque**, faute de quoi les
+    créneaux défileraient au travers, et le `z-index` la place au-dessus des cases,
+    qui sont positionnées et viennent après elle dans le document.
+  */
+  .nba-schedule-day-head,
+  .nba-schedule-gutter-head,
+  .nba-schedule-venue-head {
+    position: sticky;
+    z-index: 2;
+    background: var(--background);
+  }
+
   /* L'angle mort coiffe les deux rangs d'en-tête, jour puis gymnase. */
   .nba-schedule-gutter-head {
     height: calc(var(--day-head-h) + var(--venue-head-h));
     border-bottom: 1px solid var(--border);
+    top: var(--site-header-h);
   }
 
   .nba-schedule-hours {
@@ -437,6 +461,7 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
 
   .nba-schedule-day-head {
     height: var(--day-head-h);
+    top: var(--site-header-h);
     /* Marge minimale : « Dimanche » tient tout juste dans une colonne d'une seule voie. */
     padding: 0 0.125rem;
     text-align: center;
@@ -494,6 +519,8 @@ const usedFamilies = [...new Set(shown.map((slot) => FAMILY[slot.audience] ?? 'l
   .nba-schedule-venue-head {
     height: var(--venue-head-h);
     border-bottom: 1px solid var(--border);
+    /* Sous le rang des jours, qui occupe déjà sa hauteur en haut de la fenêtre. */
+    top: calc(var(--site-header-h) + var(--day-head-h));
     padding: 0 0.25rem;
     text-align: center;
     font-size: 0.6875rem;

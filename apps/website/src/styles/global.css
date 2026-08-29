@@ -127,6 +127,20 @@
   --brand-blue: rgb(21, 185, 236);
 }
 
+/*
+  Hauteur de l'en-tête du site, à disposition de ce qui doit se coller dessous.
+
+  L'en-tête est `sticky top-0` : tout élément qui se colle lui aussi à `top: 0`
+  passerait dessous et disparaîtrait. Il n'a pas de hauteur déclarée — elle vient de son
+  contenu : le logo (`md:h-10`, 2,5 rem), les marges verticales (`py-3`, 2 × 0,75 rem)
+  et le liseré de marque (`border-b-2`). D'où cette valeur, écrite une fois ici plutôt
+  que recopiée chez chaque colleur, et tenue par un test qui échoue si l'en-tête change
+  de gabarit sans que ce jeton suive.
+*/
+:root {
+  --site-header-h: calc(4rem + 2px);
+}
+
 .dark {
   /*
     Noir de la charte, remonté de quelques points.
