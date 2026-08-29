@@ -150,8 +150,13 @@ const compact = new Intl.NumberFormat('fr-FR', {
   maximumFractionDigits: 1
 });
 
-/** Cadre des courbes, en unités du `viewBox` — le SVG s'étire ensuite à la largeur dispo. */
-const GRAPH = { largeur: 600, hauteur: 150, cote: 12, haut: 26, bas: 8 };
+/**
+ * Cadre des courbes, en unités du `viewBox` — le SVG s'étire ensuite à la largeur dispo.
+ *
+ * La marge de gauche loge les graduations d'ordonnée, celle du bas les dates : sans
+ * elles, une courbe montre une forme mais ne se lit pas.
+ */
+const GRAPH = { largeur: 640, hauteur: 172, gauche: 50, droite: 14, haut: 26, bas: 26 };
 
 /**
  * Trois courbes à tracer.
@@ -199,10 +204,10 @@ const metriques = usage?.configured
        */
       const plafond = Math.max(max * 1.25, limiteVisible ? limite * 1.1 : 0, 1);
 
-      const largeurUtile = GRAPH.largeur - GRAPH.cote * 2;
+      const largeurUtile = GRAPH.largeur - GRAPH.gauche - GRAPH.droite;
       const hauteurUtile = GRAPH.hauteur - GRAPH.haut - GRAPH.bas;
       const abscisse = (i: number) =>
-        GRAPH.cote + (brut.length > 1 ? (i / (brut.length - 1)) * largeurUtile : largeurUtile / 2);
+        GRAPH.gauche + (brut.length > 1 ? (i / (brut.length - 1)) * largeurUtile : largeurUtile / 2);
       const ordonnee = (v: number) => GRAPH.haut + (1 - v / plafond) * hauteurUtile;
 
       const points = brut.map((point, i) => ({
@@ -227,7 +232,20 @@ const metriques = usage?.configured
         ligne: points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' '),
         limiteY: limiteVisible ? ordonnee(limite) : null,
         /** Trente étiquettes se chevauchent : au-delà de quinze jours, une sur deux. */
-        pasEtiquette: brut.length > 15 ? 2 : 1
+        pasEtiquette: brut.length > 15 ? 2 : 1,
+        /* Trois graduations suffisent à donner l'échelle sans quadriller l'écran. */
+        ordonnees: [0, 0.5, 1].map((fraction) => ({
+          valeur: plafond * fraction,
+          y: ordonnee(plafond * fraction)
+        })),
+        /* Six dates au plus, la dernière toujours : c'est elle qu'on cherche en premier. */
+        abscisses: points
+          .map((point, i) => ({ ...point, i }))
+          .filter(
+            (point, _, tous) =>
+              point.i % Math.ceil(tous.length / 6) === 0 || point.i === tous.length - 1
+          ),
+        baseY: ordonnee(0)
       };
     })
   : [];
@@ -353,11 +371,50 @@ const depuis = usage
                     role="img"
                     aria-label={`${metrique.label} : ${metrique.points.map((p) => `${jourCourt.format(new Date(p.date))} ${nombre.format(p.valeur)}`).join(', ')}`}
                   >
+                    {/* Ordonnées : trois graduations et leurs lignes de repère. */}
+                    {metrique.ordonnees.map((graduation) => (
+                      <g class="text-border">
+                        <line
+                          x1={GRAPH.gauche}
+                          x2={GRAPH.largeur - GRAPH.droite}
+                          y1={graduation.y}
+                          y2={graduation.y}
+                          stroke="currentColor"
+                          stroke-width="1"
+                        />
+                        <text
+                          x={GRAPH.gauche - 8}
+                          y={graduation.y + 3}
+                          text-anchor="end"
+                          font-size="10"
+                          fill="currentColor"
+                          class="text-muted-foreground"
+                        >
+                          {compact.format(Math.round(graduation.valeur))}
+                        </text>
+                      </g>
+                    ))}
+
+                    {/* Abscisses : la ligne de base, puis les dates sous elle. */}
+                    <g class="text-muted-foreground">
+                      {metrique.abscisses.map((point) => (
+                        <text
+                          x={point.x}
+                          y={metrique.baseY + 16}
+                          text-anchor="middle"
+                          font-size="10"
+                          fill="currentColor"
+                        >
+                          {jourCourt.format(new Date(point.date))}
+                        </text>
+                      ))}
+                    </g>
+
                     {metrique.limiteY !== null && (
                       <g class="text-destructive">
                         <line
-                          x1="0"
-                          x2={GRAPH.largeur}
+                          x1={GRAPH.gauche}
+                          x2={GRAPH.largeur - GRAPH.droite}
                           y1={metrique.limiteY}
                           y2={metrique.limiteY}
                           stroke="currentColor"
@@ -366,7 +423,7 @@ const depuis = usage
                           opacity="0.7"
                         />
                         <text
-                          x={GRAPH.largeur}
+                          x={GRAPH.largeur - GRAPH.droite}
                           y={Math.max(metrique.limiteY - 5, 9)}
                           text-anchor="end"
                           font-size="10"
@@ -416,14 +473,6 @@ const depuis = usage
                     ))}
                   </svg>
 
-                  <div class="flex justify-between text-[10px] text-muted-foreground">
-                    <span>{metrique.points.length > 0 ? jourCourt.format(new Date(metrique.points[0].date)) : ''}</span>
-                    <span>
-                      {metrique.points.length > 0
-                        ? `${jourCourt.format(new Date(metrique.points[metrique.points.length - 1].date))} (en cours)`
-                        : ''}
-                    </span>
-                  </div>
                 </div>
               ))}
             </div>
