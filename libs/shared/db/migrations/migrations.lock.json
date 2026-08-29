@@ -26,6 +26,7 @@
     "0022_bank_statement_balances.sql": "ca58136f2deefe32",
     "0023_internal_transfer_legs.sql": "b9c2070abe14ad88",
     "0024_invoice_item_category.sql": "d5eefa6f787fbb5a",
-    "0025_drop_schedule_and_session_season.sql": "1e5f39a14bc52f32"
+    "0025_drop_schedule_and_session_season.sql": "1e5f39a14bc52f32",
+    "0026_index_de_lecture.sql": "30d6a19d8367e4f7"
   }
 }

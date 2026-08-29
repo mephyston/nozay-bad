@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { CLUB_FUNCTIONS } from './club-functions';
 
 export const usersTable = sqliteTable('users', {
@@ -116,6 +116,13 @@ export const membershipsTable = sqliteTable('memberships', {
   expenseAuthorized: integer('expense_authorized', { mode: 'boolean' }).notNull().default(false)
 }, (table) => ({
   personSeasonUnq: uniqueIndex('memberships_person_season_idx').on(table.personId, table.seasonId),
+  /*
+   * Filtrer par saison seule ne pouvait s'appuyer sur rien : la colonne de tête de
+   * l'index ci-dessus est `person_id`. La liste des adhérents, son `count(*)` et
+   * l'encart des anniversaires lisaient donc la table entière — 538 lignes par appel
+   * mesurées en production, pour vingt lignes affichées.
+   */
+  seasonIdx: index('memberships_season_idx').on(table.seasonId),
 }));
 
 // Fonction au club (bureau, CA, entraîneur) attribuée à un adhérent pour une saison.

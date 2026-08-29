@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, uniqueIndex, check } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index, uniqueIndex, check } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 export const seasonsTable = sqliteTable('seasons', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -215,7 +215,16 @@ export const ledgerEntriesTable = sqliteTable('ledger_entries', {
    * montants égaux ne se contraint pas en SQLite : c'est gardé en applicatif et vérifié par
    * `scripts/check-schema-integrity.js`.
    */
-  transferLegIdx: uniqueIndex('internal_transfer_leg_idx').on(table.transferId, table.transferLeg)
+  transferLegIdx: uniqueIndex('internal_transfer_leg_idx').on(table.transferId, table.transferLeg),
+  /*
+   * Les trois chemins de lecture du grand livre. `season_id` et `date` restent séparés
+   * parce que le filtre est un OR (« la saison OU l'intervalle »), que SQLite sert en
+   * réunissant deux index ; `(account_id, date)` sert le solde progressif, qui parcourt
+   * un compte dans l'ordre des dates.
+   */
+  seasonIdx: index('ledger_entries_season_idx').on(table.seasonId),
+  dateIdx: index('ledger_entries_date_idx').on(table.date),
+  accountDateIdx: index('ledger_entries_account_date_idx').on(table.accountId, table.date)
 }));
 
 export const checksTable = sqliteTable('checks', {
