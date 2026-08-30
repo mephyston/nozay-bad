@@ -139,11 +139,20 @@ export function cacheKeyFor(pathname: string, version: number | null, query = ''
  * puisqu'un succès de cache coûterait encore un aller-retour. On la range donc
  * elle-même, très brièvement.
  *
- * Dix secondes est le prix de la fraîcheur : c'est le délai maximal entre une
- * publication et son apparition. Assez court pour passer pour instantané, assez long
- * pour absorber une rafale de visites.
+ * Cette durée est le prix de la fraîcheur : c'est le délai maximal entre une
+ * publication et son apparition.
+ *
+ * Elle était de dix secondes, pour « absorber une rafale de visites ». Le raisonnement
+ * vaut pour une rafale, mais le site n'en reçoit pas : mesuré sur vingt-quatre heures,
+ * 2 194 consultations de cette clé pour 39 % de succès, soit ~670 lectures de l'API
+ * pour ~700 rendus de page. Les visites sont espacées de plus de dix secondes, si bien
+ * que le cache expirait entre deux visiteurs et que chaque rendu repayait un
+ * aller-retour — exactement ce que ce cache existe pour éviter.
+ *
+ * Une minute couvre l'intervalle réel entre deux visites. Le délai reste sous le seuil
+ * où l'on va vérifier son site après avoir publié.
  */
-const VERSION_TTL_SECONDS = 10;
+const VERSION_TTL_SECONDS = 60;
 
 const VERSION_KEY = 'https://cache.nozaybad.fr/__content-version';
 
