@@ -11,14 +11,20 @@ import MenusScreen from '../../../components/MenusScreen.svelte';
  * plus** : le gestionnaire de menus, ses données et ses écritures vivent dans le
  * navigateur, qui s'adresse au relais `/admin/api/cms/menus`.
  *
- * Mesuré en préproduction : 18 ms de plancher quand la page rendait tout, **9 ms**
- * depuis, le relais coûtant 2 à 4 ms à côté. Le budget documenté est de 10 ms par
- * invocation. Ces 9 ms restantes sont l'habillage : le relais et la page vivent dans le
- * même worker, avec le même coût de démarrage, et le relais tient en 2 à 4 ms — ce qui
- * les sépare est donc bien le rendu de `Layout` + `AdminLayout`, et rien d'autre.
+ * Mesuré en préproduction le 2026-08-30, sur 62 chargements d'écrans convertis contre
+ * 19 de `jeu-libre`, resté entier et servant de témoin : plancher **12 → 7 ms**, moyenne
+ * **25 → 14 ms**. Le relais coûte 1 à 3 ms à côté, si bien qu'un affichage complet revient
+ * à une quinzaine de millisecondes réparties sur deux invocations, contre 25 en une seule.
+ * Le budget documenté est de 10 ms par invocation.
  *
- * (Ne pas se fier au `min` brut d'une route : il attrape les `POST`, qui répondent avant
- * tout rendu et tombent à 1 ms. Séparer par méthode.)
+ * Ce qui reste est l'habillage : le relais et la page vivent dans le même worker, avec le
+ * même coût de démarrage, et le relais tient en 2 ms — ce qui les sépare est donc bien le
+ * rendu de `Layout` + `AdminLayout`, et rien d'autre.
+ *
+ * Deux pièges de mesure, tombés dedans tous les deux : le `min` brut d'une route attrape
+ * les `POST`, qui répondent avant tout rendu et tombent à 1 ms (séparer par méthode) ; et
+ * un plancher sur deux ou trois tirages ne veut rien dire — il a fallu une soixantaine de
+ * chargements pour qu'il se stabilise.
  *
  * L'habillage reste côté serveur — et c'est désormais **le** poste de coût, pas un
  * détail. Le figer (`prerender`) le ramènerait à zéro, mais retirerait `PAGE_PERMISSIONS`
