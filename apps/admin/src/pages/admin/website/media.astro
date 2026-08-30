@@ -1,16 +1,14 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { PageHeader, ErrorAlert } from '@nba/ui';
-import { MediaLibrary } from '@nba/cms-ui';
+import { PageHeader } from '@nba/ui';
+import MediaScreen from '../../../components/MediaScreen.svelte';
 import { createAdminApiClient } from '../../../lib/api';
-import { can, guardAction } from '../../../lib/guard';
+import { guardAction } from '../../../lib/guard';
 
 // La consultation est déjà exigée par PAGE_PERMISSIONS. Déposer et supprimer sont
 // deux droits distincts : retirer un média peut vider l'illustration d'une page en
 // ligne, là où en ajouter un est sans conséquence.
-const canWrite = can(Astro.locals, 'cms:media:write');
-const canDelete = can(Astro.locals, 'cms:media:delete');
 
 const apiService = createAdminApiClient(Astro.locals);
 
@@ -56,20 +54,6 @@ if (Astro.request.method === 'POST') {
   });
 }
 
-let media: any[] = [];
-let errorMsg = '';
-
-try {
-  const res = await apiService.fetch('http://localhost/cms/media');
-  if (res.ok) {
-    const json = (await res.json()) as any;
-    media = json.data ?? [];
-  } else {
-    errorMsg = 'Impossible de charger la médiathèque.';
-  }
-} catch {
-  errorMsg = 'Impossible de charger la médiathèque.';
-}
 ---
 
 <Layout title="Médiathèque - NBA 91">
@@ -82,14 +66,13 @@ try {
     breadcrumb="Médiathèque"
   >
     <div class="space-y-6">
-      {errorMsg && <ErrorAlert message={errorMsg} />}
 
       <PageHeader
         title="Médiathèque"
         description="Images et documents du site public. Les fichiers déposés ici sont réutilisables dans toutes les pages."
       />
 
-      <MediaLibrary client:load media={media} canWrite={canWrite} canDelete={canDelete} />
+      <MediaScreen client:only="svelte" />
     </div>
   </AdminLayout>
 </Layout>

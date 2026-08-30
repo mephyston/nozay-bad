@@ -1,20 +1,16 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { PageHeader, ErrorAlert } from '@nba/ui';
-import { PostsManager } from '@nba/cms-ui';
+import { PageHeader } from '@nba/ui';
+import PostsScreen from '../../../components/PostsScreen.svelte';
 import { createAdminApiClient } from '../../../lib/api';
-import { can, guardAction } from '../../../lib/guard';
+import { guardAction } from '../../../lib/guard';
 
-const canWrite = can(Astro.locals, 'cms:posts:write');
-const canDelete = can(Astro.locals, 'cms:posts:delete');
 
 const apiService = createAdminApiClient(Astro.locals);
 
-const canUploadMedia = can(Astro.locals, 'cms:media:write');
 // Faire sonner les téléphones du club relève du même droit que l'envoi depuis l'écran
 // Notifications, et non de la rédaction.
-const canNotify = can(Astro.locals, 'notifications:messages:send');
 
 const ACTIONS = {
   create: 'cms:posts:write',
@@ -115,69 +111,6 @@ if (Astro.request.method === 'POST') {
   });
 }
 
-let posts: any[] = [];
-let media: any[] = [];
-let categories: any[] = [];
-let events: any[] = [];
-let targets: { path: string; title: string; kind: 'page' | 'post'; status?: 'draft' | 'published' }[] = [];
-let errorMsg = '';
-
-// La médiathèque, les catégories et les cibles de liens alimentent le formulaire
-// (couverture, insertion de fichier, rattachement, lien interne). Chargées avec la
-// liste et non à l'ouverture du sheet : le formulaire s'ouvre alors sans attente, et
-// l'échec de l'une n'empêche pas d'écrire.
-try {
-  const [postsRes, mediaRes, categoriesRes, pagesRes, eventsRes] = await Promise.all([
-    apiService.fetch('http://localhost/cms/posts?limit=100'),
-    apiService.fetch('http://localhost/cms/media?limit=200'),
-    apiService.fetch('http://localhost/cms/post-categories'),
-    apiService.fetch('http://localhost/cms/pages'),
-    // Seulement les rendez-vous à venir : rattacher une actualité au stage de l'an
-    // dernier n'a pas de sens, et la liste déroulante reste lisible.
-    apiService.fetch('http://localhost/events?limit=50')
-  ]);
-
-  if (postsRes.ok) {
-    posts = ((await postsRes.json()) as any).data?.posts ?? [];
-    // Un article peut renvoyer vers un autre : la liste déjà chargée sert deux fois.
-    targets.push(
-      ...posts.map((row: any) => ({
-        path: row.path,
-        title: row.title,
-        kind: 'post' as const,
-        status: row.status
-      }))
-    );
-  } else {
-    errorMsg = 'Impossible de charger les actualités.';
-  }
-
-  if (pagesRes.ok) {
-    const rows = ((await pagesRes.json()) as any).data ?? [];
-    targets.unshift(
-      ...rows.map((row: any) => ({
-        path: row.path,
-        title: row.title,
-        kind: 'page' as const,
-        status: row.status
-      }))
-    );
-  }
-
-  if (mediaRes.ok) {
-    media = ((await mediaRes.json()) as any).data ?? [];
-  }
-  if (categoriesRes.ok) {
-    const payload = (await categoriesRes.json()) as any;
-    categories = payload.data ?? [];
-  }
-  // L'agenda muet n'empêche pas d'écrire une actualité : le champ disparaît, c'est tout.
-  if (eventsRes.ok) {
-    events = ((await eventsRes.json()) as any).data ?? [];
-  }
-} catch {
-  errorMsg = 'Impossible de charger les actualités.';
-}
 ---
 
 <Layout title="Actualités - NBA 91">
@@ -190,25 +123,13 @@ try {
     breadcrumb="Actualités"
   >
     <div class="space-y-6">
-      {errorMsg && <ErrorAlert message={errorMsg} />}
 
       <PageHeader
         title="Actualités"
         description="Les communications du club. Publiques, elles paraissent sur le site et dans l'espace adhérent ; réservées, dans l'espace adhérent seul — et peuvent alors déclencher une notification."
       />
 
-      <PostsManager
-        client:load
-        posts={posts}
-        media={media}
-        categories={categories}
-        canWrite={canWrite}
-        canDelete={canDelete}
-        canUploadMedia={canUploadMedia}
-        canNotify={canNotify}
-        targets={targets}
-        events={events}
-      />
+      <PostsScreen client:only="svelte" />
     </div>
   </AdminLayout>
 </Layout>

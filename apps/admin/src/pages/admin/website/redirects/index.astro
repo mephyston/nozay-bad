@@ -1,12 +1,11 @@
 ---
 import Layout from '../../../../layouts/Layout.astro';
 import AdminLayout from '../../../../components/AdminLayout.svelte';
-import { PageHeader, ErrorAlert } from '@nba/ui';
-import { RedirectsManager } from '@nba/cms-ui';
+import { PageHeader } from '@nba/ui';
+import RedirectsScreen from '../../../../components/RedirectsScreen.svelte';
 import { createAdminApiClient } from '../../../../lib/api';
-import { can, guardAction } from '../../../../lib/guard';
+import { guardAction } from '../../../../lib/guard';
 
-const canWrite = can(Astro.locals, 'cms:nav:write');
 
 const apiService = createAdminApiClient(Astro.locals);
 
@@ -48,20 +47,6 @@ if (Astro.request.method === 'POST') {
   });
 }
 
-let redirects: any[] = [];
-let errorMsg = '';
-
-try {
-  const res = await apiService.fetch('http://localhost/cms/redirects/all');
-  if (res.ok) {
-    const json = (await res.json()) as any;
-    redirects = json.data ?? [];
-  } else {
-    errorMsg = 'Impossible de charger les redirections.';
-  }
-} catch {
-  errorMsg = 'Impossible de charger les redirections.';
-}
 ---
 
 <Layout title="Redirections - NBA 91">
@@ -74,14 +59,13 @@ try {
     breadcrumb="Redirections"
   >
     <div class="space-y-6">
-      {errorMsg && <ErrorAlert message={errorMsg} />}
 
       <PageHeader
         title="Redirections"
         description="Les anciennes adresses du site et leur destination. Une adresse sans cible répond « page supprimée » (410) : les moteurs la retirent de leur index. Le compteur dit si une adresse sert encore."
       />
 
-      <RedirectsManager client:load redirects={redirects} canWrite={canWrite} />
+      <RedirectsScreen client:only="svelte" />
     </div>
   </AdminLayout>
 </Layout>
