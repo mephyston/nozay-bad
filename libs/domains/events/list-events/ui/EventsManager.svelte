@@ -39,9 +39,17 @@
     events = [],
     canWrite = false,
     canDelete = false,
-    canReadRegistrations = false
+    canReadRegistrations = false,
+    endpoint = '/admin/api/events/events'
   } = $props<{
     events: EventRow[]; canWrite?: boolean; canDelete?: boolean; canReadRegistrations?: boolean;
+    /**
+     * Destination des écritures : le relais du domaine, et non la page hôte.
+     *
+     * `fetch('')` visait « la page qui m'affiche », ce qui obligeait chaque hôte à
+     * porter son propre pont vers l'API. La destination est nommée.
+     */
+    endpoint?: string;
   }>();
 
   let editingId = $state<number | null>(null);
@@ -98,7 +106,7 @@
   );
 
   async function post<T = unknown>(body: unknown, fallback: string): Promise<T> {
-    const response = await fetch('', {
+    const response = await fetch(endpoint, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
     });
     if (!response.ok) {

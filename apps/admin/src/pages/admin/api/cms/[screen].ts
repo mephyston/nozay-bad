@@ -1,86 +1,27 @@
-import type { APIRoute } from 'astro';
-import type { Permission } from '@nba/iam-ui';
 import { can } from '../../../../lib/guard';
-import { createAdminApiClient, resolveEnv } from '../../../../lib/api';
+import { resolveEnv } from '../../../../lib/api';
 import { createPreviewToken } from '@nba/preview';
+import { creerRelais, identifiant, Refus, type Ecran } from '../../../../lib/relais';
 
 /**
- * Le relais des écrans du CMS.
+ * Les écrans du CMS, et ce que chacun expose.
  *
- * Un seul point d'entrée pour toute la rubrique plutôt qu'un fichier par écran : la
- * table ci-dessous est alors **la** surface d'audit — un endroit unique où lire ce que
- * l'administration expose au navigateur, quelle permission garde chaque écran en
- * lecture, et quelle permission garde chacune de ses écritures. Onze gardes disséminées
- * se relisent mal ; celle-ci se relit d'un coup d'œil.
- *
- * Le worker reste le relais qu'il était : il détient `INTERNAL_API_KEY`, affirme
- * l'identité tirée du jeton Cloudflare Access, et ne rend plus de HTML. Ce qu'il expose
- * ici, ce sont les mêmes lectures et les mêmes écritures qu'il servait depuis les pages
- * — ni plus, ni moins.
- *
- * Les routes sous `/admin/api/` échappent à `PAGE_PERMISSIONS` (cf. `isPageRoute`) :
- * chaque écran répond donc de sa propre garde, et `[screen].test.ts` vérifie qu'aucun
- * n'en manque, ni en lecture ni en écriture.
+ * La mécanique — refus, validation, passe-plat de la réponse — vit dans
+ * `lib/relais.ts` ; ce fichier ne déclare que la rubrique. La table ci-dessous est donc
+ * **la** surface d'audit du CMS : un endroit unique où lire ce que l'administration
+ * expose au navigateur, et quelle permission garde chaque lecture, chaque écriture et
+ * chaque dépôt. `[screen].test.ts` vérifie qu'aucun n'en manque.
  *
  * ## Pourquoi les écritures ont quitté les pages
  *
  * Elles vivaient dans le `POST` de chaque page, et les composants publiaient vers l'URL
  * courante — `fetch('')`. Cela tenait tant qu'un composant n'était utilisé que par sa
  * propre page. Ce n'était déjà plus vrai du dépôt de fichier : le sélecteur de médias
- * s'ouvre depuis les actualités et depuis l'éditeur de pages, si bien que **trois**
- * écrans avaient dû apprendre à lire un `multipart/form-data` pour que le même bouton
- * fonctionne partout. En nommant la destination, le dépôt s'adresse à la médiathèque
- * depuis n'importe quel hôte, et ce couplage disparaît.
+ * s'ouvre depuis la médiathèque, depuis les actualités et depuis l'éditeur de pages, si
+ * bien que **trois** écrans avaient dû apprendre à lire un `multipart/form-data` pour que
+ * le même bouton fonctionne partout. En nommant la destination, le dépôt s'adresse à la
+ * médiathèque depuis n'importe quel hôte, et ce couplage disparaît.
  */
-
-type Lecteur = (chemin: string) => Promise<any>;
-
-/** Appel à faire à l'API interne pour honorer une écriture. */
-interface Appel {
-  chemin: string;
-  method: string;
-  body?: unknown;
-}
-
-/**
- * Entrée du client jugée irrecevable.
- *
- * Distinct d'un refus de permission : l'utilisateur a le droit d'écrire, c'est la
- * requête qui est mal formée. Répondre 400, et non 403.
- */
-class Refus extends Error {}
-
-/**
- * Identifiant d'objet reçu du client, validé avant de rejoindre un chemin d'API.
- *
- * Interpolé sans contrôle, il ferait de n'importe quelle écriture un chemin arbitraire.
- */
-function identifiant(valeur: unknown, quoi: string): number {
-  const n = Number(valeur);
-  if (!Number.isSafeInteger(n) || n < 1) throw new Refus(`Identifiant ${quoi} invalide.`);
-  return n;
-}
-
-interface Ecriture {
-  permission: Permission;
-  /** Construit l'appel API ; lève `Refus` pour rejeter une entrée mal formée. */
-  route: (data: any) => Appel;
-}
-
-interface Ecran {
-  /** Droit exigé pour lire l'écran. */
-  permission: Permission;
-  charger: (
-    lire: Lecteur,
-    locals: App.Locals,
-    /** Paramètres de la requête, pour les écrans qui portent sur un objet précis. */
-    params: URLSearchParams
-  ) => Promise<Record<string, unknown>>;
-  /** Écritures acceptées, par nom d'action. Une action absente d'ici est refusée. */
-  ecritures?: Record<string, Ecriture>;
-  /** Dépôt de fichier, qui arrive en multipart et n'a donc pas de nom d'action. */
-  depot?: { permission: Permission; chemin: string };
-}
 
 export const ECRANS: Record<string, Ecran> = {
   menus: {
@@ -453,100 +394,4 @@ export const ECRANS: Record<string, Ecran> = {
   }
 };
 
-const json = (data: unknown, status = 200) =>
-  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
-
-export const GET: APIRoute = async ({ params, request, locals }) => {
-  const ecran = ECRANS[params.screen ?? ''];
-  // Un écran inconnu n'existe pas : ni indice sur ce que le relais sert, ni chemin
-  // détourné vers une lecture non déclarée.
-  if (!ecran) return json({ success: false, error: 'Écran inconnu' }, 404);
-  if (!can(locals, ecran.permission)) return json({ success: false, error: 'Accès refusé' }, 403);
-
-  const api = createAdminApiClient(locals);
-  const lire: Lecteur = async (chemin) => {
-    const res = await api.fetch(`http://localhost${chemin}`);
-    if (!res.ok) return null;
-    return ((await res.json()) as { data?: unknown }).data ?? null;
-  };
-
-  try {
-    const recherche = new URL(request.url).searchParams;
-    return json({ success: true, data: await ecran.charger(lire, locals, recherche) });
-  } catch (e) {
-    // Un paramètre irrecevable est une faute du client, pas une panne de l'API.
-    if (e instanceof Refus) return json({ success: false, error: e.message }, 400);
-    return json(
-      { success: false, error: `Appel API échoué : ${e instanceof Error ? e.message : String(e)}` },
-      502
-    );
-  }
-};
-
-/**
- * La réponse de l'API est rendue telle quelle.
- *
- * Les composants lisent `data` en cas de succès et `error` en cas d'échec : c'est
- * l'enveloppe de l'API, et la réécrire ici obligerait à la maintenir en double.
- */
-async function relayer(res: Response): Promise<Response> {
-  if (!res.ok) {
-    return new Response(await res.text(), {
-      status: res.status,
-      headers: { 'Content-Type': res.headers.get('Content-Type') ?? 'application/json' }
-    });
-  }
-  return new Response(JSON.stringify(await res.json()), {
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
-
-export const POST: APIRoute = async ({ params, request, locals }) => {
-  const ecran = ECRANS[params.screen ?? ''];
-  if (!ecran) return json({ error: 'Écran inconnu' }, 404);
-
-  const api = createAdminApiClient(locals);
-
-  // Un dépôt de fichier arrive en multipart, là où toutes les autres écritures parlent
-  // JSON — il n'a donc pas de nom d'action à garder, mais son propre droit.
-  if ((request.headers.get('content-type') ?? '').includes('multipart/form-data')) {
-    if (!ecran.depot) return json({ error: 'Cet écran ne reçoit pas de fichier.' }, 400);
-    if (!can(locals, ecran.depot.permission)) return json({ error: 'Accès refusé' }, 403);
-    return relayer(
-      await api.fetch(`http://localhost${ecran.depot.chemin}`, {
-        method: 'POST',
-        body: await request.formData()
-      })
-    );
-  }
-
-  const data = (await request.json()) as any;
-  const ecritures = ecran.ecritures ?? {};
-
-  /*
-   * `Object.hasOwn` et non `in` : `'constructor' in ecritures` est vrai par héritage, et
-   * laisserait un nom d'action emprunté au prototype franchir cette vérification.
-   */
-  if (typeof data?.action !== 'string' || !Object.hasOwn(ecritures, data.action)) {
-    return json({ error: 'Action inconnue' }, 403);
-  }
-
-  const ecriture = ecritures[data.action];
-  if (!can(locals, ecriture.permission)) return json({ error: 'Accès refusé' }, 403);
-
-  let appel: Appel;
-  try {
-    appel = ecriture.route(data);
-  } catch (e) {
-    if (e instanceof Refus) return json({ error: e.message }, 400);
-    throw e;
-  }
-
-  return relayer(
-    await api.fetch(`http://localhost${appel.chemin}`, {
-      method: appel.method,
-      headers: { 'Content-Type': 'application/json' },
-      ...(appel.body ? { body: JSON.stringify(appel.body) } : {})
-    })
-  );
-};
+export const { GET, POST } = creerRelais(ECRANS);

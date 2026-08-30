@@ -48,10 +48,18 @@
 
   let {
     sessions = [], venues = [], slots = [],
-    canWrite = false, canReadRegistrations = false
+    canWrite = false, canReadRegistrations = false,
+    endpoint = '/admin/api/schedules/jeu-libre'
   } = $props<{
     sessions: SessionRow[]; venues: VenueRow[]; slots?: SlotRow[];
     canWrite?: boolean; canReadRegistrations?: boolean;
+    /**
+     * Destination des écritures : le relais du domaine, et non la page hôte.
+     *
+     * `fetch('')` visait « la page qui m'affiche », ce qui obligeait chaque hôte à
+     * porter son propre pont vers l'API. La destination est nommée.
+     */
+    endpoint?: string;
   }>();
 
   const WEEKDAYS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
@@ -105,7 +113,7 @@
   );
 
   async function post(body: unknown, fallback: string) {
-    const response = await fetch('', {
+    const response = await fetch(endpoint, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
     });
     if (!response.ok) {

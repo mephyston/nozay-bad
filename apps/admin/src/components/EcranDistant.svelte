@@ -26,8 +26,16 @@
    * qu'après 150 ms, en deçà desquelles les données sont souvent déjà là — il ne ferait
    * que clignoter.
    */
-  const { ecran, variante = 'liste', parametres, onDonnees, pret }: {
-    /** Nom de l'écran auprès du relais `/admin/api/cms/[screen]`. */
+  const { domaine = 'cms', ecran, variante = 'liste', parametres, onDonnees, pret }: {
+    /**
+     * Domaine dont relève l'écran, et donc relais auquel s'adresser.
+     *
+     * Les relais suivent les domaines, pas les rubriques du menu : « Site web » réunit
+     * dans la barre latérale des écrans du CMS, des séances et de l'agenda, qui n'ont ni
+     * les mêmes permissions ni le même modèle.
+     */
+    domaine?: 'cms' | 'schedules' | 'events';
+    /** Nom de l'écran auprès du relais `/admin/api/<domaine>/[screen]`. */
     ecran: string;
     /** Forme du squelette, à l'image du contenu attendu. */
     variante?: 'liste' | 'formulaire' | 'grille';
@@ -56,7 +64,7 @@
       const recherche = parametres
         ? `?${new URLSearchParams(Object.entries(parametres).map(([c, v]) => [c, String(v)]))}`
         : '';
-      const res = await fetch(`/admin/api/cms/${ecran}${recherche}`);
+      const res = await fetch(`/admin/api/${domaine}/${ecran}${recherche}`);
       if (!res.ok) throw new Error(String(res.status));
       donnees = (await res.json()).data;
       etat = 'pret';
