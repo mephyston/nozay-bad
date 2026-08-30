@@ -14,13 +14,21 @@
     footerAddress = '',
     instagramUrl = '',
     facebookUrl = '',
-    canWrite = false
+    canWrite = false,
+    endpoint = '/admin/api/cms/footer'
   } = $props<{
     footerDescription?: string;
     footerAddress?: string;
     instagramUrl?: string | null;
     facebookUrl?: string | null;
     canWrite?: boolean;
+    /**
+     * Destination des écritures : le relais de la rubrique, et non la page hôte.
+     *
+     * `fetch('')` visait « la page qui m'affiche », ce qui obligeait chaque hôte à
+     * porter son propre pont vers l'API. La destination est nommée.
+     */
+    endpoint?: string;
   }>();
 
   let description = $state(footerDescription);
@@ -47,7 +55,7 @@
     await submitForm({
       validate: () => invalidUrl(instagram, 'Instagram') ?? invalidUrl(facebook, 'Facebook'),
       submit: async () => {
-        const res = await fetch('', {
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -3,49 +3,6 @@ import Layout from '../../../../layouts/Layout.astro';
 import AdminLayout from '../../../../components/AdminLayout.svelte';
 import { PageHeader } from '@nba/ui';
 import RedirectsScreen from '../../../../components/RedirectsScreen.svelte';
-import { createAdminApiClient } from '../../../../lib/api';
-import { guardAction } from '../../../../lib/guard';
-
-
-const apiService = createAdminApiClient(Astro.locals);
-
-const ACTIONS = {
-  create: 'cms:nav:write',
-  update: 'cms:nav:write',
-  delete: 'cms:nav:write'
-} as const;
-
-if (Astro.request.method === 'POST') {
-  const data = (await Astro.request.json()) as any;
-  const denied = guardAction(Astro.locals, data.action, ACTIONS);
-  if (denied) return denied;
-
-  const routes: Record<string, { url: string; method: string; body?: unknown }> = {
-    create: {
-      url: 'http://localhost/cms/redirects',
-      method: 'POST',
-      body: { fromPath: data.fromPath, toPath: data.toPath, note: data.note }
-    },
-    update: {
-      url: `http://localhost/cms/redirects/${data.id}`,
-      method: 'PUT',
-      body: { toPath: data.toPath, note: data.note }
-    },
-    delete: { url: `http://localhost/cms/redirects/${data.id}`, method: 'DELETE' }
-  };
-
-  const route = routes[data.action];
-  const apiRes = await apiService.fetch(route.url, {
-    method: route.method,
-    headers: { 'Content-Type': 'application/json' },
-    ...(route.body ? { body: JSON.stringify(route.body) } : {})
-  });
-
-  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
-  return new Response(JSON.stringify(await apiRes.json()), {
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
 
 ---
 

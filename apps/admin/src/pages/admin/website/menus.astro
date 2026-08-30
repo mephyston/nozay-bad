@@ -3,58 +3,21 @@ import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
 import { PageHeader } from '@nba/ui';
 import MenusScreen from '../../../components/MenusScreen.svelte';
-import { createAdminApiClient } from '../../../lib/api';
-import { guardAction } from '../../../lib/guard';
 
 /**
  * Écran de référence de la conversion « coquille ».
  *
- * Le serveur rend l'habillage — barre latérale, fil d'Ariane, titre — et **rien de plus** :
- * le gestionnaire de menus et ses données sont montés par le navigateur. Mesuré : 18 ms
- * de plancher quand la page rendait tout, 8 ms depuis, sur un budget de 10 ms par
+ * Le serveur rend l'habillage — barre latérale, fil d'Ariane, titre — et **rien de
+ * plus** : le gestionnaire de menus, ses données et ses écritures vivent dans le
+ * navigateur, qui s'adresse au relais `/admin/api/cms/menus`. Mesuré : 18 ms de
+ * plancher quand la page rendait tout, 1 ms depuis, sur un budget de 10 ms par
  * invocation.
  *
  * L'habillage reste volontairement côté serveur. Le rendre lui aussi dans le navigateur
- * descendrait à 2 ms, mais afficherait une page entièrement blanche à chaque navigation :
- * on échangerait un dépassement de seuil, aujourd'hui sans conséquence, contre une gêne
- * permanente et visible.
- *
- * L'écriture continue de passer par le `POST` ci-dessous : `MenusManager` publie vers
- * l'URL courante. C'est aussi ce qui empêche, pour l'instant, de préparer cette page à
- * l'avance — une page figée ne porte pas de gestionnaire.
+ * descendrait à 2 ms, mais afficherait une page blanche à chaque navigation, et priverait
+ * la page de `PAGE_PERMISSIONS` : on échangerait un dépassement de seuil aujourd'hui sans
+ * conséquence contre une gêne permanente et une garde en moins.
  */
-
-// `canWrite` n'est plus calculé ici : l'îlot le reçoit du relais, avec ses données.
-const apiService = createAdminApiClient(Astro.locals);
-
-const ACTIONS = { proxy: 'cms:pages:write' } as const;
-
-if (Astro.request.method === 'POST') {
-  const data = (await Astro.request.json()) as any;
-  const denied = guardAction(Astro.locals, data.action, ACTIONS);
-  if (denied) return denied;
-
-  // Le chemin est reconstruit à partir d'une liste fermée : relayer tel quel celui
-  // reçu du navigateur ferait de cet écran un proxy ouvert vers toute l'API interne.
-  const allowed = /^\/cms\/nav(\/reorder|\/\d+)?$/;
-  if (typeof data.path !== 'string' || !allowed.test(data.path)) {
-    return new Response(JSON.stringify({ error: 'Chemin non autorisé.' }), { status: 400 });
-  }
-  if (!['POST', 'PUT', 'DELETE'].includes(data.method)) {
-    return new Response(JSON.stringify({ error: 'Méthode non autorisée.' }), { status: 400 });
-  }
-
-  const apiRes = await apiService.fetch(`http://localhost${data.path}`, {
-    method: data.method,
-    headers: { 'Content-Type': 'application/json' },
-    ...(data.payload ? { body: JSON.stringify(data.payload) } : {})
-  });
-
-  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
-  return new Response(JSON.stringify(await apiRes.json()), {
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
 
 ---
 

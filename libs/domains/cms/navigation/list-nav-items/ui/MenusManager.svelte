@@ -40,13 +40,21 @@
     footer = [],
     legal = [],
     pages = [],
-    canWrite = false
+    canWrite = false,
+    endpoint = '/admin/api/cms/menus'
   } = $props<{
     header?: NavItem[];
     footer?: NavItem[];
     legal?: NavItem[];
     pages?: { id: number; title: string; path: string; status: string }[];
     canWrite?: boolean;
+    /**
+     * Destination des écritures : le relais de la rubrique, et non la page hôte.
+     *
+     * `fetch('')` visait « la page qui m'affiche », ce qui obligeait chaque hôte à
+     * porter son propre pont vers l'API. La destination est nommée.
+     */
+    endpoint?: string;
   }>();
 
   /**
@@ -120,7 +128,7 @@
   );
 
   async function call(path: string, method: string, body?: unknown, fallback = "L'opération a échoué.") {
-    const response = await fetch('', {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'proxy', path, method, payload: body })

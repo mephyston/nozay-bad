@@ -21,27 +21,15 @@ const ACTIONS = {
   updateMeta: 'cms:pages:write',
   saveBlocks: 'cms:pages:write',
   publish: 'cms:pages:write',
-  restore: 'cms:pages:write',
-  upload: 'cms:media:write'
+  restore: 'cms:pages:write'
 } as const;
 
+/*
+  Le dépôt d'un média depuis un sélecteur de bloc ne passe plus par ici : il s'adresse
+  au relais de la médiathèque (`/admin/api/cms/media`), qui porte la garde
+  `cms:media:write`. Cet écran n'a donc plus à savoir lire un `multipart/form-data`.
+*/
 if (Astro.request.method === 'POST') {
-  // Dépôt d'un média depuis un sélecteur de bloc, sans quitter l'éditeur — il arrive en
-  // multipart, là où toutes les autres actions de cet écran parlent JSON. Composer une
-  // page et déposer un fichier restent deux droits distincts.
-  const contentType = Astro.request.headers.get('content-type') ?? '';
-  if (contentType.includes('multipart/form-data')) {
-    const denied = guardAction(Astro.locals, 'upload', ACTIONS);
-    if (denied) return denied;
-
-    const form = await Astro.request.formData();
-    const apiRes = await apiService.fetch('http://localhost/cms/media', { method: 'POST', body: form });
-    if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
-    return new Response(JSON.stringify(await apiRes.json()), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
   const data = (await Astro.request.json()) as any;
   const denied = guardAction(Astro.locals, data.action, ACTIONS);
   if (denied) return denied;

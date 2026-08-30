@@ -2,16 +2,19 @@ import { prepareUpload } from './media-upload';
 import type { PickableMedia } from './media-types';
 
 /**
- * Écritures de la médiathèque, adressées à la page elle-même.
+ * Écritures de la médiathèque, adressées au relais de la médiathèque.
  *
- * Même convention que les autres écrans : la page d'administration est le seul point
- * d'entrée, et c'est elle qui parle à l'API avec l'identité de l'utilisateur.
+ * La destination est nommée, et c'est tout l'intérêt : ces trois fonctions servent le
+ * sélecteur de médias, qui s'ouvre depuis la médiathèque, depuis les actualités et
+ * depuis l'éditeur de pages. Tant qu'elles visaient « la page courante » (`fetch('')`),
+ * **chacun de ces trois écrans** devait savoir lire un `multipart/form-data` pour que le
+ * même bouton « Déposer » fonctionne chez lui — trois ponts à tenir pour une seule
+ * fonctionnalité, et un quatrième à écrire au prochain écran qui ouvrirait le sélecteur.
  *
- * Corollaire à ne pas perdre de vue : `fetch('')` vise **la page courante**. Tout écran
- * qui déclenche un dépôt doit donc savoir lire un `multipart/form-data`, sinon la
- * requête tombe dans son pont JSON et échoue. C'est ce qu'ont ajouté les écrans des
- * actualités et des pages, pour pouvoir déposer sans quitter le formulaire.
+ * Le relais reste, comme la page avant lui, le seul à parler à l'API interne, avec
+ * l'identité tirée du jeton Cloudflare Access.
  */
+const RELAIS = '/admin/api/cms/media';
 
 /** Renvoie le média créé : le sélecteur l'affiche et le choisit sans recharger la page. */
 export async function uploadFile(file: File, alt: string): Promise<PickableMedia> {
@@ -23,7 +26,7 @@ export async function uploadFile(file: File, alt: string): Promise<PickableMedia
   if (prepared.width) form.append('width', String(prepared.width));
   if (prepared.height) form.append('height', String(prepared.height));
 
-  const response = await fetch('', { method: 'POST', body: form });
+  const response = await fetch(RELAIS, { method: 'POST', body: form });
   if (!response.ok) throw new Error(await extractError(response, 'Le dépôt a échoué.'));
 
   const body = (await response.json()) as { data?: PickableMedia };
@@ -41,7 +44,7 @@ export async function uploadFile(file: File, alt: string): Promise<PickableMedia
  * la recherche n'a que lui et une empreinte de seize caractères.
  */
 export async function updateMediaAlt(id: number, alt: string): Promise<void> {
-  const response = await fetch('', {
+  const response = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'update', id, alt })
@@ -50,7 +53,7 @@ export async function updateMediaAlt(id: number, alt: string): Promise<void> {
 }
 
 export async function deleteMedia(id: number): Promise<void> {
-  const response = await fetch('', {
+  const response = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'delete', id })

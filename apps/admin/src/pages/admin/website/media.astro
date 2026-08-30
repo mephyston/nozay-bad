@@ -3,56 +3,6 @@ import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
 import { PageHeader } from '@nba/ui';
 import MediaScreen from '../../../components/MediaScreen.svelte';
-import { createAdminApiClient } from '../../../lib/api';
-import { guardAction } from '../../../lib/guard';
-
-// La consultation est déjà exigée par PAGE_PERMISSIONS. Déposer et supprimer sont
-// deux droits distincts : retirer un média peut vider l'illustration d'une page en
-// ligne, là où en ajouter un est sans conséquence.
-
-const apiService = createAdminApiClient(Astro.locals);
-
-const ACTIONS = {
-  upload: 'cms:media:write',
-  // Renommer, c'est décrire le fichier déposé : même droit que le dépôt.
-  update: 'cms:media:write',
-  delete: 'cms:media:delete'
-} as const;
-
-if (Astro.request.method === 'POST') {
-  // Le dépôt arrive en multipart : on lit l'action dans le formulaire, et non dans un
-  // corps JSON comme les autres écrans.
-  const contentType = Astro.request.headers.get('content-type') ?? '';
-
-  if (contentType.includes('multipart/form-data')) {
-    const denied = guardAction(Astro.locals, 'upload', ACTIONS);
-    if (denied) return denied;
-
-    const form = await Astro.request.formData();
-    const apiRes = await apiService.fetch('http://localhost/cms/media', { method: 'POST', body: form });
-    if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
-    return new Response(JSON.stringify(await apiRes.json()), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
-  const data = (await Astro.request.json()) as { action: string; id?: number; alt?: string };
-  const denied = guardAction(Astro.locals, data.action, ACTIONS);
-  if (denied) return denied;
-
-  const apiRes =
-    data.action === 'update'
-      ? await apiService.fetch(`http://localhost/cms/media/${data.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ alt: data.alt ?? '' })
-        })
-      : await apiService.fetch(`http://localhost/cms/media/${data.id}`, { method: 'DELETE' });
-  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
-  return new Response(JSON.stringify(await apiRes.json()), {
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
 
 ---
 

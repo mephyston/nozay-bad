@@ -28,10 +28,22 @@
     updatedAt: number | string;
   }
 
-  let { pages = [], canWrite = false, canDelete = false } = $props<{
+  let {
+    pages = [],
+    canWrite = false,
+    canDelete = false,
+    endpoint = '/admin/api/cms/pages'
+  } = $props<{
     pages: PageRow[];
     canWrite?: boolean;
     canDelete?: boolean;
+    /**
+     * Destination des écritures : le relais de la rubrique, et non la page hôte.
+     *
+     * `fetch('')` visait « la page qui m'affiche », ce qui obligeait chaque hôte à
+     * porter son propre pont vers l'API. La destination est nommée.
+     */
+    endpoint?: string;
   }>();
 
   let title = $state('');
@@ -53,7 +65,7 @@
   );
 
   async function post(body: unknown, fallback: string) {
-    const response = await fetch('', {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)

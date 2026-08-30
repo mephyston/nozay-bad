@@ -3,8 +3,6 @@ import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
 import { PageHeader } from '@nba/ui';
 import FooterScreen from '../../../components/FooterScreen.svelte';
-import { createAdminApiClient } from '../../../lib/api';
-import { guardAction } from '../../../lib/guard';
 
 /**
  * Pied de page du site public.
@@ -13,31 +11,6 @@ import { guardAction } from '../../../lib/guard';
  * « Pied de page » et « Barre légale ». Recopier ici un second éditeur de liens
  * aurait fait deux endroits pour la même chose, dont un seul serait tenu à jour.
  */
-const apiService = createAdminApiClient(Astro.locals);
-
-const ACTIONS = { save: 'cms:pages:write' } as const;
-
-if (Astro.request.method === 'POST') {
-  const data = (await Astro.request.json()) as any;
-  const denied = guardAction(Astro.locals, data.action, ACTIONS);
-  if (denied) return denied;
-
-  const apiRes = await apiService.fetch('http://localhost/cms/settings', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      footerDescription: String(data.footerDescription ?? ''),
-      footerAddress: String(data.footerAddress ?? ''),
-      instagramUrl: String(data.instagramUrl ?? ''),
-      facebookUrl: String(data.facebookUrl ?? '')
-    })
-  });
-
-  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
-  return new Response(JSON.stringify(await apiRes.json()), {
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
 
 ---
 

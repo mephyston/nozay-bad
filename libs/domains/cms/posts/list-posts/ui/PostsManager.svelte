@@ -49,7 +49,8 @@
     canUploadMedia = false,
     canNotify = false,
     targets = [],
-    events = []
+    events = [],
+    endpoint = '/admin/api/cms/posts'
   } = $props<{
     posts: PostRow[];
     /** Médiathèque, déjà chargée par la page : sert la couverture et l'insertion de fichiers. */
@@ -70,6 +71,13 @@
      * stage de l'an dernier n'a pas de sens, et la liste resterait lisible.
      */
     events?: { id: number; title: string; startsAt: string; registration: string }[];
+    /**
+     * Destination des écritures : le relais de la rubrique, et non la page hôte.
+     *
+     * `fetch('')` visait « la page qui m'affiche », ce qui obligeait chaque hôte à
+     * porter son propre pont vers l'API. La destination est nommée.
+     */
+    endpoint?: string;
   }>();
 
   /**
@@ -236,7 +244,7 @@
   );
 
   async function post(body: unknown, fallback: string) {
-    const response = await fetch('', {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
