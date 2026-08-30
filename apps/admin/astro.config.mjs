@@ -40,6 +40,19 @@ const WEBSITE_URL =
       : 'https://nozaybad.fr';
 
 export default defineConfig({
+  /*
+   * Pages figées produites en `chemin.html`, et non `chemin/index.html`.
+   *
+   * Sous la forme répertoire, le service d'actifs de Cloudflare redirige `/admin/teams`
+   * vers `/admin/teams/` avant de servir quoi que ce soit : mesuré en préproduction,
+   * quatorze redirections pour vingt affichages. Un aller-retour de plus à chaque
+   * navigation, gagné en supprimant le rendu — le compte n'y était pas.
+   *
+   * `trailingSlash: 'never'` dit la même chose au routeur d'Astro, pour que les liens
+   * qu'il produit visent la forme réellement servie.
+   */
+  build: { format: 'file' },
+  trailingSlash: 'never',
   output: 'server',
   markdown: {
     // Processeur par défaut d'Astro, redéclaré pour lui greffer le rendu des

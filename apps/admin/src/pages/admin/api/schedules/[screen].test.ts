@@ -10,7 +10,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
  */
 
 let appels: { url: string; init?: RequestInit }[] = [];
-let jeuLibreActif = true;
+let reponse404 = false;
 
 vi.mock('../../../../lib/api', () => ({
   createAdminApiClient: () => ({
@@ -22,16 +22,15 @@ vi.mock('../../../../lib/api', () => ({
         code qui casse en production.
       */
       const chemin = url.replace('http://localhost', '');
+      if (reponse404 && chemin.startsWith('/schedules/open-play')) {
+        return Promise.resolve(new Response('désactivé', { status: 404 }));
+      }
       const corps = chemin.startsWith('/schedules/open-play?') ? { sessions: [] } : [];
       return Promise.resolve(
         new Response(JSON.stringify({ success: true, data: corps }), { status: 200 })
       );
     }
   })
-}));
-
-vi.mock('@nba/runtime-env', () => ({
-  resolveEnv: () => ({ OPEN_PLAY_ENABLED: jeuLibreActif ? 'true' : 'false' })
 }));
 
 // Le référentiel des saisons est lu à part par l'écran des ouvreurs.
@@ -70,31 +69,27 @@ const ecrire = (screen: string, body: unknown, permissions = TOUS_LES_DROITS) =>
 
 beforeEach(() => {
   appels = [];
-  jeuLibreActif = true;
+  reponse404 = false;
 });
 
 describe('relais séances — le drapeau de fonctionnalité', () => {
-  it('ferme le jeu libre et les ouvreurs quand le drapeau est baissé', async () => {
-    jeuLibreActif = false;
-    for (const ecran of ['jeu-libre', 'ouvreurs']) {
-      appels = [];
-      const res = await lire(ecran);
-      // 404 et non 403 : une fonctionnalité éteinte n'existe pas, et « accès refusé »
-      // laisserait entendre qu'elle est là.
-      expect(res.status, ecran).toBe(404);
-      expect(appels, ecran).toHaveLength(0);
-    }
+  /*
+   * Le drapeau `OPEN_PLAY_ENABLED` ne vit plus côté administration : c'est l'API qui le
+   * porte, et elle répond 404 quand il est baissé. Le relais ne le redouble pas — deux
+   * verrous pour une décision se seraient périmés au premier oubli — mais il **traduit**
+   * ce 404 en message, ce qui est sa part du travail.
+   *
+   * L'espace adhérent garde le sien : il annonce une fonctionnalité à des adhérents, là
+   * où l'administration ne fait que la tenir.
+   */
+  it("dit que la fonctionnalité est désactivée quand l'API le signale", async () => {
+    reponse404 = true;
+    const res = await lire('jeu-libre');
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as any).data.errorMsg).toContain('désactivées sur cet environnement');
   });
 
-  it("ferme aussi l'écriture, pas seulement la lecture", async () => {
-    jeuLibreActif = false;
-    const res = await ecrire('jeu-libre', { action: 'create', venueId: 1, date: '2026-09-01' });
-    expect(res.status).toBe(404);
-    expect(appels).toHaveLength(0);
-  });
-
-  it('laisse passer les créneaux, qui ne dépendent pas du drapeau', async () => {
-    jeuLibreActif = false;
+  it('laisse passer les créneaux, qui ne dépendaient pas du drapeau', async () => {
     expect((await lire('schedules')).status).toBe(200);
   });
 });

@@ -4,9 +4,14 @@ import AdminLayout from '../../../components/AdminLayout.svelte';
 import ClubFunctionsScreen from '../../../components/ClubFunctionsScreen.svelte';
 
 /*
-  Page figée : elle n'est plus rendue par un worker, mais servie depuis les actifs.
-  Elle ne porte donc aucune donnée, aucune identité et aucun paramètre d'URL — l'îlot
-  demande les siennes au relais, et lit l'URL dans le navigateur.
+  Page figée.
+
+  Le worker reste **invoqué** — l'adaptateur d'Astro sert les actifs lui-même, par
+  `env.ASSETS.fetch` — mais il ne rend plus rien : il transmet un fichier. Ce que le
+  prerender supprime est le rendu, pas l'invocation.
+
+  Corollaire : la page ne porte aucune donnée, aucune identité et aucun paramètre d'URL.
+  L'îlot demande les siennes au relais, et lit l'URL dans le navigateur.
 */
 export const prerender = true;
 ---

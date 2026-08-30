@@ -11,26 +11,27 @@ import { resolveEnv } from '@nba/runtime-env';
  * Remplace le Google Sheet : ici on ouvre des séances datées, on lit qui vient — invités
  * compris — et on annule avec un motif que l'adhérent inscrit pourra lire.
  *
- * Le drapeau est contrôlé ici **et** dans le relais : cette page ne doit pas s'ouvrir,
- * et ses données ne doivent pas se servir non plus.
+ * Le drapeau `OPEN_PLAY_ENABLED` ne se lit plus ici : c'est l'API qui le porte, et le
+ * relais traduit son 404 en message. L'espace adhérent garde le sien, parce que lui
+ * annonce la fonctionnalité à des adhérents.
  */
-const env = resolveEnv<{ OPEN_PLAY_ENABLED?: string }>(Astro.locals);
 
-// Comme côté adhérent : 404, une fonctionnalité pas encore livrée ne s'annonce pas.
-// L'entrée de menu, elle, n'apparaît qu'au super-administrateur tant que les permissions
-// ne sont accordées à aucun rôle.
-if (env.OPEN_PLAY_ENABLED !== 'true') {
-  return new Response('Not Found', { status: 404 });
-}
+/*
+  Page figée.
+
+  Le worker reste **invoqué** — l'adaptateur d'Astro sert les actifs lui-même, par
+  `env.ASSETS.fetch` — mais il ne rend plus rien : il transmet un fichier. Ce que le
+  prerender supprime est le rendu, pas l'invocation.
+
+  Corollaire : la page ne porte aucune donnée, aucune identité et aucun paramètre d'URL.
+  L'îlot demande les siennes au relais, et lit l'URL dans le navigateur.
+*/
+export const prerender = true;
 ---
 
 <Layout title="Jeu libre - NBA 91">
   <AdminLayout
-    realEmail={Astro.locals.realUser?.email || ''}
-    name={Astro.locals.user?.name}
     client:idle
-    email={Astro.locals.user?.email || ''}
-    permissions={Astro.locals.user?.permissions || []}
     breadcrumb="Jeu libre"
   >
     <div class="space-y-6">

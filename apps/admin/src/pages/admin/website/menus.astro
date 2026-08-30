@@ -28,8 +28,9 @@ import MenusScreen from '../../../components/MenusScreen.svelte';
  *
  * ## Première page figée
  *
- * `prerender` : cette page n'est plus rendue par un worker du tout. Elle est servie
- * depuis les actifs, **avant** lui — coût CPU nul.
+ * `prerender` : cette page n'est plus **rendue**. Le worker reste invoqué — l'adaptateur
+ * d'Astro sert les actifs lui-même, par `env.ASSETS.fetch` — mais il ne fait que
+ * transmettre un fichier au lieu de composer une page.
  *
  * Ce que ça suppose, et qui est en place :
  *

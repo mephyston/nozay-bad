@@ -2,6 +2,7 @@
   import { Sidebar, Toaster, consumeFlash } from "@nba/ui";
   import AdminLayoutInner from "./AdminLayoutInner.svelte";
   import { onMount } from "svelte";
+  import { chargerIdentite, derniereIdentite, type Identite } from "../lib/identite";
 
   /*
    * `email` n'a **pas** de valeur par défaut, et n'en aura pas.
@@ -41,28 +42,9 @@
    * brièvement une entrée de trop, et se ferait refuser à l'ouverture. C'est le compromis
    * assumé — l'API reste l'autorité, ici on ne fait qu'afficher.
    */
-  const CLE_IDENTITE = 'admin_identite';
-
-  interface Identite {
-    email: string;
-    name?: string | null;
-    permissions: string[];
-    realEmail: string;
-  }
-
-  function derniereConnue(): Identite | null {
-    try {
-      const brut = localStorage.getItem(CLE_IDENTITE);
-      return brut ? (JSON.parse(brut) as Identite) : null;
-    } catch {
-      // Stockage illisible ou refusé : on attendra simplement le réseau.
-      return null;
-    }
-  }
-
   const initiale: Identite = email
     ? { email, name, permissions, realEmail }
-    : (derniereConnue() ?? { email: '', name: undefined, permissions: [], realEmail: '' });
+    : (derniereIdentite() ?? { email: '', name: undefined, permissions: [], realEmail: '' });
 
   let identite = $state<Identite>(initiale);
 
@@ -87,22 +69,11 @@
       pas. Un échec laisse l'affichage en place plutôt que de le vider — perdre son menu
       parce que le réseau a hoqueté serait pire que de le garder un instant de trop.
     */
-    void (async () => {
-      try {
-        const res = await fetch('/admin/api/me');
-        if (!res.ok) return;
-        const recue = (await res.json()).data as Identite;
-        if (!recue?.email) return;
-        identite = recue;
-        try {
-          localStorage.setItem(CLE_IDENTITE, JSON.stringify(recue));
-        } catch {
-          /* Sans stockage, le prochain montage refera simplement la requête. */
-        }
-      } catch {
-        /* Identité indisponible : on garde ce qu'on affiche déjà. */
-      }
-    })();
+    // Confirmée à chaque montage, y compris quand la page l'a passée en props : c'est ce
+    // qui garde le cache frais pour les pages qui, elles, n'en passent pas.
+    void chargerIdentite().then((recue) => {
+      if (recue.email) identite = recue;
+    });
   });
 
   function handleOpenChange(open: boolean) {

@@ -3,17 +3,27 @@ import Layout from '../../../../layouts/Layout.astro';
 import AdminLayout from '../../../../components/AdminLayout.svelte';
 import { PageHeader } from '@nba/ui';
 
-const userEmail = Astro.locals.user?.email || "";
-
 /*
   Cette page ne relaie plus l'export : il vit sur `/admin/api/accounting/download`, qui
   passe le flux sans le lire. Les liens du grand livre et des factures y pointent
   directement. Il ne reste ici que de la navigation — aucune donnée à charger.
 */
+
+/*
+  Page figée.
+
+  Le worker reste **invoqué** — l'adaptateur d'Astro sert les actifs lui-même, par
+  `env.ASSETS.fetch` — mais il ne rend plus rien : il transmet un fichier. Ce que le
+  prerender supprime est le rendu, pas l'invocation.
+
+  Corollaire : la page ne porte aucune donnée, aucune identité et aucun paramètre d'URL.
+  L'îlot demande les siennes au relais, et lit l'URL dans le navigateur.
+*/
+export const prerender = true;
 ---
 
 <Layout title="Rapports financiers - NBA 91">
-  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Rapports financiers" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout client:idle breadcrumb="Comptabilité / Rapports financiers">
     <div class="space-y-6">
       <PageHeader
         title="Rapports financiers"

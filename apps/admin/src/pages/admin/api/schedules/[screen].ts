@@ -1,7 +1,6 @@
 import { can } from '../../../../lib/guard';
 import { fetchSeasons, currentSeasonCode } from '../../../../lib/seasons';
 import { createAdminApiClient } from '../../../../lib/api';
-import { resolveEnv } from '@nba/runtime-env';
 import { creerRelais, identifiant, type Ecran } from '../../../../lib/relais';
 
 /**
@@ -17,14 +16,17 @@ import { creerRelais, identifiant, type Ecran } from '../../../../lib/relais';
  * **la** surface d'audit du domaine.
  */
 
-/**
- * Le jeu libre est derrière un drapeau, comme côté adhérent.
- *
- * La page répond 404 quand il est baissé ; sans la même garde ici, le relais servirait
- * les séances d'une fonctionnalité que l'administration refuse d'afficher.
- */
-const jeuLibreOuvert = (locals: App.Locals) =>
-  resolveEnv<{ OPEN_PLAY_ENABLED?: string }>(locals).OPEN_PLAY_ENABLED === 'true';
+/*
+  Le drapeau `OPEN_PLAY_ENABLED` ne vit plus côté administration.
+
+  C'est l'API qui le porte, et c'est le bon endroit : elle répond 404 quand il est baissé,
+  et le relais traduit ce code en message — « désactivées sur cet environnement ». Le
+  redoubler ici donnait deux verrous à tenir en accord pour une seule décision, et le
+  second se serait périmé au premier oubli.
+
+  L'espace adhérent, lui, garde le sien : il annonce une fonctionnalité à des adhérents,
+  là où l'administration ne fait que la tenir.
+*/
 
 /** Champs qu'une mise à jour partielle peut porter ; les absents ne changent rien. */
 const presents = <T extends string>(data: any, cles: readonly T[]) =>
@@ -71,7 +73,6 @@ export const ECRANS: Record<string, Ecran> = {
 
   'jeu-libre': {
     permission: 'schedules:open-play:read',
-    disponible: jeuLibreOuvert,
     charger: async (lire, locals) => {
       /*
         `from` très bas : l'administration voit aussi l'historique, contrairement à
@@ -166,7 +167,6 @@ export const ECRANS: Record<string, Ecran> = {
 
   ouvreurs: {
     permission: 'schedules:open-play:read',
-    disponible: jeuLibreOuvert,
     charger: async (lire, locals) => {
       /*
         La saison vient du référentiel, et non d'un créneau : les créneaux n'en portent
