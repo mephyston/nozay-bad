@@ -276,6 +276,64 @@
   let impersonateUsers = $state<any[]>([]);
 
   /*
+   * Les comptes usurpables, chargés à l'ouverture du menu et non au montage.
+   *
+   * Cette liste ne s'affiche que dans le menu du compte, qu'on ouvre presque jamais — et
+   * elle partait pourtant à **chaque page** : 410 appels par semaine mesurés en
+   * production, chacun étant un aller-retour complet (l'admin appelle son worker, qui
+   * appelle l'API, qui lit `admin_users`) sur le chemin critique de l'affichage.
+   *
+   * Le résultat tient dix minutes en `sessionStorage` : rouvrir le menu, ou l'ouvrir sur
+   * une autre page, ne redemande rien. Un compte créé à l'instant peut donc manquer à
+   * l'appel pendant ce délai — c'est un écran d'usurpation, pas un annuaire.
+   */
+  const IMPERSONATE_CACHE_KEY = 'nba:impersonate-users';
+  const IMPERSONATE_TTL_MS = 10 * 60_000;
+  let impersonateCharge = false;
+
+  function lireCache(): any[] | null {
+    try {
+      const brut = sessionStorage.getItem(IMPERSONATE_CACHE_KEY);
+      if (!brut) return null;
+      const { expire, users } = JSON.parse(brut);
+      if (typeof expire !== 'number' || expire < Date.now()) return null;
+      return Array.isArray(users) ? users : null;
+    } catch {
+      // Navigation privée, stockage refusé : on recharge, c'est tout.
+      return null;
+    }
+  }
+
+  async function chargerComptesUsurpables() {
+    if (impersonateCharge || !can(permissions, 'iam:sessions:impersonate')) return;
+    impersonateCharge = true;
+
+    const enCache = lireCache();
+    if (enCache) {
+      impersonateUsers = enCache;
+      return;
+    }
+
+    try {
+      const res = await fetch('/admin/api/users');
+      if (!res.ok) return;
+      const json = await res.json();
+      impersonateUsers = json.data || [];
+      try {
+        sessionStorage.setItem(
+          IMPERSONATE_CACHE_KEY,
+          JSON.stringify({ expire: Date.now() + IMPERSONATE_TTL_MS, users: impersonateUsers })
+        );
+      } catch {
+        // Le cache est un confort : ne pas pouvoir écrire n'empêche pas d'afficher.
+      }
+    } catch {
+      // Menu sans liste plutôt que menu cassé : l'usurpation n'est pas vitale.
+      impersonateCharge = false;
+    }
+  }
+
+  /*
    * Le cookie d'usurpation est HttpOnly : il est posé et retiré par le serveur, et le
    * navigateur ne peut plus le lire. L'état vient donc de la comparaison des deux
    * identités.
@@ -314,17 +372,7 @@
     else window.location.reload();
   }
 
-  onMount(async () => {
-    if (can(permissions, 'iam:sessions:impersonate')) {
-      try {
-        const res = await fetch('/admin/api/users');
-        if (res.ok) {
-          const json = await res.json();
-          impersonateUsers = json.data || [];
-        }
-      } catch (err) {}
-    }
-  });
+
 
   // Parse breadcrumbs
   const breadcrumbParts = $derived(breadcrumb.split(" / "));
@@ -459,7 +507,7 @@
   <Sidebar.Footer class="p-2 border-t border-border">
     <Sidebar.Menu>
       <Sidebar.MenuItem>
-        <DropdownMenu.Root>
+        <DropdownMenu.Root onOpenChange={(ouvert) => ouvert && chargerComptesUsurpables()}>
           <DropdownMenu.Trigger asChild>
             {#snippet child({ props })}
               <Sidebar.MenuButton
