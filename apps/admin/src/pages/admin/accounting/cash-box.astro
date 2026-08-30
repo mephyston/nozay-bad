@@ -1,126 +1,22 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { PageHeader, ErrorAlert, Badge } from '@nba/ui';
-import { CashBoxManager } from '@nba/accounting-ui';
+import CashBoxScreen from '../../../components/CashBoxScreen.svelte';
 
-import { env } from 'cloudflare:workers';
-import { createAdminApiClient } from '../../../lib/api';
-import { guardAction } from '../../../lib/guard';
-
-const userEmail = Astro.locals.user?.email || "";
-const apiService = createAdminApiClient(Astro.locals);
-
-const requestedSeason = Astro.url.searchParams.get('season');
-
-/** Permission exigée par action d'écriture de cette page. */
-const ACTIONS = {
-  create: 'accounting:ledger:write',
-  delete: 'accounting:ledger:delete'
-} as const;
-
-if (Astro.request.method === 'POST') {
-  try {
-    const data = await Astro.request.json() as any;
-
-    const denied = guardAction(Astro.locals, data.action, ACTIONS);
-    if (denied) return denied;
-    if (data.action === 'create') {
-      const apiRes = await apiService.fetch('http://localhost/accounting/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (!apiRes.ok) {
-        return new Response(await apiRes.text(), { status: apiRes.status });
-      }
-    } else if (data.action === 'delete') {
-      const apiRes = await apiService.fetch(`http://localhost/accounting/transactions/${data.id}`, {
-        method: 'DELETE'
-      });
-      if (!apiRes.ok) {
-        return new Response('Erreur suppression', { status: apiRes.status });
-      }
-    }
-    return new Response(JSON.stringify({ success: true }));
-  } catch (err: any) {
-    return new Response(err.message, { status: 500 });
-  }
-}
-
-let transactionsList = [];
-let initialBalance = 0;
-let seasonsList: any[] = [];
-let errorMsg = '';
-let season = requestedSeason || '25-26';
-
-try {
-  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
-  if (seasonsRes.ok) {
-    const json = await seasonsRes.json() as any;
-    seasonsList = json.data || [];
-    seasonsList.sort((a: any, b: any) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
-    if (!requestedSeason && seasonsList.length > 0) {
-      const activeSeasonObj = seasonsList.find((s: any) => s.active || s.active === 1) || seasonsList[seasonsList.length - 1];
-      season = activeSeasonObj.code || String(activeSeasonObj.id);
-    }
-  }
-
-  const [balancesRes, txRes] = await Promise.all([
-    apiService.fetch(`http://localhost/accounting/seasons/${season}/balances`),
-    apiService.fetch(`http://localhost/accounting/transactions?season=${season}&accountId=cash&limit=100`)
-  ]);
-
-  if (balancesRes.ok) {
-    const json = await balancesRes.json() as any;
-    const balances = json.data || [];
-    const cashBalance = balances.find((b: any) => b.accountId === 'cash' || b.accountId === 3);
-    if (cashBalance) {
-      initialBalance = cashBalance.initialBalanceCents ?? cashBalance.initialBalance ?? 0;
-    }
-  }
-
-  if (txRes.ok) {
-    const json = await txRes.json() as any;
-    transactionsList = json.data || [];
-  }
-} catch (err: any) {
-  errorMsg = 'Une erreur est survenue lors du chargement des données de la caisse.';
-}
-
-let displaySeasonName = season;
-if (seasonsList.length > 0) {
-  const currentSeason = seasonsList.find((s: any) => s.code === season || String(s.id) === season);
-  if (currentSeason && currentSeason.name) {
-    displaySeasonName = currentSeason.name.replace('Saison ', '');
-  }
-}
-
-const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id) === season)?.closed;
+const parametres = Object.fromEntries(Astro.url.searchParams);
 ---
 
-<Layout title="Gestion de la Caisse - NBA 91">
-  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Caisse" permissions={Astro.locals.user?.permissions || []}>
+<Layout title="Caisse - NBA 91">
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Comptabilité / Caisse"
+  >
     <div class="space-y-6">
-      {errorMsg && <ErrorAlert message={errorMsg} />}
-
-      <PageHeader
-        title="Gestion de la Caisse"
-        description={`Suivi des mouvements d'espèces et transactions physiques de la caisse de l'association pour la saison ${displaySeasonName}.`}
-        class="print:hidden"
-      >
-        <Fragment slot="actions">
-          {isClosed && <Badge variant="outline" size="lg">Saison clôturée (Lecture seule)</Badge>}
-        </Fragment>
-      </PageHeader>
-
-      <CashBoxManager
-        client:load
-        initialBalance={initialBalance}
-        transactions={transactionsList}
-        seasonId={season}
-        seasons={seasonsList}
-      />
+      <CashBoxScreen client:load {parametres} />
     </div>
   </AdminLayout>
 </Layout>

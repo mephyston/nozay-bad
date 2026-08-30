@@ -1,199 +1,30 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { PageHeader, ErrorAlert } from '@nba/ui';
-import { TransactionLedger } from '@nba/accounting-ui';
-import { env } from 'cloudflare:workers';
-import { createAdminApiClient } from '../../../lib/api';
-import { guardAction } from '../../../lib/guard';
+import LedgerScreen from '../../../components/LedgerScreen.svelte';
 
-const userEmail = Astro.locals.user?.email || "";
-const apiService = createAdminApiClient(Astro.locals);
-
-const requestedSeason = Astro.url.searchParams.get('season');
-const page = Astro.url.searchParams.get('page') || '1';
-const category = Astro.url.searchParams.get('category') || '';
-const classCode = Astro.url.searchParams.get('classCode') || '';
-/*
- * Le sens de l'écriture, pour arriver droit sur les lignes qu'on cherche.
+/**
+ * Le grand livre, en coquille.
  *
- * Le compte de résultat sépare charges et produits ; le lien d'une catégorie ramenait pourtant
- * les deux mélangés. Sur « Adhésions & Inscriptions », cliquer depuis la colonne des charges
- * ouvrait trois cents cotisations pour y trouver sept remboursements.
+ * Les filtres de l'écran vivent dans l'URL — neuf paramètres — et sont transmis tels
+ * quels à l'îlot, qui les passe au relais `/admin/api/accounting/ledger`. Les recopier un
+ * à un obligerait à toucher ce fichier à chaque filtre ajouté ; les lire ici ne coûte
+ * rien, c'est une chaîne de requête.
  */
-const type = Astro.url.searchParams.get('type') || '';
-const unreconciledChequesOnly = Astro.url.searchParams.get('unreconciledCheques') === 'true';
-const accountId = Astro.url.searchParams.get('accountId') || 'current';
-const search = Astro.url.searchParams.get('search') || '';
-const month = Astro.url.searchParams.get('month') || '';
-const limit = Astro.url.searchParams.get('limit') || '20';
-
-// Si requête POST, intercepter pour les actions d'écriture (proxying vers Hono)
-/** Permission exigée par action d'écriture de cette page. */
-const ACTIONS = {
-  create: 'accounting:ledger:write',
-  // Un virement écrit deux lignes du grand livre : c'est le même droit.
-  'create-transfer': 'accounting:ledger:write',
-  update: 'accounting:ledger:write',
-  delete: 'accounting:ledger:delete'
-} as const;
-
-if (Astro.request.method === 'POST') {
-  try {
-    const data = await Astro.request.json() as any;
-
-    const denied = guardAction(Astro.locals, data.action, ACTIONS);
-    if (denied) return denied;
-    if (data.action === 'create') {
-      const apiRes = await apiService.fetch('http://localhost/accounting/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (!apiRes.ok) {
-        return new Response(await apiRes.text(), { status: apiRes.status });
-      }
-      return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
-    } else if (data.action === 'create-transfer') {
-      const apiRes = await apiService.fetch('http://localhost/accounting/internal-transfers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          seasonId: data.seasonId,
-          sourceAccountId: data.sourceAccountId,
-          destinationAccountId: data.destinationAccountId,
-          amountCents: data.amountCents,
-          sourceDate: data.sourceDate,
-          destinationDate: data.destinationDate,
-          description: data.description,
-          reference: data.reference
-        })
-      });
-      if (!apiRes.ok) {
-        return new Response(await apiRes.text(), { status: apiRes.status });
-      }
-      return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
-    } else if (data.action === 'update') {
-      const apiRes = await apiService.fetch(`http://localhost/accounting/transactions/${data.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data.updates)
-      });
-      if (!apiRes.ok) {
-        return new Response(await apiRes.text(), { status: apiRes.status });
-      }
-      return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
-    } else if (data.action === 'delete') {
-      const apiRes = await apiService.fetch(`http://localhost/accounting/transactions/${data.id}`, {
-        method: 'DELETE'
-      });
-      if (!apiRes.ok) {
-        return new Response('Erreur suppression', { status: apiRes.status });
-      }
-      return new Response(await apiRes.text(), { headers: { 'Content-Type': 'application/json' } });
-    }
-    return new Response(JSON.stringify({ success: true }));
-  } catch (err: any) {
-    return new Response(err.message, { status: 500 });
-  }
-}
-
-let transactionsList = [];
-let pagination = { total: 0, page: 1, limit: 20, totalPages: 1 };
-let balances = [];
-let seasonsList: any[] = [];
-let categoriesList = [];
-let accountClassesList = [];
-let errorMsg = '';
-let season = requestedSeason || '25-26';
-
-try {
-  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
-  if (seasonsRes.ok) {
-    const json = await seasonsRes.json() as any;
-    seasonsList = json.data || [];
-    seasonsList.sort((a: any, b: any) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
-    if (!requestedSeason && seasonsList.length > 0) {
-      const activeSeasonObj = seasonsList.find((s: any) => s.active || s.active === 1) || seasonsList[seasonsList.length - 1];
-      season = activeSeasonObj.code || String(activeSeasonObj.id);
-    }
-  }
-
-  const queryParams = new URLSearchParams({ season, page, limit });
-  if (category) queryParams.set('category', category);
-  if (classCode) queryParams.set('classCode', classCode);
-  if (type) queryParams.set('type', type);
-  if (unreconciledChequesOnly) queryParams.set('unreconciledCheques', 'true');
-  queryParams.set('accountId', accountId);
-  if (search) queryParams.set('search', search);
-  if (month) queryParams.set('month', month);
-
-  const [txRes, reportRes, categoriesRes, classesRes] = await Promise.all([
-    apiService.fetch(`http://localhost/accounting/transactions?${queryParams.toString()}`),
-    apiService.fetch(`http://localhost/accounting/seasons/${season}/reports`),
-    apiService.fetch('http://localhost/accounting/categories'),
-    apiService.fetch('http://localhost/accounting/account-classes')
-  ]);
-
-  if (txRes.ok) {
-    const json = await txRes.json() as any;
-    transactionsList = json.data || [];
-    pagination = json.pagination;
-  }
-
-  if (reportRes.ok) {
-    const json = await reportRes.json() as any;
-    balances = json.data?.bilanTrésorerie || [];
-  }
-
-  if (categoriesRes.ok) {
-    const json = await categoriesRes.json() as any;
-    categoriesList = json.data || [];
-  }
-
-  if (classesRes.ok) {
-    const json = await classesRes.json() as any;
-    accountClassesList = json.data || [];
-  }
-} catch (err: any) {
-  errorMsg = 'Une erreur est survenue lors de la communication avec le serveur comptable.';
-}
-
-let displaySeasonName = season;
-if (seasonsList.length > 0) {
-  const currentSeason = seasonsList.find((s: any) => s.code === season || String(s.id) === season);
-  if (currentSeason && currentSeason.name) {
-    displaySeasonName = currentSeason.name.replace('Saison ', '');
-  }
-}
+const parametres = Object.fromEntries(Astro.url.searchParams);
 ---
 
 <Layout title="Comptabilité - NBA 91">
-  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Grand Livre" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Comptabilité / Grand Livre"
+  >
     <div class="space-y-6">
-      <PageHeader
-        title="Comptabilité"
-        description={`Consultez le grand livre comptable et suivez les mouvements de fonds de l'association pour la saison ${displaySeasonName}.`}
-        class="print:hidden"
-      />
-
-      {errorMsg && <ErrorAlert message={errorMsg} />}
-
-      <TransactionLedger
-        client:load
-        transactions={transactionsList}
-        pagination={pagination}
-        seasonId={season}
-        balances={balances}
-        seasons={seasonsList}
-        categories={categoriesList}
-        accountClasses={accountClassesList}
-        unreconciledChequesOnly={unreconciledChequesOnly}
-        accountId={accountId}
-        searchQuery={search}
-        month={month}
-        limit={limit}
-      />
+      <LedgerScreen client:load {parametres} />
     </div>
   </AdminLayout>
 </Layout>

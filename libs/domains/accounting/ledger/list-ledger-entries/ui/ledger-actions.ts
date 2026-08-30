@@ -1,6 +1,15 @@
 import { softNavigate } from '@nba/ui';
 import type { Transaction } from './ledger-types';
 
+/**
+ * Destination des écritures : le relais du domaine, et non la page hôte.
+ *
+ * L'adresse de la page était écrite en dur ici — ce qui liait ce module à l'écran qui
+ * l'hébergeait, sans que rien ne le rappelle. Le jour où la page a cessé de porter un
+ * gestionnaire `POST`, elle aurait répondu 404 sans que personne ne l'ait vu venir.
+ */
+const RELAIS = '/admin/api/accounting/ledger';
+
 export interface TransactionFormValues {
   editingId: number | null;
   showPanel: 'recette' | 'depense' | 'transfert' | null;
@@ -44,7 +53,7 @@ export async function submitTransaction(params: TransactionFormValues): Promise<
    * livre n'en écrit qu'une et refuse désormais franchement le type `transfert`.
    */
   if (params.showPanel === 'transfert' && !params.editingId) {
-    const res = await fetch('/admin/accounting', {
+    const res = await fetch(RELAIS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -100,7 +109,7 @@ export async function submitTransaction(params: TransactionFormValues): Promise<
         accrualNote: params.accrualNote
       };
 
-  const res = await fetch('/admin/accounting', {
+  const res = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -122,7 +131,7 @@ export async function submitTransaction(params: TransactionFormValues): Promise<
 }
 
 export async function deleteTransaction(id: number): Promise<void> {
-  const res = await fetch('/admin/accounting', {
+  const res = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'delete', id })

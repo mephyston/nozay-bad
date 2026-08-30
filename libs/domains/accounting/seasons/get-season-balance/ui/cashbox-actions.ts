@@ -1,5 +1,14 @@
 import { uiConfirm, flashAndReload } from '@nba/ui';
 
+/**
+ * Destination des écritures : le relais du domaine, et non la page hôte.
+ *
+ * L'adresse de la page était écrite en dur ici — ce qui liait ce module à l'écran qui
+ * l'hébergeait, sans que rien ne le rappelle. Le jour où la page a cessé de porter un
+ * gestionnaire `POST`, elle aurait répondu 404 sans que personne ne l'ait vu venir.
+ */
+const RELAIS = '/admin/api/accounting/cash-box';
+
 export interface CashMovementFormValues {
   seasonId: string;
   type: 'recette' | 'depense';
@@ -20,7 +29,7 @@ export function validateCashMovement(params: CashMovementFormValues): string | n
 export async function submitCashMovement(params: CashMovementFormValues): Promise<void> {
   const numAmount = parseFloat(params.amount);
 
-  const res = await fetch('/admin/accounting/cash-box', {
+  const res = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -44,7 +53,7 @@ export async function submitCashMovement(params: CashMovementFormValues): Promis
 export async function deleteCashMovement(id: number): Promise<boolean> {
   if (!(await uiConfirm('Êtes-vous sûr de vouloir supprimer ce mouvement de caisse ?'))) return false;
 
-  const res = await fetch('/admin/accounting/cash-box', {
+  const res = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'delete', id })

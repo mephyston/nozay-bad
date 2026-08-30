@@ -1,5 +1,14 @@
 import type { InvoiceFormItem } from "./invoices-types";
 
+/**
+ * Destination des écritures : le relais du domaine, et non la page hôte.
+ *
+ * L'adresse de la page était écrite en dur ici — ce qui liait ce module à l'écran qui
+ * l'hébergeait, sans que rien ne le rappelle. Le jour où la page a cessé de porter un
+ * gestionnaire `POST`, elle aurait répondu 404 sans que personne ne l'ait vu venir.
+ */
+const RELAIS = '/admin/api/accounting/invoices';
+
 function getErrorMessage(text: string, defaultMsg: string): string {
   if (!text) return defaultMsg;
   try {
@@ -11,7 +20,7 @@ function getErrorMessage(text: string, defaultMsg: string): string {
 }
 
 export async function fetchInvoiceDetails(id: number): Promise<InvoiceFormItem[]> {
-  const res = await fetch('', {
+  const res = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'get-details', id })
@@ -68,7 +77,7 @@ export async function saveInvoice(data: {
     }
   };
 
-  const res = await fetch('', {
+  const res = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -83,7 +92,7 @@ export async function saveInvoice(data: {
 }
 
 export async function updateInvoiceStatus(id: number, newStatus: 'sent' | 'paid' | 'cancelled'): Promise<string> {
-  const res = await fetch('', {
+  const res = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'status', id, status: newStatus })
@@ -98,7 +107,7 @@ export async function updateInvoiceStatus(id: number, newStatus: 'sent' | 'paid'
 }
 
 export async function deleteInvoice(id: number): Promise<string> {
-  const res = await fetch('', {
+  const res = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'delete', id })

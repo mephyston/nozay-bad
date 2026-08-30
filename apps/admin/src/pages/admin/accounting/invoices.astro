@@ -1,174 +1,22 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { PageHeader, ErrorAlert, Badge } from '@nba/ui';
-import { InvoicesManager } from '@nba/accounting-ui';
+import InvoicesScreen from '../../../components/InvoicesScreen.svelte';
 
-import { env } from 'cloudflare:workers';
-import { createAdminApiClient } from '../../../lib/api';
-import { guardAction } from '../../../lib/guard';
-
-
-const userEmail = Astro.locals.user?.email || "";
-const apiService = createAdminApiClient(Astro.locals);
-
-let season = Astro.url.searchParams.get('season') || '';
-
-/** Permission exigée par action d'écriture de cette page. */
-const ACTIONS = {
-  create: 'accounting:invoices:write',
-  update: 'accounting:invoices:write',
-  delete: 'accounting:invoices:delete',
-  status: 'accounting:invoices:write',
-  'get-details': 'accounting:invoices:read'
-} as const;
-
-if (Astro.request.method === 'POST') {
-  try {
-    const data = await Astro.request.json() as any;
-
-    const denied = guardAction(Astro.locals, data.action, ACTIONS);
-    if (denied) return denied;
-
-    if (data.action === 'create') {
-      const apiRes = await apiService.fetch('http://localhost/accounting/invoices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data.invoice)
-      });
-      if (!apiRes.ok) {
-        return new Response(await apiRes.text(), { status: apiRes.status });
-      }
-      return new Response(await apiRes.text(), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    } else if (data.action === 'update') {
-      const apiRes = await apiService.fetch(`http://localhost/accounting/invoices/${data.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data.invoice)
-      });
-      if (!apiRes.ok) {
-        return new Response(await apiRes.text(), { status: apiRes.status });
-      }
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    } else if (data.action === 'status') {
-      const apiRes = await apiService.fetch(`http://localhost/accounting/invoices/${data.id}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: data.status })
-      });
-      if (!apiRes.ok) {
-        return new Response(await apiRes.text(), { status: apiRes.status });
-      }
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    } else if (data.action === 'delete') {
-      const apiRes = await apiService.fetch(`http://localhost/accounting/invoices/${data.id}`, {
-        method: 'DELETE'
-      });
-      if (!apiRes.ok) {
-        return new Response(await apiRes.text(), { status: apiRes.status });
-      }
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    } else if (data.action === 'get-details') {
-      const apiRes = await apiService.fetch(`http://localhost/accounting/invoices/${data.id}`);
-      if (!apiRes.ok) {
-        return new Response(await apiRes.text(), { status: apiRes.status });
-      }
-      return new Response(await apiRes.text(), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    return new Response(JSON.stringify({ success: false, error: 'Action inconnue' }), { status: 400 });
-  } catch (err: any) {
-    return new Response(err.message, { status: 500 });
-  }
-}
-
-let invoicesList = [];
-let seasonsList: any[] = [];
-let categoriesList: any[] = [];
-let errorMsg = '';
-
-try {
-  // 1. Récupérer la liste des saisons d'abord pour avoir la saison active par défaut
-  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
-  if (!seasonsRes.ok) {
-    throw new Error('Impossible de récupérer la liste des saisons.');
-  }
-  const seasonsJson = await seasonsRes.json() as any;
-  seasonsList = seasonsJson.data || [];
-  seasonsList.sort((a: any, b: any) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
-
-  // Déterminer la saison par défaut dynamiquement
-  if (!season) {
-    const activeSeason = seasonsList.find((s: any) => s.active === true || s.active === 1) || seasonsList[seasonsList.length - 1];
-    season = activeSeason ? (activeSeason.code || String(activeSeason.id)) : '25-26';
-  }
-
-  // 2. Récupérer les factures de la saison
-  const invoicesRes = await apiService.fetch(`http://localhost/accounting/invoices?season=${season}`);
-  if (!invoicesRes.ok) {
-    throw new Error('Impossible de récupérer les factures pour cette saison.');
-  }
-  const invoicesJson = await invoicesRes.json() as any;
-  invoicesList = invoicesJson.data || [];
-
-  /*
-    Les catégories comptables : une ligne de facture porte désormais son imputation.
-
-    Sans elle, le rapprochement devait en inventer une, et il l'inventait en dur — toute recette
-    de facturation atterrissait sous « Adhésions & Inscriptions ».
-  */
-  const categoriesRes = await apiService.fetch('http://localhost/accounting/categories');
-  if (categoriesRes.ok) {
-    const categoriesJson = await categoriesRes.json() as any;
-    categoriesList = categoriesJson.data || [];
-  }
-} catch (err: any) {
-  errorMsg = err.message || 'Une erreur est survenue lors du chargement des données.';
-}
-
-let displaySeasonName = season;
-if (seasonsList.length > 0) {
-  const currentSeason = seasonsList.find((s: any) => s.code === season || String(s.id) === season);
-  if (currentSeason && currentSeason.name) {
-    displaySeasonName = currentSeason.name.replace('Saison ', '');
-  }
-}
-
-const isClosed = !!seasonsList.find((s: any) => s.code === season || String(s.id) === season)?.closed;
+const parametres = Object.fromEntries(Astro.url.searchParams);
 ---
 
 <Layout title="Factures - NBA 91">
-  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Factures" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Comptabilité / Factures"
+  >
     <div class="space-y-6">
-      {errorMsg && <ErrorAlert message={errorMsg} />}
-
-      <PageHeader
-        title="Factures"
-        description={`Création, suivi, validation et rapprochement comptable des factures émises par l'association pour la saison ${displaySeasonName}.`}
-        class="print:hidden"
-      >
-        <Fragment slot="actions">
-          {isClosed && <Badge variant="outline" size="lg">Saison clôturée (Lecture seule)</Badge>}
-        </Fragment>
-      </PageHeader>
-
-      <InvoicesManager
-        client:load
-        invoices={invoicesList}
-        seasonId={season}
-        seasons={seasonsList}
-        categories={categoriesList}
-      />
+      <InvoicesScreen client:load {parametres} />
     </div>
   </AdminLayout>
 </Layout>

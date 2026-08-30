@@ -25,13 +25,16 @@ export interface Lecteur {
   /** Le contenu de `data`, ou `null` si l'appel a échoué. La forme courante. */
   (chemin: string): Promise<any>;
   /**
-   * La même lecture, code de retour compris.
+   * La même lecture, code de retour et enveloppe compris.
    *
-   * Pour les écrans qui en font un message : « impossible de charger » ne distingue pas
-   * une API éteinte d'un droit manquant ou d'une fonctionnalité désactivée, et fait
-   * perdre un aller-retour de diagnostic à chaque fois.
+   * Le code pour les écrans qui en font un message : « impossible de charger » ne
+   * distingue pas une API éteinte d'un droit manquant ou d'une fonctionnalité désactivée,
+   * et fait perdre un aller-retour de diagnostic à chaque fois.
+   *
+   * L'enveloppe pour ce que l'API rend **à côté** de `data` — la pagination d'une liste,
+   * par exemple, que `lire` laisserait tomber sans qu'on s'en aperçoive.
    */
-  detail(chemin: string): Promise<{ ok: boolean; status: number; data: any }>;
+  detail(chemin: string): Promise<{ ok: boolean; status: number; data: any; enveloppe: any }>;
 }
 
 /** Appel à faire à l'API interne pour honorer une écriture. */
@@ -127,12 +130,9 @@ export function creerRelais(ECRANS: Record<string, Ecran>): { GET: APIRoute; POS
     const api = createAdminApiClient(locals);
     const detail = async (chemin: string) => {
       const res = await api.fetch(`http://localhost${chemin}`);
-      if (!res.ok) return { ok: false, status: res.status, data: null };
-      return {
-        ok: true,
-        status: res.status,
-        data: ((await res.json()) as { data?: unknown }).data ?? null
-      };
+      if (!res.ok) return { ok: false, status: res.status, data: null, enveloppe: null };
+      const enveloppe = (await res.json()) as { data?: unknown };
+      return { ok: true, status: res.status, data: enveloppe.data ?? null, enveloppe };
     };
     const lire = Object.assign(
       async (chemin: string) => (await detail(chemin)).data,
