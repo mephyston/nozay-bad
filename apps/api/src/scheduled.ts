@@ -70,7 +70,7 @@ export type ScheduledBindings = {
  * `handleScheduled` draine la file quel que soit le déclencheur : le cron quotidien et
  * l'hebdomadaire vident aussi ce qu'ils viennent d'y écrire.
  */
-export const DISPATCH_CRON = '* * * * *';
+export const DISPATCH_CRON = '*/5 * * * *';
 export const DAILY_CRON = '0 7 * * *';
 export const WEEKLY_CRON = '0 8 * * 1';
 

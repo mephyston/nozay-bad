@@ -18,7 +18,7 @@ Une notification est mise en file d'attente au moment où elle est décidée, pu
 
 **Émission sans appel réseau.** Décider d'une notification n'écrit que des lignes en base : un message, et une livraison par appareil ciblé. Un Worker du plan gratuit est plafonné à 50 sous-requêtes par invocation ; une diffusion à l'ensemble du club dépasserait ce seuil et échouerait en cours de route.
 
-**Drain par lots.** Un Cron Trigger passe chaque minute et traite au plus 40 livraisons en attente. Le reliquat est repris au passage suivant. L'administration déclenche en plus un drain immédiat après un envoi manuel, pour ne pas attendre la minute suivante.
+**Drain par lots.** Un Cron Trigger passe toutes les cinq minutes et traite au plus 40 livraisons en attente — le plafond de 50 sous-requêtes par invocation du plan gratuit interdit d'en traiter davantage d'un coup. Le reliquat est repris au passage suivant. L'administration déclenche en plus un drain immédiat après un envoi manuel, pour ne pas attendre le passage suivant : une diffusion à l'échelle du club part donc par tranches de 40, la première immédiatement.
 
 **Réessais bornés.** Une erreur temporaire (5xx, réseau) laisse la livraison en attente pour un nouvel essai. Après 3 tentatives infructueuses elle passe en échec définitif : une file qui boucle indéfiniment finirait par masquer les envois récents.
 
