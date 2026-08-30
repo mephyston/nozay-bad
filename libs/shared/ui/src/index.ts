@@ -15,6 +15,7 @@ export * as AlertDialog from './components/ui/alert-dialog';
 export * as Avatar from './components/ui/avatar';
 export * as Breadcrumb from './components/ui/breadcrumb';
 export { Checkbox } from './components/ui/checkbox';
+export { Skeleton } from './components/ui/skeleton';
 export * as HoverCard from './components/ui/hover-card';
 export { Label } from './components/ui/label';
 export { toSeasonOptions, type SeasonLike, type SeasonOption } from './lib/seasons';

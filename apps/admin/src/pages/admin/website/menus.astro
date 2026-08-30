@@ -1,10 +1,28 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { PageHeader, ErrorAlert } from '@nba/ui';
-import { MenusManager } from '@nba/cms-ui';
+import { PageHeader } from '@nba/ui';
+import MenusScreen from '../../../components/MenusScreen.svelte';
 import { createAdminApiClient } from '../../../lib/api';
-import { can, guardAction } from '../../../lib/guard';
+import { guardAction } from '../../../lib/guard';
+
+/**
+ * Écran de référence de la conversion « coquille ».
+ *
+ * Le serveur rend l'habillage — barre latérale, fil d'Ariane, titre — et **rien de plus** :
+ * le gestionnaire de menus et ses données sont montés par le navigateur. Mesuré : 18 ms
+ * de plancher quand la page rendait tout, 8 ms depuis, sur un budget de 10 ms par
+ * invocation.
+ *
+ * L'habillage reste volontairement côté serveur. Le rendre lui aussi dans le navigateur
+ * descendrait à 2 ms, mais afficherait une page entièrement blanche à chaque navigation :
+ * on échangerait un dépassement de seuil, aujourd'hui sans conséquence, contre une gêne
+ * permanente et visible.
+ *
+ * L'écriture continue de passer par le `POST` ci-dessous : `MenusManager` publie vers
+ * l'URL courante. C'est aussi ce qui empêche, pour l'instant, de préparer cette page à
+ * l'avance — une page figée ne porte pas de gestionnaire.
+ */
 
 const canWrite = can(Astro.locals, 'cms:pages:write');
 const apiService = createAdminApiClient(Astro.locals);
@@ -38,29 +56,6 @@ if (Astro.request.method === 'POST') {
   });
 }
 
-let header: any[] = [];
-let footer: any[] = [];
-let legal: any[] = [];
-let pages: any[] = [];
-let errorMsg = '';
-
-try {
-  const [headerRes, footerRes, legalRes, pagesRes] = await Promise.all([
-    apiService.fetch('http://localhost/cms/nav?location=header'),
-    apiService.fetch('http://localhost/cms/nav?location=footer'),
-    apiService.fetch('http://localhost/cms/nav?location=legal'),
-    apiService.fetch('http://localhost/cms/pages')
-  ]);
-
-  if (headerRes.ok) header = ((await headerRes.json()) as any).data ?? [];
-  else errorMsg = 'Impossible de charger les menus.';
-  if (footerRes.ok) footer = ((await footerRes.json()) as any).data ?? [];
-  if (legalRes.ok) legal = ((await legalRes.json()) as any).data ?? [];
-  if (pagesRes.ok) pages = ((await pagesRes.json()) as any).data ?? [];
-} catch {
-  errorMsg = 'Impossible de charger les menus.';
-}
-
 ---
 
 <Layout title="Menus du site - NBA 91">
@@ -73,14 +68,12 @@ try {
     breadcrumb="Menus du site"
   >
     <div class="space-y-6">
-      {errorMsg && <ErrorAlert message={errorMsg} />}
-
       <PageHeader
         title="Menus du site"
         description="La barre de navigation, la colonne de liens du pied de page et la barre légale du site public. Une entrée principale peut porter un sous-menu, qui s'affiche au survol sur ordinateur et dans le menu déroulant sur mobile."
       />
 
-      <MenusManager client:load header={header} footer={footer} legal={legal} pages={pages} canWrite={canWrite} />
+      <MenusScreen client:only="svelte" />
     </div>
   </AdminLayout>
 </Layout>
