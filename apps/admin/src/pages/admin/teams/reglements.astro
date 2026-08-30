@@ -1,72 +1,9 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { PageHeader, ErrorAlert, SeasonSelector } from '@nba/ui';
-import { ChampionshipRulesPanel } from '@nba/teams-ui';
-import { createAdminApiClient } from '../../../lib/api';
-import { fetchSeasons, currentSeasonCode } from '../../../lib/seasons';
-import { can, guardAction } from '../../../lib/guard';
-
-const apiService = createAdminApiClient(Astro.locals);
-const canWrite = can(Astro.locals, 'teams:rankings:write');
-
-const ACTIONS = { 'save-championship-settings': 'teams:rankings:write' } as const;
+import ChampionshipRulesScreen from '../../../components/ChampionshipRulesScreen.svelte';
 
 const season = Astro.url.searchParams.get('season') ?? '';
-
-if (Astro.request.method === 'POST') {
-  const data = (await Astro.request.json()) as any;
-  const denied = guardAction(Astro.locals, data.action, ACTIONS);
-  if (denied) return denied;
-
-  if (!(data.seasonCode ?? season)) {
-    return new Response(
-      JSON.stringify({ error: "Saison indéterminée : rechargez la page avant d'enregistrer." }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    );
-  }
-
-  const apiRes = await apiService.fetch('http://localhost/teams/championship-settings', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    /*
-     * Seules les clés réellement envoyées sont relayées : le handler fait des mises à
-     * jour partielles, et recopier une clé absente en dur écraserait la date de référence
-     * que cet écran ne touche pas.
-     */
-    body: JSON.stringify({
-      seasonCode: data.seasonCode ?? season,
-      championship: data.championship,
-      ...(data.rulesUrl !== undefined ? { rulesUrl: data.rulesUrl } : {}),
-      ...(data.rulesLabel !== undefined ? { rulesLabel: data.rulesLabel } : {})
-    })
-  });
-  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
-  return new Response(JSON.stringify(await apiRes.json()), {
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
-
-let seasonCode = season;
-let settings: any[] = [];
-let errorMsg: string | null = null;
-
-const seasonsResult = await fetchSeasons(apiService);
-const seasons = seasonsResult.seasons;
-errorMsg = seasonsResult.errorMsg;
-
-try {
-  if (!seasonCode) seasonCode = currentSeasonCode(seasons);
-
-  if (seasonCode) {
-    const res = await apiService.fetch(
-      `http://localhost/teams/championship-settings?seasonCode=${seasonCode}`
-    );
-    if (res.ok) settings = ((await res.json()) as any).data?.items ?? [];
-  }
-} catch (error) {
-  errorMsg = error instanceof Error ? error.message : 'Chargement impossible.';
-}
 ---
 
 <Layout title="Règlements - NBA 91">
@@ -78,19 +15,8 @@ try {
     permissions={Astro.locals.user?.permissions || []}
     breadcrumb="Règlements"
   >
-    <div class="space-y-6 max-w-3xl">
-      {errorMsg && <ErrorAlert message={errorMsg} />}
-
-      <PageHeader
-        title="Règlements"
-        description="Le texte de chaque championnat, publié aux joueurs sur la fiche de leur équipe."
-      >
-        <Fragment slot="actions">
-          <SeasonSelector client:load seasons={seasons} current={seasonCode} />
-        </Fragment>
-      </PageHeader>
-
-      <ChampionshipRulesPanel client:load items={settings} {seasonCode} {canWrite} />
+    <div class="space-y-6">
+      <ChampionshipRulesScreen client:load {season} />
     </div>
   </AdminLayout>
 </Layout>

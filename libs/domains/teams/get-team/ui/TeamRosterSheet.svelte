@@ -8,7 +8,8 @@
     detail,
     members,
     canWrite,
-    onSaved
+    onSaved,
+    endpoint = '/admin/api/teams/teams'
   }: {
     open: boolean;
     detail: GetTeamOutput | null;
@@ -16,6 +17,13 @@
     members: Array<{ licence: string; firstName: string; lastName: string; photoUpdatedAt?: number | null }>;
     canWrite: boolean;
     onSaved: () => void;
+    /**
+     * Destination des écritures : le relais du domaine, et non la page hôte.
+     *
+     * `fetch('')` visait « la page qui m'affiche », ce qui obligeait chaque hôte à
+     * porter son propre pont vers l'API. La destination est nommée.
+     */
+    endpoint?: string;
   } = $props();
 
   let captain = $state<string>('');
@@ -100,7 +108,7 @@
   }
 
   async function post(action: string, body: Record<string, unknown>) {
-    const response = await fetch('', {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, teamId: detail?.id, ...body })

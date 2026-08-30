@@ -28,7 +28,8 @@
     daysChampionship,
     seasonCode,
     canWrite = false,
-    canDelete = false
+    canDelete = false,
+    endpoint = '/admin/api/teams/teams'
   }: {
     teams: TeamListItem[];
     members: Array<{ licence: string; firstName: string; lastName: string; photoUpdatedAt?: number | null }>;
@@ -37,6 +38,13 @@
     seasonCode: string;
     canWrite?: boolean;
     canDelete?: boolean;
+    /**
+     * Destination des écritures : le relais du domaine, et non la page hôte.
+     *
+     * `fetch('')` visait « la page qui m'affiche », ce qui obligeait chaque hôte à
+     * porter son propre pont vers l'API. La destination est nommée.
+     */
+    endpoint?: string;
   } = $props();
 
   let search = $state('');
@@ -83,7 +91,7 @@
   /** Charge le détail d'une équipe, dont vivent les deux feuilles. */
   async function loadDetail(team: TeamListItem): Promise<boolean> {
     try {
-      const response = await fetch('', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'get-team', teamId: team.id })
@@ -118,7 +126,7 @@
     if (!confirmed) return;
 
     try {
-      const response = await fetch('', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'delete-team', teamId: team.id })

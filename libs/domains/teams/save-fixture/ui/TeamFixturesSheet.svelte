@@ -7,12 +7,20 @@
     open = $bindable(false),
     detail,
     canWrite,
-    onSaved
+    onSaved,
+    endpoint = '/admin/api/teams/teams'
   }: {
     open: boolean;
     detail: GetTeamOutput | null;
     canWrite: boolean;
     onSaved: () => void;
+    /**
+     * Destination des écritures : le relais du domaine, et non la page hôte.
+     *
+     * `fetch('')` visait « la page qui m'affiche », ce qui obligeait chaque hôte à
+     * porter son propre pont vers l'API. La destination est nommée.
+     */
+    endpoint?: string;
   } = $props();
 
   /** Une ligne éditable par rencontre du calendrier. */
@@ -83,7 +91,7 @@
        * qu'une route de plus à maintenir.
        */
       for (const draft of touched) {
-        const response = await fetch('', {
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

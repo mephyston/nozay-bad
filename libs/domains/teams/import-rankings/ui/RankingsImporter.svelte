@@ -7,7 +7,8 @@
 
   let {
     seasonCode,
-    onImported
+    onImported,
+    endpoint = '/admin/api/teams/import'
   }: {
     seasonCode: string;
     /**
@@ -16,6 +17,13 @@
      * n'a rien à rafraîchir.
      */
     onImported?: (result: ImportRankingsOutput) => void;
+    /**
+     * Destination des écritures : le relais du domaine, et non la page hôte.
+     *
+     * `fetch('')` visait « la page qui m'affiche », ce qui obligeait chaque hôte à
+     * porter son propre pont vers l'API. La destination est nommée.
+     */
+    endpoint?: string;
   } = $props();
 
   let fileInput = $state<HTMLInputElement | null>(null);
@@ -78,7 +86,7 @@
     submitting = true;
     localError = null;
     try {
-      const response = await fetch('', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

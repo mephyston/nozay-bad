@@ -10,7 +10,8 @@
     availableDates,
     seasonCode,
     canWrite,
-    onSaved
+    onSaved,
+    endpoint = '/admin/api/teams/classements'
   }: {
     items: ChampionshipSettingsItem[];
     availableDates: RankingDateSummary[];
@@ -22,6 +23,13 @@
     seasonCode: string;
     canWrite: boolean;
     onSaved: () => void;
+    /**
+     * Destination des écritures : le relais de l'écran qui héberge ce panneau.
+     *
+     * Les deux panneaux de réglages écrivent dans la même table mais ne relèvent pas du
+     * même écran, et les relais n'acceptent pas les mêmes clés.
+     */
+    endpoint?: string;
   } = $props();
 
   let saving = $state<string | null>(null);
@@ -29,7 +37,7 @@
   async function save(championship: string, referenceEloDate: string | null) {
     saving = championship;
     try {
-      await saveChampionshipSetting(seasonCode, championship, { referenceEloDate });
+      await saveChampionshipSetting(endpoint, seasonCode, championship, { referenceEloDate });
       toast.success('Date de référence enregistrée.');
       onSaved();
     } catch (error) {

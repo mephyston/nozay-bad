@@ -11,7 +11,8 @@
     days: initialDays,
     seasonCode,
     canWrite,
-    onSaved
+    onSaved,
+    endpoint = '/admin/api/teams/teams'
   }: {
     open: boolean;
     championship: Championship;
@@ -19,6 +20,13 @@
     seasonCode: string;
     canWrite: boolean;
     onSaved: () => void;
+    /**
+     * Destination des écritures : le relais du domaine, et non la page hôte.
+     *
+     * `fetch('')` visait « la page qui m'affiche », ce qui obligeait chaque hôte à
+     * porter son propre pont vers l'API. La destination est nommée.
+     */
+    endpoint?: string;
   } = $props();
 
   /**
@@ -35,7 +43,7 @@
     championship = next;
     loading = true;
     try {
-      const response = await fetch('', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'list-days', seasonCode, championship: next })
@@ -109,7 +117,7 @@
   async function save() {
     saving = true;
     try {
-      const response = await fetch('', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

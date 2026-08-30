@@ -8,13 +8,21 @@
     items,
     seasonCode,
     canWrite,
-    onSaved
+    onSaved,
+    endpoint = '/admin/api/teams/reglements'
   }: {
     items: ChampionshipSettingsItem[];
     seasonCode: string;
     canWrite: boolean;
     /** Facultatif : une page Astro sérialise les props d'une île et ne peut pas passer de fonction. */
     onSaved?: () => void;
+    /**
+     * Destination des écritures : le relais de l'écran qui héberge ce panneau.
+     *
+     * Les deux panneaux de réglages écrivent dans la même table mais ne relèvent pas du
+     * même écran, et les relais n'acceptent pas les mêmes clés.
+     */
+    endpoint?: string;
   } = $props();
 
   let saving = $state<string | null>(null);
@@ -29,7 +37,7 @@
   async function save(championship: string) {
     saving = championship;
     try {
-      await saveChampionshipSetting(seasonCode, championship, {
+      await saveChampionshipSetting(endpoint, seasonCode, championship, {
         rulesUrl: links[championship].url.trim() || null,
         rulesLabel: links[championship].label.trim() || null
       });

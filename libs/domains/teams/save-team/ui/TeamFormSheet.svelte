@@ -14,7 +14,8 @@
     open = $bindable(false),
     team = null,
     seasonCode,
-    onSaved
+    onSaved,
+    endpoint = '/admin/api/teams/teams'
   }: {
     open: boolean;
     /** `null` = création. */
@@ -29,6 +30,13 @@
      */
     seasonCode: string;
     onSaved: () => void;
+    /**
+     * Destination des écritures : le relais du domaine, et non la page hôte.
+     *
+     * `fetch('')` visait « la page qui m'affiche », ce qui obligeait chaque hôte à
+     * porter son propre pont vers l'API. La destination est nommée.
+     */
+    endpoint?: string;
   } = $props();
 
   let championship = $state<Championship>('icd_mixte');
@@ -82,7 +90,7 @@
         return null;
       },
       submit: async () => {
-        const response = await fetch('', {
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

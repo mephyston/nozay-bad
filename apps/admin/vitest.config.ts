@@ -25,6 +25,8 @@ export default defineConfig({
       // Le relais du CMS signe le jeton d'aperçu d'une page : `PREVIEW_TOKEN_SECRET` est
       // partagé avec le site public, et n'a rien à faire dans le navigateur.
       '@nba/preview': path.resolve(__dirname, '../../libs/shared/preview/src/index.ts'),
+      // Le relais des interclubs valide le championnat reçu contre la liste connue.
+      '@nba/teams/championship': path.resolve(__dirname, '../../libs/domains/teams/shared/championship.ts'),
       'libs/shared/ui': path.resolve(__dirname, '../../libs/shared/ui'),
     },
     conditions: ['browser'],

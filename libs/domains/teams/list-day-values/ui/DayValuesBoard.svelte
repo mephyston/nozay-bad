@@ -9,13 +9,21 @@
     days,
     championship,
     dayNumber,
-    seasonCode
+    seasonCode,
+    endpoint = '/admin/api/teams/journees'
   }: {
     board: ListDayValuesOutput | null;
     days: Array<{ number: number; label: string | null; weekStart: string }>;
     championship: Championship;
     dayNumber: number;
     seasonCode: string;
+    /**
+     * Destination des écritures : le relais du domaine, et non la page hôte.
+     *
+     * `fetch('')` visait « la page qui m'affiche », ce qui obligeait chaque hôte à
+     * porter son propre pont vers l'API. La destination est nommée.
+     */
+    endpoint?: string;
   } = $props();
 
   function go(params: Record<string, string>) {
@@ -51,7 +59,7 @@
   async function notify(team: DayTeamValue) {
     notifying = team.teamId;
     try {
-      const response = await fetch('', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'notify-captain', teamId: team.teamId, dayNumber })

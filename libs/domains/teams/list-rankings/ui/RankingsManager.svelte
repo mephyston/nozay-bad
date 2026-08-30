@@ -18,13 +18,21 @@
     settings,
     seasonCode,
     canImport = false,
-    canWrite = false
+    canWrite = false,
+    endpoint = '/admin/api/teams/classements'
   }: {
     rankings: ListRankingsOutput;
     settings: ChampionshipSettingsItem[];
     seasonCode: string;
     canImport?: boolean;
     canWrite?: boolean;
+    /**
+     * Destination des écritures : le relais du domaine, et non la page hôte.
+     *
+     * `fetch('')` visait « la page qui m'affiche », ce qui obligeait chaque hôte à
+     * porter son propre pont vers l'API. La destination est nommée.
+     */
+    endpoint?: string;
   } = $props();
 
   /**
@@ -81,7 +89,7 @@
   async function edit(licence: string, field: 'singles' | 'doubles' | 'mixed', value: string | null) {
     saving = licence;
     try {
-      const response = await fetch('', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

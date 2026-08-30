@@ -1,125 +1,11 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { PageHeader, ErrorAlert, SeasonSelector } from '@nba/ui';
-import { RankingsManager } from '@nba/teams-ui';
-import { createAdminApiClient } from '../../../lib/api';
-import { fetchSeasons, currentSeasonCode } from '../../../lib/seasons';
-import { can, guardAction } from '../../../lib/guard';
-
-const canWrite = can(Astro.locals, 'teams:rankings:write');
-const canImport = can(Astro.locals, 'teams:rankings:import');
-const apiService = createAdminApiClient(Astro.locals);
+import RankingsScreen from '../../../components/RankingsScreen.svelte';
 
 // L'import vit sur `/admin/teams/classements/import`, avec sa propre garde.
-const ACTIONS = {
-  'save-championship-settings': 'teams:rankings:write',
-  'save-ranking': 'teams:rankings:write'
-} as const;
-
 const season = Astro.url.searchParams.get('season') ?? '';
 const eloDate = Astro.url.searchParams.get('eloDate') ?? '';
-
-if (Astro.request.method === 'POST') {
-  const data = (await Astro.request.json()) as any;
-  const denied = guardAction(Astro.locals, data.action, ACTIONS);
-  if (denied) return denied;
-
-  const routes: Record<string, { url: string; method: string; body: unknown }> = {
-    'save-championship-settings': {
-      url: 'http://localhost/teams/championship-settings',
-      method: 'PUT',
-      /*
-       * Seules les clés réellement envoyées sont relayées.
-       *
-       * Le handler fait des mises à jour partielles : une clé absente laisse la valeur
-       * en place, une clé à `null` l'efface. Recopier `referenceEloDate: undefined` en
-       * dur relayait donc toujours la date, mais **jamais** le lien du règlement —
-       * l'écran semblait enregistrer sans que rien ne change.
-       */
-      body: {
-        seasonCode: data.seasonCode ?? season,
-        championship: data.championship,
-        ...(data.referenceEloDate !== undefined ? { referenceEloDate: data.referenceEloDate } : {}),
-        ...(data.rulesUrl !== undefined ? { rulesUrl: data.rulesUrl } : {}),
-        ...(data.rulesLabel !== undefined ? { rulesLabel: data.rulesLabel } : {})
-      }
-    }
-  };
-
-  /*
-   * Correction d'un classement : seules les disciplines réellement envoyées sont
-   * relayées. Le handler fait des mises à jour partielles, et une clé à `null` y signifie
-   * « non compétiteur » — la recopier en dur effacerait les deux autres disciplines.
-   */
-  if (data.action === 'save-ranking') {
-    const body: Record<string, unknown> = { eloDate: data.eloDate };
-    for (const field of ['singles', 'doubles', 'mixed', 'cpphSingles', 'cpphDoubles', 'cpphMixed']) {
-      if (data[field] !== undefined) body[field] = data[field];
-    }
-    routes['save-ranking'] = {
-      url: `http://localhost/teams/rankings/${encodeURIComponent(data.licence)}`,
-      method: 'PUT',
-      body
-    };
-  }
-
-  const route = routes[data.action];
-  if (!route) return new Response(JSON.stringify({ error: 'Action inconnue' }), { status: 400 });
-
-  /*
-   * Aucune écriture sans saison : la page ne la résout que plus bas, pour l'affichage,
-   * et le paramètre d'URL est vide au premier chargement. Épingler une date de référence
-   * en saison `''` produit un réglage que rien ne relira jamais.
-   */
-  // La correction d'un classement ne dépend d'aucune saison : elle vise un instantané,
-  // identifié par sa date ELO.
-  if (data.action !== 'save-ranking' && !(data.seasonCode ?? season)) {
-    return new Response(
-      JSON.stringify({ error: "Saison indéterminée : rechargez la page avant d'enregistrer." }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    );
-  }
-
-  const apiRes = await apiService.fetch(route.url, {
-    method: route.method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(route.body)
-  });
-  if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
-  return new Response(JSON.stringify(await apiRes.json()), {
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
-
-let seasonCode = season;
-let errorMsg: string | null = null;
-let rankings: any = { eloDate: null, availableDates: [], rows: [], unmatchedCount: 0 };
-let settings: any[] = [];
-
-// Chargées dans tous les cas : le sélecteur doit les proposer, même si l'URL en fixe une.
-const seasonsResult = await fetchSeasons(apiService);
-const seasons = seasonsResult.seasons;
-errorMsg = seasonsResult.errorMsg;
-
-try {
-  if (!seasonCode) seasonCode = currentSeasonCode(seasons);
-
-  if (seasonCode) {
-    const query = new URLSearchParams({ seasonCode });
-    if (eloDate) query.set('eloDate', eloDate);
-
-    const [rankingsRes, settingsRes] = await Promise.all([
-      apiService.fetch(`http://localhost/teams/rankings?${query}`),
-      apiService.fetch(`http://localhost/teams/championship-settings?seasonCode=${seasonCode}`)
-    ]);
-
-    if (rankingsRes.ok) rankings = ((await rankingsRes.json()) as any).data ?? rankings;
-    if (settingsRes.ok) settings = (((await settingsRes.json()) as any).data?.items ?? []);
-  }
-} catch (error) {
-  errorMsg = error instanceof Error ? error.message : 'Chargement impossible.';
-}
 ---
 
 <Layout title="Classements - NBA 91">
@@ -132,25 +18,7 @@ try {
     breadcrumb="Classements"
   >
     <div class="space-y-6">
-      {errorMsg && <ErrorAlert message={errorMsg} />}
-
-      <PageHeader
-        title="Classements"
-        description="Les classements fédéraux, historisés par date de publication. Ils alimentent le calcul des valeurs d'équipe."
-      >
-        <Fragment slot="actions">
-          <SeasonSelector client:load seasons={seasons} current={seasonCode} />
-        </Fragment>
-      </PageHeader>
-
-      <RankingsManager
-        client:load
-        {rankings}
-        {settings}
-        {seasonCode}
-        {canImport}
-        {canWrite}
-      />
+      <RankingsScreen client:load {season} {eloDate} />
     </div>
   </AdminLayout>
 </Layout>
