@@ -21,15 +21,42 @@ export interface Identite {
 const CLE = 'admin_identite';
 const VIDE: Identite = { email: '', name: undefined, permissions: [], realEmail: '' };
 
-/** Ce que le dernier chargement a rendu, ou rien. Synchrone : sert au premier rendu. */
-export function derniereIdentite(): Identite | null {
+/**
+ * Durée pendant laquelle l'identité gardée fait foi, sans rappeler la route.
+ *
+ * Sans elle, chaque chargement de page faisait un appel — cent-trois mesurés sur une
+ * session de navigation. C'est l'invocation la moins chère du système, mais c'en est une
+ * par page, et depuis que les écrans sont figés elle pèse dans le compte.
+ *
+ * Cinq minutes, comme l'alerte des dirigeants : des droits changent quelques fois par an,
+ * les relire à chaque page est disproportionné. Le prix est qu'un rôle retiré met jusqu'à
+ * cinq minutes à disparaître du menu — l'API, elle, refuse immédiatement.
+ */
+const FRAICHEUR_MS = 5 * 60 * 1000;
+
+interface Gardee {
+  identite: Identite;
+  /** Horodatage de la réponse, pour savoir si elle vaut encore. */
+  t: number;
+}
+
+function lireGardee(): Gardee | null {
   try {
     const brut = localStorage.getItem(CLE);
-    return brut ? (JSON.parse(brut) as Identite) : null;
+    if (!brut) return null;
+    const gardee = JSON.parse(brut) as Gardee | Identite;
+    // Forme antérieure, sans horodatage : traitée comme périmée plutôt que rejetée.
+    if (!('identite' in gardee)) return { identite: gardee as Identite, t: 0 };
+    return gardee;
   } catch {
     // Stockage illisible ou refusé : on attendra le réseau.
     return null;
   }
+}
+
+/** Ce que le dernier chargement a rendu, ou rien. Synchrone : sert au premier rendu. */
+export function derniereIdentite(): Identite | null {
+  return lireGardee()?.identite ?? null;
 }
 
 /**
@@ -43,6 +70,14 @@ let enCours: Promise<Identite> | null = null;
 
 export function chargerIdentite(): Promise<Identite> {
   if (enCours) return enCours;
+
+  // Encore fraîche : aucune requête. C'est le cas courant d'une navigation dans l'heure.
+  const gardee = lireGardee();
+  if (gardee && Date.now() - gardee.t < FRAICHEUR_MS) {
+    enCours = Promise.resolve(gardee.identite);
+    return enCours;
+  }
+
   enCours = (async () => {
     try {
       const res = await fetch('/admin/api/me');
@@ -50,7 +85,7 @@ export function chargerIdentite(): Promise<Identite> {
       const recue = ((await res.json()) as { data?: Identite }).data;
       if (!recue?.email) throw new Error('identité vide');
       try {
-        localStorage.setItem(CLE, JSON.stringify(recue));
+        localStorage.setItem(CLE, JSON.stringify({ identite: recue, t: Date.now() }));
       } catch {
         /* Sans stockage, le prochain chargement refera simplement la requête. */
       }
