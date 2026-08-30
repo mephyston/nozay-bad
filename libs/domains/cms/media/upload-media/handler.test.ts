@@ -44,7 +44,7 @@ describe('uploadMedia', () => {
 
   it('dépose le fichier et enregistre ses dimensions', async () => {
     const { store, objects } = memoryStore();
-    const media = await uploadMedia(db, store, {
+    const { media: media } = await uploadMedia(db, store, {
       bytes: png(1), mimeType: 'image/png', width: 800, height: 600, alt: 'Équipe'
     });
 
@@ -59,17 +59,26 @@ describe('uploadMedia', () => {
     // C'est ce qui rend l'import rejouable, et ce qui évite la médiathèque encombrée
     // de doublons de l'ancien site.
     const { store, objects } = memoryStore();
-    const first = await uploadMedia(db, store, { bytes: png(7), mimeType: 'image/png', width: 10, height: 10 });
+    const premier = await uploadMedia(db, store, { bytes: png(7), mimeType: 'image/png', width: 10, height: 10 });
     const second = await uploadMedia(db, store, { bytes: png(7), mimeType: 'image/png', width: 10, height: 10 });
 
-    expect(second.id).toBe(first.id);
+    expect(second.media.id).toBe(premier.media.id);
     expect(objects.size).toBe(1);
+
+    /*
+      Et le retour le dit. Sans ce drapeau, l'administration ne pouvait qu'annoncer
+      « Média ajouté. » dans les deux cas : redéposer un fichier déjà connu affichait un
+      succès sans qu'aucune vignette n'apparaisse, et on cherche longtemps une image qui
+      était là depuis le début.
+    */
+    expect(premier.cree).toBe(true);
+    expect(second.cree).toBe(false);
   });
 
   it('distingue deux fichiers différents', async () => {
     const { store } = memoryStore();
-    const a = await uploadMedia(db, store, { bytes: png(1), mimeType: 'image/png', width: 10, height: 10 });
-    const b = await uploadMedia(db, store, { bytes: png(2), mimeType: 'image/png', width: 10, height: 10 });
+    const { media: a } = await uploadMedia(db, store, { bytes: png(1), mimeType: 'image/png', width: 10, height: 10 });
+    const { media: b } = await uploadMedia(db, store, { bytes: png(2), mimeType: 'image/png', width: 10, height: 10 });
     expect(b.id).not.toBe(a.id);
   });
 
@@ -90,7 +99,7 @@ describe('uploadMedia', () => {
 
   it('accepte un PDF sans dimensions', async () => {
     const { store } = memoryStore();
-    const media = await uploadMedia(db, store, { bytes: png(3), mimeType: 'application/pdf' });
+    const { media: media } = await uploadMedia(db, store, { bytes: png(3), mimeType: 'application/pdf' });
     expect(media.key).toMatch(/original\.pdf$/);
     expect(media.width).toBeNull();
   });
@@ -116,7 +125,7 @@ describe('uploadMedia — déclinaisons', () => {
   it("produit l'échelle en avif et en webp, et la dépose", async () => {
     const { store, objects } = memoryStore();
     const transcoder = fakeTranscoder();
-    const media = await uploadMedia(
+    const { media: media } = await uploadMedia(
       db,
       store,
       { bytes: png(1), mimeType: 'image/png', width: 1600, height: 1200 },
@@ -139,7 +148,7 @@ describe('uploadMedia — déclinaisons', () => {
     // Produire un 1600 depuis un 500 ajoute du poids sans ajouter de détail. Même
     // règle qu'à la reprise WordPress, pour que les deux échelles coïncident.
     const { store } = memoryStore();
-    const media = await uploadMedia(
+    const { media: media } = await uploadMedia(
       db,
       store,
       { bytes: png(4), mimeType: 'image/png', width: 500, height: 250 },
@@ -154,10 +163,10 @@ describe('uploadMedia — déclinaisons', () => {
     // Transcoder un GIF en format fixe le figerait sur sa première image ; un PDF n'a
     // pas de largeur. Les deux restent acceptés au dépôt, servis tels quels.
     const { store } = memoryStore();
-    const gif = await uploadMedia(
+    const { media: gif } = await uploadMedia(
       db, store, { bytes: png(5), mimeType: 'image/gif', width: 800, height: 600 }, fakeTranscoder()
     );
-    const pdf = await uploadMedia(
+    const { media: pdf } = await uploadMedia(
       db, store, { bytes: png(6), mimeType: 'application/pdf' }, fakeTranscoder()
     );
 
@@ -178,7 +187,7 @@ describe('uploadMedia — déclinaisons', () => {
       }
     };
 
-    const media = await uploadMedia(
+    const { media: media } = await uploadMedia(
       db, store, { bytes: png(12), mimeType: 'image/png', width: 1600, height: 1200 }, fallback
     );
 
@@ -198,7 +207,7 @@ describe('uploadMedia — déclinaisons', () => {
       async resize() { throw new Error('quota dépassé'); }
     };
 
-    const media = await uploadMedia(
+    const { media: media } = await uploadMedia(
       db, store, { bytes: png(8), mimeType: 'image/png', width: 800, height: 600 }, broken
     );
 
@@ -211,12 +220,12 @@ describe('uploadMedia — déclinaisons', () => {
     // Les médias déposés avant la production d'échelles n'en ont aucune, et rien dans
     // l'administration ne permet de la réclamer : redéposer sert de réparation.
     const { store } = memoryStore();
-    const first = await uploadMedia(db, store, {
+    const { media: first } = await uploadMedia(db, store, {
       bytes: png(9), mimeType: 'image/png', width: 800, height: 600
     });
     expect(await variantsOf(db, first.id)).toHaveLength(0);
 
-    const second = await uploadMedia(
+    const { media: second } = await uploadMedia(
       db, store, { bytes: png(9), mimeType: 'image/png', width: 800, height: 600 }, fakeTranscoder()
     );
 

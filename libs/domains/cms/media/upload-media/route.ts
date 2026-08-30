@@ -62,7 +62,7 @@ uploadMediaRoute.post('/media', async (c) => {
   };
 
   const db = createDb(c.env.DB);
-  const media = await uploadMedia(
+  const { media, cree } = await uploadMedia(
     db,
     r2Store(c.env.MEDIA),
     {
@@ -82,5 +82,10 @@ uploadMediaRoute.post('/media', async (c) => {
     c.env?.IMAGES ? imagesTranscoder(c.env.IMAGES) : undefined
   );
 
-  return c.json({ success: true, data: media });
+  /*
+    `cree` voyage dans le corps et non dans le seul code de retour : l'administration
+    passe par un relais, et une enveloppe se transmet plus sûrement qu'un statut. Le 201
+    reste posé parce que c'est ce que HTTP dit d'une création.
+  */
+  return c.json({ success: true, data: media, cree }, cree ? 201 : 200);
 });

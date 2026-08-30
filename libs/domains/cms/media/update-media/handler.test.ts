@@ -18,7 +18,7 @@ describe('updateMedia', () => {
   });
 
   it('corrige le libellé sous lequel un média se retrouve', async () => {
-    const media = await uploadMedia(db, store, {
+    const { media: media } = await uploadMedia(db, store, {
       bytes: bytes(1), mimeType: 'application/pdf', alt: ''
     });
 
@@ -31,7 +31,7 @@ describe('updateMedia', () => {
   it('ne touche ni la clé ni les octets', async () => {
     // La clé porte l'empreinte du contenu : la décrire autrement ne change pas le
     // fichier servi, et remplacer un fichier consiste à en déposer un autre.
-    const media = await uploadMedia(db, store, {
+    const { media: media } = await uploadMedia(db, store, {
       bytes: bytes(2), mimeType: 'image/png', width: 8, height: 8, alt: 'Avant'
     });
 
@@ -43,13 +43,13 @@ describe('updateMedia', () => {
   });
 
   it('rogne les espaces, qui font deux libellés d’un seul', async () => {
-    const media = await uploadMedia(db, store, { bytes: bytes(3), mimeType: 'application/pdf', alt: '' });
+    const { media: media } = await uploadMedia(db, store, { bytes: bytes(3), mimeType: 'application/pdf', alt: '' });
     const updated = await updateMedia(db, { mediaId: media.id, alt: '  Livret d’accueil  ' });
     expect(updated.alt).toBe('Livret d’accueil');
   });
 
   it('renouvelle la version du contenu, le texte alternatif étant rendu', async () => {
-    const media = await uploadMedia(db, store, {
+    const { media: media } = await uploadMedia(db, store, {
       bytes: bytes(4), mimeType: 'image/png', width: 8, height: 8, alt: 'Équipe'
     });
     const before = await getContentVersion(db);

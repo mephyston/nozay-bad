@@ -128,7 +128,7 @@ describe('resolveRoute', () => {
     // sur l'original en pleine largeur — l'image la plus lourde du site, chargée en
     // priorité, quelle que soit la taille de l'écran.
     const store = { async has() { return false; }, async put() {} };
-    const media = await uploadMedia(
+    const { media: media } = await uploadMedia(
       db, store, { bytes: new Uint8Array(64).fill(1).buffer, mimeType: 'image/png', width: 1600, height: 900 },
       { async resize(_b, { width, format }) { return { bytes: new Uint8Array(width).buffer, contentType: format }; } }
     );
@@ -166,12 +166,15 @@ describe('resolveRoute', () => {
    */
   async function mediaWithVariants(width: number) {
     const store = { async has() { return false; }, async put() {} };
-    return uploadMedia(
+    // La fabrique rend la ligne, pas la paire : ses appelants n'ont que faire de savoir
+    // si le dépôt a créé ou réutilisé.
+    const { media } = await uploadMedia(
       db,
       store,
       { bytes: new Uint8Array(64).fill(2).buffer, mimeType: 'image/webp', width, height: Math.round(width * 0.75) },
       { async resize(_b, { width: w, format }) { return { bytes: new Uint8Array(w).buffer, contentType: format }; } }
     );
+    return media;
   }
 
   it("sert les images du corps d'un article en plusieurs largeurs", async () => {

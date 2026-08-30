@@ -20,7 +20,7 @@ describe('deleteMedia', () => {
   });
 
   it('retire le média du catalogue', async () => {
-    const media = await uploadMedia(db, store, { bytes: bytes(1), mimeType: 'image/png', width: 8, height: 8 });
+    const { media: media } = await uploadMedia(db, store, { bytes: bytes(1), mimeType: 'image/png', width: 8, height: 8 });
     await deleteMedia(db, { mediaId: media.id });
     expect(await listMedia(db)).toEqual([]);
   });
@@ -28,7 +28,7 @@ describe('deleteMedia', () => {
   it('refuse de supprimer un média encore utilisé par une page', async () => {
     // La clé étrangère est en `set null` : supprimer sans regarder viderait
     // silencieusement l'image de partage de la page.
-    const media = await uploadMedia(db, store, { bytes: bytes(2), mimeType: 'image/png', width: 8, height: 8 });
+    const { media: media } = await uploadMedia(db, store, { bytes: bytes(2), mimeType: 'image/png', width: 8, height: 8 });
     const page = await createPage(db, { title: 'Accueil', slug: 'accueil' }, 'a@b.fr');
     await db.update(cmsPagesTable).set({ ogImageMediaId: media.id }).where(eq(cmsPagesTable.id, page.id)).run();
 

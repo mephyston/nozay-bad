@@ -16,8 +16,18 @@ import type { PickableMedia } from './media-types';
  */
 const RELAIS = '/admin/api/cms/media';
 
-/** Renvoie le média créé : le sélecteur l'affiche et le choisit sans recharger la page. */
-export async function uploadFile(file: File, alt: string): Promise<PickableMedia> {
+/**
+ * Dépose un fichier et renvoie le média, **avec ce qui lui est arrivé**.
+ *
+ * `cree` vaut faux quand l'empreinte du fichier était déjà connue : l'API déduplique par
+ * contenu, et redéposer la même image rend la ligne existante au lieu d'en créer une
+ * seconde. L'appelant doit le dire — annoncer « ajouté » quand rien ne l'a été envoie
+ * chercher une vignette qui n'apparaîtra jamais.
+ */
+export async function uploadFile(
+  file: File,
+  alt: string
+): Promise<{ media: PickableMedia; cree: boolean }> {
   const prepared = await prepareUpload(file);
 
   const form = new FormData();
@@ -29,11 +39,13 @@ export async function uploadFile(file: File, alt: string): Promise<PickableMedia
   const response = await fetch(RELAIS, { method: 'POST', body: form });
   if (!response.ok) throw new Error(await extractError(response, 'Le dépôt a échoué.'));
 
-  const body = (await response.json()) as { data?: PickableMedia };
+  const body = (await response.json()) as { data?: PickableMedia; cree?: boolean };
   // Le fichier est déposé quoi qu'il arrive : le dire, plutôt que de laisser croire à un
   // échec qui pousserait l'utilisateur à recommencer et à créer un doublon.
   if (!body.data) throw new Error('Le fichier est déposé, mais la médiathèque ne l’a pas renvoyé : rouvrez le sélecteur.');
-  return body.data;
+  // Un relais ancien qui ne transmettrait pas le drapeau vaut « créé » : c'est le cas de
+  // loin le plus fréquent, et le message reste alors celui d'avant.
+  return { media: body.data, cree: body.cree !== false };
 }
 
 /**

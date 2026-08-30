@@ -30,6 +30,7 @@
         blocks={d.blocks}
         revisions={d.revisions}
         previewUrl={d.previewUrl}
+        previewSigne={d.previewSigne}
         media={d.media}
         targets={d.targets}
         categories={d.categories}

@@ -142,9 +142,11 @@
     uploading = true;
     uploadError = '';
     try {
-      const created = await uploadFile(picked, alt.trim());
-      rememberUpload(created);
-      choose(created);
+      // Le sélecteur se moque de savoir si le fichier existait déjà : dans les deux cas
+      // c'est ce média-là qu'on vient choisir.
+      const { media } = await uploadFile(picked, alt.trim());
+      rememberUpload(media);
+      choose(media);
     } catch (error) {
       uploadError = error instanceof Error ? error.message : 'Le dépôt a échoué.';
     }

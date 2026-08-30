@@ -35,6 +35,7 @@
     blocks: initialBlocks = [],
     revisions = [],
     previewUrl = '',
+    previewSigne = true,
     media = [],
     targets = [],
     categories = [],
@@ -47,6 +48,14 @@
     blocks: BlockPayload[];
     revisions: unknown[];
     previewUrl?: string;
+    /**
+     * Le lien d'aperçu porte-t-il un jeton signé ?
+     *
+     * Sans `PREVIEW_TOKEN_SECRET` côté administration, il n'en porte pas — et le site
+     * public traite alors la visite comme n'importe quelle autre, donc **404 sur un
+     * brouillon**. Une page déjà en ligne s'affiche de toute façon.
+     */
+    previewSigne?: boolean;
     /** Médiathèque, cibles de liens et catégories : ressources communes aux éditeurs de blocs. */
     media?: any[];
     targets?: { path: string; title: string; kind: 'page' | 'post'; status?: 'draft' | 'published' }[];
@@ -148,10 +157,22 @@
       {page.status === 'published' ? 'En ligne' : 'Brouillon'}
     </Badge>
     <code class="text-muted-foreground text-sm">{page.path}</code>
-    {#if previewUrl}
+    {#if previewUrl && (previewSigne || page.status === 'published')}
       <a href={previewUrl} target="_blank" rel="noopener noreferrer" class="text-primary text-sm hover:underline">
         Aperçu
       </a>
+    {:else if previewUrl}
+      <!--
+        Proposer le lien quand même donnait un 404 sans explication : le site ne montre
+        un brouillon que sur présentation d'un jeton signé, et l'administration n'a pas
+        de quoi le signer ici.
+      -->
+      <span
+        class="text-muted-foreground text-sm"
+        title="L'aperçu d'un brouillon exige PREVIEW_TOKEN_SECRET côté administration, avec la même valeur que le site public."
+      >
+        Aperçu indisponible
+      </span>
     {/if}
     {#if dirty}
       <span class="text-muted-foreground text-sm">Modifications non enregistrées</span>

@@ -10,7 +10,15 @@ export interface UploadMediaInput {
   title?: string;
 }
 
-export type UploadMediaOutput = CmsMediaRow;
+export interface UploadMediaOutput {
+  media: CmsMediaRow;
+  /**
+   * Faux quand l'empreinte était déjà connue : la ligne rendue existait, rien n'a été
+   * créé. Sans cette distinction, l'appelant ne peut que dire « ajouté » — et
+   * l'utilisateur cherche une vignette qui n'apparaîtra jamais.
+   */
+  cree: boolean;
+}
 
 /** Dépôt dans l'objet-store, injecté pour que le handler reste testable sans R2. */
 export interface MediaStore {

@@ -15,7 +15,11 @@ let appels: { url: string; init?: RequestInit }[] = [];
 /** Ce que l'API interne répond ; réglable par test, et fonction du chemin appelé. */
 let reponse: (url: string) => Response;
 
+/** Le secret d'aperçu, réglable : son absence est le cas nominal en développement. */
+let secretApercu: string | undefined;
+
 vi.mock('../../../../lib/api', () => ({
+  resolveEnv: () => ({ PREVIEW_TOKEN_SECRET: secretApercu }),
   createAdminApiClient: () => ({
     fetch: (url: string, init?: RequestInit) => {
       appels.push({ url, init });
@@ -77,6 +81,7 @@ function reponseParDefaut(url: string): Response {
 beforeEach(() => {
   appels = [];
   reponse = reponseParDefaut;
+  secretApercu = undefined;
 });
 
 describe('relais CMS — la table', () => {
@@ -227,6 +232,20 @@ describe("relais CMS — l'écran paramétré", () => {
     const res = await lire('page', TOUS_LES_DROITS, '?id=12');
     expect(res.status).toBe(200);
     expect(appels.map((a) => a.url)).toContain('http://localhost/cms/pages/12');
+  });
+
+  it("dit quand il n'a pas de quoi signer l'aperçu", async () => {
+    /*
+      Sans `PREVIEW_TOKEN_SECRET`, le lien d'aperçu ne porte pas de jeton — et le site
+      public répond 404 sur un brouillon. Le lien avait pourtant exactement la même
+      allure : c'est ce que `previewSigne` permet à l'éditeur de ne plus proposer.
+    */
+    const sansSecret = (await (await lire('page', TOUS_LES_DROITS, '?id=12')).json()) as any;
+    expect(sansSecret.data.previewSigne).toBe(false);
+
+    secretApercu = 'un-secret-de-test';
+    const avecSecret = (await (await lire('page', TOUS_LES_DROITS, '?id=12')).json()) as any;
+    expect(avecSecret.data.previewSigne).toBe(true);
   });
 
   it("refuse une lecture sans identifiant, sans appeler l'API", async () => {

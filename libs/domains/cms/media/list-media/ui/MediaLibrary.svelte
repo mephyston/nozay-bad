@@ -70,6 +70,41 @@
     file = input.files?.[0] ?? null;
   }
 
+  /*
+   * Glisser-déposer.
+   *
+   * Le champ fichier reste, et reste le chemin principal : il est atteignable au clavier
+   * et annoncé par les lecteurs d'écran, ce qu'une zone de dépôt seule ne serait pas. Le
+   * dépôt est un raccourci pour la souris, posé par-dessus.
+   */
+  const TYPES_ACCEPTES = /^(image\/|application\/pdf$)/;
+  let survol = $state(false);
+
+  /** Un seul fichier : le formulaire ne décrit qu'un texte alternatif à la fois. */
+  function deposer(event: DragEvent) {
+    event.preventDefault();
+    survol = false;
+
+    const depose = event.dataTransfer?.files?.[0];
+    if (!depose) return;
+
+    // Refuser ici plutôt que de laisser l'API le faire : le message arrive avant l'envoi,
+    // et l'utilisateur n'attend pas pour rien. Même liste que le champ fichier.
+    if (!TYPES_ACCEPTES.test(depose.type)) {
+      errorMsg = 'Ce type de fichier n’est pas accepté : images et PDF seulement.';
+      return;
+    }
+
+    errorMsg = '';
+    file = depose;
+  }
+
+  function survoler(event: DragEvent) {
+    // Sans `preventDefault`, le navigateur ouvre le fichier à la place de le déposer.
+    event.preventDefault();
+    survol = true;
+  }
+
   function openAddForm() {
     file = null;
     alt = '';
@@ -95,7 +130,16 @@
         return null;
       },
       submit: () => uploadFile(picked as File, alt.trim()),
-      success: 'Média ajouté.',
+      /*
+        L'API déduplique par empreinte de contenu : redéposer un fichier déjà présent
+        rend la ligne existante sans rien créer. Annoncer « ajouté » dans ce cas envoyait
+        chercher une vignette qui n'apparaîtra jamais — le succès était vrai, le message
+        faux.
+      */
+      success: ({ cree }) =>
+        cree
+          ? 'Média ajouté.'
+          : 'Ce fichier était déjà dans la médiathèque : rien n’a été ajouté.',
       close: () => {
         file = null;
         alt = '';
@@ -282,7 +326,29 @@
   {/snippet}
 
   <FormField id="media-file" label="Fichier">
-    <Input id="media-file" type="file" accept="image/*,application/pdf" onchange={pick} />
+    <!--
+      La zone enveloppe le champ plutôt que de le remplacer : déposer et parcourir mènent
+      au même état, et le champ garde son étiquette, son focus et son annonce.
+    -->
+    <div
+      role="presentation"
+      ondragover={survoler}
+      ondragenter={survoler}
+      ondragleave={() => (survol = false)}
+      ondrop={deposer}
+      class="rounded-lg border-2 border-dashed p-4 transition-colors {survol
+        ? 'border-primary bg-primary/5'
+        : 'border-border'}"
+    >
+      <Input id="media-file" type="file" accept="image/*,application/pdf" onchange={pick} />
+      <p class="mt-2 text-xs text-muted-foreground">
+        {#if file}
+          {file.name} · {humanSize(file.size)}
+        {:else}
+          Ou déposez un fichier ici — image ou PDF.
+        {/if}
+      </p>
+    </div>
   </FormField>
 
   <FormField id="media-alt" label="Texte alternatif">

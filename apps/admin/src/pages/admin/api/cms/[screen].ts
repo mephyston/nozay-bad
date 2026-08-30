@@ -154,11 +154,16 @@ export const ECRANS: Record<string, Ecran> = {
       /*
         Sans secret configuré, le lien pointe la page sans jeton — un brouillon y reste
         donc invisible, ce qui est le comportement sûr.
+
+        Mais il faut le **dire** : le lien avait exactement la même allure signé ou non,
+        et sur un brouillon il menait à un 404 sans que rien n'explique pourquoi. D'où
+        `previewSigne`, que l'éditeur emploie pour ne pas proposer un aperçu qui ne peut
+        pas fonctionner.
       */
       const base = (import.meta.env.PUBLIC_WEBSITE_URL as string | undefined) ?? '';
+      const secret = (resolveEnv(locals) as { PREVIEW_TOKEN_SECRET?: string }).PREVIEW_TOKEN_SECRET;
       let previewUrl = '';
       if (page && base) {
-        const secret = (resolveEnv(locals) as { PREVIEW_TOKEN_SECRET?: string }).PREVIEW_TOKEN_SECRET;
         previewUrl = secret
           ? `${base}${page.path}?preview=${encodeURIComponent(await createPreviewToken(page.path, secret))}`
           : `${base}${page.path}`;
@@ -172,6 +177,7 @@ export const ECRANS: Record<string, Ecran> = {
         categories: categories ?? [],
         redirects,
         previewUrl,
+        previewSigne: Boolean(secret),
         targets: [
           ...(pages ?? []).map((row: any) => cible(row, 'page')),
           ...(reponsePosts?.posts ?? []).map((row: any) => cible(row, 'post'))

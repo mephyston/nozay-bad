@@ -13,6 +13,10 @@ const MAX_BYTES = 12 * 1024 * 1024;
  * Déduplication par empreinte de contenu : redéposer la même image renvoie la ligne
  * existante au lieu d'en créer une seconde. C'est ce qui rend l'import rejouable, et
  * ça évite la médiathèque encombrée de doublons qu'on trouve sur l'ancien site.
+ *
+ * Le retour dit **lequel des deux cas** s'est produit. Sans cela l'interface ne pouvait
+ * qu'annoncer « Média ajouté. » dans les deux, et redéposer un fichier déjà connu
+ * affichait un succès sans qu'aucune vignette n'apparaisse — on cherche longtemps.
  */
 export async function uploadMedia(
   db: Db,
@@ -54,7 +58,7 @@ export async function uploadMedia(
     if (!(await repo.hasVariants(db, existing.id))) {
       await produceVariants(db, repo, store, transcoder, existing.id, contentHash, input);
     }
-    return existing;
+    return { media: existing, cree: false };
   }
 
   const key = originalKey(contentHash, input.mimeType);
@@ -75,7 +79,7 @@ export async function uploadMedia(
   });
 
   await produceVariants(db, repo, store, transcoder, media.id, contentHash, input);
-  return media;
+  return { media, cree: true };
 }
 
 /**
