@@ -202,16 +202,25 @@
     </Card.Root>
   {:else}
     <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-      {#each filteredMedia as row (row.id)}
+      {#each filteredMedia as row, rang (row.id)}
         <li class="overflow-hidden rounded-lg border border-border">
           <div class="flex aspect-video items-center justify-center overflow-hidden bg-muted">
             {#if isImage(row.mimeType)}
+              <!--
+                Les vignettes du premier écran sont demandées tout de suite, les suivantes
+                paresseusement. `loading="lazy"` partout retardait justement celles qu'on
+                regarde : le navigateur attend d'avoir calculé la mise en page pour décider
+                si l'image est visible, et l'écran restait gris un instant de trop. Douze
+                couvre quatre colonnes sur trois rangs, la grille la plus large.
+              -->
               <img
                 src={mediaUrl(row.key)}
                 alt={row.alt}
                 width={row.width ?? undefined}
                 height={row.height ?? undefined}
-                loading="lazy"
+                loading={rang < 12 ? 'eager' : 'lazy'}
+                fetchpriority={rang < 12 ? 'high' : 'auto'}
+                decoding="async"
                 class="h-full w-full object-cover"
               />
             {:else}

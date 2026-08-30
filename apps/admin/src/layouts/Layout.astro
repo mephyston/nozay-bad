@@ -13,6 +13,13 @@ const { title } = Astro.props;
 // Suffixe d'icône selon l'environnement (inliné au build) : bandeau DEV / TEST.
 const APP_ENV = import.meta.env.PUBLIC_APP_ENV || 'production';
 const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ? '-test' : '';
+/*
+  Origine du site public, inlinée au build (`PUBLIC_WEBSITE_URL`, cf. `astro.config.mjs`).
+  Accès de membre littéral, sans `?.` : c'est la forme que la clé du `define` déclare —
+  même précaution que dans `media-url.ts`. Vide hors build d'application, où aucune image
+  n'est chargée.
+*/
+const ORIGINE_MEDIAS = (import.meta.env.PUBLIC_WEBSITE_URL as string | undefined) ?? '';
 ---
 
 <!doctype html>
@@ -23,6 +30,13 @@ const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ?
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="icon" type="image/png" href="/pwa/favicon.png" />
+    {/*
+      Les octets des médias sont servis par le site public, jamais par l'administration :
+      toute vignette de la médiathèque et toute image attachée à un bloc traverse donc une
+      seconde origine, avec sa résolution DNS et sa poignée de main TLS. Les ouvrir dès
+      l'en-tête évite de les payer au moment où la première image est demandée.
+    */}
+    {ORIGINE_MEDIAS && <link rel="preconnect" href={ORIGINE_MEDIAS} />}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
