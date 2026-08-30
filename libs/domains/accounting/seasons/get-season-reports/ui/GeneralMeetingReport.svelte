@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { ChevronDown } from '@lucide/svelte';
-  import { Tabs, Button, DropdownMenu, submitForm } from '@nba/ui';
+  import { Tabs, Button, DropdownMenu, submitForm, uiConfirm } from '@nba/ui';
   import type { ReportData, Season, DbCategory, AccountClass, BudgetRecord } from './report-types';
   import { generatePieSlices } from './report-utils';
   import { defaultChargeClasses, defaultProduitClasses } from './report-constants';
@@ -124,9 +124,45 @@
       .map(([key, amount]) => { const [catIdStr, type] = key.split('_'); return { categoryId: parseInt(catIdStr), type: type as 'recette' | 'depense', amount: Math.round(Number(amount) || 0) }; })
       .filter(item => !isNaN(item.categoryId));
 
+    /*
+     * Garde-fou contre l'effacement accidentel du prévisionnel entier.
+     *
+     * Deux mécaniques se combinent mal. Le formulaire envoie **toutes** les catégories à
+     * chaque enregistrement, en remplissant à zéro celles qu'il ne connaît pas ; et
+     * l'API supprime toutes les lignes de la saison avant de réinsérer ce qu'elle reçoit.
+     * Une sauvegarde déclenchée pendant que le budget n'est pas encore chargé écrase donc
+     * l'ensemble par des zéros, sans que rien ne l'annonce — c'est arrivé.
+     *
+     * On ne l'interdit pas : tout remettre à zéro peut être voulu en début de saison. On
+     * demande de le confirmer, ce qui suffit à distinguer l'intention de l'accident.
+     */
+    const avaitDesValeurs = (budget as any[]).some((b) => (b.amountCents ?? b.amount ?? 0) > 0);
+    const toutAZero = payload.length > 0 && payload.every((item) => item.amount === 0);
+    if (avaitDesValeurs && toutAZero) {
+      const confirme = await uiConfirm({
+        title: 'Remettre tout le budget à zéro ?',
+        description:
+          "Toutes les lignes du prévisionnel de cette saison passeraient à zéro, et les montants actuels seraient perdus. Si vous ne vouliez modifier qu'une ligne, annulez et rechargez la page : le budget n'était probablement pas encore chargé.",
+        confirmLabel: 'Tout remettre à zéro',
+        destructive: true
+      });
+      if (!confirme) {
+        isSaving = false;
+        return;
+      }
+    }
+
     await submitForm({
       submit: async () => {
-        const res = await fetch(window.location.pathname, {
+        /*
+          Le relais, et non `window.location.pathname`.
+
+          Viser la page hôte a fait échouer l'enregistrement en silence : la page ne porte
+          plus de gestionnaire POST, Astro y répond en rendant son HTML avec un 200, et un
+          code qui ne teste que `res.ok` annonçait donc un succès pour une écriture qui
+          n'avait pas eu lieu. Un 404 aurait au moins parlé.
+        */
+        const res = await fetch('/admin/api/accounting/reports', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'save_budget', seasonId: selectedSeason, budget: payload })

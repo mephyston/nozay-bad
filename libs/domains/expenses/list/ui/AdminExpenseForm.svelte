@@ -96,7 +96,11 @@
               seasonId: activeSeasonId,
               description,
               category,
-              amountCents: Math.round(parseFloat(amountStr) * 100),
+              // `amount`, et non `amountCents` : le validateur de l'API n'accepte que ce
+              // nom depuis qu'il a cessé de tolérer `amountCents || amount`. Ce
+              // durcissement n'avait corrigé que le formulaire adhérent — celui-ci
+              // envoyait un champ hors contrat, et toute création échouait en 400.
+              amount: Math.round(parseFloat(amountStr) * 100),
               photoUrl,
               memberId: parseInt(selectedMemberId),
               emitterName
