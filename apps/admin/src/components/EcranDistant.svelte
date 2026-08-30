@@ -22,9 +22,16 @@
    * d'eux.
    *
    * Le squelette **réserve la place** du contenu à venir : sans lui, la page sauterait à
-   * l'arrivée des données, ce qui se ressent plus mal qu'une attente. Il n'apparaît
-   * qu'après 150 ms, en deçà desquelles les données sont souvent déjà là — il ne ferait
-   * que clignoter.
+   * l'arrivée des données, ce qui se ressent plus mal qu'une attente.
+   *
+   * Il s'affiche **tout de suite**, et pour une durée minimale. La première version
+   * attendait 150 ms avant de le montrer, pour ne pas le faire clignoter sur un
+   * chargement rapide — mais les relais répondent en 2 à 4 ms, si bien qu'il ne
+   * s'affichait jamais : la protection contre le clignotement revenait à supprimer le
+   * retour visuel. La durée minimale règle le même problème dans l'autre sens — une fois
+   * apparu, il reste assez longtemps pour être vu.
+   *
+   * Le prix est assumé : un écran ne peut plus s'afficher plus vite que ce minimum.
    */
   const { domaine = 'cms', ecran, variante = 'liste', parametres, onDonnees, pret }: {
     /**
@@ -54,12 +61,23 @@
   } = $props();
 
   let etat = $state<'chargement' | 'pret' | 'erreur'>('chargement');
-  let squelette = $state(false);
+  /*
+    Vrai dès le départ : le squelette est rendu **par le serveur**, donc visible avant même
+    que l'îlot ne s'hydrate. Initialisé à faux, il y avait un battement pendant lequel la
+    page ne montrait rien — précisément ce qu'il est censé éviter.
+  */
+  let squelette = $state(true);
   let donnees = $state<Record<string, any> | null>(null);
+
+  /** Durée minimale d'affichage du squelette, une fois montré. */
+  const MINIMUM_MS = 300;
 
   async function charger() {
     etat = 'chargement';
-    const delai = setTimeout(() => (squelette = true), 150);
+    squelette = true;
+    const debut = Date.now();
+
+    let suite: 'pret' | 'erreur' = 'pret';
     try {
       const recherche = parametres
         ? `?${new URLSearchParams(Object.entries(parametres).map(([c, v]) => [c, String(v)]))}`
@@ -67,14 +85,18 @@
       const res = await fetch(`/admin/api/${domaine}/${ecran}${recherche}`);
       if (!res.ok) throw new Error(String(res.status));
       donnees = (await res.json()).data;
-      etat = 'pret';
-      if (donnees) onDonnees?.(donnees);
     } catch {
-      etat = 'erreur';
-    } finally {
-      clearTimeout(delai);
-      squelette = false;
+      suite = 'erreur';
     }
+
+    // Le basculement attend la fin du minimum : sans cela le contenu s'afficherait
+    // par-dessus un squelette encore visible.
+    const reste = MINIMUM_MS - (Date.now() - debut);
+    if (reste > 0) await new Promise((r) => setTimeout(r, reste));
+
+    squelette = false;
+    etat = suite;
+    if (suite === 'pret' && donnees) onDonnees?.(donnees);
   }
 
   $effect(() => {

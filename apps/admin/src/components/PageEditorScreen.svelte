@@ -15,16 +15,26 @@
    */
   let { id }: { id: number } = $props();
 
+  /*
+    Le titre est capté à l'arrivée des données, mais l'en-tête est rendu **hors** de
+    l'attente : le faire attendre avec le reste ferait sauter la page au moment où elle se
+    remplit. « Page » tient la place jusque-là.
+  */
+  let titre = $state('');
+
   function titrer(d: Record<string, any>) {
-    if (d.page?.title) document.title = `${d.page.title} - NBA 91`;
+    if (!d.page?.title) return;
+    titre = d.page.title;
+    document.title = `${d.page.title} - NBA 91`;
   }
 </script>
 
+<PageHeader title={titre || 'Page'} description="Composez la page en empilant des blocs." />
+
+<div class="mt-6">
 <EcranDistant ecran="page" variante="formulaire" parametres={{ id }} onDonnees={titrer}>
   {#snippet pret(d)}
     {#if d.page}
-      <PageHeader title={d.page.title} description="Composez la page en empilant des blocs." />
-
       <PageEditor
         page={d.page}
         blocks={d.blocks}
@@ -46,3 +56,4 @@
     {/if}
   {/snippet}
 </EcranDistant>
+</div>
