@@ -40,7 +40,7 @@ describe('BankStatementReconciliation Component', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     globalThis.fetch = vi.fn().mockImplementation((url, init) => {
-      if (url === '/admin/accounting/reconciliation' && init?.body) {
+      if (url === '/admin/api/accounting/reconciliation' && init?.body) {
         const body = JSON.parse(init.body);
         if (body.action === 'get-unpaid-invoices') {
           return Promise.resolve({
@@ -505,7 +505,7 @@ describe('BankStatementReconciliation Component', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     flushSync();
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/accounting/reconciliation', expect.objectContaining({
+    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/api/accounting/reconciliation', expect.objectContaining({
       method: 'POST',
       body: expect.stringContaining('"transactions":')
     }));
@@ -736,7 +736,7 @@ describe('BankStatementReconciliation Component', () => {
 
     const fetchDeBase = globalThis.fetch as any;
     globalThis.fetch = vi.fn().mockImplementation((url: any, init: any) => {
-      if (url === '/admin/accounting/reconciliation' && init?.body) {
+      if (url === '/admin/api/accounting/reconciliation' && init?.body) {
         const body = JSON.parse(init.body);
         if (body.action === 'analyze') {
           return Promise.resolve({

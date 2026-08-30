@@ -1,6 +1,20 @@
 import { toast, uiConfirm, flashAndReload, submitForm } from '@nba/ui';
 
 /**
+ * Destinations des écritures : les relais du domaine, et non la page hôte.
+ *
+ * Ce module visait `?season=…` — une URL relative, donc « la page qui m'affiche avec
+ * cette requête ». Deux pages l'hébergeaient, et rien ne rappelait ce lien : le jour où
+ * elles ont cessé de porter un gestionnaire `POST`, elles auraient répondu 200 en rendant
+ * leur HTML, et l'écran aurait annoncé des enregistrements qui n'avaient pas eu lieu.
+ *
+ * La lecture d'une image de chèque est un **dépôt de fichier** : elle a sa propre route,
+ * où elle porte enfin une permission — elle s'exécutait jusqu'ici avant toute garde.
+ */
+const RELAIS = '/admin/api/accounting/cheques';
+const DEPOT_ANALYSE = '/admin/api/accounting/upload?doc=check-analyze';
+
+/**
  * Extrait le message d'erreur d'une réponse, qu'elle soit JSON ou texte brut : les
  * pages admin relaient tantôt le corps JSON de l'API, tantôt un simple message.
  */
@@ -26,11 +40,8 @@ export async function handleAnalyzeScan(file: File, seasonId: string, state: any
   formData.append('seasonId', seasonId);
 
   try {
-    const res = await fetch(`?season=${seasonId}`, {
+    const res = await fetch(DEPOT_ANALYSE, {
       method: 'POST',
-      headers: {
-        'x-action': 'analyze'
-      },
       body: formData
     });
 
@@ -77,7 +88,7 @@ export async function handleAddCheck(e: SubmitEvent, seasonId: string, state: an
         ? 'Veuillez renseigner le numéro, le montant et l\'émetteur.'
         : null,
     submit: async () => {
-      const res = await fetch(`?season=${seasonId}`, {
+      const res = await fetch(RELAIS, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // `create-check` et les noms de champs doivent correspondre exactement au
@@ -108,7 +119,7 @@ export async function handleDeleteCheck(id: number, seasonId: string) {
   if (!(await uiConfirm('Êtes-vous sûr de vouloir supprimer ce chèque ?'))) return;
 
   try {
-    const res = await fetch(`?season=${seasonId}`, {
+    const res = await fetch(RELAIS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'delete-check', id })
@@ -133,7 +144,7 @@ export async function handleCreateDeposit(seasonId: string, state: any) {
 
   await submitForm({
     submit: async () => {
-      const res = await fetch(`?season=${seasonId}`, {
+      const res = await fetch(RELAIS, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -157,7 +168,7 @@ export async function handleDeleteDeposit(id: number, seasonId: string) {
   if (!(await uiConfirm('Êtes-vous sûr de vouloir supprimer ce bordereau ? Les chèques associés repasseront au statut "Reçus" et le rapprochement bancaire sera annulé.'))) return;
 
   try {
-    const res = await fetch(`?season=${seasonId}`, {
+    const res = await fetch(RELAIS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'delete-deposit', id })
@@ -180,7 +191,7 @@ export async function handleClearDeposit(e: SubmitEvent, seasonId: string, state
 
   state.isSubmittingClear = true;
   try {
-    const res = await fetch(`?season=${seasonId}`, {
+    const res = await fetch(RELAIS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

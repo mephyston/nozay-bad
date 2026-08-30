@@ -1,5 +1,5 @@
 import { can } from '../../../../lib/guard';
-import { creerRelais, identifiant, type Ecran, type Lecteur } from '../../../../lib/relais';
+import { creerRelais, identifiant, Refus, type Ecran, type Lecteur } from '../../../../lib/relais';
 
 /**
  * Les écrans du domaine « comptabilité ».
@@ -225,6 +225,244 @@ export const ECRANS: Record<string, Ecran> = {
           chemin: `/accounting/seasons/${encodeURIComponent(String(data.seasonId ?? ''))}/budget`,
           method: 'POST',
           body: data.budget
+        })
+      }
+    }
+  },
+
+  /**
+   * Les chèques et leurs bordereaux de remise.
+   *
+   * Un seul écran de relais pour **deux pages** — « Gestion des chèques » et « Remise de
+   * bordereaux » — qui ne diffèrent que par leur titre et l'onglet ouvert. Elles
+   * chargeaient les mêmes données par deux gestionnaires jumeaux ; les tenir en double
+   * garantissait qu'ils finiraient par diverger.
+   *
+   * La lecture d'une image de chèque par l'IA ne passe pas par ici : c'est un dépôt de
+   * fichier, il vit sur `/admin/api/accounting/upload`.
+   */
+  cheques: {
+    permission: 'accounting:checks:read',
+    charger: async (lire, locals, params) => {
+      const saisonnier = await saison(lire, params);
+      const s = encodeURIComponent(saisonnier.seasonId);
+      const [cheques, bordereaux, adherents, lignesBancaires] = await Promise.all([
+        lire(`/accounting/checks?season=${s}`),
+        lire(`/accounting/check-deposits?season=${s}`),
+        lire(`/members?limit=1000&season=${s}`),
+        lire(`/accounting/bank-transactions?season=${s}`)
+      ]);
+
+      return {
+        ...saisonnier,
+        checks: cheques ?? [],
+        checkDeposits: bordereaux ?? [],
+        members: adherents ?? [],
+        // Seules les lignes encore à rapprocher, et au crédit : une remise de chèques
+        // ne s'adosse pas à un débit.
+        pendingBankTransactions: (lignesBancaires ?? []).filter(
+          (tx: any) => tx.status === 'pending' && tx.amount > 0
+        ),
+        canWrite: can(locals, 'accounting:checks:write'),
+        canDelete: can(locals, 'accounting:checks:delete')
+      };
+    },
+    ecritures: {
+      'create-check': {
+        permission: 'accounting:checks:write',
+        route: (data) => ({ chemin: '/accounting/checks', method: 'POST', body: data })
+      },
+      'delete-check': {
+        permission: 'accounting:checks:delete',
+        route: (data) => ({
+          chemin: `/accounting/checks/${identifiant(data.id, 'de chèque')}`,
+          method: 'DELETE'
+        })
+      },
+      'create-deposit': {
+        permission: 'accounting:checks:write',
+        route: (data) => ({ chemin: '/accounting/check-deposits', method: 'POST', body: data })
+      },
+      'delete-deposit': {
+        permission: 'accounting:checks:delete',
+        route: (data) => ({
+          chemin: `/accounting/check-deposits/${identifiant(data.id, 'de bordereau')}/delete`,
+          method: 'POST'
+        })
+      },
+      'clear-deposit': {
+        permission: 'accounting:checks:write',
+        route: (data) => ({
+          chemin: `/accounting/check-deposits/${identifiant(data.id, 'de bordereau')}/clear`,
+          method: 'POST',
+          body: data
+        })
+      }
+    }
+  },
+
+  /**
+   * Le rapprochement bancaire.
+   *
+   * L'écran le plus cher de l'administration avant conversion : 148 ms, seize lectures.
+   *
+   * L'import d'un relevé ne passe pas par ici — c'est un dépôt de fichier, il vit sur
+   * `/admin/api/accounting/upload`, où il porte enfin la permission
+   * `accounting:bank:import` que le catalogue déclarait sans que personne l'applique.
+   */
+  reconciliation: {
+    permission: 'accounting:bank:read',
+    charger: async (lire, locals, params) => {
+      const saisonnier = await saison(lire, params);
+      const { seasons, seasonId } = saisonnier;
+      const s = encodeURIComponent(seasonId);
+
+      /*
+        Les adhérents de la saison suivante sont chargés en plus : un encaissement de
+        septembre concerne souvent l'adhésion de l'année qui commence, et le compte
+        « produit constaté d'avance » est là pour ça.
+      */
+      const suivante = seasons[seasons.findIndex((x: any) => (x.code || String(x.id)) === seasonId) + 1];
+      const codeSuivant = suivante ? suivante.code || String(suivante.id) : null;
+
+      const [lignes, ecritures, adherents, adherentsSuivants, categories, etats] = await Promise.all([
+        /*
+          Toutes les lignes, sans borne d'exercice : une ligne de relevé n'appartient à
+          aucune saison, c'est un mouvement daté. Les borner à l'exercice consulté faisait
+          disparaître de la file, au 1er septembre, tout ce qui restait à rapprocher de
+          l'année écoulée — et l'écran n'avait rien pour le dire.
+        */
+        lire('/accounting/bank-transactions'),
+        /*
+          Le solde progressif est refusé : c'est une sous-requête corrélée, réévaluée pour
+          chacune des 2000 écritures demandées, et cet écran ne l'affiche nulle part.
+        */
+        lire(`/accounting/transactions?season=${s}&page=1&limit=2000&runningBalance=0`),
+        lire(`/members?season=${s}&limit=500`),
+        codeSuivant
+          ? lire(`/members?season=${encodeURIComponent(codeSuivant)}&limit=500`)
+          : Promise.resolve(null),
+        lire('/accounting/categories'),
+        /*
+          L'état de rapprochement ne s'établit que pour les comptes dont un relevé a été
+          importé ; sans relevé la réponse est vide, et l'encart ne s'affiche pas.
+        */
+        lire(`/accounting/reconciliation-statements?season=${s}`)
+      ]);
+
+      const membres = [...(adherents ?? [])];
+      if (adherentsSuivants) {
+        // `seasonCode` n'est posé que sur ceux de l'autre saison : c'est lui qui les
+        // signale à l'écran, et son absence vaut « saison consultée ».
+        const connus = new Set(membres.map((m: any) => m.id));
+        for (const membre of adherentsSuivants as any[]) {
+          if (!connus.has(membre.id)) membres.push({ ...membre, seasonCode: codeSuivant });
+        }
+      }
+
+      return {
+        ...saisonnier,
+        bankStatementLines: lignes ?? [],
+        glTransactions: ecritures ?? [],
+        members: membres,
+        dbCategories: categories ?? [],
+        reconciliationStatements: etats ?? [],
+        canReconcile: can(locals, 'accounting:bank:reconcile')
+      };
+    },
+    ecritures: {
+      analyze: {
+        permission: 'accounting:bank:reconcile',
+        route: (data) => ({
+          chemin: data.btId
+            ? `/accounting/bank-transactions/analyze?season=${encodeURIComponent(String(data.season ?? ''))}&id=${identifiant(data.btId, 'de ligne bancaire')}`
+            : `/accounting/bank-transactions/analyze?season=${encodeURIComponent(String(data.season ?? ''))}`,
+          method: 'POST'
+        })
+      },
+      ...Object.fromEntries(
+        (['create', 'match', 'reconcile'] as const).map((action) => [
+          action,
+          {
+            permission: action === 'create' ? 'accounting:ledger:write' : 'accounting:bank:reconcile',
+            /*
+              Sans identifiant, on refuse ici plutôt que d'appeler l'API. Le gabarit d'URL
+              acceptait `undefined` sans broncher et produisait
+              `/bank-transactions/undefined/reconcile`, que l'API rejetait en 400 — un
+              message qui ne disait ni quelle ligne, ni pourquoi.
+            */
+            route: (data: any) => {
+              const brut = data.btId ?? data.match?.btId;
+              if (brut === undefined || brut === null || brut === '') {
+                throw new Refus(
+                  "Aucune ligne bancaire n'est sélectionnée : rechargez la page et resélectionnez l'opération à rapprocher."
+                );
+              }
+              return {
+                chemin: `/accounting/bank-transactions/${identifiant(brut, 'de ligne bancaire')}/reconcile`,
+                method: 'POST',
+                body: data.match ?? data
+              };
+            }
+          }
+        ])
+      ),
+      ...Object.fromEntries(
+        (['bulk', 'reconcile-bulk'] as const).map((action) => [
+          action,
+          {
+            permission: 'accounting:bank:reconcile' as const,
+            route: (data: any) => ({
+              chemin: '/accounting/bank-transactions/reconcile-bulk',
+              method: 'POST',
+              body: { requests: data.requests }
+            })
+          }
+        ])
+      ),
+      ignore: {
+        permission: 'accounting:bank:reconcile',
+        route: (data) => ({
+          chemin: `/accounting/bank-transactions/${identifiant(data.btId, 'de ligne bancaire')}/ignore`,
+          method: 'POST'
+        })
+      },
+      unignore: {
+        permission: 'accounting:bank:reconcile',
+        route: (data) => ({
+          chemin: `/accounting/bank-transactions/${identifiant(data.btId, 'de ligne bancaire')}/unignore`,
+          method: 'POST'
+        })
+      },
+      ...Object.fromEntries(
+        (['delete-transaction', 'delete-ledger-entry'] as const).map((action) => [
+          action,
+          {
+            permission: 'accounting:ledger:delete' as const,
+            route: (data: any) => ({
+              chemin: `/accounting/transactions/${identifiant(data.txId, "d'écriture")}`,
+              method: 'DELETE'
+            })
+          }
+        ])
+      ),
+      /*
+        L'encart d'état de rapprochement se relit seul après chaque écriture : c'est le
+        seul morceau de l'écran que le client ne peut pas recalculer, l'écart tenant au
+        solde annoncé par la banque.
+      */
+      'get-reconciliation-statements': {
+        permission: 'accounting:bank:read',
+        route: (data) => ({
+          chemin: `/accounting/reconciliation-statements?season=${encodeURIComponent(String(data.season ?? ''))}`,
+          method: 'GET'
+        })
+      },
+      'get-unpaid-invoices': {
+        permission: 'accounting:invoices:read',
+        route: (data) => ({
+          chemin: `/accounting/invoices?season=${encodeURIComponent(String(data.season ?? ''))}`,
+          method: 'GET'
         })
       }
     }

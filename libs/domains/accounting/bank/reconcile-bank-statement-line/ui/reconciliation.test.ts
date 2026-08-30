@@ -215,7 +215,7 @@ describe('createReconciliationState logic unit tests', () => {
 
     await state.loadUnpaidInvoices();
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/accounting/reconciliation', expect.objectContaining({
+    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/api/accounting/reconciliation', expect.objectContaining({
       method: 'POST',
       body: JSON.stringify({ action: 'get-unpaid-invoices', season: '25-26' })
     }));
@@ -390,7 +390,7 @@ describe('createReconciliationState logic unit tests', () => {
 
       expect(state.activeRightTab).toBe('manual');
       expect(vi.mocked(globalThis.fetch)).not.toHaveBeenCalledWith(
-        '/admin/accounting/reconciliation',
+        '/admin/api/accounting/reconciliation',
         expect.objectContaining({ body: expect.stringContaining('"action":"create"') })
       );
     });
@@ -433,7 +433,7 @@ describe('createReconciliationState logic unit tests', () => {
 
       expect(state.errorMsg).toContain('part 2');
       expect(vi.mocked(globalThis.fetch)).not.toHaveBeenCalledWith(
-        '/admin/accounting/reconciliation',
+        '/admin/api/accounting/reconciliation',
         expect.objectContaining({ body: expect.stringContaining('"action":"create"') })
       );
     });

@@ -65,6 +65,17 @@ export async function compresserJustificatif(
   file: File,
   budget = BUDGET_OCTETS
 ): Promise<{ dataUrl: string; octets: number; octetsOrigine: number }> {
+  /*
+    Le champ n'accepte que des images, mais la boîte de dialogue du système laisse
+    choisir « tous les fichiers ». Le dire tout de suite vaut mieux que « image
+    illisible », qui envoie chercher la panne du côté de la photo.
+  */
+  if (file.type && !file.type.startsWith('image/')) {
+    throw new Error(
+      `Ce type de fichier n'est pas une image (${file.type}). Photographiez le justificatif ou exportez-le en JPEG.`
+    );
+  }
+
   const source = await decoder(file);
   const { largeur, hauteur } = dimensions(source);
   if (!largeur || !hauteur) throw new Error('Image illisible.');
@@ -81,6 +92,9 @@ export async function compresserJustificatif(
   const formats = ['image/webp', 'image/jpeg'];
 
   let meilleur: string | null = null;
+  /** Le plus petit essai obtenu, pour que l'échec dise de combien on a manqué. */
+  let plusPetit: { octets: number; format: string; largeur: number } | null = null;
+
   for (const largeurCible of LARGEURS) {
     const echelle = Math.min(1, largeurCible / largeur);
     canvas.width = Math.round(largeur * echelle);
@@ -91,7 +105,11 @@ export async function compresserJustificatif(
       for (const qualite of QUALITES) {
         const essai = canvas.toDataURL(format, qualite);
         if (!essai.startsWith(`data:${format}`)) break; // format non encodé ici
-        if (poidsDataUrl(essai) <= budget) {
+        const octets = poidsDataUrl(essai);
+        if (!plusPetit || octets < plusPetit.octets) {
+          plusPetit = { octets, format, largeur: canvas.width };
+        }
+        if (octets <= budget) {
           meilleur = essai;
           break;
         }
@@ -103,8 +121,15 @@ export async function compresserJustificatif(
 
   if ('close' in source) source.close();
   if (!meilleur) {
+    /*
+      L'échec nomme ce qui a été atteint : sans cela on ne sait pas si la compression n'a
+      pas assez réduit, ou si elle n'a pas eu lieu du tout — deux pannes très différentes.
+    */
+    const atteint = plusPetit
+      ? `au mieux ${Math.round(plusPetit.octets / 1024)} Ko en ${plusPetit.format.replace('image/', '')} à ${plusPetit.largeur} px`
+      : "aucun encodage n'a abouti sur ce navigateur";
     throw new Error(
-      "Ce justificatif reste trop lourd même après compression. Recadrez-le ou photographiez-le de plus près."
+      `Ce justificatif reste trop lourd (${atteint}, limite ${Math.round(budget / 1024)} Ko). Recadrez-le ou photographiez-le de plus près.`
     );
   }
 

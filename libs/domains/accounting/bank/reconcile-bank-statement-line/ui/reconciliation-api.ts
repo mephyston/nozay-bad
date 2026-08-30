@@ -1,6 +1,19 @@
 import type { BankStatementLine, GLTransaction, Invoice, SplitRow } from './reconciliation-types';
 
 /**
+ * Destinations des écritures : les relais du domaine, et non la page hôte.
+ *
+ * L'adresse de la page était écrite en dur ici, ce qui liait ce module à l'écran qui
+ * l'hébergeait sans que rien ne le rappelle.
+ *
+ * L'import d'un relevé est un **dépôt de fichier** : il a sa propre route, où il porte
+ * enfin `accounting:bank:import` — le catalogue déclarait cette permission, et elle
+ * n'était appliquée nulle part, l'import s'exécutant avant toute garde.
+ */
+const RELAIS = '/admin/api/accounting/reconciliation';
+const DEPOT_RELEVE = '/admin/api/accounting/upload?doc=bank-statement';
+
+/**
  * Ce qu'une écriture de rapprochement renvoie désormais : la ligne de relevé telle qu'elle est
  * après l'opération, et les écritures qui lui sont rattachées. C'est de quoi remettre l'écran à
  * jour sur place, là où il ne savait que se recharger entier.
@@ -11,7 +24,7 @@ export interface ReconcileOutcome {
 }
 
 async function postAction<T>(body: unknown, fallbackError: string): Promise<T> {
-  const res = await fetch('/admin/accounting/reconciliation', {
+  const res = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
@@ -25,7 +38,7 @@ function toOutcome(json: any): ReconcileOutcome {
 }
 
 export async function apiLoadUnpaidInvoices(selectedSeason: string): Promise<Invoice[]> {
-  const res = await fetch('/admin/accounting/reconciliation', {
+  const res = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -62,7 +75,7 @@ export async function apiImportOfx(file: File, selectedAccount: string): Promise
   const formData = new FormData();
   formData.append('file', file);
   formData.append('accountId', selectedAccount);
-  const res = await fetch('/admin/accounting/reconciliation', { method: 'POST', body: formData });
+  const res = await fetch(DEPOT_RELEVE, { method: 'POST', body: formData });
   if (!res.ok) throw new Error((await res.text()) || 'Erreur importation.');
   try {
     const json = await res.json();

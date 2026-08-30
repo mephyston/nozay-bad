@@ -44,6 +44,33 @@ vi.mock('../../../../lib/api', () => ({
           new Response(JSON.stringify({ success: true, data: [{ accountId: 'cash', initialBalanceCents: 1234 }] }), { status: 200 })
         );
       }
+      if (chemin.startsWith('/accounting/bank-transactions')) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              success: true,
+              data: [
+                { id: 1, status: 'pending', amount: 1500 },
+                { id: 2, status: 'pending', amount: -800 },
+                { id: 3, status: 'reconciled', amount: 900 }
+              ]
+            }),
+            { status: 200 }
+          )
+        );
+      }
+      // La saison suivante rend un adhérent commun et un nouveau : c'est le second qui
+      // doit apparaître, marqué.
+      if (chemin.startsWith('/members?season=25-26')) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ success: true, data: [{ id: 10 }, { id: 11 }] }), { status: 200 })
+        );
+      }
+      if (chemin.startsWith('/members?season=')) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ success: true, data: [{ id: 10 }] }), { status: 200 })
+        );
+      }
       return Promise.resolve(new Response(JSON.stringify({ success: true, data: [] }), { status: 200 }));
     }
   })
@@ -53,7 +80,8 @@ const { GET, POST, ECRANS } = await import('./[screen]');
 
 const TOUS_LES_DROITS = [
   'accounting:ledger:read', 'accounting:ledger:write', 'accounting:ledger:delete',
-  'accounting:invoices:read', 'accounting:invoices:write', 'accounting:invoices:delete'
+  'accounting:invoices:read', 'accounting:invoices:write', 'accounting:invoices:delete',
+  'accounting:checks:read', 'accounting:checks:write', 'accounting:checks:delete'
 ];
 const locals = (permissions: string[]) => ({ user: { email: 'x@nozaybad.fr', permissions } });
 
@@ -176,5 +204,89 @@ describe('comptabilité — la caisse', () => {
     // numérique. Les deux se rencontrent encore en base.
     const d = await donnees(await lire('cash-box'));
     expect(d.initialBalance).toBe(1234);
+  });
+});
+
+describe('comptabilité — les chèques', () => {
+  it("ne propose au rapprochement que les lignes en attente et au crédit", async () => {
+    // Une remise de chèques ne s'adosse pas à un débit.
+    const d = await donnees(await lire('cheques'));
+    expect(d.pendingBankTransactions.map((x: any) => x.id)).toEqual([1]);
+  });
+
+  it('sert les deux pages depuis le même écran', () => {
+    // « Gestion des chèques » et « Remise de bordereaux » ne diffèrent que par leur
+    // onglet : deux écrans de relais auraient fini par diverger.
+    expect(Object.keys(ECRANS)).toContain('cheques');
+    expect(Object.keys(ECRANS)).not.toContain('deposits');
+  });
+
+  it("n'accorde pas la suppression d'un bordereau à qui sait seulement écrire", async () => {
+    const res = await ecrire('cheques', { action: 'delete-deposit', id: 4 },
+      ['accounting:checks:read', 'accounting:checks:write']);
+    expect(res.status).toBe(403);
+    expect(appels).toHaveLength(0);
+  });
+});
+
+describe('comptabilité — le rapprochement', () => {
+  const DROITS = [
+    'accounting:bank:read', 'accounting:bank:reconcile',
+    'accounting:ledger:write', 'accounting:ledger:delete', 'accounting:invoices:read'
+  ];
+
+  it('lit les lignes de relevé sans borne d’exercice', async () => {
+    /*
+      Une ligne de relevé n'appartient à aucune saison, c'est un mouvement daté. Les
+      borner à l'exercice consulté faisait disparaître de la file, au 1er septembre, tout
+      ce qui restait à rapprocher de l'année écoulée.
+    */
+    await lire('reconciliation', '', DROITS);
+    const appel = appels.find((a) => a.url.includes('/accounting/bank-transactions'))!.url;
+    expect(appel).not.toContain('season=');
+  });
+
+  it('refuse le solde progressif, que cet écran n’affiche pas', async () => {
+    // C'est une sous-requête corrélée, réévaluée pour chacune des 2000 écritures.
+    await lire('reconciliation', '', DROITS);
+    expect(appels.some((a) => a.url.includes('runningBalance=0'))).toBe(true);
+  });
+
+  it('ajoute les adhérents de la saison suivante, marqués comme tels', async () => {
+    /*
+      Un encaissement de septembre concerne souvent l'adhésion de l'année qui commence.
+      `seasonCode` n'est posé que sur ceux de l'autre saison : son absence vaut « saison
+      consultée ».
+    */
+    const d = await donnees(await lire('reconciliation', '?season=24-25', DROITS));
+    expect(d.members.map((m: any) => m.id)).toEqual([10, 11]);
+    expect(d.members[0].seasonCode).toBeUndefined();
+    expect(d.members[1].seasonCode).toBe('25-26');
+  });
+
+  it('nomme la cause quand aucune ligne bancaire n’est sélectionnée', async () => {
+    /*
+      Le gabarit d'URL acceptait `undefined` et produisait
+      `/bank-transactions/undefined/reconcile`, que l'API rejetait en 400 — un message qui
+      ne disait ni quelle ligne, ni pourquoi.
+    */
+    const res = await ecrire('reconciliation', { action: 'reconcile', match: {} }, DROITS);
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as any).error).toContain('Aucune ligne bancaire');
+    expect(appels).toHaveLength(0);
+  });
+
+  it('exige le droit de supprimer une écriture, et non celui de rapprocher', async () => {
+    // Rapprocher et supprimer une écriture comptable ne sont pas le même geste.
+    const res = await ecrire('reconciliation', { action: 'delete-transaction', txId: 5 },
+      DROITS.filter((p) => p !== 'accounting:ledger:delete'));
+    expect(res.status).toBe(403);
+    expect(appels).toHaveLength(0);
+  });
+
+  it('accepte un rapprochement complet', async () => {
+    const res = await ecrire('reconciliation', { action: 'reconcile', btId: 7, match: { btId: 7 } }, DROITS);
+    expect(res.status).toBe(200);
+    expect(appels[0].url).toBe('http://localhost/accounting/bank-transactions/7/reconcile');
   });
 });
