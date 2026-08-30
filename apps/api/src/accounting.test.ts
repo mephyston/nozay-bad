@@ -3292,6 +3292,136 @@ describe('Task 1: API Endpoints Advanced Reconciliation', () => {
     expect(ledgerTxs.map(t => t.amountCents)).toContain(5000);
   });
 
+  /*
+    Le pointage incrémental, sur une base réelle.
+
+    Le cumul des écritures déjà rattachées se lisait sur `t.amount`, alors que le dépôt rend la
+    colonne sous son nom Drizzle `amountCents` : il valait `NaN` dès le second pointage, et la
+    ligne ne basculait plus jamais. Les tests de domaine ne pouvaient pas le voir — leur mock
+    rendait la forme attendue, pas celle de la base. Seul un test sur D1 le prouve.
+  */
+  it('POST /accounting/bank-statement-lines/:id/reconcile pointe deux écritures successives et ne solde la ligne qu\'à la seconde', async () => {
+    const { mockD1, db } = await setupMockDb();
+
+    await db.insert(seasonsTable).values({
+      id: 1, code: '25-26', name: 'Saison 2025-2026',
+      startDate: '2025-09-01', endDate: '2026-08-31', active: true, createdAt: new Date()
+    }).onConflictDoNothing().run();
+
+    const bt = await db.insert(bankStatementLinesTable).values({
+      fitid: 'FITID-INCREMENTAL', accountId: 1, amountCents: 15000, date: '2026-07-15',
+      name: 'VIR RECU GROUPE', status: 'pending', createdAt: new Date()
+    } as any).returning().then(r => r[0]);
+
+    const ecriture = async (amountCents: number, description: string) =>
+      db.insert(ledgerEntriesTable).values({
+        seasonId: 1, type: 'recette', accountId: 1, categoryId: 1, amountCents,
+        date: '2026-07-15', paymentMethodId: 1, description, createdAt: new Date()
+      } as any).returning().then(r => r[0]);
+
+    const premiere = await ecriture(10000, 'Cotisation Dupont');
+    const seconde = await ecriture(5000, 'Cotisation Martin');
+
+    const pointer = (ledgerEntryId: number) => app.request(
+      `http://localhost/accounting/bank-statement-lines/${bt.id}/reconcile`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'match', ledgerEntryId }) },
+      { DB: mockD1 as any }
+    );
+
+    expect((await pointer(premiere.id)).status).toBe(200);
+
+    const apresPremier = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
+    expect(apresPremier.status).toBe('pending');
+
+    expect((await pointer(seconde.id)).status).toBe(200);
+
+    const apresSecond = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
+    expect(apresSecond.status).toBe('reconciled');
+
+    const liees = await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.bankStatementLineId, bt.id)).all();
+    expect(liees).toHaveLength(2);
+  });
+
+  /* Un pointage de trop soldait la ligne sans rien dire, et laissait deux écritures pour une opération. */
+  it('POST /accounting/bank-statement-lines/:id/reconcile refuse un pointage qui dépasse le reste', async () => {
+    const { mockD1, db } = await setupMockDb();
+
+    await db.insert(seasonsTable).values({
+      id: 1, code: '25-26', name: 'Saison 2025-2026',
+      startDate: '2025-09-01', endDate: '2026-08-31', active: true, createdAt: new Date()
+    }).onConflictDoNothing().run();
+
+    const bt = await db.insert(bankStatementLinesTable).values({
+      fitid: 'FITID-DEPASSEMENT', accountId: 1, amountCents: 15000, date: '2026-07-15',
+      name: 'VIR RECU', status: 'pending', createdAt: new Date()
+    } as any).returning().then(r => r[0]);
+
+    // 100,00 € déjà rattachés : il ne reste que 50,00 €.
+    await db.insert(ledgerEntriesTable).values({
+      seasonId: 1, type: 'recette', accountId: 1, categoryId: 1, amountCents: 10000,
+      date: '2026-07-15', paymentMethodId: 1, description: 'Première part',
+      bankStatementLineId: bt.id, createdAt: new Date()
+    } as any).run();
+
+    const detrop = await db.insert(ledgerEntriesTable).values({
+      seasonId: 1, type: 'recette', accountId: 1, categoryId: 1, amountCents: 15000,
+      date: '2026-07-15', paymentMethodId: 1, description: 'Doublon', createdAt: new Date()
+    } as any).returning().then(r => r[0]);
+
+    const res = await app.request(
+      `http://localhost/accounting/bank-statement-lines/${bt.id}/reconcile`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'match', ledgerEntryId: detrop.id }) },
+      { DB: mockD1 as any }
+    );
+
+    expect(res.status).toBe(400);
+    expect((await res.json() as any).error).toContain('dépasse le reste à rapprocher');
+
+    const ligne = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
+    expect(ligne.status).toBe('pending');
+
+    const inchangee = (await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, detrop.id)).get())!;
+    expect(inchangee.bankStatementLineId).toBeNull();
+  });
+
+  /*
+    Un salaire net : brut au débit, retenue au crédit, sur une seule ligne de relevé. Le cumul en
+    valeurs absolues comptait 2 060,07 € au lieu de 1 939,93 € et soldait la ligne par excès.
+  */
+  it('POST /accounting/bank-statement-lines/:id/reconcile solde une ventilation de sens mêlés sur son net', async () => {
+    const { mockD1, db } = await setupMockDb();
+
+    await db.insert(seasonsTable).values({
+      id: 1, code: '25-26', name: 'Saison 2025-2026',
+      startDate: '2025-09-01', endDate: '2026-08-31', active: true, createdAt: new Date()
+    }).onConflictDoNothing().run();
+
+    const bt = await db.insert(bankStatementLinesTable).values({
+      fitid: 'FITID-SALAIRE', accountId: 1, amountCents: -193993, date: '2026-07-15',
+      name: 'VIR EMIS NET', status: 'pending', createdAt: new Date()
+    } as any).returning().then(r => r[0]);
+
+    const res = await app.request(
+      `http://localhost/accounting/bank-statement-lines/${bt.id}/reconcile`,
+      {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          transactions: [
+            { seasonId: '25-26', type: 'depense', accountId: 'current', category: 7, amount: 200000, date: '2026-07-15', paymentMethod: 'virement', description: 'Salaire brut' },
+            { seasonId: '25-26', type: 'recette', accountId: 'current', category: 8, amount: 6007, date: '2026-07-15', paymentMethod: 'virement', description: 'Retenue cotisation' }
+          ]
+        })
+      },
+      { DB: mockD1 as any }
+    );
+
+    expect(res.status).toBe(200);
+
+    const ligne = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, bt.id)).get())!;
+    expect(ligne.status).toBe('reconciled');
+  });
+
   it('POST /accounting/bank-statement-lines/:id/reconcile successfully matches a single bank transaction to multiple invoiceIds', async () => {
     const { mockD1, db } = await setupMockDb();
 

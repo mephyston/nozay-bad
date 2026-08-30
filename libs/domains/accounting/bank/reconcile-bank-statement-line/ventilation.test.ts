@@ -12,7 +12,14 @@ vi.mock('../../config/queries', () => ({
 }));
 vi.mock('../../shared/accruals', () => ({ validateAccrualAndFiscalPhase: vi.fn() }));
 
-const BANK_LINE = { id: 1, amount: 30000, amountCents: 30000, status: 'pending', date: '2026-02-16', name: 'VIR GROUPE' };
+const BANK_LINE = { id: 1, accountId: 1, amount: 30000, amountCents: 30000, status: 'pending', date: '2026-02-16', name: 'VIR GROUPE' };
+
+/*
+  Une écriture déjà rattachée, **dans la forme que le dépôt rend** — colonne `amountCents`, et non
+  `amount`. Le mock rendait l'autre : le cumul valait `NaN` en production alors que ces tests
+  passaient au vert, et une ligne partiellement pointée ne se soldait jamais.
+*/
+const LIEE = (amountCents: number, type = 'recette') => ({ id: 99, accountId: 1, type, amountCents });
 
 /** Les écritures réellement bâties : le mock rend les valeurs, pas un jeton opaque. */
 let built: any[];
@@ -205,7 +212,7 @@ describe('bascule de la ligne de relevé', () => {
   /* Une ventilation peut se saisir en plusieurs fois : ce qui est déjà lié compte. */
   it("tient compte des écritures déjà rattachées", async () => {
     const repo = mockRepo({
-      getLedgerEntriesForBankStatementLine: vi.fn().mockResolvedValue([{ amount: 20000 }])
+      getLedgerEntriesForBankStatementLine: vi.fn().mockResolvedValue([LIEE(20000)])
     });
 
     await buildReconciliationStatements(db, 1, {
@@ -236,7 +243,7 @@ describe('pointage de plusieurs écritures', () => {
 
   it('laisse la ligne ouverte quand l\'écriture pointée ne la couvre pas', async () => {
     const repo = mockRepo({
-      getTransactionById: vi.fn().mockResolvedValue({ id: 5, seasonId: 1, amountCents: 10000 }),
+      getTransactionById: vi.fn().mockResolvedValue({ id: 5, seasonId: 1, accountId: 1, type: 'recette', amountCents: 10000 }),
       buildLinkTransactionToBankStatement: vi.fn(() => 'link')
     });
 
@@ -247,10 +254,10 @@ describe('pointage de plusieurs écritures', () => {
 
   it('solde la ligne au pointage qui la couvre enfin', async () => {
     const repo = mockRepo({
-      getTransactionById: vi.fn().mockResolvedValue({ id: 6, seasonId: 1, amountCents: 10000 }),
+      getTransactionById: vi.fn().mockResolvedValue({ id: 6, seasonId: 1, accountId: 1, type: 'recette', amountCents: 10000 }),
       buildLinkTransactionToBankStatement: vi.fn(() => 'link'),
       // 20 000 déjà rattachés ; la ligne vaut 30 000.
-      getLedgerEntriesForBankStatementLine: vi.fn().mockResolvedValue([{ amount: 20000 }])
+      getLedgerEntriesForBankStatementLine: vi.fn().mockResolvedValue([LIEE(20000)])
     });
 
     await buildReconciliationStatements(db, 1, { action: 'match', ledgerEntryId: 6 });
@@ -260,12 +267,102 @@ describe('pointage de plusieurs écritures', () => {
 
   it("solde la ligne d'un seul pointage quand l'écriture la couvre entièrement", async () => {
     const repo = mockRepo({
-      getTransactionById: vi.fn().mockResolvedValue({ id: 7, seasonId: 1, amountCents: 30000 }),
+      getTransactionById: vi.fn().mockResolvedValue({ id: 7, seasonId: 1, accountId: 1, type: 'recette', amountCents: 30000 }),
       buildLinkTransactionToBankStatement: vi.fn(() => 'link')
     });
 
     await buildReconciliationStatements(db, 1, { action: 'match', ledgerEntryId: 7 });
 
     expect(repo.buildMarkBankStatementLineReconciledStatement).toHaveBeenCalled();
+  });
+});
+
+/*
+  Le dépassement est refusé, et nommé.
+
+  La bascule se décidait sur un `>=` : pointer une seconde fois le montant entier d'une ligne
+  déjà couverte la soldait sans rien dire, et laissait deux écritures pour une seule opération.
+  C'est ainsi que sont nés les doublons de GEN-2526-067 et GEN-2526-266B.
+*/
+describe('refus du dépassement', () => {
+  let db: any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    db = {};
+    (isSeasonClosed as any).mockResolvedValue(false);
+  });
+
+  it('refuse un pointage qui dépasse le reste, en le nommant', async () => {
+    const repo = mockRepo({
+      getTransactionById: vi.fn().mockResolvedValue({ id: 8, seasonId: 1, accountId: 1, type: 'recette', amountCents: 30000 }),
+      buildLinkTransactionToBankStatement: vi.fn(() => 'link'),
+      // 20 000 déjà rattachés sur une ligne de 30 000 : il ne reste que 10 000.
+      getLedgerEntriesForBankStatementLine: vi.fn().mockResolvedValue([LIEE(20000)])
+    });
+
+    const result = await buildReconciliationStatements(db, 1, { action: 'match', ledgerEntryId: 8 });
+
+    expect(result.status).toBe(400);
+    expect(result.error).toBe('Ce pointage de 300,00 € dépasse le reste à rapprocher sur cette ligne (100,00 €).');
+    expect(result.statements).toEqual([]);
+    expect(repo.buildMarkBankStatementLineReconciledStatement).not.toHaveBeenCalled();
+  });
+
+  it('refuse une ventilation dont le total dépasse la ligne', async () => {
+    mockRepo();
+
+    const result = await buildReconciliationStatements(db, 1, {
+      action: 'create',
+      transactions: [part({ amount: 20000 }), part({ amount: 20000 })]
+    });
+
+    expect(result.status).toBe(400);
+    expect(result.statements).toEqual([]);
+  });
+
+  /* Une écriture d'un autre compte ne pèse rien sur cette ligne : la pointer la condamnerait. */
+  it("refuse de pointer une écriture d'un autre compte", async () => {
+    mockRepo({
+      getTransactionById: vi.fn().mockResolvedValue({ id: 9, seasonId: 1, accountId: 2, type: 'recette', amountCents: 30000 }),
+      buildLinkTransactionToBankStatement: vi.fn(() => 'link')
+    });
+
+    const result = await buildReconciliationStatements(db, 1, { action: 'match', ledgerEntryId: 9 });
+
+    expect(result.status).toBe(400);
+    expect(result.error).toBe('Cette écriture appartient à un autre compte que la ligne de relevé.');
+  });
+
+  /*
+    Le net de la requête, et non chaque part : une ventilation de sens mêlés — un salaire brut au
+    débit, sa retenue au crédit — dépasse la ligne part par part et la couvre exactement au total.
+  */
+  it('solde une ventilation de sens mêlés sur son net', async () => {
+    const repo = mockRepo({
+      getBankStatementLineById: vi.fn().mockResolvedValue({ ...BANK_LINE, amount: -193993, amountCents: -193993 })
+    });
+
+    await buildReconciliationStatements(db, 1, {
+      action: 'create',
+      transactions: [part({ type: 'depense', amount: 200000 }), part({ type: 'recette', amount: 6007 })]
+    });
+
+    expect(repo.buildMarkBankStatementLineReconciledStatement).toHaveBeenCalled();
+  });
+
+  /*
+    Les statements d'un lot ne sont exécutés qu'à la fin : sans mémoire partagée, deux requêtes
+    visant la même ligne ne se verraient pas, et le refus se contournerait en groupant.
+  */
+  it('voit dans un même lot ce que la base ne montre pas encore', async () => {
+    mockRepo();
+    const enAttente = new Map();
+
+    const premier = await buildReconciliationStatements(db, 1, { action: 'create', transactions: [part({ amount: 20000 })] }, enAttente);
+    const second = await buildReconciliationStatements(db, 1, { action: 'create', transactions: [part({ amount: 20000 })] }, enAttente);
+
+    expect(premier.error).toBeUndefined();
+    expect(second.status).toBe(400);
   });
 });

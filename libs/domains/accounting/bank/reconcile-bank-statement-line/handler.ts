@@ -3,12 +3,23 @@ import { isSeasonClosed } from '@nba/members-api';
 import { AppError, type Db } from '@nba/db';
 import { normalizeCategory } from '../../shared/helpers';
 import { ReconcileBankTxInternalId, ReconcileBankTxInternalInput, ReconcileBankTxInternalOutput } from "./dto";
-import { BankStatementLine } from '../../shared/bank-statement-line';
+import { BankStatementLine, remainingToReconcileCents, type LinkedEntryLike } from '../../shared/bank-statement-line';
 import { validateAccrualAndFiscalPhase } from '../../shared/accruals';
 import { assertMembershipMatchesSeason } from '../../shared/member-season';
 import { resolveAccountId, resolvePaymentMethod } from '../../config/queries';
 
-export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxInternalId, body: ReconcileBankTxInternalInput): Promise<{ statements: any[]; error?: string; status?: number }> {
+/** Des centimes, dits comme la comptable les écrit — virgule décimale. */
+function euros(cents: number): string {
+  return `${(cents / 100).toFixed(2).replace('.', ',')} €`;
+}
+
+/**
+ * @param enAttenteParLigne Les écritures déjà rattachées par le **même lot**, que la base ne
+ *   montre pas encore : `reconcileBulkTransactions` n'exécute son `db.batch` qu'à la fin. Sans
+ *   cet accumulateur, deux requêtes visant la même ligne se croiseraient sans se voir, et le
+ *   refus du dépassement se contournerait en groupant.
+ */
+export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxInternalId, body: ReconcileBankTxInternalInput, enAttenteParLigne: Map<number, LinkedEntryLike[]> = new Map()): Promise<{ statements: any[]; error?: string; status?: number }> {
   const repo = new ReconcileBankStatementLineRepository();
   const bankTxData = await repo.getBankStatementLineById(db, id);
   if (!bankTxData) {
@@ -74,8 +85,8 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
   }
 
   const statements: any[] = [];
-  /* Le montant de l'écriture pointée, retenu pour décider si la ligne est soldée. */
-  let matchedAmountCents = 0;
+  /* Les écritures que cette requête rattache à la ligne : ce sont elles qui la couvriront. */
+  const nouvellesEcritures: LinkedEntryLike[] = [];
 
   if (body.action === 'match') {
     const existingTx = await repo.getTransactionById(db, body.ledgerEntryId);
@@ -93,7 +104,18 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
      */
     await assertMembershipMatchesSeason(db, memberId ?? null, existingTx.seasonId);
 
-    matchedAmountCents = Math.abs(existingTx.amountCents ?? existingTx.amount ?? 0);
+    /*
+     * Une écriture ne prouve rien sur le compte d'à côté.
+     *
+     * La couverture d'une ligne se compte du point de vue de **son** compte : une écriture
+     * pointée depuis un autre n'y pèserait rien, et la ligne ne pourrait alors plus jamais se
+     * solder — le défaut que ce calcul vient de corriger, sous un autre nom.
+     */
+    if (existingTx.accountId !== bankTxData.accountId) {
+      return { statements: [], error: "Cette écriture appartient à un autre compte que la ligne de relevé.", status: 400 };
+    }
+
+    nouvellesEcritures.push(existingTx);
     statements.push(repo.buildLinkTransactionToBankStatement(db, body.ledgerEntryId, id, memberId));
   } else if (body.action === 'create') {
     if (body.transactions && Array.isArray(body.transactions)) {
@@ -114,7 +136,7 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
 
         const seasonId = await repo.resolveSeasonId(db, rawSeason);
 
-        statements.push(repo.buildCreateLedgerEntryStatement(db, {
+        const valeurs = {
           seasonId,
           type: txItem.type,
           accountId: await resolveAccountId(db, txItem.accountId),
@@ -131,7 +153,10 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
           invoiceId: txItem.invoiceId ?? null,
           bankStatementLineId: id,
           createdAt: new Date()
-        }));
+        };
+
+        nouvellesEcritures.push(valeurs);
+        statements.push(repo.buildCreateLedgerEntryStatement(db, valeurs));
       }
     } else {
       const tx = body.transaction;
@@ -154,7 +179,7 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
 
       const seasonId = await repo.resolveSeasonId(db, rawSeason);
 
-      statements.push(repo.buildCreateLedgerEntryStatement(db, {
+      const valeurs = {
         seasonId,
         type: tx.type,
         accountId: await resolveAccountId(db, tx.accountId),
@@ -170,7 +195,10 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
         invoiceId: body.invoiceId ?? null,
         bankStatementLineId: id,
         createdAt: new Date()
-      }));
+      };
+
+      nouvellesEcritures.push(valeurs);
+      statements.push(repo.buildCreateLedgerEntryStatement(db, valeurs));
     }
 
     for (const invId of invoiceIdsToSettle) {
@@ -180,29 +208,43 @@ export async function buildReconciliationStatements(db: Db, id: ReconcileBankTxI
     return { statements: [], error: 'Action invalide.', status: 400 };
   }
 
+  /*
+   * Une ligne se solde quand ses écritures la couvrent **exactement**, ni avant ni au-delà.
+   *
+   * Le cumul se lisait sur `t.amount` alors que le dépôt rend les colonnes sous leur nom Drizzle,
+   * `amountCents` : dès qu'une écriture était déjà rattachée, le total valait `NaN` et la ligne
+   * ne basculait plus jamais. Le mock des tests rendait la forme attendue, pas celle de la base —
+   * verte de bout en bout, la ventilation en plusieurs fois ne fonctionnait pas en production.
+   *
+   * Il additionnait par ailleurs des valeurs absolues : un salaire net ventilé en un brut au
+   * débit et une retenue au crédit se comptait deux fois au lieu de se compenser. Le sens vient
+   * désormais de `signedEntryAmountCents`, via `remainingToReconcileCents`.
+   */
+  const dejaDansLeLot = enAttenteParLigne.get(id) ?? [];
   const linkedTxs = await repo.getLedgerEntriesForBankStatementLine(db, id);
-  const existingLinkedTotal = linkedTxs.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
-  let newTxAmount = 0;
-  if (body.action === 'create') {
-    if (body.transactions && Array.isArray(body.transactions)) {
-      newTxAmount = body.transactions.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
-    } else if (body.transaction) {
-      newTxAmount = Math.abs(body.transaction.amount);
-    }
-  } else if (body.action === 'match') {
-    /*
-     * Le montant de l'écriture pointée, et non celui de la ligne bancaire.
-     *
-     * En prenant le second, la somme comparée valait toujours au moins le montant de la ligne :
-     * le tout premier pointage la marquait rapprochée, quel qu'ait été le montant de l'écriture.
-     * Une ligne de 150 € pointée contre une écriture de 50 € se refermait sur 100 € manquants —
-     * et l'écran n'offrait donc jamais d'en pointer une seconde, alors que le modèle sait
-     * parfaitement rattacher plusieurs écritures à une même ligne.
-     */
-    newTxAmount = matchedAmountCents;
+  const dejaRattachees = [...linkedTxs, ...dejaDansLeLot];
+
+  const resteAvant = remainingToReconcileCents(dejaRattachees, bankTxData);
+  const reste = remainingToReconcileCents([...dejaRattachees, ...nouvellesEcritures], bankTxData);
+
+  /*
+   * Le dépassement est refusé, et nommé.
+   *
+   * La comparaison était un `>=` : pointer une seconde fois le montant entier d'une ligne déjà
+   * couverte la soldait sans rien dire, et laissait deux écritures pour une seule opération.
+   * C'est ainsi que naissent les doublons — vus en prod sur GEN-2526-067 et GEN-2526-266B.
+   */
+  if (reste < 0) {
+    return {
+      statements: [],
+      error: `Ce pointage de ${euros(resteAvant - reste)} dépasse le reste à rapprocher sur cette ligne (${euros(resteAvant)}).`,
+      status: 400
+    };
   }
 
-  if (existingLinkedTotal + newTxAmount >= Math.abs(bankTx.amount)) {
+  enAttenteParLigne.set(id, [...dejaDansLeLot, ...nouvellesEcritures]);
+
+  if (reste === 0) {
     statements.push(repo.buildMarkBankStatementLineReconciledStatement(db, id));
   }
 
@@ -259,8 +301,10 @@ export async function reconcileBankStatementLine(db: Db, id: number, body: any) 
 
 export async function reconcileBulkTransactions(db: Db, requests: any[]) {
   const allStatements: any[] = [];
+  // Une seule mémoire pour tout le lot : deux requêtes sur la même ligne s'y voient l'une l'autre.
+  const enAttenteParLigne = new Map<number, LinkedEntryLike[]>();
   for (const req of requests) {
-    const res = await buildReconciliationStatements(db, req.btId, req);
+    const res = await buildReconciliationStatements(db, req.btId, req, enAttenteParLigne);
     if (res.error) {
       throw new AppError(res.error || 'Matching operation failed', res.status || 400);
     }

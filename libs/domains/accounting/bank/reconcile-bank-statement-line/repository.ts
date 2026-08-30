@@ -177,8 +177,21 @@ export class ReconcileBankStatementLineRepository {
     });
   }
 
+  /**
+   * Ce qui couvre déjà une ligne de relevé, réduit aux colonnes qui en décident.
+   *
+   * Le `db.select()` complet qui vivait ici rendait ses colonnes sous leur nom Drizzle —
+   * `amountCents` — quand l'appelant lisait `amount`. La forme est désormais écrite sur place :
+   * elle se relit avec le calcul qui la consomme.
+   */
   async getLedgerEntriesForBankStatementLine(db: DbOrTx, bankStatementLineId: number): Promise<any[]> {
-    return db.select()
+    return db.select({
+        id: ledgerEntriesTable.id,
+        accountId: ledgerEntriesTable.accountId,
+        type: ledgerEntriesTable.type,
+        transferLeg: ledgerEntriesTable.transferLeg,
+        amountCents: ledgerEntriesTable.amountCents
+      })
       .from(ledgerEntriesTable)
       .where(eq(ledgerEntriesTable.bankStatementLineId, bankStatementLineId))
       .all();

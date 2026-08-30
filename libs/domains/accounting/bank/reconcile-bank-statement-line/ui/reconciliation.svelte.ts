@@ -7,6 +7,7 @@ export * from './reconciliation-actions';
 export * from './reconciliation-suggestion';
 
 import { createReconciliationActions } from './reconciliation-actions';
+import { coverageCents, remainingToReconcileCents } from '../../../shared/bank-statement-line';
 
 /**
  * L'état de l'écran de rapprochement.
@@ -107,11 +108,18 @@ export class ReconciliationStore {
   linkedGlTxs = $derived(
     this.selectedTx ? this.glTransactions.filter((gt) => gt.bankStatementLineId === this.selectedTx!.id) : []
   );
+  /*
+   * Le même cumul que le serveur, et par la même fonction.
+   *
+   * L'écran additionnait ici des valeurs absolues : dès qu'une ligne mêle les sens — un salaire
+   * net ventilé en brut et retenue —, son « reste à rapprocher » divergeait de celui que le
+   * serveur oppose au pointage. La comptable aurait vu un reste, et reçu un refus.
+   */
   totalLinked = $derived(
-    this.linkedGlTxs.reduce((sum, gt) => sum + Math.abs((gt as any).amountCents ?? gt.amount ?? 0), 0)
+    this.selectedTx ? Math.abs(coverageCents(this.linkedGlTxs as any, this.selectedTx as any)) : 0
   );
   remainingAmount = $derived(
-    this.selectedTx ? Math.abs((this.selectedTx as any).amountCents ?? this.selectedTx.amount ?? 0) - this.totalLinked : 0
+    this.selectedTx ? remainingToReconcileCents(this.linkedGlTxs as any, this.selectedTx as any) : 0
   );
 
   pendingCount = $derived(this.bankStatementLines.filter((t) => t.status === 'pending').length);

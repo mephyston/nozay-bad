@@ -194,6 +194,63 @@ describe('createReconciliationState logic unit tests', () => {
     expect(sug2.length).toBe(0);
   });
 
+  /*
+    Le reste à rapprocher, dans la forme que le serveur envoie vraiment.
+
+    Les écritures arrivent avec un montant **positif** — `amount_cents` est sous CHECK `> 0` — et
+    c'est `type` qui porte le sens ; le compte, lui, est un identifiant entier. L'écran cumulait
+    ici des valeurs absolues : sur une ligne mêlant les sens il annonçait un reste que le serveur
+    n'aurait pas reconnu, et la comptable aurait reçu un refus sur un montant affiché comme dû.
+  */
+  describe('le reste à rapprocher', () => {
+    const ligne = (over: any = {}) => ({
+      id: 500, fitid: 'FIT-500', accountId: 1, amount: 15000, amountCents: 15000,
+      date: '2026-03-01', name: 'VIR RECU GROUPE', memo: null, status: 'pending', aiSuggestions: null, ...over
+    });
+    const ecriture = (over: any = {}) => ({
+      id: 600, type: 'recette', accountId: 1, amount: 10000, date: '2026-03-01',
+      description: 'Part', category: '1', bankStatementLineId: 500, ...over
+    });
+
+    const etat = (lignes: any[], ecritures: any[]) => {
+      const state = createReconciliationState({
+        bankStatementLines: lignes as any,
+        glTransactions: ecritures as any,
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', name: '2025-2026', active: true }],
+        members: []
+      });
+      state.selectedTx = lignes[0];
+      return state;
+    };
+
+    it('retranche ce qui est déjà pointé', () => {
+      const state = etat([ligne()], [ecriture()]);
+      expect(state.totalLinked).toBe(10000);
+      expect(state.remainingAmount).toBe(5000);
+    });
+
+    it('tombe à zéro quand la ligne est exactement couverte', () => {
+      const state = etat([ligne()], [ecriture(), ecriture({ id: 601, amount: 5000 })]);
+      expect(state.remainingAmount).toBe(0);
+    });
+
+    /* Un salaire net : brut au débit, retenue au crédit, sur la même ligne de relevé. */
+    it('compense les sens mêlés sur une ligne au débit', () => {
+      const state = etat(
+        [ligne({ amount: -193993, amountCents: -193993 })],
+        [ecriture({ type: 'depense', amount: 200000 }), ecriture({ id: 601, type: 'recette', amount: 6007 })]
+      );
+      expect(state.remainingAmount).toBe(0);
+    });
+
+    /* Le compte se dit tantôt par son identifiant, tantôt par son code : les deux se reconnaissent. */
+    it('reconnaît le compte désigné par son code', () => {
+      const state = etat([ligne({ accountId: 'current' })], [ecriture({ accountId: 'current' })]);
+      expect(state.remainingAmount).toBe(5000);
+    });
+  });
+
   it('loads unpaid invoices via fetch API', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValue({
       ok: true,
