@@ -6,6 +6,7 @@ import { resolveEnv as resolveRuntimeEnv } from '@nba/runtime-env';
 import { can, resolvePermissions, isRole, DEFAULT_ROLE, type ActorDto, type Role } from '@nba/iam-ui';
 import { applySecurityHeaders } from './lib/security-headers';
 import { PAGE_PERMISSIONS, matchPagePattern, isPageRoute } from './lib/page-permissions';
+import { accepteEcriture } from './lib/page-writes';
 import { impersonationEnabled } from './lib/guard';
 
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
@@ -203,6 +204,21 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
   // PAGE_PERMISSIONS est refusée, y compris si personne n'a pensé à la garder.
   const pathname = new URL(request.url).pathname;
   if (isPageRoute(pathname)) {
+    /*
+      Une écriture visant une page qui n'en déclare pas est refusée en 405.
+
+      Sans ce refus, Astro rend le HTML de la page avec un 200, et le composant qui l'a
+      postée annonce un succès pour une écriture qui n'a pas eu lieu — le défaut le plus
+      coûteux de la conversion en coquilles, parce qu'il ne laisse aucune trace.
+    */
+    if (!accepteEcriture(pathname, request.method)) {
+      console.warn(`[écriture] ${request.method} vers une page sans gestionnaire : ${pathname}`);
+      return new Response(
+        "Cette page n'accepte pas d'écriture. Le composant vise sans doute la page au lieu de son relais.",
+        { status: 405, headers: { Allow: 'GET, HEAD' } }
+      );
+    }
+
     const pattern = matchPagePattern(pathname);
     if (!pattern) {
       console.warn(`[auth] page non déclarée dans PAGE_PERMISSIONS : ${pathname}`);
