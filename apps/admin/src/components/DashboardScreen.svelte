@@ -4,9 +4,8 @@
   import EcranDistant from './EcranDistant.svelte';
 
   let {
-    parametres = {},
     permissions = []
-  }: { parametres?: Record<string, string>; permissions?: string[] } = $props();
+  }: { permissions?: string[] } = $props();
 
   let seasons = $state<any[]>([]);
   let currentSeason = $state('');
@@ -28,7 +27,6 @@
     domaine="dashboard"
     ecran="overview"
     variante="grille"
-    {parametres}
     onDonnees={(d) => {
       seasons = d.seasons ?? [];
       currentSeason = d.currentSeason ?? '';

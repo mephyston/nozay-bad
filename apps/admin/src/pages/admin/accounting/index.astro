@@ -11,20 +11,22 @@ import LedgerScreen from '../../../components/LedgerScreen.svelte';
  * à un obligerait à toucher ce fichier à chaque filtre ajouté ; les lire ici ne coûte
  * rien, c'est une chaîne de requête.
  */
-const parametres = Object.fromEntries(Astro.url.searchParams);
+
+/*
+  Page figée : elle n'est plus rendue par un worker, mais servie depuis les actifs.
+  Elle ne porte donc aucune donnée, aucune identité et aucun paramètre d'URL — l'îlot
+  demande les siennes au relais, et lit l'URL dans le navigateur.
+*/
+export const prerender = true;
 ---
 
 <Layout title="Comptabilité - NBA 91">
   <AdminLayout
-    realEmail={Astro.locals.realUser?.email || ''}
-    name={Astro.locals.user?.name}
     client:idle
-    email={Astro.locals.user?.email || ''}
-    permissions={Astro.locals.user?.permissions || []}
     breadcrumb="Comptabilité / Grand Livre"
   >
     <div class="space-y-6">
-      <LedgerScreen client:load {parametres} />
+      <LedgerScreen client:load />
     </div>
   </AdminLayout>
 </Layout>

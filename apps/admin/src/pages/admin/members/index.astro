@@ -3,20 +3,21 @@ import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
 import MembersScreen from '../../../components/MembersScreen.svelte';
 
-const parametres = Object.fromEntries(Astro.url.searchParams);
+/*
+  Page figée : elle n'est plus rendue par un worker, mais servie depuis les actifs.
+  Elle ne porte donc aucune donnée, aucune identité et aucun paramètre d'URL — l'îlot
+  demande les siennes au relais, et lit l'URL dans le navigateur.
+*/
+export const prerender = true;
 ---
 
 <Layout title="Gestion des Adhérents - NBA 91">
   <AdminLayout
-    email={Astro.locals.user?.email || ''}
-    realEmail={Astro.locals.realUser?.email || ''}
-    name={Astro.locals.user?.name}
     client:idle
     breadcrumb="Adhérents / Liste"
-    permissions={Astro.locals.user?.permissions || []}
   >
     <div class="space-y-6">
-      <MembersScreen client:load {parametres} />
+      <MembersScreen client:load />
     </div>
   </AdminLayout>
 </Layout>

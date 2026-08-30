@@ -3,8 +3,6 @@
   import { CashBoxManager } from '@nba/accounting-ui';
   import EcranDistant from './EcranDistant.svelte';
 
-  let { parametres = {} }: { parametres?: Record<string, string> } = $props();
-
   let seasonName = $state('');
   let isClosed = $state(false);
 </script>
@@ -28,7 +26,6 @@
     domaine="accounting"
     ecran="cash-box"
     variante="liste"
-    {parametres}
     onDonnees={(d) => {
       seasonName = d.seasonName ?? '';
       isClosed = Boolean(d.isClosed);

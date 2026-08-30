@@ -3,20 +3,21 @@ import Layout from '../../../../layouts/Layout.astro';
 import AdminLayout from '../../../../components/AdminLayout.svelte';
 import ChequesScreen from '../../../../components/ChequesScreen.svelte';
 
-const parametres = Object.fromEntries(Astro.url.searchParams);
+/*
+  Page figée : elle n'est plus rendue par un worker, mais servie depuis les actifs.
+  Elle ne porte donc aucune donnée, aucune identité et aucun paramètre d'URL — l'îlot
+  demande les siennes au relais, et lit l'URL dans le navigateur.
+*/
+export const prerender = true;
 ---
 
 <Layout title="Remises de Chèques - NBA 91">
   <AdminLayout
-    realEmail={Astro.locals.realUser?.email || ''}
-    name={Astro.locals.user?.name}
     client:idle
-    email={Astro.locals.user?.email || ''}
-    permissions={Astro.locals.user?.permissions || []}
     breadcrumb="Comptabilité / Remises de chèques / Gestion des chèques"
   >
     <div class="space-y-6">
-      <ChequesScreen client:load titre="Gestion des chèques" initialTab="checks" {parametres} />
+      <ChequesScreen client:load titre="Gestion des chèques" initialTab="checks" />
     </div>
   </AdminLayout>
 </Layout>

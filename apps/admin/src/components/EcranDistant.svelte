@@ -47,8 +47,16 @@
     /** Forme du squelette, à l'image du contenu attendu. */
     variante?: 'liste' | 'formulaire' | 'grille';
     /**
-     * Paramètres de requête, pour un écran qui porte sur un objet précis — l'éditeur
-     * d'une page, par exemple. Les autres écrans se désignent par leur seul nom.
+     * Paramètres à transmettre au relais.
+     *
+     * Omis, ce sont ceux de l'URL courante — lue **dans le navigateur**, au moment de la
+     * requête. C'est ce qui permet à une page figée de porter des filtres : construite une
+     * fois, elle n'a pas de chaîne de requête à passer, et seul le client sait laquelle
+     * l'utilisateur regarde.
+     *
+     * Une page rendue par le serveur peut encore les passer explicitement ; c'est
+     * équivalent, et ça évite un aller-retour dans le code pour comprendre d'où ils
+     * viennent.
      */
     parametres?: Record<string, string | number>;
     /**
@@ -81,7 +89,7 @@
     try {
       const recherche = parametres
         ? `?${new URLSearchParams(Object.entries(parametres).map(([c, v]) => [c, String(v)]))}`
-        : '';
+        : window.location.search;
       const res = await fetch(`/admin/api/${domaine}/${ecran}${recherche}`);
       if (!res.ok) throw new Error(String(res.status));
       donnees = (await res.json()).data;

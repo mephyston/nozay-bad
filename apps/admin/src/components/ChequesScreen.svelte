@@ -13,11 +13,9 @@
   let {
     titre,
     initialTab,
-    parametres = {}
   }: {
     titre: string;
     initialTab: 'checks' | 'deposits';
-    parametres?: Record<string, string>;
   } = $props();
 
   let seasonName = $state('');
@@ -58,7 +56,6 @@
     domaine="accounting"
     ecran="cheques"
     variante="liste"
-    {parametres}
     onDonnees={(d) => {
       seasonName = d.seasonName ?? '';
       isClosed = Boolean(d.isClosed);

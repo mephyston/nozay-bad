@@ -4,15 +4,17 @@ import AdminLayout from '../../../components/AdminLayout.svelte';
 import { PageHeader } from '@nba/ui';
 import MediaScreen from '../../../components/MediaScreen.svelte';
 
+/*
+  Page figée : elle n'est plus rendue par un worker, mais servie depuis les actifs.
+  Elle ne porte donc aucune donnée, aucune identité et aucun paramètre d'URL — l'îlot
+  demande les siennes au relais, et lit l'URL dans le navigateur.
+*/
+export const prerender = true;
 ---
 
 <Layout title="Médiathèque - NBA 91">
   <AdminLayout
-    realEmail={Astro.locals.realUser?.email || ''}
-    name={Astro.locals.user?.name}
     client:idle
-    email={Astro.locals.user?.email || ''}
-    permissions={Astro.locals.user?.permissions || []}
     breadcrumb="Médiathèque"
   >
     <div class="space-y-6">

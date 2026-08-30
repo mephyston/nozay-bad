@@ -3,8 +3,6 @@
   import { MembersTable } from '@nba/members-ui';
   import EcranDistant from './EcranDistant.svelte';
 
-  let { parametres = {} }: { parametres?: Record<string, string> } = $props();
-
   let seasonName = $state('');
   let errorMsg = $state<string | null>(null);
 </script>
@@ -23,7 +21,6 @@
     domaine="members"
     ecran="list"
     variante="liste"
-    {parametres}
     onDonnees={(d) => {
       seasonName = d.seasonName ?? '';
       errorMsg = d.errorMsg ?? null;

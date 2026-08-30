@@ -3,8 +3,6 @@
   import { RankingsManager } from '@nba/teams-ui';
   import EcranDistant from './EcranDistant.svelte';
 
-  let { season = '', eloDate = '' }: { season?: string; eloDate?: string } = $props();
-
   let seasons = $state<any[]>([]);
   let seasonCode = $state('');
   let errorMsg = $state<string | null>(null);
@@ -35,7 +33,6 @@
     domaine="teams"
     ecran="classements"
     variante="liste"
-    parametres={{ season, eloDate }}
     onDonnees={capter}
   >
     {#snippet pret(d)}

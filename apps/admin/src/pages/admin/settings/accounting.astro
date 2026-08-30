@@ -9,16 +9,18 @@ import SettingsScreen from '../../../components/SettingsScreen.svelte';
  * Rangé sous « Configuration » dans le menu, servi par le relais de la **comptabilité** :
  * c'est `accounting:config:*` qui le garde, et la permission décide du domaine.
  */
-const view = (Astro.url.searchParams.get('view') || 'compta') as 'compta' | 'classes';
+
+/*
+  Page figée : elle n'est plus rendue par un worker, mais servie depuis les actifs.
+  Elle ne porte donc aucune donnée, aucune identité et aucun paramètre d'URL — l'îlot
+  demande les siennes au relais, et lit l'URL dans le navigateur.
+*/
+export const prerender = true;
 ---
 
 <Layout title="Catégories et classes - NBA 91">
   <AdminLayout
-    realEmail={Astro.locals.realUser?.email || ''}
-    name={Astro.locals.user?.name}
     client:idle
-    email={Astro.locals.user?.email || ''}
-    permissions={Astro.locals.user?.permissions || []}
     breadcrumb="Configuration / Catégories et Classes"
   >
     <div class="space-y-6">
@@ -28,7 +30,7 @@ const view = (Astro.url.searchParams.get('view') || 'compta') as 'compta' | 'cla
         ecran="config"
         titre="Catégories et Plan comptable"
         description="Gérez les catégories comptables et les classes de comptes (Plan Comptable Associatif)."
-        {view}
+        view="compta"
         allowedViews={['compta', 'classes']}
       />
     </div>

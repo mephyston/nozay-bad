@@ -3,12 +3,6 @@
   import { DayValuesBoard } from '@nba/teams-ui';
   import EcranDistant from './EcranDistant.svelte';
 
-  let {
-    season = '',
-    championship = '',
-    day = ''
-  }: { season?: string; championship?: string; day?: string } = $props();
-
   let seasons = $state<any[]>([]);
   let seasonCode = $state('');
   let errorMsg = $state<string | null>(null);
@@ -39,7 +33,6 @@
     domaine="teams"
     ecran="journees"
     variante="liste"
-    parametres={{ season, championship, day }}
     onDonnees={capter}
   >
     {#snippet pret(d)}

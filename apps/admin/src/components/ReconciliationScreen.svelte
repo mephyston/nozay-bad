@@ -9,7 +9,6 @@
    * L'écran le plus cher de l'administration avant conversion : 148 ms mesurées en
    * préproduction, pour seize lectures.
    */
-  let { parametres = {} }: { parametres?: Record<string, string> } = $props();
 
   let errorMsg = $state<string | null>(null);
 </script>
@@ -22,7 +21,6 @@
   domaine="accounting"
   ecran="reconciliation"
   variante="liste"
-  {parametres}
   onDonnees={(d) => (errorMsg = d.errorMsg ?? null)}
 >
   {#snippet pret(d)}

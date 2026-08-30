@@ -14,8 +14,6 @@
    * données : titre et fil d'Ariane sont connus d'avance, et les faire attendre avec le
    * reste ferait sauter la page au moment où elle se remplit.
    */
-  let { season = '', championship = '' }: { season?: string; championship?: string } = $props();
-
   let seasons = $state<any[]>([]);
   let seasonCode = $state('');
   let errorMsg = $state<string | null>(null);
@@ -51,7 +49,6 @@
     domaine="teams"
     ecran="teams"
     variante="liste"
-    parametres={{ season, championship }}
     onDonnees={capter}
   >
     {#snippet pret(d)}

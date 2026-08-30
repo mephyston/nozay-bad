@@ -4,21 +4,22 @@ import AdminLayout from '../../../components/AdminLayout.svelte';
 import RankingsScreen from '../../../components/RankingsScreen.svelte';
 
 // L'import vit sur `/admin/teams/classements/import`, avec sa propre garde.
-const season = Astro.url.searchParams.get('season') ?? '';
-const eloDate = Astro.url.searchParams.get('eloDate') ?? '';
+
+/*
+  Page figée : elle n'est plus rendue par un worker, mais servie depuis les actifs.
+  Elle ne porte donc aucune donnée, aucune identité et aucun paramètre d'URL — l'îlot
+  demande les siennes au relais, et lit l'URL dans le navigateur.
+*/
+export const prerender = true;
 ---
 
 <Layout title="Classements - NBA 91">
   <AdminLayout
     client:idle
-    realEmail={Astro.locals.realUser?.email || ''}
-    name={Astro.locals.user?.name}
-    email={Astro.locals.user?.email}
-    permissions={Astro.locals.user?.permissions || []}
     breadcrumb="Classements"
   >
     <div class="space-y-6">
-      <RankingsScreen client:load {season} {eloDate} />
+      <RankingsScreen client:load />
     </div>
   </AdminLayout>
 </Layout>

@@ -11,21 +11,22 @@ import TeamsScreen from '../../../components/TeamsScreen.svelte';
  * requête, pas un appel — et garde l'URL comme seule source de vérité : le sélecteur de
  * saison navigue, et l'îlot est remonté avec la nouvelle valeur.
  */
-const season = Astro.url.searchParams.get('season') ?? '';
-const championship = Astro.url.searchParams.get('championship') ?? '';
+
+/*
+  Page figée : elle n'est plus rendue par un worker, mais servie depuis les actifs.
+  Elle ne porte donc aucune donnée, aucune identité et aucun paramètre d'URL — l'îlot
+  demande les siennes au relais, et lit l'URL dans le navigateur.
+*/
+export const prerender = true;
 ---
 
 <Layout title="Équipes - NBA 91">
   <AdminLayout
     client:idle
-    realEmail={Astro.locals.realUser?.email || ''}
-    name={Astro.locals.user?.name}
-    email={Astro.locals.user?.email}
-    permissions={Astro.locals.user?.permissions || []}
     breadcrumb="Équipes"
   >
     <div class="space-y-6">
-      <TeamsScreen client:load {season} {championship} />
+      <TeamsScreen client:load />
     </div>
   </AdminLayout>
 </Layout>

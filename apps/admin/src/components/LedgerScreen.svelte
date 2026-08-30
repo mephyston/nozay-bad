@@ -11,7 +11,6 @@
    * plutôt qu'énumérés un à un : l'URL reste la source de vérité, et un filtre ajouté
    * demain n'obligera pas à toucher trois fichiers.
    */
-  let { parametres = {} }: { parametres?: Record<string, string> } = $props();
 
   let seasonName = $state('');
 </script>
@@ -27,7 +26,6 @@
     domaine="accounting"
     ecran="ledger"
     variante="liste"
-    {parametres}
     onDonnees={(d) => (seasonName = d.seasonName ?? '')}
   >
     {#snippet pret(d)}

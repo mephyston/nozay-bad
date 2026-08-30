@@ -3,8 +3,6 @@
   import { RankingsImporter } from '@nba/teams-ui';
   import EcranDistant from './EcranDistant.svelte';
 
-  let { season = '' }: { season?: string } = $props();
-
   let seasons = $state<any[]>([]);
   let seasonCode = $state('');
   let errorMsg = $state<string | null>(null);
@@ -40,7 +38,6 @@
     domaine="teams"
     ecran="import"
     variante="formulaire"
-    parametres={{ season }}
     onDonnees={capter}
   >
     {#snippet pret(d)}

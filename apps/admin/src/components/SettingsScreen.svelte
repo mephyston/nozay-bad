@@ -27,9 +27,21 @@
     ecran: 'config' | 'seasons' | 'categories';
     titre: string;
     description: string;
+    /** Vue ouverte à défaut ; `?view=` de l'URL la remplace si elle est permise. */
     view: 'seasons' | 'compta' | 'classes' | 'shop';
     allowedViews: ('seasons' | 'compta' | 'classes' | 'shop')[];
   } = $props();
+
+  /*
+    L'onglet ouvert vient de l'URL, lue dans le navigateur : une page figée n'a pas de
+    chaîne de requête à passer. Contrôlé contre `allowedViews` — sans quoi `?view=seasons`
+    sur l'écran de la boutique ouvrirait un onglet que la page ne sert pas.
+  */
+  const vue = $derived.by(() => {
+    if (typeof window === 'undefined') return view;
+    const demandee = new URLSearchParams(window.location.search).get('view');
+    return demandee && (allowedViews as string[]).includes(demandee) ? (demandee as typeof view) : view;
+  });
 
   let errorMsg = $state<string | null>(null);
 </script>
@@ -54,7 +66,7 @@
         accountClasses={d.accountClasses ?? []}
         productCategories={d.productCategories ?? []}
         seasonId=""
-        {view}
+        view={vue}
         {allowedViews}
       />
     {/snippet}

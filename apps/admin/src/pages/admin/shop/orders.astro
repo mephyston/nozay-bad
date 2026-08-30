@@ -3,21 +3,21 @@ import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
 import OrdersScreen from '../../../components/OrdersScreen.svelte';
 
-const parametres = Object.fromEntries(Astro.url.searchParams);
-const initialAction = Astro.url.searchParams.get('action');
+/*
+  Page figée : elle n'est plus rendue par un worker, mais servie depuis les actifs.
+  Elle ne porte donc aucune donnée, aucune identité et aucun paramètre d'URL — l'îlot
+  demande les siennes au relais, et lit l'URL dans le navigateur.
+*/
+export const prerender = true;
 ---
 
 <Layout title="Validation des Commandes - NBA 91">
   <AdminLayout
-    realEmail={Astro.locals.realUser?.email || ''}
-    name={Astro.locals.user?.name}
     client:idle
-    email={Astro.locals.user?.email || ''}
-    permissions={Astro.locals.user?.permissions || []}
     breadcrumb="Boutique / Commandes"
   >
     <div class="space-y-6">
-      <OrdersScreen client:load {parametres} {initialAction} />
+      <OrdersScreen client:load />
     </div>
   </AdminLayout>
 </Layout>
