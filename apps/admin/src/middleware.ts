@@ -6,6 +6,7 @@ import { resolveEnv as resolveRuntimeEnv } from '@nba/runtime-env';
 import { can, resolvePermissions, isRole, DEFAULT_ROLE, type ActorDto, type Role } from '@nba/iam-ui';
 import { applySecurityHeaders } from './lib/security-headers';
 import { PAGE_PERMISSIONS, matchPagePattern, isPageRoute } from './lib/page-permissions';
+import { impersonationEnabled } from './lib/guard';
 
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
@@ -169,7 +170,10 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
   // Usurpation : réservée au droit `iam:sessions:impersonate`, revérifié à chaque
   // requête sur l'identité *réelle*. Le cookie seul n'accorde donc rien, et le
   // révoquer du rôle coupe l'usurpation en cours.
-  const impersonated = readCookie(request, 'impersonate_email');
+  // Hors préproduction, le cookie est inerte : un jeton qui traînerait d'un environnement
+  // à l'autre n'ouvre rien. C'est ici que la garde compte — masquer le menu ne serait
+  // qu'un décor.
+  const impersonated = impersonationEnabled() ? readCookie(request, 'impersonate_email') : null;
   if (impersonated && impersonated !== realActor.email && can(realActor.permissions, 'iam:sessions:impersonate')) {
     try {
       const target = await fetchActor(env, impersonated);

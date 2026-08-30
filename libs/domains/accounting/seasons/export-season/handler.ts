@@ -1,5 +1,5 @@
 import { type Db } from '@nba/db';
-import { zipSync, strToU8 } from 'fflate';
+import { zipSync, strToU8, type Zippable } from 'fflate';
 import { generateInvoicePdf } from '../../invoices/shared/generate-invoice-pdf';
 import { listInvoices } from '../../invoices/list-invoices/handler';
 import { getInvoice } from '../../invoices/get-invoice/handler';
@@ -125,9 +125,27 @@ export async function exportSeasonArchive(db: Db, season: string, type: 'all' | 
   }
   
   const zipFilePrefix = type === 'invoices' ? 'factures' : type === 'expenses' ? 'notes-de-frais' : 'export-compta';
-  
+
+  /*
+   * Ne pas compresser ce qui l'est déjà.
+   *
+   * L'archive est faite de PDF et de photos de justificatifs — des formats compressés à
+   * la source. Les déflater une seconde fois coûte du processeur pour quelques octets :
+   * mesuré sur la production, cet export tenait 112 ms de temps CPU en moyenne et 206 au
+   * pire, de loin l'opération la plus lourde de la plateforme, sur un plan gratuit qui en
+   * accorde 10 par invocation. Le journal comptable, lui, est du texte : il garde sa
+   * compression, et pèse peu.
+   */
+  const DEJA_COMPRESSE = /\.(pdf|jpe?g|png|webp|avif|gif|zip)$/i;
+  const archive: Zippable = Object.fromEntries(
+    Object.entries(zipData).map(([nom, octets]) => [
+      nom,
+      [octets, { level: DEJA_COMPRESSE.test(nom) ? 0 : 6 }] as [Uint8Array, { level: 0 | 6 }]
+    ])
+  );
+
   return {
-    data: zipSync(zipData),
+    data: zipSync(archive),
     filename: `${zipFilePrefix}-${season}.zip`,
     mimeType: 'application/zip'
   };

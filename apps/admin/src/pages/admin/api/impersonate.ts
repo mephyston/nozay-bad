@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { can as canPermission } from '@nba/iam-ui';
-import { forbidden } from '../../../lib/guard';
+import { forbidden, impersonationEnabled } from '../../../lib/guard';
 
 const COOKIE = 'impersonate_email';
 
@@ -25,6 +25,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const secure = import.meta.env.DEV ? '' : ' Secure;';
+
+  /*
+   * Prendre une identité est réservé aux environnements de test ; l'abandonner reste
+   * toujours possible. L'ordre importe : un compte qui traînerait un cookie d'usurpation
+   * doit pouvoir en sortir même là où la fonctionnalité n'existe plus — sans quoi on
+   * l'enfermerait dans une identité que le middleware ignore déjà.
+   */
+  if (body.email && !impersonationEnabled()) {
+    return json(
+      { success: false, error: "L'usurpation d'identité n'est ouverte qu'en préproduction." },
+      403
+    );
+  }
 
   /*
    * Abandonner une identité ne demande aucun droit.

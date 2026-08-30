@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { POST } from './impersonate';
 
 /**
@@ -28,6 +28,14 @@ const pendantUsurpation = {
 };
 
 describe('POST /admin/api/impersonate', () => {
+  /*
+   * L'usurpation est un outil de préproduction : `impersonationEnabled()` la ferme
+   * partout ailleurs, et le repli en l'absence de variable est « production ». Ces tests
+   * déclarent donc leur environnement, plutôt que de dépendre d'un défaut.
+   */
+  beforeEach(() => vi.stubEnv('PUBLIC_APP_ENV', 'staging'));
+  afterEach(() => vi.unstubAllEnvs());
+
   it('laisse revenir à son compte depuis une identité sans le moindre droit', async () => {
     const res = await call({ email: null }, pendantUsurpation);
 
@@ -85,5 +93,30 @@ describe('POST /admin/api/impersonate', () => {
     } as never);
 
     expect(res.status).toBe(400);
+  });
+
+  describe('en production', () => {
+    beforeEach(() => vi.stubEnv('PUBLIC_APP_ENV', 'production'));
+
+    it("refuse de prendre l'identité d'un autre", async () => {
+      const res = await call(
+        { email: 'cible@nozaybad.fr' },
+        { user: { permissions: ['iam:sessions:impersonate'] }, realUser: { permissions: ['iam:sessions:impersonate'] } }
+      );
+
+      expect(res.status).toBe(403);
+      expect(res.headers.get('set-cookie')).toBeNull();
+    });
+
+    it("laisse toujours abandonner une identité empruntée", async () => {
+      /*
+       * Sans cette exception, un compte portant encore un cookie d'un environnement où
+       * la fonctionnalité existait serait enfermé : refusé à l'entrée comme à la sortie.
+       */
+      const res = await call({ email: null }, { user: {}, realUser: {} });
+
+      expect(res.status).toBe(200);
+      expect(res.headers.get('set-cookie')).toContain('impersonate_email=;');
+    });
   });
 });

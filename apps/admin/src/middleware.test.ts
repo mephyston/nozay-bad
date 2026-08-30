@@ -317,6 +317,10 @@ describe('Astro Auth Middleware', () => {
   describe('usurpation', () => {
     const impersonationCookie = 'impersonate_email=cible%40nozay-bad.fr';
 
+    // Fonctionnalité de préproduction : le middleware ignore le cookie ailleurs.
+    beforeEach(() => vi.stubEnv('PUBLIC_APP_ENV', 'staging'));
+    afterEach(() => vi.unstubAllEnvs());
+
     beforeEach(() => {
       ACCOUNTS['cible@nozay-bad.fr'] = {
         roles: ['secretaire'],
