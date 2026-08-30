@@ -5,6 +5,8 @@ import AstroPWA from '@vite-pwa/astro';
 import tailwindcss from '@tailwindcss/vite';
 import { satteri } from '@astrojs/markdown-satteri';
 import { satteriAlerts } from './plugins/markdown-alerts.mjs';
+import { headersStatiques } from './plugins/headers-statiques.mjs';
+import { buildCsp } from './src/lib/csp.ts';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -52,6 +54,8 @@ export default defineConfig({
     runtime: { mode: 'local' }
   }),
   integrations: [
+    // Les pages figées échappent au middleware : leurs en-têtes passent par `_headers`.
+    headersStatiques({ csp: buildCsp(WEBSITE_URL) }),
     svelte(),
     AstroPWA({
       registerType: 'autoUpdate',
@@ -84,7 +88,22 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{css,js,svg,png,ico,txt}']
+        globPatterns: ['**/*.{css,js,svg,png,ico,txt}'],
+        /*
+         * Pas de repli de navigation, et c'est ce qui rend ce service worker installable.
+         *
+         * Par défaut, workbox enregistre une `NavigationRoute` liée à `/` via
+         * `createHandlerBoundToURL`, qui **lève** quand l'URL n'est pas précachée. Or le
+         * HTML est délibérément exclu de `globPatterns` : les pages de l'administration
+         * sont nominatives, et les garder sur l'appareil contredirait le `no-store`
+         * qu'elles portent. Le script échouait donc à l'évaluation, et le service worker
+         * ne s'installait jamais — `autoUpdate` compris.
+         *
+         * Un repli n'aurait de sens que pour une application qui sait fonctionner hors
+         * ligne. Celle-ci est derrière Cloudflare Access et lit une base : sans réseau,
+         * une coquille vide n'apprendrait rien à personne.
+         */
+        navigateFallback: null
       }
     })
   ],

@@ -298,18 +298,35 @@ describe("Identité affichée (admin)", () => {
     .filter((f) => !f.includes('/dist/'))
     .map((f) => ({ path: path.relative(ROOT, f), content: fs.readFileSync(f, 'utf-8') }));
 
-  it('passe email ET realEmail à chaque AdminLayout', () => {
+  it('passe email ET realEmail à AdminLayout, ou aucun des deux', () => {
+    /*
+     * La règle était « les deux » ; elle devient « les deux, ou aucun ».
+     *
+     * Ce qui la motivait reste : `realEmail` sans `email` compare une adresse à la chaîne
+     * vide, et le bandeau d'usurpation se lève pour un compte qui n'a emprunté personne,
+     * en proposant de « revenir » à un compte jamais quitté.
+     *
+     * Mais depuis que `AdminLayout` va chercher son identité sur `/admin/api/me`, une page
+     * peut légitimement n'en passer aucune — c'est même **obligatoire** pour une page
+     * figée, qui n'a pas de `Astro.locals`. Le demi-passage reste la faute ; l'absence
+     * complète est désormais un choix.
+     */
     const offenders: string[] = [];
     for (const file of adminViews) {
       for (const match of file.content.matchAll(/<AdminLayout\b[^>]*>/g)) {
         const tag = match[0];
-        const missing = ['email', 'realEmail'].filter(
-          (prop) => !new RegExp(`(^|\\s)${prop}=`).test(tag)
+        const presents = ['email', 'realEmail'].filter((prop) =>
+          new RegExp(`(^|\\s)${prop}=`).test(tag)
         );
-        if (missing.length) offenders.push(`${file.path} (manque ${missing.join(', ')})`);
+        if (presents.length === 1) {
+          offenders.push(`${file.path} (ne passe que ${presents[0]})`);
+        }
       }
     }
-    expect(offenders, `AdminLayout sans identité complète :\n${offenders.join('\n')}`).toEqual([]);
+    expect(
+      offenders,
+      `AdminLayout avec une identité à moitié passée :\n${offenders.join('\n')}`
+    ).toEqual([]);
   });
 
   it("ne code en dur aucune adresse du jeu d'essai dans une vue", () => {

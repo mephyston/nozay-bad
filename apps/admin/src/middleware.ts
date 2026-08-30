@@ -235,5 +235,18 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
 
 // M-03 : toutes les réponses reçoivent les en-têtes de sécurité.
 export const onRequest = defineMiddleware(async (context, next) => {
+  /*
+   * Une page figée ne passe pas par ici — sauf **au build**, où Astro exécute le
+   * middleware pour la rendre.
+   *
+   * Sans cette sortie, `handleAuth` s'exécutait sans jeton Cloudflare Access et refusait :
+   * c'est son refus qui était gravé dans le fichier statique, et « Non autorisé » aurait
+   * été servi à tout le monde, indéfiniment. Le fichier produit faisait 58 octets.
+   *
+   * Rien n'est perdu à l'exécution : ces pages ne portent aucune donnée, Access filtre
+   * l'hôte en amont des actifs, et leurs en-têtes de sécurité viennent de `_headers`.
+   */
+  if (context.isPrerendered) return next();
+
   return applySecurityHeaders(await handleAuth(context, next));
 });

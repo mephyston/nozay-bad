@@ -26,24 +26,33 @@ import MenusScreen from '../../../components/MenusScreen.svelte';
  * un plancher sur deux ou trois tirages ne veut rien dire — il a fallu une soixantaine de
  * chargements pour qu'il se stabilise.
  *
- * L'habillage reste côté serveur — et c'est désormais **le** poste de coût, pas un
- * détail. Le figer (`prerender`) le ramènerait à zéro, mais retirerait `PAGE_PERMISSIONS`
- * de la page et priverait `AdminLayout` de l'identité que le serveur lui passe
- * aujourd'hui : le menu et le bandeau d'usurpation devraient aller la chercher eux-mêmes.
- * Arbitrage ouvert, à trancher sur des mesures et non sur une intuition.
+ * ## Première page figée
+ *
+ * `prerender` : cette page n'est plus rendue par un worker du tout. Elle est servie
+ * depuis les actifs, **avant** lui — coût CPU nul.
+ *
+ * Ce que ça suppose, et qui est en place :
+ *
+ * - `AdminLayout` va chercher son identité sur `/admin/api/me` : sans serveur pour la lui
+ *   passer, le menu s'afficherait vide. La page ne lui transmet donc plus rien.
+ * - Les en-têtes de sécurité viennent de `_headers`, écrit au build : le middleware ne
+ *   tourne pas sur une page figée, et `applySecurityHeaders` non plus.
+ * - `PAGE_PERMISSIONS` ne garde plus cette page. La garde est côté API — le relais
+ *   vérifie, l'API revérifie — et Cloudflare Access filtre l'hôte entier en amont des
+ *   actifs. Ce qui disparaît est la séparation des rôles *dans* une administration déjà
+ *   authentifiée : un compte du bureau sans le droit CMS verrait la coquille et se
+ *   ferait refuser ses données. Arbitrage assumé.
  */
+export const prerender = true;
 
 ---
 
 <Layout title="Menus du site - NBA 91">
-  <AdminLayout
-    realEmail={Astro.locals.realUser?.email || ''}
-    name={Astro.locals.user?.name}
-    client:idle
-    email={Astro.locals.user?.email || ''}
-    permissions={Astro.locals.user?.permissions || []}
-    breadcrumb="Menus du site"
-  >
+  <!--
+    Aucune prop d'identité : une page figée n'a pas de `Astro.locals`. `AdminLayout` la
+    demande lui-même, et l'affiche depuis son dernier état connu en attendant.
+  -->
+  <AdminLayout client:idle breadcrumb="Menus du site">
     <div class="space-y-6">
       <PageHeader
         title="Menus du site"
