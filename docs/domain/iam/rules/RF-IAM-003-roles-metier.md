@@ -65,7 +65,7 @@ Les droits s'attribuent par fonction dans l'association, pas permission par perm
 | Interclubs — équipes | | | ✓ | lecture | | lecture | ✓ |
 | Interclubs — classements, import | | | ✓ | lecture | | lecture | ✓ |
 | Interclubs — compositions | | | ✓ | lecture | | lecture | ✓ |
-| Assistant IA | | | | | ✓ | ✓ | ✓ |
+| Aides IA | | | | | ✓ | ✓ | ✓ |
 | Réglages (accueil) | | | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Gestion des accès | | | | | | ✓ | ✓ |
 | Usurpation | | | | | | | ✓ |

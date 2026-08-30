@@ -37,4 +37,4 @@ Le lien **Voir les nouveautés** de l'écran de démarrage, ainsi que la page `/
 
 ## Assistance
 
-Le **Centre d'aide** (cette rubrique) est ouvert à tout compte. Si vous disposez du droit correspondant, l'**Assistant IA** peut également répondre à vos questions à partir de ces mêmes articles.
+Le **Centre d'aide** (cette rubrique) est ouvert à tout compte.

@@ -15,7 +15,6 @@
     "dev:admin": "nx dev admin",
     "dev:storefront": "nx dev storefront",
     "dev:website": "nx dev website",
-    "build:knowledge": "node apps/api/scripts/build-knowledge.js",
     "logs:admin": "cd apps/admin && astro dev logs --follow",
     "logs:storefront": "cd apps/storefront && astro dev logs --follow",
     "logs:website": "cd apps/website && astro dev logs --follow",

@@ -24,7 +24,6 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
 
   '/admin/help': 'help:docs:read',
   '/admin/help/[slug]': 'help:docs:read',
-  '/admin/ai': 'ai:assistant:use',
 
   '/admin/members': 'members:members:read',
   '/admin/members/dirigeants': 'members:members:read',

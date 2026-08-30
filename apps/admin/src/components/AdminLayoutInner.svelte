@@ -17,7 +17,6 @@
     Package,
     ShoppingCart,
     Settings,
-    Sparkles,
     ChevronDown,
     ChevronUp,
     ChevronsUpDown,
@@ -62,7 +61,7 @@
   // Les icônes sont résolues ici : `nav.ts` est aussi importé côté serveur (middleware),
   // où l'on ne veut pas charger de composants Svelte.
   const ICONS: Record<string, any> = {
-    LayoutDashboard, Sparkles, Users, BarChart3, BookOpen, FileCheck, Scale,
+    LayoutDashboard, Users, BarChart3, BookOpen, FileCheck, Scale,
     Landmark, Wallet, Coins, Package, ShoppingCart, Bell, Megaphone, Image, FileText, Newspaper, CalendarClock, CalendarDays, PanelBottom, Settings, User, HelpCircle,
     Trophy, ChartNoAxesColumn, ShieldCheck, Signpost, DoorOpen, KeyRound,
     Menu: MenuIcon
@@ -208,10 +207,6 @@
 
     if (item.href === "/") {
       return breadcrumb === "Tableau de Bord" || primary === "tableau de bord" || primary === "vue d'ensemble";
-    }
-
-    if (item.href === "/admin/ai") {
-      return primary === "assistant ia" || primary === "ia";
     }
 
     if (item.href === "/admin/expenses") {

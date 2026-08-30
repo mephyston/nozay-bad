@@ -46,4 +46,4 @@ Les exports de données (journal, factures, justificatifs) sont décrits dans [E
 
 ## Analyse assistée
 
-Sur le compte de résultat et le bilan de trésorerie, un bouton demande une **analyse rédigée** du rapport affiché. Elle nécessite le droit correspondant — voir [Assistant IA](/admin/help/assistant-ia).
+Sur le compte de résultat et le bilan de trésorerie, un bouton demande une **analyse rédigée** du rapport affiché. Elle nécessite le droit correspondant — voir [Les aides IA](/admin/help/assistant-ia).

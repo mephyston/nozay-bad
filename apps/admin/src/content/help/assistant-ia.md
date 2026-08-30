@@ -1,22 +1,13 @@
 ---
-title: "Assistant IA"
-description: "Poser une question sur l'application ou sur les chiffres du club, et les aides IA disséminées dans les écrans."
+title: "Les aides IA"
+description: "Les coups de main fondés sur l'intelligence artificielle, disséminés dans les écrans."
 category: "admin"
 order: 5
 ---
 
-L'application intègre plusieurs aides fondées sur l'intelligence artificielle. Elles nécessitent toutes le droit **Assistant IA**, et aucune n'agit à votre place : elles proposent, vous décidez.
+L'application intègre plusieurs aides fondées sur l'intelligence artificielle. Elles nécessitent toutes le droit **Aides IA**, et aucune n'agit à votre place : elles proposent, vous décidez.
 
-## L'assistant conversationnel
-
-La rubrique **Assistant IA** du menu ouvre une conversation. L'assistant est cantonné au club : il refuse poliment les questions hors sujet.
-
-Il sait faire deux choses :
-
-1. **Répondre sur le fonctionnement du logiciel**, à partir des articles de ce centre d'aide. C'est la même documentation que celle que vous lisez ici — un article incomplet donne donc une réponse incomplète.
-2. **Aller chercher les chiffres réels du club** lorsque la question l'exige. Il dispose pour cela de trois outils : les rapports d'une saison, la liste des adhérents, et les statistiques d'effectif (répartition par genre, âge moyen, tranches d'âge).
-
-Vous pouvez repartir de zéro à tout moment ; l'historique n'est pas conservé d'une visite à l'autre.
+Chacune se déclenche depuis l'écran qu'elle concerne, par un bouton — il n'y a pas de rubrique dédiée dans le menu.
 
 ## L'analyse d'un rapport
 

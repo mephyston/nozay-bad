@@ -299,8 +299,6 @@ function checkInternalTransferRule() {
       const relative = path.relative(ROOT_DIR, full);
       // Le module propriétaire de la règle, et le script d'audit qui lit l'historique.
       if (relative === OWNER || relative.includes('audit-internal-transfers')) continue;
-      // `ai-knowledge.ts` recopie le centre d'aide : c'est de la documentation, pas une règle.
-      if (relative.endsWith('ai-knowledge.ts')) continue;
 
       const content = fs.readFileSync(full, 'utf8');
       if (/(startsWith|includes)\(\s*['"`]Virements? [Ii]nternes?/.test(content)) {

@@ -31,13 +31,12 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // seul `super_admin` porte cette permission (voir permissions.ts).
   { method: 'PUT', path: '/iam/roles/:role', permission: 'iam:roles:write' },
 
-  // ── Tableau de bord et assistant IA ────────────────────────────────────────
+  // ── Tableau de bord ────────────────────────────────────────────────────────
   { method: 'GET', path: '/dashboard/overview', permission: 'dashboard:overview:read' },
 
   // Consommation Cloudflare. Aucune donnée du club, mais un jeton qui voit tout le
   // compte : jamais ouvert aux appelants de service.
   { method: 'GET', path: '/platform/usage', permission: 'settings:platform:read' },
-  { method: 'POST', path: '/ai/chat', permission: 'ai:assistant:use' },
 
   // ── Adhérents ──────────────────────────────────────────────────────────────
   { method: 'GET', path: '/members', permission: 'members:members:read' },

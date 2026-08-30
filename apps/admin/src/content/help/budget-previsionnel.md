@@ -17,7 +17,7 @@ Les totaux par classe et les totaux généraux se recalculent au fur et à mesur
 
 ## Se faire proposer des montants
 
-Un bouton demande une **suggestion de budget**. Elle ne remplit que les lignes **vides ou à zéro** : les montants déjà saisis ne sont jamais écrasés. Vous restez libre de les corriger avant d'enregistrer. Cette fonction nécessite le droit *Assistant IA*.
+Un bouton demande une **suggestion de budget**. Elle ne remplit que les lignes **vides ou à zéro** : les montants déjà saisis ne sont jamais écrasés. Vous restez libre de les corriger avant d'enregistrer. Cette fonction nécessite le droit *Aides IA*.
 
 ## Comparer au réalisé
 

@@ -81,7 +81,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'teams:lineups:read': 'Consulter les compositions et les valeurs d’équipe',
   'teams:lineups:write': 'Modifier une composition de rencontre',
 
-  'ai:assistant:use': "Utiliser l'assistant IA",
+  'ai:assistant:use': 'Utiliser les aides IA (analyse, suggestions, lecture de chèque)',
 
   'settings:hub:read': 'Accéder aux réglages',
   'settings:platform:read': 'Consulter la consommation de la plateforme',

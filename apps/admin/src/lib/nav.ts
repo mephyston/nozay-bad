@@ -38,8 +38,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: '',
     items: [
-      { name: 'Tableau de bord', icon: 'LayoutDashboard', href: '/', permission: 'dashboard:overview:read' },
-      { name: 'Assistant IA', icon: 'Sparkles', href: '/admin/ai', permission: 'ai:assistant:use' }
+      { name: 'Tableau de bord', icon: 'LayoutDashboard', href: '/', permission: 'dashboard:overview:read' }
     ]
   },
   {

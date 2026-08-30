@@ -71,7 +71,6 @@ export {
 } from './shared/queries';
 export * from './shared/dashboard';
 export { listMembers } from './list-members/handler';
-export { getMemberStats } from './get-member-stats/handler';
 export { listClubFunctions } from './list-club-functions/handler';
 export { saveClubFunctions } from './save-club-functions/handler';
 export type { ClubFunctionAssignment } from './list-club-functions/dto';
