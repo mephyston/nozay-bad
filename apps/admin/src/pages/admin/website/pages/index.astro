@@ -55,7 +55,7 @@ if (Astro.request.method === 'POST') {
         description="Les pages du site public. Une page reste invisible tant qu'elle n'est pas publiée."
       />
 
-      <PagesScreen client:only="svelte" />
+      <PagesScreen client:load />
     </div>
   </AdminLayout>
 </Layout>

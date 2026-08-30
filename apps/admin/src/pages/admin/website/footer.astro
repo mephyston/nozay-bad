@@ -57,7 +57,7 @@ if (Astro.request.method === 'POST') {
         description="Ce que le bas du site public affiche en propre : la présentation du club, son adresse et ses réseaux sociaux. Les liens se composent depuis « Menus du site », emplacements « Pied de page » et « Barre légale »."
       />
 
-      <FooterScreen client:only="svelte" />
+      <FooterScreen client:load />
     </div>
   </AdminLayout>
 </Layout>

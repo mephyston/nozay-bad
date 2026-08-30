@@ -129,7 +129,7 @@ if (Astro.request.method === 'POST') {
         description="Les communications du club. Publiques, elles paraissent sur le site et dans l'espace adhérent ; réservées, dans l'espace adhérent seul — et peuvent alors déclencher une notification."
       />
 
-      <PostsScreen client:only="svelte" />
+      <PostsScreen client:load />
     </div>
   </AdminLayout>
 </Layout>

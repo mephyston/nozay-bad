@@ -5,6 +5,16 @@
   /**
    * La mécanique de chargement d'un écran monté dans le navigateur.
    *
+   * Monté en `client:load` et non `client:only`, pour une raison qui a coûté une panne :
+   * le routeur d'Astro **ne sait pas naviguer vers une page dont le contenu est
+   * `client:only`**. Le clic dans la barre latérale n'aboutissait pas, l'URL ne bougeait
+   * pas, et rien n'était journalisé côté serveur — la page se chargeait pourtant très
+   * bien quand on l'ouvrait directement.
+   *
+   * `client:load` ne coûte presque rien ici : au rendu serveur, les données ne sont pas
+   * encore là, donc c'est le **squelette** qui est produit — une vingtaine de balises —
+   * et jamais le composant métier. Tout le gain de la coquille est conservé.
+   *
    * Six écrans de la rubrique « site web » suivent le même cycle — demander ses données
    * au relais, patienter, afficher, ou proposer de réessayer. Écrite six fois, cette
    * mécanique aurait divergé six fois : c'est le délai avant squelette qui aurait fini

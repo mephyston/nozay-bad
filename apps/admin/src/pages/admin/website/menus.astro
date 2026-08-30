@@ -73,7 +73,7 @@ if (Astro.request.method === 'POST') {
         description="La barre de navigation, la colonne de liens du pied de page et la barre légale du site public. Une entrée principale peut porter un sous-menu, qui s'affiche au survol sur ordinateur et dans le menu déroulant sur mobile."
       />
 
-      <MenusScreen client:only="svelte" />
+      <MenusScreen client:load />
     </div>
   </AdminLayout>
 </Layout>

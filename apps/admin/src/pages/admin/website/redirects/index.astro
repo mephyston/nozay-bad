@@ -65,7 +65,7 @@ if (Astro.request.method === 'POST') {
         description="Les anciennes adresses du site et leur destination. Une adresse sans cible répond « page supprimée » (410) : les moteurs la retirent de leur index. Le compteur dit si une adresse sert encore."
       />
 
-      <RedirectsScreen client:only="svelte" />
+      <RedirectsScreen client:load />
     </div>
   </AdminLayout>
 </Layout>

@@ -72,7 +72,7 @@ if (Astro.request.method === 'POST') {
         description="Images et documents du site public. Les fichiers déposés ici sont réutilisables dans toutes les pages."
       />
 
-      <MediaScreen client:only="svelte" />
+      <MediaScreen client:load />
     </div>
   </AdminLayout>
 </Layout>
