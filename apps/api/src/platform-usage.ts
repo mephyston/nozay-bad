@@ -163,7 +163,9 @@ interface DatabaseRow {
 interface DailyInvocationRow {
   dimensions: { date: string; scriptName: string };
   sum: { requests: number };
+  min?: { cpuTime: number | null };
   quantiles: {
+    cpuTimeP25: number | null;
     cpuTimeP50: number | null;
     cpuTimeP75: number | null;
     cpuTimeP90: number | null;
@@ -197,6 +199,18 @@ export interface DayPoint {
    * qu'on lit ici n'est pas le coût d'une route mais une tendance, « est-ce que ça
    * s'alourdit ». Le détail par route se lit dans le tableau des workers.
    */
+  /**
+   * Plancher et premier quart de la journée.
+   *
+   * Aucun des deux jeux de données de Cloudflare ne signale un démarrage à froid — 147
+   * champs passés en revue, pas un seul. Or sur un worker peu visité, l'initialisation de
+   * l'isolate est comptée dans le temps CPU et gonfle jusqu'à la médiane : le pied de page
+   * de l'administration est passé de 86 ms à 6 selon qu'on le mesurait sur une visite ou
+   * sur six. Le minimum et le premier quartile passent sous cette contamination : ils
+   * disent ce que coûte le travail **à chaud**.
+   */
+  cpuMinMs: number;
+  cpuP25Ms: number;
   cpuP50Ms: number;
   cpuP75Ms: number;
   cpuP90Ms: number;
@@ -227,7 +241,8 @@ query($account: String!, $since: Time!, $historySince: Time!) {
       workersDaily: workersInvocationsAdaptive(limit: 1000, filter: { datetime_geq: $historySince }) {
         dimensions { date scriptName }
         sum { requests }
-        quantiles { cpuTimeP50 cpuTimeP75 cpuTimeP90 cpuTimeP95 cpuTimeP99 }
+        min { cpuTime }
+        quantiles { cpuTimeP25 cpuTimeP50 cpuTimeP75 cpuTimeP90 cpuTimeP95 cpuTimeP99 }
       }
       d1Daily: d1AnalyticsAdaptiveGroups(limit: 500, filter: { datetime_geq: $historySince }) {
         dimensions { date }
@@ -307,7 +322,10 @@ export function aggregateUsage(
   // Somme par jour, puis projection sur le calendrier complet : les jours sans activité
   // valent zéro et gardent leur place, plutôt que de disparaître du graphique.
   const requestsByDay = new Map<string, number>();
-  const cpuByDay = new Map<string, Record<'p50' | 'p75' | 'p90' | 'p95' | 'p99', number>>();
+  const cpuByDay = new Map<
+    string,
+    Record<'min' | 'p25' | 'p50' | 'p75' | 'p90' | 'p95' | 'p99', number>
+  >();
   const workersVus = new Set<string>();
   for (const row of account.workersDaily ?? []) {
     const jour = row.dimensions.date;
@@ -318,7 +336,12 @@ export function aggregateUsage(
     requestsByDay.set(jour, (requestsByDay.get(jour) ?? 0) + row.sum.requests);
     if (worker && row.dimensions.scriptName !== worker) continue;
     // Les quantiles ne s'additionnent pas : on retient le pire, comme pour les workers.
-    const cpu = cpuByDay.get(jour) ?? { p50: 0, p75: 0, p90: 0, p95: 0, p99: 0 };
+    const cpu = cpuByDay.get(jour) ?? { min: 0, p25: 0, p50: 0, p75: 0, p90: 0, p95: 0, p99: 0 };
+    // Le plancher se retient au plus **bas**, contrairement aux quantiles : c'est le seul
+    // agrégat dont la valeur intéressante est la plus petite.
+    const plancher = roundMs(row.min?.cpuTime ?? 0);
+    cpu.min = cpu.min === 0 ? plancher : Math.min(cpu.min, plancher);
+    cpu.p25 = Math.max(cpu.p25, roundMs(row.quantiles?.cpuTimeP25 ?? 0));
     cpu.p50 = Math.max(cpu.p50, roundMs(row.quantiles?.cpuTimeP50 ?? 0));
     cpu.p75 = Math.max(cpu.p75, roundMs(row.quantiles?.cpuTimeP75 ?? 0));
     cpu.p90 = Math.max(cpu.p90, roundMs(row.quantiles?.cpuTimeP90 ?? 0));
@@ -339,6 +362,8 @@ export function aggregateUsage(
     workerRequests: requestsByDay.get(date) ?? 0,
     d1RowsRead: d1ByDay.get(date)?.read ?? 0,
     d1RowsWritten: d1ByDay.get(date)?.written ?? 0,
+    cpuMinMs: cpuByDay.get(date)?.min ?? 0,
+    cpuP25Ms: cpuByDay.get(date)?.p25 ?? 0,
     cpuP50Ms: cpuByDay.get(date)?.p50 ?? 0,
     cpuP75Ms: cpuByDay.get(date)?.p75 ?? 0,
     cpuP90Ms: cpuByDay.get(date)?.p90 ?? 0,

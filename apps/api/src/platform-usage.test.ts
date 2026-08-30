@@ -192,12 +192,14 @@ describe('aggregateUsage', () => {
           {
             dimensions: { date: '2026-08-27', scriptName: 'nba-api' },
             sum: { requests: 900 },
-            quantiles: { cpuTimeP50: 4000, cpuTimeP75: 8000, cpuTimeP90: 15000, cpuTimeP95: 20000, cpuTimeP99: 30000 }
+            min: { cpuTime: 1500 },
+            quantiles: { cpuTimeP25: 2500, cpuTimeP50: 4000, cpuTimeP75: 8000, cpuTimeP90: 15000, cpuTimeP95: 20000, cpuTimeP99: 30000 }
           },
           {
             dimensions: { date: '2026-08-29', scriptName: 'nba-api' },
             sum: { requests: 500 },
-            quantiles: { cpuTimeP50: 2000, cpuTimeP75: 3000, cpuTimeP90: 6000, cpuTimeP95: 9000, cpuTimeP99: 12000 }
+            min: { cpuTime: 900 },
+            quantiles: { cpuTimeP25: 1200, cpuTimeP50: 2000, cpuTimeP75: 3000, cpuTimeP90: 6000, cpuTimeP95: 9000, cpuTimeP99: 12000 }
           }
         ],
         d1Daily: [
@@ -210,9 +212,9 @@ describe('aggregateUsage', () => {
 
     expect(avecTrou.history.days).toBe(3);
     expect(avecTrou.history.series).toEqual([
-      { date: '2026-08-27', workerRequests: 900, d1RowsRead: 0, d1RowsWritten: 0, cpuP50Ms: 4, cpuP75Ms: 8, cpuP90Ms: 15, cpuP95Ms: 20, cpuP99Ms: 30 },
-      { date: '2026-08-28', workerRequests: 0, d1RowsRead: 0, d1RowsWritten: 0, cpuP50Ms: 0, cpuP75Ms: 0, cpuP90Ms: 0, cpuP95Ms: 0, cpuP99Ms: 0 },
-      { date: '2026-08-29', workerRequests: 500, d1RowsRead: 1200, d1RowsWritten: 30, cpuP50Ms: 2, cpuP75Ms: 3, cpuP90Ms: 6, cpuP95Ms: 9, cpuP99Ms: 12 }
+      { date: '2026-08-27', workerRequests: 900, d1RowsRead: 0, d1RowsWritten: 0, cpuMinMs: 1.5, cpuP25Ms: 2.5, cpuP50Ms: 4, cpuP75Ms: 8, cpuP90Ms: 15, cpuP95Ms: 20, cpuP99Ms: 30 },
+      { date: '2026-08-28', workerRequests: 0, d1RowsRead: 0, d1RowsWritten: 0, cpuMinMs: 0, cpuP25Ms: 0, cpuP50Ms: 0, cpuP75Ms: 0, cpuP90Ms: 0, cpuP95Ms: 0, cpuP99Ms: 0 },
+      { date: '2026-08-29', workerRequests: 500, d1RowsRead: 1200, d1RowsWritten: 30, cpuMinMs: 0.9, cpuP25Ms: 1.2, cpuP50Ms: 2, cpuP75Ms: 3, cpuP90Ms: 6, cpuP95Ms: 9, cpuP99Ms: 12 }
     ]);
   });
 
@@ -222,12 +224,14 @@ describe('aggregateUsage', () => {
         {
           dimensions: { date: '2026-08-29', scriptName: 'nba-api' },
           sum: { requests: 300 },
-          quantiles: { cpuTimeP50: 2000, cpuTimeP75: 3000, cpuTimeP90: 4000, cpuTimeP95: 5000, cpuTimeP99: 6000 }
+          min: { cpuTime: 1000 },
+          quantiles: { cpuTimeP25: 1500, cpuTimeP50: 2000, cpuTimeP75: 3000, cpuTimeP90: 4000, cpuTimeP95: 5000, cpuTimeP99: 6000 }
         },
         {
           dimensions: { date: '2026-08-29', scriptName: 'nba-admin' },
           sum: { requests: 40 },
-          quantiles: { cpuTimeP50: 14000, cpuTimeP75: 25000, cpuTimeP90: 42000, cpuTimeP95: 60000, cpuTimeP99: 130000 }
+          min: { cpuTime: 6000 },
+          quantiles: { cpuTimeP25: 9000, cpuTimeP50: 14000, cpuTimeP75: 25000, cpuTimeP90: 42000, cpuTimeP95: 60000, cpuTimeP99: 130000 }
         }
       ]
     };

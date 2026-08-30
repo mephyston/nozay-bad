@@ -31,6 +31,8 @@ interface DayPoint {
   workerRequests: number;
   d1RowsRead: number;
   d1RowsWritten: number;
+  cpuMinMs: number;
+  cpuP25Ms: number;
   cpuP50Ms: number;
   cpuP99Ms: number;
 }
@@ -181,6 +183,13 @@ const GRAPH = { largeur: 640, hauteur: 172, gauche: 50, droite: 14, haut: 26, ba
  * période : pas de JavaScript, et un lien qui se partage tel quel.
  */
 const CPU_CHOIX = [
+  /*
+   * Le plancher et le premier quart viennent d'abord : ce sont les seuls chiffres que le
+   * démarrage à froid ne contamine pas. Aucun jeu de données de Cloudflare ne signale une
+   * invocation froide — sur un worker peu visité, elle gonfle jusqu'à la médiane.
+   */
+  { param: 'min', cle: 'cpuMinMs', label: 'plancher (à chaud)' },
+  { param: 'p25', cle: 'cpuP25Ms', label: 'p25' },
   { param: 'p50', cle: 'cpuP50Ms', label: 'médiane (p50)' },
   { param: 'p75', cle: 'cpuP75Ms', label: 'p75' },
   { param: 'p90', cle: 'cpuP90Ms', label: 'p90' },
@@ -397,9 +406,11 @@ const depuis = usage
                 <p class="text-sm font-semibold text-foreground">Évolution</p>
                 <p class="text-xs text-muted-foreground">
                   Consommation jour par jour. Le dernier point est la journée en cours, donc
-                  incomplet — la moyenne l’ignore. Les deux dernières courbes suivent le temps
-                  CPU, tous workers confondus : c’est la tendance qui s’y lit, pas le coût d’une
-                  route.
+                  incomplet — la moyenne l’ignore. La dernière courbe suit le temps CPU : c’est
+                  la tendance qui s’y lit, pas le coût d’une route. Sur un worker peu visité,
+                  préférez le <strong>plancher</strong> ou le <strong>p25</strong> — les
+                  percentiles hauts y comptent surtout des démarrages à froid, qu’aucun jeu de
+                  données ne permet d’écarter.
                 </p>
               </div>
               <div class="flex items-center gap-1 rounded-lg border border-border p-1">
