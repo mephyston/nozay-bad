@@ -28,12 +28,30 @@ import { fetchUpcomingEvents } from '../lib/agenda';
  */
 const session = Astro.locals.session;
 
+/**
+ * Combien d'actualités la page rend d'un coup.
+ *
+ * Douze, comme les archives du site public, et non cinquante. Il n'y a pas de page par
+ * article dans l'espace adhérent : chaque carte porte le corps entier, l'écran coûte
+ * donc en proportion de ce qu'il rend. Le fil va du plus récent au plus ancien, et
+ * au-delà de la première douzaine on ne fait plus défiler, on cherche.
+ *
+ * Le jour où l'archive dépassera cette fenêtre, la réponse est une pagination — l'API
+ * la sert déjà (`limit`/`offset` et `total`), le site public s'en sert — et non une
+ * limite plus haute. Deux points à reprendre alors : les rubriques du filtre sont
+ * déduites des articles chargés, et l'accueil comme l'agenda pointent vers cet écran
+ * par une ancre `#slug` qu'une page partielle ne porterait plus.
+ */
+const FEED_LIMIT = 12;
+
 // L'agenda est lu en même temps que les actualités, et **au nom du profil actif** :
 // c'est ce qui permet à une actualité rattachée à un événement de porter son encart
 // d'inscription, avec le bon bouton selon que l'adhérent y est déjà inscrit ou non.
-// Une seule lecture pour toutes les cartes.
+// Une seule lecture pour toutes les cartes. Sa fenêtre reste large indépendamment de
+// `FEED_LIMIT` : elle ne dépend pas du nombre d'articles rendus, mais de la distance à
+// laquelle un article peut annoncer un rendez-vous.
 const [{ posts, failed }, events] = await Promise.all([
-  fetchPosts(env, 50),
+  fetchPosts(env, FEED_LIMIT),
   fetchUpcomingEvents(env, 50, session?.activeMemberId)
 ]);
 
