@@ -24,7 +24,7 @@ import { guardAction } from '../../../lib/guard';
  * l'avance — une page figée ne porte pas de gestionnaire.
  */
 
-const canWrite = can(Astro.locals, 'cms:pages:write');
+// `canWrite` n'est plus calculé ici : l'îlot le reçoit du relais, avec ses données.
 const apiService = createAdminApiClient(Astro.locals);
 
 const ACTIONS = { proxy: 'cms:pages:write' } as const;
