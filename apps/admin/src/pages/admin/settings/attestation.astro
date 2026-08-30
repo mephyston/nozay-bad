@@ -5,7 +5,6 @@ import { PageHeader, ErrorAlert } from '@nba/ui';
 import { env } from 'cloudflare:workers';
 import { createAdminApiClient } from '../../../lib/api';
 import { MAX_SIGNATURE_BYTES } from '@nba/members-api';
-import { guardAction } from '../../../lib/guard';
 
 const userEmail = Astro.locals.user?.email || '';
 const apiService = createAdminApiClient(Astro.locals);
@@ -14,50 +13,10 @@ const apiService = createAdminApiClient(Astro.locals);
 // divergent toujours, et celui-ci ne se serait vu qu'au refus du serveur.
 const MAX_SIGNATURE_KB = Math.round(MAX_SIGNATURE_BYTES / 1024);
 
-// --- POST : mise à jour des infos ou upload de la signature ---
-/** Permission exigée par action d'écriture de cette page. */
-const ACTIONS = {
-  update_info: 'members:attestations:write',
-  upload_signature: 'members:attestations:write'
-} as const;
-
-if (Astro.request.method === 'POST') {
-  try {
-    const data = (await Astro.request.json()) as any;
-
-    const denied = guardAction(Astro.locals, data.action, ACTIONS);
-    if (denied) return denied;
-
-    if (data.action === 'update_info') {
-      const apiRes = await apiService.fetch('http://localhost/members/attestation/config', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          signatoryName: data.signatoryName,
-          signatoryEmail: data.signatoryEmail,
-          websiteUrl: data.websiteUrl
-        })
-      });
-      if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
-    } else if (data.action === 'upload_signature') {
-      const apiRes = await apiService.fetch('http://localhost/members/attestation/signature', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signature: data.signature })
-      });
-      if (!apiRes.ok) return new Response(await apiRes.text(), { status: apiRes.status });
-    } else {
-      return new Response('Action inconnue', { status: 400 });
-    }
-
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-  } catch (err: any) {
-    return new Response(err?.message || 'Erreur serveur', { status: 500 });
-  }
-}
-
+/*
+  Les écritures de cet écran vivent sur `/admin/api/members/attestation`, avec leurs
+  gardes. Cette page ne fait plus que lire — une seule lecture — et rendre son formulaire.
+*/
 // --- GET : charge la config courante ---
 let config: any = null;
 let errorMsg = '';
@@ -163,7 +122,9 @@ try {
 
 <script define:vars={{ MAX_SIGNATURE_KB }}>
   const post = async (payload) => {
-    const res = await fetch(window.location.pathname, {
+    // Le relais du domaine, et non la page : celle-ci ne porte plus de gestionnaire, et
+    // Astro répondrait 200 en rendant son HTML — un succès pour une écriture nulle.
+    const res = await fetch('/admin/api/members/attestation', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

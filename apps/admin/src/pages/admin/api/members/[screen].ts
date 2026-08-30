@@ -19,6 +19,51 @@ import { creerRelais, Refus, type Ecran } from '../../../../lib/relais';
  */
 
 export const ECRANS: Record<string, Ecran> = {
+  /**
+   * La configuration de l'attestation CSE.
+   *
+   * Rangée sous « Configuration » dans le menu, gardée par `members:attestations:*` :
+   * c'est la permission qui décide du domaine.
+   *
+   * Seules ses **écritures** passent par ici. La page continue de rendre son formulaire
+   * côté serveur : elle ne fait qu'une lecture, et deux cents lignes de balisage n'y
+   * gagneraient qu'à changer de fichier. Ce qu'on gagne, c'est que ses deux gardes se
+   * lisent au même endroit que les autres.
+   */
+  attestation: {
+    permission: 'members:attestations:read',
+    charger: async (lire) => ({
+      config: (await lire('/members/attestation/config')) ?? null
+    }),
+    ecritures: {
+      update_info: {
+        permission: 'members:attestations:write',
+        route: (data) => ({
+          chemin: '/members/attestation/config',
+          method: 'PUT',
+          body: {
+            signatoryName: data.signatoryName,
+            signatoryEmail: data.signatoryEmail,
+            websiteUrl: data.websiteUrl
+          }
+        })
+      },
+      /*
+        La signature est une image, transmise en base64 dans le corps JSON — et non en
+        multipart : elle est stockée telle quelle, comme les justificatifs de notes de
+        frais. Elle n'a donc pas sa place sur une route de dépôt.
+      */
+      upload_signature: {
+        permission: 'members:attestations:write',
+        route: (data) => ({
+          chemin: '/members/attestation/signature',
+          method: 'POST',
+          body: { signature: data.signature }
+        })
+      }
+    }
+  },
+
   list: {
     permission: 'members:members:read',
     charger: async (lire, _locals, params) => {

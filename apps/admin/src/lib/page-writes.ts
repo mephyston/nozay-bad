@@ -27,8 +27,7 @@
  * Autant dire que c'est aussi la liste de ce qui reste à convertir.
  */
 export const PAGES_AVEC_ECRITURE = [
-  '/admin/members/import',
-  '/admin/settings/attestation'
+  '/admin/members/import'
 ] as const;
 
 /** Les méthodes qui ne modifient rien, et qu'aucune page n'a à déclarer. */

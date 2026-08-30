@@ -64,11 +64,11 @@ describe('pages acceptant une écriture', () => {
     expect(accepteEcriture('/admin/expenses', 'POST')).toBe(false);
     expect(accepteEcriture('/admin/iam', 'POST')).toBe(false);
     expect(accepteEcriture('/admin/settings/seasons', 'POST')).toBe(false);
+    expect(accepteEcriture('/admin/settings/attestation', 'POST')).toBe(false);
   });
 
   it('laisse écrire les pages qui le déclarent encore', () => {
     expect(accepteEcriture('/admin/members/import', 'POST')).toBe(true);
-    expect(accepteEcriture('/admin/settings/attestation', 'POST')).toBe(true);
   });
 
   it('ignore une barre oblique finale', () => {
