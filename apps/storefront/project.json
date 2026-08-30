@@ -24,6 +24,15 @@
     "lint": {
       "command": "eslint {projectRoot}"
     },
+    /* Contrôle de types des fichiers .astro, que `tsc --noEmit` ne couvre pas : c'est lui
+       qui attrape un import retiré alors qu'un appel subsiste — une page qui compile,
+       passe les tests, et tombe en 500 au premier chargement. */
+    "check": {
+      "command": "astro check",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": true,
+      "inputs": ["default", "^default"]
+    },
     "build": {
       "executor": "nx:run-commands",
       "outputs": [

@@ -3,6 +3,7 @@ import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
 import { PageHeader, ErrorAlert, SeasonSelector } from '@nba/ui';
 import { TeamsManager } from '@nba/teams-ui';
+import { CHAMPIONSHIPS, type Championship } from '@nba/teams-api';
 import { createAdminApiClient } from '../../../lib/api';
 import { fetchSeasons, currentSeasonCode } from '../../../lib/seasons';
 import { can, guardAction } from '../../../lib/guard';
@@ -23,7 +24,16 @@ const ACTIONS = {
 } as const;
 
 const season = Astro.url.searchParams.get('season') ?? '';
-const championshipParam = Astro.url.searchParams.get('championship') ?? 'icd_mixte';
+/*
+  Le championnat vient de l'URL : il est validé contre la liste connue avant d'être
+  utilisé. Il partait sinon tel quel dans l'appel `/teams/days?championship=…`, et
+  arrivait en `string` là où le composant attend une valeur fermée — le contrôle de types
+  l'a signalé, mais c'est bien une entrée non filtrée qui traversait.
+*/
+const championshipDemande = Astro.url.searchParams.get('championship') ?? '';
+const championshipParam = (CHAMPIONSHIPS as readonly string[]).includes(championshipDemande)
+  ? (championshipDemande as Championship)
+  : 'icd_mixte';
 
 if (Astro.request.method === 'POST') {
   const data = (await Astro.request.json()) as any;
@@ -171,7 +181,7 @@ try {
 <Layout title="Équipes - NBA 91">
   <AdminLayout
     client:idle
-    realEmail={Astro.locals.realEmail}
+    realEmail={Astro.locals.realUser?.email || ''}
     name={Astro.locals.user?.name}
     email={Astro.locals.user?.email}
     permissions={Astro.locals.user?.permissions || []}

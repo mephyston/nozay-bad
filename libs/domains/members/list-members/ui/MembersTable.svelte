@@ -1,5 +1,4 @@
 <script module>
-  export * from './members-table-types';
 </script>
 <script lang="ts">
   import { Eye, ChevronRight, Receipt } from '@lucide/svelte';

@@ -3,6 +3,7 @@ import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
 import { ErrorAlert } from '@nba/ui';
 import { MemberProfile } from '@nba/members-ui';
+import { isClubFunction, type ClubFunction } from '@nba/members-api';
 
 import { env } from 'cloudflare:workers';
 import { createAdminApiClient } from '../../../lib/api';
@@ -15,9 +16,12 @@ const apiService = createAdminApiClient(Astro.locals);
 // consulte sans offrir de commande qui finirait en 403.
 const canWrite = can(Astro.locals, 'members:members:write');
 
-let member = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let member: any = null;
 let memberTransactionsList = [];
-let clubFunctions: string[] = [];
+// La colonne est contrainte en base ; la garde du domaine le redit ici, pour que le
+// composant reçoive bien la liste fermée qu'il attend.
+let clubFunctions: ClubFunction[] = [];
 let errorMsg = '';
 
 try {
@@ -45,7 +49,8 @@ try {
       const fnBody = await fnRes.json() as any;
       clubFunctions = (fnBody.data || [])
         .filter((row: any) => row.licence === member.licence)
-        .map((row: any) => row.function);
+        .map((row: any) => row.function)
+        .filter(isClubFunction);
     }
   }
 } catch (err: any) {

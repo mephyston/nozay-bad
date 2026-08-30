@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-// @ts-expect-error — plugin en .mjs, consommé tel quel par astro.config.mjs
+/*
+  `@ts-ignore` et non `@ts-expect-error` : le greffon est en .mjs sans déclaration, et les
+  deux vérificateurs du dépôt ne s'accordent pas dessus. Le `tsc` racine exige la
+  suppression, `astro check` — qui résout les modules autrement — la juge superflue et
+  échoue sur une directive « inutile ». Seul `@ts-ignore`, qui n'est jamais reproché
+  quand il ne sert à rien, convient aux deux.
+*/
+// @ts-ignore
 import { visitBlockquote, satteriAlerts } from './markdown-alerts.mjs';
 
 /** Citation telle que la produit Sätteri : des textes d'indentation encadrent les blocs. */

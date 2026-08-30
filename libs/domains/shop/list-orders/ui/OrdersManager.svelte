@@ -1,6 +1,4 @@
 <script module>
-  export * from './orders-manager-types';
-  export * from './orders-manager-actions';
 </script>
 <script lang="ts">
   import { AlertCircle } from "@lucide/svelte";

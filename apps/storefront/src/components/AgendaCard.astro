@@ -26,6 +26,14 @@ interface Props {
 
 const { event, announcement = null, session = null, canOpen = false } = Astro.props;
 
+/*
+  Dans la branche « pas de séance de jeu libre », le rendez-vous est nécessairement là :
+  le bloc entier n'est rendu que si l'un des deux existe. Le vérificateur ne sait pas
+  suivre ce raisonnement à travers le gabarit — on le nomme donc une fois ici, plutôt que
+  de répéter cinq points d'exclamation dans le balisage.
+*/
+const rendezVous = event as NonNullable<typeof event>;
+
 const today = new Date().toISOString().slice(0, 10);
 
 /**
@@ -84,15 +92,15 @@ const today = new Date().toISOString().slice(0, 10);
           )}
         </OpenPlayRow>
       ) : (
-      <EventRow event={event!} {announcement}>
-        {event.registration !== 'none' && (
+      <EventRow event={rendezVous} {announcement}>
+        {rendezVous.registration !== 'none' && (
           <div class="mt-3">
             <EventSignup
               client:load
-              eventId={event.id}
-              myGuests={event.myGuests}
-              open={event.registration === 'open'}
-              attendeeCount={event.attendeeCount}
+              eventId={rendezVous.id}
+              myGuests={rendezVous.myGuests}
+              open={rendezVous.registration === 'open'}
+              attendeeCount={rendezVous.attendeeCount}
               endpoint="/agenda"
             />
           </div>

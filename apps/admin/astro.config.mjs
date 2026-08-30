@@ -49,7 +49,6 @@ export default defineConfig({
   // la requête serait perdue — tout en déclenchant côté serveur les appels API et D1
   // d'une page jamais visitée.
   adapter: cloudflare({
-    mode: 'advanced',
     runtime: { mode: 'local' }
   }),
   integrations: [
@@ -90,6 +89,13 @@ export default defineConfig({
     })
   ],
   vite: {
+    /*
+      `strictPort` vit ici et non dans `server` : c'est une option **Vite**, qu'Astro ne
+      reconnaît pas dans sa propre configuration. Écrite au mauvais endroit, elle était
+      ignorée en silence — et le serveur glissait donc sur le port suivant, ce que le
+      commentaire ci-dessous voulait précisément empêcher.
+    */
+    server: { strictPort: true },
     define: {
       // Version publiée, transmise par la CI (semantic-release en préproduction, tag
       // promu en production). Plus de repli sur package.json : depuis la suppression de
@@ -140,6 +146,6 @@ export default defineConfig({
   // pris : lancer les trois applications dans le désordre les décale d'un cran chacune
   // et l'on se retrouve avec le storefront sur le port du site. Mieux vaut un échec
   // franc, qui dit lequel des serveurs tourne déjà.
-  server: { port: 4321, strictPort: true },
+  server: { port: 4321 },
   srcDir: './src'
 });

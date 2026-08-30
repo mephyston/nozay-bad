@@ -13,7 +13,7 @@ const json = (body: unknown, status = 200) =>
 
 describe('fetchSeasons', () => {
   it('rend les saisons quand la lecture aboutit', async () => {
-    const seasons = [{ code: '25-26', startDate: '2025-09-01', endDate: '2026-08-31' }];
+    const seasons = [{ code: '25-26', name: 'Saison 25-26', startDate: '2025-09-01', endDate: '2026-08-31' }];
 
     const result = await fetchSeasons(client(json({ success: true, data: seasons })) as never);
 
@@ -68,8 +68,8 @@ describe('fetchSeasons', () => {
 
 describe('currentSeasonCode', () => {
   const seasons = [
-    { code: '24-25', startDate: '2024-09-01', endDate: '2025-08-31' },
-    { code: '25-26', startDate: '2025-09-01', endDate: '2026-08-31' }
+    { code: '24-25', name: 'Saison 24-25', startDate: '2024-09-01', endDate: '2025-08-31' },
+    { code: '25-26', name: 'Saison 25-26', startDate: '2025-09-01', endDate: '2026-08-31' }
   ];
 
   it('retient la saison qui court à la date du jour', () => {

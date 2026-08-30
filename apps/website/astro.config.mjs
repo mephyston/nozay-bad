@@ -22,8 +22,6 @@ export default defineConfig({
   // middleware, qui sait distinguer une page d'un fichier.
   trailingSlash: 'ignore',
   adapter: cloudflare({
-    mode: 'advanced',
-    runtime: { mode: 'local' },
     /*
       Stockage local partagé avec l'API.
 
@@ -58,6 +56,13 @@ export default defineConfig({
   // cache ferait doublon avec le cache du bord, qui est déjà notre levier principal.
   integrations: [svelte()],
   vite: {
+    /*
+      `strictPort` vit ici et non dans `server` : c'est une option **Vite**, qu'Astro ne
+      reconnaît pas dans sa propre configuration. Écrite au mauvais endroit, elle était
+      ignorée en silence — et le serveur glissait donc sur le port suivant, ce que le
+      commentaire ci-dessous voulait précisément empêcher.
+    */
+    server: { strictPort: true },
     define: {
       'import.meta.env.PUBLIC_APP_ENV': JSON.stringify(APP_ENV),
       'import.meta.env.PUBLIC_SITE_URL': JSON.stringify(SITE_URL)
@@ -74,6 +79,6 @@ export default defineConfig({
   // pris : lancer les trois applications dans le désordre les décale d'un cran chacune
   // et l'on se retrouve avec le storefront sur le port du site. Mieux vaut un échec
   // franc, qui dit lequel des serveurs tourne déjà.
-  server: { port: 4323, strictPort: true },
+  server: { port: 4323 },
   srcDir: './src'
 });

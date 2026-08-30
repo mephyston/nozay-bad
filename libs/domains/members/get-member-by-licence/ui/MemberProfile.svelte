@@ -1,5 +1,4 @@
 <script module>
-  export * from './member-profile-types';
 </script>
 
 <script lang="ts">

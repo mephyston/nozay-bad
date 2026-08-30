@@ -21,10 +21,6 @@
   import ReportAnalytiqueTab from './ReportAnalytiqueTab.svelte';
   import './report-print.css';
 
-  export * from './report-types';
-  export * from './report-utils';
-  export * from './report-constants';
-
   let {
     view, report, prevReport = null, seasonId, seasons = [], categories = [], accountClasses = [], budget = [], canUseAi = false
   }: {

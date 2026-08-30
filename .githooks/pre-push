@@ -18,6 +18,13 @@ node scripts/patch-wrangler.mjs --check
 echo "[pre-push] typecheck…"
 npm run typecheck
 
+# Les fichiers .astro échappent à `tsc` : ni son typecheck, ni le build, ni les tests ne
+# voient un identifiant manquant dans un frontmatter. Une page ainsi cassée compile, se
+# déploie, et tombe en 500 au premier chargement — c'est arrivé le 30/08/2026 sur l'écran
+# des menus. `astro check` est le seul des quatre contrôles à l'attraper.
+echo "[pre-push] contrôle des fichiers .astro…"
+npx nx run-many -t check --projects=admin,website,storefront
+
 echo "[pre-push] tests d'architecture…"
 npx vitest run --config vitest.architecture.config.ts
 

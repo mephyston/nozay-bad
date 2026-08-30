@@ -1,7 +1,19 @@
 export interface ApiClientEnv {
-  API_SERVICE?: {
-    fetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
-  };
+  /*
+    La signature reste volontairement large.
+    
+    Un binding de service est typé `Fetcher` par les types Workers, dont le `fetch` rend
+    **leur** `Response` — structurellement différente de celle du DOM, leurs itérateurs
+    d'en-têtes divergeant. Décrire la liaison avec les types DOM rendait l'environnement
+    d'un worker incompatible avec cette interface : quatre pages de l'espace adhérent
+    échouaient au contrôle de types alors que le code était juste.
+
+    Le recadrage se fait une seule fois, au seul appel qui l'utilise, plutôt que d'être
+    imposé à chaque page. Les appelants du client, eux, continuent de recevoir une
+    `Response` pleinement typée.
+  */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  API_SERVICE?: { fetch: (input: any, init?: any) => Promise<unknown> };
   INTERNAL_API_KEY?: string;
   API_URL?: string;
   ENVIRONMENT?: string;
@@ -88,7 +100,7 @@ export function createApiClient(env?: ApiClientEnv, identity?: CallerIdentity) {
         Boolean(env?.API_URL);
 
       if (!preferHttpInDev && env?.API_SERVICE && typeof env.API_SERVICE.fetch === 'function') {
-        return env.API_SERVICE.fetch(input, { ...init, headers });
+        return env.API_SERVICE.fetch(input, { ...init, headers }) as Promise<Response>;
       }
 
       if (typeof globalThis.fetch === 'function') {

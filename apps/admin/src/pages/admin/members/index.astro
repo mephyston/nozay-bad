@@ -43,7 +43,7 @@ try {
 
 let displaySeasonName = season;
 if (seasonsList.length > 0) {
-  const currentSeason = seasonsList.find(s => s.code === season || String(s.id) === season);
+  const currentSeason = seasonsList.find((s: { code?: string; id?: string | number }) => s.code === season || String(s.id) === season);
   if (currentSeason && currentSeason.name) {
     displaySeasonName = currentSeason.name.replace('Saison ', '');
   }

@@ -43,10 +43,18 @@ if (Astro.request.method === 'POST') {
   }
 
   try {
+    /*
+      Les deux familles d'îlots publient ici : un `eventId` pour un rendez-vous, un
+      `sessionId` pour une séance de jeu libre. Le type n'en déclarait qu'une, et la
+      seconde n'était lue que parce que rien ne vérifiait ce fichier — un renommage
+      l'aurait fait disparaître en silence.
+    */
     const body = (await Astro.request.json()) as {
       action?: string;
       eventId?: number;
+      sessionId?: number;
       guests?: number;
+      commitToOpen?: boolean;
     };
 
     const api = createApiClient(env);

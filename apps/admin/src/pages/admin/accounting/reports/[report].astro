@@ -105,11 +105,22 @@ let season = requestedSeason || '25-26';
 
 let reportData = {
   compteResultat: { totalRecettes: 0, totalDepenses: 0, netResult: 0, categories: {} },
-  bilanTrésorerie: [
-    { accountId: 'current' as const, initialBalance: 0, finalBalance: 0 },
-    { accountId: 'savings' as const, initialBalance: 0, finalBalance: 0 },
-    { accountId: 'cash' as const, initialBalance: 0, finalBalance: 0 }
-  ]
+  /*
+    Le repli portait trois champs sur les huit attendus : si la lecture échouait, le
+    rapport s'affichait avec des soldes absents plutôt qu'à zéro — et les trois natures de
+    trésorerie que distingue cet écran (comptable, bancaire théorique, relevé) n'avaient
+    aucune valeur à montrer.
+  */
+  bilanTrésorerie: ['current', 'savings', 'cash'].map((accountId) => ({
+    accountId,
+    initialBalance: 0,
+    finalBalance: 0,
+    inVaultCents: 0,
+    pendingDebitCents: 0,
+    bankTheoreticalCents: 0,
+    statementBalanceCents: null as number | null,
+    statementDate: null as string | null
+  }))
 };
 
 function getPreviousSeasonId(currentId: string): string {

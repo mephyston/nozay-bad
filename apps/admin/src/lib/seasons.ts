@@ -14,7 +14,9 @@
  */
 export interface Season {
   code: string;
-  name?: string;
+  /* `seasons.name` est `NOT NULL` en base : la déclarer facultative obligeait quatre
+     écrans à composer avec un nom absent qui n'arrive jamais. */
+  name: string;
   startDate: string;
   endDate: string;
   active?: boolean;

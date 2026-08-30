@@ -1,7 +1,4 @@
 <script module>
-  export * from './catalog-types';
-  export * from './catalog-utils';
-  export * from './catalog-order-action';
 </script>
 <script lang="ts">
   import { ShoppingBag, Info, AlertCircle } from "@lucide/svelte";

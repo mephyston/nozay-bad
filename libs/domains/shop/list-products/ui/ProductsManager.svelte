@@ -1,6 +1,4 @@
 <script module>
-  export * from './products-manager-types';
-  export * from './products-manager-actions';
 </script>
 <script lang="ts">
   import { Plus, Edit } from "@lucide/svelte";

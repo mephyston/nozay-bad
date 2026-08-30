@@ -8,10 +8,6 @@
   import ExpenseFormDetails from './ExpenseFormDetails.svelte';
   import ExpenseFormFileInput from './ExpenseFormFileInput.svelte';
 
-  export * from './expense-form-types';
-  export * from './expense-form-utils';
-  export * from './expense-form-submit';
-
   const { activeSeasonId, members = [], categories = [], lockToMembers = false, initialMemberId = '' }: Props = $props();
 
   let emitterName = $state('');

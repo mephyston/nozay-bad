@@ -10,14 +10,15 @@ import { listSeasons, displaySeason, type Season } from '../lib/season';
 
 const apiService = createApiClient(env);
 
-interface Product {
-  id: number;
-  name: string;
-  category: 'shuttlecock' | 'string';
-  price: number;
-  stock: number;
-  active: boolean;
-}
+/*
+  Le type vient du composant qui l'affiche, il n'est plus redéclaré ici.
+
+  La copie locale avait divergé : elle annonçait `price` et `category` là où le
+  catalogue attend `priceCents` et `productCategoryId`. Le code fonctionnait — l'API
+  renvoie la bonne forme — mais le type mentait, et c'est exactement ce qui rend un
+  renommage silencieusement dangereux.
+*/
+import type { Product } from '@nba/shop-ui';
 
 interface Member {
   id: number;

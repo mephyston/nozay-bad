@@ -74,7 +74,7 @@ try {
 <Layout title="Contrôle des journées - NBA 91">
   <AdminLayout
     client:idle
-    realEmail={Astro.locals.realEmail}
+    realEmail={Astro.locals.realUser?.email || ''}
     name={Astro.locals.user?.name}
     email={Astro.locals.user?.email}
     permissions={Astro.locals.user?.permissions || []}

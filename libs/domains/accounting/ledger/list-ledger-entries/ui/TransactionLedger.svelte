@@ -9,9 +9,6 @@
   import TransactionLedgerTable from './TransactionLedgerTable.svelte';
   import TransactionFormSheet from './TransactionFormSheet.svelte';
 
-  export * from './ledger-types';
-  export * from './ledger-actions';
-
   let {
     transactions = [],
     pagination,
@@ -307,8 +304,6 @@
     onApplySeasonChange={() => actionApplySeasonChange(selectedSeason)}
     onClearFilters={clearFilters}
   />
-
-
 
   <TransactionLedgerTable
     {transactions}

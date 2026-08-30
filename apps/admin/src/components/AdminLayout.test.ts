@@ -37,7 +37,7 @@ describe('AdminLayout Component', () => {
       target,
       props: {
         email: 'test@nozay-bad.fr',
-        permissions: ALL_PERMISSIONS
+        permissions: [...ALL_PERMISSIONS]
       }
     });
     flushSync();
@@ -63,7 +63,7 @@ describe('AdminLayout Component', () => {
 
     const component = mount(AdminLayout, {
       target,
-      props: { email: 'test@nozay-bad.fr', permissions: ALL_PERMISSIONS }
+      props: { email: 'test@nozay-bad.fr', permissions: [...ALL_PERMISSIONS] }
     });
     flushSync();
 
@@ -89,7 +89,7 @@ describe('AdminLayout Component', () => {
 
     const component = mount(AdminLayout, {
       target,
-      props: { email: 'test@nozay-bad.fr', permissions: ALL_PERMISSIONS }
+      props: { email: 'test@nozay-bad.fr', permissions: [...ALL_PERMISSIONS] }
     });
     flushSync();
 
@@ -113,7 +113,7 @@ describe('AdminLayout Component', () => {
       target,
       props: {
         email: 'test@nozay-bad.fr',
-        permissions: ALL_PERMISSIONS,
+        permissions: [...ALL_PERMISSIONS],
         breadcrumb: 'Réglages / Saisons'
       }
     });
@@ -141,7 +141,7 @@ describe('AdminLayout Component', () => {
       target,
       props: {
         email: 'test@nozay-bad.fr',
-        permissions: ALL_PERMISSIONS,
+        permissions: [...ALL_PERMISSIONS],
         breadcrumb: 'settings'
       }
     });
@@ -168,7 +168,7 @@ describe('AdminLayout Component', () => {
       isMobileViewport = false;
       const target = document.createElement('div');
       document.body.appendChild(target);
-      const component = mount(AdminLayout, { target, props: { permissions: ALL_PERMISSIONS, ...props } });
+      const component = mount(AdminLayout, { target, props: { permissions: [...ALL_PERMISSIONS], ...props } });
       flushSync();
       const text = target.textContent ?? '';
       unmount(component);

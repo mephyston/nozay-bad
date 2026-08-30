@@ -1,6 +1,4 @@
 <script module>
-  export * from './poona-importer-types';
-  export * from './poona-importer-parser';
 </script>
 
 <script lang="ts">
