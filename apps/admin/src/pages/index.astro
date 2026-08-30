@@ -1,80 +1,23 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import AdminLayout from '../components/AdminLayout.svelte';
-import DashboardOverview from '../components/DashboardOverview.svelte';
-import { PageHeader, SeasonSelector } from '@nba/ui';
-import { env } from 'cloudflare:workers';
-import { createAdminApiClient } from '../lib/api';
+import DashboardScreen from '../components/DashboardScreen.svelte';
 
-const userEmail = Astro.locals.user?.email || "";
-const apiService = createAdminApiClient(Astro.locals);
-
-const requestedSeason = Astro.url.searchParams.get('season');
-
-// Fetch the aggregated dashboard data
-let dashboardData = null;
-let seasonsList: any[] = [];
-let currentSeason = requestedSeason || '25-26';
-
-try {
-  const queryParams = new URLSearchParams();
-  if (requestedSeason) queryParams.set('seasonId', requestedSeason);
-
-  const [res, seasonsRes] = await Promise.all([
-    apiService.fetch(`http://localhost/dashboard/overview?${queryParams.toString()}`),
-    apiService.fetch('http://localhost/accounting/seasons')
-  ]);
-
-  if (res.ok) {
-    const json = await res.json() as any;
-    if (json.success) {
-      dashboardData = json.data;
-      if (!requestedSeason) currentSeason = dashboardData.season;
-    }
-  }
-
-  if (seasonsRes.ok) {
-    const json = await seasonsRes.json() as any;
-    if (json.data) {
-      seasonsList = json.data;
-    }
-  }
-} catch (e) {
-  console.error("Dashboard fetch error:", e);
-}
-
-// Fallback empty data if fetch fails
-if (!dashboardData) {
-  dashboardData = {
-    season: '25-26',
-    members: { currentTotal: 0, previousTotal: 0, partiallyPaid: 0 },
-    accounting: { pendingChecks: 0, pendingDeposits: 0, pendingInvoices: 0 },
-    expenses: { pendingReports: 0 },
-    shop: { pendingOrders: 0 },
-    poles: {
-      events: { recettes: 0, depenses: 0, solde: 0 },
-      youth: { recettes: 0, depenses: 0, solde: 0 },
-      material: { recettes: 0, depenses: 0, solde: 0 },
-      operations: { recettes: 0, depenses: 0, solde: 0 }
-    }
-  };
-}
+const parametres = Object.fromEntries(Astro.url.searchParams);
+const permissions = Astro.locals.user?.permissions || [];
 ---
 
 <Layout title="NBA 91 - Console Admin">
-  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Tableau de Bord" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    {permissions}
+    breadcrumb="Tableau de Bord"
+  >
     <div class="space-y-6">
-      <PageHeader
-        title="Tableau de bord"
-        description={`Voici le récapitulatif de votre activité pour la saison ${dashboardData.season}.`}
-      >
-        <Fragment slot="actions">
-          <SeasonSelector client:load seasons={seasonsList} current={currentSeason} />
-        </Fragment>
-      </PageHeader>
-      
-      <DashboardOverview client:idle data={dashboardData} permissions={Astro.locals.user?.permissions || []} />
-      
+      <DashboardScreen client:load {parametres} {permissions} />
     </div>
   </AdminLayout>
 </Layout>

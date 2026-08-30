@@ -1,6 +1,19 @@
 import { uiConfirm } from '@nba/ui';
 import { runSettingsAction, type SettingsState } from './settings-api-classes';
 
+/**
+ * Destinations des écritures, **par domaine**.
+ *
+ * Ce module en sert deux : les saisons et les catégories comptables relèvent de la
+ * comptabilité, les catégories de produits de la boutique. « Configuration » est une
+ * rubrique de menu, pas un domaine — et les permissions suivent le domaine, pas le menu.
+ *
+ * Il visait jusqu'ici `window.location.pathname`, ce qui masquait cette distinction
+ * derrière la page qui l'hébergeait.
+ */
+const RELAIS_COMPTA = '/admin/api/accounting/config';
+const RELAIS_BOUTIQUE = '/admin/api/shop/categories';
+
 export * from './settings-api-classes';
 
 export function createSeason(state: SettingsState, id: string, name: string, active: boolean) {
@@ -26,7 +39,7 @@ export function closeSeason(state: SettingsState, id: string, confirmOverwrite: 
 }
 
 export async function checkCloseSeason(id: string) {
-  const res = await fetch(window.location.pathname, {
+  const res = await fetch(RELAIS_COMPTA, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -85,7 +98,8 @@ export function createProductCategory(state: SettingsState, data: ProductCategor
   return runSettingsAction(state, {
     validate: () => (data.label.trim() ? null : 'Le libellé ne peut pas être vide.'),
     body: { action: 'create_product_category', ...data },
-    success: 'Catégorie produit créée.'
+    success: 'Catégorie produit créée.',
+    endpoint: RELAIS_BOUTIQUE
   });
 }
 
@@ -93,13 +107,15 @@ export function updateProductCategory(state: SettingsState, id: number, updates:
   return runSettingsAction(state, {
     validate: () => (updates.label.trim() ? null : 'Le libellé ne peut pas être vide.'),
     body: { action: 'update_product_category', id, updates },
-    success: 'Catégorie produit mise à jour.'
+    success: 'Catégorie produit mise à jour.',
+    endpoint: RELAIS_BOUTIQUE
   });
 }
 
 export function deleteProductCategory(state: SettingsState, id: number) {
   return runSettingsAction(state, {
     body: { action: 'delete_product_category', id },
-    success: 'Catégorie produit supprimée.'
+    success: 'Catégorie produit supprimée.',
+    endpoint: RELAIS_BOUTIQUE
   });
 }

@@ -1,81 +1,20 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import AdminLayout from '../../components/AdminLayout.svelte';
-import { PageHeader, ErrorAlert } from '@nba/ui';
-import { NotificationsManager } from '@nba/notifications-ui';
-import { env } from 'cloudflare:workers';
-import { createAdminApiClient } from '../../lib/api';
-import { can } from '../../lib/guard';
-
-const userPerms = Astro.locals.user?.permissions || [];
-// La consultation est déjà exigée par PAGE_PERMISSIONS. L'émission est un droit
-// distinct : une annonce part sur tous les téléphones du club.
-const canSend = can(Astro.locals, 'notifications:messages:send');
-
-const apiService = createAdminApiClient(Astro.locals);
-
-let stats = { devices: 0, accounts: 0, pending: 0 };
-let messages: any[] = [];
-let groups: any[] = [];
-let scheduled: any[] = [];
-let errorMsg = '';
-
-try {
-  const [overviewRes, audiencesRes, scheduledRes] = await Promise.all([
-    apiService.fetch('http://localhost/notifications/overview'),
-    apiService.fetch('http://localhost/notifications/audiences'),
-    apiService.fetch('http://localhost/notifications/scheduled')
-  ]);
-
-  if (overviewRes.ok) {
-    const json = (await overviewRes.json()) as any;
-    stats = json.data?.stats ?? stats;
-    messages = json.data?.messages ?? [];
-  } else {
-    errorMsg = "Impossible de charger l'état des notifications.";
-  }
-
-  // Les groupes ne sont qu'un confort de ciblage : leur absence ne doit pas
-  // empêcher d'envoyer une annonce à tous.
-  if (audiencesRes.ok) {
-    const json = (await audiencesRes.json()) as any;
-    groups = json.data?.groups ?? [];
-  }
-
-  // Le registre est un confort de consultation : son absence n'empêche rien.
-  if (scheduledRes.ok) {
-    const json = (await scheduledRes.json()) as any;
-    scheduled = json.data ?? [];
-  }
-} catch {
-  errorMsg = "Impossible de charger l'état des notifications.";
-}
+import NotificationsScreen from '../../components/NotificationsScreen.svelte';
 ---
 
 <Layout title="Notifications - NBA 91">
-  <AdminLayout realEmail={Astro.locals.realUser?.email || ""}
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
     name={Astro.locals.user?.name}
     client:idle
     email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
     breadcrumb="Notifications"
-    permissions={userPerms}
   >
     <div class="space-y-6">
-      {errorMsg && <ErrorAlert message={errorMsg} />}
-
-      <PageHeader
-        title="Notifications"
-        description="Envoyez une annonce aux adhérents qui ont activé les notifications sur leur téléphone."
-      />
-
-      <NotificationsManager
-        client:load
-        stats={stats}
-        messages={messages}
-        groups={groups}
-        canSend={canSend}
-        scheduled={scheduled}
-      />
+      <NotificationsScreen client:load />
     </div>
   </AdminLayout>
 </Layout>

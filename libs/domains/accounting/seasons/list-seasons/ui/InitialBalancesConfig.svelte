@@ -62,7 +62,8 @@
 
     await submitForm({
       submit: async () => {
-        const res = await fetch('', {
+        // L'adresse unique d'écriture de la rubrique, et non la page hôte.
+        const res = await fetch('/admin/api/settings/config', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)

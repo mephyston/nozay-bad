@@ -78,6 +78,49 @@ export const ECRANS: Record<string, Ecran> = {
     }
   },
 
+  /**
+   * Les catégories de produits, et leur correspondance comptable.
+   *
+   * Rangées sous « Configuration » dans le menu, mais gardées par `shop:categories:write` :
+   * c'est la permission qui décide du domaine. Les catégories comptables sont lues avec,
+   * puisque c'est à elles qu'on rattache chaque catégorie de la boutique.
+   */
+  categories: {
+    permission: 'shop:products:read',
+    charger: async (lire) => {
+      const [comptables, produits] = await Promise.all([
+        lire('/accounting/categories'),
+        lire('/shop/product-categories')
+      ]);
+      return { categories: comptables ?? [], productCategories: produits ?? [] };
+    },
+    ecritures: {
+      create_product_category: {
+        permission: 'shop:categories:write',
+        route: (data) => ({
+          chemin: '/shop/product-categories',
+          method: 'POST',
+          body: { label: data.label, accountingCategoryId: data.accountingCategoryId, active: data.active }
+        })
+      },
+      update_product_category: {
+        permission: 'shop:categories:write',
+        route: (data) => ({
+          chemin: `/shop/product-categories/${identifiant(data.id, 'de catégorie de produit')}`,
+          method: 'PUT',
+          body: data.updates
+        })
+      },
+      delete_product_category: {
+        permission: 'shop:categories:write',
+        route: (data) => ({
+          chemin: `/shop/product-categories/${identifiant(data.id, 'de catégorie de produit')}`,
+          method: 'DELETE'
+        })
+      }
+    }
+  },
+
   products: {
     permission: 'shop:products:read',
     charger: async (lire, locals) => ({

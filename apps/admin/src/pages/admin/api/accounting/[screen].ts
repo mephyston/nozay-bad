@@ -72,6 +72,20 @@ const RAPPORT_VIDE = () => ({
   }))
 });
 
+/** Comptes de trésorerie : l'identifiant est tantôt textuel, tantôt numérique en base. */
+const COMPTES = [
+  { cle: 'initialCurrentBalance', id: 'current', num: 1 },
+  { cle: 'initialSavingsBalance', id: 'savings', num: 2 },
+  { cle: 'initialCashBalance', id: 'cash', num: 3 }
+] as const;
+
+/** Code de saison ou de classe, tel qu'il rejoindra un chemin d'API. */
+function code(valeur: unknown, quoi: string): string {
+  const brut = String(valeur ?? '');
+  if (!/^[A-Za-z0-9-]{1,16}$/.test(brut)) throw new Refus(`Code ${quoi} invalide.`);
+  return brut;
+}
+
 export const ECRANS: Record<string, Ecran> = {
   ledger: {
     permission: 'accounting:ledger:read',
@@ -465,6 +479,182 @@ export const ECRANS: Record<string, Ecran> = {
           method: 'GET'
         })
       }
+    }
+  },
+
+  /**
+   * Le plan comptable : catégories et classes de comptes.
+   *
+   * Rangé sous « Configuration » dans le menu, mais gardé par `accounting:config:*` — et
+   * c'est la permission qui décide du domaine, pas la barre latérale. C'est aussi
+   * l'adresse d'écriture des saisons, dont les actions vivent ici : les modules qui les
+   * portent sont partagés avec les catégories, et les séparer n'apporterait rien.
+   */
+  config: {
+    permission: 'accounting:config:read',
+    charger: async (lire) => {
+      const [categories, classes] = await Promise.all([
+        lire('/accounting/categories'),
+        lire('/accounting/account-classes')
+      ]);
+      return { categories: categories ?? [], accountClasses: classes ?? [] };
+    },
+    ecritures: {
+      create_category: {
+        permission: 'accounting:config:write',
+        route: (data) => ({
+          chemin: '/accounting/categories',
+          method: 'POST',
+          body: {
+            adminLabel: data.adminLabel,
+            adherentLabel: data.adherentLabel,
+            hideInExpenses: data.hideInExpenses,
+            receiptCode: data.receiptCode,
+            expenseCode: data.expenseCode
+          }
+        })
+      },
+      update_category: {
+        permission: 'accounting:config:write',
+        route: (data) => ({
+          chemin: `/accounting/categories/${identifiant(data.id, 'de catégorie')}`,
+          method: 'PUT',
+          body: data.updates
+        })
+      },
+      delete_category: {
+        permission: 'accounting:config:write',
+        route: (data) => ({
+          chemin: `/accounting/categories/${identifiant(data.id, 'de catégorie')}`,
+          method: 'DELETE'
+        })
+      },
+      /*
+        Une classe de comptes est désignée par son **code** — « 706 », « 512 » — et non par
+        un identifiant numérique. Il est contrôlé comme tel avant de rejoindre le chemin.
+      */
+      create_account_class: {
+        permission: 'accounting:config:write',
+        route: (data) => ({
+          chemin: '/accounting/account-classes',
+          method: 'POST',
+          body: { code: data.code, label: data.label, type: data.type }
+        })
+      },
+      update_account_class: {
+        permission: 'accounting:config:write',
+        route: (data) => ({
+          chemin: `/accounting/account-classes/${code(data.code, 'de classe')}`,
+          method: 'PUT',
+          body: { label: data.label, type: data.type }
+        })
+      },
+      delete_account_class: {
+        permission: 'accounting:config:write',
+        route: (data) => ({
+          chemin: `/accounting/account-classes/${code(data.code, 'de classe')}`,
+          method: 'DELETE'
+        })
+      },
+
+      create_season: {
+        permission: 'accounting:seasons:write',
+        route: (data) => ({
+          chemin: '/accounting/seasons',
+          method: 'POST',
+          body: { id: data.id, name: data.name, active: data.active }
+        })
+      },
+      activate_season: {
+        permission: 'accounting:seasons:write',
+        route: (data) => ({
+          chemin: `/accounting/seasons/${code(data.id, 'de saison')}`,
+          method: 'PUT',
+          body: { active: true }
+        })
+      },
+      update_balances: {
+        permission: 'accounting:seasons:write',
+        route: (data) => ({
+          chemin: `/accounting/seasons/${code(data.seasonId, 'de saison')}/balances`,
+          method: 'POST',
+          body: data.balances
+        })
+      },
+      /*
+        Clôturer est irréversible, et porte donc son propre droit — distinct de celui qui
+        crée et modifie une saison.
+      */
+      check_close_season: {
+        permission: 'accounting:seasons:close',
+        route: (data) => ({
+          chemin: `/accounting/seasons/${code(data.id, 'de saison')}/close-checks`,
+          method: 'GET'
+        })
+      },
+      close_season: {
+        permission: 'accounting:seasons:close',
+        route: (data) => ({
+          chemin: `/accounting/seasons/${code(data.id, 'de saison')}/close`,
+          method: 'POST',
+          body: { confirmOverwriteInitialBalances: Boolean(data.confirmOverwrite) }
+        })
+      }
+    }
+  },
+
+  /**
+   * Les saisons comptables et leurs soldes initiaux.
+   *
+   * Lecture seule ici : ses écritures vivent sur `config`, l'adresse unique que visent les
+   * modules partagés avec les catégories.
+   */
+  seasons: {
+    permission: 'accounting:seasons:write',
+    charger: async (lire) => {
+      const saisons: any[] = (await lire('/accounting/seasons')) ?? [];
+
+      /*
+        Une lecture par saison, plus une seconde quand la saison n'a pas encore de soldes :
+        c'est le coût dominant de cet écran, et il est conservé tel quel. C'est lui qui
+        permet au formulaire de proposer un report à-nouveau plutôt qu'une saisie à blanc,
+        et `isAutoFilled` dit à l'utilisateur d'où vient le chiffre.
+      */
+      return {
+        seasons: await Promise.all(
+          saisons.map(async (s) => {
+            const codeSaison = s.code || String(s.id);
+            const soldes: any[] =
+              (await lire(`/accounting/seasons/${encodeURIComponent(codeSaison)}/balances`)) ?? [];
+            const enrichie: Record<string, unknown> = { ...s, isAutoFilled: false };
+
+            if (soldes.length > 0) {
+              for (const compte of COMPTES) {
+                const ligne = soldes.find(
+                  (b) => b.accountId === compte.id || b.accountId === compte.num
+                );
+                enrichie[compte.cle] = ligne?.initialBalanceCents ?? ligne?.initialBalance ?? 0;
+              }
+              return enrichie;
+            }
+
+            for (const compte of COMPTES) enrichie[compte.cle] = 0;
+            const avant = saisonPrecedente(codeSaison);
+            if (!avant) return enrichie;
+
+            const rapport = await lire(`/accounting/seasons/${encodeURIComponent(avant)}/reports`);
+            const bilan: any[] = rapport?.bilanTrésorerie ?? [];
+            for (const compte of COMPTES) {
+              const ligne = bilan.find((b) => b.accountId === compte.id);
+              if (ligne) {
+                enrichie[compte.cle] = ligne.finalBalance;
+                enrichie.isAutoFilled = true;
+              }
+            }
+            return enrichie;
+          })
+        )
+      };
     }
   },
 

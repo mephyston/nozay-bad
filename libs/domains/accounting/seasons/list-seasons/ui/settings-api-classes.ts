@@ -1,5 +1,14 @@
 import { submitForm } from '@nba/ui';
 
+/**
+ * Destination des écritures : le relais de la comptabilité.
+ *
+ * Le plan comptable est de la configuration au sens du menu, mais de la **comptabilité**
+ * au sens du domaine — c'est là que vivent ses permissions. Ce module visait
+ * `window.location.pathname`, donc la page hôte, sans que rien ne le rappelle.
+ */
+const RELAIS = '/admin/api/accounting/config';
+
 export interface SettingsState {
   errorMsg: string;
   isSubmitting: boolean;
@@ -15,7 +24,13 @@ export interface SettingsState {
  */
 export function runSettingsAction(
   state: SettingsState,
-  options: { validate?: () => string | null; body: unknown; success: string }
+  options: {
+    validate?: () => string | null;
+    body: unknown;
+    success: string;
+    /** Relais du domaine visé ; la comptabilité par défaut, la boutique pour ses catégories. */
+    endpoint?: string;
+  }
 ): Promise<boolean> {
   state.isSubmitting = true;
   state.errorMsg = '';
@@ -23,7 +38,7 @@ export function runSettingsAction(
   return submitForm({
     validate: options.validate,
     submit: async () => {
-      const res = await fetch(window.location.pathname, {
+      const res = await fetch(options.endpoint ?? RELAIS, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(options.body)

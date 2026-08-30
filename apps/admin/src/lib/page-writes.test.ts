@@ -63,16 +63,17 @@ describe('pages acceptant une écriture', () => {
     expect(accepteEcriture('/admin/members', 'POST')).toBe(false);
     expect(accepteEcriture('/admin/expenses', 'POST')).toBe(false);
     expect(accepteEcriture('/admin/iam', 'POST')).toBe(false);
+    expect(accepteEcriture('/admin/settings/seasons', 'POST')).toBe(false);
   });
 
   it('laisse écrire les pages qui le déclarent encore', () => {
-    expect(accepteEcriture('/admin/settings/seasons', 'POST')).toBe(true);
     expect(accepteEcriture('/admin/members/import', 'POST')).toBe(true);
+    expect(accepteEcriture('/admin/settings/attestation', 'POST')).toBe(true);
   });
 
   it('ignore une barre oblique finale', () => {
-    // `/admin/settings/seasons/` et `/admin/settings/seasons` sont la même page.
-    expect(accepteEcriture('/admin/settings/seasons/', 'POST')).toBe(true);
+    // `/admin/members/import/` et `/admin/members/import` sont la même page.
+    expect(accepteEcriture('/admin/members/import/', 'POST')).toBe(true);
   });
 
   it('refuse aussi les autres méthodes modifiantes', () => {
