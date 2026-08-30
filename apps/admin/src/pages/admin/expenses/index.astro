@@ -1,155 +1,23 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { ErrorAlert } from '@nba/ui';
-import { ExpensesManager } from '@nba/expenses-ui';
+import ExpensesScreen from '../../../components/ExpensesScreen.svelte';
 
-import { env } from 'cloudflare:workers';
-import { createAdminApiClient } from '../../../lib/api';
-
-const userEmail = Astro.locals.user?.email || "";
-const apiService = createAdminApiClient(Astro.locals);
-
-let season = Astro.url.searchParams.get('season') || '';
-
-const userPerms = Astro.locals.user?.permissions || [];
-import { can, guardAction } from '../../../lib/guard';
-
-const canValidate = can(Astro.locals, 'expenses:reports:approve');
-const canCreate = can(Astro.locals, 'expenses:reports:write');
-const canUpdate = canCreate;
-
-const ACTIONS = {
-  expense: 'expenses:reports:write',
-  update: 'expenses:reports:write',
-  approve: 'expenses:reports:approve',
-  reject: 'expenses:reports:approve',
-  cancel: 'expenses:reports:approve'
-} as const;
-
-if (Astro.request.method === 'POST') {
-  try {
-    const data = await Astro.request.json() as any;
-
-    const denied = guardAction(Astro.locals, data.action, ACTIONS);
-    if (denied) return denied;
-
-    if (data.action === 'approve') {
-      const apiRes = await apiService.fetch(`http://localhost/expenses/${data.id}/approve`, {
-        method: 'POST'
-      });
-      if (!apiRes.ok) {
-        return new Response(await apiRes.text(), { status: apiRes.status });
-      }
-    } else if (data.action === 'reject') {
-      const apiRes = await apiService.fetch(`http://localhost/expenses/${data.id}/reject`, {
-        method: 'POST'
-      });
-      if (!apiRes.ok) {
-        return new Response('Erreur rejet', { status: apiRes.status });
-      }
-    } else if (data.action === 'update') {
-      const apiRes = await apiService.fetch(`http://localhost/expenses/${data.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data.updates)
-      });
-      if (!apiRes.ok) {
-        return new Response(await apiRes.text(), { status: apiRes.status });
-      }
-    } else if (data.action === 'cancel') {
-      const apiRes = await apiService.fetch(`http://localhost/expenses/${data.id}/cancel`, {
-        method: 'POST'
-      });
-      if (!apiRes.ok) {
-        return new Response(await apiRes.text(), { status: apiRes.status });
-      }
-    } else if (data.action === 'expense') {
-      const apiRes = await apiService.fetch('http://localhost/expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data.data)
-      });
-      if (!apiRes.ok) {
-        return new Response(JSON.stringify({ success: false, error: await apiRes.text() }), { status: 400 });
-      }
-      return new Response(JSON.stringify({ success: true }));
-    }
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-  } catch (err: any) {
-    return new Response(err.message, { status: 500 });
-  }
-}
-
-let expensesList = [];
-let seasonsList = [];
-let categoriesList = [];
-let membersList = [];
-let errorMsg = '';
-
-try {
-  // 1. Fetch seasons first
-  const seasonsRes = await apiService.fetch('http://localhost/accounting/seasons');
-  if (seasonsRes.ok) {
-    const json = await seasonsRes.json() as any;
-    seasonsList = json.data || [];
-    seasonsList.sort((a: any, b: any) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
-  }
-
-  if (!season) {
-    const activeSeason = seasonsList.find((s: any) => s.active === true || s.active === 1) || seasonsList[seasonsList.length - 1];
-    season = activeSeason ? (activeSeason.code || String(activeSeason.id)) : '25-26';
-  }
-
-  // 2. Fetch expenses for that season
-  const [expensesRes, categoriesRes, membersRes] = await Promise.all([
-    apiService.fetch(`http://localhost/expenses?season=${season}`),
-    apiService.fetch('http://localhost/accounting/categories'),
-    apiService.fetch(`http://localhost/members?limit=1000&season=${season}`)
-  ]);
-
-  if (expensesRes.ok) {
-    const json = await expensesRes.json() as any;
-    expensesList = (json.data || []).map((exp: any) => ({
-      ...exp,
-      amount: exp.amountCents,
-      category: exp.categoryId
-    }));
-  }
-
-  if (categoriesRes.ok) {
-    const json = await categoriesRes.json() as any;
-    categoriesList = json.data || [];
-  }
-
-  if (membersRes.ok) {
-    const json = await membersRes.json() as any;
-    membersList = json.data || [];
-  }
-} catch (err: any) {
-  errorMsg = 'Une erreur est survenue lors du chargement des notes de frais.';
-}
-const isClosed = !!seasonsList.find((s: any) => s.id === season)?.closed;
+const parametres = Object.fromEntries(Astro.url.searchParams);
+const initialAction = Astro.url.searchParams.get('action');
 ---
 
 <Layout title="Notes de Frais - NBA 91">
-  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Comptabilité / Notes de frais" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Comptabilité / Notes de frais"
+  >
     <div class="space-y-6">
-      {errorMsg && <ErrorAlert message={errorMsg} />}
-
-
-
-      <ExpensesManager
-        client:load
-        expenses={expensesList}
-        seasonId={season}
-        seasons={seasonsList}
-        categories={categoriesList}
-        members={membersList}
-        initialAction={Astro.url.searchParams.get('action')}
-      />
+      <ExpensesScreen client:load {parametres} {initialAction} />
     </div>
   </AdminLayout>
 </Layout>

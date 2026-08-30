@@ -27,8 +27,6 @@
  * Autant dire que c'est aussi la liste de ce qui reste à convertir.
  */
 export const PAGES_AVEC_ECRITURE = [
-  '/admin/expenses',
-  '/admin/iam',
   '/admin/members/import',
   '/admin/settings/accounting',
   '/admin/settings/attestation',

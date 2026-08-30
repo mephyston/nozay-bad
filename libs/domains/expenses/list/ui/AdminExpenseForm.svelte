@@ -87,7 +87,8 @@
     await submitForm({
       validate,
       submit: async () => {
-        const res = await fetch('', {
+        // Le relais du domaine, et non la page hôte.
+        const res = await fetch('/admin/api/expenses/list', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -92,7 +92,7 @@ describe('ExpensesManager Component', () => {
     approveButton?.click();
     flushSync();
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('', {
+    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/api/expenses/list', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'approve', id: 1 })

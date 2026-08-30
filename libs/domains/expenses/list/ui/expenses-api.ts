@@ -1,10 +1,17 @@
+
+/**
+ * Destination des écritures : le relais du domaine, et non la page hôte.
+ *
+ * Le formulaire de l'espace adhérent garde la sienne : il vit dans le storefront.
+ */
+const RELAIS = '/admin/api/expenses/list';
 export async function saveExpenseEdit(id: number, updates: {
   description: string;
   category: string;
   seasonId: string;
   amount: number;
 }): Promise<string> {
-  const res = await fetch('', {
+  const res = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -22,7 +29,7 @@ export async function saveExpenseEdit(id: number, updates: {
 }
 
 export async function handleExpenseAction(id: number, action: 'approve' | 'reject'): Promise<string> {
-  const res = await fetch('', {
+  const res = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, id })
@@ -38,7 +45,7 @@ export async function handleExpenseAction(id: number, action: 'approve' | 'rejec
 }
 
 export async function cancelExpenseValidation(id: number): Promise<string> {
-  const res = await fetch('', {
+  const res = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'cancel', id })
