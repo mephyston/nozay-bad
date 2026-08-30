@@ -22,10 +22,12 @@
   import './report-print.css';
 
   let {
-    view, report, prevReport = null, seasonId, seasons = [], categories = [], accountClasses = [], budget = [], canUseAi = false
+    view, report, prevReport = null, seasonId, seasons = [], categories = [], accountClasses = [], budget = [], canUseAi = false, pdfDoc = ''
   }: {
     view: 'resultat' | 'analytique' | 'tresorerie' | 'budget';
     report: ReportData; prevReport?: ReportData | null; seasonId: string; seasons?: Season[]; categories?: DbCategory[]; accountClasses?: AccountClass[]; budget?: BudgetRecord[]; canUseAi?: boolean;
+    /** Clé du document PDF sur `/admin/api/accounting/download` ; vide = pas de PDF. */
+    pdfDoc?: string;
   } = $props();
 
   // svelte-ignore state_referenced_locally
@@ -45,11 +47,19 @@
     requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
   }
 
-  // Rapports financiers en PDF (en-tête/pied de page club) : le type découle
-  // du segment d'URL courant, on ne fait qu'ajouter la saison + le drapeau pdf.
-  // Servi en « inline » → s'ouvre dans un nouvel onglet plutôt que téléchargé.
+  /*
+   * Rapport en PDF (en-tête et pied de page du club), servi « inline » : il s'ouvre dans
+   * un nouvel onglet plutôt que d'être téléchargé.
+   *
+   * L'adresse était déduite du chemin courant, ce qui liait ce composant à la page qui
+   * l'affiche. Elle est désormais nommée — et `pdfDoc` vaut la chaîne vide là où aucun
+   * PDF n'existe : sur le budget prévisionnel, le bouton rouvrait simplement la page dans
+   * un onglet, ce que personne n'attendait d'un bouton « PDF ».
+   */
   function openPdf() {
-    window.open(`${window.location.pathname}?pdf=1&season=${encodeURIComponent(selectedSeason)}`, '_blank');
+    if (!pdfDoc) return;
+    const adresse = `/admin/api/accounting/download?doc=${encodeURIComponent(pdfDoc)}&season=${encodeURIComponent(selectedSeason)}`;
+    window.open(adresse, '_blank');
   }
 
   // La classe cible est retirée une fois la boîte d'impression fermée.

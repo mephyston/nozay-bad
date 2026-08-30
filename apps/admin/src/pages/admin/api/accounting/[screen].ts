@@ -37,6 +37,41 @@ async function saison(lire: Lecteur, params: URLSearchParams) {
   };
 }
 
+/**
+ * La saison précédente, déduite du code `AA-BB`.
+ *
+ * Sert la colonne de comparaison des rapports. Rend la chaîne vide sur un code qui ne
+ * suit pas cette forme : mieux vaut pas de comparaison qu'une comparaison fausse.
+ */
+function saisonPrecedente(code: string): string {
+  const [debut, fin] = code.split('-');
+  const a = Number(debut);
+  const b = Number(fin);
+  if (!Number.isInteger(a) || !Number.isInteger(b)) return '';
+  return `${String(a - 1).padStart(2, '0')}-${String(b - 1).padStart(2, '0')}`;
+}
+
+/**
+ * Rapport de repli, aux huit champs attendus.
+ *
+ * Le repli n'en portait que trois : quand la lecture échouait, l'écran montrait des soldes
+ * **absents** plutôt qu'à zéro, et les trois natures de trésorerie qu'il distingue —
+ * comptable, bancaire théorique, relevé — n'avaient aucune valeur à afficher.
+ */
+const RAPPORT_VIDE = () => ({
+  compteResultat: { totalRecettes: 0, totalDepenses: 0, netResult: 0, categories: {} },
+  bilanTrésorerie: ['current', 'savings', 'cash'].map((accountId) => ({
+    accountId,
+    initialBalance: 0,
+    finalBalance: 0,
+    inVaultCents: 0,
+    pendingDebitCents: 0,
+    bankTheoreticalCents: 0,
+    statementBalanceCents: null as number | null,
+    statementDate: null as string | null
+  }))
+});
+
 export const ECRANS: Record<string, Ecran> = {
   ledger: {
     permission: 'accounting:ledger:read',
@@ -127,6 +162,69 @@ export const ECRANS: Record<string, Ecran> = {
         route: (data) => ({
           chemin: `/accounting/transactions/${identifiant(data.id, "d'écriture")}`,
           method: 'DELETE'
+        })
+      }
+    }
+  },
+
+  /**
+   * Les rapports financiers d'une saison.
+   *
+   * Les téléchargements — PDF d'un rapport, ZIP de l'export — ne passent **pas** par ici :
+   * ils vivent sur `/admin/api/accounting/download`, qui relaie un flux binaire sans le
+   * lire. C'est ce qui libère la page de son rôle de proxy.
+   */
+  reports: {
+    permission: 'accounting:reports:read',
+    charger: async (lire, locals, params) => {
+      const saisonnier = await saison(lire, params);
+      const { seasons, seasonId } = saisonnier;
+
+      /*
+        La saison en cours est arrêtée à aujourd'hui ; une saison passée se lit entière.
+        Sans cette distinction, le rapport de l'année courante afficherait des totaux
+        projetés sur douze mois dont six ne sont pas écoulés.
+      */
+      const active = seasons.find((s: any) => s.active === true || s.active === 1);
+      const enCours = seasonId === active?.code || seasonId === seasons[seasons.length - 1]?.code;
+      const arretedAu = enCours ? `?arretedAu=${new Date().toISOString().split('T')[0]}` : '';
+
+      const [rapport, precedent, categories, classes, budget] = await Promise.all([
+        lire(`/accounting/seasons/${encodeURIComponent(seasonId)}/reports${arretedAu}`),
+        saisonPrecedente(seasonId)
+          ? lire(`/accounting/seasons/${encodeURIComponent(saisonPrecedente(seasonId))}/reports`)
+          : Promise.resolve(null),
+        lire('/accounting/categories'),
+        lire('/accounting/account-classes'),
+        lire(`/accounting/seasons/${encodeURIComponent(seasonId)}/budget`)
+      ]);
+
+      return {
+        ...saisonnier,
+        report: rapport ?? RAPPORT_VIDE(),
+        prevReport: precedent,
+        categories: categories ?? [],
+        accountClasses: classes ?? [],
+        budget: budget ?? [],
+        errorMsg: rapport ? null : 'Impossible de charger les données du bilan AG.',
+        canUseAi: can(locals, 'ai:assistant:use'),
+        canWriteBudget: can(locals, 'accounting:budget:write')
+      };
+    },
+    ecritures: {
+      /*
+        Une seule écriture, et c'est volontaire. La page en portait une seconde — les
+        soldes initiaux — dans une branche `else` que la table des actions rendait
+        **inatteignable** : tout ce qui n'était pas `save_budget` était refusé avant d'y
+        parvenir. La recopier ici aurait installé un chemin d'écriture sans permission
+        propre, qui se serait ouvert au premier ajout dans la table.
+      */
+      save_budget: {
+        permission: 'accounting:budget:write',
+        route: (data) => ({
+          chemin: `/accounting/seasons/${encodeURIComponent(String(data.seasonId ?? ''))}/budget`,
+          method: 'POST',
+          body: data.budget
         })
       }
     }

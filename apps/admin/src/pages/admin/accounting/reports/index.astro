@@ -2,31 +2,14 @@
 import Layout from '../../../../layouts/Layout.astro';
 import AdminLayout from '../../../../components/AdminLayout.svelte';
 import { PageHeader } from '@nba/ui';
-import { env } from 'cloudflare:workers';
-import { createAdminApiClient } from '../../../../lib/api';
 
 const userEmail = Astro.locals.user?.email || "";
-const apiService = createAdminApiClient(Astro.locals);
 
-const requestedSeason = Astro.url.searchParams.get('season');
-const isExport = Astro.url.searchParams.get('export');
-
-if (isExport && requestedSeason) {
-  try {
-    const exportType = isExport === 'true' ? 'all' : isExport;
-    const exportRes = await apiService.fetch(`http://localhost/accounting/seasons/${requestedSeason}/export?type=${exportType}`);
-    if (exportRes.ok) {
-      return new Response(exportRes.body, {
-        headers: {
-          'Content-Type': exportRes.headers.get('Content-Type') || 'application/zip',
-          'Content-Disposition': exportRes.headers.get('Content-Disposition') || `attachment; filename="export-compta-${requestedSeason}.zip"`
-        }
-      });
-    }
-  } catch (err) {
-    console.error('Export failed', err);
-  }
-}
+/*
+  Cette page ne relaie plus l'export : il vit sur `/admin/api/accounting/download`, qui
+  passe le flux sans le lire. Les liens du grand livre et des factures y pointent
+  directement. Il ne reste ici que de la navigation — aucune donnée à charger.
+*/
 ---
 
 <Layout title="Rapports financiers - NBA 91">
