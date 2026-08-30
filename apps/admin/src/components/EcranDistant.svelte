@@ -26,11 +26,21 @@
    * qu'après 150 ms, en deçà desquelles les données sont souvent déjà là — il ne ferait
    * que clignoter.
    */
-  const { ecran, variante = 'liste', pret }: {
+  const { ecran, variante = 'liste', parametres, onDonnees, pret }: {
     /** Nom de l'écran auprès du relais `/admin/api/cms/[screen]`. */
     ecran: string;
     /** Forme du squelette, à l'image du contenu attendu. */
     variante?: 'liste' | 'formulaire' | 'grille';
+    /**
+     * Paramètres de requête, pour un écran qui porte sur un objet précis — l'éditeur
+     * d'une page, par exemple. Les autres écrans se désignent par leur seul nom.
+     */
+    parametres?: Record<string, string | number>;
+    /**
+     * Appelé à l'arrivée des données, pour ce qui vit hors du gabarit — le titre du
+     * document, par exemple, qui dépend ici de ce qu'on édite.
+     */
+    onDonnees?: (donnees: Record<string, any>) => void;
     /** Rendu une fois les données là. */
     pret: Snippet<[Record<string, any>]>;
   } = $props();
@@ -43,10 +53,14 @@
     etat = 'chargement';
     const delai = setTimeout(() => (squelette = true), 150);
     try {
-      const res = await fetch(`/admin/api/cms/${ecran}`);
+      const recherche = parametres
+        ? `?${new URLSearchParams(Object.entries(parametres).map(([c, v]) => [c, String(v)]))}`
+        : '';
+      const res = await fetch(`/admin/api/cms/${ecran}${recherche}`);
       if (!res.ok) throw new Error(String(res.status));
       donnees = (await res.json()).data;
       etat = 'pret';
+      if (donnees) onDonnees?.(donnees);
     } catch {
       etat = 'erreur';
     } finally {

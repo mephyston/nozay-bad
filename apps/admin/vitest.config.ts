@@ -22,6 +22,9 @@ export default defineConfig({
       // Le barrel @nba/iam expose désormais la résolution d'identité, qui touche la
       // base : l'alias devient nécessaire ici comme il l'est déjà côté build.
       '@nba/db': path.resolve(__dirname, '../../libs/shared/db/src/index.ts'),
+      // Le relais du CMS signe le jeton d'aperçu d'une page : `PREVIEW_TOKEN_SECRET` est
+      // partagé avec le site public, et n'a rien à faire dans le navigateur.
+      '@nba/preview': path.resolve(__dirname, '../../libs/shared/preview/src/index.ts'),
       'libs/shared/ui': path.resolve(__dirname, '../../libs/shared/ui'),
     },
     conditions: ['browser'],

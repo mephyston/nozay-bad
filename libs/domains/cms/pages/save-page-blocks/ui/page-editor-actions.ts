@@ -1,14 +1,16 @@
 import type { BlockPayload } from '../../../shared/blocks';
 
 /**
- * Écritures de l'éditeur, adressées à la page d'administration elle-même.
+ * Écritures de l'éditeur, adressées au relais de la rubrique.
  *
- * Même convention que les autres écrans : la page est le seul point d'entrée, et
- * c'est elle qui parle à l'API avec l'identité de l'utilisateur.
+ * L'éditeur porte sur une page précise : chaque écriture nomme donc son identifiant,
+ * là où elle le tirait autrefois de l'URL de la page hôte. Le relais le valide avant
+ * de le laisser rejoindre un chemin d'API.
  */
+const RELAIS = '/admin/api/cms/page';
 
 async function post(body: unknown, fallback: string): Promise<unknown> {
-  const response = await fetch('', {
+  const response = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
@@ -26,21 +28,21 @@ async function post(body: unknown, fallback: string): Promise<unknown> {
   return response.json();
 }
 
-export function saveBlocks(blocks: BlockPayload[]): Promise<unknown> {
+export function saveBlocks(id: number, blocks: BlockPayload[]): Promise<unknown> {
   // L'état complet part à chaque enregistrement : c'est ce que le serveur attend, et
   // ce qui rend l'écriture atomique.
-  return post({ action: 'saveBlocks', blocks: blocks.map((b) => ({ type: b.type, payload: b })) },
+  return post({ action: 'saveBlocks', id, blocks: blocks.map((b) => ({ type: b.type, payload: b })) },
     "L'enregistrement a échoué.");
 }
 
-export function saveMeta(meta: Record<string, unknown>): Promise<unknown> {
-  return post({ action: 'updateMeta', ...meta }, 'La mise à jour a échoué.');
+export function saveMeta(id: number, meta: Record<string, unknown>): Promise<unknown> {
+  return post({ action: 'updateMeta', id, ...meta }, 'La mise à jour a échoué.');
 }
 
-export function setPublished(published: boolean): Promise<unknown> {
-  return post({ action: 'publish', published }, published ? 'La publication a échoué.' : 'Le retrait a échoué.');
+export function setPublished(id: number, published: boolean): Promise<unknown> {
+  return post({ action: 'publish', id, published }, published ? 'La publication a échoué.' : 'Le retrait a échoué.');
 }
 
-export function restoreRevision(revisionId: number): Promise<unknown> {
-  return post({ action: 'restore', revisionId }, 'La restauration a échoué.');
+export function restoreRevision(id: number, revisionId: number): Promise<unknown> {
+  return post({ action: 'restore', id, revisionId }, 'La restauration a échoué.');
 }

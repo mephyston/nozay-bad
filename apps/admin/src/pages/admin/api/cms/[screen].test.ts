@@ -12,14 +12,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 /** Ce que le relais a demandé à l'API interne pendant le test. */
 let appels: { url: string; init?: RequestInit }[] = [];
-/** Ce que l'API interne répond ; réglable par test. */
-let reponse: () => Response;
+/** Ce que l'API interne répond ; réglable par test, et fonction du chemin appelé. */
+let reponse: (url: string) => Response;
 
 vi.mock('../../../../lib/api', () => ({
   createAdminApiClient: () => ({
     fetch: (url: string, init?: RequestInit) => {
       appels.push({ url, init });
-      return Promise.resolve(reponse());
+      return Promise.resolve(reponse(url));
     }
   })
 }));
@@ -36,8 +36,12 @@ const TOUS_LES_DROITS = [
 
 const locals = (permissions: string[]) => ({ user: { email: 'x@nozaybad.fr', permissions } });
 
-const lire = (screen: string, permissions = TOUS_LES_DROITS) =>
-  GET({ params: { screen }, locals: locals(permissions) } as never);
+const lire = (screen: string, permissions = TOUS_LES_DROITS, recherche = '') =>
+  GET({
+    params: { screen },
+    locals: locals(permissions),
+    request: new Request(`https://admin.nozaybad.fr/admin/api/cms/${screen}${recherche}`)
+  } as never);
 
 const ecrire = (screen: string, body: unknown, permissions = TOUS_LES_DROITS) =>
   POST({
@@ -50,9 +54,29 @@ const ecrire = (screen: string, body: unknown, permissions = TOUS_LES_DROITS) =>
     })
   } as never);
 
+/**
+ * Réponses de l'API interne, à la forme que le relais attend réellement.
+ *
+ * Un mock qui rend `{}` pour tout ferait passer des tests sur du code qui casserait en
+ * production : les chargeurs enchaînent `.map()` sur ce qu'ils reçoivent, et une forme
+ * fausse ne se verrait qu'à l'usage.
+ */
+function reponseParDefaut(url: string): Response {
+  const chemin = url.replace('http://localhost', '');
+  const corps =
+    /^\/cms\/pages\/\d+$/.test(chemin)
+      ? { page: { id: 12, title: 'Accueil', path: '/accueil' }, blocks: [] }
+      : chemin.startsWith('/cms/posts')
+        ? { posts: [] }
+        : chemin === '/cms/settings'
+          ? {}
+          : [];
+  return new Response(JSON.stringify({ success: true, data: corps }), { status: 200 });
+}
+
 beforeEach(() => {
   appels = [];
-  reponse = () => new Response(JSON.stringify({ success: true, data: {} }), { status: 200 });
+  reponse = reponseParDefaut;
 });
 
 describe('relais CMS — la table', () => {
@@ -189,5 +213,60 @@ describe('relais CMS — dépôt de fichier', () => {
     const res = await deposer('posts');
     expect(res.status).toBe(400);
     expect(appels).toHaveLength(0);
+  });
+});
+
+describe("relais CMS — l'écran paramétré", () => {
+  /*
+   * L'éditeur d'une page est le seul écran qui porte sur un objet précis : son
+   * identifiant vient du client, en lecture comme en écriture, et rejoint directement un
+   * chemin d'API. Interpolé sans contrôle, il ferait de chaque écriture un chemin
+   * arbitraire — d'où une validation, et ces tests pour la tenir.
+   */
+  it('charge la page demandée', async () => {
+    const res = await lire('page', TOUS_LES_DROITS, '?id=12');
+    expect(res.status).toBe(200);
+    expect(appels.map((a) => a.url)).toContain('http://localhost/cms/pages/12');
+  });
+
+  it("refuse une lecture sans identifiant, sans appeler l'API", async () => {
+    const res = await lire('page');
+    expect(res.status).toBe(400);
+    expect(appels).toHaveLength(0);
+  });
+
+  it('refuse un identifiant qui n’en est pas un', async () => {
+    for (const valeur of ['0', '-3', 'abc', '1.5', '../members', '1e999']) {
+      appels = [];
+      const res = await lire('page', TOUS_LES_DROITS, `?id=${encodeURIComponent(valeur)}`);
+      expect(res.status, valeur).toBe(400);
+      expect(appels, valeur).toHaveLength(0);
+    }
+  });
+
+  it('exige un identifiant valable à l’écriture aussi', async () => {
+    for (const corps of [
+      { action: 'saveBlocks', id: 'abc', blocks: [] },
+      { action: 'publish', published: true },
+      { action: 'updateMeta', id: 0, title: 'x' }
+    ]) {
+      appels = [];
+      const res = await ecrire('page', corps);
+      expect(res.status, JSON.stringify(corps)).toBe(400);
+      expect(appels, JSON.stringify(corps)).toHaveLength(0);
+    }
+  });
+
+  it('valide aussi le numéro de version restaurée', async () => {
+    // Deux identifiants dans le même chemin : le second se contrôle comme le premier.
+    const res = await ecrire('page', { action: 'restore', id: 4, revisionId: 'x' });
+    expect(res.status).toBe(400);
+    expect(appels).toHaveLength(0);
+  });
+
+  it('transmet une restauration valable', async () => {
+    const res = await ecrire('page', { action: 'restore', id: 4, revisionId: 9 });
+    expect(res.status).toBe(200);
+    expect(appels[0].url).toBe('http://localhost/cms/pages/4/revisions/9/restore');
   });
 });

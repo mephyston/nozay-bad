@@ -114,8 +114,8 @@
     if (busy) return;
     busy = true;
     try {
-      await saveMeta({ title, slug, template, seoTitle, seoDescription });
-      await saveBlocks($state.snapshot(blocks) as BlockPayload[]);
+      await saveMeta(page.id, { title, slug, template, seoTitle, seoDescription });
+      await saveBlocks(page.id, $state.snapshot(blocks) as BlockPayload[]);
       flashAndReload('Page enregistrée.');
     } catch (error) {
       // Le formulaire reste ouvert avec les valeurs saisies : un refus ne doit jamais
@@ -133,7 +133,7 @@
     }
     busy = true;
     try {
-      await setPublished(next);
+      await setPublished(page.id, next);
       flashAndReload(next ? 'Page publiée.' : 'Page retirée du site.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "L'opération a échoué.");
@@ -293,5 +293,5 @@
     </CollapsibleSection>
   {/if}
 
-  <RevisionsPanel {revisions} canRestore={canWrite} />
+  <RevisionsPanel {revisions} pageId={page.id} canRestore={canWrite} />
 </div>

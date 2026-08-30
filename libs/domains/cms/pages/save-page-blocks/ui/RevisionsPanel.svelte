@@ -11,7 +11,12 @@
     blockCount: number;
   }
 
-  let { revisions = [], canRestore = false } = $props<{ revisions: RevisionRow[]; canRestore?: boolean }>();
+  let { revisions = [], pageId, canRestore = false } = $props<{
+    revisions: RevisionRow[];
+    /** Page dont on restaure une version : l'écriture la nomme, le relais la valide. */
+    pageId: number;
+    canRestore?: boolean;
+  }>();
 
   const formatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
   const when = (value: number | string) =>
@@ -27,7 +32,7 @@
     if (!confirmed) return;
 
     try {
-      await restoreRevision(row.id);
+      await restoreRevision(pageId, row.id);
       flashAndReload(`Version ${row.revision} restaurée.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'La restauration a échoué.');

@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
 import type { Permission } from '@nba/iam-ui';
 import { can } from '../../../../lib/guard';
-import { createAdminApiClient } from '../../../../lib/api';
+import { createAdminApiClient, resolveEnv } from '../../../../lib/api';
+import { createPreviewToken } from '@nba/preview';
 
 /**
  * Le relais des écrans du CMS.
@@ -49,6 +50,17 @@ interface Appel {
  */
 class Refus extends Error {}
 
+/**
+ * Identifiant d'objet reçu du client, validé avant de rejoindre un chemin d'API.
+ *
+ * Interpolé sans contrôle, il ferait de n'importe quelle écriture un chemin arbitraire.
+ */
+function identifiant(valeur: unknown, quoi: string): number {
+  const n = Number(valeur);
+  if (!Number.isSafeInteger(n) || n < 1) throw new Refus(`Identifiant ${quoi} invalide.`);
+  return n;
+}
+
 interface Ecriture {
   permission: Permission;
   /** Construit l'appel API ; lève `Refus` pour rejeter une entrée mal formée. */
@@ -58,7 +70,12 @@ interface Ecriture {
 interface Ecran {
   /** Droit exigé pour lire l'écran. */
   permission: Permission;
-  charger: (lire: Lecteur, locals: App.Locals) => Promise<Record<string, unknown>>;
+  charger: (
+    lire: Lecteur,
+    locals: App.Locals,
+    /** Paramètres de la requête, pour les écrans qui portent sur un objet précis. */
+    params: URLSearchParams
+  ) => Promise<Record<string, unknown>>;
   /** Écritures acceptées, par nom d'action. Une action absente d'ici est refusée. */
   ecritures?: Record<string, Ecriture>;
   /** Dépôt de fichier, qui arrive en multipart et n'a donc pas de nom d'action. */
@@ -144,6 +161,124 @@ export const ECRANS: Record<string, Ecran> = {
       delete: {
         permission: 'cms:pages:delete',
         route: (data) => ({ chemin: `/cms/pages/${data.id}`, method: 'DELETE' })
+      }
+    }
+  },
+
+  /**
+   * L'éditeur d'une page, le seul écran de la rubrique qui porte sur un objet précis :
+   * son identifiant arrive en paramètre de requête plutôt que dans le nom de l'écran.
+   *
+   * C'est aussi le seul qui **signe** quelque chose. Le lien d'aperçu porte un jeton que
+   * le site public vérifie, les deux workers partageant `PREVIEW_TOKEN_SECRET` — ce
+   * secret ne doit jamais atteindre le navigateur, et c'est une raison de plus pour que
+   * cette préparation reste ici plutôt que dans l'îlot.
+   */
+  page: {
+    permission: 'cms:pages:read',
+    charger: async (lire, locals, params) => {
+      const id = identifiant(params.get('id'), 'de page');
+
+      const fiche = await lire(`/cms/pages/${id}`);
+      const page = fiche?.page ?? null;
+      const blocks = fiche?.blocks ?? [];
+
+      /*
+        Ressources des éditeurs de blocs : la médiathèque (bannière, documents), les
+        cibles internes possibles et les catégories d'actualités. L'échec de l'une
+        n'empêche pas d'éditer la page — les champs concernés retombent simplement sur
+        une saisie libre.
+      */
+      const [revisions, media, pages, reponsePosts, categories] = await Promise.all([
+        lire(`/cms/pages/${id}/revisions`),
+        lire('/cms/media?limit=200'),
+        lire('/cms/pages'),
+        lire('/cms/posts?limit=100'),
+        lire('/cms/post-categories')
+      ]);
+
+      // Les redirections ne se cherchent qu'une fois la page connue : elles portent sur
+      // son chemin de destination.
+      const redirects = page?.path
+        ? (await lire(`/cms/redirects?toPath=${encodeURIComponent(page.path)}`)) ?? []
+        : [];
+
+      const cible = (row: any, kind: 'page' | 'post') => ({
+        path: row.path,
+        title: row.title,
+        kind,
+        status: row.status
+      });
+
+      /*
+        Sans secret configuré, le lien pointe la page sans jeton — un brouillon y reste
+        donc invisible, ce qui est le comportement sûr.
+      */
+      const base = (import.meta.env.PUBLIC_WEBSITE_URL as string | undefined) ?? '';
+      let previewUrl = '';
+      if (page && base) {
+        const secret = (resolveEnv(locals) as { PREVIEW_TOKEN_SECRET?: string }).PREVIEW_TOKEN_SECRET;
+        previewUrl = secret
+          ? `${base}${page.path}?preview=${encodeURIComponent(await createPreviewToken(page.path, secret))}`
+          : `${base}${page.path}`;
+      }
+
+      return {
+        page,
+        blocks,
+        revisions: revisions ?? [],
+        media: media ?? [],
+        categories: categories ?? [],
+        redirects,
+        previewUrl,
+        targets: [
+          ...(pages ?? []).map((row: any) => cible(row, 'page')),
+          ...(reponsePosts?.posts ?? []).map((row: any) => cible(row, 'post'))
+        ],
+        canWrite: can(locals, 'cms:pages:write'),
+        canDelete: can(locals, 'cms:pages:delete'),
+        canUploadMedia: can(locals, 'cms:media:write')
+      };
+    },
+    ecritures: {
+      updateMeta: {
+        permission: 'cms:pages:write',
+        route: (data) => ({
+          chemin: `/cms/pages/${identifiant(data.id, 'de page')}`,
+          method: 'PUT',
+          body: {
+            title: data.title,
+            slug: data.slug,
+            template: data.template,
+            // Une chaîne vide veut dire « pas de valeur » : on la ramène à null pour que
+            // le repli en cascade s'applique côté site.
+            seoTitle: data.seoTitle?.trim() ? data.seoTitle : null,
+            seoDescription: data.seoDescription?.trim() ? data.seoDescription : null
+          }
+        })
+      },
+      saveBlocks: {
+        permission: 'cms:pages:write',
+        route: (data) => ({
+          chemin: `/cms/pages/${identifiant(data.id, 'de page')}/blocks`,
+          method: 'PUT',
+          body: { blocks: data.blocks }
+        })
+      },
+      publish: {
+        permission: 'cms:pages:write',
+        route: (data) => ({
+          chemin: `/cms/pages/${identifiant(data.id, 'de page')}/publish`,
+          method: 'POST',
+          body: { published: data.published }
+        })
+      },
+      restore: {
+        permission: 'cms:pages:write',
+        route: (data) => ({
+          chemin: `/cms/pages/${identifiant(data.id, 'de page')}/revisions/${identifiant(data.revisionId, 'de révision')}/restore`,
+          method: 'POST'
+        })
       }
     }
   },
@@ -321,7 +456,7 @@ export const ECRANS: Record<string, Ecran> = {
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 
-export const GET: APIRoute = async ({ params, locals }) => {
+export const GET: APIRoute = async ({ params, request, locals }) => {
   const ecran = ECRANS[params.screen ?? ''];
   // Un écran inconnu n'existe pas : ni indice sur ce que le relais sert, ni chemin
   // détourné vers une lecture non déclarée.
@@ -336,8 +471,11 @@ export const GET: APIRoute = async ({ params, locals }) => {
   };
 
   try {
-    return json({ success: true, data: await ecran.charger(lire, locals) });
+    const recherche = new URL(request.url).searchParams;
+    return json({ success: true, data: await ecran.charger(lire, locals, recherche) });
   } catch (e) {
+    // Un paramètre irrecevable est une faute du client, pas une panne de l'API.
+    if (e instanceof Refus) return json({ success: false, error: e.message }, 400);
     return json(
       { success: false, error: `Appel API échoué : ${e instanceof Error ? e.message : String(e)}` },
       502
