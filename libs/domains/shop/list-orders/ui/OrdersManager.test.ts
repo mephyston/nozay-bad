@@ -320,7 +320,7 @@ describe('OrdersManager Component', () => {
     actionButton(target, 'Valider').click();
     flushSync();
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('', {
+    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/api/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'validate', id: 1 })
@@ -341,7 +341,7 @@ describe('OrdersManager Component', () => {
     actionButton(target, 'Encaisser').click();
     flushSync();
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('', {
+    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/api/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'pay', id: 4 })
@@ -367,7 +367,7 @@ describe('OrdersManager Component', () => {
     expect(uiConfirm).toHaveBeenCalledWith(
       "Annuler cette commande faute de règlement ? Le stock réservé sera rendu."
     );
-    expect(globalThis.fetch).toHaveBeenCalledWith('', {
+    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/api/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'cancel', id: 4 })
@@ -390,7 +390,7 @@ describe('OrdersManager Component', () => {
     const { uiConfirm } = await import('@nba/ui');
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(uiConfirm).toHaveBeenCalledWith('Êtes-vous sûr de vouloir refuser cette commande ?');
-    expect(globalThis.fetch).toHaveBeenCalledWith('', {
+    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/api/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'reject', id: 1 })

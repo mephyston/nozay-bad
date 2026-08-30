@@ -105,10 +105,18 @@
 
     errorMessage = null; submitting = true;
     try {
-      const res = await fetch(window.location.pathname + window.location.search, {
+      /*
+        Le relais, et non la page hôte : `window.location.pathname` la visait, ce qui
+        liait ce formulaire à l'écran qui l'affiche sans que rien ne le rappelle.
+      */
+      const res = await fetch('/admin/api/shop/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          // La création se nomme désormais : elle se reconnaissait jusqu'ici à la seule
+          // présence d'un produit et d'une quantité, un implicite qui se serait défait à
+          // la première évolution du formulaire.
+          action: 'create-order',
           seasonId: activeSeasonId,
           memberId: parseInt(selectedMemberId),
           productId: selectedProduct.id,

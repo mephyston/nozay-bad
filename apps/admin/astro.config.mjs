@@ -120,6 +120,8 @@ export default defineConfig({
         '@nba/teams-api': path.resolve(__dirname, '../../libs/domains/teams/index.ts'),
         // Liste fermée des championnats, partagée. Alias étroit plutôt que le barrel `@nba/teams-api`, qui tire tout le serveur du domaine.
         '@nba/teams/championship': path.resolve(__dirname, '../../libs/domains/teams/shared/championship.ts'),
+        // Liste fermée des fonctions au club, partagée ; alias étroit plutôt que le barrel.
+        '@nba/members/club-functions': path.resolve(__dirname, '../../libs/domains/members/shared/club-functions.ts'),
         '@nba/teams-ui': path.resolve(__dirname, '../../libs/domains/teams/shared/ui.ts')
       }
     },

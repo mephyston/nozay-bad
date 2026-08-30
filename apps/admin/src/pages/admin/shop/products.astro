@@ -1,104 +1,20 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { PageHeader, ErrorAlert } from '@nba/ui';
-import { ProductsManager } from '@nba/shop-ui';
-
-import { env } from 'cloudflare:workers';
-import { createAdminApiClient } from '../../../lib/api';
-import { guardAction } from '../../../lib/guard';
-
-
-const userEmail = Astro.locals.user?.email || "";
-const apiService = createAdminApiClient(Astro.locals);
-
-/** Permission exigée par action d'écriture de cette page. */
-const ACTIONS = {
-  create: 'shop:products:write',
-  update: 'shop:products:write'
-} as const;
-
-if (Astro.request.method === 'POST') {
-  try {
-    const data = await Astro.request.json() as any;
-
-    const denied = guardAction(Astro.locals, data.action, ACTIONS);
-    if (denied) return denied;
-    if (data.action === 'create') {
-      let catId = typeof data.category === 'number' ? data.category : 3;
-      if (data.category === 'shuttlecock') catId = 1;
-      if (data.category === 'string') catId = 2;
-      
-      const apiRes = await apiService.fetch('http://localhost/shop/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: data.name,
-          productCategoryId: catId,
-          priceCents: data.priceCents ?? data.price,
-          stock: data.stock,
-          trackStock: data.trackStock,
-          active: data.active
-        })
-      });
-      if (!apiRes.ok) {
-        return new Response(await apiRes.text(), { status: apiRes.status });
-      }
-      return new Response(JSON.stringify(await apiRes.json()));
-    } else if (data.action === 'update') {
-      const apiRes = await apiService.fetch(`http://localhost/shop/products/${data.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: data.name,
-          priceCents: data.priceCents ?? data.price,
-          stock: data.stock,
-          trackStock: data.trackStock,
-          active: data.active
-        })
-      });
-      if (!apiRes.ok) {
-        return new Response(await apiRes.text(), { status: apiRes.status });
-      }
-      return new Response(JSON.stringify(await apiRes.json()));
-    }
-    return new Response('Action inconnue', { status: 400 });
-  } catch (err: any) {
-    return new Response(err.message, { status: 500 });
-  }
-}
-
-let productsList = [];
-let errorMsg = '';
-
-try {
-  const productsRes = await apiService.fetch('http://localhost/shop/products');
-  if (productsRes.ok) {
-    const json = await productsRes.json() as any;
-    productsList = json.data || [];
-  } else {
-    errorMsg = 'Impossible de charger la liste des produits depuis le service API.';
-  }
-} catch (err: any) {
-  errorMsg = 'Une erreur est survenue lors du chargement des produits.';
-}
+import ShopProductsScreen from '../../../components/ShopProductsScreen.svelte';
 ---
 
 <Layout title="Gestion des Produits - NBA 91">
-  <AdminLayout realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle email={userEmail} breadcrumb="Boutique / Produits" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb="Boutique / Produits"
+  >
     <div class="space-y-6">
-      {errorMsg && <ErrorAlert message={errorMsg} />}
-
-      <PageHeader
-        title="Gestion des Produits"
-        description="Consultez et modifiez les tarifs, stocks et statuts de la boutique."
-      />
-
-      <ProductsManager
-        client:load
-        category="all"
-        products={productsList}
-      />
+      <ShopProductsScreen client:load />
     </div>
   </AdminLayout>
 </Layout>

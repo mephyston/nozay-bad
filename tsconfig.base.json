@@ -52,6 +52,7 @@
       "@nba/teams-api": ["libs/domains/teams/index.ts"],
       "@nba/teams/schema": ["libs/domains/teams/shared/schema.ts"],
       "@nba/teams/championship": ["libs/domains/teams/shared/championship.ts"],
+      "@nba/members/club-functions": ["libs/domains/members/shared/club-functions.ts"],
       "@nba/teams-ui": ["libs/domains/teams/shared/ui.ts"],
       "@nba/cms/schema": ["libs/domains/cms/shared/schema.ts"]
     }

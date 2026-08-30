@@ -23,14 +23,14 @@
 </script>
 
 <div class="space-y-4 text-sm">
-  <div class="bg-gray-50 border p-3 rounded-lg text-xs space-y-1">
+  <div class="bg-muted space-y-1 rounded-lg border p-3 text-xs">
     <div>
-      <span class="text-gray-500 font-medium">Remise :</span>
-      <span class="font-semibold text-gray-800">{selectedDepositToClear?.reference}</span>
+      <span class="text-muted-foreground font-medium">Remise :</span>
+      <span class="text-foreground font-semibold">{selectedDepositToClear?.reference}</span>
     </div>
     <div>
-      <span class="text-gray-500 font-medium">Montant :</span>
-      <span class="font-bold text-gray-900">{(selectedDepositToClear?.amount / 100).toFixed(2)} €</span>
+      <span class="text-muted-foreground font-medium">Montant :</span>
+      <span class="text-foreground font-bold">{(selectedDepositToClear?.amount / 100).toFixed(2)} €</span>
     </div>
   </div>
 

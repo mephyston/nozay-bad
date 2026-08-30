@@ -1,72 +1,22 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { PageHeader, ErrorAlert } from '@nba/ui';
-import { MembersTable } from '@nba/members-ui';
+import MembersScreen from '../../../components/MembersScreen.svelte';
 
-import { env } from 'cloudflare:workers';
-import { createAdminApiClient } from '../../../lib/api';
-
-const page = Astro.url.searchParams.get('page') || '1';
-const search = Astro.url.searchParams.get('search') || '';
-const gender = Astro.url.searchParams.get('gender') || '';
-const type = Astro.url.searchParams.get('type') || '';
-const status = Astro.url.searchParams.get('status') || '';
-const season = Astro.url.searchParams.get('season') || '25-26';
-
-
-const apiService = createAdminApiClient(Astro.locals);
-const queryParams = new URLSearchParams({ page, limit: '20', search, gender, type, status, season });
-
-let membersData = { data: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 1 } };
-let seasonsList = [];
-let errorMsg = '';
-
-try {
-  const [res, seasonsRes] = await Promise.all([
-    apiService.fetch(`http://localhost/members?${queryParams.toString()}`),
-    apiService.fetch('http://localhost/accounting/seasons')
-  ]);
-
-  if (!res.ok) {
-    throw new Error('Impossible de récupérer la liste des adhérents');
-  }
-  membersData = await res.json();
-
-  if (seasonsRes.ok) {
-    const json = await seasonsRes.json() as any;
-    seasonsList = json.data || [];
-  }
-} catch (err: any) {
-  errorMsg = err.message || 'Une erreur est survenue lors de la récupération.';
-}
-
-let displaySeasonName = season;
-if (seasonsList.length > 0) {
-  const currentSeason = seasonsList.find((s: { code?: string; id?: string | number }) => s.code === season || String(s.id) === season);
-  if (currentSeason && currentSeason.name) {
-    displaySeasonName = currentSeason.name.replace('Saison ', '');
-  }
-}
+const parametres = Object.fromEntries(Astro.url.searchParams);
 ---
 
 <Layout title="Gestion des Adhérents - NBA 91">
-  <AdminLayout email={Astro.locals.user?.email || ""} realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle breadcrumb="Adhérents / Liste" permissions={Astro.locals.user?.permissions || []}>
+  <AdminLayout
+    email={Astro.locals.user?.email || ''}
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    breadcrumb="Adhérents / Liste"
+    permissions={Astro.locals.user?.permissions || []}
+  >
     <div class="space-y-6">
-      <PageHeader
-        title="Adhérents"
-        description={`Consultez et recherchez les membres inscrits au club pour la saison ${displaySeasonName}.`}
-      />
-
-      {errorMsg && <ErrorAlert message={errorMsg} />}
-
-      <MembersTable
-        client:load
-        data={membersData.data}
-        pagination={membersData.pagination}
-        filters={{ search, gender, type, status, season }}
-        seasons={seasonsList}
-      />
+      <MembersScreen client:load {parametres} />
     </div>
   </AdminLayout>
 </Layout>

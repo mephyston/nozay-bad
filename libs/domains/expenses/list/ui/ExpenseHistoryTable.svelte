@@ -170,7 +170,7 @@
           </div>
           
           <div class="flex justify-between items-center pt-2">
-            <Badge variant="outline" class={categoryColors[exp.category] || 'bg-slate-500/10 text-slate-600 border-slate-500/20'}>
+            <Badge variant="outline" class={categoryColors[exp.category] || 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20'}>
               {categoryLabels[exp.category] || exp.category}
             </Badge>
             

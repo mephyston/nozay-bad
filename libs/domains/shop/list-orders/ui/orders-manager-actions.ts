@@ -1,5 +1,13 @@
 import { uiConfirm, flashAndReload } from '@nba/ui';
 
+/**
+ * Destination des écritures : le relais du domaine, et non la page hôte.
+ *
+ * Le catalogue de l'espace adhérent garde la sienne : il vit dans le storefront, et lui
+ * donner une adresse d'administration l'aurait cassé sans que rien ne le signale.
+ */
+const RELAIS = '/admin/api/shop/orders';
+
 export async function getErrorMessage(res: Response, defaultMsg: string): Promise<string> {
   try {
     const text = await res.text();
@@ -32,7 +40,7 @@ async function postOrderAction(
   payload: Record<string, unknown> = {}
 ): Promise<OrderActionResult> {
   try {
-    const res = await fetch('', {
+    const res = await fetch(RELAIS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, id: orderId, ...payload })

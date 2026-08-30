@@ -1,43 +1,9 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { PageHeader, ErrorAlert } from '@nba/ui';
-import { ClubFunctionsBoard } from '@nba/members-ui';
-import { createAdminApiClient } from '../../../lib/api';
-import { fetchSeasons, currentSeasonCode } from '../../../lib/seasons';
-import { can } from '../../../lib/guard';
+import ClubFunctionsScreen from '../../../components/ClubFunctionsScreen.svelte';
 
-const apiService = createAdminApiClient(Astro.locals);
-const canWrite = can(Astro.locals, 'members:members:write');
-
-let assignments: any[] = [];
-let members: any[] = [];
-
-// La saison par défaut est celle en cours par ses dates, pas le drapeau comptable.
-const seasonsResult = await fetchSeasons(apiService);
-const seasons = seasonsResult.seasons;
-let errorMsg = seasonsResult.errorMsg;
-const season = Astro.url.searchParams.get('season') || currentSeasonCode(seasons) || '25-26';
-
-try {
-  const [fnRes, membersRes] = await Promise.all([
-    apiService.fetch(`http://localhost/members/club-functions?season=${encodeURIComponent(season)}`),
-    apiService.fetch(`http://localhost/members?season=${encodeURIComponent(season)}&limit=5000`)
-  ]);
-  if (!fnRes.ok) throw new Error('Impossible de récupérer les fonctions au club.');
-  assignments = ((await fnRes.json()) as any).data || [];
-
-  if (membersRes.ok) {
-    const payload = (await membersRes.json()) as any;
-    members = (payload?.data?.data ?? payload?.data ?? []).map((m: any) => ({
-      licence: String(m.licence),
-      firstName: m.firstName,
-      lastName: m.lastName
-    }));
-  }
-} catch (err: any) {
-  errorMsg = err.message || 'Une erreur inattendue est survenue.';
-}
+const parametres = Object.fromEntries(Astro.url.searchParams);
 ---
 
 <Layout title="Dirigeants - NBA 91">
@@ -50,21 +16,7 @@ try {
     permissions={Astro.locals.user?.permissions || []}
   >
     <div class="space-y-6">
-      {errorMsg && <ErrorAlert message={errorMsg} />}
-
-      <PageHeader
-        title="Dirigeants"
-        description="Les fonctions au club de la saison : bureau, comité d'administration et entraîneurs."
-      />
-
-      <ClubFunctionsBoard
-        client:load
-        assignments={assignments}
-        seasons={seasons}
-        season={season}
-        members={members}
-        canWrite={canWrite}
-      />
+      <ClubFunctionsScreen client:load {parametres} />
     </div>
   </AdminLayout>
 </Layout>

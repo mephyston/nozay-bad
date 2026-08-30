@@ -22,12 +22,12 @@
     <div class="bg-info/10 border border-info/20 p-4 rounded-lg space-y-2">
     <div class="text-xs text-info font-bold uppercase tracking-wider">Récapitulatif de la sélection</div>
     <div class="flex justify-between items-center text-xs">
-      <span class="text-gray-500 font-medium">Chèques sélectionnés :</span>
-      <span class="font-bold text-gray-900">{selectedChecksList.length}</span>
+      <span class="text-muted-foreground font-medium">Chèques sélectionnés :</span>
+      <span class="text-foreground font-bold">{selectedChecksList.length}</span>
     </div>
     <div class="flex justify-between items-center text-xs border-t pt-2">
-      <span class="text-gray-500 font-medium">Montant total de la remise :</span>
-      <span class="font-bold text-gray-900">{(totalSelectedAmount / 100).toFixed(2)} €</span>
+      <span class="text-muted-foreground font-medium">Montant total de la remise :</span>
+      <span class="text-foreground font-bold">{(totalSelectedAmount / 100).toFixed(2)} €</span>
     </div>
   </div>
 

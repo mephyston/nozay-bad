@@ -136,7 +136,17 @@ export async function handleDeleteCheck(id: number, seasonId: string) {
   }
 }
 
-export async function handleCreateDeposit(seasonId: string, state: any) {
+/**
+ * Génération d'un bordereau de remise.
+ *
+ * L'événement est le premier paramètre, comme pour les autres gestionnaires de ce module.
+ * Il manquait : l'appelant passait bien `(e, seasonId, state)`, si bien que `state`
+ * recevait la chaîne de la saison, et `Object.keys(undefined)` levait au clic. Sans
+ * `preventDefault`, le navigateur enchaînait sur une soumission native du formulaire vers
+ * la page — ce qui masquait l'erreur derrière un rechargement.
+ */
+export async function handleCreateDeposit(e: SubmitEvent, seasonId: string, state: any) {
+  e.preventDefault();
   const checkIds = Object.keys(state.selectedCheckIds).map(Number).filter(id => state.selectedCheckIds[id]);
   if (checkIds.length === 0) return;
 

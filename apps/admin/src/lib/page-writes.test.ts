@@ -58,11 +58,14 @@ describe('pages acceptant une écriture', () => {
     expect(accepteEcriture('/admin/accounting/reports/forecast', 'POST')).toBe(false);
     expect(accepteEcriture('/admin/website/menus', 'POST')).toBe(false);
     expect(accepteEcriture('/admin/teams', 'POST')).toBe(false);
+    // Converties dans la foulée : la boutique et les adhérents.
+    expect(accepteEcriture('/admin/shop/orders', 'POST')).toBe(false);
+    expect(accepteEcriture('/admin/members', 'POST')).toBe(false);
   });
 
   it('laisse écrire les pages qui le déclarent encore', () => {
     expect(accepteEcriture('/admin/iam', 'POST')).toBe(true);
-    expect(accepteEcriture('/admin/shop/orders', 'POST')).toBe(true);
+    expect(accepteEcriture('/admin/settings/seasons', 'POST')).toBe(true);
   });
 
   it('ignore une barre oblique finale', () => {

@@ -27,6 +27,8 @@ export default defineConfig({
       '@nba/preview': path.resolve(__dirname, '../../libs/shared/preview/src/index.ts'),
       // Le relais des interclubs valide le championnat reçu contre la liste connue.
       '@nba/teams/championship': path.resolve(__dirname, '../../libs/domains/teams/shared/championship.ts'),
+      // La fiche d'un adhérent n'affiche que des fonctions de la liste connue.
+      '@nba/members/club-functions': path.resolve(__dirname, '../../libs/domains/members/shared/club-functions.ts'),
       'libs/shared/ui': path.resolve(__dirname, '../../libs/shared/ui'),
     },
     conditions: ['browser'],

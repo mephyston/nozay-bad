@@ -91,6 +91,37 @@ describe('Design System — usage rules', () => {
     expect(violations, `Palette brute interdite — utiliser les tokens sémantiques:\n${violations.join('\n')}`).toEqual([]);
   });
 
+  it('DS4b: pas de gris de palette sans variante sombre (ils disparaissent en thème sombre)', () => {
+    /*
+     * Les gris échappaient à DS4, qui ne liste que les couleurs chromatiques. C'est
+     * pourtant eux qui cassent le plus franchement : `text-gray-900` sur une carte sombre
+     * donne du noir sur noir, et le texte devient simplement invisible. Un rouge mal
+     * choisi reste lisible ; un gris, non.
+     *
+     * Trouvé le 2026-08-30 sur le dialogue de remise de chèques, signalé à l'usage —
+     * « bleu sur noir, illisible ».
+     *
+     * Toléré quand la ligne porte une variante `dark:` : l'auteur a alors traité les deux
+     * thèmes, ce qui est le fond de la règle. L'échappatoire `ds-allow-palette` vaut ici
+     * comme pour DS4.
+     */
+    const gris = /\b(?:text|bg|border)-(?:gray|slate|zinc|neutral|stone)-[0-9]/;
+    const violations: string[] = [];
+    for (const file of scanTargets) {
+      if (STANDALONE_DOCUMENTS.test(file)) continue;
+      const lines = readLines(file);
+      lines.forEach((line, i) => {
+        if (!gris.test(line) || line.includes('dark:')) return;
+        const allowed = /ds-allow-palette/.test(line) || (i > 0 && /ds-allow-palette/.test(lines[i - 1]));
+        if (!allowed) violations.push(`${rel(file)}:${i + 1}`);
+      });
+    }
+    expect(
+      violations,
+      `Gris de palette sans variante sombre — employer les tokens (foreground, muted-foreground, card…) :\n${violations.join('\n')}`
+    ).toEqual([]);
+  });
+
   it('DS5: <Badge> ne porte que des classes de layout (le style passe par variant/size/shape)', () => {
     // Seules ces utilités de disposition sont tolérées dans class= sur un <Badge>.
     const LAYOUT_ALLOWED = /^(shrink-0|grow-0|flex-1|w-full|w-fit|ml-auto|mr-auto|ml-[0-9.]+|mr-[0-9.]+|mt-[0-9.]+|mb-[0-9.]+|self-(start|end|center|auto)|sm:self-(start|end|center|auto)|col-span-[0-9]+|justify-self-.*|tabular-nums|font-outfit|uppercase|whitespace-nowrap|truncate|max-w-.*|min-w-.*|no-print|print:hidden)$/;

@@ -33,9 +33,7 @@ export const PAGES_AVEC_ECRITURE = [
   '/admin/settings/accounting',
   '/admin/settings/attestation',
   '/admin/settings/products',
-  '/admin/settings/seasons',
-  '/admin/shop/orders',
-  '/admin/shop/products'
+  '/admin/settings/seasons'
 ] as const;
 
 /** Les méthodes qui ne modifient rien, et qu'aucune page n'a à déclarer. */

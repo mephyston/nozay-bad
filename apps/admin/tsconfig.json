@@ -28,6 +28,7 @@
       "@nba/events-ui": ["../../libs/domains/events/shared/ui.ts"],
       "@nba/teams-api": ["../../libs/domains/teams/index.ts"],
       "@nba/teams/championship": ["../../libs/domains/teams/shared/championship.ts"],
+      "@nba/members/club-functions": ["../../libs/domains/members/shared/club-functions.ts"],
       "@nba/teams-ui": ["../../libs/domains/teams/shared/ui.ts"]
     }
   }

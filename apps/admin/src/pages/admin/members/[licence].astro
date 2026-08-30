@@ -1,76 +1,31 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import AdminLayout from '../../../components/AdminLayout.svelte';
-import { ErrorAlert } from '@nba/ui';
-import { MemberProfile } from '@nba/members-ui';
-import { isClubFunction, type ClubFunction } from '@nba/members-api';
+import MemberProfileScreen from '../../../components/MemberProfileScreen.svelte';
 
-import { env } from 'cloudflare:workers';
-import { createAdminApiClient } from '../../../lib/api';
-import { can } from '../../../lib/guard';
+/**
+ * La fiche d'un adhérent, en coquille.
+ *
+ * La licence est validée ici **et** dans le relais : une URL absurde doit renvoyer sur la
+ * liste, pas monter un écran qui échouera.
+ */
+const licence = Astro.params.licence ?? '';
+if (!/^\d{1,8}$/.test(licence)) return Astro.redirect('/admin/members');
 
-const { licence } = Astro.params;
-const season = Astro.url.searchParams.get('season') || '25-26';
-const apiService = createAdminApiClient(Astro.locals);
-// La fiche s'ouvre sur `members:members:read` : sans le droit d'écriture, elle se
-// consulte sans offrir de commande qui finirait en 403.
-const canWrite = can(Astro.locals, 'members:members:write');
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let member: any = null;
-let memberTransactionsList = [];
-// La colonne est contrainte en base ; la garde du domaine le redit ici, pour que le
-// composant reçoive bien la liste fermée qu'il attend.
-let clubFunctions: ClubFunction[] = [];
-let errorMsg = '';
-
-try {
-  const res = await apiService.fetch(`http://localhost/members/${licence}?season=${season}`);
-  if (!res.ok) {
-    if (res.status === 404) {
-      throw new Error(`Adhérent avec la licence ${licence} introuvable.`);
-    }
-    throw new Error('Erreur de communication avec le service API.');
-  }
-  const body = await res.json() as any;
-  member = body.data;
-
-  if (member) {
-    // Transactions et fonctions au club en parallèle ; leurs échecs n'empêchent pas la fiche.
-    const [txRes, fnRes] = await Promise.all([
-      apiService.fetch(`http://localhost/accounting/transactions?season=${season}&memberId=${member.id}&limit=100`),
-      apiService.fetch(`http://localhost/members/club-functions?season=${season}`)
-    ]);
-    if (txRes.ok) {
-      const txBody = await txRes.json() as any;
-      memberTransactionsList = txBody.data || [];
-    }
-    if (fnRes.ok) {
-      const fnBody = await fnRes.json() as any;
-      clubFunctions = (fnBody.data || [])
-        .filter((row: any) => row.licence === member.licence)
-        .map((row: any) => row.function)
-        .filter(isClubFunction);
-    }
-  }
-} catch (err: any) {
-  errorMsg = err.message || 'Une erreur inattendue est survenue.';
-}
+const season = Astro.url.searchParams.get('season') ?? '';
 ---
 
-<Layout title={member ? `Profil ${member.lastName} ${member.firstName} - NBA 91` : "Profil Adhérent - NBA 91"}>
-  <AdminLayout email={Astro.locals.user?.email || ""} realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle breadcrumb="Adhérents / Fiche Adhérent" permissions={Astro.locals.user?.permissions || []}>
+<Layout title="Profil Adhérent - NBA 91">
+  <AdminLayout
+    email={Astro.locals.user?.email || ''}
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    breadcrumb="Adhérents / Fiche Adhérent"
+    permissions={Astro.locals.user?.permissions || []}
+  >
     <div class="space-y-6">
-      {errorMsg && (
-        <div class="max-w-3xl mx-auto space-y-4">
-          <ErrorAlert message={errorMsg} />
-          <a href="/admin/members" class="text-sm text-primary hover:underline">
-            &larr; Retour à la liste des adhérents
-          </a>
-        </div>
-      )}
-
-      {member && <MemberProfile client:load {member} transactions={memberTransactionsList} seasonId={season} clubFunctions={clubFunctions} canWrite={canWrite} />}
+      <MemberProfileScreen client:load {licence} {season} />
     </div>
   </AdminLayout>
 </Layout>

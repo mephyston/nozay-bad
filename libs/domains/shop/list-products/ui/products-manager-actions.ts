@@ -1,6 +1,14 @@
 import { uiConfirm } from '@nba/ui';
 import type { Product } from './products-manager-types';
 
+/**
+ * Destination des écritures : le relais du domaine, et non la page hôte.
+ *
+ * Le catalogue de l'espace adhérent garde la sienne : il vit dans le storefront, et lui
+ * donner une adresse d'administration l'aurait cassé sans que rien ne le signale.
+ */
+const RELAIS = '/admin/api/shop/products';
+
 export interface ProductFormValues {
   editingId: number | null;
   name: string;
@@ -45,7 +53,7 @@ export async function submitProduct(params: ProductFormValues): Promise<void> {
         active: params.active
       };
 
-  const res = await fetch('', {
+  const res = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -57,7 +65,7 @@ export async function submitProduct(params: ProductFormValues): Promise<void> {
 }
 
 export async function toggleProductActive(product: Product): Promise<boolean> {
-  const res = await fetch('', {
+  const res = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -77,7 +85,7 @@ export async function toggleProductActive(product: Product): Promise<boolean> {
 export async function archiveProduct(product: Product): Promise<boolean> {
   if (!(await uiConfirm(`Êtes-vous sûr de vouloir désactiver le produit "${product.name}" ?`))) return false;
 
-  const res = await fetch('', {
+  const res = await fetch(RELAIS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
