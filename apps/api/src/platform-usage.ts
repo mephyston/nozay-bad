@@ -97,6 +97,15 @@ export interface WorkerUsage {
   requests: number;
   errors: number;
   subrequests: number;
+  /**
+   * Plancher à chaud : le coût du code **sans** l'initialisation de l'isolate.
+   *
+   * C'est l'étalon qui relativise les deux quantiles suivants. Cloudflare n'expose aucun
+   * indicateur de démarrage à froid — l'écart entre ce minimum et la médiane est ce que
+   * l'initialisation et la variance ajoutent. Un worker peu sollicité et souvent redéployé
+   * affiche une médiane élevée sans qu'une seule ligne de code ait changé.
+   */
+  cpuMinMs: number;
   /** Millisecondes : l'API rend des microsecondes, que personne ne lit d'un coup d'œil. */
   cpuP50Ms: number;
   cpuP99Ms: number;
@@ -152,6 +161,8 @@ export interface PlatformUsage {
 interface InvocationRow {
   dimensions: { scriptName: string; status: string };
   sum: { requests: number; errors: number; subrequests: number };
+  /** Optionnel : les jeux de test antérieurs à la colonne « plancher » n'en portent pas. */
+  min?: { cpuTime: number | null };
   quantiles: { cpuTimeP50: number | null; cpuTimeP99: number | null };
 }
 
@@ -232,6 +243,7 @@ query($account: String!, $since: Time!, $historySince: Time!) {
       workersInvocationsAdaptive(limit: 200, filter: { datetime_geq: $since }) {
         dimensions { scriptName status }
         sum { requests errors subrequests }
+        min { cpuTime }
         quantiles { cpuTimeP50 cpuTimeP99 }
       }
       d1AnalyticsAdaptiveGroups(limit: 50, filter: { datetime_geq: $since }) {
@@ -273,6 +285,10 @@ export function aggregateUsage(
   worker: string | null = null
 ): PlatformUsage {
   const workers = new Map<string, WorkerUsage>();
+  /** Minimums bruts des invocations réussies, en microsecondes : arrondis après fusion. */
+  const minByScript = new Map<string, number>();
+  /** Minimums des autres statuts, utilisés seulement faute de réussite sur la fenêtre. */
+  const minDeSecours = new Map<string, number>();
 
   for (const row of account.workersInvocationsAdaptive ?? []) {
     const name = row.dimensions.scriptName;
@@ -281,6 +297,7 @@ export function aggregateUsage(
       requests: 0,
       errors: 0,
       subrequests: 0,
+      cpuMinMs: 0,
       cpuP50Ms: 0,
       cpuP99Ms: 0,
       statuses: []
@@ -288,6 +305,25 @@ export function aggregateUsage(
     worker.requests += row.sum.requests;
     worker.errors += row.sum.errors;
     worker.subrequests += row.sum.subrequests;
+    /*
+      Le plancher ne se lit que sur les invocations **réussies**.
+
+      Une requête `clientDisconnected` est abandonnée en cours de route : son temps CPU est
+      bas parce qu'elle s'est arrêtée, pas parce que le code est léger. La retenir tirerait
+      le plancher vers un chiffre que rien ne produit. Les autres statuts servent de
+      recours quand un worker n'a aucune réussite sur la fenêtre — mieux vaut un plancher
+      approximatif que la case vide d'un worker en panne.
+
+      Le cumul reste en microsecondes et l'arrondi n'intervient qu'à la fin : un minimum
+      sous les 50 µs tomberait sinon à 0,0 et deviendrait indiscernable d'une absence
+      de mesure.
+    */
+    const floorUs = row.min?.cpuTime ?? 0;
+    if (floorUs > 0) {
+      const cible = row.dimensions.status === 'success' ? minByScript : minDeSecours;
+      const seen = cible.get(name);
+      cible.set(name, seen === undefined ? floorUs : Math.min(seen, floorUs));
+    }
     worker.cpuP50Ms = Math.max(worker.cpuP50Ms, roundMs(row.quantiles.cpuTimeP50 ?? 0));
     worker.cpuP99Ms = Math.max(worker.cpuP99Ms, roundMs(row.quantiles.cpuTimeP99 ?? 0));
 
@@ -305,6 +341,11 @@ export function aggregateUsage(
     readQueries: row.sum.readQueries,
     writeQueries: row.sum.writeQueries
   }));
+
+  for (const worker of workers.values()) {
+    const floorUs = minByScript.get(worker.script) ?? minDeSecours.get(worker.script);
+    if (floorUs !== undefined) worker.cpuMinMs = roundMs(floorUs);
+  }
 
   const ordered = [...workers.values()].sort((a, b) => b.requests - a.requests);
   for (const worker of ordered) worker.statuses.sort((a, b) => b.requests - a.requests);

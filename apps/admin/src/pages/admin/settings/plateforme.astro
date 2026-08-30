@@ -21,6 +21,7 @@ interface WorkerUsage {
   requests: number;
   errors: number;
   subrequests: number;
+  cpuMinMs: number;
   cpuP50Ms: number;
   cpuP99Ms: number;
   statuses: { status: string; requests: number }[];
@@ -606,7 +607,12 @@ const depuis = usage
                 <span class="font-mono">exceededCpu</span> malgré des pointes bien au-delà.
                 Cloudflare tolère, sans rien garantir. C’est la colonne « Statuts » qui
                 trancherait : <span class="font-mono">exceededCpu</span> y désignerait des
-                requêtes réellement tuées. Seuls les workers du club sont listés — les autres
+                requêtes réellement tuées. Lisez la médiane à la lumière du <strong>plancher</strong>,
+                qui est le coût du code une fois l’isolate chaud : Cloudflare n’expose aucun
+                indicateur de démarrage à froid, et l’écart entre les deux est ce que
+                l’initialisation ajoute. Un worker peu sollicité et souvent redéployé voit sa
+                médiane grimper sans qu’une ligne de code ait changé — seul un plancher qui monte
+                désigne un code devenu plus lourd. Seuls les workers du club sont listés — les autres
                 projets du compte comptent dans les quotas, mais il n’y a rien à en diagnostiquer
                 ici.
               </p>
@@ -618,6 +624,7 @@ const depuis = usage
                     <th class="text-left font-medium px-5 py-2">Worker</th>
                     <th class="text-right font-medium px-3 py-2">Requêtes</th>
                     <th class="text-right font-medium px-3 py-2">Sous-req.</th>
+                    <th class="text-right font-medium px-3 py-2">CPU plancher</th>
                     <th class="text-right font-medium px-3 py-2">CPU p50</th>
                     <th class="text-right font-medium px-3 py-2">CPU p99</th>
                     <th class="text-left font-medium px-5 py-2">Statuts</th>
@@ -630,6 +637,11 @@ const depuis = usage
                       <td class="px-3 py-2 text-right tabular-nums">{nombre.format(worker.requests)}</td>
                       <td class="px-3 py-2 text-right tabular-nums text-muted-foreground">
                         {nombre.format(worker.subrequests)}
+                      </td>
+                      <td
+                        class={`px-3 py-2 text-right tabular-nums ${TEXTE[niveau(worker.cpuMinMs / usage.limits.cpuMsPerInvocation)]}`}
+                      >
+                        {worker.cpuMinMs} ms
                       </td>
                       <td
                         class={`px-3 py-2 text-right tabular-nums ${TEXTE[niveau(worker.cpuP50Ms / usage.limits.cpuMsPerInvocation)]}`}

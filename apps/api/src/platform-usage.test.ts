@@ -125,16 +125,19 @@ describe('aggregateUsage', () => {
       {
         dimensions: { scriptName: 'nba-api', status: 'success' },
         sum: { requests: 100, errors: 0, subrequests: 10 },
+        min: { cpuTime: 1100 },
         quantiles: { cpuTimeP50: 4483, cpuTimeP99: 22521 }
       },
       {
         dimensions: { scriptName: 'nba-api', status: 'clientDisconnected' },
         sum: { requests: 5, errors: 0, subrequests: 0 },
+        min: { cpuTime: 200 },
         quantiles: { cpuTimeP50: 900, cpuTimeP99: 90000 }
       },
       {
         dimensions: { scriptName: 'nba-website', status: 'success' },
         sum: { requests: 400, errors: 2, subrequests: 500 },
+        min: { cpuTime: 3000 },
         quantiles: { cpuTimeP50: 3943, cpuTimeP99: 57118 }
       }
     ],
@@ -155,6 +158,56 @@ describe('aggregateUsage', () => {
   it('convertit les microsecondes en millisecondes', () => {
     const api = usage.workers.find((w) => w.script === 'nba-api')!;
     expect(api.cpuP50Ms).toBe(4.5);
+  });
+
+  it('rend le plancher à chaud, qui relativise la médiane', () => {
+    const api = usage.workers.find((w) => w.script === 'nba-api')!;
+    expect(api.cpuMinMs).toBe(1.1);
+  });
+
+  it('ignore le plancher d’un statut interrompu, qui ne mesure pas le code', () => {
+    // `clientDisconnected` descend ici à 200 µs : la requête s'est arrêtée, elle n'a pas
+    // été servie pour 0,2 ms. Retenir ce chiffre inventerait un plancher que rien ne produit.
+    const api = usage.workers.find((w) => w.script === 'nba-api')!;
+    expect(api.cpuMinMs).not.toBe(0.2);
+  });
+
+  it('se rabat sur les autres statuts quand un worker n’a aucune réussite', () => {
+    // Un worker qui n'a servi que des requêtes abandonnées reste un worker à afficher :
+    // une case vide se lirait comme « pas de donnée » alors qu'il y en a.
+    const enPanne = aggregateUsage(
+      {
+        workersInvocationsAdaptive: [
+          {
+            dimensions: { scriptName: 'nba-api', status: 'clientDisconnected' },
+            sum: { requests: 3, errors: 0, subrequests: 0 },
+            min: { cpuTime: 700 },
+            quantiles: { cpuTimeP50: 900, cpuTimeP99: 1200 }
+          }
+        ]
+      },
+      '2026-08-29T00:00:00.000Z'
+    );
+
+    expect(enPanne.workers[0].cpuMinMs).toBe(0.7);
+  });
+
+  it('laisse le plancher à zéro quand Cloudflare n’en renvoie pas', () => {
+    // Les réponses antérieures à la colonne « plancher » n'ont pas de bloc `min`.
+    const sansMin = aggregateUsage(
+      {
+        workersInvocationsAdaptive: [
+          {
+            dimensions: { scriptName: 'nba-api', status: 'success' },
+            sum: { requests: 10, errors: 0, subrequests: 0 },
+            quantiles: { cpuTimeP50: 2000, cpuTimeP99: 4000 }
+          }
+        ]
+      },
+      '2026-08-29T00:00:00.000Z'
+    );
+
+    expect(sansMin.workers[0].cpuMinMs).toBe(0);
   });
 
   it('retient le pire quantile plutôt que d’en faire une moyenne dénuée de sens', () => {
