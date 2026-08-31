@@ -1,7 +1,7 @@
 import { bankStatementLinesTable } from '../../shared/schema';
 
 export interface ListBankStatementLinesFilters {
-  status?: 'pending' | 'reconciled' | 'ignored';
+  status?: 'pending' | 'reconciled';
   /** Code (« current ») ou identifiant du compte ; le handler le résout. */
   accountId?: string | number;
   /** Resserre l'intervalle de l'exercice ; il ne peut pas l'élargir. */

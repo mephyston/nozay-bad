@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, ChevronDown, Link2, Sparkles, RefreshCw, Pencil } from '@lucide/svelte';
+  import { Check, ChevronDown, Link2, Sparkles, Pencil } from '@lucide/svelte';
   import { Amount, Badge, Button } from '@nba/ui';
   import { accrualLabel } from '../../../shared/accrual-labels';
   import { parseSuggestion, isOneClickValidatable } from './reconciliation-suggestion';
@@ -110,8 +110,6 @@
     <div class="flex min-w-0 flex-col justify-center gap-1 md:w-[34%]">
       {#if line.status === 'reconciled'}
         <Badge variant="success" size="xs" class="self-start">Rapprochée</Badge>
-      {:else if line.status === 'ignored'}
-        <Badge variant="secondary" size="xs" class="self-start">Ignorée</Badge>
       {:else if hasExistingEntry}
         <div class="flex flex-wrap items-center gap-1.5">
           <Link2 class="h-3 w-3 shrink-0 text-success" />
@@ -201,17 +199,6 @@
           <span class="hidden lg:inline">{isExpanded ? 'Replier' : 'Modifier'}</span>
         </Button>
 
-      {:else if line.status === 'ignored'}
-        <Button
-          size="sm"
-          variant="outline"
-          class="h-8 gap-1.5 text-xs"
-          disabled={reconState.isClosed || reconState.isSubmitting}
-          onclick={() => reconState.handleUnignore(line.id)}
-        >
-          <RefreshCw class="h-3.5 w-3.5" />
-          <span class="hidden sm:inline">Rétablir</span>
-        </Button>
       {:else}
         <Button
           size="sm" variant="ghost" class="h-8 gap-1.5 text-xs"

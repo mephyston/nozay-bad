@@ -8,7 +8,7 @@ export interface BankStatementLine {
   date: string;
   name: string;
   memo: string | null;
-  status: 'pending' | 'reconciled' | 'ignored';
+  status: 'pending' | 'reconciled';
   aiSuggestions: string | null;
 }
 

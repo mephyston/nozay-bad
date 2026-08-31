@@ -197,14 +197,18 @@ describe('getReconciliationStatement', () => {
   });
 
   /*
-   * Une ligne masquée reste de l'argent que la banque a bougé. L'exclure du total ferait
-   * apparaître un écart permanent, et masquer une ligne deviendrait un moyen de casser le
-   * rapprochement sans s'en apercevoir.
+   * Le total porte sur « pas rapprochée », et non sur « en attente ».
+   *
+   * La distinction a compté : tant que masquer une ligne existait, l'exclure du total aurait
+   * fait de ce bouton un moyen de casser le rapprochement sans s'en apercevoir. Le masquage a
+   * disparu, mais la règle reste — et elle protège encore la base d'avant la migration 0029,
+   * qui peut porter des lignes `ignored` que plus aucun code ne produit.
    */
-  it('compte les lignes masquées dans le total, et les isole', async () => {
+  it("compte toute ligne non rapprochée dans le total, quel que soit son état", async () => {
     mockRepo({
       getUnreconciledBankLines: vi.fn().mockResolvedValue([
-        bankLine({ id: 3, amountCents: -1_000, status: 'ignored' }),
+        // État hérité, que plus rien n'écrit : il doit peser comme n'importe quel autre.
+        bankLine({ id: 3, amountCents: -1_000, status: 'ignored' as any }),
         bankLine({ id: 4, amountCents: 2_500, status: 'pending' })
       ]),
       getLatestBankStatementBalance: vi.fn().mockResolvedValue({ date: '2025-10-31', balanceCents: 1_500 })
@@ -213,7 +217,6 @@ describe('getReconciliationStatement', () => {
     const result = await getReconciliationStatement(db, { accountCode: 'current', seasonId: '25-26', date: '2025-10-31' });
 
     expect(result.unrecordedBankLinesTotalCents).toBe(1_500);
-    expect(result.ignoredBankLinesTotalCents).toBe(-1_000);
     expect(result.gapCents).toBe(0);
   });
 

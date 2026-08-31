@@ -79,9 +79,12 @@ export class GetReconciliationStatementRepository {
   }
 
   /**
-   * Les lignes de relevé du compte que rien ne rapproche : `pending` (à traiter) et `ignored`
-   * (masquées). Les masquées comptent dans l'écart au même titre que les autres — la banque a
-   * bougé l'argent, que le trésorier ait choisi de ne pas regarder la ligne ou non.
+   * Les lignes de relevé du compte que rien ne rapproche.
+   *
+   * Le filtre porte sur « pas rapprochée » plutôt que sur « en attente » : c'est la seule
+   * formulation qui reste juste si un état venait à s'ajouter. Elle a d'ailleurs survécu au
+   * retrait du masquage, qui était le troisième état — une ligne masquée comptait déjà dans
+   * l'écart, la banque ayant bougé l'argent que le trésorier regarde la ligne ou non.
    */
   async getUnreconciledBankLines(db: DbOrTx, accountId: number, startDate: string, asOfDate: string): Promise<any[]> {
     return db.select()

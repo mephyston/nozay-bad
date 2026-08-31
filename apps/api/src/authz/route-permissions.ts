@@ -116,15 +116,11 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/accounting/bank-statement-lines/analyze', permission: 'accounting:bank:reconcile' },
   { method: 'POST', path: '/accounting/bank-statement-lines/reconcile-bulk', permission: 'accounting:bank:reconcile' },
   { method: 'POST', path: '/accounting/bank-statement-lines/:id/reconcile', permission: 'accounting:bank:reconcile' },
-  { method: 'POST', path: '/accounting/bank-statement-lines/:id/ignore', permission: 'accounting:bank:reconcile' },
-  { method: 'POST', path: '/accounting/bank-statement-lines/:id/unignore', permission: 'accounting:bank:reconcile' },
   { method: 'GET', path: '/accounting/bank-transactions', permission: 'accounting:bank:read' },
   { method: 'POST', path: '/accounting/bank-transactions/import', permission: 'accounting:bank:import' },
   { method: 'POST', path: '/accounting/bank-transactions/analyze', permission: 'accounting:bank:reconcile' },
   { method: 'POST', path: '/accounting/bank-transactions/reconcile-bulk', permission: 'accounting:bank:reconcile' },
   { method: 'POST', path: '/accounting/bank-transactions/:id/reconcile', permission: 'accounting:bank:reconcile' },
-  { method: 'POST', path: '/accounting/bank-transactions/:id/ignore', permission: 'accounting:bank:reconcile' },
-  { method: 'POST', path: '/accounting/bank-transactions/:id/unignore', permission: 'accounting:bank:reconcile' },
 
   // ── Comptabilité : virements internes ──────────────────────────────────────
   // Un virement écrit deux lignes du grand livre : c'est le même droit.

@@ -6,8 +6,7 @@ import {
   apiMatchLedgerEntry,
   apiCreateAndMatchSplit,
   apiCreateAndMatchSingle,
-  apiDeleteLedgerEntry,
-  apiUnignore
+  apiDeleteLedgerEntry
 } from './reconciliation-api';
 import { scrollMemberOptionIntoView, scrollCategoryOptionIntoView } from './reconciliation-dropdowns';
 import { createBulkActions } from './reconciliation-actions-bulk';
@@ -239,17 +238,6 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
     } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
   }
 
-  async function handleUnignore(btId: number) {
-    s.isSubmitting = true;
-    try {
-      await apiUnignore(btId);
-      patch.applyStatus([btId], 'pending');
-      toast.success('Transaction rétablie !');
-      s.isSubmitting = false;
-      void refreshStatements();
-    } catch (err: any) { toast.error(err.message); s.isSubmitting = false; }
-  }
-
 
   return {
     ...bulk,
@@ -257,6 +245,6 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
     toggleInvoiceSelection, addSplitRow, removeSplitRow, refreshStatements,
     loadUnpaidInvoices, prefillFromInvoices, validateSuggestion,
     selectMember, handleMemberKeyDown, selectCategory, handleCategoryKeyDown,
-    handleMatch, handleCreateAndMatch, handleDeletePart, handleUnignore
+    handleMatch, handleCreateAndMatch, handleDeletePart
   };
 }

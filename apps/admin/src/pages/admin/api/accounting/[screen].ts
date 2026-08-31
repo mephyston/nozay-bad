@@ -460,20 +460,6 @@ export const ECRANS: Record<string, Ecran> = {
           }
         ])
       ),
-      ignore: {
-        permission: 'accounting:bank:reconcile',
-        route: (data) => ({
-          chemin: `/accounting/bank-transactions/${identifiant(data.btId, 'de ligne bancaire')}/ignore`,
-          method: 'POST'
-        })
-      },
-      unignore: {
-        permission: 'accounting:bank:reconcile',
-        route: (data) => ({
-          chemin: `/accounting/bank-transactions/${identifiant(data.btId, 'de ligne bancaire')}/unignore`,
-          method: 'POST'
-        })
-      },
       ...Object.fromEntries(
         (['delete-transaction', 'delete-ledger-entry'] as const).map((action) => [
           action,

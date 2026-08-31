@@ -661,7 +661,12 @@ VERSION:102
     expect(body.error).toBe('La saison de la facture est clôturée.');
   });
 
-  it('should ignore a bank transaction', async () => {
+  /*
+    Le masquage d'une ligne a disparu (migration 0029) : une ligne de relevé se rapproche ou
+    reste à traiter. Ce qui restait à couvrir ici, c'est le trajet import → lecture, et le
+    filtre par état qui le sert.
+  */
+  it("importe un relevé et rend la ligne dans la file", async () => {
     const { mockD1, db } = await setupMockDb();
 
     /*
@@ -732,17 +737,10 @@ VERSION:102
     expect(bankTx.amountCents ?? bankTx.amount).toBe(5000); // 50.00 -> 5000 cents
     expect([1, 2, 'savings']).toContain(bankTx.accountId);
 
-    // 3. Ignorer via POST /accounting/bank-statement-lines/:id/ignore
-    const ignoreRes = await app.request(`http://localhost/accounting/bank-statement-lines/${bankTx.id}/ignore`, {
-      method: 'POST'
-    }, { DB: mockD1 as any });
-    expect(ignoreRes.status).toBe(200);
-
-    // Vérifier le changement de statut
-    const checkRes = await app.request('http://localhost/accounting/bank-statement-lines?season=25-26&status=ignored', undefined, { DB: mockD1 as any });
+    // 3. Le filtre par état ne rend que ce qu'il désigne : rien n'est encore rapproché.
+    const checkRes = await app.request('http://localhost/accounting/bank-statement-lines?season=25-26&status=reconciled', undefined, { DB: mockD1 as any });
     const checkJson = await checkRes.json() as any;
-    expect(checkJson.data).toHaveLength(1);
-    expect(checkJson.data[0].status).toBe('ignored');
+    expect(checkJson.data).toHaveLength(0);
   });
 
   it('should analyze transactions and update member balances on reconciliation', async () => {

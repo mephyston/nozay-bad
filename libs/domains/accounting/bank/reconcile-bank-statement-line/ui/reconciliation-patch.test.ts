@@ -85,23 +85,23 @@ describe('applyOutcome', () => {
 });
 
 describe('applyStatus', () => {
-  it('masque un lot de lignes en une passe', () => {
+  it('change l’état d’un lot de lignes en une passe', () => {
     const s = makeState();
     const patch = createPatchActions(s);
 
-    patch.applyStatus([1, 2], 'ignored');
+    patch.applyStatus([1, 2], 'reconciled');
 
-    expect(s.bankStatementLines.every((l) => l.status === 'ignored')).toBe(true);
+    expect(s.bankStatementLines.every((l) => l.status === 'reconciled')).toBe(true);
   });
 
   it('laisse intactes les lignes hors du lot', () => {
     const s = makeState();
     const patch = createPatchActions(s);
 
-    patch.applyStatus([2], 'ignored');
+    patch.applyStatus([2], 'reconciled');
 
     expect(s.bankStatementLines[0].status).toBe('pending');
-    expect(s.bankStatementLines[1].status).toBe('ignored');
+    expect(s.bankStatementLines[1].status).toBe('reconciled');
   });
 });
 

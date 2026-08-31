@@ -184,7 +184,4 @@ export async function apiLoadReconciliationStatements(season: string): Promise<a
   return json?.data ?? [];
 }
 
-export async function apiUnignore(btId: number): Promise<void> {
-  await postAction({ action: 'unignore', btId }, 'Erreur réactivation.');
-}
 

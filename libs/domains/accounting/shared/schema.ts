@@ -69,7 +69,7 @@ export const bankStatementLinesTable = sqliteTable('bank_statement_lines', {
   date: text('date').notNull(),
   name: text('name').notNull(),
   memo: text('memo'),
-  status: text('status', { enum: ['pending', 'reconciled', 'ignored'] }).notNull().default('pending'),
+  status: text('status', { enum: ['pending', 'reconciled'] }).notNull().default('pending'),
   aiSuggestions: text('ai_suggestions'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });

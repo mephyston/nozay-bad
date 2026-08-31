@@ -66,8 +66,6 @@ export type GetReconciliationStatementOutput = {
   unpointedEntriesTotalCents: number;
   unrecordedBankLines: UnrecordedBankLine[];
   unrecordedBankLinesTotalCents: number;
-  /** Part de `unrecordedBankLines` que le trésorier a masquée : de l'argent réellement bougé. */
-  ignoredBankLinesTotalCents: number;
 
   /** `grossCents − unpointedEntriesTotalCents + unrecordedBankLinesTotalCents`. */
   /** L'argent parti d'un compte et pas encore arrivé dans l'autre, à la date d'arrêté. */

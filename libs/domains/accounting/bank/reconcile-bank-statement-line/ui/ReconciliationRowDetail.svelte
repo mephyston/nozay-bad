@@ -68,9 +68,8 @@
   -->
   {#if line.status !== 'pending'}
     <p class="text-xs text-muted-foreground">
-      {line.status === 'reconciled'
-        ? "Cette ligne est rapprochée : les écritures ci-dessus font foi. Pour la modifier, dissociez l'écriture concernée."
-        : 'Cette ligne est ignorée. Rétablissez-la pour la rapprocher.'}
+      Cette ligne est rapprochée : les écritures ci-dessus font foi. Pour la modifier, dissociez
+      l'écriture concernée.
     </p>
   {:else}
     <Tabs.Root value={reconState.activeRightTab} onValueChange={(v) => (reconState.activeRightTab = v as any)} class="w-full">

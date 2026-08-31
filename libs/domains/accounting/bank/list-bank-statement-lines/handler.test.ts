@@ -64,9 +64,9 @@ describe('listBankStatementLines', () => {
   it('accepte aussi les filtres posés à la racine', async () => {
     const repo = mockRepo();
 
-    await listBankStatementLines(db, { seasonId: '25-26', status: 'ignored' });
+    await listBankStatementLines(db, { seasonId: '25-26', status: 'reconciled' });
 
-    expect(repo.listBankStatementLines).toHaveBeenCalledWith(db, expect.objectContaining({ status: 'ignored' }));
+    expect(repo.listBankStatementLines).toHaveBeenCalledWith(db, expect.objectContaining({ status: 'reconciled' }));
   });
 
   it("laisse un intervalle explicite resserrer l'exercice", async () => {

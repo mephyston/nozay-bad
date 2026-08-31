@@ -128,9 +128,6 @@ function buildStatement(inputs: StatementInputs): GetReconciliationStatementOutp
     status: line.status ?? 'pending'
   }));
   const unrecordedBankLinesTotalCents = unrecordedBankLines.reduce((sum, l) => sum + l.amountCents, 0);
-  const ignoredBankLinesTotalCents = unrecordedBankLines
-    .filter((l) => l.status === 'ignored')
-    .reduce((sum, l) => sum + l.amountCents, 0);
 
   /*
    * Deux nombres que le modèle à une seule écriture ne savait pas produire.
@@ -187,7 +184,6 @@ function buildStatement(inputs: StatementInputs): GetReconciliationStatementOutp
     unpointedEntriesTotalCents,
     unrecordedBankLines,
     unrecordedBankLinesTotalCents,
-    ignoredBankLinesTotalCents,
     transitCents,
     halfPointedTransferIds,
     expectedBankBalanceCents,

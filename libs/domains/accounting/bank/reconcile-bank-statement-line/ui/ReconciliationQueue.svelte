@@ -51,8 +51,8 @@
   const accountLabelOf = (line: any) =>
     reconState.accountOptions.find((a) => a.id === String(line.accountId))?.label ?? null;
 
-  const total = $derived(reconState.pendingCount + reconState.reconciledCount + reconState.ignoredCount);
-  const done = $derived(reconState.reconciledCount + reconState.ignoredCount);
+  const total = $derived(reconState.pendingCount + reconState.reconciledCount);
+  const done = $derived(reconState.reconciledCount);
   const progress = $derived(total === 0 ? 0 : Math.round((done / total) * 100));
 
   const rows = $derived(reconState.view === 'history' ? reconState.historyTransactions : reconState.queueTransactions);
@@ -191,7 +191,7 @@
             class="text-xs h-8"
             onclick={() => (reconState.view = 'history')}
           >
-            Voir l'historique ({reconState.reconciledCount + reconState.ignoredCount})
+            Voir l'historique ({reconState.reconciledCount})
           </Button>
         {:else}
           <Button variant="ghost" size="sm" class="text-xs h-8 gap-1" onclick={() => (reconState.view = 'queue')}>
@@ -206,33 +206,6 @@
       <div class="h-full bg-success transition-all duration-500" style={`width: ${progress}%`}></div>
     </div>
 
-
-    <!--
-      Plus de bascule « Rapprochées / Ignorées » : masquer une ligne n'est plus possible, et
-      l'historique n'a donc qu'un contenu.
-
-      Elle ne réapparaît que si d'anciennes lignes masquées subsistent — les rendre inatteignables
-      les ferait disparaître de l'écran tout en continuant de peser dans l'écart, ce qui est
-      précisément le défaut pour lequel « Ignorer » a été retiré.
-    -->
-    {#if reconState.view === 'history' && reconState.ignoredCount > 0}
-      <div class="flex items-center gap-1">
-        <Button
-          variant={reconState.activeTab === 'reconciled' ? 'default' : 'ghost'}
-          size="sm" class="text-xs h-7"
-          onclick={() => (reconState.activeTab = 'reconciled')}
-        >
-          Rapprochées ({reconState.reconciledCount})
-        </Button>
-        <Button
-          variant={reconState.activeTab === 'ignored' ? 'default' : 'ghost'}
-          size="sm" class="text-xs h-7"
-          onclick={() => (reconState.activeTab = 'ignored')}
-        >
-          Masquées, à rétablir ({reconState.ignoredCount})
-        </Button>
-      </div>
-    {/if}
 
     <!--
       Le filtre par mois est retiré : il n'était pas utilisé, et sur mobile il tenait la ligne à
@@ -315,9 +288,7 @@
         {#if reconState.searchQuery}
           <p class="text-sm">Aucune opération ne correspond à cette recherche.</p>
         {:else if reconState.view === 'history'}
-          <p class="text-sm">
-            {reconState.activeTab === 'reconciled' ? 'Aucune opération rapprochée.' : 'Aucune opération ignorée.'}
-          </p>
+          <p class="text-sm">Aucune opération rapprochée.</p>
         {:else}
           <CheckCircle2 class="h-10 w-10 mx-auto mb-3 text-success" />
           <p class="text-base font-semibold text-foreground">La file est vide.</p>

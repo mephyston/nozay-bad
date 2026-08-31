@@ -45,11 +45,10 @@ export class ReconciliationStore {
     L'écran de travail ne montre que ce qui reste à décider.
 
     Les trois onglets « À rapprocher / Rapprochées / Ignorées » mettaient sur le même plan une file
-    à vider et deux archives. `view` sépare les deux ; `activeTab` ne sert plus qu'à choisir
-    l'archive consultée.
+    à vider et deux archives. `view` sépare la file de l'archive, et l'archive n'a plus qu'un
+    contenu depuis que masquer une ligne n'est plus possible.
   */
   view = $state<'queue' | 'history'>('queue');
-  activeTab = $state<'reconciled' | 'ignored'>('reconciled');
   unpaidInvoices = $state<Invoice[]>([]);
   activeRightTab = $state<'manual' | 'ledger'>('manual');
 
@@ -122,9 +121,8 @@ export class ReconciliationStore {
     this.selectedTx ? remainingToReconcileCents(this.linkedGlTxs as any, this.selectedTx as any) : 0
   );
 
-  pendingCount = $derived(this.bankStatementLines.filter((t) => t.status === 'pending').length);
+  pendingCount = $derived(this.bankStatementLines.filter((t) => t.status !== 'reconciled').length);
   reconciledCount = $derived(this.bankStatementLines.filter((t) => t.status === 'reconciled').length);
-  ignoredCount = $derived(this.bankStatementLines.filter((t) => t.status === 'ignored').length);
   selectedSum = $derived(
     this.unpaidInvoices.filter((i) => this.selectedInvoiceIds.has(i.id)).reduce((acc, i) => acc + i.totalAmount, 0)
   );
@@ -145,7 +143,7 @@ export class ReconciliationStore {
     for (const line of this.bankStatementLines) {
       const id = String((line as any).accountId);
       total.set(id, (total.get(id) ?? 0) + 1);
-      if (line.status === 'pending') pending.set(id, (pending.get(id) ?? 0) + 1);
+      if (line.status !== 'reconciled') pending.set(id, (pending.get(id) ?? 0) + 1);
     }
     return [...total.keys()]
       .map((id) => ({ id, label: labels.get(id) ?? `Compte #${id}`, pendingCount: pending.get(id) ?? 0 }))
@@ -155,10 +153,17 @@ export class ReconciliationStore {
   /** Vrai tant que le relevé ne porte qu'un seul compte : le filtre n'a alors rien à trancher. */
   isSingleAccount = $derived(this.accountOptions.length <= 1);
 
-  /** La file : ce qui reste à décider, et rien d'autre. */
-  queueTransactions = $derived(this.bankStatementLines.filter((t) => t.status === 'pending' && this.matchesFilters(t)));
-  /** L'archive : rapprochées ou ignorées, selon l'onglet consulté. */
-  historyTransactions = $derived(this.bankStatementLines.filter((t) => t.status === this.activeTab && this.matchesFilters(t)));
+  /**
+   * La file : ce qui reste à décider, et rien d'autre.
+   *
+   * Le critère est « pas rapprochée » et non « en attente », comme côté serveur. C'est ce qui
+   * fait qu'une ligne héritée du masquage — la migration 0029 les rend toutes à la file, mais
+   * le code ne doit pas en dépendre — revient se faire traiter au lieu de n'être visible nulle
+   * part tout en pesant dans l'écart.
+   */
+  queueTransactions = $derived(this.bankStatementLines.filter((t) => t.status !== 'reconciled' && this.matchesFilters(t)));
+  /** L'archive : les lignes rapprochées, et c'est tout ce qu'elle peut contenir. */
+  historyTransactions = $derived(this.bankStatementLines.filter((t) => t.status === 'reconciled' && this.matchesFilters(t)));
   /* Ce que la vue courante affiche. `pickNextId` s'en sert pour avancer d'une ligne à l'autre. */
   displayedTransactions = $derived(this.view === 'history' ? this.historyTransactions : this.queueTransactions);
 
@@ -306,7 +311,7 @@ export class ReconciliationStore {
     const safeEffect = (fn: () => void) => { try { $effect(fn); } catch { /* hors composant */ } };
 
     safeEffect(() => {
-      const _ = `${this.view}:${this.activeTab}`;
+      const _ = this.view;
       this.searchQuery = '';
     });
 

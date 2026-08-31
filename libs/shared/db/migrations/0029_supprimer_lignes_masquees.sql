@@ -1,0 +1,15 @@
+-- Le masquage d'une ligne de relevé disparaît.
+--
+-- Masquer une ligne n'a jamais rien effacé : l'état de rapprochement comptait déjà les
+-- lignes masquées dans l'écart, au même titre que celles restées à traiter, et l'encart
+-- le disait. Le statut ne faisait donc que sortir la ligne de la file — une échappatoire
+-- qui laisse croire qu'une décision a été prise alors que l'écart, lui, subsiste.
+--
+-- Une ligne de relevé se rapproche, ou elle reste à traiter. Il n'y a pas de troisième
+-- état.
+--
+-- Les lignes masquées repassent en attente et réapparaissent dans la file. Aucun montant
+-- ne bouge, aucun rapprochement n'est défait : c'est le même écart, rendu à sa cause.
+--
+-- La colonne est un `text` sans contrainte, il n'y a donc rien à reconstruire.
+UPDATE `bank_statement_lines` SET `status` = 'pending' WHERE `status` = 'ignored';

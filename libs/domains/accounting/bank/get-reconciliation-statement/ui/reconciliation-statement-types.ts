@@ -38,7 +38,6 @@ export interface ReconciliationStatementView {
     status: string;
   }[];
   unrecordedBankLinesTotalCents: number;
-  ignoredBankLinesTotalCents: number;
   expectedBankBalanceCents: number;
   gapCents: number | null;
   reconciled: boolean;

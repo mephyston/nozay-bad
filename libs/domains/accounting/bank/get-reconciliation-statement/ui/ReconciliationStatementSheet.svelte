@@ -142,17 +142,6 @@
             {/if}
           {/if}
 
-          {#if statement.ignoredBankLinesTotalCents !== 0}
-            <Alert.Root variant="warning" class="flex items-start gap-3">
-              <TriangleAlert class="mt-0.5 h-4 w-4 shrink-0" />
-              <Alert.Description class="text-sm">
-                <Amount cents={statement.ignoredBankLinesTotalCents} /> de lignes masquées entrent dans
-                ce calcul. Masquer une ligne la retire de l'écran, pas du compte en banque : l'argent a
-                bel et bien bougé et reste sans écriture.
-              </Alert.Description>
-            </Alert.Root>
-          {/if}
-
           {#if statement.book.inVaultCents > 0 || statement.book.pendingDebitCents > 0}
             <div class="flex flex-wrap gap-2 text-xs">
               {#if statement.book.inVaultCents > 0}

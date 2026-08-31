@@ -105,11 +105,8 @@ describe('createReconciliationState logic unit tests', () => {
     });
 
     state.view = 'history';
-    state.activeTab = 'reconciled';
+    // L'archive n'a qu'un contenu : les lignes rapprochées. Masquer n'existe plus.
     expect(state.displayedTransactions.map((t: any) => t.id)).toEqual([3]);
-
-    state.activeTab = 'ignored';
-    expect(state.displayedTransactions).toEqual([]);
 
     // La file, elle, n'a pas bougé.
     expect(state.queueTransactions.map((t: any) => t.id)).toEqual([1, 2]);
@@ -126,7 +123,6 @@ describe('createReconciliationState logic unit tests', () => {
 
     expect(state.pendingCount).toBe(2);
     expect(state.reconciledCount).toBe(1);
-    expect(state.ignoredCount).toBe(0);
   });
 
   it('manages invoice selection and calculates selected sum', () => {
@@ -574,7 +570,6 @@ describe('createReconciliationState logic unit tests', () => {
     it("restreint aussi l'historique", () => {
       const state = build();
       state.view = 'history';
-      state.activeTab = 'reconciled';
 
       state.accountFilter = '1';
       expect(state.displayedTransactions).toEqual([]);

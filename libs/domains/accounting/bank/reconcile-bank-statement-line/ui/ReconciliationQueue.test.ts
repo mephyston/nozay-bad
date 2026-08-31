@@ -52,7 +52,7 @@ describe('la file de décisions', () => {
     const target = render([
       line({ id: 1 }),
       line({ id: 2, status: 'reconciled' }),
-      line({ id: 3, status: 'ignored' })
+      line({ id: 3, status: 'reconciled' })
     ]);
 
     expect(target.innerHTML).toContain('1 opération à rapprocher');
@@ -353,7 +353,7 @@ describe("pointer avant créer", () => {
 });
 
 describe("l'historique", () => {
-  it("ne propose aucune bascule quand rien n'est masqué", () => {
+  it("n'a qu'un contenu, et donc aucune bascule", () => {
     const target = render([line({ id: 1 }), line({ id: 2, status: 'reconciled' })]);
 
     btn(target, "Voir l'historique").click();
@@ -364,23 +364,23 @@ describe("l'historique", () => {
     expect(target.innerHTML).not.toContain('Rapprochées (');
   });
 
-  /* Une ligne masquée pèse dans l'écart : la rendre inatteignable la ferait disparaître de
-     l'écran sans la retirer du compte. */
-  it('rouvre la bascule si des lignes masquées subsistent', () => {
+  /*
+    Une ligne héritée du masquage revient dans la file, et non dans l'archive.
+
+    La migration 0029 les rend toutes à l'état « en attente », mais l'écran ne doit pas en
+    dépendre : le critère est « pas rapprochée », comme côté serveur. Sans cela, une telle
+    ligne ne s'afficherait plus nulle part tout en continuant de peser dans l'écart — le
+    défaut même pour lequel le masquage a été retiré.
+  */
+  it('ramène dans la file une ligne héritée du masquage', () => {
     const target = render([
       line({ id: 1, status: 'reconciled' }),
-      line({ id: 2, status: 'ignored', name: 'ANCIENNE MASQUEE' })
+      line({ id: 2, status: 'ignored' as any, name: 'ANCIENNE MASQUEE' })
     ]);
 
-    btn(target, "Voir l'historique").click();
-    flushSync();
-
-    expect(target.innerHTML).toContain('Masquées, à rétablir (1)');
-
-    btn(target, 'Masquées, à rétablir').click();
-    flushSync();
+    expect(target.innerHTML).toContain('1 opération à rapprocher');
     expect(target.innerHTML).toContain('ANCIENNE MASQUEE');
-    expect(btn(target, 'Rétablir')).not.toBeUndefined();
+    expect(target.innerHTML).not.toContain('Masquées');
   });
 });
 
