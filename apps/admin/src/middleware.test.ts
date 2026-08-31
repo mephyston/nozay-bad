@@ -26,12 +26,15 @@ const ACCOUNTS: Record<string, { roles: string[]; permissions: string[] }> = {
 
 let lastRequestedEmail: string | undefined;
 let apiUnavailable = false;
+/** Nombre d'appels effectifs à `/iam/me` : c'est ce que le cache d'acteur doit réduire. */
+let iamCalls = 0;
 
 vi.mock('@nba/api-client', () => ({
   createApiClient: (_env: unknown, identity?: { userEmail?: string }) => ({
     fetch: async (url: any) => {
       if (typeof url === 'string' && url.includes('/iam/me')) {
         lastRequestedEmail = identity?.userEmail;
+        iamCalls += 1;
         if (apiUnavailable) return new Response('nope', { status: 502 });
         const account = ACCOUNTS[identity?.userEmail ?? ''];
         return new Response(
@@ -54,7 +57,7 @@ vi.mock('@nba/api-client', () => ({
   }),
 }));
 
-import { handleAuth } from './middleware';
+import { handleAuth, viderCacheActeur } from './middleware';
 import { ROLE_PERMISSIONS } from '@nba/iam-ui';
 
 // Les permissions servies par l'API simulée dérivent des rôles, comme en vrai.
@@ -76,6 +79,10 @@ describe('Astro Auth Middleware', () => {
     mockJwtVerify.mockReset();
     lastRequestedEmail = undefined;
     apiUnavailable = false;
+    iamCalls = 0;
+    // Le cache d'acteur vit à l'échelle du module : sans ce vidage, un cas hériterait
+    // de la résolution du précédent et n'appellerait plus l'API du tout.
+    viderCacheActeur();
     // Par défaut : flux de production.
     vi.stubEnv('DEV', '' as any);
     vi.stubEnv('NODE_ENV', 'test');
@@ -384,6 +391,101 @@ describe('Astro Auth Middleware', () => {
       await handleAuth(context, next);
 
       expect(context.locals.user.email).toBe('prod-user@nozay-bad.fr');
+    });
+  });
+  /**
+   * Le cache d'acteur.
+   *
+   * Le middleware garde toutes les pages, donc il s'exécute sur toutes les requêtes —
+   * et depuis la conversion en coquilles, une page en vaut quatre. Mesuré en production :
+   * `GET /iam/me` suivait exactement le nombre d'invocations de l'admin.
+   */
+  describe("cache d'identité", () => {
+    const enProduction = () => {
+      mockJwtVerify.mockResolvedValue({ payload: { email: 'prod-user@nozay-bad.fr' } });
+      return vi.fn().mockImplementation(() => new Response('ok'));
+    };
+    const requete = () =>
+      contextFor('https://admin.nozay-bad.fr/', {
+        headers: { 'Cf-Access-Jwt-Assertion': 'token' }
+      });
+
+    it("ne résout l'identité qu'une fois pour une rafale de requêtes", async () => {
+      const next = enProduction();
+
+      // Une page convertie : la coquille, puis ses relais.
+      for (let i = 0; i < 4; i += 1) await handleAuth(requete(), next);
+
+      expect(iamCalls, 'quatre invocations, un seul appel de service').toBe(1);
+    });
+
+    it('sert la même identité depuis la garde', async () => {
+      const next = enProduction();
+      await handleAuth(requete(), next);
+
+      const second = requete();
+      await handleAuth(second, next);
+
+      expect(second.locals.user).toMatchObject({ email: 'prod-user@nozay-bad.fr' });
+      expect(second.locals.user.roles).toEqual(['super_admin']);
+    });
+
+    it('rappelle la route une fois la garde périmée', async () => {
+      const next = enProduction();
+      await handleAuth(requete(), next);
+      expect(iamCalls).toBe(1);
+
+      // Trente et une secondes plus tard : au-delà de la fenêtre.
+      vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 31_000);
+      await handleAuth(requete(), next);
+
+      expect(iamCalls).toBe(2);
+    });
+
+    it("ne garde rien quand l'API échoue", async () => {
+      // Un échec gardé figerait une panne passagère : le repli de développement comme
+      // le 500 de production doivent se décider sur une réponse fraîche.
+      apiUnavailable = true;
+      const next = enProduction();
+
+      await handleAuth(requete(), next);
+      await handleAuth(requete(), next);
+
+      expect(iamCalls).toBe(2);
+    });
+
+    it("garde aussi l'identité empruntée, séparément de l'identité réelle", async () => {
+      // L'usurpation est une fonctionnalité de préproduction ; ailleurs le cookie est inerte.
+      vi.stubEnv('PUBLIC_APP_ENV', 'staging');
+      ACCOUNTS['cible@nozay-bad.fr'] = {
+        roles: ['secretaire'],
+        permissions: [...(ROLE_PERMISSIONS as any).secretaire]
+      };
+      try {
+        mockJwtVerify.mockResolvedValue({ payload: { email: 'prod-user@nozay-bad.fr' } });
+        const next = vi.fn().mockImplementation(() => new Response('ok'));
+        const avecCookie = () =>
+          contextFor('https://admin.nozay-bad.fr/', {
+            headers: {
+              'Cf-Access-Jwt-Assertion': 'token',
+              cookie: 'impersonate_email=cible%40nozay-bad.fr'
+            }
+          });
+
+        const premier = avecCookie();
+        await handleAuth(premier, next);
+        expect(premier.locals.user.email).toBe('cible@nozay-bad.fr');
+        // Deux adresses distinctes, donc deux résolutions : la réelle et l'empruntée.
+        expect(iamCalls).toBe(2);
+
+        const second = avecCookie();
+        await handleAuth(second, next);
+        expect(iamCalls, 'la seconde requête ne résout ni l\'une ni l\'autre').toBe(2);
+        expect(second.locals.user.email).toBe('cible@nozay-bad.fr');
+        expect(second.locals.realUser.email).toBe('prod-user@nozay-bad.fr');
+      } finally {
+        delete ACCOUNTS['cible@nozay-bad.fr'];
+      }
     });
   });
 });

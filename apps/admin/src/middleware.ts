@@ -31,6 +31,37 @@ function readCookie(request: Request, name: string): string | undefined {
 }
 
 /**
+ * Cache de résolution d'identité, à l'échelle de l'isolate.
+ *
+ * `fetchActor` s'exécutait à **chaque** requête — le middleware garde toutes les pages,
+ * donc il ne peut pas ne pas s'exécuter. Tant qu'une page valait une requête, c'était un
+ * appel de service par page. Depuis la conversion en coquilles, une page vaut une
+ * coquille et trois relais : mesuré en production, `GET /iam/me` suivait exactement le
+ * nombre d'invocations de l'admin — 135 pour 135, sur trois fenêtres — soit 77 appels à
+ * l'heure là où il y en avait 23.
+ *
+ * Le cache d'identité de `lib/identite.ts` ne pouvait rien pour ça : il vit dans le
+ * navigateur et ne couvre que `/admin/api/me`, l'une des quatre invocations.
+ *
+ * Trente secondes, comme `apps/api/src/authz/actor.ts` — délibérément **pas** plus : ce
+ * cache-ci décide de l'affichage, celui-là de l'autorisation, et une coquille qui
+ * montrerait un menu que l'API refuse déjà serait un état à moitié fonctionnel. Aligner
+ * les deux durées fait qu'ils périment ensemble.
+ */
+const ACTEUR_TTL_MS = 30_000;
+const ACTEUR_MAX_ENTREES = 500;
+
+const acteursGardes = new Map<string, { acteur: ActorDto | null; expireA: number }>();
+
+/**
+ * Vide le cache. Réservé aux tests : l'état vit à l'échelle du module, donc un cas qui
+ * change les droits d'une adresse hériterait de la résolution du cas précédent.
+ */
+export function viderCacheActeur(): void {
+  acteursGardes.clear();
+}
+
+/**
  * Résout un compte via l'API, qui est l'autorité en matière de droits.
  *
  * `GET /iam/me` remplace l'ancien `GET /iam/users`, qui rapatriait la table entière
@@ -39,11 +70,32 @@ function readCookie(request: Request, name: string): string | undefined {
  * plus diverger sur ce qu'un rôle accorde.
  */
 async function fetchActor(env: Record<string, string>, email: string): Promise<ActorDto | null> {
+  // Même normalisation que l'API (`normalizeEmail`) : deux casses d'une même adresse
+  // résolvent le même compte, elles ne doivent pas occuper deux entrées.
+  const cle = email.trim().toLowerCase();
+  const maintenant = Date.now();
+
+  const gardee = acteursGardes.get(cle);
+  if (gardee && gardee.expireA > maintenant) return gardee.acteur;
+
   const api = createApiClient(env as never, { caller: 'admin', userEmail: email });
   const res = await api.fetch('http://localhost/iam/me');
+  // Une erreur n'est jamais gardée : elle remonte, et le repli de développement comme le
+  // 500 de production se décident en aval, sur une réponse fraîche.
   if (!res.ok) throw new Error(`[auth] /iam/me a répondu ${res.status}`);
   const json = (await res.json()) as { data: ActorDto | null };
-  return json.data ?? null;
+  const acteur = json.data ?? null;
+
+  // Les comptes inconnus sont gardés eux aussi : sans cela, une adresse sans compte
+  // — le cas d'un lien partagé — coûterait un appel de service par requête.
+  if (acteursGardes.size >= ACTEUR_MAX_ENTREES) {
+    // Borne mémoire : la plus anciennement insérée part en premier.
+    const plusAncienne = acteursGardes.keys().next().value;
+    if (plusAncienne !== undefined) acteursGardes.delete(plusAncienne);
+  }
+  acteursGardes.set(cle, { acteur, expireA: maintenant + ACTEUR_TTL_MS });
+
+  return acteur;
 }
 
 /**
