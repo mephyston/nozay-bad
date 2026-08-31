@@ -339,14 +339,24 @@ export const ECRANS: Record<string, Ecran> = {
       const suivante = seasons[seasons.findIndex((x: any) => (x.code || String(x.id)) === seasonId) + 1];
       const codeSuivant = suivante ? suivante.code || String(suivante.id) : null;
 
-      const [lignes, ecritures, adherents, adherentsSuivants, categories, etats] = await Promise.all([
+      const [enAttente, delExercice, ecritures, adherents, adherentsSuivants, categories, etats] = await Promise.all([
         /*
-          Toutes les lignes, sans borne d'exercice : une ligne de relevé n'appartient à
-          aucune saison, c'est un mouvement daté. Les borner à l'exercice consulté faisait
-          disparaître de la file, au 1er septembre, tout ce qui restait à rapprocher de
-          l'année écoulée — et l'écran n'avait rien pour le dire.
+          Les lignes encore à rapprocher, sans borne d'exercice : une ligne de relevé
+          n'appartient à aucune saison, c'est un mouvement daté. Les borner à l'exercice
+          consulté faisait disparaître de la file, au 1er septembre, tout ce qui restait à
+          rapprocher de l'année écoulée — et l'écran n'avait rien pour le dire.
         */
-        lire('/accounting/bank-transactions'),
+        lire('/accounting/bank-transactions?status=pending'),
+        /*
+          Et les lignes de l'exercice consulté, tous états : c'est l'archive que les onglets
+          montrent, et la population sur laquelle porte la barre de progression.
+
+          Les deux demandes remplacent un `lire('/accounting/bank-transactions')` nu, qui
+          rapatriait **chaque ligne jamais importée** — 1 188 lignes lues par ouverture
+          d'écran, mesurées sur l'analytique D1, pour une archive qui grandit sans fin et
+          dont l'écran ne montre jamais que l'exercice choisi dans son en-tête.
+        */
+        lire(`/accounting/bank-transactions?season=${s}`),
         /*
           Le solde progressif est refusé : c'est une sous-requête corrélée, réévaluée pour
           chacune des 2000 écritures demandées, et cet écran ne l'affiche nulle part.
@@ -374,9 +384,25 @@ export const ECRANS: Record<string, Ecran> = {
         }
       }
 
+      /*
+        Les deux demandes se recouvrent — une ligne en attente datée dans l'exercice figure
+        dans les deux — et l'écran dérive tout d'un seul tableau : compteurs, progression,
+        filtre par compte. Un doublon y compterait deux fois.
+
+        L'ordre est celui de l'archive, la plus récente d'abord, comme le rendait la demande
+        unique qu'elles remplacent : c'est lui que la file et les onglets suivent.
+      */
+      const parId = new Map<number, any>();
+      for (const ligne of [...((enAttente as any[]) ?? []), ...((delExercice as any[]) ?? [])]) {
+        if (!parId.has(ligne.id)) parId.set(ligne.id, ligne);
+      }
+      const lignes = [...parId.values()].sort(
+        (a, b) => String(b.date).localeCompare(String(a.date)) || b.id - a.id
+      );
+
       return {
         ...saisonnier,
-        bankStatementLines: lignes ?? [],
+        bankStatementLines: lignes,
         glTransactions: ecritures ?? [],
         members: membres,
         dbCategories: categories ?? [],

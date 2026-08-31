@@ -45,15 +45,26 @@ vi.mock('../../../../lib/api', () => ({
         );
       }
       if (chemin.startsWith('/accounting/bank-transactions')) {
+        /*
+          Deux populations distinctes, comme en vrai : les lignes encore à rapprocher, quelle
+          que soit leur date, et celles de l'exercice consulté quel que soit leur état. La
+          ligne 1 appartient aux deux — c'est le recouvrement que le relais doit dédoublonner.
+        */
+        const enAttente = chemin.includes('status=pending');
         return Promise.resolve(
           new Response(
             JSON.stringify({
               success: true,
-              data: [
-                { id: 1, status: 'pending', amount: 1500 },
-                { id: 2, status: 'pending', amount: -800 },
-                { id: 3, status: 'reconciled', amount: 900 }
-              ]
+              data: enAttente
+                ? [
+                    { id: 1, status: 'pending', amount: 1500, date: '2026-02-10' },
+                    { id: 4, status: 'pending', amount: 300, date: '2024-11-02' }
+                  ]
+                : [
+                    { id: 1, status: 'pending', amount: 1500, date: '2026-02-10' },
+                    { id: 2, status: 'pending', amount: -800, date: '2026-01-05' },
+                    { id: 3, status: 'reconciled', amount: 900, date: '2026-03-01' }
+                  ]
             }),
             { status: 200 }
           )
@@ -235,15 +246,32 @@ describe('comptabilité — le rapprochement', () => {
     'accounting:ledger:write', 'accounting:ledger:delete', 'accounting:invoices:read'
   ];
 
-  it('lit les lignes de relevé sans borne d’exercice', async () => {
+  it('lit les lignes à rapprocher sans borne d’exercice, et l’archive avec', async () => {
     /*
-      Une ligne de relevé n'appartient à aucune saison, c'est un mouvement daté. Les
-      borner à l'exercice consulté faisait disparaître de la file, au 1er septembre, tout
-      ce qui restait à rapprocher de l'année écoulée.
+      Une ligne de relevé n'appartient à aucune saison, c'est un mouvement daté : borner la
+      file à l'exercice consulté faisait disparaître, au 1er septembre, tout ce qui restait
+      à rapprocher de l'année écoulée.
+
+      L'archive, elle, se borne — l'écran ne montre jamais que l'exercice choisi dans son
+      en-tête, et la demande nue rapatriait chaque ligne jamais importée.
     */
-    await lire('reconciliation', '', DROITS);
-    const appel = appels.find((a) => a.url.includes('/accounting/bank-transactions'))!.url;
-    expect(appel).not.toContain('season=');
+    await lire('reconciliation', '?season=24-25', DROITS);
+    const bancaires = appels
+      .filter((a) => a.url.includes('/accounting/bank-transactions'))
+      .map((a) => a.url);
+
+    expect(bancaires).toHaveLength(2);
+    expect(bancaires.some((u) => u.includes('status=pending') && !u.includes('season='))).toBe(true);
+    expect(bancaires.some((u) => u.includes('season=24-25') && !u.includes('status='))).toBe(true);
+  });
+
+  it('fond les deux demandes en une liste sans doublon, la plus récente d’abord', async () => {
+    /*
+      L'écran dérive tout d'un seul tableau — compteurs, progression, filtre par compte —
+      donc une ligne présente dans les deux demandes y compterait deux fois.
+    */
+    const d = await donnees(await lire('reconciliation', '?season=24-25', DROITS));
+    expect(d.bankStatementLines.map((l: any) => l.id)).toEqual([3, 1, 2, 4]);
   });
 
   it('refuse le solde progressif, que cet écran n’affiche pas', async () => {
