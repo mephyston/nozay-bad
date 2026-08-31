@@ -322,11 +322,21 @@ export async function withPageCache(
 /**
  * Durée de vie d'une lecture d'API rangée au bord.
  *
- * Une heure sans risque de servir du vieux : la clé porte la version de contenu, que
- * toute publication incrémente. C'est donc la version, et non ce délai, qui décide de
- * la fraîcheur — le délai ne fait que borner l'occupation du cache.
+ * Sans risque de servir du vieux : la clé porte la version de contenu, que toute
+ * publication incrémente. C'est donc la version, et non ce délai, qui décide de la
+ * fraîcheur — le délai ne fait que borner l'occupation du cache.
+ *
+ * Ce raisonnement tenait déjà, mais la valeur était restée à une heure, ce qui faisait
+ * expirer chaque entrée vingt-quatre fois par jour et par centre de données pour un
+ * contenu identique. Mesuré sur la production en 24 h : 501 lectures de `cms_nav_items`,
+ * 481 de `cms_pages`, 272 de `cms_media_variants` et 192 de `cms_posts` — près de 46 000
+ * lignes D1, soit 16 % de toutes les lectures, pour des tables qui changent quand on
+ * publie.
+ *
+ * Un jour, donc. La borne n'est de toute façon pas la seule : l'API Cache évince aussi
+ * sous pression, et une entrée peut disparaître bien avant l'échéance.
  */
-export const DATA_CACHE_SECONDS = 3600;
+export const DATA_CACHE_SECONDS = 86_400;
 
 /** Clé d'une lecture d'API. Espace séparé : jamais le chemin d'une page servie. */
 export function dataCacheKey(path: string, version: number): Request {
