@@ -1,0 +1,20 @@
+-- La file de rapprochement, servie par un index plutôt que par un balayage.
+--
+-- L'écran demandait **toutes** les lignes jamais importées, tous états et tous exercices
+-- confondus, parce qu'il a besoin des lignes encore à rapprocher quelle que soit leur
+-- date — une ligne de relevé n'appartient à aucun exercice. Il ne demande plus que ce
+-- qu'il montre, en deux fois : les lignes en attente, où qu'elles soient dans le temps,
+-- et les lignes de l'exercice consulté.
+--
+-- La première de ces deux demandes filtre sur `status`, que rien n'indexait.
+--
+-- `status` vient en tête parce que c'est la colonne sélective — la file à traiter est
+-- petite là où l'archive grandit sans fin. Viennent ensuite `date` puis `id`, qui sont
+-- le tri de la file, ce qui évite d'avoir à trier après avoir lu.
+--
+-- Deux pièges du harnais de test, rencontrés tous les deux en écrivant ce fichier. Il
+-- découpe une migration sur le marqueur de rupture de drizzle, et à défaut sur les
+-- points-virgules — commentaires compris. Un commentaire ne doit donc contenir ni
+-- point-virgule, ni le marqueur lui-même, sous peine de produire un fragment sans
+-- instruction, que D1 rejette.
+CREATE INDEX IF NOT EXISTS `bank_statement_lines_status_date_idx` ON `bank_statement_lines` (`status`, `date`, `id`);

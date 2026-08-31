@@ -7,6 +7,9 @@ export interface ListBankStatementLinesConditions {
   accountId?: number;
   startDate?: string;
   endDate?: string;
+  /** Nombre maximal de lignes rendues. Sans lui, la liste n'est bornée que par ses filtres. */
+  limit?: number;
+  offset?: number;
 }
 
 export class ListBankStatementLinesRepository {
@@ -32,10 +35,20 @@ export class ListBankStatementLinesRepository {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    return db.select()
+    /*
+     * Le tri suit `bank_statement_lines_date_id_idx` (migration 0027), et le filtre par état
+     * suit `bank_statement_lines_status_date_idx` (0028). C'est ce qui permet à une demande
+     * bornée de ne lire que ce qu'elle rend : sans index, SQLite lisait la table entière puis
+     * la triait, quelle que soit la borne — 1 188 lignes mesurées par appel en production.
+     */
+    const query = db.select()
       .from(bankStatementLinesTable)
       .where(whereClause)
-      .orderBy(desc(bankStatementLinesTable.date), desc(bankStatementLinesTable.id))
-      .all();
+      .orderBy(desc(bankStatementLinesTable.date), desc(bankStatementLinesTable.id));
+
+    if (filters?.limit === undefined) return query.all();
+
+    // `offset` sans `limit` n'a pas de sens en SQLite ; il n'est lu que si une borne est posée.
+    return query.limit(filters.limit).offset(filters.offset ?? 0).all();
   }
 }

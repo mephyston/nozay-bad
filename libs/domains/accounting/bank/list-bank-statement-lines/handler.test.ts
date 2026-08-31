@@ -112,4 +112,30 @@ describe('listBankStatementLines', () => {
       endDate: undefined
     }));
   });
+  it('transmet la borne de lecture, en la convertissant', async () => {
+    // La route ne rend que des chaînes ; le repository attend des nombres.
+    const repo = mockRepo();
+
+    await listBankStatementLines(db, { filters: { limit: '50', offset: '100' } } as any);
+
+    expect(repo.listBankStatementLines).toHaveBeenCalledWith(db, expect.objectContaining({
+      limit: 50,
+      offset: 100
+    }));
+  });
+
+  it("ne borne rien quand aucune borne n'est demandée", async () => {
+    /*
+      `Number('')` vaut zéro, et une borne de zéro rendrait une liste vide sans qu'aucun
+      appelant l'ait voulu : l'absence de borne doit rester l'absence de borne.
+    */
+    const repo = mockRepo();
+
+    await listBankStatementLines(db, { filters: { limit: '', offset: '' } } as any);
+
+    expect(repo.listBankStatementLines).toHaveBeenCalledWith(db, expect.objectContaining({
+      limit: undefined,
+      offset: undefined
+    }));
+  });
 });

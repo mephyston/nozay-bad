@@ -11,5 +11,11 @@ export const listBankStatementLinesQuerySchema = Type.Object({
    */
   season: Type.Optional(Type.String({ minLength: 1 })),
   status: Type.Optional(Type.String()),
-  accountId: Type.Optional(Type.String())
+  accountId: Type.Optional(Type.String()),
+  /*
+   * Bornes de lecture, en chaînes : Hono ne rend que des chaînes de la requête, et le
+   * handler convertit. Sans borne, la liste rend tout ce que les filtres laissent passer.
+   */
+  limit: Type.Optional(Type.String({ pattern: '^[0-9]+$' })),
+  offset: Type.Optional(Type.String({ pattern: '^[0-9]+$' }))
 });

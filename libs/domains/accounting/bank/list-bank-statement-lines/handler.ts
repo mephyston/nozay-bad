@@ -37,12 +37,21 @@ export async function listBankStatementLines(db: Db, input: ListBankStatementLin
     ? await resolveAccountId(db, filters.accountId)
     : undefined;
 
+  /*
+   * Une borne de zéro n'existe pas : elle rendrait une liste vide sans qu'aucun appelant
+   * l'ait voulu. `Number('')` valant 0, la distinction compte — la route passe des chaînes.
+   */
+  const limit = Number(filters.limit) > 0 ? Number(filters.limit) : undefined;
+  const offset = Number(filters.offset) > 0 ? Number(filters.offset) : undefined;
+
   const rawLines = await repo.listBankStatementLines(db, {
     status: filters.status,
     accountId,
     // Un intervalle explicite l'emporte sur celui de l'exercice : il ne peut que le resserrer.
     startDate: filters.startDate ?? season?.startDate,
-    endDate: filters.endDate ?? season?.endDate
+    endDate: filters.endDate ?? season?.endDate,
+    limit,
+    offset
   });
 
   return rawLines.map(line => {

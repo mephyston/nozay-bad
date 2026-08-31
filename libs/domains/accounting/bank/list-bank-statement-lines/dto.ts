@@ -7,6 +7,14 @@ export interface ListBankStatementLinesFilters {
   /** Resserre l'intervalle de l'exercice ; il ne peut pas l'élargir. */
   startDate?: string;
   endDate?: string;
+  /**
+   * Borne le nombre de lignes rendues, les plus récentes d'abord.
+   *
+   * Sans elle, la liste rend tout ce que les filtres laissent passer — ce que l'écran de
+   * rapprochement demandait, et qui lui faisait rapatrier chaque ligne jamais importée.
+   */
+  limit?: number;
+  offset?: number;
 }
 
 /** Les filtres se posent sous `filters` ; la racine reste acceptée pour les appelants directs. */
