@@ -194,6 +194,46 @@ describe('BankStatementReconciliation Component', () => {
     expect(importer.disabled).toBe(true);
   });
 
+  /*
+    Le libellé et le mémo sont tronqués — il le faut, une file se lit en balayant une colonne —
+    mais un libellé bancaire porte à sa FIN ce qui l'identifie : bénéficiaire, référence du
+    prélèvement. Tronqué, il ne permet plus de vérifier à quoi on rapproche.
+  */
+  it('rend le détail complet de la ligne au survol', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    component = mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankStatementLines: [{
+          id: 1,
+          fitid: '6286748844S',
+          accountId: 'current',
+          amount: -4200,
+          date: '2026-08-28',
+          name: 'PRLV SEPA ASSURANCE MULTIRISQUE ASSOCIATION REF 8891234',
+          memo: 'Echeance annuelle 2026',
+          status: 'pending',
+          aiSuggestions: null
+        }],
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [{ id: '25-26', code: '25-26', name: 'Saison 2025-2026', active: true, closed: false }],
+        members: []
+      }
+    });
+
+    const infobulle = (target.querySelector('[title]') as unknown as HTMLElement).getAttribute('title')!;
+
+    expect(infobulle).toContain('PRLV SEPA ASSURANCE MULTIRISQUE ASSOCIATION REF 8891234');
+    expect(infobulle).toContain('Echeance annuelle 2026');
+    expect(infobulle).toContain('2026-08-28');
+    expect(infobulle).toContain('-42.00');
+    // La référence de la banque : c'est par elle qu'on retrouve l'opération dans l'export.
+    expect(infobulle).toContain('6286748844S');
+  });
+
   it('rend la file, et ouvre une ligne sur demande', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
@@ -234,7 +274,10 @@ describe('BankStatementReconciliation Component', () => {
             licence: '0102030',
             lastName: 'Dupont',
             firstName: 'Jean',
-            amountRemaining: 15000
+            amountRemaining: 15000,
+            // Obligatoire depuis que la convention muette a été retirée : une adhésion dit
+            // toujours de quel exercice elle est.
+            seasonCode: '25-26'
           }
         ]
       }
@@ -750,7 +793,10 @@ describe('BankStatementReconciliation Component', () => {
             licence: '0102030',
             lastName: 'Dupont',
             firstName: 'Jean',
-            amountRemaining: 15000
+            amountRemaining: 15000,
+            // Obligatoire depuis que la convention muette a été retirée : une adhésion dit
+            // toujours de quel exercice elle est.
+            seasonCode: '25-26'
           }
         ],
         dbCategories: [
@@ -820,7 +866,7 @@ describe('BankStatementReconciliation Component', () => {
         glTransactions: [],
         seasonId: '25-26',
         seasons: [{ id: '25-26', code: '25-26', name: 'Saison 2025-2026', startDate: '2025-09-01', endDate: '2026-08-31', active: true }],
-        members: [{ id: 99, licence: '0102030', lastName: 'Dupont', firstName: 'Jean', amountRemaining: 15000 }],
+        members: [{ id: 99, licence: '0102030', lastName: 'Dupont', firstName: 'Jean', amountRemaining: 15000, seasonCode: '25-26' }],
         dbCategories: [{ id: 5, code: 'tournois_senior', adminLabel: 'Tournois Senior' }]
       }
     });
@@ -880,8 +926,8 @@ describe('BankStatementReconciliation Component', () => {
         seasonId: '25-26',
         seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }],
         members: [
-          { id: 99, licence: '0102030', lastName: 'Dupont', firstName: 'Morgane', amountRemaining: 15000 },
-          { id: 77, licence: '0405060', lastName: 'Renard', firstName: 'Sylvain', amountRemaining: 15000 }
+          { id: 99, licence: '0102030', lastName: 'Dupont', firstName: 'Morgane', amountRemaining: 15000, seasonCode: '25-26' },
+          { id: 77, licence: '0405060', lastName: 'Renard', firstName: 'Sylvain', amountRemaining: 15000, seasonCode: '25-26' }
         ],
         dbCategories: [{ id: 1, code: 'adhesions_inscriptions', adminLabel: 'Adhésions' }]
       }

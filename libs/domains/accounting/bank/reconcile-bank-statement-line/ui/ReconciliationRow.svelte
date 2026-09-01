@@ -30,6 +30,19 @@
   const cents = $derived((line as any).amountCents ?? line.amount ?? 0);
   const sug = $derived(parseSuggestion(line));
 
+  /* Le détail que la troncature cache, rendu au survol. Voir le commentaire du bloc. */
+  const detailComplet = $derived(
+    [
+      line.name,
+      line.memo || null,
+      `${line.date} · ${(cents / 100).toFixed(2)} €`,
+      accountLabel,
+      `Réf. banque : ${line.fitid}`
+    ]
+      .filter(Boolean)
+      .join('\n')
+  );
+
   /**
    * Une écriture existante attend-elle d'être pointée ?
    *
@@ -92,7 +105,22 @@
     <!-- Volet gauche : le fait bancaire. Il ne se modifie pas, il se lit. -->
     <span class="shrink-0 text-[11px] text-muted-foreground tabular-nums md:w-[4.5rem]">{line.date}</span>
 
-    <div class="min-w-0 flex-1">
+    <!--
+      Le détail complet au survol.
+
+      Le libellé et le mémo sont tronqués — il le faut, une file se lit en balayant une
+      colonne — mais un libellé bancaire porte justement à sa fin ce qui l'identifie :
+      le bénéficiaire, la référence du prélèvement. Tronqué, il ne permet plus de vérifier
+      à quoi on rapproche, et le seul recours était d'aller relire le relevé.
+
+      L'infobulle native plutôt que le composant `Tooltip` : celui-ci demande un Provider et
+      un Portal, n'est utilisé nulle part ailleurs dans le dépôt, et une ligne de file en
+      contiendrait autant qu'il y a d'opérations. `title` ne coûte rien et survit à tout.
+
+      Le `fitid` y figure parce que c'est l'identifiant que la banque donne à l'opération :
+      c'est par lui qu'on retrouve la ligne dans l'export, ou qu'on la désigne.
+    -->
+    <div class="min-w-0 flex-1" title={detailComplet}>
       <div class="truncate text-sm font-medium">{line.name}</div>
       {#if line.memo}
         <div class="truncate text-[11px] italic text-muted-foreground">{line.memo}</div>
