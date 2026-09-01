@@ -13,6 +13,16 @@ export const listBankStatementLinesQuerySchema = Type.Object({
   status: Type.Optional(Type.String()),
   accountId: Type.Optional(Type.String()),
   /*
+   * Un intervalle explicite, pour les appelants dont la borne n'est pas un exercice.
+   *
+   * L'archive du rapprochement en est un : elle doit couvrir les exercices encore OUVERTS,
+   * et non le seul exercice consulté — une ligne d'août rapprochée en septembre sortait
+   * sinon de l'écran à la seconde où on la rapprochait. Le handler savait déjà lire ces
+   * bornes ; seule la route ne les laissait pas passer.
+   */
+  startDate: Type.Optional(Type.String({ pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' })),
+  endDate: Type.Optional(Type.String({ pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' })),
+  /*
    * Bornes de lecture, en chaînes : Hono ne rend que des chaînes de la requête, et le
    * handler convertit. Sans borne, la liste rend tout ce que les filtres laissent passer.
    */

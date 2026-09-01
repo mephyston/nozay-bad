@@ -339,6 +339,21 @@ export const ECRANS: Record<string, Ecran> = {
       const suivante = seasons[seasons.findIndex((x: any) => (x.code || String(x.id)) === seasonId) + 1];
       const codeSuivant = suivante ? suivante.code || String(suivante.id) : null;
 
+      /*
+        L'intervalle de l'archive : tous les exercices non clôturés, plus celui qu'on consulte
+        — ce dernier pouvant être clôturé, on ne va pas le rendre invisible pour autant.
+
+        `closedAt` et non `closed` : le référentiel rend la colonne telle quelle, et le champ
+        `closed` que d'autres endroits testent n'existe nulle part dans la réponse.
+      */
+      const consultee = seasons.find((x: any) => (x.code || String(x.id)) === seasonId);
+      const retenues = seasons.filter((x: any) => !x.closedAt || x === consultee);
+      const bornes = (retenues.length > 0 ? retenues : seasons).filter((x: any) => x.startDate && x.endDate);
+      const archive = {
+        debut: bornes.reduce((min: string, x: any) => (x.startDate < min ? x.startDate : min), bornes[0]?.startDate ?? '1970-01-01'),
+        fin: bornes.reduce((max: string, x: any) => (x.endDate > max ? x.endDate : max), bornes[0]?.endDate ?? '2999-12-31')
+      };
+
       const [enAttente, delExercice, ecritures, adherents, adherentsSuivants, categories, etats] = await Promise.all([
         /*
           Les lignes encore à rapprocher, sans borne d'exercice : une ligne de relevé
@@ -348,15 +363,22 @@ export const ECRANS: Record<string, Ecran> = {
         */
         lire('/accounting/bank-transactions?status=pending'),
         /*
-          Et les lignes de l'exercice consulté, tous états : c'est l'archive que les onglets
-          montrent, et la population sur laquelle porte la barre de progression.
+          Et l'archive : les lignes des exercices encore OUVERTS, tous états confondus.
 
-          Les deux demandes remplacent un `lire('/accounting/bank-transactions')` nu, qui
-          rapatriait **chaque ligne jamais importée** — 1 188 lignes lues par ouverture
-          d'écran, mesurées sur l'analytique D1, pour une archive qui grandit sans fin et
-          dont l'écran ne montre jamais que l'exercice choisi dans son en-tête.
+          La borne était l'exercice consulté, sur l'idée que « l'archive n'est jamais montrée
+          que pour l'exercice choisi ». C'était faux d'un cran : une ligne d'août encore en
+          attente figure bien dans la file — celle-ci n'a pas de borne de date, exprès — mais
+          la rapprocher la faisait passer dans l'ensemble borné, et elle DISPARAISSAIT de
+          l'écran à la seconde où on la rapprochait. Impossible de relire ce qu'on venait de
+          faire sans changer de saison.
+
+          La borne juste n'est pas l'exercice consulté mais la clôture : tant qu'un exercice
+          n'est pas clôturé, on peut encore agir dessus, donc on doit encore le voir. Elle est
+          auto-limitante — clôturer 25-26 fait sortir ses lignes — là où la demande nue qu'on
+          a remplacée rapatriait chaque ligne jamais importée (1 188 par ouverture, mesurées
+          sur l'analytique D1, premier poste de lecture du compte).
         */
-        lire(`/accounting/bank-transactions?season=${s}`),
+        lire(`/accounting/bank-transactions?startDate=${archive.debut}&endDate=${archive.fin}`),
         /*
           Le solde progressif est refusé : c'est une sous-requête corrélée, réévaluée pour
           chacune des 2000 écritures demandées, et cet écran ne l'affiche nulle part.

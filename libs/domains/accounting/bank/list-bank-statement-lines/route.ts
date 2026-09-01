@@ -14,11 +14,11 @@ const handleListBank = async (c: any) => {
   if (!c.env || !c.env.DB) {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
-  const { season, status, accountId, limit, offset } = c.req.valid('query');
+  const { season, status, accountId, limit, offset, startDate, endDate } = c.req.valid('query');
   const db = createDb(c.env.DB);
   const data = await listBankStatementLines(db, {
     seasonId: season,
-    filters: { status, accountId, limit, offset }
+    filters: { status, accountId, limit, offset, startDate, endDate }
   } as any);
   return c.json({ success: true, data });
 };

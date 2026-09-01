@@ -119,8 +119,8 @@ const donnees = async (res: Response) => ((await res.json()) as any).data;
 beforeEach(() => {
   appels = [];
   saisons = [
-    { code: '24-25', startDate: '2024-09-01', active: 0, name: 'Saison 24-25' },
-    { code: '25-26', startDate: '2025-09-01', active: 1, name: 'Saison 25-26', closed: false }
+    { code: '24-25', startDate: '2024-09-01', endDate: '2025-08-31', active: 0, name: 'Saison 24-25', closedAt: null },
+    { code: '25-26', startDate: '2025-09-01', endDate: '2026-08-31', active: 1, name: 'Saison 25-26', closedAt: null }
   ];
 });
 
@@ -246,14 +246,16 @@ describe('comptabilité — le rapprochement', () => {
     'accounting:ledger:write', 'accounting:ledger:delete', 'accounting:invoices:read'
   ];
 
-  it('lit les lignes à rapprocher sans borne d’exercice, et l’archive avec', async () => {
+  it('lit les lignes à rapprocher sans borne, et l’archive sur les exercices ouverts', async () => {
     /*
       Une ligne de relevé n'appartient à aucune saison, c'est un mouvement daté : borner la
       file à l'exercice consulté faisait disparaître, au 1er septembre, tout ce qui restait
       à rapprocher de l'année écoulée.
 
-      L'archive, elle, se borne — l'écran ne montre jamais que l'exercice choisi dans son
-      en-tête, et la demande nue rapatriait chaque ligne jamais importée.
+      L'archive se borne, mais à la CLÔTURE et non à l'exercice consulté. Bornée à ce
+      dernier, une ligne d'août rapprochée depuis l'exercice suivant quittait l'écran à la
+      seconde où on la rapprochait : elle passait de la file non bornée à une archive qui ne
+      la contenait pas.
     */
     await lire('reconciliation', '?season=24-25', DROITS);
     const bancaires = appels
@@ -261,8 +263,50 @@ describe('comptabilité — le rapprochement', () => {
       .map((a) => a.url);
 
     expect(bancaires).toHaveLength(2);
-    expect(bancaires.some((u) => u.includes('status=pending') && !u.includes('season='))).toBe(true);
-    expect(bancaires.some((u) => u.includes('season=24-25') && !u.includes('status='))).toBe(true);
+    expect(bancaires.some((u) => u.includes('status=pending') && !u.includes('startDate='))).toBe(true);
+
+    // Les deux exercices sont ouverts : l'archive les couvre tous les deux.
+    const archive = bancaires.find((u) => u.includes('startDate='))!;
+    expect(archive).toContain('startDate=2024-09-01');
+    expect(archive).toContain('endDate=2026-08-31');
+    expect(archive).not.toContain('status=');
+  });
+
+  it('sort un exercice de l’archive dès qu’il est clôturé', async () => {
+    /*
+      La borne est auto-limitante, et c'est ce qui la rend tenable : clôturer un exercice
+      le fait sortir de l'archive, donc le coût de lecture ne grandit pas sans fin — ce
+      qu'on reprochait à la demande nue d'origine (1 188 lignes par ouverture).
+    */
+    saisons[0].closedAt = 1756684800000;
+    try {
+      await lire('reconciliation', '?season=25-26', DROITS);
+      const archive = appels
+        .filter((a) => a.url.includes('/accounting/bank-transactions'))
+        .map((a) => a.url)
+        .find((u) => u.includes('startDate='))!;
+
+      expect(archive).toContain('startDate=2025-09-01');
+      expect(archive).toContain('endDate=2026-08-31');
+    } finally {
+      saisons[0].closedAt = null;
+    }
+  });
+
+  it('garde dans l’archive l’exercice consulté, même clôturé', async () => {
+    saisons[0].closedAt = 1756684800000;
+    try {
+      await lire('reconciliation', '?season=24-25', DROITS);
+      const archive = appels
+        .filter((a) => a.url.includes('/accounting/bank-transactions'))
+        .map((a) => a.url)
+        .find((u) => u.includes('startDate='))!;
+
+      // Consulter un exercice clôturé doit continuer de montrer ses lignes.
+      expect(archive).toContain('startDate=2024-09-01');
+    } finally {
+      saisons[0].closedAt = null;
+    }
   });
 
   it('fond les deux demandes en une liste sans doublon, la plus récente d’abord', async () => {
