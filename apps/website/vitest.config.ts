@@ -17,6 +17,9 @@ export default defineConfig({
   test: {
     name: 'website',
     globals: true,
+    // Projet à fichier séparé : il n'hérite PAS du `setupFiles` de la config racine.
+    // Sans cette ligne, l'horloge n'est pas figée ici (voir vitest.setup.clock.ts).
+    setupFiles: [path.resolve(__dirname, '../..', 'vitest.setup.clock.ts')],
     // Node et non jsdom : le site public ne porte presque aucun JS, et ce qui est
     // testé ici (résolution d'URL, en-têtes, cache, SEO) est du code serveur.
     environment: 'node'

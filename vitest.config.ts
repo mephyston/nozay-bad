@@ -17,6 +17,10 @@ export default defineConfig({
   test: {
     // Vitest 4 : poolOptions supprimé, les options sont désormais au niveau racine.
     pool: 'threads',
+    // Horloge figée pour toute la suite (voir vitest.setup.clock.ts). Hérité par les
+    // projets en ligne via `extends: true` ; les projets à fichier séparé le rechargent
+    // eux-mêmes, ils n'héritent de rien d'ici.
+    setupFiles: [path.resolve(__dirname, 'vitest.setup.clock.ts')],
     // Les 5 s par défaut sont trop justes en CI : `setupMockDb()` rejoue toutes les
     // migrations à chaque test (~140 allers-retours D1), ce qui coûte des secondes sur
     // un runner GitHub là où la même chose prend 30 ms en local. Les migrations RBAC
@@ -43,6 +47,7 @@ export default defineConfig({
       '**/package-lock.json',
       '**/{vitest,vite}.config.*',
       '**/vitest.setup.ts',
+      '**/vitest.setup.clock.ts',
       '**/vitest.wrangler.ts',
       '**/vitest.aliases.ts',
       '**/wrangler.json',
@@ -92,7 +97,7 @@ export default defineConfig({
           name: 'features-members-ui',
           globals: true,
           environment: 'jsdom',
-          setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.clock.ts'), path.resolve(__dirname, 'vitest.setup.ts')],
           root: path.resolve(__dirname, 'libs/domains/members'),
           // Liste littérale : un test d'interface posé dans une tranche absente d'ici ne
           // serait jamais exécuté, sans que rien ne le signale.
@@ -130,7 +135,7 @@ export default defineConfig({
           name: 'features-accounting-ui',
           globals: true,
           environment: 'jsdom',
-          setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.clock.ts'), path.resolve(__dirname, 'vitest.setup.ts')],
           root: path.resolve(__dirname, 'libs/domains/accounting'),
           include: ['*/**/ui/**/*.test.ts'],
         }
@@ -166,7 +171,7 @@ export default defineConfig({
           name: 'features-expenses-ui',
           globals: true,
           environment: 'jsdom',
-          setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.clock.ts'), path.resolve(__dirname, 'vitest.setup.ts')],
           root: path.resolve(__dirname, 'libs/domains/expenses'),
           include: ['create/ui/**/*.test.ts', 'list/ui/**/*.test.ts', 'update/ui/**/*.test.ts'],
         }
@@ -202,7 +207,7 @@ export default defineConfig({
           name: 'features-shop-ui',
           globals: true,
           environment: 'jsdom',
-          setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.clock.ts'), path.resolve(__dirname, 'vitest.setup.ts')],
           root: path.resolve(__dirname, 'libs/domains/shop'),
           include: ['list-orders/ui/**/*.test.ts', 'list-products/ui/**/*.test.ts'],
         }
@@ -262,7 +267,7 @@ export default defineConfig({
           name: 'features-schedules-ui',
           globals: true,
           environment: 'jsdom',
-          setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.clock.ts'), path.resolve(__dirname, 'vitest.setup.ts')],
           root: path.resolve(__dirname, 'libs/domains/schedules'),
           include: ['**/ui/**/*.test.ts'],
           exclude: ['**/node_modules/**'],
@@ -307,7 +312,7 @@ export default defineConfig({
           name: 'features-teams-ui',
           globals: true,
           environment: 'jsdom',
-          setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.clock.ts'), path.resolve(__dirname, 'vitest.setup.ts')],
           root: path.resolve(__dirname, 'libs/domains/teams'),
           include: ['**/ui/**/*.test.ts'],
           exclude: ['**/node_modules/**'],
@@ -339,7 +344,7 @@ export default defineConfig({
           name: 'features-cms-ui',
           globals: true,
           environment: 'jsdom',
-          setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.clock.ts'), path.resolve(__dirname, 'vitest.setup.ts')],
           root: path.resolve(__dirname, 'libs/domains/cms'),
           include: ['**/ui/**/*.test.ts'],
         }
@@ -373,7 +378,7 @@ export default defineConfig({
           name: 'features-announcements-ui',
           globals: true,
           environment: 'jsdom',
-          setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.clock.ts'), path.resolve(__dirname, 'vitest.setup.ts')],
           root: path.resolve(__dirname, 'libs/domains/announcements'),
           include: ['list-announcements/ui/**/*.test.ts'],
         }

@@ -46,6 +46,9 @@ export default defineConfig({
   test: {
     name: 'api',
     globals: true,
+    // Projet à fichier séparé : il n'hérite PAS du `setupFiles` de la config racine.
+    // Sans cette ligne, l'horloge n'est pas figée ici (voir vitest.setup.clock.ts).
+    setupFiles: [path.resolve(__dirname, '../..', 'vitest.setup.clock.ts')],
     // Projet à fichier séparé : il n'hérite PAS du `testTimeout` de la config racine.
     // Sans ces valeurs, le projet tournait aux 5 s par défaut — et c'est précisément
     // lui qui fait le plus de setupMockDb : sur un runner GitHub saturé, des tests
