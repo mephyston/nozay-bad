@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Upload, Sparkles, ShieldAlert } from '@lucide/svelte';
-  import { Button, PageHeader, Alert } from '@nba/ui';
+  import { Button, PageHeader, Alert, SeasonSelector } from '@nba/ui';
   import type { ReconciliationState } from './reconciliation.svelte';
 
   let { state = $bindable() }: { state: ReconciliationState } = $props();
@@ -22,13 +22,20 @@
   {#snippet actions()}
     <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
       <!--
-        Plus de sélecteur d'exercice ici.
+        Le sélecteur d'exercice, revenu — mais pour CONSULTER, jamais pour rapprocher.
 
-        Une ligne non rapprochée n'appartient à aucun exercice, et la file les montre donc toutes.
-        L'exercice de rattachement de l'écriture, lui, se choisit dans le formulaire — au bon
-        endroit, ligne par ligne. Consulter un exercice clos n'avait par ailleurs aucun objet :
-        sa file est vide par construction.
+        Il avait été retiré, et les deux tiers de ce raisonnement tiennent toujours : une ligne
+        non rapprochée n'appartient à aucun exercice, la file les montre donc toutes, et
+        l'exercice de rattachement d'une écriture se choisit dans le formulaire, ligne par
+        ligne. Rien de tout cela ne réclame un sélecteur.
+
+        Le troisième tiers, lui, était faux : « consulter un exercice clos n'a aucun objet, sa
+        file est vide ». Sa file, oui — mais pas son ARCHIVE, ni son état de rapprochement, ni
+        son écart. Faute de sélecteur, les relire imposait de changer le drapeau `active` du
+        référentiel, c'est-à-dire un réglage global pour un besoin de lecture.
       -->
+      <SeasonSelector seasons={state.seasons} current={state.selectedSeason} size="sm" />
+
       <!-- Groupe de boutons toujours maintenus ensemble sur la même ligne (flex-nowrap) -->
       <div class="flex items-center gap-2 flex-nowrap flex-1 sm:flex-initial">
         <Button

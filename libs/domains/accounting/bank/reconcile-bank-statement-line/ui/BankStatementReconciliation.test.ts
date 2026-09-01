@@ -130,6 +130,70 @@ describe('BankStatementReconciliation Component', () => {
     expect(target.innerHTML).toContain("Lancer l'importation");
   });
 
+  /*
+   * Le sélecteur d'exercice, et les garde-fous de clôture qui vont avec.
+   *
+   * Le sélecteur avait été retiré au motif que « consulter un exercice clos n'a aucun objet,
+   * sa file est vide ». Sa file, oui — mais pas son archive ni son écart, et les relire
+   * imposait de changer le drapeau `active` du référentiel : un réglage global pour un besoin
+   * de lecture.
+   */
+  it("porte un sélecteur d'exercice", () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    component = mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankStatementLines: [],
+        glTransactions: [],
+        seasonId: '25-26',
+        seasons: [
+          { id: '24-25', code: '24-25', name: 'Saison 2024-2025', closed: true },
+          { id: '25-26', code: '25-26', name: 'Saison 2025-2026', active: true, closed: false }
+        ],
+        members: []
+      }
+    });
+
+    // `unknown` en pivot : dans ce fichier `Element` est celui de @cloudflare/workers-types
+    // (HTMLRewriter), qui ne recouvre pas le DOM — le cast direct est refusé.
+    const select = target.querySelector('select[aria-label="Saison"]') as unknown as HTMLSelectElement;
+    expect(select).toBeTruthy();
+    expect(Array.from(select.options).map((o) => o.value)).toContain('24-25');
+  });
+
+  /*
+   * Et la conséquence de leur avoir enfin donné un `closed` qui existe.
+   *
+   * L'interface cherchait ce booléen partout, mais le référentiel ne rendait que `closed_at` :
+   * elle lisait donc `undefined`, et se comportait comme si aucun exercice n'était jamais
+   * clôturé. L'alerte ne s'affichait pas, l'import restait actif. Le fond tenait — l'API
+   * refuse en phase 3 — mais on ne l'apprenait qu'au moment de valider.
+   */
+  it("passe en lecture seule sur un exercice clôturé", () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    component = mount(BankStatementReconciliation, {
+      target,
+      props: {
+        bankStatementLines: [],
+        glTransactions: [],
+        seasonId: '24-25',
+        seasons: [{ id: '24-25', code: '24-25', name: 'Saison 2024-2025', closed: true }],
+        members: []
+      }
+    });
+
+    expect(target.innerHTML).toContain('Saison clôturée');
+
+    const importer = Array.from(target.querySelectorAll('button')).find(
+      (b) => b.textContent?.includes('Importer (OFX)')
+    ) as HTMLButtonElement;
+    expect(importer.disabled).toBe(true);
+  });
+
   it('rend la file, et ouvre une ligne sur demande', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
