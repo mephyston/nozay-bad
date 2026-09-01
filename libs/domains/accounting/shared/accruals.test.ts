@@ -204,13 +204,37 @@ describe("phase d'inventaire (exercice terminé, pas encore clôturé)", () => {
     expect(res.code).toBe('25-26');
   });
 
-  it("refuse la même écriture le lendemain matin, sans qu'une ligne ait bougé", async () => {
-    await expect(validateAccrualAndFiscalPhase(db, {
+  /*
+   * Et la laisse passer le lendemain matin, exactement de la même façon.
+   *
+   * C'est tout l'objet de la période d'inventaire : achever la saisie de l'exercice écoulé.
+   * La règle refusait ici toute écriture `normal` dès que la date du JOUR dépassait la fin
+   * de l'exercice — donc le relevé bancaire d'août, qui arrive en septembre tous les ans,
+   * ne pouvait plus être rapproché. Ce qui compte est la date de l'ÉCRITURE, pas celle du
+   * jour où on la saisit.
+   */
+  it("laisse passer la même écriture le lendemain matin, le relevé d'août arrivant en septembre", async () => {
+    const res = await validateAccrualAndFiscalPhase(db, {
       seasonId: '25-26',
       type: 'depense',
       date: '2026-08-31',
       accrualType: 'normal'
-    })).rejects.toThrow("période d'inventaire");
+    });
+    expect(res.code).toBe('25-26');
+  });
+
+  /*
+   * Ce qui reste refusé, et qui est le vrai invariant : une écriture `normal` DATÉE hors
+   * de l'exercice. Le message ne parle plus d'inventaire, il parle de bornes — ce qui est
+   * la bonne raison.
+   */
+  it("refuse une écriture normale datée hors de l'exercice", async () => {
+    await expect(validateAccrualAndFiscalPhase(db, {
+      seasonId: '25-26',
+      type: 'depense',
+      date: '2026-09-15',
+      accrualType: 'normal'
+    })).rejects.toThrow('sort des bornes');
   });
 
   /*
@@ -243,13 +267,13 @@ describe("phase d'inventaire (exercice terminé, pas encore clôturé)", () => {
    * Et ce qui reste fermé : un « constaté d'avance » ne rattrape pas un exercice terminé, il
    * en désigne un qui n'a pas commencé. Sur 25-26 au 1er septembre, il n'a plus de sens.
    */
-  it("refuse un constaté d'avance sur l'exercice en inventaire", async () => {
+  it("refuse un constaté d'avance daté dans l'exercice de rattachement", async () => {
     await expect(validateAccrualAndFiscalPhase(db, {
       seasonId: '25-26',
       type: 'depense',
       date: '2026-08-20',
       accrualType: 'charge_constatee_avance',
       accrualNote: 'Assurance 26-27 payée en août'
-    })).rejects.toThrow("période d'inventaire");
+    })).rejects.toThrow("constaté d'avance");
   });
 });

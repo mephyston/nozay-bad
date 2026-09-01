@@ -38,7 +38,6 @@ export async function validateAccrualAndFiscalPhase(db: DbOrTx, params: AccrualV
 
   await assertMembershipMatchesSeason(db, params.memberId, season.id);
 
-  const todayStr = new Date().toISOString().split('T')[0];
   const accrualType = params.accrualType || 'normal';
 
   // Phase 3: Arrêté (closed_at IS NOT NULL) -> READ ONLY!
@@ -48,12 +47,23 @@ export async function validateAccrualAndFiscalPhase(db: DbOrTx, params: AccrualV
     }
   }
 
-  // Phase 2: Inventaire (today > season.endDate AND closed_at IS NULL)
-  if (todayStr > season.endDate) {
-    if (accrualType !== 'charge_a_payer' && accrualType !== 'produit_a_recevoir' && accrualType !== 'recette_exercice_anterieur') {
-      throw new AppError("L'exercice est en période d'inventaire. Seules les régularisations de fin d'exercice (charge à payer, produit à recevoir) sont autorisées.", 400);
-    }
-  }
+  /*
+   * Phase 2 : inventaire — l'exercice est terminé, sa clôture n'est pas faite.
+   *
+   * Aucune restriction ici, et c'est délibéré. Cette phase refusait toute écriture
+   * `normal` dès que la date du JOUR dépassait la fin de l'exercice, sans regarder la date
+   * de l'écriture. C'était l'inverse de son objet : la période d'inventaire existe
+   * précisément pour ACHEVER la saisie de l'exercice écoulé.
+   *
+   * Le relevé bancaire d'août arrive en septembre — tous les ans — et le rapprocher était
+   * refusé, alors que les mouvements qu'il détaille ont bien eu lieu en août. Constaté le
+   * 2026-09-01 sur une ligne de relevé datée d'août, impossible à rattacher.
+   *
+   * Ce qui doit rester fermé passé la date de fin, ce n'est pas la saisie : c'est une
+   * écriture DATÉE hors de l'exercice sans motif de rattachement. Le contrôle des bornes
+   * ci-dessous le dit déjà, et le dit mieux — il regarde la date de l'écriture, pas celle
+   * du jour. La vraie fermeture est la clôture (`closed_at`), traitée en phase 3.
+   */
 
   // Accrual & Date Bounds Validation
   const isDateInBounds = (params.date >= season.startDate && params.date <= season.endDate);

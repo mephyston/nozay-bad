@@ -10,6 +10,7 @@ import {
 import { getReconciliationStatement } from './handler';
 import { updateSeasonBalances } from '../../seasons/update-season-balances/handler';
 import { closeSeason, getCloseSeasonChecks } from '../../seasons/close-season/handler';
+import { reconcileBankStatementLine } from '../reconcile-bank-statement-line/handler';
 
 /**
  * Le passage d'exercice quand la clôture n'a pas encore eu lieu.
@@ -196,6 +197,52 @@ describe("bascule d'exercice sans clôture", () => {
   /*
    * La clôture, quand les dernières charges d'août sont enfin arrivées.
    */
+  /*
+   * Le geste le plus banal de septembre, et il était refusé.
+   *
+   * Le relevé d'août arrive après le 31 — tous les ans, c'est le rythme des banques. Ses
+   * lignes sont datées d'août et se rattachent à l'exercice écoulé, qui n'est pas clôturé.
+   * La règle de phase d'inventaire les rejetait pourtant en bloc : elle comparait la date
+   * du JOUR à la fin de l'exercice, sans regarder la date de l'écriture, et n'admettait
+   * plus que des régularisations de cut-off. Signalé en production le 2026-09-01, sur une
+   * ligne de relevé d'août impossible à rapprocher.
+   */
+  it("rapproche en septembre une ligne de relevé datée d'août", async () => {
+    const ligne = await db.insert(bankStatementLinesTable).values({
+      fitid: 'FIT-AOUT-TARDIF',
+      accountId: COMPTE_COURANT,
+      amountCents: -4_200,
+      date: '2026-08-28',
+      name: 'PRLV ASSURANCE',
+      status: 'pending',
+      createdAt: new Date()
+    }).returning().get();
+
+    await reconcileBankStatementLine(db, ligne.id, {
+      action: 'create',
+      transaction: {
+        seasonId: '25-26',
+        type: 'depense',
+        accountId: COMPTE_COURANT,
+        category: CATEGORIE,
+        amount: 4_200,
+        date: '2026-08-28',
+        paymentMethod: VIREMENT,
+        description: "Prélèvement d'assurance d'août"
+      }
+    } as any);
+
+    const apres = await db.select().from(bankStatementLinesTable).all();
+    expect(apres.find((l: any) => l.id === ligne.id)!.status).toBe('reconciled');
+
+    // L'écriture est bien rattachée à l'exercice qui se ferme, sans motif de régularisation.
+    const ecritures = await db.select().from(ledgerEntriesTable).all();
+    const creee = ecritures.find((e: any) => e.bankStatementLineId === ligne.id);
+    expect(creee).toBeDefined();
+    expect(creee!.seasonId).toBe(1);
+    expect(creee!.accrualType).toBe('normal');
+  });
+
   describe('clôture de 25-26, une fois les charges reçues', () => {
     it('calcule le même à-nouveau que celui saisi à la main, et ne signale alors aucun écart', async () => {
       await updateSeasonBalances(db, '26-27', [
