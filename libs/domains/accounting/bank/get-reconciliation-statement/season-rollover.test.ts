@@ -17,16 +17,16 @@ import { closeSeason, getCloseSeasonChecks } from '../../seasons/close-season/ha
  * La situation, constatée en production le 1er septembre 2026 : l'exercice 26-27 est activé
  * parce que la vie du club continue, mais 25-26 reste ouvert — des charges d'août arriveront
  * encore. Or `season_balances.initial_balance_cents` n'est écrit que par
- * `closeSeasonWithRollover` : tant que 25-26 n'est pas clôturé, 26-27 n'a **aucun** à-nouveau,
- * et `getInitialBalanceCents` rend `0`.
+ * `closeSeasonWithRollover` : tant que 25-26 n'est pas clôturé, 26-27 n'a **aucun** à-nouveau.
  *
- * Ce `0` n'est pas neutre. Le rapprochement compare le solde que la banque annonce à un solde
- * comptable reconstitué depuis l'à-nouveau : sans à-nouveau, l'écart affiché vaut exactement
- * toute la trésorerie d'ouverture. Rien n'est faux dans les données, c'est le report qui
- * manque — mais l'écran, lui, annonce un écart de plusieurs milliers d'euros.
+ * Le rapprochement lisait alors `0`, et l'écart affiché valait exactement toute la trésorerie
+ * d'ouverture — sans qu'aucun des décalages qu'il sait nommer ne l'explique. Rien n'était faux
+ * dans les données : c'est le report qui manquait, et le calculer n'attend pas la clôture (voir
+ * `shared/opening-balances.ts`).
  *
- * Ces tests posent le scénario complet : l'écart, sa disparition sur un à-nouveau provisoire,
- * puis son écrasement par la valeur définitive à la clôture.
+ * Ces tests posent le scénario complet : le rapprochement juste sans la moindre saisie, un
+ * à-nouveau saisi à la main qui prime sur le calcul, et le passage du provisoire au figé à la
+ * clôture — refusé sans confirmation, écrasé avec.
  *
  * Les dates sont POSÉES, jamais subies : `vitest.setup.clock.ts` fige la suite au 30 août 2026,
  * ce qui est justement la veille du basculement qu'on veut décrire.
