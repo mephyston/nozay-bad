@@ -332,12 +332,23 @@ export const ECRANS: Record<string, Ecran> = {
       const s = encodeURIComponent(seasonId);
 
       /*
-        Les adhérents de la saison suivante sont chargés en plus : un encaissement de
-        septembre concerne souvent l'adhésion de l'année qui commence, et le compte
-        « produit constaté d'avance » est là pour ça.
+        Les annuaires chargés : ceux de TOUS les exercices ouverts, et non plus « le consulté
+        et le suivant ».
+
+        Une adhésion appartient à un exercice, avec un identifiant différent d'une année sur
+        l'autre. Le formulaire déduit l'exercice de rattachement de la DATE de la ligne : une
+        ligne d'août rapprochée depuis 26-27 vise donc 25-26. On ne chargeait pas cet
+        annuaire-là — seulement le consulté et le suivant — et la liste des adhérents
+        s'affichait **vide**, sans rien dire, exactement quand on en avait besoin.
+
+        « Ouvert » est la même borne que pour l'archive, et c'est la bonne : on ne peut écrire
+        que dans un exercice non clôturé, donc on ne peut viser que ceux-là.
       */
-      const suivante = seasons[seasons.findIndex((x: any) => (x.code || String(x.id)) === seasonId) + 1];
-      const codeSuivant = suivante ? suivante.code || String(suivante.id) : null;
+      const codeDe = (x: any) => String(x.code || x.id);
+      const exercicesCibles = Array.from(new Set([
+        seasonId,
+        ...seasons.filter((x: any) => !x.closedAt).map(codeDe)
+      ]));
 
       /*
         L'intervalle de l'archive : tous les exercices non clôturés, plus celui qu'on consulte
@@ -354,7 +365,7 @@ export const ECRANS: Record<string, Ecran> = {
         fin: bornes.reduce((max: string, x: any) => (x.endDate > max ? x.endDate : max), bornes[0]?.endDate ?? '2999-12-31')
       };
 
-      const [enAttente, delExercice, ecritures, adherents, adherentsSuivants, categories, etats] = await Promise.all([
+      const [enAttente, delExercice, ecritures, annuaires, categories, etats] = await Promise.all([
         /*
           Les lignes encore à rapprocher, sans borne d'exercice : une ligne de relevé
           n'appartient à aucune saison, c'est un mouvement daté. Les borner à l'exercice
@@ -384,10 +395,12 @@ export const ECRANS: Record<string, Ecran> = {
           chacune des 2000 écritures demandées, et cet écran ne l'affiche nulle part.
         */
         lire(`/accounting/transactions?season=${s}&page=1&limit=2000&runningBalance=0`),
-        lire(`/members?season=${s}&limit=500`),
-        codeSuivant
-          ? lire(`/members?season=${encodeURIComponent(codeSuivant)}&limit=500`)
-          : Promise.resolve(null),
+        Promise.all(
+          exercicesCibles.map(async (code) => ({
+            code,
+            membres: (await lire(`/members?season=${encodeURIComponent(code)}&limit=500`)) ?? []
+          }))
+        ),
         lire('/accounting/categories'),
         /*
           L'état de rapprochement ne s'établit que pour les comptes dont un relevé a été
@@ -396,13 +409,21 @@ export const ECRANS: Record<string, Ecran> = {
         lire(`/accounting/reconciliation-statements?season=${s}`)
       ]);
 
-      const membres = [...(adherents ?? [])];
-      if (adherentsSuivants) {
-        // `seasonCode` n'est posé que sur ceux de l'autre saison : c'est lui qui les
-        // signale à l'écran, et son absence vaut « saison consultée ».
-        const connus = new Set(membres.map((m: any) => m.id));
-        for (const membre of adherentsSuivants as any[]) {
-          if (!connus.has(membre.id)) membres.push({ ...membre, seasonCode: codeSuivant });
+      /*
+        Chaque adhésion porte SON code d'exercice, sans exception.
+
+        La convention précédente — « pas de `seasonCode` » valait « exercice consulté » —
+        était muette et fausse dès que l'exercice visé n'était pas celui qu'on consultait :
+        le filtre cherchait alors un code que personne ne portait, et rendait une liste vide.
+        Un marqueur implicite ne se voit pas quand il manque.
+      */
+      const membres: any[] = [];
+      const connus = new Set<unknown>();
+      for (const { code, membres: annuaire } of annuaires as { code: string; membres: any[] }[]) {
+        for (const membre of annuaire) {
+          if (connus.has(membre.id)) continue;
+          connus.add(membre.id);
+          membres.push({ ...membre, seasonCode: code });
         }
       }
 

@@ -72,14 +72,19 @@ export interface Member {
   firstName: string;
   amountRemaining: number;
   /**
-   * Renseigné uniquement pour un adhérent d'une **autre** saison que celle consultée.
+   * L'exercice de l'adhésion. **Obligatoire**, sur chacune.
    *
-   * L'écran propose aussi l'annuaire de la saison suivante, pour rattacher une
-   * cotisation encaissée d'avance. Sans ce repère, deux homonymes de deux saisons
-   * seraient indiscernables dans la liste — et `id` désigne une adhésion, pas une
-   * personne : se tromper de saison rattache l'argent au mauvais exercice.
+   * `id` désigne une adhésion, pas une personne : la même personne en porte une par
+   * exercice, avec un identifiant différent. Se tromper d'exercice rattache donc l'argent à
+   * la mauvaise adhésion — une erreur qu'aucun contrôle ne rattrape.
+   *
+   * Le champ était facultatif, et son absence signifiait « exercice consulté ». Cette
+   * convention muette se retournait dès que l'exercice VISÉ n'était pas celui qu'on
+   * consultait : une ligne d'août rapprochée depuis 26-27 vise 25-26, et le filtre cherchait
+   * alors un code que personne ne portait — la liste s'affichait vide, sans un mot. Un
+   * marqueur implicite ne se voit pas quand il manque ; celui-ci est désormais exigé.
    */
-  seasonCode?: string;
+  seasonCode: string;
 }
 
 export interface ReconciliationStateProps {

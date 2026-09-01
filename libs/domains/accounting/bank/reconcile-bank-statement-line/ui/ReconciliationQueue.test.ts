@@ -390,7 +390,7 @@ describe("l'historique", () => {
 */
 describe('formulaire en ventilation', () => {
   const withMembers = {
-    members: [{ id: 42, licence: '0102030', lastName: 'Dupont', firstName: 'Jean', amountRemaining: 0 }],
+    members: [{ id: 42, licence: '0102030', lastName: 'Dupont', firstName: 'Jean', amountRemaining: 0, seasonCode: '25-26' }],
     dbCategories: [{ id: 5, code: 'cotisations', adminLabel: 'Cotisations' }]
   };
 
@@ -440,8 +440,11 @@ describe("annuaire et exercice de rattachement", () => {
     { id: '25-26', code: '25-26', name: 'Saison 2025-2026', active: true },
     { id: '26-27', code: '26-27', name: 'Saison 2026-2027', active: false }
   ];
+  /* Chaque adhésion dit son exercice. L'absence de code ne signifie plus « exercice consulté » :
+     cette convention muette rendait la liste vide, sans un mot, dès que l'exercice VISÉ n'était
+     pas celui qu'on consultait — le cas d'une ligne d'août rapprochée depuis l'exercice suivant. */
   const members = [
-    { id: 1, licence: '0102030', lastName: 'COURANTE', firstName: 'Anne', amountRemaining: 0 },
+    { id: 1, licence: '0102030', lastName: 'COURANTE', firstName: 'Anne', amountRemaining: 0, seasonCode: '25-26' },
     { id: 2, licence: '0405060', lastName: 'SUIVANTE', firstName: 'Bea', amountRemaining: 0, seasonCode: '26-27' }
   ];
 
@@ -450,7 +453,7 @@ describe("annuaire et exercice de rattachement", () => {
     flushSync();
   }
 
-  it("ne propose que l'annuaire de l'exercice consulté par défaut", () => {
+  it("ne propose que l'annuaire de l'exercice visé, celui de la date par défaut", () => {
     const target = render([line({ id: 1 })], { seasons, members, seasonId: '25-26' });
     openForm(target);
 

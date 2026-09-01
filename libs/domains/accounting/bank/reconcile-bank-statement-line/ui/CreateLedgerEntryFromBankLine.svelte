@@ -20,7 +20,6 @@
     sortedMembers = [],
     seasons = [],
     targetSeasonId = $bindable(''),
-    browsedSeason = '',
     aiHint = null,
     aiFields = {},
     isAnalyzing = false,
@@ -56,7 +55,6 @@
     /** Exercice auquel l'écriture est rattachée — pas celui qu'on consulte. */
     targetSeasonId: string;
     /** Exercice consulté, pour signaler l'écart sans avoir à le deviner. */
-    browsedSeason: string;
     /** Résumé de la proposition du modèle : confiance et motif, en une ligne. */
     aiHint?: { confidence?: number; reason?: string | null } | null;
     /** Quels champs portent encore la valeur proposée — ceux-là seuls se signalent. */
@@ -89,14 +87,15 @@
    * côte laissait donc rattacher un encaissement à l'adhésion du mauvais exercice — une erreur
    * qu'aucun contrôle ne rattrape et que rien à l'écran ne signale.
    *
-   * L'écran charge l'exercice consulté **et** le suivant, précisément pour qu'une cotisation
-   * encaissée en août pour la rentrée trouve son adhérent. `seasonCode` n'est posé que sur ceux
-   * de l'autre saison : son absence vaut « exercice consulté ».
+   * L'écran charge l'annuaire de TOUS les exercices ouverts, et chaque adhésion porte son
+   * propre `seasonCode`. La convention précédente — pas de code valait « exercice consulté »,
+   * et seul l'exercice suivant était étiqueté — se retournait dès que l'exercice visé était
+   * le PRÉCÉDENT : une ligne d'août rapprochée depuis 26-27 vise 25-26, dont l'annuaire
+   * n'était ni chargé ni étiqueté. Le filtre cherchait un code que personne ne portait et
+   * rendait une liste vide, sans un mot.
    */
   let membersForTargetSeason = $derived(
-    sortedMembers.filter((m) =>
-      targetSeasonId === browsedSeason ? !m.seasonCode : m.seasonCode === targetSeasonId
-    )
+    sortedMembers.filter((m) => m.seasonCode === targetSeasonId)
   );
 
   /* Plus de millésime accolé au nom : il ne servait qu'à distinguer deux annuaires mêlés dans la

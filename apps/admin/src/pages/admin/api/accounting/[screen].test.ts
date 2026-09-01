@@ -272,6 +272,37 @@ describe('comptabilité — le rapprochement', () => {
     expect(archive).not.toContain('status=');
   });
 
+  /*
+    Le formulaire déduit l'exercice de rattachement de la DATE de la ligne : une ligne d'août
+    rapprochée depuis 26-27 vise 25-26. On ne chargeait que l'annuaire du consulté et du
+    suivant — jamais du précédent — et la liste des adhérents s'affichait vide, sans rien dire,
+    exactement quand on en avait besoin.
+  */
+  it('charge l’annuaire de chaque exercice ouvert, chacun étiqueté de son code', async () => {
+    const d = await donnees(await lire('reconciliation', '?season=25-26', DROITS));
+
+    const annuaires = appels.filter((a) => a.url.includes('/members?season='));
+    const codes = annuaires.map((a) => decodeURIComponent(a.url.match(/season=([^&]+)/)![1])).sort();
+    expect(codes).toEqual(['24-25', '25-26']);
+
+    // Et chaque adhésion porte son exercice : un marqueur implicite ne se voit pas quand il
+    // manque, c'est précisément ce qui rendait la liste vide en silence.
+    expect(d.members.every((m: any) => typeof m.seasonCode === 'string' && m.seasonCode)).toBe(true);
+  });
+
+  it('n’interroge pas l’annuaire d’un exercice clôturé, où l’on ne peut rien écrire', async () => {
+    saisons[0].closedAt = 1756684800000;
+    try {
+      await lire('reconciliation', '?season=25-26', DROITS);
+      const codes = appels
+        .filter((a) => a.url.includes('/members?season='))
+        .map((a) => decodeURIComponent(a.url.match(/season=([^&]+)/)![1]));
+      expect(codes).toEqual(['25-26']);
+    } finally {
+      saisons[0].closedAt = null;
+    }
+  });
+
   it('sort un exercice de l’archive dès qu’il est clôturé', async () => {
     /*
       La borne est auto-limitante, et c'est ce qui la rend tenable : clôturer un exercice
@@ -324,15 +355,19 @@ describe('comptabilité — le rapprochement', () => {
     expect(appels.some((a) => a.url.includes('runningBalance=0'))).toBe(true);
   });
 
-  it('ajoute les adhérents de la saison suivante, marqués comme tels', async () => {
+  it('rassemble les annuaires des exercices ouverts, chacun étiqueté', async () => {
     /*
-      Un encaissement de septembre concerne souvent l'adhésion de l'année qui commence.
-      `seasonCode` n'est posé que sur ceux de l'autre saison : son absence vaut « saison
-      consultée ».
+      Un encaissement de septembre concerne souvent l'adhésion de l'année qui commence, et une
+      ligne d'août rapprochée depuis l'exercice suivant vise celle de l'année écoulée. Les deux
+      annuaires doivent donc être là — et chacun porter SON code.
+
+      La convention précédente laissait l'exercice consulté sans marqueur, son absence valant
+      « saison consultée ». Elle se retournait dès que l'exercice visé n'était pas celui qu'on
+      consultait : le filtre cherchait un code que personne ne portait.
     */
     const d = await donnees(await lire('reconciliation', '?season=24-25', DROITS));
     expect(d.members.map((m: any) => m.id)).toEqual([10, 11]);
-    expect(d.members[0].seasonCode).toBeUndefined();
+    expect(d.members[0].seasonCode).toBe('24-25');
     expect(d.members[1].seasonCode).toBe('25-26');
   });
 

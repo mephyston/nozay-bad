@@ -100,7 +100,6 @@
           sortedMembers={reconState.sortedMembers}
           seasons={reconState.seasons}
           bind:targetSeasonId={reconState.targetSeasonId}
-          browsedSeason={reconState.selectedSeason}
           {aiHint}
           {aiFields}
           isAnalyzing={reconState.isAnalyzingSingle}
