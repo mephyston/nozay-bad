@@ -23,7 +23,7 @@ import { currentSeasonCode, sortSeasons } from '../../../../lib/seasons';
  * sert au sous-titre — deux choses que la page calculait après coup.
  */
 async function saison(lire: Lecteur, params: URLSearchParams) {
-  const seasons = sortSeasons((await lire('/accounting/seasons')) ?? []);
+  const seasons: any[] = sortSeasons((await lire('/accounting/seasons')) ?? []);
 
   const demandee = params.get('season') ?? '';
   const seasonId = demandee || currentSeasonCode(seasons) || '25-26';

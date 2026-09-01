@@ -21,7 +21,7 @@ export const ECRANS: Record<string, Ecran> = {
         invariablement sur « 25-26 » codé en dur, et non sur l'active de la configuration.
         Le savoir coûte cette lecture avant les trois autres — celles-ci en dépendent.
       */
-      const seasons = sortSeasons((await lire('/accounting/seasons')) ?? []);
+      const seasons: any[] = sortSeasons((await lire('/accounting/seasons')) ?? []);
       const season = params.get('season') || currentSeasonCode(seasons) || '25-26';
       const s = encodeURIComponent(season);
       const [commandes, produits, adherents] = await Promise.all([

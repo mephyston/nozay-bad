@@ -42,7 +42,7 @@ export const ECRANS: Record<string, Ecran> = {
       ]);
 
       const data = recap ?? VIDE();
-      const seasons = sortSeasons(saisons ?? []);
+      const seasons: any[] = sortSeasons(saisons ?? []);
       return {
         data,
         seasons,

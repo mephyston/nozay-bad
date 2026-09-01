@@ -11,7 +11,7 @@ import { currentSeasonCode, sortSeasons } from '../../../../lib/seasons';
 
 /** Saison de l'URL, ou l'active de la configuration à défaut ; liste triée pour le sélecteur. */
 async function saison(lire: Lecteur, params: URLSearchParams) {
-  const seasons = sortSeasons((await lire('/accounting/seasons')) ?? []);
+  const seasons: any[] = sortSeasons((await lire('/accounting/seasons')) ?? []);
   const demandee = params.get('season') ?? '';
   const season = demandee || currentSeasonCode(seasons) || '25-26';
   return { seasons, season, isClosed: Boolean(seasons.find((s: any) => s.id === season)?.closed) };

@@ -75,7 +75,7 @@ export const ECRANS: Record<string, Ecran> = {
         Le référentiel part donc le premier : la liste s'ouvrait sur « 25-26 » codé en
         dur, et non sur l'active de la configuration. `/members` en dépend, il attend.
       */
-      const seasons = sortSeasons((await lire('/accounting/seasons')) ?? []);
+      const seasons: any[] = sortSeasons((await lire('/accounting/seasons')) ?? []);
       const season = params.get('season') || currentSeasonCode(seasons) || '25-26';
 
       const requete = new URLSearchParams({
