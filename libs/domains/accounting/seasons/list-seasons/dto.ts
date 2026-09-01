@@ -1,3 +1,4 @@
 import { seasonsTable } from '@nba/accounting/schema';
 
-export type ListSeasonsOutput = (typeof seasonsTable.$inferSelect)[];
+/** Les lignes du référentiel, plus `closed` dérivé de `closed_at` (voir le repository). */
+export type ListSeasonsOutput = (typeof seasonsTable.$inferSelect & { closed: boolean })[];
