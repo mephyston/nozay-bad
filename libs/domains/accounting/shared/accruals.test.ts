@@ -1,5 +1,5 @@
 import { seasonsTable } from '@nba/accounting/schema';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { validateAccrualAndFiscalPhase } from './accruals';
 
@@ -152,5 +152,104 @@ describe('validateAccrualAndFiscalPhase', () => {
       date: '2025-01-15',
       accrualType: 'normal'
     })).rejects.toThrow('L\'exercice comptable est arrêté et clôturé');
+  });
+});
+
+/*
+ * La phase 2, celle que l'horloge figée de la suite ne rencontre plus jamais.
+ *
+ * `vitest.setup.clock.ts` fige `Date` au 30 août 2026 pour que les fixtures de saison `25-26`
+ * restent dans un exercice ouvert. C'est ce qu'on veut partout ailleurs — mais du coup plus
+ * aucun test ne franchit le 31 août, et la bascule en inventaire n'était vérifiée par personne.
+ * Elle l'a été en production, le 1er septembre 2026 : la CI est passée au rouge toute seule,
+ * sur un commit qui ne touchait pas la comptabilité.
+ *
+ * Ici la date est POSÉE, pas subie. Ces tests diront la même chose dans dix ans.
+ */
+describe("phase d'inventaire (exercice terminé, pas encore clôturé)", () => {
+  let db: any;
+
+  beforeEach(async () => {
+    const mock = await setupMockDb();
+    db = mock.db;
+
+    await db.insert(seasonsTable).values({
+      id: 1,
+      code: '25-26',
+      name: 'Saison 2025-2026',
+      startDate: '2025-09-01',
+      endDate: '2026-08-31',
+      active: false,
+      closedAt: null,
+      createdAt: new Date()
+    });
+
+    // Le 1er septembre : l'exercice est terminé, sa clôture n'est pas faite.
+    vi.setSystemTime(new Date('2026-09-01T08:00:00Z'));
+  });
+
+  // Le setup global remet l'horloge au 30 août ; on l'écrit quand même, pour que le test
+  // reste lisible sans connaître le setup.
+  afterEach(() => vi.useRealTimers());
+
+  it('laisse passer une écriture normale la veille au soir', async () => {
+    vi.setSystemTime(new Date('2026-08-31T22:00:00Z'));
+
+    const res = await validateAccrualAndFiscalPhase(db, {
+      seasonId: '25-26',
+      type: 'depense',
+      date: '2026-08-31',
+      accrualType: 'normal'
+    });
+    expect(res.code).toBe('25-26');
+  });
+
+  it("refuse la même écriture le lendemain matin, sans qu'une ligne ait bougé", async () => {
+    await expect(validateAccrualAndFiscalPhase(db, {
+      seasonId: '25-26',
+      type: 'depense',
+      date: '2026-08-31',
+      accrualType: 'normal'
+    })).rejects.toThrow("période d'inventaire");
+  });
+
+  /*
+   * Ce qui reste ouvert pendant l'inventaire : le rattachement des charges et produits dont
+   * l'argent bouge après le 31 août. C'est tout l'objet de la phase.
+   */
+  it('accepte une charge à payer datée après la fin de l\'exercice', async () => {
+    const res = await validateAccrualAndFiscalPhase(db, {
+      seasonId: '25-26',
+      type: 'depense',
+      date: '2026-09-15',
+      accrualType: 'charge_a_payer',
+      accrualNote: "Facture d'électricité d'août, reçue en septembre"
+    });
+    expect(res.code).toBe('25-26');
+  });
+
+  it('accepte un produit à recevoir daté après la fin de l\'exercice', async () => {
+    const res = await validateAccrualAndFiscalPhase(db, {
+      seasonId: '25-26',
+      type: 'recette',
+      date: '2026-10-01',
+      accrualType: 'produit_a_recevoir',
+      accrualNote: 'Subvention municipale 25-26, versée en octobre'
+    });
+    expect(res.code).toBe('25-26');
+  });
+
+  /*
+   * Et ce qui reste fermé : un « constaté d'avance » ne rattrape pas un exercice terminé, il
+   * en désigne un qui n'a pas commencé. Sur 25-26 au 1er septembre, il n'a plus de sens.
+   */
+  it("refuse un constaté d'avance sur l'exercice en inventaire", async () => {
+    await expect(validateAccrualAndFiscalPhase(db, {
+      seasonId: '25-26',
+      type: 'depense',
+      date: '2026-08-20',
+      accrualType: 'charge_constatee_avance',
+      accrualNote: 'Assurance 26-27 payée en août'
+    })).rejects.toThrow("période d'inventaire");
   });
 });
