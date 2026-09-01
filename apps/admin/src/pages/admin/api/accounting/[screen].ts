@@ -365,7 +365,7 @@ export const ECRANS: Record<string, Ecran> = {
         fin: bornes.reduce((max: string, x: any) => (x.endDate > max ? x.endDate : max), bornes[0]?.endDate ?? '2999-12-31')
       };
 
-      const [enAttente, delExercice, ecritures, annuaires, categories, etats] = await Promise.all([
+      const [enAttente, delExercice, listesEcritures, annuaires, categories, etats] = await Promise.all([
         /*
           Les lignes encore à rapprocher, sans borne d'exercice : une ligne de relevé
           n'appartient à aucune saison, c'est un mouvement daté. Les borner à l'exercice
@@ -391,10 +391,26 @@ export const ECRANS: Record<string, Ecran> = {
         */
         lire(`/accounting/bank-transactions?startDate=${archive.debut}&endDate=${archive.fin}`),
         /*
+          Les écritures pointables, de TOUS les exercices ouverts.
+
+          Elles étaient bornées à l'exercice consulté, alors que la file, elle, montre les
+          lignes de relevé de tous les exercices : une ligne d'août proposée au pointage
+          n'avait donc en face aucune des écritures d'août. Constaté en production le
+          2026-09-01 — une commande de cordage rattachée à 25-26, introuvable depuis 26-27,
+          sans que l'écran dise pourquoi.
+
+          Même borne que l'archive et que les annuaires : on ne peut pointer qu'une écriture
+          d'un exercice ouvert — `buildReconciliationStatements` refuse les autres — donc
+          charger les exercices clos ne servirait qu'à proposer des refus.
+
           Le solde progressif est refusé : c'est une sous-requête corrélée, réévaluée pour
           chacune des 2000 écritures demandées, et cet écran ne l'affiche nulle part.
         */
-        lire(`/accounting/transactions?season=${s}&page=1&limit=2000&runningBalance=0`),
+        Promise.all(
+          exercicesCibles.map((code) =>
+            lire(`/accounting/transactions?season=${encodeURIComponent(code)}&page=1&limit=2000&runningBalance=0`)
+          )
+        ),
         Promise.all(
           exercicesCibles.map(async (code) => ({
             code,
@@ -408,6 +424,23 @@ export const ECRANS: Record<string, Ecran> = {
         */
         lire(`/accounting/reconciliation-statements?season=${s}`)
       ]);
+
+      /*
+        Les écritures des exercices ouverts, fondues en une liste sans doublon.
+
+        Une écriture ne peut relever que d'un exercice, donc le recouvrement est nul en
+        théorie — la déduplication est là parce qu'une liste d'écritures pointables qui
+        proposerait deux fois la même laisserait la pointer deux fois.
+      */
+      const vues = new Set<unknown>();
+      const ecritures: any[] = [];
+      for (const liste of listesEcritures as any[][]) {
+        for (const ecriture of liste ?? []) {
+          if (vues.has(ecriture.id)) continue;
+          vues.add(ecriture.id);
+          ecritures.push(ecriture);
+        }
+      }
 
       /*
         Chaque adhésion porte SON code d'exercice, sans exception.
@@ -446,7 +479,7 @@ export const ECRANS: Record<string, Ecran> = {
       return {
         ...saisonnier,
         bankStatementLines: lignes,
-        glTransactions: ecritures ?? [],
+        glTransactions: ecritures,
         members: membres,
         dbCategories: categories ?? [],
         reconciliationStatements: etats ?? [],

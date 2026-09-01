@@ -349,6 +349,36 @@ describe('comptabilité — le rapprochement', () => {
     expect(d.bankStatementLines.map((l: any) => l.id)).toEqual([3, 1, 2, 4]);
   });
 
+  /*
+    La file montre les lignes de relevé de tous les exercices ; les écritures qu'on leur oppose
+    doivent suivre. Bornées à l'exercice consulté, une ligne d'août proposée au pointage depuis
+    26-27 n'avait en face aucune écriture d'août — constaté en production sur une commande de
+    cordage rattachée à 25-26, introuvable, sans que l'écran dise pourquoi.
+  */
+  it('propose les écritures de chaque exercice ouvert, pas seulement du consulté', async () => {
+    await lire('reconciliation', '?season=26-27', DROITS);
+
+    const codes = appels
+      .filter((a) => a.url.includes('/accounting/transactions?season='))
+      .map((a) => decodeURIComponent(a.url.match(/season=([^&]+)/)![1]))
+      .sort();
+
+    expect(codes).toEqual(['24-25', '25-26', '26-27']);
+  });
+
+  it('n’interroge pas les écritures d’un exercice clôturé, qu’on ne peut pas pointer', async () => {
+    saisons[0].closedAt = 1756684800000;
+    try {
+      await lire('reconciliation', '?season=25-26', DROITS);
+      const codes = appels
+        .filter((a) => a.url.includes('/accounting/transactions?season='))
+        .map((a) => decodeURIComponent(a.url.match(/season=([^&]+)/)![1]));
+      expect(codes).toEqual(['25-26']);
+    } finally {
+      saisons[0].closedAt = null;
+    }
+  });
+
   it('refuse le solde progressif, que cet écran n’affiche pas', async () => {
     // C'est une sous-requête corrélée, réévaluée pour chacune des 2000 écritures.
     await lire('reconciliation', '', DROITS);
