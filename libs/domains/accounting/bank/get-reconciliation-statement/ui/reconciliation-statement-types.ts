@@ -16,6 +16,8 @@ export interface ReconciliationStatementView {
     pendingDebitCents: number;
     bankTheoreticalCents: number;
   };
+  /** L'à-nouveau a été reconstitué faute de clôture : juste, mais pas encore arrêté. */
+  openingBalanceProvisional: boolean;
   statement: { date: string; balanceCents: number } | null;
   /** La dernière opération que le relevé détaille. */
   lastBankLineDate: string | null;

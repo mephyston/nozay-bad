@@ -68,6 +68,20 @@
               <Amount cents={statement.book.grossCents} />
             </div>
 
+            <!--
+              Le solde part d'un à-nouveau reconstitué tant que l'exercice précédent n'est pas
+              clôturé. Le chiffre est juste — aucune régularisation de fin d'exercice ne peut
+              déplacer la trésorerie à la date de clôture, une charge à payer étant par
+              définition datée après — mais il n'est pas arrêté, et l'afficher muet laisserait
+              croire qu'il fait foi.
+            -->
+            {#if statement.openingBalanceProvisional}
+              <p class="text-xs text-muted-foreground">
+                À-nouveau provisoire : l'exercice précédent n'étant pas clôturé, le solde
+                d'ouverture est reconstitué. Il sera figé à la clôture.
+              </p>
+            {/if}
+
             <div class="flex items-baseline justify-between gap-4 text-muted-foreground">
               <span>Écritures non pointées <span class="text-xs">({statement.unpointedEntries.length})</span></span>
               <Amount cents={-statement.unpointedEntriesTotalCents} showSign />
