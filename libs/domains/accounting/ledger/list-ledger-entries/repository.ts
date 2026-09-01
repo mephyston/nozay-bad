@@ -2,10 +2,11 @@ import { seasonsTable } from '@nba/accounting/schema';
 import { ledgerEntriesTable, categoriesTable, paymentMethodsTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { and, or, eq, sql, inArray, isNull, desc, like, type SQL } from 'drizzle-orm';
-import { accountClassesTable, bankStatementLinesTable, seasonBalancesTable } from '../../shared/schema';
+import { accountClassesTable, bankStatementLinesTable } from '../../shared/schema';
 import { getMembersByIds } from '@nba/members-api';
 import type { ListTransactionsFilters } from './dto';
 import { resolveAccountId } from '../../config/queries';
+import { resolveOpeningBalances } from '../../shared/opening-balances';
 
 export class ListTransactionsRepository {
   async resolveSeasonId(db: DbOrTx, seasonIdOrCode: string | number): Promise<number> {
@@ -156,21 +157,30 @@ export class ListTransactionsRepository {
        */
       const accId = filters.accountId ? await resolveAccountId(db, filters.accountId) : await resolveAccountId(db, null);
 
+      /*
+       * Le solde d'ouverture, et la borne basse du cumul qui va avec.
+       *
+       * La jointure précédente partait de `season_balances` : sans ligne d'à-nouveau — donc
+       * sur tout exercice dont le précédent n'est pas clôturé — elle ne trouvait rien, et
+       * laissait `initialBalance` à 0 ET `seasonStartDate` vide. Le cumul se retrouvait alors
+       * SANS borne basse et resommait l'historique entier sur une base nulle : deux erreurs
+       * qui se compensaient à peu près, jusqu'au jour où un report figé existait quelque part.
+       *
+       * On part maintenant de la saison, toujours trouvée, et le solde d'ouverture vient du
+       * résolveur partagé avec le rapprochement et le bilan de trésorerie.
+       */
       let initialBalance = 0;
       let seasonStartDate = '';
       if (filters.seasonId) {
         const seasonIdInt = await this.resolveSeasonId(db, filters.seasonId);
-        const balanceRow = await db.select({
-            initialBalanceCents: seasonBalancesTable.initialBalanceCents,
-            startDate: seasonsTable.startDate
-          })
-          .from(seasonBalancesTable)
-          .innerJoin(seasonsTable, eq(seasonBalancesTable.seasonId, seasonsTable.id))
-          .where(and(eq(seasonBalancesTable.seasonId, seasonIdInt), eq(seasonBalancesTable.accountId, accId)))
+        const saison = await db.select({ id: seasonsTable.id, startDate: seasonsTable.startDate })
+          .from(seasonsTable)
+          .where(eq(seasonsTable.id, seasonIdInt))
           .get();
-        if (balanceRow) {
-          initialBalance = balanceRow.initialBalanceCents;
-          seasonStartDate = balanceRow.startDate;
+        if (saison) {
+          seasonStartDate = saison.startDate;
+          const ouverture = await resolveOpeningBalances(db, saison, [accId]);
+          initialBalance = ouverture.byAccountId.get(accId) ?? 0;
         }
       }
 

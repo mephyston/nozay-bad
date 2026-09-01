@@ -13,10 +13,6 @@ export class GetSeasonReportsRepository {
     return db.select().from(seasonBalancesTable).where(cond).all();
   }
 
-  async getAllBalances(db: DbOrTx): Promise<any[]> {
-    return db.select().from(seasonBalancesTable).all();
-  }
-
   async getTransactionsForPeriod(db: DbOrTx, startDate: string, endDate: string): Promise<any[]> {
     return db.select()
       .from(ledgerEntriesTable)

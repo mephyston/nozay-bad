@@ -1,11 +1,11 @@
 import { type DbOrTx } from '@nba/db';
 import { and, desc, eq, gte, inArray, lte, ne, sql } from 'drizzle-orm';
+import { resolveOpeningBalances, type OpeningBalances } from '../../shared/opening-balances';
 import {
   accountsTable,
   bankStatementBalancesTable,
   bankStatementLinesTable,
-  ledgerEntriesTable,
-  seasonBalancesTable
+  ledgerEntriesTable
 } from '../../shared/schema';
 
 export class GetReconciliationStatementRepository {
@@ -46,24 +46,25 @@ export class GetReconciliationStatementRepository {
     return [...byId.values()].sort((a, b) => a.id - b.id);
   }
 
-  async getInitialBalanceCents(db: DbOrTx, seasonId: number, accountId: number): Promise<number> {
-    const row = await db.select({ initialBalanceCents: seasonBalancesTable.initialBalanceCents })
-      .from(seasonBalancesTable)
-      .where(and(eq(seasonBalancesTable.seasonId, seasonId), eq(seasonBalancesTable.accountId, accountId)))
-      .get();
-    return row?.initialBalanceCents ?? 0;
-  }
-
-  /** Les à-nouveaux de tous les comptes de l'exercice, en une lecture. */
-  async getInitialBalancesBySeason(db: DbOrTx, seasonId: number): Promise<Map<number, number>> {
-    const rows = await db.select({
-        accountId: seasonBalancesTable.accountId,
-        initialBalanceCents: seasonBalancesTable.initialBalanceCents
-      })
-      .from(seasonBalancesTable)
-      .where(eq(seasonBalancesTable.seasonId, seasonId))
-      .all();
-    return new Map(rows.map((r) => [r.accountId, r.initialBalanceCents]));
+  /**
+   * Les soldes d'ouverture des comptes demandés : le report figé s'il existe, le calcul sinon.
+   *
+   * Les deux méthodes que celle-ci remplace lisaient `season_balances` et rendaient `0` quand
+   * la ligne manquait. Or ce report n'est écrit qu'à la clôture : au 1er septembre, tant que
+   * l'exercice précédent restait ouvert, l'écart de rapprochement affiché valait toute la
+   * trésorerie d'ouverture — sans qu'aucun des décalages que l'écran sait nommer ne l'explique.
+   *
+   * Le calcul vit dans `shared/opening-balances.ts`, partagé avec le bilan de trésorerie et le
+   * grand livre : trois écrans qui donnaient trois réponses différentes à la même question.
+   * Il passe par le dépôt, et non par un appel direct depuis le handler, pour rester
+   * bouchonnable comme le reste de la lecture.
+   */
+  async getOpeningBalances(
+    db: DbOrTx,
+    season: { id: number; startDate: string },
+    accountIds: number[]
+  ): Promise<OpeningBalances> {
+    return resolveOpeningBalances(db, season, accountIds);
   }
 
   /**

@@ -123,26 +123,39 @@ describe("bascule d'exercice sans clôture", () => {
     getReconciliationStatement(db, { accountCode: 'current', seasonId });
 
   /*
-   * Le symptôme, tel qu'il se lit à l'écran.
+   * Le cœur de l'affaire : sans clôture ET sans la moindre saisie, le rapprochement tombe
+   * juste.
+   *
+   * C'est ce que faisait déjà le bilan de trésorerie et que cet écran ne faisait pas : il
+   * lisait `season_balances` et rendait `0`, si bien que l'écart affiché valait toute la
+   * trésorerie d'ouverture — 1 500 € ici — sans qu'aucun des décalages qu'il sait nommer ne
+   * l'explique. Le trésorier voyait un montant sans cause.
    */
-  it("affiche en écart toute la trésorerie d'ouverture tant que l'à-nouveau manque", async () => {
+  it("se rapproche sans écart alors qu'aucun à-nouveau n'a été saisi ni figé", async () => {
     const etat = await rapprochement('26-27');
 
-    expect(etat.book.initialBalanceCents).toBe(0);
-    // Le relevé annonce 1 450 €, les livres n'en reconstituent que −50 € : il manque l'ouverture.
+    // Reconstitué depuis le dernier report figé (25-26) augmenté des mouvements jusqu'au 31/08.
+    expect(etat.book.initialBalanceCents).toBe(CLOTURE_25_26);
     expect(etat.statement).toEqual({ date: '2026-09-30', balanceCents: CLOTURE_25_26 - DEPENSE_SEPTEMBRE });
-    expect(etat.expectedBankBalanceCents).toBe(-DEPENSE_SEPTEMBRE);
-    expect(etat.gapCents).toBe(CLOTURE_25_26);
-    expect(etat.reconciled).toBe(false);
+    expect(etat.expectedBankBalanceCents).toBe(CLOTURE_25_26 - DEPENSE_SEPTEMBRE);
+    expect(etat.gapCents).toBe(0);
+    expect(etat.reconciled).toBe(true);
 
-    /*
-     * Et l'écart n'est imputable à aucun des décalages que l'écran sait nommer : ni écriture
-     * non pointée, ni ligne non comptabilisée, ni virement à moitié pointé. C'est ce qui le
-     * rend illisible pour le trésorier — le montant apparaît sans cause affichée.
-     */
+    // Juste, mais pas arrêté : l'écran doit pouvoir le dire.
+    expect(etat.openingBalanceProvisional).toBe(true);
+
     expect(etat.unpointedEntries).toHaveLength(0);
     expect(etat.unrecordedBankLines).toHaveLength(0);
     expect(etat.halfPointedTransferIds).toHaveLength(0);
+  });
+
+  /*
+   * Et le drapeau que l'écran lit pour choisir entre « à-nouveau » et « à-nouveau provisoire ».
+   * Sur l'exercice précédent, dont le report a bien été figé à la clôture de 24-25, il retombe.
+   */
+  it("ne dit « provisoire » que lorsque le report n'est pas figé", async () => {
+    expect((await rapprochement('25-26')).openingBalanceProvisional).toBe(false);
+    expect((await rapprochement('26-27')).openingBalanceProvisional).toBe(true);
   });
 
   /*
@@ -157,17 +170,21 @@ describe("bascule d'exercice sans clôture", () => {
     expect(etat.reconciled).toBe(true);
   });
 
-  it("retombe à zéro dès qu'un à-nouveau provisoire est saisi", async () => {
+  /*
+   * Un à-nouveau saisi à la main fait autorité et n'est plus recalculé : c'est la règle
+   * « figé gagne ». On le prouve avec une valeur FAUSSE — si le calcul reprenait la main,
+   * l'écart resterait à zéro et le test ne dirait rien.
+   */
+  it("laisse un à-nouveau saisi primer sur le calcul, même faux", async () => {
     await updateSeasonBalances(db, '26-27', [
-      { accountId: COMPTE_COURANT, initialBalanceCents: CLOTURE_25_26 }
+      { accountId: COMPTE_COURANT, initialBalanceCents: 140_000 }
     ]);
 
     const etat = await rapprochement('26-27');
 
-    expect(etat.book.initialBalanceCents).toBe(CLOTURE_25_26);
-    expect(etat.book.grossCents).toBe(CLOTURE_25_26 - DEPENSE_SEPTEMBRE);
-    expect(etat.gapCents).toBe(0);
-    expect(etat.reconciled).toBe(true);
+    expect(etat.book.initialBalanceCents).toBe(140_000);
+    expect(etat.openingBalanceProvisional).toBe(false);
+    expect(etat.gapCents).toBe(CLOTURE_25_26 - 140_000);
   });
 
   it("accepte un à-nouveau provisoire sur la saison entrante, qui n'est pas clôturée", async () => {

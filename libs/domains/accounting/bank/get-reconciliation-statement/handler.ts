@@ -65,14 +65,16 @@ export async function getReconciliationStatement(
     ?? (await repo.getLatestBankStatementDate(db, account.id))
     ?? season.endDate;
 
-  const initialBalanceCents = await repo.getInitialBalanceCents(db, season.id, account.id);
+  const ouverture = await repo.getOpeningBalances(db, season, [account.id]);
+  const initialBalanceCents = ouverture.byAccountId.get(account.id) ?? 0;
   const entries = await repo.getEntriesForPeriod(db, season.startDate, asOfDate);
   const bankLines = await repo.getUnreconciledBankLines(db, account.id, season.startDate, asOfDate);
   const statement = (await repo.getLatestBankStatementBalance(db, account.id, asOfDate)) ?? null;
   const lastBankLineDate = (await repo.getLatestBankLineDate(db, account.id)) ?? null;
 
   return buildStatement({
-    account, season, asOfDate, initialBalanceCents, entries, bankLines, statement, lastBankLineDate
+    account, season, asOfDate, initialBalanceCents, entries, bankLines, statement, lastBankLineDate,
+    openingBalanceProvisional: ouverture.provisional
   });
 }
 
@@ -87,6 +89,8 @@ interface StatementInputs {
   statement: { date: string; balanceCents: number } | null;
   /** La dernière opération détaillée par les relevés du compte, toutes dates confondues. */
   lastBankLineDate: string | null;
+  /** Vrai quand l'à-nouveau a été calculé faute de clôture, et peut donc encore bouger. */
+  openingBalanceProvisional: boolean;
 }
 
 /**
@@ -98,7 +102,10 @@ interface StatementInputs {
  * entier trois fois pour en tirer trois nombres différents.
  */
 function buildStatement(inputs: StatementInputs): GetReconciliationStatementOutput {
-  const { account, season, asOfDate, initialBalanceCents, entries, bankLines, statement, lastBankLineDate } = inputs;
+  const {
+    account, season, asOfDate, initialBalanceCents, entries, bankLines, statement, lastBankLineDate,
+    openingBalanceProvisional
+  } = inputs;
 
   const balance = computeAccountBalance(account, initialBalanceCents, entries);
 
@@ -170,6 +177,7 @@ function buildStatement(inputs: StatementInputs): GetReconciliationStatementOutp
     seasonCode: season.code,
     seasonStartDate: season.startDate,
     asOfDate,
+    openingBalanceProvisional,
     book: {
       initialBalanceCents,
       grossCents: balance.grossCents,
@@ -230,8 +238,8 @@ export async function getReconciliationStatements(
    */
   const maxAsOfDate = [...asOfDates.values()].reduce((max, d) => (d > max ? d : max), season.startDate);
 
-  const [initialBalances, allEntries, bankLinesByAccount, balancesByAccount, lastLineDates] = await Promise.all([
-    repo.getInitialBalancesBySeason(db, season.id),
+  const [ouverture, allEntries, bankLinesByAccount, balancesByAccount, lastLineDates] = await Promise.all([
+    repo.getOpeningBalances(db, season, accountIds),
     repo.getEntriesForPeriod(db, season.startDate, maxAsOfDate),
     repo.getUnreconciledBankLinesForAccounts(db, accountIds, season.startDate, maxAsOfDate),
     repo.getBankStatementBalancesForAccounts(db, accountIds),
@@ -257,11 +265,12 @@ export async function getReconciliationStatements(
       account,
       season,
       asOfDate,
-      initialBalanceCents: initialBalances.get(account.id) ?? 0,
+      initialBalanceCents: ouverture.byAccountId.get(account.id) ?? 0,
       entries,
       bankLines,
       statement,
-      lastBankLineDate: lastLineDates.get(account.id) ?? null
+      lastBankLineDate: lastLineDates.get(account.id) ?? null,
+      openingBalanceProvisional: ouverture.provisional
     });
   });
 }

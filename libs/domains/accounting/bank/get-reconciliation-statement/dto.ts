@@ -42,6 +42,18 @@ export type GetReconciliationStatementOutput = {
     bankTheoreticalCents: number;
   };
 
+  /**
+   * L'à-nouveau a été calculé faute de clôture, et n'est donc pas encore arrêté.
+   *
+   * `season_balances` n'est écrit qu'à la clôture de l'exercice précédent. Tant qu'elle n'a pas
+   * eu lieu — l'état normal plusieurs mois par an — le solde d'ouverture est reconstitué depuis
+   * le dernier report figé. Le nombre est juste : aucune régularisation de fin d'exercice ne
+   * peut déplacer la trésorerie au 31 août, une charge à payer étant par définition datée
+   * après. Mais il n'est pas *arrêté*, et l'écran doit le dire plutôt que d'afficher un solde
+   * dont personne ne sait s'il fait foi.
+   */
+  openingBalanceProvisional: boolean;
+
   /** Le côté banque. `null` tant qu'aucun relevé n'a été importé pour ce compte. */
   statement: { date: string; balanceCents: number } | null;
 

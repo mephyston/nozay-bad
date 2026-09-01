@@ -6,6 +6,7 @@ import { GetSeasonReportsInput, GetSeasonReportsOutput, CategoryProjection, Defe
 import { getSeasonFromDb } from '../../shared/accruals';
 import { generateTreasuryForecast } from './forecast-engine';
 import { computeAccountBalance, computeAccountBalances, sumAccountBalances, type AccountRef, signedEntryAmountCents } from '../../shared/balances';
+import { resolveOpeningBalances } from '../../shared/opening-balances';
 
 export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Promise<GetSeasonReportsOutput> {
   const seasonId = typeof input === 'string' ? input : input.seasonId;
@@ -88,59 +89,38 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     ? dbAccounts.map((a: any) => ({ id: a.id, code: a.code, label: a.label }))
     : accountTypes.map((code) => ({ id: code as any, code }));
 
-  let dynamicInitBalances: Record<string, number> = {};
-  if (balances.length === 0 || balances.every(b => (b.initialBalanceCents ?? 0) === 0)) {
-    const pastSeasons = await repo.getPastSeasons(db, season.startDate);
-    if (pastSeasons.length > 0) {
-      const pastTransactions = await repo.getPastTransactions(db, season.startDate);
-      const allBalances = await repo.getAllBalances(db);
-      
-      pastSeasons.sort((a, b) => a.startDate.localeCompare(b.startDate));
-      const oldestSeason = pastSeasons[0];
-      
-      for (const account of treasuryAccounts) {
-        // Find the earliest initial balance for this account across all past seasons
-        let earliestBal = 0;
-        let earliestDate = "1970-01-01";
-
-        const pastSeasonsForAcc = pastSeasons.map(ps => {
-          const balRow = allBalances.find(b => b.seasonId === ps.id && (b.accountId === account.id || b.accountId === account.code));
-          return { date: ps.startDate, bal: balRow ? (balRow.initialBalanceCents ?? 0) : 0 };
-        }).filter(s => s.bal !== 0);
-
-        if (pastSeasonsForAcc.length > 0) {
-           pastSeasonsForAcc.sort((a, b) => a.date.localeCompare(b.date));
-           earliestBal = pastSeasonsForAcc[0].bal;
-           earliestDate = pastSeasonsForAcc[0].date;
-        }
-
-        dynamicInitBalances[account.code] = computeAccountBalance(
-          account,
-          earliestBal,
-          pastTransactions.filter((tx: any) => tx.date >= earliestDate)
-        ).grossCents;
-      }
-    }
-  }
+  /*
+   * Le solde d'ouverture de chaque compte : le report figé s'il existe, la reconstitution
+   * sinon. La règle vit désormais dans `shared/opening-balances.ts`, partagée avec le
+   * rapprochement et le grand livre.
+   *
+   * Ce que faisait le code d'ici tenait la bonne idée mais l'avait pour lui seul, si bien que
+   * le rapprochement affichait un écart pendant que ce bilan-ci donnait le bon chiffre. Il
+   * repartait aussi du PLUS ANCIEN report non nul en resommant tout depuis, et chargeait pour
+   * cela le grand livre entier dans le Worker — le résolveur repart du plus récent point figé
+   * et fait la somme en base. Sur le plan gratuit, la ressource rare est le nombre de lignes
+   * lues en D1.
+   *
+   * Le repli sur les trois codes historiques (base non semée, jamais en production) n'a pas
+   * d'identifiants numériques : il se contente alors du report tel quel, comme avant.
+   */
+  const idsNumeriques = treasuryAccounts.every((a) => typeof a.id === 'number');
+  const ouverture = idsNumeriques
+    ? await resolveOpeningBalances(
+        db,
+        { id: season.id, startDate: season.startDate },
+        treasuryAccounts.map((a) => a.id as number)
+      )
+    : null;
 
   const accountBalances = computeAccountBalances(
     treasuryAccounts,
-    /*
-     * L'à-nouveau de la saison, ou celui reconstitué depuis les exercices passés quand la
-     * saison n'en porte pas. Le repli ne vaut que pour un à-nouveau absent OU nul : un solde
-     * initial délibérément mis à zéro se reconstitue donc lui aussi, ce qui est le
-     * comportement d'origine et le seul possible — la base ne distingue pas les deux.
-     */
-    treasuryAccounts.map((account) => {
-      const row = balances.find((b) => b.accountId === account.id || b.accountId === account.code);
-      const initBal = row ? (row.initialBalanceCents ?? 0) : 0;
-      return {
-        accountId: account.id,
-        initialBalanceCents: initBal === 0 && dynamicInitBalances[account.code] !== undefined
-          ? dynamicInitBalances[account.code]
-          : initBal
-      };
-    }),
+    treasuryAccounts.map((account) => ({
+      accountId: account.id,
+      initialBalanceCents: ouverture
+        ? ouverture.byAccountId.get(account.id as number) ?? 0
+        : balances.find((b) => b.accountId === account.id || b.accountId === account.code)?.initialBalanceCents ?? 0
+    })),
     periodTxs
   );
 

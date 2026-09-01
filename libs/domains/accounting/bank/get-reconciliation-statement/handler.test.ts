@@ -36,7 +36,7 @@ const bankLine = (over: Record<string, any> = {}) => ({
 function mockRepo(over: Record<string, any> = {}) {
   const instance = {
     getAccountByCode: vi.fn().mockResolvedValue(ACCOUNT),
-    getInitialBalanceCents: vi.fn().mockResolvedValue(0),
+    getOpeningBalances: vi.fn().mockResolvedValue({ byAccountId: new Map(), provisional: false }),
     getEntriesForPeriod: vi.fn().mockResolvedValue([]),
     getUnreconciledBankLines: vi.fn().mockResolvedValue([]),
     getLatestBankStatementBalance: vi.fn().mockResolvedValue(undefined),
@@ -44,7 +44,6 @@ function mockRepo(over: Record<string, any> = {}) {
     getLatestBankLineDate: vi.fn().mockResolvedValue(undefined),
     getLatestBankLineDates: vi.fn().mockResolvedValue(new Map()),
     getAccountsWithStatements: vi.fn().mockResolvedValue([]),
-    getInitialBalancesBySeason: vi.fn().mockResolvedValue(new Map()),
     getUnreconciledBankLinesForAccounts: vi.fn().mockResolvedValue(new Map()),
     getLatestBankStatementDates: vi.fn().mockResolvedValue(new Map()),
     getBankStatementBalancesForAccounts: vi.fn().mockResolvedValue(new Map()),
@@ -81,7 +80,7 @@ describe('getReconciliationStatement', () => {
    */
   it("boucle à zéro quand tout est pointé et que le relevé confirme", async () => {
     mockRepo({
-      getInitialBalanceCents: vi.fn().mockResolvedValue(100_000),
+      getOpeningBalances: vi.fn().mockResolvedValue({ byAccountId: new Map([[1, 100_000]]), provisional: false }),
       getEntriesForPeriod: vi.fn().mockResolvedValue([
         entry({ id: 1, type: 'recette', amountCents: 20_000, bankStatementLineId: 7 })
       ]),
@@ -103,7 +102,7 @@ describe('getReconciliationStatement', () => {
    */
   it("explique par une écriture non pointée l'écart entre les livres et le relevé", async () => {
     mockRepo({
-      getInitialBalanceCents: vi.fn().mockResolvedValue(100_000),
+      getOpeningBalances: vi.fn().mockResolvedValue({ byAccountId: new Map([[1, 100_000]]), provisional: false }),
       getEntriesForPeriod: vi.fn().mockResolvedValue([
         entry({ id: 5, type: 'recette', amountCents: 8_000, status: 'in_vault', bankStatementLineId: null, description: 'Chèque Dupont' })
       ]),
@@ -122,7 +121,7 @@ describe('getReconciliationStatement', () => {
 
   it("explique par une ligne de relevé non comptabilisée l'écart inverse", async () => {
     mockRepo({
-      getInitialBalanceCents: vi.fn().mockResolvedValue(100_000),
+      getOpeningBalances: vi.fn().mockResolvedValue({ byAccountId: new Map([[1, 100_000]]), provisional: false }),
       getUnreconciledBankLines: vi.fn().mockResolvedValue([
         bankLine({ id: 3, amountCents: -4_500, name: 'Frais de tenue de compte' })
       ]),
@@ -138,7 +137,7 @@ describe('getReconciliationStatement', () => {
 
   it("signale un écart que rien n'explique", async () => {
     mockRepo({
-      getInitialBalanceCents: vi.fn().mockResolvedValue(100_000),
+      getOpeningBalances: vi.fn().mockResolvedValue({ byAccountId: new Map([[1, 100_000]]), provisional: false }),
       getLatestBankStatementBalance: vi.fn().mockResolvedValue({ date: '2025-10-31', balanceCents: 97_000 })
     });
 
@@ -158,7 +157,7 @@ describe('getReconciliationStatement', () => {
    */
   it("distingue l'arrêté en avance sur son propre détail d'un écart inexpliqué", async () => {
     mockRepo({
-      getInitialBalanceCents: vi.fn().mockResolvedValue(100_000),
+      getOpeningBalances: vi.fn().mockResolvedValue({ byAccountId: new Map([[1, 100_000]]), provisional: false }),
       getLatestBankStatementBalance: vi.fn().mockResolvedValue({ date: '2026-08-27', balanceCents: 117_600 }),
       getLatestBankLineDate: vi.fn().mockResolvedValue('2026-08-26')
     });
@@ -177,7 +176,7 @@ describe('getReconciliationStatement', () => {
    */
   it("ne crie pas à l'avance quand le détail va au moins jusqu'à l'arrêté", async () => {
     mockRepo({
-      getInitialBalanceCents: vi.fn().mockResolvedValue(100_000),
+      getOpeningBalances: vi.fn().mockResolvedValue({ byAccountId: new Map([[1, 100_000]]), provisional: false }),
       getLatestBankStatementBalance: vi.fn().mockResolvedValue({ date: '2026-08-27', balanceCents: 117_600 }),
       getLatestBankLineDate: vi.fn().mockResolvedValue('2026-08-31')
     });
@@ -259,7 +258,7 @@ describe('getReconciliationStatement', () => {
   });
 
   it("rend un écart nul et non trompeur tant qu'aucun relevé n'a été importé", async () => {
-    mockRepo({ getInitialBalanceCents: vi.fn().mockResolvedValue(100_000) });
+    mockRepo({ getOpeningBalances: vi.fn().mockResolvedValue({ byAccountId: new Map([[1, 100_000]]), provisional: false }) });
 
     const result = await getReconciliationStatement(db, { accountCode: 'current', seasonId: '25-26' });
 
@@ -340,7 +339,7 @@ describe('getReconciliationStatements', () => {
 
     expect(repo.getEntriesForPeriod).toHaveBeenCalledTimes(1);
     expect(getSeasonFromDb).toHaveBeenCalledTimes(1);
-    expect(repo.getInitialBalancesBySeason).toHaveBeenCalledTimes(1);
+    expect(repo.getOpeningBalances).toHaveBeenCalledTimes(1);
     expect(repo.getUnreconciledBankLinesForAccounts).toHaveBeenCalledTimes(1);
     expect(repo.getBankStatementBalancesForAccounts).toHaveBeenCalledTimes(1);
     expect(repo.getLatestBankLineDates).toHaveBeenCalledTimes(1);
@@ -348,7 +347,9 @@ describe('getReconciliationStatements', () => {
     // Les lectures par compte de l'ancienne boucle ne doivent plus servir du tout.
     expect(repo.getEntriesForPeriod).not.toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), expect.anything());
     expect(repo.getUnreconciledBankLines).not.toHaveBeenCalled();
-    expect(repo.getInitialBalanceCents).not.toHaveBeenCalled();
+    // La vue agrégée lit les soldes d'ouverture UNE fois pour tous les comptes, et non un
+    // appel par compte : c'est tout l'objet de ce chemin-là.
+    expect(repo.getOpeningBalances).toHaveBeenCalledTimes(1);
     expect(repo.getLatestBankStatementBalance).not.toHaveBeenCalled();
     expect(repo.getLatestBankStatementDate).not.toHaveBeenCalled();
     expect(repo.getLatestBankLineDate).not.toHaveBeenCalled();
@@ -390,7 +391,7 @@ describe('getReconciliationStatements', () => {
         { id: 2, code: 'savings', label: 'Compte Livret' }
       ]),
       getLatestBankStatementDates: vi.fn().mockResolvedValue(new Map([[1, '2025-10-31'], [2, '2025-12-31']])),
-      getInitialBalancesBySeason: vi.fn().mockResolvedValue(new Map([[1, 0], [2, 0]])),
+      getOpeningBalances: vi.fn().mockResolvedValue({ byAccountId: new Map([[1, 0], [2, 0]]), provisional: false }),
       getEntriesForPeriod: vi.fn().mockResolvedValue([
         entry({ id: 1, accountId: 1, type: 'recette', amountCents: 1000, date: '2025-10-01' }),
         // Postérieure à l'arrêté du compte courant : elle ne doit pas peser sur son état.
