@@ -1,5 +1,6 @@
 import { can } from '../../../../lib/guard';
 import { creerRelais, identifiant, Refus, type Ecran, type Lecteur } from '../../../../lib/relais';
+import { currentSeasonCode, sortSeasons } from '../../../../lib/seasons';
 
 /**
  * Les écrans du domaine « comptabilité ».
@@ -15,20 +16,19 @@ import { creerRelais, identifiant, Refus, type Ecran, type Lecteur } from '../..
 /**
  * La saison affichée, et ce qu'il faut en dire.
  *
- * Résolution propre à la comptabilité, et différente de celle des interclubs : les
- * saisons sont triées par date de début, et à défaut de saison dans l'URL on prend
- * l'active, sinon la dernière. `closed` conditionne l'affichage en lecture seule, et le
- * nom sert au sous-titre — deux choses que la page calculait après coup.
+ * Le tri chronologique et le choix par défaut — l'active de la configuration — vivent
+ * dans `lib/seasons`, et sont donc les mêmes que pour les interclubs, la boutique ou les
+ * notes de frais : cette rubrique en portait sa propre copie, et c'est ainsi que les
+ * défauts avaient divergé. `closed` conditionne l'affichage en lecture seule, et le nom
+ * sert au sous-titre — deux choses que la page calculait après coup.
  */
 async function saison(lire: Lecteur, params: URLSearchParams) {
-  const seasons: any[] = (await lire('/accounting/seasons')) ?? [];
-  seasons.sort((a, b) => (a.startDate || a.code || '').localeCompare(b.startDate || b.code || ''));
+  const seasons = sortSeasons((await lire('/accounting/seasons')) ?? []);
 
   const demandee = params.get('season') ?? '';
-  const active = seasons.find((s) => s.active === true || s.active === 1) ?? seasons[seasons.length - 1];
-  const seasonId = demandee || (active ? active.code || String(active.id) : '25-26');
+  const seasonId = demandee || currentSeasonCode(seasons) || '25-26';
 
-  const courante = seasons.find((s) => s.code === seasonId || String(s.id) === seasonId);
+  const courante = seasons.find((s: any) => s.code === seasonId || String(s.id) === seasonId);
   return {
     seasons,
     seasonId,

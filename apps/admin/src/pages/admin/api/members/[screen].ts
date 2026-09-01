@@ -1,6 +1,6 @@
 import { can } from '../../../../lib/guard';
 import { createAdminApiClient } from '../../../../lib/api';
-import { fetchSeasons, currentSeasonCode } from '../../../../lib/seasons';
+import { fetchSeasons, currentSeasonCode, sortSeasons } from '../../../../lib/seasons';
 import { isClubFunction } from '@nba/members/club-functions';
 import { creerRelais, Refus, type Ecran } from '../../../../lib/relais';
 
@@ -71,7 +71,13 @@ export const ECRANS: Record<string, Ecran> = {
         Les filtres voyagent tels quels. `season` n'est pas facultatif : `/members` rend
         des ADHÉSIONS, une ligne par licence ET par saison (ADR-0006) — sans lui, un
         adhérent de trois ans reviendrait trois fois.
+
+        Le référentiel part donc le premier : la liste s'ouvrait sur « 25-26 » codé en
+        dur, et non sur l'active de la configuration. `/members` en dépend, il attend.
       */
+      const seasons = sortSeasons((await lire('/accounting/seasons')) ?? []);
+      const season = params.get('season') || currentSeasonCode(seasons) || '25-26';
+
       const requete = new URLSearchParams({
         page: params.get('page') || '1',
         limit: '20',
@@ -79,16 +85,11 @@ export const ECRANS: Record<string, Ecran> = {
         gender: params.get('gender') || '',
         type: params.get('type') || '',
         status: params.get('status') || '',
-        season: params.get('season') || '25-26'
+        season
       });
 
-      const [adherents, saisons] = await Promise.all([
-        lire.detail(`/members?${requete}`),
-        lire('/accounting/seasons')
-      ]);
+      const adherents = await lire.detail(`/members?${requete}`);
 
-      const seasons = saisons ?? [];
-      const season = requete.get('season')!;
       const courante = seasons.find((s: any) => s.code === season || String(s.id) === season);
 
       return {
@@ -118,7 +119,7 @@ export const ECRANS: Record<string, Ecran> = {
   dirigeants: {
     permission: 'members:members:read',
     charger: async (lire, locals, params) => {
-      // La saison par défaut est celle en cours par ses dates, pas le drapeau comptable.
+      // La saison par défaut est l'active de la configuration, comme partout ailleurs.
       const { seasons, errorMsg } = await fetchSeasons(createAdminApiClient(locals));
       const season = params.get('season') || currentSeasonCode(seasons) || '25-26';
       const s = encodeURIComponent(season);

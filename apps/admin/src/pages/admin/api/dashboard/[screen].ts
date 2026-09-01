@@ -1,4 +1,5 @@
 import { creerRelais, type Ecran } from '../../../../lib/relais';
+import { currentSeasonCode, sortSeasons } from '../../../../lib/seasons';
 
 /**
  * Le tableau de bord d'accueil.
@@ -41,11 +42,16 @@ export const ECRANS: Record<string, Ecran> = {
       ]);
 
       const data = recap ?? VIDE();
+      const seasons = sortSeasons(saisons ?? []);
       return {
         data,
-        seasons: saisons ?? [],
-        // La saison affichée est celle demandée, ou celle que l'agrégat a retenue.
-        currentSeason: demandee || data.season
+        seasons,
+        /*
+          La saison affichée est celle demandée, sinon celle que l'agrégat a retenue —
+          l'API du tableau de bord choisit déjà l'active. Quand elle a échoué, c'est le
+          référentiel qui la nomme : le récapitulatif vide, lui, porte « 25-26 » en dur.
+        */
+        currentSeason: demandee || (recap ? data.season : currentSeasonCode(seasons)) || data.season
       };
     }
   }

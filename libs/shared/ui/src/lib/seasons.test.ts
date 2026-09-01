@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toSeasonOptions } from './seasons';
+import { toSeasonOptions, sortSeasons } from './seasons';
 
 const seasons = [
   { id: 2, code: '26-27', name: 'Saison 2026-2027', startDate: '2026-09-01' },
@@ -43,5 +43,15 @@ describe('toSeasonOptions', () => {
 
   it("retombe sur l'identifiant quand rien d'autre ne nomme la saison", () => {
     expect(toSeasonOptions([{ id: 7 }])).toEqual([{ value: '7', label: 'Saison 7' }]);
+  });
+});
+
+describe('sortSeasons', () => {
+  /* Le pendant de `toSeasonOptions` pour les sélecteurs qui rendent leurs `<option>`
+     eux-mêmes : le tri ne doit pas être la contrepartie d'une mise en forme. */
+  it('trie par ordre croissant sans toucher à la liste reçue', () => {
+    const entree = [...seasons];
+    expect(sortSeasons(entree).map((s) => s.code)).toEqual(['24-25', '25-26', '26-27']);
+    expect(entree.map((s) => s.id)).toEqual([2, 1, 3]);
   });
 });

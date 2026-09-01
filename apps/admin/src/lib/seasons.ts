@@ -13,13 +13,16 @@
  * erreur de typage.
  */
 export interface Season {
+  id?: number;
   code: string;
   /* `seasons.name` est `NOT NULL` en base : la déclarer facultative obligeait quatre
      écrans à composer avec un nom absent qui n'arrive jamais. */
   name: string;
   startDate: string;
   endDate: string;
-  active?: boolean;
+  /** Le drapeau de la configuration des saisons, `active = 1` sur une seule ligne. */
+  active?: boolean | number;
+  closed?: boolean | number;
 }
 
 export interface SeasonsResult {
@@ -63,17 +66,45 @@ export async function fetchSeasons(api: { fetch: typeof fetch }): Promise<Season
     return { seasons: [], errorMsg: 'Référentiel des saisons inattendu.' };
   }
 
-  return { seasons: data as Season[], errorMsg: null };
+  return { seasons: sortSeasons(data as Season[]), errorMsg: null };
 }
 
 /**
- * Saison à afficher par défaut : celle qui court aujourd'hui, à défaut la première.
+ * Les saisons dans l'ordre du temps.
  *
- * Déduite des dates et jamais du drapeau comptable `active`, qui bascule à la clôture
- * — à une date sans rapport avec la saison sportive.
+ * `/accounting/seasons` répond par `id` décroissant : sans ce tri, chaque sélecteur
+ * proposait la plus récente en tête, et le repli « la dernière du tableau » désignait
+ * la plus **ancienne**. Le pendant côté composants est `sortSeasons` de `@nba/ui` ;
+ * il est redit ici parce qu'un relais tourne dans le worker et n'a rien à tirer d'un
+ * paquet de composants Svelte pour trois lignes.
+ */
+export function sortSeasons<T extends { startDate?: string; code?: string }>(seasons: T[]): T[] {
+  return [...seasons].sort((a, b) =>
+    String(a.startDate ?? a.code ?? '').localeCompare(String(b.startDate ?? b.code ?? ''))
+  );
+}
+
+/**
+ * Saison proposée par défaut dans un sélecteur : **l'active de la configuration**.
+ *
+ * C'est le choix qu'un utilisateur attend, et le seul qui soit le même partout : le
+ * bureau désigne une saison active dans « Configuration des saisons », et tous les écrans
+ * s'ouvrent dessus. La déduction par les dates, qui régnait ici, divergeait de celle des
+ * écrans comptables dès que le bureau ouvrait la saison suivante en avance ou tardait à
+ * clore la précédente — deux rubriques affichaient alors deux saisons différentes.
+ *
+ * Replis, dans l'ordre : la saison dont on est dans la fenêtre de dates, puis la plus
+ * récente connue. Ils ne servent qu'à ne jamais ouvrir un écran sans saison si la table
+ * venait à n'en marquer aucune active.
  */
 export function currentSeasonCode(seasons: Season[], today = new Date()): string {
+  const triees = sortSeasons(seasons);
   const iso = today.toISOString().slice(0, 10);
-  const current = seasons.find((s) => s.startDate <= iso && iso <= s.endDate);
-  return current?.code ?? seasons[0]?.code ?? '';
+
+  const retenue =
+    triees.find((s) => s.active === true || s.active === 1) ??
+    triees.find((s) => s.startDate <= iso && iso <= s.endDate) ??
+    triees[triees.length - 1];
+
+  return retenue ? (retenue.code || String(retenue.id ?? '')) : '';
 }

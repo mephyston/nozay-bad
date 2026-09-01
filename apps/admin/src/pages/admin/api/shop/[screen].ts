@@ -1,5 +1,6 @@
 import { can } from '../../../../lib/guard';
 import { creerRelais, identifiant, type Ecran } from '../../../../lib/relais';
+import { currentSeasonCode, sortSeasons } from '../../../../lib/seasons';
 
 /**
  * Les écrans du domaine « boutique ».
@@ -15,10 +16,15 @@ export const ECRANS: Record<string, Ecran> = {
   orders: {
     permission: 'shop:orders:read',
     charger: async (lire, locals, params) => {
-      const season = params.get('season') || '25-26';
+      /*
+        Le référentiel part le premier : sans saison dans l'URL, l'écran s'ouvrait
+        invariablement sur « 25-26 » codé en dur, et non sur l'active de la configuration.
+        Le savoir coûte cette lecture avant les trois autres — celles-ci en dépendent.
+      */
+      const seasons = sortSeasons((await lire('/accounting/seasons')) ?? []);
+      const season = params.get('season') || currentSeasonCode(seasons) || '25-26';
       const s = encodeURIComponent(season);
-      const [saisons, commandes, produits, adherents] = await Promise.all([
-        lire('/accounting/seasons'),
+      const [commandes, produits, adherents] = await Promise.all([
         lire(`/shop/orders?season=${s}`),
         // Seuls les produits encore proposés : on ne crée pas une commande sur un article
         // retiré du catalogue.
@@ -26,7 +32,6 @@ export const ECRANS: Record<string, Ecran> = {
         lire(`/members?limit=1000&season=${s}`)
       ]);
 
-      const seasons = saisons ?? [];
       const courante = seasons.find((x: any) => x.code === season || String(x.id) === season);
 
       return {

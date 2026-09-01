@@ -10,7 +10,8 @@
     FormField,
     SearchableCombobox,
     uiConfirm,
-    flashAndReload
+    flashAndReload,
+    toSeasonOptions
   } from '@nba/ui';
   import { CLUB_FUNCTIONS, CLUB_FUNCTION_LABELS, type ClubFunction } from '../../shared/club-functions';
   import type { ClubFunctionAssignment } from '../dto';
@@ -39,6 +40,9 @@
   // La saison vient de l'URL et la page est rendue côté serveur : changer de saison
   // est une navigation, pas un état local.
   let selectedSeason = $state(season);
+  /* Même liste, même ordre chronologique que partout ailleurs : ce sélecteur rendait ses
+     options dans l'ordre de la réponse serveur, donc de la plus récente à la plus ancienne. */
+  const seasonOptions = $derived(toSeasonOptions(seasons));
   function changeSeason() {
     if (selectedSeason !== season) {
       window.location.href = `/admin/members/dirigeants?season=${encodeURIComponent(selectedSeason)}`;
@@ -172,11 +176,11 @@
       Une fonction au plus par adhérent ; président, trésorier et trésorier adjoint n'ont qu'un titulaire.
     </div>
     <div class="flex items-center gap-2">
-      {#if seasons.length > 0}
+      {#if seasonOptions.length > 0}
         <div class="w-36">
           <Select bind:value={selectedSeason} onchange={changeSeason} aria-label="Saison">
-            {#each seasons as s (s.code)}
-              <option value={s.code}>{s.name.replace('Saison ', '')}</option>
+            {#each seasonOptions as o (o.value)}
+              <option value={o.value}>{o.label.replace('Saison ', '')}</option>
             {/each}
           </Select>
         </div>

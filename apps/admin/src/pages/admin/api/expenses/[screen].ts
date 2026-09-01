@@ -1,5 +1,6 @@
 import { can } from '../../../../lib/guard';
 import { creerRelais, identifiant, type Ecran, type Lecteur } from '../../../../lib/relais';
+import { currentSeasonCode, sortSeasons } from '../../../../lib/seasons';
 
 /**
  * Les écrans du domaine « notes de frais ».
@@ -8,13 +9,12 @@ import { creerRelais, identifiant, type Ecran, type Lecteur } from '../../../../
  * et écrit vers sa propre page.
  */
 
-/** Saison de l'URL, ou l'active à défaut, puis la dernière. */
+/** Saison de l'URL, ou l'active de la configuration à défaut ; liste triée pour le sélecteur. */
 async function saison(lire: Lecteur, params: URLSearchParams) {
-  const seasons: any[] = (await lire('/accounting/seasons')) ?? [];
+  const seasons = sortSeasons((await lire('/accounting/seasons')) ?? []);
   const demandee = params.get('season') ?? '';
-  const active = seasons.find((s) => s.active === true || s.active === 1) ?? seasons[seasons.length - 1];
-  const season = demandee || (active ? active.code || String(active.id) : '25-26');
-  return { seasons, season, isClosed: Boolean(seasons.find((s) => s.id === season)?.closed) };
+  const season = demandee || currentSeasonCode(seasons) || '25-26';
+  return { seasons, season, isClosed: Boolean(seasons.find((s: any) => s.id === season)?.closed) };
 }
 
 export const ECRANS: Record<string, Ecran> = {
