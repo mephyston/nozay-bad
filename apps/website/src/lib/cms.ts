@@ -190,6 +190,18 @@ export function mediaIdsInBlocks(blocks: import('@nba/cms/public').BlockPayload[
   return ids;
 }
 
+/**
+ * Adresse publique d'un média, depuis sa clé de stockage.
+ *
+ * La clé porte parfois le préfixe `media/` du bucket, parfois non selon la voie par
+ * laquelle elle a été enregistrée ; la route publique, elle, l'ajoute toujours. Une
+ * seule définition ici plutôt qu'une réécriture recopiée à chaque endroit qui affiche
+ * une image — c'est le genre de détail qui ne se remarque qu'en 404.
+ */
+export function mediaPath(key: string): string {
+  return `/media/${key.replace(/^media\//, '')}`;
+}
+
 export interface PostCoverRow {
   id: number;
   key: string;

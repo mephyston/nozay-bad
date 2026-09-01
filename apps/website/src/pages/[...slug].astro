@@ -19,11 +19,12 @@ import {
   listClubEvents,
   ANNOUNCEMENT_LOOKUP_LIMIT,
   getSiteSettings,
+  mediaPath,
   type PostRow
 } from '../lib/cms';
 import { resolveEnv } from '../lib/request-context';
 import { pageTitle, pageDescription, absoluteUrl } from '../lib/seo';
-import { sportsClub, webSite, webPage, breadcrumbList, article, openingHours, sportsEvent } from '../lib/jsonld';
+import { sportsClub, webSite, webPage, breadcrumbList, article, openingHours, clubEvent } from '../lib/jsonld';
 import { socialLinks } from '../lib/social';
 import { HTML_CACHE_CONTROL } from '../lib/cache';
 
@@ -116,6 +117,22 @@ const announcementPosts = needsEvents
   ? (await listPublishedPosts(env, { limit: ANNOUNCEMENT_LOOKUP_LIMIT })).posts
   : [];
 const announcements = announcementsByEvent(announcementPosts, (post) => post.path);
+
+/*
+ * Le même rapprochement, mais gardant l'article entier.
+ *
+ * `announcements` ne retient que ce que la carte affiche — un lien, un titre. Les
+ * données structurées ont besoin de plus : l'extrait et la couverture de l'article
+ * sont la seule description et le seul visuel qu'un rendez-vous d'agenda possède.
+ * Même règle qu'ailleurs : la liste arrive de la plus récente à la plus ancienne,
+ * c'est donc le premier rencontré qui gagne.
+ */
+const announcementPostByEvent = new Map<number, PostRow>();
+for (const post of announcementPosts) {
+  if (typeof post.eventId === 'number' && !announcementPostByEvent.has(post.eventId)) {
+    announcementPostByEvent.set(post.eventId, post);
+  }
+}
 
 // Idem pour les actualités : une page qui n'en affiche pas ne paie pas la requête.
 //
@@ -218,15 +235,23 @@ if (page) {
       .filter((event) => (event.endsAt ?? event.startsAt).slice(0, 10) >= today)
       .slice(0, block.limit);
     for (const event of shown) {
+      /*
+        L'actualité qui annonce le rendez-vous porte ce que l'agenda n'a pas : une
+        adresse à lui et un visuel. Quand elle existe, c'est vers elle qu'on renvoie —
+        et non vers la page qui liste, où le rendez-vous n'est qu'une ligne parmi cinq.
+      */
+      const announcement = announcementPostByEvent.get(event.id);
       pageJsonLd.push(
-        sportsEvent(siteUrl, {
+        clubEvent(siteUrl, {
           title: event.title,
-          slug: event.slug,
+          category: event.category,
           startsAt: event.startsAt,
           endsAt: event.endsAt,
+          allDay: event.allDay,
           venueLabel: event.venueLabel,
           status: event.status,
-          description: event.descriptionHtml
+          url: announcement?.path ?? page.path,
+          image: announcement?.cover ? absoluteUrl(siteUrl, mediaPath(announcement.cover.key)) : null
         })
       );
     }

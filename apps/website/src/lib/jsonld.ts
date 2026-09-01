@@ -162,24 +162,96 @@ export function openingHours(slots: { weekday: number; startTime: string; endTim
   }));
 }
 
-export function sportsEvent(
+/**
+ * Type schema.org d'un rendez-vous, par catégorie d'agenda.
+ *
+ * `SportsEvent` pour tout, c'était décrire une soirée raclette comme une rencontre
+ * sportive. Google le lit littéralement : c'est ce qui lui fait réclamer un
+ * `performer` — l'équipe qui joue — sur un forum des associations où personne ne joue.
+ * Un type juste ne « corrige » pas un avertissement, il cesse de promettre ce que
+ * l'événement n'est pas.
+ */
+const EVENT_TYPES: Record<string, string> = {
+  competition: 'SportsEvent',
+  interclubs: 'SportsEvent',
+  tournoi: 'SportsEvent',
+  stage: 'SportsEvent',
+  vie_du_club: 'SocialEvent',
+  assemblee: 'BusinessEvent'
+};
+
+/**
+ * Décalage horaire de Paris à une date locale donnée, sous la forme « +02:00 ».
+ *
+ * L'agenda stocke des heures locales sans fuseau (« 2026-10-23T19:30 »). Émises
+ * telles quelles, Google les rattache au fuseau du lieu — qu'il déduit d'une adresse
+ * réduite ici au pays. Un rendez-vous de 19 h 30 peut donc s'afficher à 17 h 30 dans
+ * un résultat de recherche, ce que personne ne verrait jamais en relisant la page.
+ *
+ * L'instant approché sert seulement à savoir de quel côté du changement d'heure on se
+ * trouve : l'erreur possible se limite aux deux heures qui suivent la bascule d'un
+ * dernier dimanche de mars ou d'octobre, à 2 h du matin.
+ */
+function parisOffset(local: string): string {
+  const label = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Paris',
+    timeZoneName: 'longOffset'
+  }).format(new Date(`${local.slice(0, 16)}:00Z`));
+  return /GMT([+-]\d{2}:\d{2})/.exec(label)?.[1] ?? '+01:00';
+}
+
+/**
+ * Date d'un rendez-vous, dans la forme que Google attend.
+ *
+ * Une journée entière sort en date seule : « 2026-09-05T00:00 » annoncerait un
+ * rendez-vous à minuit, et c'est exactement ce qu'un moteur en ferait.
+ */
+export function eventDate(local: string, allDay: boolean): string {
+  const day = local.slice(0, 10);
+  if (allDay || local.length < 16) return day;
+  return `${day}T${local.slice(11, 16)}:00${parisOffset(local)}`;
+}
+
+/**
+ * Un rendez-vous de l'agenda.
+ *
+ * @param url Page qui parle du rendez-vous — l'actualité qui l'annonce quand il y en
+ *   a une, la page qui porte l'agenda sinon. Requis : une adresse codée en dur ici
+ *   survivrait au déplacement du bloc, et pointerait vers une page où le rendez-vous
+ *   ne figure pas.
+ * @param image Visuel du rendez-vous, en absolu — la couverture de cette actualité.
+ *   Absent tant qu'aucun article n'annonce le rendez-vous : une image de repli
+ *   identique sur tous ne dirait rien de celui qu'elle illustre.
+ *
+ * Pas de `description` ici, et c'est délibéré : celle que porte l'agenda n'est
+ * affichée nulle part sur le site public. Google demande de ne baliser que ce qu'un
+ * lecteur voit, et un texte présent dans le seul balisage est précisément ce qu'une
+ * action manuelle sanctionne. Le jour où la carte l'affichera, elle aura sa place ici.
+ *
+ * Pas d'`offers` non plus : l'inscription à un rendez-vous se prend dans l'espace
+ * adhérent, derrière l'authentification. Une offre pointant vers une page que
+ * Googlebot ne peut pas atteindre ne vaut pas mieux que pas d'offre du tout.
+ */
+export function clubEvent(
   siteUrl: string,
   event: {
     title: string;
-    slug: string;
+    category: string;
     startsAt: string;
     endsAt: string | null;
+    allDay: boolean;
     venueLabel: string | null;
     status: string;
-    description?: string | null;
+    url: string;
+    image?: string | null;
   }
 ) {
   return {
     '@context': 'https://schema.org',
-    '@type': 'SportsEvent',
+    '@type': EVENT_TYPES[event.category] ?? 'Event',
     name: event.title,
-    startDate: event.startsAt,
-    ...(event.endsAt ? { endDate: event.endsAt } : {}),
+    startDate: eventDate(event.startsAt, event.allDay),
+    ...(event.endsAt ? { endDate: eventDate(event.endsAt, event.allDay) } : {}),
     // La route ne sert que les événements publiés : un annulé n'arrive pas jusqu'ici.
     // La correspondance est conservée pour rester juste si cette règle change — c'est
     // le vocabulaire attendu par Google, pas une décision de ce fichier.
@@ -189,8 +261,8 @@ export function sportsEvent(
     ...(event.venueLabel
       ? { location: { '@type': 'Place', name: event.venueLabel, address: { '@type': 'PostalAddress', addressCountry: 'FR' } } }
       : {}),
-    ...(event.description ? { description: event.description } : {}),
+    ...(event.image ? { image: event.image } : {}),
     organizer: { '@id': clubId(siteUrl) },
-    url: new URL('/agenda/', siteUrl).toString()
+    url: new URL(event.url, siteUrl).toString()
   };
 }

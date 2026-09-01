@@ -1,5 +1,6 @@
 ---
 import type { CmsMediaRow, CmsMediaVariantRow } from '@nba/cms/public';
+import { mediaPath } from '../lib/cms';
 
 interface Props {
   /**
@@ -21,12 +22,12 @@ const srcsetFor = (format: string) =>
   variants
     .filter((v) => v.format === format)
     .sort((a, b) => a.width - b.width)
-    .map((v) => `/media/${v.key.replace(/^media\//, '')} ${v.width}w`)
+    .map((v) => `${mediaPath(v.key)} ${v.width}w`)
     .join(', ');
 
 const avif = srcsetFor('avif');
 const webp = srcsetFor('webp');
-const fallback = `/media/${media.key.replace(/^media\//, '')}`;
+const fallback = mediaPath(media.key);
 ---
 {/*
   `width` et `height` viennent de la base et ne sont jamais optionnels pour une image :

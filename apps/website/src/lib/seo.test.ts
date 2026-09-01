@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { pageTitle, pageDescription, absoluteUrl, SITE_NAME } from './seo';
 import { readFile } from 'node:fs/promises';
-import { serialiseJsonLd, sportsClub, webSite, breadcrumbList } from './jsonld';
+import { serialiseJsonLd, sportsClub, webSite, breadcrumbList, clubEvent, eventDate } from './jsonld';
 import { socialLinks } from './social';
 import { SITE_SETTINGS_FALLBACK } from './cms';
 import { applySecurityHeaders } from './security-headers';
@@ -153,5 +153,59 @@ describe('en-têtes de sécurité', () => {
   it('marque la préproduction hors index', () => {
     const headers = applySecurityHeaders(new Response('ok'), { noindex: true }).headers;
     expect(headers.get('X-Robots-Tag')).toBe('noindex, nofollow');
+  });
+});
+
+describe('clubEvent', () => {
+  const base = {
+    title: 'Raclette party',
+    category: 'vie_du_club',
+    startsAt: '2026-10-23T19:30',
+    endsAt: null,
+    allDay: false,
+    venueLabel: 'Arthur Rimbaud',
+    status: 'published',
+    url: '/agenda/'
+  };
+
+  it('choisit le type schema.org selon la catégorie', () => {
+    expect(clubEvent('https://x.fr', base)['@type']).toBe('SocialEvent');
+    expect(clubEvent('https://x.fr', { ...base, category: 'interclubs' })['@type']).toBe('SportsEvent');
+    expect(clubEvent('https://x.fr', { ...base, category: 'assemblee' })['@type']).toBe('BusinessEvent');
+    // Une catégorie ajoutée en base sans passer par ici reste un événement valide.
+    expect(clubEvent('https://x.fr', { ...base, category: 'inconnue' })['@type']).toBe('Event');
+  });
+
+  it('date le rendez-vous dans le fuseau de Paris, heure d’été comprise', () => {
+    expect(eventDate('2026-10-23T19:30', false)).toBe('2026-10-23T19:30:00+02:00');
+    expect(eventDate('2026-12-12T19:30', false)).toBe('2026-12-12T19:30:00+01:00');
+  });
+
+  it('rend une journée entière en date seule, sans heure de minuit', () => {
+    expect(eventDate('2026-09-05T00:00', true)).toBe('2026-09-05');
+  });
+
+  /*
+    La description saisie en administration n'est affichée nulle part sur le site :
+    l'émettre reviendrait à baliser un contenu que le lecteur ne voit pas. Ce test est
+    le garde-fou de cette décision — la rebrancher demande d'abord de l'afficher.
+  */
+  it('n’émet jamais de description, ni d’offre', () => {
+    const json = clubEvent('https://x.fr', base);
+    expect(json).not.toHaveProperty('description');
+    expect(json).not.toHaveProperty('offers');
+  });
+
+  it('tait ce que le rendez-vous n’a pas, plutôt que de l’inventer', () => {
+    const json = clubEvent('https://x.fr', base);
+    expect(json).not.toHaveProperty('image');
+    expect(json).not.toHaveProperty('endDate');
+    expect(json).not.toHaveProperty('performer');
+  });
+
+  it('rend l’adresse de la page qui décrit, en absolu', () => {
+    expect(clubEvent('https://x.fr', { ...base, url: '/actualites/raclette/' }).url).toBe(
+      'https://x.fr/actualites/raclette/'
+    );
   });
 });
