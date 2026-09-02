@@ -85,6 +85,13 @@ jobs:
         if: steps.node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
+      # Nomenclature logicielle (SBOM, CycloneDX) des dépendances de production,
+      # dérivée du lockfile et jointe à la Release GitHub (assets, package.json).
+      # Elle répond en une requête à « la 3.12 embarque-t-elle ce paquet ? » sans
+      # rejouer l'installation du commit de l'époque.
+      - name: Générer le SBOM (CycloneDX)
+        run: npm sbom --sbom-format cyclonedx --omit dev --package-lock-only > sbom.cdx.json
+
       - name: Semantic Release
         id: semantic
         uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0

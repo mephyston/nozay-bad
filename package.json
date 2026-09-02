@@ -117,7 +117,13 @@
           "successComment": false,
           "failComment": false,
           "failTitle": false,
-          "releasedLabels": false
+          "releasedLabels": false,
+          "assets": [
+            {
+              "path": "sbom.cdx.json",
+              "label": "SBOM CycloneDX (dépendances de production)"
+            }
+          ]
         }
       ]
     ]

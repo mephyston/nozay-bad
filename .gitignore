@@ -89,3 +89,4 @@ scratch/
 # Rapports locaux des scanners de la CI (semgrep, zap)
 semgrep.json
 /zap-report*
+sbom.cdx.json
