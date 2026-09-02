@@ -57,21 +57,22 @@ jobs:
     environment: production
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           # Historique et tags complets : l'horizon de rollback se calcule en reliant
           # la dernière migration destructive au tag qui l'a publiée.
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
       - name: Cache node_modules
         id: node-modules
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -94,13 +95,16 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       # Journalisé avant bascule : sans cette liste, on ne sait pas vers quoi on revient.
+      # Les entrées du formulaire passent par l'environnement et non par le gabarit
+      # `${{ }}` : interpolées dans le script, elles y seraient exécutées telles quelles.
       - name: Déploiements actuels
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WORKER: ${{ inputs.worker }}
         run: |
           for w in nba-api nba-storefront nba-website nba-admin; do
-            if [ "${{ inputs.worker }}" = "tous" ] || [ "${{ inputs.worker }}" = "$w" ]; then
+            if [ "$WORKER" = "tous" ] || [ "$WORKER" = "$w" ]; then
               echo "--- $w ---"
               npx wrangler deployments list --name "$w" | tail -8
             fi
@@ -110,28 +114,32 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WORKER: ${{ inputs.worker }}
+          VERSION_ID: ${{ inputs.version_id }}
+          REASON: ${{ inputs.reason }}
         run: |
-          echo "### Rollback de \`${{ inputs.worker }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "Motif : ${{ inputs.reason }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Rollback de \`$WORKER\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Motif : $REASON" >> "$GITHUB_STEP_SUMMARY"
           # --yes : la commande est interactive par défaut et bloquerait le runner.
-          if [ "${{ inputs.worker }}" = "tous" ]; then
+          if [ "$WORKER" = "tous" ]; then
             # L'API en dernier : les trois autres l'appellent par service binding, on
             # préfère qu'elles reculent avant lui plutôt que l'inverse.
             for w in nba-storefront nba-website nba-admin nba-api; do
               echo "--- $w ---"
-              npx wrangler rollback --name "$w" --message "${{ inputs.reason }}" --yes
+              npx wrangler rollback --name "$w" --message "$REASON" --yes
             done
           else
-            npx wrangler rollback --name "${{ inputs.worker }}" ${{ inputs.version_id }} --message "${{ inputs.reason }}" --yes
+            npx wrangler rollback --name "$WORKER" ${VERSION_ID:+"$VERSION_ID"} --message "$REASON" --yes
           fi
 
       - name: Déploiement résultant
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WORKER: ${{ inputs.worker }}
         run: |
           for w in nba-api nba-storefront nba-website nba-admin; do
-            if [ "${{ inputs.worker }}" = "tous" ] || [ "${{ inputs.worker }}" = "$w" ]; then
+            if [ "$WORKER" = "tous" ] || [ "$WORKER" = "$w" ]; then
               echo "--- $w ---"
               npx wrangler deployments list --name "$w" | tail -8
             fi

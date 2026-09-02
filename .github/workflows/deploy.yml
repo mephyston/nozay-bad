@@ -22,8 +22,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || 'staging' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# Lecture seule par défaut ; seul `release` écrit (tags et Releases GitHub).
+# `actions: read` sert à nx-set-shas, qui cherche le dernier run vert de main.
 permissions:
-  contents: write
+  contents: read
   actions: read
 
 env:
@@ -46,28 +48,30 @@ jobs:
   # en amont saute aussi tout ce qui en dépend —, et chaque dépendance est donc
   # réexaminée à la main, en distinguant « réussi » de « sauté ».
   release:
-    name: Semantic Release
+    name: Version, changelog et release GitHub
     runs-on: ubuntu-latest
     needs: [static-checks, test, visual]
     if: always() && github.event_name == 'push' && needs.static-checks.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped')
+    permissions:
+      contents: write
     outputs:
       version: ${{ steps.semantic.outputs.new_release_version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
           
       - name: Cache node_modules
         id: node-modules
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -78,7 +82,7 @@ jobs:
 
       - name: Semantic Release
         id: semantic
-        uses: cycjimmy/semantic-release-action@v6
+        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -88,7 +92,7 @@ jobs:
   detect-changes:
     # En tête de graphe, sans dépendance : la détection conditionne `test` et `visual`,
     # eux-mêmes en amont de `release` depuis que la publication attend les tests.
-    name: Detect affected apps
+    name: Périmètre du push (nx affected)
     runs-on: ubuntu-latest
     outputs:
       api: ${{ steps.affected.outputs.api }}
@@ -101,19 +105,20 @@ jobs:
       apps: ${{ steps.affected.outputs.apps }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
       - name: Cache node_modules
         id: node-modules
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -123,7 +128,7 @@ jobs:
         run: npm ci
 
       - name: Derive appropriate SHAs for affected commands
-        uses: nrwl/nx-set-shas@v5
+        uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
         with:
           # L'action prend le dernier run vert de la branche nommée ici. Sur un tronc
           # unique il n'y a qu'un candidat : `main`, aussi bien pour un push que pour le
@@ -132,10 +137,12 @@ jobs:
 
       - name: Detect affected projects
         id: affected
+        env:
+          FORCE_ALL: ${{ github.event.inputs.force_all }}
         run: |
           COMMIT_MSG=$(git log -1 --pretty=%B)
           
-          if [ "${{ github.event.inputs.force_all }}" = "true" ] || echo "$COMMIT_MSG" | grep -qiE "force deploy|deploy all"; then
+          if [ "$FORCE_ALL" = "true" ] || echo "$COMMIT_MSG" | grep -qiE "force deploy|deploy all"; then
             echo "Forcing deployment of all applications"
             API_AFFECTED="true"
             STOREFRONT_AFFECTED="true"
@@ -195,25 +202,26 @@ jobs:
   #     Aucun needs : rien ici ne dépend du calcul d'affected.
   # ──────────────────────────────────────────────────────────────
   static-checks:
-    name: Static checks
+    name: Garde-fous, typecheck et architecture
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           # Pas d'historique : aucun de ces contrôles n'en a besoin
           # (check-schema-integrity fait un git log -1, couvert par le commit de tête).
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
       - name: Cache node_modules
         id: node-modules
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -268,24 +276,25 @@ jobs:
   # 2. Tests affectés (exécutés sur PR et sur Push)
   # ──────────────────────────────────────────────────────────────
   test:
-    name: Test affected
+    name: Tests affectés
     runs-on: ubuntu-latest
     needs: detect-changes
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
       - name: Cache node_modules
         id: node-modules
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -300,7 +309,7 @@ jobs:
       # (actions/cache ne resauvegarde jamais sur hit exact) ; restore-keys restaure
       # le plus récent du même lockfile.
       - name: Cache Vite transform cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules/.vite
           key: vite-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
@@ -308,7 +317,7 @@ jobs:
             vite-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
 
       - name: Derive appropriate SHAs for affected commands
-        uses: nrwl/nx-set-shas@v5
+        uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
         with:
           # L'action prend le dernier run vert de la branche nommée ici. Sur un tronc
           # unique il n'y a qu'un candidat : `main`, aussi bien pour un push que pour le
@@ -330,23 +339,25 @@ jobs:
   #     générées/commitées par le workflow visual-baselines.yml.
   # ──────────────────────────────────────────────────────────────
   visual:
-    name: Visual regression
+    name: Régression visuelle du design system
     runs-on: ubuntu-latest
     needs: detect-changes
     if: needs.detect-changes.outputs.ds == 'true'
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
       - name: Cache node_modules
         id: node-modules
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -357,7 +368,7 @@ jobs:
 
       - name: Cache Playwright browsers
         id: playwright-cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -380,7 +391,7 @@ jobs:
         run: npx playwright install-deps chromium
 
       - name: Cache Nx
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .nx/cache
           key: nx-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
@@ -397,7 +408,7 @@ jobs:
 
       - name: Upload report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: playwright-visual-report
           path: |
@@ -409,7 +420,7 @@ jobs:
   # 3. Deploy API (en premier — les autres apps en dépendent via Service Binding)
   # ──────────────────────────────────────────────────────────────
   deploy-api:
-    name: Deploy API Worker (staging)
+    name: Déployer l'API (staging)
     runs-on: ubuntu-latest
     needs: [detect-changes, test, visual, static-checks]
     # `!= 'pull_request'` et non `== 'push'` : le déclenchement manuel forçait les
@@ -418,17 +429,19 @@ jobs:
     environment: staging
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
       - name: Cache node_modules
         id: node-modules
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -457,7 +470,7 @@ jobs:
   # 4. Deploy des 3 applications Astro affectées, en parallèle (après l'API)
   # ──────────────────────────────────────────────────────────────
   deploy-apps:
-    name: Deploy ${{ matrix.app }} (staging)
+    name: Déployer ${{ matrix.app }} (staging)
     runs-on: ubuntu-latest
     needs: [detect-changes, test, visual, static-checks, deploy-api, release]
     if: always() && github.event_name != 'pull_request' && needs.detect-changes.outputs.apps != '[]' && needs.static-checks.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
@@ -468,11 +481,12 @@ jobs:
         app: ${{ fromJSON(needs.detect-changes.outputs.apps) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           # Historique et tags complets : l'action résout la version affichée par
           # `git describe`, et un checkout superficiel la priverait de tout repère.
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: ./.github/actions/deploy-app
         with:

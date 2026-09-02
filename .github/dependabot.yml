@@ -1,0 +1,70 @@
+# Mises à jour de dépendances par Dependabot, gratuit sur ce dépôt privé.
+#
+# Trois choses distinctes, dont deux ne se règlent pas ici : les ALERTES de
+# vulnérabilités et les PR de correction de sécurité sont activées dans les réglages
+# du dépôt (Settings → Advanced Security). Ce fichier ne pilote que les mises à jour
+# de VERSION : une PR groupée par semaine et par famille, pour ne pas noyer le tronc.
+#
+# Chaque PR passe par deploy.yml (garde-fous, tests, sécurité) : on fusionne si vert.
+# Les préfixes suivent Conventional Commits, donc semantic-release n'émet aucune
+# version pour une PR Dependabot (chore = pas de release).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    # Délai de carence : on ne prend jamais une version publiée depuis moins de
+    # sept jours. C'est la parade la moins chère aux paquets compromis, retirés du
+    # registre en quelques heures ou quelques jours ; une majeure attend un mois.
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Mineures et correctifs ensemble ; une majeure arrive seule, pour être lue.
+      production-mineures:
+        dependency-type: production
+        update-types: [minor, patch]
+      developpement-mineures:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  # Les actions sont épinglées par SHA (zizmor l'exige) : c'est Dependabot qui fait
+  # avancer le SHA et le commentaire de version qui l'accompagne.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Europe/Paris
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # L'action composite n'est pas sous .github/workflows : Dependabot ne la voit
+  # qu'en la nommant.
+  - package-ecosystem: github-actions
+    directory: /.github/actions/deploy-app
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Europe/Paris
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions:
+        patterns: ["*"]
