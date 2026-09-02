@@ -455,6 +455,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # Sur une PR, gitleaks-action demande à l'API la liste des commits à scanner ;
+      # sans ce droit il échoue avant d'avoir rien lu (« Resource not accessible »).
+      pull-requests: read
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
