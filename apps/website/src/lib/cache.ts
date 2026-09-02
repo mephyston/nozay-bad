@@ -12,16 +12,34 @@
  */
 
 /**
- * Une heure au bord.
+ * Deux jours au bord — mais ce n'est plus le TTL qui borne la dérive.
+ *
+ * La clé porte deux termes (`cacheKeyFor`) : la **version de contenu**, qu'une publication
+ * ou un déploiement incrémente, et le **jour du rendu**. Le premier couvre ce que dit la
+ * base, le second ce que dit l'heure — c'est-à-dire le filtre `>= new Date()` de
+ * `Events.astro` et l'année du pied de page, que rien d'autre n'aurait rattrapé.
+ *
+ * Une entrée devient donc inatteignable au plus tard au changement de date, quelle que soit
+ * sa durée de vie déclarée. Le TTL ne fait plus qu'une chose : autoriser l'entrée à vivre
+ * jusque-là. Deux jours suffisent largement et laissent de la marge autour de minuit ; en
+ * mettre sept n'achèterait rien, et laisserait croire à une rétention que la date interdit.
+ *
+ * Ce que ça coûte : chaque page se re-rend une fois par jour et par centre de données. Sur
+ * ~130 URL, c'est borné et sans commune mesure avec les 35 % de défauts mesurés le
+ * 2026-09-02 sur la page d'accueil — min 1 ms, moyenne 25,4 ms, p90 63 ms, max 98 ms sur
+ * 190 appels, chaque défaut payant un rendu Astro complet là où un succès coûte 1 ms.
+ *
+ * Ce que ça ne couvre pas, et qui est assumé : un rendez-vous terminé à 18 h reste listé
+ * jusqu'au changement de jour.
  *
  * `stale-while-revalidate` et `stale-if-error` s'adressent aux caches qui savent les
- * honorer — navigateurs, intermédiaires. L'API Cache d'un Worker, elle, ne révalide
- * rien en arrière-plan : passé l'heure, l'entrée a simplement disparu et la requête
- * suivante paie un rendu complet. Les directives sont conservées parce qu'elles ne
- * coûtent rien et servent en aval ; il ne faut simplement pas compter dessus ici.
+ * honorer — navigateurs, intermédiaires. L'API Cache d'un Worker, elle, ne révalide rien
+ * en arrière-plan : passé le délai, l'entrée a simplement disparu et la requête suivante
+ * paie un rendu complet. Les directives sont conservées parce qu'elles ne coûtent rien et
+ * servent en aval ; il ne faut simplement pas compter dessus ici.
  */
 export const HTML_CACHE_CONTROL =
-  'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400, stale-if-error=604800';
+  'public, max-age=0, s-maxage=172800, stale-while-revalidate=86400, stale-if-error=604800';
 
 /**
  * Un quart d'heure pour une adresse morte.
@@ -34,10 +52,14 @@ export const HTML_CACHE_CONTROL =
  *
  * Le ranger est sans danger parce que la clé porte la version de contenu : publier la
  * page manquante, ou la redirection qui la remplace (`update-page` écrit les deux et
- * incrémente la version), rend l'entrée inatteignable sur-le-champ. Le quart d'heure
- * ne sert qu'à borner ce qu'aucune publication ne viendrait corriger.
+ * incrémente la version), rend l'entrée inatteignable sur-le-champ. Le délai ne sert qu'à
+ * borner ce qu'aucune publication ne viendrait corriger.
+ *
+ * Il était d'un quart d'heure, ce qui laissait les robots repayer un rendu quatre fois par
+ * heure et par point de présence — 126 réponses 404 le 2026-09-02 sur le seul site public.
+ * La clé étant versionnée, rien ne justifiait d'être plus court que le HTML.
  */
-export const NOT_FOUND_CACHE_CONTROL = 'public, max-age=0, s-maxage=900';
+export const NOT_FOUND_CACHE_CONTROL = 'public, max-age=0, s-maxage=604800';
 
 /** Codes rangés au bord. Une 5xx figerait une panne passagère sur tout le réseau. */
 const CACHEABLE_STATUS = new Set([200, 404, 410]);
@@ -126,9 +148,40 @@ export function isFingerprintedPath(pathname: string): boolean {
  * `version` à `null` range hors de tout espace de version — réservé aux chemins
  * empreintés, les seuls qui n'aient rien à invalider.
  */
-export function cacheKeyFor(pathname: string, version: number | null, query = ''): Request {
-  const prefix = version === null ? '' : `/v${version}`;
+export function cacheKeyFor(
+  pathname: string,
+  version: number | null,
+  query = '',
+  now: Date = new Date()
+): Request {
+  const prefix = version === null ? '' : `/v${version}/d${jourDeRendu(now)}`;
   return new Request(`https://cache.nozaybad.fr${prefix}${pathname}${query}`, { method: 'GET' });
+}
+
+/**
+ * Le jour du rendu, second terme de la clé après la version.
+ *
+ * La version invalide ce que la **base** dit ; elle ne dit rien de ce que l'**heure** dit.
+ * Or le HTML embarque l'instant du rendu : `Events.astro` ne retient un rendez-vous que si
+ * `parse(event.endsAt ?? event.startsAt) >= new Date()`, `[...slug].astro` fait le même tri
+ * pour le JSON-LD, et le pied de page affiche `getFullYear()`. Une page mise en cache sans
+ * date resterait donc à annoncer des rendez-vous passés, sans qu'aucune publication ne
+ * vienne la corriger — rien n'a changé côté contenu, c'est le temps qui a tourné.
+ *
+ * La dater ramène la dérive possible de « le TTL » à « la journée en cours », et rend le
+ * TTL secondaire : l'entrée d'hier est inatteignable dès le changement de date, quelle que
+ * soit sa durée de vie déclarée.
+ *
+ * Reste assumé : un rendez-vous qui se termine à 18 h figure encore sur la page jusqu'au
+ * changement de jour. C'est le prix de la mise en cache d'une page, et il est jugé
+ * acceptable pour un agenda de club — l'annoncer terminé à la minute près demanderait de
+ * filtrer côté navigateur.
+ *
+ * En UTC, comme partout ailleurs dans le dépôt : la bascule tombe vers 1 h ou 2 h du matin
+ * à Paris, c'est-à-dire au creux du trafic, ce qui vaut mieux que minuit pile.
+ */
+function jourDeRendu(now: Date): string {
+  return now.toISOString().slice(0, 10);
 }
 
 /**

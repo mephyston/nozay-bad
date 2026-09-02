@@ -14,12 +14,44 @@ import {
 const query = (search: string) => canonicalQuery(new URLSearchParams(search));
 
 describe('clé de cache', () => {
+  const LUNDI = new Date('2026-09-07T10:00:00Z');
+
   it('intègre la version du contenu — c’est ce qui remplace la purge', () => {
-    expect(cacheKeyFor('/presentation/', 4).url).toBe('https://cache.nozaybad.fr/v4/presentation/');
+    expect(cacheKeyFor('/presentation/', 4, '', LUNDI).url)
+      .toBe('https://cache.nozaybad.fr/v4/d2026-09-07/presentation/');
   });
 
   it('rend inatteignable tout ce qui précède un changement de version', () => {
-    expect(cacheKeyFor('/presentation/', 4).url).not.toBe(cacheKeyFor('/presentation/', 5).url);
+    expect(cacheKeyFor('/presentation/', 4, '', LUNDI).url)
+      .not.toBe(cacheKeyFor('/presentation/', 5, '', LUNDI).url);
+  });
+
+  /*
+    La version couvre ce que dit la base, la date ce que dit l'heure. Sans elle, une page
+    resterait à annoncer des rendez-vous passés — `Events.astro` filtre sur
+    `>= new Date()` — et aucune publication ne la corrigerait, puisque rien n'a changé côté
+    contenu.
+  */
+  it('rend inatteignable la page de la veille, à version inchangée', () => {
+    const veille = cacheKeyFor('/agenda/', 4, '', new Date('2026-09-06T23:00:00Z')).url;
+    const jour = cacheKeyFor('/agenda/', 4, '', LUNDI).url;
+    expect(veille).not.toBe(jour);
+    expect(jour).toContain('/d2026-09-07/');
+  });
+
+  it('ne change pas au fil de la journée', () => {
+    const matin = cacheKeyFor('/agenda/', 4, '', new Date('2026-09-07T06:00:00Z')).url;
+    const soir = cacheKeyFor('/agenda/', 4, '', new Date('2026-09-07T22:00:00Z')).url;
+    expect(matin).toBe(soir);
+  });
+
+  /*
+    Les chemins empreintés n'ont rien à invalider — ni contenu, ni heure. Les dater les
+    ferait re-télécharger chaque jour pour rien.
+  */
+  it('ne date pas un chemin empreinté', () => {
+    expect(cacheKeyFor('/media/abc/400.webp', null, '', LUNDI).url)
+      .toBe('https://cache.nozaybad.fr/media/abc/400.webp');
   });
 
   it('ne dépend pas de l’hôte servi', () => {
@@ -85,8 +117,22 @@ describe('withPageCache', () => {
     // Le visiteur doit voir une page republiée sans vider son cache ; c'est le bord
     // qui absorbe la charge.
     expect(HTML_CACHE_CONTROL).toContain('max-age=0');
-    expect(HTML_CACHE_CONTROL).toContain('s-maxage=3600');
+    expect(HTML_CACHE_CONTROL).toContain('s-maxage=172800');
     expect(HTML_CACHE_CONTROL).toContain('stale-while-revalidate');
+  });
+
+  /*
+    Une adresse morte se range PLUS longtemps qu'une page vivante, et ce n'est pas une
+    incohérence : une 404 ne rend aucun bloc sensible au temps, là où une page peut porter
+    l'agenda et son filtre sur l'instant. La version dans la clé couvre le seul cas qui
+    compte — publier la page manquante, ou la redirection qui la remplace.
+
+    Le quart d'heure d'avant faisait repayer un rendu aux robots quatre fois par heure et
+    par point de présence : 126 réponses 404 sur le seul site public le 2026-09-02.
+  */
+  it('range une adresse morte plus longtemps qu\'une page, faute de contenu daté', () => {
+    expect(NOT_FOUND_CACHE_CONTROL).toContain('max-age=0');
+    expect(NOT_FOUND_CACHE_CONTROL).toContain('s-maxage=604800');
   });
 });
 
@@ -164,7 +210,9 @@ describe('withPageCache — ce qui est rangé', () => {
         }),
       { pathname: '/rss.xml', version: 3, cacheable: true }
     );
-    expect([...entries.keys()]).toEqual(['https://cache.nozaybad.fr/v3/rss.xml']);
+    // `d2026-08-30` est le jour du rendu, second terme de la clé après la version : c'est
+    // la date où `vitest.setup.clock.ts` fige la suite.
+    expect([...entries.keys()]).toEqual(['https://cache.nozaybad.fr/v3/d2026-08-30/rss.xml']);
   });
 
   it('ne range pas une réponse qui ne déclare rien', async () => {
