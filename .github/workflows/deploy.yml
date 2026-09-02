@@ -55,8 +55,8 @@ jobs:
   release:
     name: Version, changelog et release GitHub
     runs-on: ubuntu-latest
-    needs: [static-checks, test, visual]
-    if: always() && github.event_name == 'push' && needs.static-checks.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped')
+    needs: [static-checks, test, visual, security]
+    if: always() && github.event_name == 'push' && needs.static-checks.result == 'success' && needs.security.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped')
     permissions:
       contents: write
     outputs:
@@ -653,9 +653,11 @@ jobs:
     environment: staging
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -685,8 +687,10 @@ jobs:
   dast:
     name: DAST ZAP sur staging (${{ matrix.app }})
     runs-on: ubuntu-latest
-    needs: [deploy-apps]
-    if: always() && github.event_name != 'pull_request' && needs.deploy-apps.result == 'success'
+    # Après `invalidate` (ignoré si le site n'a pas bougé) : scanner avant, c'est
+    # lire l'ancien rendu encore en cache.
+    needs: [deploy-apps, invalidate]
+    if: always() && github.event_name != 'pull_request' && needs.deploy-apps.result == 'success' && (needs.invalidate.result == 'success' || needs.invalidate.result == 'skipped')
     permissions:
       contents: read
     strategy:
