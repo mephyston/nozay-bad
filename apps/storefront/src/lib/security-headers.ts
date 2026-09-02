@@ -30,6 +30,9 @@ export function buildCsp(mediaOrigin: string): string {
     "default-src 'self'",
     "base-uri 'self'",
     "frame-ancestors 'none'",
+    // Sans repli sur default-src : absente, un formulaire injecté pourrait poster
+    // n'importe où. Les formulaires de la boutique (OTP, commandes) postent chez elle.
+    "form-action 'self'",
     "object-src 'none'",
     `img-src ${imgSrc}`,
     "font-src 'self' data:",

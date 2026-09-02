@@ -1,8 +1,9 @@
 ---
+// Écran de démarrage PWA (même traitement que l'admin). En commentaire de frontmatter
+// et non HTML : un commentaire HTML part dans la page, et ZAP le relève.
 import { formatAppVersion } from '@nba/ui';
 ---
 
-<!-- Écran de démarrage PWA (même traitement que l'admin). -->
 <div id="pwa-splash" class="fixed inset-0 z-[9999] bg-background flex flex-col items-center justify-center transition-opacity duration-500">
   <div class="relative z-10 flex flex-col items-center gap-6">
     <img src="/logo.png" alt="Logo Nozay Bad" class="w-72 h-72 animate-pulse object-contain" />

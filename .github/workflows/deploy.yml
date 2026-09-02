@@ -30,11 +30,11 @@ permissions:
 
 env:
   NODE_VERSION: "22"
-  # Interrupteur du DAST. "false" : ZAP rend son rapport (artefact du run) mais ne
-  # bloque pas. Passer à "true" une fois la règle WAF posée sur Cloudflare (voir le job
-  # dast) et le premier rapport trié dans .zap/rules.tsv ; à partir de là, un verdict
-  # FAIL rend le run rouge et la promotion refuse le commit.
-  DAST_BLOQUANT: "false"
+  # Interrupteur du DAST. "true" : un verdict FAIL de ZAP (règles marquées FAIL dans
+  # .zap/rules.tsv) rend le run rouge, et la promotion refuse le commit. Repasser à
+  # "false" ne sert qu'à débloquer un faux positif le temps de l'inscrire dans le
+  # fichier de règles, motif à l'appui.
+  DAST_BLOQUANT: "true"
 
 jobs:
   # Derrière les tests, et non à côté d'eux.

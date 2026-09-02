@@ -3,6 +3,7 @@ import cloudflare from '@astrojs/cloudflare';
 import svelte from '@astrojs/svelte';
 import AstroPWA from '@vite-pwa/astro';
 import tailwindcss from '@tailwindcss/vite';
+import { headersStatiques } from '../../scripts/headers-statiques.mjs';
 
 // Environnement inliné au build (chaque branche est buildée séparément) :
 //  - 'development' via le script `dev:storefront`
@@ -45,6 +46,12 @@ export default defineConfig({
   }),
   integrations: [
     svelte(),
+    // Les actifs (feuilles de style, manifeste, icônes PWA) sont servis avant le worker :
+    // leurs en-têtes passent par `_headers`. Valeurs identiques à src/lib/security-headers.ts.
+    headersStatiques({
+      hstsMaxAge: 31536000,
+      permissionsPolicy: 'geolocation=(), microphone=(), camera=()'
+    }),
     AstroPWA({
       // App SSR authentifiée : le SW ne doit ni recharger la page tout seul
       // (le rechargement effaçait le widget Turnstile en mode PWA), ni servir de

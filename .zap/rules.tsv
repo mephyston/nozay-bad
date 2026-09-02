@@ -4,5 +4,26 @@
 # IGNORE ce qu'on a examiné et jugé sans objet ICI, motif à l'appui. Les identifiants sont
 # ceux des « passive scan rules » de ZAP (https://www.zaproxy.org/docs/alerts/).
 #
-# Exemple :
-# 10038	FAIL	(Content Security Policy manquante : les Workers la posent, une régression est un bug)
+# Tri du premier rapport (2026-09-03, site public et boutique en préproduction).
+
+# --- Ce qu'on garantit : les en-têtes que les applications posent sur chaque réponse,
+#     pages par le middleware, actifs par scripts/headers-statiques.mjs. Une régression
+#     ici est un bug de livraison.
+10035	FAIL	(HSTS absent : posé par @nba/security-headers et _headers ; sa disparition est une régression)
+10021	FAIL	(X-Content-Type-Options absent : même garantie que HSTS)
+10038	FAIL	(Content-Security-Policy absente sur une page : le middleware la pose toujours)
+10020	FAIL	(Anti-clickjacking absent : frame-ancestors none et X-Frame-Options DENY partout)
+10063	FAIL	(Permissions-Policy absente : posée sur pages et actifs)
+
+# --- Ce qu'on sait et qu'on ne traite pas maintenant : reste en WARN, visible dans le
+#     rapport, sans bloquer.
+10055	WARN	(CSP unsafe-inline : Astro inline le script anti-scintillement du thème et des styles ; passer aux nonces est un chantier à part)
+
+# --- Sans objet ici, examiné instance par instance.
+10202	IGNORE	(Anti-CSRF : les seuls formulaires relevés sont des <form method=dialog> qui ferment une boîte de dialogue sans requête)
+90004	IGNORE	(COEP/COOP/CORP : isolation cross-origin sans objet, aucun SharedArrayBuffer ; COEP casserait les cadres YouTube et Google du site)
+10049	IGNORE	(Contenu cachable ou non : la politique de cache est délibérée, pages publiques en cache de bord, boutique en no-store)
+10015	IGNORE	(Directives Cache-Control à réexaminer : même motif que 10049)
+10109	IGNORE	(Application web moderne : informatif, décrit Astro et Svelte)
+10017	IGNORE	(Script tiers : le seul est Turnstile, challenges.cloudflare.com, autorisé explicitement par la CSP de la boutique)
+90003	IGNORE	(SRI absent : le script Turnstile change sans préavis, un hash figé le casserait ; la CSP borne son origine)
