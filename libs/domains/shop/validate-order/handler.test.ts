@@ -3,8 +3,6 @@ import { eq } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
 import { validateOrder } from './handler';
 import { ordersTable, productsTable, productCategoriesTable } from '../shared/schema';
-// eslint-disable-next-line no-restricted-imports
-// eslint-disable-next-line no-restricted-imports
 import { seasonsTable } from '@nba/accounting/schema';
 import { OrderInvalidOrProcessedError, InsufficientStockError } from '../shared/errors';
 import type { OrderStatus } from '../shared/order';

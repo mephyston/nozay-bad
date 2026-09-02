@@ -14,6 +14,10 @@ export async function getPaymentMethodByCode(db: DbOrTx, code: string): Promise<
   return db.select().from(paymentMethodsTable).where(eq(paymentMethodsTable.code, code)).get();
 }
 
+export async function listPaymentMethods(db: DbOrTx): Promise<(typeof paymentMethodsTable.$inferSelect)[]> {
+  return db.select().from(paymentMethodsTable).all();
+}
+
 /**
  * L'identifiant d'un compte, qu'on lui passe son code ou son identifiant.
  *

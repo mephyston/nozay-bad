@@ -3,11 +3,11 @@ import { type DbOrTx } from '@nba/db';
 import { ordersTable, productsTable } from '../shared/schema';
 import type { OrderStatus } from '../shared/order';
 import { getMembersByIds } from '@nba/members-api';
-import { paymentMethodsTable } from '@nba/accounting/schema';
+import { listPaymentMethods } from '@nba/accounting-api';
 
 export class ListOrdersRepository {
   async getPaymentMethods(db: DbOrTx) {
-    return db.select().from(paymentMethodsTable).all();
+    return listPaymentMethods(db);
   }
   async list(db: DbOrTx, filters: { seasonId?: number; status?: string; memberId?: number }): Promise<(typeof ordersTable.$inferSelect)[]> {
     const conditions = [];
