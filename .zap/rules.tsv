@@ -1,0 +1,8 @@
+# Règles du scan ZAP baseline joué par le job dast de deploy.yml sur la préproduction.
+# Une ligne par règle : <identifiant><TAB><IGNORE|WARN|FAIL><TAB>(<motif>)
+# Tout ce qui n'est pas listé est WARN. On passe en FAIL ce qu'on tient à garantir, en
+# IGNORE ce qu'on a examiné et jugé sans objet ICI, motif à l'appui. Les identifiants sont
+# ceux des « passive scan rules » de ZAP (https://www.zaproxy.org/docs/alerts/).
+#
+# Exemple :
+# 10038	FAIL	(Content Security Policy manquante : les Workers la posent, une régression est un bug)
