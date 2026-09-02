@@ -428,15 +428,115 @@ jobs:
           retention-days: 14
 
   # ──────────────────────────────────────────────────────────────
+  # 2c. Sécurité : secrets, SAST, dépendances, workflows. En parallèle des autres
+  #     vérifications ; bloque le déploiement staging, donc la promotion.
+  #
+  #     Le dépôt est privé sur un plan Free : l'onglet Security de GitHub (CodeQL,
+  #     secret scanning, dependency review) lui est fermé. Tout ce qui suit est donc
+  #     libre et tourne ici ; la restitution passe par les annotations (`::error`)
+  #     et le résumé du job, pas par un tableau de bord.
+  # ──────────────────────────────────────────────────────────────
+  security:
+    name: Secrets, SAST, dépendances et workflows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          # Historique complet : gitleaks lit les commits, pas seulement l'arbre.
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Gratuit pour un compte personnel (une licence n'est exigée que des
+      # organisations). Sur un push, l'action ne relit que les commits poussés ; les
+      # exceptions vivent dans .gitleaks.toml et .gitleaksignore.
+      - name: Secrets (gitleaks)
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_SUMMARY: "true"
+
+      # Semgrep Community : règles TypeScript, Node, OWASP Top 10 et GitHub Actions,
+      # seules celles de sévérité ERROR bloquent. Image `latest` à dessein : ce sont
+      # les règles du registre qui comptent, et elles exigent un moteur récent. Les
+      # verdicts sont rejoués en annotations, l'image ne le fait pas elle-même.
+      - name: SAST (Semgrep)
+        run: |
+          status=0
+          docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep:latest \
+            semgrep scan \
+              --config p/typescript --config p/nodejs --config p/owasp-top-ten --config p/github-actions \
+              --metrics=off --severity ERROR --error --quiet --json -o semgrep.json . || status=$?
+          jq -r '.results[] | "::error file=\(.path),line=\(.start.line),title=\(.check_id)::\(.extra.message | gsub("\n"; " "))"' semgrep.json
+          {
+            echo "### SAST (Semgrep)"
+            echo "Verdicts bloquants : $(jq '.results | length' semgrep.json)"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+      # Vulnérabilités connues des dépendances (package-lock.json). Bloque sur HIGH et
+      # CRITICAL munies d'un correctif ; les exceptions datées vivent dans
+      # .trivyignore.yaml. Dependabot ouvre les PR de correction, Trivy refuse de
+      # déployer tant qu'elles ne sont pas fusionnées.
+      - name: Dépendances (Trivy)
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          trivyignores: .trivyignore.yaml
+          skip-dirs: node_modules
+
+      - name: Setup Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Cache node_modules
+        id: node-modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.node-modules.outputs.cache-hit != 'true'
+        run: npm ci
+
+      # Chaque paquet installé porte la signature du registre npm : un paquet substitué
+      # entre le registre et le runner (miroir, cache, proxy) ne la porte pas.
+      - name: Intégrité des paquets (npm audit signatures)
+        run: npm audit signatures
+
+      # Les workflows sont une surface d'attaque à part entière : zizmor audite leurs
+      # motifs dangereux (injection par gabarit, actions non épinglées, droits trop
+      # larges…), actionlint leur syntaxe et leurs expressions. Les exceptions de
+      # zizmor sont motivées dans .github/zizmor.yml.
+      - name: Workflows (zizmor, actionlint)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pipx run zizmor==1.30.0 --no-progress .github
+          docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color
+
+  # ──────────────────────────────────────────────────────────────
   # 3. Deploy API (en premier — les autres apps en dépendent via Service Binding)
   # ──────────────────────────────────────────────────────────────
   deploy-api:
     name: Déployer l'API (staging)
     runs-on: ubuntu-latest
-    needs: [detect-changes, test, visual, static-checks]
+    needs: [detect-changes, test, visual, static-checks, security]
     # `!= 'pull_request'` et non `== 'push'` : le déclenchement manuel forçait les
     # booléens à true puis ne déployait rien, tous les jobs étant filtrés sur `push`.
-    if: always() && github.event_name != 'pull_request' && needs.detect-changes.outputs.api == 'true' && needs.static-checks.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped')
+    if: always() && github.event_name != 'pull_request' && needs.detect-changes.outputs.api == 'true' && needs.static-checks.result == 'success' && needs.security.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped')
     environment: staging
     steps:
       - name: Checkout
@@ -483,8 +583,8 @@ jobs:
   deploy-apps:
     name: Déployer ${{ matrix.app }} (staging)
     runs-on: ubuntu-latest
-    needs: [detect-changes, test, visual, static-checks, deploy-api, release]
-    if: always() && github.event_name != 'pull_request' && needs.detect-changes.outputs.apps != '[]' && needs.static-checks.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    needs: [detect-changes, test, visual, static-checks, security, deploy-api, release]
+    if: always() && github.event_name != 'pull_request' && needs.detect-changes.outputs.apps != '[]' && needs.static-checks.result == 'success' && needs.security.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     environment: staging
     strategy:
       fail-fast: false

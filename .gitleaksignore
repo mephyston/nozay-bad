@@ -1,0 +1,14 @@
+# Empreintes (commit:fichier:règle:ligne) de signalements passés, connus et traités.
+# Une empreinte ne vaut que pour SON commit : le même secret réintroduit ailleurs
+# est à nouveau signalé.
+#
+# Clé interne de PRÉPRODUCTION (INTERNAL_API_KEY) commitée en clair du 26/07 au
+# 03/08/2026 dans les wrangler.json et deploy.yml, retirée par l'audit de sécurité
+# (commit 32c94cc7). Elle reste lisible dans l'historique : la valeur est à faire
+# tourner côté Cloudflare si ce n'est pas déjà fait.
+9c43dc33f170f958126482a0a550dd16fa814e5f:apps/storefront/wrangler.json:generic-api-key:39
+c079e86e916dd4c65ab6bbaa2cd31c26ea9913fc:apps/admin/wrangler.json:generic-api-key:31
+7137ea91dd4844f5880875820f8ebf75e1e049e5:.github/workflows/deploy.yml:generic-api-key:210
+7137ea91dd4844f5880875820f8ebf75e1e049e5:.github/workflows/deploy.yml:generic-api-key:254
+f8b2df52e6a0bdc139eefcd8a7b174a890518ac5:apps/admin/wrangler.json:generic-api-key:31
+f8b2df52e6a0bdc139eefcd8a7b174a890518ac5:apps/storefront/wrangler.json:generic-api-key:37
