@@ -20,6 +20,9 @@ export default defineConfig({
     name: 'architecture-tests',
     globals: true,
     environment: 'node',
-    include: ['libs/*.test.ts'],
+    // `scripts/*.test.mjs` : les scripts de CI sont du JS nu, hors du `include` de
+    // tsconfig — un test .ts qui les importerait ferait échouer le typecheck, faute de
+    // déclarations. Ils rejoignent donc les tests transverses, joués par `static-checks`.
+    include: ['libs/*.test.ts', 'scripts/*.test.mjs'],
   },
 });

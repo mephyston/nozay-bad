@@ -453,16 +453,61 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          # Historique et tags complets : l'action résout la version affichée par
+          # `git describe`, et un checkout superficiel la priverait de tout repère.
+          fetch-depth: 0
 
       - uses: ./.github/actions/deploy-app
         with:
           app: ${{ matrix.app }}
           env: staging
-          # L'admin et la boutique affichent la version (badge, écran de démarrage PWA).
-          # Le job `release` a pu être ignoré — un commit `ci:` ou `chore:` n'incrémente
-          # rien : l'action retombe alors sur le SHA court.
-          app-version: ${{ matrix.app != 'website' && needs.release.outputs.version || '' }}
+          # Simple indice, souvent vide : `release` ne coupe rien sur un `chore:` ou un
+          # `docs:`, et il est carrément ignoré sur un `workflow_dispatch`. L'action
+          # retombe alors sur le dernier tag atteignable — la version qui tourne
+          # réellement — plutôt que sur un « 0.0.0 » qui ressemblait à une panne.
+          app-version: ${{ needs.release.outputs.version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           node-version: ${{ env.NODE_VERSION }}
+
+  # ──────────────────────────────────────────────────────────────
+  # Invalider le cache du site public après le déploiement.
+  #
+  # La version de contenu entre dans la clé de cache des pages : l'incrémenter rend d'un
+  # coup toutes les entrées précédentes inatteignables. Les handlers du CMS le font à
+  # chaque publication, et `invalidatePublicContent` à chaque écriture sur les créneaux ou
+  # les événements — mais rien ne le faisait pour un **déploiement**.
+  #
+  # Or un changement de gabarit ou de composant modifie le HTML à contenu identique : les
+  # points de présence qui ont déjà la page continuaient de servir l'ancien rendu jusqu'à
+  # l'expiration du TTL. Correction invisible, sans que rien ne le signale.
+  #
+  # Après le déploiement, jamais avant : invalider d'abord laisserait les requêtes
+  # suivantes remplir le cache avec l'ancien code encore en ligne.
+  #
+  # Seulement si le site a été déployé — invalider sur une livraison d'API seule viderait
+  # le cache pour rien.
+  # ──────────────────────────────────────────────────────────────
+  invalidate:
+    name: Invalider le cache du site public (staging)
+    needs: [detect-changes, deploy-apps]
+    if: always() && needs.deploy-apps.result == 'success' && contains(needs.detect-changes.outputs.apps, 'website')
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Incrémenter cms_content_version
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >
+          npx wrangler d1 execute nba-db-staging --remote
+          --command "UPDATE cms_content_version SET version = version + 1, updated_at = unixepoch() WHERE id = 1;"

@@ -17,6 +17,17 @@ describe('formatAppVersion', () => {
     expect(formatAppVersion('0.0.0-a1b2c3d')).toBe('v0.0.0-a1b2c3d');
   });
 
+  it('garde la métadonnée de build qui qualifie une livraison de préproduction', () => {
+    // Forme rendue par `scripts/resolve-app-version.mjs` : la version qui tourne, plus
+    // le commit qui l'a construite.
+    expect(formatAppVersion('2.2.2+d0438f6')).toBe('v2.2.2+d0438f6');
+  });
+
+  it('ne préfixe pas ce qui n’est pas un numéro', () => {
+    // Repli des `astro.config.mjs` hors CI. Le splash affichait « VDEV ».
+    expect(formatAppVersion('dev')).toBe('dev');
+  });
+
   it('retombe sur 0.0.0 quand rien ne lui parvient', () => {
     expect(formatAppVersion(undefined)).toBe('v0.0.0');
     expect(formatAppVersion('')).toBe('v0.0.0');
