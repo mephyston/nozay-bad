@@ -21,6 +21,15 @@ export default defineConfig({
   // `/media/<clé>/400.webp` tombait alors en 404. La règle est donc appliquée par le
   // middleware, qui sait distinguer une page d'un fichier.
   trailingSlash: 'ignore',
+  /*
+    Pas de session Astro : le site public n'en ouvre aucune.
+
+    L'adaptateur Cloudflare branchait pourtant son pilote par défaut sur un binding KV
+    `SESSION` que ce worker ne déclare nulle part — le runtime partait donc dans le
+    paquet servi, et se faisait analyser à chaque démarrage à froid, pour un pilote
+    posé sur du vide. `false` l'en sort (Astro ≥ 7.2).
+  */
+  session: false,
   adapter: cloudflare({
     /*
       Stockage local partagé avec l'API.

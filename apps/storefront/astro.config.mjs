@@ -31,6 +31,15 @@ const WEBSITE_URL =
 
 export default defineConfig({
   output: 'server',
+  /*
+    Pas de session Astro, malgré l'espace adhérent.
+
+    La nôtre est un JWT signé, relu dans l'en-tête `Cookie` par `lib/auth.ts` : sans
+    état, et donc sans une lecture KV par requête — c'est ce choix qui tient le plan
+    gratuit. Le runtime d'Astro et son pilote KV par défaut n'ont jamais rien stocké
+    ici ; `false` les sort du paquet (Astro ≥ 7.2).
+  */
+  session: false,
   adapter: cloudflare({
     runtime: { mode: 'local' }
   }),

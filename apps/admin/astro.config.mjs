@@ -63,6 +63,12 @@ export default defineConfig({
   // (cf. lib/security-headers.ts), donc une page préchargée ne serait pas stockée et
   // la requête serait perdue — tout en déclenchant côté serveur les appels API et D1
   // d'une page jamais visitée.
+  /*
+    Pas de session Astro : l'identité vient de Cloudflare Access, dont le middleware
+    vérifie le jeton à chaque requête. Rien n'a jamais été stocké dans le pilote KV que
+    l'adaptateur branchait par défaut ; `false` sort le runtime du paquet (Astro ≥ 7.2).
+  */
+  session: false,
   adapter: cloudflare({
     runtime: { mode: 'local' }
   }),
