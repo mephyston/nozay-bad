@@ -4,7 +4,7 @@ import { bumpContentVersion } from '@nba/cms-api';
 import { isOpenPlayPath } from './open-play';
 
 /**
- * Invalidation du cache du site public après une écriture sur les créneaux.
+ * Invalidation du cache du site public après une écriture sur les créneaux ou les événements.
  *
  * Le site met ses pages en cache au bord sous la version de contenu
  * (`withPageCache`/`withDataCache`, cf. `apps/website/src/lib/cache.ts`). Seul le
@@ -29,6 +29,28 @@ const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const SCHEDULES_PREFIX = '/schedules';
 
 /**
+ * Préfixe monté par `app.route('/events', eventsRouter)`.
+ *
+ * Le site lit trois sources — `/cms`, `/schedules` et `/events` — et deux seulement
+ * invalidaient : le domaine CMS depuis ses propres handlers, les créneaux depuis ce
+ * middleware. Les événements du club n'avaient rien, et c'était le `s-maxage` d'une heure
+ * du HTML qui bornait seul leur péremption. Mesuré le 2026-09-02 : ce TTL d'une heure
+ * coûtait 35 % de défauts de cache sur la page d'accueil — 63 à 98 ms de rendu là où un
+ * succès coûte 1 ms — parce que le cache d'un Worker est propre à chaque centre de données
+ * et qu'un point de présence peu sollicité manque systématiquement une entrée d'une heure.
+ *
+ * Fermer ce trou est le préalable à l'allongement du cache : la clé de page porte la
+ * version de contenu, donc c'est la version — jamais le TTL — qui doit gouverner la
+ * fraîcheur.
+ */
+const EVENTS_PREFIX = '/events';
+
+/** Le chemin tombe-t-il sous ce préfixe, segment complet et non simple amorce ? */
+function sousPrefixe(path: string, prefix: string): boolean {
+  return path === prefix || path.startsWith(`${prefix}/`);
+}
+
+/**
  * L'écriture change-t-elle ce que lit le site public ?
  *
  * Comparaison sur le segment complet, comme `isOpenPlayPath` et pour la même raison :
@@ -36,8 +58,8 @@ const SCHEDULES_PREFIX = '/schedules';
  */
 export function affectsPublicSite(method: string, path: string): boolean {
   if (!WRITE_METHODS.has(method)) return false;
-  const underSchedules = path === SCHEDULES_PREFIX || path.startsWith(`${SCHEDULES_PREFIX}/`);
-  return underSchedules && !isOpenPlayPath(path);
+  if (sousPrefixe(path, EVENTS_PREFIX)) return true;
+  return sousPrefixe(path, SCHEDULES_PREFIX) && !isOpenPlayPath(path);
 }
 
 export type ContentVersionBindings = { DB: D1Database };

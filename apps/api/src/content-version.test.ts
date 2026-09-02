@@ -45,9 +45,29 @@ describe('affectsPublicSite', () => {
     expect(affectsPublicSite('DELETE', '/schedules/open-play/openers/1')).toBe(false);
   });
 
+  /*
+    Le site lit trois sources — `/cms`, `/schedules` et `/events` — et la troisième
+    n'invalidait rien. Un événement créé restait invisible jusqu'à une heure, bornée par le
+    seul `s-maxage` du HTML. Rien ne le signalait : la route répondait 200, le handler
+    écrivait bien, et la page publique mentait.
+  */
+  it('retient les écritures sur les événements du club, que le site affiche', () => {
+    expect(affectsPublicSite('POST', '/events')).toBe(true);
+    expect(affectsPublicSite('PUT', '/events/7')).toBe(true);
+    expect(affectsPublicSite('DELETE', '/events/7')).toBe(true);
+    expect(affectsPublicSite('PATCH', '/events/7/registrations')).toBe(true);
+  });
+
+  it('laisse les lectures d\'événements tranquilles', () => {
+    expect(affectsPublicSite('GET', '/events')).toBe(false);
+    expect(affectsPublicSite('GET', '/events/7')).toBe(false);
+  });
+
   it('ne déborde pas sur les autres domaines ni sur un préfixe voisin', () => {
     expect(affectsPublicSite('POST', '/members')).toBe(false);
     expect(affectsPublicSite('POST', '/schedulesomething')).toBe(false);
+    // Même précaution du côté des événements : le segment doit être complet.
+    expect(affectsPublicSite('POST', '/eventsomething')).toBe(false);
   });
 });
 
