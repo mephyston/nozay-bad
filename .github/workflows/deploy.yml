@@ -265,6 +265,17 @@ jobs:
       - name: Run TypeScript typecheck
         run: npm run typecheck
 
+      # ESLint : `no-undef` sur les .svelte (rien d'autre ne les contrôle), étanchéité
+      # VSA et règles de couches (no-restricted-imports), pas de comparaison sur les
+      # libellés dans les dépôts. Le plugin Nx lit le graphe de projets : `nx show
+      # projects` le calcule d'abord, sinon sa règle se tait sur un simple avertissement.
+      # setup-node a enregistré le problem matcher d'ESLint : chaque verdict devient une
+      # annotation sur la ligne fautive.
+      - name: Run ESLint
+        run: |
+          npx nx show projects > /dev/null
+          npx eslint . --max-warnings 0
+
       # Tests d'architecture (frontières d'import inter-libs) : transverses, donc joués
       # systématiquement — un --changed pourrait les rater. Config dédiée sans pool
       # Workers : l'ancienne invocation `--project architecture-tests` évaluait les 30
