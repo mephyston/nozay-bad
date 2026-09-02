@@ -17,6 +17,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          # Le jeton n'est pas laissé dans le dépôt de travail : il est passé au seul
+          # `git push` qui en a besoin, en fin de job.
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
@@ -39,6 +43,8 @@ jobs:
         run: npm run test:visual:update
 
       - name: Commit updated baselines
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -49,4 +55,4 @@ jobs:
             exit 0
           fi
           git commit -m "test(visual): update Linux baselines [skip ci]"
-          git push
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${GITHUB_REF_NAME}"

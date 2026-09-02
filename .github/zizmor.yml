@@ -2,14 +2,6 @@
 # de deploy.yml et bloquant. Chaque exception ci-dessous porte sa justification :
 # en ajouter une sans motif, c'est rendre l'outil décoratif.
 rules:
-  artipacked:
-    # Les deux seuls checkouts qui GARDENT leurs identifiants git : le job release
-    # pousse le tag de version, visual-baselines commite les références PNG. Tous les
-    # autres checkouts posent persist-credentials: false. Les numéros de ligne sont
-    # ceux de l'étape `uses: actions/checkout` de chacun.
-    ignore:
-      - deploy.yml:44
-      - visual-baselines.yml:18
   github-env:
     # L'action composite alimente $GITHUB_ENV avec les variables de build calculées
     # par scripts/build-env.mjs, dont les entrées ne viennent que de la matrice du
