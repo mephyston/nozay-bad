@@ -30,10 +30,26 @@ env:
   NODE_VERSION: "22"
 
 jobs:
+  # Derrière les tests, et non à côté d'eux.
+  #
+  # `release` ne dépendait de rien : il posait le tag et publiait la GitHub Release en
+  # parallèle de `static-checks`, `test` et `visual`. Un run rouge laissait donc une
+  # version publiée que rien ne ferait jamais tourner — le dépôt annonçait une v2.2.3
+  # dont aucun Worker ne portait le code. Une version publiée est un fait public et
+  # définitif : elle ne doit exister que pour du code qu'on est prêt à déployer.
+  #
+  # Le prix est assumé : la publication attend la fin des tests, soit un quart d'heure
+  # de plus. Personne ne regarde un tag pendant ce temps, et il vaut mieux tard que faux.
+  #
+  # Même forme d'`if` que `deploy-api` et `deploy-apps` plus bas : `always()` est
+  # nécessaire pour que le job survive à un `visual` *ignoré* — sans lui, un job sauté
+  # en amont saute aussi tout ce qui en dépend —, et chaque dépendance est donc
+  # réexaminée à la main, en distinguant « réussi » de « sauté ».
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    needs: [static-checks, test, visual]
+    if: always() && github.event_name == 'push' && needs.static-checks.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped')
     outputs:
       version: ${{ steps.semantic.outputs.new_release_version }}
     steps:
@@ -70,8 +86,8 @@ jobs:
   # 1. Détecte les apps affectées avec nx affected
   # ──────────────────────────────────────────────────────────────
   detect-changes:
-    # Indépendant de `release` : tourne en parallèle du semantic-release au lieu
-    # d'attendre derrière lui. Seul `deploy-admin` a besoin de la version publiée.
+    # En tête de graphe, sans dépendance : la détection conditionne `test` et `visual`,
+    # eux-mêmes en amont de `release` depuis que la publication attend les tests.
     name: Detect affected apps
     runs-on: ubuntu-latest
     outputs:
