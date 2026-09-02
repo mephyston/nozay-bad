@@ -164,7 +164,7 @@ jobs:
             ADMIN_AFFECTED="true"
             DS_AFFECTED="true"
           else
-            AFFECTED=$(npx nx show projects --affected --base=$NX_BASE --head=$NX_HEAD 2>/dev/null || echo "")
+            AFFECTED=$(npx nx show projects --affected --base="$NX_BASE" --head="$NX_HEAD" 2>/dev/null || echo "")
             echo "Affected projects: [$AFFECTED]"
 
             if echo "$AFFECTED" | grep -qx 'api'; then API_AFFECTED="true"; else API_AFFECTED="false"; fi
@@ -198,14 +198,19 @@ jobs:
           if [ "$STOREFRONT_AFFECTED" = "true" ]; then LIST="$LIST storefront"; fi
           if [ "$WEBSITE_AFFECTED" = "true" ]; then LIST="$LIST website"; fi
           if [ "$ADMIN_AFFECTED" = "true" ]; then LIST="$LIST admin"; fi
+          # $LIST volontairement sans guillemets : c'est le découpage en mots qui fait
+          # une ligne par application.
+          # shellcheck disable=SC2086
           APPS=$(printf '%s\n' $LIST | jq -R . | jq -sc 'map(select(length>0))')
-          echo "apps=$APPS" >> $GITHUB_OUTPUT
 
-          echo "api=$API_AFFECTED" >> $GITHUB_OUTPUT
-          echo "storefront=$STOREFRONT_AFFECTED" >> $GITHUB_OUTPUT
-          echo "website=$WEBSITE_AFFECTED" >> $GITHUB_OUTPUT
-          echo "admin=$ADMIN_AFFECTED" >> $GITHUB_OUTPUT
-          echo "ds=$DS_AFFECTED" >> $GITHUB_OUTPUT
+          {
+            echo "apps=$APPS"
+            echo "api=$API_AFFECTED"
+            echo "storefront=$STOREFRONT_AFFECTED"
+            echo "website=$WEBSITE_AFFECTED"
+            echo "admin=$ADMIN_AFFECTED"
+            echo "ds=$DS_AFFECTED"
+          } >> "$GITHUB_OUTPUT"
 
           echo "Debug outputs → api=$API_AFFECTED storefront=$STOREFRONT_AFFECTED admin=$ADMIN_AFFECTED website=$WEBSITE_AFFECTED ds=$DS_AFFECTED"
 
