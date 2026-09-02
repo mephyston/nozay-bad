@@ -2,9 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { approveExpense } from './handler';
 import { expensesTable } from '../shared/schema';
-// eslint-disable-next-line no-restricted-imports
 import { ledgerEntriesTable, categoriesTable } from '@nba/accounting/schema';
-// eslint-disable-next-line no-restricted-imports
 import { seasonsTable } from '@nba/accounting/schema';
 import { eq } from 'drizzle-orm';
 

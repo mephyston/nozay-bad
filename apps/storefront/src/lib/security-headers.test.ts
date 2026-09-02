@@ -29,6 +29,7 @@ describe('applySecurityHeaders', () => {
     expect(res.headers.get('X-Frame-Options')).toBe('DENY');
     // Appliquée, plus seulement observée : la période Report-Only a servi à calibrer.
     expect(res.headers.get('Content-Security-Policy')).toContain("default-src 'self'");
+    expect(res.headers.get('Content-Security-Policy')).toContain("form-action 'self'");
     expect(res.headers.get('Content-Security-Policy-Report-Only')).toBeNull();
     expect(await res.json()).toEqual({ success: true });
   });

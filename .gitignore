@@ -85,3 +85,8 @@ apps/api/wrangler.test.json
 dev.log
 **/dev.log
 scratch/
+
+# Rapports locaux des scanners de la CI (semgrep, zap)
+semgrep.json
+/zap-report*
+sbom.cdx.json

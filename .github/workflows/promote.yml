@@ -42,15 +42,17 @@ jobs:
       sha: ${{ steps.resolve.outputs.sha }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
           ref: ${{ inputs.ref }}
+          persist-credentials: false
 
       - name: Résoudre et contrôler
         id: resolve
         env:
           GH_TOKEN: ${{ github.token }}
+          PROMOTED_REF: ${{ inputs.ref }}
         run: |
           SHA=$(git rev-parse HEAD)
 
@@ -70,7 +72,7 @@ jobs:
           # La version affichée n'est plus calculée ici : c'est l'action de déploiement
           # qui la résout, par la même règle que la préproduction. Le résumé s'en tient
           # donc à ce que ce job sait — le ref demandé et le commit qu'il désigne.
-          echo "### Promotion de \`${{ inputs.ref }}\` → \`$SHA\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Promotion de \`$PROMOTED_REF\` → \`$SHA\`" >> "$GITHUB_STEP_SUMMARY"
 
   # ──────────────────────────────────────────────────────────────
   # 2. Migrations D1 puis API (les 3 autres Workers en dépendent).
@@ -82,20 +84,21 @@ jobs:
     environment: production
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           # Le SHA figé, jamais le tag : un tag peut être déplacé entre les deux jobs.
           ref: ${{ needs.guard.outputs.sha }}
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
       - name: Cache node_modules
         id: node-modules
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -138,7 +141,7 @@ jobs:
   #    mélangeant deux versions de @nba/db.
   # ──────────────────────────────────────────────────────────────
   apps:
-    name: Deploy ${{ matrix.app }} (production)
+    name: Déployer ${{ matrix.app }} (production)
     needs: [guard, api]
     runs-on: ubuntu-latest
     environment: production
@@ -148,12 +151,13 @@ jobs:
         app: [storefront, website, admin]
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           ref: ${{ needs.guard.outputs.sha }}
           # Historique et tags complets : l'action lit `git describe` pour savoir quelle
           # version porte le commit promu.
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: ./.github/actions/deploy-app
         with:
@@ -193,11 +197,12 @@ jobs:
     environment: production
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           ref: ${{ needs.guard.outputs.sha }}
+          persist-credentials: false
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
 

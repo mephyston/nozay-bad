@@ -1,0 +1,16 @@
+# Configuration de gitleaks (détection de secrets), jouée :
+#   - en CI, dans le job sécurité de deploy.yml, sur l'historique poussé ;
+#   - en local, par le hook pre-commit (fichiers indexés) et pre-push (commits à partir).
+#
+# Le jeu de règles par défaut est conservé tel quel. Ce fichier ne porte que les
+# exceptions, chacune avec son motif ; les faux positifs déjà commités dans
+# l'historique sont, eux, listés par empreinte dans .gitleaksignore.
+title = "nozay-bad"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Jeu d'essai des notifications push : clé d'authentification de souscription fabriquée pour les tests, jamais utilisée hors vitest"
+regexTarget = "secret"
+regexes = ['''^BTBZMqHH6r4T''']

@@ -28,6 +28,24 @@ npx nx run-many -t check --projects=admin,website,storefront
 echo "[pre-push] tests d'architecture…"
 npx vitest run --config vitest.architecture.config.ts
 
+# ESLint, comme en CI : --max-warnings 0, graphe Nx calculé d'abord (sans lui, la règle
+# du plugin Nx se tait sur un simple avertissement).
+echo "[pre-push] eslint…"
+npx nx show projects > /dev/null
+npx eslint . --max-warnings 0
+
+# Secrets dans les commits qui vont partir. Le pre-commit a vu chaque commit ; ceci
+# rattrape un --no-verify, un commit fait ailleurs, ou un poste sans gitleaks.
+if command -v gitleaks >/dev/null 2>&1; then
+  echo "[pre-push] secrets…"
+  RANGE_BASE=$(git merge-base HEAD "@{upstream}" 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || echo "")
+  if [ -n "$RANGE_BASE" ] && [ "$RANGE_BASE" != "$(git rev-parse HEAD)" ]; then
+    gitleaks git --no-banner --redact --config .gitleaks.toml --log-opts="${RANGE_BASE}..HEAD"
+  fi
+else
+  echo "[pre-push] gitleaks absent (brew install gitleaks) : pas de contrôle local des secrets." >&2
+fi
+
 # Base de comparaison : le point de divergence avec la branche amont si elle existe,
 # sinon le commit précédent (première poussée d'une branche).
 BASE=$(git merge-base HEAD "@{upstream}" 2>/dev/null || git rev-parse HEAD~1 2>/dev/null || echo "")

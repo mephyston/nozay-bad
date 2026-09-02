@@ -34,9 +34,9 @@
     "@cloudflare/vitest-pool-workers": "^0.18.7",
     "@cloudflare/workers-types": "^5.20260707.1",
     "@lucide/svelte": "^1.27.0",
-    "@nx/eslint-plugin": "^23.0.1",
-    "@nx/js": "23.0.1",
-    "@nx/workspace": "23.0.1",
+    "@nx/eslint-plugin": "^23.2.0",
+    "@nx/js": "^23.2.0",
+    "@nx/workspace": "^23.2.0",
     "@playwright/test": "^1.62.1",
     "@storybook/addon-svelte-csf": "^5.1.2",
     "@storybook/addon-themes": "^10.5.5",
@@ -50,7 +50,7 @@
     "fast-xml-parser": "^5.10.1",
     "globals": "^17.7.0",
     "jsdom": "^26.0.0",
-    "nx": "23.0.2",
+    "nx": "^23.2.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "semantic-release": "^25.0.8",
@@ -117,7 +117,13 @@
           "successComment": false,
           "failComment": false,
           "failTitle": false,
-          "releasedLabels": false
+          "releasedLabels": false,
+          "assets": [
+            {
+              "path": "sbom.cdx.json",
+              "label": "SBOM CycloneDX (dépendances de production)"
+            }
+          ]
         }
       ]
     ]

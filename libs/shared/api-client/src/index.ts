@@ -12,7 +12,6 @@ export interface ApiClientEnv {
     imposé à chaque page. Les appelants du client, eux, continuent de recevoir une
     `Response` pleinement typée.
   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   API_SERVICE?: { fetch: (input: any, init?: any) => Promise<unknown> };
   INTERNAL_API_KEY?: string;
   API_URL?: string;

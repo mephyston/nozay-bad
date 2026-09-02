@@ -3,6 +3,7 @@
 </script>
 
 <script lang="ts">
+  import type { PickableMedia } from './media-types';
   import { Sheet, Input, Button, EmptyState, ErrorAlert, Label } from '@nba/ui';
   import { mediaUrl } from '../../media-url';
   import { ImageOff, Search, Upload } from '@lucide/svelte';

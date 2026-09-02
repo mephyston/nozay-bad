@@ -1,0 +1,11 @@
+# Exceptions de Trivy (vulnérabilités des dépendances), jouées par le job sécurité
+# de deploy.yml. Le scan bloque sur toute vulnérabilité HIGH ou CRITICAL disposant
+# d'un correctif : l'exception n'est là que pour un correctif qu'on ne peut pas
+# prendre tout de suite. Elle porte une date d'expiration ET un motif, sinon elle
+# devient une décision permanente prise sans y penser.
+#
+# vulnerabilities:
+#   - id: CVE-2026-00000
+#     expired_at: 2026-10-31
+#     statement: "Correctif dans une majeure de X, montée prévue avec la refonte Y."
+vulnerabilities: []

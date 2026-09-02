@@ -3,6 +3,7 @@ import { defineConfig } from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
 import svelte from '@astrojs/svelte';
 import tailwindcss from '@tailwindcss/vite';
+import { headersStatiques } from '../../scripts/headers-statiques.mjs';
 
 const APP_ENV = process.env.PUBLIC_APP_ENV || 'production';
 
@@ -63,7 +64,15 @@ export default defineConfig({
   }),
   // Ni PWA ni service worker : site public, indexable, sans session. Un worker de
   // cache ferait doublon avec le cache du bord, qui est déjà notre levier principal.
-  integrations: [svelte()],
+  integrations: [
+    svelte(),
+    // Les actifs (feuilles de style, logos) sont servis avant le worker : leurs en-têtes
+    // passent par `_headers`. Valeurs identiques à src/lib/security-headers.ts.
+    headersStatiques({
+      hstsMaxAge: 63072000,
+      permissionsPolicy: 'camera=(), microphone=(), geolocation=(), payment=()'
+    })
+  ],
   vite: {
     /*
       `strictPort` vit ici et non dans `server` : c'est une option **Vite**, qu'Astro ne

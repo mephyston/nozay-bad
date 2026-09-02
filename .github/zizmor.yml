@@ -1,0 +1,20 @@
+# Configuration de zizmor (audit statique des workflows), joué dans le job sécurité
+# de deploy.yml et bloquant. Chaque exception ci-dessous porte sa justification :
+# en ajouter une sans motif, c'est rendre l'outil décoratif.
+rules:
+  github-env:
+    # L'action composite alimente $GITHUB_ENV avec les variables de build calculées
+    # par scripts/build-env.mjs, dont les entrées ne viennent que de la matrice du
+    # workflow appelant (jamais d'un événement pull_request_target ni d'un titre de
+    # PR). Le motif de l'audit — une écriture pilotée par un contenu externe — ne
+    # s'applique pas ; zizmor ne peut pas le savoir depuis une action composite.
+    ignore:
+      - action.yml
+  self-repository:
+    # `uses: ./.github/actions/deploy-app` : zizmor propose la syntaxe `$/...`, plus
+    # récente, qui référence l'action du dépôt sans passer par le checkout. Le job
+    # fait de toute façon un checkout complet (nx build a besoin des sources), le
+    # gain est nul et la syntaxe trop jeune pour y accrocher les déploiements.
+    ignore:
+      - deploy.yml
+      - promote.yml

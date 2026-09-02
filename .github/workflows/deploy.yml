@@ -22,12 +22,19 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || 'staging' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# Lecture seule par défaut ; seul `release` écrit (tags et Releases GitHub).
+# `actions: read` sert à nx-set-shas, qui cherche le dernier run vert de main.
 permissions:
-  contents: write
+  contents: read
   actions: read
 
 env:
   NODE_VERSION: "22"
+  # Interrupteur du DAST. "true" : un verdict FAIL de ZAP (règles marquées FAIL dans
+  # .zap/rules.tsv) rend le run rouge, et la promotion refuse le commit. Repasser à
+  # "false" ne sert qu'à débloquer un faux positif le temps de l'inscrire dans le
+  # fichier de règles, motif à l'appui.
+  DAST_BLOQUANT: "true"
 
 jobs:
   # Derrière les tests, et non à côté d'eux.
@@ -46,28 +53,32 @@ jobs:
   # en amont saute aussi tout ce qui en dépend —, et chaque dépendance est donc
   # réexaminée à la main, en distinguant « réussi » de « sauté ».
   release:
-    name: Semantic Release
+    name: Version, changelog et release GitHub
     runs-on: ubuntu-latest
-    needs: [static-checks, test, visual]
-    if: always() && github.event_name == 'push' && needs.static-checks.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped')
+    needs: [static-checks, test, visual, security]
+    if: always() && github.event_name == 'push' && needs.static-checks.result == 'success' && needs.security.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped')
+    permissions:
+      contents: write
     outputs:
       version: ${{ steps.semantic.outputs.new_release_version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Pas d'identifiants git conservés, ici non plus : semantic-release s'authentifie
+          # lui-même auprès de GitHub avec GITHUB_TOKEN (recette officielle).
+          persist-credentials: false
       
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
           
       - name: Cache node_modules
         id: node-modules
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -76,9 +87,16 @@ jobs:
         if: steps.node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
+      # Nomenclature logicielle (SBOM, CycloneDX) des dépendances de production,
+      # dérivée du lockfile et jointe à la Release GitHub (assets, package.json).
+      # Elle répond en une requête à « la 3.12 embarque-t-elle ce paquet ? » sans
+      # rejouer l'installation du commit de l'époque.
+      - name: Générer le SBOM (CycloneDX)
+        run: npm sbom --sbom-format cyclonedx --omit dev --package-lock-only > sbom.cdx.json
+
       - name: Semantic Release
         id: semantic
-        uses: cycjimmy/semantic-release-action@v6
+        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -88,7 +106,7 @@ jobs:
   detect-changes:
     # En tête de graphe, sans dépendance : la détection conditionne `test` et `visual`,
     # eux-mêmes en amont de `release` depuis que la publication attend les tests.
-    name: Detect affected apps
+    name: Périmètre du push (nx affected)
     runs-on: ubuntu-latest
     outputs:
       api: ${{ steps.affected.outputs.api }}
@@ -101,19 +119,20 @@ jobs:
       apps: ${{ steps.affected.outputs.apps }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
       - name: Cache node_modules
         id: node-modules
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -123,7 +142,7 @@ jobs:
         run: npm ci
 
       - name: Derive appropriate SHAs for affected commands
-        uses: nrwl/nx-set-shas@v5
+        uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
         with:
           # L'action prend le dernier run vert de la branche nommée ici. Sur un tronc
           # unique il n'y a qu'un candidat : `main`, aussi bien pour un push que pour le
@@ -132,10 +151,12 @@ jobs:
 
       - name: Detect affected projects
         id: affected
+        env:
+          FORCE_ALL: ${{ github.event.inputs.force_all }}
         run: |
           COMMIT_MSG=$(git log -1 --pretty=%B)
           
-          if [ "${{ github.event.inputs.force_all }}" = "true" ] || echo "$COMMIT_MSG" | grep -qiE "force deploy|deploy all"; then
+          if [ "$FORCE_ALL" = "true" ] || echo "$COMMIT_MSG" | grep -qiE "force deploy|deploy all"; then
             echo "Forcing deployment of all applications"
             API_AFFECTED="true"
             STOREFRONT_AFFECTED="true"
@@ -143,7 +164,7 @@ jobs:
             ADMIN_AFFECTED="true"
             DS_AFFECTED="true"
           else
-            AFFECTED=$(npx nx show projects --affected --base=$NX_BASE --head=$NX_HEAD 2>/dev/null || echo "")
+            AFFECTED=$(npx nx show projects --affected --base="$NX_BASE" --head="$NX_HEAD" 2>/dev/null || echo "")
             echo "Affected projects: [$AFFECTED]"
 
             if echo "$AFFECTED" | grep -qx 'api'; then API_AFFECTED="true"; else API_AFFECTED="false"; fi
@@ -177,14 +198,19 @@ jobs:
           if [ "$STOREFRONT_AFFECTED" = "true" ]; then LIST="$LIST storefront"; fi
           if [ "$WEBSITE_AFFECTED" = "true" ]; then LIST="$LIST website"; fi
           if [ "$ADMIN_AFFECTED" = "true" ]; then LIST="$LIST admin"; fi
+          # $LIST volontairement sans guillemets : c'est le découpage en mots qui fait
+          # une ligne par application.
+          # shellcheck disable=SC2086
           APPS=$(printf '%s\n' $LIST | jq -R . | jq -sc 'map(select(length>0))')
-          echo "apps=$APPS" >> $GITHUB_OUTPUT
 
-          echo "api=$API_AFFECTED" >> $GITHUB_OUTPUT
-          echo "storefront=$STOREFRONT_AFFECTED" >> $GITHUB_OUTPUT
-          echo "website=$WEBSITE_AFFECTED" >> $GITHUB_OUTPUT
-          echo "admin=$ADMIN_AFFECTED" >> $GITHUB_OUTPUT
-          echo "ds=$DS_AFFECTED" >> $GITHUB_OUTPUT
+          {
+            echo "apps=$APPS"
+            echo "api=$API_AFFECTED"
+            echo "storefront=$STOREFRONT_AFFECTED"
+            echo "website=$WEBSITE_AFFECTED"
+            echo "admin=$ADMIN_AFFECTED"
+            echo "ds=$DS_AFFECTED"
+          } >> "$GITHUB_OUTPUT"
 
           echo "Debug outputs → api=$API_AFFECTED storefront=$STOREFRONT_AFFECTED admin=$ADMIN_AFFECTED website=$WEBSITE_AFFECTED ds=$DS_AFFECTED"
 
@@ -195,25 +221,26 @@ jobs:
   #     Aucun needs : rien ici ne dépend du calcul d'affected.
   # ──────────────────────────────────────────────────────────────
   static-checks:
-    name: Static checks
+    name: Garde-fous, typecheck et architecture
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           # Pas d'historique : aucun de ces contrôles n'en a besoin
           # (check-schema-integrity fait un git log -1, couvert par le commit de tête).
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
       - name: Cache node_modules
         id: node-modules
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -257,6 +284,17 @@ jobs:
       - name: Run TypeScript typecheck
         run: npm run typecheck
 
+      # ESLint : `no-undef` sur les .svelte (rien d'autre ne les contrôle), étanchéité
+      # VSA et règles de couches (no-restricted-imports), pas de comparaison sur les
+      # libellés dans les dépôts. Le plugin Nx lit le graphe de projets : `nx show
+      # projects` le calcule d'abord, sinon sa règle se tait sur un simple avertissement.
+      # setup-node a enregistré le problem matcher d'ESLint : chaque verdict devient une
+      # annotation sur la ligne fautive.
+      - name: Run ESLint
+        run: |
+          npx nx show projects > /dev/null
+          npx eslint . --max-warnings 0
+
       # Tests d'architecture (frontières d'import inter-libs) : transverses, donc joués
       # systématiquement — un --changed pourrait les rater. Config dédiée sans pool
       # Workers : l'ancienne invocation `--project architecture-tests` évaluait les 30
@@ -268,24 +306,25 @@ jobs:
   # 2. Tests affectés (exécutés sur PR et sur Push)
   # ──────────────────────────────────────────────────────────────
   test:
-    name: Test affected
+    name: Tests affectés
     runs-on: ubuntu-latest
     needs: detect-changes
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
       - name: Cache node_modules
         id: node-modules
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -300,7 +339,7 @@ jobs:
       # (actions/cache ne resauvegarde jamais sur hit exact) ; restore-keys restaure
       # le plus récent du même lockfile.
       - name: Cache Vite transform cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules/.vite
           key: vite-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
@@ -308,7 +347,7 @@ jobs:
             vite-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
 
       - name: Derive appropriate SHAs for affected commands
-        uses: nrwl/nx-set-shas@v5
+        uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
         with:
           # L'action prend le dernier run vert de la branche nommée ici. Sur un tronc
           # unique il n'y a qu'un candidat : `main`, aussi bien pour un push que pour le
@@ -330,23 +369,25 @@ jobs:
   #     générées/commitées par le workflow visual-baselines.yml.
   # ──────────────────────────────────────────────────────────────
   visual:
-    name: Visual regression
+    name: Régression visuelle du design system
     runs-on: ubuntu-latest
     needs: detect-changes
     if: needs.detect-changes.outputs.ds == 'true'
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
       - name: Cache node_modules
         id: node-modules
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -357,7 +398,7 @@ jobs:
 
       - name: Cache Playwright browsers
         id: playwright-cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -380,7 +421,7 @@ jobs:
         run: npx playwright install-deps chromium
 
       - name: Cache Nx
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .nx/cache
           key: nx-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
@@ -397,7 +438,7 @@ jobs:
 
       - name: Upload report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: playwright-visual-report
           path: |
@@ -406,29 +447,134 @@ jobs:
           retention-days: 14
 
   # ──────────────────────────────────────────────────────────────
-  # 3. Deploy API (en premier — les autres apps en dépendent via Service Binding)
+  # 2c. Sécurité : secrets, SAST, dépendances, workflows. En parallèle des autres
+  #     vérifications ; bloque le déploiement staging, donc la promotion.
+  #
+  #     Le dépôt est privé sur un plan Free : l'onglet Security de GitHub (CodeQL,
+  #     secret scanning, dependency review) lui est fermé. Tout ce qui suit est donc
+  #     libre et tourne ici ; la restitution passe par les annotations (`::error`)
+  #     et le résumé du job, pas par un tableau de bord.
   # ──────────────────────────────────────────────────────────────
-  deploy-api:
-    name: Deploy API Worker (staging)
+  security:
+    name: Secrets, SAST, dépendances et workflows
     runs-on: ubuntu-latest
-    needs: [detect-changes, test, visual, static-checks]
-    # `!= 'pull_request'` et non `== 'push'` : le déclenchement manuel forçait les
-    # booléens à true puis ne déployait rien, tous les jobs étant filtrés sur `push`.
-    if: always() && github.event_name != 'pull_request' && needs.detect-changes.outputs.api == 'true' && needs.static-checks.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped')
-    environment: staging
+    permissions:
+      contents: read
+      # Sur une PR, gitleaks-action demande à l'API la liste des commits à scanner ;
+      # sans ce droit il échoue avant d'avoir rien lu (« Resource not accessible »).
+      pull-requests: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          # Historique complet : gitleaks lit les commits, pas seulement l'arbre.
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Gratuit pour un compte personnel (une licence n'est exigée que des
+      # organisations). Sur un push, l'action ne relit que les commits poussés ; les
+      # exceptions vivent dans .gitleaks.toml et .gitleaksignore.
+      - name: Secrets (gitleaks)
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_SUMMARY: "true"
+
+      # Semgrep Community : règles TypeScript, Node, OWASP Top 10 et GitHub Actions,
+      # seules celles de sévérité ERROR bloquent. Image `latest` à dessein : ce sont
+      # les règles du registre qui comptent, et elles exigent un moteur récent. Les
+      # verdicts sont rejoués en annotations, l'image ne le fait pas elle-même.
+      - name: SAST (Semgrep)
+        run: |
+          status=0
+          docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep:latest \
+            semgrep scan \
+              --config p/typescript --config p/nodejs --config p/owasp-top-ten --config p/github-actions \
+              --metrics=off --severity ERROR --error --quiet --json -o semgrep.json . || status=$?
+          jq -r '.results[] | "::error file=\(.path),line=\(.start.line),title=\(.check_id)::\(.extra.message | gsub("\n"; " "))"' semgrep.json
+          {
+            echo "### SAST (Semgrep)"
+            echo "Verdicts bloquants : $(jq '.results | length' semgrep.json)"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+      # Vulnérabilités connues des dépendances (package-lock.json). Bloque sur HIGH et
+      # CRITICAL munies d'un correctif ; les exceptions datées vivent dans
+      # .trivyignore.yaml. Dependabot ouvre les PR de correction, Trivy refuse de
+      # déployer tant qu'elles ne sont pas fusionnées.
+      - name: Dépendances (Trivy)
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          trivyignores: .trivyignore.yaml
+          skip-dirs: node_modules
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
       - name: Cache node_modules
         id: node-modules
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.node-modules.outputs.cache-hit != 'true'
+        run: npm ci
+
+      # Chaque paquet installé porte la signature du registre npm : un paquet substitué
+      # entre le registre et le runner (miroir, cache, proxy) ne la porte pas.
+      - name: Intégrité des paquets (npm audit signatures)
+        run: npm audit signatures
+
+      # Les workflows sont une surface d'attaque à part entière : zizmor audite leurs
+      # motifs dangereux (injection par gabarit, actions non épinglées, droits trop
+      # larges…), actionlint leur syntaxe et leurs expressions. Les exceptions de
+      # zizmor sont motivées dans .github/zizmor.yml.
+      - name: Workflows (zizmor, actionlint)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pipx run zizmor==1.30.0 --no-progress .github
+          docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color
+
+  # ──────────────────────────────────────────────────────────────
+  # 3. Deploy API (en premier — les autres apps en dépendent via Service Binding)
+  # ──────────────────────────────────────────────────────────────
+  deploy-api:
+    name: Déployer l'API (staging)
+    runs-on: ubuntu-latest
+    needs: [detect-changes, test, visual, static-checks, security]
+    # `!= 'pull_request'` et non `== 'push'` : le déclenchement manuel forçait les
+    # booléens à true puis ne déployait rien, tous les jobs étant filtrés sur `push`.
+    if: always() && github.event_name != 'pull_request' && needs.detect-changes.outputs.api == 'true' && needs.static-checks.result == 'success' && needs.security.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped')
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Cache node_modules
+        id: node-modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -457,10 +603,10 @@ jobs:
   # 4. Deploy des 3 applications Astro affectées, en parallèle (après l'API)
   # ──────────────────────────────────────────────────────────────
   deploy-apps:
-    name: Deploy ${{ matrix.app }} (staging)
+    name: Déployer ${{ matrix.app }} (staging)
     runs-on: ubuntu-latest
-    needs: [detect-changes, test, visual, static-checks, deploy-api, release]
-    if: always() && github.event_name != 'pull_request' && needs.detect-changes.outputs.apps != '[]' && needs.static-checks.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    needs: [detect-changes, test, visual, static-checks, security, deploy-api, release]
+    if: always() && github.event_name != 'pull_request' && needs.detect-changes.outputs.apps != '[]' && needs.static-checks.result == 'success' && needs.security.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.visual.result == 'success' || needs.visual.result == 'skipped') && (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     environment: staging
     strategy:
       fail-fast: false
@@ -468,11 +614,12 @@ jobs:
         app: ${{ fromJSON(needs.detect-changes.outputs.apps) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           # Historique et tags complets : l'action résout la version affichée par
           # `git describe`, et un checkout superficiel la priverait de tout repère.
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: ./.github/actions/deploy-app
         with:
@@ -514,9 +661,11 @@ jobs:
     environment: staging
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -527,3 +676,59 @@ jobs:
         run: >
           npx wrangler d1 execute nba-db-staging --remote
           --command "UPDATE cms_content_version SET version = version + 1, updated_at = unixepoch() WHERE id = 1;"
+
+  # ──────────────────────────────────────────────────────────────
+  # 5. DAST : ZAP en scan passif (« baseline ») sur la préproduction qui vient
+  #    d'être déployée, site public et boutique. Dans le MÊME run que le
+  #    déploiement, exprès : un verdict rouge rend le run rouge, et le garde de
+  #    promote.yml refuse alors le commit. Le scan actif complet, long et bruyant,
+  #    n'a pas sa place ici ; il se joue à la main ou sur planning.
+  #
+  #    Non authentifié par nature : l'admin est derrière Access et la boutique
+  #    derrière un OTP, seules leurs surfaces publiques sont vues.
+  #
+  #    Cloudflare voit arriver un scanner : prévoir une règle WAF « skip » sur la zone
+  #    quand l'en-tête X-Scan-Token porte la valeur du secret ZAP_WAF_TOKEN (à créer
+  #    des deux côtés). Tant que le secret n'existe pas, l'en-tête part vide et le
+  #    scan subit les protections comme n'importe quel robot.
+  # ──────────────────────────────────────────────────────────────
+  dast:
+    name: DAST ZAP sur staging (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    # Après `invalidate` (ignoré si le site n'a pas bougé) : scanner avant, c'est
+    # lire l'ancien rendu encore en cache.
+    needs: [deploy-apps, invalidate]
+    if: always() && github.event_name != 'pull_request' && needs.deploy-apps.result == 'success' && (needs.invalidate.result == 'success' || needs.invalidate.result == 'skipped')
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: website
+            target: https://staging-www.nozaybad.fr
+          - app: storefront
+            target: https://staging-my.nozaybad.fr
+    steps:
+      # Pour .zap/rules.tsv seulement.
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: ZAP baseline (${{ matrix.target }})
+        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
+        with:
+          target: ${{ matrix.target }}
+          rules_file_name: .zap/rules.tsv
+          artifact_name: zap-${{ matrix.app }}
+          # Pas d'issue GitHub par verdict : le rapport est dans l'artefact du run.
+          allow_issue_writing: false
+          fail_action: ${{ env.DAST_BLOQUANT == 'true' }}
+          cmd_options: >-
+            -z "-config replacer.full_list(0).description=waf
+            -config replacer.full_list(0).enabled=true
+            -config replacer.full_list(0).matchtype=REQ_HEADER
+            -config replacer.full_list(0).matchstr=X-Scan-Token
+            -config replacer.full_list(0).regex=false
+            -config replacer.full_list(0).replacement=${{ secrets.ZAP_WAF_TOKEN }}"

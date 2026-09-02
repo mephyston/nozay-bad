@@ -1,0 +1,17 @@
+#!/bin/sh
+# Détection de secrets sur ce qui est indexé, AVANT le commit. C'est ce que la
+# « push protection » de GitHub ferait côté serveur si le dépôt n'était pas privé sur
+# un plan Free : ici, un secret arrêté l'est avant d'entrer dans l'historique, d'où
+# il ne ressort jamais vraiment. Le job sécurité de la CI rejoue le même scan sur
+# les commits poussés, avec la même configuration (.gitleaks.toml, .gitleaksignore).
+#
+# gitleaks n'est pas un paquet npm : `brew install gitleaks`. Absent, le hook prévient
+# et laisse passer — la CI, elle, ne laisse pas passer.
+#
+# Contournement ponctuel (faux positif à documenter ensuite) : git commit --no-verify
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "[pre-commit] gitleaks absent (brew install gitleaks) : pas de contrôle local des secrets." >&2
+  exit 0
+fi
+
+gitleaks git --staged --no-banner --redact --config .gitleaks.toml

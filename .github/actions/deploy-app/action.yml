@@ -38,13 +38,13 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-node@v5
+    - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
       with:
         node-version: ${{ inputs.node-version }}
         cache: npm
 
     - id: node-modules
-      uses: actions/cache@v6
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: node_modules
         key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -53,7 +53,7 @@ runs:
       shell: bash
       run: npm ci
 
-    - uses: actions/cache@v6
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: .nx/cache
         key: nx-${{ runner.os }}-deploy-${{ inputs.app }}-${{ github.sha }}
@@ -64,9 +64,14 @@ runs:
     # build, donc elles ne peuvent pas venir de dist/server/wrangler.json. Elles sont
     # dérivées plutôt que recopiées — la clé VAPID est lue dans apps/api/wrangler.json,
     # ce qui garantit qu'elle reste identique à celle du Worker qui signe les envois.
+    # Les entrées passent par l'environnement et non par le gabarit `${{ }}` : même
+    # venant d'une matrice, une valeur interpolée dans un script y est exécutée.
     - name: Résoudre les variables de build
       shell: bash
-      run: node scripts/build-env.mjs --app "${{ inputs.app }}" --env "${{ inputs.env }}" >> "$GITHUB_ENV"
+      env:
+        APP: ${{ inputs.app }}
+        TARGET_ENV: ${{ inputs.env }}
+      run: node scripts/build-env.mjs --app "$APP" --env "$TARGET_ENV" >> "$GITHUB_ENV"
 
     # Version affichée par le badge de la barre latérale et les écrans de démarrage.
     #
@@ -78,10 +83,13 @@ runs:
     # sinon `git describe` ne trouve rien et tout retombe sur « 0.0.0 ».
     - name: Résoudre la version affichée
       shell: bash
+      env:
+        APP_VERSION: ${{ inputs.app-version }}
+        TARGET_ENV: ${{ inputs.env }}
       run: |
         node scripts/resolve-app-version.mjs \
-          --env "${{ inputs.env }}" \
-          --released "${{ inputs.app-version }}"
+          --env "$TARGET_ENV" \
+          --released "$APP_VERSION"
 
     # L'écran « Nouveautés » de l'admin importe CHANGELOG.md. Depuis le retrait de
     # @semantic-release/git, plus rien ne le met à jour dans le dépôt : on le
@@ -95,18 +103,26 @@ runs:
 
     - name: Construire ${{ inputs.app }}
       shell: bash
-      run: npx nx build "${{ inputs.app }}"
+      env:
+        APP: ${{ inputs.app }}
+      run: npx nx build "$APP"
 
     # Garde-fou anti-promotion-contaminée : le bundle ne doit contenir aucun marqueur de
     # l'autre environnement. astro.config.mjs retombe sur 'production' quand
     # PUBLIC_APP_ENV est absent, donc un oubli ne se voit pas autrement.
     - name: Vérifier le bundle
       shell: bash
-      run: node scripts/build-env.mjs --app "${{ inputs.app }}" --env "${{ inputs.env }}" --verify
+      env:
+        APP: ${{ inputs.app }}
+        TARGET_ENV: ${{ inputs.env }}
+      run: node scripts/build-env.mjs --app "$APP" --env "$TARGET_ENV" --verify
 
     - name: Appliquer la configuration d'environnement
       shell: bash
-      run: node scripts/patch-wrangler.mjs --app "${{ inputs.app }}" --env "${{ inputs.env }}"
+      env:
+        APP: ${{ inputs.app }}
+        TARGET_ENV: ${{ inputs.env }}
+      run: node scripts/patch-wrangler.mjs --app "$APP" --env "$TARGET_ENV"
 
     - name: Déployer
       shell: bash

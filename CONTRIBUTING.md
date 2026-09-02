@@ -192,3 +192,26 @@ Le déclenchement des migrations D1 n'a **aucun mécanisme dédié** : il repose
 ### 8.8 Limites d'exploitation
 
 **5 cron triggers maximum par compte** (plan Workers Free, erreur API 10072). La production en consomme 3 ; `apps/api/wrangler.json` porte donc `env.staging.triggers.crons: []` — **le tableau vide est obligatoire**, sans lui l'environnement hérite des crons de la racine.
+
+## 9. Sécurité de la chaîne de livraison
+
+Le dépôt est privé sur un plan GitHub Free : l'onglet Security (CodeQL, secret scanning, dependency review, protection de branche) lui est fermé. La chaîne repose donc sur des outils libres joués dans `deploy.yml`, tous **bloquants pour le déploiement staging, donc pour la promotion** (le garde de `promote.yml` exige un run vert). La restitution passe par les annotations et le résumé de chaque run, pas par un tableau de bord.
+
+| Pilier | Outil | Où vivent les exceptions |
+|---|---|---|
+| Secrets | gitleaks (CI, pre-commit, pre-push) | `.gitleaks.toml` (motifs), `.gitleaksignore` (empreintes passées) |
+| SAST | Semgrep Community, sévérité ERROR | `// nosemgrep: <règle>` sur la ligne, avec le pourquoi |
+| Dépendances | Trivy sur `package-lock.json`, HIGH/CRITICAL corrigeables ; Dependabot ouvre les PR | `.trivyignore.yaml`, exceptions **datées** |
+| Intégrité | `npm audit signatures` | aucune |
+| Workflows | zizmor, actionlint ; actions épinglées par SHA | `.github/zizmor.yml` |
+| Qualité | ESLint `--max-warnings 0` dans static-checks | la configuration, jamais une directive sans motif |
+| DAST | ZAP baseline sur staging, après déploiement | `.zap/rules.tsv` ; interrupteur `DAST_BLOQUANT` en tête de `deploy.yml` |
+| Traçabilité | SBOM CycloneDX joint à chaque Release | — |
+
+Trois règles de conduite :
+
+- **Une exception porte toujours son motif**, et une date quand elle en mérite une. Sans ça, l'outil devient décoratif et personne ne le remarque.
+- **Les hooks locaux répètent la CI** (`.githooks/pre-commit`, `pre-push`) : gitleaks se pose avec `brew install gitleaks`, le reste est dans `node_modules`. Un poste sans gitleaks est prévenu et laissé passer ; la CI, non.
+- **Dependabot n'est pas optionnel** : une PR de mise à jour verte se fusionne, une rouge se lit. Trivy refuse de déployer tant qu'une vulnérabilité corrigeable traîne dans le lockfile.
+
+Ce que le plan Free ne donne pas et qu'aucun outil ne remplace : la protection de `main` par GitHub (Pro à 4 $/mois) et la push protection côté serveur. Le pre-commit gitleaks est le substitut de la seconde.

@@ -2,8 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { createOrder } from './handler';
 import { productsTable, productCategoriesTable } from '../shared/schema';
-// eslint-disable-next-line no-restricted-imports
-// eslint-disable-next-line no-restricted-imports
 import { seasonsTable } from '@nba/accounting/schema';
 import { MemberNotEligibleError } from '../shared/errors';
 import { insertMemberFixture } from '@nba/members/test-fixtures';

@@ -4,8 +4,6 @@ import { setupMockDb } from '@nba/db/test-utils';
 import { payOrder } from './handler';
 import { PayOrderRepository } from './repository';
 import { ordersTable, productsTable, productCategoriesTable } from '../shared/schema';
-// eslint-disable-next-line no-restricted-imports
-// eslint-disable-next-line no-restricted-imports
 import { seasonsTable } from '@nba/accounting/schema';
 import { ShopCategoryNotConfiguredError } from '../shared/errors';
 import { getSeasonReports } from '@nba/accounting-api';
