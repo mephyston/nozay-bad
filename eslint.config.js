@@ -16,6 +16,11 @@ export default tseslint.config(
       '**/tmp/**',
       '**/.nx/**',
       '**/.astro/**',
+      // Sorties de build locales, ignorées par git mais pas par ESLint : le hook
+      // pre-push refusait un push à cause du bundle Storybook compilé sur le poste.
+      '**/storybook-static/**',
+      '**/playwright-report/**',
+      '**/coverage/**',
       '**/*.d.ts'
     ]
   },
