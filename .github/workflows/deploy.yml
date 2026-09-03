@@ -97,8 +97,13 @@ jobs:
       # dérivée du lockfile et jointe à la Release GitHub (assets, package.json).
       # Elle répond en une requête à « la 3.12 embarque-t-elle ce paquet ? » sans
       # rejouer l'installation du commit de l'époque.
+      #
+      # Sans les optionnelles : `npm sbom` valide l'arbre et refuse (ESBOMPROBLEMS) les
+      # dépendances empaquetées d'un fallback wasm (@tailwindcss/oxide-wasm32-wasi) qui
+      # déclarent des versions étrangères au lockfile. Ces binaires par plateforme ne
+      # font de toute façon pas partie du bundle déployé sur Workers.
       - name: Générer le SBOM (CycloneDX)
-        run: npm sbom --sbom-format cyclonedx --omit dev --package-lock-only > sbom.cdx.json
+        run: npm sbom --sbom-format cyclonedx --omit dev --omit optional --package-lock-only > sbom.cdx.json
 
       - name: Semantic Release
         id: semantic
