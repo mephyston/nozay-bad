@@ -32,9 +32,15 @@ env:
   NODE_VERSION: "22"
   # Interrupteur du DAST. "true" : un verdict FAIL de ZAP (règles marquées FAIL dans
   # .zap/rules.tsv) rend le run rouge, et la promotion refuse le commit. Repasser à
-  # "false" ne sert qu'à débloquer un faux positif le temps de l'inscrire dans le
-  # fichier de règles, motif à l'appui.
-  DAST_BLOQUANT: "true"
+  # "false" ne sert qu'à débloquer un faux positif le temps de le traiter.
+  #
+  # À "false" depuis le 03/09/2026 : Cloudflare sert une page de challenge au runner
+  # GitHub sur `/` et `/sitemap.xml` des deux cibles (CSP à nonce, sans HSTS), et ZAP
+  # la juge comme une page à nous. L'en-tête X-Scan-Token part bien, la règle WAF
+  # « Scanner ZAP » ne suffit donc pas : le produit qui challenge n'est pas couvert par
+  # son Skip (Bot Fight Mode ne s'exempte pas sur le plan Free). Repasser à "true" une
+  # fois le challenge levé côté Cloudflare, vérifié par un run vert du job dast.
+  DAST_BLOQUANT: "false"
 
 jobs:
   # Derrière les tests, et non à côté d'eux.
