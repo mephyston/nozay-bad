@@ -5,7 +5,15 @@
 # du dépôt (Settings → Advanced Security). Ce fichier ne pilote que les mises à jour
 # de VERSION : une PR groupée par semaine et par famille, pour ne pas noyer le tronc.
 #
-# Chaque PR passe par deploy.yml (garde-fous, tests, sécurité) : on fusionne si vert.
+# Chaque PR passe par deploy.yml : un lockfile modifié rejoue TOUTE la suite (15 min),
+# c'est voulu (une dépendance peut casser n'importe quoi). Le budget de 2 000 minutes
+# se protège donc en faisant peu de PR, pas en testant moins : une seule PR npm par
+# semaine, mineures et correctifs de tout le monde ensemble ; les majeures ne sont pas
+# proposées, elles se décident et se jouent à la main, avec leur lecture des notes de
+# version. Les PR de sécurité automatiques sont coupées dans les réglages du dépôt :
+# l'alerte reste, Trivy refuse de déployer tant que le lockfile porte une faille
+# corrigeable, et la PR hebdomadaire ou un `npm audit fix` la prend.
+#
 # Les préfixes suivent Conventional Commits, donc semantic-release n'émet aucune
 # version pour une PR Dependabot (chore = pas de release).
 version: 2
@@ -17,7 +25,7 @@ updates:
       day: monday
       time: "07:00"
       timezone: Europe/Paris
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 2
     # Délai de carence : on ne prend jamais une version publiée depuis moins de
     # sept jours. C'est la parade la moins chère aux paquets compromis, retirés du
     # registre en quelques heures ou quelques jours ; une majeure attend un mois.
@@ -26,13 +34,13 @@ updates:
       semver-major-days: 30
     commit-message:
       prefix: "chore(deps)"
+    # Les majeures ne sont pas proposées (voir en tête) ; une seule PR pour tout le reste.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
-      # Mineures et correctifs ensemble ; une majeure arrive seule, pour être lue.
-      production-mineures:
-        dependency-type: production
-        update-types: [minor, patch]
-      developpement-mineures:
-        dependency-type: development
+      dependances-mineures:
+        patterns: ["*"]
         update-types: [minor, patch]
 
   # Les actions sont épinglées par SHA (zizmor l'exige) : c'est Dependabot qui fait
