@@ -156,6 +156,42 @@ export async function generateSeasonReportPdf(
     // Le libellé s'arrête à gauche du montant Réalisé (on réserve ~70 pt).
     const labelMax = colReal - 70 - MARGIN;
 
+    /*
+     * Interligne et corps des lignes : choisis d'après la place, pas figés.
+     *
+     * Avec un interligne unique, le bloc des charges d'une saison bien remplie dépassait
+     * la première page de quelques points : sa barre « TOTAL GÉNÉRAL » se retrouvait seule
+     * en tête de la deuxième, et les produits dessous. On mesure donc chaque bloc avant de
+     * dessiner, et on resserre juste ce qu'il faut — de la présentation aérée d'origine
+     * (10 pt) jusqu'à 8 pt, seuil en deçà duquel le rapport ne se lit plus. Passé ce
+     * seuil, la pagination reprend ses droits.
+     */
+    type Densite = {
+      /** Corps du libellé de classe et de ses montants. */
+      classeSize: number;
+      /** Corps d'une ligne de catégorie. */
+      ligneSize: number;
+      /** Hauteur d'une ligne de classe (libellé, filet compris). */
+      classe: number;
+      /** Hauteur d'une ligne de catégorie. */
+      ligne: number;
+      /** Air laissé sous la dernière catégorie d'une classe. */
+      apresClasse: number;
+    };
+    const DENSITES: Densite[] = [
+      { classeSize: 10, ligneSize: 9.5, classe: 19, ligne: 13, apresClasse: 6 },
+      { classeSize: 9.5, ligneSize: 9, classe: 17, ligne: 11.5, apresClasse: 4 },
+      { classeSize: 9, ligneSize: 8.5, classe: 15, ligne: 10.5, apresClasse: 3 },
+      { classeSize: 8.5, ligneSize: 8, classe: 14, ligne: 9.5, apresClasse: 2 }
+    ];
+    // Hauteurs fixes d'un bloc : barre de section, en-têtes de colonnes, résultat, total.
+    const H_SECTION = 30;
+    const H_ENTETES = 14;
+    const H_RESULTAT = 16;
+    const H_TOTAL = 31;
+    /** Air entre le total des charges et la barre des produits, quand ils partagent la page. */
+    const H_ENTRE_BLOCS = 12;
+
     const chargeClasses = accountClasses.filter((ac) => ac.type === 'depense');
     const produitClasses = accountClasses.filter((ac) => ac.type === 'recette');
     /*
@@ -222,58 +258,76 @@ export async function generateSeasonReportPdf(
       return favorable ? GREEN : RED;
     };
 
-    const drawSide = (classes: AccountClass[], side: 'depense' | 'recette') => {
+    const drawSide = (classes: AccountClass[], side: 'depense' | 'recette', d: Densite) => {
       for (const ac of classes) {
         const classReal = calcGetClassSumRealise(categories, report, null, ac.code, side, 'realise', accountClasses);
         const cPrev = classPrev(ac.code, side);
         if (classReal <= 0 && cPrev <= 0) continue;
 
-        ensureSpace(19);
-        page.drawText(clip(classLabel(ac), bold, 10, labelMax), { x: MARGIN, y, size: 10, font: bold, color: INK });
-        drawRight(formatEuros(classReal), colReal, 10, bold, INK);
-        drawRight(formatEuros(cPrev), colPrev, 10, bold, INK);
-        drawRight(formatDelta(classReal - cPrev), colEcart, 10, bold, ecartColor(classReal - cPrev, side));
-        y -= 6;
-        page.drawLine({ start: { x: MARGIN, y }, end: { x: rightEdge, y }, thickness: 0.4, color: GREY });
-        y -= 13;
+        ensureSpace(d.classe);
+        page.drawText(clip(classLabel(ac), bold, d.classeSize, labelMax), { x: MARGIN, y, size: d.classeSize, font: bold, color: INK });
+        drawRight(formatEuros(classReal), colReal, d.classeSize, bold, INK);
+        drawRight(formatEuros(cPrev), colPrev, d.classeSize, bold, INK);
+        drawRight(formatDelta(classReal - cPrev), colEcart, d.classeSize, bold, ecartColor(classReal - cPrev, side));
+        // Le filet court sous les jambages, à mi-hauteur de l'air laissé avant les catégories.
+        const filet = y - 6;
+        page.drawLine({ start: { x: MARGIN, y: filet }, end: { x: rightEdge, y: filet }, thickness: 0.4, color: GREY });
+        y -= d.classe;
 
         for (const cat of calcGetClassCategories(categories, ac.code, side, accountClasses)) {
           const tReal = calcGetCatTotal(report, null, String(cat.id), side, 'realise');
           const tPrev = catPrev(cat.id, side);
           if (tReal <= 0 && tPrev <= 0) continue;
-          ensureSpace(13);
-          page.drawText(`•  ${clip(cat.adminLabel, font, 9.5, labelMax - 14)}`, { x: MARGIN + 14, y, size: 9.5, font, color: GREY });
-          drawRight(formatEuros(tReal), colReal, 9.5, font, GREY);
-          drawRight(formatEuros(tPrev), colPrev, 9.5, font, GREY);
-          drawRight(formatDelta(tReal - tPrev), colEcart, 9.5, font, ecartColor(tReal - tPrev, side));
-          y -= 13;
+          ensureSpace(d.ligne);
+          page.drawText(`•  ${clip(cat.adminLabel, font, d.ligneSize, labelMax - 14)}`, { x: MARGIN + 14, y, size: d.ligneSize, font, color: GREY });
+          drawRight(formatEuros(tReal), colReal, d.ligneSize, font, GREY);
+          drawRight(formatEuros(tPrev), colPrev, d.ligneSize, font, GREY);
+          drawRight(formatDelta(tReal - tPrev), colEcart, d.ligneSize, font, ecartColor(tReal - tPrev, side));
+          y -= d.ligne;
         }
-        y -= 6;
+        y -= d.apresClasse;
       }
     };
 
-    // Hauteur estimée d'une section (mêmes prédicats de visibilité que drawSide),
-    // pour décider d'un saut de page propre avant les Produits.
-    const measureSide = (classes: AccountClass[], side: 'depense' | 'recette') => {
+    // Hauteur des lignes d'un côté (mêmes prédicats de visibilité que drawSide).
+    const measureSide = (classes: AccountClass[], side: 'depense' | 'recette', d: Densite) => {
       let h = 0;
       for (const ac of classes) {
         const classReal = calcGetClassSumRealise(categories, report, null, ac.code, side, 'realise', accountClasses);
         const cPrev = classPrev(ac.code, side);
         if (classReal <= 0 && cPrev <= 0) continue;
-        h += 19;
+        h += d.classe;
         for (const cat of calcGetClassCategories(categories, ac.code, side, accountClasses)) {
           const tReal = calcGetCatTotal(report, null, String(cat.id), side, 'realise');
-          if (tReal > 0 || catPrev(cat.id, side) > 0) h += 13;
+          if (tReal > 0 || catPrev(cat.id, side) > 0) h += d.ligne;
         }
-        h += 6;
+        h += d.apresClasse;
       }
       return h;
     };
 
+    // Hauteur complète d'un bloc : barre, en-têtes, lignes, ligne de résultat, total.
+    const hCharges = (d: Densite) =>
+      H_SECTION + H_ENTETES + measureSide(charges, 'depense', d) + (netResReal >= 0 || netResPrev >= 0 ? H_RESULTAT : 0) + H_TOTAL;
+    const hProduits = (d: Densite) =>
+      H_SECTION + H_ENTETES + measureSide(produits, 'recette', d) + (netResReal < 0 || netResPrev < 0 ? H_RESULTAT : 0) + H_TOTAL;
+
+    /*
+     * Choix de la densité. Tout sur une page si une densité le permet ; sinon les charges
+     * entières sur cette page et les produits entiers sur la suivante ; sinon la plus
+     * serrée, et les sauts de page tombent où ils peuvent.
+     */
+    const placeIci = y - bottomLimit;
+    const placePageVierge = letterhead.bodyTop - 20 - bottomLimit;
+    const densite =
+      DENSITES.find((d) => hCharges(d) + H_ENTRE_BLOCS + hProduits(d) <= placeIci) ??
+      DENSITES.find((d) => hCharges(d) <= placeIci && hProduits(d) <= placePageVierge) ??
+      DENSITES[DENSITES.length - 1];
+
     // --- Charges ---
     sectionBar('CHARGES (Dépenses)', RED);
     colHeaders();
-    drawSide(charges, 'depense');
+    drawSide(charges, 'depense', densite);
     if (netResReal >= 0 || netResPrev >= 0) {
       ensureSpace(16);
       const excReal = netResReal >= 0 ? netResReal : 0;
@@ -288,14 +342,12 @@ export async function generateSeasonReportPdf(
     totalBar('TOTAL GÉNÉRAL', formatEuros(chargesReal), formatEuros(chargesPrev), DARK_RED);
 
     // --- Produits : démarrer sur une page propre s'il ne tient pas ici. ---
-    const produitsH =
-      30 + 14 + measureSide(produits, 'recette') + (netResReal < 0 || netResPrev < 0 ? 16 : 0) + 31;
-    if (y - produitsH < bottomLimit) addBlankPage();
-    else y -= 12;
+    if (y - hProduits(densite) < bottomLimit) addBlankPage();
+    else y -= H_ENTRE_BLOCS;
 
     sectionBar('PRODUITS (Recettes)', GREEN);
     colHeaders();
-    drawSide(produits, 'recette');
+    drawSide(produits, 'recette', densite);
     if (netResReal < 0 || netResPrev < 0) {
       ensureSpace(16);
       const defReal = netResReal < 0 ? -netResReal : 0;
