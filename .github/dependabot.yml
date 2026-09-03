@@ -38,6 +38,12 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # Retenues à dessein (voir f0af2be8) ; à retirer d'ici quand la montée sera traitée
+      # comme un chantier, avec ses tests. Sinon la PR du lundi les reproposerait sans fin.
+      - dependency-name: "@cloudflare/vitest-pool-workers"
+        # > 0.18.7 : le workerd embarqué fait échouer les tests du transcodeur de médias.
+      - dependency-name: "@cloudflare/workers-types"
+        # > 5.20260707.1 : redéfinit Buffer et casse le typecheck de seo.test.ts (site).
     groups:
       dependances-mineures:
         patterns: ["*"]
