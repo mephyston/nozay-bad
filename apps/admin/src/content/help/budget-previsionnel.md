@@ -17,7 +17,9 @@ Les totaux par classe et les totaux généraux se recalculent au fur et à mesur
 
 ## Se faire proposer des montants
 
-Un bouton demande une **suggestion de budget**. Elle ne remplit que les lignes **vides ou à zéro** : les montants déjà saisis ne sont jamais écrasés. Vous restez libre de les corriger avant d'enregistrer. Cette fonction nécessite le droit *Aides IA*.
+Le bouton **Proposer d'après la saison précédente** recopie, ligne à ligne, ce que chaque catégorie a réellement coûté ou rapporté la saison passée. Il ne remplit que les lignes **vides ou à zéro** : les montants déjà saisis ne sont jamais écrasés. Vous restez libre de corriger chaque montant avant d'enregistrer.
+
+Le bouton reste grisé tant qu'aucune saison précédente n'existe.
 
 ## Comparer au réalisé
 

@@ -13,10 +13,6 @@ Chacune se déclenche depuis l'écran qu'elle concerne, par un bouton — il n'y
 
 Sur le **compte de résultat** et le **bilan de trésorerie**, un bouton propose une analyse rédigée du rapport affiché. Le texte s'écrit progressivement à l'écran.
 
-## La suggestion de budget
-
-Sur l'écran **Budget prévisionnel**, un bouton demande une proposition de montants par catégorie. Les suggestions ne remplissent que les lignes **vides ou à zéro** : ce que vous avez déjà saisi n'est jamais écrasé. Rien n'est enregistré tant que vous n'avez pas cliqué sur *Enregistrer*.
-
 ## Les suggestions de rapprochement bancaire
 
 Sur l'écran **Rapprochement bancaire**, l'analyse propose pour chaque ligne du relevé une catégorie comptable et, lorsque c'est possible, l'adhérent concerné. Elle combine des règles de reconnaissance sur le libellé bancaire, les rapprochements déjà validés par le trésorier, le catalogue de la boutique et le montant restant dû par chaque adhérent. Voir [Rapprochement bancaire](/admin/help/rapprochement-bancaire).

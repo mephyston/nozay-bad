@@ -54,7 +54,6 @@ import { createBankCheckDepositRoute } from './checks/create-bank-check-deposit/
 
 // AI Routes
 import { generateAiAnalysisRoute } from './ai/generate-analysis/route';
-import { suggestBudgetRoute } from './ai/suggest-budget/route';
 
 export type Bindings = {
   DB: D1Database;
@@ -65,7 +64,6 @@ export const accountingRouter = new Hono<{ Bindings: Bindings }>();
 
 // Mount AI Routes
 accountingRouter.route('/seasons', generateAiAnalysisRoute);
-accountingRouter.route('/seasons', suggestBudgetRoute);
 
 // 1. SEASONS ROUTES (mounted with /seasons prefix)
 accountingRouter.route('/seasons', listSeasonsRoute);

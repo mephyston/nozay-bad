@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { Button, Card, Alert } from '@nba/ui';
-  import { Sparkles } from '@lucide/svelte';
+  import { Button, Card, Alert, toast } from '@nba/ui';
+  import { History } from '@lucide/svelte';
   import type { ReportData, Season, DbCategory, AccountClass } from './report-types';
+  import { getCatTotal as totalCategorie } from './report-calculations';
   import ReportChargesColumn from './ReportChargesColumn.svelte';
   import ReportProduitsColumn from './ReportProduitsColumn.svelte';
   import ReportAIAnalysis from './ReportAIAnalysis.svelte';
@@ -10,36 +11,6 @@
   // Sur écran étroit (< xl) : la 2e colonne montre soit le prévisionnel, soit
   // l'écart (les deux sont visibles simultanément à partir de xl).
   let secondaryView = $state<'previsionnel' | 'ecart'>('previsionnel');
-  
-  let isSuggesting = $state(false);
-  
-  async function suggestBudget() {
-    isSuggesting = true;
-    try {
-      const response = await fetch(`/api/accounting/seasons/${selectedSeason}/ai/budget-suggestion`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ report, categories, currentBudget: editableBudget })
-      });
-      const data = await response.json();
-      if (data.success && data.data?.suggestions) {
-        for (const sug of data.data.suggestions) {
-          const cat = categories.find(c => c.adminLabel === sug.categoryName);
-          if (cat) {
-            const key = `${cat.id}_${sug.type}`;
-            // Mettre à jour si vide ou 0 (ne pas écraser les valeurs déjà saisies)
-            if (!editableBudget[key] || editableBudget[key] === 0) {
-              editableBudget[key] = Math.round(sug.suggestedAmount * 100);
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      isSuggesting = false;
-    }
-  }
 
   let {
     mode,
@@ -88,6 +59,51 @@
     onSaveBudget: () => void;
     canUseAi?: boolean;
   } = $props();
+
+  /*
+   * Proposition de budget : le réalisé de la saison précédente, ligne à ligne.
+   *
+   * Le bouton passait par un modèle de langage à qui l'on demandait de deviner des montants
+   * d'après une « moyenne historique » qui n'en était pas une (le reste à consommer du budget
+   * courant), en réponse libre à recoller sur les libellés de catégories. Le trésorier
+   * n'obtenait rien, ou n'importe quoi. Ce qu'il attend d'une proposition est pourtant
+   * connu et déjà chargé avec l'écran : ce que chaque catégorie a réellement coûté ou
+   * rapporté la saison passée. On le recopie, à l'euro près, et il ajuste.
+   *
+   * Seules les lignes vides ou à zéro sont remplies : une saisie n'est jamais écrasée. Rien
+   * n'est enregistré tant que l'on n'a pas cliqué sur « Enregistrer ».
+   */
+  const saisonPrecedenteConnue = $derived(!!prevReport?.compteResultat?.categories);
+
+  function proposerDepuisSaisonPrecedente() {
+    if (!prevReport) return;
+    const propose: Record<string, number> = { ...editableBudget };
+    let remplies = 0;
+    const cotes: Array<[AccountClass[], 'depense' | 'recette']> = [
+      [chargeClasses, 'depense'],
+      [produitClasses, 'recette']
+    ];
+    for (const [classes, type] of cotes) {
+      for (const ac of classes) {
+        for (const cat of getClassCategories(ac.code, type)) {
+          const cle = `${cat.id}_${type}`;
+          if (propose[cle]) continue;
+          const realise = totalCategorie(prevReport, null, String(cat.id), type, 'realise');
+          if (realise <= 0) continue;
+          propose[cle] = realise;
+          remplies++;
+        }
+      }
+    }
+    editableBudget = propose;
+    if (remplies === 0) {
+      toast.info("Rien à proposer : la saison précédente n'a pas de réalisé sur les lignes encore vides.");
+      return;
+    }
+    toast.success(
+      `${remplies} ligne${remplies > 1 ? 's' : ''} remplie${remplies > 1 ? 's' : ''} d'après le réalisé de la saison précédente. Les montants déjà saisis sont conservés ; pensez à enregistrer.`
+    );
+  }
 
   const totalDepReal = $derived(getTotalDepensesRealise(mode));
   const totalRecReal = $derived(getTotalRecettesRealise(mode));
@@ -215,21 +231,16 @@
         {/if}
         
         <div class="flex justify-end gap-3">
-          {#if canUseAi}
-            <Button
-              variant="outline"
-              onclick={suggestBudget}
-              disabled={isSuggesting}
-              class="flex items-center gap-1.5 border-primary/20 text-primary hover:bg-primary/5"
-            >
-              <Sparkles class="w-4 h-4" />
-              {#if isSuggesting}
-                Génération...
-              {:else}
-                Aide à la saisie IA
-              {/if}
-            </Button>
-          {/if}
+          <Button
+            variant="outline"
+            onclick={proposerDepuisSaisonPrecedente}
+            disabled={!saisonPrecedenteConnue}
+            title={saisonPrecedenteConnue ? 'Remplit les lignes vides avec le réalisé de la saison précédente' : 'Aucune saison précédente connue'}
+            class="flex items-center gap-1.5 border-primary/20 text-primary hover:bg-primary/5"
+          >
+            <History class="w-4 h-4" />
+            Proposer d'après la saison précédente
+          </Button>
           <Button
             onclick={onSaveBudget}
             disabled={isSaving}

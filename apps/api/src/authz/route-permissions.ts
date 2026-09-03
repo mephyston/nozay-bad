@@ -83,7 +83,6 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'GET', path: '/accounting/seasons/:seasonId/reports/pdf', permission: 'accounting:reports:export' },
   { method: 'GET', path: '/accounting/seasons/:season/export', permission: 'accounting:reports:export' },
   { method: 'POST', path: '/accounting/seasons/:seasonId/ai/analysis', permission: 'ai:assistant:use' },
-  { method: 'POST', path: '/accounting/seasons/:seasonId/ai/budget-suggestion', permission: 'ai:assistant:use' },
 
   // ── Comptabilité : configuration ───────────────────────────────────────────
   // Le storefront lit les catégories pour afficher un libellé de note de frais.
