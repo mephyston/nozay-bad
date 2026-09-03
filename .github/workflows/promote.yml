@@ -56,7 +56,9 @@ jobs:
         run: |
           SHA=$(git rev-parse HEAD)
 
-          git fetch --no-tags origin main
+          # Le checkout ne conserve plus le jeton (persist-credentials: false) : ce fetch
+          # d'un dépôt privé s'authentifie lui-même, comme semantic-release le fait.
+          git fetch --no-tags "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" main:refs/remotes/origin/main
           if ! git merge-base --is-ancestor "$SHA" origin/main; then
             echo "::error::$SHA n'est pas un ancêtre de main — on ne promeut que du tronc."
             exit 1
