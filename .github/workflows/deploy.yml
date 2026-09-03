@@ -34,13 +34,14 @@ env:
   # .zap/rules.tsv) rend le run rouge, et la promotion refuse le commit. Repasser à
   # "false" ne sert qu'à débloquer un faux positif le temps de le traiter.
   #
-  # À "false" depuis le 03/09/2026 : Cloudflare sert une page de challenge au runner
-  # GitHub sur `/` et `/sitemap.xml` des deux cibles (CSP à nonce, sans HSTS), et ZAP
-  # la juge comme une page à nous. L'en-tête X-Scan-Token part bien, la règle WAF
-  # « Scanner ZAP » ne suffit donc pas : le produit qui challenge n'est pas couvert par
-  # son Skip (Bot Fight Mode ne s'exempte pas sur le plan Free). Repasser à "true" une
-  # fois le challenge levé côté Cloudflare, vérifié par un run vert du job dast.
-  DAST_BLOQUANT: "false"
+  # Le 03/09/2026, Bot Fight Mode challengeait le runner GitHub sur `/` et
+  # `/sitemap.xml` des deux cibles staging, et ZAP prenait la page de challenge pour
+  # une page à nous (HSTS absent). Sur le plan Free ce produit n'admet aucune
+  # exception, la règle WAF « Scanner ZAP » (en-tête X-Scan-Token) jouait sans effet :
+  # il a été désactivé, les règles perso, les règles gérées et Turnstile suffisent.
+  # Si le DAST rougit à nouveau sur HSTS avec une CSP à nonce dans l'évidence, c'est
+  # qu'un challenge est revenu.
+  DAST_BLOQUANT: "true"
 
 jobs:
   # Derrière les tests, et non à côté d'eux.
