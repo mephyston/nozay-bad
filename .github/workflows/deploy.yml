@@ -737,7 +737,11 @@ jobs:
           # Pas d'issue GitHub par verdict : le rapport est dans l'artefact du run.
           allow_issue_writing: false
           fail_action: ${{ env.DAST_BLOQUANT == 'true' }}
+          # -I : un WARN reste dans le rapport mais ne fait pas échouer le scan (sans
+          # lui, zap-baseline rend 2 sur un avertissement et l'action le prend pour un
+          # échec). Seules les règles FAIL de .zap/rules.tsv rendent le job rouge.
           cmd_options: >-
+            -I
             -z "-config replacer.full_list(0).description=waf
             -config replacer.full_list(0).enabled=true
             -config replacer.full_list(0).matchtype=REQ_HEADER
