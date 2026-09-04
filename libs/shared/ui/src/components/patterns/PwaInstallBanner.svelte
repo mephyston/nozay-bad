@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { X, Download, Share } from '@lucide/svelte';
+  import { X, Download, Share, ExternalLink } from '@lucide/svelte';
   import { Button } from '../ui/button';
+  import { detectInstallTarget, chromeIntentUrl, type InstallTarget } from '../../lib/pwa-install';
 
   // Le rejet expire au bout de 30 jours. Auparavant il était définitif : un clic
   // malheureux masquait la bannière à vie sur l'appareil. C'est bloquant depuis
@@ -16,10 +17,11 @@
   };
 
   let showBanner = $state(false);
-  let isIOS = $state(false);
-  // Sur iOS, seul Safari sait poser une vraie PWA sur l'écran d'accueil : les autres
-  // navigateurs n'ont pas le menu « Sur l'écran d'accueil » qui installe l'app.
-  let isIOSSafari = $state(false);
+  // Qui sait installer quoi (Safari seul sur iOS, Chrome seul sur Android…) : voir
+  // lib/pwa-install.ts. Hors 'default', on n'attend pas `beforeinstallprompt` : on
+  // explique la marche à suivre.
+  let target = $state<InstallTarget>('default');
+  let chromeUrl = $state('');
   let deferredPrompt = $state<InstallPromptEvent | null>(null);
 
   // Safari refuse l'accès à localStorage (SecurityError) quand les cookies sont
@@ -39,12 +41,6 @@
     } catch {
       /* stockage indisponible : le rejet ne dure que la session */
     }
-  }
-
-  function detectIOS(ua: string): boolean {
-    if (/iphone|ipad|ipod/.test(ua)) return true;
-    // iPadOS 13+ s'annonce comme un Mac de bureau ; seul maxTouchPoints le trahit.
-    return /macintosh/.test(ua) && navigator.maxTouchPoints > 1;
   }
 
   function isDismissed(): boolean {
@@ -75,12 +71,12 @@
 
     if (isDismissed()) return;
 
-    const ua = window.navigator.userAgent.toLowerCase();
-    isIOS = detectIOS(ua);
-    isIOSSafari = isIOS && !/crios|fxios|edgios|opios|opt\//.test(ua);
+    target = detectInstallTarget(window.navigator.userAgent, window.navigator.maxTouchPoints);
 
-    if (isIOS) {
-      // iOS n'expose pas `beforeinstallprompt` : on affiche la marche à suivre.
+    if (target !== 'default') {
+      // iOS n'expose pas `beforeinstallprompt` ; sur Android hors Chrome, le WebAPK est
+      // bloqué (Samsung) ou absent : dans les deux cas, on affiche la marche à suivre.
+      if (target === 'android-other') chromeUrl = chromeIntentUrl(window.location.href);
       const timer = setTimeout(() => {
         showBanner = true;
       }, 2000);
@@ -120,19 +116,25 @@
     class="fixed top-0 left-0 right-0 z-[100] bg-primary text-primary-foreground p-3 shadow-md flex items-center justify-between gap-3 animate-in slide-in-from-top-full duration-300"
   >
     <div class="flex-1 text-sm font-medium leading-tight">
-      {#if isIOSSafari}
+      {#if target === 'ios-safari'}
         <span class="flex items-center gap-1 flex-wrap">
           Installer l'application : appuyez sur <Share class="w-4 h-4 inline" /> puis « Sur l'écran d'accueil ».
         </span>
-      {:else if isIOS}
+      {:else if target === 'ios-other'}
         <span>Pour installer l'application, ouvrez ce site dans Safari puis « Sur l'écran d'accueil ».</span>
+      {:else if target === 'android-other'}
+        <span>Ce navigateur ne peut pas installer l'application : ouvrez le site dans Chrome pour le faire.</span>
       {:else}
         <span>Ajoutez NBA à votre écran d'accueil pour une meilleure expérience.</span>
       {/if}
     </div>
 
     <div class="flex items-center gap-2 shrink-0">
-      {#if !isIOS}
+      {#if target === 'android-other'}
+        <Button variant="secondary" size="sm" class="h-8 text-xs px-3 font-bold" href={chromeUrl}>
+          <ExternalLink class="w-3.5 h-3.5 mr-1" /> Ouvrir dans Chrome
+        </Button>
+      {:else if target === 'default'}
         <Button variant="secondary" size="sm" class="h-8 text-xs px-3 font-bold" onclick={install}>
           <Download class="w-3.5 h-3.5 mr-1" /> Installer
         </Button>

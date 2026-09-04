@@ -68,6 +68,8 @@ export default defineConfig({
         name: 'Nozay Bad' + ENV_LABEL,
         short_name: 'Nozay Bad' + ENV_LABEL,
         description: 'Espace adhérent du club Nozay Badminton',
+        // Sans cette ligne, vite-pwa émet `"lang": "en"` pour une app en français.
+        lang: 'fr',
         theme_color: '#262624',
         background_color: '#262624',
         display: 'standalone',

@@ -90,6 +90,8 @@ export default defineConfig({
         name: 'Nozay Bad Admin' + ENV_LABEL,
         short_name: 'NBA Admin' + ENV_LABEL,
         description: 'Administration du club Nozay Badminton',
+        // Sans cette ligne, vite-pwa émet `"lang": "en"` pour une app en français.
+        lang: 'fr',
         theme_color: '#262624',
         background_color: '#262624',
         display: 'standalone',
