@@ -87,6 +87,16 @@ export default defineConfig({
     },
     plugins: [tailwindcss()],
     optimizeDeps: {
+      /*
+        Le service d'images « noop », le manifeste et le rendu Svelte côté serveur ne sont
+        découverts par Vite qu'au premier rendu, après le pré-bundle : il ré-optimise
+        alors les dépendances et recharge, mais le worker
+        SSR de Cloudflare garde son graphe de modules et réclame un chunk qui n'existe
+        plus (« The file does not exist at …/deps_ssr/route-cache-… »). Sous le démon de
+        dev d'Astro 7, ce plantage survient avant que le serveur ne soit prêt : `astro dev`
+        échouait à chaque lancement. Le déclarer d'avance évite la ré-optimisation.
+      */
+      include: ['astro/assets/services/noop', 'astro/app/manifest', '@astrojs/svelte/server.js'],
       exclude: ['astro:transitions', '@astrojs/cloudflare', '@nba/ui', '@nba/cms-ui']
     },
     ssr: { external: ['@astrojs/cloudflare'] }
