@@ -21,15 +21,21 @@ import { imagesTranscoder } from '@nba/cms-api';
 /**
  * PNG 2×2 valide, le plus petit sur lequel un redimensionnement ait un sens.
  *
+ * Généré par `sharp` lui-même (2×2, rouge uni) : depuis libvips 8.18 (sharp 0.35, qui
+ * corrige des CVE de lecture), la bibliothèque est plus stricte et refusait l'ancien
+ * fixture, écrit à la main, par un « libpng read error » — miniflare s'appuie sur
+ * `sharp` pour émuler le binding. Un fixture sorti de l'encodeur reste lisible par
+ * les versions suivantes.
+ *
  * Valable pour l'émulation locale seulement : le service réel refuse une image aussi
- * petite (`IMAGES_TRANSFORM_ERROR 9516`), bien que le fichier soit correct — `sharp`
- * le relit sans broncher. Ce n'est pas gênant ici, ce test ne s'adresse qu'à
- * miniflare ; mais pointer ce fichier vers le vrai service demanderait une vraie photo.
+ * petite (`IMAGES_TRANSFORM_ERROR 9516`), bien que le fichier soit correct. Ce n'est
+ * pas gênant ici, ce test ne s'adresse qu'à miniflare ; mais pointer ce fichier vers
+ * le vrai service demanderait une vraie photo.
  */
 const PNG_2X2 = Uint8Array.from(
   atob(
-    'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP8z4AATAxQxhArAQAWpQIJ' +
-      'zPzXpAAAAABJRU5ErkJggg=='
+    'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAEElE' +
+      'QVQI12M4oaEBRAwQCgAhLgRh1YkDWAAAAABJRU5ErkJggg=='
   ),
   (c) => c.charCodeAt(0)
 );
