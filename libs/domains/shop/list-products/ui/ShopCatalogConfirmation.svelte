@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { Check, Banknote } from '@lucide/svelte';
+  import { Check, Banknote, Landmark } from '@lucide/svelte';
   import { Dialog, Button, Amount } from '@nba/ui';
   import type { OrderConfirmation } from './catalog-types';
-  import { paymentMethodLabel, requiresCashHandover } from './catalog-utils';
+  import { CLUB_BANK_DETAILS, paymentMethodLabel, requiresBankTransfer, requiresCashHandover } from './catalog-utils';
 
   /**
    * Accusé de réception d'une commande, en boîte modale.
@@ -25,6 +25,7 @@
 
   const open = $derived(confirmation !== null);
   const cash = $derived(confirmation !== null && requiresCashHandover(confirmation.paymentMethod));
+  const transfer = $derived(confirmation !== null && requiresBankTransfer(confirmation.paymentMethod));
 
   function handleOpenChange(next: boolean) {
     if (next) return;
@@ -79,6 +80,31 @@
             <Amount cents={confirmation.totalCents} class="font-bold" />
             à votre entraîneur ou au trésorier.
           </p>
+        </div>
+      {/if}
+
+      {#if transfer}
+        <!-- Sans les coordonnées sous les yeux, le virement attend le prochain passage au gymnase. -->
+        <div
+          class="flex items-start gap-2.5 rounded-xl border border-info/40 bg-info/10 p-3 text-sm text-foreground"
+          data-testid="bank-transfer-details"
+        >
+          <Landmark class="mt-0.5 h-4 w-4 shrink-0 text-info" />
+          <div class="min-w-0 space-y-1">
+            <p>
+              Paiement par virement : virez
+              <Amount cents={confirmation.totalCents} class="font-bold" />
+              sur le compte du club.
+            </p>
+            <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
+              <dt class="text-muted-foreground">Titulaire</dt>
+              <dd class="font-semibold">{CLUB_BANK_DETAILS.holder}</dd>
+              <dt class="text-muted-foreground">IBAN</dt>
+              <dd class="font-mono font-semibold tabular-nums break-all">{CLUB_BANK_DETAILS.iban}</dd>
+              <dt class="text-muted-foreground">BIC</dt>
+              <dd class="font-mono font-semibold">{CLUB_BANK_DETAILS.bic}</dd>
+            </dl>
+          </div>
         </div>
       {/if}
     {/if}

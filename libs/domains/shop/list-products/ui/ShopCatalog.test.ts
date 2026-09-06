@@ -245,6 +245,31 @@ describe('ShopCatalog Component', () => {
       expect(dialog.textContent).toContain('à votre entraîneur ou au trésorier');
     });
 
+    it('donne les coordonnées bancaires du club quand le paiement est par virement', async () => {
+      const target = document.createElement('div');
+      document.body.appendChild(target);
+
+      // Le virement est le mode de paiement proposé par défaut.
+      await mountOrderable(target);
+
+      const dialog = await submit(target);
+      expect(dialog.textContent).toContain('NOZAY BADMINTON');
+      expect(dialog.textContent).toContain('FR76 3000 3008 4600 0500 0784 720');
+      expect(dialog.textContent).toContain('SOGEFRPP');
+    });
+
+    it("ne donne l'IBAN que pour un virement", async () => {
+      const target = document.createElement('div');
+      document.body.appendChild(target);
+
+      await mountOrderable(target);
+
+      await selectInCombobox(target, 1, 'Espèces');
+
+      const dialog = await submit(target);
+      expect(dialog.textContent).not.toContain('FR76');
+    });
+
     it("ne parle d'espèces que pour un paiement en espèces", async () => {
       const target = document.createElement('div');
       document.body.appendChild(target);

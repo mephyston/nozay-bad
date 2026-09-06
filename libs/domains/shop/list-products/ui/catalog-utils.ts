@@ -31,3 +31,21 @@ export function paymentMethodLabel(value: string): string {
 export function requiresCashHandover(paymentMethod: string): boolean {
   return CASH_PAYMENT_METHODS.includes(paymentMethod);
 }
+
+/** Le paiement se fait-il par virement, auquel cas il faut donner les coordonnées du club ? */
+export function requiresBankTransfer(paymentMethod: string): boolean {
+  return paymentMethod === 'virement';
+}
+
+/**
+ * Coordonnées bancaires du club, affichées à l'adhérent qui commande par virement.
+ *
+ * En dur, comme sur les factures (`accounting/invoices/shared/generate-invoice-pdf.ts`) :
+ * elles changent rarement, et le domaine boutique n'importe pas la compta. Les deux
+ * copies sont à modifier ensemble en cas de changement de banque.
+ */
+export const CLUB_BANK_DETAILS = {
+  holder: 'NOZAY BADMINTON',
+  iban: 'FR76 3000 3008 4600 0500 0784 720',
+  bic: 'SOGEFRPP'
+} as const;
